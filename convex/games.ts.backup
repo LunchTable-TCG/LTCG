@@ -1,0 +1,1652 @@
+import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import { internalMutation, mutation, query, internalAction, internalQuery } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { api } from "./_generated/api";
+import { validateSession } from "./lib/validators";
+import { calculateEloChange, calculateWinRate } from "./lib/helpers";
+import { XP_SYSTEM, ELO_SYSTEM, SPECTATOR } from "./lib/constants";
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const RATING_DEFAULTS = {
+  DEFAULT_RATING: 1000,
+  RANKED_RATING_WINDOW: 200,
+} as const;
+
+const RANK_THRESHOLDS = {
+  Bronze: 0,
+  Silver: 1200,
+  Gold: 1400,
+  Platinum: 1600,
+  Diamond: 1800,
+  Master: 2000,
+  Legend: 2200,
+} as const;
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Calculate rank tier from rating
+ */
+function getRank(rating: number): string {
+  if (rating >= RANK_THRESHOLDS.Legend) return "Legend";
+  if (rating >= RANK_THRESHOLDS.Master) return "Master";
+  if (rating >= RANK_THRESHOLDS.Diamond) return "Diamond";
+  if (rating >= RANK_THRESHOLDS.Platinum) return "Platinum";
+  if (rating >= RANK_THRESHOLDS.Gold) return "Gold";
+  if (rating >= RANK_THRESHOLDS.Silver) return "Silver";
+  return "Bronze";
+}
+
+/**
+ * Generate random 6-character alphanumeric join code
+ * Excludes ambiguous characters: O, 0, I, 1, l
+ */
+function generateJoinCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+/**
+ * Update user presence status
+ */
+async function updatePresenceInternal(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  username: string,
+  status: "online" | "in_game" | "idle"
+): Promise<void> {
+  const existing = await ctx.db
+    .query("userPresence")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .first();
+
+  if (existing) {
+    await ctx.db.patch(existing._id, {
+      status,
+      lastActiveAt: Date.now(),
+    });
+  } else {
+    await ctx.db.insert("userPresence", {
+      userId,
+      username,
+      status,
+      lastActiveAt: Date.now(),
+    });
+  }
+}
+
+/**
+ * Initialize game state for a new game (internal mutation)
+ *
+ * Creates the gameStates document with:
+ * - Loaded and shuffled decks from both players
+ * - Initial 5-card hands
+ * - Empty boards and graveyards
+ * - Starting LP and mana
+ * - Phase/chain/flag initialization
+ */
+export const initializeGameState = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
+    hostId: v.id("users"),
+    opponentId: v.id("users"),
+    currentTurnPlayerId: v.id("users"),
+  },
+  handler: async (ctx, { lobbyId, gameId, hostId, opponentId, currentTurnPlayerId }) => {
+  // Get both players' active decks
+  const host = await ctx.db.get(hostId);
+  const opponent = await ctx.db.get(opponentId);
+
+  if (!host?.activeDeckId || !opponent?.activeDeckId) {
+    throw new Error("Both players must have active decks");
+  }
+
+  // Get deck cards for both players
+  const hostDeckCards = await ctx.db
+    .query("deckCards")
+    .withIndex("by_deck", (q) => q.eq("deckId", host.activeDeckId!))
+    .collect();
+
+  const opponentDeckCards = await ctx.db
+    .query("deckCards")
+    .withIndex("by_deck", (q) => q.eq("deckId", opponent.activeDeckId!))
+    .collect();
+
+  // Build full deck arrays (expanding quantities)
+  const hostFullDeck: Id<"cardDefinitions">[] = [];
+  for (const deckCard of hostDeckCards) {
+    for (let i = 0; i < deckCard.quantity; i++) {
+      hostFullDeck.push(deckCard.cardDefinitionId);
+    }
+  }
+
+  const opponentFullDeck: Id<"cardDefinitions">[] = [];
+  for (const deckCard of opponentDeckCards) {
+    for (let i = 0; i < deckCard.quantity; i++) {
+      opponentFullDeck.push(deckCard.cardDefinitionId);
+    }
+  }
+
+  // Shuffle decks (Fisher-Yates shuffle)
+  const shuffle = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      // TypeScript strict null check: array elements are guaranteed to exist
+      [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+    }
+    return shuffled;
+  };
+
+  const shuffledHostDeck = shuffle(hostFullDeck);
+  const shuffledOpponentDeck = shuffle(opponentFullDeck);
+
+  // Draw initial hands (5 cards each)
+  const INITIAL_HAND_SIZE = 5;
+  const hostHand = shuffledHostDeck.slice(0, INITIAL_HAND_SIZE);
+  const opponentHand = shuffledOpponentDeck.slice(0, INITIAL_HAND_SIZE);
+  const hostDeck = shuffledHostDeck.slice(INITIAL_HAND_SIZE);
+  const opponentDeck = shuffledOpponentDeck.slice(INITIAL_HAND_SIZE);
+
+    // Create initial game state
+    const now = Date.now();
+    await ctx.db.insert("gameStates", {
+      lobbyId,
+      gameId,
+      hostId,
+      opponentId,
+
+      // Initial hands
+      hostHand,
+      opponentHand,
+
+      // Empty monster boards
+      hostBoard: [],
+      opponentBoard: [],
+
+      // Empty spell/trap zones
+      hostSpellTrapZone: [],
+      opponentSpellTrapZone: [],
+
+      // Empty field spell zones
+      hostFieldSpell: undefined,
+      opponentFieldSpell: undefined,
+
+      // Remaining decks
+      hostDeck,
+      opponentDeck,
+
+      // Empty graveyards
+      hostGraveyard: [],
+      opponentGraveyard: [],
+
+      // Empty banished zones
+      hostBanished: [],
+      opponentBanished: [],
+
+      // Initial resources (Yu-Gi-Oh: 8000 LP, no mana system)
+      hostLifePoints: 8000,
+      opponentLifePoints: 8000,
+      hostMana: 0,
+      opponentMana: 0,
+
+      // Turn tracking
+      currentTurnPlayerId,
+      turnNumber: 1,
+
+      // Phase Management (start in Draw Phase)
+      currentPhase: "draw",
+
+      // Turn Flags (no normal summons yet)
+      hostNormalSummonedThisTurn: false,
+      opponentNormalSummonedThisTurn: false,
+
+      // Chain State (empty chain)
+      currentChain: [],
+
+      // Priority System (turn player has priority)
+      currentPriorityPlayer: currentTurnPlayerId,
+
+      // Temporary Modifiers (none at start)
+      temporaryModifiers: [],
+
+      // OPT Tracking (none at start)
+      optUsedThisTurn: [],
+
+      // Timestamps
+      lastMoveAt: now,
+      createdAt: now,
+    });
+  },
+});
+
+/**
+ * Update player stats and ratings after game completion
+ */
+async function updatePlayerStatsAfterGame(
+  ctx: MutationCtx,
+  winnerId: Id<"users">,
+  loserId: Id<"users">,
+  gameMode: "ranked" | "casual" | "story"
+): Promise<void> {
+  const winner = await ctx.db.get(winnerId);
+  const loser = await ctx.db.get(loserId);
+
+  if (!winner || !loser) {
+    throw new Error("Winner or loser not found");
+  }
+
+  // Determine which rating field to use and XP amount
+  const isRanked = gameMode === "ranked";
+  const isCasual = gameMode === "casual";
+  const isStory = gameMode === "story";
+
+  const winnerRatingBefore = isRanked
+    ? winner.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+    : isCasual
+      ? winner.casualRating || ELO_SYSTEM.DEFAULT_RATING
+      : 0;
+
+  const loserRatingBefore = isRanked
+    ? loser.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+    : isCasual
+      ? loser.casualRating || ELO_SYSTEM.DEFAULT_RATING
+      : 0;
+
+  // Calculate new ratings (only for ranked/casual)
+  let winnerRatingAfter = winnerRatingBefore;
+  let loserRatingAfter = loserRatingBefore;
+
+  if (isRanked || isCasual) {
+    const { winnerNewRating, loserNewRating } = calculateEloChange(
+      winnerRatingBefore,
+      loserRatingBefore
+    );
+    winnerRatingAfter = winnerNewRating;
+    loserRatingAfter = loserNewRating;
+  }
+
+  // Determine XP reward
+  const xpReward = isRanked
+    ? XP_SYSTEM.RANKED_WIN_XP
+    : isCasual
+      ? XP_SYSTEM.CASUAL_WIN_XP
+      : XP_SYSTEM.STORY_WIN_XP;
+
+  // Update winner XP via playerXP system (maintains single source of truth)
+  const { addXP } = await import("./lib/xpHelpers");
+  await addXP(ctx, winnerId, xpReward);
+
+  // Update winner stats
+  await ctx.db.patch(winnerId, {
+    // Update ratings
+    ...(isRanked && { rankedElo: winnerRatingAfter }),
+    ...(isCasual && { casualRating: winnerRatingAfter }),
+
+    // Update win stats
+    totalWins: (winner.totalWins || 0) + 1,
+    ...(isRanked && { rankedWins: (winner.rankedWins || 0) + 1 }),
+    ...(isCasual && { casualWins: (winner.casualWins || 0) + 1 }),
+    ...(isStory && { storyWins: (winner.storyWins || 0) + 1 }),
+
+    lastStatsUpdate: Date.now(),
+  });
+
+  // Update loser stats
+  await ctx.db.patch(loserId, {
+    // Update ratings
+    ...(isRanked && { rankedElo: loserRatingAfter }),
+    ...(isCasual && { casualRating: loserRatingAfter }),
+
+    // Update loss stats (no XP for losses)
+    totalLosses: (loser.totalLosses || 0) + 1,
+    ...(isRanked && { rankedLosses: (loser.rankedLosses || 0) + 1 }),
+    ...(isCasual && { casualLosses: (loser.casualLosses || 0) + 1 }),
+
+    lastStatsUpdate: Date.now(),
+  });
+
+  // Record match history
+  await ctx.db.insert("matchHistory", {
+    winnerId,
+    loserId,
+    gameType: gameMode,
+    winnerRatingBefore,
+    winnerRatingAfter,
+    loserRatingBefore,
+    loserRatingAfter,
+    xpAwarded: xpReward,
+    completedAt: Date.now(),
+  });
+}
+
+/**
+ * Validate user can create or join a game
+ * Checks: session, active deck, deck validity, not already in game, no existing lobby
+ */
+async function validateUserCanCreateGame(
+  ctx: QueryCtx | MutationCtx,
+  token: string
+): Promise<{
+  userId: Id<"users">;
+  username: string;
+  deckId: Id<"userDecks">;
+  deckArchetype: string;
+}> {
+  // Validate session
+  const { userId, username } = await validateSession(ctx, token);
+
+  // Check user has active deck set
+  const user = await ctx.db.get(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!user.activeDeckId) {
+    throw new Error("You must select an active deck in your Binder before creating a game");
+  }
+
+  // Get active deck
+  const deck = await ctx.db.get(user.activeDeckId);
+  if (!deck || deck.userId !== userId || !deck.isActive) {
+    throw new Error("Your active deck is no longer valid. Please select a new deck in your Binder");
+  }
+
+  // Validate deck has minimum cards
+  const deckCards = await ctx.db
+    .query("deckCards")
+    .withIndex("by_deck", (q) => q.eq("deckId", user.activeDeckId!))
+    .collect();
+
+  const totalCards = deckCards.reduce((sum, dc) => sum + dc.quantity, 0);
+  if (totalCards < 30) {
+    throw new Error(`Your active deck must have at least 30 cards. Currently has ${totalCards}.`);
+  }
+
+  // Check user doesn't already have an active lobby (check this FIRST for better error messages)
+  const existingLobby = await ctx.db
+    .query("gameLobbies")
+    .withIndex("by_host", (q) => q.eq("hostId", userId))
+    .filter((q) =>
+      q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active"))
+    )
+    .first();
+
+  if (existingLobby) {
+    throw new Error("You already have an active lobby");
+  }
+
+  // Check user presence status
+  const presence = await ctx.db
+    .query("userPresence")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .first();
+
+  if (presence?.status === "in_game") {
+    throw new Error("You are already in a game");
+  }
+
+  // Get deck archetype
+  const deckArchetype = deck.deckArchetype || "neutral";
+
+  return {
+    userId,
+    username,
+    deckId: user.activeDeckId,
+    deckArchetype,
+  };
+}
+
+// ============================================================================
+// QUERIES
+// ============================================================================
+
+/**
+ * List waiting lobbies (public lobbies only)
+ */
+export const listWaitingLobbies = query({
+  args: {
+    mode: v.optional(v.union(v.literal("casual"), v.literal("ranked"), v.literal("all"))),
+    userRating: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const mode = args.mode || "all";
+    const userRating = args.userRating || RATING_DEFAULTS.DEFAULT_RATING;
+
+    // Query waiting lobbies
+    const allLobbies = await (mode === "all"
+      ? ctx.db
+          .query("gameLobbies")
+          .withIndex("by_status", (q) => q.eq("status", "waiting"))
+          .collect()
+      : ctx.db
+          .query("gameLobbies")
+          .withIndex("by_mode_status", (q) => q.eq("mode", mode).eq("status", "waiting"))
+          .collect());
+
+    // Filter out private lobbies
+    let publicLobbies = allLobbies.filter((lobby) => !lobby.isPrivate);
+
+    // For ranked mode, filter by rating window
+    if (mode === "ranked" || mode === "all") {
+      publicLobbies = publicLobbies.filter((lobby) => {
+        if (lobby.mode !== "ranked") return true;
+        const ratingDiff = Math.abs(lobby.hostRating - userRating);
+        return ratingDiff <= RATING_DEFAULTS.RANKED_RATING_WINDOW;
+      });
+    }
+
+    // Sort by newest first
+    publicLobbies.sort((a, b) => b.createdAt - a.createdAt);
+
+    // Limit to 50 results
+    publicLobbies = publicLobbies.slice(0, 50);
+
+    // Return without joinCode (security)
+    return publicLobbies.map((lobby) => ({
+      id: lobby._id,
+      hostUsername: lobby.hostUsername,
+      hostRank: lobby.hostRank,
+      hostRating: lobby.hostRating,
+      deckArchetype: lobby.deckArchetype,
+      mode: lobby.mode,
+      createdAt: lobby.createdAt,
+      isPrivate: lobby.isPrivate,
+    }));
+  },
+});
+
+/**
+ * Get user's active lobby (as host)
+ */
+export const getActiveLobby = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const { userId } = await validateSession(ctx, args.token);
+
+    // Find user's lobby where they are the host
+    const lobby = await ctx.db
+      .query("gameLobbies")
+      .withIndex("by_host", (q) => q.eq("hostId", userId))
+      .filter((q) =>
+        q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active"))
+      )
+      .first();
+
+    return lobby;
+  },
+});
+
+/**
+ * Get detailed lobby information
+ */
+export const getLobbyDetails = query({
+  args: {
+    token: v.string(),
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, args) => {
+    await validateSession(ctx, args.token);
+
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw new Error("Lobby not found");
+    }
+
+    if (lobby.status === "cancelled") {
+      throw new Error("This lobby has been cancelled");
+    }
+
+    return lobby;
+  },
+});
+
+/**
+ * Get user's private lobby (to show join code)
+ */
+export const getMyPrivateLobby = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const { userId } = await validateSession(ctx, args.token);
+
+    const lobby = await ctx.db
+      .query("gameLobbies")
+      .withIndex("by_host", (q) => q.eq("hostId", userId))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("isPrivate"), true),
+          q.eq(q.field("status"), "waiting")
+        )
+      )
+      .first();
+
+    if (!lobby) {
+      return null;
+    }
+
+    return {
+      lobbyId: lobby._id,
+      joinCode: lobby.joinCode,
+      mode: lobby.mode,
+    };
+  },
+});
+
+// ============================================================================
+// SPECTATOR QUERIES
+// ============================================================================
+
+/**
+ * Get list of active PUBLIC games for spectating
+ *
+ * Features:
+ * - Only returns public games (isPrivate: false)
+ * - Only games in "active" status
+ * - Sorted by createdAt (desc) for most recent matches first
+ * - Includes spectator count
+ */
+export const listActiveGames = query({
+  args: {
+    mode: v.optional(v.union(v.literal("casual"), v.literal("ranked"), v.literal("all"))),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, { mode, limit = 50 }) => {
+    let baseQuery = ctx.db
+      .query("gameLobbies")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("isPrivate"), false),
+          q.or(
+            q.eq(q.field("allowSpectators"), true),
+            q.eq(q.field("allowSpectators"), undefined) // default is true
+          )
+        )
+      );
+
+    const games = await baseQuery.collect();
+
+    // Filter by mode if specified
+    const filteredGames = mode && mode !== "all"
+      ? games.filter((game) => game.mode === mode)
+      : games;
+
+    // Sort by createdAt desc and take limit
+    const sortedGames = filteredGames
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      .slice(0, limit);
+
+    return sortedGames.map((game) => ({
+      lobbyId: game._id,
+      hostUsername: game.hostUsername,
+      opponentUsername: game.opponentUsername || "Waiting...",
+      mode: game.mode,
+      turnNumber: game.turnNumber || 0,
+      spectatorCount: game.spectatorCount || 0,
+      deckArchetype: game.deckArchetype,
+      startedAt: game.startedAt,
+    }));
+  },
+});
+
+/**
+ * Get sanitized game state for spectators
+ *
+ * Security:
+ * - Only exposes public information visible to both players
+ * - Hides private zones (hands, deck contents)
+ * - Verifies game is public and allows spectators
+ */
+export const getGameSpectatorView = query({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, { lobbyId }) => {
+    const lobby = await ctx.db.get(lobbyId);
+
+    if (!lobby) {
+      throw new Error("Game not found");
+    }
+
+    // Security: Verify game is spectatable
+    if (lobby.isPrivate) {
+      throw new Error("Cannot spectate private games");
+    }
+
+    if (lobby.allowSpectators === false) {
+      throw new Error("Spectators not allowed for this game");
+    }
+
+    if (lobby.status !== "active") {
+      throw new Error("Game is not active");
+    }
+
+    // Get player information
+    const host = await ctx.db.get(lobby.hostId);
+    const opponent = lobby.opponentId ? await ctx.db.get(lobby.opponentId) : null;
+
+    // Return sanitized game state
+    return {
+      lobbyId: lobby._id,
+      gameId: lobby.gameId!,
+
+      // Player info
+      host: {
+        userId: lobby.hostId,
+        username: lobby.hostUsername,
+        rank: lobby.hostRank,
+        rating: lobby.hostRating,
+      },
+      opponent: opponent ? {
+        userId: lobby.opponentId!,
+        username: lobby.opponentUsername!,
+        rank: lobby.opponentRank,
+      } : null,
+
+      // Game state (public info only)
+      mode: lobby.mode,
+      deckArchetype: lobby.deckArchetype,
+      turnNumber: lobby.turnNumber || 0,
+      currentTurnPlayerId: lobby.currentTurnPlayerId,
+      turnStartedAt: lobby.turnStartedAt,
+
+      // Metadata
+      status: lobby.status,
+      startedAt: lobby.startedAt,
+      spectatorCount: lobby.spectatorCount || 0,
+    };
+  },
+});
+
+/**
+ * Check if user has an active game (for reconnection on login/mount)
+ */
+export const checkForActiveGame = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const { userId } = await validateSession(ctx, args.token);
+
+    // Check if user is in an active game
+    const activeGames = await ctx.db
+      .query("gameLobbies")
+      .filter((q) =>
+        q.and(
+          q.or(
+            q.eq(q.field("hostId"), userId),
+            q.eq(q.field("opponentId"), userId)
+          ),
+          q.eq(q.field("status"), "active")
+        )
+      )
+      .collect();
+
+    if (activeGames.length === 0) {
+      return null;
+    }
+
+    const game = activeGames[0]!; // Safe: checked length > 0
+
+    // Check if game is recent (not stale from cleanup failure)
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    const lastMove = game.lastMoveAt || game.startedAt || Date.now();
+    if (Date.now() - lastMove > FIVE_MINUTES) {
+      return null;
+    }
+
+    // User has active game - return reconnection info
+    return {
+      hasActiveGame: true,
+      lobbyId: game._id,
+      gameId: game.gameId!,
+      isHost: game.hostId === userId,
+      opponentUsername: game.hostId === userId
+        ? game.opponentUsername
+        : game.hostUsername,
+      turnNumber: game.turnNumber,
+      isYourTurn: game.currentTurnPlayerId === userId,
+      lastMoveAt: lastMove,
+    };
+  },
+});
+
+/**
+ * Get available actions for current player
+ *
+ * Returns what actions the authenticated player can take right now.
+ * Used by agents to determine valid moves.
+ */
+export const getAvailableActions = query({
+  args: {
+    token: v.string(),
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await validateSession(ctx, args.token);
+
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      return { error: "Game not found", actions: [] };
+    }
+
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      return { error: "Game state not found", actions: [] };
+    }
+
+    const isMyTurn = gameState.currentTurnPlayerId === userId;
+    const currentPhase = gameState.currentPhase || "draw";
+    const isHost = lobby.hostId === userId;
+    const myBoard = isHost ? gameState.hostBoard : gameState.opponentBoard;
+    const normalSummonedThisTurn = isHost
+      ? gameState.hostNormalSummonedThisTurn || false
+      : gameState.opponentNormalSummonedThisTurn || false;
+
+    const actions: string[] = [];
+
+    if (!isMyTurn) {
+      // Opponent's turn - can only activate traps/quick effects
+      actions.push("activateTrap");
+      return { currentPhase, isMyTurn, actions };
+    }
+
+    // My turn - determine available actions based on phase
+    switch (currentPhase) {
+      case "draw":
+      case "standby":
+        actions.push("advancePhase");
+        break;
+
+      case "main1":
+      case "main2":
+        if (!normalSummonedThisTurn) {
+          actions.push("normalSummon", "setMonster");
+        }
+        actions.push("setSpellTrap", "activateSpell", "changePosition", "advancePhase");
+        break;
+
+      case "battle_start":
+      case "battle":
+        // Can attack with monsters that haven't attacked yet
+        const canAttack = myBoard.some((card) => !card.hasAttacked && card.position === 1);
+        if (canAttack) {
+          actions.push("declareAttack");
+        }
+        actions.push("advancePhase");
+        break;
+
+      case "battle_end":
+        actions.push("advancePhase");
+        break;
+
+      case "end":
+        actions.push("endTurn");
+        break;
+    }
+
+    return {
+      currentPhase,
+      isMyTurn,
+      normalSummonedThisTurn,
+      actions,
+    };
+  },
+});
+
+/**
+ * Get detailed game state for player (sanitized for security)
+ */
+export const getGameStateForPlayer = query({
+  args: {
+    token: v.string(),
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await validateSession(ctx, args.token);
+
+    // Get lobby
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw new Error("Game not found");
+    }
+
+    // Verify user is in this game
+    if (lobby.hostId !== userId && lobby.opponentId !== userId) {
+      throw new Error("You are not in this game");
+    }
+
+    // Verify game is active
+    if (lobby.status !== "active") {
+      throw new Error("Game is not active");
+    }
+
+    // Get game state
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      throw new Error("Game state not found - game may be initializing");
+    }
+
+    // Determine if user is host
+    const isHost = lobby.hostId === userId;
+
+    // Return sanitized state (hide opponent's hand and deck)
+    return {
+      gameId: lobby.gameId!,
+      lobbyId: args.lobbyId,
+
+      // Player identity
+      isHost,
+      playerId: userId,
+      opponentId: isHost ? lobby.opponentId! : lobby.hostId,
+      opponentUsername: isHost ? lobby.opponentUsername! : lobby.hostUsername,
+
+      // Turn info
+      currentTurnPlayerId: gameState.currentTurnPlayerId,
+      turnNumber: gameState.turnNumber,
+      isYourTurn: gameState.currentTurnPlayerId === userId,
+
+      // Phase and chain state (for gameplay logic)
+      currentPhase: gameState.currentPhase || "draw",
+      currentChain: gameState.currentChain || [],
+      currentPriorityPlayer: gameState.currentPriorityPlayer,
+      myNormalSummonedThisTurn: isHost ? gameState.hostNormalSummonedThisTurn || false : gameState.opponentNormalSummonedThisTurn || false,
+
+      // Player's state (full visibility)
+      myHand: isHost ? gameState.hostHand : gameState.opponentHand,
+      myBoard: isHost ? gameState.hostBoard : gameState.opponentBoard,
+      mySpellTrapZone: isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone,
+      myDeckCount: isHost ? gameState.hostDeck.length : gameState.opponentDeck.length,
+      myGraveyard: isHost ? gameState.hostGraveyard : gameState.opponentGraveyard,
+      myLifePoints: isHost ? gameState.hostLifePoints : gameState.opponentLifePoints,
+      myMana: isHost ? gameState.hostMana : gameState.opponentMana,
+
+      // Opponent's state (limited visibility - no hand/deck contents)
+      opponentHandCount: isHost ? gameState.opponentHand.length : gameState.hostHand.length,
+      opponentBoard: isHost ? gameState.opponentBoard : gameState.hostBoard,
+      opponentSpellTrapZone: isHost ? gameState.opponentSpellTrapZone : gameState.hostSpellTrapZone,
+      opponentDeckCount: isHost ? gameState.opponentDeck.length : gameState.hostDeck.length,
+      opponentGraveyard: isHost ? gameState.opponentGraveyard : gameState.hostGraveyard,
+      opponentLifePoints: isHost ? gameState.opponentLifePoints : gameState.hostLifePoints,
+      opponentMana: isHost ? gameState.opponentMana : gameState.hostMana,
+
+      // Metadata
+      mode: lobby.mode,
+      lastMoveAt: gameState.lastMoveAt,
+    };
+  },
+});
+
+// ============================================================================
+// MUTATIONS
+// ============================================================================
+
+/**
+ * Create a new game lobby
+ */
+export const createLobby = mutation({
+  args: {
+    token: v.string(),
+    mode: v.union(v.literal("casual"), v.literal("ranked")),
+    isPrivate: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const isPrivate = args.isPrivate || false;
+
+    // Validate user can create game
+    const { userId, username, deckArchetype } = await validateUserCanCreateGame(ctx, args.token);
+
+    // Generate join code for private matches
+    const joinCode = isPrivate ? generateJoinCode() : undefined;
+
+    // Calculate rank
+    const rating = RATING_DEFAULTS.DEFAULT_RATING;
+    const rank = getRank(rating);
+
+    // Set max rating diff for ranked matches
+    const maxRatingDiff = args.mode === "ranked" ? RATING_DEFAULTS.RANKED_RATING_WINDOW : undefined;
+
+    // Create lobby
+    const lobbyId = await ctx.db.insert("gameLobbies", {
+      hostId: userId,
+      hostUsername: username,
+      hostRank: rank,
+      hostRating: rating,
+      deckArchetype,
+      mode: args.mode,
+      status: "waiting",
+      isPrivate,
+      joinCode,
+      maxRatingDiff,
+      createdAt: Date.now(),
+    });
+
+    // Update user presence to in_game
+    await updatePresenceInternal(ctx, userId, username, "in_game");
+
+    return {
+      lobbyId,
+      joinCode,
+    };
+  },
+});
+
+/**
+ * Join an existing lobby
+ */
+export const joinLobby = mutation({
+  args: {
+    token: v.string(),
+    lobbyId: v.id("gameLobbies"),
+    joinCode: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Validate session first (light check)
+    const { userId } = await validateSession(ctx, args.token);
+
+    // Get lobby
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw new Error("Lobby not found or no longer available");
+    }
+
+    // Check lobby is waiting
+    if (lobby.status !== "waiting") {
+      throw new Error("Lobby is not accepting players");
+    }
+
+    // Check user is not the host (do this BEFORE full validation for better error messages)
+    if (lobby.hostId === userId) {
+      throw new Error("You cannot join your own lobby");
+    }
+
+    // Now do full validation
+    const { username, deckArchetype } = await validateUserCanCreateGame(ctx, args.token);
+
+    // Check lobby doesn't already have opponent (race condition)
+    if (lobby.opponentId) {
+      throw new Error("This lobby is no longer available");
+    }
+
+    // Validate join code for private lobbies
+    if (lobby.isPrivate) {
+      if (!args.joinCode) {
+        throw new Error("Join code required for private match");
+      }
+      if (args.joinCode.toUpperCase() !== lobby.joinCode) {
+        throw new Error("Invalid join code for private match");
+      }
+    }
+
+    // Validate rating for ranked matches
+    if (lobby.mode === "ranked" && lobby.maxRatingDiff) {
+      const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
+      const ratingDiff = Math.abs(lobby.hostRating - opponentRating);
+      if (ratingDiff > lobby.maxRatingDiff) {
+        throw new Error("Your rating is too far from the host's rating for ranked match");
+      }
+    }
+
+    // Calculate opponent rank
+    const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
+    const opponentRank = getRank(opponentRating);
+
+    // Generate game ID
+    const gameId = crypto.randomUUID();
+
+    // Randomly decide who goes first
+    const goesFirst = Math.random() < 0.5 ? lobby.hostId : userId;
+    const now = Date.now();
+
+    // Update lobby with opponent info and start game
+    await ctx.db.patch(args.lobbyId, {
+      opponentId: userId,
+      opponentUsername: username,
+      opponentRank,
+      status: "active",
+      startedAt: now,
+      gameId,
+      currentTurnPlayerId: goesFirst,
+      turnStartedAt: now,
+      lastMoveAt: now,
+      turnNumber: 1,
+    });
+
+    // Update both players' presence to in_game
+    await updatePresenceInternal(ctx, userId, username, "in_game");
+    await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "in_game");
+
+    // Initialize game state for reconnection
+    await ctx.runMutation(internal.games.initializeGameState, {
+      lobbyId: args.lobbyId,
+      gameId,
+      hostId: lobby.hostId,
+      opponentId: userId,
+      currentTurnPlayerId: goesFirst,
+    });
+
+    // Record game start event for spectators
+    await ctx.runMutation(api.gameEvents.recordGameStart, {
+      lobbyId: args.lobbyId,
+      gameId,
+      hostId: lobby.hostId,
+      hostUsername: lobby.hostUsername,
+      opponentId: userId,
+      opponentUsername: username,
+    });
+
+    return {
+      gameId,
+      lobbyId: args.lobbyId,
+      opponentUsername: lobby.hostUsername,
+    };
+  },
+});
+
+/**
+ * Join a lobby using a join code
+ */
+export const joinLobbyByCode = mutation({
+  args: {
+    token: v.string(),
+    joinCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Normalize join code
+    const normalizedCode = args.joinCode.trim().toUpperCase();
+
+    // Find lobby by join code
+    const lobby = await ctx.db
+      .query("gameLobbies")
+      .withIndex("by_join_code", (q) => q.eq("joinCode", normalizedCode))
+      .filter((q) => q.eq(q.field("status"), "waiting"))
+      .first();
+
+    if (!lobby) {
+      throw new Error("Invalid or expired join code");
+    }
+
+    // Use joinLobby logic
+    // Re-validate and join
+    const { userId, username, deckArchetype } = await validateUserCanCreateGame(ctx, args.token);
+
+    // Check user is not the host
+    if (lobby.hostId === userId) {
+      throw new Error("You cannot join your own lobby");
+    }
+
+    // Check lobby doesn't already have opponent
+    if (lobby.opponentId) {
+      throw new Error("This lobby is no longer available");
+    }
+
+    // Calculate opponent rank
+    const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
+    const opponentRank = getRank(opponentRating);
+
+    // Generate game ID
+    const gameId = crypto.randomUUID();
+
+    // Randomly decide who goes first
+    const goesFirst = Math.random() < 0.5 ? lobby.hostId : userId;
+    const now = Date.now();
+
+    // Update lobby
+    await ctx.db.patch(lobby._id, {
+      opponentId: userId,
+      opponentUsername: username,
+      opponentRank,
+      status: "active",
+      startedAt: now,
+      gameId,
+      currentTurnPlayerId: goesFirst,
+      turnStartedAt: now,
+      lastMoveAt: now,
+      turnNumber: 1,
+    });
+
+    // Update both players' presence
+    await updatePresenceInternal(ctx, userId, username, "in_game");
+    await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "in_game");
+
+    // Initialize game state for reconnection
+    await ctx.runMutation(internal.games.initializeGameState, {
+      lobbyId: lobby._id,
+      gameId,
+      hostId: lobby.hostId,
+      opponentId: userId,
+      currentTurnPlayerId: goesFirst,
+    });
+
+    // Record game start event for spectators
+    await ctx.runMutation(api.gameEvents.recordGameStart, {
+      lobbyId: lobby._id,
+      gameId,
+      hostId: lobby.hostId,
+      hostUsername: lobby.hostUsername,
+      opponentId: userId,
+      opponentUsername: username,
+    });
+
+    return {
+      gameId,
+      lobbyId: lobby._id,
+      opponentUsername: lobby.hostUsername,
+    };
+  },
+});
+
+/**
+ * Cancel user's waiting lobby
+ */
+export const cancelLobby = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const { userId, username } = await validateSession(ctx, args.token);
+
+    // Find user's waiting lobby
+    const lobby = await ctx.db
+      .query("gameLobbies")
+      .withIndex("by_host", (q) => q.eq("hostId", userId))
+      .filter((q) => q.eq(q.field("status"), "waiting"))
+      .first();
+
+    if (!lobby) {
+      throw new Error("No active lobby to cancel");
+    }
+
+    // Update lobby status
+    await ctx.db.patch(lobby._id, {
+      status: "cancelled",
+    });
+
+    // Update host presence to online
+    await updatePresenceInternal(ctx, userId, username, "online");
+
+    return { success: true };
+  },
+});
+
+/**
+ * Leave a lobby (as host or opponent)
+ */
+export const leaveLobby = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const { userId, username } = await validateSession(ctx, args.token);
+
+    // Find user's lobby (as host or opponent)
+    const lobbies = await ctx.db
+      .query("gameLobbies")
+      .filter((q) =>
+        q.and(
+          q.or(
+            q.eq(q.field("hostId"), userId),
+            q.eq(q.field("opponentId"), userId)
+          ),
+          q.or(
+            q.eq(q.field("status"), "waiting"),
+            q.eq(q.field("status"), "active")
+          )
+        )
+      )
+      .collect();
+
+    const lobby = lobbies[0];
+    if (!lobby) {
+      throw new Error("No active lobby to leave");
+    }
+
+    // Cannot leave active game
+    if (lobby.status === "active") {
+      throw new Error("Cannot leave an active game (game in progress)");
+    }
+
+    // If user is host
+    if (lobby.hostId === userId) {
+      await ctx.db.patch(lobby._id, {
+        status: "cancelled",
+      });
+    } else if (lobby.opponentId === userId) {
+      // If user is opponent, remove them from lobby
+      await ctx.db.patch(lobby._id, {
+        opponentId: undefined,
+        opponentUsername: undefined,
+        opponentRank: undefined,
+      });
+    }
+
+    // Update user presence to online
+    await updatePresenceInternal(ctx, userId, username, "online");
+
+    return { success: true };
+  },
+});
+
+/**
+ * Surrender/forfeit the current game (user-initiated)
+ */
+export const surrenderGame = mutation({
+  args: {
+    token: v.string(),
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, args) => {
+    const { userId, username } = await validateSession(ctx, args.token);
+
+    // Get lobby
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw new Error("Game not found");
+    }
+
+    // Verify game is active
+    if (lobby.status !== "active") {
+      throw new Error("Game is not active");
+    }
+
+    // Verify user is in this game
+    if (lobby.hostId !== userId && lobby.opponentId !== userId) {
+      throw new Error("You are not in this game");
+    }
+
+    // Determine winner (the player who didn't surrender)
+    const winnerId = userId === lobby.hostId ? lobby.opponentId : lobby.hostId;
+
+    if (!winnerId) {
+      throw new Error("Cannot determine winner");
+    }
+
+    // Update lobby
+    await ctx.db.patch(args.lobbyId, {
+      status: "forfeited",
+      winnerId,
+    });
+
+    // Update both players' presence to online
+    await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
+
+    if (lobby.opponentId && lobby.opponentUsername) {
+      await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
+    }
+
+    // Update player stats and ratings (surrender counts as a loss)
+    if (lobby.opponentId) {
+      const gameMode = lobby.mode as "ranked" | "casual";
+      await updatePlayerStatsAfterGame(ctx, winnerId, userId, gameMode);
+    }
+
+    // Clean up game state (no longer needed after game ends)
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (gameState) {
+      await ctx.db.delete(gameState._id);
+    }
+
+    return { success: true };
+  },
+});
+
+/**
+ * Update turn (internal mutation, called by game engine when player makes a move)
+ */
+export const updateTurn = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    newTurnPlayerId: v.id("users"),
+    turnNumber: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw new Error("Lobby not found");
+    }
+
+    if (lobby.status !== "active") {
+      throw new Error("Game is not active");
+    }
+
+    const now = Date.now();
+
+    // Update lobby with new turn info
+    await ctx.db.patch(args.lobbyId, {
+      currentTurnPlayerId: args.newTurnPlayerId,
+      turnStartedAt: now,
+      lastMoveAt: now,
+      turnNumber: args.turnNumber,
+    });
+
+    // Record turn start event for spectators
+    if (lobby.gameId) {
+      const currentPlayer = await ctx.db.get(args.newTurnPlayerId);
+      if (currentPlayer) {
+        const username = currentPlayer.username || currentPlayer.name || "Unknown";
+        await ctx.runMutation(api.gameEvents.recordEvent, {
+          lobbyId: args.lobbyId,
+          gameId: lobby.gameId!,
+          turnNumber: args.turnNumber,
+          eventType: "turn_start",
+          playerId: args.newTurnPlayerId,
+          playerUsername: username,
+          description: `Turn ${args.turnNumber} - ${username}'s turn`,
+        });
+      }
+    }
+  },
+});
+
+/**
+ * Forfeit a game due to timeout or manual forfeit
+ */
+export const forfeitGame = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    forfeitingPlayerId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw new Error("Lobby not found");
+    }
+
+    if (lobby.status !== "active") {
+      throw new Error("Game is not active");
+    }
+
+    // Determine winner (the player who didn't forfeit)
+    const winnerId =
+      args.forfeitingPlayerId === lobby.hostId ? lobby.opponentId : lobby.hostId;
+
+    if (!winnerId) {
+      throw new Error("Cannot determine winner");
+    }
+
+    // Update lobby
+    await ctx.db.patch(args.lobbyId, {
+      status: "forfeited",
+      winnerId,
+    });
+
+    // Update both players' presence to online
+    await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
+
+    if (lobby.opponentId && lobby.opponentUsername) {
+      await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
+    }
+
+    // Update player stats and ratings (forfeit counts as a loss)
+    if (lobby.opponentId) {
+      const gameMode = lobby.mode as "ranked" | "casual";
+      await updatePlayerStatsAfterGame(ctx, winnerId, args.forfeitingPlayerId, gameMode);
+    }
+
+    // Clean up game state (no longer needed after game ends)
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (gameState) {
+      await ctx.db.delete(gameState._id);
+    }
+  },
+});
+
+/**
+ * Complete a game (internal mutation, called by game engine)
+ */
+export const completeGame = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    winnerId: v.id("users"),
+    finalTurnNumber: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw new Error("Lobby not found");
+    }
+
+    // Update lobby
+    await ctx.db.patch(args.lobbyId, {
+      status: "completed",
+      turnNumber: args.finalTurnNumber,
+      winnerId: args.winnerId,
+    });
+
+    // Update both players' presence to online
+    const hostUser = await ctx.db.get(lobby.hostId);
+    if (hostUser) {
+      await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
+    }
+
+    if (lobby.opponentId) {
+      const opponentUser = await ctx.db.get(lobby.opponentId);
+      if (opponentUser && lobby.opponentUsername) {
+        await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
+      }
+    }
+
+    // Update player stats and ratings
+    if (lobby.opponentId) {
+      const loserId = args.winnerId === lobby.hostId ? lobby.opponentId : lobby.hostId;
+      const gameMode = lobby.mode as "ranked" | "casual";
+      await updatePlayerStatsAfterGame(ctx, args.winnerId, loserId, gameMode);
+
+      // Record game end event for spectators
+      if (lobby.gameId) {
+        const winner = await ctx.db.get(args.winnerId);
+        const loser = await ctx.db.get(loserId);
+        if (winner && loser) {
+          await ctx.runMutation(api.gameEvents.recordGameEnd, {
+            lobbyId: args.lobbyId,
+            gameId: lobby.gameId!,
+            turnNumber: args.finalTurnNumber,
+            winnerId: args.winnerId,
+            winnerUsername: winner.username || winner.name || "Unknown",
+            loserId,
+            loserUsername: loser.username || loser.name || "Unknown",
+          });
+        }
+      }
+    }
+
+    // Clean up game state (no longer needed after game ends)
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (gameState) {
+      await ctx.db.delete(gameState._id);
+    }
+  },
+});
+
+// ============================================================================
+// SPECTATOR MUTATIONS
+// ============================================================================
+
+/**
+ * Track spectator joining a game
+ *
+ * Features:
+ * - Increments spectator count
+ * - Enforces max spectator limit
+ * - Works for anonymous users (no auth required)
+ */
+export const joinAsSpectator = mutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    token: v.optional(v.string()), // Optional: for tracking logged-in users
+  },
+  handler: async (ctx, { lobbyId, token }) => {
+    const lobby = await ctx.db.get(lobbyId);
+
+    if (!lobby) {
+      throw new Error("Game not found");
+    }
+
+    // Verify game is spectatable
+    if (lobby.isPrivate || lobby.allowSpectators === false) {
+      throw new Error("Cannot spectate this game");
+    }
+
+    if (lobby.status !== "active") {
+      throw new Error("Game is not active");
+    }
+
+    const currentCount = lobby.spectatorCount || 0;
+
+    // Enforce max spectators
+    const maxSpectators = lobby.maxSpectators || SPECTATOR.MAX_SPECTATORS_PER_GAME;
+    if (currentCount >= maxSpectators) {
+      throw new Error("Game is at maximum spectator capacity");
+    }
+
+    // Increment count
+    await ctx.db.patch(lobbyId, {
+      spectatorCount: currentCount + 1,
+    });
+
+    return { success: true, spectatorCount: currentCount + 1 };
+  },
+});
+
+/**
+ * Track spectator leaving a game
+ *
+ * Features:
+ * - Decrements spectator count (with floor of 0)
+ * - Safe to call even if count is already 0
+ */
+export const leaveAsSpectator = mutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    token: v.optional(v.string()),
+  },
+  handler: async (ctx, { lobbyId, token }) => {
+    const lobby = await ctx.db.get(lobbyId);
+
+    if (!lobby) {
+      // Game already ended, no need to decrement
+      return { success: true };
+    }
+
+    const currentCount = lobby.spectatorCount || 0;
+
+    // Decrement with floor of 0
+    await ctx.db.patch(lobbyId, {
+      spectatorCount: Math.max(0, currentCount - 1),
+    });
+
+    return { success: true, spectatorCount: Math.max(0, currentCount - 1) };
+  },
+});
+
+// ============================================================================
+// SCHEDULED CLEANUP
+// ============================================================================
+
+/**
+ * Cleanup stale game lobbies
+ * Runs every minute to check for games where players haven't made a move in > 2 minutes
+ */
+export const cleanupStaleGames = internalAction({
+  handler: async (ctx) => {
+    const now = Date.now();
+    const TIMEOUT_MS = 120000; // 2 minutes (120 seconds)
+
+    // Get all active games
+    const activeLobbies = await ctx.runQuery(internal.games.getActiveLobbiesForCleanup);
+
+    for (const lobby of activeLobbies) {
+      // Check if last move was more than 2 minutes ago
+      if (lobby.lastMoveAt && now - lobby.lastMoveAt > TIMEOUT_MS) {
+        // Forfeit the game for the player whose turn it is
+        if (lobby.currentTurnPlayerId) {
+          await ctx.runMutation(internal.games.forfeitGame, {
+            lobbyId: lobby._id,
+            forfeitingPlayerId: lobby.currentTurnPlayerId,
+          });
+        }
+      }
+    }
+
+    // Also cleanup waiting lobbies that have been waiting for too long (30 minutes)
+    const WAITING_TIMEOUT_MS = 1800000; // 30 minutes
+    const waitingLobbies = await ctx.runQuery(internal.games.getWaitingLobbiesForCleanup);
+
+    for (const lobby of waitingLobbies) {
+      if (now - lobby.createdAt > WAITING_TIMEOUT_MS) {
+        await ctx.runMutation(internal.games.cancelStaleWaitingLobby, {
+          lobbyId: lobby._id,
+        });
+      }
+    }
+  },
+});
+
+/**
+ * Get active lobbies for cleanup (internal query)
+ */
+export const getActiveLobbiesForCleanup = internalQuery({
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("gameLobbies")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+  },
+});
+
+/**
+ * Get waiting lobbies for cleanup (internal query)
+ */
+export const getWaitingLobbiesForCleanup = internalQuery({
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("gameLobbies")
+      .withIndex("by_status", (q) => q.eq("status", "waiting"))
+      .collect();
+  },
+});
+
+/**
+ * Cancel stale waiting lobby (internal mutation)
+ */
+export const cancelStaleWaitingLobby = internalMutation({
+  args: { lobbyId: v.id("gameLobbies") },
+  handler: async (ctx, args) => {
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) return;
+
+    // Update lobby to cancelled
+    await ctx.db.patch(args.lobbyId, {
+      status: "cancelled",
+    });
+
+    // Update host presence
+    await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
+  },
+});
