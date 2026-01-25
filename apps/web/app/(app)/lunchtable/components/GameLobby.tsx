@@ -43,61 +43,7 @@ interface GameLobbyEntry {
   spectatorCount?: number;
 }
 
-// Mock data for UI
-const MOCK_WAITING_GAMES: GameLobbyEntry[] = [
-  {
-    id: "1",
-    hostName: "DragonSlayer",
-    hostRank: "Diamond",
-    deckArchetype: "fire",
-    mode: "ranked",
-    createdAt: Date.now() - 120000,
-    status: "waiting",
-  },
-  {
-    id: "2",
-    hostName: "TideWalker",
-    hostRank: "Platinum",
-    deckArchetype: "water",
-    mode: "casual",
-    createdAt: Date.now() - 300000,
-    status: "waiting",
-  },
-  {
-    id: "3",
-    hostName: "IronGuard",
-    hostRank: "Gold",
-    deckArchetype: "earth",
-    mode: "ranked",
-    createdAt: Date.now() - 60000,
-    status: "waiting",
-  },
-  {
-    id: "7",
-    hostName: "CasualKing",
-    hostRank: "Silver",
-    deckArchetype: "wind",
-    mode: "casual",
-    createdAt: Date.now() - 180000,
-    status: "waiting",
-  },
-];
-
-const MOCK_ACTIVE_GAMES: GameLobbyEntry[] = [
-  {
-    id: "4",
-    hostName: "StormBringer",
-    hostRank: "Master",
-    deckArchetype: "wind",
-    mode: "ranked",
-    createdAt: Date.now() - 600000,
-    status: "active",
-    opponentName: "PhoenixRise",
-    opponentRank: "Diamond",
-    turnNumber: 8,
-  },
-  {
-    id: "5",
+const ARCHETYPE_CONFIG = {
     hostName: "FlameHeart",
     hostRank: "Legend",
     deckArchetype: "fire",
