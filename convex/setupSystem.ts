@@ -29,7 +29,7 @@ export const createSystemUser = internalMutation({
     const systemUserId = await ctx.db.insert("users", {
       username: "system",
       email: "system@localhost",
-      passwordHash: "N/A", // System user cannot be logged into
+      name: "System",
       createdAt: Date.now(),
     });
 

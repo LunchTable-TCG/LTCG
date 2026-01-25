@@ -294,7 +294,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
         </div>
 
         {/* Map Area */}
-        <div className="flex-grow flex items-center justify-center p-8 overflow-x-auto">
+        <div className="grow flex items-center justify-center p-8 overflow-x-auto">
           <div className="relative min-w-[800px] w-full max-w-5xl aspect-video mx-auto">
             {/* Map Path SVG */}
             <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-50" aria-hidden="true">

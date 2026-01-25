@@ -34,6 +34,21 @@ export const getCardDefinition = query({
  * Get all cards owned by the current user (for binder)
  * Returns card definitions joined with ownership data
  */
+// Helper function to map archetype to element for frontend compatibility
+function archetypeToElement(archetype: string): "fire" | "water" | "earth" | "wind" | "neutral" {
+  const mapping: Record<string, "fire" | "water" | "earth" | "wind" | "neutral"> = {
+    infernal_dragons: "fire",
+    abyssal_horrors: "water",
+    nature_spirits: "earth",
+    storm_elementals: "wind",
+    fire: "fire",
+    water: "water",
+    earth: "earth",
+    wind: "wind",
+  };
+  return mapping[archetype] || "neutral";
+}
+
 export const getUserCards = query({
   args: { token: v.string() },
   handler: async (ctx, args) => {
@@ -57,6 +72,7 @@ export const getUserCards = query({
           name: cardDef.name,
           rarity: cardDef.rarity,
           archetype: cardDef.archetype,
+          element: archetypeToElement(cardDef.archetype),
           cardType: cardDef.cardType,
           attack: cardDef.attack,
           defense: cardDef.defense,
@@ -100,6 +116,7 @@ export const getUserFavoriteCards = query({
           name: cardDef.name,
           rarity: cardDef.rarity,
           archetype: cardDef.archetype,
+          element: archetypeToElement(cardDef.archetype),
           cardType: cardDef.cardType,
           attack: cardDef.attack,
           defense: cardDef.defense,
@@ -285,10 +302,16 @@ export const createCardDefinition = internalMutation({
       v.literal("legendary")
     ),
     archetype: v.union(
-      v.literal("fire"),
-      v.literal("water"),
-      v.literal("earth"),
-      v.literal("wind"),
+      v.literal("infernal_dragons"),
+      v.literal("abyssal_horrors"),
+      v.literal("nature_spirits"),
+      v.literal("storm_elementals"),
+      v.literal("shadow_assassins"),
+      v.literal("celestial_guardians"),
+      v.literal("undead_legion"),
+      v.literal("divine_knights"),
+      v.literal("arcane_mages"),
+      v.literal("mechanical_constructs"),
       v.literal("neutral")
     ),
     cardType: v.union(

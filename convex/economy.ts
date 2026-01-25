@@ -10,6 +10,7 @@ import {
 } from "./lib/validators";
 import { PAGINATION } from "./lib/constants";
 import type { CurrencyType, TransactionType } from "./lib/types";
+import { openPack, type PackConfig, type CardResult } from "./lib/helpers";
 
 // ============================================================================
 // INTERNAL MUTATIONS (called by other backend functions)
@@ -186,7 +187,27 @@ export const getPlayerBalance = query({
   args: { token: v.string() },
   handler: async (ctx, args) => {
     const { userId } = await validateSession(ctx, args.token);
-    const currency = await getPlayerCurrency(ctx, userId);
+
+    // Query currency directly instead of using getPlayerCurrency (which throws)
+    const currency = await ctx.db
+      .query("playerCurrency")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    // Return defaults if currency doesn't exist yet (scheduled init may be pending)
+    if (!currency) {
+      return {
+        gold: 0,
+        gems: 0,
+        lifetimeStats: {
+          goldEarned: 0,
+          goldSpent: 0,
+          gemsEarned: 0,
+          gemsSpent: 0,
+        },
+        lastUpdatedAt: Date.now(),
+      };
+    }
 
     return {
       gold: currency.gold,
@@ -312,6 +333,7 @@ export const redeemPromoCode = mutation({
 
     // Grant reward based on type
     let rewardDescription = "";
+    let rewardCards: CardResult[] | undefined;
 
     if (promoCode.rewardType === "gold") {
       await ctx.runMutation(internal.economy.adjustPlayerCurrency, {
@@ -332,8 +354,45 @@ export const redeemPromoCode = mutation({
       });
       rewardDescription = `${promoCode.rewardAmount} Gems`;
     } else if (promoCode.rewardType === "pack") {
-      // TODO: Grant pack directly when shop.ts is implemented
-      rewardDescription = `${promoCode.rewardAmount}x ${promoCode.rewardPackId} Pack`;
+      // Look up pack product
+      const packProduct = await ctx.db
+        .query("shopProducts")
+        .withIndex("by_product_id", (q) => q.eq("productId", promoCode.rewardPackId!))
+        .first();
+
+      if (!packProduct || !packProduct.packConfig) {
+        throw new Error("Invalid pack configuration for promo code");
+      }
+
+      const allCards: CardResult[] = [];
+
+      // Open packs (once per rewardAmount)
+      for (let i = 0; i < promoCode.rewardAmount; i++) {
+        const cards = await openPack(ctx, packProduct.packConfig, userId);
+        allCards.push(...cards);
+
+        // Record pack opening
+        const startIdx = i * packProduct.packConfig.cardCount;
+        const endIdx = startIdx + packProduct.packConfig.cardCount;
+        const packCards = allCards.slice(startIdx, endIdx);
+
+        await ctx.db.insert("packOpeningHistory", {
+          userId,
+          productId: promoCode.rewardPackId!,
+          packType: packProduct.name,
+          cardsReceived: packCards.map((c) => ({
+            cardDefinitionId: c.cardDefinitionId,
+            name: c.name,
+            rarity: c.rarity,
+          })),
+          currencyUsed: "gold",
+          amountPaid: 0,
+          openedAt: Date.now(),
+        });
+      }
+
+      rewardDescription = `${promoCode.rewardAmount}x ${packProduct.name}`;
+      rewardCards = allCards;
     }
 
     // Increment redemption count
@@ -352,11 +411,8 @@ export const redeemPromoCode = mutation({
 
     return {
       success: true,
-      reward: {
-        type: promoCode.rewardType,
-        amount: promoCode.rewardAmount,
-        description: rewardDescription,
-      },
+      rewardDescription,
+      cardsReceived: promoCode.rewardType === "pack" ? rewardCards : undefined,
     };
   },
 });

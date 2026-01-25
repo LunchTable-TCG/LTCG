@@ -1,15 +1,15 @@
 "use client";
 
-import { useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useProfile } from "@/hooks";
 import { useAuth } from "@/components/ConvexAuthProvider";
 import { api } from "../../convex/_generated/api";
 
 export default function ProfilePage() {
-  const { token, isAuthenticated } = useAuth();
-  const currentUser = useQuery(api.users.currentUser, token ? { token } : "skip");
+  const { isAuthenticated } = useAuth();
+  const { profile: currentUser, isLoading: profileLoading } = useProfile();
   const router = useRouter();
 
   useEffect(() => {

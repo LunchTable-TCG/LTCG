@@ -6,6 +6,7 @@
       "dom",
       "dom.iterable"
     ],
+    "types": ["vite/client"],
     "jsx": "preserve",
     "module": "esnext",
     "moduleResolution": "bundler",

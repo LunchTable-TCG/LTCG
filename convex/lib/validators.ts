@@ -44,7 +44,7 @@ export async function validateSession(
 
   return {
     userId: session.userId,
-    username: user.username,
+    username: user.username || user.name || "",
   };
 }
 

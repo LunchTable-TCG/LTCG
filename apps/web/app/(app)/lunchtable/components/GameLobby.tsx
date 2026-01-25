@@ -1,7 +1,5 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
-import { useMutation, useQuery } from "convex/react";
 import {
   ChevronRight,
   Clock,
@@ -19,10 +17,12 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/components/ConvexAuthProvider";
 import { cn } from "@/lib/utils";
 import { CreateGameModal } from "./CreateGameModal";
 import { JoinConfirmDialog } from "./JoinConfirmDialog";
+import { SpectatorGameView } from "./SpectatorGameView";
+import type { Id } from "@convex/_generated/dataModel";
+import { useGameLobby, useSpectator, useMatchmaking } from "@/hooks";
 
 type GameStatus = "waiting" | "active";
 type TabType = "join" | "watch";
@@ -40,6 +40,7 @@ interface GameLobbyEntry {
   opponentName?: string;
   opponentRank?: string;
   turnNumber?: number;
+  spectatorCount?: number;
 }
 
 // Mock data for UI
@@ -167,33 +168,28 @@ function formatWaitTime(timestamp: number): string {
 }
 
 export function GameLobby() {
-  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("join");
   const [modeFilter, setModeFilter] = useState<GameMode>("all");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
   const [joiningGame, setJoiningGame] = useState<GameLobbyEntry | null>(null);
+  const [spectatingGameId, setSpectatingGameId] = useState<string | null>(null);
 
-  // Queries
-  const lobbiesData = useQuery(
-    api.games.listWaitingLobbies,
-    token
-      ? {
-          mode: modeFilter === "all" ? undefined : modeFilter,
-          userRating: 1000, // Default rating for now
-        }
-      : "skip"
-  );
+  // Use custom hooks
+  const {
+    waitingLobbies: lobbiesData,
+    myLobby: myActiveLobby,
+    createLobby,
+    joinLobby: joinLobbyAction,
+    cancelLobby,
+  } = useGameLobby();
 
-  const myActiveLobby = useQuery(
-    api.games.getActiveLobby,
-    token ? { token } : "skip"
-  );
+  const { activeGames: activeGamesData } = useSpectator();
 
-  // Mutations
-  const createLobby = useMutation(api.games.createLobby);
-  const joinLobby = useMutation(api.games.joinLobby);
-  const cancelLobby = useMutation(api.games.cancelLobby);
+  const {
+    isInQueue: isSearching,
+    joinQueue,
+    leaveQueue,
+  } = useMatchmaking();
 
   // Convert API data to component format
   const waitingGames: GameLobbyEntry[] =
@@ -207,71 +203,84 @@ export function GameLobby() {
       status: "waiting" as const,
     })) || [];
 
-  // For now, active games list is empty (will be implemented when we have active game tracking)
-  const activeGames: GameLobbyEntry[] = [];
+  const activeGames: GameLobbyEntry[] =
+    activeGamesData?.map((game) => ({
+      id: game.lobbyId,
+      hostName: game.hostUsername,
+      hostRank: "Bronze", // Rank not included in query, using default
+      deckArchetype: game.deckArchetype as "fire" | "water" | "earth" | "wind",
+      mode: game.mode as "casual" | "ranked",
+      createdAt: game.startedAt || 0,
+      status: "active" as const,
+      opponentName: game.opponentUsername,
+      turnNumber: game.turnNumber,
+      spectatorCount: game.spectatorCount,
+    })) || [];
 
   const handleCreateGame = async (data: { mode: "casual" | "ranked"; isPrivate?: boolean }) => {
-    if (!token) {
-      alert("You must be logged in to create a game");
-      return;
-    }
-
     try {
-      const result = await createLobby({
-        token,
-        mode: data.mode,
-        isPrivate: data.isPrivate || false,
-      });
-
-      if (result.joinCode) {
-        alert(`Private lobby created! Join code: ${result.joinCode}\nShare this code with your opponent.`);
-      }
-
+      await createLobby(data.mode, data.isPrivate || false);
       setIsCreateModalOpen(false);
     } catch (error: any) {
       console.error("Failed to create lobby:", error);
-      alert(error.message || "Failed to create lobby. Please try again.");
     }
   };
 
   const handleCancelMyLobby = async () => {
-    if (!token || !myActiveLobby) return;
+    if (!myActiveLobby) return;
 
     try {
-      await cancelLobby({ token });
+      await cancelLobby();
     } catch (error: any) {
       console.error("Failed to cancel lobby:", error);
-      alert(error.message || "Failed to cancel lobby.");
     }
   };
 
-  const handleQuickMatch = () => {
-    setIsSearching(true);
-    // TODO: Implement quick match/matchmaking
-    setTimeout(() => setIsSearching(false), 3000);
+  const handleQuickMatch = async () => {
+    try {
+      await joinQueue();
+    } catch (error: any) {
+      console.error("Failed to join queue:", error);
+    }
+  };
+
+  const handleCancelSearch = async () => {
+    try {
+      await leaveQueue();
+    } catch (error: any) {
+      console.error("Failed to leave queue:", error);
+    }
   };
 
   const handleJoinGame = (game: GameLobbyEntry) => {
     setJoiningGame(game);
   };
 
+  const handleWatchGame = (gameId: string) => {
+    setSpectatingGameId(gameId);
+  };
+
   const confirmJoin = async () => {
-    if (!token || !joiningGame) return;
+    if (!joiningGame) return;
 
     try {
-      const result = await joinLobby({
-        token,
-        lobbyId: joiningGame.id as any,
-      });
-
-      alert(`Joined game! Game ID: ${result.gameId}\nOpponent: ${result.opponentUsername}`);
+      await joinLobbyAction(joiningGame.id as any);
       setJoiningGame(null);
     } catch (error: any) {
       console.error("Failed to join game:", error);
-      alert(error.message || "Failed to join game. Please try again.");
       setJoiningGame(null);
     }
   };
+
+  // Render spectator view if watching a game
+  if (spectatingGameId) {
+    return (
+      <SpectatorGameView
+        lobbyId={spectatingGameId as Id<"gameLobbies">}
+        onExit={() => setSpectatingGameId(null)}
+      />
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -303,31 +312,34 @@ export function GameLobby() {
             </div>
           )}
 
-          {/* Quick Match Button */}
-          {!myActiveLobby && (
+          {/* Quick Match / Matchmaking Status */}
+          {!myActiveLobby && !isSearching && (
             <button
               type="button"
               onClick={handleQuickMatch}
-              disabled={isSearching}
-              className={cn(
-                "h-12 px-5 rounded-lg font-bold uppercase tracking-wide text-sm flex items-center gap-2 transition-all",
-                isSearching
-                  ? "bg-purple-600/50 text-white/70 cursor-wait"
-                  : "bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg hover:shadow-xl"
-              )}
+              className="h-12 px-5 rounded-lg font-bold uppercase tracking-wide text-sm flex items-center gap-2 transition-all bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg hover:shadow-xl"
             >
-              {isSearching ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Searching...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Quick Match
-                </>
-              )}
+              <Sparkles className="w-4 h-4" />
+              Quick Match
             </button>
+          )}
+
+          {/* Matchmaking Status with Details */}
+          {!myActiveLobby && isSearching && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold">Searching for opponent...</span>
+                <span className="text-xs text-purple-400">Quick match coming soon</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelSearch}
+                className="ml-2 px-3 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold uppercase transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           )}
 
           {/* Create Game Button */}
@@ -438,7 +450,9 @@ export function GameLobby() {
             />
           )
         ) : activeGames.length > 0 ? (
-          activeGames.map((game) => <ActiveGameCard key={game.id} game={game} />)
+          activeGames.map((game) => (
+            <ActiveGameCard key={game.id} game={game} onWatch={handleWatchGame} />
+          ))
         ) : (
           <EmptyState
             icon={Eye}
@@ -534,7 +548,13 @@ function WaitingGameCard({ game, onJoin }: { game: GameLobbyEntry; onJoin: () =>
   );
 }
 
-function ActiveGameCard({ game }: { game: GameLobbyEntry }) {
+function ActiveGameCard({
+  game,
+  onWatch,
+}: {
+  game: GameLobbyEntry;
+  onWatch?: (gameId: string) => void;
+}) {
   const archetype = ARCHETYPE_CONFIG[game.deckArchetype];
   const ArchetypeIcon = archetype.icon;
 
@@ -565,7 +585,7 @@ function ActiveGameCard({ game }: { game: GameLobbyEntry }) {
             </div>
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1 text-sm">
               <span className="font-black text-[#e8e0d5] truncate">{game.hostName}</span>
               <span className="text-[#a89f94] font-bold">vs</span>
@@ -586,6 +606,15 @@ function ActiveGameCard({ game }: { game: GameLobbyEntry }) {
               >
                 {game.opponentRank}
               </span>
+              {game.spectatorCount !== undefined && game.spectatorCount > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 text-[#d4af37]">
+                    <Eye className="w-3 h-3" />
+                    {game.spectatorCount} watching
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -598,6 +627,7 @@ function ActiveGameCard({ game }: { game: GameLobbyEntry }) {
           </div>
           <button
             type="button"
+            onClick={() => onWatch?.(game.id)}
             className="h-10 px-5 rounded-lg bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold uppercase tracking-wide text-sm flex items-center gap-2 shadow-lg transition-all group-hover:scale-105"
           >
             <Eye className="w-4 h-4" />

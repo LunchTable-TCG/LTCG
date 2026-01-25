@@ -1,10 +1,9 @@
-import { convexTest } from "convex-test";
 import { expect, test, describe, beforeEach } from "vitest";
-import { api } from "./_generated/api";
-import schema from "./schema";
+import { createTestInstance } from "./test.setup";
+import type { TestMutationCtx, TestHelper } from "./test.setup";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 
-const modules = import.meta.glob("./**/*.ts");
 
 // Test constants matching the actual implementation
 const DECK_SIZE = 30;
@@ -13,16 +12,15 @@ const MAX_LEGENDARY_COPIES = 1;
 const MAX_DECKS_PER_USER = 50;
 
 // Helper function to create a test user session
-async function createTestUser(t: ReturnType<typeof convexTest>, name: string) {
+async function createTestUser(t: TestHelper, name: string) {
   // Create a mock session token
   const token = `test-token-${name}-${Date.now()}`;
 
   // Create user and session
-  const userId = await t.run(async (ctx) => {
+  const userId = await t.run(async (ctx: TestMutationCtx) => {
     const userId = await ctx.db.insert("users", {
       username: name,
       email: `${name}@test.com`,
-      passwordHash: "test-hash",
       createdAt: Date.now(),
     });
 
@@ -39,8 +37,8 @@ async function createTestUser(t: ReturnType<typeof convexTest>, name: string) {
 }
 
 // Helper function to create test card definitions
-async function createTestCards(t: ReturnType<typeof convexTest>) {
-  return await t.run(async (ctx) => {
+async function createTestCards(t: TestHelper) {
+  return await t.run(async (ctx: TestMutationCtx) => {
     // Create a variety of test cards
     const cards = {
       commonCard: await ctx.db.insert("cardDefinitions", {
@@ -95,12 +93,12 @@ async function createTestCards(t: ReturnType<typeof convexTest>) {
 
 // Helper function to give cards to a user
 async function giveCardsToUser(
-  t: ReturnType<typeof convexTest>,
+  t: TestHelper,
   userId: Id<"users">,
   cardDefinitionId: Id<"cardDefinitions">,
   quantity: number
 ) {
-  await t.run(async (ctx) => {
+  await t.run(async (ctx: TestMutationCtx) => {
     await ctx.db.insert("playerCards", {
       userId,
       cardDefinitionId,
@@ -114,7 +112,7 @@ async function giveCardsToUser(
 
 describe("decks.createDeck", () => {
   test("creates a new deck with valid name", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token } = await createTestUser(t, "alice");
 
     const result = await t.mutation(api.decks.createDeck, {
@@ -125,18 +123,18 @@ describe("decks.createDeck", () => {
     expect(result.deckId).toBeDefined();
 
     // Verify deck was created
-    const deck = await t.run(async (ctx) => {
+    const deck = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.get(result.deckId);
     });
 
-    expect(deck).toMatchObject({
+    expect(deck!).toMatchObject({
       name: "My First Deck",
       isActive: true,
     });
   });
 
   test("trims whitespace from deck name", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token } = await createTestUser(t, "bob");
 
     const result = await t.mutation(api.decks.createDeck, {
@@ -144,7 +142,7 @@ describe("decks.createDeck", () => {
       name: "  Deck With Spaces  ",
     });
 
-    const deck = await t.run(async (ctx) => {
+    const deck = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.get(result.deckId);
     });
 
@@ -152,7 +150,7 @@ describe("decks.createDeck", () => {
   });
 
   test("rejects empty deck name", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token } = await createTestUser(t, "charlie");
 
     await expect(
@@ -164,7 +162,7 @@ describe("decks.createDeck", () => {
   });
 
   test("rejects deck name with only whitespace", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token } = await createTestUser(t, "david");
 
     await expect(
@@ -176,7 +174,7 @@ describe("decks.createDeck", () => {
   });
 
   test("rejects deck name exceeding 50 characters", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token } = await createTestUser(t, "eve");
 
     const longName = "a".repeat(51);
@@ -190,11 +188,11 @@ describe("decks.createDeck", () => {
   });
 
   test("enforces max decks per user limit", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "frank");
 
     // Create MAX_DECKS_PER_USER decks
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       for (let i = 0; i < MAX_DECKS_PER_USER; i++) {
         await ctx.db.insert("userDecks", {
           userId,
@@ -216,7 +214,7 @@ describe("decks.createDeck", () => {
   });
 
   test("rejects unauthenticated request", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
     await expect(
       t.mutation(api.decks.createDeck, {
@@ -229,21 +227,21 @@ describe("decks.createDeck", () => {
 
 describe("decks.getUserDecks", () => {
   test("returns empty array when user has no decks", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token } = await createTestUser(t, "grace");
 
     const decks = await t.query(api.decks.getUserDecks, { token });
 
-    expect(decks).toEqual([]);
+    expect(decks!).toEqual([]);
   });
 
   test("returns user's decks with card counts", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "henry");
     const cards = await createTestCards(t);
 
     // Create a deck
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Test Deck",
@@ -254,7 +252,7 @@ describe("decks.getUserDecks", () => {
     });
 
     // Add some cards to the deck
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("deckCards", {
         deckId,
         cardDefinitionId: cards.commonCard,
@@ -269,7 +267,7 @@ describe("decks.getUserDecks", () => {
 
     const decks = await t.query(api.decks.getUserDecks, { token });
 
-    expect(decks).toHaveLength(1);
+    expect(decks!).toHaveLength(1);
     expect(decks[0]).toMatchObject({
       name: "Test Deck",
       cardCount: 5,
@@ -277,11 +275,11 @@ describe("decks.getUserDecks", () => {
   });
 
   test("only returns active decks", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "iris");
 
     // Create active and inactive decks
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("userDecks", {
         userId,
         name: "Active Deck",
@@ -300,15 +298,15 @@ describe("decks.getUserDecks", () => {
 
     const decks = await t.query(api.decks.getUserDecks, { token });
 
-    expect(decks).toHaveLength(1);
-    expect(decks[0].name).toBe("Active Deck");
+    expect(decks!).toHaveLength(1);
+    expect(decks![0]!.name).toBe("Active Deck");
   });
 
   test("sorts decks by most recently updated", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "jack");
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("userDecks", {
         userId,
         name: "Old Deck",
@@ -327,17 +325,17 @@ describe("decks.getUserDecks", () => {
 
     const decks = await t.query(api.decks.getUserDecks, { token });
 
-    expect(decks[0].name).toBe("New Deck");
-    expect(decks[1].name).toBe("Old Deck");
+    expect(decks![0]!.name).toBe("New Deck");
+    expect(decks![1]!.name).toBe("Old Deck");
   });
 
   test("does not return other users' decks", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token: token1 } = await createTestUser(t, "kate");
     const { userId: userId2 } = await createTestUser(t, "leo");
 
     // Create deck for user2
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("userDecks", {
         userId: userId2,
         name: "Leo's Deck",
@@ -350,17 +348,17 @@ describe("decks.getUserDecks", () => {
     // Query as user1
     const decks = await t.query(api.decks.getUserDecks, { token: token1 });
 
-    expect(decks).toEqual([]);
+    expect(decks!).toEqual([]);
   });
 });
 
 describe("decks.getDeckWithCards", () => {
   test("returns deck with all cards", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "mike");
     const cards = await createTestCards(t);
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       const deckId = await ctx.db.insert("userDecks", {
         userId,
         name: "Full Deck",
@@ -397,11 +395,11 @@ describe("decks.getDeckWithCards", () => {
   });
 
   test("rejects access to other user's deck", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token: token1 } = await createTestUser(t, "nina");
     const { userId: userId2 } = await createTestUser(t, "oscar");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId: userId2,
         name: "Oscar's Deck",
@@ -420,10 +418,10 @@ describe("decks.getDeckWithCards", () => {
   });
 
   test("rejects access to deleted deck", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "paula");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Deleted Deck",
@@ -442,10 +440,10 @@ describe("decks.getDeckWithCards", () => {
   });
 
   test("filters out inactive cards", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "quinn");
 
-    const { deckId, activeCardId, inactiveCardId } = await t.run(async (ctx) => {
+    const { deckId, activeCardId, inactiveCardId } = await t.run(async (ctx: TestMutationCtx) => {
       const deckId = await ctx.db.insert("userDecks", {
         userId,
         name: "Test Deck",
@@ -494,13 +492,13 @@ describe("decks.getDeckWithCards", () => {
     });
 
     expect(deck.cards).toHaveLength(1);
-    expect(deck.cards[0].name).toBe("Active Card");
+    expect(deck!.cards[0]!.name).toBe("Active Card");
   });
 });
 
 describe("decks.saveDeck", () => {
-  test("saves deck with exactly 30 cards", async () => {
-    const t = convexTest(schema, modules);
+  test("saves deck with 30+ cards", async () => {
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "rachel");
     const cards = await createTestCards(t);
 
@@ -513,7 +511,7 @@ describe("decks.saveDeck", () => {
     // Create additional cards to reach 30 total
     // Need: 3+3+3+1=10 from base cards, plus 20 more = 30 total
     // So we need 6 more cards with 3 copies each, plus 1 card with 2 copies
-    const extraCards = await t.run(async (ctx) => {
+    const extraCards = await t.run(async (ctx: TestMutationCtx) => {
       const extraCardIds = [];
       for (let i = 0; i < 7; i++) {
         const cardId = await ctx.db.insert("cardDefinitions", {
@@ -538,7 +536,7 @@ describe("decks.saveDeck", () => {
       return extraCardIds;
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Valid Deck",
@@ -556,39 +554,39 @@ describe("decks.saveDeck", () => {
         { cardDefinitionId: cards.uncommonCard, quantity: 3 },
         { cardDefinitionId: cards.rareCard, quantity: 3 },
         { cardDefinitionId: cards.legendaryCard, quantity: 1 },
-        { cardDefinitionId: extraCards[0], quantity: 3 },
-        { cardDefinitionId: extraCards[1], quantity: 3 },
-        { cardDefinitionId: extraCards[2], quantity: 3 },
-        { cardDefinitionId: extraCards[3], quantity: 3 },
-        { cardDefinitionId: extraCards[4], quantity: 3 },
-        { cardDefinitionId: extraCards[5], quantity: 3 },
-        { cardDefinitionId: extraCards[6], quantity: 2 }, // Only 2 copies to reach exactly 30
+        { cardDefinitionId: extraCards[0]!, quantity: 3 },
+        { cardDefinitionId: extraCards[1]!, quantity: 3 },
+        { cardDefinitionId: extraCards[2]!, quantity: 3 },
+        { cardDefinitionId: extraCards[3]!, quantity: 3 },
+        { cardDefinitionId: extraCards[4]!, quantity: 3 },
+        { cardDefinitionId: extraCards[5]!, quantity: 3 },
+        { cardDefinitionId: extraCards[6]!, quantity: 2 }, // Only 2 copies to reach 30
       ],
     });
 
     expect(result.success).toBe(true);
 
     // Verify cards were saved
-    const savedCards = await t.run(async (ctx) => {
+    const savedCards = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db
         .query("deckCards")
-        .withIndex("by_deck", (q) => q.eq("deckId", deckId))
+        .withIndex("by_deck", (q: any) => q.eq("deckId", deckId))
         .collect();
     });
 
-    expect(savedCards).toHaveLength(11); // 4 base cards + 7 extra cards
-    const totalQuantity = savedCards.reduce((sum, c) => sum + c.quantity, 0);
-    expect(totalQuantity).toBe(30);
+    expect(savedCards!).toHaveLength(11); // 4 base cards + 7 extra cards
+    const totalQuantity = savedCards!.reduce((sum: any, c: any) => sum + c.quantity, 0);
+    expect(totalQuantity!).toBe(30);
   });
 
   test("rejects deck with less than 30 cards", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "sam");
     const cards = await createTestCards(t);
 
     await giveCardsToUser(t, userId, cards.commonCard, 29);
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Too Small",
@@ -606,46 +604,66 @@ describe("decks.saveDeck", () => {
           { cardDefinitionId: cards.commonCard, quantity: 29 },
         ],
       })
-    ).rejects.toThrowError(`Deck must have exactly ${DECK_SIZE} cards`);
+    ).rejects.toThrowError(`Deck must have at least ${DECK_SIZE} cards`);
   });
 
-  test("rejects deck with more than 30 cards", async () => {
-    const t = convexTest(schema, modules);
+  test("accepts deck with more than 30 cards", async () => {
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "tina");
-    const cards = await createTestCards(t);
 
-    await giveCardsToUser(t, userId, cards.commonCard, 31);
+    // Create 11 unique cards to build a 33-card deck (11 cards x 3 copies each)
+    const cardIds = await t.run(async (ctx: TestMutationCtx) => {
+      const ids = [];
+      for (let i = 0; i < 11; i++) {
+        const cardId = await ctx.db.insert("cardDefinitions", {
+          name: `Test Card ${i}`,
+          rarity: "common",
+          archetype: "fire",
+          cardType: "spell",
+          cost: 2,
+          ability: "Test ability",
+          isActive: true,
+          createdAt: Date.now(),
+        });
+        ids.push(cardId);
+      }
+      return ids;
+    });
 
-    const deckId = await t.run(async (ctx) => {
+    // Give user 3 copies of each card
+    for (const cardId of cardIds) {
+      await giveCardsToUser(t, userId, cardId, 3);
+    }
+
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
-        name: "Too Big",
+        name: "Big Deck",
         isActive: true,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
     });
 
-    await expect(
-      t.mutation(api.decks.saveDeck, {
-        token,
-        deckId,
-        cards: [
-          { cardDefinitionId: cards.commonCard, quantity: 31 },
-        ],
-      })
-    ).rejects.toThrowError(`Deck must have exactly ${DECK_SIZE} cards`);
+    // Should succeed with 33 cards (11 cards x 3 copies, minimum is 30, no maximum)
+    const result = await t.mutation(api.decks.saveDeck, {
+      token,
+      deckId,
+      cards: cardIds.map(cardId => ({ cardDefinitionId: cardId, quantity: 3 })),
+    });
+
+    expect(result).toBeDefined();
   });
 
   test("enforces max 3 copies per non-legendary card", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "uma");
     const cards = await createTestCards(t);
 
     await giveCardsToUser(t, userId, cards.commonCard, 4);
     await giveCardsToUser(t, userId, cards.rareCard, 26);
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Too Many Copies",
@@ -668,14 +686,14 @@ describe("decks.saveDeck", () => {
   });
 
   test("enforces max 1 copy per legendary card", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "victor");
     const cards = await createTestCards(t);
 
     await giveCardsToUser(t, userId, cards.legendaryCard, 2);
     await giveCardsToUser(t, userId, cards.commonCard, 28);
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Too Many Legendaries",
@@ -698,13 +716,13 @@ describe("decks.saveDeck", () => {
   });
 
   test("rejects cards user doesn't own", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "wendy");
     const cards = await createTestCards(t);
 
     // Don't give user any cards
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Unowned Cards",
@@ -726,14 +744,14 @@ describe("decks.saveDeck", () => {
   });
 
   test("rejects more cards than user owns", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "xander");
     const cards = await createTestCards(t);
 
     await giveCardsToUser(t, userId, cards.commonCard, 2);
     await giveCardsToUser(t, userId, cards.rareCard, 28);
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Not Enough Cards",
@@ -756,7 +774,7 @@ describe("decks.saveDeck", () => {
   });
 
   test("replaces existing deck cards on save", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "yara");
     const cards = await createTestCards(t);
 
@@ -766,7 +784,7 @@ describe("decks.saveDeck", () => {
     await giveCardsToUser(t, userId, cards.rareCard, 3);
 
     // Create additional cards - need 7 cards × 3 copies = 21 cards
-    const extraCardIds = await t.run(async (ctx) => {
+    const extraCardIds = await t.run(async (ctx: TestMutationCtx) => {
       const ids = [];
       for (let i = 0; i < 7; i++) {
         const cardId = await ctx.db.insert("cardDefinitions", {
@@ -791,7 +809,7 @@ describe("decks.saveDeck", () => {
       return ids;
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       const deckId = await ctx.db.insert("userDecks", {
         userId,
         name: "Changing Deck",
@@ -819,7 +837,7 @@ describe("decks.saveDeck", () => {
       for (let i = 0; i < 7; i++) {
         await ctx.db.insert("deckCards", {
           deckId,
-          cardDefinitionId: extraCardIds[i],
+          cardDefinitionId: extraCardIds[i]!,
           quantity: 3,
         });
       }
@@ -840,26 +858,26 @@ describe("decks.saveDeck", () => {
     });
 
     // Verify old cards were removed and new cards were added
-    const savedCards = await t.run(async (ctx) => {
+    const savedCards = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db
         .query("deckCards")
-        .withIndex("by_deck", (q) => q.eq("deckId", deckId))
+        .withIndex("by_deck", (q: any) => q.eq("deckId", deckId))
         .collect();
     });
 
-    expect(savedCards).toHaveLength(10); // 3 base + 7 extra cards
-    const totalQuantity = savedCards.reduce((sum, c) => sum + c.quantity, 0);
-    expect(totalQuantity).toBe(30);
+    expect(savedCards!).toHaveLength(10); // 3 base + 7 extra cards
+    const totalQuantity = savedCards!.reduce((sum: any, c: any) => sum + c.quantity, 0);
+    expect(totalQuantity!).toBe(30);
 
     // Verify it contains the same cards (testing atomic replacement)
-    const cardIds = savedCards.map((c) => c.cardDefinitionId);
-    expect(cardIds).toContain(cards.commonCard);
-    expect(cardIds).toContain(cards.uncommonCard);
-    expect(cardIds).toContain(cards.rareCard);
+    const cardIds = savedCards.map((c: any) => c.cardDefinitionId);
+    expect(cardIds!).toContain(cards.commonCard);
+    expect(cardIds!).toContain(cards.uncommonCard);
+    expect(cardIds!).toContain(cards.rareCard);
   });
 
   test("updates deck timestamp on save", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "zoe");
     const cards = await createTestCards(t);
 
@@ -869,7 +887,7 @@ describe("decks.saveDeck", () => {
     await giveCardsToUser(t, userId, cards.rareCard, 3);
 
     // Create additional cards
-    const extraCardIds = await t.run(async (ctx) => {
+    const extraCardIds = await t.run(async (ctx: TestMutationCtx) => {
       const ids = [];
       for (let i = 0; i < 7; i++) {
         const cardId = await ctx.db.insert("cardDefinitions", {
@@ -894,7 +912,7 @@ describe("decks.saveDeck", () => {
       return ids;
     });
 
-    const { deckId, originalTimestamp } = await t.run(async (ctx) => {
+    const { deckId, originalTimestamp } = await t.run(async (ctx: TestMutationCtx) => {
       const deckId = await ctx.db.insert("userDecks", {
         userId,
         name: "Timestamp Test",
@@ -918,7 +936,7 @@ describe("decks.saveDeck", () => {
       ],
     });
 
-    const updatedDeck = await t.run(async (ctx) => {
+    const updatedDeck = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.get(deckId);
     });
 
@@ -928,10 +946,10 @@ describe("decks.saveDeck", () => {
 
 describe("decks.renameDeck", () => {
   test("renames deck successfully", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "adam");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Old Name",
@@ -947,7 +965,7 @@ describe("decks.renameDeck", () => {
       newName: "New Name",
     });
 
-    const deck = await t.run(async (ctx) => {
+    const deck = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.get(deckId);
     });
 
@@ -955,10 +973,10 @@ describe("decks.renameDeck", () => {
   });
 
   test("trims whitespace from new name", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "bella");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Old Name",
@@ -974,7 +992,7 @@ describe("decks.renameDeck", () => {
       newName: "  Trimmed Name  ",
     });
 
-    const deck = await t.run(async (ctx) => {
+    const deck = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.get(deckId);
     });
 
@@ -982,10 +1000,10 @@ describe("decks.renameDeck", () => {
   });
 
   test("rejects empty name", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "carl");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Original Name",
@@ -1005,10 +1023,10 @@ describe("decks.renameDeck", () => {
   });
 
   test("rejects name exceeding 50 characters", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "dana");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Original Name",
@@ -1028,11 +1046,11 @@ describe("decks.renameDeck", () => {
   });
 
   test("rejects renaming other user's deck", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token: token1 } = await createTestUser(t, "eric");
     const { userId: userId2 } = await createTestUser(t, "fiona");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId: userId2,
         name: "Fiona's Deck",
@@ -1054,10 +1072,10 @@ describe("decks.renameDeck", () => {
 
 describe("decks.deleteDeck", () => {
   test("soft deletes deck", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "george");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "To Be Deleted",
@@ -1072,7 +1090,7 @@ describe("decks.deleteDeck", () => {
       deckId,
     });
 
-    const deck = await t.run(async (ctx) => {
+    const deck = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.get(deckId);
     });
 
@@ -1081,10 +1099,10 @@ describe("decks.deleteDeck", () => {
   });
 
   test("deleted deck not returned by getUserDecks", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "hannah");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "To Be Hidden",
@@ -1101,15 +1119,15 @@ describe("decks.deleteDeck", () => {
 
     const decks = await t.query(api.decks.getUserDecks, { token });
 
-    expect(decks).toEqual([]);
+    expect(decks!).toEqual([]);
   });
 
   test("rejects deleting other user's deck", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token: token1 } = await createTestUser(t, "ivan");
     const { userId: userId2 } = await createTestUser(t, "julia");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId: userId2,
         name: "Julia's Deck",
@@ -1128,10 +1146,10 @@ describe("decks.deleteDeck", () => {
   });
 
   test("can delete already deleted deck", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "kevin");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Already Deleted",
@@ -1147,7 +1165,7 @@ describe("decks.deleteDeck", () => {
       deckId,
     });
 
-    const deck = await t.run(async (ctx) => {
+    const deck = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.get(deckId);
     });
 
@@ -1157,11 +1175,11 @@ describe("decks.deleteDeck", () => {
 
 describe("decks.duplicateDeck", () => {
   test("creates copy of deck with all cards", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "laura");
     const cards = await createTestCards(t);
 
-    const sourceDeckId = await t.run(async (ctx) => {
+    const sourceDeckId = await t.run(async (ctx: TestMutationCtx) => {
       const deckId = await ctx.db.insert("userDecks", {
         userId,
         name: "Original Deck",
@@ -1190,25 +1208,25 @@ describe("decks.duplicateDeck", () => {
     expect(result.deckId).not.toBe(sourceDeckId);
 
     // Verify new deck
-    const newDeck = await t.run(async (ctx) => {
+    const newDeck = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.get(result.deckId);
     });
 
-    expect(newDeck).toMatchObject({
+    expect(newDeck!).toMatchObject({
       name: "Copy of Original",
       description: "Original description",
       isActive: true,
     });
 
     // Verify cards were copied
-    const newDeckCards = await t.run(async (ctx) => {
+    const newDeckCards = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db
         .query("deckCards")
-        .withIndex("by_deck", (q) => q.eq("deckId", result.deckId))
+        .withIndex("by_deck", (q: any) => q.eq("deckId", result.deckId))
         .collect();
     });
 
-    expect(newDeckCards).toHaveLength(1);
+    expect(newDeckCards!).toHaveLength(1);
     expect(newDeckCards[0]).toMatchObject({
       cardDefinitionId: cards.commonCard,
       quantity: 3,
@@ -1216,11 +1234,11 @@ describe("decks.duplicateDeck", () => {
   });
 
   test("rejects duplicating other user's deck", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { token: token1 } = await createTestUser(t, "mark");
     const { userId: userId2 } = await createTestUser(t, "nancy");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId: userId2,
         name: "Nancy's Deck",
@@ -1240,10 +1258,10 @@ describe("decks.duplicateDeck", () => {
   });
 
   test("rejects duplicating deleted deck", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "oliver");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Deleted Deck",
@@ -1265,11 +1283,11 @@ describe("decks.duplicateDeck", () => {
 
 describe("decks.validateDeck", () => {
   test("validates correct deck size", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "peter");
     const cards = await createTestCards(t);
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       const deckId = await ctx.db.insert("userDecks", {
         userId,
         name: "Valid Deck",
@@ -1327,11 +1345,11 @@ describe("decks.validateDeck", () => {
   });
 
   test("detects too few cards", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "quinn2");
     const cards = await createTestCards(t);
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       const deckId = await ctx.db.insert("userDecks", {
         userId,
         name: "Too Small",
@@ -1355,15 +1373,15 @@ describe("decks.validateDeck", () => {
     });
 
     expect(validation.isValid).toBe(false);
-    expect(validation.errors).toContain("Deck needs exactly 30 cards. Currently has 20.");
+    expect(validation.errors).toContain("Deck needs at least 30 cards. Currently has 20.");
   });
 
   test("detects too many copies of non-legendary", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "rita");
     const cards = await createTestCards(t);
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       const deckId = await ctx.db.insert("userDecks", {
         userId,
         name: "Too Many Copies",
@@ -1398,14 +1416,14 @@ describe("decks.validateDeck", () => {
     });
 
     expect(validation.isValid).toBe(false);
-    expect(validation.errors.some((e) => e.includes("Limited to 3 copies per deck"))).toBe(true);
+    expect(validation.errors.some((e: any) => e.includes("Limited to 3 copies per deck"))).toBe(true);
   });
 
   test("detects too many legendary copies", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "steve");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       const deckId = await ctx.db.insert("userDecks", {
         userId,
         name: "Too Many Legendaries",
@@ -1441,7 +1459,7 @@ describe("decks.validateDeck", () => {
     });
 
     expect(validation.isValid).toBe(false);
-    expect(validation.errors.some((e) => e.includes("Legendary cards limited to 1 copy"))).toBe(
+    expect(validation.errors.some((e: any) => e.includes("Legendary cards limited to 1 copy"))).toBe(
       true
     );
   });
@@ -1449,11 +1467,11 @@ describe("decks.validateDeck", () => {
 
 describe("decks.getDeckStats", () => {
   test("calculates correct statistics", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "terry");
     const cards = await createTestCards(t);
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       const deckId = await ctx.db.insert("userDecks", {
         userId,
         name: "Stats Test",
@@ -1500,10 +1518,10 @@ describe("decks.getDeckStats", () => {
   });
 
   test("handles empty deck", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     const { userId, token } = await createTestUser(t, "uma2");
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Empty Deck",
@@ -1520,5 +1538,171 @@ describe("decks.getDeckStats", () => {
 
     expect(stats.totalCards).toBe(0);
     expect(stats.avgCost).toBe("0");
+  });
+});
+
+describe("Starter Deck Selection", () => {
+  test("selectStarterDeck gives user all 45 cards and creates a 30-card deck", async () => {
+    const t = createTestInstance();
+    const { userId, token } = await createTestUser(t, "newplayer1");
+
+    // Seed the starter cards first
+    await t.mutation(internal.seedStarterCards.seedStarterCards, {});
+
+    // Select the Infernal Dragons starter deck
+    const result = await t.mutation(api.decks.selectStarterDeck, {
+      token,
+      deckCode: "INFERNAL_DRAGONS",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.cardsReceived).toBe(45);
+    expect(result.deckSize).toBe(45);
+    expect(result.deckName).toBe("Infernal Dragons Starter");
+
+    // Verify user has the deck as active
+    const user = await t.run(async (ctx: any) => ctx.db.get(userId));
+    expect(user.activeDeckId).toBe(result.deckId);
+
+    // Verify deck was created
+    const deck = await t.run(async (ctx: any) => ctx.db.get(result.deckId));
+    expect(deck).toBeDefined();
+    expect(deck.name).toBe("Infernal Dragons Starter");
+    expect(deck.deckArchetype).toBe("fire");
+
+    // Verify deck has all 45 cards
+    const deckCards = await t.run(async (ctx: any) =>
+      ctx.db
+        .query("deckCards")
+        .withIndex("by_deck", (q: any) => q.eq("deckId", result.deckId))
+        .collect()
+    );
+
+    const totalCards = deckCards.reduce((sum: number, dc: any) => sum + dc.quantity, 0);
+    expect(totalCards).toBe(45);
+
+    // Verify user owns all 45 cards in their inventory
+    const playerCards = await t.run(async (ctx: any) =>
+      ctx.db
+        .query("playerCards")
+        .withIndex("by_user", (q: any) => q.eq("userId", userId))
+        .collect()
+    );
+
+    const totalOwnedCards = playerCards.reduce(
+      (sum: number, pc: any) => sum + pc.quantity,
+      0
+    );
+    expect(totalOwnedCards).toBe(45);
+  });
+
+  test("selectStarterDeck prevents claiming multiple starter decks", async () => {
+    const t = createTestInstance();
+    const { token } = await createTestUser(t, "greedy");
+
+    // Seed the starter cards
+    await t.mutation(internal.seedStarterCards.seedStarterCards, {});
+
+    // Claim first starter deck
+    await t.mutation(api.decks.selectStarterDeck, {
+      token,
+      deckCode: "INFERNAL_DRAGONS",
+    });
+
+    // Try to claim another starter deck
+    await expect(
+      t.mutation(api.decks.selectStarterDeck, {
+        token,
+        deckCode: "ABYSSAL_DEPTHS",
+      })
+    ).rejects.toThrow("You have already claimed your starter deck");
+  });
+
+  test("selectStarterDeck works for Abyssal Depths deck", async () => {
+    const t = createTestInstance();
+    const { token } = await createTestUser(t, "waterplayer");
+
+    // Seed the starter cards
+    await t.mutation(internal.seedStarterCards.seedStarterCards, {});
+
+    // Select the Abyssal Depths starter deck
+    const result = await t.mutation(api.decks.selectStarterDeck, {
+      token,
+      deckCode: "ABYSSAL_DEPTHS",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.deckName).toBe("Abyssal Depths Starter");
+
+    // Verify deck archetype is water
+    const deck = await t.run(async (ctx: any) => ctx.db.get(result.deckId));
+    expect(deck.deckArchetype).toBe("water");
+  });
+
+  test("selectStarterDeck auto-seeds cards if not seeded", async () => {
+    const t = createTestInstance();
+    const { token, userId } = await createTestUser(t, "tooearly");
+
+    // Don't seed the cards - the mutation should auto-seed them
+    const result = await t.mutation(api.decks.selectStarterDeck, {
+      token,
+      deckCode: "INFERNAL_DRAGONS",
+    });
+
+    expect(result.deckId).toBeDefined();
+
+    // Verify cards were auto-seeded and given to user
+    const playerCards = await t.run(async (ctx: any) => {
+      return await ctx.db
+        .query("playerCards")
+        .withIndex("by_user", (q: any) => q.eq("userId", userId))
+        .collect();
+    });
+
+    // Should have received 45 cards from the starter deck
+    expect(playerCards.length).toBeGreaterThan(0);
+  });
+
+  test("selectStarterDeck adds cards to existing inventory if user has some", async () => {
+    const t = createTestInstance();
+    const { userId, token } = await createTestUser(t, "collector");
+
+    // Seed the starter cards
+    await t.mutation(internal.seedStarterCards.seedStarterCards, {});
+
+    // Give user one card manually first
+    const cardDef = await t.run(async (ctx: any) =>
+      ctx.db.query("cardDefinitions").first()
+    );
+
+    await t.run(async (ctx: any) => {
+      await ctx.db.insert("playerCards", {
+        userId,
+        cardDefinitionId: cardDef._id,
+        quantity: 2,
+        isFavorite: false,
+        acquiredAt: Date.now(),
+        lastUpdatedAt: Date.now(),
+      });
+    });
+
+    // Now claim starter deck
+    await t.mutation(api.decks.selectStarterDeck, {
+      token,
+      deckCode: "INFERNAL_DRAGONS",
+    });
+
+    // Verify the card quantity was updated (not duplicated)
+    const playerCard = await t.run(async (ctx: any) =>
+      ctx.db
+        .query("playerCards")
+        .withIndex("by_user_card", (q: any) =>
+          q.eq("userId", userId).eq("cardDefinitionId", cardDef._id)
+        )
+        .first()
+    );
+
+    // Should have original 2 + however many from starter deck
+    expect(playerCard.quantity).toBeGreaterThan(2);
   });
 });

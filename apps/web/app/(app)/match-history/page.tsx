@@ -1,7 +1,5 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
 import {
   Calendar,
   ChevronRight,
@@ -17,7 +15,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/components/ConvexAuthProvider";
+import { useProfile } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -177,8 +175,7 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 export default function MatchHistoryPage() {
-  const { token } = useAuth();
-  const currentUser = useQuery(api.users.currentUser, token ? { token } : "skip");
+  const { profile: currentUser, isLoading: profileLoading } = useProfile();
 
   const [filter, setFilter] = useState<MatchMode | "all">("all");
 
@@ -195,7 +192,7 @@ export default function MatchHistoryPage() {
     ),
   };
 
-  if (!currentUser) {
+  if (profileLoading || !currentUser) {
     return (
       <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />

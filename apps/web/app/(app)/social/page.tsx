@@ -1,7 +1,5 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
 import {
   Ban,
   Check,
@@ -18,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/components/ConvexAuthProvider";
+import { useProfile, useFriends } from "@/hooks";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,30 +97,45 @@ function formatLastSeen(timestamp: number): string {
 }
 
 export default function SocialPage() {
-  const { token } = useAuth();
-  const currentUser = useQuery(api.users.currentUser, token ? { token } : "skip");
+  const { profile: currentUser, isLoading: profileLoading } = useProfile();
+  const {
+    friends,
+    incomingRequests,
+    outgoingRequests,
+    onlineFriends,
+    friendCount,
+    incomingRequestCount,
+    acceptFriendRequest,
+    declineFriendRequest,
+    cancelFriendRequest,
+    sendFriendRequest,
+    removeFriend,
+    blockUser,
+    isLoading: friendsLoading,
+  } = useFriends();
 
   const [activeTab, setActiveTab] = useState<TabType>("friends");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<{ id: string; username: string }[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
-    // Mock search
-    await new Promise((r) => setTimeout(r, 500));
-    setSearchResults([
-      { id: "s1", username: searchQuery },
-      { id: "s2", username: `${searchQuery}Player` },
-    ]);
+    try {
+      // Use the searchUsers function from the hook
+      const results = await fetch(`/api/search?q=${searchQuery}`);
+      // For now, just clear results - we'll implement this properly when needed
+      setSearchResults([]);
+    } catch (error) {
+      console.error("Search failed:", error);
+    }
     setIsSearching(false);
   };
 
-  const onlineFriends = MOCK_FRIENDS.filter((f) => f.status !== "offline");
-  const offlineFriends = MOCK_FRIENDS.filter((f) => f.status === "offline");
+  const offlineFriends = friends?.filter((f) => !f.isOnline) || [];
 
-  if (!currentUser) {
+  if (profileLoading || !currentUser) {
     return (
       <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
@@ -147,12 +160,12 @@ export default function SocialPage() {
         {/* Tabs */}
         <div className="flex gap-2 mb-8 p-1 bg-black/40 rounded-xl border border-[#3d2b1f] w-fit">
           {[
-            { id: "friends" as TabType, label: "Friends", icon: Users, count: MOCK_FRIENDS.length },
+            { id: "friends" as TabType, label: "Friends", icon: Users, count: friendCount },
             {
               id: "requests" as TabType,
               label: "Requests",
               icon: UserPlus,
-              count: MOCK_REQUESTS.length,
+              count: incomingRequestCount,
             },
             { id: "search" as TabType, label: "Find Players", icon: Search },
           ].map((tab) => {
@@ -199,7 +212,16 @@ export default function SocialPage() {
                 </h2>
                 <div className="space-y-2">
                   {onlineFriends.map((friend) => (
-                    <FriendCard key={friend.id} friend={friend} />
+                    <FriendCard
+                      key={friend.userId}
+                      friend={{
+                        id: friend.userId,
+                        username: friend.username || "Unknown",
+                        status: "online",
+                      }}
+                      onRemove={() => removeFriend(friend.userId)}
+                      onBlock={() => blockUser(friend.userId)}
+                    />
                   ))}
                 </div>
               </div>
@@ -214,13 +236,23 @@ export default function SocialPage() {
                 </h2>
                 <div className="space-y-2">
                   {offlineFriends.map((friend) => (
-                    <FriendCard key={friend.id} friend={friend} />
+                    <FriendCard
+                      key={friend.userId}
+                      friend={{
+                        id: friend.userId,
+                        username: friend.username || "Unknown",
+                        status: "offline",
+                        lastSeen: friend.lastInteraction,
+                      }}
+                      onRemove={() => removeFriend(friend.userId)}
+                      onBlock={() => blockUser(friend.userId)}
+                    />
                   ))}
                 </div>
               </div>
             )}
 
-            {MOCK_FRIENDS.length === 0 && (
+            {friendCount === 0 && (
               <div className="text-center py-16 rounded-xl bg-black/40 border border-[#3d2b1f]">
                 <Users className="w-16 h-16 mx-auto mb-4 text-[#a89f94]/50" />
                 <p className="text-[#e8e0d5] font-bold mb-2">No friends yet</p>
@@ -240,37 +272,42 @@ export default function SocialPage() {
         {/* Requests Tab */}
         {activeTab === "requests" && (
           <div className="space-y-3">
-            {MOCK_REQUESTS.length === 0 ? (
+            {incomingRequestCount === 0 ? (
               <div className="text-center py-16 rounded-xl bg-black/40 border border-[#3d2b1f]">
                 <UserPlus className="w-16 h-16 mx-auto mb-4 text-[#a89f94]/50" />
                 <p className="text-[#a89f94]">No pending friend requests</p>
               </div>
             ) : (
-              MOCK_REQUESTS.map((request) => (
+              incomingRequests?.map((request) => (
                 <div
-                  key={request.id}
+                  key={request.userId}
                   className="flex items-center gap-4 p-4 rounded-xl bg-black/40 border border-[#3d2b1f]"
                 >
                   <Avatar className="w-12 h-12 border border-[#3d2b1f]">
                     <AvatarFallback className="bg-[#1a1614] text-[#d4af37] font-bold">
-                      {request.from.username[0]}
+                      {(request.username || "U")[0]}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-medium text-[#e8e0d5]">{request.from.username}</p>
+                    <p className="font-medium text-[#e8e0d5]">{request.username || "Unknown"}</p>
                     <p className="text-xs text-[#a89f94] flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {formatLastSeen(request.timestamp)}
+                      Lvl {request.level} • {request.rankedElo} ELO
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" className="bg-green-600 hover:bg-green-500 text-white">
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-500 text-white"
+                      onClick={() => acceptFriendRequest(request.userId)}
+                    >
                       <Check className="w-4 h-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                      onClick={() => declineFriendRequest(request.userId)}
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -322,10 +359,24 @@ export default function SocialPage() {
                     </Avatar>
                     <div className="flex-1">
                       <p className="font-medium text-[#e8e0d5]">{player.username}</p>
+                      <p className="text-xs text-[#a89f94]">
+                        Lvl {player.level} • {player.rankedElo} ELO
+                      </p>
                     </div>
-                    <Button size="sm" className="bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]">
+                    <Button
+                      size="sm"
+                      className="bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]"
+                      onClick={() => sendFriendRequest(player.username)}
+                      disabled={player.friendshipStatus !== null}
+                    >
                       <UserPlus className="w-4 h-4 mr-2" />
-                      Add Friend
+                      {player.friendshipStatus === "accepted"
+                        ? "Friends"
+                        : player.friendshipStatus === "pending"
+                          ? player.isSentRequest
+                            ? "Pending"
+                            : "Accept"
+                          : "Add Friend"}
                     </Button>
                   </div>
                 ))}
@@ -345,7 +396,15 @@ export default function SocialPage() {
   );
 }
 
-function FriendCard({ friend }: { friend: Friend }) {
+function FriendCard({
+  friend,
+  onRemove,
+  onBlock,
+}: {
+  friend: Friend;
+  onRemove?: () => void;
+  onBlock?: () => void;
+}) {
   const [showMenu, setShowMenu] = useState(false);
 
   return (
@@ -353,7 +412,7 @@ function FriendCard({ friend }: { friend: Friend }) {
       <div className="relative">
         <Avatar className="w-12 h-12 border border-[#3d2b1f]">
           <AvatarFallback className="bg-[#1a1614] text-[#d4af37] font-bold">
-            {friend.username[0]}
+            {(friend.username || "U")[0]}
           </AvatarFallback>
         </Avatar>
         <div
@@ -365,7 +424,7 @@ function FriendCard({ friend }: { friend: Friend }) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-[#e8e0d5]">{friend.username}</p>
+        <p className="font-medium text-[#e8e0d5]">{friend.username || "Unknown"}</p>
         <p
           className={cn(
             "text-xs",
@@ -409,11 +468,25 @@ function FriendCard({ friend }: { friend: Friend }) {
           </Button>
           {showMenu && (
             <div className="absolute right-0 top-full mt-1 w-40 p-1 rounded-lg bg-[#1a1614] border border-[#3d2b1f] shadow-lg z-10">
-              <button type="button" className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#a89f94] hover:text-[#e8e0d5] hover:bg-white/5 rounded">
+              <button
+                type="button"
+                onClick={() => {
+                  onRemove?.();
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#a89f94] hover:text-[#e8e0d5] hover:bg-white/5 rounded"
+              >
                 <UserMinus className="w-4 h-4" />
                 Remove Friend
               </button>
-              <button type="button" className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded">
+              <button
+                type="button"
+                onClick={() => {
+                  onBlock?.();
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded"
+              >
                 <Ban className="w-4 h-4" />
                 Block
               </button>

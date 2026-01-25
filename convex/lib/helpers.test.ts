@@ -8,13 +8,12 @@
  * - Pack opening logic
  */
 
-import { convexTest } from "convex-test";
 import { describe, it, expect } from "vitest";
+import { createTestInstance } from "../test.setup";
+import type { TestMutationCtx } from "../test.setup";
 import { api } from "../_generated/api";
-import schema from "../schema";
-import { weightedRandomRarity } from "./helpers";
+import { weightedRandomRarity, calculateEloChange, calculateWinRate } from "./helpers";
 
-const modules = import.meta.glob("../**/*.ts");
 
 describe("weightedRandomRarity", () => {
   it("should return valid rarity", () => {
@@ -58,14 +57,13 @@ describe("weightedRandomRarity", () => {
 
 describe("getRandomCard", () => {
   it("should throw error when no cards of rarity exist", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
     // Don't create any cards
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -88,7 +86,7 @@ describe("getRandomCard", () => {
     });
 
     // Try to purchase pack when no cards exist
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("shopProducts", {
         productId: "test-pack",
         name: "Test Pack",
@@ -105,20 +103,20 @@ describe("getRandomCard", () => {
       });
     });
 
-    await expect(async () => {
-      await t.mutation(api.shop.purchasePack, {
+    await expect(
+      t.mutation(api.shop.purchasePack, {
         token: "test-token",
         productId: "test-pack",
         useGems: false,
-      });
-    }).rejects.toThrowError(/No active .+ cards found/);
+      })
+    ).rejects.toThrowError(/No active .+ cards found/);
   });
 
   it("should return card of specified rarity", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
     // Create cards of different rarities
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("cardDefinitions", {
         name: "Common Card",
         rarity: "common",
@@ -151,13 +149,12 @@ describe("getRandomCard", () => {
 
 describe("addCardsToInventory", () => {
   it("should create new inventory entry for new card", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId] = await t.run(async (ctx) => {
+    const [userId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -192,18 +189,17 @@ describe("addCardsToInventory", () => {
     });
 
     expect(userCards.length).toBe(1);
-    expect(userCards[0].owned).toBe(3);
-    expect(userCards[0].name).toBe("New Card");
+    expect(userCards![0]!.owned).toBe(3);
+    expect(userCards![0]!.name).toBe("New Card");
   });
 
   it("should increment quantity for existing card", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId] = await t.run(async (ctx) => {
+    const [userId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -248,19 +244,18 @@ describe("addCardsToInventory", () => {
     });
 
     expect(userCards.length).toBe(1);
-    expect(userCards[0].owned).toBe(5); // 2 + 3
+    expect(userCards![0]!.owned).toBe(5); // 2 + 3
   });
 });
 
 describe("adjustCardInventory", () => {
   it("should decrease card quantity", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId] = await t.run(async (ctx) => {
+    const [userId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "seller",
         email: "seller@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -306,17 +301,16 @@ describe("adjustCardInventory", () => {
     });
 
     // Should have 5 left (10 - 5 listed)
-    expect(userCards[0].owned).toBe(5);
+    expect(userCards![0]!.owned).toBe(5);
   });
 
   it("should delete inventory entry when quantity reaches 0", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId] = await t.run(async (ctx) => {
+    const [userId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "seller",
         email: "seller@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -366,13 +360,12 @@ describe("adjustCardInventory", () => {
   });
 
   it("should throw error when trying to remove more cards than owned", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId] = await t.run(async (ctx) => {
+    const [userId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "pooruser",
         email: "poor@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -405,24 +398,24 @@ describe("adjustCardInventory", () => {
     });
 
     // Try to list 5 when only 1 owned
-    await expect(async () => {
-      await t.mutation(api.marketplace.createListing, {
+    await expect(
+      t.mutation(api.marketplace.createListing, {
         token: "poor-token",
         cardDefinitionId: cardDefId,
         quantity: 5,
         listingType: "fixed",
         price: 1000,
-      });
-    }).rejects.toThrowError("You don't own enough of this card");
+      })
+    ).rejects.toThrowError("You don't own enough of this card");
   });
 });
 
 describe("openPack", () => {
   it("should generate correct number of cards", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
     // Create various cards
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const rarities: Array<"common" | "uncommon" | "rare" | "epic" | "legendary"> = [
         "common", "uncommon", "rare", "epic", "legendary"
       ];
@@ -444,7 +437,6 @@ describe("openPack", () => {
       const uid = await ctx.db.insert("users", {
         username: "packopener",
         email: "opener@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -491,7 +483,7 @@ describe("openPack", () => {
     expect(result.cardsReceived.length).toBe(5);
 
     // Last card should be guaranteed rare
-    expect(result.cardsReceived[4].rarity).toBe("rare");
+    expect(result!.cardsReceived[4]!.rarity).toBe("rare");
 
     // Check cards were added to inventory
     const userCards = await t.query(api.cards.getUserCards, {
@@ -499,5 +491,174 @@ describe("openPack", () => {
     });
 
     expect(userCards.length).toBeGreaterThan(0);
+  });
+});
+
+// ============================================================================
+// ELO RATING & WIN RATE HELPER TESTS
+// ============================================================================
+
+describe("ELO Rating System", () => {
+  describe("calculateEloChange", () => {
+    it("should increase winner rating and decrease loser rating", () => {
+
+      const result = calculateEloChange(1000, 1000);
+
+      expect(result.winnerNewRating).toBeGreaterThan(1000);
+      expect(result.loserNewRating).toBeLessThan(1000);
+    });
+
+    it("should award ~16 points for equal ratings", () => {
+
+      const result = calculateEloChange(1000, 1000);
+
+      // With equal ratings, expected score is 0.5
+      // Change = K * (1 - 0.5) = 32 * 0.5 = 16
+      expect(result.winnerNewRating).toBe(1016);
+      expect(result.loserNewRating).toBe(984);
+    });
+
+    it("should award fewer points when higher rated player wins", () => {
+
+      // Higher rated player (1500) beats lower rated player (1200)
+      const result = calculateEloChange(1500, 1200);
+
+      // Higher rated player is expected to win, so gains fewer points
+      expect(result.winnerNewRating).toBeLessThan(1510);
+      expect(result.winnerNewRating).toBeGreaterThan(1500);
+
+      // Lower rated player loses fewer points (upset was expected)
+      expect(result.loserNewRating).toBeLessThan(1200);
+    });
+
+    it("should award more points when lower rated player wins (upset)", () => {
+
+      // Lower rated player (1200) beats higher rated player (1500)
+      const result = calculateEloChange(1200, 1500);
+
+      // Lower rated player wins upset, gains many points
+      expect(result.winnerNewRating).toBeGreaterThan(1220);
+
+      // Higher rated player loses upset, loses many points
+      expect(result.loserNewRating).toBeLessThan(1480);
+    });
+
+    it("should enforce rating floor of 0", () => {
+
+      // Player with very low rating loses
+      const result = calculateEloChange(1500, 10);
+
+      // Loser cannot go below 0
+      expect(result.loserNewRating).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should respect custom K-factor", () => {
+
+      // Use K=64 instead of default 32
+      const defaultK = calculateEloChange(1000, 1000, 32);
+      const higherK = calculateEloChange(1000, 1000, 64);
+
+      // Higher K means more volatile ratings
+      const defaultChange = defaultK.winnerNewRating - 1000;
+      const higherChange = higherK.winnerNewRating - 1000;
+
+      expect(higherChange).toBe(defaultChange * 2);
+    });
+  });
+});
+
+describe("Win Rate Calculation", () => {
+  describe("calculateWinRate", () => {
+    it("should return 0% for no games played", () => {
+
+      const player = {
+        rankedWins: 0,
+        rankedLosses: 0,
+        casualWins: 0,
+        casualLosses: 0,
+        storyWins: 0,
+      };
+
+      expect(calculateWinRate(player, "ranked")).toBe(0);
+      expect(calculateWinRate(player, "casual")).toBe(0);
+      expect(calculateWinRate(player, "story")).toBe(0);
+    });
+
+    it("should return 100% for all wins", () => {
+
+      const player = {
+        rankedWins: 10,
+        rankedLosses: 0,
+        casualWins: 5,
+        casualLosses: 0,
+        storyWins: 20,
+      };
+
+      expect(calculateWinRate(player, "ranked")).toBe(100);
+      expect(calculateWinRate(player, "casual")).toBe(100);
+    });
+
+    it("should return 0% for all losses", () => {
+
+      const player = {
+        rankedWins: 0,
+        rankedLosses: 10,
+        casualWins: 0,
+        casualLosses: 5,
+        storyWins: 0,
+      };
+
+      expect(calculateWinRate(player, "ranked")).toBe(0);
+      expect(calculateWinRate(player, "casual")).toBe(0);
+    });
+
+    it("should calculate 75% win rate correctly", () => {
+
+      const player = {
+        rankedWins: 3,
+        rankedLosses: 1,
+        casualWins: 0,
+        casualLosses: 0,
+        storyWins: 0,
+      };
+
+      expect(calculateWinRate(player, "ranked")).toBe(75);
+    });
+
+    it("should round to nearest integer", () => {
+
+      const player = {
+        rankedWins: 2,
+        rankedLosses: 1,
+        casualWins: 0,
+        casualLosses: 0,
+        storyWins: 0,
+      };
+
+      // 2/3 = 66.666... should round to 67
+      expect(calculateWinRate(player, "ranked")).toBe(67);
+    });
+
+    it("should handle undefined stats (default to 0)", () => {
+
+      const player = {};
+
+      expect(calculateWinRate(player, "ranked")).toBe(0);
+    });
+
+    it("should calculate per game type correctly", () => {
+
+      const player = {
+        rankedWins: 8,
+        rankedLosses: 2,  // 80% ranked
+        casualWins: 3,
+        casualLosses: 7,  // 30% casual
+        storyWins: 15,    // 100% story (no losses in story)
+      };
+
+      expect(calculateWinRate(player, "ranked")).toBe(80);
+      expect(calculateWinRate(player, "casual")).toBe(30);
+      expect(calculateWinRate(player, "story")).toBe(100);
+    });
   });
 });

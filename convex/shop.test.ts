@@ -9,18 +9,17 @@
  * - Pack opening history
  */
 
-import { convexTest } from "convex-test";
 import { describe, it, expect } from "vitest";
+import { createTestInstance } from "./test.setup";
+import type { TestMutationCtx } from "./test.setup";
 import { api } from "./_generated/api";
-import schema from "./schema";
 
-const modules = import.meta.glob("./**/*.ts");
 
 describe("getShopProducts", () => {
   it("should return only active products", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("shopProducts", {
         productId: "active-pack",
         name: "Active Pack",
@@ -49,13 +48,13 @@ describe("getShopProducts", () => {
     const products = await t.query(api.shop.getShopProducts);
 
     expect(products.length).toBe(1);
-    expect(products[0].productId).toBe("active-pack");
+    expect(products![0]!.productId).toBe("active-pack");
   });
 
   it("should sort products by sortOrder", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("shopProducts", {
         productId: "pack-3",
         name: "Third",
@@ -95,18 +94,18 @@ describe("getShopProducts", () => {
 
     const products = await t.query(api.shop.getShopProducts);
 
-    expect(products[0].productId).toBe("pack-1");
-    expect(products[1].productId).toBe("pack-2");
-    expect(products[2].productId).toBe("pack-3");
+    expect(products![0]!.productId).toBe("pack-1");
+    expect(products![1]!.productId).toBe("pack-2");
+    expect(products![2]!.productId).toBe("pack-3");
   });
 });
 
 describe("purchasePack", () => {
   it("should successfully purchase pack with gold", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
     // Setup
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       // Seed cards for all rarities so pack opening works
       const rarities: Array<"common" | "uncommon" | "rare" | "epic" | "legendary"> = [
         "common",
@@ -133,7 +132,6 @@ describe("purchasePack", () => {
       const uid = await ctx.db.insert("users", {
         username: "buyer",
         email: "buyer@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -189,9 +187,9 @@ describe("purchasePack", () => {
   });
 
   it("should successfully purchase pack with gems", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       // Seed cards for all rarities so pack opening works
       const rarities: Array<"common" | "uncommon" | "rare" | "epic" | "legendary"> = [
         "common",
@@ -218,7 +216,6 @@ describe("purchasePack", () => {
       const uid = await ctx.db.insert("users", {
         username: "gembuyer",
         email: "gembuyer@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -271,13 +268,12 @@ describe("purchasePack", () => {
   });
 
   it("should fail when product not found", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -288,23 +284,22 @@ describe("purchasePack", () => {
       });
     });
 
-    await expect(async () => {
-      await t.mutation(api.shop.purchasePack, {
+    await expect(
+      t.mutation(api.shop.purchasePack, {
         token: "test-token",
         productId: "nonexistent",
         useGems: false,
-      });
-    }).rejects.toThrowError("Product not found or unavailable");
+      })
+    ).rejects.toThrowError("Product not found or unavailable");
   });
 
   it("should fail when insufficient currency", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "pooruser",
         email: "poor@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -338,21 +333,21 @@ describe("purchasePack", () => {
       });
     });
 
-    await expect(async () => {
-      await t.mutation(api.shop.purchasePack, {
+    await expect(
+      t.mutation(api.shop.purchasePack, {
         token: "poor-token",
         productId: "expensive-pack",
         useGems: false,
-      });
-    }).rejects.toThrowError("Insufficient gold");
+      })
+    ).rejects.toThrowError("Insufficient gold");
   });
 });
 
 describe("purchaseBox", () => {
   it("should open multiple packs", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       // Seed cards for all rarities so pack opening works
       const rarities: Array<"common" | "uncommon" | "rare" | "epic" | "legendary"> = [
         "common",
@@ -379,7 +374,6 @@ describe("purchaseBox", () => {
       const uid = await ctx.db.insert("users", {
         username: "boxbuyer",
         email: "box@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -442,9 +436,9 @@ describe("purchaseBox", () => {
   });
 
   it("should include bonus cards", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       // Seed cards for all rarities so pack opening works
       const rarities: Array<"common" | "uncommon" | "rare" | "epic" | "legendary"> = [
         "common",
@@ -471,7 +465,6 @@ describe("purchaseBox", () => {
       const uid = await ctx.db.insert("users", {
         username: "bonusbuyer",
         email: "bonus@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -534,13 +527,12 @@ describe("purchaseBox", () => {
 
 describe("purchaseCurrencyBundle", () => {
   it("should convert gems to gold", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "converter",
         email: "convert@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -597,13 +589,12 @@ describe("purchaseCurrencyBundle", () => {
 
 describe("getPackOpeningHistory", () => {
   it("should return pack opening history", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "historyuser",
         email: "history@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 

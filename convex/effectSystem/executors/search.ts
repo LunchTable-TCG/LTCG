@@ -1,7 +1,7 @@
 import type { MutationCtx } from "../../_generated/server";
 import type { Id, Doc } from "../../_generated/dataModel";
 // Import the ParsedEffect type from the parent module
-import type { ParsedEffect } from "../effectSystem";
+import type { ParsedEffect } from "../types";
 
 /**
  * Execute Search effect - Search deck for cards matching criteria

@@ -139,7 +139,7 @@ export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProp
       <div
         className={cn(
           "absolute -bottom-8 left-1/2 -translate-x-1/2 w-max px-3 py-1 rounded-full bg-black/80 border border-white/20 text-xs text-white opacity-0 transition-all duration-300 pointer-events-none whitespace-nowrap z-30",
-          "group-hover:opacity-100 group-hover:bottom-[-2.5rem]"
+          "group-hover:opacity-100 group-hover:-bottom-10"
         )}
       >
         {stage.name}

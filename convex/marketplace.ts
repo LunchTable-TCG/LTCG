@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { validateSession, checkCardOwnership } from "./lib/validators";
 import { adjustCardInventory } from "./lib/helpers";
@@ -598,6 +598,126 @@ export const claimAuctionWin = mutation({
       success: true,
       finalPrice: listing.currentBid,
       platformFee,
+    };
+  },
+});
+
+// ============================================================================
+// INTERNAL MUTATIONS (Automated Tasks)
+// ============================================================================
+
+/**
+ * Finalize expired auctions
+ *
+ * Runs periodically via cron to:
+ * - Auto-complete auctions with bids (transfer cards to winner)
+ * - Return cards to seller for auctions with no bids
+ * - Grace period: 1 hour after auction ends before auto-finalization
+ */
+export const finalizeExpiredAuctions = internalMutation({
+  handler: async (ctx) => {
+    const now = Date.now();
+    const GRACE_PERIOD_MS = 60 * 60 * 1000; // 1 hour
+
+    // Find active auctions that have expired (including grace period)
+    const expiredAuctions = await ctx.db
+      .query("marketplaceListings")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+
+    const toFinalize = expiredAuctions.filter(
+      (listing) =>
+        listing.listingType === "auction" &&
+        listing.endsAt !== undefined &&
+        listing.endsAt + GRACE_PERIOD_MS < now
+    );
+
+    let finalizedCount = 0;
+    let returnedCount = 0;
+
+    for (const listing of toFinalize) {
+      try {
+        // Case 1: Auction with bids - transfer to winner
+        if (listing.highestBidderId && listing.currentBid) {
+          const platformFee = Math.floor(listing.currentBid * MARKETPLACE.PLATFORM_FEE_PERCENT);
+
+          // Deduct platform fee from winner
+          await ctx.runMutation(internal.economy.adjustPlayerCurrency, {
+            userId: listing.highestBidderId,
+            goldDelta: -platformFee,
+            transactionType: "marketplace_fee",
+            description: `Auto-finalized auction #${listing._id}`,
+            referenceId: listing._id,
+          });
+
+          // Credit seller
+          await ctx.runMutation(internal.economy.adjustPlayerCurrency, {
+            userId: listing.sellerId,
+            goldDelta: listing.currentBid,
+            transactionType: "sale",
+            description: `Auto-finalized auction #${listing._id}`,
+            referenceId: listing._id,
+          });
+
+          // Transfer cards to winner
+          await adjustCardInventory(
+            ctx,
+            listing.highestBidderId,
+            listing.cardDefinitionId,
+            listing.quantity
+          );
+
+          // Update listing status
+          await ctx.db.patch(listing._id, {
+            status: "sold",
+            soldTo: listing.highestBidderId,
+            soldFor: listing.currentBid,
+            soldAt: now,
+            platformFee,
+            updatedAt: now,
+          });
+
+          // Update bid status to won
+          const bids = await ctx.db
+            .query("auctionBids")
+            .withIndex("by_listing", (q) => q.eq("listingId", listing._id))
+            .collect();
+
+          for (const bid of bids) {
+            if (bid.bidderId === listing.highestBidderId && bid.bidStatus === "active") {
+              await ctx.db.patch(bid._id, {
+                bidStatus: "won",
+              });
+            }
+          }
+
+          finalizedCount++;
+        }
+        // Case 2: Auction with no bids - return cards to seller
+        else {
+          await adjustCardInventory(
+            ctx,
+            listing.sellerId,
+            listing.cardDefinitionId,
+            listing.quantity
+          );
+
+          await ctx.db.patch(listing._id, {
+            status: "expired",
+            updatedAt: now,
+          });
+
+          returnedCount++;
+        }
+      } catch (error) {
+        console.error(`Failed to finalize auction ${listing._id}:`, error);
+      }
+    }
+
+    return {
+      processed: toFinalize.length,
+      finalized: finalizedCount,
+      returned: returnedCount,
     };
   },
 });

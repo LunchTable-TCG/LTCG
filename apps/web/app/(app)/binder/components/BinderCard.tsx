@@ -1,7 +1,6 @@
 "use client";
 
 import { Flame, Heart, Shield, Star, Waves, Zap } from "lucide-react";
-import Image from "next/image";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -97,7 +96,7 @@ export function BinderCard({
   const [isHovering, setIsHovering] = useState(false);
 
   const rarity = RARITY_CONFIG[card.rarity];
-  const element = ELEMENT_CONFIG[card.element];
+  const element = ELEMENT_CONFIG[card.element] || ELEMENT_CONFIG.neutral;
   const ElementIcon = element.icon;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -155,12 +154,12 @@ export function BinderCard({
         >
           {/* Card Background */}
           <div className={cn("absolute inset-0", rarity.bg)}>
-            {/* Card Art - Always show card back for now */}
-            <Image
-              src="/assets/Untitled%20(500%20x%20500%20px).svg"
+            {/* Card Art - Use default background until real artwork is added */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={card.imageUrl && card.imageUrl.trim() !== "" ? card.imageUrl : "/assets/card-bg.svg"}
               alt={card.name}
-              fill
-              className="object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
 
@@ -257,11 +256,11 @@ export function BinderCard({
           boxShadow: `0 0 15px ${rarity.glow}`,
         }}
       >
-        <Image
-          src="/assets/Untitled%20(500%20x%20500%20px).svg"
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={card.imageUrl && card.imageUrl.trim() !== "" ? card.imageUrl : "/assets/card-bg.svg"}
           alt={card.name}
-          fill
-          className="object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
         />
       </div>
 

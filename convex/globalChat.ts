@@ -264,7 +264,7 @@ export const updatePresence = mutation({
  * Called from other backend functions, not directly from clients.
  *
  * IMPORTANT: Requires a system user to exist in the database.
- * Create one with: { username: "System", email: "system@localhost", passwordHash: "N/A", createdAt: Date.now() }
+ * Create one with: { username: "System", email: "system@localhost", name: "System", createdAt: Date.now() }
  *
  * @param message - System message content
  * @param systemUserId - Optional: ID of the system user (will auto-fetch if not provided)

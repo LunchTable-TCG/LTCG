@@ -49,7 +49,7 @@ export function ChallengeConfirmDialog({
       {/* biome-ignore lint/a11y/noStaticElementInteractions: Backdrop overlay for modal */}
       <div
         role="presentation"
-        className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-100 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onClose}
         onKeyDown={(e) => {
           if (e.key === "Escape") onClose();
@@ -57,7 +57,7 @@ export function ChallengeConfirmDialog({
       />
 
       {/* Dialog */}
-      <div className="fixed inset-0 z-[105] flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-105 flex items-center justify-center p-4 pointer-events-none">
         <div className="relative w-full max-w-sm rounded-2xl tcg-chat-leather border border-[#3d2b1f] shadow-2xl pointer-events-auto animate-in zoom-in-95 fade-in duration-200">
           {/* Close button */}
           <button

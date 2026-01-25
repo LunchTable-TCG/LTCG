@@ -8,5 +8,3 @@ export type {
   ValidActions,
 } from "./hooks/useGameBoard";
 export { useGameBoard } from "./hooks/useGameBoard";
-export { useMockGameBoard } from "./hooks/useMockGameBoard";
-export { MockGameBoard } from "./MockGameBoard";

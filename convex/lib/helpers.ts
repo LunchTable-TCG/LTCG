@@ -6,8 +6,8 @@
  */
 
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
-import { RARITY_WEIGHTS } from "./constants";
+import type { Id, Doc } from "../_generated/dataModel";
+import { RARITY_WEIGHTS, XP_SYSTEM, ELO_SYSTEM } from "./constants";
 import type {
   Rarity,
   Archetype,
@@ -17,7 +17,20 @@ import type {
 } from "./types";
 
 // Re-export types for backwards compatibility
-export type { Rarity, Archetype };
+export type { Rarity, Archetype, PackConfig, CardResult };
+
+/**
+ * Get display username with fallback to name field
+ *
+ * Convex Auth uses `name` field while game system uses `username`.
+ * This helper provides consistent fallback logic.
+ *
+ * @param user - User document
+ * @returns Display name (username → name → "Unknown")
+ */
+export function getDisplayUsername(user: Doc<"users">): string {
+  return user.username || user.name || "Unknown";
+}
 
 /**
  * Weighted random rarity selection based on configured weights
@@ -222,4 +235,72 @@ export async function openPack(
   }
 
   return cards;
+}
+
+// ============================================================================
+// LEADERBOARD & PROGRESSION HELPERS
+// ============================================================================
+
+/**
+ * Calculate ELO rating change for winner and loser
+ *
+ * Uses standard ELO formula:
+ * - Expected score = 1 / (1 + 10^((opponent_rating - player_rating) / 400))
+ * - New rating = old rating + K * (actual_score - expected_score)
+ *
+ * @param winnerRating - Winner's current rating
+ * @param loserRating - Loser's current rating
+ * @param kFactor - K-factor (rating volatility), defaults to 32
+ * @returns New ratings for both players
+ */
+export function calculateEloChange(
+  winnerRating: number,
+  loserRating: number,
+  kFactor: number = ELO_SYSTEM.K_FACTOR
+): { winnerNewRating: number; loserNewRating: number } {
+  // Calculate expected win probability for both players
+  const expectedWinner = 1 / (1 + Math.pow(10, (loserRating - winnerRating) / 400));
+  const expectedLoser = 1 - expectedWinner;
+
+  // Calculate rating changes
+  // Winner gets 1 point (win), Loser gets 0 points (loss)
+  const winnerChange = Math.round(kFactor * (1 - expectedWinner));
+  const loserChange = Math.round(kFactor * (0 - expectedLoser));
+
+  return {
+    winnerNewRating: Math.max(ELO_SYSTEM.RATING_FLOOR, winnerRating + winnerChange),
+    loserNewRating: Math.max(ELO_SYSTEM.RATING_FLOOR, loserRating + loserChange),
+  };
+}
+
+/**
+ * Calculate win rate percentage
+ *
+ * @param player - Player object with win/loss stats
+ * @param gameType - Type of game ("ranked" | "casual" | "story")
+ * @returns Win rate as percentage (0-100)
+ */
+export function calculateWinRate(
+  player: Pick<
+    Doc<"users">,
+    "rankedWins" | "casualWins" | "storyWins" | "rankedLosses" | "casualLosses"
+  >,
+  gameType: "ranked" | "casual" | "story"
+): number {
+  const wins =
+    gameType === "ranked"
+      ? player.rankedWins || 0
+      : gameType === "casual"
+        ? player.casualWins || 0
+        : player.storyWins || 0;
+
+  const losses =
+    gameType === "ranked"
+      ? player.rankedLosses || 0
+      : gameType === "casual"
+        ? player.casualLosses || 0
+        : 0; // Story mode has no losses
+
+  const total = wins + losses;
+  return total === 0 ? 0 : Math.round((wins / total) * 100);
 }

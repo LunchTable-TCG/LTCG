@@ -9,22 +9,21 @@
  * - Platform fees
  */
 
-import { convexTest } from "convex-test";
 import { describe, it, expect, vi } from "vitest";
+import { createTestInstance } from "./test.setup";
+import type { TestMutationCtx } from "./test.setup";
 import { api } from "./_generated/api";
-import schema from "./schema";
+import { internal } from "./_generated/api";
 
-const modules = import.meta.glob("./**/*.ts");
 
 describe("createListing", () => {
   it("should create fixed-price listing", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId] = await t.run(async (ctx) => {
+    const [userId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "seller",
         email: "seller@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -71,17 +70,16 @@ describe("createListing", () => {
     const userCards = await t.query(api.cards.getUserCards, {
       token: "seller-token",
     });
-    expect(userCards[0].owned).toBe(3); // 5 - 2 listed
+    expect(userCards![0]!.owned).toBe(3); // 5 - 2 listed
   });
 
   it("should create auction listing with duration", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId] = await t.run(async (ctx) => {
+    const [userId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "auctioneer",
         email: "auction@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -125,7 +123,7 @@ describe("createListing", () => {
     expect(result.success).toBe(true);
 
     // Verify auction has end time
-    const listing = await t.run(async (ctx) => {
+    const listing = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.get(result.listingId!);
     });
 
@@ -134,13 +132,12 @@ describe("createListing", () => {
   });
 
   it("should reject listing with price below minimum", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "cheapuser",
         email: "cheap@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -170,29 +167,28 @@ describe("createListing", () => {
       });
     });
 
-    const cardDefId = await t.run(async (ctx) => {
+    const cardDefId = await t.run(async (ctx: TestMutationCtx) => {
       return (await ctx.db.query("cardDefinitions").first())?._id!;
     });
 
-    await expect(async () => {
-      await t.mutation(api.marketplace.createListing, {
+    await expect(
+      t.mutation(api.marketplace.createListing, {
         token: "cheap-token",
         cardDefinitionId: cardDefId,
         quantity: 1,
         listingType: "fixed",
         price: 5, // Below minimum of 10
-      });
-    }).rejects.toThrowError("Minimum price is");
+      })
+    ).rejects.toThrowError("Minimum price is");
   });
 
   it("should reject listing when user doesn't own card", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId] = await t.run(async (ctx) => {
+    const [userId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "faker",
         email: "fake@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -217,27 +213,26 @@ describe("createListing", () => {
       return [uid, cid];
     });
 
-    await expect(async () => {
-      await t.mutation(api.marketplace.createListing, {
+    await expect(
+      t.mutation(api.marketplace.createListing, {
         token: "faker-token",
         cardDefinitionId: cardDefId,
         quantity: 1,
         listingType: "fixed",
         price: 1000,
-      });
-    }).rejects.toThrowError("You don't own enough of this card");
+      })
+    ).rejects.toThrowError("You don't own enough of this card");
   });
 });
 
 describe("cancelListing", () => {
   it("should cancel listing and return cards", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId, listingId] = await t.run(async (ctx) => {
+    const [userId, cardDefId, listingId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "canceler",
         email: "cancel@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -290,24 +285,22 @@ describe("cancelListing", () => {
     const userCards = await t.query(api.cards.getUserCards, {
       token: "cancel-token",
     });
-    expect(userCards[0].owned).toBe(5); // Back to original 5
+    expect(userCards![0]!.owned).toBe(5); // Back to original 5
   });
 
   it("should reject canceling someone else's listing", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [sellerId, buyerId, cardDefId] = await t.run(async (ctx) => {
+    const [sellerId, buyerId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const sid = await ctx.db.insert("users", {
         username: "seller",
         email: "seller@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
       const bid = await ctx.db.insert("users", {
         username: "buyer",
         email: "buyer@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -355,31 +348,29 @@ describe("cancelListing", () => {
     });
 
     // Buyer tries to cancel
-    await expect(async () => {
-      await t.mutation(api.marketplace.cancelListing, {
+    await expect(
+      t.mutation(api.marketplace.cancelListing, {
         token: "buyer-token",
         listingId: createResult.listingId!,
-      });
-    }).rejects.toThrowError("You can only cancel your own listings");
+      })
+    ).rejects.toThrowError("You can only cancel your own listings");
   });
 });
 
 describe("buyNow", () => {
   it("should successfully buy fixed-price listing", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [sellerId, buyerId, cardDefId] = await t.run(async (ctx) => {
+    const [sellerId, buyerId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const sid = await ctx.db.insert("users", {
         username: "seller",
         email: "seller@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
       const bid = await ctx.db.insert("users", {
         username: "buyer",
         email: "buyer@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -464,7 +455,7 @@ describe("buyNow", () => {
       token: "buyer-token",
     });
     expect(buyerCards.length).toBe(1);
-    expect(buyerCards[0].owned).toBe(2);
+    expect(buyerCards![0]!.owned).toBe(2);
 
     // Verify seller received gold
     const sellerBalance = await t.query(api.economy.getPlayerBalance, {
@@ -480,13 +471,12 @@ describe("buyNow", () => {
   });
 
   it("should reject buying own listing", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId] = await t.run(async (ctx) => {
+    const [userId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "selfseller",
         email: "self@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -526,31 +516,29 @@ describe("buyNow", () => {
       price: 100,
     });
 
-    await expect(async () => {
-      await t.mutation(api.marketplace.buyNow, {
+    await expect(
+      t.mutation(api.marketplace.buyNow, {
         token: "self-token",
         listingId: listing.listingId!,
-      });
-    }).rejects.toThrowError("You cannot buy your own listing");
+      })
+    ).rejects.toThrowError("You cannot buy your own listing");
   });
 });
 
 describe("placeBid", () => {
   it("should place bid on auction", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [sellerId, bidderId, cardDefId] = await t.run(async (ctx) => {
+    const [sellerId, bidderId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const sid = await ctx.db.insert("users", {
         username: "auctioneer",
         email: "auction@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
       const bid = await ctx.db.insert("users", {
         username: "bidder",
         email: "bidder@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -627,27 +615,24 @@ describe("placeBid", () => {
   });
 
   it("should refund previous bidder when outbid", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [sellerId, bidder1Id, bidder2Id, cardDefId] = await t.run(async (ctx) => {
+    const [sellerId, bidder1Id, bidder2Id, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const sid = await ctx.db.insert("users", {
         username: "seller",
         email: "seller@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
       const b1 = await ctx.db.insert("users", {
         username: "bidder1",
         email: "bidder1@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
       const b2 = await ctx.db.insert("users", {
         username: "bidder2",
         email: "bidder2@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -751,20 +736,18 @@ describe("placeBid", () => {
   });
 
   it("should reject bid below minimum increment", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [sellerId, bidderId, cardDefId] = await t.run(async (ctx) => {
+    const [sellerId, bidderId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const sid = await ctx.db.insert("users", {
         username: "seller",
         email: "seller@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
       const bid = await ctx.db.insert("users", {
         username: "lowbidder",
         email: "low@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -823,33 +806,31 @@ describe("placeBid", () => {
     });
 
     // Bid must be at least 5% higher (105)
-    await expect(async () => {
-      await t.mutation(api.marketplace.placeBid, {
+    await expect(
+      t.mutation(api.marketplace.placeBid, {
         token: "bidder-token",
         listingId: listing.listingId!,
         bidAmount: 102, // Too low
-      });
-    }).rejects.toThrowError("Bid must be at least");
+      })
+    ).rejects.toThrowError("Bid must be at least");
   });
 });
 
 describe("claimAuctionWin", () => {
   it("should allow winner to claim after auction ends", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
     vi.useFakeTimers();
 
-    const [sellerId, winnerId, cardDefId] = await t.run(async (ctx) => {
+    const [sellerId, winnerId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const sid = await ctx.db.insert("users", {
         username: "seller",
         email: "seller@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
       const wid = await ctx.db.insert("users", {
         username: "winner",
         email: "winner@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -955,20 +936,18 @@ describe("claimAuctionWin", () => {
   });
 
   it("should reject claim before auction ends", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [sellerId, bidderId, cardDefId] = await t.run(async (ctx) => {
+    const [sellerId, bidderId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const sid = await ctx.db.insert("users", {
         username: "seller",
         email: "seller@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
       const bid = await ctx.db.insert("users", {
         username: "earlybird",
         email: "early@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -1033,11 +1012,266 @@ describe("claimAuctionWin", () => {
     });
 
     // Try to claim before auction ends
-    await expect(async () => {
-      await t.mutation(api.marketplace.claimAuctionWin, {
+    await expect(
+      t.mutation(api.marketplace.claimAuctionWin, {
         token: "early-token",
         listingId: listing.listingId!,
+      })
+    ).rejects.toThrowError("Auction has not ended yet");
+  });
+});
+
+describe("finalizeExpiredAuctions", () => {
+  it("should auto-finalize auction with winning bid", async () => {
+    const t = createTestInstance();
+
+    // Create seller and winner
+    const [sellerId, winnerId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
+      const sid = await ctx.db.insert("users", {
+        username: "seller",
+        email: "seller@test.com",
+        rankedElo: 1000,
+        casualRating: 1000,
+        totalWins: 0,
+        totalLosses: 0,
+        createdAt: Date.now(),
       });
-    }).rejects.toThrowError("Auction has not ended yet");
+
+      const wid = await ctx.db.insert("users", {
+        username: "winner",
+        email: "winner@test.com",
+        rankedElo: 1000,
+        casualRating: 1000,
+        totalWins: 0,
+        totalLosses: 0,
+        createdAt: Date.now(),
+      });
+
+      const cid = await ctx.db.insert("cardDefinitions", {
+        name: "Auto Finalize Card",
+        rarity: "epic",
+        archetype: "fire",
+        cardType: "creature",
+        attack: 7,
+        defense: 7,
+        cost: 5,
+        imageUrl: "test.jpg",
+        isActive: true,
+        createdAt: Date.now(),
+      });
+
+      // Initialize currencies
+      await ctx.db.insert("playerCurrency", {
+        userId: sid,
+        gold: 0,
+        gems: 0,
+        lifetimeGoldEarned: 0,
+        lifetimeGoldSpent: 0,
+        lifetimeGemsEarned: 0,
+        lifetimeGemsSpent: 0,
+        lastUpdatedAt: Date.now(),
+      });
+
+      await ctx.db.insert("playerCurrency", {
+        userId: wid,
+        gold: 2000,
+        gems: 0,
+        lifetimeGoldEarned: 2000,
+        lifetimeGoldSpent: 0,
+        lifetimeGemsEarned: 0,
+        lifetimeGemsSpent: 0,
+        lastUpdatedAt: Date.now(),
+      });
+
+      return [sid, wid, cid];
+    });
+
+    // Create expired auction (ended 2 hours ago, beyond 1-hour grace period)
+    const listingId = await t.run(async (ctx: TestMutationCtx) => {
+      return await ctx.db.insert("marketplaceListings", {
+        sellerId,
+        sellerUsername: "seller",
+        listingType: "auction",
+        cardDefinitionId: cardDefId,
+        quantity: 1,
+        price: 100,
+        currentBid: 150,
+        highestBidderId: winnerId,
+        highestBidderUsername: "winner",
+        bidCount: 1,
+        status: "active",
+        endsAt: Date.now() - 7200000, // 2 hours ago
+        createdAt: Date.now() - 86400000,
+        updatedAt: Date.now() - 7200000,
+      });
+    });
+
+    // Create active bid record
+    await t.run(async (ctx: TestMutationCtx) => {
+      await ctx.db.insert("auctionBids", {
+        listingId,
+        bidderId: winnerId,
+        bidderUsername: "winner",
+        bidAmount: 150,
+        bidStatus: "active",
+        createdAt: Date.now() - 7200000,
+      });
+    });
+
+    // Run auto-finalization
+    const result = await t.mutation(internal.marketplace.finalizeExpiredAuctions);
+
+    expect(result.processed).toBe(1);
+    expect(result.finalized).toBe(1);
+    expect(result.returned).toBe(0);
+
+    // Verify listing marked as sold
+    const listing = await t.run(async (ctx: TestMutationCtx) => ctx.db.get(listingId));
+    expect(listing?.status).toBe("sold");
+    expect(listing?.soldTo).toBe(winnerId);
+    expect(listing?.soldFor).toBe(150);
+
+    // Verify winner got the card
+    const winnerCard = await t.run(async (ctx: TestMutationCtx) =>
+      ctx.db
+        .query("playerCards")
+        .withIndex("by_user_card", (q: any) =>
+          q.eq("userId", winnerId).eq("cardDefinitionId", cardDefId)
+        )
+        .first()
+    );
+    expect(winnerCard?.quantity).toBe(1);
+
+    // Verify bid marked as won
+    const bids = await t.run(async (ctx: TestMutationCtx) =>
+      ctx.db
+        .query("auctionBids")
+        .withIndex("by_listing", (q: any) => q.eq("listingId", listingId))
+        .collect()
+    );
+    expect(bids![0]!.bidStatus).toBe("won");
+  });
+
+  it("should return cards for auction with no bids", async () => {
+    const t = createTestInstance();
+
+    // Create seller
+    const [sellerId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
+      const sid = await ctx.db.insert("users", {
+        username: "nobids",
+        email: "nobids@test.com",
+        rankedElo: 1000,
+        casualRating: 1000,
+        totalWins: 0,
+        totalLosses: 0,
+        createdAt: Date.now(),
+      });
+
+      const cid = await ctx.db.insert("cardDefinitions", {
+        name: "Unsold Card",
+        rarity: "rare",
+        archetype: "water",
+        cardType: "spell",
+        cost: 3,
+        imageUrl: "test.jpg",
+        isActive: true,
+        createdAt: Date.now(),
+      });
+
+      return [sid, cid];
+    });
+
+    // Create expired auction with no bids
+    const listingId = await t.run(async (ctx: TestMutationCtx) => {
+      return await ctx.db.insert("marketplaceListings", {
+        sellerId,
+        sellerUsername: "nobids",
+        listingType: "auction",
+        cardDefinitionId: cardDefId,
+        quantity: 1,
+        price: 100,
+        bidCount: 0,
+        status: "active",
+        endsAt: Date.now() - 7200000, // 2 hours ago
+        createdAt: Date.now() - 86400000,
+        updatedAt: Date.now() - 7200000,
+      });
+    });
+
+    // Run finalization
+    const result = await t.mutation(internal.marketplace.finalizeExpiredAuctions);
+
+    expect(result.processed).toBe(1);
+    expect(result.finalized).toBe(0);
+    expect(result.returned).toBe(1);
+
+    // Verify listing marked as expired
+    const listing = await t.run(async (ctx: TestMutationCtx) => ctx.db.get(listingId));
+    expect(listing?.status).toBe("expired");
+
+    // Verify seller got card back
+    const sellerCard = await t.run(async (ctx: TestMutationCtx) =>
+      ctx.db
+        .query("playerCards")
+        .withIndex("by_user_card", (q: any) =>
+          q.eq("userId", sellerId).eq("cardDefinitionId", cardDefId)
+        )
+        .first()
+    );
+    expect(sellerCard?.quantity).toBe(1);
+  });
+
+  it("should respect grace period (not finalize within 1 hour)", async () => {
+    const t = createTestInstance();
+
+    const [sellerId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
+      const sid = await ctx.db.insert("users", {
+        username: "grace",
+        email: "grace@test.com",
+        rankedElo: 1000,
+        casualRating: 1000,
+        totalWins: 0,
+        totalLosses: 0,
+        createdAt: Date.now(),
+      });
+
+      const cid = await ctx.db.insert("cardDefinitions", {
+        name: "Grace Card",
+        rarity: "common",
+        archetype: "earth",
+        cardType: "creature",
+        cost: 2,
+        imageUrl: "test.jpg",
+        isActive: true,
+        createdAt: Date.now(),
+      });
+
+      return [sid, cid];
+    });
+
+    // Auction expired 30 minutes ago (within grace period)
+    await t.run(async (ctx: TestMutationCtx) => {
+      await ctx.db.insert("marketplaceListings", {
+        sellerId,
+        sellerUsername: "grace",
+        listingType: "auction",
+        cardDefinitionId: cardDefId,
+        quantity: 1,
+        price: 50,
+        bidCount: 0,
+        status: "active",
+        endsAt: Date.now() - 1800000, // 30 minutes ago
+        createdAt: Date.now() - 86400000,
+        updatedAt: Date.now() - 1800000,
+      });
+    });
+
+    // Run finalization
+    const result = await t.mutation(internal.marketplace.finalizeExpiredAuctions);
+
+    // Should not process (still in grace period)
+    expect(result.processed).toBe(0);
+    expect(result.finalized).toBe(0);
+    expect(result.returned).toBe(0);
   });
 });

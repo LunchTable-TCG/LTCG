@@ -13,7 +13,23 @@ import type { QueryCtx, MutationCtx } from "../_generated/server";
 // Core Game Types (Backend-specific)
 // =============================================================================
 
-export type Archetype = "fire" | "water" | "earth" | "wind" | "neutral";
+export type Archetype =
+  | "infernal_dragons"
+  | "abyssal_horrors"
+  | "nature_spirits"
+  | "storm_elementals"
+  | "shadow_assassins"
+  | "celestial_guardians"
+  | "undead_legion"
+  | "divine_knights"
+  | "arcane_mages"
+  | "mechanical_constructs"
+  | "neutral"
+  // Old archetypes (deprecated - for migration compatibility)
+  | "fire"
+  | "water"
+  | "earth"
+  | "wind";
 export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type CardType = "creature" | "spell" | "trap" | "equipment";
 

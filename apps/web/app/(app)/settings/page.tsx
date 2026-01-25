@@ -1,7 +1,5 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
 import {
   Bell,
   Check,
@@ -22,7 +20,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/components/ConvexAuthProvider";
+import { useProfile } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -58,8 +56,7 @@ function Toggle({ enabled, onChange, disabled }: ToggleProps) {
 }
 
 export default function SettingsPage() {
-  const { token } = useAuth();
-  const currentUser = useQuery(api.users.currentUser, token ? { token } : "skip");
+  const { profile: currentUser, isLoading: profileLoading } = useProfile();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [isSaving, setIsSaving] = useState(false);
@@ -123,7 +120,7 @@ export default function SettingsPage() {
     { id: "privacy", label: "Privacy", icon: Shield },
   ];
 
-  if (!currentUser) {
+  if (profileLoading || !currentUser) {
     return (
       <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />

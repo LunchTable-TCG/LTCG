@@ -1,7 +1,5 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
 import {
   Award,
   Check,
@@ -33,9 +31,9 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/components/ConvexAuthProvider";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useProfile } from "@/hooks";
 
 type TabType = "quests" | "badges" | "achievements";
 type QuestType = "daily" | "weekly" | "achievement" | "event";
@@ -443,8 +441,7 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 export default function QuestsPage() {
-  const { token } = useAuth();
-  const currentUser = useQuery(api.users.currentUser, token ? { token } : "skip");
+  const { profile: currentUser, isLoading: profileLoading } = useProfile();
 
   const [activeTab, setActiveTab] = useState<TabType>("quests");
   const [claimingQuest, setClaimingQuest] = useState<string | null>(null);
@@ -475,7 +472,7 @@ export default function QuestsPage() {
   const unlockedAchievements = achievements.filter((a) => a.isUnlocked);
   const lockedAchievements = achievements.filter((a) => !a.isUnlocked);
 
-  if (!currentUser) {
+  if (profileLoading || !currentUser) {
     return (
       <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

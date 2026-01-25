@@ -8,22 +8,20 @@
  * - Promo code redemption
  */
 
-import { convexTest } from "convex-test";
 import { describe, it, expect } from "vitest";
+import { createTestInstance } from "./test.setup";
+import type { TestMutationCtx } from "./test.setup";
 import { api, internal } from "./_generated/api";
-import schema from "./schema";
 
-const modules = import.meta.glob("./**/*.ts");
 
 describe("initializePlayerCurrency", () => {
   it("should create currency record with welcome bonus", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("users", {
         username: "newplayer",
         email: "new@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
     });
@@ -36,14 +34,14 @@ describe("initializePlayerCurrency", () => {
       },
     });
 
-    const currency = await t.run(async (ctx) => {
+    const currency = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db
         .query("playerCurrency")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .withIndex("by_user", (q: any) => q.eq("userId", userId))
         .first();
     });
 
-    expect(currency).toMatchObject({
+    expect(currency!).toMatchObject({
       gold: 500,
       gems: 100,
       lifetimeGoldEarned: 500,
@@ -54,13 +52,12 @@ describe("initializePlayerCurrency", () => {
   });
 
   it("should not reinitialize if currency already exists", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("users", {
         username: "existingplayer",
         email: "existing@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
     });
@@ -77,10 +74,10 @@ describe("initializePlayerCurrency", () => {
       welcomeBonus: { gold: 1000, gems: 200 },
     });
 
-    const currency = await t.run(async (ctx) => {
+    const currency = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db
         .query("playerCurrency")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .withIndex("by_user", (q: any) => q.eq("userId", userId))
         .first();
     });
 
@@ -92,13 +89,12 @@ describe("initializePlayerCurrency", () => {
 
 describe("adjustPlayerCurrency", () => {
   it("should increase gold correctly", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -123,10 +119,10 @@ describe("adjustPlayerCurrency", () => {
       description: "Test reward",
     });
 
-    const currency = await t.run(async (ctx) => {
+    const currency = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db
         .query("playerCurrency")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .withIndex("by_user", (q: any) => q.eq("userId", userId))
         .first();
     });
 
@@ -135,13 +131,12 @@ describe("adjustPlayerCurrency", () => {
   });
 
   it("should decrease gold correctly", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "spender",
         email: "spend@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -166,10 +161,10 @@ describe("adjustPlayerCurrency", () => {
       description: "Bought pack",
     });
 
-    const currency = await t.run(async (ctx) => {
+    const currency = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db
         .query("playerCurrency")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .withIndex("by_user", (q: any) => q.eq("userId", userId))
         .first();
     });
 
@@ -178,13 +173,12 @@ describe("adjustPlayerCurrency", () => {
   });
 
   it("should throw error when insufficient gold", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "pooruser",
         email: "poor@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -202,24 +196,23 @@ describe("adjustPlayerCurrency", () => {
       return uid;
     });
 
-    await expect(async () => {
-      await t.mutation(internal.economy.adjustPlayerCurrency, {
+    await expect(
+      t.mutation(internal.economy.adjustPlayerCurrency, {
         userId,
         goldDelta: -200,
         transactionType: "purchase",
         description: "Can't afford",
-      });
-    }).rejects.toThrowError("Insufficient gold");
+      })
+    ).rejects.toThrowError("Insufficient gold");
   });
 
   it("should adjust both gold and gems simultaneously", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "trader",
         email: "trade@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -245,10 +238,10 @@ describe("adjustPlayerCurrency", () => {
       description: "Gems to gold",
     });
 
-    const currency = await t.run(async (ctx) => {
+    const currency = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db
         .query("playerCurrency")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .withIndex("by_user", (q: any) => q.eq("userId", userId))
         .first();
     });
 
@@ -259,13 +252,12 @@ describe("adjustPlayerCurrency", () => {
 
 describe("getPlayerBalance", () => {
   it("should return current balance", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -291,7 +283,7 @@ describe("getPlayerBalance", () => {
       token: "test-token",
     });
 
-    expect(balance).toMatchObject({
+    expect(balance!).toMatchObject({
       gold: 750,
       gems: 150,
       lifetimeStats: {
@@ -306,13 +298,12 @@ describe("getPlayerBalance", () => {
 
 describe("getTransactionHistory", () => {
   it("should return paginated transaction history", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "historyuser",
         email: "history@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -368,13 +359,12 @@ describe("getTransactionHistory", () => {
   });
 
   it("should filter by currency type", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "filteruser",
         email: "filter@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -441,13 +431,12 @@ describe("getTransactionHistory", () => {
 
 describe("redeemPromoCode", () => {
   it("should redeem valid promo code", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "promouser",
         email: "promo@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -485,10 +474,7 @@ describe("redeemPromoCode", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.reward).toMatchObject({
-      type: "gold",
-      amount: 200,
-    });
+    expect(result.rewardDescription).toContain("200");
 
     const balance = await t.query(api.economy.getPlayerBalance, {
       token: "promo-token",
@@ -498,13 +484,12 @@ describe("redeemPromoCode", () => {
   });
 
   it("should reject inactive promo code", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -525,22 +510,21 @@ describe("redeemPromoCode", () => {
       });
     });
 
-    await expect(async () => {
-      await t.mutation(api.economy.redeemPromoCode, {
+    await expect(
+      t.mutation(api.economy.redeemPromoCode, {
         token: "test-token",
         code: "INACTIVE",
-      });
-    }).rejects.toThrowError("This promo code is no longer active");
+      })
+    ).rejects.toThrowError("This promo code is no longer active");
   });
 
   it("should reject duplicate redemption", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "greedy",
         email: "greedy@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -581,22 +565,21 @@ describe("redeemPromoCode", () => {
     });
 
     // Try to redeem again
-    await expect(async () => {
-      await t.mutation(api.economy.redeemPromoCode, {
+    await expect(
+      t.mutation(api.economy.redeemPromoCode, {
         token: "greedy-token",
         code: "ONETIME",
-      });
-    }).rejects.toThrowError("You have already redeemed this promo code");
+      })
+    ).rejects.toThrowError("You have already redeemed this promo code");
   });
 
   it("should reject expired promo code", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "lateuser",
         email: "late@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -618,22 +601,21 @@ describe("redeemPromoCode", () => {
       });
     });
 
-    await expect(async () => {
-      await t.mutation(api.economy.redeemPromoCode, {
+    await expect(
+      t.mutation(api.economy.redeemPromoCode, {
         token: "late-token",
         code: "EXPIRED",
-      });
-    }).rejects.toThrowError("This promo code has expired");
+      })
+    ).rejects.toThrowError("This promo code has expired");
   });
 
   it("should reject when max redemptions reached", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "toolate",
         email: "toolate@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -655,11 +637,134 @@ describe("redeemPromoCode", () => {
       });
     });
 
-    await expect(async () => {
-      await t.mutation(api.economy.redeemPromoCode, {
+    await expect(
+      t.mutation(api.economy.redeemPromoCode, {
         token: "toolate-token",
         code: "LIMITED",
+      })
+    ).rejects.toThrowError("This promo code has reached its redemption limit");
+  });
+});
+
+describe("redeemPromoCode - Pack Rewards", () => {
+  it("should grant cards when redeeming pack promo code", async () => {
+    const t = createTestInstance();
+
+    const { userId, token } = await t.run(async (ctx: TestMutationCtx) => {
+      const userId = await ctx.db.insert("users", {
+        username: "testuser",
+        email: "test@example.com",
+        createdAt: Date.now(),
       });
-    }).rejects.toThrowError("This promo code has reached its redemption limit");
+
+      const token = "test-token";
+      await ctx.db.insert("sessions", {
+        userId,
+        token,
+        expiresAt: Date.now() + 86400000,
+      });
+
+      // Create card definitions for pack opening (all rarities)
+      const rarities = ["common", "uncommon", "rare", "epic", "legendary"] as const;
+      for (const rarity of rarities) {
+        for (let i = 0; i < 5; i++) {
+          await ctx.db.insert("cardDefinitions", {
+            name: `Test ${rarity} Card ${i}`,
+            rarity,
+            archetype: "fire",
+            cardType: "creature",
+            attack: 1,
+            defense: 1,
+            cost: 1,
+            isActive: true,
+            createdAt: Date.now(),
+          });
+        }
+      }
+
+      await ctx.db.insert("shopProducts", {
+        productId: "BASIC_PACK",
+        name: "Basic Pack",
+        description: "5 random cards",
+        productType: "pack",
+        goldPrice: 100,
+        isActive: true,
+        sortOrder: 1,
+        packConfig: {
+          cardCount: 5,
+          guaranteedRarity: "common",
+        },
+        createdAt: Date.now(),
+      });
+
+      await ctx.db.insert("promoCodes", {
+        code: "FREEPACK",
+        description: "Free pack promo",
+        rewardType: "pack",
+        rewardAmount: 2,
+        rewardPackId: "BASIC_PACK",
+        isActive: true,
+        redemptionCount: 0,
+        createdAt: Date.now(),
+      });
+
+      return { userId, token };
+    });
+
+    const result = await t.mutation(api.economy.redeemPromoCode, {
+      token,
+      code: "FREEPACK",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.cardsReceived).toBeDefined();
+    expect(result.cardsReceived).toHaveLength(10);
+
+    const history = await t.run(async (ctx: TestMutationCtx) => {
+      return await ctx.db
+        .query("packOpeningHistory")
+        .withIndex("by_user_time", (q: any) => q.eq("userId", userId))
+        .collect();
+    });
+    expect(history).toHaveLength(2);
+  });
+
+  it("should throw error for invalid pack ID in promo code", async () => {
+    const t = createTestInstance();
+
+    const { token } = await t.run(async (ctx: TestMutationCtx) => {
+      const userId = await ctx.db.insert("users", {
+        username: "testuser",
+        email: "test@example.com",
+        createdAt: Date.now(),
+      });
+
+      const token = "test-token";
+      await ctx.db.insert("sessions", {
+        userId,
+        token,
+        expiresAt: Date.now() + 86400000,
+      });
+
+      await ctx.db.insert("promoCodes", {
+        code: "BADPACK",
+        description: "Invalid pack promo",
+        rewardType: "pack",
+        rewardAmount: 1,
+        rewardPackId: "NONEXISTENT_PACK",
+        isActive: true,
+        redemptionCount: 0,
+        createdAt: Date.now(),
+      });
+
+      return { token };
+    });
+
+    await expect(
+      t.mutation(api.economy.redeemPromoCode, {
+        token,
+        code: "BADPACK",
+      })
+    ).rejects.toThrow(/Invalid pack configuration/i);
   });
 });

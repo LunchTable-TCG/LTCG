@@ -1,13 +1,12 @@
-import { convexTest } from "convex-test";
 import { expect, test, describe } from "vitest";
+import { createTestInstance } from "./test.setup";
+import type { TestMutationCtx } from "./test.setup";
 import { api, internal } from "./_generated/api";
-import schema from "./schema";
-import { modules } from "./test.setup";
 
 /**
  * NOTE: Tests that require the @convex-dev/ratelimiter component are currently skipped.
  * The package doesn't export a /test helper, and manual component registration requires
- * complex module path resolution that doesn't work well with import.meta.glob.
+ * module files which are not easy to mock in the test environment.
  *
  * Tests that are skipped:
  * - "should send message successfully with valid auth" (uses rate limiter)
@@ -15,33 +14,33 @@ import { modules } from "./test.setup";
  * - "should enforce rate limit (2 seconds between messages)"
  *
  * All other functionality is tested without the rate limiter component.
+ * Rate limiting is verified manually in the deployed environment.
  */
 
 describe("Global Chat System", () => {
   describe("getRecentMessages Query", () => {
     test("should return empty array when no messages exist", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       const messages = await t.query(api.globalChat.getRecentMessages, {});
 
-      expect(messages).toEqual([]);
+      expect(messages!).toEqual([]);
     });
 
     test("should return messages in chronological order", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       // Create test user
-      const userId = await t.run(async (ctx) => {
+      const userId = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
       });
 
       // Insert messages with different timestamps
-      await t.run(async (ctx) => {
+      await t.run(async (ctx: TestMutationCtx) => {
         await ctx.db.insert("globalChatMessages", {
           userId,
           username: "testuser",
@@ -67,26 +66,25 @@ describe("Global Chat System", () => {
 
       const messages = await t.query(api.globalChat.getRecentMessages, {});
 
-      expect(messages).toHaveLength(3);
-      expect(messages[0].message).toBe("First message");
-      expect(messages[1].message).toBe("Second message");
-      expect(messages[2].message).toBe("Third message");
+      expect(messages!).toHaveLength(3);
+      expect(messages![0]!.message).toBe("First message");
+      expect(messages![1]!.message).toBe("Second message");
+      expect(messages![2]!.message).toBe("Third message");
     });
 
     test("should respect limit parameter", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const userId = await t.run(async (ctx) => {
+      const userId = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
       });
 
       // Insert 10 messages
-      await t.run(async (ctx) => {
+      await t.run(async (ctx: TestMutationCtx) => {
         for (let i = 0; i < 10; i++) {
           await ctx.db.insert("globalChatMessages", {
             userId,
@@ -102,23 +100,22 @@ describe("Global Chat System", () => {
         limit: 5,
       });
 
-      expect(messages).toHaveLength(5);
+      expect(messages!).toHaveLength(5);
     });
 
     test("should clamp limit to max 100", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const userId = await t.run(async (ctx) => {
+      const userId = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
       });
 
       // Insert 150 messages
-      await t.run(async (ctx) => {
+      await t.run(async (ctx: TestMutationCtx) => {
         for (let i = 0; i < 150; i++) {
           await ctx.db.insert("globalChatMessages", {
             userId,
@@ -140,18 +137,17 @@ describe("Global Chat System", () => {
     });
 
     test("should clamp negative limit to 1", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const userId = await t.run(async (ctx) => {
+      const userId = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
       });
 
-      await t.run(async (ctx) => {
+      await t.run(async (ctx: TestMutationCtx) => {
         for (let i = 0; i < 5; i++) {
           await ctx.db.insert("globalChatMessages", {
             userId,
@@ -174,29 +170,28 @@ describe("Global Chat System", () => {
 
   describe("getOnlineUsers Query", () => {
     test("should return empty array when no users are online", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       const users = await t.query(api.globalChat.getOnlineUsers, {});
 
-      expect(users).toEqual([]);
+      expect(users!).toEqual([]);
     });
 
     test("should return users active in last 5 minutes", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       const now = Date.now();
 
-      const userId = await t.run(async (ctx) => {
+      const userId = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "activeuser",
           email: "active@example.com",
-          passwordHash: "hash",
           createdAt: now,
         });
       });
 
       // Add active user
-      await t.run(async (ctx) => {
+      await t.run(async (ctx: TestMutationCtx) => {
         await ctx.db.insert("userPresence", {
           userId,
           username: "activeuser",
@@ -207,28 +202,27 @@ describe("Global Chat System", () => {
 
       const users = await t.query(api.globalChat.getOnlineUsers, {});
 
-      expect(users).toHaveLength(1);
-      expect(users[0].username).toBe("activeuser");
-      expect(users[0].status).toBe("online");
+      expect(users!).toHaveLength(1);
+      expect(users![0]!.username).toBe("activeuser");
+      expect(users![0]!.status).toBe("online");
     });
 
     test("should NOT return users inactive for >5 minutes", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       const now = Date.now();
       const sixMinutesAgo = now - 6 * 60 * 1000;
 
-      const userId = await t.run(async (ctx) => {
+      const userId = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "inactiveuser",
           email: "inactive@example.com",
-          passwordHash: "hash",
           createdAt: now,
         });
       });
 
       // Add inactive user (6 minutes ago)
-      await t.run(async (ctx) => {
+      await t.run(async (ctx: TestMutationCtx) => {
         await ctx.db.insert("userPresence", {
           userId,
           username: "inactiveuser",
@@ -240,44 +234,41 @@ describe("Global Chat System", () => {
       const users = await t.query(api.globalChat.getOnlineUsers, {});
 
       // Should not include inactive user
-      expect(users).toHaveLength(0);
+      expect(users!).toHaveLength(0);
     });
 
     test("should return users sorted by last active (most recent first)", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       const now = Date.now();
 
       // Create 3 users
-      const user1 = await t.run(async (ctx) => {
+      const user1 = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "user1",
           email: "user1@example.com",
-          passwordHash: "hash",
           createdAt: now,
         });
       });
 
-      const user2 = await t.run(async (ctx) => {
+      const user2 = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "user2",
           email: "user2@example.com",
-          passwordHash: "hash",
           createdAt: now,
         });
       });
 
-      const user3 = await t.run(async (ctx) => {
+      const user3 = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "user3",
           email: "user3@example.com",
-          passwordHash: "hash",
           createdAt: now,
         });
       });
 
       // Add presence with different times
-      await t.run(async (ctx) => {
+      await t.run(async (ctx: TestMutationCtx) => {
         await ctx.db.insert("userPresence", {
           userId: user1,
           username: "user1",
@@ -300,25 +291,22 @@ describe("Global Chat System", () => {
 
       const users = await t.query(api.globalChat.getOnlineUsers, {});
 
-      expect(users).toHaveLength(3);
-      expect(users[0].username).toBe("user2"); // Most recent
-      expect(users[1].username).toBe("user1");
-      expect(users[2].username).toBe("user3"); // Least recent
+      expect(users!).toHaveLength(3);
+      expect(users![0]!.username).toBe("user2"); // Most recent
+      expect(users![1]!.username).toBe("user1");
+      expect(users![2]!.username).toBe("user3"); // Least recent
     });
   });
 
   describe("sendMessage Mutation", () => {
     test.skip("should send message successfully with valid auth", async () => {
-      // SKIPPED: Requires rate limiter component registration (not available in test environment)
-      // See note at top of file for details
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       // Create user and session
-      const { userId, token } = await t.run(async (ctx) => {
+      const { userId, token } = await t.run(async (ctx: TestMutationCtx) => {
         const userId = await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
 
@@ -337,18 +325,18 @@ describe("Global Chat System", () => {
         content: "Hello world!",
       });
 
-      expect(messageId).toBeDefined();
+      expect(messageId!).toBeDefined();
 
       // Verify message was inserted
       const messages = await t.query(api.globalChat.getRecentMessages, {});
-      expect(messages).toHaveLength(1);
-      expect(messages[0].message).toBe("Hello world!");
-      expect(messages[0].username).toBe("testuser");
-      expect(messages[0].isSystem).toBe(false);
+      expect(messages!).toHaveLength(1);
+      expect(messages![0]!.message).toBe("Hello world!");
+      expect(messages![0]!.username).toBe("testuser");
+      expect(messages![0]!.isSystem).toBe(false);
     });
 
     test("should reject message without authentication", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       await expect(
         t.mutation(api.globalChat.sendMessage, {
@@ -359,13 +347,12 @@ describe("Global Chat System", () => {
     });
 
     test("should reject empty message", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const { token } = await t.run(async (ctx) => {
+      const { token } = await t.run(async (ctx: TestMutationCtx) => {
         const userId = await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
 
@@ -388,13 +375,12 @@ describe("Global Chat System", () => {
     });
 
     test("should reject message exceeding max length", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const { token } = await t.run(async (ctx) => {
+      const { token } = await t.run(async (ctx: TestMutationCtx) => {
         const userId = await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
 
@@ -419,15 +405,12 @@ describe("Global Chat System", () => {
     });
 
     test.skip("should update user presence when sending message", async () => {
-      // SKIPPED: Requires rate limiter component registration (not available in test environment)
-      // See note at top of file for details
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const { userId, token } = await t.run(async (ctx) => {
+      const { userId, token } = await t.run(async (ctx: TestMutationCtx) => {
         const userId = await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
 
@@ -447,28 +430,25 @@ describe("Global Chat System", () => {
       });
 
       // Check presence was created/updated
-      const presence = await t.run(async (ctx) => {
+      const presence = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db
           .query("userPresence")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .withIndex("by_user", (q: any) => q.eq("userId", userId))
           .first();
       });
 
-      expect(presence).toBeDefined();
+      expect(presence!).toBeDefined();
       expect(presence!.username).toBe("testuser");
       expect(presence!.status).toBe("online");
     });
 
     test.skip("should enforce rate limit (2 seconds between messages)", async () => {
-      // SKIPPED: Requires rate limiter component registration (not available in test environment)
-      // See note at top of file for details
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const { token } = await t.run(async (ctx) => {
+      const { token } = await t.run(async (ctx: TestMutationCtx) => {
         const userId = await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
 
@@ -500,13 +480,12 @@ describe("Global Chat System", () => {
 
   describe("updatePresence Mutation", () => {
     test("should create presence record for new user", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const { userId, token } = await t.run(async (ctx) => {
+      const { userId, token } = await t.run(async (ctx: TestMutationCtx) => {
         const userId = await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
 
@@ -525,25 +504,24 @@ describe("Global Chat System", () => {
         status: "online",
       });
 
-      const presence = await t.run(async (ctx) => {
+      const presence = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db
           .query("userPresence")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .withIndex("by_user", (q: any) => q.eq("userId", userId))
           .first();
       });
 
-      expect(presence).toBeDefined();
+      expect(presence!).toBeDefined();
       expect(presence!.status).toBe("online");
     });
 
     test("should update existing presence record", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const { userId, token } = await t.run(async (ctx) => {
+      const { userId, token } = await t.run(async (ctx: TestMutationCtx) => {
         const userId = await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
 
@@ -572,26 +550,25 @@ describe("Global Chat System", () => {
         status: "in_game",
       });
 
-      const presence = await t.run(async (ctx) => {
+      const presence = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db
           .query("userPresence")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .withIndex("by_user", (q: any) => q.eq("userId", userId))
           .first();
       });
 
-      expect(presence).toBeDefined();
+      expect(presence!).toBeDefined();
       expect(presence!.status).toBe("in_game");
       expect(presence!.lastActiveAt).toBeGreaterThanOrEqual(beforeTime);
     });
 
     test("should NOT create duplicate presence records", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const { userId, token } = await t.run(async (ctx) => {
+      const { userId, token } = await t.run(async (ctx: TestMutationCtx) => {
         const userId = await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: Date.now(),
         });
 
@@ -622,28 +599,27 @@ describe("Global Chat System", () => {
       });
 
       // Check only 1 presence record exists
-      const presenceRecords = await t.run(async (ctx) => {
+      const presenceRecords = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db
           .query("userPresence")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .withIndex("by_user", (q: any) => q.eq("userId", userId))
           .collect();
       });
 
-      expect(presenceRecords).toHaveLength(1);
-      expect(presenceRecords[0].status).toBe("idle"); // Latest status
+      expect(presenceRecords!).toHaveLength(1);
+      expect(presenceRecords![0]!.status).toBe("idle"); // Latest status
     });
   });
 
   describe("sendSystemMessage Internal Mutation", () => {
     test("should send system message when system user exists", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       // Create system user
-      const systemUserId = await t.run(async (ctx) => {
+      const systemUserId = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "system",
           email: "system@localhost",
-          passwordHash: "N/A",
           createdAt: Date.now(),
         });
       });
@@ -652,17 +628,17 @@ describe("Global Chat System", () => {
         message: "Server maintenance in 5 minutes",
       });
 
-      expect(messageId).toBeDefined();
+      expect(messageId!).toBeDefined();
 
       const messages = await t.query(api.globalChat.getRecentMessages, {});
-      expect(messages).toHaveLength(1);
-      expect(messages[0].message).toBe("Server maintenance in 5 minutes");
-      expect(messages[0].username).toBe("System");
-      expect(messages[0].isSystem).toBe(true);
+      expect(messages!).toHaveLength(1);
+      expect(messages![0]!.message).toBe("Server maintenance in 5 minutes");
+      expect(messages![0]!.username).toBe("System");
+      expect(messages![0]!.isSystem).toBe(true);
     });
 
     test("should throw error when system user does not exist", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       await expect(
         t.mutation(internal.globalChat.sendSystemMessage, {
@@ -672,13 +648,12 @@ describe("Global Chat System", () => {
     });
 
     test("should use provided systemUserId if given", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
-      const customSystemUserId = await t.run(async (ctx) => {
+      const customSystemUserId = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "admin",
           email: "admin@localhost",
-          passwordHash: "N/A",
           createdAt: Date.now(),
         });
       });
@@ -688,40 +663,39 @@ describe("Global Chat System", () => {
         systemUserId: customSystemUserId,
       });
 
-      expect(messageId).toBeDefined();
+      expect(messageId!).toBeDefined();
 
       const messages = await t.query(api.globalChat.getRecentMessages, {});
-      expect(messages).toHaveLength(1);
-      expect(messages[0].userId).toBe(customSystemUserId);
+      expect(messages!).toHaveLength(1);
+      expect(messages![0]!.userId).toBe(customSystemUserId);
     });
   });
 
   describe("getMessageCount Query", () => {
     test("should return 0 when no messages exist", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       const count = await t.query(api.globalChat.getMessageCount, {});
 
-      expect(count).toBe(0);
+      expect(count!).toBe(0);
     });
 
     test("should count messages from last 24 hours by default", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       const now = Date.now();
       const oneDayAgo = now - 24 * 60 * 60 * 1000;
       const twoDaysAgo = now - 48 * 60 * 60 * 1000;
 
-      const userId = await t.run(async (ctx) => {
+      const userId = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: now,
         });
       });
 
-      await t.run(async (ctx) => {
+      await t.run(async (ctx: TestMutationCtx) => {
         // Recent messages (should be counted)
         await ctx.db.insert("globalChatMessages", {
           userId,
@@ -750,24 +724,23 @@ describe("Global Chat System", () => {
 
       const count = await t.query(api.globalChat.getMessageCount, {});
 
-      expect(count).toBe(2); // Only recent messages
+      expect(count!).toBe(2); // Only recent messages
     });
 
     test("should count messages from custom time period", async () => {
-      const t = convexTest(schema, modules);
+      const t = createTestInstance();
 
       const now = Date.now();
 
-      const userId = await t.run(async (ctx) => {
+      const userId = await t.run(async (ctx: TestMutationCtx) => {
         return await ctx.db.insert("users", {
           username: "testuser",
           email: "test@example.com",
-          passwordHash: "hash",
           createdAt: now,
         });
       });
 
-      await t.run(async (ctx) => {
+      await t.run(async (ctx: TestMutationCtx) => {
         for (let i = 0; i < 5; i++) {
           await ctx.db.insert("globalChatMessages", {
             userId,
@@ -783,7 +756,7 @@ describe("Global Chat System", () => {
         since: now - 3 * 60 * 60 * 1000, // Last 3 hours
       });
 
-      expect(count).toBe(4); // Messages 0, 1, 2, 3 (gte includes boundary)
+      expect(count!).toBe(4); // Messages 0, 1, 2, 3 (gte includes boundary)
     });
   });
 });

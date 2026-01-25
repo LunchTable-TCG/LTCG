@@ -8,46 +8,44 @@
  * - Transaction recording
  */
 
-import { convexTest } from "convex-test";
 import { describe, it, expect, beforeEach } from "vitest";
+import { createTestInstance } from "../test.setup";
+import type { TestMutationCtx } from "../test.setup";
 import { api } from "../_generated/api";
-import schema from "../schema";
 import { Id } from "../_generated/dataModel";
 
-const modules = import.meta.glob("../**/*.ts");
 
 describe("validateSession", () => {
   it("should throw error when token is empty", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await expect(async () => {
-      await t.query(api.cards.getUserCards, { token: "" });
-    }).rejects.toThrowError("Authentication required");
+    await expect(
+      t.query(api.cards.getUserCards, { token: "" })
+    ).rejects.toThrowError("Authentication required");
   });
 
   it("should throw error when session does not exist", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await expect(async () => {
-      await t.query(api.cards.getUserCards, { token: "invalid-token" });
-    }).rejects.toThrowError("Session expired or invalid");
+    await expect(
+      t.query(api.cards.getUserCards, { token: "invalid-token" })
+    ).rejects.toThrowError("Session expired or invalid");
   });
 
   it("should throw error when session is expired", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
     // Create user
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
     });
 
     // Create expired session
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("sessions", {
         userId,
         token: "expired-token",
@@ -55,26 +53,25 @@ describe("validateSession", () => {
       });
     });
 
-    await expect(async () => {
-      await t.query(api.cards.getUserCards, { token: "expired-token" });
-    }).rejects.toThrowError("Session expired or invalid");
+    await expect(
+      t.query(api.cards.getUserCards, { token: "expired-token" })
+    ).rejects.toThrowError("Session expired or invalid");
   });
 
   it("should return user info for valid session", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
     // Create user
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       return await ctx.db.insert("users", {
         username: "validuser",
         email: "valid@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
     });
 
     // Create valid session
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("sessions", {
         userId,
         token: "valid-token",
@@ -90,13 +87,12 @@ describe("validateSession", () => {
 
 describe("checkCardOwnership", () => {
   it("should return false when user does not own card", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId] = await t.run(async (ctx) => {
+    const [userId, cardDefId] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -114,7 +110,7 @@ describe("checkCardOwnership", () => {
     });
 
     // User doesn't own the card - marketplace should reject listing
-    const token = await t.run(async (ctx) => {
+    const token = await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("sessions", {
         userId,
         token: "test-token",
@@ -123,25 +119,24 @@ describe("checkCardOwnership", () => {
       return "test-token";
     });
 
-    await expect(async () => {
-      await t.mutation(api.marketplace.createListing, {
+    await expect(
+      t.mutation(api.marketplace.createListing, {
         token,
         cardDefinitionId: cardDefId,
         quantity: 1,
         listingType: "fixed",
         price: 100,
-      });
-    }).rejects.toThrowError("You don't own enough of this card");
+      })
+    ).rejects.toThrowError("You don't own enough of this card");
   });
 
   it("should return true when user owns sufficient quantity", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const [userId, cardDefId, token] = await t.run(async (ctx) => {
+    const [userId, cardDefId, token] = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -190,13 +185,12 @@ describe("checkCardOwnership", () => {
 
 describe("getOrCreatePlayerCurrency", () => {
   it("should return existing currency record", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -229,13 +223,12 @@ describe("getOrCreatePlayerCurrency", () => {
   });
 
   it("should return currency record for new user", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "newuser",
         email: "new@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -270,13 +263,12 @@ describe("getOrCreatePlayerCurrency", () => {
 
 describe("recordTransaction", () => {
   it("should record transaction in ledger", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: TestMutationCtx) => {
       const uid = await ctx.db.insert("users", {
         username: "testuser",
         email: "test@example.com",
-        passwordHash: "hash",
         createdAt: Date.now(),
       });
 
@@ -301,7 +293,7 @@ describe("recordTransaction", () => {
     });
 
     // Redeem a promo code (which records transactions)
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: TestMutationCtx) => {
       await ctx.db.insert("promoCodes", {
         code: "TEST100",
         description: "Test promo code",

@@ -47,7 +47,7 @@ export async function getUserFromToken(
 
   return {
     userId: user._id,
-    username: user.username,
+    username: user.username || user.name || "",
   };
 }
 

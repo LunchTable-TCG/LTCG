@@ -1,57 +1,65 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useAuth } from "@/components/ConvexAuthProvider";
 import { GameLobby, GlobalChat, WelcomeGuideDialog } from "./components";
 
 export default function LunchtablePage() {
   const { token } = useAuth();
   const currentUser = useQuery(api.users.currentUser, token ? { token } : "skip");
+  const selectStarterDeck = useMutation(api.decks.selectStarterDeck);
 
   // Track if user needs onboarding (no starter deck)
-  // For now, check localStorage to persist across refreshes
-  // In production, this would be a field on the user record
   const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
-  const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
+  const [isClaimingDeck, setIsClaimingDeck] = useState(false);
 
-  // Check if user has completed onboarding
+  // Check if user has completed onboarding - runs on every currentUser update
   useEffect(() => {
-    if (currentUser && !hasCheckedOnboarding) {
-      // Check localStorage for onboarding completion
-      const onboardingKey = `ltcg_onboarding_${currentUser._id}`;
-      const hasCompletedOnboarding = localStorage.getItem(onboardingKey);
-
-      if (!hasCompletedOnboarding) {
+    if (currentUser) {
+      // Show welcome guide if user has no active deck
+      if (!currentUser.activeDeckId) {
         setShowWelcomeGuide(true);
+      } else {
+        setShowWelcomeGuide(false);
       }
-      setHasCheckedOnboarding(true);
     }
-  }, [currentUser, hasCheckedOnboarding]);
+  }, [currentUser]);
 
   // Reset scroll position on mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleWelcomeComplete = (selectedDeck: string) => {
-    if (currentUser) {
-      // Save onboarding completion to localStorage
-      const onboardingKey = `ltcg_onboarding_${currentUser._id}`;
-      localStorage.setItem(
-        onboardingKey,
-        JSON.stringify({
-          completedAt: Date.now(),
-          starterDeck: selectedDeck,
-        })
-      );
+  const handleWelcomeComplete = async (selectedDeck: string) => {
+    if (!token || !currentUser) return;
 
-      // TODO: In production, save starter deck to user record via Convex mutation
-      console.log("User selected starter deck:", selectedDeck);
+    // Map frontend archetype to backend deck code
+    // Note: Only fire and water starter decks are currently available
+    const deckCodeMap: Record<string, "INFERNAL_DRAGONS" | "ABYSSAL_DEPTHS"> = {
+      fire: "INFERNAL_DRAGONS",
+      water: "ABYSSAL_DEPTHS",
+    };
+
+    const deckCode = deckCodeMap[selectedDeck as keyof typeof deckCodeMap];
+    if (!deckCode) {
+      toast.error("Invalid starter deck selection.");
+      return;
     }
-    setShowWelcomeGuide(false);
+
+    setIsClaimingDeck(true);
+    try {
+      const result = await selectStarterDeck({ token, deckCode });
+      toast.success(`${result.deckName} claimed! You received ${result.cardsReceived} cards.`);
+      setShowWelcomeGuide(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to claim starter deck");
+    } finally {
+      setIsClaimingDeck(false);
+    }
   };
 
   if (!currentUser) {

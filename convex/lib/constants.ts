@@ -75,3 +75,68 @@ export const CHAT = {
   /** Presence timeout in milliseconds */
   PRESENCE_TIMEOUT_MS: 300000, // 5 minutes
 } as const;
+
+/**
+ * Leaderboard Configuration
+ */
+export const LEADERBOARD = {
+  /** Number of top players to cache in snapshots */
+  PAGE_SIZE: 100,
+
+  /** How often to refresh leaderboard snapshots (5 minutes) */
+  CACHE_REFRESH_INTERVAL_MS: 5 * 60 * 1000,
+
+  /** Number of ranks to display on leaderboards page */
+  RANKS_TO_DISPLAY: 100,
+} as const;
+
+/**
+ * XP and Level Progression System
+ */
+export const XP_SYSTEM = {
+  /** Base XP required for level 2 */
+  BASE_XP_PER_LEVEL: 100,
+
+  /** Gentle curve: each level requires 1.2x more XP than previous */
+  XP_MULTIPLIER: 1.2,
+
+  /** XP awarded for story mode victory */
+  STORY_WIN_XP: 50,
+
+  /** XP awarded for ranked match victory */
+  RANKED_WIN_XP: 30,
+
+  /** XP awarded for casual match victory */
+  CASUAL_WIN_XP: 20,
+
+  /** XP awarded for story mode loss (no penalty) */
+  STORY_LOSS_XP: 0,
+} as const;
+
+/**
+ * ELO Rating System
+ */
+export const ELO_SYSTEM = {
+  /** Default starting rating for new players */
+  DEFAULT_RATING: 1000,
+
+  /** Standard ELO K-factor (rating volatility) */
+  K_FACTOR: 32,
+
+  /** Minimum rating floor */
+  RATING_FLOOR: 0,
+} as const;
+
+/**
+ * Spectator System Configuration
+ */
+export const SPECTATOR = {
+  /** Maximum spectators per game */
+  MAX_SPECTATORS_PER_GAME: 100,
+
+  /** Default: allow spectators on public games */
+  DEFAULT_ALLOW_SPECTATORS: true,
+
+  /** Spectator count update throttle (ms) */
+  COUNT_UPDATE_THROTTLE_MS: 5000, // Update every 5 seconds max
+} as const;

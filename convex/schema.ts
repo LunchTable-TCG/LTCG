@@ -1,17 +1,97 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import type { Infer } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
+
+// ============================================================================
+// SHARED VALIDATORS (Reusable across schema and function args)
+// ============================================================================
+
+/** Game mode types for leaderboards and matchmaking */
+export const gameModeValidator = v.union(
+  v.literal("ranked"),
+  v.literal("casual"),
+  v.literal("story")
+);
+export type GameMode = Infer<typeof gameModeValidator>;
+
+/** Player segment filters for leaderboards */
+export const playerSegmentValidator = v.union(
+  v.literal("all"),
+  v.literal("humans"),
+  v.literal("ai")
+);
+export type PlayerSegment = Infer<typeof playerSegmentValidator>;
+
+/** Story mode difficulty levels */
+export const difficultyValidator = v.union(
+  v.literal("normal"),
+  v.literal("hard"),
+  v.literal("legendary")
+);
+export type Difficulty = Infer<typeof difficultyValidator>;
+
+/** Story progress status */
+export const progressStatusValidator = v.union(
+  v.literal("locked"),
+  v.literal("available"),
+  v.literal("in_progress"),
+  v.literal("completed")
+);
+export type ProgressStatus = Infer<typeof progressStatusValidator>;
 
 export default defineSchema({
+  ...authTables,
   users: defineTable({
-    username: v.string(),
-    email: v.string(),
-    passwordHash: v.string(),
+    // Convex Auth fields
+    name: v.optional(v.string()),
+    image: v.optional(v.string()),
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
+
+    // Custom game fields
+    username: v.optional(v.string()),
     bio: v.optional(v.string()),
+    passwordHash: v.optional(v.string()), // Legacy field, may be present in old records
     activeDeckId: v.optional(v.id("userDecks")),
-    createdAt: v.number(),
+    createdAt: v.optional(v.number()),
+
+    // Leaderboard: Rating fields
+    rankedElo: v.optional(v.number()), // default: 1000
+    casualRating: v.optional(v.number()), // default: 1000
+
+    // Leaderboard: Stats fields
+    totalWins: v.optional(v.number()), // default: 0
+    totalLosses: v.optional(v.number()), // default: 0
+    rankedWins: v.optional(v.number()), // default: 0
+    rankedLosses: v.optional(v.number()), // default: 0
+    casualWins: v.optional(v.number()), // default: 0
+    casualLosses: v.optional(v.number()), // default: 0
+    storyWins: v.optional(v.number()), // default: 0
+
+    // Leaderboard: Player type
+    isAiAgent: v.optional(v.boolean()), // default: false
+
+    // XP and Level (denormalized for quick access)
+    xp: v.optional(v.number()), // default: 0
+    level: v.optional(v.number()), // default: 1
+
+    lastStatsUpdate: v.optional(v.number()),
   })
     .index("email", ["email"])
-    .index("username", ["username"]),
+    .index("username", ["username"])
+    // Leaderboard indexes
+    .index("rankedElo", ["rankedElo"])
+    .index("casualRating", ["casualRating"])
+    .index("totalWins", ["totalWins"])
+    .index("xp", ["xp"])
+    // Composite indexes for segmented leaderboards
+    .index("rankedElo_byType", ["isAiAgent", "rankedElo"])
+    .index("casualRating_byType", ["isAiAgent", "casualRating"])
+    .index("xp_byType", ["isAiAgent", "xp"]),
 
   sessions: defineTable({
     userId: v.id("users"),
@@ -126,6 +206,11 @@ export default defineSchema({
     winnerId: v.optional(v.id("users")), // Winner of the game
     createdAt: v.number(),
     startedAt: v.optional(v.number()),
+
+    // Spectator system
+    spectatorCount: v.optional(v.number()), // default: 0
+    allowSpectators: v.optional(v.boolean()), // default: true
+    maxSpectators: v.optional(v.number()), // default: 100
   })
     .index("by_status", ["status"])
     .index("by_mode_status", ["mode", "status"])
@@ -134,17 +219,225 @@ export default defineSchema({
     .index("by_join_code", ["joinCode"])
     .index("by_last_move", ["lastMoveAt"]),
 
+  // Game event log for spectators and replay
+  gameEvents: defineTable({
+    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
+    turnNumber: v.number(),
+    eventType: v.union(
+      // Lifecycle Events (5)
+      v.literal("game_start"),
+      v.literal("game_end"),
+      v.literal("turn_start"),
+      v.literal("turn_end"),
+      v.literal("phase_changed"),
+
+      // Summon Events (5)
+      v.literal("normal_summon"),
+      v.literal("tribute_summon"),
+      v.literal("flip_summon"),
+      v.literal("special_summon"),
+      v.literal("summon_negated"),
+
+      // Card Placement Events (3)
+      v.literal("monster_set"),
+      v.literal("spell_set"),
+      v.literal("trap_set"),
+
+      // Activation Events (4)
+      v.literal("spell_activated"),
+      v.literal("trap_activated"),
+      v.literal("effect_activated"),
+      v.literal("activation_negated"),
+
+      // Chain Events (3)
+      v.literal("chain_link_added"),
+      v.literal("chain_resolving"),
+      v.literal("chain_resolved"),
+
+      // Combat Events (5)
+      v.literal("battle_phase_entered"),
+      v.literal("attack_declared"),
+      v.literal("damage_calculated"),
+      v.literal("damage"),
+      v.literal("card_destroyed_battle"),
+
+      // Zone Transition Events (6)
+      v.literal("card_drawn"),
+      v.literal("card_to_hand"),
+      v.literal("card_to_graveyard"),
+      v.literal("card_banished"),
+      v.literal("card_to_deck"),
+      v.literal("position_changed"),
+
+      // Resource Events (4)
+      v.literal("lp_changed"),
+      v.literal("tribute_paid"),
+      v.literal("deck_shuffled"),
+      v.literal("hand_limit_enforced")
+    ),
+    playerId: v.id("users"),
+    playerUsername: v.string(),
+    description: v.string(), // Human-readable event description
+    metadata: v.optional(v.any()), // Additional event data (card IDs, damage amounts, etc.)
+    timestamp: v.number(),
+  })
+    .index("by_lobby", ["lobbyId", "timestamp"])
+    .index("by_game", ["gameId", "timestamp"])
+    .index("by_timestamp", ["timestamp"]),
+
+  // Detailed game state for reconnection and gameplay
+  gameStates: defineTable({
+    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
+
+    // Player identifiers
+    hostId: v.id("users"),
+    opponentId: v.id("users"),
+
+    // Game state
+    hostHand: v.array(v.id("cardDefinitions")), // Card IDs in host's hand
+    opponentHand: v.array(v.id("cardDefinitions")), // Card IDs in opponent's hand
+
+    // Monster zones (5 slots)
+    hostBoard: v.array(v.object({
+      cardId: v.id("cardDefinitions"),
+      position: v.number(), // 1 = Attack, -1 = Defense
+      attack: v.number(),
+      defense: v.number(),
+      hasAttacked: v.boolean(),
+      isFaceDown: v.boolean(), // For set monsters
+      // Protection flags
+      cannotBeDestroyedByBattle: v.optional(v.boolean()),
+      cannotBeDestroyedByEffects: v.optional(v.boolean()),
+      cannotBeTargeted: v.optional(v.boolean()),
+    })),
+    opponentBoard: v.array(v.object({
+      cardId: v.id("cardDefinitions"),
+      position: v.number(), // 1 = Attack, -1 = Defense
+      attack: v.number(),
+      defense: v.number(),
+      hasAttacked: v.boolean(),
+      isFaceDown: v.boolean(), // For set monsters
+      // Protection flags
+      cannotBeDestroyedByBattle: v.optional(v.boolean()),
+      cannotBeDestroyedByEffects: v.optional(v.boolean()),
+      cannotBeTargeted: v.optional(v.boolean()),
+    })),
+
+    // Spell/Trap zones (5 slots each)
+    hostSpellTrapZone: v.array(v.object({
+      cardId: v.id("cardDefinitions"),
+      isFaceDown: v.boolean(),
+      isActivated: v.boolean(), // Continuous spells/traps remain on field
+    })),
+    opponentSpellTrapZone: v.array(v.object({
+      cardId: v.id("cardDefinitions"),
+      isFaceDown: v.boolean(),
+      isActivated: v.boolean(), // Continuous spells/traps remain on field
+    })),
+
+    // Field Spell zones (1 slot each, face-up only)
+    hostFieldSpell: v.optional(v.object({
+      cardId: v.id("cardDefinitions"),
+      isActive: v.boolean(),
+    })),
+    opponentFieldSpell: v.optional(v.object({
+      cardId: v.id("cardDefinitions"),
+      isActive: v.boolean(),
+    })),
+
+    hostDeck: v.array(v.id("cardDefinitions")), // Remaining cards in deck
+    opponentDeck: v.array(v.id("cardDefinitions")),
+    hostGraveyard: v.array(v.id("cardDefinitions")),
+    opponentGraveyard: v.array(v.id("cardDefinitions")),
+    hostBanished: v.array(v.id("cardDefinitions")), // Banished/removed from play
+    opponentBanished: v.array(v.id("cardDefinitions")),
+
+    // Game resources
+    hostLifePoints: v.number(),
+    opponentLifePoints: v.number(),
+    hostMana: v.number(),
+    opponentMana: v.number(),
+
+    // Turn tracking
+    currentTurnPlayerId: v.id("users"),
+    turnNumber: v.number(),
+
+    // Phase Management (Yu-Gi-Oh turn structure)
+    currentPhase: v.optional(
+      v.union(
+        v.literal("draw"),
+        v.literal("standby"),
+        v.literal("main1"),
+        v.literal("battle_start"),
+        v.literal("battle"),
+        v.literal("battle_end"),
+        v.literal("main2"),
+        v.literal("end")
+      )
+    ),
+
+    // Turn Flags
+    hostNormalSummonedThisTurn: v.optional(v.boolean()),
+    opponentNormalSummonedThisTurn: v.optional(v.boolean()),
+
+    // Chain State
+    currentChain: v.optional(
+      v.array(
+        v.object({
+          cardId: v.id("cardDefinitions"),
+          playerId: v.id("users"),
+          spellSpeed: v.number(), // 1, 2, or 3
+          effect: v.string(),
+          targets: v.optional(v.array(v.id("cardDefinitions"))),
+        })
+      )
+    ),
+
+    // Priority System
+    currentPriorityPlayer: v.optional(v.id("users")),
+
+    // Temporary Modifiers (cleared at end of turn)
+    temporaryModifiers: v.optional(
+      v.array(
+        v.object({
+          cardId: v.id("cardDefinitions"), // Card being modified
+          atkBonus: v.number(),
+          defBonus: v.number(),
+          expiresAtTurn: v.number(), // Turn number when this expires
+          expiresAtPhase: v.optional(v.string()), // Phase when this expires ("end", "battle_end", etc.)
+        })
+      )
+    ),
+
+    // Once Per Turn (OPT) Tracking (cleared at end of turn)
+    optUsedThisTurn: v.optional(
+      v.array(v.id("cardDefinitions")) // Cards that have used their OPT effect this turn
+    ),
+
+    // Timestamps
+    lastMoveAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_lobby", ["lobbyId"])
+    .index("by_game_id", ["gameId"])
+    .index("by_host", ["hostId"])
+    .index("by_opponent", ["opponentId"]),
+
   // Matchmaking queue for quick match
   matchmakingQueue: defineTable({
     userId: v.id("users"),
     username: v.string(),
     rating: v.number(),
     deckArchetype: v.string(),
-    mode: v.string(), // "ranked" only for now
+    mode: v.string(), // "ranked" or "casual"
     joinedAt: v.number(),
   })
     .index("by_rating", ["rating"])
-    .index("by_user", ["userId"]),
+    .index("by_user", ["userId"])
+    .index("by_mode_rating", ["mode", "rating"]) // Optimize mode filtering + rating sort
+    .index("by_rating_joined", ["rating", "joinedAt"]), // For wait time analytics
 
   // Master card definitions - all cards available in the game
   cardDefinitions: defineTable({
@@ -157,11 +450,22 @@ export default defineSchema({
       v.literal("legendary")
     ),
     archetype: v.union(
+      v.literal("infernal_dragons"),
+      v.literal("abyssal_horrors"),
+      v.literal("nature_spirits"),
+      v.literal("storm_elementals"),
+      v.literal("shadow_assassins"),
+      v.literal("celestial_guardians"),
+      v.literal("undead_legion"),
+      v.literal("divine_knights"),
+      v.literal("arcane_mages"),
+      v.literal("mechanical_constructs"),
+      v.literal("neutral"),
+      // Old archetypes (deprecated - for backward compatibility)
       v.literal("fire"),
       v.literal("water"),
       v.literal("earth"),
-      v.literal("wind"),
-      v.literal("neutral")
+      v.literal("wind")
     ),
     cardType: v.union(
       v.literal("creature"),
@@ -230,24 +534,6 @@ export default defineSchema({
     .index("by_deck", ["deckId"])
     .index("by_deck_card", ["deckId", "cardDefinitionId"]),
 
-  // Analytics: Event tracking for user actions and system metrics
-  events: defineTable({
-    userId: v.id("users"),
-    category: v.union(
-      v.literal("user_action"),
-      v.literal("game_event"),
-      v.literal("system"),
-      v.literal("error"),
-      v.literal("performance")
-    ),
-    eventName: v.string(),
-    properties: v.any(), // JSON object with event-specific data
-    timestamp: v.number(),
-  })
-    .index("by_user_timestamp", ["userId", "timestamp"])
-    .index("by_timestamp", ["timestamp"])
-    .index("by_category", ["category", "timestamp"]),
-
   // File Storage: Metadata for uploaded files (images, documents, etc.)
   fileMetadata: defineTable({
     userId: v.id("users"),
@@ -267,6 +553,67 @@ export default defineSchema({
     .index("by_user_category", ["userId", "category"])
     .index("by_uploaded_at", ["uploadedAt"])
     .index("by_storage_id", ["storageId"]),
+
+  // ============================================================================
+  // LEADERBOARDS & MATCH HISTORY
+  // ============================================================================
+
+  // Match history - track all completed games for ratings and analytics
+  matchHistory: defineTable({
+    winnerId: v.id("users"),
+    loserId: v.id("users"),
+    gameType: v.union(
+      v.literal("ranked"),
+      v.literal("casual"),
+      v.literal("story")
+    ),
+
+    // Rating changes
+    winnerRatingBefore: v.number(),
+    winnerRatingAfter: v.number(),
+    loserRatingBefore: v.number(),
+    loserRatingAfter: v.number(),
+
+    // XP rewards (for story mode and all games)
+    xpAwarded: v.optional(v.number()),
+
+    completedAt: v.number(),
+  })
+    .index("by_winner", ["winnerId"])
+    .index("by_loser", ["loserId"])
+    .index("by_completed", ["completedAt"])
+    .index("by_game_type", ["gameType", "completedAt"]),
+
+  // Leaderboard snapshots - cached rankings to avoid recalculating
+  leaderboardSnapshots: defineTable({
+    leaderboardType: v.union(
+      v.literal("ranked"),
+      v.literal("casual"),
+      v.literal("story")
+    ),
+    playerSegment: v.union(
+      v.literal("all"),
+      v.literal("humans"),
+      v.literal("ai")
+    ),
+
+    // Top N players snapshot
+    rankings: v.array(
+      v.object({
+        userId: v.id("users"),
+        username: v.string(),
+        rank: v.number(),
+        rating: v.number(), // ELO, casual rating, or XP
+        level: v.optional(v.number()), // for story leaderboard
+        wins: v.number(),
+        losses: v.number(),
+        winRate: v.number(),
+        isAiAgent: v.boolean(),
+      })
+    ),
+
+    lastUpdated: v.number(),
+  }).index("by_leaderboard", ["leaderboardType", "playerSegment"]),
 
   // ============================================================================
   // ECONOMY SYSTEM
@@ -336,11 +683,23 @@ export default defineSchema({
         ),
         archetype: v.optional(
           v.union(
+            // New archetypes
+            v.literal("infernal_dragons"),
+            v.literal("abyssal_horrors"),
+            v.literal("nature_spirits"),
+            v.literal("storm_elementals"),
+            v.literal("shadow_assassins"),
+            v.literal("celestial_guardians"),
+            v.literal("undead_legion"),
+            v.literal("divine_knights"),
+            v.literal("arcane_mages"),
+            v.literal("mechanical_constructs"),
+            v.literal("neutral"),
+            // Old archetypes (temporary for migration)
             v.literal("fire"),
             v.literal("water"),
             v.literal("earth"),
-            v.literal("wind"),
-            v.literal("neutral")
+            v.literal("wind")
           )
         ),
       })
@@ -475,4 +834,146 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_code", ["promoCodeId", "redeemedAt"])
     .index("by_user_code", ["userId", "promoCodeId"]),
+
+  // ============================================================================
+  // STORY MODE SYSTEM
+  // ============================================================================
+
+  // Story mode progress tracking
+  storyProgress: defineTable({
+    userId: v.id("users"),
+    actNumber: v.number(), // 1-4, 5 for epilogue
+    chapterNumber: v.number(), // 1-15 depending on act
+    difficulty: difficultyValidator,
+    status: progressStatusValidator,
+    starsEarned: v.number(), // 0-3
+    bestScore: v.optional(v.number()), // Highest LP remaining
+    timesAttempted: v.number(),
+    timesCompleted: v.number(),
+    firstCompletedAt: v.optional(v.number()),
+    lastAttemptedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_chapter", ["userId", "actNumber", "chapterNumber"])
+    .index("by_user_difficulty", ["userId", "difficulty", "status"])
+    .index("by_user_status", ["userId", "status"]),
+
+  // Chapter battle history (for retry tracking)
+  storyBattleAttempts: defineTable({
+    userId: v.id("users"),
+    progressId: v.id("storyProgress"),
+    actNumber: v.number(),
+    chapterNumber: v.number(),
+    difficulty: difficultyValidator,
+    outcome: v.union(
+      v.literal("won"),
+      v.literal("lost"),
+      v.literal("abandoned")
+    ),
+    starsEarned: v.number(),
+    finalLP: v.number(), // Life points remaining
+    rewardsEarned: v.object({
+      gold: v.number(),
+      xp: v.number(),
+      cards: v.optional(v.array(v.string())),
+    }),
+    attemptedAt: v.number(),
+  })
+    .index("by_user_time", ["userId", "attemptedAt"])
+    .index("by_progress", ["progressId", "attemptedAt"])
+    .index("by_user_chapter", ["userId", "actNumber", "chapterNumber"]),
+
+  // Player XP and level system
+  playerXP: defineTable({
+    userId: v.id("users"),
+    currentXP: v.number(),
+    currentLevel: v.number(),
+    lifetimeXP: v.number(),
+    lastUpdatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_level", ["currentLevel"])
+    .index("by_lifetime_xp", ["lifetimeXP"]),
+
+  // Badge/achievement system
+  playerBadges: defineTable({
+    userId: v.id("users"),
+    badgeType: v.union(
+      v.literal("archetype_complete"), // Completed all chapters for an archetype
+      v.literal("act_complete"),       // Completed entire act
+      v.literal("difficulty_complete"), // Completed all chapters on a difficulty
+      v.literal("perfect_chapter"),    // 3 stars on a chapter
+      v.literal("speed_run"),          // Special achievements
+      v.literal("milestone")           // XP/level milestones
+    ),
+    badgeId: v.string(), // e.g., "infernal_dragons_complete", "act_1_hard"
+    displayName: v.string(),
+    description: v.string(),
+    archetype: v.optional(v.string()), // For archetype badges
+    iconUrl: v.optional(v.string()),
+    earnedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_type", ["userId", "badgeType"])
+    .index("by_badge", ["badgeId"]),
+
+  // Chapter definitions (reference data)
+  storyChapters: defineTable({
+    actNumber: v.number(),
+    chapterNumber: v.number(),
+    title: v.string(),
+    description: v.string(),
+    archetype: v.string(), // Which archetype this chapter focuses on
+    archetypeImageUrl: v.string(), // Path to story asset image
+    storyText: v.string(), // Narrative cutscene text
+    loreText: v.string(), // Lore entry unlocked on completion
+    aiOpponentDeckCode: v.string(), // Starter deck code for AI
+    aiDifficulty: v.object({
+      normal: v.number(),   // AI strength 1-10
+      hard: v.number(),
+      legendary: v.number(),
+    }),
+    battleCount: v.number(), // 1-3 battles per chapter
+    baseRewards: v.object({
+      gold: v.number(),
+      xp: v.number(),
+      guaranteedCards: v.optional(v.array(v.string())), // Specific card IDs
+    }),
+    unlockRequirements: v.optional(v.object({
+      previousChapter: v.optional(v.boolean()), // Must complete previous chapter
+      minimumLevel: v.optional(v.number()),
+    })),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_act_chapter", ["actNumber", "chapterNumber"])
+    .index("by_archetype", ["archetype"])
+    .index("by_active", ["isActive"]),
+
+  // ============================================================================
+  // SOCIAL SYSTEM - Friends
+  // ============================================================================
+
+  // Friendships - tracks friend relationships between users
+  friendships: defineTable({
+    userId: v.id("users"), // The user who owns this relationship
+    friendId: v.id("users"), // The other user in the relationship
+    status: v.union(
+      v.literal("pending"), // Friend request sent, awaiting response
+      v.literal("accepted"), // Both users are friends
+      v.literal("blocked")   // User has blocked friendId
+    ),
+    // Who initiated the friend request (for pending status)
+    requestedBy: v.id("users"),
+    createdAt: v.number(), // When request was sent
+    respondedAt: v.optional(v.number()), // When accepted/blocked
+    lastInteraction: v.optional(v.number()), // Last message/game together
+  })
+    .index("by_user", ["userId"])
+    .index("by_friend", ["friendId"])
+    .index("by_user_status", ["userId", "status"])
+    .index("by_friend_status", ["friendId", "status"])
+    .index("by_user_friend", ["userId", "friendId"])
+    .index("by_status", ["status"])
+    .index("by_created", ["createdAt"]),
 });

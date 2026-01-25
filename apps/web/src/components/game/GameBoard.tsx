@@ -463,7 +463,7 @@ export function GameBoard({ gameId, playerId }: GameBoardProps) {
 
         {/* Player Hand - flexible, takes remaining space */}
         <div className="flex-1 min-h-0 border-b border-white/5 bg-black/20 overflow-visible relative">
-          <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-t from-primary/5 to-transparent pointer-events-none" />
           <PlayerHand
             cards={player.hand}
             handCount={player.hand.length}

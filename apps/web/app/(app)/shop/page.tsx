@@ -1,7 +1,5 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
-import { useMutation, useQuery } from "convex/react";
 import {
   Box,
   Clock,
@@ -19,10 +17,12 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { useAuth } from "@/components/ConvexAuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useProfile, useShop, useCurrency, useMarketplace } from "@/hooks";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
 
 type TabType = "shop" | "marketplace";
 type ListingType = "fixed" | "auction";
@@ -233,8 +233,7 @@ const RARITY_COLORS: Record<Rarity, string> = {
 const PLATFORM_FEE = 0.05;
 
 export default function ShopPage() {
-  const { token } = useAuth();
-  const currentUser = useQuery(api.users.currentUser, token ? { token } : "skip");
+  const { profile: currentUser } = useProfile();
 
   const [activeTab, setActiveTab] = useState<TabType>("shop");
   const [searchQuery, setSearchQuery] = useState("");
@@ -246,30 +245,13 @@ export default function ShopPage() {
   const [bidAmount, setBidAmount] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Backend data
-  const shopProducts = useQuery(api.shop.getShopProducts, {});
-  const playerBalance = useQuery(api.economy.getPlayerBalance, token ? { token } : "skip");
-  const marketplaceListings = useQuery(
-    api.marketplace.getMarketplaceListings,
-    token
-      ? {
-          rarity: rarityFilter !== "all" ? rarityFilter : undefined,
-          listingType: typeFilter !== "all" ? typeFilter : undefined,
-          sortBy: sortBy as any,
-          page: 1,
-        }
-      : "skip"
-  );
+  // Use custom hooks
+  const { products: shopProducts, purchasePack: purchasePackAction, purchaseBox: purchaseBoxAction, purchaseBundle } = useShop();
+  const { balance, gold: goldBalance, gems: gemBalance } = useCurrency();
+  const { listings: marketplaceListings, buyNow: buyNowAction, placeBid: placeBidAction } = useMarketplace();
 
-  // Mutations
-  const purchasePack = useMutation(api.shop.purchasePack);
-  const purchaseBox = useMutation(api.shop.purchaseBox);
-  const purchaseCurrencyBundle = useMutation(api.shop.purchaseCurrencyBundle);
-  const buyNow = useMutation(api.marketplace.buyNow);
-  const placeBidMutation = useMutation(api.marketplace.placeBid);
-
-  const goldBalance = playerBalance?.gold ?? 0;
-  const gemBalance = playerBalance?.gems ?? 0;
+  // Use the marketplace data from the hook (filtering will be done client-side for now)
+  const filteredMarketplaceData = marketplaceListings;
 
   // Filter marketplace listings
   const filteredListings = useMemo(() => {
@@ -321,88 +303,55 @@ export default function ShopPage() {
 
   const handleShopPurchase = useCallback(
     async (item: any, useGems: boolean) => {
-      if (!token) return;
       setIsProcessing(true);
       try {
         if (item.productType === "pack") {
-          const result = await purchasePack({
-            token,
-            productId: item.productId,
-            useGems,
-          });
-          alert(
-            `Opened ${result.productName}! Received ${result.cardsReceived.length} cards.`
-          );
+          await purchasePackAction(item.productId, useGems);
         } else if (item.productType === "box") {
-          const result = await purchaseBox({
-            token,
-            productId: item.productId,
-            useGems,
-          });
-          alert(
-            `Opened ${result.productName}! Received ${result.cardsReceived.length} cards from ${result.packsOpened} packs.`
-          );
+          await purchaseBoxAction(item.productId, useGems);
         } else if (item.productType === "currency") {
-          const result = await purchaseCurrencyBundle({
-            token,
-            productId: item.productId,
-          });
-          alert(
-            `Purchased ${result.productName}! Received ${result.goldReceived} Gold.`
-          );
+          await purchaseBundle(item.productId);
         }
         setSelectedShopItem(null);
       } catch (error: any) {
-        alert(`Purchase failed: ${error.message}`);
+        console.error("Purchase failed:", error);
       } finally {
         setIsProcessing(false);
       }
     },
-    [token, purchasePack, purchaseBox, purchaseCurrencyBundle]
+    [purchasePackAction, purchaseBoxAction, purchaseBundle]
   );
 
   const handleMarketPurchase = useCallback(
     async (listing: any) => {
-      if (!token) return;
       setIsProcessing(true);
       try {
-        const result = await buyNow({
-          token,
-          listingId: listing._id,
-        });
-        alert(
-          `Purchased ${listing.cardName} for ${result.price} Gold (+ ${result.platformFee} platform fee)!`
-        );
+        await buyNowAction(listing._id);
         setSelectedListing(null);
       } catch (error: any) {
-        alert(`Purchase failed: ${error.message}`);
+        console.error("Purchase failed:", error);
       } finally {
         setIsProcessing(false);
       }
     },
-    [token, buyNow]
+    [buyNowAction]
   );
 
   const handlePlaceBid = useCallback(
     async (listing: any) => {
-      if (!bidAmount || !token) return;
+      if (!bidAmount) return;
       setIsProcessing(true);
       try {
-        const result = await placeBidMutation({
-          token,
-          listingId: listing._id,
-          bidAmount: parseInt(bidAmount),
-        });
-        alert(`Bid placed: ${result.bidAmount} Gold!`);
+        await placeBidAction(listing._id, parseInt(bidAmount));
         setBidAmount("");
         setSelectedListing(null);
       } catch (error: any) {
-        alert(`Bid failed: ${error.message}`);
+        console.error("Bid failed:", error);
       } finally {
         setIsProcessing(false);
       }
     },
-    [bidAmount, token, placeBidMutation]
+    [bidAmount, placeBidAction]
   );
 
   const formatTimeRemaining = (endsAt: number) => {

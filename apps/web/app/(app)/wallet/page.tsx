@@ -1,7 +1,5 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
-import { useMutation, useQuery } from "convex/react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -19,9 +17,9 @@ import {
   Wallet,
 } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/components/ConvexAuthProvider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useProfile, useCurrency } from "@/hooks";
 
 type TransactionType = "purchase" | "reward" | "sale" | "gift" | "refund";
 
@@ -131,29 +129,13 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 export default function WalletPage() {
-  const { token } = useAuth();
-  const currentUser = useQuery(api.users.currentUser, token ? { token } : "skip");
+  const { profile: currentUser, isLoading: profileLoading } = useProfile();
+  const { balance, transactions, gold: goldBalance, gems: gemBalance } = useCurrency();
 
   const [filter, setFilter] = useState<"all" | "gold" | "gems">("all");
 
-  // Backend data
-  const playerBalance = useQuery(api.economy.getPlayerBalance, token ? { token } : "skip");
-  const transactionHistory = useQuery(
-    api.economy.getTransactionHistory,
-    token
-      ? {
-          token,
-          page: 1,
-          currencyType: filter !== "all" ? filter : undefined,
-        }
-      : "skip"
-  );
-
-  const goldBalance = playerBalance?.gold ?? 0;
-  const gemBalance = playerBalance?.gems ?? 0;
-
   const filteredTransactions =
-    transactionHistory?.transactions.map((t: any): Transaction => ({
+    transactions?.transactions.map((t: any): Transaction => ({
       id: t._id,
       type: t.transactionType,
       description: t.description,
@@ -163,10 +145,10 @@ export default function WalletPage() {
       status: "completed" as const,
     })) ?? [];
 
-  const totalEarned = playerBalance?.lifetimeStats.goldEarned ?? 0;
-  const totalSpent = playerBalance?.lifetimeStats.goldSpent ?? 0;
+  const totalEarned = balance?.lifetimeStats.goldEarned ?? 0;
+  const totalSpent = balance?.lifetimeStats.goldSpent ?? 0;
 
-  if (!currentUser) {
+  if (profileLoading || !currentUser) {
     return (
       <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />

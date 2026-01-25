@@ -20,9 +20,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChallengeConfirmDialog } from "./ChallengeConfirmDialog";
 import { PlayerProfileDialog } from "./PlayerProfileDialog";
-import { api } from "@convex/_generated/api";
-import { useQuery, useMutation } from "convex/react";
-import { useAuth } from "@/components/ConvexAuthProvider";
+import { useGlobalChat } from "@/hooks";
 
 interface ChatMessage {
   id: string;
@@ -87,13 +85,13 @@ function formatTime(timestamp: number): string {
 }
 
 export function GlobalChat() {
-  const { token } = useAuth();
-
-  // Convex queries and mutations
-  const convexMessages = useQuery(api.globalChat.getRecentMessages, { limit: 50 });
-  const convexOnlineUsers = useQuery(api.globalChat.getOnlineUsers);
-  const sendMessageMutation = useMutation(api.globalChat.sendMessage);
-  const updatePresenceMutation = useMutation(api.globalChat.updatePresence);
+  // Use custom hook
+  const {
+    messages: convexMessages,
+    onlineUsers: convexOnlineUsers,
+    sendMessage: sendMessageAction,
+    updatePresence,
+  } = useGlobalChat();
 
   const [chatMode, setChatMode] = useState<ChatMode>("global");
   const [message, setMessage] = useState("");
@@ -175,39 +173,21 @@ export function GlobalChat() {
     }
   }, [userMenu]);
 
-  // Presence heartbeat - update every 30 seconds
-  useEffect(() => {
-    if (!token) return;
-
-    // Initial presence update
-    updatePresenceMutation({ token, status: "online" });
-
-    // Set up heartbeat interval
-    const interval = setInterval(() => {
-      updatePresenceMutation({ token, status: "online" });
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, [token, updatePresenceMutation]);
+  // Presence heartbeat is handled by useGlobalChat hook
 
   // Removed: handleLoadMore - pagination not implemented in MVP
   // TODO: Implement proper pagination with offset/cursor in future version
 
   const handleSend = async () => {
-    if (!message.trim() || isSending || !token) return;
+    if (!message.trim() || isSending) return;
 
     setIsSending(true);
 
     try {
-      await sendMessageMutation({
-        token,
-        content: message.trim(),
-      });
+      await sendMessageAction(message.trim());
       setMessage("");
     } catch (error: any) {
       console.error("Failed to send message:", error);
-      // Show error to user
-      alert(error.message || "Failed to send message. Please try again.");
     } finally {
       setIsSending(false);
     }

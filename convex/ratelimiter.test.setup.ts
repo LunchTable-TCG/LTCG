@@ -1,5 +1,3 @@
-/// <reference types="vite/client" />
-
 /**
  * Test setup for @convex-dev/ratelimiter component
  *

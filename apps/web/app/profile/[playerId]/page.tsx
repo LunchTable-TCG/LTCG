@@ -147,14 +147,14 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
             <div className="relative z-10">
               <Avatar className="w-32 h-32 border-4 border-[#3d2b1f] shadow-2xl">
                 <AvatarFallback className="bg-linear-to-br from-[#8b4513] to-[#3d2b1f] text-4xl font-black text-[#d4af37]">
-                  {profileUser.username[0]?.toUpperCase() || "?"}
+                  {(profileUser.username || "U")[0]?.toUpperCase() || "?"}
                 </AvatarFallback>
               </Avatar>
             </div>
 
             {/* Info */}
             <div className="flex-1 text-center md:text-left">
-              <h1 className="text-3xl font-bold mb-2">{profileUser.username}</h1>
+              <h1 className="text-3xl font-bold mb-2">{profileUser.username || "Unknown"}</h1>
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">

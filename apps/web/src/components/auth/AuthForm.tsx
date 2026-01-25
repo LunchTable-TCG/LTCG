@@ -50,7 +50,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         const result = await signUpMutation({ email, password, username });
         setToken(result.token);
-        router.push("/play");
+        router.push("/lunchtable");
       } else {
         if (password.length < 8) {
           throw new Error("Password must be at least 8 characters");
@@ -58,7 +58,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         const result = await signInMutation({ email, password });
         setToken(result.token);
-        router.push("/play");
+        router.push("/lunchtable");
       }
     } catch (err: unknown) {
       console.error("Auth error:", err);

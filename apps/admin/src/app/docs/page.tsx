@@ -97,7 +97,7 @@ export default function DocsPage() {
         <div className="space-y-6">
           {/* Step 1 */}
           <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+            <div className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
               1
             </div>
             <div className="flex-1">
@@ -134,7 +134,7 @@ export default function DocsPage() {
 
           {/* Step 2 */}
           <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+            <div className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
               2
             </div>
             <div className="flex-1">
@@ -152,7 +152,7 @@ export default function DocsPage() {
 
           {/* Step 3 */}
           <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+            <div className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
               3
             </div>
             <div className="flex-1">
