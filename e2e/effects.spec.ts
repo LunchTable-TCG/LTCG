@@ -38,8 +38,6 @@ test.describe("Effect System Flow", () => {
       const gameHelper = new GameStateHelper(authenticatedPage);
       await gameHelper.waitForPhase("main1");
 
-      const handSizeBefore = await gameHelper.getHandSize();
-
       // Activate draw effect card (if available)
       // This depends on having specific cards in deck
       // Implementation varies based on card pool
@@ -51,8 +49,6 @@ test.describe("Effect System Flow", () => {
       const gameHelper = new GameStateHelper(authenticatedPage);
       await gameHelper.waitForPhase("main1");
 
-      const opponentLPBefore = await gameHelper.getOpponentLifePoints();
-
       // Activate damage effect
       // Check LP decreased
     });
@@ -60,8 +56,6 @@ test.describe("Effect System Flow", () => {
     test("should deal damage to player", async ({ authenticatedPage }) => {
       const gameHelper = new GameStateHelper(authenticatedPage);
       await gameHelper.waitForPhase("main1");
-
-      const playerLPBefore = await gameHelper.getPlayerLifePoints();
 
       // Some effects damage the player
       // Verify LP change
@@ -102,8 +96,6 @@ test.describe("Effect System Flow", () => {
       const gameHelper = new GameStateHelper(authenticatedPage);
       await gameHelper.waitForPhase("main1");
 
-      const handSizeBefore = await gameHelper.getHandSize();
-
       // Activate search and select card
       // Hand size should increase
     });
@@ -122,7 +114,7 @@ test.describe("Effect System Flow", () => {
       ).toBeVisible({ timeout: 5000 });
     });
 
-    test("should resolve chain in reverse order", async ({ authenticatedPage }) => {
+    test("should resolve chain in reverse order", async () => {
       // Chain link 2 resolves before chain link 1
       // This is complex to test without specific cards
     });
@@ -170,16 +162,12 @@ test.describe("Effect System Flow", () => {
       // Effect should activate automatically
     });
 
-    test("should trigger on battle", async ({ authenticatedPage }) => {
-      const gameHelper = new GameStateHelper(authenticatedPage);
-
+    test("should trigger on battle", async () => {
       // Some monsters have battle trigger effects
       // Test that they activate during battle
     });
 
-    test("should trigger on destruction", async ({ authenticatedPage }) => {
-      const gameHelper = new GameStateHelper(authenticatedPage);
-
+    test("should trigger on destruction", async () => {
       // Some cards have effects when destroyed
       // Test activation
     });

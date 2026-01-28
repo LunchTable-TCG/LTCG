@@ -145,6 +145,75 @@ export interface BadgeData {
 }
 
 /**
+ * Base notification fields shared across all notification types
+ */
+interface BaseNotification {
+  /** Unique notification ID */
+  _id: Id<"playerNotifications">;
+  /** Timestamp when notification was created */
+  _creationTime: number;
+  /** Recipient user ID */
+  userId: Id<"users">;
+  /** Notification title */
+  title: string;
+  /** Notification message body */
+  message: string;
+  /** Whether the notification has been read */
+  isRead: boolean;
+  /** Timestamp when notification was marked as read (optional) */
+  readAt?: number;
+  /** Timestamp when notification was created */
+  createdAt: number;
+}
+
+/**
+ * Achievement unlocked notification
+ */
+export interface AchievementNotification extends BaseNotification {
+  type: "achievement_unlocked";
+  data: {
+    achievementId: string;
+    rarity: string;
+    rewards: {
+      gold?: number;
+      xp?: number;
+      gems?: number;
+    };
+  };
+}
+
+/**
+ * Level up notification
+ */
+export interface LevelUpNotification extends BaseNotification {
+  type: "level_up";
+  data: {
+    newLevel: number;
+    oldLevel: number;
+  };
+}
+
+/**
+ * Quest completed notification
+ */
+export interface QuestCompletedNotification extends BaseNotification {
+  type: "quest_completed";
+  data: {
+    questType: string;
+  };
+}
+
+/**
+ * Badge earned notification
+ */
+export interface BadgeEarnedNotification extends BaseNotification {
+  type: "badge_earned";
+  data: {
+    description: string;
+  };
+}
+
+/**
  * In-game notification alerting players to progression events.
  *
  * Notifications appear in the notification center and can trigger toasts/popups.
@@ -158,7 +227,7 @@ export interface BadgeData {
  * @example
  * ```typescript
  * // Achievement notification
- * const notification: Notification = {
+ * const notification: AchievementNotification = {
  *   _id: "jn2k9m3..." as Id<"playerNotifications">,
  *   _creationTime: 1234567890,
  *   userId: "ju8s9d0..." as Id<"users">,
@@ -167,15 +236,15 @@ export interface BadgeData {
  *   message: "You earned 'First Victory'",
  *   data: {
  *     achievementId: "first_win",
- *     achievementName: "First Victory",
- *     rarity: "common"
+ *     rarity: "common",
+ *     rewards: { gold: 100, xp: 50 }
  *   },
  *   isRead: false,
  *   createdAt: 1234567890
  * };
  *
  * // Level up notification
- * const levelUp: Notification = {
+ * const levelUp: LevelUpNotification = {
  *   _id: "jn3m8k2..." as Id<"playerNotifications">,
  *   _creationTime: 1234567890,
  *   userId: "ju8s9d0..." as Id<"users">,
@@ -184,39 +253,18 @@ export interface BadgeData {
  *   message: "You reached level 10",
  *   data: {
  *     newLevel: 10,
- *     xpEarned: 500
+ *     oldLevel: 9
  *   },
  *   isRead: false,
  *   createdAt: 1234567890
  * };
  * ```
  */
-export interface Notification {
-  /** Unique notification ID */
-  _id: Id<"playerNotifications">;
-  /** Timestamp when notification was created */
-  _creationTime: number;
-  /** Recipient user ID */
-  userId: Id<"users">;
-  /** Type of progression event */
-  type: "achievement_unlocked" | "level_up" | "quest_completed" | "badge_earned";
-  /** Notification title */
-  title: string;
-  /** Notification message body */
-  message: string;
-  /** Type-specific additional data */
-  data?:
-    | { achievementId: string; achievementName: string; rarity: string }
-    | { newLevel: number; xpEarned: number }
-    | { questId: string; questName: string; rewards: { gold: number; xp: number; gems?: number } }
-    | { badgeId: string; badgeName: string; badgeType: string };
-  /** Whether the notification has been read */
-  isRead: boolean;
-  /** Timestamp when notification was marked as read (optional) */
-  readAt?: number;
-  /** Timestamp when notification was created */
-  createdAt: number;
-}
+export type Notification =
+  | AchievementNotification
+  | LevelUpNotification
+  | QuestCompletedNotification
+  | BadgeEarnedNotification;
 
 // =============================================================================
 // Mutation Results

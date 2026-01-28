@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import { mutation } from "../../_generated/server";
-import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { recordEventHelper } from "../gameEvents";
 import { validatePositionChange } from "../summonValidator";

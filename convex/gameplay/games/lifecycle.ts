@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import { internalMutation, mutation } from "../../_generated/server";
 import type { MutationCtx } from "../../_generated/server";
-import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import { requireAuthMutation } from "../../lib/convexAuth";
 import { shuffleArray } from "../../lib/deterministicRandom";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
@@ -270,7 +270,7 @@ export const surrenderGame = mutation({
     lobbyId: v.id("gameLobbies"),
   },
   handler: async (ctx, args) => {
-    const { userId, username } = await requireAuthMutation(ctx);
+    const { userId } = await requireAuthMutation(ctx);
 
     // Get lobby
     const lobby = await ctx.db.get(args.lobbyId);

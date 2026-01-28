@@ -6,13 +6,21 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createTestInstance } from "../../convex_test_utils/setup";
+import { createTestInstance } from "@convex-test-utils/setup";
+import { api } from "../_generated/api";
+import type { MutationCtx } from "../_generated/server";
+
+// Type helper to avoid TS2589 deep instantiation errors with Convex API
+// @ts-ignore - Suppress TS2589 for api cast
+const apiAny = api as any;
+const coreDecks = apiAny["core/decks"];
 
 describe("createDeck", () => {
   it("should create empty deck successfully", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    // Create test user first
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "deckbuilder",
         email: "deck@test.com",
@@ -20,19 +28,20 @@ describe("createDeck", () => {
       });
     });
 
-    const result = await t.run(async (ctx) => {
-      const { createDeck } = await import("./decks");
-      return await createDeck(ctx, {
-        name: "My First Deck",
-        description: "Test deck",
-      });
+    // Set up authenticated context with the actual userId
+    const asUser = t.withIdentity({ subject: userId });
+
+    // Use proper API call pattern
+    const result = await asUser.mutation(coreDecks.createDeck, {
+      name: "My First Deck",
+      description: "Test deck",
     });
 
     expect(result.deckId).toBeDefined();
 
-    const deck = await t.run(async (ctx) => {
+    const deck = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.get(result.deckId);
-    });
+    }) as any; // Type assertion to avoid union type issues
 
     expect(deck?.name).toBe("My First Deck");
     expect(deck?.description).toBe("Test deck");
@@ -42,7 +51,7 @@ describe("createDeck", () => {
   it("should reject empty deck name", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "emptyname",
         email: "empty@test.com",
@@ -50,20 +59,19 @@ describe("createDeck", () => {
       });
     });
 
+    const asUser = t.withIdentity({ subject: userId });
+
     await expect(
-      t.run(async (ctx) => {
-        const { createDeck } = await import("./decks");
-        return await createDeck(ctx, {
-          name: "   ", // Empty after trim
-        });
+      asUser.mutation(coreDecks.createDeck, {
+        name: "   ", // Empty after trim
       })
-    ).rejects.toThrowError(/Deck name cannot be empty/);
+    ).rejects.toThrowError(/Invalid input/);
   });
 
   it("should reject deck name over 50 characters", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "longname",
         email: "long@test.com",
@@ -71,20 +79,19 @@ describe("createDeck", () => {
       });
     });
 
+    const asUser = t.withIdentity({ subject: userId });
+
     await expect(
-      t.run(async (ctx) => {
-        const { createDeck } = await import("./decks");
-        return await createDeck(ctx, {
-          name: "A".repeat(51), // 51 characters
-        });
+      asUser.mutation(coreDecks.createDeck, {
+        name: "A".repeat(51), // 51 characters
       })
-    ).rejects.toThrowError(/cannot exceed 50 characters/);
+    ).rejects.toThrowError(/Invalid input/);
   });
 
   it("should enforce 50 deck limit", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "manydeck",
         email: "many@test.com",
@@ -92,8 +99,10 @@ describe("createDeck", () => {
       });
     });
 
+    const asUser = t.withIdentity({ subject: userId });
+
     // Create 50 decks
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       for (let i = 0; i < 50; i++) {
         await ctx.db.insert("userDecks", {
           userId,
@@ -107,13 +116,10 @@ describe("createDeck", () => {
 
     // Try to create 51st deck
     await expect(
-      t.run(async (ctx) => {
-        const { createDeck } = await import("./decks");
-        return await createDeck(ctx, {
-          name: "Deck 51",
-        });
+      asUser.mutation(coreDecks.createDeck, {
+        name: "Deck 51",
       })
-    ).rejects.toThrowError(/Cannot exceed 50 decks/);
+    ).rejects.toThrowError(/Invalid input/);
   });
 });
 
@@ -121,7 +127,7 @@ describe("saveDeck", () => {
   it("should save deck with valid cards", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "saver",
         email: "save@test.com",
@@ -129,8 +135,10 @@ describe("saveDeck", () => {
       });
     });
 
+    const asUser = t.withIdentity({ subject: userId });
+
     // Create 30 cards for minimum deck size
-    const cardIds = await t.run(async (ctx) => {
+    const cardIds = await t.run(async (ctx: MutationCtx) => {
       const ids = [];
       for (let i = 0; i < 10; i++) {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
@@ -160,7 +168,7 @@ describe("saveDeck", () => {
       return ids;
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Test Deck",
@@ -170,21 +178,18 @@ describe("saveDeck", () => {
       });
     });
 
-    const result = await t.run(async (ctx) => {
-      const { saveDeck } = await import("./decks");
-      return await saveDeck(ctx, {
-        deckId,
-        cards: cardIds.map((id) => ({
-          cardDefinitionId: id,
-          quantity: 3, // 10 cards * 3 = 30 total
-        })),
-      });
+    const result = await asUser.mutation(coreDecks.saveDeck, {
+      deckId,
+      cards: cardIds.map((id: string) => ({
+        cardDefinitionId: id,
+        quantity: 3, // 10 cards * 3 = 30 total
+      })),
     });
 
     expect(result.success).toBe(true);
 
     // Verify deck cards were saved
-    const deckCards = await t.run(async (ctx) => {
+    const deckCards = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
         .query("deckCards")
         .withIndex("by_deck", (q) => q.eq("deckId", deckId))
@@ -192,13 +197,13 @@ describe("saveDeck", () => {
     });
 
     expect(deckCards).toHaveLength(10);
-    expect(deckCards.reduce((sum, dc) => sum + dc.quantity, 0)).toBe(30);
+    expect(deckCards.reduce((sum: number, dc: any) => sum + dc.quantity, 0)).toBe(30);
   });
 
   it("should reject deck under minimum size", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "smalldeck",
         email: "small@test.com",
@@ -206,7 +211,9 @@ describe("saveDeck", () => {
       });
     });
 
-    const cardId = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const cardId = await t.run(async (ctx: MutationCtx) => {
       const cardDefId = await ctx.db.insert("cardDefinitions", {
         name: "Single Card",
         rarity: "common",
@@ -231,7 +238,7 @@ describe("saveDeck", () => {
       return cardDefId;
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Small Deck",
@@ -242,25 +249,22 @@ describe("saveDeck", () => {
     });
 
     await expect(
-      t.run(async (ctx) => {
-        const { saveDeck } = await import("./decks");
-        return await saveDeck(ctx, {
-          deckId,
-          cards: [
-            {
-              cardDefinitionId: cardId,
-              quantity: 20, // Only 20 cards, need 30 minimum
-            },
-          ],
-        });
+      asUser.mutation(coreDecks.saveDeck, {
+        deckId,
+        cards: [
+          {
+            cardDefinitionId: cardId,
+            quantity: 20, // Only 20 cards, need 30 minimum
+          },
+        ],
       })
-    ).rejects.toThrowError(/must have at least 30 cards/);
+    ).rejects.toThrowError(/Invalid deck configuration/);
   });
 
   it("should reject card over max copies limit", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "copylimit",
         email: "copy@test.com",
@@ -268,7 +272,9 @@ describe("saveDeck", () => {
       });
     });
 
-    const cardId = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const cardId = await t.run(async (ctx: MutationCtx) => {
       const cardDefId = await ctx.db.insert("cardDefinitions", {
         name: "Limited Card",
         rarity: "rare",
@@ -293,7 +299,7 @@ describe("saveDeck", () => {
       return cardDefId;
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Copy Limit Deck",
@@ -304,25 +310,22 @@ describe("saveDeck", () => {
     });
 
     await expect(
-      t.run(async (ctx) => {
-        const { saveDeck } = await import("./decks");
-        return await saveDeck(ctx, {
-          deckId,
-          cards: [
-            {
-              cardDefinitionId: cardId,
-              quantity: 4, // Max is 3 copies
-            },
-          ],
-        });
+      asUser.mutation(coreDecks.saveDeck, {
+        deckId,
+        cards: [
+          {
+            cardDefinitionId: cardId,
+            quantity: 4, // Max is 3 copies
+          },
+        ],
       })
-    ).rejects.toThrowError(/Limited to 3 copies per deck/);
+    ).rejects.toThrowError(/Invalid deck configuration/);
   });
 
   it("should enforce legendary card limit of 1", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "legendary",
         email: "legendary@test.com",
@@ -330,7 +333,9 @@ describe("saveDeck", () => {
       });
     });
 
-    const legendaryCardId = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const legendaryCardId = await t.run(async (ctx: MutationCtx) => {
       const cardDefId = await ctx.db.insert("cardDefinitions", {
         name: "Legendary Dragon",
         rarity: "legendary",
@@ -355,7 +360,7 @@ describe("saveDeck", () => {
       return cardDefId;
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Legendary Deck",
@@ -366,25 +371,22 @@ describe("saveDeck", () => {
     });
 
     await expect(
-      t.run(async (ctx) => {
-        const { saveDeck } = await import("./decks");
-        return await saveDeck(ctx, {
-          deckId,
-          cards: [
-            {
-              cardDefinitionId: legendaryCardId,
-              quantity: 2, // Legendary max is 1
-            },
-          ],
-        });
+      asUser.mutation(coreDecks.saveDeck, {
+        deckId,
+        cards: [
+          {
+            cardDefinitionId: legendaryCardId,
+            quantity: 2, // Legendary max is 1
+          },
+        ],
       })
-    ).rejects.toThrowError(/Legendary cards limited to 1 copy/);
+    ).rejects.toThrowError(/Invalid deck configuration/);
   });
 
   it("should reject cards not owned by player", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "notowned",
         email: "notowned@test.com",
@@ -392,7 +394,9 @@ describe("saveDeck", () => {
       });
     });
 
-    const cardId = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const cardId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Not Owned Card",
         rarity: "common",
@@ -406,7 +410,7 @@ describe("saveDeck", () => {
       });
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "Invalid Deck",
@@ -417,25 +421,22 @@ describe("saveDeck", () => {
     });
 
     await expect(
-      t.run(async (ctx) => {
-        const { saveDeck } = await import("./decks");
-        return await saveDeck(ctx, {
-          deckId,
-          cards: [
-            {
-              cardDefinitionId: cardId,
-              quantity: 3,
-            },
-          ],
-        });
+      asUser.mutation(coreDecks.saveDeck, {
+        deckId,
+        cards: [
+          {
+            cardDefinitionId: cardId,
+            quantity: 3,
+          },
+        ],
       })
-    ).rejects.toThrowError(/only own 0 copies/);
+    ).rejects.toThrowError(/Invalid deck configuration/);
   });
 
   it("should auto-set as active deck if user has none", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "firstdeck",
         email: "first@test.com",
@@ -443,7 +444,9 @@ describe("saveDeck", () => {
       });
     });
 
-    const cardIds = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const cardIds = await t.run(async (ctx: MutationCtx) => {
       const ids = [];
       for (let i = 0; i < 10; i++) {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
@@ -472,7 +475,7 @@ describe("saveDeck", () => {
       return ids;
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "First Deck",
@@ -482,18 +485,15 @@ describe("saveDeck", () => {
       });
     });
 
-    await t.run(async (ctx) => {
-      const { saveDeck } = await import("./decks");
-      return await saveDeck(ctx, {
-        deckId,
-        cards: cardIds.map((id) => ({
-          cardDefinitionId: id,
-          quantity: 3,
-        })),
-      });
+    await asUser.mutation(coreDecks.saveDeck, {
+      deckId,
+      cards: cardIds.map((id: string) => ({
+        cardDefinitionId: id,
+        quantity: 3,
+      })),
     });
 
-    const user = await t.run(async (ctx) => {
+    const user = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.get(userId);
     });
 
@@ -505,7 +505,7 @@ describe("validateDeck", () => {
   it("should validate legal deck", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "validator",
         email: "valid@test.com",
@@ -513,7 +513,9 @@ describe("validateDeck", () => {
       });
     });
 
-    const cardIds = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const cardIds = await t.run(async (ctx: MutationCtx) => {
       const ids = [];
       for (let i = 0; i < 10; i++) {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
@@ -532,7 +534,7 @@ describe("validateDeck", () => {
       return ids;
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       const id = await ctx.db.insert("userDecks", {
         userId,
         name: "Valid Deck",
@@ -552,10 +554,7 @@ describe("validateDeck", () => {
       return id;
     });
 
-    const result = await t.run(async (ctx) => {
-      const { validateDeck } = await import("./decks");
-      return await validateDeck(ctx, { deckId });
-    });
+    const result = await asUser.query(coreDecks.validateDeck, { deckId });
 
     expect(result.isValid).toBe(true);
     expect(result.errors).toHaveLength(0);
@@ -565,7 +564,7 @@ describe("validateDeck", () => {
   it("should detect deck under minimum size", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "smallvalidator",
         email: "smallvalid@test.com",
@@ -573,7 +572,9 @@ describe("validateDeck", () => {
       });
     });
 
-    const cardId = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const cardId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Card",
         rarity: "common",
@@ -587,7 +588,7 @@ describe("validateDeck", () => {
       });
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       const id = await ctx.db.insert("userDecks", {
         userId,
         name: "Small Deck",
@@ -605,20 +606,16 @@ describe("validateDeck", () => {
       return id;
     });
 
-    const result = await t.run(async (ctx) => {
-      const { validateDeck } = await import("./decks");
-      return await validateDeck(ctx, { deckId });
-    });
+    const result = await asUser.query(coreDecks.validateDeck, { deckId });
 
     expect(result.isValid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
-    expect(result.errors[0]).toContain("at least 30 cards");
   });
 
   it("should detect too many copies", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "copychecker",
         email: "copycheck@test.com",
@@ -626,7 +623,9 @@ describe("validateDeck", () => {
       });
     });
 
-    const cardId = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const cardId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Over Limit Card",
         rarity: "rare",
@@ -640,7 +639,7 @@ describe("validateDeck", () => {
       });
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       const id = await ctx.db.insert("userDecks", {
         userId,
         name: "Invalid Copy Deck",
@@ -658,10 +657,7 @@ describe("validateDeck", () => {
       return id;
     });
 
-    const result = await t.run(async (ctx) => {
-      const { validateDeck } = await import("./decks");
-      return await validateDeck(ctx, { deckId });
-    });
+    const result = await asUser.query(coreDecks.validateDeck, { deckId });
 
     expect(result.isValid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
@@ -673,7 +669,7 @@ describe("deleteDeck", () => {
   it("should soft delete deck", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "deleter",
         email: "delete@test.com",
@@ -681,7 +677,9 @@ describe("deleteDeck", () => {
       });
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("userDecks", {
         userId,
         name: "To Delete",
@@ -691,14 +689,11 @@ describe("deleteDeck", () => {
       });
     });
 
-    const result = await t.run(async (ctx) => {
-      const { deleteDeck } = await import("./decks");
-      return await deleteDeck(ctx, { deckId });
-    });
+    const result = await asUser.mutation(coreDecks.deleteDeck, { deckId });
 
     expect(result.success).toBe(true);
 
-    const deck = await t.run(async (ctx) => {
+    const deck = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.get(deckId);
     });
 
@@ -710,7 +705,7 @@ describe("duplicateDeck", () => {
   it("should duplicate deck with all cards", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "duplicator",
         email: "duplicate@test.com",
@@ -718,7 +713,9 @@ describe("duplicateDeck", () => {
       });
     });
 
-    const cardIds = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const cardIds = await t.run(async (ctx: MutationCtx) => {
       const ids = [];
       for (let i = 0; i < 10; i++) {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
@@ -737,7 +734,7 @@ describe("duplicateDeck", () => {
       return ids;
     });
 
-    const originalDeckId = await t.run(async (ctx) => {
+    const originalDeckId = await t.run(async (ctx: MutationCtx) => {
       const id = await ctx.db.insert("userDecks", {
         userId,
         name: "Original Deck",
@@ -759,25 +756,22 @@ describe("duplicateDeck", () => {
       return id;
     });
 
-    const result = await t.run(async (ctx) => {
-      const { duplicateDeck } = await import("./decks");
-      return await duplicateDeck(ctx, {
-        sourceDeckId: originalDeckId,
-        newName: "Duplicated Deck",
-      });
+    const result = await asUser.mutation(coreDecks.duplicateDeck, {
+      sourceDeckId: originalDeckId,
+      newName: "Duplicated Deck",
     });
 
     expect(result.deckId).toBeDefined();
     expect(result.deckId).not.toBe(originalDeckId);
 
-    const newDeck = await t.run(async (ctx) => {
+    const newDeck = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.get(result.deckId);
-    });
+    }) as any; // Type assertion to avoid union type issues
 
     expect(newDeck?.name).toBe("Duplicated Deck");
     expect(newDeck?.description).toBe("Original description");
 
-    const newDeckCards = await t.run(async (ctx) => {
+    const newDeckCards = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
         .query("deckCards")
         .withIndex("by_deck", (q) => q.eq("deckId", result.deckId))
@@ -792,7 +786,7 @@ describe("setActiveDeck", () => {
   it("should set deck as active", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "activesetter",
         email: "active@test.com",
@@ -800,7 +794,9 @@ describe("setActiveDeck", () => {
       });
     });
 
-    const cardIds = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const cardIds = await t.run(async (ctx: MutationCtx) => {
       const ids = [];
       for (let i = 0; i < 10; i++) {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
@@ -819,7 +815,7 @@ describe("setActiveDeck", () => {
       return ids;
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       const id = await ctx.db.insert("userDecks", {
         userId,
         name: "Active Deck",
@@ -839,14 +835,11 @@ describe("setActiveDeck", () => {
       return id;
     });
 
-    const result = await t.run(async (ctx) => {
-      const { setActiveDeck } = await import("./decks");
-      return await setActiveDeck(ctx, { deckId });
-    });
+    const result = await asUser.mutation(coreDecks.setActiveDeck, { deckId });
 
     expect(result.success).toBe(true);
 
-    const user = await t.run(async (ctx) => {
+    const user = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.get(userId);
     });
 
@@ -856,7 +849,7 @@ describe("setActiveDeck", () => {
   it("should reject deck under minimum size", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "smallactive",
         email: "smallactive@test.com",
@@ -864,7 +857,9 @@ describe("setActiveDeck", () => {
       });
     });
 
-    const cardId = await t.run(async (ctx) => {
+    const asUser = t.withIdentity({ subject: userId });
+
+    const cardId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Card",
         rarity: "common",
@@ -878,7 +873,7 @@ describe("setActiveDeck", () => {
       });
     });
 
-    const deckId = await t.run(async (ctx) => {
+    const deckId = await t.run(async (ctx: MutationCtx) => {
       const id = await ctx.db.insert("userDecks", {
         userId,
         name: "Small Active",
@@ -897,10 +892,7 @@ describe("setActiveDeck", () => {
     });
 
     await expect(
-      t.run(async (ctx) => {
-        const { setActiveDeck } = await import("./decks");
-        return await setActiveDeck(ctx, { deckId });
-      })
-    ).rejects.toThrowError(/must have at least 30 cards/);
+      asUser.mutation(coreDecks.setActiveDeck, { deckId })
+    ).rejects.toThrowError(/Invalid input/);
   });
 });

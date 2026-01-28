@@ -7,7 +7,6 @@ import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
 import {
   Bot,
-  ChevronUp,
   Flag,
   Gamepad2,
   Loader2,
@@ -95,7 +94,6 @@ export function GlobalChat() {
     messages: convexMessages,
     onlineUsers: convexOnlineUsers,
     sendMessage: sendMessageAction,
-    updatePresence,
     canLoadMore,
     loadMore,
   } = useGlobalChat();
@@ -189,6 +187,7 @@ export function GlobalChat() {
       document.addEventListener("keydown", handleEscape);
       return () => document.removeEventListener("keydown", handleEscape);
     }
+    return undefined;
   }, [userMenu]);
 
   // Presence heartbeat is handled by useGlobalChat hook
@@ -201,8 +200,8 @@ export function GlobalChat() {
     try {
       await sendMessageAction(message.trim());
       setMessage("");
-    } catch (error: any) {
-      console.error("Failed to send message:", error);
+    } catch (error: unknown) {
+      console.error("Failed to send message:", error instanceof Error ? error.message : error);
     } finally {
       setIsSending(false);
     }
@@ -259,7 +258,7 @@ export function GlobalChat() {
     if (!challengeTarget) return;
 
     try {
-      const lobbyId = await sendChallengeMutation({
+      await sendChallengeMutation({
         opponentUsername: challengeTarget.username,
         mode,
       });
@@ -268,8 +267,9 @@ export function GlobalChat() {
         description: `Lobby created. They will be notified to join.`,
       });
       setChallengeTarget(null);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send challenge");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to send challenge";
+      toast.error(errorMessage);
       console.error("Challenge failed:", error);
     }
   };
@@ -287,8 +287,9 @@ export function GlobalChat() {
         description: `Thank you. Moderators will review your report.`,
       });
       setReportTarget(null);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to submit report");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to submit report";
+      toast.error(errorMessage);
       console.error("Report failed:", error);
       throw error;
     }

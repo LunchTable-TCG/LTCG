@@ -7,6 +7,13 @@ import { toast } from "sonner";
 import { handleHookError } from "@/lib/errorHandling";
 import { useAuth } from "../auth/useConvexAuthHook";
 
+interface BuyNowResult {
+  success: boolean;
+  price: number;
+  platformFee: number;
+  totalCost: number;
+}
+
 interface UseMarketplaceReturn {
   listings: ReturnType<typeof useQuery<typeof api.marketplace.getMarketplaceListings>> | undefined;
   myListings: ReturnType<typeof useQuery<typeof api.marketplace.getUserListings>> | undefined;
@@ -19,7 +26,7 @@ interface UseMarketplaceReturn {
     duration?: number;
   }) => Promise<Id<"marketplaceListings">>;
   cancelListing: (listingId: Id<"marketplaceListings">) => Promise<void>;
-  buyNow: (listingId: Id<"marketplaceListings">) => Promise<any>;
+  buyNow: (listingId: Id<"marketplaceListings">) => Promise<BuyNowResult>;
   placeBid: (listingId: Id<"marketplaceListings">, bidAmount: number) => Promise<void>;
   claimAuction: (listingId: Id<"marketplaceListings">) => Promise<void>;
 }

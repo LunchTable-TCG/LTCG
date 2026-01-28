@@ -238,7 +238,7 @@ export const batchGrantPremium = mutation({
     durationDays: v.number(),
     reason: v.string(),
   },
-  handler: async (ctx, { playerIds, durationDays, reason }) => {
+  handler: async (ctx, { playerIds: _playerIds, durationDays: _durationDays, reason: _reason }) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
@@ -260,7 +260,7 @@ export const batchGrantPacks = mutation({
     quantity: v.number(),
     reason: v.string(),
   },
-  handler: async (ctx, { playerIds, packType, quantity, reason }) => {
+  handler: async (ctx, { playerIds: _playerIds, packType: _packType, quantity: _quantity, reason: _reason }) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
@@ -281,7 +281,7 @@ export const grantCardsToPlayer = mutation({
     cardIds: v.array(v.string()),
     reason: v.string(),
   },
-  handler: async (ctx, { playerId, cardIds, reason }) => {
+  handler: async (ctx, { playerId: _playerId, cardIds: _cardIds, reason: _reason }) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
@@ -302,7 +302,7 @@ export const removeCardsFromPlayer = mutation({
     cardIds: v.array(v.string()),
     reason: v.string(),
   },
-  handler: async (ctx, { playerId, cardIds, reason }) => {
+  handler: async (ctx, _args) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
@@ -323,7 +323,7 @@ export const batchGrantCards = mutation({
     cardIds: v.array(v.string()),
     reason: v.string(),
   },
-  handler: async (ctx, { playerIds, cardIds, reason }) => {
+  handler: async (ctx, { playerIds: _playerIds, cardIds: _cardIds, reason: _reason }) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 

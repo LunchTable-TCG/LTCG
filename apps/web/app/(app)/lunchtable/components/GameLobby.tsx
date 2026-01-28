@@ -14,7 +14,6 @@ import {
   Flame,
   Loader2,
   Plus,
-  RefreshCw,
   Shield,
   Sparkles,
   Swords,
@@ -114,10 +113,6 @@ export function GameLobby() {
 
   const forceCloseGame = useMutation(api.admin.mutations.forceCloseMyGame);
 
-  // Type aliases for API data
-  type Lobby = NonNullable<typeof lobbiesData>[number];
-  type Game = NonNullable<typeof activeGamesData>[number];
-
   // Convert API data to component format
   // Filter out the user's own lobby from the waiting games list
   const waitingGames: GameLobbyEntry[] =
@@ -208,7 +203,7 @@ export function GameLobby() {
     if (!joiningGame) return;
 
     try {
-      const result = await joinLobbyAction(joiningGame.id as any);
+      const result = await joinLobbyAction(joiningGame.id as Id<"gameLobbies">);
       setJoiningGame(null);
 
       // Redirect to game view after successfully joining

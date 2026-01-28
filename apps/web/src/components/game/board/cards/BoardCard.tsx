@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Ban, Shield, Sparkles, Sword, Target } from "lucide-react";
+import { Ban, Shield, Sparkles, Sword } from "lucide-react";
 import Image from "next/image";
 import type { CardInZone } from "../../hooks/useGameBoard";
 
@@ -79,8 +79,8 @@ export function BoardCard({
           : cn(
               "bg-linear-to-br from-slate-800 to-slate-900",
               card.rarity
-                ? (RARITY_COLORS[card.rarity] ?? RARITY_COLORS.common)
-                : RARITY_COLORS.common,
+                ? (RARITY_COLORS[card.rarity] ?? RARITY_COLORS["common"])
+                : RARITY_COLORS["common"],
               card.rarity ? (RARITY_GLOW[card.rarity] ?? "") : ""
             ),
         isSelected && "ring-2 ring-yellow-400 ring-offset-1 ring-offset-slate-900",

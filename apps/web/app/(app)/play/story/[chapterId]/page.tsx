@@ -4,9 +4,9 @@ import { StoryStageNode } from "@/components/story/StoryStageNode";
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
-import { useMutation, useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Gift, Loader2, Lock, Play, Star } from "lucide-react";
 import Image from "next/image";
@@ -24,15 +24,25 @@ export default function ChapterPage({ params }: ChapterPageProps) {
   const [actNumber, chapterNumber] = chapterId.split("-").map(Number);
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
-  const chapterDetails = useQuery(
+  const currentUser = useConvexQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const chapterDetails = useConvexQuery(
     api.progression.story.getChapterDetails,
     isAuthenticated && actNumber && chapterNumber ? { actNumber, chapterNumber } : "skip"
   );
 
-  const [selectedStage, setSelectedStage] = useState<any | null>(null);
+  const [selectedStage, setSelectedStage] = useState<{
+    stageNumber: number;
+    name: string;
+    description: string;
+    rewardGold: number;
+    rewardXp: number;
+    firstClearBonus: number;
+    firstClearClaimed: boolean;
+    aiDifficulty: "easy" | "medium" | "hard" | "extreme";
+    status: "locked" | "available" | "completed" | "starred";
+  } | null>(null);
 
-  const initializeStageProgress = useMutation(
+  const initializeStageProgress = useConvexMutation(
     api.progression.storyStages.initializeChapterStageProgress
   );
 
@@ -41,7 +51,8 @@ export default function ChapterPage({ params }: ChapterPageProps) {
     if (chapterDetails && chapterDetails._id) {
       // Check if any stage has progress - if not, initialize
       const hasProgress = chapterDetails.stages?.some(
-        (s: any) => s.status !== "locked" || s.timesCompleted > 0
+        (s: { status?: string; timesCompleted?: number }) =>
+          s.status !== "locked" || (s.timesCompleted ?? 0) > 0
       );
       if (!hasProgress) {
         initializeStageProgress({ chapterId: chapterDetails._id }).catch(console.error);
@@ -118,9 +129,9 @@ export default function ChapterPage({ params }: ChapterPageProps) {
   }
 
   const completedStages = stages.filter(
-    (s: (typeof stages)[number]) => s.status === "starred" || s.status === "completed"
+    (s: { status?: string }) => s.status === "starred" || s.status === "completed"
   ).length;
-  const starCount = stages.filter((s: (typeof stages)[number]) => s.status === "starred").length;
+  const starCount = stages.filter((s: { status?: string }) => s.status === "starred").length;
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
@@ -188,16 +199,29 @@ export default function ChapterPage({ params }: ChapterPageProps) {
         <div className="max-w-7xl mx-auto">
           {stages.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              {stages.map((stage: (typeof stages)[number], index: number) => (
-                <motion.div
-                  key={stage.stageNumber}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <StoryStageNode stage={stage} onClick={() => setSelectedStage(stage)} />
-                </motion.div>
-              ))}
+              {stages.map((stage: any, index: number) => {
+                const stageData = {
+                  stageNumber: stage.stageNumber,
+                  name: stage.name,
+                  description: stage.description,
+                  rewardGold: stage.rewardGold,
+                  rewardXp: stage.rewardXp,
+                  firstClearBonus: stage.firstClearBonus,
+                  firstClearClaimed: stage.firstClearClaimed,
+                  aiDifficulty: stage.aiDifficulty,
+                  status: stage.status,
+                };
+                return (
+                  <motion.div
+                    key={stage.stageNumber}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <StoryStageNode stage={stageData} onClick={() => setSelectedStage(stageData)} />
+                  </motion.div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-16">

@@ -89,6 +89,7 @@ export function GameResultScreen({
         clearTimeout(completeTimer);
       };
     }
+    return undefined;
   }, [isOpen]);
 
   const handlePlayAgain = () => {

@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { componentLogger, logger, perf, useDebugLifecycle } from "@/lib/debug";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { useMutation, useQuery } from "convex/react";
 import {
   Flag,
@@ -69,18 +71,25 @@ export function GameBoard({
   playerId: providedPlayerId,
   gameMode = "pvp",
 }: GameBoardProps) {
+  const log = componentLogger("GameBoard");
   const router = useRouter();
 
+  // Debug lifecycle
+  useDebugLifecycle("GameBoard", { lobbyId, gameMode });
+
   // Get player ID from auth if not provided (story mode)
-  const authUser = useQuery(api.core.users.currentUser, {});
+  const authUser = useConvexQuery(apiAny.core.users.currentUser, {});
   const playerId = providedPlayerId || (authUser?._id as Id<"users"> | undefined);
+
+  log.debug("GameBoard rendered", { lobbyId, playerId, gameMode });
 
   // First check lobby status - MUST be called before any conditional returns
   const lobbyDetails = useQuery(api.gameplay.games.queries.getLobbyDetails, { lobbyId });
 
   // Selection effect mutations
-  const completeSearchEffect = useMutation(api.gameplay.gameEngine.spellsTraps.completeSearchEffect);
-  const completeSpecialSummon = useMutation(api.gameplay.gameEngine.selectionEffects.completeSpecialSummon);
+  const completeSearchEffect = useMutation(
+    api.gameplay.gameEngine.spellsTraps.completeSearchEffect
+  );
 
   const {
     // State
@@ -201,7 +210,6 @@ export function GameBoard({
       // Get trigger type for icon selection
       const trigger = event.metadata?.trigger as string | undefined;
       const cardName = event.metadata?.cardName as string | undefined;
-      const effectMessage = event.metadata?.effect as string | undefined;
 
       // Select icon based on trigger type
       let icon: React.ReactNode;
@@ -400,33 +408,58 @@ export function GameBoard({
     async (position: "attack" | "defense", tributeIds?: Id<"cardDefinitions">[]) => {
       if (!selectedHandCard) return;
 
+      logger.userAction("summon_monster", {
+        cardName: selectedHandCard.name,
+        position,
+        tributesCount: tributeIds?.length || 0,
+      });
+
       // Calculate tributes required based on monster level
       const level = selectedHandCard.monsterStats?.level ?? 0;
       const tributesRequired = level >= 7 ? 2 : level >= 5 ? 1 : 0;
       const tributesProvided = tributeIds?.length ?? 0;
 
+      log.debug("Calculating tribute requirements", {
+        cardName: selectedHandCard.name,
+        level,
+        tributesRequired,
+        tributesProvided,
+      });
+
       // Validate tributes before attempting summon
       if (tributesRequired > 0 && tributesProvided < tributesRequired) {
+        log.warn("Insufficient tributes", {
+          cardName: selectedHandCard.name,
+          required: tributesRequired,
+          provided: tributesProvided,
+        });
         toast.error(`Tribute Required`, {
           description: `This Level ${level} monster requires ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}. Please select ${tributesRequired} monster${tributesRequired > 1 ? "s" : ""} from your field to tribute.`,
         });
         return;
       }
 
-      console.log("Summoning with tributes:", tributeIds);
-      const result = await normalSummon(selectedHandCard.instanceId, position, tributeIds);
+      const result = await perf.time(
+        `normalSummon_${selectedHandCard.name}`,
+        async () => normalSummon(selectedHandCard.instanceId, position, tributeIds)
+      );
 
       if (result.success) {
+        log.info("Monster summoned successfully", {
+          cardName: selectedHandCard.name,
+          position,
+        });
         toast.success(`${selectedHandCard.name} summoned in ${position} position!`);
         setSelectedHandCard(null);
         setShowSummonModal(false);
       } else if (result.error) {
+        log.warn("Summon failed", { cardName: selectedHandCard.name, error: result.error });
         toast.error("Summon Failed", {
           description: result.error,
         });
       }
     },
-    [selectedHandCard, normalSummon]
+    [selectedHandCard, normalSummon, log]
   );
 
   const handleSetMonster = useCallback(async () => {
@@ -753,7 +786,6 @@ export function GameBoard({
   }
 
   // Determine summon options based on card type
-  const selectedId = selectedHandCard?.instanceId;
   const isCreature = selectedHandCard?.cardType === "creature";
   const isSpell = selectedHandCard?.cardType === "spell";
   const isTrap = selectedHandCard?.cardType === "trap";
@@ -764,7 +796,7 @@ export function GameBoard({
   const canSetSpellTrap = (isSpell || isTrap) && (validActions?.canSetSpellTrap ?? false);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-arena flex flex-col">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-arena flex flex-col" data-testid="game-board">
       {/* Decorative Overlay */}
       <div className="absolute inset-0 bg-black/40 z-0" />
       <div className="absolute inset-0 bg-vignette z-0 pointer-events-none" />

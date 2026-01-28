@@ -33,7 +33,7 @@ export default function QuestsPage() {
   }
 
   // Calculate XP progress
-  const xpInLevel = ((profile as any).xp ?? 0) % 1000;
+  const xpInLevel = (profile.xp ?? 0) % 1000;
   const xpToNext = 1000;
   const progressPercent = (xpInLevel / xpToNext) * 100;
 
@@ -56,7 +56,7 @@ export default function QuestsPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-2xl font-bold text-[#e8e0d5]">
-                Level {(profile as any).level ?? 1}
+                Level {profile.level ?? 1}
               </h2>
               <p className="text-sm text-[#a89f94]">
                 {xpInLevel.toLocaleString()} / {xpToNext.toLocaleString()} XP
@@ -65,7 +65,7 @@ export default function QuestsPage() {
             <div className="flex items-center gap-2">
               <Star className="w-6 h-6 text-[#d4af37]" />
               <span className="text-xl font-bold text-[#d4af37]">
-                {((profile as any).xp ?? 0).toLocaleString()} Total XP
+                {(profile.xp ?? 0).toLocaleString()} Total XP
               </span>
             </div>
           </div>
@@ -79,30 +79,30 @@ export default function QuestsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="p-4 rounded-xl bg-linear-to-br from-green-500/10 to-green-600/5 border border-green-500/30">
             <Trophy className="w-8 h-8 text-green-400 mb-2" />
-            <p className="text-2xl font-black text-[#e8e0d5]">{(profile as any).totalWins || 0}</p>
+            <p className="text-2xl font-black text-[#e8e0d5]">{profile.totalWins || 0}</p>
             <p className="text-xs text-[#a89f94]">Total Wins</p>
           </div>
           <div className="p-4 rounded-xl bg-linear-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/30">
             <Award className="w-8 h-8 text-blue-400 mb-2" />
             <p className="text-2xl font-black text-[#e8e0d5]">
-              {((profile as any).totalWins || 0) + ((profile as any).totalLosses || 0)}
+              {(profile.totalWins || 0) + (profile.totalLosses || 0)}
             </p>
             <p className="text-xs text-[#a89f94]">Games Played</p>
           </div>
           <div className="p-4 rounded-xl bg-linear-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/30">
             <Sparkles className="w-8 h-8 text-purple-400 mb-2" />
             <p className="text-2xl font-black text-[#e8e0d5]">
-              {(profile as any).rankedElo || 1000}
+              {profile.rankedElo || 1000}
             </p>
             <p className="text-xs text-[#a89f94]">Ranked ELO</p>
           </div>
           <div className="p-4 rounded-xl bg-linear-to-br from-[#d4af37]/10 to-[#d4af37]/5 border border-[#d4af37]/30">
             <Star className="w-8 h-8 text-[#d4af37] mb-2" />
             <p className="text-2xl font-black text-[#e8e0d5]">
-              {((profile as any).totalWins || 0) > 0
+              {(profile.totalWins || 0) > 0
                 ? Math.round(
-                    (((profile as any).totalWins || 0) /
-                      (((profile as any).totalWins || 0) + ((profile as any).totalLosses || 0))) *
+                    ((profile.totalWins || 0) /
+                      ((profile.totalWins || 0) + (profile.totalLosses || 0))) *
                       100
                   )
                 : 0}

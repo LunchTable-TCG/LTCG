@@ -4,8 +4,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, Lock, Mail, Sparkles, User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ConvexError } from "convex/values";
 
 interface AuthFormProps {
   mode: "signIn" | "signUp";
@@ -13,73 +13,83 @@ interface AuthFormProps {
 
 export function AuthForm({ mode }: AuthFormProps) {
   const { signIn } = useAuthActions();
-  const router = useRouter();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [name, setName] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isSignUp = mode === "signUp";
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError(null);
 
-    try {
-      if (isSignUp) {
-        // Validation
-        const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-        if (!usernameRegex.test(name)) {
-          throw new Error("Username must be 3-20 characters (letters, numbers, underscore only)");
-        }
+    const formData = new FormData(event.currentTarget);
 
-        if (password !== confirmPassword) {
-          throw new Error("Passwords do not match");
-        }
+    // Validate username format for sign up
+    if (isSignUp) {
+      const name = formData.get("name") as string;
+      const usernameRegex = /^[a-zA-Z0-9]{3,20}$/;
 
-        if (password.length < 8) {
-          throw new Error("Password must be at least 8 characters");
-        }
-      } else {
-        if (password.length < 8) {
-          throw new Error("Password must be at least 8 characters");
-        }
+      if (!name || !usernameRegex.test(name)) {
+        setError("Username must be 3-20 characters: letters and numbers only (no spaces or special characters)");
+        setSubmitting(false);
+        return;
       }
 
-      const formData = new FormData(e.currentTarget);
-      formData.set("flow", isSignUp ? "signUp" : "signIn");
+      // Validate password confirmation match
+      const password = formData.get("password") as string;
+      const confirmPassword = formData.get("confirmPassword") as string;
 
-      signIn("password", formData)
-        .then(() => {
-          console.log("✅ AUTH SUCCESS - Redirecting to /lunchtable");
-          window.location.href = "/lunchtable";
-        })
-        .catch((error) => {
-          console.error("❌ AUTH ERROR:", error);
-          let errorMessage = "Authentication failed.";
-          if (error.message) {
-            console.error("Error message:", error.message);
-            if (error.message.includes("Invalid password")) {
-              errorMessage = "Invalid password. Please try again.";
-            } else if (error.message.includes("User already exists")) {
-              errorMessage = "This email is already registered. Please sign in instead.";
-            } else {
-              errorMessage = isSignUp
-                ? `Sign up failed: ${error.message}`
-                : `Sign in failed: ${error.message}`;
-            }
-          }
-          setError(errorMessage);
-          setIsLoading(false);
-        });
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Authentication failed.";
-      setError(errorMessage);
-      setIsLoading(false);
+      if (password !== confirmPassword) {
+        setError("Passwords do not match");
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    try {
+      await signIn("password", formData);
+      window.location.href = "/lunchtable";
+    } catch (err) {
+      console.error("Auth error:", err);
+
+      // SECURITY: Parse ConvexError for specific validation errors
+      if (err instanceof ConvexError) {
+        const data = err.data as { code?: string; message?: string };
+
+        // Show specific validation errors (these are safe to display)
+        if (
+          data.code === "PASSWORD_TOO_SHORT" ||
+          data.code === "PASSWORD_NO_UPPERCASE" ||
+          data.code === "PASSWORD_NO_LOWERCASE" ||
+          data.code === "PASSWORD_NO_NUMBER" ||
+          data.code === "PASSWORD_TOO_COMMON" ||
+          data.code === "INVALID_USERNAME"
+        ) {
+          setError(data.message || err.message);
+        } else {
+          // SECURITY: Generic error for auth failures (don't reveal if user exists)
+          setError(
+            isSignUp
+              ? "Could not create account. Please check your information and try again."
+              : "Invalid email or password. Please try again."
+          );
+        }
+      } else if (err instanceof Error) {
+        // SECURITY: Don't expose internal error messages
+        setError(
+          isSignUp
+            ? "Could not create account. Please try again."
+            : "Invalid email or password. Please try again."
+        );
+      } else {
+        setError(
+          isSignUp
+            ? "Could not create account. Please try again."
+            : "Invalid email or password. Please try again."
+        );
+      }
+      setSubmitting(false);
     }
   };
 
@@ -134,17 +144,18 @@ export function AuthForm({ mode }: AuthFormProps) {
                 id="name"
                 name="name"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
                 placeholder="Choose your moniker"
-                pattern="[a-zA-Z0-9_]{3,20}"
-                title="3-20 characters: letters, numbers, underscore"
+                autoComplete="username"
                 required
+                pattern="[a-zA-Z0-9]{3,20}"
+                minLength={3}
+                maxLength={20}
+                title="Username must be 3-20 characters: letters and numbers only"
                 className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-parchment text-[#2a1f14] placeholder:text-[#2a1f14]/40 border border-[#3d2b1f]/20 focus:outline-none focus:border-[#d4af37]/50 focus:ring-2 focus:ring-[#d4af37]/10 transition-all font-medium"
               />
             </div>
             <p className="text-[8px] text-[#a89f94]/60 mt-1.5 ml-1 font-medium italic">
-              3-20 characters: letters, numbers, underscore only
+              3-20 characters: letters and numbers only
             </p>
           </motion.div>
         )}
@@ -167,10 +178,8 @@ export function AuthForm({ mode }: AuthFormProps) {
               id="email"
               name="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your scribe email"
-              required
+              autoComplete="email"
               className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-parchment text-[#2a1f14] placeholder:text-[#2a1f14]/40 border border-[#3d2b1f]/20 focus:outline-none focus:border-[#d4af37]/50 focus:ring-2 focus:ring-[#d4af37]/10 transition-all font-medium"
             />
           </div>
@@ -204,14 +213,19 @@ export function AuthForm({ mode }: AuthFormProps) {
               id="password"
               name="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               placeholder="Inscribe your cipher"
+              autoComplete={isSignUp ? "new-password" : "current-password"}
               required
               minLength={8}
+              title={isSignUp ? "Password must be at least 8 characters with uppercase, lowercase, and a number" : undefined}
               className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-parchment text-[#2a1f14] placeholder:text-[#2a1f14]/40 border border-[#3d2b1f]/20 focus:outline-none focus:border-[#d4af37]/50 focus:ring-2 focus:ring-[#d4af37]/10 transition-all font-medium"
             />
           </div>
+          {isSignUp && (
+            <p className="text-[8px] text-[#a89f94]/60 mt-1.5 ml-1 font-medium italic">
+              Min 8 characters with uppercase, lowercase, and a number
+            </p>
+          )}
         </motion.div>
 
         {/* Confirm Password field (sign up only) */}
@@ -231,12 +245,10 @@ export function AuthForm({ mode }: AuthFormProps) {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#a89f94] group-focus-within:text-[#d4af37] transition-colors" />
               <input
                 id="confirmPassword"
+                name="confirmPassword"
                 type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Inscribe cipher again"
-                required
-                minLength={8}
+                autoComplete="new-password"
                 className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-parchment text-[#2a1f14] placeholder:text-[#2a1f14]/40 border border-[#3d2b1f]/20 focus:outline-none focus:border-[#d4af37]/50 focus:ring-2 focus:ring-[#d4af37]/10 transition-all font-medium"
               />
             </div>
@@ -254,17 +266,20 @@ export function AuthForm({ mode }: AuthFormProps) {
           </motion.div>
         )}
 
+        {/* Hidden flow field */}
+        <input name="flow" type="hidden" value={isSignUp ? "signUp" : "signIn"} />
+
         {/* Submit button */}
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: isSignUp ? 0.6 : 0.4 }}
           type="submit"
-          disabled={isLoading}
+          disabled={submitting}
           className="group relative w-full py-4 rounded-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] transition-all duration-300 shadow-lg hover:shadow-gold"
         >
           <span className="relative flex items-center justify-center gap-2 text-lg font-black uppercase tracking-widest text-white">
-            {isLoading ? (
+            {submitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
                 {isSignUp ? "Creating..." : "Signing In..."}

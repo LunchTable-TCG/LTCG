@@ -5,8 +5,6 @@
  * used throughout the LTCG frontend application.
  */
 
-import type { Id } from "@convex/_generated/dataModel";
-
 // =============================================================================
 // Base Hook Patterns
 // =============================================================================

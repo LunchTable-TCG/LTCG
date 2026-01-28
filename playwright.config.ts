@@ -7,7 +7,7 @@ import { defineConfig, devices } from '@playwright/test';
  * including authentication, deck management, gameplay, economy, story mode, and social features.
  *
  * Prerequisites:
- * - Run `bun run dev` to start the Next.js app on port 3000
+ * - Run `bun run dev` to start the Next.js app on port 3333
  * - Run `bun run dev:convex` to start the Convex backend
  * - Ensure .env.local has required environment variables
  *
@@ -32,7 +32,7 @@ export default defineConfig({
   workers: 1,
 
   // Retry failed tests once in CI
-  retries: process.env.CI ? 1 : 0,
+  retries: process.env["CI"] ? 1 : 0,
 
   // Reporter configuration
   reporter: [
@@ -43,16 +43,16 @@ export default defineConfig({
 
   // Global configuration
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3333',
 
-    // Capture trace on first retry
-    trace: 'on-first-retry',
+    // Capture trace on all tests
+    trace: 'on',
 
-    // Screenshot on failure
-    screenshot: 'only-on-failure',
+    // Screenshot on all tests
+    screenshot: 'on',
 
-    // Video on first retry
-    video: 'retain-on-failure',
+    // Video on all tests
+    video: 'on',
 
     // Browser viewport
     viewport: { width: 1280, height: 720 },
@@ -95,8 +95,8 @@ export default defineConfig({
   // Web server configuration - auto-start dev server if not running
   webServer: {
     command: 'bun run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    url: 'http://localhost:3333',
+    reuseExistingServer: !process.env["CI"],
     timeout: 120000, // 2 minutes to start
     stdout: 'pipe',
     stderr: 'pipe',

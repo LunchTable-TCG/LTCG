@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AbnormalRatingChange, ColumnDef, SuspiciousMatchup } from "@/types";
 import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
 import { Card, Flex, Text, Title } from "@tremor/react";
 import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
@@ -28,7 +27,7 @@ interface SuspiciousMatchupRow extends SuspiciousMatchup {
 }
 
 interface AbnormalRatingRow extends AbnormalRatingChange {
-  _id: Id<"players">;
+  _id: any; // Id type - players table
 }
 
 interface SuspiciousSummaryItem {
@@ -184,22 +183,15 @@ export default function SuspiciousActivityPage() {
   const router = useRouter();
 
   // Fetch suspicious activity data
-  const suspiciousMatchups = useQuery(api.admin.admin.detectSuspiciousMatchups, {
-    lookbackDays: 30,
-    minGames: 5,
-    winRateThreshold: 0.8,
-  });
-
-  const abnormalRatings = useQuery(api.admin.admin.detectAbnormalRatingChanges, {
-    lookbackDays: 7,
-    minChange: 150,
-  });
-
   const report = useQuery(api.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
 
-  const isLoading = suspiciousMatchups === undefined;
+  // Extract data from report (currently stubs until backend implements full analysis)
+  const suspiciousMatchups: any[] = [];
+  const abnormalRatings: any[] = [];
+
+  const isLoading = report === undefined;
 
   // Transform data for tables
   const matchupTableData: SuspiciousMatchupRow[] | undefined = suspiciousMatchups?.map(

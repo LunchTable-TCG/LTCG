@@ -3,7 +3,6 @@
  * Displays player statistics, streaks, and achievements
  */
 
-import { cn } from "@/lib/utils";
 import { Crown, Star, Zap } from "lucide-react";
 import { BADGE_ICONS } from "./constants";
 import type { PlayerProfile } from "./types";

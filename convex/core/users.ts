@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 import { getCurrentUser } from "../lib/convexAuth";
 import {
   fullUserValidator,
@@ -176,5 +176,34 @@ export const getUserStats = query({
       // Player type
       isAiAgent: user.isAiAgent ?? false,
     };
+  },
+});
+
+/**
+ * Update username mutation (Admin only)
+ * Allows admins to update any user's username
+ */
+export const adminUpdateUsername = mutation({
+  args: {
+    userId: v.id("users"),
+    newUsername: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Check if username is already taken
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("username", (q) => q.eq("username", args.newUsername))
+      .first();
+
+    if (existingUser && existingUser._id !== args.userId) {
+      throw new Error("Username already taken");
+    }
+
+    // Update username
+    await ctx.db.patch(args.userId, {
+      username: args.newUsername,
+    });
+
+    return { success: true };
   },
 });

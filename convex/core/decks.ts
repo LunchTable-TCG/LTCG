@@ -10,7 +10,6 @@ import {
   deckWithCardsValidator,
   deckWithCountValidator,
 } from "../lib/returnValidators";
-import type { Archetype } from "../lib/types";
 import { validateDeckSize, validateCardOwnership, validateStringLength } from "../lib/validation";
 import {
   ABYSSAL_DEPTHS_CARDS,
@@ -48,7 +47,7 @@ const MAX_LEGENDARY_COPIES = 1;
 export const getUserDecks = query({
   args: {},
   returns: v.array(deckWithCountValidator), // Deck with card count
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     // Get all active decks for this user
@@ -174,7 +173,7 @@ export const getDeckWithCards = query({
       .take(50); // Reasonable limit per deck
 
     // Join with card definitions (N+1 acceptable for small N=50 max)
-    const cardsWithDefinitions = await Promise.all(
+    const cardsWithDefinitions = (await Promise.all(
       deckCards.map(async (dc) => {
         const cardDef = await ctx.db.get(dc.cardDefinitionId);
         if (!cardDef || !cardDef.isActive) return null;
@@ -196,16 +195,14 @@ export const getDeckWithCards = query({
           position: dc.position,
         };
       })
-    );
-
-    const validCards = cardsWithDefinitions.filter((c) => c !== null);
+    )).filter((c): c is NonNullable<typeof c> => c !== null);
 
     return {
       id: deck._id,
       name: deck.name,
       description: deck.description,
       deckArchetype: deck.deckArchetype,
-      cards: validCards,
+      cards: cardsWithDefinitions,
       createdAt: deck.createdAt,
       updatedAt: deck.updatedAt,
     };

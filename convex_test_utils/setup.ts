@@ -1,98 +1,146 @@
 /**
- * Test Setup for Convex Tests
- *
- * NOTE: Before running tests, you must generate Convex types:
- *   bunx convex codegen
- *
- * This creates the _generated directory required by convex-test.
+ * Shared Convex Test Utilities
+ * Helper functions for integration tests with real Convex backend
  */
 
 import { convexTest } from "convex-test";
-import { register as registerAggregate } from "@convex-dev/aggregate/test";
-import { register as registerShardedCounter } from "@convex-dev/sharded-counter/test";
-import type { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
-import schema from "../schema";
-
-export type TestHelper = ReturnType<typeof convexTest>;
-
-// Export context types for use in tests
-export type TestMutationCtx = MutationCtx;
-export type TestQueryCtx = QueryCtx;
-export type TestActionCtx = ActionCtx;
-
-// Export modules for convex-test
-// Each module must be a lazy-loading function that returns a Promise
-export const modules = {
-  matchmaking: () => import("../social/matchmaking"),
-  games: () => import("../gameplay/games"),
-  auth: () => import("../auth"),
-  agents: () => import("../agents"),
-  cards: () => import("../core/cards"),
-  gameEvents: () => import("../gameplay/gameEvents"),
-  globalChat: () => import("../social/globalChat"),
-  decks: () => import("../core/decks"),
-  economy: () => import("../economy/economy"),
-  leaderboards: () => import("../social/leaderboards"),
-  marketplace: () => import("../economy/marketplace"),
-  shop: () => import("../economy/shop"),
-  story: () => import("../progression/story"),
-  friends: () => import("../social/friends"),
-  seedStarterCards: () => import("../scripts/seedStarterCards"),
-  "progression/quests": () => import("../progression/quests"),
-  "progression/achievements": () => import("../progression/achievements"),
-  "progression/matchHistory": () => import("../progression/matchHistory"),
-  "lib/helpers": () => import("../lib/helpers"),
-  "lib/validators": () => import("../lib/validators"),
-  "lib/xpHelpers": () => import("../lib/xpHelpers"),
-  "infrastructure/aggregates": () => import("../infrastructure/aggregates"),
-  "infrastructure/shardedCounters": () => import("../infrastructure/shardedCounters"),
-  "__mocks__/ratelimiter": () => import("../__mocks__/ratelimiter"),
-};
+import type { TestConvex } from "convex-test";
+import type { Id } from "../convex/_generated/dataModel";
+import schema from "../convex/schema";
 
 /**
- * Create a test instance with Convex components
- *
- * This function registers:
- * - @convex-dev/aggregate (for leaderboards)
- * - @convex-dev/sharded-counter (for spectator counters)
- *
- * TESTING STRATEGY:
- *
- * 1. **Unit Tests (Vitest)**: Test business logic without components
- *    - Run with: `bun run test`
- *    - Components are registered but may not work without `convex dev` running
- *
- * 2. **Integration Tests**: Test with real components
- *    - Run `convex dev` in a separate terminal
- *    - Components will be fully functional
- *    - Use for testing leaderboard queries, spectator counters, etc.
- *
- * Note: Vitest is required (not Bun test runner) because component helpers
- * use import.meta.glob() which is Vite-specific.
- *
- * Note: @convex-dev/ratelimiter does not export a /test helper.
- * Rate limiting is tested via integration tests in deployed environment.
+ * Module discovery for convex-test
+ * IMPORTANT: import.meta.glob MUST be at module level (not inside a function)
+ * This is required for convex-test to discover and load Convex functions
  */
-export function createTestInstance(): TestHelper {
-  const t = convexTest(schema, modules);
+const modules = import.meta.glob("../convex/**/*.ts");
 
-  // Component registration - works with Vitest but may require `convex dev` for full functionality
-  try {
-    registerAggregate(t);
-    registerShardedCounter(t);
-  } catch (error) {
-    console.warn(
-      "Component registration failed - this is expected without `convex dev` running.",
-      error
-    );
-  }
-
-  return t;
+/**
+ * Create a test instance for Convex tests
+ * This is a synchronous wrapper around convexTest
+ */
+export function createTestInstance() {
+  return convexTest(schema, modules);
 }
 
-// Mock rate limiter for tests (rate limiter component not available in test env)
-export const mockRateLimiter = {
-  checkRateLimit: async () => ({ allowed: true, retryAfter: null }),
-  recordAction: async () => {},
-  reset: async () => {},
-};
+/**
+ * Create a test context with Convex testing helper (async version)
+ */
+export async function createTestContext() {
+  return convexTest(schema, modules);
+}
+
+/**
+ * Cleanup test context after test completes
+ */
+export async function cleanupTestContext(_helper: TestConvex<typeof schema>) {
+  // convex-test handles cleanup automatically
+}
+
+/**
+ * Wait for condition with timeout
+ */
+export async function waitFor(
+  condition: () => Promise<boolean>,
+  timeoutMs = 5000,
+  intervalMs = 100
+): Promise<void> {
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeoutMs) {
+    if (await condition()) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  throw new Error(`Timeout waiting for condition after ${timeoutMs}ms`);
+}
+
+/**
+ * Helper to insert test user and return userId
+ */
+export async function insertTestUser(
+  helper: TestConvex<typeof schema>,
+  userData: {
+    email: string;
+    username: string;
+    name?: string;
+    gold?: number;
+    rankedElo?: number;
+  }
+): Promise<Id<"users">> {
+  // @ts-ignore - Inline mutation for testing
+  const userId = await helper.mutation(async (ctx: any) => {
+    return await ctx.db.insert("users", {
+      email: userData.email,
+      username: userData.username,
+      name: userData.name ?? userData.username,
+      gold: userData.gold ?? 1000,
+      rankedElo: userData.rankedElo ?? 1000,
+      casualRating: 1000,
+      totalWins: 0,
+      totalLosses: 0,
+      xp: 0,
+      level: 1,
+      createdAt: Date.now(),
+    });
+  });
+  return userId;
+}
+
+/**
+ * Helper to create test session for user (simulates authentication)
+ */
+export async function createTestSession(
+  helper: TestConvex<typeof schema>,
+  userId: Id<"users">
+): Promise<Id<"authSessions">> {
+  // @ts-ignore - Inline mutation for testing
+  const sessionId = await helper.mutation(async (ctx: any) => {
+    return await ctx.db.insert("authSessions", {
+      userId,
+      sessionToken: `test_session_${Date.now()}`,
+      expirationTime: Date.now() + 86400000, // 24 hours
+    });
+  });
+  return sessionId;
+}
+
+/**
+ * Helper to clean up test data (delete user and related records)
+ */
+export async function deleteTestUser(
+  helper: TestConvex<typeof schema>,
+  userId: Id<"users">
+): Promise<void> {
+  // @ts-ignore - Inline mutation for testing
+  await helper.mutation(async (ctx: any) => {
+    // Delete sessions
+    const sessions = await ctx.db
+      .query("authSessions")
+      .withIndex("userId", (q: { eq: (field: string, value: unknown) => unknown }) => q.eq("userId", userId))
+      .collect();
+    for (const session of sessions) {
+      await ctx.db.delete(session._id);
+    }
+
+    // Delete decks
+    const decks = await ctx.db
+      .query("userDecks")
+      .withIndex("by_user", (q: { eq: (field: string, value: unknown) => unknown }) => q.eq("userId", userId))
+      .collect();
+    for (const deck of decks) {
+      // Delete deck cards
+      const deckCards = await ctx.db
+        .query("deckCards")
+        .withIndex("by_deck", (q: { eq: (field: string, value: unknown) => unknown }) => q.eq("deckId", deck._id))
+        .collect();
+      for (const card of deckCards) {
+        await ctx.db.delete(card._id);
+      }
+      await ctx.db.delete(deck._id);
+    }
+
+    // Delete user
+    await ctx.db.delete(userId);
+  });
+}

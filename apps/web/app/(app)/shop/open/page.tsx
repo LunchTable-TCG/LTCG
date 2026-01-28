@@ -80,7 +80,12 @@ export default function PackOpeningPage() {
 
   const [phase, setPhase] = useState<OpeningPhase>("ready");
   const [cards, setCards] = useState<Card[]>([]);
-  const [openingData, setOpeningData] = useState<any>(null);
+  const [openingData, setOpeningData] = useState<{
+    productName?: string;
+    packsOpened?: number;
+    bonusCards?: number;
+    cardsReceived?: Card[];
+  } | null>(null);
   const [_currentCardIndex, _setCurrentCardIndex] = useState(0);
   const [revealedCards, setRevealedCards] = useState<Set<number>>(new Set());
   const [selectedForListing, setSelectedForListing] = useState<Set<Id<"cardDefinitions">>>(
@@ -195,8 +200,9 @@ export default function PackOpeningPage() {
           setListingDialogCard(null);
           router.push("/shop");
         }
-      } catch (error: any) {
-        toast.error(error.message || "Failed to list card");
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to list card";
+        toast.error(errorMessage);
         setIsListingCards(false);
       }
     },
@@ -224,6 +230,7 @@ export default function PackOpeningPage() {
       const timer = setTimeout(() => handleComplete(), 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [allRevealed, phase, handleComplete]);
 
   if (!currentUser || !openingData || cards.length === 0) {
@@ -395,6 +402,7 @@ export default function PackOpeningPage() {
                   return (
                     <motion.div
                       key={`${card.cardDefinitionId}-${index}`}
+                      data-testid="pack-card"
                       initial={{ opacity: 0, y: 50 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
@@ -502,7 +510,7 @@ export default function PackOpeningPage() {
               </div>
 
               {/* Card Summary Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8" data-testid="pack-results">
                 {cards.map((card, idx) => {
                   const config = RARITY_CONFIG[card.rarity];
                   const isSelected = selectedForListing.has(card.cardDefinitionId);
@@ -510,6 +518,7 @@ export default function PackOpeningPage() {
                   return (
                     <motion.button
                       key={`${card.cardDefinitionId}-${idx}`}
+                      data-testid="pack-card"
                       onClick={() => toggleListingSelection(card.cardDefinitionId)}
                       className={cn(
                         "relative aspect-3/4 rounded-xl overflow-hidden transition-all",
@@ -621,7 +630,7 @@ export default function PackOpeningPage() {
                     }
                   )}
                 </div>
-                {openingType === "box" && openingData.bonusCards > 0 && (
+                {openingType === "box" && (openingData.bonusCards ?? 0) > 0 && (
                   <div className="mt-4 pt-4 border-t border-[#3d2b1f] text-center">
                     <p className="text-sm text-[#d4af37]">
                       <Sparkles className="w-4 h-4 inline mr-1" />+{openingData.bonusCards} Bonus

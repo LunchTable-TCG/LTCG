@@ -5,28 +5,17 @@
  * and provide the expected type transformations.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import type {
   Nullable,
   Optional,
   Maybe,
-  NonNullish,
   RequireProps,
   MakeOptional,
   OptionalExcept,
-  DeepReadonly,
-  Mutable,
   PickByType,
-  OmitByType,
   ArrayElement,
-  ImmutableArray,
-  NonEmptyArray,
-  AsyncReturnType,
-  FirstParameter,
-  VoidFunction,
-  AsyncFunction,
   ValueOf,
-  KeysOfType,
   Result,
   Brand,
 } from "../utils";
@@ -54,7 +43,7 @@ import {
 // =============================================================================
 
 describe("Type Utilities - Compile Time", () => {
-  test("Nullable type", () => {
+  it("Nullable type", () => {
     type TestType = Nullable<string>;
     const validNull: TestType = null;
     const validString: TestType = "test";
@@ -63,7 +52,7 @@ describe("Type Utilities - Compile Time", () => {
     expect(validString).toBe("test");
   });
 
-  test("Optional type", () => {
+  it("Optional type", () => {
     type TestType = Optional<string>;
     const validUndefined: TestType = undefined;
     const validString: TestType = "test";
@@ -72,7 +61,7 @@ describe("Type Utilities - Compile Time", () => {
     expect(validString).toBe("test");
   });
 
-  test("Maybe type", () => {
+  it("Maybe type", () => {
     type TestType = Maybe<string>;
     const validNull: TestType = null;
     const validUndefined: TestType = undefined;
@@ -83,7 +72,7 @@ describe("Type Utilities - Compile Time", () => {
     expect(validString).toBe("test");
   });
 
-  test("RequireProps type", () => {
+  it("RequireProps type", () => {
     interface User {
       id?: string;
       name?: string;
@@ -99,7 +88,7 @@ describe("Type Utilities - Compile Time", () => {
     expect(user.id).toBe("123");
   });
 
-  test("MakeOptional type", () => {
+  it("MakeOptional type", () => {
     interface User {
       id: string;
       name: string;
@@ -117,7 +106,7 @@ describe("Type Utilities - Compile Time", () => {
     expect(user.id).toBe("123");
   });
 
-  test("OptionalExcept type", () => {
+  it("OptionalExcept type", () => {
     interface User {
       id: string;
       name: string;
@@ -134,7 +123,7 @@ describe("Type Utilities - Compile Time", () => {
     expect(user.id).toBe("123");
   });
 
-  test("PickByType type", () => {
+  it("PickByType type", () => {
     interface TestObj {
       str: string;
       num: number;
@@ -151,7 +140,7 @@ describe("Type Utilities - Compile Time", () => {
     expect(obj.str).toBe("test");
   });
 
-  test("ArrayElement type", () => {
+  it("ArrayElement type", () => {
     type Users = Array<{ name: string }>;
     type User = ArrayElement<Users>;
 
@@ -160,7 +149,7 @@ describe("Type Utilities - Compile Time", () => {
     expect(user.name).toBe("John");
   });
 
-  test("ValueOf type", () => {
+  it("ValueOf type", () => {
     const Status = {
       ACTIVE: "active",
       IDLE: "idle",
@@ -180,7 +169,7 @@ describe("Type Utilities - Compile Time", () => {
 // =============================================================================
 
 describe("Type Guards - Runtime", () => {
-  test("isDefined - filters null and undefined", () => {
+  it("isDefined - filters null and undefined", () => {
     const value: string | undefined = "test";
     const nullValue: string | null = null;
     const undefinedValue: string | undefined = undefined;
@@ -190,28 +179,28 @@ describe("Type Guards - Runtime", () => {
     expect(isDefined(undefinedValue)).toBe(false);
   });
 
-  test("isNull - checks for null", () => {
+  it("isNull - checks for null", () => {
     expect(isNull(null)).toBe(true);
     expect(isNull(undefined)).toBe(false);
     expect(isNull("test")).toBe(false);
     expect(isNull(0)).toBe(false);
   });
 
-  test("isUndefined - checks for undefined", () => {
+  it("isUndefined - checks for undefined", () => {
     expect(isUndefined(undefined)).toBe(true);
     expect(isUndefined(null)).toBe(false);
     expect(isUndefined("test")).toBe(false);
     expect(isUndefined(0)).toBe(false);
   });
 
-  test("isString - checks for string type", () => {
+  it("isString - checks for string type", () => {
     expect(isString("test")).toBe(true);
     expect(isString(123)).toBe(false);
     expect(isString(null)).toBe(false);
     expect(isString(undefined)).toBe(false);
   });
 
-  test("isNumber - checks for number type", () => {
+  it("isNumber - checks for number type", () => {
     expect(isNumber(123)).toBe(true);
     expect(isNumber(123.45)).toBe(true);
     expect(isNumber(Number.NaN)).toBe(false); // NaN is excluded
@@ -219,14 +208,14 @@ describe("Type Guards - Runtime", () => {
     expect(isNumber(null)).toBe(false);
   });
 
-  test("isBoolean - checks for boolean type", () => {
+  it("isBoolean - checks for boolean type", () => {
     expect(isBoolean(true)).toBe(true);
     expect(isBoolean(false)).toBe(true);
     expect(isBoolean(1)).toBe(false);
     expect(isBoolean("true")).toBe(false);
   });
 
-  test("isFunction - checks for function type", () => {
+  it("isFunction - checks for function type", () => {
     expect(isFunction(() => {})).toBe(true);
     expect(isFunction(function () {})).toBe(true);
     expect(isFunction(async () => {})).toBe(true);
@@ -234,7 +223,7 @@ describe("Type Guards - Runtime", () => {
     expect(isFunction(null)).toBe(false);
   });
 
-  test("isObject - checks for object type (not null, not array)", () => {
+  it("isObject - checks for object type (not null, not array)", () => {
     expect(isObject({})).toBe(true);
     expect(isObject({ key: "value" })).toBe(true);
     expect(isObject([])).toBe(false);
@@ -242,13 +231,13 @@ describe("Type Guards - Runtime", () => {
     expect(isObject("object")).toBe(false);
   });
 
-  test("isNonEmptyArray - checks for non-empty arrays", () => {
+  it("isNonEmptyArray - checks for non-empty arrays", () => {
     expect(isNonEmptyArray([1, 2, 3])).toBe(true);
     expect(isNonEmptyArray(["test"])).toBe(true);
     expect(isNonEmptyArray([])).toBe(false);
   });
 
-  test("hasKey - checks if object has a key", () => {
+  it("hasKey - checks if object has a key", () => {
     const obj = { name: "John", age: 30 };
 
     expect(hasKey(obj, "name")).toBe(true);
@@ -262,7 +251,7 @@ describe("Type Guards - Runtime", () => {
 // =============================================================================
 
 describe("Result Types", () => {
-  test("ok - creates success result", () => {
+  it("ok - creates success result", () => {
     const result = ok("success value");
 
     expect(result.ok).toBe(true);
@@ -271,7 +260,7 @@ describe("Result Types", () => {
     }
   });
 
-  test("err - creates failure result", () => {
+  it("err - creates failure result", () => {
     const result = err(new Error("Something went wrong"));
 
     expect(result.ok).toBe(false);
@@ -280,7 +269,7 @@ describe("Result Types", () => {
     }
   });
 
-  test("isOk - type guards success result", () => {
+  it("isOk - type guards success result", () => {
     const successResult = ok("test");
     const failureResult = err(new Error("error"));
 
@@ -288,7 +277,7 @@ describe("Result Types", () => {
     expect(isOk(failureResult)).toBe(false);
   });
 
-  test("isErr - type guards failure result", () => {
+  it("isErr - type guards failure result", () => {
     const successResult = ok("test");
     const failureResult = err(new Error("error"));
 
@@ -296,7 +285,7 @@ describe("Result Types", () => {
     expect(isErr(failureResult)).toBe(true);
   });
 
-  test("Result type - pattern matching", () => {
+  it("Result type - pattern matching", () => {
     function divide(a: number, b: number): Result<number, string> {
       if (b === 0) {
         return err("Division by zero");
@@ -322,7 +311,7 @@ describe("Result Types", () => {
 // =============================================================================
 
 describe("Branded Types", () => {
-  test("brand - creates branded value", () => {
+  it("brand - creates branded value", () => {
     type UserId = Brand<string, "UserId">;
 
     const userId = brand<UserId>("user123");
@@ -331,7 +320,7 @@ describe("Branded Types", () => {
     expect(userId).toBe("user123");
   });
 
-  test("brand - prevents mixing different brands at compile time", () => {
+  it("brand - prevents mixing different brands at compile time", () => {
     type UserId = Brand<string, "UserId">;
     type ProductId = Brand<string, "ProductId">;
 
@@ -353,7 +342,7 @@ describe("Branded Types", () => {
 // =============================================================================
 
 describe("Integration Tests", () => {
-  test("Combined utilities with type guards", () => {
+  it("Combined utilities with type guards", () => {
     interface User {
       id?: string;
       name?: string;
@@ -378,7 +367,7 @@ describe("Integration Tests", () => {
     expect(processUser(undefined)).toBe("Unknown user");
   });
 
-  test("Result type with async operations", async () => {
+  it("Result type with async operations", async () => {
     async function fetchData(shouldFail: boolean): Promise<Result<string, Error>> {
       await new Promise((resolve) => setTimeout(resolve, 10));
 
@@ -403,7 +392,7 @@ describe("Integration Tests", () => {
     }
   });
 
-  test("Non-empty array with type guards", () => {
+  it("Non-empty array with type guards", () => {
     function processCards(cards: Array<{ name: string }>): string {
       if (isNonEmptyArray(cards)) {
         // TypeScript knows cards is NonEmptyArray here

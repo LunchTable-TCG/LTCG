@@ -4,16 +4,48 @@ import { api } from "@convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { handleHookError } from "@/lib/errorHandling";
-import type { BaseHookReturn } from "@/types";
 import { useAuth } from "../auth/useConvexAuthHook";
+
+interface CardResult {
+  cardDefinitionId: string;
+  name: string;
+  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  archetype: string;
+  imageUrl?: string;
+}
+
+interface PackPurchaseResult {
+  success: boolean;
+  productName: string;
+  cardsReceived: CardResult[];
+  currencyUsed: "gold" | "gems";
+  amountPaid: number;
+}
+
+interface BoxPurchaseResult {
+  success: boolean;
+  productName: string;
+  packsOpened: number;
+  bonusCards: number;
+  cardsReceived: CardResult[];
+  currencyUsed: "gold" | "gems";
+  amountPaid: number;
+}
+
+interface CurrencyBundleResult {
+  success: boolean;
+  productName: string;
+  gemsSpent: number;
+  goldReceived: number;
+}
 
 interface UseShopReturn {
   products: ReturnType<typeof useQuery<typeof api.shop.getShopProducts>> | undefined;
   packHistory: ReturnType<typeof useQuery<typeof api.shop.getPackOpeningHistory>> | undefined;
   isLoading: boolean;
-  purchasePack: (productId: string, useGems: boolean) => Promise<any>;
-  purchaseBox: (productId: string, useGems: boolean) => Promise<any>;
-  purchaseBundle: (productId: string) => Promise<any>;
+  purchasePack: (productId: string, useGems: boolean) => Promise<PackPurchaseResult>;
+  purchaseBox: (productId: string, useGems: boolean) => Promise<BoxPurchaseResult>;
+  purchaseBundle: (productId: string) => Promise<CurrencyBundleResult>;
 }
 
 /**

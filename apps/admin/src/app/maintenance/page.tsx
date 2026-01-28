@@ -82,9 +82,9 @@ export default function MaintenancePage() {
   const suspiciousReport = useQuery(api.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
-  const matchmakingHealth = useQuery(api.analytics.matchmaking.getMatchmakingHealth);
-  const economySnapshot = useQuery(api.analytics.economy.getCurrentEconomySnapshot);
-  const dailyStats = useQuery(api.analytics.engagement.getDailyActiveStats, { days: 7 });
+  const matchmakingHealth = useQuery(api.admin.analytics.getMatchmakingHealth);
+  const economySnapshot = useQuery(api.admin.analytics.getCurrentEconomySnapshot);
+  const dailyStats = useQuery(api.admin.analytics.getDailyActiveStats, { days: 7 });
 
   const isLoading = stats === undefined;
 
@@ -105,7 +105,7 @@ export default function MaintenancePage() {
             ? "warning"
             : "critical",
       message: `Health score: ${matchmakingHealth?.ranked?.healthScore ?? 0}/100`,
-      lastChecked: matchmakingHealth?.lastUpdated ?? Date.now(),
+      lastChecked: Date.now(),
     },
     {
       component: "Queue",

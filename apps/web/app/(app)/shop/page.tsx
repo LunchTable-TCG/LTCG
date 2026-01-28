@@ -41,6 +41,8 @@ interface ShopItem {
   gemPrice?: number;
   contents?: string;
   quantity?: number;
+  productId: string;
+  productType: "pack" | "box" | "currency";
 }
 
 // Marketplace listing types
@@ -82,7 +84,11 @@ export default function ShopPage() {
   const [selectedShopItem, setSelectedShopItem] = useState<ShopItem | null>(null);
   const [bidAmount, setBidAmount] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [listingDialogCard, setListingDialogCard] = useState<any>(null);
+  const [listingDialogCard, setListingDialogCard] = useState<{
+    cardDefinitionId: Id<"cardDefinitions">;
+    name: string;
+    rarity: Rarity;
+  } | null>(null);
   const [isCardSelectorOpen, setIsCardSelectorOpen] = useState(false);
 
   // Use custom hooks
@@ -92,7 +98,7 @@ export default function ShopPage() {
     purchaseBox: purchaseBoxAction,
     purchaseBundle,
   } = useShop();
-  const { balance, gold: goldBalance, gems: gemBalance } = useCurrency();
+  const { gold: goldBalance, gems: gemBalance } = useCurrency();
   const {
     listings: marketplaceListings,
     myListings,
@@ -107,16 +113,15 @@ export default function ShopPage() {
   // Mutations
   const createListingMutation = useMutation(api.marketplace.createListing);
 
-  // Use the marketplace data from the hook (filtering will be done client-side for now)
-  const filteredMarketplaceData = marketplaceListings;
-
   // Filter marketplace listings
   const filteredListings = useMemo(() => {
     let listings = marketplaceListings?.listings ?? [];
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      listings = listings.filter((listing: any) => listing.cardName.toLowerCase().includes(query));
+      listings = listings.filter((listing: MarketListing) =>
+        listing.cardName.toLowerCase().includes(query)
+      );
     }
 
     return listings;
@@ -126,20 +131,26 @@ export default function ShopPage() {
   const transformedShopItems = useMemo(() => {
     if (!shopProducts) return [];
     return shopProducts.map(
-      (product: any): ShopItem => ({
+      (product: {
+        productId: string;
+        name: string;
+        description: string;
+        productType: "pack" | "box" | "currency";
+        goldPrice?: number;
+        gemPrice?: number;
+        packConfig?: { cardCount: number };
+        boxConfig?: { packCount: number };
+        currencyConfig?: { amount: number };
+      }): ShopItem => ({
+        ...product, // Include original for mutations first
         id: product.productId,
-        name: product.name,
-        description: product.description,
         type: product.productType,
-        goldPrice: product.goldPrice,
-        gemPrice: product.gemPrice,
         contents: product.packConfig
           ? `${product.packConfig.cardCount} Cards`
           : product.boxConfig
             ? `${product.boxConfig.packCount} Packs`
             : undefined,
         quantity: product.currencyConfig?.amount,
-        ...product, // Include original for mutations
       })
     );
   }, [shopProducts]);
@@ -159,7 +170,10 @@ export default function ShopPage() {
   );
 
   const handleShopPurchase = useCallback(
-    async (item: any, useGems: boolean) => {
+    async (
+      item: { productId: string; productType: "pack" | "box" | "currency" },
+      useGems: boolean
+    ) => {
       setIsProcessing(true);
       try {
         if (item.productType === "pack") {
@@ -178,8 +192,8 @@ export default function ShopPage() {
           await purchaseBundle(item.productId);
           setSelectedShopItem(null);
         }
-      } catch (error: any) {
-        console.error("Purchase failed:", error);
+      } catch (error: unknown) {
+        console.error("Purchase failed:", error instanceof Error ? error.message : error);
         setIsProcessing(false);
       }
     },
@@ -187,13 +201,13 @@ export default function ShopPage() {
   );
 
   const handleMarketPurchase = useCallback(
-    async (listing: any) => {
+    async (listing: { _id: string }) => {
       setIsProcessing(true);
       try {
-        await buyNowAction(listing._id);
+        await buyNowAction(listing._id as Id<"marketplaceListings">);
         setSelectedListing(null);
-      } catch (error: any) {
-        console.error("Purchase failed:", error);
+      } catch (error: unknown) {
+        console.error("Purchase failed:", error instanceof Error ? error.message : error);
       } finally {
         setIsProcessing(false);
       }
@@ -202,15 +216,15 @@ export default function ShopPage() {
   );
 
   const handlePlaceBid = useCallback(
-    async (listing: any) => {
+    async (listing: { _id: string }) => {
       if (!bidAmount) return;
       setIsProcessing(true);
       try {
-        await placeBidAction(listing._id, Number.parseInt(bidAmount));
+        await placeBidAction(listing._id as Id<"marketplaceListings">, Number.parseInt(bidAmount));
         setBidAmount("");
         setSelectedListing(null);
-      } catch (error: any) {
-        console.error("Bid failed:", error);
+      } catch (error: unknown) {
+        console.error("Bid failed:", error instanceof Error ? error.message : error);
       } finally {
         setIsProcessing(false);
       }
@@ -239,8 +253,8 @@ export default function ShopPage() {
       setIsProcessing(true);
       try {
         await cancelListing(listingId);
-      } catch (error: any) {
-        console.error("Cancel failed:", error);
+      } catch (error: unknown) {
+        console.error("Cancel failed:", error instanceof Error ? error.message : error);
       } finally {
         setIsProcessing(false);
       }
@@ -275,7 +289,7 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden">
+    <div data-testid="shop" className="min-h-screen bg-[#0d0a09] relative overflow-hidden">
       {/* Background */}
       <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
@@ -296,7 +310,7 @@ export default function ShopPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
               <Coins className="w-5 h-5 text-yellow-400" />
-              <span className="text-lg font-bold text-yellow-300">
+              <span data-testid="player-gold" className="text-lg font-bold text-yellow-300">
                 {goldBalance.toLocaleString()}
               </span>
             </div>
@@ -514,7 +528,7 @@ export default function ShopPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {myListings.map((listing: any) => (
+                {myListings.map((listing: MarketListing & { _id: Id<"marketplaceListings"> }) => (
                   <div
                     key={listing._id}
                     className="p-4 rounded-xl bg-black/40 border border-[#3d2b1f] hover:border-[#3d2b1f]/50 transition-all"
@@ -586,9 +600,19 @@ export default function ShopPage() {
         <CardSelectorModal
           isOpen={isCardSelectorOpen}
           onClose={() => setIsCardSelectorOpen(false)}
-          cards={userCards as any}
+          cards={userCards?.map((card) => ({
+            cardDefinitionId: card.cardDefinitionId,
+            playerCardId: card.id as Id<"playerCards">,
+            name: card.name,
+            rarity: card.rarity,
+            quantity: card.owned,
+          }))}
           onSelectCard={(card) => {
-            setListingDialogCard(card);
+            setListingDialogCard({
+              cardDefinitionId: card.cardDefinitionId,
+              name: card.name,
+              rarity: card.rarity,
+            });
           }}
         />
 
@@ -805,7 +829,7 @@ export default function ShopPage() {
 // Shop Item Card Component
 function ShopItemCard({ item, onPurchase }: { item: ShopItem; onPurchase: () => void }) {
   return (
-    <div className="p-4 rounded-xl border border-[#3d2b1f] bg-black/40 hover:bg-black/60 transition-all">
+    <div data-testid="pack-item" className="p-4 rounded-xl border border-[#3d2b1f] bg-black/40 hover:bg-black/60 transition-all">
       <div className="aspect-square rounded-lg bg-[#d4af37]/10 flex items-center justify-center mb-4">
         {item.type === "pack" && <Package className="w-16 h-16 text-[#d4af37]" />}
         {item.type === "box" && <Box className="w-16 h-16 text-[#d4af37]" />}

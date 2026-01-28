@@ -29,32 +29,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Card, Flex, Text, Title } from "@tremor/react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 // =============================================================================
-// Types
-// =============================================================================
-
-interface ModerationHistoryEntry {
-  action: string;
-  reason?: string;
-  createdAt: number;
-}
-
 // =============================================================================
 // Component
 // =============================================================================
 
 export default function PlayerDetailPage() {
-  const params = useParams();
+  const params = useParams<{ playerId: string }>();
   const router = useRouter();
-  const playerId = params.playerId as Id<"players">;
+  const playerId = params.playerId as Id<"users">;
 
   // State
   const [editNameOpen, setEditNameOpen] = useState(false);
@@ -64,21 +55,43 @@ export default function PlayerDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Fetch player data
-  const profile = useQuery(api.players.players.getPlayerProfile, { playerId });
-  const moderationStatus = useQuery(api.admin.moderation.getPlayerModerationStatus, { playerId });
-  const moderationHistory = useQuery(api.admin.moderation.getModerationHistory, {
+  const profile = useQuery(apiAny.admin.admin.getPlayerProfile, { playerId });
+  const moderationStatus = useQuery(apiAny.admin.moderation.getPlayerModerationStatus, { playerId });
+  const moderationHistory = useQuery(apiAny.admin.moderation.getModerationHistory, {
     playerId,
     limit: 20,
   });
   // Fetch player engagement data
-  const engagement = useQuery(api.analytics.engagement.getPlayerEngagement, {
-    playerId,
-    days: 30,
+  const engagementData = useQuery(apiAny.admin.analytics.getPlayerEngagement, {
+    userId: playerId,
+    days: 30
   });
 
+  // Transform engagement data to match expected format
+  const engagement = engagementData ? {
+    totals: {
+      gamesPlayed: engagementData.metrics.totalGames,
+      daysActive: engagementData.metrics.daysActive,
+      avgSessionLength: 0,
+      totalSessions: engagementData.metrics.daysActive,
+      totalSessionTime: 0,
+      totalGamesPlayed: engagementData.metrics.totalGames,
+      totalGamesWon: 0,
+      totalCardsPlayed: 0,
+      totalPacksOpened: 0,
+    },
+    metrics: engagementData.metrics,
+    currentStreak: 0,
+    dailyData: [], // TODO: Backend doesn't provide daily breakdown yet
+  } : undefined;
+
   // Mutations
-  const updatePlayerName = useMutation(api.admin.admin.updatePlayerName);
-  const addModerationNote = useMutation(api.admin.moderation.addModerationNote);
+  const updateUsernameMutation = useConvexMutation(apiAny.core.users.adminUpdateUsername);
+  const addModerationNote = useConvexMutation(apiAny.admin.moderation.addModerationNote);
+
+  const updatePlayerName = async (newName: string) => {
+    await updateUsernameMutation({ userId: playerId, newUsername: newName });
+  };
 
   const isLoading = profile === undefined;
   const isBanned = moderationStatus?.isBanned ?? false;
@@ -109,10 +122,7 @@ export default function PlayerDetailPage() {
 
     setIsUpdating(true);
     try {
-      await updatePlayerName({
-        playerId,
-        name: editName.trim(),
-      });
+      await updatePlayerName(editName.trim());
       toast.success("Player name updated");
       setEditNameOpen(false);
     } catch (error) {
@@ -491,11 +501,11 @@ export default function PlayerDetailPage() {
                 </div>
               ) : (
                 <ModerationTimeline
-                  entries={moderationHistory.map((h: ModerationHistoryEntry) => ({
+                  entries={moderationHistory?.map((h: any) => ({
                     action: h.action,
                     reason: h.reason,
-                    createdAt: h.createdAt,
-                  }))}
+                    createdAt: h.timestamp || h.createdAt,
+                  })) ?? []}
                 />
               )}
             </div>

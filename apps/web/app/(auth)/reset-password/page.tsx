@@ -30,8 +30,24 @@ function ResetPasswordForm() {
       return;
     }
 
+    // SECURITY: Match server-side password validation
     if (password.length < 8) {
       setError("Password must be at least 8 characters");
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setError("Password must contain at least one uppercase letter");
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      setError("Password must contain at least one lowercase letter");
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setError("Password must contain at least one number");
       return;
     }
 
@@ -177,7 +193,7 @@ function ResetPasswordForm() {
             />
           </div>
           <p className="text-[8px] text-[#a89f94]/60 mt-1.5 ml-1 font-medium italic">
-            Minimum 8 characters
+            Min 8 characters with uppercase, lowercase, and a number
           </p>
         </div>
 

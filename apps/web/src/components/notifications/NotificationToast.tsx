@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, Bell, Gift, Star, Trophy } from "lucide-react";
+import { Award, Gift, Star, Trophy } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useNotifications } from "@/hooks";
@@ -32,8 +32,7 @@ export function NotificationToast() {
 
       // Show toast based on notification type
       if (notification.type === "achievement_unlocked") {
-        const data = notification.data as any;
-        const rarity = data?.rarity || "common";
+        const { data } = notification;
 
         toast.success(
           <div className="flex items-start gap-3">
@@ -43,7 +42,7 @@ export function NotificationToast() {
             <div className="flex-1">
               <p className="font-bold text-sm">{notification.title}</p>
               <p className="text-xs text-[#a89f94] mt-0.5">{notification.message}</p>
-              {data?.rewards && (
+              {data.rewards && (
                 <div className="flex items-center gap-2 mt-1 text-xs">
                   {data.rewards.gold && (
                     <span className="text-yellow-400">+{data.rewards.gold} Gold</span>
@@ -64,7 +63,7 @@ export function NotificationToast() {
           }
         );
       } else if (notification.type === "level_up") {
-        const data = notification.data as any;
+        const { data } = notification;
 
         toast.success(
           <div className="flex items-start gap-3">
@@ -74,7 +73,7 @@ export function NotificationToast() {
             <div className="flex-1">
               <p className="font-bold text-sm">{notification.title}</p>
               <p className="text-xs text-[#a89f94] mt-0.5">{notification.message}</p>
-              {data?.newLevel && (
+              {data.newLevel && (
                 <p className="text-xs text-purple-400 mt-1">You are now level {data.newLevel}!</p>
               )}
             </div>

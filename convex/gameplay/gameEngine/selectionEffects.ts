@@ -8,7 +8,6 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "../../_generated/dataModel";
 import { mutation, query } from "../../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";

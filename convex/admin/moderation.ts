@@ -499,7 +499,14 @@ export const getModerationHistory = query({
 
     // Filter for moderation-related actions
     const moderationActions = actions.filter((a) =>
-      ["ban_player", "unban_player", "suspend_player", "unsuspend_player", "warn_player", "moderation_note"].includes(a.action)
+      [
+        "ban_player",
+        "unban_player",
+        "suspend_player",
+        "unsuspend_player",
+        "warn_player",
+        "moderation_note",
+      ].includes(a.action)
     );
 
     // Enrich with admin info

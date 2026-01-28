@@ -107,7 +107,7 @@ export function CardInspectorModal({
                   <div
                     className={cn(
                       "w-20 h-28 rounded-lg border-2 overflow-hidden shrink-0",
-                      RARITY_BORDERS[card.rarity ?? "common"] ?? RARITY_BORDERS.common
+                      RARITY_BORDERS[card.rarity ?? "common"] ?? RARITY_BORDERS["common"]
                     )}
                   >
                     {card.imageUrl ? (
@@ -132,7 +132,9 @@ export function CardInspectorModal({
                     {/* Rarity */}
                     <div className="flex items-center gap-1 mb-1">
                       <Star className={cn("w-2.5 h-2.5", RARITY_COLORS[card.rarity ?? "common"])} />
-                      <span className={cn("text-xs capitalize", RARITY_COLORS[card.rarity ?? "common"])}>
+                      <span
+                        className={cn("text-xs capitalize", RARITY_COLORS[card.rarity ?? "common"])}
+                      >
                         {card.rarity}
                       </span>
                     </div>

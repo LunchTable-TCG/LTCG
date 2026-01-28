@@ -30,8 +30,27 @@ bun run test:e2e:debug
 | `economy.spec.ts` | 19 | Shop & economy |
 | `story.spec.ts` | 24 | Story mode |
 | `social.spec.ts` | 22 | Social features |
+| **`realtime.spec.ts`** | **20+** | **Real-time updates & stale data** ⚡ |
 
-**Total**: 154+ tests
+**Total**: 174+ tests
+
+### Critical: Real-time Tests ⚡
+
+The `realtime.spec.ts` file contains critical regression tests for catching:
+- WebSocket subscription bugs
+- Stale cached data
+- Missing optimistic updates
+- Cache invalidation failures
+
+**Run these tests when**:
+- Changing Convex queries/mutations
+- Modifying cache strategies
+- Updating WebSocket logic
+- Implementing real-time features
+
+```bash
+bun run test:e2e:realtime
+```
 
 ## Setup Files
 

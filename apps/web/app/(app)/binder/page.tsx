@@ -1,14 +1,15 @@
 "use client";
 
-import { useCardBinder, useDeckBuilder, useDeck, useProfile } from "@/hooks";
+import { useCardBinder, useDeck, useDeckBuilder, useProfile } from "@/hooks";
 import { cn } from "@/lib/utils";
+import type { SortOption } from "@/types";
+import { isSortOption } from "@/types";
+import type { Id } from "@convex/_generated/dataModel";
 import { AuthLoading, Authenticated } from "convex/react";
 import {
-  AlertCircle,
   BookOpen,
   ChevronDown,
   Crown,
-  Flame,
   Gem,
   Grid3X3,
   Heart,
@@ -16,13 +17,9 @@ import {
   List,
   Loader2,
   Search,
-  Shield,
   SlidersHorizontal,
   Sparkles,
-  Star,
-  Waves,
   X,
-  Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -36,8 +33,6 @@ import {
   type Element,
   type Rarity,
 } from "./components";
-import type { SortOption } from "@/types";
-import { isSortOption } from "@/types";
 import type { BinderTab, DeckCard, ViewMode } from "./types";
 import { DECK_MIN_SIZE, MAX_COPIES_PER_CARD, MAX_LEGENDARY_COPIES } from "./types";
 
@@ -55,14 +50,6 @@ const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: string }
   rare: { bg: "bg-blue-500/20", text: "text-blue-400", border: "border-blue-500/40" },
   uncommon: { bg: "bg-green-500/20", text: "text-green-400", border: "border-green-500/40" },
   common: { bg: "bg-gray-500/20", text: "text-gray-400", border: "border-gray-500/40" },
-};
-
-const ELEMENT_CONFIG: Record<Element, { icon: typeof Flame; color: string }> = {
-  fire: { icon: Flame, color: "text-red-500" },
-  water: { icon: Waves, color: "text-blue-500" },
-  earth: { icon: Shield, color: "text-slate-400" },
-  wind: { icon: Zap, color: "text-yellow-500" },
-  neutral: { icon: Star, color: "text-gray-400" },
 };
 
 export default function BinderPage() {
@@ -119,7 +106,7 @@ function BinderContent() {
   const [editingDeckName, setEditingDeckName] = useState("");
   const [isSavingDeck, setIsSavingDeck] = useState(false);
 
-  const selectedDeckData = useDeck(selectedDeckId as any);
+  const selectedDeckData = useDeck(selectedDeckId as Id<"userDecks"> | null);
 
   // Convert API data to CardData format
   const cards: CardData[] = useMemo(() => {
@@ -280,7 +267,7 @@ function BinderContent() {
 
   const handleToggleFavorite = async (cardId: string) => {
     try {
-      await toggleFavoriteAction(cardId as any);
+      await toggleFavoriteAction(cardId as Id<"playerCards">);
       if (previewCard?.id === cardId) {
         setPreviewCard((prev) => (prev ? { ...prev, isFavorite: !prev.isFavorite } : null));
       }
@@ -328,7 +315,7 @@ function BinderContent() {
   const handleCreateDeck = async (name: string) => {
     try {
       const deckId = await createDeck(name);
-      setSelectedDeckId(deckId as any);
+      setSelectedDeckId(deckId as string);
       setCurrentDeckCards([]);
     } catch (error) {
       console.error("Failed to create deck:", error);
@@ -342,25 +329,40 @@ function BinderContent() {
   // Load deck cards when selectedDeckData changes
   useEffect(() => {
     if (selectedDeckData && selectedDeckData.cards) {
-      const loadedCards: DeckCard[] = selectedDeckData.cards.map((apiCard: any) => ({
-        card: {
-          id: apiCard.cardDefinitionId,
-          cardDefinitionId: apiCard.cardDefinitionId,
-          name: apiCard.name,
-          rarity: apiCard.rarity as Rarity,
-          element: apiCard.element as Element,
-          cardType: apiCard.cardType as CardType,
-          attack: apiCard.attack,
-          defense: apiCard.defense,
-          cost: apiCard.cost,
-          ability: apiCard.ability,
-          flavorText: apiCard.flavorText,
-          imageUrl: apiCard.imageUrl,
-          owned: 0,
-          isFavorite: false,
-        },
-        count: apiCard.quantity,
-      }));
+      const loadedCards: DeckCard[] = selectedDeckData.cards.map(
+        (apiCard: {
+          cardDefinitionId: Id<"cardDefinitions">;
+          name: string;
+          rarity: Rarity;
+          element: Element;
+          cardType: CardType;
+          attack?: number;
+          defense?: number;
+          cost: number;
+          ability?: string;
+          flavorText?: string;
+          imageUrl?: string;
+          quantity: number;
+        }) => ({
+          card: {
+            id: apiCard.cardDefinitionId,
+            cardDefinitionId: apiCard.cardDefinitionId,
+            name: apiCard.name,
+            rarity: apiCard.rarity as Rarity,
+            element: apiCard.element as Element,
+            cardType: apiCard.cardType as CardType,
+            attack: apiCard.attack,
+            defense: apiCard.defense,
+            cost: apiCard.cost,
+            ability: apiCard.ability,
+            flavorText: apiCard.flavorText,
+            imageUrl: apiCard.imageUrl,
+            owned: 0,
+            isFavorite: false,
+          },
+          count: apiCard.quantity,
+        })
+      );
       setCurrentDeckCards(loadedCards);
     }
   }, [selectedDeckData, selectedDeckId]);
@@ -376,12 +378,12 @@ function BinderContent() {
     setIsSavingDeck(true);
     try {
       const cardsToSave = currentDeckCards.map((dc) => ({
-        cardDefinitionId: (dc.card.cardDefinitionId || dc.card.id) as any,
+        cardDefinitionId: (dc.card.cardDefinitionId || dc.card.id) as Id<"cardDefinitions">,
         quantity: dc.count,
       }));
-      await saveDeckAction(selectedDeckId as any, cardsToSave);
-    } catch (error: any) {
-      console.error("Failed to save deck:", error);
+      await saveDeckAction(selectedDeckId as Id<"userDecks">, cardsToSave);
+    } catch (error: unknown) {
+      console.error("Failed to save deck:", error instanceof Error ? error.message : error);
     } finally {
       setIsSavingDeck(false);
     }
@@ -392,7 +394,7 @@ function BinderContent() {
     if (typeof window === "undefined") return;
     if (!window.confirm("Are you sure you want to delete this deck?")) return;
     try {
-      await deleteDeckAction(deckId as any);
+      await deleteDeckAction(deckId as Id<"userDecks">);
       if (selectedDeckId === deckId) {
         setSelectedDeckId(null);
         setCurrentDeckCards([]);
@@ -405,7 +407,7 @@ function BinderContent() {
   const handleRenameDeck = async () => {
     if (!selectedDeckId || !editingDeckName.trim()) return;
     try {
-      await renameDeckAction(selectedDeckId as any, editingDeckName.trim());
+      await renameDeckAction(selectedDeckId as Id<"userDecks">, editingDeckName.trim());
       setIsEditingDeckName(false);
     } catch (error) {
       console.error("Failed to rename deck:", error);
@@ -418,9 +420,9 @@ function BinderContent() {
 
   const handleSetActiveDeck = async (deckId: string) => {
     try {
-      await setActiveDeckAction(deckId as any);
-    } catch (error: any) {
-      console.error("Failed to set active deck:", error);
+      await setActiveDeckAction(deckId as Id<"userDecks">);
+    } catch (error: unknown) {
+      console.error("Failed to set active deck:", error instanceof Error ? error.message : error);
     }
   };
 
@@ -761,13 +763,17 @@ function BinderContent() {
 
         {/* Deck Builder Tab Content */}
         {activeTab === "deckbuilder" && (
-          <div className="flex gap-6">
+          <div className="flex gap-6" data-testid="deck-builder">
             <div className="flex-1">
               {!selectedDeck ? (
                 <div className="space-y-6">
                   <DeckList
                     decks={userDecks}
-                    activeDeckId={(currentUser as any)?.activeDeckId}
+                    activeDeckId={
+                      (currentUser && "activeDeckId" in currentUser
+                        ? currentUser.activeDeckId
+                        : undefined) as Id<"userDecks"> | undefined
+                    }
                     onSelectDeck={handleSelectDeck}
                     onCreateDeck={handleCreateDeck}
                     onSetActiveDeck={handleSetActiveDeck}

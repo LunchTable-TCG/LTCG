@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import { mutation } from "../../_generated/server";
-import type { MutationCtx, QueryCtx } from "../../_generated/server";
-import { ELO_SYSTEM } from "../../lib/constants";
-import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import type { MutationCtx } from "../../_generated/server";
+import { requireAuthMutation } from "../../lib/convexAuth";
+import { logger, performance, createTraceContext, logMatchmaking } from "../../lib/debug";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { checkRateLimitWrapper } from "../../lib/rateLimit";
 import { validateLobbyCapacity, validateLobbyStatus } from "../../lib/validation";
@@ -168,14 +168,11 @@ async function validateUserCanCreateGame(ctx: MutationCtx): Promise<{
     });
   }
 
-  // Get deck archetype
-  const deckArchetype = deck.deckArchetype || "neutral";
-
   return {
     userId,
     username,
     deckId: user.activeDeckId!,
-    deckArchetype,
+    deckArchetype: deck.deckArchetype || "unknown",
   };
 }
 
@@ -197,43 +194,69 @@ export const createLobby = mutation({
     isPrivate: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const opId = `createLobby_${Date.now()}`;
+    performance.start(opId);
+
     const isPrivate = args.isPrivate || false;
 
-    // Validate user can create game
-    const { userId, username, deckArchetype } = await validateUserCanCreateGame(ctx);
+    logger.mutation("createLobby", "pending", { mode: args.mode, isPrivate });
 
-    // Generate join code for private matches
-    const joinCode = isPrivate ? generateJoinCode() : undefined;
+    try {
+      // Validate user can create game
+      logger.debug("Validating user can create game");
+      const { userId, username, deckArchetype } = await validateUserCanCreateGame(ctx);
 
-    // Calculate rank
-    const rating = RATING_DEFAULTS.DEFAULT_RATING;
-    const rank = getRank(rating);
+      const traceCtx = createTraceContext("createLobby", { userId, username, mode: args.mode });
+      logMatchmaking("lobby_create_start", userId, traceCtx);
 
-    // Set max rating diff for ranked matches
-    const maxRatingDiff = args.mode === "ranked" ? RATING_DEFAULTS.RANKED_RATING_WINDOW : undefined;
+      // Generate join code for private matches
+      const joinCode = isPrivate ? generateJoinCode() : undefined;
+      if (joinCode) {
+        logger.debug("Generated join code for private lobby", { joinCode, ...traceCtx });
+      }
 
-    // Create lobby
-    const lobbyId = await ctx.db.insert("gameLobbies", {
-      hostId: userId,
-      hostUsername: username,
-      hostRank: rank,
-      hostRating: rating,
-      deckArchetype,
-      mode: args.mode,
-      status: "waiting",
-      isPrivate,
-      joinCode,
-      maxRatingDiff,
-      createdAt: Date.now(),
-    });
+      // Calculate rank
+      const rating = RATING_DEFAULTS.DEFAULT_RATING;
+      const rank = getRank(rating);
 
-    // Update user presence to in_game
-    await updatePresenceInternal(ctx, userId, username, "in_game");
+      // Set max rating diff for ranked matches
+      const maxRatingDiff = args.mode === "ranked" ? RATING_DEFAULTS.RANKED_RATING_WINDOW : undefined;
 
-    return {
-      lobbyId,
-      joinCode,
-    };
+      // Create lobby
+      logger.dbOperation("insert", "gameLobbies", traceCtx);
+      const lobbyId = await ctx.db.insert("gameLobbies", {
+        hostId: userId,
+        hostUsername: username,
+        hostRank: rank,
+        hostRating: rating,
+        deckArchetype,
+
+        mode: args.mode,
+        status: "waiting",
+        isPrivate,
+        joinCode,
+        maxRatingDiff,
+        createdAt: Date.now(),
+      });
+
+      logger.info("Lobby created successfully", { ...traceCtx, lobbyId, rank, rating });
+
+      // Update user presence to in_game
+      await updatePresenceInternal(ctx, userId, username, "in_game");
+      logger.debug("Updated user presence to in_game", traceCtx);
+
+      logMatchmaking("lobby_create_complete", userId, { ...traceCtx, lobbyId });
+      performance.end(opId, { userId, lobbyId });
+
+      return {
+        lobbyId,
+        joinCode,
+      };
+    } catch (error) {
+      logger.error("Failed to create lobby", error as Error, { mode: args.mode, isPrivate });
+      performance.end(opId, { error: true });
+      throw error;
+    }
   },
 });
 
@@ -251,52 +274,73 @@ export const joinLobby = mutation({
     joinCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const opId = `joinLobby_${Date.now()}`;
+    performance.start(opId);
+
     // Validate session first (light check)
     const { userId } = await requireAuthMutation(ctx);
 
-    // Get lobby
-    const lobby = await ctx.db.get(args.lobbyId);
-    if (!lobby) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Lobby not found or no longer available",
-      });
-    }
+    logger.mutation("joinLobby", userId, { lobbyId: args.lobbyId, hasJoinCode: !!args.joinCode });
 
-    // Validate lobby status is waiting
-    validateLobbyStatus(lobby, ["waiting"]);
+    const traceCtx = createTraceContext("joinLobby", { userId, lobbyId: args.lobbyId });
+    logMatchmaking("lobby_join_attempt", userId, traceCtx);
 
-    // Validate lobby has capacity (max 2 players)
-    validateLobbyCapacity(lobby, 2);
+    try {
+      // Get lobby
+      logger.dbOperation("get", "gameLobbies", traceCtx);
+      const lobby = await ctx.db.get(args.lobbyId);
+      if (!lobby) {
+        logger.warn("Lobby not found", traceCtx);
+        throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+          reason: "Lobby not found or no longer available",
+        });
+      }
 
-    // Check user is not the host (do this BEFORE full validation for better error messages)
-    if (lobby.hostId === userId) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "You cannot join your own lobby",
-      });
-    }
+      logger.debug("Found lobby", { ...traceCtx, hostId: lobby.hostId, status: lobby.status, mode: lobby.mode });
 
-    // Now do full validation
-    const { username, deckArchetype } = await validateUserCanCreateGame(ctx);
+      // Validate lobby status is waiting
+      validateLobbyStatus(lobby, ["waiting"]);
+
+      // Validate lobby has capacity (max 2 players)
+      validateLobbyCapacity(lobby, 2);
+
+      // Check user is not the host (do this BEFORE full validation for better error messages)
+      if (lobby.hostId === userId) {
+        logger.warn("User attempted to join own lobby", traceCtx);
+        throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+          reason: "You cannot join your own lobby",
+        });
+      }
+
+      // Now do full validation
+      logger.debug("Validating user can join game", traceCtx);
+      const { username } = await validateUserCanCreateGame(ctx);
 
     // Validate join code for private lobbies
     if (lobby.isPrivate) {
+      logger.debug("Validating join code for private lobby", traceCtx);
       if (!args.joinCode) {
+        logger.warn("Join code missing for private lobby", traceCtx);
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: "Join code required for private match",
         });
       }
       if (args.joinCode.toUpperCase() !== lobby.joinCode) {
+        logger.warn("Invalid join code provided", traceCtx);
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: "Invalid join code for private match",
         });
       }
+      logger.debug("Join code validated successfully", traceCtx);
     }
 
     // Validate rating for ranked matches
     if (lobby.mode === "ranked" && lobby.maxRatingDiff) {
       const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
       const ratingDiff = Math.abs(lobby.hostRating - opponentRating);
+      logger.debug("Validating rating difference", { ...traceCtx, hostRating: lobby.hostRating, opponentRating, ratingDiff, maxDiff: lobby.maxRatingDiff });
       if (ratingDiff > lobby.maxRatingDiff) {
+        logger.warn("Rating difference too large for ranked match", { ...traceCtx, ratingDiff, maxDiff: lobby.maxRatingDiff });
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: "Your rating is too far from the host's rating for ranked match",
         });
@@ -309,6 +353,7 @@ export const joinLobby = mutation({
 
     // Generate game ID
     const gameId = crypto.randomUUID();
+    logger.info("Generated game ID", { ...traceCtx, gameId });
 
     // Deterministically decide who goes first based on game ID
     // This ensures consistent results if the mutation is retried
@@ -317,7 +362,10 @@ export const joinLobby = mutation({
     const goesFirst = hash % 2 === 0 ? lobby.hostId : userId;
     const now = Date.now();
 
+    logger.info("Determined first player", { ...traceCtx, gameId, goesFirst, isHost: goesFirst === lobby.hostId });
+
     // Update lobby with opponent info and start game
+    logger.dbOperation("patch", "gameLobbies", { ...traceCtx, gameId });
     await ctx.db.patch(args.lobbyId, {
       opponentId: userId,
       opponentUsername: username,
@@ -331,11 +379,15 @@ export const joinLobby = mutation({
       turnNumber: 1,
     });
 
+    logger.info("Lobby updated to active status", { ...traceCtx, gameId });
+
     // Update both players' presence to in_game
     await updatePresenceInternal(ctx, userId, username, "in_game");
     await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "in_game");
+    logger.debug("Updated player presence for both players", traceCtx);
 
     // Initialize game state for reconnection
+    logger.debug("Initializing game state", { ...traceCtx, gameId });
     await initializeGameStateHelper(ctx, {
       lobbyId: args.lobbyId,
       gameId,
@@ -354,12 +406,23 @@ export const joinLobby = mutation({
       opponentUsername: username,
     });
 
+    logMatchmaking("lobby_join_success", userId, { ...traceCtx, gameId, hostId: lobby.hostId });
+    logger.info("Game started successfully", { ...traceCtx, gameId, hostId: lobby.hostId, opponentId: userId });
+
+    performance.end(opId, { userId, lobbyId: args.lobbyId, gameId });
+
     return {
       gameId,
       lobbyId: args.lobbyId,
       opponentUsername: lobby.hostUsername,
     };
-  },
+  } catch (error) {
+    logger.error("Failed to join lobby", error as Error, { userId, lobbyId: args.lobbyId });
+    logMatchmaking("lobby_join_failed", userId, { lobbyId: args.lobbyId, error: (error as Error).message });
+    performance.end(opId, { error: true });
+    throw error;
+  }
+},
 });
 
 /**
@@ -392,7 +455,7 @@ export const joinLobbyByCode = mutation({
 
     // Use joinLobby logic
     // Re-validate and join
-    const { userId, username, deckArchetype } = await validateUserCanCreateGame(ctx);
+    const { userId, username, deckArchetype: _deckArchetype } = await validateUserCanCreateGame(ctx);
 
     // Check user is not the host
     if (lobby.hostId === userId) {
@@ -475,7 +538,7 @@ export const joinLobbyByCode = mutation({
  */
 export const cancelLobby = mutation({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId, username } = await requireAuthMutation(ctx);
 
     // SECURITY: Rate limit lobby actions to prevent spam
@@ -515,7 +578,7 @@ export const cancelLobby = mutation({
  */
 export const leaveLobby = mutation({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId, username } = await requireAuthMutation(ctx);
 
     // SECURITY: Rate limit lobby actions to prevent spam

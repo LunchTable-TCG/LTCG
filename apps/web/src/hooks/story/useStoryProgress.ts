@@ -110,7 +110,9 @@ export function useStoryProgress(): UseStoryProgressReturn {
         won,
         finalLP,
       });
-      toast.success(`Chapter complete! +${mutationResult.rewards.xp} XP, +${mutationResult.rewards.gold} gold`);
+      toast.success(
+        `Chapter complete! +${mutationResult.rewards.xp} XP, +${mutationResult.rewards.gold} gold`
+      );
 
       // Transform mutation result to match CompleteChapterResult interface
       // Mutation returns `success`, but interface expects `won`

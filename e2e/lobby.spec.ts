@@ -59,7 +59,7 @@ test.describe("Game Lobby Flow", () => {
       ).toBeVisible();
     });
 
-    test("should show host as lobby creator", async ({ authenticatedPage, testUser }) => {
+    test("should show host as lobby creator", async ({ authenticatedPage }) => {
       await authenticatedPage.goto("/lunchtable");
 
       // Create game
@@ -94,7 +94,7 @@ test.describe("Game Lobby Flow", () => {
   });
 
   test.describe("Joining Lobby", () => {
-    test("should join existing lobby", async ({ context, authenticatedPage, testUser }) => {
+    test("should join existing lobby", async ({ context, authenticatedPage }) => {
       // User 1 creates lobby
       await authenticatedPage.goto("/lunchtable");
       await authenticatedPage.click('button:has-text("Create Game")');
@@ -153,7 +153,7 @@ test.describe("Game Lobby Flow", () => {
       ).toBeVisible({ timeout: 5000 });
     });
 
-    test("should not join full lobby", async ({ authenticatedPage }) => {
+    test("should not join full lobby", async () => {
       // This test assumes a 2-player maximum
       // Create lobby and have it filled by other players
       // Then try to join as third player

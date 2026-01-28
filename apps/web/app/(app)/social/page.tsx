@@ -64,17 +64,14 @@ export default function SocialPage() {
   const {
     friends,
     incomingRequests,
-    outgoingRequests,
     onlineFriends,
     friendCount,
     incomingRequestCount,
     acceptFriendRequest,
     declineFriendRequest,
-    cancelFriendRequest,
     sendFriendRequest,
     removeFriend,
     blockUser,
-    isLoading: friendsLoading,
   } = useFriends();
 
   const [activeTab, setActiveTab] = useState<TabType>("friends");

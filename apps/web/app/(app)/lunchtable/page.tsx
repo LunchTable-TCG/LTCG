@@ -33,7 +33,7 @@ function LunchtableContent() {
 
   // Track if user needs onboarding (no starter deck)
   const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
-  const [isClaimingDeck, setIsClaimingDeck] = useState(false);
+  const [_isClaimingDeck, setIsClaimingDeck] = useState(false);
 
   // Check if user has completed onboarding - runs on every currentUser update
   useEffect(() => {
@@ -81,9 +81,10 @@ function LunchtableContent() {
       console.log("✅ Mutation success:", result);
       toast.success(`${result.deckName} claimed! You received ${result.cardsReceived} cards.`);
       setShowWelcomeGuide(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("❌ Mutation error:", error);
-      toast.error(error.message || "Failed to claim starter deck");
+      const errorMessage = error instanceof Error ? error.message : "Failed to claim starter deck";
+      toast.error(errorMessage);
     } finally {
       setIsClaimingDeck(false);
     }

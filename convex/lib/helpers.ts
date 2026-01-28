@@ -7,7 +7,7 @@
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { ELO_SYSTEM, RARITY_WEIGHTS, XP_SYSTEM } from "./constants";
+import { ELO_SYSTEM, RARITY_WEIGHTS } from "./constants";
 import { ErrorCode, createError } from "./errorCodes";
 import type { Archetype, CardDefinition, CardResult, PackConfig, Rarity } from "./types";
 

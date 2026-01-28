@@ -1,6 +1,5 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
 import { internalMutation, mutation, query } from "../_generated/server";
 import { MARKETPLACE, PAGINATION } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -17,8 +16,6 @@ const scheduleEmail = (ctx: any, emailFunction: any, args: any) =>
   ctx.scheduler.runAfter(0, emailFunction, args);
 import {
   auctionBidValidator,
-  marketplaceListingValidator,
-  marketplaceListingsValidator,
 } from "../lib/returnValidators";
 import { checkCardOwnership } from "../lib/validators";
 import { adjustPlayerCurrencyHelper } from "./economy";
@@ -165,7 +162,7 @@ export const getMarketplaceListings = query({
  */
 export const getUserListings = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     const listings = await ctx.db
@@ -410,7 +407,7 @@ export const buyNow = mutation({
     listingId: v.id("marketplaceListings"),
   },
   handler: async (ctx, args) => {
-    const { userId, username } = await requireAuthMutation(ctx);
+    const { userId } = await requireAuthMutation(ctx);
 
     const listing = await ctx.db.get(args.listingId);
     if (!listing) {

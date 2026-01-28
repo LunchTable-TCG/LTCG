@@ -1,6 +1,6 @@
 import { test, expect } from "./setup/fixtures";
 import { AuthHelper } from "./setup/helpers";
-import { TestUserFactory, SELECTORS, TEST_CONFIG } from "./setup/test-data";
+import { TestUserFactory, SELECTORS } from "./setup/test-data";
 
 /**
  * Authentication Flow E2E Tests
@@ -25,6 +25,7 @@ test.describe("Authentication Flow", () => {
       await page.fill(SELECTORS.AUTH_USERNAME_INPUT, testUser.username);
       await page.fill(SELECTORS.AUTH_EMAIL_INPUT, testUser.email);
       await page.fill(SELECTORS.AUTH_PASSWORD_INPUT, testUser.password);
+      await page.fill('input[id="confirmPassword"]', testUser.password);
 
       // Submit
       await page.click(SELECTORS.AUTH_SUBMIT_BUTTON);
@@ -50,10 +51,11 @@ test.describe("Authentication Flow", () => {
       await page.fill(SELECTORS.AUTH_USERNAME_INPUT, testUser.username);
       await page.fill(SELECTORS.AUTH_EMAIL_INPUT, `different_${testUser.email}`);
       await page.fill(SELECTORS.AUTH_PASSWORD_INPUT, testUser.password);
+      await page.fill('input[id="confirmPassword"]', testUser.password);
       await page.click(SELECTORS.AUTH_SUBMIT_BUTTON);
 
-      // Should show error message
-      await expect(page.locator('text=/username.*already.*exists/i')).toBeVisible({ timeout: 5000 });
+      // SECURITY: Generic error message (doesn't reveal if user exists)
+      await expect(page.locator('text=/Could not create account/i')).toBeVisible({ timeout: 5000 });
     });
 
     test("should show error for duplicate email", async ({ page }) => {
@@ -69,10 +71,11 @@ test.describe("Authentication Flow", () => {
       await page.fill(SELECTORS.AUTH_USERNAME_INPUT, `different_${testUser.username}`);
       await page.fill(SELECTORS.AUTH_EMAIL_INPUT, testUser.email);
       await page.fill(SELECTORS.AUTH_PASSWORD_INPUT, testUser.password);
+      await page.fill('input[id="confirmPassword"]', testUser.password);
       await page.click(SELECTORS.AUTH_SUBMIT_BUTTON);
 
-      // Should show error message
-      await expect(page.locator('text=/email.*already.*exists/i')).toBeVisible({ timeout: 5000 });
+      // SECURITY: Generic error message (doesn't reveal if user exists)
+      await expect(page.locator('text=/Could not create account/i')).toBeVisible({ timeout: 5000 });
     });
 
     test("should validate password requirements", async ({ page }) => {
@@ -83,6 +86,7 @@ test.describe("Authentication Flow", () => {
       await page.fill(SELECTORS.AUTH_USERNAME_INPUT, testUser.username);
       await page.fill(SELECTORS.AUTH_EMAIL_INPUT, testUser.email);
       await page.fill(SELECTORS.AUTH_PASSWORD_INPUT, testUser.password);
+      await page.fill('input[id="confirmPassword"]', testUser.password);
       await page.click(SELECTORS.AUTH_SUBMIT_BUTTON);
 
       // Should show password validation error
@@ -97,6 +101,7 @@ test.describe("Authentication Flow", () => {
       await page.fill(SELECTORS.AUTH_USERNAME_INPUT, testUser.username);
       await page.fill(SELECTORS.AUTH_EMAIL_INPUT, testUser.email);
       await page.fill(SELECTORS.AUTH_PASSWORD_INPUT, testUser.password);
+      await page.fill('input[id="confirmPassword"]', testUser.password);
       await page.click(SELECTORS.AUTH_SUBMIT_BUTTON);
 
       // Should show email validation error
@@ -128,8 +133,8 @@ test.describe("Authentication Flow", () => {
       await page.fill(SELECTORS.AUTH_PASSWORD_INPUT, "WrongPassword123!");
       await page.click(SELECTORS.AUTH_SUBMIT_BUTTON);
 
-      // Should show error
-      await expect(page.locator('text=/invalid.*credentials/i')).toBeVisible({ timeout: 5000 });
+      // SECURITY: Generic error message (doesn't reveal if user exists)
+      await expect(page.locator('text=/Invalid email or password/i')).toBeVisible({ timeout: 5000 });
     });
 
     test("should show error for wrong password", async ({ page }) => {
@@ -145,8 +150,8 @@ test.describe("Authentication Flow", () => {
       await page.fill(SELECTORS.AUTH_PASSWORD_INPUT, "WrongPassword123!");
       await page.click(SELECTORS.AUTH_SUBMIT_BUTTON);
 
-      // Should show error
-      await expect(page.locator('text=/invalid.*credentials/i')).toBeVisible({ timeout: 5000 });
+      // SECURITY: Generic error message (doesn't reveal if user exists)
+      await expect(page.locator('text=/Invalid email or password/i')).toBeVisible({ timeout: 5000 });
     });
   });
 

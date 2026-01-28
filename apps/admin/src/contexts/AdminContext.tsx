@@ -8,27 +8,40 @@
  */
 
 import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
+import type { Id } from "@convex/_generated/dataModel";
 import { type ReactNode, createContext, useContext, useMemo } from "react";
-import type { AdminRole, AdminRoleData } from "../types";
+import type { AdminRole } from "../types";
 import { ROLE_PERMISSIONS } from "../types";
+import { useConvexQuery } from "@/lib/convexHelpers";
 
 // =============================================================================
 // Context Types
 // =============================================================================
 
+type AdminRoleData = {
+  role: AdminRole;
+  roleLevel: number;
+  isAdmin: boolean;
+  isModerator: boolean;
+  isFullAdmin: boolean;
+  isSuperAdmin: boolean;
+  permissions: string[];
+  grantedAt?: number;
+  grantedBy?: Id<"users">;
+} | null | undefined;
+
 interface AdminContextValue {
   /** Current admin role data, null if not admin or loading */
-  adminRole: AdminRoleData | null | undefined;
+  adminRole: AdminRoleData;
   /** Current player ID (for mutations that require it) */
-  playerId: import("@convex/_generated/dataModel").Id<"players"> | null;
+  playerId: Id<"users"> | null;
   /** Whether the admin data is still loading */
   isLoading: boolean;
   /** Whether the user is authenticated (has a user account) */
   isAuthenticated: boolean;
   /** Whether the user is authenticated as an admin */
   isAdmin: boolean;
-  /** The role type (super_admin, admin, moderator, support) */
+  /** The role type (superadmin, admin, moderator) */
   role: AdminRole | null;
   /** Check if the current admin has a specific permission */
   hasPermission: (permission: string) => boolean;
@@ -57,27 +70,26 @@ interface AdminProviderProps {
 }
 
 export function AdminProvider({ children }: AdminProviderProps) {
-  // Fetch the current user to check authentication status
-  const currentUser = useQuery(api.auth.currentUser);
-  // Fetch the current user's admin role from Convex
-  const adminRole = useQuery(api.admin.admin.getMyAdminRole);
-  // Fetch the current user's player data (for mutations that require playerId)
-  const currentPlayer = useQuery(api.core.users.me);
+  // Use convexHelpers to avoid TS2589 type instantiation errors
+  const currentUser = useConvexQuery(api.core.users.currentUser);
+  const adminRoleData = useConvexQuery(api.admin.admin.getMyAdminRole) as AdminRoleData | undefined;
+
+  // Player ID is the same as user ID
+  const playerId: Id<"users"> | null = currentUser?._id ?? null;
 
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo<AdminContextValue>(() => {
     // Loading if any query is still undefined
-    const isLoading = currentUser === undefined || adminRole === undefined;
+    const isLoading = currentUser === undefined || adminRoleData === undefined;
     // Authenticated if we have a user
     const isAuthenticated = currentUser !== null && currentUser !== undefined;
     // Admin if we have an admin role
-    const isAdmin = !!adminRole;
-    const role = (adminRole?.role as AdminRole | null) ?? null;
-    const playerId = currentPlayer?._id ?? null;
+    const isAdmin = adminRoleData !== null && adminRoleData !== undefined;
+    const role: AdminRole | null = adminRoleData?.role ?? null;
 
     // Get all permissions for the role (including explicit permissions)
     const rolePermissions = role ? ROLE_PERMISSIONS[role] : [];
-    const explicitPermissions = adminRole?.permissions ?? [];
+    const explicitPermissions = adminRoleData?.permissions ?? [];
     const permissions = [...new Set([...rolePermissions, ...explicitPermissions])];
 
     // Permission checker function
@@ -87,7 +99,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
     };
 
     return {
-      adminRole,
+      adminRole: adminRoleData,
       playerId,
       isLoading,
       isAuthenticated,
@@ -99,7 +111,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
       canBatchOperate: hasPermission("batch.operations"),
       permissions,
     };
-  }, [currentUser, adminRole, currentPlayer]);
+  }, [currentUser, adminRoleData, playerId]);
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 }
@@ -129,7 +141,7 @@ export function useAdmin(): AdminContextValue {
 interface RoleGuardProps {
   /** Required permission to view children */
   permission?: string;
-  /** Required role level (super_admin has highest priority) */
+  /** Required role level (superadmin has highest priority) */
   minRole?: AdminRole;
   /** Content to show when access is denied */
   fallback?: ReactNode;
@@ -156,7 +168,7 @@ export function RoleGuard({ permission, minRole, fallback = null, children }: Ro
 
   // Check minimum role if specified
   if (minRole) {
-    const roleHierarchy: AdminRole[] = ["support", "moderator", "admin", "super_admin"];
+    const roleHierarchy: AdminRole[] = ["moderator", "admin", "superadmin"];
     const currentRoleIndex = role ? roleHierarchy.indexOf(role) : -1;
     const requiredRoleIndex = roleHierarchy.indexOf(minRole);
 

@@ -143,7 +143,7 @@ export const getStarterDecks = query({
  */
 export const getUserAgents = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     // Get all active agents for this user
@@ -179,7 +179,7 @@ export const getUserAgents = query({
  */
 export const getAgentCount = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const auth = await getCurrentUser(ctx);
     if (!auth) {
       return 0;

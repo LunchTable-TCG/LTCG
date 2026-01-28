@@ -34,6 +34,7 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
 
   return (
     <motion.button
+      data-testid="story-chapter"
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}

@@ -95,9 +95,10 @@ function GrantRoleDialog() {
 
     setIsSubmitting(true);
     try {
-      const expiresAt = expiresInDays
-        ? Date.now() + Number(expiresInDays) * 24 * 60 * 60 * 1000
-        : undefined;
+      // TODO: Backend doesn't support expiresAt or notes yet
+      // const expiresAt = expiresInDays
+      //   ? Date.now() + Number(expiresInDays) * 24 * 60 * 60 * 1000
+      //   : undefined;
 
       await grantRole({
         userId: userId as Id<"users">,

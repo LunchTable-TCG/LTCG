@@ -5,7 +5,6 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { mutation } from "../_generated/server";
 import { initializeGameStateHelper } from "../gameplay/games/lifecycle";
@@ -83,10 +82,10 @@ export const initializeStoryBattle = mutation({
     }
 
     // Build AI deck from archetype cards
-    const aiDeck = await buildAIDeck(ctx, chapter.archetype, chapter.aiOpponentDeckCode);
+    const aiDeck = await buildAIDeck(ctx, chapter.archetype);
 
     // Create or get AI user
-    const aiUserId = await getOrCreateAIUser(ctx, chapter.aiOpponentDeckCode);
+    const aiUserId = await getOrCreateAIUser(ctx);
 
     // Create game lobby for story mode
     const gameId = `story_${userId}_${Date.now()}`;
@@ -145,8 +144,7 @@ export const initializeStoryBattle = mutation({
  */
 async function buildAIDeck(
   ctx: any,
-  archetype: string,
-  deckCode: string
+  archetype: string
 ): Promise<Id<"cardDefinitions">[]> {
   // Query all active cards of this archetype
   const archetypeCards = await ctx.db
@@ -209,7 +207,7 @@ async function buildAIDeck(
  *
  * For MVP: Creates a single AI user with a dummy deck
  */
-async function getOrCreateAIUser(ctx: any, deckCode: string): Promise<Id<"users">> {
+async function getOrCreateAIUser(ctx: any): Promise<Id<"users">> {
   // Check if AI user already exists
   const existingAI = await ctx.db
     .query("users")

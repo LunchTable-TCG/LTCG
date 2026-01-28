@@ -77,7 +77,10 @@ export function LifePointsBar({
             style={{ width: `${percentage}%` }}
           />
         </div>
-        <span className="text-[9px] sm:text-xs font-mono font-medium min-w-[35px] sm:min-w-[50px] text-right">
+        <span
+          data-testid={isOpponent ? "opponent-lp" : "player-lp"}
+          className="text-[9px] sm:text-xs font-mono font-medium min-w-[35px] sm:min-w-[50px] text-right"
+        >
           {lifePoints.toLocaleString()}
         </span>
       </div>

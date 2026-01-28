@@ -18,10 +18,8 @@ import { internalMutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import {
   casualLeaderboard,
-  casualLeaderboardAI,
   casualLeaderboardHumans,
   rankedLeaderboard,
-  rankedLeaderboardAI,
   rankedLeaderboardHumans,
   storyLeaderboard,
 } from "../infrastructure/aggregates";

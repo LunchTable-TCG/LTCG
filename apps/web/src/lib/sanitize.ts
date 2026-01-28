@@ -8,11 +8,12 @@
  */
 
 import DOMPurify from "dompurify";
+import type { Config } from "dompurify";
 
 /**
  * Strict configuration - strips ALL HTML tags
  */
-const STRICT_CONFIG: DOMPurify.Config = {
+const STRICT_CONFIG: Config = {
   ALLOWED_TAGS: [],
   ALLOWED_ATTR: [],
   KEEP_CONTENT: true,
@@ -21,10 +22,11 @@ const STRICT_CONFIG: DOMPurify.Config = {
 /**
  * Basic configuration - allows safe formatting tags only
  */
-const BASIC_CONFIG: DOMPurify.Config = {
+const BASIC_CONFIG: Config = {
   ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "br"],
   ALLOWED_ATTR: ["href"],
-  ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\\-]+(?:[^a-z+.\\-:]|$))/i,
+  ALLOWED_URI_REGEXP:
+    /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
 };
 
 /**
@@ -44,7 +46,7 @@ export function sanitizeText(input: string | null | undefined): string {
   if (!input) return "";
 
   // First pass: DOMPurify removes dangerous content
-  const sanitized = DOMPurify.sanitize(input, STRICT_CONFIG);
+  const sanitized = DOMPurify.sanitize(input, STRICT_CONFIG) as unknown as string;
 
   // Second pass: Escape HTML entities
   return sanitized
@@ -71,7 +73,7 @@ export function sanitizeText(input: string | null | undefined): string {
  */
 export function sanitizeHTML(input: string | null | undefined): string {
   if (!input) return "";
-  return DOMPurify.sanitize(input, BASIC_CONFIG);
+  return DOMPurify.sanitize(input, BASIC_CONFIG) as unknown as string;
 }
 
 /**

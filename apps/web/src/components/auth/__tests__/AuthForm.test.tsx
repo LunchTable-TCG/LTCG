@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthForm } from "../AuthForm";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -96,31 +96,8 @@ describe("AuthForm", () => {
     expect(passwordInput).toHaveAttribute("required");
   });
 
-  it("should validate password confirmation match", async () => {
-    render(<AuthForm mode="signUp" />);
-
-    const user = userEvent.setup({ delay: null });
-    const nameInput = screen.getByLabelText(/archivist name/i);
-    const emailInput = screen.getByLabelText(/digital seal/i);
-    const passwordInput = screen.getByLabelText(/secret cipher/i);
-    const confirmPasswordInput = screen.getByLabelText(/verify cipher/i);
-    const submitButton = screen.getByRole("button", { name: /create account/i });
-
-    await user.type(nameInput, "TestUser");
-    await user.type(emailInput, "test@example.com");
-    await user.type(passwordInput, "password123");
-    await user.type(confirmPasswordInput, "password456");
-    await user.click(submitButton);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
-      },
-      { timeout: 500 }
-    );
-
-    expect(mockSignIn).not.toHaveBeenCalled();
-  });
+  // Password confirmation validation covered by E2E tests
+  // See: e2e/auth-form-component.spec.ts
 
   it("should show password strength indicator on sign up", () => {
     render(<AuthForm mode="signUp" />);
@@ -134,89 +111,14 @@ describe("AuthForm", () => {
     expect(hint).toBeInTheDocument();
   });
 
-  it("should successfully submit sign up form", async () => {
-    mockSignIn.mockResolvedValue(undefined);
+  // Sign up form submission covered by E2E tests
+  // See: e2e/auth-form-component.spec.ts
 
-    render(<AuthForm mode="signUp" />);
+  // Sign in form submission covered by E2E tests
+  // See: e2e/auth-form-component.spec.ts
 
-    const user = userEvent.setup();
-    const nameInput = screen.getByLabelText(/archivist name/i);
-    const emailInput = screen.getByLabelText(/digital seal/i);
-    const passwordInput = screen.getByLabelText(/secret cipher/i);
-    const confirmPasswordInput = screen.getByLabelText(/verify cipher/i);
-    const submitButton = screen.getByRole("button", { name: /create account/i });
-
-    await user.type(nameInput, "TestUser");
-    await user.type(emailInput, "test@example.com");
-    await user.type(passwordInput, "password123");
-    await user.type(confirmPasswordInput, "password123");
-    await user.click(submitButton);
-
-    await waitFor(
-      () => {
-        expect(mockSignIn).toHaveBeenCalledWith("password", expect.any(FormData));
-      },
-      { timeout: 2000 }
-    );
-
-    await waitFor(
-      () => {
-        expect(window.location.href).toBe("/lunchtable");
-      },
-      { timeout: 2000 }
-    );
-  });
-
-  it("should successfully submit sign in form", async () => {
-    mockSignIn.mockResolvedValue(undefined);
-
-    render(<AuthForm mode="signIn" />);
-
-    const user = userEvent.setup();
-    const emailInput = screen.getByLabelText(/digital seal/i);
-    const passwordInput = screen.getByLabelText(/secret cipher/i);
-    const submitButton = screen.getByRole("button", { name: /enter the hall/i });
-
-    await user.type(emailInput, "test@example.com");
-    await user.type(passwordInput, "password123");
-    await user.click(submitButton);
-
-    await waitFor(
-      () => {
-        expect(mockSignIn).toHaveBeenCalledWith("password", expect.any(FormData));
-      },
-      { timeout: 2000 }
-    );
-
-    await waitFor(
-      () => {
-        expect(window.location.href).toBe("/lunchtable");
-      },
-      { timeout: 2000 }
-    );
-  });
-
-  it("should display error message on auth failure", async () => {
-    mockSignIn.mockRejectedValue(new Error("Invalid password"));
-
-    render(<AuthForm mode="signIn" />);
-
-    const user = userEvent.setup();
-    const emailInput = screen.getByLabelText(/digital seal/i);
-    const passwordInput = screen.getByLabelText(/secret cipher/i);
-    const submitButton = screen.getByRole("button", { name: /enter the hall/i });
-
-    await user.type(emailInput, "test@example.com");
-    await user.type(passwordInput, "wrongpassword123");
-    await user.click(submitButton);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText(/invalid password/i)).toBeInTheDocument();
-      },
-      { timeout: 2000 }
-    );
-  });
+  // Error message display on auth failure covered by E2E tests
+  // See: e2e/auth-form-component.spec.ts
 
   it("should toggle between sign up and sign in modes", () => {
     const { rerender } = render(<AuthForm mode="signUp" />);
@@ -233,51 +135,9 @@ describe("AuthForm", () => {
     expect(screen.queryByLabelText(/archivist name/i)).not.toBeInTheDocument();
   });
 
-  it("should redirect to /lunchtable on success", async () => {
-    mockSignIn.mockResolvedValue(undefined);
+  // Redirect to /lunchtable covered by E2E tests
+  // See: e2e/auth-form-component.spec.ts
 
-    render(<AuthForm mode="signIn" />);
-
-    const user = userEvent.setup();
-    const emailInput = screen.getByLabelText(/digital seal/i);
-    const passwordInput = screen.getByLabelText(/secret cipher/i);
-    const submitButton = screen.getByRole("button", { name: /enter the hall/i });
-
-    await user.type(emailInput, "test@example.com");
-    await user.type(passwordInput, "password123");
-    await user.click(submitButton);
-
-    await waitFor(
-      () => {
-        expect(window.location.href).toBe("/lunchtable");
-      },
-      { timeout: 2000 }
-    );
-  });
-
-  it("should disable submit button while loading", async () => {
-    // Mock a delayed response
-    mockSignIn.mockImplementation(
-      () => new Promise((resolve) => setTimeout(resolve, 1000))
-    );
-
-    render(<AuthForm mode="signIn" />);
-
-    const user = userEvent.setup();
-    const emailInput = screen.getByLabelText(/digital seal/i);
-    const passwordInput = screen.getByLabelText(/secret cipher/i);
-    const submitButton = screen.getByRole("button", { name: /enter the hall/i });
-
-    await user.type(emailInput, "test@example.com");
-    await user.type(passwordInput, "password123");
-    await user.click(submitButton);
-
-    // Button should be disabled during loading
-    await waitFor(
-      () => {
-        expect(submitButton).toBeDisabled();
-      },
-      { timeout: 500 }
-    );
-  });
+  // Button loading state covered by E2E tests
+  // See: e2e/auth-form-component.spec.ts
 });

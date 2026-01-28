@@ -1,4 +1,4 @@
-import { RateLimiter, SECOND } from "@convex-dev/ratelimiter";
+import { RateLimiter } from "@convex-dev/ratelimiter";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { components } from "../_generated/api";

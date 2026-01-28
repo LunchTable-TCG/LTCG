@@ -1,6 +1,6 @@
 import { test, expect } from "./setup/fixtures";
 import { GameStateHelper } from "./setup/helpers";
-import { TEST_CONFIG, SELECTORS } from "./setup/test-data";
+import { TEST_CONFIG } from "./setup/test-data";
 
 /**
  * Basic Gameplay Flow E2E Tests
@@ -295,9 +295,7 @@ test.describe("Basic Gameplay Flow", () => {
       }
     });
 
-    test("should attack opponent monster", async ({ authenticatedPage }) => {
-      const gameHelper = new GameStateHelper(authenticatedPage);
-
+    test("should attack opponent monster", async () => {
       // This test requires opponent to have monsters
       // Skip implementation details as it depends on AI behavior
     });
@@ -376,13 +374,11 @@ test.describe("Basic Gameplay Flow", () => {
       }
     });
 
-    test("should show defeat screen when player LP reaches 0", async ({
-      authenticatedPage,
-    }) => {
+    test("should show defeat screen when player LP reaches 0", async () => {
       // Similar to above but checking for defeat condition
     });
 
-    test("should handle deck-out condition", async ({ authenticatedPage }) => {
+    test("should handle deck-out condition", async () => {
       // Player loses if they need to draw but deck is empty
       // This is difficult to test in E2E without special setup
     });

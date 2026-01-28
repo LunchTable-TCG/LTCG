@@ -4,7 +4,6 @@
 
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { requireAuthQuery } from "../lib/convexAuth";
 
 /**
  * Get stage by chapter and stage number

@@ -93,22 +93,6 @@ function TargetTypeBadge({ type }: { type: TargetType }) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _ValueDisplay({ value, label }: { value: unknown; label: string }) {
-  if (value === undefined || value === null) return null;
-
-  const displayValue = typeof value === "object" ? JSON.stringify(value, null, 2) : String(value);
-
-  return (
-    <div className="text-xs">
-      <span className="text-muted-foreground">{label}:</span>
-      <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-x-auto max-w-xs">
-        {displayValue}
-      </pre>
-    </div>
-  );
-}
-
 // =============================================================================
 // Main Component
 // =============================================================================

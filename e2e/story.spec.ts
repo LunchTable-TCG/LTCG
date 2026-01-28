@@ -165,10 +165,6 @@ test.describe("Story Mode Flow", () => {
       await authenticatedPage.locator('[data-testid="story-chapter"]').first().click();
       await authenticatedPage.waitForURL(/\/play\/story\/chapter-/);
 
-      // Check stage 2 status
-      const stage2 = authenticatedPage.locator('[data-testid="story-stage"]:nth-child(2)');
-      const isLocked = await stage2.getAttribute("data-locked");
-
       // After completing stage 1, stage 2 should unlock
       // This requires actually completing stage 1
     });
@@ -187,25 +183,21 @@ test.describe("Story Mode Flow", () => {
   });
 
   test.describe("Rewards", () => {
-    test("should earn gold from story completion", async ({ authenticatedPage }) => {
+    test("should earn gold from story completion", async () => {
       // After completing story battle, gold should increase
       // Implementation requires completing a battle
     });
 
-    test("should earn XP from story completion", async ({ authenticatedPage }) => {
+    test("should earn XP from story completion", async () => {
       // XP should be awarded after victory
     });
 
-    test("should earn card rewards", async ({ authenticatedPage }) => {
+    test("should earn card rewards", async () => {
       // Some stages award specific cards
     });
 
-    test("should show reward summary", async ({ authenticatedPage }) => {
+    test("should show reward summary", async () => {
       // After battle, reward summary should display
-      const rewardSummary = authenticatedPage.locator('[data-testid="reward-summary"]');
-      if (await rewardSummary.isVisible({ timeout: 2000 })) {
-        expect(true).toBeTruthy();
-      }
     });
   });
 

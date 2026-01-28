@@ -6,15 +6,26 @@ import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { handleHookError } from "@/lib/errorHandling";
 
+interface CreateLobbyResult {
+  lobbyId: Id<"gameLobbies">;
+  joinCode?: string;
+}
+
+interface JoinLobbyResult {
+  gameId: string;
+  lobbyId: Id<"gameLobbies">;
+  opponentUsername: string;
+}
+
 interface UseGameLobbyReturn {
   waitingLobbies: ReturnType<typeof useQuery<typeof api.games.listWaitingLobbies>> | undefined;
   myLobby: ReturnType<typeof useQuery<typeof api.games.getActiveLobby>> | undefined;
   privateLobby: ReturnType<typeof useQuery<typeof api.games.getMyPrivateLobby>> | undefined;
   isLoading: boolean;
   hasActiveLobby: boolean;
-  createLobby: (mode: "casual" | "ranked", isPrivate?: boolean) => Promise<any>;
-  joinLobby: (lobbyId: Id<"gameLobbies">, joinCode?: string) => Promise<any>;
-  joinByCode: (joinCode: string) => Promise<any>;
+  createLobby: (mode: "casual" | "ranked", isPrivate?: boolean) => Promise<CreateLobbyResult>;
+  joinLobby: (lobbyId: Id<"gameLobbies">, joinCode?: string) => Promise<JoinLobbyResult>;
+  joinByCode: (joinCode: string) => Promise<JoinLobbyResult>;
   cancelLobby: () => Promise<void>;
   leaveLobby: () => Promise<void>;
 }

@@ -21,13 +21,13 @@ import { useMemo, useState } from "react";
 // =============================================================================
 
 interface PlayerSelectorProps {
-  selectedIds: Id<"players">[];
-  onSelectionChange: (ids: Id<"players">[]) => void;
+  selectedIds: Id<"users">[];
+  onSelectionChange: (ids: Id<"users">[]) => void;
   maxSelection?: number;
 }
 
 interface PlayerOption {
-  playerId: Id<"players">;
+  playerId: Id<"users">;
   name: string;
   type: "human" | "ai";
   eloRating: number;
@@ -45,12 +45,8 @@ export function PlayerSelector({
 }: PlayerSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch players
-  const players = useQuery(api.players.players.getLeaderboardRanked, {
-    limit: 200,
-    playerType: "all",
-  });
-
+  // Fetch player list from backend
+  const players = useQuery(api.admin.admin.listPlayers, { limit: 200 }) as PlayerOption[] | undefined;
   const isLoading = players === undefined;
 
   // Filter players by search
@@ -63,7 +59,7 @@ export function PlayerSelector({
   }, [players, searchQuery]);
 
   // Toggle selection
-  const togglePlayer = (playerId: Id<"players">) => {
+  const togglePlayer = (playerId: Id<"users">) => {
     if (selectedIds.includes(playerId)) {
       onSelectionChange(selectedIds.filter((id) => id !== playerId));
     } else {

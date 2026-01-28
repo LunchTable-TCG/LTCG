@@ -22,7 +22,7 @@ import { TestUserFactory, SELECTORS } from "./setup/test-data";
  *   bun run test:e2e              # Run all E2E tests (includes smoke)
  *
  * Prerequisites:
- *   - App running on http://localhost:3000 (or use webServer in playwright.config.ts)
+ *   - App running on http://localhost:3333 (or use webServer in playwright.config.ts)
  *   - Convex backend running
  */
 test.describe("Smoke Test - Critical Path", () => {
@@ -47,7 +47,7 @@ test.describe("Smoke Test - Critical Path", () => {
     await page.fill(SELECTORS.AUTH_PASSWORD_INPUT, testUser.password);
     await page.fill('input[id="confirmPassword"]', testUser.password); // Confirm password for signup
 
-    // Click submit and wait for either redirect or error
+    // Submit form
     await page.click(SELECTORS.AUTH_SUBMIT_BUTTON);
 
     // Wait a moment for the form to process

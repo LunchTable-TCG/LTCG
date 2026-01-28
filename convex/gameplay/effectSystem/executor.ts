@@ -7,6 +7,7 @@
 
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
+import { logger, performance, logCardEffect } from "../../lib/debug";
 import { hasUsedOPT, markOPTUsed } from "../../lib/gameHelpers";
 import { parseAbility } from "./parser";
 import type { EffectResult, ParsedAbility, ParsedEffect } from "./types";
@@ -16,7 +17,6 @@ import { executeBanish } from "./executors/cardMovement/banish";
 import { executeDiscard } from "./executors/cardMovement/discard";
 import { executeDraw } from "./executors/cardMovement/draw";
 import { executeMill } from "./executors/cardMovement/mill";
-import { executeReturnToDeck } from "./executors/cardMovement/returnToDeck";
 import { executeSearch } from "./executors/cardMovement/search";
 import { executeSendToGraveyard } from "./executors/cardMovement/toGraveyard";
 import { executeToHand } from "./executors/cardMovement/toHand";
@@ -42,23 +42,44 @@ export async function executeEffect(
   cardId: Id<"cardDefinitions">,
   targets?: Id<"cardDefinitions">[]
 ): Promise<EffectResult> {
+  const opId = `effect_${effect.type}_${Date.now()}`;
+  performance.start(opId);
+
+  // Get card info for logging
+  const card = await ctx.db.get(cardId);
+  const cardName = card?.name || "Unknown Card";
+
+  logger.debug("Executing card effect", {
+    cardId,
+    cardName,
+    effectType: effect.type,
+    playerId,
+    lobbyId,
+    targetsCount: targets?.length || 0,
+  });
+
   // Edge case: Validate effect object is not null/undefined
   if (!effect || typeof effect !== "object") {
+    logger.warn("Invalid effect object", { cardId, cardName });
     return { success: false, message: "Invalid effect object" };
   }
 
   // Edge case: Validate required effect properties
   if (!effect.type) {
+    logger.warn("Effect missing type property", { cardId, cardName });
     return { success: false, message: "Effect missing type property" };
   }
 
   // Edge case: Validate gameState has required properties
   if (!gameState.hostId || !gameState.opponentId) {
+    logger.error("Invalid game state", undefined, { cardId, cardName, lobbyId });
     return { success: false, message: "Invalid game state" };
   }
 
   // Check OPT restriction
   if (effect.isOPT && hasUsedOPT(gameState, cardId)) {
+    logger.debug("OPT restriction blocked effect", { cardId, cardName, effectType: effect.type });
+    logCardEffect(cardName, effect.type, false, { reason: "OPT_USED", lobbyId });
     return { success: false, message: "This card's effect can only be used once per turn" };
   }
 
@@ -451,7 +472,35 @@ export async function executeEffect(
   // Mark card as having used OPT effect if successful
   if (result.success && effect.isOPT) {
     await markOPTUsed(ctx, gameState, cardId);
+    logger.debug("Marked OPT as used", { cardId, cardName });
   }
+
+  // Log effect result
+  logCardEffect(cardName, effect.type, result.success, {
+    lobbyId,
+    playerId,
+    targetsCount: targets?.length || 0,
+    message: result.message,
+  });
+
+  if (result.success) {
+    logger.info(`Card effect executed: ${effect.type}`, {
+      cardId,
+      cardName,
+      lobbyId,
+      playerId,
+    });
+  } else {
+    logger.warn(`Card effect failed: ${effect.type}`, {
+      cardId,
+      cardName,
+      lobbyId,
+      playerId,
+      reason: result.message,
+    });
+  }
+
+  performance.end(opId, { cardId, effectType: effect.type, success: result.success });
 
   return result;
 }

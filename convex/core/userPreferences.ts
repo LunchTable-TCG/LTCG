@@ -253,7 +253,7 @@ export const deleteAccount = mutation({
     success: v.boolean(),
     error: v.optional(v.string()),
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthMutation(ctx);
 
     // Get user email for password verification

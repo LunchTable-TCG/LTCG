@@ -22,9 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RoleGuard } from "@/contexts/AdminContext";
 import type { ApiKey, ColumnDef } from "@/types";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Card, Flex, Text, Title } from "@tremor/react";
-import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -43,11 +42,11 @@ const columns: ColumnDef<ApiKey>[] = [
     ),
   },
   {
-    id: "name",
-    header: "Name",
-    accessorKey: "name",
+    id: "agentName",
+    header: "Agent",
+    accessorKey: "agentName",
     sortable: true,
-    cell: (row) => <span className="font-medium">{row.name}</span>,
+    cell: (row) => <span className="font-medium">{row.agentName}</span>,
   },
   {
     id: "playerName",
@@ -59,24 +58,11 @@ const columns: ColumnDef<ApiKey>[] = [
     id: "status",
     header: "Status",
     cell: (row) => {
-      const isExpired = row.expiresAt && row.expiresAt < Date.now();
       if (!row.isActive) {
         return <Badge variant="destructive">Revoked</Badge>;
       }
-      if (isExpired) {
-        return <Badge variant="secondary">Expired</Badge>;
-      }
       return <Badge variant="default">Active</Badge>;
     },
-  },
-  {
-    id: "permissions",
-    header: "Permissions",
-    cell: (row) => (
-      <span className="text-sm text-muted-foreground">
-        {row.permissions.length} permission{row.permissions.length !== 1 ? "s" : ""}
-      </span>
-    ),
   },
   {
     id: "lastUsedAt",
@@ -111,12 +97,12 @@ export default function ApiKeysPage() {
   const [selectedKey, setSelectedKey] = useState<ApiKey | null>(null);
 
   // Fetch API keys
-  const apiKeys = useQuery(api.admin.apiKeys.listApiKeys, { limit: 100 });
+  const apiKeys = useConvexQuery(apiAny.admin.apiKeys.listApiKeys, { limit: 100 });
 
   // Mutations
-  const revokeKey = useMutation(api.admin.apiKeys.revokeApiKey);
-  const reactivateKey = useMutation(api.admin.apiKeys.reactivateApiKey);
-  const deleteKey = useMutation(api.admin.apiKeys.deleteApiKey);
+  const revokeKey = useConvexMutation(apiAny.admin.apiKeys.revokeApiKey);
+  const reactivateKey = useConvexMutation(apiAny.admin.apiKeys.reactivateApiKey);
+  const deleteKey = useConvexMutation(apiAny.admin.apiKeys.deleteApiKey);
 
   const isLoading = apiKeys === undefined;
 
@@ -128,8 +114,7 @@ export default function ApiKeysPage() {
     const nowTime = Date.now();
     return {
       total: apiKeys.length,
-      active: apiKeys.filter((k: ApiKey) => k.isActive && (!k.expiresAt || k.expiresAt > nowTime))
-        .length,
+      active: apiKeys.filter((k: ApiKey) => k.isActive).length,
       revoked: apiKeys.filter((k: ApiKey) => !k.isActive).length,
       recentlyUsed: apiKeys.filter(
         (k: ApiKey) => k.lastUsedAt && nowTime - k.lastUsedAt < 7 * 24 * 60 * 60 * 1000
@@ -149,7 +134,7 @@ export default function ApiKeysPage() {
 
     try {
       await revokeKey({ keyId: selectedKey._id });
-      toast.success(`API key "${selectedKey.name}" revoked`);
+      toast.success(`API key "${selectedKey.agentName}" revoked`);
       setRevokeDialogOpen(false);
       setSelectedKey(null);
     } catch (error) {
@@ -162,7 +147,7 @@ export default function ApiKeysPage() {
 
     try {
       await reactivateKey({ keyId: selectedKey._id });
-      toast.success(`API key "${selectedKey.name}" reactivated`);
+      toast.success(`API key "${selectedKey.agentName}" reactivated`);
       setReactivateDialogOpen(false);
       setSelectedKey(null);
     } catch (error) {
@@ -175,7 +160,7 @@ export default function ApiKeysPage() {
 
     try {
       await deleteKey({ keyId: selectedKey._id });
-      toast.success(`API key "${selectedKey.name}" permanently deleted`);
+      toast.success(`API key "${selectedKey.agentName}" permanently deleted`);
       setDeleteDialogOpen(false);
       setSelectedKey(null);
     } catch (error) {
@@ -236,75 +221,78 @@ export default function ApiKeysPage() {
       <Card className="mt-6">
         <Title>All API Keys</Title>
         <div className="mt-4">
-          <DataTable<ApiKey>
-            data={apiKeys}
+          <DataTable
+            data={apiKeys || []}
             columns={columns}
             rowKey="_id"
             isLoading={isLoading}
             searchable
-            searchPlaceholder="Search by name or player..."
-            searchColumns={["name", "playerName"]}
+            searchPlaceholder="Search by agent or player..."
+            searchColumns={["agentName", "playerName"]}
             pageSize={15}
             emptyMessage="No API keys found"
-            onRowClick={(row) => router.push(`/players/${row.playerId}`)}
-            rowActions={(row) => (
-              <div className="flex gap-2">
-                {row.isActive ? (
-                  <RoleGuard permission="player.edit">
+            onRowClick={(row) => router.push(`/players/${row.userId}`)}
+            rowActions={(row) => {
+              const apiKey = row;
+              return (
+                <div className="flex gap-2">
+                  {apiKey.isActive ? (
+                    <RoleGuard permission="player.edit">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedKey(apiKey);
+                          setRevokeDialogOpen(true);
+                        }}
+                      >
+                        Revoke
+                      </Button>
+                    </RoleGuard>
+                  ) : (
+                    <RoleGuard permission="player.edit">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedKey(apiKey);
+                          setReactivateDialogOpen(true);
+                        }}
+                      >
+                        Reactivate
+                      </Button>
+                    </RoleGuard>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/players/${apiKey.userId}`);
+                    }}
+                  >
+                    View Player
+                  </Button>
+                  <RoleGuard permission="admin.manage">
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-destructive hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedKey(row);
-                        setRevokeDialogOpen(true);
+                        setSelectedKey(apiKey);
+                        setDeleteDialogOpen(true);
                       }}
                     >
-                      Revoke
+                      Delete
                     </Button>
                   </RoleGuard>
-                ) : (
-                  <RoleGuard permission="player.edit">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedKey(row);
-                        setReactivateDialogOpen(true);
-                      }}
-                    >
-                      Reactivate
-                    </Button>
-                  </RoleGuard>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/players/${row.playerId}`);
-                  }}
-                >
-                  View Player
-                </Button>
-                <RoleGuard permission="admin.manage">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedKey(row);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </RoleGuard>
-              </div>
-            )}
+                </div>
+              );
+            }}
           />
         </div>
       </Card>
@@ -315,7 +303,7 @@ export default function ApiKeysPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Revoke API Key</AlertDialogTitle>
             <AlertDialogDescription>
-              This will immediately revoke &ldquo;{selectedKey?.name}&rdquo; for player &ldquo;
+              This will immediately revoke &ldquo;{selectedKey?.agentName}&rdquo; for player &ldquo;
               {selectedKey?.playerName}&rdquo;. Any active connections using this key will stop
               working.
             </AlertDialogDescription>
@@ -338,7 +326,7 @@ export default function ApiKeysPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Reactivate API Key</AlertDialogTitle>
             <AlertDialogDescription>
-              This will reactivate &ldquo;{selectedKey?.name}&rdquo; for player &ldquo;
+              This will reactivate &ldquo;{selectedKey?.agentName}&rdquo; for player &ldquo;
               {selectedKey?.playerName}&rdquo;. The key will be able to access the API again.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -355,7 +343,7 @@ export default function ApiKeysPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Permanently Delete API Key</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete &ldquo;{selectedKey?.name}&rdquo; for player &ldquo;
+              This will permanently delete &ldquo;{selectedKey?.agentName}&rdquo; for player &ldquo;
               {selectedKey?.playerName}&rdquo;. This action cannot be undone. The key prefix &ldquo;
               {selectedKey?.keyPrefix}...&rdquo; will be gone forever.
             </AlertDialogDescription>

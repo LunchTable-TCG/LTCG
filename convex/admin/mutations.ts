@@ -11,7 +11,7 @@ import { internal } from "../_generated/api";
 import { mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { requirePermission, requireRole } from "../lib/roles";
+import { requireRole } from "../lib/roles";
 import type { MutationCtx } from "../_generated/server";
 
 /**
@@ -50,10 +50,8 @@ export const deleteUserByEmail = mutation({
     const { userId } = await requireAuthMutation(ctx);
     await requireRole(ctx, userId, "admin");
 
-    let success = false;
     let message = "";
     let targetUserId: Id<"users"> | undefined;
-    let errorMessage: string | undefined;
 
     try {
       // Find user by email
@@ -64,7 +62,6 @@ export const deleteUserByEmail = mutation({
 
       if (!user) {
         message = `User ${args.email} not found`;
-        success = false;
 
         // Log failed attempt
         await scheduleAuditLog(ctx, {
@@ -94,7 +91,6 @@ export const deleteUserByEmail = mutation({
       // Delete user
       await ctx.db.delete(user._id);
 
-      success = true;
       message = `Deleted user ${args.email}`;
 
       // Log successful deletion
@@ -112,7 +108,7 @@ export const deleteUserByEmail = mutation({
 
       return { success: true, message };
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
       // Log error
       await scheduleAuditLog(ctx, {
@@ -136,13 +132,12 @@ export const deleteUserByEmail = mutation({
  */
 export const deleteTestUsers = mutation({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     // Validate admin session and require superadmin role
     const { userId } = await requireAuthMutation(ctx);
     await requireRole(ctx, userId, "superadmin");
 
     let deletedCount = 0;
-    let errorMessage: string | undefined;
     const deletedEmails: string[] = [];
 
     try {
@@ -185,7 +180,7 @@ export const deleteTestUsers = mutation({
         message: `Deleted ${deletedCount} test users`,
       };
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
       // Log error
       await scheduleAuditLog(ctx, {
@@ -303,7 +298,7 @@ export const getUserAnalytics = query({
  */
 export const getAllTestUsers = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     // Validate admin session and require moderator role
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -332,7 +327,6 @@ export const addGoldToCurrentUser = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
 
-    let errorMessage: string | undefined;
     let currentGold = 0;
     let newGold = 0;
 
@@ -373,7 +367,7 @@ export const addGoldToCurrentUser = mutation({
         amountAdded: args.amount,
       };
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
       // Log error
       await scheduleAuditLog(ctx, {
@@ -401,7 +395,6 @@ export const forceCloseMyGame = mutation({
   handler: async (ctx) => {
     const { userId } = await requireAuthMutation(ctx);
 
-    let errorMessage: string | undefined;
     let closedCount = 0;
 
     try {
@@ -452,7 +445,7 @@ export const forceCloseMyGame = mutation({
 
       return { success: true, closedLobbies: closedCount };
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
       // Log error
       await scheduleAuditLog(ctx, {
@@ -527,10 +520,7 @@ export const getAdminAuditLogs = query({
         .withIndex("by_success", (q) => q.eq("success", success))
         .collect();
     } else {
-      logs = await ctx.db
-        .query("adminAuditLogs")
-        .withIndex("by_timestamp")
-        .collect();
+      logs = await ctx.db.query("adminAuditLogs").withIndex("by_timestamp").collect();
     }
 
     // Sort by timestamp descending

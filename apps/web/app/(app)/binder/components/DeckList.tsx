@@ -41,7 +41,7 @@ export function DeckList({
   };
 
   return (
-    <div className="tcg-chat-leather rounded-2xl p-6 border border-[#3d2b1f]">
+    <div className="tcg-chat-leather rounded-2xl p-6 border border-[#3d2b1f]" data-testid="deck-list">
       <h2 className="text-lg font-bold text-[#e8e0d5] mb-4 flex items-center gap-2">
         <Layers className="w-5 h-5 text-[#d4af37]" />
         My Decks

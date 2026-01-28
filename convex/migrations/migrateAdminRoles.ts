@@ -14,7 +14,6 @@ import { internalMutation } from "../_generated/server";
 export const migrateAdminRoles = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const now = Date.now();
     let migrationLog = {
       totalRecords: 0,
       updatedRecords: 0,

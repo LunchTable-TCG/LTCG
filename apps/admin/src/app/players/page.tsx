@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import type { ColumnDef, PlayerType } from "@/types";
 import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -29,7 +28,7 @@ import { useState } from "react";
 // =============================================================================
 
 interface LeaderboardPlayer {
-  playerId: Id<"players">;
+  playerId: any; // Id type
   name: string;
   type: PlayerType;
   eloRating: number;
@@ -43,7 +42,7 @@ interface LeaderboardPlayer {
 }
 
 interface PlayerListItem extends LeaderboardPlayer {
-  _id: Id<"players">;
+  _id: any; // Id type
 }
 
 // =============================================================================
@@ -111,18 +110,26 @@ export default function PlayersPage() {
   const [playerTypeFilter, setPlayerTypeFilter] = useState<"all" | "human" | "ai">("all");
 
   // Fetch player leaderboard
-  const players = useQuery(api.players.players.getLeaderboardRanked, {
-    limit: 500,
-    playerType: playerTypeFilter,
+  const leaderboardData = useQuery(api.social.leaderboards.getLeaderboard, {
+    type: "ranked",
+    segment: "all",
+    limit: 100,
   });
 
   // Transform data for table
-  const tableData: PlayerListItem[] | undefined = players?.map((p: LeaderboardPlayer) => ({
-    ...p,
-    _id: p.playerId,
+  const tableData: PlayerListItem[] | undefined = leaderboardData?.map((entry: any) => ({
+    _id: entry.userId,
+    playerId: entry.userId,
+    name: entry.username || "Unknown",
+    type: (entry.isAiAgent ? "ai" : "human") as PlayerType,
+    eloRating: entry.rating,
+    rank: entry.rank,
+    gamesPlayed: entry.wins + entry.losses,
+    gamesWon: entry.wins,
+    winRate: entry.winRate,
   }));
 
-  const isLoading = players === undefined;
+  const isLoading = leaderboardData === undefined;
 
   return (
     <PageWrapper title="Players" description="Manage and moderate player accounts">

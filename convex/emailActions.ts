@@ -8,7 +8,7 @@ import { v } from "convex/values";
  * All emails are sent asynchronously and logged for monitoring.
  */
 
-const EMAIL_FROM = process.env.AUTH_EMAIL ?? "Lunchtable <onboarding@resend.dev>";
+const EMAIL_FROM = process.env['AUTH_EMAIL'] ?? "Lunchtable <onboarding@resend.dev>";
 
 async function sendEmail({
   to,
@@ -19,7 +19,7 @@ async function sendEmail({
   subject: string;
   html: string;
 }): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env['RESEND_API_KEY'];
 
   if (!apiKey) {
     console.log("=".repeat(60));
@@ -62,7 +62,7 @@ export const sendWelcomeEmail = internalAction({
     email: v.string(),
     username: v.string(),
   },
-  handler: async (ctx, { email, username }) => {
+  handler: async (_ctx, { email, username }) => {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #d4af37;">Welcome to Lunchtable, ${username}!</h2>
@@ -101,7 +101,7 @@ export const sendSecurityAlert = internalAction({
     alertType: v.string(),
     alertDetails: v.string(),
   },
-  handler: async (ctx, { email, username, alertType, alertDetails }) => {
+  handler: async (_ctx, { email, username, alertType, alertDetails }) => {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #d4af37;">Security Alert for ${username}</h2>
@@ -134,7 +134,7 @@ export const sendCardSoldNotification = internalAction({
     rarity: v.string(),
     price: v.number(),
   },
-  handler: async (ctx, { email, username, cardName, rarity, price }) => {
+  handler: async (_ctx, { email, username, cardName, rarity, price }) => {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #d4af37;">Your Card Was Sold!</h2>
@@ -171,7 +171,7 @@ export const sendAuctionWonNotification = internalAction({
     rarity: v.string(),
     winningBid: v.number(),
   },
-  handler: async (ctx, { email, username, cardName, rarity, winningBid }) => {
+  handler: async (_ctx, { email, username, cardName, rarity, winningBid }) => {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #d4af37;">You Won the Auction!</h2>
@@ -208,7 +208,7 @@ export const sendAuctionOutbidNotification = internalAction({
     currentBid: v.number(),
     auctionEndsAt: v.string(),
   },
-  handler: async (ctx, { email, username, cardName, currentBid, auctionEndsAt }) => {
+  handler: async (_ctx, { email, username, cardName, currentBid, auctionEndsAt }) => {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #d4af37;">You've Been Outbid!</h2>
@@ -244,7 +244,7 @@ export const sendFriendRequestNotification = internalAction({
     username: v.string(),
     fromUsername: v.string(),
   },
-  handler: async (ctx, { email, username, fromUsername }) => {
+  handler: async (_ctx, { email, username, fromUsername }) => {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #d4af37;">New Friend Request</h2>

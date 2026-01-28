@@ -6,15 +6,8 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
-import { Doc, type Id } from "../_generated/dataModel";
-import {
-  internalAction,
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "../_generated/server";
+import type { Id } from "../_generated/dataModel";
+import { mutation, query } from "../_generated/server";
 
 // =============================================================================
 // CONSTANTS
@@ -53,14 +46,14 @@ export const getCardWithImages = query({
     let thumbnailUrl: string | null = null;
 
     // Best Practice: Prefer Convex storage over external URLs
-    if (card.imageStorageId) {
-      imageUrl = await ctx.storage.getUrl(card.imageStorageId as Id<"_storage">);
+    if (card['imageStorageId']) {
+      imageUrl = await ctx.storage.getUrl(card['imageStorageId'] as Id<"_storage">);
     } else if (card.imageUrl) {
       imageUrl = card.imageUrl;
     }
 
-    if (card.thumbnailStorageId) {
-      thumbnailUrl = await ctx.storage.getUrl(card.thumbnailStorageId as Id<"_storage">);
+    if (card['thumbnailStorageId']) {
+      thumbnailUrl = await ctx.storage.getUrl(card['thumbnailStorageId'] as Id<"_storage">);
     }
 
     return {
@@ -89,14 +82,14 @@ export const getCardsWithImages = query({
         let imageUrl: string | null = null;
         let thumbnailUrl: string | null = null;
 
-        if (card.imageStorageId) {
-          imageUrl = await ctx.storage.getUrl(card.imageStorageId as Id<"_storage">);
+        if (card['imageStorageId']) {
+          imageUrl = await ctx.storage.getUrl(card['imageStorageId'] as Id<"_storage">);
         } else if (card.imageUrl) {
           imageUrl = card.imageUrl;
         }
 
-        if (card.thumbnailStorageId) {
-          thumbnailUrl = await ctx.storage.getUrl(card.thumbnailStorageId as Id<"_storage">);
+        if (card['thumbnailStorageId']) {
+          thumbnailUrl = await ctx.storage.getUrl(card['thumbnailStorageId'] as Id<"_storage">);
         }
 
         return {
@@ -129,11 +122,11 @@ export const updateCardImage = mutation({
     const updates: Record<string, Id<"_storage"> | undefined> = {};
 
     if (args.imageStorageId) {
-      updates.imageStorageId = args.imageStorageId;
+      updates['imageStorageId'] = args.imageStorageId;
     }
 
     if (args.thumbnailStorageId) {
-      updates.thumbnailStorageId = args.thumbnailStorageId;
+      updates['thumbnailStorageId'] = args.thumbnailStorageId;
     }
 
     if (Object.keys(updates).length > 0) {

@@ -2,16 +2,32 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useQuery } from "convex/react";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import type { FunctionReturnType } from "convex/server";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 // Extract return types from Convex queries to avoid type depth issues
+// @ts-ignore - TS2589: Type instantiation too deep
 type CurrentUserReturn = FunctionReturnType<typeof api.core.users.currentUser>;
+// @ts-ignore - TS2589: Type instantiation too deep
 type UserInfoReturn = FunctionReturnType<typeof api.core.users.getUser>;
 
+/**
+ * Type-safe profile with optional stats fields
+ * All stats fields are guaranteed to be present for current user, but may be undefined for other users
+ */
+export type ProfileWithStats = (CurrentUserReturn | UserInfoReturn) & {
+  xp?: number;
+  level?: number;
+  totalWins?: number;
+  totalLosses?: number;
+  rankedElo?: number;
+  casualRating?: number;
+  activeDeckId?: string;
+};
+
 interface UseProfileReturn {
-  profile: CurrentUserReturn | UserInfoReturn | undefined;
+  profile: ProfileWithStats | undefined;
   isLoading: boolean;
   isCurrentUser: boolean;
 }
@@ -54,16 +70,18 @@ export function useProfile(userId?: Id<"users">): UseProfileReturn {
   const { isAuthenticated } = useAuth();
 
   // Current user - explicit type annotation avoids TypeScript type depth errors
-  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip") as
+  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip") as
     | CurrentUserReturn
+    | null
     | undefined;
 
   // Other user - explicit type annotation avoids TypeScript type depth errors
-  const otherUser = useQuery(api.core.users.getUser, userId ? { userId } : "skip") as
+  const otherUser = useConvexQuery(apiAny.core.users.getUser, userId ? { userId } : "skip") as
     | UserInfoReturn
+    | null
     | undefined;
 
-  const profile = userId ? otherUser : currentUser;
+  const profile = userId ? (otherUser ?? undefined) : (currentUser ?? undefined);
 
   return {
     profile,

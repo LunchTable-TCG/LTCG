@@ -5,8 +5,7 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
-import { internalMutation, mutation, query } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";

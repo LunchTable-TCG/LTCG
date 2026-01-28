@@ -50,11 +50,7 @@ async function scheduleAuditLog(
 export const grantRole = mutation({
   args: {
     targetUserId: v.id("users"),
-    role: v.union(
-      v.literal("moderator"),
-      v.literal("admin"),
-      v.literal("superadmin")
-    ),
+    role: v.union(v.literal("moderator"), v.literal("admin"), v.literal("superadmin")),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
@@ -255,13 +251,7 @@ export const revokeRole = mutation({
  */
 export const listAdminsByRole = query({
   args: {
-    role: v.optional(
-      v.union(
-        v.literal("moderator"),
-        v.literal("admin"),
-        v.literal("superadmin")
-      )
-    ),
+    role: v.optional(v.union(v.literal("moderator"), v.literal("admin"), v.literal("superadmin"))),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
@@ -274,7 +264,9 @@ export const listAdminsByRole = query({
     if (args.role) {
       adminRoles = await ctx.db
         .query("adminRoles")
-        .withIndex("by_role", (q) => q.eq("role", args.role as "moderator" | "admin" | "superadmin").eq("isActive", true))
+        .withIndex("by_role", (q) =>
+          q.eq("role", args.role as "moderator" | "admin" | "superadmin").eq("isActive", true)
+        )
         .collect();
     } else {
       adminRoles = await ctx.db

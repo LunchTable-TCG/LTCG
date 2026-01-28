@@ -28,10 +28,25 @@
     "rules": {
       "recommended": true,
       "style": {
-        "useConst": "error"
+        "useConst": "error",
+        "noNonNullAssertion": "warn",
+        "useExportType": "error",
+        "useImportType": "error"
       },
       "suspicious": {
-        "noExplicitAny": "warn"
+        "noExplicitAny": "error",
+        "noUnsafeDeclarationMerging": "error",
+        "noConfusingVoidType": "error",
+        "noDoubleEquals": "error"
+      },
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error",
+        "useExhaustiveDependencies": "warn"
+      },
+      "complexity": {
+        "noForEach": "off",
+        "useLiteralKeys": "error"
       }
     }
   },

@@ -60,20 +60,9 @@ const navigation: NavGroup[] = [
     ],
   },
   {
-    title: "Forum",
-    items: [
-      { title: "Overview", href: "/forum", icon: "💬", permission: "player.view" },
-      { title: "Reports", href: "/forum/reports", icon: "🚩", permission: "player.view" },
-      { title: "Categories", href: "/forum/categories", icon: "📁", permission: "player.view" },
-      { title: "Mutes", href: "/forum/mutes", icon: "🔇", permission: "player.view" },
-      { title: "Mod Log", href: "/forum/log", icon: "📜", permission: "player.view" },
-    ],
-  },
-  {
     title: "Management",
     items: [
       { title: "Admins", href: "/admins", icon: "👑", permission: "admin.manage" },
-      { title: "Seasons", href: "/seasons", icon: "🏆", permission: "season.edit" },
       { title: "API Keys", href: "/api-keys", icon: "🔑", permission: "player.view" },
       { title: "Batch Operations", href: "/batch", icon: "📦", permission: "batch.operations" },
       { title: "Maintenance", href: "/maintenance", icon: "🔧", permission: "admin.manage" },

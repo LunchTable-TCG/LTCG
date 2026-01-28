@@ -46,7 +46,6 @@ export default function LeaderboardsPage() {
     myRank: userRank,
     battleHistory = [],
     lastUpdated,
-    isLoading = true,
   } = leaderboardData || {};
 
   const leaderboardTypes: { id: LeaderboardType; label: string; icon: typeof Trophy }[] = [

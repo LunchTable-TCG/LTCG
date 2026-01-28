@@ -6,6 +6,10 @@ import { ErrorCode, createError } from "../../lib/errorCodes";
 import { calculateEloChange } from "../../lib/helpers";
 import { addXP } from "../../lib/xpHelpers";
 
+// Type boundary to prevent TS2589 with deeply nested Convex types
+// @ts-ignore - TS2589: Type instantiation too deep
+const internalAny = internal as any;
+
 /**
  * Update player stats and ratings after game completion
  */
@@ -108,72 +112,59 @@ export async function updatePlayerStatsAfterGame(
 
   // Update quest progress for both players
   // Winner: win_game event
-  await ctx.scheduler.runAfter(0, internal.progression.quests.updateQuestProgress, {
+  const winGameEvent = {
+    type: "win_game" as const,
+    value: 1,
+    gameMode,
+  };
+  await ctx.scheduler.runAfter(0, internalAny.progression.quests.updateQuestProgress, {
     userId: winnerId,
-    event: {
-      type: "win_game",
-      value: 1,
-      gameMode,
-    },
+    event: winGameEvent,
   });
 
   // Both players: play_game event
-  await ctx.scheduler.runAfter(0, internal.progression.quests.updateQuestProgress, {
+  const playGameEvent = {
+    type: "play_game" as const,
+    value: 1,
+    gameMode,
+  };
+  await ctx.scheduler.runAfter(0, internalAny.progression.quests.updateQuestProgress, {
     userId: winnerId,
-    event: {
-      type: "play_game",
-      value: 1,
-      gameMode,
-    },
+    event: playGameEvent,
   });
 
-  await ctx.scheduler.runAfter(0, internal.progression.quests.updateQuestProgress, {
+  await ctx.scheduler.runAfter(0, internalAny.progression.quests.updateQuestProgress, {
     userId: loserId,
-    event: {
-      type: "play_game",
-      value: 1,
-      gameMode,
-    },
+    event: playGameEvent,
   });
 
   // Update achievement progress for both players
   // Winner: win_game event
-  await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
+  await ctx.scheduler.runAfter(0, internalAny.progression.achievements['updateAchievementProgress'], {
     userId: winnerId,
-    event: {
-      type: "win_game",
-      value: 1,
-      gameMode,
-    },
+    event: winGameEvent,
   });
 
   // Winner: ranked-specific achievement if applicable
   if (isRanked) {
-    await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
+    const winRankedEvent = {
+      type: "win_ranked" as const,
+      value: 1,
+    };
+    await ctx.scheduler.runAfter(0, internalAny.progression.achievements['updateAchievementProgress'], {
       userId: winnerId,
-      event: {
-        type: "win_ranked",
-        value: 1,
-      },
+      event: winRankedEvent,
     });
   }
 
   // Both players: play_game achievement
-  await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
+  await ctx.scheduler.runAfter(0, internalAny.progression.achievements['updateAchievementProgress'], {
     userId: winnerId,
-    event: {
-      type: "play_game",
-      value: 1,
-      gameMode,
-    },
+    event: playGameEvent,
   });
 
-  await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
+  await ctx.scheduler.runAfter(0, internalAny.progression.achievements['updateAchievementProgress'], {
     userId: loserId,
-    event: {
-      type: "play_game",
-      value: 1,
-      gameMode,
-    },
+    event: playGameEvent,
   });
 }

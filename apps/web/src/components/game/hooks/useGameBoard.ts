@@ -4,7 +4,6 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useMemo } from "react";
-import type { HandCard, BoardCard, BackrowCard, GraveyardCard } from "@/types";
 
 // =============================================================================
 // Query Return Types (simplified to avoid deep type instantiation)
@@ -323,9 +322,9 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
 
   // First, get lobby details to check if game is active
   // @ts-ignore - Deep type instantiation limit workaround
-  const lobbyDetails = useQuery(api.gameplay.games.queries.getLobbyDetails, { lobbyId }) as unknown as
-    | LobbyDetails
-    | undefined;
+  const lobbyDetails = useQuery(api.gameplay.games.queries.getLobbyDetails, {
+    lobbyId,
+  }) as unknown as LobbyDetails | undefined;
 
   // Only query game state if lobby is active (not "waiting")
   // Skip the query if status is completed, forfeited, or cancelled to avoid errors
@@ -363,9 +362,9 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   // ==========================================================================
 
   // Mutations without optimistic updates (type assertions to avoid depth limit)
-  const normalSummonMutation = useMutation(api.gameplay.gameEngine.summons.normalSummon) as ReturnType<
-    typeof useMutation
-  >;
+  const normalSummonMutation = useMutation(
+    api.gameplay.gameEngine.summons.normalSummon
+  ) as ReturnType<typeof useMutation>;
 
   const setMonsterMutation = useMutation(api.gameplay.gameEngine.summons.setMonster) as ReturnType<
     typeof useMutation
@@ -383,9 +382,6 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
 
   // Chain system mutations
   const passPriorityMutation = useMutation(api.gameplay.chainResolver.passPriority) as ReturnType<
-    typeof useMutation
-  >;
-  const resolveChainMutation = useMutation(api.gameplay.chainResolver.resolveChain) as ReturnType<
     typeof useMutation
   >;
 
@@ -532,7 +528,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   }, [surrenderGameMutation, lobbyId]);
 
   const activateSpell = useCallback(
-    async (cardId: Id<"cardDefinitions">, effectIndex?: number) => {
+    async (cardId: Id<"cardDefinitions">, _effectIndex?: number) => {
       try {
         await activateSpellMutation({
           lobbyId,
@@ -548,7 +544,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   );
 
   const activateFieldSpell = useCallback(
-    async (cardId: Id<"cardDefinitions">, effectIndex?: number) => {
+    async (cardId: Id<"cardDefinitions">, _effectIndex?: number) => {
       try {
         // Field spells use the same activateSpell mutation
         await activateSpellMutation({
@@ -565,7 +561,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   );
 
   const activateTrap = useCallback(
-    async (cardId: Id<"cardDefinitions">, effectIndex?: number) => {
+    async (cardId: Id<"cardDefinitions">, _effectIndex?: number) => {
       try {
         await activateTrapMutation({
           lobbyId,

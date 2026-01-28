@@ -415,7 +415,7 @@ export const getPhaseActions = query({
  */
 function getAvailableActionsForPhase(
   phase: GamePhase,
-  gameState: any
+  _gameState: any
 ): {
   canSummon: boolean;
   canSetCard: boolean;

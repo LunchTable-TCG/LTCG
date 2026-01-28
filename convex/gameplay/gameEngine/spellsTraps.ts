@@ -8,16 +8,14 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "../../_generated/dataModel";
 import { mutation } from "../../_generated/server";
-import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
-import { executeEffect, parseAbility } from "../effectSystem";
+import { parseAbility } from "../effectSystem";
 import { executeSearch } from "../effectSystem/executors/cardMovement/search";
-import type { EffectResult } from "../effectSystem/types";
 import { recordEventHelper } from "../gameEvents";
 import { getSpellSpeed } from "../../lib/spellSpeedHelper";
-import { addToChainHelper, resolveChainHelper } from "../chainResolver";
+import { addToChainHelper } from "../chainResolver";
 
 /**
  * Set a Spell or Trap card face-down in the Spell/Trap Zone

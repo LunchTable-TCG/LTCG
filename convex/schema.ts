@@ -119,11 +119,7 @@ export default defineSchema({
   // Admin roles for protected operations with role hierarchy
   adminRoles: defineTable({
     userId: v.id("users"),
-    role: v.union(
-      v.literal("moderator"),
-      v.literal("admin"),
-      v.literal("superadmin")
-    ),
+    role: v.union(v.literal("moderator"), v.literal("admin"), v.literal("superadmin")),
     grantedBy: v.id("users"), // Required: who granted this role
     grantedAt: v.number(),
     isActive: v.boolean(),

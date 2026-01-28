@@ -10,7 +10,13 @@ import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { requireRole, getUserRole, canManageRole, roleHierarchy, type UserRole } from "../lib/roles";
+import {
+  requireRole,
+  getUserRole,
+  canManageRole,
+  roleHierarchy,
+  type UserRole,
+} from "../lib/roles";
 import { internal } from "../_generated/api";
 import type { MutationCtx } from "../_generated/server";
 
@@ -71,9 +77,7 @@ export const getSystemStats = query({
     }).length;
 
     // Count players in queue (waiting lobbies without opponent)
-    const playersInQueue = allLobbies.filter(
-      (l) => l.status === "waiting" && !l.opponentId
-    ).length;
+    const playersInQueue = allLobbies.filter((l) => l.status === "waiting" && !l.opponentId).length;
 
     // Get API key stats
     const allApiKeys = await ctx.db.query("apiKeys").collect();
@@ -143,7 +147,8 @@ export const getSuspiciousActivityReport = query({
       summary.push({
         category: "Pending Reports",
         count: pendingReports.length,
-        severity: pendingReports.length > 10 ? "high" : pendingReports.length > 5 ? "medium" : "low",
+        severity:
+          pendingReports.length > 10 ? "high" : pendingReports.length > 5 ? "medium" : "low",
       });
     }
 
@@ -224,13 +229,7 @@ export const getMyAdminRole = query({
  */
 export const listAdmins = query({
   args: {
-    role: v.optional(
-      v.union(
-        v.literal("moderator"),
-        v.literal("admin"),
-        v.literal("superadmin")
-      )
-    ),
+    role: v.optional(v.union(v.literal("moderator"), v.literal("admin"), v.literal("superadmin"))),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
@@ -291,11 +290,7 @@ export const listAdmins = query({
 export const grantAdminRole = mutation({
   args: {
     userId: v.id("users"),
-    role: v.union(
-      v.literal("moderator"),
-      v.literal("admin"),
-      v.literal("superadmin")
-    ),
+    role: v.union(v.literal("moderator"), v.literal("admin"), v.literal("superadmin")),
   },
   handler: async (ctx, args) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
@@ -398,6 +393,30 @@ export const grantAdminRole = mutation({
 });
 
 /**
+ * Get audit log entries
+ * TODO: Implement filtering and pagination
+ */
+export const getAuditLog = query({
+  args: {
+    limit: v.number(),
+    targetType: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "moderator");
+
+    // Get audit logs
+    const logs = await ctx.db
+      .query("adminAuditLogs")
+      .withIndex("by_timestamp")
+      .order("desc")
+      .take(args.limit);
+
+    return logs;
+  },
+});
+
+/**
  * Revoke admin role from a user
  * Wrapper for admin/roles.ts revokeRole
  */
@@ -486,5 +505,71 @@ export const revokeAdminRole = mutation({
 
       throw error;
     }
+  },
+});
+
+/**
+ * List players for admin operations (batch operations, player selector)
+ * Returns simplified player data with ranking and type info
+ * Requires moderator role or higher
+ */
+export const listPlayers = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, { limit = 200 }) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "moderator");
+
+    // Get users
+    const users = await ctx.db.query("users").take(limit);
+
+    // Transform to PlayerOption format
+    return users.map((user, index) => ({
+      playerId: user._id,
+      name: user.username || user.email || "Unknown",
+      type: (user.isAiAgent ? "ai" : "human") as "ai" | "human",
+      eloRating: user.rankedElo || 1000,
+      rank: index + 1, // Simple ranking by query order
+    }));
+  },
+});
+
+/**
+ * Get player profile for admin view
+ * Returns extended player data including admin-specific fields
+ */
+export const getPlayerProfile = query({
+  args: {
+    playerId: v.id("users"),
+  },
+  handler: async (ctx, { playerId }) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "moderator");
+
+    const player = await ctx.db.get(playerId);
+    if (!player) return null;
+
+    return {
+      _id: player._id,
+      name: player.username || "Unknown",
+      username: player.username,
+      type: player.isAiAgent ? ("ai" as const) : ("human" as const),
+      eloRating: player.rankedElo || 1000,
+      seasonRating: player.casualRating || 1000,
+      rank: 0, // TODO: Calculate actual rank
+      percentile: 0, // TODO: Calculate percentile
+      lastActiveAt: player.createdAt || player._creationTime,
+      createdAt: player.createdAt,
+      aiDifficulty: player.isAiAgent ? ("medium" as const) : undefined,
+      aiPersonality: player.isAiAgent ? "balanced" : undefined,
+      peakRating: player.rankedElo || 1000,
+      seasonId: null,
+      stats: {
+        gamesPlayed: (player.totalWins || 0) + (player.totalLosses || 0),
+        gamesWon: player.totalWins || 0,
+        totalScore: 0,
+      },
+    };
   },
 });

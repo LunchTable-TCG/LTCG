@@ -2,6 +2,8 @@
  * Test data factories and constants for E2E tests
  */
 
+import type { Page } from "@playwright/test";
+
 export interface TestUser {
   username: string;
   email: string;
@@ -30,8 +32,8 @@ export class TestUserFactory {
   static create(overrides?: Partial<TestUser>): TestUser {
     const timestamp = Date.now();
     return {
-      username: `testuser_${timestamp}`,
-      email: `test_${timestamp}@example.com`,
+      username: `testuser${timestamp}`,
+      email: `test${timestamp}@example.com`,
       password: "TestPassword123!",
       displayName: `Test User ${timestamp}`,
       ...overrides,
@@ -42,8 +44,8 @@ export class TestUserFactory {
     return Array.from({ length: count }, (_, i) => {
       const timestamp = Date.now() + i;
       return this.create({
-        username: `testuser_${timestamp}_${i}`,
-        email: `test_${timestamp}_${i}@example.com`,
+        username: `testuser${timestamp}${i}`,
+        email: `test${timestamp}${i}@example.com`,
         displayName: `Test User ${timestamp} ${i}`,
       });
     });
@@ -143,7 +145,7 @@ export const TEST_CONFIG = {
   CARDS_PER_PACK: 5,
 
   // URLs
-  BASE_URL: "http://localhost:3000",
+  BASE_URL: "http://localhost:3333",
   LOGIN_URL: "/login",
   SIGNUP_URL: "/signup",
   DASHBOARD_URL: "/lunchtable",
@@ -157,7 +159,7 @@ export const TEST_CONFIG = {
  */
 export const SELECTORS = {
   // Auth
-  AUTH_USERNAME_INPUT: 'input[name="username"]',
+  AUTH_USERNAME_INPUT: 'input[name="name"]', // AuthForm uses "name" not "username"
   AUTH_EMAIL_INPUT: 'input[name="email"]',
   AUTH_PASSWORD_INPUT: 'input[name="password"]',
   AUTH_SUBMIT_BUTTON: 'button[type="submit"]',
@@ -198,7 +200,7 @@ export const SELECTORS = {
  * Wait for an element to be visible and stable
  */
 export async function waitForElement(
-  page: any,
+  page: Page,
   selector: string,
   timeout = TEST_CONFIG.DEFAULT_TIMEOUT
 ) {

@@ -436,7 +436,7 @@ export const unblockUser = mutation({
 export const getFriends = query({
   args: {},
   returns: v.array(friendInfoValidator),
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     const friendships = await ctx.db
@@ -508,7 +508,7 @@ export const getFriends = query({
 export const getIncomingRequests = query({
   args: {},
   returns: v.array(friendRequestValidator),
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     const friendships = await ctx.db
@@ -554,7 +554,7 @@ export const getIncomingRequests = query({
 export const getOutgoingRequests = query({
   args: {},
   returns: v.array(friendRequestValidator),
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     const friendships = await ctx.db
@@ -606,7 +606,7 @@ export const getBlockedUsers = query({
       blockedAt: v.number(),
     })
   ),
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     const friendships = await ctx.db

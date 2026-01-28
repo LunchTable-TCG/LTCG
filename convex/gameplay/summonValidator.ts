@@ -163,7 +163,7 @@ export async function validateSpecialSummon(
   gameState: Doc<"gameStates">,
   playerId: Id<"users">,
   cardId: Id<"cardDefinitions">,
-  summonType: "fusion" | "ritual" | "synchro" | "xyz" | "pendulum" | "link"
+  _summonType: "fusion" | "ritual" | "synchro" | "xyz" | "pendulum" | "link"
 ): Promise<ValidationResult> {
   const isHost = playerId === gameState.hostId;
 
@@ -221,7 +221,7 @@ export async function validateSpecialSummon(
  * await validateFlipSummon(ctx, gameState, playerId, faceDownMonster)
  */
 export async function validateFlipSummon(
-  ctx: QueryCtx,
+  _ctx: QueryCtx,
   gameState: Doc<"gameStates">,
   playerId: Id<"users">,
   cardId: Id<"cardDefinitions">
@@ -307,7 +307,7 @@ export async function validateSetMonster(
  * // Switches attack → defense or defense → attack
  */
 export async function validatePositionChange(
-  ctx: QueryCtx,
+  _ctx: QueryCtx,
   gameState: Doc<"gameStates">,
   playerId: Id<"users">,
   cardId: Id<"cardDefinitions">

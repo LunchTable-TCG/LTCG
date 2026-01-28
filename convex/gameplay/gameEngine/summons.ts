@@ -8,9 +8,8 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "../../_generated/dataModel";
 import { mutation } from "../../_generated/server";
-import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { moveCard } from "../../lib/gameHelpers";
 import { validateMonsterZone } from "../../lib/validation";
@@ -54,6 +53,11 @@ export const normalSummon = mutation({
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
+    }
+
+    // 2.5. Validate game is active
+    if (!lobby.gameId || lobby.turnNumber === undefined) {
+      throw createError(ErrorCode.GAME_NOT_STARTED);
     }
 
     // 3. Validate it's the current player's turn
@@ -110,8 +114,8 @@ export const normalSummon = mutation({
       // Record tribute_paid event
       await recordEventHelper(ctx, {
         lobbyId: args.lobbyId,
-        gameId: lobby.gameId!,
-        turnNumber: lobby.turnNumber!,
+        gameId: lobby.gameId,
+        turnNumber: lobby.turnNumber,
         eventType: "tribute_paid",
         playerId: user.userId,
         playerUsername: user.username,
@@ -184,8 +188,8 @@ export const normalSummon = mutation({
     const eventType = tributeCount > 0 ? "tribute_summon" : "normal_summon";
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
+      gameId: lobby.gameId,
+      turnNumber: lobby.turnNumber,
       eventType,
       playerId: user.userId,
       playerUsername: user.username,
@@ -228,8 +232,8 @@ export const normalSummon = mutation({
             // Record trigger activation
             await recordEventHelper(ctx, {
               lobbyId: args.lobbyId,
-              gameId: lobby.gameId!,
-              turnNumber: lobby.turnNumber!,
+              gameId: lobby.gameId,
+              turnNumber: lobby.turnNumber,
               eventType: "effect_activated",
               playerId: user.userId,
               playerUsername: user.username,
@@ -281,8 +285,8 @@ export const normalSummon = mutation({
                 // Record opponent's trap activation
                 await recordEventHelper(ctx, {
                   lobbyId: args.lobbyId,
-                  gameId: lobby.gameId!,
-                  turnNumber: lobby.turnNumber!,
+                  gameId: lobby.gameId,
+                  turnNumber: lobby.turnNumber,
                   eventType: "effect_activated",
                   playerId: opponentId,
                   playerUsername: opponent?.username || "Opponent",
@@ -343,6 +347,11 @@ export const setMonster = mutation({
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
+    // 2.5. Validate game is active
+    if (!lobby.gameId || lobby.turnNumber === undefined) {
+      throw createError(ErrorCode.GAME_NOT_STARTED);
+    }
+
     // 3. Validate it's the current player's turn
     if (lobby.currentTurnPlayerId !== user.userId) {
       throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
@@ -396,8 +405,8 @@ export const setMonster = mutation({
     if (tributeCount > 0 && args.tributeCardIds) {
       await recordEventHelper(ctx, {
         lobbyId: args.lobbyId,
-        gameId: lobby.gameId!,
-        turnNumber: lobby.turnNumber!,
+        gameId: lobby.gameId,
+        turnNumber: lobby.turnNumber,
         eventType: "tribute_paid",
         playerId: user.userId,
         playerUsername: user.username,
@@ -451,8 +460,8 @@ export const setMonster = mutation({
     // 11. Record monster_set event
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
+      gameId: lobby.gameId,
+      turnNumber: lobby.turnNumber,
       eventType: "monster_set",
       playerId: user.userId,
       playerUsername: user.username,
@@ -505,6 +514,11 @@ export const flipSummon = mutation({
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
+    }
+
+    // 2.5. Validate game is active
+    if (!lobby.gameId || lobby.turnNumber === undefined) {
+      throw createError(ErrorCode.GAME_NOT_STARTED);
     }
 
     // 3. Validate it's the current player's turn
@@ -569,8 +583,8 @@ export const flipSummon = mutation({
     // 8. Record flip_summon event
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
+      gameId: lobby.gameId,
+      turnNumber: lobby.turnNumber,
       eventType: "flip_summon",
       playerId: user.userId,
       playerUsername: user.username,
@@ -612,8 +626,8 @@ export const flipSummon = mutation({
             // Record FLIP effect activation
             await recordEventHelper(ctx, {
               lobbyId: args.lobbyId,
-              gameId: lobby.gameId!,
-              turnNumber: lobby.turnNumber!,
+              gameId: lobby.gameId,
+              turnNumber: lobby.turnNumber,
               eventType: "effect_activated",
               playerId: user.userId,
               playerUsername: user.username,

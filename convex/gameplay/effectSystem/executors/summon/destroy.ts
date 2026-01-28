@@ -16,7 +16,6 @@ export async function executeDestroy(
   destroyedCardOwnerId?: Id<"users">;
   hadDestroyTrigger?: boolean;
 }> {
-  const isHost = playerId === gameState.hostId;
 
   // Check both boards for target
   const hostBoard = gameState.hostBoard;

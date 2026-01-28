@@ -4,7 +4,7 @@ import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowRight, Coins, Gift, Star, Trophy, Zap } from "lucide-react";
 
 interface StoryBattleCompleteDialogProps {
@@ -15,7 +15,11 @@ interface StoryBattleCompleteDialogProps {
     rewards: {
       gold: number;
       xp: number;
-      cards?: any[];
+      cards?: Array<{
+        id: string;
+        name: string;
+        rarity: string;
+      }>;
     };
     starsEarned: number;
     levelUp?: {

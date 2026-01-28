@@ -28,7 +28,6 @@ export async function executeToHand(
   }
 
   let newHand = hand;
-  let targetOwnerIsHost = isHost;
   let description = "";
 
   if (sourceLocation === "graveyard") {
@@ -67,7 +66,6 @@ export async function executeToHand(
       // Return opponent's card to opponent's hand
       const newOpponentBoard = opponentBoard.filter((bc) => bc.cardId !== targetCardId);
       const newOpponentHand = [...opponentHand, targetCardId];
-      targetOwnerIsHost = !isHost;
 
       await ctx.db.patch(gameState._id, {
         [isHost ? "opponentBoard" : "hostBoard"]: newOpponentBoard,

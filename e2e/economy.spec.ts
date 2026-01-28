@@ -261,8 +261,6 @@ test.describe("Economy Flow", () => {
       const shopHelper = new ShopHelper(authenticatedPage);
       await shopHelper.navigate();
 
-      const goldBefore = await shopHelper.getGoldAmount();
-
       // Enter promo code
       const promoInput = authenticatedPage.locator('input[name="promoCode"]');
       if (await promoInput.isVisible({ timeout: 2000 })) {

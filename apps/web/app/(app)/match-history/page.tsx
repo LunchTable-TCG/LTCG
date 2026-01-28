@@ -9,21 +9,15 @@ import { useQuery } from "convex/react";
 import {
   Calendar,
   ChevronRight,
-  Clock,
   Filter,
   History,
   Loader2,
   Skull,
-  Swords,
-  Target,
   TrendingDown,
   TrendingUp,
   Trophy,
 } from "lucide-react";
 import { useState } from "react";
-
-type MatchResult = "victory" | "defeat" | "draw";
-type MatchMode = "ranked" | "casual" | "story" | "practice";
 
 const resultConfig: Record<
   "victory" | "defeat",
@@ -64,7 +58,7 @@ export default function MatchHistoryPage() {
   const { profile: currentUser, isLoading: profileLoading } = useProfile();
   const { isAuthenticated } = useAuth();
 
-  const [filter, setFilter] = useState<MatchMode | "all">("all");
+  const [filter, setFilter] = useState<"ranked" | "casual" | "story" | "all">("all");
 
   // Fetch real match history from Convex
   const matchHistory = useQuery(

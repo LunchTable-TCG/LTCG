@@ -7,7 +7,6 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
 import { requireAuthQuery } from "../lib/convexAuth";
-import { matchHistoryEntryValidator } from "../lib/returnValidators";
 
 // Type definitions
 type MatchResult = "victory" | "defeat";

@@ -1,9 +1,8 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "../../_generated/dataModel";
 import { internalQuery, query } from "../../_generated/server";
-import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import { requireAuthQuery } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
-import { lobbyForCleanupValidator } from "../../lib/returnValidators";
 
 // ============================================================================
 // CONSTANTS
@@ -90,7 +89,7 @@ export const listWaitingLobbies = query({
  */
 export const getActiveLobby = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     // Find user's lobby where they are the host
@@ -147,7 +146,7 @@ export const getLobbyDetails = query({
  */
 export const getMyPrivateLobby = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     const lobby = await ctx.db
@@ -268,7 +267,7 @@ export const getGameSpectatorView = query({
     }
 
     // Get player information
-    const host = await ctx.db.get(lobby.hostId);
+    // const host = await ctx.db.get(lobby.hostId);
     const opponent = lobby.opponentId ? await ctx.db.get(lobby.opponentId) : null;
 
     // Get game state for spectator view (public zones only)
@@ -441,7 +440,7 @@ export const getGameSpectatorView = query({
  */
 export const checkForActiveGame = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     // Check if user is in an active game

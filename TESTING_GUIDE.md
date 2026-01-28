@@ -1,207 +1,152 @@
 # Testing Guide
 
-## Overview
+## Current Testing Status
 
-This project uses **Vitest** for testing Convex backend functions. Bun's test runner is not used because Convex component test helpers require `import.meta.glob()`, which is Vite-specific.
+### Infrastructure Status
 
-## Running Tests
+The test suite uses `convex-test@0.0.41` which requires updating the testing infrastructure. The current test files are written correctly but won't run until the setup is updated.
 
-```bash
-# Run all tests
-bun run test
+**Issue**: `convex-test` 0.0.41 no longer exports `ConvexTestingHelper`. It now uses `convexTest()` function.
 
-# Run tests once (no watch mode)
-bun run test:once
+**Files that need updating**:
+- `convex_test_utils/setup.ts` - Update to use `convexTest()` instead of `ConvexTestingHelper`
+- `tests/integration/auth-matrix.test.ts` - Already written correctly but can't run yet
 
-# Run specific test file
-bun run test:once convex/lib/xpHelpers.test.ts
+### Invariant Tests Structure
 
-# Run with coverage
-bun run test:coverage
+The file `tests/integration/invariants.test.ts` contains comprehensive data integrity tests covering 6 critical business invariants.
+
+## Invariants Tested
+
+### 1. Currency Never Negative
+**Why it matters**: Prevents economy exploits, duplication glitches, and infinite currency bugs.
+
+Tests:
+- ✓ Gold remains >= 0 after valid pack purchase
+- ✓ System rejects purchases with insufficient gold (negative test)
+- ✓ Gems remain >= 0 when using gem currency
+
+**Business rule**: `playerCurrency.gold >= 0` AND `playerCurrency.gems >= 0`
+
+### 2. Deck Validity (Exactly 30+ Cards)
+**Why it matters**: Ensures fair gameplay - players can't enter matches with invalid decks.
+
+Tests:
+- ✓ Allows creating deck with exactly 30 cards
+- ✓ Rejects deck with fewer than 30 cards (negative test)
+- ✓ Allows deck with more than 30 cards (no maximum enforced)
+
+**Business rule**: `deck.cardCount >= 30`
+
+### 3. Active Deck Exists Before Game
+**Why it matters**: Prevents players from entering games without a legal deck.
+
+Tests:
+- ✓ Allows setting valid 30-card deck as active
+- ✓ Rejects setting invalid deck as active (negative test)
+- ✓ Auto-sets first valid deck as active
+
+**Business rule**: `user.activeDeckId` must reference a valid deck with >= 30 cards
+
+### 4. No Orphaned Records (Referential Integrity)
+**Why it matters**: Prevents data corruption and broken references that crash the game.
+
+Tests:
+- ✓ Maintains card definition references in deck cards
+- ✓ Rejects adding cards user does not own (negative test)
+- ✓ Handles deck deletion without orphaning deck cards (soft delete)
+
+**Business rule**: All `deckCards.cardDefinitionId` must reference existing, active `cardDefinitions`
+
+### 5. Rating Bounds (0-3000 ELO)
+**Why it matters**: Keeps leaderboard data valid, prevents integer overflow/underflow.
+
+Tests:
+- ✓ Maintains rating bounds after match completion
+- ✓ Never allows rating to drop below 0 (boundary test)
+
+**Business rule**: `0 <= user.rankedElo <= 3000` AND `0 <= user.casualRating <= 3000`
+
+### 6. Consistent Totals (Wins + Losses = Match History)
+**Why it matters**: Ensures match statistics are accurate and auditable.
+
+Tests:
+- ✓ Maintains win/loss count consistency with match history
+- ✓ Detects inconsistency if stats and history mismatch (negative test)
+- ✓ Maintains separate game mode win counts
+
+**Business rule**:
+```
+user.totalWins = COUNT(matchHistory WHERE winnerId = user._id)
+user.totalLosses = COUNT(matchHistory WHERE loserId = user._id)
+user.totalWins = user.rankedWins + user.casualWins + user.storyWins
 ```
 
-## Testing Strategy
+## Test Strategy
 
-### 1. Unit Tests (No Convex Dev Required)
+Each test follows this pattern:
 
-Test pure business logic that doesn't depend on Convex components:
+1. **Setup**: Establish valid initial state
+2. **Operation**: Perform action that COULD violate invariant
+3. **Assert**: Verify invariant still holds
+4. **Negative Tests**: Deliberately try to break the invariant
 
+### Example: How Invariants Prevent Exploits
+
+#### Without Invariant 1 (Currency Never Negative)
 ```typescript
-// convex/lib/xpHelpers.test.ts
-import { describe, it, expect } from "vitest";
-import { calculateLevel, getXPForNextLevel } from "./xpHelpers";
+// BAD: No validation
+async function purchasePack(userId, cost) {
+  const user = await db.get(userId);
+  user.gold -= cost; // Could go negative!
+  await db.patch(userId, { gold: user.gold });
+}
 
-describe("XP Calculations", () => {
-  it("should calculate level from XP", () => {
-    expect(calculateLevel(0)).toBe(1);
-    expect(calculateLevel(100)).toBe(2);
-  });
-});
+// Exploit: User with 50 gold buys 100 gold pack
+// Result: gold = -50 (or wraps to 4,294,967,246 on 32-bit systems)
 ```
 
-### 2. Integration Tests (Requires Convex Dev)
-
-Test features that use Convex components (aggregates, sharded counters):
-
-**Setup:**
-1. Start Convex dev server in a separate terminal:
-   ```bash
-   bunx convex dev
-   ```
-2. Run tests:
-   ```bash
-   bun run test
-   ```
-
-**Example:**
+#### With Invariant 1 (Currency Never Negative)
 ```typescript
-// convex/social/leaderboards.test.ts
-import { describe, it, expect, beforeEach } from "vitest";
-import { createTestInstance } from "../test_utils/setup";
+// GOOD: Validates invariant
+async function purchasePack(userId, cost) {
+  const user = await db.get(userId);
 
-describe("Leaderboards (Integration)", () => {
-  let t: ReturnType<typeof createTestInstance>;
-
-  beforeEach(() => {
-    t = createTestInstance();
-  });
-
-  it("should rank players by ELO", async () => {
-    // Create test users
-    await t.run(async (ctx) => {
-      await ctx.db.insert("users", {
-        username: "player1",
-        rankedElo: 1500,
-        // ...
-      });
-    });
-
-    // Query leaderboard via aggregate component
-    const result = await t.run(async (ctx) => {
-      const { rankedLeaderboard } = await import("../infrastructure/aggregates");
-      return await rankedLeaderboard.topK(ctx, 10);
-    });
-
-    expect(result).toHaveLength(1);
-  });
-});
-```
-
-## Component Registration
-
-Convex components are automatically registered in test setup:
-
-```typescript
-// convex/test_utils/setup.ts
-import { register as registerAggregate } from "@convex-dev/aggregate/test";
-import { register as registerShardedCounter } from "@convex-dev/sharded-counter/test";
-
-export function createTestInstance() {
-  const t = convexTest(schema, modules);
-
-  try {
-    registerAggregate(t);
-    registerShardedCounter(t);
-  } catch (error) {
-    // Expected without convex dev running
+  if (user.gold < cost) {
+    throw new Error("Insufficient gold"); // Maintain invariant
   }
 
-  return t;
+  user.gold -= cost; // Always >= 0
+  await db.patch(userId, { gold: user.gold });
 }
 ```
 
-## Available Components
+## How to Run Tests (Once Infrastructure is Fixed)
 
-- **@convex-dev/aggregate** - For leaderboard queries
-- **@convex-dev/sharded-counter** - For spectator counters
-- **@convex-dev/ratelimiter** - No test helper (integration tests only)
+```bash
+# Run all invariant tests
+bun test tests/integration/invariants.test.ts
 
-## Test File Structure
+# Run specific test suite
+bun test tests/integration/invariants.test.ts -t "Currency Never Negative"
 
-```
-convex/
-├── lib/
-│   ├── xpHelpers.ts
-│   └── xpHelpers.test.ts          # Unit tests
-├── social/
-│   ├── leaderboards.ts
-│   └── leaderboards.test.ts       # Integration tests (requires convex dev)
-└── test_utils/
-    ├── setup.ts                   # Test configuration
-    └── utils.ts                   # Test helpers
+# Run with watch mode
+bun test tests/integration/invariants.test.ts --watch
 ```
 
-## Best Practices
+## Why These Tests Matter
 
-1. **Use `createTestInstance()` in `beforeEach()`** - Creates fresh test state
-   ```typescript
-   let t: ReturnType<typeof createTestInstance>;
+### Bug Prevention
+- **Currency exploits**: Without invariant tests, players could find ways to get negative currency
+- **Invalid deck states**: Players could enter games with 0-card decks, causing crashes
+- **Data corruption**: Orphaned records waste database space and cause errors
 
-   beforeEach(() => {
-     t = createTestInstance();
-   });
-   ```
+### Audit Trail
+- Rating bounds ensure leaderboard integrity
+- Win/loss consistency enables dispute resolution
+- Transaction history maintains economy fairness
 
-2. **Import components inside `t.run()`** - Ensures proper context
-   ```typescript
-   await t.run(async (ctx) => {
-     const { rankedLeaderboard } = await import("../infrastructure/aggregates");
-     // Use component here
-   });
-   ```
-
-3. **Test mutations separately from queries**
-   ```typescript
-   // Mutation
-   await t.run(async (ctx) => {
-     await ctx.db.patch(userId, { rankedElo: 1500 });
-   });
-
-   // Separate query
-   await t.run(async (ctx) => {
-     const users = await ctx.db.query("users").collect();
-     expect(users).toHaveLength(1);
-   });
-   ```
-
-4. **Account for eventual consistency** in sharded counters
-   ```typescript
-   await counter.increment(ctx, key, 1);
-   await counter.increment(ctx, key, 1);
-
-   const count = await counter.count(ctx, key);
-   expect(count).toBe(2); // Works in single test execution
-   ```
-
-## Troubleshooting
-
-### Error: Could not find "_generated" directory
-
-**Solution:** Run `bunx convex codegen` or start `bunx convex dev`
-
-### Component registration fails
-
-**Solution:** This is expected without `convex dev` running. Components are registered in a try-catch block and will work when dev server is running.
-
-### Tests hang or timeout
-
-**Solution:** Make sure `convex dev` is running if your test uses components (aggregates, counters)
-
-## Why Vitest Instead of Bun?
-
-Convex component test helpers use `import.meta.glob()` which is:
-- ✅ Supported in Vitest (has Vite integration)
-- ❌ Not supported in Bun's test runner
-
-The project is configured to use Vitest via `vitest.config.ts`:
-
-```typescript
-export default defineConfig({
-  test: {
-    environment: "edge-runtime",
-    server: { deps: { inline: ["convex-test"] } },
-  },
-});
-```
-
-This provides the Vite environment needed for component registration.
+### Competitive Integrity
+- All players must follow the same deck rules
+- Rating calculations must be consistent
+- No exploits that give unfair advantages

@@ -522,7 +522,7 @@ export function getModifiedStats(
  * @param ctx - Context with database access (query or mutation)
  * @param gameState - Current game state document
  * @param cardId - Card definition ID to calculate bonuses for
- * @param cardDef - Full card definition with archetype data
+ * @param _cardDef - Full card definition with archetype data (unused)
  * @param isHost - Whether the card belongs to the host player
  * @returns Total ATK/DEF bonuses from all continuous effects
  */
@@ -530,7 +530,7 @@ export async function applyContinuousEffects(
   ctx: { db: any },
   gameState: Doc<"gameStates">,
   cardId: Id<"cardDefinitions">,
-  cardDef: any, // Full card definition with archetype
+  _cardDef: any, // Full card definition with archetype (unused in current implementation)
   isHost: boolean
 ): Promise<{ atkBonus: number; defBonus: number }> {
   let atkBonus = 0;

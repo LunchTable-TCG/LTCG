@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { BannedPlayer, ColumnDef } from "@/types";
 import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import { useQuery } from "convex/react";
 import Link from "next/link";
@@ -27,7 +26,7 @@ import { useMemo } from "react";
 // =============================================================================
 
 interface BannedPlayerRow extends BannedPlayer {
-  _id: Id<"players">;
+  _id: any; // Id type - players table
 }
 
 interface SuspiciousSummaryItem {

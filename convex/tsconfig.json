@@ -6,11 +6,34 @@
   "compilerOptions": {
     /* These settings are not required by Convex and can be modified. */
     "allowJs": true,
-    "strict": true,
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@convex-test-utils/*": ["../convex_test_utils/*"]
+    },
+
+    /* Strict Type-Checking Options */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+
+    /* Additional Checks */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "noPropertyAccessFromIndexSignature": true,
 
     /* These compiler options are required by Convex */
     "target": "ESNext",
@@ -20,6 +43,13 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["./**/*"],
-  "exclude": ["./_generated", "**/*.test.ts", "**/*.test.multipart.ts", "test_utils", "__mocks__"]
+  "include": ["./**/*.ts"],
+  "exclude": [
+    "./_generated",
+    "./**/*.test.ts",
+    "./**/*.test.multipart.ts",
+    "./test_utils",
+    "./__mocks__",
+    "../convex_test_utils"
+  ]
 }

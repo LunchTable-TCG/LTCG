@@ -5,7 +5,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createTestInstance } from "../../convex_test_utils/setup";
+import { createTestInstance } from "@convex-test-utils/setup";
+import type { MutationCtx } from "../_generated/server";
 import { XP_PER_LEVEL } from "./storyConstants";
 import { calculateLevel, getLevelProgress, getXPForNextLevel } from "./xpHelpers";
 
@@ -106,7 +107,7 @@ describe("addXP", () => {
   it("should add XP and update level", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "xptest",
         email: "xp@test.com",
@@ -114,7 +115,7 @@ describe("addXP", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerXP", {
         userId,
         currentXP: 0,
@@ -125,7 +126,7 @@ describe("addXP", () => {
     });
 
     // Add XP via internal mutation (we'll test through story.ts which uses addXP)
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       const { addXP } = await import("./xpHelpers");
       const result = await addXP(ctx, userId, 150);
 
@@ -136,7 +137,7 @@ describe("addXP", () => {
       expect(result.levelsGained).toBe(1);
     });
 
-    const xpRecord = await t.run(async (ctx) => {
+    const xpRecord = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
         .query("playerXP" as any)
         .withIndex("by_user" as any, (q: any) => q.eq("userId", userId))
@@ -151,7 +152,7 @@ describe("addXP", () => {
   it("should award milestone badge at level 10", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "milestone",
         email: "milestone@test.com",
@@ -159,7 +160,7 @@ describe("addXP", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerXP", {
         userId,
         currentXP: 2600, // Just below level 10
@@ -169,7 +170,7 @@ describe("addXP", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       const { addXP } = await import("./xpHelpers");
       const result = await addXP(ctx, userId, 200); // Push to level 10
 
@@ -179,7 +180,7 @@ describe("addXP", () => {
       expect(result.badgesAwarded?.[0]?.badgeId).toBe("milestone_novice");
     });
 
-    const badge = await t.run(async (ctx) => {
+    const badge = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
         .query("playerBadges" as any)
         .withIndex("by_user" as any, (q: any) => q.eq("userId", userId))
@@ -194,7 +195,7 @@ describe("addXP", () => {
   it("should not duplicate milestone badges", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "nodupe",
         email: "nodupe@test.com",
@@ -202,7 +203,7 @@ describe("addXP", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerXP", {
         userId,
         currentXP: 2600,
@@ -213,13 +214,13 @@ describe("addXP", () => {
     });
 
     // Award level 10 twice
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       const { addXP } = await import("./xpHelpers");
       await addXP(ctx, userId, 200);
       await addXP(ctx, userId, 100);
     });
 
-    const badges = await t.run(async (ctx) => {
+    const badges = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
         .query("playerBadges" as any)
         .withIndex("by_user" as any, (q: any) => q.eq("userId", userId))
@@ -227,14 +228,14 @@ describe("addXP", () => {
     });
 
     // Should only have one milestone_novice badge
-    const noviceBadges = badges.filter((b) => b.badgeId === "milestone_novice");
+    const noviceBadges = badges.filter((b: any) => b.badgeId === "milestone_novice");
     expect(noviceBadges.length).toBe(1);
   });
 
   it("should handle multiple level ups in one XP gain", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "bigxp",
         email: "bigxp@test.com",
@@ -242,7 +243,7 @@ describe("addXP", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerXP", {
         userId,
         currentXP: 0,
@@ -252,7 +253,7 @@ describe("addXP", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       const { addXP } = await import("./xpHelpers");
       const result = await addXP(ctx, userId, 1000); // Jump to level 6
 
@@ -261,7 +262,7 @@ describe("addXP", () => {
       expect(result.leveledUp).toBe(true);
     });
 
-    const xpRecord = await t.run(async (ctx) => {
+    const xpRecord = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
         .query("playerXP" as any)
         .withIndex("by_user" as any, (q: any) => q.eq("userId", userId))
@@ -274,7 +275,7 @@ describe("addXP", () => {
   it("should reject negative XP", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "negative",
         email: "negative@test.com",
@@ -282,7 +283,7 @@ describe("addXP", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerXP", {
         userId,
         currentXP: 500,
@@ -293,7 +294,7 @@ describe("addXP", () => {
     });
 
     await expect(
-      t.run(async (ctx) => {
+      t.run(async (ctx: MutationCtx) => {
         const { addXP } = await import("./xpHelpers");
         await addXP(ctx, userId, -100); // Negative XP
       })
@@ -303,7 +304,7 @@ describe("addXP", () => {
   it("should track lifetime XP correctly", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "lifetime",
         email: "lifetime@test.com",
@@ -311,7 +312,7 @@ describe("addXP", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerXP", {
         userId,
         currentXP: 500,
@@ -321,13 +322,13 @@ describe("addXP", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       const { addXP } = await import("./xpHelpers");
       await addXP(ctx, userId, 200);
       await addXP(ctx, userId, 300);
     });
 
-    const xpRecord = await t.run(async (ctx) => {
+    const xpRecord = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
         .query("playerXP" as any)
         .withIndex("by_user" as any, (q: any) => q.eq("userId", userId))
@@ -342,7 +343,7 @@ describe("hasReachedLevel", () => {
   it("should return true when level reached", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "leveled",
         email: "leveled@test.com",
@@ -350,7 +351,7 @@ describe("hasReachedLevel", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerXP", {
         userId,
         currentXP: 1000,
@@ -360,7 +361,7 @@ describe("hasReachedLevel", () => {
       });
     });
 
-    const result = await t.run(async (ctx) => {
+    const result = await t.run(async (ctx: MutationCtx) => {
       const { hasReachedLevel } = await import("./xpHelpers");
       return await hasReachedLevel(ctx, userId, 5);
     });
@@ -371,7 +372,7 @@ describe("hasReachedLevel", () => {
   it("should return false when level not reached", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "notyet",
         email: "notyet@test.com",
@@ -379,7 +380,7 @@ describe("hasReachedLevel", () => {
       });
     });
 
-    await t.run(async (ctx) => {
+    await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerXP", {
         userId,
         currentXP: 100,
@@ -389,7 +390,7 @@ describe("hasReachedLevel", () => {
       });
     });
 
-    const result = await t.run(async (ctx) => {
+    const result = await t.run(async (ctx: MutationCtx) => {
       const { hasReachedLevel } = await import("./xpHelpers");
       return await hasReachedLevel(ctx, userId, 10);
     });
@@ -400,7 +401,7 @@ describe("hasReachedLevel", () => {
   it("should return false when XP record doesn't exist", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx) => {
+    const userId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("users", {
         username: "newplayer",
         email: "new@test.com",
@@ -408,7 +409,7 @@ describe("hasReachedLevel", () => {
       });
     });
 
-    const result = await t.run(async (ctx) => {
+    const result = await t.run(async (ctx: MutationCtx) => {
       const { hasReachedLevel } = await import("./xpHelpers");
       return await hasReachedLevel(ctx, userId, 1);
     });

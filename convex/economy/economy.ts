@@ -1,20 +1,19 @@
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
-import { internal } from "../_generated/api";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import { internalMutation, mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import { PAGINATION } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { type CardResult, type PackConfig, openPack } from "../lib/helpers";
+import { type CardResult, openPack } from "../lib/helpers";
 import {
   cardResultValidator,
   playerBalanceValidator,
   transactionHistoryValidator,
 } from "../lib/returnValidators";
-import type { CurrencyType, TransactionType } from "../lib/types";
-import { getOrCreatePlayerCurrency, getPlayerCurrency, recordTransaction } from "../lib/validators";
+import type { TransactionType } from "../lib/types";
+import { getOrCreatePlayerCurrency, recordTransaction } from "../lib/validators";
 
 // ============================================================================
 // INTERNAL MUTATIONS (called by other backend functions)
@@ -238,7 +237,7 @@ export const adjustPlayerCurrency = internalMutation({
 export const getPlayerBalance = query({
   args: {},
   returns: playerBalanceValidator,
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     // Query currency directly instead of using getPlayerCurrency (which throws)

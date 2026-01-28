@@ -10,7 +10,6 @@ import type { Id } from "../../_generated/dataModel";
 import { mutation } from "../../_generated/server";
 import { createError, ErrorCode } from "../../lib/errorCodes";
 import { drawCards } from "../../lib/gameHelpers";
-import { makeAIDecision } from "./aiEngine";
 
 /**
  * Execute a complete AI turn

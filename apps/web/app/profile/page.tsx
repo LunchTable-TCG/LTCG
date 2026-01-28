@@ -5,11 +5,10 @@ import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { api } from "../../convex/_generated/api";
 
 export default function ProfilePage() {
   const { isAuthenticated } = useAuth();
-  const { profile: currentUser, isLoading: profileLoading } = useProfile();
+  const { profile: currentUser } = useProfile();
   const router = useRouter();
 
   useEffect(() => {

@@ -9,7 +9,6 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { ErrorCode, createError } from "./errorCodes";
 import type {
-  AuthenticatedUser,
   CurrencyType,
   TransactionMetadata,
   TransactionType,

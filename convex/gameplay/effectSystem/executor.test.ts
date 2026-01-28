@@ -6,13 +6,22 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createTestInstance } from "../../../convex_test_utils/setup";
+import { convexTest } from "convex-test";
+import { api } from "../../_generated/api";
+import schema from "../../schema";
 import type { Id } from "../../_generated/dataModel";
+
+// Type helper to avoid TS2589 deep instantiation errors with Convex API
+// @ts-ignore - Suppress TS2589 for api cast
+const apiAny = api as any;
+
+const modules = import.meta.glob("../../**/*.ts");
 
 describe("executeEffect - Main Dispatcher", () => {
   it("should execute draw effect", async () => {
-    const t = createTestInstance();
+    const t = convexTest(schema, modules);
 
+    // Create test user first
     const userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
         username: "effecttest",
@@ -21,41 +30,82 @@ describe("executeEffect - Main Dispatcher", () => {
       });
     });
 
+    // Create some dummy cards for the deck
+    const card1 = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "Test Card 1",
+        rarity: "common",
+        cardType: "creature",
+        archetype: "neutral",
+        cost: 1,
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    const card2 = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "Test Card 2",
+        rarity: "common",
+        cardType: "creature",
+        archetype: "neutral",
+        cost: 1,
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create game lobby
     const lobbyId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameLobbies", {
         hostId: userId,
+        hostUsername: "effecttest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
         opponentId: userId, // Self-play for testing
-        gameMode: "ranked",
-        status: "in_progress",
+        opponentUsername: "effecttest",
+        opponentRank: "Bronze",
         turnNumber: 1,
         createdAt: Date.now(),
       });
     });
 
+    // Create game state with cards in deck
     const gameStateId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameStates", {
         lobbyId,
+        gameId: "test-game-1",
         hostId: userId,
         opponentId: userId,
-        currentTurnPlayer: userId,
-        phase: "main1",
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
         turnNumber: 1,
-        hostLP: 8000,
-        opponentLP: 8000,
-        hostDeck: [],
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
+        hostDeck: [card1, card2], // Add cards to deck for draw test
         opponentDeck: [],
         hostHand: [],
         opponentHand: [],
         hostBoard: [],
         opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
         hostGraveyard: [],
         opponentGraveyard: [],
         hostBanished: [],
         opponentBanished: [],
-        isActive: true,
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
       });
     });
 
+    // Execute effect using internal function
     const result = await t.run(async (ctx) => {
       const { executeEffect } = await import("./executor");
       const gameState = await ctx.db.get(gameStateId);
@@ -65,7 +115,7 @@ describe("executeEffect - Main Dispatcher", () => {
         ctx,
         gameState,
         lobbyId,
-        { type: "draw", value: 2 },
+        { type: "draw", trigger: "manual", value: 2 },
         userId,
         "card123" as Id<"cardDefinitions">,
         []
@@ -77,7 +127,7 @@ describe("executeEffect - Main Dispatcher", () => {
   });
 
   it("should handle OPT restriction", async () => {
-    const t = createTestInstance();
+    const t = convexTest(schema, modules);
 
     const userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
@@ -103,9 +153,16 @@ describe("executeEffect - Main Dispatcher", () => {
     const lobbyId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameLobbies", {
         hostId: userId,
+        hostUsername: "opttest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
         opponentId: userId,
-        gameMode: "ranked",
-        status: "in_progress",
+        opponentUsername: "opttest",
+        opponentRank: "Bronze",
         turnNumber: 1,
         createdAt: Date.now(),
       });
@@ -114,25 +171,31 @@ describe("executeEffect - Main Dispatcher", () => {
     const gameStateId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameStates", {
         lobbyId,
+        gameId: "test-game-2",
         hostId: userId,
         opponentId: userId,
-        currentTurnPlayer: userId,
-        phase: "main1",
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
         turnNumber: 1,
-        hostLP: 8000,
-        opponentLP: 8000,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
         hostDeck: [],
         opponentDeck: [],
         hostHand: [],
         opponentHand: [],
         hostBoard: [],
         opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
         hostGraveyard: [],
         opponentGraveyard: [],
         hostBanished: [],
         opponentBanished: [],
-        OPTUsed: [cardId], // Card already used
-        isActive: true,
+        optUsedThisTurn: [cardId], // Card already used
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
       });
     });
 
@@ -145,7 +208,7 @@ describe("executeEffect - Main Dispatcher", () => {
         ctx,
         gameState,
         lobbyId,
-        { type: "draw", value: 1, isOPT: true },
+        { type: "draw", trigger: "manual", value: 1, isOPT: true },
         userId,
         cardId,
         []
@@ -157,7 +220,7 @@ describe("executeEffect - Main Dispatcher", () => {
   });
 
   it("should check targeting protection", async () => {
-    const t = createTestInstance();
+    const t = convexTest(schema, modules);
 
     const userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
@@ -199,9 +262,16 @@ describe("executeEffect - Main Dispatcher", () => {
     const lobbyId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameLobbies", {
         hostId: userId,
+        hostUsername: "targettest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
         opponentId: userId,
-        gameMode: "ranked",
-        status: "in_progress",
+        opponentUsername: "targettest",
+        opponentRank: "Bronze",
         turnNumber: 1,
         createdAt: Date.now(),
       });
@@ -210,13 +280,16 @@ describe("executeEffect - Main Dispatcher", () => {
     const gameStateId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameStates", {
         lobbyId,
+        gameId: "test-game-3",
         hostId: userId,
         opponentId: userId,
-        currentTurnPlayer: userId,
-        phase: "battle",
+        currentTurnPlayerId: userId,
+        currentPhase: "battle",
         turnNumber: 1,
-        hostLP: 8000,
-        opponentLP: 8000,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
         hostDeck: [],
         opponentDeck: [],
         hostHand: [],
@@ -224,26 +297,33 @@ describe("executeEffect - Main Dispatcher", () => {
         hostBoard: [
           {
             cardId: attackerCardId,
-            position: "attack",
-            isFaceUp: true,
-            hasAttackedThisTurn: false,
+            position: 1,
+            attack: 1800,
+            defense: 1000,
+            hasAttacked: false,
+            isFaceDown: false,
             cannotBeTargeted: false,
           },
         ],
         opponentBoard: [
           {
             cardId: protectedCardId,
-            position: "attack",
-            isFaceUp: true,
-            hasAttackedThisTurn: false,
+            position: 1,
+            attack: 2000,
+            defense: 1500,
+            hasAttacked: false,
+            isFaceDown: false,
             cannotBeTargeted: true, // Protected
           },
         ],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
         hostGraveyard: [],
         opponentGraveyard: [],
         hostBanished: [],
         opponentBanished: [],
-        isActive: true,
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
       });
     });
 
@@ -256,7 +336,7 @@ describe("executeEffect - Main Dispatcher", () => {
         ctx,
         gameState,
         lobbyId,
-        { type: "destroy", targetCount: 1 },
+        { type: "destroy", trigger: "manual", targetCount: 1 },
         userId,
         attackerCardId,
         [protectedCardId] // Try to target protected card
@@ -268,7 +348,7 @@ describe("executeEffect - Main Dispatcher", () => {
   });
 
   it("should reject effect with no targets when targets required", async () => {
-    const t = createTestInstance();
+    const t = convexTest(schema, modules);
 
     const userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
@@ -294,9 +374,16 @@ describe("executeEffect - Main Dispatcher", () => {
     const lobbyId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameLobbies", {
         hostId: userId,
+        hostUsername: "notargettest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
         opponentId: userId,
-        gameMode: "ranked",
-        status: "in_progress",
+        opponentUsername: "notargettest",
+        opponentRank: "Bronze",
         turnNumber: 1,
         createdAt: Date.now(),
       });
@@ -305,24 +392,30 @@ describe("executeEffect - Main Dispatcher", () => {
     const gameStateId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameStates", {
         lobbyId,
+        gameId: "test-game-4",
         hostId: userId,
         opponentId: userId,
-        currentTurnPlayer: userId,
-        phase: "main1",
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
         turnNumber: 1,
-        hostLP: 8000,
-        opponentLP: 8000,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
         hostDeck: [],
         opponentDeck: [],
         hostHand: [],
         opponentHand: [],
         hostBoard: [],
         opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
         hostGraveyard: [],
         opponentGraveyard: [],
         hostBanished: [],
         opponentBanished: [],
-        isActive: true,
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
       });
     });
 
@@ -335,7 +428,7 @@ describe("executeEffect - Main Dispatcher", () => {
         ctx,
         gameState,
         lobbyId,
-        { type: "destroy", targetCount: 1 },
+        { type: "destroy", trigger: "manual", targetCount: 1 },
         userId,
         cardId,
         [] // No targets provided
@@ -347,7 +440,7 @@ describe("executeEffect - Main Dispatcher", () => {
   });
 
   it("should handle unknown effect type", async () => {
-    const t = createTestInstance();
+    const t = convexTest(schema, modules);
 
     const userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
@@ -372,9 +465,16 @@ describe("executeEffect - Main Dispatcher", () => {
     const lobbyId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameLobbies", {
         hostId: userId,
+        hostUsername: "unknowntest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
         opponentId: userId,
-        gameMode: "ranked",
-        status: "in_progress",
+        opponentUsername: "unknowntest",
+        opponentRank: "Bronze",
         turnNumber: 1,
         createdAt: Date.now(),
       });
@@ -383,24 +483,30 @@ describe("executeEffect - Main Dispatcher", () => {
     const gameStateId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameStates", {
         lobbyId,
+        gameId: "test-game-5",
         hostId: userId,
         opponentId: userId,
-        currentTurnPlayer: userId,
-        phase: "main1",
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
         turnNumber: 1,
-        hostLP: 8000,
-        opponentLP: 8000,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
         hostDeck: [],
         opponentDeck: [],
         hostHand: [],
         opponentHand: [],
         hostBoard: [],
         opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
         hostGraveyard: [],
         opponentGraveyard: [],
         hostBanished: [],
         opponentBanished: [],
-        isActive: true,
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
       });
     });
 
@@ -413,7 +519,7 @@ describe("executeEffect - Main Dispatcher", () => {
         ctx,
         gameState,
         lobbyId,
-        { type: "unknownEffect" as any },
+        { type: "unknownEffect" as any, trigger: "manual" },
         userId,
         cardId,
         []
@@ -427,7 +533,7 @@ describe("executeEffect - Main Dispatcher", () => {
 
 describe("executeMultiPartAbility", () => {
   it("should execute multiple effects in sequence", async () => {
-    const t = createTestInstance();
+    const t = convexTest(schema, modules);
 
     const userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
@@ -450,12 +556,45 @@ describe("executeMultiPartAbility", () => {
       });
     });
 
+    // Create dummy cards for the deck
+    const dummyCard1 = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "Dummy Card 1",
+        rarity: "common",
+        cardType: "creature",
+        archetype: "neutral",
+        cost: 1,
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    const dummyCard2 = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "Dummy Card 2",
+        rarity: "common",
+        cardType: "creature",
+        archetype: "neutral",
+        cost: 1,
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
     const lobbyId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameLobbies", {
         hostId: userId,
+        hostUsername: "multitest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
         opponentId: userId,
-        gameMode: "ranked",
-        status: "in_progress",
+        opponentUsername: "multitest",
+        opponentRank: "Bronze",
+        gameId: "test-game-6",
         turnNumber: 1,
         createdAt: Date.now(),
       });
@@ -464,24 +603,30 @@ describe("executeMultiPartAbility", () => {
     const gameStateId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameStates", {
         lobbyId,
+        gameId: "test-game-6",
         hostId: userId,
         opponentId: userId,
-        currentTurnPlayer: userId,
-        phase: "main1",
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
         turnNumber: 1,
-        hostLP: 8000,
-        opponentLP: 8000,
-        hostDeck: [],
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
+        hostDeck: [dummyCard1, dummyCard2], // Add cards for draw effect
         opponentDeck: [],
         hostHand: [],
         opponentHand: [],
         hostBoard: [],
         opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
         hostGraveyard: [],
         opponentGraveyard: [],
         hostBanished: [],
         opponentBanished: [],
-        isActive: true,
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
       });
     });
 
@@ -493,8 +638,8 @@ describe("executeMultiPartAbility", () => {
       const parsedAbility = {
         hasMultiPart: true,
         effects: [
-          { type: "draw" as const, value: 2 },
-          { type: "damage" as const, value: 500 },
+          { type: "draw" as const, trigger: "manual" as const, value: 2 },
+          { type: "damage" as const, trigger: "manual" as const, value: 500 },
         ],
       };
 
@@ -515,7 +660,7 @@ describe("executeMultiPartAbility", () => {
   });
 
   it("should skip protection-only effects", async () => {
-    const t = createTestInstance();
+    const t = convexTest(schema, modules);
 
     const userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
@@ -543,9 +688,16 @@ describe("executeMultiPartAbility", () => {
     const lobbyId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameLobbies", {
         hostId: userId,
+        hostUsername: "protectiontest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
         opponentId: userId,
-        gameMode: "ranked",
-        status: "in_progress",
+        opponentUsername: "protectiontest",
+        opponentRank: "Bronze",
         turnNumber: 1,
         createdAt: Date.now(),
       });
@@ -554,24 +706,30 @@ describe("executeMultiPartAbility", () => {
     const gameStateId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameStates", {
         lobbyId,
+        gameId: "test-game-7",
         hostId: userId,
         opponentId: userId,
-        currentTurnPlayer: userId,
-        phase: "main1",
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
         turnNumber: 1,
-        hostLP: 8000,
-        opponentLP: 8000,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
         hostDeck: [],
         opponentDeck: [],
         hostHand: [],
         opponentHand: [],
         hostBoard: [],
         opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
         hostGraveyard: [],
         opponentGraveyard: [],
         hostBanished: [],
         opponentBanished: [],
-        isActive: true,
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
       });
     });
 
@@ -585,6 +743,7 @@ describe("executeMultiPartAbility", () => {
         effects: [
           {
             type: "modifyATK" as const,
+            trigger: "manual" as const,
             value: 0,
             protection: { cannotBeDestroyedByBattle: true },
           },
@@ -608,7 +767,7 @@ describe("executeMultiPartAbility", () => {
   });
 
   it("should handle empty ability", async () => {
-    const t = createTestInstance();
+    const t = convexTest(schema, modules);
 
     const userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
@@ -635,9 +794,16 @@ describe("executeMultiPartAbility", () => {
     const lobbyId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameLobbies", {
         hostId: userId,
+        hostUsername: "emptytest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
         opponentId: userId,
-        gameMode: "ranked",
-        status: "in_progress",
+        opponentUsername: "emptytest",
+        opponentRank: "Bronze",
         turnNumber: 1,
         createdAt: Date.now(),
       });
@@ -646,24 +812,30 @@ describe("executeMultiPartAbility", () => {
     const gameStateId = await t.run(async (ctx) => {
       return await ctx.db.insert("gameStates", {
         lobbyId,
+        gameId: "test-game-8",
         hostId: userId,
         opponentId: userId,
-        currentTurnPlayer: userId,
-        phase: "main1",
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
         turnNumber: 1,
-        hostLP: 8000,
-        opponentLP: 8000,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
         hostDeck: [],
         opponentDeck: [],
         hostHand: [],
         opponentHand: [],
         hostBoard: [],
         opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
         hostGraveyard: [],
         opponentGraveyard: [],
         hostBanished: [],
         opponentBanished: [],
-        isActive: true,
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
       });
     });
 
@@ -689,6 +861,7 @@ describe("executeMultiPartAbility", () => {
     });
 
     expect(result.effectsExecuted).toBe(0);
-    expect(result.messages).toHaveLength(0);
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0]).toBe("No effects to execute");
   });
 });

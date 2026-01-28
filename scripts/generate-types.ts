@@ -7,6 +7,11 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// ES module __dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const VALIDATORS_PATH = "../convex/lib/returnValidators.ts";
 const OUTPUT_PATH = "../apps/web/src/types/generated.ts";
@@ -28,17 +33,15 @@ function parseValidators(content: string): ValidatorInfo[] {
     const validatorName = match[1];
     const validatorValue = match[2];
 
+    if (!validatorName || !validatorValue) {
+      continue;
+    }
+
     // Skip function validators (e.g., <T extends ...> or function declarations)
     if (validatorValue.includes("<") || validatorValue.includes("=>") || validatorValue.includes("function")) {
       console.log(`  ⚠ Skipping function validator: ${validatorName}`);
       continue;
     }
-
-    // Convert "userProfileValidator" -> "UserProfile"
-    const typeName = validatorName
-      .replace(/Validator$/, "")
-      .replace(/^(\w)/, (c) => c.toUpperCase())
-      .replace(/([A-Z])/g, (c) => c.toUpperCase());
 
     validators.push({
       name: validatorName,
@@ -59,8 +62,8 @@ function parseValidators(content: string): ValidatorInfo[] {
 function capitalizeTypeName(name: string): string {
   // Handle camelCase to PascalCase
   return name
-    .replace(/^(\w)/, (c) => c.toUpperCase())
-    .replace(/_(\w)/g, (_, c) => c.toUpperCase());
+    .replace(/^(\w)/, (c: string) => c.toUpperCase())
+    .replace(/_(\w)/g, (_: string, c: string) => c.toUpperCase());
 }
 
 /**
@@ -84,7 +87,7 @@ ${validators.map(v => `  ${v.name},`).join("\n")}
 
 `;
 
-  const types = validators.map(v => {
+  const types = validators.map((v: ValidatorInfo) => {
     return `export type ${v.typeName} = Infer<typeof ${v.name}>;`;
   }).join("\n");
 
@@ -127,7 +130,7 @@ async function main() {
   console.log(`✓ Generated types written to ${OUTPUT_PATH}`);
   console.log(`✓ Generated ${validators.length} type definitions`);
   console.log("\n📋 Generated types:");
-  validators.forEach(v => {
+  validators.forEach((v: ValidatorInfo) => {
     console.log(`  - ${v.typeName} (from ${v.name})`);
   });
 }

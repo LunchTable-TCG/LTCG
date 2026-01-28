@@ -64,12 +64,7 @@ export type Permission =
  */
 export const rolePermissions: Record<UserRole, Permission[]> = {
   user: [],
-  moderator: [
-    "read:users",
-    "view:reports",
-    "manage:reports",
-    "view:analytics",
-  ],
+  moderator: ["read:users", "view:reports", "manage:reports", "view:analytics"],
   admin: [
     "read:users",
     "write:users",
@@ -119,10 +114,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
  * Get user's role from database
  * Returns "user" if no admin role is found
  */
-export async function getUserRole(
-  ctx: SharedCtx,
-  userId: Id<"users">
-): Promise<UserRole> {
+export async function getUserRole(ctx: SharedCtx, userId: Id<"users">): Promise<UserRole> {
   const adminRole = await ctx.db
     .query("adminRoles")
     .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -150,10 +142,7 @@ export async function getUserRole(
 /**
  * Check if a role has sufficient privilege level
  */
-export function hasRoleLevel(
-  userRole: UserRole,
-  requiredRole: UserRole
-): boolean {
+export function hasRoleLevel(userRole: UserRole, requiredRole: UserRole): boolean {
   return roleHierarchy[userRole] >= roleHierarchy[requiredRole];
 }
 
@@ -179,10 +168,7 @@ export function getRolePermissions(role: UserRole): Permission[] {
  * - Admins can manage moderator roles
  * - Cannot manage roles equal to or higher than your own
  */
-export function canManageRole(
-  actorRole: UserRole,
-  targetRole: UserRole
-): boolean {
+export function canManageRole(actorRole: UserRole, targetRole: UserRole): boolean {
   // Superadmin can manage all roles
   if (actorRole === "superadmin") {
     return true;

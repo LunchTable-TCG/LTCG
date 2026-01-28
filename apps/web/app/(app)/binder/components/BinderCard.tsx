@@ -134,6 +134,7 @@ export function BinderCard({
       <button
         ref={cardRef}
         type="button"
+        data-testid="card-item"
         className={cn("group cursor-pointer text-left", className)}
         style={{ perspective: "1000px" }}
         onMouseMove={handleMouseMove}
@@ -245,6 +246,7 @@ export function BinderCard({
   return (
     <button
       type="button"
+      data-testid="card-item"
       className={cn(
         "flex items-center gap-4 p-3 rounded-xl tcg-chat-leather border border-[#3d2b1f] hover:border-[#d4af37]/30 cursor-pointer transition-all group text-left w-full",
         className

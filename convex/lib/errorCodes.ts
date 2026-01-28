@@ -30,6 +30,7 @@ export const ErrorCode = {
   RATE_LIMIT_CHAT_MESSAGE: "RATE_3004",
 
   // Resource Not Found Errors (4xxx)
+  NOT_FOUND: "NOT_FOUND_4000", // Generic not found
   NOT_FOUND_USER: "NOT_FOUND_4001",
   NOT_FOUND_QUEST: "NOT_FOUND_4002",
   NOT_FOUND_ACHIEVEMENT: "NOT_FOUND_4003",
@@ -98,6 +99,7 @@ export const ErrorCode = {
   GAME_INVALID_CHAIN: "GAME_8020",
   GAME_CANNOT_ADVANCE_PHASE: "GAME_8021",
   GAME_AI_TURN_ERROR: "GAME_8022",
+  GAME_NOT_STARTED: "GAME_8023",
 
   // Matchmaking Errors (8xxx - Game Related)
   MATCHMAKING_ALREADY_IN_QUEUE: "MATCHMAKING_8005",
@@ -132,6 +134,7 @@ export const ErrorCode = {
   SYSTEM_RATE_LIMIT_CONFIG: "SYSTEM_9005",
   SYSTEM_CURRENCY_NOT_FOUND: "SYSTEM_9006",
   SYSTEM_CURRENCY_CREATION_FAILED: "SYSTEM_9007",
+  NOT_IMPLEMENTED: "SYSTEM_9008", // Feature not yet implemented
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -161,6 +164,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   RATE_3004: "Too many chat messages. Please slow down",
 
   // Not Found
+  NOT_FOUND_4000: "Resource not found",
   NOT_FOUND_4001: "User not found",
   NOT_FOUND_4002: "Quest not found",
   NOT_FOUND_4003: "Achievement not found",
@@ -229,6 +233,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   GAME_8020: "Invalid chain structure",
   GAME_8021: "Cannot advance from End Phase - use endTurn instead",
   GAME_8022: "AI turn execution failed",
+  GAME_8023: "Game has not started yet",
 
   // Matchmaking
   MATCHMAKING_8005: "You are already in the matchmaking queue",
@@ -263,6 +268,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   SYSTEM_9005: "Rate limit configuration error",
   SYSTEM_9006: "Currency record not found. User may need to sign up again",
   SYSTEM_9007: "Failed to create currency record",
+  SYSTEM_9008: "Feature not yet implemented",
 };
 
 /**

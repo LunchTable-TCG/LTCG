@@ -14,7 +14,7 @@ import { TestUserFactory, SELECTORS } from "./setup/test-data";
 
 test.describe("Social Features Flow", () => {
   test.describe("Friend System", () => {
-    test("should send friend request", async ({ context, authenticatedPage, testUser }) => {
+    test("should send friend request", async ({ context, authenticatedPage }) => {
       // Create second user
       const user2 = TestUserFactory.create();
       const page2 = await context.newPage();
@@ -47,7 +47,6 @@ test.describe("Social Features Flow", () => {
     test("should receive friend request notification", async ({
       context,
       authenticatedPage,
-      testUser,
     }) => {
       const user2 = TestUserFactory.create();
       const page2 = await context.newPage();
@@ -117,7 +116,7 @@ test.describe("Social Features Flow", () => {
       await page2.close();
     });
 
-    test("should decline friend request", async ({ context, authenticatedPage, testUser }) => {
+    test("should decline friend request", async ({ context, authenticatedPage }) => {
       const user2 = TestUserFactory.create();
       const page2 = await context.newPage();
 
@@ -149,7 +148,7 @@ test.describe("Social Features Flow", () => {
       await page2.close();
     });
 
-    test("should remove friend", async ({ context, authenticatedPage, testUser }) => {
+    test("should remove friend", async ({ context, authenticatedPage }) => {
       const user2 = TestUserFactory.create();
       const page2 = await context.newPage();
 

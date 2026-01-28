@@ -1,14 +1,10 @@
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
-import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { PAGINATION } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import {
-  type Archetype,
-  type Rarity,
   addCardsToInventory,
   getRandomCard,
   openPack,
@@ -16,8 +12,6 @@ import {
 } from "../lib/helpers";
 import {
   cardResultValidator,
-  packOpeningHistoryValidator,
-  shopProductValidator,
 } from "../lib/returnValidators";
 import { packPurchaseValidator } from "../lib/returnValidators";
 import { checkRateLimitWrapper } from "../lib/rateLimit";

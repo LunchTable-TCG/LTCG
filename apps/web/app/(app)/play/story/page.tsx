@@ -81,17 +81,17 @@ const CHAPTER_INFO = [
 export default function StoryModePage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip") as any;
+  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
 
-  // Fetch real data with type assertions to avoid deep instantiation errors
+  // Fetch real data
   const allChapters = useQuery(
     api.progression.story.getAvailableChapters,
     isAuthenticated ? {} : "skip"
-  ) as any;
+  );
   const playerProgress = useQuery(
     api.progression.story.getPlayerProgress,
     isAuthenticated ? {} : "skip"
-  ) as any;
+  );
 
   const initializeStoryProgress = useMutation(api.progression.story.initializeStoryProgress);
 
@@ -107,24 +107,35 @@ export default function StoryModePage() {
   const chapters = useMemo(() => {
     if (!allChapters) return [];
 
-    return allChapters.map((chapter: any) => {
-      const info = CHAPTER_INFO[chapter.chapterNumber - 1];
-      const chapterId = `${chapter.actNumber}-${chapter.chapterNumber}`;
+    return allChapters.map(
+      (chapter: {
+        actNumber: number;
+        chapterNumber: number;
+        description?: string;
+        archetype?: string;
+        requiredLevel?: number;
+        status?: string;
+        stagesCompleted?: number;
+        starsEarned?: number;
+      }) => {
+        const info = CHAPTER_INFO[chapter.chapterNumber - 1];
+        const chapterId = `${chapter.actNumber}-${chapter.chapterNumber}`;
 
-      return {
-        chapterId,
-        name: info?.name || `Chapter ${chapter.chapterNumber}`,
-        description: info?.description || chapter.description || "",
-        archetype: info?.archetype || chapter.archetype || "mixed",
-        order: chapter.chapterNumber,
-        requiredLevel: chapter.requiredLevel || (chapter.chapterNumber - 1) * 5 + 1,
-        isUnlocked: chapter.status !== "locked",
-        completedStages: chapter.stagesCompleted || 0,
-        totalStages: 10,
-        starredStages: chapter.starsEarned || 0,
-        isCompleted: chapter.status === "completed",
-      };
-    });
+        return {
+          chapterId,
+          name: info?.name || `Chapter ${chapter.chapterNumber}`,
+          description: info?.description || chapter.description || "",
+          archetype: info?.archetype || chapter.archetype || "mixed",
+          order: chapter.chapterNumber,
+          requiredLevel: chapter.requiredLevel || (chapter.chapterNumber - 1) * 5 + 1,
+          isUnlocked: chapter.status !== "locked",
+          completedStages: chapter.stagesCompleted || 0,
+          totalStages: 10,
+          starredStages: chapter.starsEarned || 0,
+          isCompleted: chapter.status === "completed",
+        };
+      }
+    );
   }, [allChapters]);
 
   const stats = useMemo(() => {
@@ -141,8 +152,9 @@ export default function StoryModePage() {
     // Calculate total stages from progress
     let totalStages = 0;
     if (playerProgress.progressByAct) {
-      Object.values(playerProgress.progressByAct).forEach((chapters: any) => {
-        chapters.forEach((ch: any) => {
+      Object.values(playerProgress.progressByAct).forEach((chapters: unknown) => {
+        if (!Array.isArray(chapters)) return;
+        chapters.forEach((ch: { timesCompleted?: number }) => {
           totalStages += ch.timesCompleted || 0;
         });
       });
@@ -249,23 +261,40 @@ export default function StoryModePage() {
           {/* Chapters Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
             {chapters.length > 0 ? (
-              chapters.map((chapter: any, index: number) => (
-                <motion.div
-                  key={chapter.chapterId}
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <StoryChapterCard
-                    chapter={chapter}
-                    onClick={() => {
-                      if (chapter.isUnlocked) {
-                        router.push(`/play/story/${chapter.chapterId}`);
-                      }
-                    }}
-                  />
-                </motion.div>
-              ))
+              chapters.map(
+                (
+                  chapter: {
+                    chapterId: string;
+                    name: string;
+                    description: string;
+                    archetype: string;
+                    order: number;
+                    requiredLevel: number;
+                    completedStages: number;
+                    totalStages: number;
+                    starredStages: number;
+                    isCompleted: boolean;
+                    isUnlocked: boolean;
+                  },
+                  index: number
+                ) => (
+                  <motion.div
+                    key={chapter.chapterId}
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <StoryChapterCard
+                      chapter={chapter}
+                      onClick={() => {
+                        if (chapter.isUnlocked) {
+                          router.push(`/play/story/${chapter.chapterId}`);
+                        }
+                      }}
+                    />
+                  </motion.div>
+                )
+              )
             ) : (
               <div className="col-span-full text-center py-16">
                 <Loader2 className="w-8 h-8 animate-spin text-[#d4af37] mx-auto mb-4" />

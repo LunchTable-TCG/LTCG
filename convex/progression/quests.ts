@@ -10,7 +10,6 @@ import { questClaimValidator, userQuestValidator } from "../lib/returnValidators
 // Type definitions matching schema
 type QuestType = "daily" | "weekly" | "achievement";
 type GameMode = "ranked" | "casual" | "story";
-type QuestStatus = "active" | "completed" | "claimed";
 
 interface QuestRewards {
   gold: number;
@@ -46,7 +45,7 @@ interface QuestDefinitionInput {
 export const getUserQuests = query({
   args: {},
   returns: v.array(userQuestValidator),
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     // Get user's quests

@@ -50,10 +50,7 @@ export const listApiKeys = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    const apiKeys = await ctx.db
-      .query("apiKeys")
-      .order("desc")
-      .take(limit);
+    const apiKeys = await ctx.db.query("apiKeys").order("desc").take(limit);
 
     // Enrich with user and agent info
     const enrichedKeys = await Promise.all(

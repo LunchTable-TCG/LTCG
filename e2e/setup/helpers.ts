@@ -17,6 +17,7 @@ export class AuthHelper {
     await this.page.fill(SELECTORS.AUTH_USERNAME_INPUT, username);
     await this.page.fill(SELECTORS.AUTH_EMAIL_INPUT, email);
     await this.page.fill(SELECTORS.AUTH_PASSWORD_INPUT, password);
+    await this.page.fill('input[id="confirmPassword"]', password); // Required for signup
 
     // Submit form
     await this.page.click(SELECTORS.AUTH_SUBMIT_BUTTON);

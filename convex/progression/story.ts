@@ -2,8 +2,8 @@
 // Queries and mutations for story mode progression, XP, and badges
 
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
-import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, mutation, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -11,23 +11,13 @@ import { ErrorCode, createError } from "../lib/errorCodes";
 import { type CardResult, type Rarity, addCardsToInventory, getRandomCard } from "../lib/helpers";
 import { checkRateLimitWrapper } from "../lib/rateLimit";
 import {
-  availableChapterValidator,
-  battleAttemptValidator,
-  chapterDefinitionValidator,
-  playerBadgesValidator,
-  playerProgressValidator,
-  storyBattleCompletionValidator,
-  storyBattleStartValidator,
-} from "../lib/returnValidators";
-import {
   DIFFICULTY_UNLOCK_LEVELS,
   RETRY_LIMITS,
   REWARD_MULTIPLIERS,
   STAR_BONUS,
   XP_PER_LEVEL,
 } from "../lib/storyConstants";
-import { addXP, getPlayerXP, hasReachedLevel } from "../lib/xpHelpers";
-import type { Difficulty } from "../schema";
+import { addXP, getPlayerXP } from "../lib/xpHelpers";
 import { STORY_CHAPTERS } from "../seeds/storyChapters";
 
 // Card reward configuration
@@ -56,7 +46,7 @@ const CARD_REWARDS_BY_STARS: Record<1 | 2 | 3, CardRewardConfig> = {
  */
 export const getPlayerProgress = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     const allProgress = await ctx.db
@@ -158,7 +148,7 @@ export const getChapterDetails = query({
  */
 export const getAvailableChapters = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     // Fetch user progress first (indexed query, most selective)
@@ -242,7 +232,7 @@ export const getPlayerXPInfo = query({
     xpForNextLevel: v.number(),
     levelProgress: v.number(),
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     const xpRecord = await getPlayerXP(ctx, userId);
 
@@ -284,7 +274,7 @@ export const getPlayerXPInfo = query({
  */
 export const getPlayerBadges = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
     const badges = await ctx.db
@@ -668,6 +658,7 @@ export const completeChapter = mutation({
       }
 
       // Update quest progress (story stage completion)
+      // @ts-ignore - Type instantiation depth limitation with Convex internal API
       await ctx.scheduler.runAfter(0, internal.progression.quests.updateQuestProgress, {
         userId,
         event: {
@@ -882,7 +873,7 @@ export const abandonChapter = mutation({
  */
 export const initializeStoryProgress = mutation({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const { userId } = await requireAuthMutation(ctx);
 
     // SECURITY: Rate limit story progress initialization to prevent spam

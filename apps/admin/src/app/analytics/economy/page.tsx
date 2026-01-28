@@ -84,7 +84,9 @@ export default function EconomyAnalyticsPage() {
   const snapshot = useQuery(api.admin.analytics.getCurrentEconomySnapshot);
   const metrics = useQuery(api.admin.analytics.getEconomyMetrics, { days: 14 });
   const wealth = useQuery(api.admin.analytics.getWealthDistribution);
-  const marketplaceStats = useQuery(api.admin.analytics.getMarketplaceStats, { periodType: "all_time" });
+  const marketplaceStats = useQuery(api.admin.analytics.getMarketplaceStats, {
+    periodType: "all_time",
+  });
 
   const isLoading = snapshot === undefined || metrics === undefined;
 

@@ -9,7 +9,6 @@
 
 import { defineRateLimits } from "convex-helpers/server/rateLimit";
 import type { MutationCtx } from "../_generated/server";
-import { RATELIMIT_CONFIG } from "./constants";
 import { ErrorCode, createError } from "./errorCodes";
 
 const SECOND = 1000; // ms
@@ -80,7 +79,7 @@ export async function checkRateLimitWrapper(
   key?: string
 ): Promise<void> {
   // In development/testing, rate limiting might be disabled
-  if (process.env.CONVEX_CLOUD_URL === undefined) {
+  if (process.env['CONVEX_CLOUD_URL'] === undefined) {
     // Local development - skip rate limiting
     return;
   }

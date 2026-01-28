@@ -9,13 +9,9 @@ export default defineConfig({
     // Default environment for frontend tests
     environment: "happy-dom",
 
-    // Use different environments based on file location
-    environmentMatchGlobs: [
-      // Convex backend tests use edge-runtime
-      ["convex/**/*.test.ts", "edge-runtime"],
-      // Convex test utils use edge-runtime
-      ["convex_test_utils/**/*.ts", "edge-runtime"],
-    ],
+    // Note: environmentMatchGlobs is not supported in current Vitest version
+    // Tests should be run with appropriate environment via CLI or separate configs
+    // For Convex tests: vitest --environment edge-runtime convex/**/*.test.ts
 
     // Setup files for React component tests (only for happy-dom environment)
     setupFiles: ["./apps/web/src/test/setup.ts"],
@@ -50,6 +46,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./apps/web/src"),
       "@convex": path.resolve(__dirname, "./convex"),
       "@convex/_generated": path.resolve(__dirname, "./convex/_generated"),
+      "@convex-test-utils": path.resolve(__dirname, "./convex_test_utils"),
     },
   },
 });

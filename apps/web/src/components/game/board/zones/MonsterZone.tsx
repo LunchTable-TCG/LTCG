@@ -53,6 +53,7 @@ export function MonsterZone({
                 key={key}
                 card={card}
                 size="sm"
+                isOpponent={isOpponent}
                 isSelected={selectedCard === card.instanceId}
                 isTargetable={targetableCards.has(card.instanceId)}
                 isAttacking={attackingCard === card.instanceId}
@@ -86,6 +87,7 @@ export function MonsterZone({
           <BoardCard
             card={frontline}
             size="md"
+            isOpponent={isOpponent}
             isSelected={selectedCard === frontline.instanceId}
             isTargetable={targetableCards.has(frontline.instanceId)}
             isAttacking={attackingCard === frontline.instanceId}

@@ -35,7 +35,6 @@ export async function executeSendToGraveyard(
   }
 
   // Determine which player owns the card and source location
-  let sourceZone: Id<"cardDefinitions">[];
   let sourceField: string;
   let targetIsHost = isHost;
   let graveyardField: string;

@@ -5,7 +5,7 @@
  * These types mirror the Convex validators for full type safety.
  */
 
-import type { Id } from "../../../../_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 
 // =============================================================================
 // Admin Role Types
@@ -84,7 +84,7 @@ export type PlayerStats = {
 };
 
 export type Player = {
-  _id: Id<"players">;
+  _id: Id<"users">;
   _creationTime: number;
   name: string;
   type: PlayerType;
@@ -105,7 +105,7 @@ export type Player = {
 };
 
 export type PlayerAdminView = {
-  _id: Id<"players">;
+  _id: Id<"users">;
   name: string;
   type: PlayerType;
   userId?: Id<"users">;
@@ -121,7 +121,7 @@ export type PlayerAdminView = {
     lastUsedAt?: number;
   }>;
   recentGames: Array<{
-    gameId: Id<"games">;
+    gameId: Id<"gameLobbies">;
     gameName: string;
     won: boolean;
     endedAt?: number;
@@ -129,7 +129,7 @@ export type PlayerAdminView = {
 };
 
 export type PlayerModerationStatus = {
-  playerId: Id<"players">;
+  playerId: Id<"users">;
   playerName: string;
   isBanned: boolean;
   banReason?: string;
@@ -146,7 +146,7 @@ export type PlayerModerationStatus = {
 };
 
 export type BannedPlayer = {
-  playerId: Id<"players">;
+  playerId: Id<"users">;
   playerName: string;
   banReason?: string;
   bannedAt?: number;
@@ -159,9 +159,9 @@ export type BannedPlayer = {
 export type ModerationAction = "warn" | "mute" | "suspend" | "ban" | "unban" | "unsuspend" | "note";
 
 export type ModerationLogEntry = {
-  _id: Id<"playerModerationLog">;
+  _id: Id<"adminAuditLogs">;
   _creationTime: number;
-  playerId: Id<"players">;
+  playerId: Id<"users">;
   adminUserId: Id<"users">;
   action: ModerationAction;
   reason: string;
@@ -180,7 +180,7 @@ export type ModerationLogEntry = {
 // =============================================================================
 
 export type Season = {
-  _id: Id<"seasons">;
+  _id: string;
   _creationTime: number;
   seasonId: string;
   name: string;
@@ -188,7 +188,7 @@ export type Season = {
   endDate: number;
   isActive: boolean;
   finalLeaderboard?: Array<{
-    playerId: Id<"players">;
+    playerId: Id<"users">;
     rank: number;
     rating: number;
   }>;
@@ -203,7 +203,7 @@ export type SeasonStats = {
   uniquePlayers: number;
   averageRating: number;
   topPlayers: Array<{
-    playerId: Id<"players">;
+    playerId: Id<"users">;
     name: string;
     rating: number;
     gamesPlayed: number;
@@ -217,13 +217,12 @@ export type SeasonStats = {
 
 export type ApiKey = {
   _id: Id<"apiKeys">;
-  playerId: Id<"players">;
+  userId: Id<"users">;
+  agentId: Id<"agents">;
   playerName: string;
+  agentName: string;
   keyPrefix: string;
-  name: string;
-  permissions: string[];
   lastUsedAt?: number;
-  expiresAt?: number;
   isActive: boolean;
   createdAt: number;
 };
@@ -253,7 +252,7 @@ export type SystemStats = {
 export type AuditTargetType = "player" | "card" | "listing" | "season" | "config" | "system";
 
 export type AuditLogEntry = {
-  _id: Id<"adminAuditLog">;
+  _id: Id<"adminAuditLogs">;
   _creationTime: number;
   adminUserId: Id<"users">;
   action: string;
@@ -271,9 +270,9 @@ export type AuditLogEntry = {
 // =============================================================================
 
 export type SuspiciousMatchup = {
-  player1Id: Id<"players">;
+  player1Id: Id<"users">;
   player1Name: string;
-  player2Id: Id<"players">;
+  player2Id: Id<"users">;
   player2Name: string;
   gamesPlayed: number;
   player1Wins: number;
@@ -285,7 +284,7 @@ export type SuspiciousMatchup = {
 };
 
 export type AbnormalRatingChange = {
-  playerId: Id<"players">;
+  playerId: Id<"users">;
   playerName: string;
   currentRating: number;
   ratingChange: number;

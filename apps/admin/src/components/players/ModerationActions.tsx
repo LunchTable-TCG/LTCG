@@ -36,7 +36,7 @@ import { toast } from "sonner";
 // =============================================================================
 
 interface ModerationActionsProps {
-  playerId: Id<"players">;
+  playerId: any;
   playerName: string;
   isBanned?: boolean;
   isSuspended?: boolean;
@@ -44,7 +44,7 @@ interface ModerationActionsProps {
 }
 
 interface ActionDialogProps {
-  playerId: Id<"players">;
+  playerId: any;
   playerName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -68,7 +68,7 @@ function BanDialog({ playerId, playerName, open, onOpenChange, onComplete }: Act
 
     setIsSubmitting(true);
     try {
-      await banPlayer({ playerId, reason: reason.trim() });
+      await banPlayer({ playerId: playerId as Id<"users">, reason: reason.trim() });
       toast.success(`${playerName} has been banned`);
       setReason("");
       onOpenChange(false);
@@ -132,7 +132,7 @@ function UnbanDialog({ playerId, playerName, open, onOpenChange, onComplete }: A
 
     setIsSubmitting(true);
     try {
-      await unbanPlayer({ playerId, reason: reason.trim() });
+      await unbanPlayer({ playerId: playerId as Id<"users"> });
       toast.success(`${playerName} has been unbanned`);
       setReason("");
       onOpenChange(false);
@@ -216,10 +216,12 @@ function SuspendDialog({
 
     setIsSubmitting(true);
     try {
+      const durationMs = Number.parseInt(duration, 10);
+      const durationDays = durationMs / (24 * 60 * 60 * 1000);
       await suspendPlayer({
-        playerId,
+        playerId: playerId as Id<"users">,
         reason: reason.trim(),
-        durationMs: Number.parseInt(duration, 10),
+        durationDays,
       });
       toast.success(`${playerName} has been suspended`);
       setReason("");
@@ -311,7 +313,7 @@ function UnsuspendDialog({
 
     setIsSubmitting(true);
     try {
-      await unsuspendPlayer({ playerId, reason: reason.trim() });
+      await unsuspendPlayer({ playerId: playerId as Id<"users"> });
       toast.success(`${playerName}'s suspension has been lifted`);
       setReason("");
       onOpenChange(false);
@@ -374,8 +376,8 @@ function WarnDialog({ playerId, playerName, open, onOpenChange, onComplete }: Ac
 
     setIsSubmitting(true);
     try {
-      const result = await warnPlayer({ playerId, reason: reason.trim() });
-      toast.success(`Warning issued to ${playerName}. Total warnings: ${result.warningCount}`);
+      const result = await warnPlayer({ playerId: playerId as Id<"users">, reason: reason.trim() });
+      toast.success(result.message || `Warning issued to ${playerName}`);
       setReason("");
       onOpenChange(false);
       onComplete?.();

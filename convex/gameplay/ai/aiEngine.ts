@@ -6,7 +6,7 @@
  */
 
 import type { Doc, Id } from "../../_generated/dataModel";
-import { handleBattlePhase, handleMainPhase } from "./aiDifficulty";
+import { handleBattlePhase } from "./aiDifficulty";
 
 export interface AIAction {
   type: "summon" | "set" | "attack" | "activate_spell" | "end_phase" | "pass";

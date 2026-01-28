@@ -79,7 +79,9 @@ export default function AnalyticsPage() {
   const suspiciousReport = useQuery(api.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
-  const marketplaceStats = useQuery(apimarketplace.getMarketplaceStats);
+  const marketplaceStats = useQuery(api.admin.analytics.getMarketplaceStats, {
+    periodType: "all_time",
+  });
 
   const isLoading = stats === undefined;
 
