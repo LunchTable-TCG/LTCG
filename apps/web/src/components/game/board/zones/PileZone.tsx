@@ -1,9 +1,9 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 import type { CardInZone } from "../../hooks/useGameBoard";
 
 interface PileZoneProps {
@@ -72,7 +72,7 @@ function DeckPile({ count }: { count: number }) {
             key={key}
             className={cn(
               "absolute inset-0 rounded-md border-2",
-              "bg-gradient-to-br from-indigo-900 to-indigo-950",
+              "bg-linear-to-br from-indigo-900 to-indigo-950",
               "border-indigo-700/50"
             )}
             style={{
@@ -121,17 +121,17 @@ function GraveyardPile({
       {count > 0 ? (
         <>
           {topCard && (
-            <div className="absolute inset-0 rounded overflow-hidden relative">
+            <div className="absolute inset-0 rounded overflow-hidden">
               {topCard.imageUrl ? (
                 <Image
                   src={topCard.imageUrl}
-                  alt={topCard.name}
+                  alt={topCard.name ?? "Card"}
                   fill
                   className="object-cover opacity-60"
                   sizes="(max-width: 640px) 40px, 56px"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                <div className="w-full h-full bg-linear-to-br from-gray-700 to-gray-800 flex items-center justify-center">
                   <span className="text-[6px] sm:text-[8px] text-gray-400 text-center px-0.5 truncate">
                     {topCard.name}
                   </span>

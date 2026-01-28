@@ -42,7 +42,7 @@ export function generateStagesForChapter(
     stages.push({
       stageNumber: i,
       name: `Stage ${i}: Initiation`,
-      description: `Face a basic ${archetype.replace(/_/g, ' ')} opponent. Learn the fundamentals.`,
+      description: `Face a basic ${archetype.replace(/_/g, " ")} opponent. Learn the fundamentals.`,
       aiDifficulty: "easy",
       rewardGold: Math.floor(baseGold * 0.8),
       rewardXp: Math.floor(baseXp * 0.8),
@@ -55,7 +55,7 @@ export function generateStagesForChapter(
     stages.push({
       stageNumber: i,
       name: `Stage ${i}: Challenge`,
-      description: `An experienced ${archetype.replace(/_/g, ' ')} duelist awaits. Use strategy.`,
+      description: `An experienced ${archetype.replace(/_/g, " ")} duelist awaits. Use strategy.`,
       aiDifficulty: "medium",
       rewardGold: baseGold,
       rewardXp: baseXp,
@@ -68,7 +68,7 @@ export function generateStagesForChapter(
     stages.push({
       stageNumber: i,
       name: `Stage ${i}: Trial`,
-      description: `A master of ${archetype.replace(/_/g, ' ')} techniques. Victory requires skill.`,
+      description: `A master of ${archetype.replace(/_/g, " ")} techniques. Victory requires skill.`,
       aiDifficulty: "hard",
       rewardGold: Math.floor(baseGold * 1.5),
       rewardXp: Math.floor(baseXp * 1.5),

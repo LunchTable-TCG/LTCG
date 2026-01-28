@@ -3,10 +3,10 @@
  * Displays player statistics, streaks, and achievements
  */
 
-import { Crown, Star, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { PlayerProfile } from "./types";
+import { Crown, Star, Zap } from "lucide-react";
 import { BADGE_ICONS } from "./constants";
+import type { PlayerProfile } from "./types";
 
 interface StatsTabProps {
   profile: PlayerProfile;
@@ -61,9 +61,7 @@ export function StatsTab({ profile, onAchievementClick }: StatsTabProps) {
             <Crown className="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <p className="text-lg font-black text-purple-400">
-              {profile.stats.longestWinStreak}
-            </p>
+            <p className="text-lg font-black text-purple-400">{profile.stats.longestWinStreak}</p>
             <p className="text-[10px] text-[#a89f94] uppercase tracking-wider">Best Streak</p>
           </div>
         </div>
@@ -71,9 +69,7 @@ export function StatsTab({ profile, onAchievementClick }: StatsTabProps) {
 
       {/* Achievements Progress */}
       <div className="space-y-2">
-        <h4 className="text-xs font-bold text-[#a89f94] uppercase tracking-wider">
-          Achievements
-        </h4>
+        <h4 className="text-xs font-bold text-[#a89f94] uppercase tracking-wider">Achievements</h4>
         {profile.achievements.map((ach) => {
           const Icon = BADGE_ICONS[ach.icon] || Star;
           const hasProgress = ach.progress !== undefined && ach.maxProgress !== undefined;

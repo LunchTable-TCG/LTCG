@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, Flame, Shield, Waves, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Check, Flame, Shield, Waves, Zap } from "lucide-react";
 
 interface StarterDeck {
   name: string;

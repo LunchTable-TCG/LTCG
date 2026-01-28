@@ -8,25 +8,36 @@
  */
 
 import { v } from "convex/values";
-import { mutation } from "../../_generated/server";
 import type { Id } from "../../_generated/dataModel";
-import { getCurrentUser, requireAuthQuery, requireAuthMutation } from "../../lib/convexAuth";
+import { mutation } from "../../_generated/server";
+import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import { ErrorCode, createError } from "../../lib/errorCodes";
 import { moveCard } from "../../lib/gameHelpers";
-import { parseAbility, executeEffect } from "../effectSystem";
+import { validateMonsterZone } from "../../lib/validation";
+import { executeEffect, parseAbility } from "../effectSystem";
 import { recordEventHelper } from "../gameEvents";
-import {
-  validateNormalSummon,
-  validateSetMonster,
-  validateFlipSummon,
-} from "../summonValidator";
+import { validateFlipSummon, validateNormalSummon, validateSetMonster } from "../summonValidator";
 
 /**
- * Normal Summon a monster
+ * Normal summon a monster from hand to the field
  *
  * Summons a monster from hand to the field in face-up Attack or Defense Position.
- * Counts as the 1 Normal Summon per turn.
- * Records: normal_summon or tribute_summon (if tributes used)
- * Also records: tribute_paid, card_to_graveyard (if tributes)
+ * Monsters level 4 or lower can be summoned without tributes.
+ * Level 5-6 monsters require 1 tribute, level 7+ require 2 tributes.
+ * This action counts as your 1 Normal Summon per turn.
+ *
+ * Game rules:
+ * - Only one Normal Summon/Set per turn
+ * - Must have required number of tributes on field
+ * - Monster zone must have available space (max 5 monsters)
+ * - Can only summon during your Main Phase
+ * - Face-up summons trigger "on_summon" effects
+ *
+ * @param lobbyId - Game lobby ID
+ * @param cardId - Monster card to summon from hand
+ * @param tributeCardIds - Optional array of monster card IDs to tribute
+ * @param position - "attack" for Attack Position or "defense" for Defense Position
+ * @returns Success status with card name, position, tributes used, and trigger effect message
  */
 export const normalSummon = mutation({
   args: {
@@ -42,12 +53,12 @@ export const normalSummon = mutation({
     // 2. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
-      throw new Error("Lobby not found");
+      throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
     // 3. Validate it's the current player's turn
     if (lobby.currentTurnPlayerId !== user.userId) {
-      throw new Error("Not your turn");
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
     }
 
     // 4. Get game state
@@ -57,7 +68,9 @@ export const normalSummon = mutation({
       .first();
 
     if (!gameState) {
-      throw new Error("Game state not found");
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Game state not found",
+      });
     }
 
     // 5. Validate summon
@@ -70,17 +83,25 @@ export const normalSummon = mutation({
     );
 
     if (!validation.valid) {
-      throw new Error(validation.error);
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: validation.error,
+      });
     }
 
     const isHost = user.userId === gameState.hostId;
     const hand = isHost ? gameState.hostHand : gameState.opponentHand;
     const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
+    // 5.5. Validate monster zone has space (max 5 monsters)
+    validateMonsterZone(board, 5);
+
     // 6. Get card details
     const card = await ctx.db.get(args.cardId);
     if (!card) {
-      throw new Error("Card not found");
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Card not found",
+        cardId: args.cardId,
+      });
     }
 
     // 7. Process tributes (if any)
@@ -156,9 +177,7 @@ export const normalSummon = mutation({
     await ctx.db.patch(gameState._id, {
       [isHost ? "hostHand" : "opponentHand"]: newHand,
       [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
-      [isHost
-        ? "hostNormalSummonedThisTurn"
-        : "opponentNormalSummonedThisTurn"]: true,
+      [isHost ? "hostNormalSummonedThisTurn" : "opponentNormalSummonedThisTurn"]: true,
     });
 
     // 11. Record summon event
@@ -222,7 +241,62 @@ export const normalSummon = mutation({
       }
     }
 
-    // 13. Return success
+    // 13. Check opponent's continuous traps for "on_opponent_summon" triggers
+    const opponentId = isHost ? gameState.opponentId : gameState.hostId;
+    const opponentSpellTrapZone = isHost
+      ? gameState.opponentSpellTrapZone
+      : gameState.hostSpellTrapZone;
+
+    for (const zoneCard of opponentSpellTrapZone) {
+      // Only check active (face-up) continuous traps
+      if (!zoneCard.isFaceDown && zoneCard.isActivated) {
+        const trapCard = await ctx.db.get(zoneCard.cardId);
+        if (trapCard && trapCard.ability && trapCard.cardType === "trap") {
+          const parsedEffect = parseAbility(trapCard.ability);
+
+          // Check if this trap triggers on opponent summon
+          if (
+            parsedEffect &&
+            parsedEffect.trigger === "on_opponent_summon" &&
+            parsedEffect.continuous
+          ) {
+            const refreshedState = await ctx.db
+              .query("gameStates")
+              .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+              .first();
+
+            if (refreshedState) {
+              const opponentTriggerResult = await executeEffect(
+                ctx,
+                refreshedState,
+                args.lobbyId,
+                parsedEffect,
+                opponentId,
+                zoneCard.cardId,
+                [] // No targets needed for automatic triggers
+              );
+
+              if (opponentTriggerResult.success) {
+                const opponent = await ctx.db.get(opponentId);
+                // Record opponent's trap activation
+                await recordEventHelper(ctx, {
+                  lobbyId: args.lobbyId,
+                  gameId: lobby.gameId!,
+                  turnNumber: lobby.turnNumber!,
+                  eventType: "effect_activated",
+                  playerId: opponentId,
+                  playerUsername: opponent?.username || "Opponent",
+                  description: `${trapCard.name} effect: ${opponentTriggerResult.message}`,
+                  metadata: { cardId: zoneCard.cardId, trigger: "on_opponent_summon" },
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 14. Return success
     return {
       success: true,
       cardSummoned: card.name,
@@ -234,11 +308,24 @@ export const normalSummon = mutation({
 });
 
 /**
- * Set a monster face-down
+ * Set a monster face-down in Defense Position
  *
  * Places a monster from hand face-down in Defense Position.
- * Counts as the 1 Normal Summon per turn.
- * Records: monster_set
+ * Same tribute requirements as Normal Summon apply.
+ * This action counts as your 1 Normal Summon per turn.
+ *
+ * Game rules:
+ * - Only one Normal Summon/Set per turn
+ * - Must have required number of tributes on field
+ * - Monster zone must have available space (max 5 monsters)
+ * - Can only set during your Main Phase
+ * - Face-down monsters do not trigger "on_summon" effects
+ * - Opponent cannot see which card was set
+ *
+ * @param lobbyId - Game lobby ID
+ * @param cardId - Monster card to set from hand
+ * @param tributeCardIds - Optional array of monster card IDs to tribute
+ * @returns Success status with tributes used
  */
 export const setMonster = mutation({
   args: {
@@ -253,12 +340,12 @@ export const setMonster = mutation({
     // 2. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
-      throw new Error("Lobby not found");
+      throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
     // 3. Validate it's the current player's turn
     if (lobby.currentTurnPlayerId !== user.userId) {
-      throw new Error("Not your turn");
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
     }
 
     // 4. Get game state
@@ -268,7 +355,9 @@ export const setMonster = mutation({
       .first();
 
     if (!gameState) {
-      throw new Error("Game state not found");
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Game state not found",
+      });
     }
 
     // 5. Validate set (uses same validation as normal summon)
@@ -281,17 +370,25 @@ export const setMonster = mutation({
     );
 
     if (!validation.valid) {
-      throw new Error(validation.error);
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: validation.error,
+      });
     }
 
     const isHost = user.userId === gameState.hostId;
     const hand = isHost ? gameState.hostHand : gameState.opponentHand;
     const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
+    // 5.5. Validate monster zone has space (max 5 monsters)
+    validateMonsterZone(board, 5);
+
     // 6. Get card details
     const card = await ctx.db.get(args.cardId);
     if (!card) {
-      throw new Error("Card not found");
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Card not found",
+        cardId: args.cardId,
+      });
     }
 
     // 7. Process tributes (if any)
@@ -348,9 +445,7 @@ export const setMonster = mutation({
     await ctx.db.patch(gameState._id, {
       [isHost ? "hostHand" : "opponentHand"]: newHand,
       [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
-      [isHost
-        ? "hostNormalSummonedThisTurn"
-        : "opponentNormalSummonedThisTurn"]: true,
+      [isHost ? "hostNormalSummonedThisTurn" : "opponentNormalSummonedThisTurn"]: true,
     });
 
     // 11. Record monster_set event
@@ -379,11 +474,22 @@ export const setMonster = mutation({
 });
 
 /**
- * Flip Summon a face-down monster
+ * Flip Summon a face-down monster to face-up position
  *
  * Flips a face-down monster to face-up Attack or Defense Position.
- * Does NOT count as the Normal Summon.
- * Records: flip_summon
+ * This does NOT count as your Normal Summon for the turn.
+ *
+ * Game rules:
+ * - Can only Flip Summon face-down monsters that have been on field for at least 1 turn
+ * - Can only Flip Summon during your Main Phase
+ * - Cannot Flip Summon a monster that was just set this turn
+ * - Triggers "on_flip" effects when flipped
+ * - Does not consume your Normal Summon for the turn
+ *
+ * @param lobbyId - Game lobby ID
+ * @param cardId - Face-down monster card to flip
+ * @param newPosition - "attack" for Attack Position or "defense" for Defense Position
+ * @returns Success status with card name, position, and flip effect message
  */
 export const flipSummon = mutation({
   args: {
@@ -398,12 +504,12 @@ export const flipSummon = mutation({
     // 2. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
-      throw new Error("Lobby not found");
+      throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
     // 3. Validate it's the current player's turn
     if (lobby.currentTurnPlayerId !== user.userId) {
-      throw new Error("Not your turn");
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
     }
 
     // 4. Get game state
@@ -413,14 +519,18 @@ export const flipSummon = mutation({
       .first();
 
     if (!gameState) {
-      throw new Error("Game state not found");
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Game state not found",
+      });
     }
 
     // 5. Validate flip summon
     const validation = await validateFlipSummon(ctx, gameState, user.userId, args.cardId);
 
     if (!validation.valid) {
-      throw new Error(validation.error);
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: validation.error,
+      });
     }
 
     const isHost = user.userId === gameState.hostId;
@@ -429,12 +539,18 @@ export const flipSummon = mutation({
     // 6. Find card on board and flip it
     const cardIndex = board.findIndex((bc) => bc.cardId === args.cardId);
     if (cardIndex === -1) {
-      throw new Error("Card not found on board");
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Card not found on board",
+        cardId: args.cardId,
+      });
     }
 
     const card = await ctx.db.get(args.cardId);
     if (!card) {
-      throw new Error("Card not found");
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Card not found",
+        cardId: args.cardId,
+      });
     }
 
     // 7. Update card to face-up

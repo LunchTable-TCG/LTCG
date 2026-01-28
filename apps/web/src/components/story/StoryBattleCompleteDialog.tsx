@@ -1,11 +1,11 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Star, Coins, Zap, Gift, ArrowRight } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Coins, Gift, Star, Trophy, Zap } from "lucide-react";
 
 interface StoryBattleCompleteDialogProps {
   open: boolean;
@@ -48,9 +48,7 @@ export function StoryBattleCompleteDialog({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="bg-black/95 border-[#3d2b1f] max-w-2xl">
-        <DialogTitle className="sr-only">
-          {won ? "Victory!" : "Defeat"}
-        </DialogTitle>
+        <DialogTitle className="sr-only">{won ? "Victory!" : "Defeat"}</DialogTitle>
 
         {/* Victory/Defeat Header */}
         <motion.div
@@ -59,17 +57,10 @@ export function StoryBattleCompleteDialog({
           transition={{ duration: 0.5, type: "spring" }}
           className="text-center mb-6"
         >
-          <div
-            className={cn(
-              "text-6xl font-bold mb-2",
-              won ? "text-[#d4af37]" : "text-gray-500"
-            )}
-          >
+          <div className={cn("text-6xl font-bold mb-2", won ? "text-[#d4af37]" : "text-gray-500")}>
             {won ? "VICTORY" : "DEFEAT"}
           </div>
-          {chapterName && (
-            <p className="text-[#a89f94] text-lg">{chapterName}</p>
-          )}
+          {chapterName && <p className="text-[#a89f94] text-lg">{chapterName}</p>}
         </motion.div>
 
         {won ? (
@@ -87,9 +78,7 @@ export function StoryBattleCompleteDialog({
                     <Star
                       className={cn(
                         "w-10 h-10",
-                        star <= starsEarned
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-600"
+                        star <= starsEarned ? "fill-yellow-400 text-yellow-400" : "text-gray-600"
                       )}
                     />
                   </motion.div>
@@ -99,8 +88,8 @@ export function StoryBattleCompleteDialog({
                 {starsEarned === 3
                   ? "Perfect Victory!"
                   : starsEarned === 2
-                  ? "Excellent Performance!"
-                  : "Victory!"}
+                    ? "Excellent Performance!"
+                    : "Victory!"}
               </p>
             </FantasyFrame>
 
@@ -111,9 +100,7 @@ export function StoryBattleCompleteDialog({
                   <Coins className="w-6 h-6 text-[#d4af37]" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-[#d4af37]">
-                    +{rewards.gold}
-                  </div>
+                  <div className="text-2xl font-bold text-[#d4af37]">+{rewards.gold}</div>
                   <div className="text-xs text-[#a89f94]">Gold</div>
                 </div>
               </FantasyFrame>
@@ -123,9 +110,7 @@ export function StoryBattleCompleteDialog({
                   <Zap className="w-6 h-6 text-purple-400" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-purple-400">
-                    +{rewards.xp}
-                  </div>
+                  <div className="text-2xl font-bold text-purple-400">+{rewards.xp}</div>
                   <div className="text-xs text-[#a89f94]">XP</div>
                 </div>
               </FantasyFrame>
@@ -138,12 +123,13 @@ export function StoryBattleCompleteDialog({
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                <FantasyFrame variant="gold" className="p-4 text-center bg-gradient-to-br from-purple-900/40 to-blue-900/40">
+                <FantasyFrame
+                  variant="gold"
+                  className="p-4 text-center bg-linear-to-br from-purple-900/40 to-blue-900/40"
+                >
                   <div className="flex items-center justify-center gap-3 mb-2">
                     <Trophy className="w-6 h-6 text-[#d4af37]" />
-                    <div className="text-2xl font-bold text-[#d4af37]">
-                      LEVEL UP!
-                    </div>
+                    <div className="text-2xl font-bold text-[#d4af37]">LEVEL UP!</div>
                     <Trophy className="w-6 h-6 text-[#d4af37]" />
                   </div>
                   <p className="text-[#a89f94]">
@@ -158,9 +144,7 @@ export function StoryBattleCompleteDialog({
               <FantasyFrame className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Gift className="w-5 h-5 text-blue-400" />
-                  <div className="text-lg font-bold text-[#e8e0d5]">
-                    New Badges Earned!
-                  </div>
+                  <div className="text-lg font-bold text-[#e8e0d5]">New Badges Earned!</div>
                 </div>
                 <div className="space-y-2">
                   {newBadges.map((badge) => (
@@ -172,12 +156,8 @@ export function StoryBattleCompleteDialog({
                     >
                       <Trophy className="w-5 h-5 text-blue-400" />
                       <div>
-                        <div className="text-sm font-bold text-[#e8e0d5]">
-                          {badge.displayName}
-                        </div>
-                        <div className="text-xs text-[#a89f94]">
-                          {badge.description}
-                        </div>
+                        <div className="text-sm font-bold text-[#e8e0d5]">{badge.displayName}</div>
+                        <div className="text-xs text-[#a89f94]">{badge.description}</div>
                       </div>
                     </motion.div>
                   ))}
@@ -190,9 +170,7 @@ export function StoryBattleCompleteDialog({
               <FantasyFrame className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Star className="w-5 h-5 text-[#d4af37]" />
-                  <div className="text-lg font-bold text-[#e8e0d5]">
-                    Cards Received
-                  </div>
+                  <div className="text-lg font-bold text-[#e8e0d5]">Cards Received</div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {cardsReceived.map((card, index) => (
@@ -210,10 +188,8 @@ export function StoryBattleCompleteDialog({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center p-2">
-                          <span className="text-xs text-center text-white">
-                            {card.name}
-                          </span>
+                        <div className="w-full h-full bg-linear-to-br from-gray-800 to-gray-900 flex items-center justify-center p-2">
+                          <span className="text-xs text-center text-white">{card.name}</span>
                         </div>
                       )}
                     </motion.div>
@@ -233,9 +209,7 @@ export function StoryBattleCompleteDialog({
           </div>
         ) : (
           <div className="space-y-6 text-center">
-            <p className="text-[#a89f94] text-lg">
-              You were defeated. Try again to earn rewards!
-            </p>
+            <p className="text-[#a89f94] text-lg">You were defeated. Try again to earn rewards!</p>
 
             <Button
               onClick={onClose}

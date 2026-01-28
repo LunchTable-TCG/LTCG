@@ -12,11 +12,131 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "../_generated/server";
-import type { MutationCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
+import { internalMutation, mutation, query } from "../_generated/server";
+import type { MutationCtx } from "../_generated/server";
 import { requireAuthMutation } from "../lib/convexAuth";
+import { createError, ErrorCode } from "../lib/errorCodes";
+import { executeEffect, parseAbility } from "./effectSystem/index";
 import { recordEventHelper } from "./gameEvents";
+
+/**
+ * Helper function to add effect to chain without mutation overhead
+ *
+ * Used by game engine to build chains efficiently without ctx.runMutation latency.
+ * Validates spell speed compatibility (e.g., can't chain Speed 1 to Speed 2),
+ * adds the effect to the chain stack, passes priority to opponent, and records the event.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param params - Chain addition parameters
+ * @param params.lobbyId - Lobby ID for the game
+ * @param params.cardId - Card definition ID being activated
+ * @param params.playerId - User ID of the player activating the effect
+ * @param params.playerUsername - Username for event recording
+ * @param params.spellSpeed - Spell speed (1 = Normal, 2 = Quick, 3 = Counter)
+ * @param params.effect - Effect text to execute when chain resolves
+ * @param params.targets - Optional array of target card IDs
+ * @returns Chain state with success flag, chain link number, and total chain length
+ * @throws {ErrorCode.GAME_INVALID_SPELL_SPEED} If spell speed is incompatible with current chain
+ */
+export async function addToChainHelper(
+  ctx: MutationCtx,
+  params: {
+    lobbyId: Id<"gameLobbies">;
+    cardId: Id<"cardDefinitions">;
+    playerId: Id<"users">;
+    playerUsername: string;
+    spellSpeed: 1 | 2 | 3;
+    effect: string;
+    targets?: Id<"cardDefinitions">[];
+  }
+): Promise<{ success: boolean; chainLinkNumber: number; currentChainLength: number }> {
+  const args = params;
+
+  // 1. Get lobby
+  const lobby = await ctx.db.get(args.lobbyId);
+  if (!lobby) {
+    throw createError(ErrorCode.NOT_FOUND_LOBBY, {
+      reason: "Lobby not found",
+      lobbyId: args.lobbyId,
+    });
+  }
+
+  // 2. Get game state
+  const gameState = await ctx.db
+    .query("gameStates")
+    .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+    .first();
+
+  if (!gameState) {
+    throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+      reason: "Game state not found",
+      lobbyId: args.lobbyId,
+    });
+  }
+
+  // 3. Get current chain (or initialize empty)
+  const currentChain = gameState.currentChain || [];
+
+  // 4. Validate spell speed
+  if (currentChain.length > 0) {
+    const lastChainLink = currentChain[currentChain.length - 1];
+    if (lastChainLink && args.spellSpeed < lastChainLink.spellSpeed) {
+      throw createError(ErrorCode.GAME_INVALID_SPELL_SPEED, {
+        reason: `Cannot chain Spell Speed ${args.spellSpeed} to Spell Speed ${lastChainLink.spellSpeed}`,
+        currentSpellSpeed: args.spellSpeed,
+        requiredSpellSpeed: lastChainLink.spellSpeed,
+      });
+    }
+  }
+
+  // 5. Create new chain link
+  const newChainLink = {
+    cardId: args.cardId,
+    playerId: args.playerId,
+    spellSpeed: args.spellSpeed,
+    effect: args.effect,
+    targets: args.targets,
+  };
+
+  const updatedChain = [...currentChain, newChainLink];
+
+  // 6. Update game state with chain and priority
+  const opponentId = args.playerId === gameState.hostId ? gameState.opponentId : gameState.hostId;
+  await ctx.db.patch(gameState._id, {
+    currentChain: updatedChain,
+    currentPriorityPlayer: opponentId, // Give opponent priority to respond
+  });
+
+  // 7. Get card details
+  const card = await ctx.db.get(args.cardId);
+
+  // 8. Record chain_link_added event
+  await recordEventHelper(ctx, {
+    lobbyId: args.lobbyId,
+    gameId: lobby.gameId!,
+    turnNumber: lobby.turnNumber!,
+    eventType: "chain_link_added",
+    playerId: args.playerId,
+    playerUsername: args.playerUsername,
+    description: `${args.playerUsername} added ${card?.name || "a card"} to the chain (Chain Link ${updatedChain.length})`,
+    metadata: {
+      cardId: args.cardId,
+      cardName: card?.name,
+      chainLinkNumber: updatedChain.length,
+      spellSpeed: args.spellSpeed,
+      effect: args.effect,
+    },
+  });
+
+  // 9. Return chain state
+  return {
+    success: true,
+    chainLinkNumber: updatedChain.length,
+    currentChainLength: updatedChain.length,
+  };
+}
 
 /**
  * Add effect to chain
@@ -36,84 +156,33 @@ export const addToChain = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby
-    const lobby = await ctx.db.get(args.lobbyId);
-    if (!lobby) {
-      throw new Error("Lobby not found");
-    }
-
-    // 3. Get game state
-    const gameState = await ctx.db
-      .query("gameStates")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-      .first();
-
-    if (!gameState) {
-      throw new Error("Game state not found");
-    }
-
-    // 4. Get current chain (or initialize empty)
-    const currentChain = gameState.currentChain || [];
-
-    // 5. Validate spell speed
-    if (currentChain.length > 0) {
-      const lastChainLink = currentChain[currentChain.length - 1];
-      if (lastChainLink && args.spellSpeed < lastChainLink.spellSpeed) {
-        throw new Error(
-          `Cannot chain Spell Speed ${args.spellSpeed} to Spell Speed ${lastChainLink.spellSpeed}`
-        );
-      }
-    }
-
-    // 6. Create new chain link
-    const newChainLink = {
+    // 2. Call helper with validated user info
+    return await addToChainHelper(ctx, {
+      lobbyId: args.lobbyId,
       cardId: args.cardId,
       playerId: user.userId,
-      spellSpeed: args.spellSpeed,
+      playerUsername: user.username,
+      spellSpeed: args.spellSpeed as 1 | 2 | 3,
       effect: args.effect,
       targets: args.targets,
-    };
-
-    const updatedChain = [...currentChain, newChainLink];
-
-    // 7. Update game state
-    await ctx.db.patch(gameState._id, {
-      currentChain: updatedChain,
     });
-
-    // 8. Get card details
-    const card = await ctx.db.get(args.cardId);
-
-    // 9. Record chain_link_added event
-    await recordEventHelper(ctx, {
-      lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
-      eventType: "chain_link_added",
-      playerId: user.userId,
-      playerUsername: user.username,
-      description: `${user.username} added ${card?.name || "a card"} to the chain (Chain Link ${updatedChain.length})`,
-      metadata: {
-        cardId: args.cardId,
-        cardName: card?.name,
-        chainLinkNumber: updatedChain.length,
-        spellSpeed: args.spellSpeed,
-        effect: args.effect,
-      },
-    });
-
-    // 10. Return chain state
-    return {
-      success: true,
-      chainLinkNumber: updatedChain.length,
-      currentChainLength: updatedChain.length,
-    };
   },
 });
 
 /**
- * Helper function to resolve chain
- * Can be called directly from other mutations to avoid ctx.runMutation overhead
+ * Helper function to resolve chain without mutation overhead
+ *
+ * Used by game engine to resolve chains efficiently in reverse order (CL3 → CL2 → CL1).
+ * Executes each effect in the chain, handles negated effects, moves spell/trap cards to graveyard,
+ * clears chain state, and records all resolution events for spectators.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param params - Chain resolution parameters
+ * @param params.lobbyId - Lobby ID for the game
+ * @returns Resolution result with success flag and number of chain links resolved
+ * @throws {ErrorCode.GAME_NO_CHAIN} If no chain exists to resolve
+ * @throws {ErrorCode.GAME_INVALID_CHAIN} If chain structure is invalid
  */
 export async function resolveChainHelper(
   ctx: MutationCtx,
@@ -122,64 +191,148 @@ export async function resolveChainHelper(
   }
 ): Promise<{ success: boolean; resolvedChainLinks: number }> {
   const args = params;
-    // 1. Get lobby
-    const lobby = await ctx.db.get(args.lobbyId);
-    if (!lobby) {
-      throw new Error("Lobby not found");
-    }
-
-    // 2. Get game state
-    const gameState = await ctx.db
-      .query("gameStates")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-      .first();
-
-    if (!gameState) {
-      throw new Error("Game state not found");
-    }
-
-    // 3. Get current chain
-    const currentChain = gameState.currentChain || [];
-
-    if (currentChain.length === 0) {
-      throw new Error("No chain to resolve");
-    }
-
-    const firstChainLink = currentChain[0];
-    if (!firstChainLink) {
-      throw new Error("Invalid chain structure");
-    }
-
-    // 4. Record chain_resolving event
-    await recordEventHelper(ctx, {
+  // 1. Get lobby
+  const lobby = await ctx.db.get(args.lobbyId);
+  if (!lobby) {
+    throw createError(ErrorCode.NOT_FOUND_LOBBY, {
+      reason: "Lobby not found",
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
-      eventType: "chain_resolving",
-      playerId: firstChainLink.playerId,
-      playerUsername: "System",
-      description: `Chain of ${currentChain.length} effect(s) is resolving`,
-      metadata: {
-        chainLength: currentChain.length,
-        chainLinks: currentChain.map((link, idx) => ({
-          chainLink: idx + 1,
-          cardId: link.cardId,
-          playerId: link.playerId,
-        })),
-      },
     });
+  }
 
-    // 5. Resolve chain in reverse order (CL3 → CL2 → CL1)
-    for (let i = currentChain.length - 1; i >= 0; i--) {
-      const chainLink = currentChain[i];
-      if (!chainLink) continue;
+  // 2. Get game state
+  const gameState = await ctx.db
+    .query("gameStates")
+    .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+    .first();
 
-      const card = await ctx.db.get(chainLink.cardId);
+  if (!gameState) {
+    throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+      reason: "Game state not found",
+      lobbyId: args.lobbyId,
+    });
+  }
 
-      // Execute effect (simplified for MVP)
-      // Full implementation would parse card abilities and execute complex effects
-      // For now, just record the resolution
+  // 3. Get current chain
+  const currentChain = gameState.currentChain || [];
 
+  if (currentChain.length === 0) {
+    throw createError(ErrorCode.GAME_NO_CHAIN, {
+      reason: "No chain to resolve",
+      lobbyId: args.lobbyId,
+    });
+  }
+
+  const firstChainLink = currentChain[0];
+  if (!firstChainLink) {
+    throw createError(ErrorCode.GAME_INVALID_CHAIN, {
+      reason: "Invalid chain structure",
+      lobbyId: args.lobbyId,
+    });
+  }
+
+  // 4. Record chain_resolving event
+  await recordEventHelper(ctx, {
+    lobbyId: args.lobbyId,
+    gameId: lobby.gameId!,
+    turnNumber: lobby.turnNumber!,
+    eventType: "chain_resolving",
+    playerId: firstChainLink.playerId,
+    playerUsername: "System",
+    description: `Chain of ${currentChain.length} effect(s) is resolving`,
+    metadata: {
+      chainLength: currentChain.length,
+      chainLinks: currentChain.map((link, idx) => ({
+        chainLink: idx + 1,
+        cardId: link.cardId,
+        playerId: link.playerId,
+      })),
+    },
+  });
+
+  // 5. Resolve chain in reverse order (CL3 → CL2 → CL1)
+  for (let i = currentChain.length - 1; i >= 0; i--) {
+    const chainLink = currentChain[i];
+    if (!chainLink) continue;
+
+    const card = await ctx.db.get(chainLink.cardId);
+
+    // Skip negated effects
+    if (chainLink.negated) {
+      await recordEventHelper(ctx, {
+        lobbyId: args.lobbyId,
+        gameId: lobby.gameId!,
+        turnNumber: lobby.turnNumber!,
+        eventType: "activation_negated",
+        playerId: chainLink.playerId,
+        playerUsername: "System",
+        description: `Chain Link ${i + 1}: ${card?.name || "Unknown"} effect was negated`,
+        metadata: {
+          cardId: chainLink.cardId,
+          cardName: card?.name,
+          chainLink: i + 1,
+        },
+      });
+
+      // Move negated spell/trap to graveyard
+      if (card?.cardType === "spell" || card?.cardType === "trap") {
+        const currentState = await ctx.db
+          .query("gameStates")
+          .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+          .first();
+
+        if (currentState) {
+          const isHost = chainLink.playerId === currentState.hostId;
+          const graveyard = isHost ? currentState.hostGraveyard : currentState.opponentGraveyard;
+          await ctx.db.patch(currentState._id, {
+            [isHost ? "hostGraveyard" : "opponentGraveyard"]: [...graveyard, chainLink.cardId],
+          });
+        }
+      }
+      continue;
+    }
+
+    // Parse and execute effect
+    const parsedEffect = parseAbility(chainLink.effect);
+
+    if (parsedEffect) {
+      // Refresh game state before each effect resolution
+      const refreshedState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+        .first();
+
+      if (refreshedState) {
+        const effectResult = await executeEffect(
+          ctx,
+          refreshedState,
+          args.lobbyId,
+          parsedEffect,
+          chainLink.playerId,
+          chainLink.cardId,
+          chainLink.targets || []
+        );
+
+        // Record effect resolution
+        await recordEventHelper(ctx, {
+          lobbyId: args.lobbyId,
+          gameId: lobby.gameId!,
+          turnNumber: lobby.turnNumber!,
+          eventType: "effect_activated",
+          playerId: chainLink.playerId,
+          playerUsername: "System",
+          description: `Chain Link ${i + 1}: ${card?.name || "Unknown"} - ${effectResult.message}`,
+          metadata: {
+            cardId: chainLink.cardId,
+            cardName: card?.name,
+            chainLink: i + 1,
+            effect: chainLink.effect,
+            success: effectResult.success,
+          },
+        });
+      }
+    } else {
+      // Couldn't parse effect - log warning
       await recordEventHelper(ctx, {
         lobbyId: args.lobbyId,
         gameId: lobby.gameId!,
@@ -187,7 +340,7 @@ export async function resolveChainHelper(
         eventType: "effect_activated",
         playerId: chainLink.playerId,
         playerUsername: "System",
-        description: `Chain Link ${i + 1}: ${card?.name || "Unknown"} effect resolves`,
+        description: `Chain Link ${i + 1}: ${card?.name || "Unknown"} effect (unparsed)`,
         metadata: {
           cardId: chainLink.cardId,
           cardName: card?.name,
@@ -197,31 +350,48 @@ export async function resolveChainHelper(
       });
     }
 
-    // 6. Clear chain
-    await ctx.db.patch(gameState._id, {
-      currentChain: [],
-      currentPriorityPlayer: undefined,
-    });
+    // Move spell/trap card to graveyard after effect resolves
+    if (card?.cardType === "spell" || card?.cardType === "trap") {
+      const currentState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+        .first();
 
-    // 7. Record chain_resolved event
-    await recordEventHelper(ctx, {
-      lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
-      eventType: "chain_resolved",
-      playerId: firstChainLink.playerId,
-      playerUsername: "System",
-      description: `Chain fully resolved`,
-      metadata: {
-        chainLength: currentChain.length,
-      },
-    });
+      if (currentState) {
+        const isHost = chainLink.playerId === currentState.hostId;
+        const graveyard = isHost ? currentState.hostGraveyard : currentState.opponentGraveyard;
+        await ctx.db.patch(currentState._id, {
+          [isHost ? "hostGraveyard" : "opponentGraveyard"]: [...graveyard, chainLink.cardId],
+        });
+      }
+    }
+  }
 
-    // 8. Return success
-    return {
-      success: true,
-      resolvedChainLinks: currentChain.length,
-    };
+  // 6. Clear chain
+  await ctx.db.patch(gameState._id, {
+    currentChain: [],
+    currentPriorityPlayer: undefined,
+  });
+
+  // 7. Record chain_resolved event
+  await recordEventHelper(ctx, {
+    lobbyId: args.lobbyId,
+    gameId: lobby.gameId!,
+    turnNumber: lobby.turnNumber!,
+    eventType: "chain_resolved",
+    playerId: firstChainLink.playerId,
+    playerUsername: "System",
+    description: `Chain fully resolved`,
+    metadata: {
+      chainLength: currentChain.length,
+    },
+  });
+
+  // 8. Return success
+  return {
+    success: true,
+    resolvedChainLinks: currentChain.length,
+  };
 }
 
 /**
@@ -256,7 +426,10 @@ export const passPriority = mutation({
     // 2. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
-      throw new Error("Lobby not found");
+      throw createError(ErrorCode.NOT_FOUND_LOBBY, {
+        reason: "Lobby not found",
+        lobbyId: args.lobbyId,
+      });
     }
 
     // 3. Get game state
@@ -266,14 +439,20 @@ export const passPriority = mutation({
       .first();
 
     if (!gameState) {
-      throw new Error("Game state not found");
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game state not found",
+        lobbyId: args.lobbyId,
+      });
     }
 
     // 4. Check if there's a chain to respond to
     const currentChain = gameState.currentChain || [];
 
     if (currentChain.length === 0) {
-      throw new Error("No chain to respond to");
+      throw createError(ErrorCode.GAME_NO_CHAIN, {
+        reason: "No chain to respond to",
+        lobbyId: args.lobbyId,
+      });
     }
 
     // 5. Pass priority to opponent

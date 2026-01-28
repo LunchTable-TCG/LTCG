@@ -35,11 +35,19 @@ export const ErrorCode = {
   NOT_FOUND_ACHIEVEMENT: "NOT_FOUND_4003",
   NOT_FOUND_PRODUCT: "NOT_FOUND_4004",
   NOT_FOUND_LOBBY: "NOT_FOUND_4005",
+  NOT_FOUND_CARD: "NOT_FOUND_4006",
+  NOT_FOUND_STORAGE_FILE: "NOT_FOUND_4007",
 
   // Validation Errors (5xxx)
   VALIDATION_INVALID_INPUT: "VALIDATION_5001",
   VALIDATION_MISSING_FIELD: "VALIDATION_5002",
   VALIDATION_INVALID_FORMAT: "VALIDATION_5003",
+  VALIDATION_INVALID_DECK: "VALIDATION_5009",
+  VALIDATION_UNSUPPORTED_FORMAT: "VALIDATION_5011",
+  VALIDATION_FILE_TOO_LARGE: "VALIDATION_5012",
+  VALIDATION_DECK_SIZE: "VALIDATION_5013",
+  VALIDATION_CARD_OWNERSHIP: "VALIDATION_5014",
+  VALIDATION_RANGE: "VALIDATION_5015",
 
   // Quest/Achievement Errors (5xxx - State Validation)
   QUEST_NOT_COMPLETED: "QUEST_5004",
@@ -50,6 +58,9 @@ export const ErrorCode = {
   CHAT_MESSAGE_TOO_LONG: "CHAT_5007",
   CHAT_MESSAGE_EMPTY: "CHAT_5008",
 
+  // Notification Errors (5xxx - State Validation)
+  NOTIFICATION_NOT_FOUND: "NOTIFICATION_5010",
+
   // Economy Errors (6xxx)
   ECONOMY_INSUFFICIENT_GOLD: "ECONOMY_6001",
   ECONOMY_INSUFFICIENT_GEMS: "ECONOMY_6002",
@@ -57,6 +68,9 @@ export const ErrorCode = {
   ECONOMY_PROMO_CODE_INVALID: "ECONOMY_6004",
   ECONOMY_PROMO_CODE_EXPIRED: "ECONOMY_6005",
   ECONOMY_PROMO_CODE_USED: "ECONOMY_6006",
+
+  // Marketplace Errors (6xxx - Economy Related)
+  MARKETPLACE_BID_TOO_LOW: "MARKETPLACE_6007",
 
   // Social Errors (7xxx)
   SOCIAL_ALREADY_FRIENDS: "SOCIAL_7001",
@@ -69,16 +83,55 @@ export const ErrorCode = {
   GAME_ALREADY_IN_GAME: "GAME_8002",
   GAME_INVALID_MOVE: "GAME_8003",
   GAME_NOT_YOUR_TURN: "GAME_8004",
+  GAME_STATE_NOT_FOUND: "GAME_8008",
+  GAME_CARD_NOT_FOUND: "GAME_8009",
+  GAME_CARD_NOT_IN_HAND: "GAME_8010",
+  GAME_CARD_NOT_ON_BOARD: "GAME_8011",
+  GAME_INVALID_PHASE: "GAME_8012",
+  GAME_INVALID_CARD_TYPE: "GAME_8013",
+  GAME_ZONE_FULL: "GAME_8014",
+  GAME_CARD_ALREADY_FACE_UP: "GAME_8015",
+  GAME_TRAP_SAME_TURN: "GAME_8016",
+  GAME_CARD_NOT_IN_ZONE: "GAME_8017",
+  GAME_INVALID_SPELL_SPEED: "GAME_8018",
+  GAME_NO_CHAIN: "GAME_8019",
+  GAME_INVALID_CHAIN: "GAME_8020",
+  GAME_CANNOT_ADVANCE_PHASE: "GAME_8021",
+  GAME_AI_TURN_ERROR: "GAME_8022",
 
   // Matchmaking Errors (8xxx - Game Related)
   MATCHMAKING_ALREADY_IN_QUEUE: "MATCHMAKING_8005",
   MATCHMAKING_NOT_IN_QUEUE: "MATCHMAKING_8006",
   MATCHMAKING_PLAYER_LEFT_QUEUE: "MATCHMAKING_8007",
 
+  // Agent Errors (10xxx)
+  AGENT_LIMIT_REACHED: "AGENT_10001",
+  AGENT_NAME_INVALID_LENGTH: "AGENT_10002",
+  AGENT_NAME_INVALID_CHARS: "AGENT_10003",
+  AGENT_NAME_DUPLICATE: "AGENT_10004",
+  AGENT_INVALID_STARTER_DECK: "AGENT_10005",
+  AGENT_INVALID_PROFILE_URL: "AGENT_10006",
+  AGENT_INVALID_SOCIAL_URL: "AGENT_10007",
+  AGENT_NOT_FOUND: "AGENT_10008",
+  AGENT_DELETED: "AGENT_10009",
+
+  // Library/System Errors (11xxx)
+  LIBRARY_EMPTY_DECK: "LIBRARY_11001",
+  LIBRARY_NO_CARDS_FOUND: "LIBRARY_11002",
+  LIBRARY_CARD_SELECTION_FAILED: "LIBRARY_11003",
+  LIBRARY_EMPTY_ARRAY: "LIBRARY_11004",
+  LIBRARY_INSUFFICIENT_CARDS: "LIBRARY_11005",
+  LIBRARY_XP_CREATION_FAILED: "LIBRARY_11006",
+  LIBRARY_INVALID_XP: "LIBRARY_11007",
+
   // System Errors (9xxx)
   SYSTEM_INTERNAL_ERROR: "SYSTEM_9001",
   SYSTEM_DATABASE_ERROR: "SYSTEM_9002",
   SYSTEM_TRANSACTION_FAILED: "SYSTEM_9003",
+  SYSTEM_EMAIL_SEND_FAILED: "SYSTEM_9004",
+  SYSTEM_RATE_LIMIT_CONFIG: "SYSTEM_9005",
+  SYSTEM_CURRENCY_NOT_FOUND: "SYSTEM_9006",
+  SYSTEM_CURRENCY_CREATION_FAILED: "SYSTEM_9007",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -113,11 +166,19 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   NOT_FOUND_4003: "Achievement not found",
   NOT_FOUND_4004: "Product not found or unavailable",
   NOT_FOUND_4005: "Game lobby not found",
+  NOT_FOUND_4006: "Card not found",
+  NOT_FOUND_4007: "Storage file not found",
 
   // Validation
   VALIDATION_5001: "Invalid input provided",
   VALIDATION_5002: "Required field is missing",
   VALIDATION_5003: "Invalid format",
+  VALIDATION_5009: "Invalid deck configuration",
+  VALIDATION_5011: "Unsupported file format",
+  VALIDATION_5012: "File size exceeds maximum allowed size",
+  VALIDATION_5013: "Deck size is outside allowed range",
+  VALIDATION_5014: "Card ownership validation failed",
+  VALIDATION_5015: "Value is outside allowed range",
 
   // Quest/Achievement
   QUEST_5004: "Quest is not completed yet",
@@ -128,6 +189,9 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   CHAT_5007: "Chat message is too long",
   CHAT_5008: "Chat message cannot be empty",
 
+  // Notification
+  NOTIFICATION_5010: "Notification not found",
+
   // Economy
   ECONOMY_6001: "Insufficient gold",
   ECONOMY_6002: "Insufficient gems",
@@ -135,6 +199,9 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   ECONOMY_6004: "Invalid promo code",
   ECONOMY_6005: "This promo code has expired",
   ECONOMY_6006: "You have already redeemed this promo code",
+
+  // Marketplace
+  MARKETPLACE_6007: "Bid amount is too low",
 
   // Social
   SOCIAL_7001: "You are already friends with this user",
@@ -147,16 +214,55 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   GAME_8002: "You are already in an active game",
   GAME_8003: "Invalid move",
   GAME_8004: "It is not your turn",
+  GAME_8008: "Game state not found",
+  GAME_8009: "Card not found",
+  GAME_8010: "Card is not in your hand",
+  GAME_8011: "Card not found on board",
+  GAME_8012: "Action not allowed in current phase",
+  GAME_8013: "Invalid card type for this action",
+  GAME_8014: "Zone is full",
+  GAME_8015: "Card is already face-up",
+  GAME_8016: "Trap cards cannot be activated the same turn they are set",
+  GAME_8017: "Card is not in your zone",
+  GAME_8018: "Cannot chain card with lower Spell Speed",
+  GAME_8019: "No chain to resolve or respond to",
+  GAME_8020: "Invalid chain structure",
+  GAME_8021: "Cannot advance from End Phase - use endTurn instead",
+  GAME_8022: "AI turn execution failed",
 
   // Matchmaking
   MATCHMAKING_8005: "You are already in the matchmaking queue",
   MATCHMAKING_8006: "You are not in the matchmaking queue",
   MATCHMAKING_8007: "One or more players left the matchmaking queue",
 
+  // Agent
+  AGENT_10001: "Maximum agents allowed per account",
+  AGENT_10002: "Agent name must be between 3 and 32 characters",
+  AGENT_10003: "Agent name can only contain letters, numbers, spaces, underscores, and hyphens",
+  AGENT_10004: "You already have an agent with this name",
+  AGENT_10005: "Invalid starter deck selection",
+  AGENT_10006: "Invalid profile picture URL",
+  AGENT_10007: "Invalid social link URL",
+  AGENT_10008: "Agent not found",
+  AGENT_10009: "Agent has been deleted",
+
+  // Library/System
+  LIBRARY_11001: "Cannot draw card: deck is empty",
+  LIBRARY_11002: "No cards found matching criteria",
+  LIBRARY_11003: "Failed to select card",
+  LIBRARY_11004: "Cannot pick from empty array",
+  LIBRARY_11005: "Insufficient cards in collection",
+  LIBRARY_11006: "Failed to create player XP record",
+  LIBRARY_11007: "Cannot add negative XP",
+
   // System
   SYSTEM_9001: "An internal error occurred. Please try again",
   SYSTEM_9002: "Database error occurred",
   SYSTEM_9003: "Transaction failed. Please try again",
+  SYSTEM_9004: "Failed to send email",
+  SYSTEM_9005: "Rate limit configuration error",
+  SYSTEM_9006: "Currency record not found. User may need to sign up again",
+  SYSTEM_9007: "Failed to create currency record",
 };
 
 /**
@@ -171,7 +277,10 @@ export const ErrorMessages: Record<ErrorCode, string> = {
  */
 export function createError(code: ErrorCode, details?: Record<string, unknown>): Error {
   const message = ErrorMessages[code];
-  const error = new Error(message) as Error & { code: ErrorCode; details?: Record<string, unknown> };
+  const error = new Error(message) as Error & {
+    code: ErrorCode;
+    details?: Record<string, unknown>;
+  };
   error.code = code;
   if (details) {
     error.details = details;

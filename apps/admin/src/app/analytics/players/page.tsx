@@ -45,9 +45,9 @@ interface EngagedPlayer {
 export default function PlayerAnalyticsPage() {
   // Fetch real data from Convex
   const stats = useQuery(api.admin.admin.getSystemStats);
-  const dailyStats = useQuery(api.analytics.engagement.getDailyActiveStats, { days: 14 });
-  const retention = useQuery(api.analytics.engagement.getRetentionOverview);
-  const topEngaged = useQuery(api.analytics.engagement.getTopEngagedPlayers, {
+  const dailyStats = useQuery(api.admin.analytics.engagement.getDailyActiveStats, { days: 14 });
+  const retention = useQuery(api.admin.analytics.engagement.getRetentionOverview);
+  const topEngaged = useQuery(api.admin.analytics.engagement.getTopEngagedPlayers, {
     days: 7,
     limit: 10,
   });

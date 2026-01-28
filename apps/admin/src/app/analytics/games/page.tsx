@@ -78,10 +78,10 @@ function getHealthBadge(score: number) {
 export default function GameAnalyticsPage() {
   // Fetch real data from Convex
   const stats = useQuery(api.admin.admin.getSystemStats);
-  const matchmakingHealth = useQuery(api.analytics.matchmaking.getMatchmakingHealth);
-  const matchmakingStats = useQuery(api.analytics.matchmaking.getMatchmakingStats, { days: 14 });
-  const skillDist = useQuery(api.analytics.matchmaking.getSkillDistribution, { ratingType: "elo" });
-  const dailyStats = useQuery(api.analytics.engagement.getDailyActiveStats, { days: 14 });
+  const matchmakingHealth = useQuery(api.admin.analytics.matchmaking.getMatchmakingHealth);
+  const matchmakingStats = useQuery(api.admin.analytics.matchmaking.getMatchmakingStats, { days: 14 });
+  const skillDist = useQuery(api.admin.analytics.matchmaking.getSkillDistribution, { ratingType: "elo" });
+  const dailyStats = useQuery(api.admin.analytics.engagement.getDailyActiveStats, { days: 14 });
 
   const isLoading = stats === undefined;
 

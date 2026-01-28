@@ -6,9 +6,9 @@
  */
 
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
 
 // ============================================================================
 // PUBLIC QUERIES
@@ -97,13 +97,7 @@ export const subscribeToGameEvents = query({
     includeMetadata: v.optional(v.boolean()), // Include full metadata (default: true)
   },
   handler: async (ctx, args) => {
-    const {
-      lobbyId,
-      sinceTimestamp,
-      eventTypes,
-      limit = 50,
-      includeMetadata = true,
-    } = args;
+    const { lobbyId, sinceTimestamp, eventTypes, limit = 50, includeMetadata = true } = args;
 
     // Query events for this game
     const allEvents = await ctx.db
@@ -200,8 +194,24 @@ export const getGameEventStats = query({
 // ============================================================================
 
 /**
- * Helper function to record a game event
- * Can be called directly from other mutations to avoid ctx.runMutation overhead
+ * Helper function to record a game event without mutation overhead
+ *
+ * Used by game engine to record events directly without ctx.runMutation latency.
+ * Events are immediately visible to spectators and ElizaOS agents via Convex reactivity.
+ * All gameplay actions should record appropriate events for audit trail and replay systems.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param params - Event parameters
+ * @param params.lobbyId - Lobby ID the event belongs to
+ * @param params.gameId - Game ID for event correlation
+ * @param params.turnNumber - Turn number when event occurred
+ * @param params.eventType - Type of event (e.g., "card_drawn", "attack_declared")
+ * @param params.playerId - User ID of the player who triggered the event
+ * @param params.playerUsername - Username for display in event feed
+ * @param params.description - Human-readable event description
+ * @param params.metadata - Optional metadata for detailed event information
+ * @returns Promise that resolves when event is recorded
  */
 export async function recordEventHelper(
   ctx: MutationCtx,
@@ -303,8 +313,21 @@ export const recordEvent = mutation({
 });
 
 /**
- * Helper function to record game start event
- * Can be called directly from other mutations to avoid ctx.runMutation overhead
+ * Helper function to record game start event without mutation overhead
+ *
+ * Used by game lifecycle mutations to record when a game begins.
+ * Creates a special "game_start" event with both player information for spectator feeds.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param params - Game start parameters
+ * @param params.lobbyId - Lobby ID for the game
+ * @param params.gameId - Unique game ID
+ * @param params.hostId - User ID of the host player
+ * @param params.hostUsername - Host's username for display
+ * @param params.opponentId - User ID of the opponent player
+ * @param params.opponentUsername - Opponent's username for display
+ * @returns Promise that resolves when event is recorded
  */
 export async function recordGameStartHelper(
   ctx: MutationCtx,
@@ -355,8 +378,22 @@ export const recordGameStart = mutation({
 });
 
 /**
- * Helper function to record game end event
- * Can be called directly from other mutations to avoid ctx.runMutation overhead
+ * Helper function to record game end event without mutation overhead
+ *
+ * Used by game lifecycle mutations to record when a game concludes.
+ * Creates a special "game_end" event with winner/loser information for match history.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param params - Game end parameters
+ * @param params.lobbyId - Lobby ID for the game
+ * @param params.gameId - Unique game ID
+ * @param params.turnNumber - Final turn number when game ended
+ * @param params.winnerId - User ID of the winning player
+ * @param params.winnerUsername - Winner's username for display
+ * @param params.loserId - User ID of the losing player
+ * @param params.loserUsername - Loser's username for display
+ * @returns Promise that resolves when event is recorded
  */
 export async function recordGameEndHelper(
   ctx: MutationCtx,

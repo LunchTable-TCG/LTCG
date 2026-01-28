@@ -1,10 +1,10 @@
 "use client";
 
+import { FantasyFrame } from "@/components/ui/FantasyFrame";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Lock, Star, Trophy } from "lucide-react";
 import Image from "next/image";
-import { FantasyFrame } from "@/components/ui/FantasyFrame";
-import { cn } from "@/lib/utils";
 
 interface StoryChapterCardProps {
   chapter: {
@@ -57,7 +57,7 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
+          <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent opacity-90" />
         </div>
 
         {/* Content */}
@@ -93,10 +93,8 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
               {chapterName}
             </h3>
 
-            <p className="text-sm text-gray-300 line-clamp-2 min-h-[2.5rem]">
-              {!isUnlocked
-                ? `Reach level ${chapter.requiredLevel} to unlock.`
-                : chapterDescription}
+            <p className="text-sm text-gray-300 line-clamp-2 min-h-10">
+              {!isUnlocked ? `Reach level ${chapter.requiredLevel} to unlock.` : chapterDescription}
             </p>
 
             {/* Progress Bar */}
@@ -113,8 +111,8 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
                     className={cn(
                       "h-full rounded-full transition-all duration-500",
                       isCompleted
-                        ? "bg-gradient-to-r from-yellow-500 to-amber-300"
-                        : "bg-gradient-to-r from-purple-500 to-indigo-400"
+                        ? "bg-linear-to-r from-yellow-500 to-amber-300"
+                        : "bg-linear-to-r from-purple-500 to-indigo-400"
                     )}
                     style={{ width: `${(completedStages / totalStages) * 100}%` }}
                   />

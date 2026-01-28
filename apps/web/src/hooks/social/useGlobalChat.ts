@@ -1,25 +1,75 @@
 "use client";
 
-import { useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "../auth/useConvexAuthHook";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import { handleHookError, logError } from "@/lib/errorHandling";
+import { useAuth } from "../auth/useConvexAuthHook";
+
+interface UseGlobalChatReturn {
+  messages: ReturnType<
+    typeof usePaginatedQuery<typeof api.globalChat.getPaginatedMessages>
+  >["results"];
+  onlineUsers: ReturnType<typeof useQuery<typeof api.globalChat.getOnlineUsers>> | undefined;
+  isLoading: boolean;
+  sendMessage: (message: string) => Promise<void>;
+  updatePresence: () => Promise<void>;
+  canLoadMore: boolean;
+  loadMore: () => void;
+}
 
 /**
- * useGlobalChat Hook
+ * Global chat messaging system with automatic presence tracking.
  *
- * Global chat messaging with presence tracking:
- * - View recent messages
- * - Send messages
- * - Presence heartbeat (automatic every 30s)
- * - Online users list
+ * Provides a real-time global chat room with message pagination and online
+ * user tracking. Automatically maintains user presence with a 30-second heartbeat.
+ * Uses infinite scroll pagination for message history.
+ *
+ * Features:
+ * - Send messages to global chat
+ * - View paginated message history (initially 50 messages)
+ * - Load more messages on scroll (25 at a time)
+ * - Track online users with automatic presence updates
+ * - Automatic presence heartbeat every 30 seconds
+ * - Silent presence update failures (non-disruptive)
+ *
+ * @example
+ * ```typescript
+ * const {
+ *   messages,
+ *   onlineUsers,
+ *   isLoading,
+ *   canLoadMore,
+ *   sendMessage,
+ *   loadMore
+ * } = useGlobalChat();
+ *
+ * // Send a message
+ * await sendMessage("Hello everyone!");
+ *
+ * // Load more messages
+ * if (canLoadMore) {
+ *   loadMore(); // Loads 25 more messages
+ * }
+ *
+ * // Display online users
+ * console.log(`${onlineUsers?.length} users online`);
+ * ```
+ *
+ * @returns {UseGlobalChatReturn} Chat interface
+ *
+ * @throws {Error} When user is not authenticated
  */
-export function useGlobalChat() {
+export function useGlobalChat(): UseGlobalChatReturn {
   const { isAuthenticated } = useAuth();
 
-  // Queries
-  const messages = useQuery(api.globalChat.getRecentMessages, { limit: 100 });
+  // Paginated messages query (initially load 50 messages)
+  const {
+    results: messages,
+    status: paginationStatus,
+    loadMore,
+  } = usePaginatedQuery(api.globalChat.getPaginatedMessages, {}, { initialNumItems: 50 });
 
   const onlineUsers = useQuery(api.globalChat.getOnlineUsers, {});
 
@@ -34,21 +84,22 @@ export function useGlobalChat() {
 
     try {
       await sendMessageMutation({ content: message.trim() });
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send message");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to send message");
+      toast.error(message);
       throw error;
     }
   };
 
-  const updatePresence = async () => {
+  const updatePresence = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
       await updatePresenceMutation({});
     } catch (error) {
       // Silent fail for presence updates
-      console.error("Presence update failed:", error);
+      logError("Presence update", error);
     }
-  };
+  }, [isAuthenticated, updatePresenceMutation]);
 
   // Heartbeat every 30 seconds
   useEffect(() => {
@@ -58,7 +109,7 @@ export function useGlobalChat() {
     const interval = setInterval(updatePresence, 30000);
 
     return () => clearInterval(interval);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, updatePresence]);
 
   return {
     messages,
@@ -66,5 +117,8 @@ export function useGlobalChat() {
     isLoading: messages === undefined,
     sendMessage,
     updatePresence,
+    // Pagination controls
+    canLoadMore: paginationStatus === "CanLoadMore",
+    loadMore: () => loadMore(25), // Load 25 more messages at a time
   };
 }

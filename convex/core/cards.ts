@@ -1,8 +1,9 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation, mutation, query } from "../_generated/server";
-import { requireAuthQuery, requireAuthMutation } from "../lib/convexAuth";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { archetypeToElement } from "../lib/helpers";
 import { cardWithOwnershipValidator } from "../lib/returnValidators";
 
 // ============================================================================
@@ -10,7 +11,9 @@ import { cardWithOwnershipValidator } from "../lib/returnValidators";
 // ============================================================================
 
 /**
- * Get all active card definitions
+ * Get all active card definitions in the game
+ *
+ * @returns Array of all active card definitions with stats and abilities
  */
 export const getAllCardDefinitions = query({
   args: {},
@@ -24,6 +27,9 @@ export const getAllCardDefinitions = query({
 
 /**
  * Get a single card definition by ID
+ *
+ * @param cardId - The card definition ID to retrieve
+ * @returns The card definition or null if not found
  */
 export const getCardDefinition = query({
   args: { cardId: v.id("cardDefinitions") },
@@ -35,22 +41,9 @@ export const getCardDefinition = query({
 /**
  * Get all cards owned by the current user (for binder)
  * Returns card definitions joined with ownership data
+ *
+ * @returns Array of cards with ownership info (quantity, favorite status, acquisition date)
  */
-// Helper function to map archetype to element for frontend compatibility
-function archetypeToElement(archetype: string): "fire" | "water" | "earth" | "wind" | "neutral" {
-  const mapping: Record<string, "fire" | "water" | "earth" | "wind" | "neutral"> = {
-    infernal_dragons: "fire",
-    abyssal_horrors: "water",
-    nature_spirits: "earth",
-    storm_elementals: "wind",
-    fire: "fire",
-    water: "water",
-    earth: "earth",
-    wind: "wind",
-  };
-  return mapping[archetype] || "neutral";
-}
-
 export const getUserCards = query({
   args: {},
   returns: v.array(cardWithOwnershipValidator), // Card with ownership info
@@ -63,10 +56,15 @@ export const getUserCards = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    // Join with card definitions
-    const cardsWithDefinitions = await Promise.all(
-      playerCards.map(async (pc) => {
-        const cardDef = await ctx.db.get(pc.cardDefinitionId);
+    // Batch fetch card definitions to avoid N+1 queries
+    const cardDefIds = playerCards.map((pc) => pc.cardDefinitionId);
+    const cardDefs = await Promise.all(cardDefIds.map((id) => ctx.db.get(id)));
+    const cardDefMap = new Map(cardDefs.filter((c) => c !== null).map((c) => [c!._id, c!]));
+
+    // Join with card definitions using the map
+    const cardsWithDefinitions = playerCards
+      .map((pc) => {
+        const cardDef = cardDefMap.get(pc.cardDefinitionId);
         if (!cardDef || !cardDef.isActive) return null;
 
         return {
@@ -88,15 +86,16 @@ export const getUserCards = query({
           acquiredAt: pc.acquiredAt,
         };
       })
-    );
+      .filter((c) => c !== null);
 
-    // Filter out nulls and return
-    return cardsWithDefinitions.filter((c) => c !== null);
+    return cardsWithDefinitions;
   },
 });
 
 /**
  * Get user's favorite cards
+ *
+ * @returns Array of cards marked as favorites by the current user
  */
 export const getUserFavoriteCards = query({
   args: {},
@@ -109,9 +108,15 @@ export const getUserFavoriteCards = query({
       .withIndex("by_user_favorite", (q) => q.eq("userId", userId).eq("isFavorite", true))
       .collect();
 
-    const cardsWithDefinitions = await Promise.all(
-      favoriteCards.map(async (pc) => {
-        const cardDef = await ctx.db.get(pc.cardDefinitionId);
+    // Batch fetch card definitions to avoid N+1 queries
+    const cardDefIds = favoriteCards.map((pc) => pc.cardDefinitionId);
+    const cardDefs = await Promise.all(cardDefIds.map((id) => ctx.db.get(id)));
+    const cardDefMap = new Map(cardDefs.filter((c) => c !== null).map((c) => [c!._id, c!]));
+
+    // Join with card definitions using the map
+    const cardsWithDefinitions = favoriteCards
+      .map((pc) => {
+        const cardDef = cardDefMap.get(pc.cardDefinitionId);
         if (!cardDef || !cardDef.isActive) return null;
 
         return {
@@ -133,14 +138,16 @@ export const getUserFavoriteCards = query({
           acquiredAt: pc.acquiredAt,
         };
       })
-    );
+      .filter((c) => c !== null);
 
-    return cardsWithDefinitions.filter((c) => c !== null);
+    return cardsWithDefinitions;
   },
 });
 
 /**
  * Get collection stats for a user
+ *
+ * @returns Statistics about the user's collection (unique cards, total cards, favorite count)
  */
 export const getUserCollectionStats = query({
   args: {},
@@ -171,6 +178,9 @@ export const getUserCollectionStats = query({
 
 /**
  * Toggle favorite status on a card
+ *
+ * @param playerCardId - The player card ID to toggle favorite status
+ * @returns Success status and new favorite state
  */
 export const toggleFavorite = mutation({
   args: {
@@ -203,6 +213,10 @@ export const toggleFavorite = mutation({
 /**
  * Add cards to a player's inventory
  * Used when opening packs, winning rewards, etc.
+ *
+ * @param cardDefinitionId - The card definition ID to add
+ * @param quantity - Number of copies to add
+ * @returns Success status and new total quantity
  */
 export const addCardsToInventory = mutation({
   args: {
@@ -256,6 +270,9 @@ export const addCardsToInventory = mutation({
 
 /**
  * Give a player all cards (for testing/new player setup)
+ * Grants multiple copies of each card based on rarity
+ *
+ * @returns Success status and number of unique cards added
  */
 export const giveStarterCollection = mutation({
   args: {},

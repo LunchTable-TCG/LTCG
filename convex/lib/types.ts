@@ -7,7 +7,7 @@
  */
 
 import type { Doc, Id } from "../_generated/dataModel";
-import type { QueryCtx, MutationCtx } from "../_generated/server";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 // =============================================================================
 // Core Game Types (Backend-specific)
@@ -155,12 +155,7 @@ export interface AdminActionResult<T = unknown> {
 // Event & Analytics Types
 // =============================================================================
 
-export type EventCategory =
-  | "user_action"
-  | "game_event"
-  | "system"
-  | "error"
-  | "performance";
+export type EventCategory = "user_action" | "game_event" | "system" | "error" | "performance";
 
 /**
  * Event properties with type-safe structure
@@ -190,13 +185,7 @@ export type EventProperties =
 /**
  * JSON-serializable value type
  */
-export type JSONValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JSONObject
-  | JSONArray;
+export type JSONValue = string | number | boolean | null | JSONObject | JSONArray;
 
 export interface JSONObject {
   [key: string]: JSONValue;
@@ -207,9 +196,7 @@ export interface JSONArray extends Array<JSONValue> {}
 /**
  * Partial update helper (excludes system fields)
  */
-export type PartialUpdate<T> = Partial<
-  Omit<T, "_id" | "_creationTime" | "createdAt">
->;
+export type PartialUpdate<T> = Partial<Omit<T, "_id" | "_creationTime" | "createdAt">>;
 
 /**
  * Database record with system fields
@@ -223,11 +210,7 @@ export type DbRecord<T> = T & {
 // File & Storage Types
 // =============================================================================
 
-export type FileCategory =
-  | "profile_picture"
-  | "card_image"
-  | "document"
-  | "other";
+export type FileCategory = "profile_picture" | "card_image" | "document" | "other";
 
 export type SupportedImageFormat = "image/png" | "image/jpeg" | "image/webp";
 

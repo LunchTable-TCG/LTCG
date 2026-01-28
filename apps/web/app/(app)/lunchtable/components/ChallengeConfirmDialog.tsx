@@ -1,8 +1,8 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { Gamepad2, Swords, Trophy, X } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 
 interface ChallengeConfirmDialogProps {
   isOpen: boolean;
@@ -46,7 +46,6 @@ export function ChallengeConfirmDialog({
   return (
     <>
       {/* Backdrop */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: Backdrop overlay for modal */}
       <div
         role="presentation"
         className="fixed inset-0 z-100 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"

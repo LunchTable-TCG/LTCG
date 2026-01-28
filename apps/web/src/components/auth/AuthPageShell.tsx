@@ -1,12 +1,15 @@
 import type { CSSProperties, ReactNode } from "react";
 
-const floatingParticles: (CSSProperties & { id: string })[] = Array.from({ length: 15 }, (_, i) => ({
-  id: `particle-${i}`,
-  left: `${Math.random() * 100}%`,
-  top: `${Math.random() * 100}%`,
-  animationDelay: `${Math.random() * 5}s`,
-  animationDuration: `${6 + Math.random() * 4}s`,
-}));
+const floatingParticles: (CSSProperties & { id: string })[] = Array.from(
+  { length: 15 },
+  (_, i) => ({
+    id: `particle-${i}`,
+    left: `${Math.random() * 100}%`,
+    top: `${Math.random() * 100}%`,
+    animationDelay: `${Math.random() * 5}s`,
+    animationDuration: `${6 + Math.random() * 4}s`,
+  })
+);
 
 interface AuthPageShellProps {
   children: ReactNode;

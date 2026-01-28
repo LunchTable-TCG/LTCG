@@ -1,10 +1,10 @@
 "use client";
 
-import { FolderOpen, Layers, Plus, Star, Trash2, Check, X } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { Check, FolderOpen, Layers, Plus, Star, Trash2, X } from "lucide-react";
+import { useState } from "react";
 import { DECK_MIN_SIZE } from "../types";
 
 interface DeckListItem {
@@ -120,12 +120,7 @@ export function DeckList({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p
-                      className={cn(
-                        "font-bold",
-                        isActive ? "text-[#d4af37]" : "text-[#e8e0d5]"
-                      )}
-                    >
+                    <p className={cn("font-bold", isActive ? "text-[#d4af37]" : "text-[#e8e0d5]")}>
                       {deck.name}
                     </p>
                     {isActive && (

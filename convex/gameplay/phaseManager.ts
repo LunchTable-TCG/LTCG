@@ -6,11 +6,12 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { mutation, query } from "../_generated/server";
+import { createError, ErrorCode } from "../lib/errorCodes";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { drawCards } from "../lib/gameHelpers";
-import { parseAbility, executeEffect } from "./effectSystem/index";
+import { executeEffect, parseAbility } from "./effectSystem/index";
 import { recordEventHelper } from "./gameEvents";
 
 /**
@@ -71,12 +72,19 @@ export const advancePhase = mutation({
     // 2. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
-      throw new Error("Lobby not found");
+      throw createError(ErrorCode.NOT_FOUND_LOBBY, {
+        reason: "Lobby not found",
+        lobbyId: args.lobbyId,
+      });
     }
 
     // 3. Validate it's the current player's turn
     if (lobby.currentTurnPlayerId !== user.userId) {
-      throw new Error("Not your turn");
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN, {
+        reason: "Not your turn",
+        currentTurnPlayerId: lobby.currentTurnPlayerId,
+        userId: user.userId,
+      });
     }
 
     // 4. Get game state
@@ -86,7 +94,10 @@ export const advancePhase = mutation({
       .first();
 
     if (!gameState) {
-      throw new Error("Game state not found");
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game state not found",
+        lobbyId: args.lobbyId,
+      });
     }
 
     // 5. Get current phase (default to draw if not set)
@@ -94,7 +105,10 @@ export const advancePhase = mutation({
     let nextPhase = getNextPhase(currentPhase);
 
     if (!nextPhase) {
-      throw new Error("Cannot advance from End Phase - use endTurn instead");
+      throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
+        reason: "Cannot advance from End Phase - use endTurn instead",
+        currentPhase,
+      });
     }
 
     // 6. Auto-advance through non-interactive phases
@@ -124,7 +138,14 @@ export const advancePhase = mutation({
       });
 
       // Execute phase logic
-      await executePhaseLogic(ctx, args.lobbyId, gameState._id, nextPhase, user.userId, lobby.turnNumber!);
+      await executePhaseLogic(
+        ctx,
+        args.lobbyId,
+        gameState._id,
+        nextPhase,
+        user.userId,
+        lobby.turnNumber!
+      );
 
       // Move to next phase
       currentPhase = nextPhase;
@@ -168,7 +189,14 @@ export const advancePhase = mutation({
     }
 
     // 9. Execute final phase logic
-    await executePhaseLogic(ctx, args.lobbyId, gameState._id, nextPhase, user.userId, lobby.turnNumber!);
+    await executePhaseLogic(
+      ctx,
+      args.lobbyId,
+      gameState._id,
+      nextPhase,
+      user.userId,
+      lobby.turnNumber!
+    );
 
     // 10. Return new phase and available actions
     return {
@@ -285,6 +313,13 @@ async function executePhaseTriggeredEffects(
     ...opponentBoard.map((bc: any) => ({ ...bc, ownerId: opponentId, isOwner: false })),
   ];
 
+  // Batch fetch all board card definitions to avoid N+1 queries
+  const boardCardIds = allBoards.map((bc) => bc.cardId);
+  const boardCards = await Promise.all(boardCardIds.map((id) => ctx.db.get(id)));
+  const boardCardMap = new Map(
+    boardCards.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
+  );
+
   // Map phase to trigger condition
   const triggerMap: Record<string, string> = {
     battle_start: "on_battle_start",
@@ -295,7 +330,7 @@ async function executePhaseTriggeredEffects(
 
   // Scan all cards for matching trigger
   for (const boardCard of allBoards) {
-    const card = await ctx.db.get(boardCard.cardId);
+    const card = boardCardMap.get(boardCard.cardId);
     if (!card?.ability) continue;
 
     const parsedEffect = parseAbility(card.ability);
@@ -303,7 +338,6 @@ async function executePhaseTriggeredEffects(
 
     // Check if this effect triggers during this phase
     if (parsedEffect.trigger === triggerCondition) {
-
       // Get refreshed game state
       const refreshedState = await ctx.db
         .query("gameStates")
@@ -508,12 +542,18 @@ export const initializeTurnPhase = mutation({
       .first();
 
     if (!gameState) {
-      throw new Error("Game state not found");
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game state not found",
+        lobbyId: args.lobbyId,
+      });
     }
 
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
-      throw new Error("Lobby not found");
+      throw createError(ErrorCode.NOT_FOUND_LOBBY, {
+        reason: "Lobby not found",
+        lobbyId: args.lobbyId,
+      });
     }
 
     // Set to Draw Phase

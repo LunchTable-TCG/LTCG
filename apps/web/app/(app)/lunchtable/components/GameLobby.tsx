@@ -1,5 +1,12 @@
 "use client";
 
+import { GameBoard } from "@/components/game/GameBoard";
+import { useGameLobby, useMatchmaking, useSpectator } from "@/hooks";
+import { logError } from "@/lib/errorHandling";
+import { cn } from "@/lib/utils";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
 import {
   ChevronRight,
   Clock,
@@ -16,16 +23,10 @@ import {
   Waves,
   Zap,
 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import { CreateGameModal } from "./CreateGameModal";
 import { JoinConfirmDialog } from "./JoinConfirmDialog";
 import { SpectatorGameView } from "./SpectatorGameView";
-import { GameBoard } from "@/components/game/GameBoard";
-import type { Id } from "@convex/_generated/dataModel";
-import { useGameLobby, useSpectator, useMatchmaking } from "@/hooks";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@convex/_generated/api";
 
 type GameStatus = "waiting" | "active";
 type TabType = "join" | "watch";
@@ -109,20 +110,20 @@ export function GameLobby() {
 
   const { activeGames: activeGamesData } = useSpectator();
 
-  const {
-    isInQueue: isSearching,
-    joinQueue,
-    leaveQueue,
-  } = useMatchmaking();
+  const { isInQueue: isSearching, joinQueue, leaveQueue } = useMatchmaking();
 
   const forceCloseGame = useMutation(api.admin.mutations.forceCloseMyGame);
+
+  // Type aliases for API data
+  type Lobby = NonNullable<typeof lobbiesData>[number];
+  type Game = NonNullable<typeof activeGamesData>[number];
 
   // Convert API data to component format
   // Filter out the user's own lobby from the waiting games list
   const waitingGames: GameLobbyEntry[] =
     lobbiesData
-      ?.filter((lobby: any) => lobby.id !== myActiveLobby?.id)
-      .map((lobby: any) => ({
+      ?.filter((lobby) => lobby.id !== myActiveLobby?._id)
+      .map((lobby) => ({
         id: lobby.id,
         hostName: lobby.hostUsername,
         hostRank: lobby.hostRank,
@@ -133,7 +134,7 @@ export function GameLobby() {
       })) || [];
 
   const activeGames: GameLobbyEntry[] =
-    activeGamesData?.map((game: any) => ({
+    activeGamesData?.map((game) => ({
       id: game.lobbyId,
       hostName: game.hostUsername,
       hostRank: "Bronze", // Rank not included in query, using default
@@ -155,8 +156,8 @@ export function GameLobby() {
       if (result && result.lobbyId) {
         setSpectatingGameId(result.lobbyId as string);
       }
-    } catch (error: any) {
-      console.error("Failed to create lobby:", error);
+    } catch (error) {
+      logError("create lobby", error);
     }
   };
 
@@ -165,24 +166,25 @@ export function GameLobby() {
 
     try {
       await cancelLobby();
-    } catch (error: any) {
-      console.error("Failed to cancel lobby:", error);
+    } catch (error) {
+      logError("cancel lobby", error);
     }
   };
 
   const handleQuickMatch = async () => {
     try {
-      await joinQueue();
-    } catch (error: any) {
-      console.error("Failed to join queue:", error);
+      // TODO: Add mode selector UI (casual/ranked) - defaulting to casual for now
+      await joinQueue("casual");
+    } catch (error) {
+      logError("join queue", error);
     }
   };
 
   const handleCancelSearch = async () => {
     try {
       await leaveQueue();
-    } catch (error: any) {
-      console.error("Failed to leave queue:", error);
+    } catch (error) {
+      logError("leave queue", error);
     }
   };
 
@@ -191,8 +193,8 @@ export function GameLobby() {
     if (myActiveLobby && myActiveLobby.status === "waiting") {
       try {
         await cancelLobby();
-      } catch (error: any) {
-        console.error("Failed to cancel old lobby:", error);
+      } catch (error) {
+        logError("cancel old lobby", error);
       }
     }
     setJoiningGame(game);
@@ -213,16 +215,20 @@ export function GameLobby() {
       if (result && result.lobbyId) {
         setSpectatingGameId(result.lobbyId as string);
       }
-    } catch (error: any) {
-      console.error("Failed to join game:", error);
+    } catch (error) {
+      logError("join game", error);
       setJoiningGame(null);
     }
   };
 
   // Auto-redirect to game board when user has an active lobby (waiting or active)
   useEffect(() => {
-    if (myActiveLobby && (myActiveLobby.status === "waiting" || myActiveLobby.status === "active") && !spectatingGameId) {
-      setSpectatingGameId(myActiveLobby.id as string);
+    if (
+      myActiveLobby &&
+      (myActiveLobby.status === "waiting" || myActiveLobby.status === "active") &&
+      !spectatingGameId
+    ) {
+      setSpectatingGameId(myActiveLobby._id as string);
     }
   }, [myActiveLobby, spectatingGameId]);
 
@@ -251,15 +257,13 @@ export function GameLobby() {
 
     const isPlayer =
       spectatingLobby &&
-      (spectatingLobby.hostId === currentUser._id || spectatingLobby.opponentId === currentUser._id);
+      (spectatingLobby.hostId === currentUser._id ||
+        spectatingLobby.opponentId === currentUser._id);
 
     if (isPlayer) {
       // User is a player - show full game board
       return (
-        <GameBoard
-          lobbyId={spectatingGameId as Id<"gameLobbies">}
-          playerId={currentUser._id}
-        />
+        <GameBoard lobbyId={spectatingGameId as Id<"gameLobbies">} playerId={currentUser._id} />
       );
     } else {
       // User is a spectator - show spectator view
@@ -294,7 +298,7 @@ export function GameLobby() {
               <span className="text-sm font-bold">Game in progress!</span>
               <button
                 type="button"
-                onClick={() => setSpectatingGameId(myActiveLobby.id as string)}
+                onClick={() => setSpectatingGameId(myActiveLobby._id as string)}
                 className="ml-2 px-3 py-1 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 text-xs font-bold uppercase transition-colors"
               >
                 View Game
@@ -302,7 +306,11 @@ export function GameLobby() {
               <button
                 type="button"
                 onClick={async () => {
-                  await forceCloseGame({});
+                  try {
+                    await forceCloseGame({});
+                  } catch (error) {
+                    logError("force close game", error);
+                  }
                 }}
                 className="ml-2 px-3 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold uppercase transition-colors"
               >

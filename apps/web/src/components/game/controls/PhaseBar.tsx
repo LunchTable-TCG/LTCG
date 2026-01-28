@@ -1,8 +1,8 @@
 "use client";
 
-import { ChevronRight, Sparkles, Swords, Scroll } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ChevronRight, Scroll, Sparkles, Swords } from "lucide-react";
 
 // Only show interactive phases that players actually stop at
 const PHASES = [
@@ -13,14 +13,14 @@ const PHASES = [
 
 // Map all phases to display phases for highlighting
 const PHASE_MAPPING: Record<string, string> = {
-  "draw": "main1",
-  "standby": "main1",
-  "main1": "main1",
-  "battle_start": "battle",
-  "battle": "battle",
-  "battle_end": "battle",
-  "main2": "main2",
-  "end": "main2",
+  draw: "main1",
+  standby: "main1",
+  main1: "main1",
+  battle_start: "battle",
+  battle: "battle",
+  battle_end: "battle",
+  main2: "main2",
+  end: "main2",
 };
 
 interface PhaseBarProps {
@@ -63,7 +63,7 @@ export function PhaseBar({
         return {
           icon: Sparkles,
           text: "Summon monsters, activate spells, set cards",
-          color: "text-purple-400"
+          color: "text-purple-400",
         };
       case "battle_start":
       case "battle":
@@ -71,19 +71,19 @@ export function PhaseBar({
         return {
           icon: Swords,
           text: "Attack with your monsters",
-          color: "text-red-400"
+          color: "text-red-400",
         };
       case "main2":
         return {
           icon: Scroll,
           text: "Last chance to play cards before ending turn",
-          color: "text-blue-400"
+          color: "text-blue-400",
         };
       case "end":
         return {
           icon: ChevronRight,
           text: "Ending turn...",
-          color: "text-gray-400"
+          color: "text-gray-400",
         };
       default:
         return null;
@@ -101,50 +101,50 @@ export function PhaseBar({
           <span className="text-[10px] sm:text-xs font-bold">{turnNumber}</span>
         </div>
 
-      {/* Phase indicators */}
-      <div className="flex items-center gap-1">
-        {PHASES.map((phase, index) => {
-          const isActive = phase.id === displayPhase;
-          const isPast = index < currentPhaseIndex;
+        {/* Phase indicators */}
+        <div className="flex items-center gap-1">
+          {PHASES.map((phase, index) => {
+            const isActive = phase.id === displayPhase;
+            const isPast = index < currentPhaseIndex;
 
-          return (
-            <div
-              key={phase.id}
-              className={cn(
-                "px-2 sm:px-3 py-1 rounded text-[9px] sm:text-[11px] font-semibold transition-all duration-200 whitespace-nowrap",
-                isActive &&
-                  "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/30 scale-105",
-                isPast && "text-muted-foreground/70 bg-muted/30",
-                !isActive && !isPast && "text-muted-foreground/40 bg-muted/10"
-              )}
-            >
-              <span className="hidden sm:inline">{phase.label}</span>
-              <span className="sm:hidden">{phase.shortLabel}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Advance button */}
-      {isPlayerTurn && canAdvancePhase && (
-        <Button
-          size="sm"
-          variant="default"
-          onClick={currentPhase === "main2" ? onEndTurn : onAdvancePhase}
-          className="ml-auto gap-1 h-7 text-[11px] px-3 font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-        >
-          {getAdvanceButtonLabel()}
-          <ChevronRight className="h-3.5 w-3.5" />
-        </Button>
-      )}
-
-      {/* Turn indicator */}
-      {!isPlayerTurn && (
-        <div className="ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-600 text-[8px] sm:text-[10px] font-medium">
-          <span className="hidden sm:inline">Opponent&apos;s Turn</span>
-          <span className="sm:hidden">Opp Turn</span>
+            return (
+              <div
+                key={phase.id}
+                className={cn(
+                  "px-2 sm:px-3 py-1 rounded text-[9px] sm:text-[11px] font-semibold transition-all duration-200 whitespace-nowrap",
+                  isActive &&
+                    "bg-linear-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/30 scale-105",
+                  isPast && "text-muted-foreground/70 bg-muted/30",
+                  !isActive && !isPast && "text-muted-foreground/40 bg-muted/10"
+                )}
+              >
+                <span className="hidden sm:inline">{phase.label}</span>
+                <span className="sm:hidden">{phase.shortLabel}</span>
+              </div>
+            );
+          })}
         </div>
-      )}
+
+        {/* Advance button */}
+        {isPlayerTurn && canAdvancePhase && (
+          <Button
+            size="sm"
+            variant="default"
+            onClick={currentPhase === "main2" ? onEndTurn : onAdvancePhase}
+            className="ml-auto gap-1 h-7 text-[11px] px-3 font-semibold bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+          >
+            {getAdvanceButtonLabel()}
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        )}
+
+        {/* Turn indicator */}
+        {!isPlayerTurn && (
+          <div className="ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-600 text-[8px] sm:text-[10px] font-medium">
+            <span className="hidden sm:inline">Opponent&apos;s Turn</span>
+            <span className="sm:hidden">Opp Turn</span>
+          </div>
+        )}
       </div>
 
       {/* Phase Hint */}

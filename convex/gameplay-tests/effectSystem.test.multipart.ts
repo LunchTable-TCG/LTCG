@@ -4,8 +4,8 @@
  * Tests the parsing of complex multi-clause abilities
  */
 
-import { describe, test, expect } from "vitest";
-import { parseMultiPartAbility, parseAbility } from "../gameplay/effectSystem";
+import { describe, expect, test } from "vitest";
+import { parseAbility, parseMultiPartAbility } from "../gameplay/effectSystem";
 
 describe("Multi-Part Effect Parser", () => {
   test("should parse protection + continuous effect", () => {
@@ -57,7 +57,8 @@ describe("Multi-Part Effect Parser", () => {
   });
 
   test("should parse protection + continuous + triggered effect", () => {
-    const ability = "Cannot be destroyed by battle. All Dragon-Type monsters you control gain 500 ATK. When this card destroys a monster by battle: Draw 1 card.";
+    const ability =
+      "Cannot be destroyed by battle. All Dragon-Type monsters you control gain 500 ATK. When this card destroys a monster by battle: Draw 1 card.";
     const result = parseMultiPartAbility(ability);
 
     expect(result.hasMultiPart).toBe(true);
@@ -133,7 +134,8 @@ describe("Multi-Part Effect Parser", () => {
   });
 
   test("should parse complex 4-part ability", () => {
-    const ability = "Cannot be destroyed by battle. Cannot be targeted by opponent's card effects. All Dragon-Type monsters gain 300 ATK. Once per turn: Add 1 Dragon monster from your graveyard to your hand.";
+    const ability =
+      "Cannot be destroyed by battle. Cannot be targeted by opponent's card effects. All Dragon-Type monsters gain 300 ATK. Once per turn: Add 1 Dragon monster from your graveyard to your hand.";
     const result = parseMultiPartAbility(ability);
 
     expect(result.hasMultiPart).toBe(true);

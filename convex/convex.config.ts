@@ -1,7 +1,7 @@
-import { defineApp } from "convex/server";
-import rateLimiter from "@convex-dev/ratelimiter/convex.config";
 import aggregate from "@convex-dev/aggregate/convex.config";
+import rateLimiter from "@convex-dev/ratelimiter/convex.config";
 import shardedCounter from "@convex-dev/sharded-counter/convex.config";
+import { defineApp } from "convex/server";
 
 const app = defineApp();
 app.use(rateLimiter);

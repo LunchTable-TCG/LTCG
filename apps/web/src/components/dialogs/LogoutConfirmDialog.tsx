@@ -1,7 +1,5 @@
 "use client";
 
-import { AlertTriangle, Loader2, LogOut } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AlertTriangle, Loader2, LogOut } from "lucide-react";
+import { useState } from "react";
 
 interface LogoutConfirmDialogProps {
   isOpen: boolean;

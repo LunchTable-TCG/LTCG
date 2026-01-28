@@ -23,9 +23,7 @@ export default internalMutation({
     let updatedCount = 0;
 
     // Get all cards
-    const allCards = await ctx.db
-      .query("cardDefinitions")
-      .collect();
+    const allCards = await ctx.db.query("cardDefinitions").collect();
 
     for (const card of allCards) {
       const newArchetype = archetypeMap[card.archetype as keyof typeof archetypeMap];

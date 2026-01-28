@@ -1,13 +1,20 @@
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "../_generated/server";
+import { internal } from "../_generated/api";
+import { internalMutation, mutation, query } from "../_generated/server";
+import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { achievementValidator, achievementUnlockedValidator } from "../lib/returnValidators";
-import { internal } from "../_generated/api";
-import { adjustPlayerCurrencyHelper } from "../economy/economy";
+import { achievementUnlockedValidator, achievementValidator } from "../lib/returnValidators";
 
 // Type definitions matching schema
-type AchievementCategory = "wins" | "games_played" | "collection" | "social" | "story" | "ranked" | "special";
+type AchievementCategory =
+  | "wins"
+  | "games_played"
+  | "collection"
+  | "social"
+  | "story"
+  | "ranked"
+  | "special";
 type AchievementRarity = "common" | "rare" | "epic" | "legendary";
 
 interface AchievementRewards {
@@ -33,12 +40,14 @@ interface AchievementDefinitionInput {
 }
 
 /**
- * Get user's achievements with progress
+ * Retrieves all active achievements for the authenticated user with current progress.
+ * Returns both locked and unlocked achievements, hiding secret achievements that
+ * haven't been unlocked yet.
+ *
+ * @returns Array of achievements with progress, unlock status, and rewards
  */
 export const getUserAchievements = query({
-  args: {
-    
-  },
+  args: {},
   returns: v.array(achievementValidator),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
@@ -49,33 +58,36 @@ export const getUserAchievements = query({
       .withIndex("by_active", (q) => q.eq("isActive", true))
       .collect();
 
-    // Get user's progress for each achievement
-    const achievements = await Promise.all(
-      definitions.map(async (def) => {
-        // Get user's progress
-        const userProgress = await ctx.db
-          .query("userAchievements")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
-          .filter((q) => q.eq(q.field("achievementId"), def.achievementId))
-          .first();
+    // OPTIMIZATION: Fetch all user achievements once, then create a Map for O(1) lookups
+    // This prevents N+1 queries (one query per definition)
+    const allUserAchievements = await ctx.db
+      .query("userAchievements")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
 
-        return {
-          achievementId: def.achievementId,
-          name: def.name,
-          description: def.description,
-          category: def.category,
-          rarity: def.rarity,
-          icon: def.icon,
-          requirementType: def.requirementType,
-          targetValue: def.targetValue,
-          currentProgress: userProgress?.currentProgress ?? 0,
-          isUnlocked: userProgress?.isUnlocked ?? false,
-          unlockedAt: userProgress?.unlockedAt,
-          rewards: def.rewards,
-          isSecret: def.isSecret,
-        };
-      })
-    );
+    // Create a Map for O(1) lookups by achievementId
+    const userProgressMap = new Map(allUserAchievements.map((ua) => [ua.achievementId, ua]));
+
+    // Join definitions with user progress using the Map
+    const achievements = definitions.map((def) => {
+      const userProgress = userProgressMap.get(def.achievementId);
+
+      return {
+        achievementId: def.achievementId,
+        name: def.name,
+        description: def.description,
+        category: def.category,
+        rarity: def.rarity,
+        icon: def.icon,
+        requirementType: def.requirementType,
+        targetValue: def.targetValue,
+        currentProgress: userProgress?.currentProgress ?? 0,
+        isUnlocked: userProgress?.isUnlocked ?? false,
+        unlockedAt: userProgress?.unlockedAt,
+        rewards: def.rewards,
+        isSecret: def.isSecret,
+      };
+    });
 
     // Hide secret achievements that aren't unlocked
     return achievements.filter((a) => !a.isSecret || a.isUnlocked);
@@ -83,7 +95,11 @@ export const getUserAchievements = query({
 });
 
 /**
- * Get unlocked achievements for a specific user (for profile display)
+ * Retrieves only unlocked achievements for a specific user by username.
+ * Used for profile display to showcase player accomplishments to others.
+ *
+ * @param username - The username of the user whose achievements to retrieve
+ * @returns Array of unlocked achievements with basic details and unlock timestamp
  */
 export const getUnlockedAchievements = query({
   args: {
@@ -102,9 +118,7 @@ export const getUnlockedAchievements = query({
     // Get unlocked achievements
     const userAchievements = await ctx.db
       .query("userAchievements")
-      .withIndex("by_user_unlocked", (q) =>
-        q.eq("userId", user._id).eq("isUnlocked", true)
-      )
+      .withIndex("by_user_unlocked", (q) => q.eq("userId", user._id).eq("isUnlocked", true))
       .collect();
 
     // Enrich with achievement definitions
@@ -134,7 +148,16 @@ export const getUnlockedAchievements = query({
 });
 
 /**
- * Update achievement progress (internal - called from game events)
+ * Updates progress for all achievements matching the given game event.
+ * Internal mutation called from game events. Automatically awards rewards and
+ * creates notifications when achievements are unlocked.
+ *
+ * @param userId - The ID of the user whose achievement progress to update
+ * @param event - Game event containing type, value, and optional filters
+ * @param event.type - Event type (e.g., "win_game", "play_game", "collect_card")
+ * @param event.value - Progress value to add
+ * @param event.gameMode - Optional game mode filter
+ * @param event.archetype - Optional archetype filter
  */
 export const updateAchievementProgress = internalMutation({
   args: {
@@ -159,7 +182,7 @@ export const updateAchievementProgress = internalMutation({
       if (definition.requirementType !== args.event.type) continue;
 
       // Get or create user achievement progress
-      let userAchievement = await ctx.db
+      const userAchievement = await ctx.db
         .query("userAchievements")
         .withIndex("by_user", (q) => q.eq("userId", args.userId))
         .filter((q) => q.eq(q.field("achievementId"), definition.achievementId))
@@ -233,6 +256,23 @@ export const updateAchievementProgress = internalMutation({
               });
             }
           }
+
+          // Create achievement unlock notification
+          await ctx.scheduler.runAfter(
+            0,
+            internal.progression.notifications.createAchievementNotification,
+            {
+              userId: args.userId,
+              achievementId: definition.achievementId,
+              achievementName: definition.name,
+              achievementRarity: definition.rarity,
+              rewards: {
+                gold: definition.rewards.gold,
+                xp: definition.rewards.xp,
+                gems: definition.rewards.gems,
+              },
+            }
+          );
         }
       }
     }
@@ -240,7 +280,11 @@ export const updateAchievementProgress = internalMutation({
 });
 
 /**
- * Seed initial achievement definitions (internal)
+ * Seeds the database with initial achievement definitions across all categories
+ * (wins, games_played, ranked, story, social). Only inserts achievements that
+ * don't already exist. Internal mutation used during setup.
+ *
+ * @returns Success status and count of achievement definitions seeded
  */
 export const seedAchievements = internalMutation({
   args: {},

@@ -1,9 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Shield, Sparkles, Sword } from "lucide-react";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { Ban, Shield, Sparkles, Sword, Target } from "lucide-react";
+import Image from "next/image";
 import type { CardInZone } from "../../hooks/useGameBoard";
 
 interface BoardCardProps {
@@ -59,10 +59,10 @@ export function BoardCard({
   };
 
   const effectiveAttack = card.monsterStats
-    ? card.monsterStats.attack + (card.attackModifier ?? 0)
+    ? (card.monsterStats.attack ?? 0) + (card.attackModifier ?? 0)
     : 0;
   const effectiveDefense = card.monsterStats
-    ? card.monsterStats.defense + (card.defenseModifier ?? 0)
+    ? (card.monsterStats.defense ?? 0) + (card.defenseModifier ?? 0)
     : 0;
 
   return (
@@ -75,11 +75,13 @@ export function BoardCard({
         sizeClasses[size],
         isDefensePosition && "rotate-90",
         isFaceDown
-          ? "bg-gradient-to-br from-indigo-900 to-purple-900 border-indigo-500/50"
+          ? "bg-linear-to-br from-indigo-900 to-purple-900 border-indigo-500/50"
           : cn(
-              "bg-gradient-to-br from-slate-800 to-slate-900",
-              RARITY_COLORS[card.rarity] ?? RARITY_COLORS.common,
-              RARITY_GLOW[card.rarity] ?? ""
+              "bg-linear-to-br from-slate-800 to-slate-900",
+              card.rarity
+                ? (RARITY_COLORS[card.rarity] ?? RARITY_COLORS.common)
+                : RARITY_COLORS.common,
+              card.rarity ? (RARITY_GLOW[card.rarity] ?? "") : ""
             ),
         isSelected && "ring-2 ring-yellow-400 ring-offset-1 ring-offset-slate-900",
         isTargetable && "ring-2 ring-red-500 shadow-lg shadow-red-500/50 animate-pulse",
@@ -97,17 +99,17 @@ export function BoardCard({
         </div>
       ) : (
         <>
-          <div className="absolute inset-0 rounded overflow-hidden relative">
+          <div className="absolute inset-0 rounded overflow-hidden">
             {card.imageUrl ? (
               <Image
                 src={card.imageUrl}
-                alt={card.name}
+                alt={card.name || "Card"}
                 fill
                 className="object-cover"
                 sizes="(max-width: 640px) 40px, 56px"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
+              <div className="w-full h-full bg-linear-to-br from-slate-700 to-slate-800 flex items-center justify-center">
                 <span className="text-[6px] text-slate-400 text-center px-0.5 leading-tight">
                   {card.name ? card.name.substring(0, 10) : "Card"}
                 </span>
@@ -161,6 +163,36 @@ export function BoardCard({
             </div>
           )}
         </>
+      )}
+
+      {/* Protection Effect Badges */}
+      {!isFaceDown && (
+        <div className="absolute top-1 left-1 flex flex-col gap-0.5">
+          {card.cannotBeDestroyedByBattle && (
+            <div
+              className="w-3 h-3 rounded-full bg-amber-500/90 border border-amber-300 flex items-center justify-center shadow-sm"
+              title="Cannot be destroyed by battle"
+            >
+              <Shield className="w-2 h-2 text-white" />
+            </div>
+          )}
+          {card.cannotBeDestroyedByEffects && (
+            <div
+              className="w-3 h-3 rounded-full bg-emerald-500/90 border border-emerald-300 flex items-center justify-center shadow-sm"
+              title="Cannot be destroyed by card effects"
+            >
+              <Sparkles className="w-2 h-2 text-white" />
+            </div>
+          )}
+          {card.cannotBeTargeted && (
+            <div
+              className="w-3 h-3 rounded-full bg-purple-500/90 border border-purple-300 flex items-center justify-center shadow-sm"
+              title="Cannot be targeted by card effects"
+            >
+              <Ban className="w-2 h-2 text-white" />
+            </div>
+          )}
+        </div>
       )}
 
       {card.hasAttacked && !isFaceDown && (

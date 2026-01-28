@@ -1,15 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { GameBoard } from "@/components/game/GameBoard";
+import { StoryBattleCompleteDialog } from "@/components/story/StoryBattleCompleteDialog";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { GameBoard } from "@/components/game/GameBoard";
-import { Button } from "@/components/ui/button";
+import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { StoryBattleCompleteDialog } from "@/components/story/StoryBattleCompleteDialog";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { useRouter } from "next/navigation";
+import { use, useEffect, useState } from "react";
 
 interface BattlePageProps {
   params: Promise<{
@@ -44,19 +44,22 @@ export default function BattlePage({ params }: BattlePageProps) {
   );
 
   // Get stage information
-  const stageInfo = useQuery(
-    api.progression.storyQueries.getStageByChapterAndNumber,
-    { chapterId, stageNumber: parseInt(stageNumber) }
-  );
+  const stageInfo = useQuery(api.progression.storyQueries.getStageByChapterAndNumber, {
+    chapterId,
+    stageNumber: Number.parseInt(stageNumber),
+  });
 
   // Initialize story battle on mount
   useEffect(() => {
     let mounted = true;
 
     async function initialize() {
-      console.log("Initializing story battle for chapter:", chapterId);
+      console.log("Initializing story battle for chapter:", chapterId, "stage:", stageNumber);
       try {
-        const result = await initializeStoryBattle({ chapterId });
+        const result = await initializeStoryBattle({
+          chapterId,
+          stageNumber: Number.parseInt(stageNumber),
+        });
         console.log("Battle initialized successfully:", result);
 
         if (mounted) {
@@ -92,9 +95,7 @@ export default function BattlePage({ params }: BattlePageProps) {
     if (!gameState || !stageId || !currentUser) return;
 
     // Check if game ended
-    const isGameEnded =
-      gameState.myLifePoints <= 0 ||
-      gameState.opponentLifePoints <= 0;
+    const isGameEnded = gameState.myLifePoints <= 0 || gameState.opponentLifePoints <= 0;
 
     if (isGameEnded && !showCompletionDialog) {
       const playerWon = gameState.myLifePoints > 0;

@@ -6,10 +6,11 @@
  */
 
 import { v } from "convex/values";
-import { mutation } from "../../_generated/server";
-import { makeAIDecision } from "./aiEngine";
-import { drawCards } from "../../lib/gameHelpers";
 import type { Id } from "../../_generated/dataModel";
+import { mutation } from "../../_generated/server";
+import { createError, ErrorCode } from "../../lib/errorCodes";
+import { drawCards } from "../../lib/gameHelpers";
+import { makeAIDecision } from "./aiEngine";
 
 /**
  * Execute a complete AI turn
@@ -29,13 +30,19 @@ export const executeAITurn = mutation({
       .unique();
 
     if (!gameState) {
-      throw new Error("Game not found");
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game not found",
+        gameId: args.gameId,
+      });
     }
 
     // Get lobby
     const lobby = await ctx.db.get(gameState.lobbyId);
     if (!lobby) {
-      throw new Error("Lobby not found");
+      throw createError(ErrorCode.NOT_FOUND_LOBBY, {
+        reason: "Lobby not found",
+        lobbyId: gameState.lobbyId,
+      });
     }
 
     // Determine AI player
@@ -43,7 +50,11 @@ export const executeAITurn = mutation({
 
     // Verify it's AI's turn
     if (lobby.currentTurnPlayerId !== aiPlayerId) {
-      throw new Error("Not AI's turn");
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN, {
+        reason: "Not AI's turn",
+        currentTurnPlayerId: lobby.currentTurnPlayerId,
+        aiPlayerId,
+      });
     }
 
     // Load all card data for decision making
@@ -73,7 +84,7 @@ export const executeAITurn = mutation({
 
         if (summonableMonsters.length > 0) {
           // Pick strongest
-          let strongest = summonableMonsters[0];
+          let strongest: Id<"cardDefinitions"> | undefined = summonableMonsters[0];
           let maxPower = 0;
 
           for (const cardId of summonableMonsters) {
@@ -87,25 +98,27 @@ export const executeAITurn = mutation({
             }
           }
 
-          const cardToSummon = cardDataMap.get(strongest);
-          if (cardToSummon) {
-            // Add to board
-            await ctx.db.patch(gameState._id, {
-              opponentBoard: [
-                ...aiBoard,
-                {
-                  cardId: strongest,
-                  position: 1, // Attack position
-                  attack: cardToSummon.attack || 0,
-                  defense: cardToSummon.defense || 0,
-                  isFaceDown: false,
-                  hasAttacked: false,
-                },
-              ],
-              opponentHand: aiHand.filter((id) => id !== strongest),
-              opponentNormalSummonedThisTurn: true,
-            });
-            actionsTaken++;
+          if (strongest) {
+            const cardToSummon = cardDataMap.get(strongest);
+            if (cardToSummon) {
+              // Add to board
+              await ctx.db.patch(gameState._id, {
+                opponentBoard: [
+                  ...aiBoard,
+                  {
+                    cardId: strongest,
+                    position: 1, // Attack position
+                    attack: cardToSummon.attack || 0,
+                    defense: cardToSummon.defense || 0,
+                    isFaceDown: false,
+                    hasAttacked: false,
+                  },
+                ],
+                opponentHand: aiHand.filter((id) => id !== strongest),
+                opponentNormalSummonedThisTurn: true,
+              });
+              actionsTaken++;
+            }
           }
         }
       }
@@ -128,6 +141,8 @@ export const executeAITurn = mutation({
           } else {
             // Attack first opponent monster
             const target = playerBoard[0];
+            if (!target) continue;
+
             if (monster.attack > target.attack) {
               // Destroy opponent monster
               const newPlayerBoard = playerBoard.filter((m) => m.cardId !== target.cardId);
@@ -183,7 +198,9 @@ export const executeAITurn = mutation({
           // Auto-draw for player's new turn (skip on turn 1)
           const shouldSkipDraw = newTurnNumber === 1 && finalState.hostId === lobby.hostId;
           if (!shouldSkipDraw) {
-            console.log(`AI ended turn ${newTurnNumber - 1}, drawing card for player's turn ${newTurnNumber}`);
+            console.log(
+              `AI ended turn ${newTurnNumber - 1}, drawing card for player's turn ${newTurnNumber}`
+            );
             await drawCards(ctx, refreshedState, finalState.hostId, 1);
           }
 
@@ -201,7 +218,10 @@ export const executeAITurn = mutation({
       };
     } catch (error) {
       console.error("AI turn execution error:", error);
-      throw new Error(`AI turn failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw createError(ErrorCode.GAME_AI_TURN_ERROR, {
+        reason: "AI turn execution failed",
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
     }
   },
 });

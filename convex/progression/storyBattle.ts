@@ -5,12 +5,12 @@
  */
 
 import { v } from "convex/values";
-import { mutation } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import { mutation } from "../_generated/server";
+import { initializeGameStateHelper } from "../gameplay/games/lifecycle";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { initializeGameStateHelper } from "../gameplay/games/lifecycle";
 import { STORY_CHAPTERS } from "../seeds/storyChapters";
 
 /**
@@ -22,6 +22,7 @@ import { STORY_CHAPTERS } from "../seeds/storyChapters";
 export const initializeStoryBattle = mutation({
   args: {
     chapterId: v.string(), // e.g., "1-1", "1-2", etc.
+    stageNumber: v.optional(v.number()), // 1-10, defaults to 1 if not provided
   },
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
@@ -38,14 +39,27 @@ export const initializeStoryBattle = mutation({
     // Get chapter from database
     const chapter = await ctx.db
       .query("storyChapters")
-      .withIndex("by_act_chapter", (q) =>
-        q.eq("actNumber", actNum).eq("chapterNumber", chapNum)
-      )
+      .withIndex("by_act_chapter", (q) => q.eq("actNumber", actNum).eq("chapterNumber", chapNum))
       .first();
 
     if (!chapter) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
         reason: "Chapter not found",
+      });
+    }
+
+    // Get the specific stage for this battle
+    const stageNumber = args.stageNumber || 1;
+    const stage = await ctx.db
+      .query("storyStages")
+      .withIndex("by_chapter_stage", (q) =>
+        q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber)
+      )
+      .first();
+
+    if (!stage) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: `Stage ${stageNumber} not found for this chapter`,
       });
     }
 
@@ -111,7 +125,7 @@ export const initializeStoryBattle = mutation({
       currentTurnPlayerId: userId,
       gameMode: "story",
       isAIOpponent: true,
-      aiDifficulty: "normal", // MVP: always normal difficulty
+      aiDifficulty: stage.aiDifficulty, // Use stage's difficulty (easy, medium, hard, boss)
       aiDeck,
     });
 

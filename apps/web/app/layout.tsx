@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { Cinzel, Crimson_Text, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
 import { Toaster } from "@/components/ui/toaster";
+import { NotificationToast } from "@/components/notifications/NotificationToast";
+import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,6 +68,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} ${crimsonText.variable} antialiased min-h-screen bg-background font-serif`}
         >
           <ConvexClientProvider>
+            <NotificationToast />
             <LayoutWrapper>{children}</LayoutWrapper>
             <Toaster />
           </ConvexClientProvider>

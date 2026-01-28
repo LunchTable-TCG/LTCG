@@ -1,7 +1,9 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { STARTER_DECKS, VALID_DECK_CODES, type StarterDeckCode } from "./seeds/starterDecks";
 import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "./lib/convexAuth";
+import { ErrorCode, createError } from "./lib/errorCodes";
+import { STARTER_DECKS, type StarterDeckCode, VALID_DECK_CODES } from "./seeds/starterDecks";
+import bcrypt from "bcryptjs";
 
 const MAX_AGENTS_PER_USER = 3;
 
@@ -21,33 +23,90 @@ function generateApiKey(): string {
   return `ltcg_${key}`;
 }
 
-// Hash API key using a deterministic hash function
-function hashApiKey(key: string): string {
-  // Simple but effective hash for API key storage
-  let hash1 = 0;
-  let hash2 = 0;
-  let hash3 = 0;
-  let hash4 = 0;
+/**
+ * Hash API key using bcrypt with 12 salt rounds
+ * Bcrypt provides strong one-way hashing for secure API key storage
+ * @param key - The plain text API key to hash
+ * @returns Promise resolving to the bcrypt hash
+ */
+async function hashApiKey(key: string): Promise<string> {
+  const saltRounds = 12; // Good balance of security and performance
+  return await bcrypt.hash(key, saltRounds);
+}
 
-  for (let i = 0; i < key.length; i++) {
-    const char = key.charCodeAt(i);
-    hash1 = ((hash1 << 5) - hash1 + char) | 0;
-    hash2 = ((hash2 << 7) - hash2 + char * 31) | 0;
-    hash3 = ((hash3 << 11) - hash3 + char * 37) | 0;
-    hash4 = ((hash4 << 13) - hash4 + char * 41) | 0;
+/**
+ * Verify an API key against a stored bcrypt hash
+ * @param key - The plain text API key to verify
+ * @param hash - The stored bcrypt hash to compare against
+ * @returns Promise resolving to true if key matches, false otherwise
+ */
+async function verifyApiKey(key: string, hash: string): Promise<boolean> {
+  try {
+    return await bcrypt.compare(key, hash);
+  } catch (error) {
+    // If hash format is invalid or comparison fails, return false
+    console.error("API key verification error:", error);
+    return false;
   }
-
-  return [
-    Math.abs(hash1).toString(16).padStart(8, "0"),
-    Math.abs(hash2).toString(16).padStart(8, "0"),
-    Math.abs(hash3).toString(16).padStart(8, "0"),
-    Math.abs(hash4).toString(16).padStart(8, "0"),
-  ].join("");
 }
 
 // Get key prefix for display (first 12 chars including "ltcg_")
 function getKeyPrefix(key: string): string {
   return `${key.substring(0, 12)}...`;
+}
+
+// ============================================
+// INTERNAL FUNCTIONS
+// ============================================
+
+/**
+ * Validate an API key and return the associated agent
+ * Internal function for use by other Convex functions (not exposed to clients)
+ * @param ctx - Convex context with database access
+ * @param apiKey - The API key to validate
+ * @returns The agent record if valid, null otherwise
+ */
+export async function validateApiKeyInternal(
+  ctx: { db: any },
+  apiKey: string
+): Promise<{ agentId: string; userId: string } | null> {
+  // Basic format validation
+  if (!apiKey || !apiKey.startsWith("ltcg_") || apiKey.length < 37) {
+    return null;
+  }
+
+  try {
+    // Get all active API keys and check each one
+    // Note: We need to iterate because bcrypt hashes can't be directly queried
+    const allKeys = await ctx.db
+      .query("apiKeys")
+      .filter((q: any) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    for (const keyRecord of allKeys) {
+      const isValid = await verifyApiKey(apiKey, keyRecord.keyHash);
+      if (isValid) {
+        // Update last used timestamp
+        await ctx.db.patch(keyRecord._id, {
+          lastUsedAt: Date.now(),
+        });
+
+        // Get the agent to ensure it's still active
+        const agent = await ctx.db.get(keyRecord.agentId);
+        if (agent && agent.isActive) {
+          return {
+            agentId: agent._id,
+            userId: agent.userId,
+          };
+        }
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("API key validation error:", error);
+    return null;
+  }
 }
 
 // ============================================
@@ -172,6 +231,40 @@ export const getAgent = query({
 // ============================================
 
 /**
+ * Validate an API key (public endpoint)
+ * Returns agent information if the key is valid
+ */
+export const validateApiKey = mutation({
+  args: {
+    apiKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const result = await validateApiKeyInternal(ctx, args.apiKey);
+
+    if (!result) {
+      throw createError(ErrorCode.AUTH_INVALID_CREDENTIALS);
+    }
+
+    // Get full agent details from agents table
+    const agent = await ctx.db
+      .query("agents")
+      .filter((q) => q.eq(q.field("_id"), result.agentId))
+      .first();
+
+    if (!agent || !agent.isActive) {
+      throw createError(ErrorCode.AGENT_NOT_FOUND, { agentId: result.agentId });
+    }
+
+    return {
+      agentId: agent._id,
+      name: agent.name,
+      userId: agent.userId,
+      starterDeckCode: agent.starterDeckCode,
+    };
+  },
+});
+
+/**
  * Register a new AI agent
  */
 export const registerAgent = mutation({
@@ -193,21 +286,19 @@ export const registerAgent = mutation({
     const activeCount = existingAgents.filter((a) => a.isActive).length;
 
     if (activeCount >= MAX_AGENTS_PER_USER) {
-      throw new Error(`Maximum ${MAX_AGENTS_PER_USER} agents allowed per account`);
+      throw createError(ErrorCode.AGENT_LIMIT_REACHED, { maxAgents: MAX_AGENTS_PER_USER });
     }
 
     // 3. Validate agent name
     const trimmedName = args.name.trim();
 
     if (trimmedName.length < 3 || trimmedName.length > 32) {
-      throw new Error("Agent name must be between 3 and 32 characters");
+      throw createError(ErrorCode.AGENT_NAME_INVALID_LENGTH, { length: trimmedName.length });
     }
 
     // Check for valid characters (alphanumeric, spaces, underscores, hyphens)
     if (!/^[a-zA-Z0-9\s_-]+$/.test(trimmedName)) {
-      throw new Error(
-        "Agent name can only contain letters, numbers, spaces, underscores, and hyphens"
-      );
+      throw createError(ErrorCode.AGENT_NAME_INVALID_CHARS, { name: trimmedName });
     }
 
     // Check uniqueness per user
@@ -216,12 +307,12 @@ export const registerAgent = mutation({
     );
 
     if (duplicateName) {
-      throw new Error("You already have an agent with this name");
+      throw createError(ErrorCode.AGENT_NAME_DUPLICATE, { name: trimmedName });
     }
 
     // 4. Validate starter deck code
     if (!isValidDeckCode(args.starterDeckCode)) {
-      throw new Error("Invalid starter deck selection");
+      throw createError(ErrorCode.AGENT_INVALID_STARTER_DECK, { code: args.starterDeckCode });
     }
 
     // 5. Validate optional URLs
@@ -229,7 +320,7 @@ export const registerAgent = mutation({
       try {
         new URL(args.profilePictureUrl);
       } catch {
-        throw new Error("Invalid profile picture URL");
+        throw createError(ErrorCode.AGENT_INVALID_PROFILE_URL, { url: args.profilePictureUrl });
       }
     }
 
@@ -237,7 +328,7 @@ export const registerAgent = mutation({
       try {
         new URL(args.socialLink);
       } catch {
-        throw new Error("Invalid social link URL");
+        throw createError(ErrorCode.AGENT_INVALID_SOCIAL_URL, { url: args.socialLink });
       }
     }
 
@@ -259,7 +350,7 @@ export const registerAgent = mutation({
 
     // 7. Generate and store API key
     const apiKey = generateApiKey();
-    const keyHash = hashApiKey(apiKey);
+    const keyHash = await hashApiKey(apiKey); // Now async with bcrypt
     const keyPrefix = getKeyPrefix(apiKey);
 
     await ctx.db.insert("apiKeys", {
@@ -294,11 +385,11 @@ export const regenerateApiKey = mutation({
     const agent = await ctx.db.get(args.agentId);
 
     if (!agent || agent.userId !== userId) {
-      throw new Error("Agent not found");
+      throw createError(ErrorCode.AGENT_NOT_FOUND, { agentId: args.agentId });
     }
 
     if (!agent.isActive) {
-      throw new Error("Agent has been deleted");
+      throw createError(ErrorCode.AGENT_DELETED, { agentId: args.agentId });
     }
 
     // Deactivate all existing keys for this agent
@@ -315,7 +406,7 @@ export const regenerateApiKey = mutation({
 
     // Generate new key
     const apiKey = generateApiKey();
-    const keyHash = hashApiKey(apiKey);
+    const keyHash = await hashApiKey(apiKey); // Now async with bcrypt
     const keyPrefix = getKeyPrefix(apiKey);
 
     await ctx.db.insert("apiKeys", {
@@ -348,18 +439,18 @@ export const updateAgent = mutation({
     // Get authenticated user
     const auth = await getCurrentUser(ctx);
     if (!auth) {
-      throw new Error("Not authenticated");
+      throw createError(ErrorCode.AUTH_REQUIRED);
     }
 
     // Verify agent ownership
     const agent = await ctx.db.get(args.agentId);
 
     if (!agent || agent.userId !== auth.userId) {
-      throw new Error("Agent not found");
+      throw createError(ErrorCode.AGENT_NOT_FOUND, { agentId: args.agentId });
     }
 
     if (!agent.isActive) {
-      throw new Error("Agent has been deleted");
+      throw createError(ErrorCode.AGENT_DELETED, { agentId: args.agentId });
     }
 
     const updates: Partial<{
@@ -373,13 +464,11 @@ export const updateAgent = mutation({
       const trimmedName = args.name.trim();
 
       if (trimmedName.length < 3 || trimmedName.length > 32) {
-        throw new Error("Agent name must be between 3 and 32 characters");
+        throw createError(ErrorCode.AGENT_NAME_INVALID_LENGTH, { length: trimmedName.length });
       }
 
       if (!/^[a-zA-Z0-9\s_-]+$/.test(trimmedName)) {
-        throw new Error(
-          "Agent name can only contain letters, numbers, spaces, underscores, and hyphens"
-        );
+        throw createError(ErrorCode.AGENT_NAME_INVALID_CHARS, { name: trimmedName });
       }
 
       // Check uniqueness (excluding current agent)
@@ -394,7 +483,7 @@ export const updateAgent = mutation({
       );
 
       if (duplicateName) {
-        throw new Error("You already have an agent with this name");
+        throw createError(ErrorCode.AGENT_NAME_DUPLICATE, { name: trimmedName });
       }
 
       updates.name = trimmedName;
@@ -406,7 +495,7 @@ export const updateAgent = mutation({
         try {
           new URL(args.profilePictureUrl);
         } catch {
-          throw new Error("Invalid profile picture URL");
+          throw createError(ErrorCode.AGENT_INVALID_PROFILE_URL, { url: args.profilePictureUrl });
         }
       }
       updates.profilePictureUrl = args.profilePictureUrl;
@@ -417,7 +506,7 @@ export const updateAgent = mutation({
         try {
           new URL(args.socialLink);
         } catch {
-          throw new Error("Invalid social link URL");
+          throw createError(ErrorCode.AGENT_INVALID_SOCIAL_URL, { url: args.socialLink });
         }
       }
       updates.socialLink = args.socialLink;
@@ -445,7 +534,7 @@ export const deleteAgent = mutation({
     const agent = await ctx.db.get(args.agentId);
 
     if (!agent || agent.userId !== userId) {
-      throw new Error("Agent not found");
+      throw createError(ErrorCode.AGENT_NOT_FOUND, { agentId: args.agentId });
     }
 
     // Soft delete - deactivate agent

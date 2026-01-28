@@ -1,13 +1,24 @@
 "use client";
 
-import type { Id } from "@convex/_generated/dataModel";
-import { Flag, Loader2, Trophy, XCircle, Users } from "lucide-react";
-import Link from "next/link";
-import { useCallback, useMemo, useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { toast } from "sonner";
-import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import {
+  Flag,
+  Heart,
+  Loader2,
+  Skull,
+  Sparkles,
+  Swords,
+  Trophy,
+  Users,
+  XCircle,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { LifePointsBar } from "./board/LifePointsBar";
 import { OpponentBoard } from "./board/OpponentBoard";
 import { PlayerBoard } from "./board/PlayerBoard";
@@ -17,6 +28,7 @@ import { PhaseBar } from "./controls/PhaseBar";
 import { ActivateCardModal } from "./dialogs/ActivateCardModal";
 import { AttackModal } from "./dialogs/AttackModal";
 import { CardInspectorModal } from "./dialogs/CardInspectorModal";
+import { CardSelectionModal } from "./dialogs/CardSelectionModal";
 import { ForfeitDialog } from "./dialogs/ForfeitDialog";
 import { ResponsePrompt } from "./dialogs/ResponsePrompt";
 import { SummonModal } from "./dialogs/SummonModal";
@@ -28,13 +40,47 @@ interface GameBoardProps {
   gameMode?: "pvp" | "story";
 }
 
-export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp" }: GameBoardProps) {
+interface ActivationResult {
+  success: boolean;
+  error?: string;
+  requiresSelection?: boolean;
+  availableTargets?: Array<{
+    cardId: Id<"cardDefinitions">;
+    name: string;
+    instanceId: string;
+    imageUrl?: string;
+    attack?: number;
+    defense?: number;
+    cardType?: string;
+    monsterStats?: {
+      level: number;
+      attack: number;
+      defense: number;
+    };
+  }>;
+  selectionSource?: "deck" | "graveyard" | "banished" | "board" | "hand";
+  minSelections?: number;
+  maxSelections?: number;
+  selectionPrompt?: string;
+}
+
+export function GameBoard({
+  lobbyId,
+  playerId: providedPlayerId,
+  gameMode = "pvp",
+}: GameBoardProps) {
+  const router = useRouter();
+
   // Get player ID from auth if not provided (story mode)
   const authUser = useQuery(api.core.users.currentUser, {});
   const playerId = providedPlayerId || (authUser?._id as Id<"users"> | undefined);
 
   // First check lobby status - MUST be called before any conditional returns
   const lobbyDetails = useQuery(api.gameplay.games.queries.getLobbyDetails, { lobbyId });
+
+  // Selection effect mutations
+  const completeSearchEffect = useMutation(api.gameplay.gameEngine.spellsTraps.completeSearchEffect);
+  const completeSpecialSummon = useMutation(api.gameplay.gameEngine.selectionEffects.completeSpecialSummon);
 
   const {
     // State
@@ -67,7 +113,7 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
     activateFieldSpell,
     activateTrap,
     respondToChain,
-  } = useGameBoard(lobbyId, playerId || ("" as Id<"users">));
+  } = useGameBoard(lobbyId, playerId ?? ("" as Id<"users">));
 
   // UI State
   const [selectedHandCard, setSelectedHandCard] = useState<CardInZone | null>(null);
@@ -83,6 +129,18 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
   const [isForfeitLoading, setIsForfeitLoading] = useState(false);
   const [isAIThinking, setIsAIThinking] = useState(false);
 
+  // Card Selection State (for search effects, etc.)
+  const [cardSelection, setCardSelection] = useState<{
+    cards: CardInZone[];
+    zone: "deck" | "graveyard" | "banished" | "board" | "hand";
+    selectionMode?: "single" | "multi";
+    minSelections?: number;
+    maxSelections?: number;
+    title?: string;
+    description?: string;
+    callback: (cardIds: Id<"cardDefinitions">[]) => void;
+  } | null>(null);
+
   // AI Turn Automation (Story Mode)
   const executeAITurn = useMutation(api.gameplay.ai.aiTurn.executeAITurn);
   const gameState = useQuery(
@@ -93,7 +151,6 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
   useEffect(() => {
     if (gameMode !== "story") return;
     if (!gameState || !lobbyDetails) return;
-    if (gameState.gameMode !== "story" || !gameState.isAIOpponent) return;
     if (isAIThinking) return; // Already executing
 
     const isAITurn = gameState.currentTurnPlayerId === gameState.opponentId;
@@ -114,8 +171,64 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
     }
   }, [gameMode, gameState, lobbyDetails, gameEnded, isAIThinking, executeAITurn]);
 
+  // Effect Notifications - Subscribe to auto-triggered effects
+  const lastEventTimestamp = useRef<number>(Date.now());
+  const gameEvents = useQuery(
+    api.gameplay.gameEvents.subscribeToGameEvents,
+    lobbyId
+      ? {
+          lobbyId,
+          sinceTimestamp: lastEventTimestamp.current,
+          eventTypes: ["effect_activated"],
+          limit: 10,
+        }
+      : "skip"
+  );
+
+  // Show toast notifications for auto-triggered effects
+  useEffect(() => {
+    if (!gameEvents || gameEvents.length === 0) return;
+
+    gameEvents.forEach((event) => {
+      // Update last seen timestamp
+      if (event.timestamp > lastEventTimestamp.current) {
+        lastEventTimestamp.current = event.timestamp;
+      }
+
+      // Don't show notifications for manual activations (handled by other toasts)
+      if (event.metadata?.trigger === "manual") return;
+
+      // Get trigger type for icon selection
+      const trigger = event.metadata?.trigger as string | undefined;
+      const cardName = event.metadata?.cardName as string | undefined;
+      const effectMessage = event.metadata?.effect as string | undefined;
+
+      // Select icon based on trigger type
+      let icon: React.ReactNode;
+      if (trigger?.includes("summon")) {
+        icon = <Sparkles className="h-4 w-4" />;
+      } else if (trigger?.includes("battle") || trigger?.includes("attack")) {
+        icon = <Swords className="h-4 w-4" />;
+      } else if (trigger?.includes("destroy")) {
+        icon = <Skull className="h-4 w-4" />;
+      } else if (trigger?.includes("draw") || trigger?.includes("end")) {
+        icon = <Heart className="h-4 w-4" />;
+      } else {
+        icon = <Sparkles className="h-4 w-4" />;
+      }
+
+      // Show toast notification
+      toast(cardName || "Card Effect", {
+        description: event.description,
+        icon,
+        duration: 3000,
+        className: "border-l-4 border-l-purple-500",
+      });
+    });
+  }, [gameEvents]);
+
   const attackableAttackers = useMemo(() => {
-    if (!attackOptions) return new Set<Id<"cardInstances">>();
+    if (!attackOptions) return new Set<Id<"cardDefinitions">>();
     return new Set(
       attackOptions.filter((option) => option.canAttack).map((option) => option.instanceId)
     );
@@ -130,14 +243,14 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
 
   const targetableCards = useMemo(() => {
     if (!isBattlePhase || !selectedAttackOption || !selectedAttackOption.canAttack) {
-      return new Set<Id<"cardInstances">>();
+      return new Set<Id<"cardDefinitions">>();
     }
     return new Set(selectedAttackOption.validTargets);
   }, [isBattlePhase, selectedAttackOption]);
 
   const attackTargets = useMemo(() => {
     if (!selectedAttackOption || !opponent) return [];
-    const opponentField = new Map<Id<"cardInstances">, CardInZone>();
+    const opponentField = new Map<Id<"cardDefinitions">, CardInZone>();
     if (opponent.frontline) {
       opponentField.set(opponent.frontline.instanceId, opponent.frontline);
     }
@@ -174,7 +287,7 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
   }, [player, attackableAttackers]);
 
   const handleDeclareAttack = useCallback(
-    async (targetId?: Id<"cardInstances">) => {
+    async (targetId?: Id<"cardDefinitions">) => {
       if (!selectedFieldCard) return;
 
       const result = await declareAttack(selectedFieldCard.instanceId, targetId);
@@ -220,7 +333,8 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
           main2: "Main Phase 2",
           end: "End Phase",
         };
-        const phaseName = phaseNames[phase?.currentPhase || ""] || phase?.currentPhase || "Unknown Phase";
+        const phaseName =
+          phaseNames[phase?.currentPhase || ""] || phase?.currentPhase || "Unknown Phase";
         toast.warning("Wrong Phase", {
           description: `You can only play cards during Main Phase 1 or Main Phase 2. Current Phase: ${phaseName}. Click the "Next" or "Battle" button to advance.`,
         });
@@ -350,23 +464,55 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
   const handleHandCardActivate = useCallback(async () => {
     if (!selectedHandCard) return;
 
-    let result: { success: boolean; error?: string };
+    let result: ActivationResult;
     if (selectedHandCard.cardType === "field") {
       result = await activateFieldSpell(selectedHandCard.instanceId);
     } else {
       result = await activateSpell(selectedHandCard.instanceId);
     }
 
-    if (result.success) {
+    // Check if effect requires player selection (search, etc.)
+    if (result?.success && result.requiresSelection && Array.isArray(result.availableTargets)) {
+      setCardSelection({
+        cards: result.availableTargets.map((target) => ({
+          cardId: target.cardId,
+          name: target.name,
+          cardType: target.cardType,
+          imageUrl: target.imageUrl,
+          monsterStats: target.monsterStats,
+          instanceId: target.cardId, // Use cardId as instanceId for selection
+        })),
+        zone: result.selectionSource || "deck",
+        selectionMode: (result.maxSelections || 1) > 1 ? "multi" : "single",
+        minSelections: result.minSelections || 1,
+        maxSelections: result.maxSelections || 1,
+        title: result.selectionPrompt?.split(":")[0] || "Select Cards",
+        description: result.selectionPrompt || "Select a card",
+        callback: async (selectedIds) => {
+          try {
+            await completeSearchEffect({
+              lobbyId,
+              sourceCardId: selectedHandCard.cardId,
+              selectedCardId: selectedIds[0]!,
+            });
+            toast.success("Card added to hand!");
+            setSelectedHandCard(null);
+            setShowSummonModal(false);
+          } catch (error) {
+            toast.error("Failed to complete search");
+          }
+        },
+      });
+    } else if (result?.success) {
       toast.success(`${selectedHandCard.name} activated!`);
       setSelectedHandCard(null);
       setShowSummonModal(false);
-    } else if (result.error) {
+    } else if (result?.error) {
       toast.error("Activation Failed", {
         description: result.error,
       });
     }
-  }, [selectedHandCard, activateSpell, activateFieldSpell]);
+  }, [selectedHandCard, activateSpell, activateFieldSpell, lobbyId, completeSearchEffect]);
 
   const handleAdvancePhase = useCallback(async () => {
     const result = await advancePhase();
@@ -392,6 +538,15 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
       const result = await forfeitGame();
       if (result.success) {
         toast.info("Game forfeited");
+
+        // Redirect to appropriate screen after forfeit
+        if (gameMode === "story") {
+          // Redirect back to story mode page
+          router.push("/play/story");
+        } else {
+          // Redirect to lobby for PVP games
+          router.push("/lunchtable");
+        }
       } else if (result.error) {
         toast.error("Forfeit Failed", {
           description: result.error,
@@ -401,7 +556,7 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
       setIsForfeitLoading(false);
       setShowForfeitDialog(false);
     }
-  }, [forfeitGame]);
+  }, [forfeitGame, gameMode, router]);
 
   const handleBackrowCardClick = useCallback((card: CardInZone) => {
     setSelectedBackrowCard(card);
@@ -417,27 +572,68 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
         selectedBackrowCard.cardType === "spell" || selectedBackrowCard.cardType === "equipment";
       const isTrap = selectedBackrowCard.cardType === "trap";
 
-      let result: { success: boolean } | undefined;
+      let result: ActivationResult | undefined;
       if (isField) {
         result = await activateFieldSpell(selectedBackrowCard.instanceId, effectIndex);
       } else if (isSpell) {
         result = await activateSpell(selectedBackrowCard.instanceId, effectIndex);
       } else if (isTrap) {
         result = await activateTrap(selectedBackrowCard.instanceId, effectIndex);
+      } else {
+        return; // Not a valid card type
       }
 
-      if (result?.success) {
+      // Check if effect requires player selection
+      if (result?.success && result.requiresSelection && Array.isArray(result.availableTargets)) {
+        setCardSelection({
+          cards: result.availableTargets.map((target) => ({
+            cardId: target.cardId,
+            name: target.name,
+            cardType: target.cardType,
+            imageUrl: target.imageUrl,
+            monsterStats: target.monsterStats,
+            instanceId: target.cardId,
+          })),
+          zone: result.selectionSource || "deck",
+          selectionMode: (result.maxSelections || 1) > 1 ? "multi" : "single",
+          minSelections: result.minSelections || 1,
+          maxSelections: result.maxSelections || 1,
+          title: result.selectionPrompt?.split(":")[0] || "Select Cards",
+          description: result.selectionPrompt || "Select a card",
+          callback: async (selectedIds) => {
+            try {
+              await completeSearchEffect({
+                lobbyId,
+                sourceCardId: selectedBackrowCard.cardId,
+                selectedCardId: selectedIds[0]!,
+              });
+              toast.success("Card added to hand!");
+              setSelectedBackrowCard(null);
+              setShowActivateModal(false);
+            } catch (error) {
+              toast.error("Failed to complete effect");
+            }
+          },
+        });
+      } else if (result?.success) {
         setSelectedBackrowCard(null);
         setShowActivateModal(false);
       }
     },
-    [selectedBackrowCard, activateSpell, activateFieldSpell, activateTrap]
+    [
+      selectedBackrowCard,
+      activateSpell,
+      activateFieldSpell,
+      activateTrap,
+      lobbyId,
+      completeSearchEffect,
+    ]
   );
 
   const handleChainResponse = useCallback(
-    async (cardInstanceId: Id<"cardInstances">, effectIndex: number) => {
+    async (cardInstanceId: Id<"cardDefinitions">, effectIndex: number) => {
       await respondToChain({
-        cardInstanceId,
+        cardId: cardInstanceId,
         effectIndex,
       });
     },
@@ -449,15 +645,18 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
   }, [respondToChain]);
 
   const responseCards = useMemo(() => {
-    if (!chainResponses || !player) return [];
+    if (!chainResponses || !chainResponses.chain || !player) return [];
 
-    return chainResponses.map((response: { cardInstanceId: Id<"cardInstances"> }) => {
+    return chainResponses.chain.map((response) => {
       const card =
-        player.backrow.find((c) => c.instanceId === response.cardInstanceId) ??
-        player.hand.find((c) => c.instanceId === response.cardInstanceId);
+        player.backrow.find((c) => c.instanceId === response.cardId) ??
+        player.hand.find((c) => c.instanceId === response.cardId);
 
       return {
-        ...response,
+        cardId: response.cardId,
+        effectName: response.effect,
+        effectIndex: 0,
+        speed: response.spellSpeed as 1 | 2 | 3,
         card,
       };
     });
@@ -480,7 +679,8 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
           <Users className="h-16 w-16 text-[#d4af37] animate-pulse" />
           <h2 className="text-2xl font-bold text-[#e8e0d5]">Waiting for Opponent</h2>
           <p className="text-sm text-[#a89f94] text-center max-w-md">
-            Your game lobby is ready. Share your join code or wait for someone to join from the lobby list.
+            Your game lobby is ready. Share your join code or wait for someone to join from the
+            lobby list.
           </p>
           {lobbyDetails.joinCode && (
             <div className="flex flex-col items-center gap-2 mt-2">
@@ -516,6 +716,9 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
   // Game ended state
   if (gameEnded) {
     const isWinner = winner === "player";
+    const returnLink = gameMode === "story" ? "/play/story" : "/lunchtable";
+    const returnText = gameMode === "story" ? "Return to Story" : "Return to Table";
+
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#0d0a09]">
         <div className="flex flex-col items-center gap-3 text-center p-6 rounded-xl border bg-background">
@@ -533,7 +736,7 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
             </>
           )}
           <Button asChild className="mt-3" size="sm">
-            <Link href="/lunchtable">Return to Table</Link>
+            <Link href={returnLink}>{returnText}</Link>
           </Button>
         </div>
       </div>
@@ -693,10 +896,9 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
           }
           availableTributes={
             player?.frontline || player?.support?.length > 0
-              ? [
-                  ...(player.frontline ? [player.frontline] : []),
-                  ...(player.support || []),
-                ].filter((card) => !card.isFaceDown)
+              ? [...(player.frontline ? [player.frontline] : []), ...(player.support || [])].filter(
+                  (card) => !card.isFaceDown
+                )
               : []
           }
           onSummon={handleSummon}
@@ -744,9 +946,9 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
 
         <ResponsePrompt
           isOpen={!!pendingAction && responseCards.length > 0}
-          actionType={pendingAction?.actionType ?? "chain_response"}
+          actionType="chain_response"
           responseCards={responseCards}
-          timeRemaining={pendingAction?.timeRemaining ?? 30000}
+          timeRemaining={30000}
           onActivate={handleChainResponse}
           onPass={handlePassChain}
         />
@@ -759,6 +961,24 @@ export function GameBoard({ lobbyId, playerId: providedPlayerId, gameMode = "pvp
             setShowCardInspector(false);
             setInspectedCard(null);
           }}
+        />
+
+        <CardSelectionModal
+          isOpen={!!cardSelection}
+          cards={cardSelection?.cards || []}
+          zone={cardSelection?.zone || "deck"}
+          selectionMode={cardSelection?.selectionMode || "single"}
+          minSelections={cardSelection?.minSelections || 1}
+          maxSelections={cardSelection?.maxSelections || 1}
+          title={cardSelection?.title}
+          description={cardSelection?.description}
+          onConfirm={(selectedIds) => {
+            if (cardSelection?.callback) {
+              cardSelection.callback(selectedIds);
+            }
+            setCardSelection(null);
+          }}
+          onCancel={() => setCardSelection(null)}
         />
       </div>
 

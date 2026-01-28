@@ -1,27 +1,75 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "../auth/useConvexAuthHook";
-import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import { toast } from "sonner";
+import type { Quest, QuestRewardResult } from "@/types";
+import { handleHookError } from "@/lib/errorHandling";
+import { useAuth } from "../auth/useConvexAuthHook";
+
+interface UseQuestsReturn {
+  quests: Quest[];
+  activeQuests: Quest[];
+  completedQuests: Quest[];
+  claimedQuests: Quest[];
+  dailyQuests: Quest[];
+  weeklyQuests: Quest[];
+  achievementQuests: Quest[];
+  activeCount: number;
+  completedCount: number;
+  totalCount: number;
+  isLoading: boolean;
+  claimQuestReward: (questRecordId: Id<"userQuests">) => Promise<QuestRewardResult>;
+}
 
 /**
- * useQuests Hook
+ * Quest system for daily, weekly, and achievement-based challenges.
  *
- * Manages user quests:
- * - View active/completed quests
+ * Provides quest management with automatic progress tracking. Players can
+ * claim rewards once quests are completed. Quests reset daily/weekly and
+ * provide gold, XP, and gem rewards.
+ *
+ * Features:
+ * - View all quests with progress tracking
+ * - Filter by type (daily, weekly, achievement)
+ * - Filter by status (active, completed, claimed)
  * - Claim quest rewards
- * - Track quest progress
+ * - Real-time progress updates
+ * - Automatic quest generation (daily/weekly)
+ *
+ * @example
+ * ```typescript
+ * const {
+ *   quests,
+ *   activeQuests,
+ *   completedQuests,
+ *   dailyQuests,
+ *   claimQuestReward
+ * } = useQuests();
+ *
+ * // Show active quests
+ * activeQuests.forEach(quest => {
+ *   console.log(`${quest.name}: ${quest.progress}/${quest.goal}`);
+ * });
+ *
+ * // Claim reward
+ * await claimQuestReward(questRecordId);
+ * // Toast shows: "Claimed rewards: 100 Gold, 50 XP"
+ *
+ * // Check daily quests
+ * console.log(`${dailyQuests.length} daily quests available`);
+ * ```
+ *
+ * @returns {UseQuestsReturn} Quest management interface
+ *
+ * @throws {Error} When user is not authenticated
  */
-export function useQuests() {
+export function useQuests(): UseQuestsReturn {
   const { isAuthenticated } = useAuth();
 
   // Query for user's quests
-  const quests = useQuery(
-    api.progression.quests.getUserQuests,
-    isAuthenticated ? {} : "skip"
-  );
+  const quests = useQuery(api.progression.quests.getUserQuests, isAuthenticated ? {} : "skip");
 
   // Mutation to claim quest rewards
   const claimRewardMutation = useMutation(api.progression.quests.claimQuestReward);
@@ -33,22 +81,24 @@ export function useQuests() {
     try {
       const result = await claimRewardMutation({ questRecordId });
       const gemsText = result.rewards.gems ? `, ${result.rewards.gems} Gems` : "";
-      toast.success(`Claimed rewards: ${result.rewards.gold} Gold, ${result.rewards.xp} XP${gemsText}`);
+      toast.success(
+        `Claimed rewards: ${result.rewards.gold} Gold, ${result.rewards.xp} XP${gemsText}`
+      );
       return result;
-    } catch (error: any) {
-      toast.error(error.message || "Failed to claim quest reward");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to claim quest reward");
+      toast.error(message);
       throw error;
     }
   };
 
   // Separate quests by type
-  type Quest = NonNullable<typeof quests>[number];
-  const activeQuests = quests?.filter((q: Quest) => q.status === "active") || [];
-  const completedQuests = quests?.filter((q: Quest) => q.status === "completed") || [];
-  const claimedQuests = quests?.filter((q: Quest) => q.status === "claimed") || [];
-  const dailyQuests = quests?.filter((q: Quest) => q.questType === "daily") || [];
-  const weeklyQuests = quests?.filter((q: Quest) => q.questType === "weekly") || [];
-  const achievementQuests = quests?.filter((q: Quest) => q.questType === "achievement") || [];
+  const activeQuests = quests?.filter((q) => q.status === "active") || [];
+  const completedQuests = quests?.filter((q) => q.status === "completed") || [];
+  const claimedQuests = quests?.filter((q) => q.status === "claimed") || [];
+  const dailyQuests = quests?.filter((q) => q.questType === "daily") || [];
+  const weeklyQuests = quests?.filter((q) => q.questType === "weekly") || [];
+  const achievementQuests = quests?.filter((q) => q.questType === "achievement") || [];
 
   return {
     // Data

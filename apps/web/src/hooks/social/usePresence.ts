@@ -1,16 +1,52 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
+import { logError } from "@/lib/errorHandling";
 import { useAuth } from "../auth/useConvexAuthHook";
 
+interface UsePresenceReturn {
+  onlineUsers: ReturnType<typeof useQuery<typeof api.globalChat.getOnlineUsers>> | undefined;
+  onlineCount: number;
+  updatePresence: () => Promise<void>;
+}
+
 /**
- * usePresence Hook
+ * Online user presence tracking.
  *
- * Online user tracking.
- * Simple hook for getting online user count.
+ * Simple hook for tracking online users and updating presence status.
+ * Provides real-time count of online players. Silent failure on presence
+ * updates to avoid disrupting user experience.
+ *
+ * Features:
+ * - Get list of online users
+ * - Get online user count
+ * - Manual presence update
+ * - Silent error handling
+ *
+ * @example
+ * ```typescript
+ * const {
+ *   onlineUsers,
+ *   onlineCount,
+ *   updatePresence
+ * } = usePresence();
+ *
+ * // Display online count
+ * console.log(`${onlineCount} players online`);
+ *
+ * // Show online users
+ * onlineUsers?.forEach(user => {
+ *   console.log(`${user.username} is online`);
+ * });
+ *
+ * // Manually update presence
+ * await updatePresence();
+ * ```
+ *
+ * @returns {UsePresenceReturn} Presence interface
  */
-export function usePresence() {
+export function usePresence(): UsePresenceReturn {
   const { isAuthenticated } = useAuth();
 
   const onlineUsers = useQuery(api.globalChat.getOnlineUsers, {});
@@ -25,7 +61,7 @@ export function usePresence() {
       try {
         await updateMutation({});
       } catch (error) {
-        console.error("Presence update failed:", error);
+        logError("Presence update", error);
       }
     },
   };

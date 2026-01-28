@@ -41,31 +41,28 @@ import { toast } from "sonner";
 // Types
 // =============================================================================
 
-type AdminRoleType = "super_admin" | "admin" | "moderator" | "support";
+type AdminRoleType = "superadmin" | "admin" | "moderator";
 
 // =============================================================================
 // Constants
 // =============================================================================
 
 const ROLE_LABELS: Record<AdminRoleType, string> = {
-  super_admin: "Super Admin",
+  superadmin: "Super Admin",
   admin: "Admin",
   moderator: "Moderator",
-  support: "Support",
 };
 
 const ROLE_COLORS: Record<AdminRoleType, string> = {
-  super_admin: "red",
+  superadmin: "red",
   admin: "blue",
   moderator: "amber",
-  support: "gray",
 };
 
 const ROLE_DESCRIPTIONS: Record<AdminRoleType, string> = {
-  super_admin: "Full access, can manage other admins",
-  admin: "Most admin functions, cannot manage super_admins",
+  superadmin: "Full access, can manage other admins",
+  admin: "Most admin functions, cannot manage superadmins",
   moderator: "Player moderation only (ban/suspend/warn)",
-  support: "Read-only access with limited actions",
 };
 
 // =============================================================================
@@ -83,7 +80,7 @@ function RoleBadge({ role }: { role: AdminRoleType }) {
 function GrantRoleDialog() {
   const [open, setOpen] = useState(false);
   const [userId, setUserId] = useState("");
-  const [role, setRole] = useState<AdminRoleType>("support");
+  const [role, setRole] = useState<AdminRoleType>("moderator");
   const [notes, setNotes] = useState("");
   const [expiresInDays, setExpiresInDays] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,16 +100,14 @@ function GrantRoleDialog() {
         : undefined;
 
       await grantRole({
-        targetUserId: userId as Id<"users">,
+        userId: userId as Id<"users">,
         role,
-        notes: notes || undefined,
-        expiresAt,
       });
 
       toast.success(`Granted ${ROLE_LABELS[role]} role`);
       setOpen(false);
       setUserId("");
-      setRole("support");
+      setRole("moderator");
       setNotes("");
       setExpiresInDays("");
     } catch (error) {
@@ -152,7 +147,7 @@ function GrantRoleDialog() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(["admin", "moderator", "support"] as AdminRoleType[]).map((r) => (
+                {(["superadmin", "admin", "moderator"] as AdminRoleType[]).map((r) => (
                   <SelectItem key={r} value={r}>
                     <div>
                       <div>{ROLE_LABELS[r]}</div>
@@ -207,8 +202,7 @@ function RevokeRoleDialog({ admin, onClose }: { admin: AdminRoleData; onClose: (
     setIsSubmitting(true);
     try {
       await revokeRole({
-        targetUserId: admin.userId,
-        reason: reason || undefined,
+        userId: admin.userId,
       });
       toast.success("Admin role revoked");
       onClose();
@@ -266,7 +260,7 @@ export default function AdminManagementPage() {
   const { role: myRole } = useAdmin();
   const [selectedAdmin, setSelectedAdmin] = useState<AdminRoleData | null>(null);
 
-  const admins = useQuery(api.admin.admin.listAdmins) as AdminRoleData[] | undefined;
+  const admins = useQuery(api.admin.admin.listAdmins, {}) as AdminRoleData[] | undefined;
 
   const columns: ColumnDef<AdminRoleData>[] = [
     {
@@ -313,7 +307,7 @@ export default function AdminManagementPage() {
       header: "Actions",
       cell: (admin: AdminRoleData) => (
         <div className="flex gap-2">
-          {myRole === "super_admin" && admin.isActive && admin.role !== "super_admin" && (
+          {myRole === "superadmin" && admin.isActive && admin.role !== "superadmin" && (
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" onClick={() => setSelectedAdmin(admin)}>
@@ -330,8 +324,8 @@ export default function AdminManagementPage() {
     },
   ];
 
-  // Only super_admin can access this page
-  if (myRole !== "super_admin") {
+  // Only superadmin can access this page
+  if (myRole !== "superadmin") {
     return (
       <PageWrapper title="Admin Management" description="Manage admin roles and permissions">
         <Card>

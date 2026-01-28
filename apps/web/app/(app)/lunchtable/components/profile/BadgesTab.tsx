@@ -4,8 +4,8 @@
  */
 
 import { Medal, Star } from "lucide-react";
-import type { PlayerProfile } from "./types";
 import { BADGE_ICONS } from "./constants";
+import type { PlayerProfile } from "./types";
 
 interface BadgesTabProps {
   profile: PlayerProfile;

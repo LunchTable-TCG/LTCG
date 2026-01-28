@@ -1,33 +1,68 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "../auth/useConvexAuthHook";
+import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
+import { handleHookError } from "@/lib/errorHandling";
+import type { BaseHookReturn } from "@/types";
+import { useAuth } from "../auth/useConvexAuthHook";
+
+interface UseShopReturn {
+  products: ReturnType<typeof useQuery<typeof api.shop.getShopProducts>> | undefined;
+  packHistory: ReturnType<typeof useQuery<typeof api.shop.getPackOpeningHistory>> | undefined;
+  isLoading: boolean;
+  purchasePack: (productId: string, useGems: boolean) => Promise<any>;
+  purchaseBox: (productId: string, useGems: boolean) => Promise<any>;
+  purchaseBundle: (productId: string) => Promise<any>;
+}
 
 /**
- * useShop Hook
+ * In-game shop for purchasing card packs, boxes, and currency bundles.
  *
- * Shop purchases for packs, boxes, and bundles:
- * - View shop products
- * - Purchase packs
- * - Purchase boxes
- * - Purchase currency bundles
+ * Provides access to all shop products and purchase functionality. Supports
+ * both gold and gem purchases. Shows pack opening results and maintains
+ * purchase history. All purchases show toast notifications with results.
+ *
+ * Features:
+ * - View all shop products (packs, boxes, bundles)
+ * - Purchase single packs (gold or gems)
+ * - Purchase boxes (multiple packs at once)
+ * - Purchase currency bundles (gems for gold)
  * - View pack opening history
+ * - Real-time product availability
+ *
+ * @example
+ * ```typescript
+ * const {
+ *   products,
+ *   packHistory,
+ *   purchasePack,
+ *   purchaseBox
+ * } = useShop();
+ *
+ * // Purchase a pack with gold
+ * const result = await purchasePack("pack_starter", false);
+ * console.log(`Got ${result.cardsReceived.length} cards!`);
+ *
+ * // Purchase a pack with gems
+ * await purchasePack("pack_premium", true);
+ *
+ * // Purchase a box (multiple packs)
+ * const boxResult = await purchaseBox("box_mega", false);
+ * console.log(`Opened ${boxResult.packsOpened} packs`);
+ * ```
+ *
+ * @returns {UseShopReturn} Shop interface
+ *
+ * @throws {Error} When user is not authenticated or insufficient funds
  */
-export function useShop() {
+export function useShop(): UseShopReturn {
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const products = useQuery(
-    api.shop.getShopProducts,
-    {}
-  );
+  const products = useQuery(api.shop.getShopProducts, {});
 
-  const packHistory = useQuery(
-    api.shop.getPackOpeningHistory,
-    isAuthenticated ? {} : "skip"
-  );
+  const packHistory = useQuery(api.shop.getPackOpeningHistory, isAuthenticated ? {} : "skip");
 
   // Mutations
   const purchasePackMutation = useMutation(api.shop.purchasePack);
@@ -35,10 +70,7 @@ export function useShop() {
   const purchaseBundleMutation = useMutation(api.shop.purchaseCurrencyBundle);
 
   // Actions
-  const purchasePack = async (
-    productId: string,
-    useGems: boolean
-  ) => {
+  const purchasePack = async (productId: string, useGems: boolean) => {
     if (!isAuthenticated) throw new Error("Not authenticated");
     try {
       const result = await purchasePackMutation({
@@ -47,16 +79,14 @@ export function useShop() {
       });
       toast.success(`Pack purchased! You got ${result.cardsReceived.length} cards`);
       return result;
-    } catch (error: any) {
-      toast.error(error.message || "Failed to purchase pack");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to purchase pack");
+      toast.error(message);
       throw error;
     }
   };
 
-  const purchaseBox = async (
-    productId: string,
-    useGems: boolean
-  ) => {
+  const purchaseBox = async (productId: string, useGems: boolean) => {
     if (!isAuthenticated) throw new Error("Not authenticated");
     try {
       const result = await purchaseBoxMutation({
@@ -65,8 +95,9 @@ export function useShop() {
       });
       toast.success(`Box purchased! Opening ${result.packsOpened} packs...`);
       return result;
-    } catch (error: any) {
-      toast.error(error.message || "Failed to purchase box");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to purchase box");
+      toast.error(message);
       throw error;
     }
   };
@@ -77,8 +108,9 @@ export function useShop() {
       const result = await purchaseBundleMutation({ productId });
       toast.success(`Bundle purchased! You got ${result.goldReceived} gold`);
       return result;
-    } catch (error: any) {
-      toast.error(error.message || "Failed to purchase bundle");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to purchase bundle");
+      toast.error(message);
       throw error;
     }
   };

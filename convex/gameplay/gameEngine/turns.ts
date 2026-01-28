@@ -7,8 +7,14 @@
 
 import { v } from "convex/values";
 import { mutation } from "../../_generated/server";
-import { getCurrentUser, requireAuthQuery, requireAuthMutation } from "../../lib/convexAuth";
-import { enforceHandLimit, clearTemporaryModifiers, clearOPTTracking, drawCards } from "../../lib/gameHelpers";
+import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import { ErrorCode, createError } from "../../lib/errorCodes";
+import {
+  clearOPTTracking,
+  clearTemporaryModifiers,
+  drawCards,
+  enforceHandLimit,
+} from "../../lib/gameHelpers";
 import { recordEventHelper } from "../gameEvents";
 
 /**
@@ -30,12 +36,12 @@ export const endTurn = mutation({
     // 2. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
-      throw new Error("Lobby not found");
+      throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
     // 3. Validate it's the current player's turn
     if (lobby.currentTurnPlayerId !== user.userId) {
-      throw new Error("Not your turn");
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
     }
 
     // 4. Get game state
@@ -45,12 +51,14 @@ export const endTurn = mutation({
       .first();
 
     if (!gameState) {
-      throw new Error("Game state not found");
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND);
     }
 
     // 5. Validate in Main Phase 2 or End Phase (can end turn from either)
     if (gameState.currentPhase !== "main2" && gameState.currentPhase !== "end") {
-      throw new Error("Must be in Main Phase 2 or End Phase to end turn");
+      throw createError(ErrorCode.GAME_INVALID_PHASE, {
+        reason: "Must be in Main Phase 2 or End Phase to end turn",
+      });
     }
 
     // If still in Main Phase 2, advance to End Phase first
@@ -140,13 +148,17 @@ export const endTurn = mutation({
     // Refresh game state to get latest data after phase reset
     const refreshedGameState = await ctx.db.get(gameState._id);
     if (!refreshedGameState) {
-      throw new Error("Game state not found after turn transition");
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game state not found after turn transition",
+      });
     }
 
     if (!shouldSkipDraw) {
       // Draw 1 card for the new turn (drawCards already records the event)
       const drawnCards = await drawCards(ctx, refreshedGameState, nextPlayerId, 1);
-      console.log(`Turn ${nextTurnNumber}: ${nextPlayer?.username} drew ${drawnCards.length} card(s)`);
+      console.log(
+        `Turn ${nextTurnNumber}: ${nextPlayer?.username} drew ${drawnCards.length} card(s)`
+      );
     } else {
       console.log(`Turn ${nextTurnNumber}: Skipping draw for first player's first turn`);
     }

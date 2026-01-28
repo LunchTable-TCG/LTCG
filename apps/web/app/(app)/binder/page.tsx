@@ -1,5 +1,8 @@
 "use client";
 
+import { useCardBinder, useDeckBuilder, useDeck, useProfile } from "@/hooks";
+import { cn } from "@/lib/utils";
+import { AuthLoading, Authenticated } from "convex/react";
 import {
   AlertCircle,
   BookOpen,
@@ -22,30 +25,21 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Authenticated, AuthLoading } from "convex/react";
-import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   BinderCard,
+  type CardData,
   CardPreviewModal,
+  type CardType,
   DeckEditor,
   DeckList,
-  type CardData,
-  type CardType,
   type Element,
   type Rarity,
 } from "./components";
-import { useProfile, useDeckBuilder, useCardBinder } from "@/hooks";
-import type {
-  BinderTab,
-  DeckCard,
-  SortOption,
-  ViewMode,
-} from "./types";
-import {
-  DECK_MIN_SIZE,
-  MAX_COPIES_PER_CARD,
-  MAX_LEGENDARY_COPIES,
-} from "./types";
+import type { SortOption } from "@/types";
+import { isSortOption } from "@/types";
+import type { BinderTab, DeckCard, ViewMode } from "./types";
+import { DECK_MIN_SIZE, MAX_COPIES_PER_CARD, MAX_LEGENDARY_COPIES } from "./types";
 
 const RARITY_ORDER: Record<Rarity, number> = {
   legendary: 5,
@@ -96,7 +90,6 @@ function BinderContent() {
   const { userCards, toggleFavorite: toggleFavoriteAction } = useCardBinder();
   const {
     decks: userDecks,
-    useDeck,
     createDeck,
     saveDeck: saveDeckAction,
     renameDeck: renameDeckAction,
@@ -376,7 +369,7 @@ function BinderContent() {
     if (!selectedDeckId) return;
     const totalCards = currentDeckCards.reduce((sum, dc) => sum + dc.count, 0);
     if (totalCards < DECK_MIN_SIZE) {
-      alert(`Deck must have at least ${DECK_MIN_SIZE} cards. Currently has ${totalCards}.`);
+      toast.error(`Deck must have at least ${DECK_MIN_SIZE} cards. Currently has ${totalCards}.`);
       return;
     }
 
@@ -395,7 +388,9 @@ function BinderContent() {
   };
 
   const handleDeleteDeck = async (deckId: string) => {
-    if (!confirm("Are you sure you want to delete this deck?")) return;
+    // Ensure this only runs client-side
+    if (typeof window === "undefined") return;
+    if (!window.confirm("Are you sure you want to delete this deck?")) return;
     try {
       await deleteDeckAction(deckId as any);
       if (selectedDeckId === deckId) {
@@ -628,7 +623,12 @@ function BinderContent() {
 
                   <select
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (isSortOption(value)) {
+                        setSortBy(value);
+                      }
+                    }}
                     className="px-4 py-4 bg-[#1a1510] border border-[#3d2b1f] rounded-xl text-[#e8e0d5] focus:outline-none focus:border-[#d4af37]/50 cursor-pointer"
                   >
                     <option value="rarity">By Rarity</option>

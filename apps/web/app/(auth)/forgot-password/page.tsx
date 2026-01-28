@@ -1,12 +1,14 @@
 "use client";
 
+import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CheckCircle, Loader2, Mail, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { AuthPageShell } from "@/components/auth/AuthPageShell";
 
 export default function ForgotPasswordPage() {
+  const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -18,11 +20,11 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Implement actual password reset API call
-      // await api.auth.requestPasswordReset({ email });
+      const formData = new FormData();
+      formData.append("email", email);
+      formData.append("flow", "reset");
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await signIn("password", formData);
       setIsSubmitted(true);
     } catch (err) {
       setError(
@@ -70,6 +72,12 @@ export default function ForgotPasswordPage() {
               Didn&apos;t receive the email? Check your spam folder or try again.
             </p>
             <div className="flex flex-col gap-3">
+              <Link
+                href={`/reset-password?email=${encodeURIComponent(email)}`}
+                className="w-full py-3 rounded-xl bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white text-center font-bold transition-all"
+              >
+                Enter Reset Code
+              </Link>
               <button
                 type="button"
                 onClick={() => {
@@ -82,7 +90,7 @@ export default function ForgotPasswordPage() {
               </button>
               <Link
                 href="/login"
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white text-center font-bold transition-all"
+                className="w-full py-3 rounded-xl border border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5] hover:border-[#d4af37]/50 text-center font-medium transition-all"
               >
                 Return to Sign In
               </Link>
@@ -142,7 +150,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full py-4 rounded-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] transition-all duration-300 shadow-lg hover:shadow-gold"
+                className="group relative w-full py-4 rounded-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] transition-all duration-300 shadow-lg hover:shadow-gold"
               >
                 <span className="relative flex items-center justify-center gap-2 text-lg font-black uppercase tracking-widest text-white">
                   {isLoading ? (

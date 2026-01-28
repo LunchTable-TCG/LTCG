@@ -8,8 +8,8 @@
  * - Special Summon (Fusion, Ritual, Synchro, Xyz, Pendulum, Link)
  */
 
-import type { QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
+import type { QueryCtx } from "../_generated/server";
 
 export interface ValidationResult {
   valid: boolean;
@@ -45,7 +45,8 @@ export async function validateNormalSummon(
   if (hasNormalSummoned) {
     return {
       valid: false,
-      error: "You can only Normal Summon or Set once per turn. You've already used your Normal Summon this turn.",
+      error:
+        "You can only Normal Summon or Set once per turn. You've already used your Normal Summon this turn.",
     };
   }
 
@@ -56,7 +57,8 @@ export async function validateNormalSummon(
   if (board.length >= MONSTER_ZONE_LIMIT) {
     return {
       valid: false,
-      error: "Your Monster Zone is full (maximum 5 monsters). Remove a monster from the field before summoning.",
+      error:
+        "Your Monster Zone is full (maximum 5 monsters). Remove a monster from the field before summoning.",
     };
   }
 
@@ -81,7 +83,8 @@ export async function validateNormalSummon(
   if (card.cardType !== "creature") {
     return {
       valid: false,
-      error: "Only monster cards can be Normal Summoned. Use 'Set' or 'Activate' for Spell/Trap cards.",
+      error:
+        "Only monster cards can be Normal Summoned. Use 'Set' or 'Activate' for Spell/Trap cards.",
     };
   }
 
@@ -125,7 +128,8 @@ export async function validateNormalSummon(
       if (!isOnBoard) {
         return {
           valid: false,
-          error: "You can only tribute monsters that are on your field. The selected monster is not on your field.",
+          error:
+            "You can only tribute monsters that are on your field. The selected monster is not on your field.",
         };
       }
     }
@@ -144,6 +148,15 @@ export async function validateNormalSummon(
  *
  * Note: This is a simplified version - full implementation would need
  * card-specific summon condition logic.
+ *
+ * @param ctx - Query context
+ * @param gameState - Current game state
+ * @param playerId - Player attempting special summon
+ * @param cardId - Card being special summoned
+ * @param summonType - Type of special summon (fusion, ritual, synchro, xyz, pendulum, link)
+ * @returns Validation result with error message if invalid
+ * @example
+ * await validateSpecialSummon(ctx, gameState, playerId, fusionMonster, "fusion")
  */
 export async function validateSpecialSummon(
   ctx: QueryCtx,
@@ -198,6 +211,14 @@ export async function validateSpecialSummon(
  * Requirements:
  * - Card is face-down on player's field
  * - Card was not set this turn (must wait 1 turn before flipping)
+ *
+ * @param ctx - Query context
+ * @param gameState - Current game state
+ * @param playerId - Player attempting flip summon
+ * @param cardId - Card being flipped face-up
+ * @returns Validation result with error message if invalid
+ * @example
+ * await validateFlipSummon(ctx, gameState, playerId, faceDownMonster)
  */
 export async function validateFlipSummon(
   ctx: QueryCtx,
@@ -244,6 +265,16 @@ export async function validateFlipSummon(
  * - Monster zone has space (max 5 monsters)
  * - Card is in player's hand
  * - Tribute requirements met (same as Normal Summon for Level 5+)
+ *
+ * @param ctx - Query context
+ * @param gameState - Current game state
+ * @param playerId - Player attempting to set monster
+ * @param cardId - Card being set face-down
+ * @param tributeCardIds - Optional tribute cards (for Level 5+ monsters)
+ * @returns Validation result with error message if invalid
+ * @example
+ * await validateSetMonster(ctx, gameState, playerId, monsterCard) // Level 4 or lower
+ * await validateSetMonster(ctx, gameState, playerId, level5Card, [tributeId]) // Level 5-6
  */
 export async function validateSetMonster(
   ctx: QueryCtx,
@@ -265,6 +296,15 @@ export async function validateSetMonster(
  * - Card is face-up
  * - Not in Battle Phase
  * - Card has not changed position this turn (would need tracking)
+ *
+ * @param ctx - Query context
+ * @param gameState - Current game state
+ * @param playerId - Player attempting position change
+ * @param cardId - Card being switched (attack ↔ defense)
+ * @returns Validation result with error message if invalid
+ * @example
+ * await validatePositionChange(ctx, gameState, playerId, attackPositionMonster)
+ * // Switches attack → defense or defense → attack
  */
 export async function validatePositionChange(
   ctx: QueryCtx,

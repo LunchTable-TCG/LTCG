@@ -6,11 +6,7 @@
 
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { AIAction } from "./aiEngine";
-import {
-  canSummonWithoutTribute,
-  findStrongestMonster,
-  findWeakestMonster,
-} from "./aiEngine";
+import { canSummonWithoutTribute, findStrongestMonster, findWeakestMonster } from "./aiEngine";
 
 /**
  * Handle Main Phase decisions based on difficulty
@@ -42,7 +38,8 @@ export function handleMainPhase(
     if (difficulty === "easy") {
       // Easy: Random summon, sometimes makes bad decisions
       if (Math.random() > 0.3 && summonableMonsters.length > 0) {
-        const randomCard = summonableMonsters[Math.floor(Math.random() * summonableMonsters.length)];
+        const randomCard =
+          summonableMonsters[Math.floor(Math.random() * summonableMonsters.length)];
         return {
           type: "summon",
           cardId: randomCard,
@@ -63,8 +60,14 @@ export function handleMainPhase(
       }
 
       // Hard difficulty: Better tribute logic
-      if (difficulty === "hard" && highCostMonsters.length > 0 && myBoard.length >= 1) {
-        const highCostCard = cardData.get(highCostMonsters[0]);
+      const firstHighCostHard = highCostMonsters[0];
+      if (
+        difficulty === "hard" &&
+        firstHighCostHard &&
+        highCostMonsters.length > 0 &&
+        myBoard.length >= 1
+      ) {
+        const highCostCard = cardData.get(firstHighCostHard);
         if (highCostCard) {
           const requiredTributes = highCostCard.cost >= 7 ? 2 : 1;
 
@@ -90,7 +93,7 @@ export function handleMainPhase(
             if (newPower - tributePower > 800) {
               return {
                 type: "summon",
-                cardId: highCostMonsters[0],
+                cardId: firstHighCostHard,
                 position: "attack",
                 tributeIds: weakestTributes,
               };
@@ -102,38 +105,41 @@ export function handleMainPhase(
       // Boss: Optimal tribute decisions and combo awareness
       // First check if tribute summon is optimal
       if (highCostMonsters.length > 0 && myBoard.length >= 1) {
-        const highCostCard = cardData.get(highCostMonsters[0]);
-        if (highCostCard) {
-          const requiredTributes = highCostCard.cost >= 7 ? 2 : 1;
+        const firstHighCostBoss = highCostMonsters[0];
+        if (firstHighCostBoss) {
+          const highCostCard = cardData.get(firstHighCostBoss);
+          if (highCostCard) {
+            const requiredTributes = highCostCard.cost >= 7 ? 2 : 1;
 
-          if (myBoard.length >= requiredTributes) {
-            const weakestTributes: Id<"cardDefinitions">[] = [];
-            let tributePower = 0;
+            if (myBoard.length >= requiredTributes) {
+              const weakestTributes: Id<"cardDefinitions">[] = [];
+              let tributePower = 0;
 
-            for (let i = 0; i < requiredTributes; i++) {
-              const weakest = findWeakestMonster(
-                myBoard.filter((m) => !weakestTributes.includes(m.cardId))
-              );
-              if (weakest) {
-                weakestTributes.push(weakest);
-                const weakCard = myBoard.find((m) => m.cardId === weakest);
-                if (weakCard) {
-                  tributePower += weakCard.attack;
+              for (let i = 0; i < requiredTributes; i++) {
+                const weakest = findWeakestMonster(
+                  myBoard.filter((m) => !weakestTributes.includes(m.cardId))
+                );
+                if (weakest) {
+                  weakestTributes.push(weakest);
+                  const weakCard = myBoard.find((m) => m.cardId === weakest);
+                  if (weakCard) {
+                    tributePower += weakCard.attack;
+                  }
                 }
               }
-            }
 
-            const newPower = highCostCard.attack || 0;
-            const oppHighestATK = Math.max(...oppBoard.map((m) => m.attack), 0);
+              const newPower = highCostCard.attack || 0;
+              const oppHighestATK = Math.max(...oppBoard.map((m) => m.attack), 0);
 
-            // Boss: Tribute if new monster can beat opponent's strongest
-            if (newPower > oppHighestATK && newPower - tributePower > 500) {
-              return {
-                type: "summon",
-                cardId: highCostMonsters[0],
-                position: "attack",
-                tributeIds: weakestTributes,
-              };
+              // Boss: Tribute if new monster can beat opponent's strongest
+              if (newPower > oppHighestATK && newPower - tributePower > 500) {
+                return {
+                  type: "summon",
+                  cardId: firstHighCostBoss,
+                  position: "attack",
+                  tributeIds: weakestTributes,
+                };
+              }
             }
           }
         }
@@ -239,7 +245,11 @@ export function handleBattlePhase(
       }
 
       // Boss difficulty: Even trade if it helps board control
-      if (difficulty === "boss" && monster.attack === targetDEF && myBoard.length > oppBoard.length) {
+      if (
+        difficulty === "boss" &&
+        monster.attack === targetDEF &&
+        myBoard.length > oppBoard.length
+      ) {
         return {
           type: "attack",
           cardId: monster.cardId,

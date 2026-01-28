@@ -1,11 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { Check, Coins, Gift, Sparkles, Star, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, Coins, Gift, Sparkles, Star, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface QuestReward {
   gold?: number;
@@ -121,7 +121,7 @@ export function QuestRewardModal({
                     animate={phase === "claiming" ? { rotate: 360 } : {}}
                     transition={{
                       duration: 1,
-                      repeat: phase === "claiming" ? Infinity : 0,
+                      repeat: phase === "claiming" ? Number.POSITIVE_INFINITY : 0,
                       ease: "linear",
                     }}
                   >
@@ -167,7 +167,10 @@ export function QuestRewardModal({
               <motion.span
                 className="text-xl font-black text-yellow-400"
                 animate={phase === "claiming" ? { scale: [1, 1.2, 1] } : {}}
-                transition={{ duration: 0.3, repeat: phase === "claiming" ? Infinity : 0 }}
+                transition={{
+                  duration: 0.3,
+                  repeat: phase === "claiming" ? Number.POSITIVE_INFINITY : 0,
+                }}
               >
                 +{rewards.gold.toLocaleString()}
               </motion.span>
@@ -199,7 +202,7 @@ export function QuestRewardModal({
                 transition={{
                   duration: 0.3,
                   delay: 0.1,
-                  repeat: phase === "claiming" ? Infinity : 0,
+                  repeat: phase === "claiming" ? Number.POSITIVE_INFINITY : 0,
                 }}
               >
                 +{rewards.xp.toLocaleString()} XP
@@ -253,7 +256,7 @@ export function QuestRewardModal({
           {phase === "complete" ? (
             <Button
               onClick={onClose}
-              className="w-full bg-gradient-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white font-bold py-6"
+              className="w-full bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white font-bold py-6"
             >
               <Sparkles className="w-5 h-5 mr-2" />
               Continue
@@ -262,13 +265,13 @@ export function QuestRewardModal({
             <Button
               onClick={handleClaim}
               disabled={phase === "claiming"}
-              className="w-full bg-gradient-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white font-bold py-6 disabled:opacity-70"
+              className="w-full bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white font-bold py-6 disabled:opacity-70"
             >
               {phase === "claiming" ? (
                 <>
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
                     className="mr-2"
                   >
                     <Sparkles className="w-5 h-5" />

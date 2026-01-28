@@ -1,0 +1,11 @@
+# Test files
+*.test.ts
+*.test.multipart.ts
+test_utils
+test.setup.ts
+test.setup.d.ts
+test.utils.ts
+__mocks__
+
+# Documentation
+*.md

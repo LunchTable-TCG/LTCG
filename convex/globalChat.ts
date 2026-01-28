@@ -5,6 +5,7 @@
 
 export {
   getRecentMessages,
+  getPaginatedMessages,
   getOnlineUsers,
   getMessageCount,
   sendMessage,

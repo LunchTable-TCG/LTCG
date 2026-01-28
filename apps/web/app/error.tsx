@@ -1,10 +1,10 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { AlertTriangle, Bug, Home, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -33,7 +33,7 @@ export default function ErrorPage({ error, reset }: ErrorProps) {
         >
           <div className="relative inline-flex">
             <div className="absolute inset-0 bg-red-500/20 rounded-full blur-xl animate-pulse" />
-            <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 flex items-center justify-center">
+            <div className="relative w-24 h-24 rounded-full bg-linear-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 flex items-center justify-center">
               <AlertTriangle className="w-12 h-12 text-red-400" />
             </div>
           </div>
@@ -77,7 +77,7 @@ export default function ErrorPage({ error, reset }: ErrorProps) {
         >
           <Button
             onClick={reset}
-            className="w-full sm:w-auto bg-gradient-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white font-bold px-8 py-6"
+            className="w-full sm:w-auto bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white font-bold px-8 py-6"
           >
             <RefreshCw className="w-5 h-5 mr-2" />
             Try Again

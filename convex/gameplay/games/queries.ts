@@ -1,9 +1,9 @@
 import { v } from "convex/values";
-import { query, internalQuery } from "../../_generated/server";
-import { getCurrentUser, requireAuthQuery, requireAuthMutation } from "../../lib/convexAuth";
+import type { Doc, Id } from "../../_generated/dataModel";
+import { internalQuery, query } from "../../_generated/server";
+import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { lobbyForCleanupValidator } from "../../lib/returnValidators";
-import type { Id, Doc } from "../../_generated/dataModel";
 
 // ============================================================================
 // CONSTANTS
@@ -20,6 +20,13 @@ const RATING_DEFAULTS = {
 
 /**
  * List waiting lobbies (public lobbies only)
+ *
+ * Retrieves all public game lobbies that are waiting for an opponent.
+ * For ranked mode, filters by rating window to ensure balanced matches.
+ *
+ * @param mode - Optional filter by game mode (casual, ranked, or all)
+ * @param userRating - Optional user rating for ranked matchmaking (default: 1000)
+ * @returns Array of public lobbies with host info and game details
  */
 export const listWaitingLobbies = query({
   args: {
@@ -75,6 +82,11 @@ export const listWaitingLobbies = query({
 
 /**
  * Get user's active lobby (as host)
+ *
+ * Retrieves the authenticated user's current lobby where they are the host.
+ * Returns null if user has no active lobby.
+ *
+ * @returns The user's active lobby or null
  */
 export const getActiveLobby = query({
   args: {},
@@ -85,9 +97,7 @@ export const getActiveLobby = query({
     const lobby = await ctx.db
       .query("gameLobbies")
       .withIndex("by_host", (q) => q.eq("hostId", userId))
-      .filter((q) =>
-        q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active"))
-      )
+      .filter((q) => q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")))
       .first();
 
     return lobby;
@@ -96,10 +106,15 @@ export const getActiveLobby = query({
 
 /**
  * Get detailed lobby information
+ *
+ * Fetches complete details for a specific game lobby.
+ * Throws error if lobby doesn't exist or has been cancelled.
+ *
+ * @param lobbyId - The game lobby ID to fetch
+ * @returns Full lobby details
  */
 export const getLobbyDetails = query({
   args: {
-    
     lobbyId: v.id("gameLobbies"),
   },
   handler: async (ctx, args) => {
@@ -124,6 +139,11 @@ export const getLobbyDetails = query({
 
 /**
  * Get user's private lobby (to show join code)
+ *
+ * Retrieves the authenticated user's private lobby with join code.
+ * Used to display the join code for sharing with friends.
+ *
+ * @returns Private lobby details with join code, or null if no private lobby exists
  */
 export const getMyPrivateLobby = query({
   args: {},
@@ -133,12 +153,7 @@ export const getMyPrivateLobby = query({
     const lobby = await ctx.db
       .query("gameLobbies")
       .withIndex("by_host", (q) => q.eq("hostId", userId))
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("isPrivate"), true),
-          q.eq(q.field("status"), "waiting")
-        )
-      )
+      .filter((q) => q.and(q.eq(q.field("isPrivate"), true), q.eq(q.field("status"), "waiting")))
       .first();
 
     if (!lobby) {
@@ -161,6 +176,10 @@ export const getMyPrivateLobby = query({
  * - Only games in "active" status
  * - Sorted by createdAt (desc) for most recent matches first
  * - Includes spectator count
+ *
+ * @param mode - Optional filter by game mode (casual, ranked, or all)
+ * @param limit - Maximum number of games to return (default: 50)
+ * @returns Array of active public games with player info and spectator counts
  */
 export const listActiveGames = query({
   args: {
@@ -168,7 +187,7 @@ export const listActiveGames = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { mode, limit = 50 }) => {
-    let baseQuery = ctx.db
+    const baseQuery = ctx.db
       .query("gameLobbies")
       .withIndex("by_status", (q) => q.eq("status", "active"))
       .filter((q) =>
@@ -184,9 +203,8 @@ export const listActiveGames = query({
     const games = await baseQuery.collect();
 
     // Filter by mode if specified
-    const filteredGames = mode && mode !== "all"
-      ? games.filter((game) => game.mode === mode)
-      : games;
+    const filteredGames =
+      mode && mode !== "all" ? games.filter((game) => game.mode === mode) : games;
 
     // Sort by createdAt desc and take limit
     const sortedGames = filteredGames
@@ -213,6 +231,9 @@ export const listActiveGames = query({
  * - Only exposes public information visible to both players
  * - Hides private zones (hands, deck contents)
  * - Verifies game is public and allows spectators
+ *
+ * @param lobbyId - The game lobby ID to spectate
+ * @returns Public game state with visible zones only (board, graveyard, card counts)
  */
 export const getGameSpectatorView = query({
   args: {
@@ -250,6 +271,127 @@ export const getGameSpectatorView = query({
     const host = await ctx.db.get(lobby.hostId);
     const opponent = lobby.opponentId ? await ctx.db.get(lobby.opponentId) : null;
 
+    // Get game state for spectator view (public zones only)
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+      .first();
+
+    let boardState = null;
+    if (gameState) {
+      // Helper to get card data
+      const getCardData = async (cardId: Id<"cardDefinitions">) => {
+        return await ctx.db.get(cardId);
+      };
+
+      // Fetch host board
+      const hostBoardData = await Promise.all(
+        gameState.hostBoard.map(async (bc) => {
+          const card = await getCardData(bc.cardId);
+          if (!card) return null;
+          return {
+            ...card,
+            currentAttack: bc.attack,
+            currentDefense: bc.defense,
+            position: bc.position,
+            hasAttacked: bc.hasAttacked,
+            isFaceDown: bc.isFaceDown,
+          };
+        })
+      );
+
+      const hostSpellTrapData = await Promise.all(
+        gameState.hostSpellTrapZone.map(async (st) => {
+          const card = await getCardData(st.cardId);
+          if (!card) return null;
+          return {
+            ...card,
+            isFaceDown: st.isFaceDown,
+          };
+        })
+      );
+
+      const hostGraveyardData = await Promise.all(
+        gameState.hostGraveyard.map(async (cardId) => await getCardData(cardId))
+      );
+
+      // Fetch opponent board
+      const opponentBoardData = await Promise.all(
+        gameState.opponentBoard.map(async (bc) => {
+          const card = await getCardData(bc.cardId);
+          if (!card) return null;
+          return {
+            ...card,
+            currentAttack: bc.attack,
+            currentDefense: bc.defense,
+            position: bc.position,
+            hasAttacked: bc.hasAttacked,
+            isFaceDown: bc.isFaceDown,
+          };
+        })
+      );
+
+      const opponentSpellTrapData = await Promise.all(
+        gameState.opponentSpellTrapZone.map(async (st) => {
+          const card = await getCardData(st.cardId);
+          if (!card) return null;
+          return {
+            ...card,
+            isFaceDown: st.isFaceDown,
+          };
+        })
+      );
+
+      const opponentGraveyardData = await Promise.all(
+        gameState.opponentGraveyard.map(async (cardId) => await getCardData(cardId))
+      );
+
+      // Fetch field spells
+      let hostFieldSpell = null;
+      if (gameState.hostFieldSpell) {
+        const card = await getCardData(gameState.hostFieldSpell.cardId);
+        if (card) {
+          hostFieldSpell = {
+            ...card,
+            isActive: gameState.hostFieldSpell.isActive,
+          };
+        }
+      }
+
+      let opponentFieldSpell = null;
+      if (gameState.opponentFieldSpell) {
+        const card = await getCardData(gameState.opponentFieldSpell.cardId);
+        if (card) {
+          opponentFieldSpell = {
+            ...card,
+            isActive: gameState.opponentFieldSpell.isActive,
+          };
+        }
+      }
+
+      boardState = {
+        currentPhase: gameState.currentPhase || "draw",
+
+        // Host state (public zones only)
+        hostLifePoints: gameState.hostLifePoints,
+        hostHandCount: gameState.hostHand.length,
+        hostDeckCount: gameState.hostDeck.length,
+        hostBoard: hostBoardData.filter(Boolean),
+        hostSpellTrapZone: hostSpellTrapData.filter(Boolean),
+        hostGraveyard: hostGraveyardData.filter((c) => c !== null),
+        hostFieldSpell,
+
+        // Opponent state (public zones only)
+        opponentLifePoints: gameState.opponentLifePoints,
+        opponentHandCount: gameState.opponentHand.length,
+        opponentDeckCount: gameState.opponentDeck.length,
+        opponentBoard: opponentBoardData.filter(Boolean),
+        opponentSpellTrapZone: opponentSpellTrapData.filter(Boolean),
+        opponentGraveyard: opponentGraveyardData.filter((c) => c !== null),
+        opponentFieldSpell,
+      };
+    }
+
     // Return sanitized game state
     return {
       lobbyId: lobby._id,
@@ -262,11 +404,13 @@ export const getGameSpectatorView = query({
         rank: lobby.hostRank,
         rating: lobby.hostRating,
       },
-      opponent: opponent ? {
-        userId: lobby.opponentId!,
-        username: lobby.opponentUsername!,
-        rank: lobby.opponentRank,
-      } : null,
+      opponent: opponent
+        ? {
+            userId: lobby.opponentId!,
+            username: lobby.opponentUsername!,
+            rank: lobby.opponentRank,
+          }
+        : null,
 
       // Game state (public info only)
       mode: lobby.mode,
@@ -274,6 +418,9 @@ export const getGameSpectatorView = query({
       turnNumber: lobby.turnNumber || 0,
       currentTurnPlayerId: lobby.currentTurnPlayerId,
       turnStartedAt: lobby.turnStartedAt,
+
+      // Board state (visible zones only)
+      boardState,
 
       // Metadata
       status: lobby.status,
@@ -285,6 +432,12 @@ export const getGameSpectatorView = query({
 
 /**
  * Check if user has an active game (for reconnection on login/mount)
+ *
+ * Checks if the authenticated user is currently in an active game.
+ * Used on login or page mount to enable reconnection to in-progress games.
+ * Returns null if no active game or if game is stale (>5 minutes since last move).
+ *
+ * @returns Active game reconnection info or null
  */
 export const checkForActiveGame = query({
   args: {},
@@ -296,10 +449,7 @@ export const checkForActiveGame = query({
       .query("gameLobbies")
       .filter((q) =>
         q.and(
-          q.or(
-            q.eq(q.field("hostId"), userId),
-            q.eq(q.field("opponentId"), userId)
-          ),
+          q.or(q.eq(q.field("hostId"), userId), q.eq(q.field("opponentId"), userId)),
           q.eq(q.field("status"), "active")
         )
       )
@@ -324,9 +474,7 @@ export const checkForActiveGame = query({
       lobbyId: game._id,
       gameId: game.gameId!,
       isHost: game.hostId === userId,
-      opponentUsername: game.hostId === userId
-        ? game.opponentUsername
-        : game.hostUsername,
+      opponentUsername: game.hostId === userId ? game.opponentUsername : game.hostUsername,
       turnNumber: game.turnNumber,
       isYourTurn: game.currentTurnPlayerId === userId,
       lastMoveAt: lastMove,
@@ -338,11 +486,13 @@ export const checkForActiveGame = query({
  * Get available actions for current player
  *
  * Returns what actions the authenticated player can take right now.
- * Used by agents to determine valid moves.
+ * Used by agents to determine valid moves and by UI to enable/disable action buttons.
+ *
+ * @param lobbyId - The game lobby ID
+ * @returns Current phase, turn status, and array of available action names
  */
 export const getAvailableActions = query({
   args: {
-    
     lobbyId: v.id("gameLobbies"),
   },
   handler: async (ctx, args) => {
@@ -423,10 +573,16 @@ export const getAvailableActions = query({
 
 /**
  * Get detailed game state for player (sanitized for security)
+ *
+ * Retrieves full game state for the authenticated player including their hand and deck count.
+ * Opponent's hand and deck contents are hidden for security.
+ * Returns null if game is not active (e.g., after forfeit/completion).
+ *
+ * @param lobbyId - The game lobby ID
+ * @returns Complete game state with player's private zones and opponent's public zones
  */
 export const getGameStateForPlayer = query({
   args: {
-    
     lobbyId: v.id("gameLobbies"),
   },
   handler: async (ctx, args) => {
@@ -447,11 +603,10 @@ export const getGameStateForPlayer = query({
       });
     }
 
-    // Verify game is active
+    // Return null if game is not active (e.g., after forfeit/completion)
+    // This allows the UI to handle the end-of-game state gracefully
     if (lobby.status !== "active") {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Game is not active",
-      });
+      return null;
     }
 
     // Get game state
@@ -470,7 +625,9 @@ export const getGameStateForPlayer = query({
     const isHost = lobby.hostId === userId;
 
     // Helper: Fetch card definition with all details
-    const getCardData = async (cardId: Id<"cardDefinitions">): Promise<Doc<"cardDefinitions"> | null> => {
+    const getCardData = async (
+      cardId: Id<"cardDefinitions">
+    ): Promise<Doc<"cardDefinitions"> | null> => {
       const card = await ctx.db.get(cardId);
       return card;
     };
@@ -523,7 +680,9 @@ export const getGameStateForPlayer = query({
     const opponentBoard = opponentBoardData.filter(Boolean);
 
     // Fetch card data for spell/trap zones
-    const mySpellTrapZoneRaw = isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
+    const mySpellTrapZoneRaw = isHost
+      ? gameState.hostSpellTrapZone
+      : gameState.opponentSpellTrapZone;
     const mySpellTrapData = await Promise.all(
       mySpellTrapZoneRaw.map(async (stCard) => {
         const cardData = await getCardData(stCard.cardId);
@@ -537,7 +696,9 @@ export const getGameStateForPlayer = query({
     );
     const mySpellTrapZone = mySpellTrapData.filter(Boolean);
 
-    const opponentSpellTrapZoneRaw = isHost ? gameState.opponentSpellTrapZone : gameState.hostSpellTrapZone;
+    const opponentSpellTrapZoneRaw = isHost
+      ? gameState.opponentSpellTrapZone
+      : gameState.hostSpellTrapZone;
     const opponentSpellTrapData = await Promise.all(
       opponentSpellTrapZoneRaw.map(async (stCard) => {
         const cardData = await getCardData(stCard.cardId);
@@ -568,7 +729,34 @@ export const getGameStateForPlayer = query({
         return cardData;
       })
     );
-    const opponentGraveyard = opponentGraveyardData.filter((c): c is Doc<"cardDefinitions"> => c !== null);
+    const opponentGraveyard = opponentGraveyardData.filter(
+      (c): c is Doc<"cardDefinitions"> => c !== null
+    );
+
+    // Fetch field spell data
+    const myFieldSpellRaw = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
+    let myFieldSpell = null;
+    if (myFieldSpellRaw) {
+      const fieldCard = await getCardData(myFieldSpellRaw.cardId);
+      if (fieldCard) {
+        myFieldSpell = {
+          ...fieldCard,
+          isActive: myFieldSpellRaw.isActive,
+        };
+      }
+    }
+
+    const opponentFieldSpellRaw = isHost ? gameState.opponentFieldSpell : gameState.hostFieldSpell;
+    let opponentFieldSpell = null;
+    if (opponentFieldSpellRaw) {
+      const fieldCard = await getCardData(opponentFieldSpellRaw.cardId);
+      if (fieldCard) {
+        opponentFieldSpell = {
+          ...fieldCard,
+          isActive: opponentFieldSpellRaw.isActive,
+        };
+      }
+    }
 
     // Return sanitized state (hide opponent's hand and deck) with full card data
     return {
@@ -590,12 +778,16 @@ export const getGameStateForPlayer = query({
       currentPhase: gameState.currentPhase || "draw",
       currentChain: gameState.currentChain || [],
       currentPriorityPlayer: gameState.currentPriorityPlayer,
-      myNormalSummonedThisTurn: isHost ? gameState.hostNormalSummonedThisTurn || false : gameState.opponentNormalSummonedThisTurn || false,
+      pendingAction: gameState.pendingAction, // For attack/summon response windows
+      myNormalSummonedThisTurn: isHost
+        ? gameState.hostNormalSummonedThisTurn || false
+        : gameState.opponentNormalSummonedThisTurn || false,
 
       // Player's state (full visibility with card data)
       myHand,
       myBoard,
       mySpellTrapZone,
+      myFieldSpell,
       myDeckCount: isHost ? gameState.hostDeck.length : gameState.opponentDeck.length,
       myGraveyard,
       myLifePoints: isHost ? gameState.hostLifePoints : gameState.opponentLifePoints,
@@ -605,6 +797,7 @@ export const getGameStateForPlayer = query({
       opponentHandCount: isHost ? gameState.opponentHand.length : gameState.hostHand.length,
       opponentBoard,
       opponentSpellTrapZone,
+      opponentFieldSpell,
       opponentDeckCount: isHost ? gameState.opponentDeck.length : gameState.hostDeck.length,
       opponentGraveyard,
       opponentLifePoints: isHost ? gameState.opponentLifePoints : gameState.hostLifePoints,
@@ -628,7 +821,7 @@ export const getActiveLobbiesForCleanup = internalQuery({
       .withIndex("by_status", (q) => q.eq("status", "active"))
       .collect();
 
-    return lobbies.map(lobby => ({
+    return lobbies.map((lobby) => ({
       _id: lobby._id,
       createdAt: lobby.createdAt,
       lastMoveAt: lobby.lastMoveAt,
@@ -650,7 +843,7 @@ export const getWaitingLobbiesForCleanup = internalQuery({
       .withIndex("by_status", (q) => q.eq("status", "waiting"))
       .collect();
 
-    return lobbies.map(lobby => ({
+    return lobbies.map((lobby) => ({
       _id: lobby._id,
       createdAt: lobby.createdAt,
       lastMoveAt: lobby.lastMoveAt,

@@ -10,8 +10,16 @@ export { normalSummon, setMonster, flipSummon } from "./summons";
 // Positions module (Change Position)
 export { changePosition } from "./positions";
 
-// Spells & Traps module (Set Spell/Trap, Activate Spell, Activate Trap)
-export { setSpellTrap, activateSpell, activateTrap } from "./spellsTraps";
+// Spells & Traps module (Set Spell/Trap, Activate Spell, Activate Trap, Complete Search)
+export { setSpellTrap, activateSpell, activateTrap, completeSearchEffect } from "./spellsTraps";
+
+// Selection-based Effects (Special Summon, Destruction Targets)
+export {
+  getGraveyardSummonTargets,
+  getBanishedSummonTargets,
+  completeSpecialSummon,
+  getDestructionTargets,
+} from "./selectionEffects";
 
 // Turns module (End Turn)
 export { endTurn } from "./turns";

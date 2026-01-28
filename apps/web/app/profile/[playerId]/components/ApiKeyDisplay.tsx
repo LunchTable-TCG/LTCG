@@ -1,9 +1,9 @@
 "use client";
 
-import { AlertTriangle, Check, Copy, Key } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AlertTriangle, Check, Copy, Key } from "lucide-react";
+import { useState } from "react";
 
 interface ApiKeyDisplayProps {
   apiKey: string;

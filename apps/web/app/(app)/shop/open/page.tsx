@@ -1,7 +1,12 @@
 "use client";
 
+import { ListingDialog } from "@/components/marketplace/ListingDialog";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
+import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -16,21 +21,16 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 
 interface Card {
-  id: string;
+  cardDefinitionId: Id<"cardDefinitions">;
+  playerCardId?: Id<"playerCards">;
   name: string;
   rarity: Rarity;
-  type: "creature" | "spell" | "trap";
-  element: string;
-  attack?: number;
-  defense?: number;
-  isNew: boolean;
+  isNew?: boolean;
 }
 
 const RARITY_CONFIG: Record<Rarity, { color: string; glow: string; bg: string; label: string }> = {
@@ -66,73 +66,61 @@ const RARITY_CONFIG: Record<Rarity, { color: string; glow: string; bg: string; l
   },
 };
 
-// Mock data - replace with actual pack opening logic
-const generateMockCards = (count: number): Card[] => {
-  const names = [
-    "Flame Drake",
-    "Water Sprite",
-    "Shadow Knight",
-    "Crystal Golem",
-    "Thunder Phoenix",
-    "Forest Guardian",
-    "Ice Wyrm",
-    "Storm Elemental",
-  ] as const;
-  const elements = [
-    "Fire",
-    "Water",
-    "Shadow",
-    "Earth",
-    "Lightning",
-    "Nature",
-    "Ice",
-    "Wind",
-  ] as const;
-  const rarities: Rarity[] = [
-    "common",
-    "common",
-    "common",
-    "uncommon",
-    "uncommon",
-    "rare",
-    "epic",
-    "legendary",
-  ];
-  const types: Card["type"][] = ["creature", "spell", "trap"];
-
-  return Array.from({ length: count }, (_, i) => ({
-    id: `card-${i}-${Date.now()}`,
-    name: names[Math.floor(Math.random() * names.length)] as string,
-    rarity: rarities[Math.floor(Math.random() * rarities.length)] as Rarity,
-    type: types[Math.floor(Math.random() * types.length)] as Card["type"],
-    element: elements[Math.floor(Math.random() * elements.length)] as string,
-    attack: Math.floor(Math.random() * 3000) + 500,
-    defense: Math.floor(Math.random() * 2500) + 300,
-    isNew: Math.random() > 0.5,
-  }));
-};
-
 type OpeningPhase = "ready" | "opening" | "revealing" | "complete";
 
 export default function PackOpeningPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const packType = searchParams.get("pack") || "starter";
+  const openingType = searchParams.get("type") || "pack";
+  const dataParam = searchParams.get("data");
 
   const { isAuthenticated } = useAuth();
   const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const createListingMutation = useMutation(api.marketplace.createListing);
 
   const [phase, setPhase] = useState<OpeningPhase>("ready");
   const [cards, setCards] = useState<Card[]>([]);
+  const [openingData, setOpeningData] = useState<any>(null);
   const [_currentCardIndex, _setCurrentCardIndex] = useState(0);
   const [revealedCards, setRevealedCards] = useState<Set<number>>(new Set());
-  const [selectedForListing, setSelectedForListing] = useState<Set<string>>(new Set());
+  const [selectedForListing, setSelectedForListing] = useState<Set<Id<"cardDefinitions">>>(
+    new Set()
+  );
+  const [isListingCards, setIsListingCards] = useState(false);
+  const [listingDialogCard, setListingDialogCard] = useState<Card | null>(null);
+  const [currentListingIndex, setCurrentListingIndex] = useState(0);
+  const selectedCards = Array.from(selectedForListing)
+    .map((id) => cards.find((c) => c.cardDefinitionId === id))
+    .filter((c): c is Card => c !== null);
 
-  const packInfo = {
-    starter: { name: "Starter Pack", cardCount: 5 },
-    booster: { name: "Booster Pack", cardCount: 8 },
-    premium: { name: "Premium Pack", cardCount: 10 },
-  }[packType] || { name: "Card Pack", cardCount: 5 };
+  // Parse opening data from URL
+  useEffect(() => {
+    if (dataParam) {
+      try {
+        const decoded = JSON.parse(decodeURIComponent(dataParam));
+        setOpeningData(decoded);
+        // Extract cards from the purchase result
+        if (decoded.cardsReceived) {
+          setCards(decoded.cardsReceived);
+        }
+      } catch (error) {
+        console.error("Failed to parse opening data:", error);
+        toast.error("Invalid opening data");
+        router.push("/shop");
+      }
+    } else {
+      // No data provided, redirect back to shop
+      toast.error("No opening data found");
+      router.push("/shop");
+    }
+  }, [dataParam, router]);
+
+  const packInfo = openingData
+    ? {
+        name: openingData.productName || (openingType === "box" ? "Card Box" : "Card Pack"),
+        cardCount: cards.length,
+      }
+    : { name: "Card Pack", cardCount: 0 };
 
   const handleOpenPack = useCallback(async () => {
     setPhase("opening");
@@ -140,11 +128,9 @@ export default function PackOpeningPage() {
     // Simulate pack opening animation delay
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // Generate cards
-    const newCards = generateMockCards(packInfo.cardCount);
-    setCards(newCards);
+    // Cards are already loaded from openingData
     setPhase("revealing");
-  }, [packInfo.cardCount]);
+  }, []);
 
   const handleRevealCard = useCallback((index: number) => {
     setRevealedCards((prev) => new Set([...prev, index]));
@@ -159,7 +145,7 @@ export default function PackOpeningPage() {
     setPhase("complete");
   }, []);
 
-  const toggleListingSelection = useCallback((cardId: string) => {
+  const toggleListingSelection = useCallback((cardId: Id<"cardDefinitions">) => {
     setSelectedForListing((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(cardId)) {
@@ -172,10 +158,63 @@ export default function PackOpeningPage() {
   }, []);
 
   const handleListSelected = useCallback(() => {
-    // TODO: Implement marketplace listing
-    console.log("Listing cards:", Array.from(selectedForListing));
-    router.push("/shop?tab=marketplace");
-  }, [selectedForListing, router]);
+    if (!isAuthenticated || selectedForListing.size === 0) return;
+
+    // Start listing flow with first card
+    const firstCard = selectedCards[0];
+    if (firstCard) {
+      setCurrentListingIndex(0);
+      setListingDialogCard(firstCard);
+    }
+  }, [selectedForListing, isAuthenticated, selectedCards]);
+
+  const handleListingDialogConfirm = useCallback(
+    async (listingType: "fixed" | "auction", price: number, duration?: number) => {
+      if (!listingDialogCard) return;
+
+      setIsListingCards(true);
+      try {
+        // Create listing for current card
+        await createListingMutation({
+          cardDefinitionId: listingDialogCard.cardDefinitionId,
+          quantity: 1,
+          listingType,
+          price,
+          duration,
+        });
+
+        // Move to next card or finish
+        const nextIndex = currentListingIndex + 1;
+        if (nextIndex < selectedCards.length) {
+          setCurrentListingIndex(nextIndex);
+          setListingDialogCard(selectedCards[nextIndex] || null);
+          setIsListingCards(false);
+        } else {
+          // All cards listed
+          toast.success(`Successfully listed ${selectedForListing.size} card(s) on marketplace`);
+          setListingDialogCard(null);
+          router.push("/shop");
+        }
+      } catch (error: any) {
+        toast.error(error.message || "Failed to list card");
+        setIsListingCards(false);
+      }
+    },
+    [
+      listingDialogCard,
+      currentListingIndex,
+      selectedCards,
+      createListingMutation,
+      selectedForListing.size,
+      router,
+    ]
+  );
+
+  const handleListingDialogClose = useCallback(() => {
+    setListingDialogCard(null);
+    setCurrentListingIndex(0);
+    setIsListingCards(false);
+  }, []);
 
   const allRevealed = revealedCards.size === cards.length && cards.length > 0;
 
@@ -187,7 +226,7 @@ export default function PackOpeningPage() {
     }
   }, [allRevealed, phase, handleComplete]);
 
-  if (!currentUser) {
+  if (!currentUser || !openingData || cards.length === 0) {
     return (
       <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
@@ -273,7 +312,7 @@ export default function PackOpeningPage() {
                 }}
                 transition={{
                   duration: 3,
-                  repeat: Infinity,
+                  repeat: Number.POSITIVE_INFINITY,
                   ease: "easeInOut",
                 }}
                 className="relative mb-8"
@@ -287,14 +326,18 @@ export default function PackOpeningPage() {
               <h1 className="text-3xl font-black text-[#e8e0d5] mb-2 uppercase tracking-tight">
                 {packInfo.name}
               </h1>
-              <p className="text-[#a89f94] mb-8">Contains {packInfo.cardCount} cards</p>
+              <p className="text-[#a89f94] mb-8">
+                {openingType === "box"
+                  ? `${openingData.packsOpened} packs with ${packInfo.cardCount} total cards`
+                  : `Contains ${packInfo.cardCount} cards`}
+              </p>
 
               <Button
                 onClick={handleOpenPack}
                 className="bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white font-bold px-12 py-6 text-lg"
               >
                 <Sparkles className="w-5 h-5 mr-2" />
-                Open Pack
+                {openingType === "box" ? "Open Box" : "Open Pack"}
               </Button>
             </motion.div>
           )}
@@ -339,7 +382,7 @@ export default function PackOpeningPage() {
             >
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-black text-[#e8e0d5] mb-2 uppercase tracking-tight">
-                  Your Cards
+                  {openingType === "box" ? `Your ${openingData.packsOpened} Packs` : "Your Cards"}
                 </h2>
                 <p className="text-[#a89f94]">Click each card to reveal, or reveal all at once</p>
               </div>
@@ -351,7 +394,7 @@ export default function PackOpeningPage() {
 
                   return (
                     <motion.div
-                      key={card.id}
+                      key={`${card.cardDefinitionId}-${index}`}
                       initial={{ opacity: 0, y: 50 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
@@ -406,7 +449,11 @@ export default function PackOpeningPage() {
                           <div className="w-full h-full bg-linear-to-br from-[#3d2b1f] to-[#1a1614] border-2 border-[#d4af37]/30 flex items-center justify-center">
                             <motion.div
                               animate={{ rotate: 360 }}
-                              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                              transition={{
+                                duration: 3,
+                                repeat: Number.POSITIVE_INFINITY,
+                                ease: "linear",
+                              }}
                             >
                               <Sparkles className="w-8 h-8 text-[#d4af37]/50" />
                             </motion.div>
@@ -456,14 +503,14 @@ export default function PackOpeningPage() {
 
               {/* Card Summary Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
-                {cards.map((card) => {
+                {cards.map((card, idx) => {
                   const config = RARITY_CONFIG[card.rarity];
-                  const isSelected = selectedForListing.has(card.id);
+                  const isSelected = selectedForListing.has(card.cardDefinitionId);
 
                   return (
                     <motion.button
-                      key={card.id}
-                      onClick={() => toggleListingSelection(card.id)}
+                      key={`${card.cardDefinitionId}-${idx}`}
+                      onClick={() => toggleListingSelection(card.cardDefinitionId)}
                       className={cn(
                         "relative aspect-3/4 rounded-xl overflow-hidden transition-all",
                         isSelected ? "ring-2 ring-[#d4af37] scale-95" : "hover:scale-105",
@@ -519,17 +566,28 @@ export default function PackOpeningPage() {
                 {selectedForListing.size > 0 && (
                   <Button
                     onClick={handleListSelected}
+                    disabled={isListingCards}
                     className="w-full sm:w-auto bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614] font-bold px-8"
                   >
-                    <Store className="w-4 h-4 mr-2" />
-                    List {selectedForListing.size} Card{selectedForListing.size > 1 ? "s" : ""} on
-                    Marketplace
+                    {isListingCards ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Listing...
+                      </>
+                    ) : (
+                      <>
+                        <Store className="w-4 h-4 mr-2" />
+                        List {selectedForListing.size} Card{selectedForListing.size > 1 ? "s" : ""}{" "}
+                        on Marketplace
+                      </>
+                    )}
                   </Button>
                 )}
                 <Button
                   onClick={() => router.push("/binder")}
                   variant="outline"
                   className="w-full sm:w-auto border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5] px-8"
+                  disabled={isListingCards}
                 >
                   <ArrowRight className="w-4 h-4 mr-2" />
                   Go to Collection
@@ -538,6 +596,7 @@ export default function PackOpeningPage() {
                   onClick={() => router.push("/shop")}
                   variant="ghost"
                   className="w-full sm:w-auto text-[#a89f94] hover:text-[#e8e0d5]"
+                  disabled={isListingCards}
                 >
                   Open Another Pack
                 </Button>
@@ -545,7 +604,9 @@ export default function PackOpeningPage() {
 
               {/* Stats Summary */}
               <div className="mt-12 p-6 rounded-xl bg-black/40 border border-[#3d2b1f]">
-                <h3 className="text-lg font-bold text-[#e8e0d5] mb-4">Pack Summary</h3>
+                <h3 className="text-lg font-bold text-[#e8e0d5] mb-4">
+                  {openingType === "box" ? "Box Summary" : "Pack Summary"}
+                </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                   {(["common", "uncommon", "rare", "epic", "legendary"] as Rarity[]).map(
                     (rarity) => {
@@ -560,11 +621,35 @@ export default function PackOpeningPage() {
                     }
                   )}
                 </div>
+                {openingType === "box" && openingData.bonusCards > 0 && (
+                  <div className="mt-4 pt-4 border-t border-[#3d2b1f] text-center">
+                    <p className="text-sm text-[#d4af37]">
+                      <Sparkles className="w-4 h-4 inline mr-1" />+{openingData.bonusCards} Bonus
+                      Cards!
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Listing Dialog */}
+      {listingDialogCard && (
+        <ListingDialog
+          isOpen={!!listingDialogCard}
+          onClose={handleListingDialogClose}
+          card={listingDialogCard}
+          onConfirm={handleListingDialogConfirm}
+          isSubmitting={isListingCards}
+          progressText={
+            selectedCards.length > 1
+              ? `Listing ${currentListingIndex + 1} of ${selectedCards.length}`
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }

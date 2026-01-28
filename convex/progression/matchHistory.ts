@@ -14,6 +14,13 @@ type MatchResult = "victory" | "defeat";
 
 /**
  * Get match history for a user
+ *
+ * Retrieves the authenticated user's match history, including both wins and losses.
+ * Results are enriched with opponent information, rating changes, and XP gained.
+ * Returns matches sorted by completion time (most recent first).
+ *
+ * @param limit - Maximum number of matches to return (default: 50)
+ * @returns Array of match history entries with result, opponent, rating change, and timestamp
  */
 export const getMatchHistory = query({
   args: {
@@ -60,7 +67,7 @@ export const getMatchHistory = query({
           ratingChange: isWinner
             ? match.winnerRatingAfter - match.winnerRatingBefore
             : match.loserRatingAfter - match.loserRatingBefore,
-          xpGained: isWinner ? (match.xpAwarded || 0) : 0,
+          xpGained: isWinner ? match.xpAwarded || 0 : 0,
           timestamp: match.completedAt,
         };
       })

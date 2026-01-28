@@ -1,28 +1,25 @@
 "use client";
 
-import {
-  Award,
-  CheckCircle2,
-  Clock,
-  Gift,
-  Loader2,
-  Sparkles,
-  Star,
-  Trophy,
-} from "lucide-react";
-import { useProfile, useQuests, useAchievements } from "@/hooks";
 import { Progress } from "@/components/ui/progress";
+import { useAchievements, useProfile, useQuests } from "@/hooks";
 import { cn } from "@/lib/utils";
+import { Award, CheckCircle2, Clock, Gift, Loader2, Sparkles, Star, Trophy } from "lucide-react";
 import { useState } from "react";
 
 export default function QuestsPage() {
   const { profile, isLoading } = useProfile();
-  const { quests, activeQuests, completedQuests, claimQuestReward, isLoading: questsLoading } = useQuests();
+  const {
+    quests,
+    activeQuests,
+    completedQuests,
+    claimQuestReward,
+    isLoading: questsLoading,
+  } = useQuests();
   const {
     achievements,
     unlockedAchievements,
     completionPercent,
-    isLoading: achievementsLoading
+    isLoading: achievementsLoading,
   } = useAchievements();
 
   const [activeTab, setActiveTab] = useState<"quests" | "achievements">("quests");
@@ -103,7 +100,11 @@ export default function QuestsPage() {
             <Star className="w-8 h-8 text-[#d4af37] mb-2" />
             <p className="text-2xl font-black text-[#e8e0d5]">
               {((profile as any).totalWins || 0) > 0
-                ? Math.round((((profile as any).totalWins || 0) / (((profile as any).totalWins || 0) + ((profile as any).totalLosses || 0))) * 100)
+                ? Math.round(
+                    (((profile as any).totalWins || 0) /
+                      (((profile as any).totalWins || 0) + ((profile as any).totalLosses || 0))) *
+                      100
+                  )
                 : 0}
               %
             </p>
@@ -173,7 +174,10 @@ export default function QuestsPage() {
                   <div className="space-y-4">
                     <h3 className="text-lg font-bold text-[#e8e0d5]">Active Quests</h3>
                     {activeQuests.map((quest: (typeof activeQuests)[number]) => {
-                      const progress = Math.min((quest.currentProgress / quest.targetValue) * 100, 100);
+                      const progress = Math.min(
+                        (quest.currentProgress / quest.targetValue) * 100,
+                        100
+                      );
                       const isExpiring = quest.expiresAt && quest.expiresAt - Date.now() < 3600000; // 1 hour
 
                       return (
@@ -215,9 +219,13 @@ export default function QuestsPage() {
                               {quest.expiresAt && quest.expiresAt > 0 && (
                                 <div className="flex items-center gap-1 text-xs">
                                   <Clock className="w-3 h-3" />
-                                  <span className={cn(isExpiring ? "text-red-400" : "text-[#a89f94]")}>
-                                    Expires in {Math.floor((quest.expiresAt - Date.now()) / 3600000)}h{" "}
-                                    {Math.floor(((quest.expiresAt - Date.now()) % 3600000) / 60000)}m
+                                  <span
+                                    className={cn(isExpiring ? "text-red-400" : "text-[#a89f94]")}
+                                  >
+                                    Expires in{" "}
+                                    {Math.floor((quest.expiresAt - Date.now()) / 3600000)}h{" "}
+                                    {Math.floor(((quest.expiresAt - Date.now()) % 3600000) / 60000)}
+                                    m
                                   </span>
                                 </div>
                               )}
@@ -299,9 +307,7 @@ export default function QuestsPage() {
               <div className="text-center py-16 rounded-xl bg-black/40 border border-[#3d2b1f]">
                 <Award className="w-16 h-16 text-[#a89f94]/50 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-[#e8e0d5] mb-2">No Achievements Yet</h3>
-                <p className="text-[#a89f94]">
-                  Start playing to unlock achievements!
-                </p>
+                <p className="text-[#a89f94]">Start playing to unlock achievements!</p>
               </div>
             ) : (
               <>
@@ -320,7 +326,10 @@ export default function QuestsPage() {
                 {/* Achievement List */}
                 <div className="grid gap-4 md:grid-cols-2">
                   {achievements.map((achievement: (typeof achievements)[number]) => {
-                    const progress = Math.min((achievement.currentProgress / achievement.targetValue) * 100, 100);
+                    const progress = Math.min(
+                      (achievement.currentProgress / achievement.targetValue) * 100,
+                      100
+                    );
 
                     return (
                       <div
@@ -337,9 +346,7 @@ export default function QuestsPage() {
                           <div
                             className={cn(
                               "w-12 h-12 rounded-lg flex items-center justify-center",
-                              achievement.isUnlocked
-                                ? "bg-[#d4af37]/20"
-                                : "bg-black/30"
+                              achievement.isUnlocked ? "bg-[#d4af37]/20" : "bg-black/30"
                             )}
                           >
                             {achievement.isUnlocked ? (
@@ -386,13 +393,19 @@ export default function QuestsPage() {
                             {achievement.rewards && (
                               <div className="flex items-center gap-3 text-xs">
                                 {achievement.rewards.gold && (
-                                  <span className="text-[#d4af37]">+{achievement.rewards.gold} Gold</span>
+                                  <span className="text-[#d4af37]">
+                                    +{achievement.rewards.gold} Gold
+                                  </span>
                                 )}
                                 {achievement.rewards.xp && (
-                                  <span className="text-purple-400">+{achievement.rewards.xp} XP</span>
+                                  <span className="text-purple-400">
+                                    +{achievement.rewards.xp} XP
+                                  </span>
                                 )}
                                 {achievement.rewards.gems && (
-                                  <span className="text-blue-400">+{achievement.rewards.gems} Gems</span>
+                                  <span className="text-blue-400">
+                                    +{achievement.rewards.gems} Gems
+                                  </span>
                                 )}
                               </div>
                             )}

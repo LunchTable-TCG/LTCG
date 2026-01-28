@@ -7,7 +7,15 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "include": ["src/**", "app/**", "apps/admin/src/**", "convex/**", "!convex/_generated"]
+    "include": [
+      "src/**",
+      "app/**",
+      "apps/admin/src/**",
+      "apps/web/src/**",
+      "apps/web/app/**",
+      "convex/**"
+    ],
+    "ignore": ["**/node_modules/**", "**/.next/**", "**/dist/**", "convex/_generated/**"]
   },
   "formatter": {
     "enabled": true,

@@ -10,14 +10,25 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query, internalMutation, internalQuery, internalAction } from "../_generated/server";
-import type { MutationCtx, ActionCtx } from "../_generated/server";
-import type { Id, Doc } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
-import { requireAuthQuery, requireAuthMutation } from "../lib/convexAuth";
-import { ErrorCode, createError } from "../lib/errorCodes";
-import { matchmakingStatusValidator, queueStatsValidator, successResponseValidator } from "../lib/returnValidators";
+import type { Doc, Id } from "../_generated/dataModel";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "../_generated/server";
+import type { ActionCtx, MutationCtx } from "../_generated/server";
 import { recordGameStartHelper } from "../gameplay/gameEvents";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
+import { ErrorCode, createError } from "../lib/errorCodes";
+import { checkRateLimitWrapper } from "../lib/rateLimit";
+import {
+  matchmakingStatusValidator,
+  queueStatsValidator,
+  successResponseValidator,
+} from "../lib/returnValidators";
 
 // ============================================================================
 // CONSTANTS
@@ -124,10 +135,9 @@ export const getQueueStats = query({
 export const joinQueue = mutation({
   args: {
     mode: v.union(v.literal("ranked"), v.literal("casual")),
-    deckArchetype: v.string(),
   },
   returns: successResponseValidator,
-  handler: async (ctx, { mode, deckArchetype }) => {
+  handler: async (ctx, { mode }) => {
     const { userId, username } = await requireAuthMutation(ctx);
 
     // Check if already in queue
@@ -144,20 +154,34 @@ export const joinQueue = mutation({
     const activeLobby = await ctx.db
       .query("gameLobbies")
       .withIndex("by_host", (q) => q.eq("hostId", userId))
-      .filter((q) =>
-        q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active"))
-      )
+      .filter((q) => q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")))
       .first();
 
     if (activeLobby) {
       throw createError(ErrorCode.GAME_ALREADY_IN_GAME);
     }
 
-    // Get user's rating
+    // Get user and active deck
     const user = await ctx.db.get(userId);
     if (!user) {
       throw createError(ErrorCode.NOT_FOUND_USER);
     }
+
+    // Get user's active deck archetype
+    if (!user.activeDeckId) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "No active deck selected. Please select a deck in your Binder",
+      });
+    }
+
+    const deck = await ctx.db.get(user.activeDeckId);
+    if (!deck || deck.userId !== userId || !deck.isActive) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Your deck is no longer valid. Please select a new deck in your Binder",
+      });
+    }
+
+    const deckArchetype = deck.deckArchetype || "fire"; // Default to fire if not set
 
     const rating = mode === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
 
@@ -188,6 +212,10 @@ export const leaveQueue = mutation({
   returns: successResponseValidator,
   handler: async (ctx) => {
     const { userId } = await requireAuthMutation(ctx);
+
+    // SECURITY: Rate limit queue operations to prevent spam
+    // Max 20 actions per minute per user (configured in lib/rateLimit.ts)
+    await checkRateLimitWrapper(ctx, "LOBBY_ACTION", userId);
 
     const queueEntry = await ctx.db
       .query("matchmakingQueue")
@@ -339,8 +367,10 @@ export const createMatchedGame = internalMutation({
     const now = Date.now();
     const goesFirst = Math.random() < 0.5 ? player1Id : player2Id;
 
-    const player1Rating = mode === "ranked" ? player1.rankedElo || 1000 : player1.casualRating || 1000;
-    const player2Rating = mode === "ranked" ? player2.rankedElo || 1000 : player2.casualRating || 1000;
+    const player1Rating =
+      mode === "ranked" ? player1.rankedElo || 1000 : player1.casualRating || 1000;
+    const player2Rating =
+      mode === "ranked" ? player2.rankedElo || 1000 : player2.casualRating || 1000;
 
     const lobbyId = await ctx.db.insert("gameLobbies", {
       hostId: player1Id,

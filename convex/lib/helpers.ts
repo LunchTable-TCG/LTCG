@@ -5,16 +5,11 @@
  * Includes card inventory management, pack opening, and rarity logic.
  */
 
+import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import type { Id, Doc } from "../_generated/dataModel";
-import { RARITY_WEIGHTS, XP_SYSTEM, ELO_SYSTEM } from "./constants";
-import type {
-  Rarity,
-  Archetype,
-  CardDefinition,
-  PackConfig,
-  CardResult,
-} from "./types";
+import { ELO_SYSTEM, RARITY_WEIGHTS, XP_SYSTEM } from "./constants";
+import { ErrorCode, createError } from "./errorCodes";
+import type { Archetype, CardDefinition, CardResult, PackConfig, Rarity } from "./types";
 
 // Re-export types for backwards compatibility
 export type { Rarity, Archetype, PackConfig, CardResult };
@@ -33,9 +28,81 @@ export function getDisplayUsername(user: Doc<"users">): string {
 }
 
 /**
+ * Map archetype name to element for frontend compatibility
+ *
+ * Converts both long-form archetype names (infernal_dragons) and
+ * short-form element names (fire) to standardized element types.
+ *
+ * @param archetype - Archetype identifier (e.g., "infernal_dragons", "fire")
+ * @returns Element type for frontend display
+ * @example
+ * archetypeToElement("infernal_dragons") // "fire"
+ * archetypeToElement("fire") // "fire"
+ * archetypeToElement("unknown") // "neutral"
+ */
+export function archetypeToElement(
+  archetype: string
+): "fire" | "water" | "earth" | "wind" | "neutral" {
+  const mapping: Record<string, "fire" | "water" | "earth" | "wind" | "neutral"> = {
+    infernal_dragons: "fire",
+    abyssal_horrors: "water",
+    nature_spirits: "earth",
+    storm_elementals: "wind",
+    fire: "fire",
+    water: "water",
+    earth: "earth",
+    wind: "wind",
+  };
+  return mapping[archetype] || "neutral";
+}
+
+/**
+ * Batch fetch card definitions and return as Map
+ *
+ * Efficiently loads multiple card definitions in parallel and returns them
+ * as a Map for O(1) lookup. Filters out null results automatically.
+ *
+ * @param ctx - Query or mutation context
+ * @param cardDefinitionIds - Array of card definition IDs to fetch
+ * @returns Map of card definition ID to Doc<"cardDefinitions">
+ * @example
+ * const deckCards = await ctx.db.query("deckCards").collect();
+ * const cardMap = await batchFetchCardDefinitions(ctx, deckCards.map(dc => dc.cardDefinitionId));
+ * const cardDef = cardMap.get(someCardId); // O(1) lookup
+ */
+export async function batchFetchCardDefinitions(
+  ctx: QueryCtx | MutationCtx,
+  cardDefinitionIds: Id<"cardDefinitions">[]
+): Promise<Map<Id<"cardDefinitions">, Doc<"cardDefinitions">>> {
+  // Remove duplicates
+  const uniqueIds = [...new Set(cardDefinitionIds)];
+
+  // Batch fetch all card definitions in parallel
+  const cardDefs = await Promise.all(uniqueIds.map((id) => ctx.db.get(id)));
+
+  // Create Map, filtering out null results
+  return new Map(
+    cardDefs.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
+  );
+}
+
+/**
  * Weighted random rarity selection based on configured weights
  *
- * @returns Randomly selected rarity
+ * Uses a weighted probability system from RARITY_WEIGHTS constant.
+ * Rolls a random number (0-1000) and selects rarity based on cumulative weights.
+ *
+ * **Probability Distribution:**
+ * - Common: 65% (650/1000)
+ * - Uncommon: 20% (200/1000)
+ * - Rare: 10% (100/1000)
+ * - Epic: 4% (40/1000)
+ * - Legendary: 1% (10/1000)
+ *
+ * @returns Randomly selected rarity (common, uncommon, rare, epic, legendary)
+ * @example
+ * weightedRandomRarity() // "common" (most likely, 65% chance)
+ * weightedRandomRarity() // "legendary" (rare outcome, 1% chance)
  */
 export function weightedRandomRarity(): Rarity {
   const totalWeight = 1000;
@@ -54,51 +121,61 @@ export function weightedRandomRarity(): Rarity {
 
 /**
  * Get random card of specific rarity (and optional archetype)
+ *
+ * Queries active cards from cardDefinitions table and randomly selects one.
+ * If archetype is specified, filters by archetype first with fallback to any archetype.
+ *
+ * @param ctx - Query or mutation context
+ * @param rarity - Card rarity to filter by
+ * @param archetype - Optional archetype filter (e.g., "warrior", "dragon", "neutral")
+ * @returns Random card matching criteria
+ * @throws Error if no cards found matching criteria
+ * @example
+ * await getRandomCard(ctx, "ultra_rare", "dragon") // Random ultra rare dragon card
+ * await getRandomCard(ctx, "common") // Random common card of any archetype
  */
 export async function getRandomCard(
   ctx: QueryCtx | MutationCtx,
   rarity: Rarity,
   archetype?: Archetype
 ): Promise<CardDefinition> {
-  let query = ctx.db
+  const query = ctx.db
     .query("cardDefinitions")
     .filter((q) => q.eq(q.field("isActive"), true))
     .filter((q) => q.eq(q.field("rarity"), rarity));
 
   if (archetype && archetype !== "neutral") {
     const allCards = await query.collect();
-    const archetypeCards = allCards.filter(
-      (card) => card.archetype === archetype
-    );
+    const archetypeCards = allCards.filter((card) => card.archetype === archetype);
 
     if (archetypeCards.length === 0) {
       // Fallback to any archetype if no cards found
       const cards = await query.collect();
       if (cards.length === 0) {
-        throw new Error(`No active ${rarity} cards found`);
+        throw createError(ErrorCode.LIBRARY_NO_CARDS_FOUND, { rarity });
       }
       const fallbackCard = cards[Math.floor(Math.random() * cards.length)];
       if (!fallbackCard) {
-        throw new Error(`Failed to select ${rarity} card from fallback`);
+        throw createError(ErrorCode.LIBRARY_CARD_SELECTION_FAILED, { rarity, context: "fallback" });
       }
       return fallbackCard;
     }
 
     const archetypeCard = archetypeCards[Math.floor(Math.random() * archetypeCards.length)];
     if (!archetypeCard) {
-      throw new Error(`Failed to select ${rarity} ${archetype} card`);
+      throw createError(ErrorCode.LIBRARY_CARD_SELECTION_FAILED, { rarity, archetype });
     }
     return archetypeCard;
   }
 
   const cards = await query.collect();
   if (cards.length === 0) {
-    throw new Error(`No active ${rarity} cards found`);
+    throw createError(ErrorCode.LIBRARY_NO_CARDS_FOUND, { rarity });
   }
 
   const selectedCard = cards[Math.floor(Math.random() * cards.length)];
   if (!selectedCard) {
-    throw new Error(`Failed to select ${rarity} card`);
+    throw createError(ErrorCode.LIBRARY_CARD_SELECTION_FAILED, { rarity });
   }
 
   return selectedCard;
@@ -106,6 +183,17 @@ export async function getRandomCard(
 
 /**
  * Add cards to player's inventory (creates or increments quantity)
+ *
+ * If player already owns the card, increments quantity.
+ * If player doesn't own the card, creates new playerCards entry.
+ * Updates lastUpdatedAt timestamp.
+ *
+ * @param ctx - Mutation context
+ * @param userId - Player's user ID
+ * @param cardDefinitionId - Card definition ID to add
+ * @param quantity - Number of cards to add
+ * @example
+ * await addCardsToInventory(ctx, userId, blueEyesId, 3) // Add 3 Blue-Eyes to inventory
  */
 export async function addCardsToInventory(
   ctx: MutationCtx,
@@ -142,7 +230,18 @@ export async function addCardsToInventory(
 /**
  * Adjust player card inventory (add or remove cards)
  *
+ * More flexible than addCardsToInventory - supports adding or removing cards.
+ * Automatically deletes playerCards entry if quantity reaches 0.
+ *
+ * @param ctx - Mutation context
+ * @param userId - Player's user ID
+ * @param cardDefinitionId - Card definition ID to adjust
  * @param quantityDelta - Positive to add, negative to remove
+ * @throws Error if trying to remove more cards than player owns
+ * @throws Error if trying to decrease quantity of unowned card
+ * @example
+ * await adjustCardInventory(ctx, userId, darkMagicianId, 2) // Add 2
+ * await adjustCardInventory(ctx, userId, darkMagicianId, -1) // Remove 1
  */
 export async function adjustCardInventory(
   ctx: MutationCtx,
@@ -169,14 +268,16 @@ export async function adjustCardInventory(
         lastUpdatedAt: Date.now(),
       });
     } else {
-      throw new Error("Cannot decrease quantity of card you don't own");
+      throw createError(ErrorCode.LIBRARY_INSUFFICIENT_CARDS, { cardId: cardDefinitionId });
     }
   } else {
     const newQuantity = playerCard.quantity + quantityDelta;
     if (newQuantity < 0) {
-      throw new Error(
-        `Insufficient cards (have ${playerCard.quantity}, need ${-quantityDelta})`
-      );
+      throw createError(ErrorCode.LIBRARY_INSUFFICIENT_CARDS, {
+        cardId: cardDefinitionId,
+        have: playerCard.quantity,
+        need: -quantityDelta,
+      });
     }
 
     if (newQuantity === 0) {
@@ -194,7 +295,17 @@ export async function adjustCardInventory(
 /**
  * Open a pack and generate cards based on pack configuration
  *
- * @returns Array of cards received
+ * Generates random cards using weighted rarity system.
+ * Last card in pack gets guaranteed rarity if specified.
+ * Automatically adds all cards to player's inventory.
+ *
+ * @param ctx - Mutation context
+ * @param packConfig - Pack configuration (cardCount, guaranteedRarity, archetype)
+ * @param userId - Player opening the pack
+ * @returns Array of card results with full details for display
+ * @example
+ * await openPack(ctx, { cardCount: 5, guaranteedRarity: "super_rare" }, userId)
+ * // Returns 5 cards, last one guaranteed to be super rare or better
  */
 export async function openPack(
   ctx: MutationCtx,
@@ -276,9 +387,16 @@ export function calculateEloChange(
 /**
  * Calculate win rate percentage
  *
+ * Calculates wins / (wins + losses) as percentage.
+ * Returns 0 if no games played.
+ * Story mode has no losses tracking.
+ *
  * @param player - Player object with win/loss stats
  * @param gameType - Type of game ("ranked" | "casual" | "story")
- * @returns Win rate as percentage (0-100)
+ * @returns Win rate as percentage (0-100), rounded to nearest integer
+ * @example
+ * calculateWinRate({ rankedWins: 15, rankedLosses: 5 }, "ranked") // 75
+ * calculateWinRate({ casualWins: 0, casualLosses: 0 }, "casual") // 0
  */
 export function calculateWinRate(
   player: Pick<

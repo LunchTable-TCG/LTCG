@@ -1,5 +1,10 @@
 "use client";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { cn } from "@/lib/utils";
 import { useQuery } from "convex/react";
 import {
   Bot,
@@ -18,11 +23,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { AgentManagement } from "./components";
@@ -71,18 +71,22 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
   const { isAuthenticated } = useAuth();
   const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
   const profileUser = useQuery(api.core.users.getUser, { userId: playerId });
+  const userStats = useQuery(api.core.users.getUserStats, { userId: playerId });
 
   const isOwnProfile = currentUser?._id === playerId;
 
-  // Mock stats for now - in real app these would come from backend
+  // Calculate stats from real data
+  const gamesPlayed = (userStats?.totalWins ?? 0) + (userStats?.totalLosses ?? 0);
+  const gamesWon = userStats?.totalWins ?? 0;
+  const totalScore = (userStats?.rankedElo ?? 1000) + (userStats?.casualRating ?? 1000);
+
   const stats = {
-    gamesPlayed: 0,
-    gamesWon: 0,
-    totalScore: 0,
+    gamesPlayed,
+    gamesWon,
+    totalScore,
   };
 
-  const winRate =
-    stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0;
+  const winRate = gamesPlayed > 0 ? Math.round((gamesWon / gamesPlayed) * 100) : 0;
 
   const rank = getRank(stats.gamesWon);
   const RankIcon = rank?.icon || Medal;
@@ -154,7 +158,14 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
 
             {/* Info */}
             <div className="flex-1 text-center md:text-left">
-              <h1 className="text-3xl font-bold mb-2">{profileUser.username || "Unknown"}</h1>
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                <h1 className="text-3xl font-bold">{profileUser.username || "Unknown"}</h1>
+                {userStats && (
+                  <Badge className="bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/30 text-xs font-bold px-2 py-0.5">
+                    LV {userStats.level}
+                  </Badge>
+                )}
+              </div>
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
@@ -163,8 +174,15 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  Last seen {profileUser.createdAt ? formatRelativeTime(profileUser.createdAt) : "Unknown"}
+                  Last seen{" "}
+                  {profileUser.createdAt ? formatRelativeTime(profileUser.createdAt) : "Unknown"}
                 </div>
+                {userStats && userStats.xp > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4" />
+                    {userStats.xp.toLocaleString()} XP
+                  </div>
+                )}
               </div>
             </div>
 
@@ -208,6 +226,77 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
             color="text-purple-400"
           />
         </div>
+
+        {/* Detailed Stats Breakdown */}
+        {userStats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="p-6 rounded-xl tcg-chat-leather relative overflow-hidden shadow-lg">
+              <div className="ornament-corner ornament-corner-tl opacity-30" />
+              <h3 className="text-sm font-black mb-4 text-[#e8e0d5] uppercase tracking-wider relative z-10 flex items-center gap-2">
+                <Swords className="w-4 h-4 text-[#d4af37]" />
+                Ranked Stats
+              </h3>
+              <div className="space-y-2 relative z-10">
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#a89f94]">Wins:</span>
+                  <span className="text-[#e8e0d5] font-bold">{userStats.rankedWins}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#a89f94]">Losses:</span>
+                  <span className="text-[#e8e0d5] font-bold">{userStats.rankedLosses}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-2 border-t border-[#3d2b1f]">
+                  <span className="text-[#d4af37]">ELO:</span>
+                  <span className="text-[#d4af37] font-bold">{userStats.rankedElo}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-xl tcg-chat-leather relative overflow-hidden shadow-lg">
+              <div className="ornament-corner ornament-corner-tl opacity-30" />
+              <h3 className="text-sm font-black mb-4 text-[#e8e0d5] uppercase tracking-wider relative z-10 flex items-center gap-2">
+                <Gamepad2 className="w-4 h-4 text-[#d4af37]" />
+                Casual Stats
+              </h3>
+              <div className="space-y-2 relative z-10">
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#a89f94]">Wins:</span>
+                  <span className="text-[#e8e0d5] font-bold">{userStats.casualWins}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#a89f94]">Losses:</span>
+                  <span className="text-[#e8e0d5] font-bold">{userStats.casualLosses}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-2 border-t border-[#3d2b1f]">
+                  <span className="text-[#d4af37]">Rating:</span>
+                  <span className="text-[#d4af37] font-bold">{userStats.casualRating}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-xl tcg-chat-leather relative overflow-hidden shadow-lg">
+              <div className="ornament-corner ornament-corner-tl opacity-30" />
+              <h3 className="text-sm font-black mb-4 text-[#e8e0d5] uppercase tracking-wider relative z-10 flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-[#d4af37]" />
+                Story Stats
+              </h3>
+              <div className="space-y-2 relative z-10">
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#a89f94]">Victories:</span>
+                  <span className="text-[#e8e0d5] font-bold">{userStats.storyWins}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#a89f94]">Level:</span>
+                  <span className="text-[#e8e0d5] font-bold">{userStats.level}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-2 border-t border-[#3d2b1f]">
+                  <span className="text-[#d4af37]">XP:</span>
+                  <span className="text-[#d4af37] font-bold">{userStats.xp.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Additional Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

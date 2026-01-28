@@ -1,9 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Crown, Gift, Lock, Shield, Star, Swords, Trophy } from "lucide-react";
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { Crown, Gift, Lock, Shield, Star, Swords, Trophy } from "lucide-react";
 
 interface StoryStageNodeProps {
   stage: {
@@ -125,7 +125,7 @@ export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProp
             {canClaimFirstClear && (
               <motion.div
                 animate={{ y: [0, -5, 0] }}
-                transition={{ repeat: Infinity, duration: 2 }}
+                transition={{ repeat: Number.POSITIVE_INFINITY, duration: 2 }}
                 className="absolute -bottom-3 -right-2 w-8 h-8 bg-purple-600 rounded-full border border-purple-400 flex items-center justify-center shadow-lg z-20"
               >
                 <Gift className="w-5 h-5 text-white" />

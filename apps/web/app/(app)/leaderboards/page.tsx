@@ -1,6 +1,10 @@
 "use client";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useLeaderboard, useProfile } from "@/hooks";
+import { cn } from "@/lib/utils";
 import {
+  Bot,
   Crown,
   Loader2,
   Medal,
@@ -9,14 +13,10 @@ import {
   TrendingDown,
   TrendingUp,
   Trophy,
-  Zap,
   Users,
-  Bot,
+  Zap,
 } from "lucide-react";
 import { useState } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-import { useProfile, useLeaderboard } from "@/hooks";
 
 type LeaderboardType = "ranked" | "casual" | "story";
 type PlayerSegment = "all" | "humans" | "ai";
@@ -41,7 +41,13 @@ export default function LeaderboardsPage() {
 
   // Use leaderboard hook with filters
   const leaderboardData = useLeaderboard(activeType, activeSegment);
-  const { rankings = [], myRank: userRank, lastUpdated, isLoading = true } = leaderboardData || {};
+  const {
+    rankings = [],
+    myRank: userRank,
+    battleHistory = [],
+    lastUpdated,
+    isLoading = true,
+  } = leaderboardData || {};
 
   const leaderboardTypes: { id: LeaderboardType; label: string; icon: typeof Trophy }[] = [
     { id: "ranked", label: "Ranked (ELO)", icon: Trophy },
@@ -64,7 +70,9 @@ export default function LeaderboardsPage() {
   }
 
   // Check if current user is in top 100
-  const userInTop100 = rankings.some((p: (typeof rankings)[number]) => p.userId === currentUser._id);
+  const userInTop100 = rankings.some(
+    (p: (typeof rankings)[number]) => p.userId === currentUser._id
+  );
 
   return (
     <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden">
@@ -154,7 +162,9 @@ export default function LeaderboardsPage() {
               </div>
               <div>
                 <p className="text-sm text-[#a89f94] mb-1">Percentile</p>
-                <p className="text-xl font-semibold text-[#e8e0d5]">Top {100 - userRank.percentile}%</p>
+                <p className="text-xl font-semibold text-[#e8e0d5]">
+                  Top {100 - userRank.percentile}%
+                </p>
               </div>
             </div>
           </div>
@@ -203,11 +213,11 @@ export default function LeaderboardsPage() {
                   </div>
                   <Avatar className="w-16 h-16 border-2 border-[#3d2b1f] mb-2">
                     <AvatarFallback className="bg-[#1a1614] text-[#d4af37] text-xl font-bold">
-                      {player.username[0]}
+                      {player.username?.[0] || "?"}
                     </AvatarFallback>
                   </Avatar>
                   <p className="font-bold text-[#e8e0d5] text-center truncate w-full">
-                    {player.username}
+                    {player.username || "Unknown"}
                     {isCurrentUser && <span className="text-xs ml-1">(You)</span>}
                   </p>
                   <p
@@ -244,9 +254,7 @@ export default function LeaderboardsPage() {
           <div className="grid grid-cols-12 gap-4 p-4 border-b border-[#3d2b1f] text-xs font-bold text-[#a89f94] uppercase tracking-wider">
             <div className="col-span-1">Rank</div>
             <div className="col-span-4">Player</div>
-            <div className="col-span-2 text-center">
-              {activeType === "story" ? "XP" : "Rating"}
-            </div>
+            <div className="col-span-2 text-center">{activeType === "story" ? "XP" : "Rating"}</div>
             <div className="col-span-2 text-center">Level</div>
             <div className="col-span-2 text-center">W/L</div>
             <div className="col-span-1 text-center">Win %</div>
@@ -286,7 +294,7 @@ export default function LeaderboardsPage() {
                     <div className="col-span-4 flex items-center gap-3">
                       <Avatar className="w-10 h-10 border border-[#3d2b1f]">
                         <AvatarFallback className="bg-[#1a1614] text-[#d4af37] font-bold">
-                          {player.username[0]}
+                          {player.username?.[0] || "?"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
@@ -371,9 +379,122 @@ export default function LeaderboardsPage() {
           )}
         </div>
 
+        {/* Battle History Section */}
+        {battleHistory.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Swords className="w-6 h-6 text-[#d4af37]" />
+              <h2 className="text-2xl font-bold text-[#e8e0d5]">Recent Matches</h2>
+            </div>
+
+            <div className="rounded-xl bg-black/40 border border-[#3d2b1f] overflow-hidden">
+              {/* Header */}
+              <div className="grid grid-cols-12 gap-4 p-4 border-b border-[#3d2b1f] text-xs font-bold text-[#a89f94] uppercase tracking-wider">
+                <div className="col-span-1">Result</div>
+                <div className="col-span-4">Opponent</div>
+                <div className="col-span-2 text-center">Rating Change</div>
+                <div className="col-span-2 text-center">Before</div>
+                <div className="col-span-2 text-center">After</div>
+                <div className="col-span-1 text-center">Time</div>
+              </div>
+
+              {/* Rows */}
+              <div className="divide-y divide-[#3d2b1f]">
+                {battleHistory.map((match) => {
+                  const isWin = match.result === "win";
+                  const ratingChanged = match.ratingChange !== 0;
+
+                  return (
+                    <div
+                      key={match._id}
+                      className={cn(
+                        "grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/5 transition-colors",
+                        isWin ? "bg-green-500/5" : "bg-red-500/5"
+                      )}
+                    >
+                      {/* Result */}
+                      <div className="col-span-1">
+                        <div
+                          className={cn(
+                            "px-2 py-1 rounded text-xs font-bold text-center",
+                            isWin ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                          )}
+                        >
+                          {isWin ? "WIN" : "LOSS"}
+                        </div>
+                      </div>
+
+                      {/* Opponent */}
+                      <div className="col-span-4 flex items-center gap-3">
+                        <Avatar className="w-8 h-8 border border-[#3d2b1f]">
+                          <AvatarFallback className="bg-[#1a1614] text-[#d4af37] text-xs font-bold">
+                            {match.opponentUsername[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <p className="font-medium text-[#e8e0d5] truncate">
+                          {match.opponentUsername}
+                        </p>
+                      </div>
+
+                      {/* Rating Change */}
+                      <div className="col-span-2 text-center">
+                        {ratingChanged ? (
+                          <div className="flex items-center justify-center gap-1">
+                            {match.ratingChange > 0 ? (
+                              <TrendingUp className="w-4 h-4 text-green-400" />
+                            ) : (
+                              <TrendingDown className="w-4 h-4 text-red-400" />
+                            )}
+                            <span
+                              className={cn(
+                                "font-bold",
+                                match.ratingChange > 0 ? "text-green-400" : "text-red-400"
+                              )}
+                            >
+                              {match.ratingChange > 0 ? "+" : ""}
+                              {match.ratingChange}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <Minus className="w-4 h-4 text-[#a89f94]" />
+                            <span className="text-[#a89f94] font-medium ml-1">0</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Rating Before */}
+                      <div className="col-span-2 text-center">
+                        <span className="text-[#a89f94]">{match.ratingBefore}</span>
+                      </div>
+
+                      {/* Rating After */}
+                      <div className="col-span-2 text-center">
+                        <span className="font-medium text-[#e8e0d5]">{match.ratingAfter}</span>
+                      </div>
+
+                      {/* Time */}
+                      <div className="col-span-1 text-center">
+                        <span className="text-xs text-[#a89f94]">
+                          {new Date(match.completedAt).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Footer Info */}
         <div className="mt-6 text-center text-sm text-[#a89f94]">
-          <p>Showing top {rankings.length} players {activeSegment !== "all" && `(${activeSegment})`}</p>
+          <p>
+            Showing top {rankings.length} players {activeSegment !== "all" && `(${activeSegment})`}
+          </p>
           <p className="mt-1">Rankings update every 5 minutes</p>
         </div>
       </div>

@@ -1,5 +1,9 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { cn } from "@/lib/utils";
+import { sanitizeText, sanitizeURL } from "@/lib/sanitize";
 import { useMutation } from "convex/react";
 import {
   AlertTriangle,
@@ -19,9 +23,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
@@ -129,11 +130,11 @@ export function AgentCard({ agent, onDeleted }: AgentCardProps) {
           {agent.profilePictureUrl ? (
             <img
               src={agent.profilePictureUrl}
-              alt={agent.name}
+              alt={sanitizeText(agent.name)}
               className="w-14 h-14 rounded-lg border-2 border-[#3d2b1f] object-cover"
             />
           ) : (
-            <div className="w-14 h-14 rounded-lg border-2 border-[#3d2b1f] bg-gradient-to-br from-[#8b4513] to-[#3d2b1f] flex items-center justify-center">
+            <div className="w-14 h-14 rounded-lg border-2 border-[#3d2b1f] bg-linear-to-br from-[#8b4513] to-[#3d2b1f] flex items-center justify-center">
               <Bot className="w-7 h-7 text-[#d4af37]" />
             </div>
           )}
@@ -150,14 +151,14 @@ export function AgentCard({ agent, onDeleted }: AgentCardProps) {
         {/* Info */}
         <div className="flex-1 min-w-0">
           <h4 className="font-black text-[#e8e0d5] uppercase tracking-wide truncate">
-            {agent.name}
+            {sanitizeText(agent.name)}
           </h4>
           <p className="text-[10px] text-[#a89f94] uppercase tracking-widest">
             Registered {formatDate(agent.createdAt)}
           </p>
-          {agent.socialLink && (
+          {agent.socialLink && sanitizeURL(agent.socialLink) && (
             <a
-              href={agent.socialLink}
+              href={sanitizeURL(agent.socialLink)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-[10px] text-[#d4af37] hover:underline mt-1"

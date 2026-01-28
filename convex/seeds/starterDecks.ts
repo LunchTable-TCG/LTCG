@@ -1,7 +1,7 @@
 // Starter deck definitions for AI agents
 // Each deck has 45 cards focused on a single archetype
 
-import type { StarterDeckDefinition, DeckArchetype } from "./types";
+import type { DeckArchetype, StarterDeckDefinition } from "./types";
 
 export const STARTER_DECKS: readonly StarterDeckDefinition[] = [
   {

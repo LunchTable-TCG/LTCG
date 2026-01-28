@@ -5,25 +5,26 @@
  * All functions record appropriate game events for spectators and ElizaOS agents.
  */
 
-import type { MutationCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import { recordEventHelper, recordGameEndHelper } from "../gameplay/gameEvents";
+import type { MutationCtx } from "../_generated/server";
 import { parseAbility } from "../effectSystem";
+import { recordEventHelper, recordGameEndHelper } from "../gameplay/gameEvents";
+import { ErrorCode, createError } from "./errorCodes";
 
-export type CardZone =
-  | "hand"
-  | "deck"
-  | "board"
-  | "graveyard"
-  | "banished"
-  | "extraDeck";
+export type CardZone = "hand" | "deck" | "board" | "graveyard" | "banished" | "extraDeck";
 
 /**
  * Draw cards from deck to hand
  *
- * Records card_drawn event for each card drawn.
- * Handles deck-out condition (no cards left to draw).
+ * Core game utility for drawing cards during draw phase or from card effects.
+ * Records card_drawn event for each card drawn. Handles deck-out condition
+ * (returns empty array if deck is empty, triggering game loss).
  *
+ * @internal
+ * @param ctx - Mutation context
+ * @param gameState - Current game state document
+ * @param playerId - User ID of the player drawing cards
+ * @param count - Number of cards to draw
  * @returns Array of card IDs drawn, or empty array if deck is empty
  */
 export async function drawCards(
@@ -54,7 +55,7 @@ export async function drawCards(
   for (let i = 0; i < cardsToDraw; i++) {
     const cardId = deck[i];
     if (!cardId) {
-      throw new Error(`Cannot draw card: deck is empty or invalid at index ${i}`);
+      throw createError(ErrorCode.LIBRARY_EMPTY_DECK, { index: i });
     }
     drawnCards.push(cardId);
 
@@ -86,8 +87,15 @@ export async function drawCards(
 /**
  * Shuffle deck
  *
- * Uses Fisher-Yates shuffle algorithm.
- * Records deck_shuffled event.
+ * Uses Fisher-Yates shuffle algorithm for in-place randomization.
+ * Called when card effects require deck shuffling (e.g., after searching).
+ * Records deck_shuffled event for game log.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param gameState - Current game state document
+ * @param playerId - User ID of the player whose deck to shuffle
+ * @returns Promise that resolves when deck is shuffled
  */
 export async function shuffleDeck(
   ctx: MutationCtx,
@@ -131,11 +139,19 @@ export async function shuffleDeck(
 /**
  * Move card between zones
  *
- * Records appropriate zone transition event based on destination:
- * - card_to_hand: Moving to hand (search, retrieval)
- * - card_to_graveyard: Sent to graveyard
- * - card_banished: Banished/removed from play
- * - card_to_deck: Returned to deck
+ * Core game utility for card zone transitions (hand, deck, board, graveyard, banished).
+ * Handles removal from source zone and insertion into destination zone.
+ * Records appropriate event based on destination zone for game log and spectators.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param gameState - Current game state document
+ * @param cardId - Card definition ID to move
+ * @param fromZone - Source zone ("hand", "deck", "board", "graveyard", "banished")
+ * @param toZone - Destination zone ("hand", "deck", "board", "graveyard", "banished")
+ * @param playerId - User ID of the player who owns the card
+ * @param turnNumber - Current turn number for event recording (defaults to 0)
+ * @returns Promise that resolves when card is moved
  */
 export async function moveCard(
   ctx: MutationCtx,
@@ -144,7 +160,7 @@ export async function moveCard(
   fromZone: CardZone,
   toZone: CardZone,
   playerId: Id<"users">,
-  turnNumber: number = 0
+  turnNumber = 0
 ): Promise<void> {
   const isHost = playerId === gameState.hostId;
 
@@ -153,11 +169,8 @@ export async function moveCard(
   const username = user?.username || "Unknown";
 
   // Determine event type based on destination
-  let eventType:
-    | "card_to_hand"
-    | "card_to_graveyard"
-    | "card_banished"
-    | "card_to_deck" = "card_to_hand";
+  let eventType: "card_to_hand" | "card_to_graveyard" | "card_banished" | "card_to_deck" =
+    "card_to_hand";
   let description = "";
 
   switch (toZone) {
@@ -230,11 +243,19 @@ export async function moveCard(
 /**
  * Apply damage to player
  *
- * Records lp_changed and damage events.
- * Checks for game end condition (LP <= 0).
+ * Core game utility for applying damage from battle or card effects.
+ * Reduces player's life points, records damage and LP change events,
+ * and checks for game end condition (LP <= 0). Records game_end event if LP reaches 0.
  *
- * @param source - "battle" or "effect" (for metadata tracking)
- * @returns true if game ended (LP reached 0), false otherwise
+ * @internal
+ * @param ctx - Mutation context
+ * @param lobbyId - Lobby ID for event recording
+ * @param gameState - Current game state document
+ * @param targetPlayerId - User ID of the player taking damage
+ * @param amount - Amount of damage to apply
+ * @param source - Damage source ("battle" or "effect") for metadata tracking
+ * @param turnNumber - Current turn number for event recording (defaults to 0)
+ * @returns True if game ended (LP reached 0), false if game continues
  */
 export async function applyDamage(
   ctx: MutationCtx,
@@ -243,7 +264,7 @@ export async function applyDamage(
   targetPlayerId: Id<"users">,
   amount: number,
   source: "battle" | "effect",
-  turnNumber: number = 0
+  turnNumber = 0
 ): Promise<boolean> {
   const isHost = targetPlayerId === gameState.hostId;
   const currentLP = isHost ? gameState.hostLifePoints : gameState.opponentLifePoints;
@@ -308,19 +329,25 @@ export async function applyDamage(
 /**
  * Enforce hand size limit (6 cards maximum)
  *
- * Called during End Phase.
- * If player has more than 6 cards, they must discard down to 6.
+ * Called during End Phase to enforce Yu-Gi-Oh hand limit rules.
+ * If player has more than 6 cards, excess cards are discarded to graveyard.
  * Records hand_limit_enforced event if cards were discarded.
  *
- * Note: This is a simplified version - full implementation would need
- * player input to choose which cards to discard. For now, discards
- * from the end of the hand array.
+ * Note: Simplified implementation discards from end of hand array.
+ * Full implementation would require player input to choose which cards to discard.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param gameState - Current game state document
+ * @param playerId - User ID of the player to check hand limit for
+ * @param turnNumber - Current turn number for event recording (defaults to 0)
+ * @returns Promise that resolves when hand limit is enforced
  */
 export async function enforceHandLimit(
   ctx: MutationCtx,
   gameState: Doc<"gameStates">,
   playerId: Id<"users">,
-  turnNumber: number = 0
+  turnNumber = 0
 ): Promise<void> {
   const isHost = playerId === gameState.hostId;
   const hand = isHost ? gameState.hostHand : gameState.opponentHand;
@@ -358,15 +385,7 @@ export async function enforceHandLimit(
 
   // Move discarded cards to graveyard
   for (const cardId of cardsToDiscard) {
-    await moveCard(
-      ctx,
-      gameState,
-      cardId,
-      "hand",
-      "graveyard",
-      playerId,
-      turnNumber
-    );
+    await moveCard(ctx, gameState, cardId, "hand", "graveyard", playerId, turnNumber);
   }
 
   // Update hand
@@ -378,7 +397,17 @@ export async function enforceHandLimit(
 /**
  * Apply temporary modifier to a card
  *
- * Adds ATK/DEF bonus that expires at the end of turn or specified phase.
+ * Used by card effects to grant temporary ATK/DEF bonuses that expire
+ * at the end of turn or specified phase (e.g., "until end of Battle Phase").
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param gameState - Current game state document
+ * @param cardId - Card definition ID to apply modifier to
+ * @param atkBonus - ATK bonus to apply (positive or negative)
+ * @param defBonus - DEF bonus to apply (positive or negative)
+ * @param expiresAtPhase - Optional phase when modifier expires ("end" or "battle_end")
+ * @returns Promise that resolves when modifier is applied
  */
 export async function applyTemporaryModifier(
   ctx: MutationCtx,
@@ -406,7 +435,14 @@ export async function applyTemporaryModifier(
 /**
  * Clear temporary modifiers
  *
- * Removes modifiers that have expired based on turn number and phase.
+ * Helper to remove expired temporary modifiers based on turn number and phase.
+ * Called at phase transitions and turn end to clean up expired stat bonuses.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param gameState - Current game state document
+ * @param currentPhase - Optional current phase to check for phase-based expiration
+ * @returns Promise that resolves when expired modifiers are cleared
  */
 export async function clearTemporaryModifiers(
   ctx: MutationCtx,
@@ -439,7 +475,16 @@ export async function clearTemporaryModifiers(
 /**
  * Get card's current ATK/DEF including temporary modifiers
  *
- * Returns the card's base stats plus any active modifiers.
+ * Pure function that calculates a card's effective stats by summing base stats
+ * with all active temporary modifiers targeting that card. Used for battle calculations
+ * and stat display.
+ *
+ * @internal
+ * @param gameState - Current game state document
+ * @param cardId - Card definition ID to get stats for
+ * @param baseAtk - Base ATK from card definition
+ * @param baseDef - Base DEF from card definition
+ * @returns Modified stats with ATK and DEF including all active bonuses
  */
 export function getModifiedStats(
   gameState: Doc<"gameStates">,
@@ -468,15 +513,18 @@ export function getModifiedStats(
 /**
  * Apply continuous effects from all cards on the field
  *
- * Checks all cards with continuous effects and applies matching bonuses
- * to the target card based on archetype/type conditions.
+ * Scans all field spells, continuous traps, and monster effects on the field
+ * and applies matching stat bonuses to the target card based on conditions
+ * (archetype, level, ATK/DEF thresholds). Used for accurate stat calculations
+ * during battle and card activation.
  *
- * @param ctx - Mutation context (for DB access)
- * @param gameState - Current game state
- * @param cardId - Card to calculate stats for
- * @param cardDef - Card definition (for archetype checking)
+ * @internal
+ * @param ctx - Context with database access (query or mutation)
+ * @param gameState - Current game state document
+ * @param cardId - Card definition ID to calculate bonuses for
+ * @param cardDef - Full card definition with archetype data
  * @param isHost - Whether the card belongs to the host player
- * @returns ATK/DEF bonuses from continuous effects
+ * @returns Total ATK/DEF bonuses from all continuous effects
  */
 export async function applyContinuousEffects(
   ctx: { db: any },
@@ -488,30 +536,147 @@ export async function applyContinuousEffects(
   let atkBonus = 0;
   let defBonus = 0;
 
-  // Check all cards on both boards for continuous effects
-  const allBoards = [...gameState.hostBoard, ...gameState.opponentBoard];
+  // Get the card being modified
+  const card = await ctx.db.get(cardId);
+  if (!card || card.cardType !== "creature") {
+    return { atkBonus: 0, defBonus: 0 };
+  }
 
+  // Helper function to check if card matches a condition
+  const matchesCondition = (condition?: string): boolean => {
+    if (!condition) return true;
+    if (condition === "all_monsters") return true;
+
+    // Level conditions (e.g., "level_4_or_lower", "level_7_or_higher")
+    const levelMatch = condition.match(/level_(\d+)_or_(lower|higher)/i);
+    if (levelMatch && levelMatch[1] && levelMatch[2]) {
+      const threshold = Number.parseInt(levelMatch[1]);
+      const comparison = levelMatch[2].toLowerCase();
+      const cardLevel = card.cost || 0; // Level is derived from cost
+
+      if (comparison === "lower") {
+        return cardLevel <= threshold;
+      } else if (comparison === "higher") {
+        return cardLevel >= threshold;
+      }
+    }
+
+    // ATK threshold conditions (e.g., "atk_1500_or_less", "atk_2000_or_more")
+    const atkMatch = condition.match(/atk_(\d+)_or_(less|more)/i);
+    if (atkMatch && atkMatch[1] && atkMatch[2]) {
+      const threshold = Number.parseInt(atkMatch[1]);
+      const comparison = atkMatch[2].toLowerCase();
+      const cardAtk = card.attack || 0;
+
+      if (comparison === "less") {
+        return cardAtk <= threshold;
+      } else if (comparison === "more") {
+        return cardAtk >= threshold;
+      }
+    }
+
+    // DEF threshold conditions (e.g., "def_1500_or_less", "def_2000_or_more")
+    const defMatch = condition.match(/def_(\d+)_or_(less|more)/i);
+    if (defMatch && defMatch[1] && defMatch[2]) {
+      const threshold = Number.parseInt(defMatch[1]);
+      const comparison = defMatch[2].toLowerCase();
+      const cardDef = card.defense || 0;
+
+      if (comparison === "less") {
+        return cardDef <= threshold;
+      } else if (comparison === "more") {
+        return cardDef >= threshold;
+      }
+    }
+
+    // Extract archetype from condition (e.g., "Warrior_monsters" → "warrior")
+    const archetypeMatch = condition.match(/^(.+)_monsters$/i);
+    if (archetypeMatch && archetypeMatch[1]) {
+      const requiredArchetype = archetypeMatch[1].toLowerCase();
+
+      if (card.archetype?.toLowerCase().includes(requiredArchetype)) return true;
+      if (card.name.toLowerCase().includes(requiredArchetype)) return true;
+    }
+
+    return false;
+  };
+
+  // Check field spells (affects both players unless specified)
+  const playerFieldSpell = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
+  if (playerFieldSpell && playerFieldSpell.isActive) {
+    const fieldCard = await ctx.db.get(playerFieldSpell.cardId);
+    if (fieldCard?.ability) {
+      const parsedAbility = parseAbility(fieldCard.ability);
+      if (parsedAbility?.continuous) {
+        if (matchesCondition(parsedAbility.condition)) {
+          if (parsedAbility.type === "modifyATK") {
+            atkBonus += parsedAbility.value || 0;
+          } else if (parsedAbility.type === "modifyDEF") {
+            defBonus += parsedAbility.value || 0;
+          }
+        }
+      }
+    }
+  }
+
+  // Check opponent's field spell (some affect opponent's monsters)
+  const opponentFieldSpell = isHost ? gameState.opponentFieldSpell : gameState.hostFieldSpell;
+  if (opponentFieldSpell && opponentFieldSpell.isActive) {
+    const fieldCard = await ctx.db.get(opponentFieldSpell.cardId);
+    if (fieldCard?.ability) {
+      const parsedAbility = parseAbility(fieldCard.ability);
+      if (parsedAbility?.continuous) {
+        if (parsedAbility.condition?.includes("opponent_monsters")) {
+          if (parsedAbility.type === "modifyATK") {
+            atkBonus += parsedAbility.value || 0;
+          } else if (parsedAbility.type === "modifyDEF") {
+            defBonus += parsedAbility.value || 0;
+          }
+        }
+      }
+    }
+  }
+
+  // Check continuous traps in player's spell/trap zone
+  const backrow = isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
+  for (const backrowCard of backrow) {
+    if (!backrowCard || backrowCard.isFaceDown) continue;
+
+    const backrowCardDef = await ctx.db.get(backrowCard.cardId);
+    if (backrowCardDef?.cardType === "trap" && backrowCardDef.ability) {
+      const parsedAbility = parseAbility(backrowCardDef.ability);
+      if (parsedAbility?.continuous) {
+        if (matchesCondition(parsedAbility.condition)) {
+          if (parsedAbility.type === "modifyATK") {
+            atkBonus += parsedAbility.value || 0;
+          } else if (parsedAbility.type === "modifyDEF") {
+            defBonus += parsedAbility.value || 0;
+          }
+        }
+      }
+    }
+  }
+
+  // Check continuous effects from monsters on the field
+  const allBoards = [...gameState.hostBoard, ...gameState.opponentBoard];
   for (const boardCard of allBoards) {
-    // Get card definition
     const cardDefinition = await ctx.db.get(boardCard.cardId);
     if (!cardDefinition?.ability) continue;
 
-    // Parse ability
     const parsedEffect = parseAbility(cardDefinition.ability);
     if (!parsedEffect || !parsedEffect.continuous) continue;
 
-    // Check if effect applies to this card
     const effectOwnerIsHost = gameState.hostBoard.some((c) => c.cardId === boardCard.cardId);
-    const targetIsOppMonster = parsedEffect.condition === "opponent_monsters" && effectOwnerIsHost !== isHost;
-    const targetIsOwnMonster = parsedEffect.condition !== "opponent_monsters" && effectOwnerIsHost === isHost;
+    const targetIsOppMonster =
+      parsedEffect.condition === "opponent_monsters" && effectOwnerIsHost !== isHost;
+    const targetIsOwnMonster =
+      parsedEffect.condition !== "opponent_monsters" && effectOwnerIsHost === isHost;
 
-    // Check archetype match for archetype-specific effects
-    const archetypeMatch = parsedEffect.condition?.includes("_monsters") &&
-                          parsedEffect.condition.replace("_monsters", "").replace("-type", "") === cardDef.archetype?.replace("_", "-");
-
-    if (targetIsOppMonster || (targetIsOwnMonster && (archetypeMatch || !parsedEffect.condition?.includes("_monsters")))) {
+    if (targetIsOppMonster || (targetIsOwnMonster && matchesCondition(parsedEffect.condition))) {
       if (parsedEffect.type === "modifyATK") {
         atkBonus += parsedEffect.value || 0;
+      } else if (parsedEffect.type === "modifyDEF") {
+        defBonus += parsedEffect.value || 0;
       }
     }
   }
@@ -522,12 +687,16 @@ export async function applyContinuousEffects(
 /**
  * Check if a card has used its Once Per Turn (OPT) effect
  *
- * @returns true if the card has already used its OPT effect this turn
+ * Pure function that checks OPT tracking array to prevent cards from using
+ * their OPT effects multiple times in the same turn. OPT tracking is cleared
+ * at the end of each turn.
+ *
+ * @internal
+ * @param gameState - Current game state document
+ * @param cardId - Card definition ID to check
+ * @returns True if the card has already used its OPT effect this turn
  */
-export function hasUsedOPT(
-  gameState: Doc<"gameStates">,
-  cardId: Id<"cardDefinitions">
-): boolean {
+export function hasUsedOPT(gameState: Doc<"gameStates">, cardId: Id<"cardDefinitions">): boolean {
   const optUsed = gameState.optUsedThisTurn || [];
   return optUsed.includes(cardId);
 }
@@ -535,7 +704,14 @@ export function hasUsedOPT(
 /**
  * Mark a card as having used its Once Per Turn (OPT) effect
  *
- * Prevents the card from using its OPT effect again this turn.
+ * Adds card to OPT tracking array to prevent multiple uses of OPT effects
+ * in the same turn. Called after successfully activating an OPT effect.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param gameState - Current game state document
+ * @param cardId - Card definition ID to mark as used
+ * @returns Promise that resolves when OPT is marked
  */
 export async function markOPTUsed(
   ctx: MutationCtx,
@@ -555,7 +731,13 @@ export async function markOPTUsed(
 /**
  * Clear OPT tracking at end of turn
  *
- * Resets all cards so they can use their OPT effects next turn.
+ * Helper to reset OPT tracking array at turn end, allowing cards to use
+ * their OPT effects again next turn. Called by turn management system.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param gameState - Current game state document
+ * @returns Promise that resolves when OPT tracking is cleared
  */
 export async function clearOPTTracking(
   ctx: MutationCtx,

@@ -1,10 +1,10 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { ArrowRight, Flame, type LucideIcon, Play, Scroll, Sparkles, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 export default function Home() {
   return (

@@ -544,13 +544,15 @@ export const deckWithCountValidator = v.object({
   id: v.id("userDecks"),
   name: v.string(),
   description: v.optional(v.string()),
-  deckArchetype: v.optional(v.union(
-    v.literal("fire"),
-    v.literal("water"),
-    v.literal("earth"),
-    v.literal("wind"),
-    v.literal("neutral")
-  )),
+  deckArchetype: v.optional(
+    v.union(
+      v.literal("fire"),
+      v.literal("water"),
+      v.literal("earth"),
+      v.literal("wind"),
+      v.literal("neutral")
+    )
+  ),
   cardCount: v.number(),
   createdAt: v.number(),
   updatedAt: v.number(),
@@ -600,13 +602,15 @@ export const deckWithCardsValidator = v.object({
   id: v.id("userDecks"),
   name: v.string(),
   description: v.optional(v.string()),
-  deckArchetype: v.optional(v.union(
-    v.literal("fire"),
-    v.literal("water"),
-    v.literal("earth"),
-    v.literal("wind"),
-    v.literal("neutral")
-  )),
+  deckArchetype: v.optional(
+    v.union(
+      v.literal("fire"),
+      v.literal("water"),
+      v.literal("earth"),
+      v.literal("wind"),
+      v.literal("neutral")
+    )
+  ),
   cards: v.array(deckCardEntryValidator),
   createdAt: v.number(),
   updatedAt: v.number(),
@@ -952,4 +956,20 @@ export const matchHistoryEntryValidator = v.object({
   duration: v.number(),
   ratingChange: v.optional(v.number()),
   playedAt: v.number(),
+});
+
+/**
+ * Battle history entry validator (from matchHistory table)
+ */
+export const battleHistoryEntryValidator = v.object({
+  _id: v.id("matchHistory"),
+  opponentId: v.id("users"),
+  opponentUsername: v.string(),
+  gameType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
+  result: v.union(v.literal("win"), v.literal("loss")),
+  ratingBefore: v.number(),
+  ratingAfter: v.number(),
+  ratingChange: v.number(),
+  xpAwarded: v.optional(v.number()),
+  completedAt: v.number(),
 });

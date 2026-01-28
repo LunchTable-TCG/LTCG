@@ -1,10 +1,10 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, ArrowUp, Shield, Sparkles, Star, Sword, X, Zap } from "lucide-react";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { CardInZone } from "../hooks/useGameBoard";
 
 interface CardInspectorModalProps {
@@ -48,10 +48,10 @@ export function CardInspectorModal({
 
   const hasModifiers = (card.attackModifier ?? 0) !== 0 || (card.defenseModifier ?? 0) !== 0;
   const effectiveAttack = card.monsterStats
-    ? card.monsterStats.attack + (card.attackModifier ?? 0)
+    ? (card.monsterStats.attack ?? 0) + (card.attackModifier ?? 0)
     : 0;
   const effectiveDefense = card.monsterStats
-    ? card.monsterStats.defense + (card.defenseModifier ?? 0)
+    ? (card.monsterStats.defense ?? 0) + (card.defenseModifier ?? 0)
     : 0;
 
   return (
@@ -106,20 +106,20 @@ export function CardInspectorModal({
                   {/* Card image */}
                   <div
                     className={cn(
-                      "w-20 h-28 rounded-lg border-2 overflow-hidden flex-shrink-0",
-                      RARITY_BORDERS[card.rarity] ?? RARITY_BORDERS.common
+                      "w-20 h-28 rounded-lg border-2 overflow-hidden shrink-0",
+                      RARITY_BORDERS[card.rarity ?? "common"] ?? RARITY_BORDERS.common
                     )}
                   >
                     {card.imageUrl ? (
                       <Image
                         src={card.imageUrl}
-                        alt={card.name}
+                        alt={card.name ?? "Card"}
                         width={80}
                         height={112}
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center p-1">
+                      <div className="w-full h-full bg-linear-to-br from-slate-700 to-slate-800 flex items-center justify-center p-1">
                         <span className="text-[10px] text-slate-400 text-center">{card.name}</span>
                       </div>
                     )}
@@ -131,8 +131,8 @@ export function CardInspectorModal({
 
                     {/* Rarity */}
                     <div className="flex items-center gap-1 mb-1">
-                      <Star className={cn("w-2.5 h-2.5", RARITY_COLORS[card.rarity])} />
-                      <span className={cn("text-xs capitalize", RARITY_COLORS[card.rarity])}>
+                      <Star className={cn("w-2.5 h-2.5", RARITY_COLORS[card.rarity ?? "common"])} />
+                      <span className={cn("text-xs capitalize", RARITY_COLORS[card.rarity ?? "common"])}>
                         {card.rarity}
                       </span>
                     </div>
@@ -150,7 +150,10 @@ export function CardInspectorModal({
                             {Array.from({ length: Math.min(card.monsterStats.level, 6) }).map(
                               (_, i) => (
                                 // biome-ignore lint/suspicious/noArrayIndexKey: Static level indicators don't reorder
-                                <div key={`level-indicator-${i}`} className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                                <div
+                                  key={`level-indicator-${i}`}
+                                  className="w-1.5 h-1.5 rounded-full bg-yellow-400"
+                                />
                               )
                             )}
                           </div>
@@ -284,7 +287,10 @@ export function CardInspectorModal({
                     </h3>
                     <div className="space-y-1">
                       {card.effects.map((effect, index) => (
-                        <div key={`ability-${effect.name}-${index}`} className="p-2 border rounded-lg bg-muted/20">
+                        <div
+                          key={`ability-${effect.name}-${index}`}
+                          className="p-2 border rounded-lg bg-muted/20"
+                        >
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <span className="font-medium text-xs">{effect.name}</span>
                             {effect.effectType && (

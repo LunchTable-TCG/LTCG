@@ -1,8 +1,8 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { Check, Gamepad2, Trophy, X } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 
 interface CreateGameModalProps {
   isOpen: boolean;
@@ -37,7 +37,6 @@ export function CreateGameModal({ isOpen, onClose, onSubmit }: CreateGameModalPr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: Backdrop overlay for modal */}
       <div
         role="presentation"
         className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"

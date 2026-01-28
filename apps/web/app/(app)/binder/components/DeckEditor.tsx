@@ -1,24 +1,24 @@
 "use client";
 
-import {
-  AlertCircle,
-  ChevronDown,
-  Edit3,
-  Check,
-  Save,
-  Trash2,
-  Loader2,
-  Minus,
-  Plus,
-  Search,
-} from "lucide-react";
-import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { BinderCard, type CardData, type Rarity } from "./BinderCard";
+import {
+  AlertCircle,
+  Check,
+  ChevronDown,
+  Edit3,
+  Loader2,
+  Minus,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+} from "lucide-react";
+import { useMemo } from "react";
 import type { DeckCard } from "../types";
 import { DECK_MIN_SIZE } from "../types";
+import { BinderCard, type CardData, type Rarity } from "./BinderCard";
 
 const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: string }> = {
   legendary: { bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/40" },

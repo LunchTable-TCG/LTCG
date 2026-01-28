@@ -11,7 +11,7 @@ import type { Id } from "../../../../_generated/dataModel";
 // Admin Role Types
 // =============================================================================
 
-export type AdminRole = "super_admin" | "admin" | "moderator" | "support";
+export type AdminRole = "superadmin" | "admin" | "moderator";
 
 export type AdminRoleData = {
   _id: Id<"adminRoles">;
@@ -27,7 +27,7 @@ export type AdminRoleData = {
 };
 
 export const ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
-  super_admin: [
+  superadmin: [
     "admin.manage",
     "admin.audit.view",
     "player.ban",
@@ -69,7 +69,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
     "batch.operations",
   ],
   moderator: ["player.ban", "player.suspend", "player.warn", "player.view", "admin.audit.view"],
-  support: ["player.view", "admin.audit.view"],
 };
 
 // =============================================================================

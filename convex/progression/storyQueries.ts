@@ -15,13 +15,17 @@ export const getStageByChapterAndNumber = query({
     stageNumber: v.number(),
   },
   handler: async (ctx, args) => {
-    const [actNum, chapNum] = args.chapterId.split("-").map(Number);
+    const parts = args.chapterId.split("-").map(Number);
+    const actNum = parts[0];
+    const chapNum = parts[1];
+
+    if (actNum === undefined || chapNum === undefined) {
+      return null;
+    }
 
     const chapter = await ctx.db
       .query("storyChapters")
-      .withIndex("by_act_chapter", (q) =>
-        q.eq("actNumber", actNum).eq("chapterNumber", chapNum)
-      )
+      .withIndex("by_act_chapter", (q) => q.eq("actNumber", actNum).eq("chapterNumber", chapNum))
       .first();
 
     if (!chapter) return null;

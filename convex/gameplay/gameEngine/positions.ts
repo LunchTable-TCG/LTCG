@@ -7,9 +7,10 @@
 
 import { v } from "convex/values";
 import { mutation } from "../../_generated/server";
-import { getCurrentUser, requireAuthQuery, requireAuthMutation } from "../../lib/convexAuth";
-import { validatePositionChange } from "../summonValidator";
+import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import { ErrorCode, createError } from "../../lib/errorCodes";
 import { recordEventHelper } from "../gameEvents";
+import { validatePositionChange } from "../summonValidator";
 
 /**
  * Change monster position (Attack ↔ Defense)
@@ -31,12 +32,12 @@ export const changePosition = mutation({
     // 2. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
-      throw new Error("Lobby not found");
+      throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
     // 3. Validate it's the current player's turn
     if (lobby.currentTurnPlayerId !== user.userId) {
-      throw new Error("Not your turn");
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
     }
 
     // 4. Get game state
@@ -46,14 +47,14 @@ export const changePosition = mutation({
       .first();
 
     if (!gameState) {
-      throw new Error("Game state not found");
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND);
     }
 
     // 5. Validate position change
     const validation = await validatePositionChange(ctx, gameState, user.userId, args.cardId);
 
     if (!validation.valid) {
-      throw new Error(validation.error);
+      throw createError(ErrorCode.GAME_INVALID_MOVE, { reason: validation.error });
     }
 
     const isHost = user.userId === gameState.hostId;
@@ -62,12 +63,12 @@ export const changePosition = mutation({
     // 6. Find card on board and toggle position
     const cardIndex = board.findIndex((bc) => bc.cardId === args.cardId);
     if (cardIndex === -1) {
-      throw new Error("Card not found on board");
+      throw createError(ErrorCode.GAME_CARD_NOT_ON_BOARD);
     }
 
     const card = await ctx.db.get(args.cardId);
     if (!card) {
-      throw new Error("Card not found");
+      throw createError(ErrorCode.GAME_CARD_NOT_FOUND);
     }
 
     const boardCard = board[cardIndex]!;

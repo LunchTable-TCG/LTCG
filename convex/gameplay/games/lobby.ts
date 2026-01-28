@@ -2,11 +2,13 @@ import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import { mutation } from "../../_generated/server";
 import type { MutationCtx, QueryCtx } from "../../_generated/server";
-import { getCurrentUser, requireAuthQuery, requireAuthMutation } from "../../lib/convexAuth";
-import { ErrorCode, createError } from "../../lib/errorCodes";
 import { ELO_SYSTEM } from "../../lib/constants";
-import { initializeGameStateHelper } from "./lifecycle";
+import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import { ErrorCode, createError } from "../../lib/errorCodes";
+import { checkRateLimitWrapper } from "../../lib/rateLimit";
+import { validateLobbyCapacity, validateLobbyStatus } from "../../lib/validation";
 import { recordGameStartHelper } from "../gameEvents";
+import { initializeGameStateHelper } from "./lifecycle";
 
 // ============================================================================
 // CONSTANTS
@@ -52,10 +54,11 @@ function getRank(rating: number): string {
 function generateJoinCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   // Use UUID to generate deterministic-enough join code
-  const uuid = crypto.randomUUID().replace(/-/g, '');
+  const uuid = crypto.randomUUID().replace(/-/g, "");
   let code = "";
   for (let i = 0; i < 6; i++) {
-    const charIndex = parseInt(uuid.charAt(i * 2) + uuid.charAt(i * 2 + 1), 16) % chars.length;
+    const charIndex =
+      Number.parseInt(uuid.charAt(i * 2) + uuid.charAt(i * 2 + 1), 16) % chars.length;
     code += chars.charAt(charIndex);
   }
   return code;
@@ -94,9 +97,7 @@ async function updatePresenceInternal(
  * Validate user can create or join a game
  * Checks: session, deck validity, not already in game, no existing lobby
  */
-async function validateUserCanCreateGame(
-  ctx: MutationCtx,
-): Promise<{
+async function validateUserCanCreateGame(ctx: MutationCtx): Promise<{
   userId: Id<"users">;
   username: string;
   deckId: Id<"userDecks">;
@@ -109,13 +110,13 @@ async function validateUserCanCreateGame(
   const user = await ctx.db.get(userId);
   if (!user) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "User not found",
+      reason: "User not found",
     });
   }
 
   if (!user.activeDeckId) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "No active deck selected. Please select a deck in your Binder",
+      reason: "No active deck selected. Please select a deck in your Binder",
     });
   }
 
@@ -123,7 +124,7 @@ reason: "No active deck selected. Please select a deck in your Binder",
   const deck = await ctx.db.get(user.activeDeckId);
   if (!deck || deck.userId !== userId || !deck.isActive) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Your deck is no longer valid. Please select a new deck in your Binder",
+      reason: "Your deck is no longer valid. Please select a new deck in your Binder",
     });
   }
 
@@ -135,21 +136,23 @@ reason: "Your deck is no longer valid. Please select a new deck in your Binder",
 
   const totalCards = deckCards.reduce((sum, dc) => sum + dc.quantity, 0);
   if (totalCards < 30) {
-    throw new Error(`Your deck must have at least 30 cards. Currently has ${totalCards}.`);
+    throw createError(ErrorCode.VALIDATION_INVALID_DECK, {
+      reason: `Your deck must have at least 30 cards. Currently has ${totalCards}`,
+      totalCards,
+      requiredCards: 30,
+    });
   }
 
   // Check user doesn't already have an active lobby (check this FIRST for better error messages)
   const existingLobby = await ctx.db
     .query("gameLobbies")
     .withIndex("by_host", (q) => q.eq("hostId", userId))
-    .filter((q) =>
-      q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active"))
-    )
+    .filter((q) => q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")))
     .first();
 
   if (existingLobby) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "You already have an active lobby",
+      reason: "You already have an active lobby",
     });
   }
 
@@ -161,7 +164,7 @@ reason: "You already have an active lobby",
 
   if (presence?.status === "in_game") {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "You are already in a game",
+      reason: "You are already in a game",
     });
   }
 
@@ -182,10 +185,14 @@ reason: "You are already in a game",
 
 /**
  * Create a new game lobby
+ * Creates a waiting lobby for other players to join
+ *
+ * @param mode - Game mode: "casual" or "ranked"
+ * @param isPrivate - Optional flag for private lobby with join code
+ * @returns Lobby ID and join code (if private)
  */
 export const createLobby = mutation({
   args: {
-    
     mode: v.union(v.literal("casual"), v.literal("ranked")),
     isPrivate: v.optional(v.boolean()),
   },
@@ -232,10 +239,14 @@ export const createLobby = mutation({
 
 /**
  * Join an existing lobby
+ * Matches player with host and starts the game
+ *
+ * @param lobbyId - The lobby ID to join
+ * @param joinCode - Optional join code for private lobbies
+ * @returns Game ID, lobby ID, and opponent username
  */
 export const joinLobby = mutation({
   args: {
-    
     lobbyId: v.id("gameLobbies"),
     joinCode: v.optional(v.string()),
   },
@@ -247,45 +258,37 @@ export const joinLobby = mutation({
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Lobby not found or no longer available",
-    });
+        reason: "Lobby not found or no longer available",
+      });
     }
 
-    // Check lobby is waiting
-    if (lobby.status !== "waiting") {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Lobby is not accepting players",
-    });
-    }
+    // Validate lobby status is waiting
+    validateLobbyStatus(lobby, ["waiting"]);
+
+    // Validate lobby has capacity (max 2 players)
+    validateLobbyCapacity(lobby, 2);
 
     // Check user is not the host (do this BEFORE full validation for better error messages)
     if (lobby.hostId === userId) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "You cannot join your own lobby",
-    });
+        reason: "You cannot join your own lobby",
+      });
     }
 
     // Now do full validation
     const { username, deckArchetype } = await validateUserCanCreateGame(ctx);
 
-    // Check lobby doesn't already have opponent (race condition)
-    if (lobby.opponentId) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "This lobby is no longer available",
-    });
-    }
-
     // Validate join code for private lobbies
     if (lobby.isPrivate) {
       if (!args.joinCode) {
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Join code required for private match",
-    });
+          reason: "Join code required for private match",
+        });
       }
       if (args.joinCode.toUpperCase() !== lobby.joinCode) {
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Invalid join code for private match",
-    });
+          reason: "Invalid join code for private match",
+        });
       }
     }
 
@@ -295,8 +298,8 @@ reason: "Invalid join code for private match",
       const ratingDiff = Math.abs(lobby.hostRating - opponentRating);
       if (ratingDiff > lobby.maxRatingDiff) {
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Your rating is too far from the host's rating for ranked match",
-    });
+          reason: "Your rating is too far from the host's rating for ranked match",
+        });
       }
     }
 
@@ -310,7 +313,7 @@ reason: "Your rating is too far from the host's rating for ranked match",
     // Deterministically decide who goes first based on game ID
     // This ensures consistent results if the mutation is retried
     const seed = `${gameId}-first-turn`;
-    const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const goesFirst = hash % 2 === 0 ? lobby.hostId : userId;
     const now = Date.now();
 
@@ -361,10 +364,13 @@ reason: "Your rating is too far from the host's rating for ranked match",
 
 /**
  * Join a lobby using a join code
+ * Finds and joins a private lobby by its 6-character join code
+ *
+ * @param joinCode - The 6-character alphanumeric join code
+ * @returns Game ID, lobby ID, and opponent username
  */
 export const joinLobbyByCode = mutation({
   args: {
-    
     joinCode: v.string(),
   },
   handler: async (ctx, args) => {
@@ -380,8 +386,8 @@ export const joinLobbyByCode = mutation({
 
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Invalid or expired join code",
-    });
+        reason: "Invalid or expired join code",
+      });
     }
 
     // Use joinLobby logic
@@ -391,15 +397,15 @@ reason: "Invalid or expired join code",
     // Check user is not the host
     if (lobby.hostId === userId) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "You cannot join your own lobby",
-    });
+        reason: "You cannot join your own lobby",
+      });
     }
 
     // Check lobby doesn't already have opponent
     if (lobby.opponentId) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "This lobby is no longer available",
-    });
+        reason: "This lobby is no longer available",
+      });
     }
 
     // Calculate opponent rank
@@ -412,7 +418,7 @@ reason: "This lobby is no longer available",
     // Deterministically decide who goes first based on game ID
     // This ensures consistent results if the mutation is retried
     const seed = `${gameId}-first-turn`;
-    const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const goesFirst = hash % 2 === 0 ? lobby.hostId : userId;
     const now = Date.now();
 
@@ -463,11 +469,18 @@ reason: "This lobby is no longer available",
 
 /**
  * Cancel user's waiting lobby
+ * Cancels the user's lobby before anyone joins
+ *
+ * @returns Success status
  */
 export const cancelLobby = mutation({
   args: {},
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
+
+    // SECURITY: Rate limit lobby actions to prevent spam
+    // Max 20 actions per minute per user (configured in lib/rateLimit.ts)
+    await checkRateLimitWrapper(ctx, "LOBBY_ACTION", userId);
 
     // Find user's waiting lobby
     const lobby = await ctx.db
@@ -478,8 +491,8 @@ export const cancelLobby = mutation({
 
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "No active lobby to cancel",
-    });
+        reason: "No active lobby to cancel",
+      });
     }
 
     // Update lobby status
@@ -496,41 +509,50 @@ reason: "No active lobby to cancel",
 
 /**
  * Leave a lobby (as host or opponent)
+ * Cannot be used once game is active
+ *
+ * @returns Success status
  */
 export const leaveLobby = mutation({
   args: {},
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
 
+    // SECURITY: Rate limit lobby actions to prevent spam
+    // Max 20 actions per minute per user (configured in lib/rateLimit.ts)
+    await checkRateLimitWrapper(ctx, "LOBBY_ACTION", userId);
+
     // Find user's lobby (as host or opponent)
-    const lobbies = await ctx.db
-      .query("gameLobbies")
-      .filter((q) =>
-        q.and(
-          q.or(
-            q.eq(q.field("hostId"), userId),
-            q.eq(q.field("opponentId"), userId)
-          ),
-          q.or(
-            q.eq(q.field("status"), "waiting"),
-            q.eq(q.field("status"), "active")
+    // Query by hostId and opponentId separately using indexes for efficiency
+    const [hostLobby, opponentLobbies] = await Promise.all([
+      ctx.db
+        .query("gameLobbies")
+        .withIndex("by_host", (q) => q.eq("hostId", userId))
+        .filter((q) => q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")))
+        .first(),
+      ctx.db
+        .query("gameLobbies")
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("opponentId"), userId),
+            q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active"))
           )
         )
-      )
-      .collect();
+        .collect(),
+    ]);
 
-    const lobby = lobbies[0];
+    const lobby = hostLobby || opponentLobbies[0];
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "No active lobby to leave",
-    });
+        reason: "No active lobby to leave",
+      });
     }
 
     // Cannot leave active game
     if (lobby.status === "active") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Cannot leave an active game (game in progress)",
-    });
+        reason: "Cannot leave an active game (game in progress)",
+      });
     }
 
     // If user is host

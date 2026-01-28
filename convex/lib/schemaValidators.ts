@@ -31,10 +31,7 @@ export const moderationActionValidator = v.union(
 /**
  * Player type validator
  */
-export const playerTypeValidator = v.union(
-  v.literal("human"),
-  v.literal("ai")
-);
+export const playerTypeValidator = v.union(v.literal("human"), v.literal("ai"));
 
 /**
  * Player moderation log validator

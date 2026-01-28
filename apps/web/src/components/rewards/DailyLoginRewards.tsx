@@ -1,11 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Calendar, Check, Coins, Gem, Gift, Package, Sparkles, Star } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { Calendar, Check, Coins, Gem, Gift, Package, Sparkles, Star } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface DayReward {
   day: number;
@@ -186,7 +186,7 @@ export function DailyLoginRewards({
                 {claiming === todayReward.day ? (
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
                   >
                     <Sparkles className="w-4 h-4" />
                   </motion.div>

@@ -1,9 +1,9 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { FlaskConical, Shield, Sparkles, Sword, Zap } from "lucide-react";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
 import type { CardInZone } from "../../hooks/useGameBoard";
 
 interface HandCardProps {
@@ -41,18 +41,20 @@ export function HandCard({
   // Fan effect - cards spread out from center
   const centerIndex = (totalCards - 1) / 2;
   const offsetFromCenter = index - centerIndex;
-  const rotation = offsetFromCenter * 3; // 3 degrees per card from center
-  const translateY = Math.abs(offsetFromCenter) * 2; // Slight arc
+  const rotation = offsetFromCenter * 2.5; // 2.5 degrees per card from center
+  const translateY = Math.abs(offsetFromCenter) * 3; // Slight arc
 
-  const colors = RARITY_COLORS[card.rarity] ?? { border: "border-gray-500", glow: "" };
+  const colors = card.rarity
+    ? (RARITY_COLORS[card.rarity] ?? { border: "border-gray-500", glow: "" })
+    : { border: "border-gray-500", glow: "" };
   const bgColor =
     CARD_TYPE_COLORS[card.cardType ?? "monster"] ?? "from-orange-900/80 to-orange-950/80";
 
   const effectiveAttack = card.monsterStats
-    ? card.monsterStats.attack + (card.attackModifier ?? 0)
+    ? (card.monsterStats.attack ?? 0) + (card.attackModifier ?? 0)
     : 0;
   const effectiveDefense = card.monsterStats
-    ? card.monsterStats.defense + (card.defenseModifier ?? 0)
+    ? (card.monsterStats.defense ?? 0) + (card.defenseModifier ?? 0)
     : 0;
 
   return (
@@ -74,8 +76,8 @@ export function HandCard({
       }}
       whileTap={{ scale: 1.08 }}
       className={cn(
-        "relative w-12 h-16 sm:w-14 sm:h-20 rounded-lg border-2 transition-all duration-200",
-        "bg-gradient-to-br",
+        "relative w-16 h-22 sm:w-20 sm:h-28 rounded-lg border-2 transition-all duration-200",
+        "bg-linear-to-br",
         bgColor,
         colors.border,
         colors.glow && `shadow-lg ${colors.glow}`,
@@ -88,21 +90,21 @@ export function HandCard({
       )}
       style={{
         transformOrigin: "bottom center",
-        marginLeft: index > 0 ? "-0.25rem" : "0",
+        marginLeft: index > 0 ? "0.25rem" : "0",
       }}
     >
       {/* Card image */}
-      <div className="absolute inset-0.5 rounded overflow-hidden bg-slate-800 relative">
+      <div className="absolute inset-0.5 rounded overflow-hidden bg-slate-800">
         {card.imageUrl ? (
           <Image
             src={card.imageUrl}
-            alt={card.name}
+            alt={card.name || "Card"}
             fill
             className="object-cover"
-            sizes="(max-width: 640px) 56px, 80px"
+            sizes="(max-width: 640px) 64px, 96px"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center p-0.5">
+          <div className="w-full h-full bg-linear-to-br from-slate-700 to-slate-800 flex items-center justify-center p-0.5">
             {card.cardType === "creature" ? (
               <Sparkles className="w-4 h-4 text-slate-500" />
             ) : card.cardType === "spell" ? (
@@ -115,14 +117,14 @@ export function HandCard({
       </div>
 
       {/* Card name banner */}
-      <div className="absolute top-0.5 left-0.5 right-0.5 bg-black/70 rounded px-0.5 py-0.5">
-        <p className="text-[8px] font-semibold text-white truncate">{card.name}</p>
+      <div className="absolute top-0.5 left-0.5 right-0.5 bg-black/70 rounded px-1 py-0.5">
+        <p className="text-[9px] sm:text-[10px] font-semibold text-white truncate">{card.name}</p>
       </div>
 
       {/* Card type badge */}
       <div
         className={cn(
-          "absolute top-4 right-0.5 px-0.5 py-0.5 rounded text-[6px] font-bold uppercase",
+          "absolute top-5 sm:top-6 right-0.5 px-1 py-0.5 rounded text-[7px] sm:text-[8px] font-bold uppercase",
           card.cardType === "creature" && "bg-orange-600 text-white",
           card.cardType === "spell" && "bg-green-600 text-white",
           card.cardType === "trap" && "bg-purple-600 text-white",
@@ -134,13 +136,13 @@ export function HandCard({
 
       {/* Monster stats */}
       {card.monsterStats && (
-        <div className="absolute bottom-0.5 left-0.5 right-0.5 bg-black/80 rounded px-0.5 py-0.5 flex justify-between">
-          <span className="text-[8px] font-bold text-red-400 flex items-center gap-0.5">
-            <Sword className="w-2 h-2" />
+        <div className="absolute bottom-0.5 left-0.5 right-0.5 bg-black/80 rounded px-1 py-1 flex justify-between">
+          <span className="text-[9px] sm:text-[10px] font-bold text-red-400 flex items-center gap-0.5">
+            <Sword className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             {effectiveAttack}
           </span>
-          <span className="text-[8px] font-bold text-blue-400 flex items-center gap-0.5">
-            <Shield className="w-2 h-2" />
+          <span className="text-[9px] sm:text-[10px] font-bold text-blue-400 flex items-center gap-0.5">
+            <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             {effectiveDefense}
           </span>
         </div>
@@ -148,16 +150,18 @@ export function HandCard({
 
       {/* Level indicator for monsters */}
       {card.monsterStats && (
-        <div className="absolute top-4 left-0.5 flex items-center gap-0.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-          <span className="text-[6px] text-yellow-400 font-bold">Lv.{card.monsterStats.level}</span>
+        <div className="absolute top-5 sm:top-6 left-0.5 flex items-center gap-0.5">
+          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-yellow-400" />
+          <span className="text-[7px] sm:text-[8px] text-yellow-400 font-bold">
+            Lv.{card.monsterStats.level}
+          </span>
         </div>
       )}
 
       {/* Playable indicator */}
       {isPlayable && (
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5">
-          <div className="bg-linear-to-r from-green-400 to-emerald-500 text-white text-[7px] sm:text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-lg shadow-green-500/60 animate-pulse">
+        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5">
+          <div className="bg-linear-to-r from-green-400 to-emerald-500 text-white text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold shadow-lg shadow-green-500/60 animate-pulse">
             ▶ PLAYABLE
           </div>
         </div>
@@ -188,7 +192,7 @@ export function OpponentHandCard({ index, totalCards }: { index: number; totalCa
     <motion.div
       initial={{ opacity: 0, y: -30 }}
       animate={{ opacity: 1, y: 0, rotate: rotation }}
-      className="w-8 h-11 rounded-md bg-gradient-to-br from-indigo-900 to-purple-900 border-2 border-indigo-500/50 flex items-center justify-center"
+      className="w-8 h-11 rounded-md bg-linear-to-br from-indigo-900 to-purple-900 border-2 border-indigo-500/50 flex items-center justify-center"
       style={{
         transformOrigin: "top center",
         marginLeft: index > 0 ? "-0.25rem" : "0",

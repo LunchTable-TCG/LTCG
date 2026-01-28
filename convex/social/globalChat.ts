@@ -1,11 +1,12 @@
+import { RateLimiter, SECOND } from "@convex-dev/ratelimiter";
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { query, mutation, internalMutation, MutationCtx } from "../_generated/server";
-import { Id } from "../_generated/dataModel";
+import { components } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import { type MutationCtx, internalMutation, mutation, query } from "../_generated/server";
+import { CHAT } from "../lib/constants";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { CHAT } from "../lib/constants";
-import { RateLimiter, SECOND } from "@convex-dev/ratelimiter";
-import { components } from "../_generated/api";
 import type { UserStatus } from "../lib/types";
 
 /**
@@ -58,25 +59,46 @@ const messageValidator = v.object({
 const onlineUserValidator = v.object({
   userId: v.id("users"),
   username: v.string(),
-  status: v.union(
-    v.literal("online"),
-    v.literal("in_game"),
-    v.literal("idle")
-  ),
+  status: v.union(v.literal("online"), v.literal("in_game"), v.literal("idle")),
   lastActiveAt: v.number(),
+  rank: v.string(), // Rank tier (Bronze, Silver, Gold, etc.)
+  rankedElo: v.number(), // ELO rating for ranked
 });
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+/**
+ * Calculate rank tier from ELO rating
+ */
+function calculateRankFromElo(elo: number): string {
+  if (elo < 1000) return "Bronze";
+  if (elo < 1400) return "Bronze";
+  if (elo < 1600) return "Silver";
+  if (elo < 2000) return "Silver";
+  if (elo < 2200) return "Gold";
+  if (elo < 2600) return "Gold";
+  if (elo < 2800) return "Platinum";
+  if (elo < 3200) return "Platinum";
+  if (elo < 3400) return "Diamond";
+  if (elo < 3800) return "Diamond";
+  if (elo < 4000) return "Master";
+  if (elo < 4400) return "Master";
+  return "Legend";
+}
 
 // =============================================================================
 // Queries
 // =============================================================================
 
 /**
- * Get recent global chat messages
- *
+ * Get recent global chat messages.
  * Returns the most recent messages in chronological order.
  * Public query - no authentication required to read.
  *
- * @param limit - Maximum number of messages to return (default 50, max 100)
+ * @param limit - Maximum number of messages to return (default: 50, max: 100)
+ * @returns Array of chat messages with user info and timestamps
  */
 export const getRecentMessages = query({
   args: {
@@ -102,10 +124,41 @@ export const getRecentMessages = query({
 });
 
 /**
- * Get online users
+ * Get paginated global chat messages (for infinite scroll).
+ * Returns messages in chronological order (oldest first) with cursor support.
+ * Public query - no authentication required to read.
  *
+ * Use with usePaginatedQuery hook on the frontend for infinite scroll.
+ *
+ * @param paginationOpts - Pagination options with numItems and cursor
+ * @returns PaginationResult with page of messages and continuation cursor
+ */
+export const getPaginatedMessages = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    // Query messages in descending order (newest first)
+    // Convex pagination works with the natural query order
+    const paginatedResult = await ctx.db
+      .query("globalChatMessages")
+      .withIndex("by_created")
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    // Reverse the page to show oldest first (chronological order for chat)
+    return {
+      ...paginatedResult,
+      page: paginatedResult.page.reverse(),
+    };
+  },
+});
+
+/**
+ * Get online users in the Tavern Hall.
  * Returns users who have been active in the last 5 minutes.
+ * Filters out AI agents (story mode NPCs).
  * Public query - no authentication required.
+ *
+ * @returns Array of online users with status, rank, and ELO rating
  */
 export const getOnlineUsers = query({
   args: {},
@@ -120,24 +173,41 @@ export const getOnlineUsers = query({
       .withIndex("by_last_active", (q) => q.gte("lastActiveAt", cutoff))
       .collect();
 
-    // Return sorted by last active (most recent first)
-    return presenceRecords
-      .map((p) => ({
-        userId: p.userId,
-        username: p.username,
-        status: p.status,
-        lastActiveAt: p.lastActiveAt,
-      }))
+    // Filter out AI agents by checking user record and include rank data
+    const filteredRecords = await Promise.all(
+      presenceRecords.map(async (p) => {
+        const user = await ctx.db.get(p.userId);
+        // Exclude AI agents (story mode NPCs)
+        if (user?.isAiAgent) return null;
+
+        // Get user's ranked ELO and calculate rank
+        const rankedElo = user?.rankedElo ?? 1000;
+        const rank = calculateRankFromElo(rankedElo);
+
+        return {
+          userId: p.userId,
+          username: p.username,
+          status: p.status,
+          lastActiveAt: p.lastActiveAt,
+          rank,
+          rankedElo,
+        };
+      })
+    );
+
+    // Remove nulls and return sorted by last active (most recent first)
+    return filteredRecords
+      .filter((p): p is NonNullable<typeof p> => p !== null)
       .sort((a, b) => b.lastActiveAt - a.lastActiveAt);
   },
 });
 
 /**
- * Get message count for a time period
- *
+ * Get message count for a time period.
  * Useful for analytics and moderation tracking.
  *
  * @param since - Timestamp to count messages from (default: last 24 hours)
+ * @returns Total number of messages sent since the specified timestamp
  */
 export const getMessageCount = query({
   args: {
@@ -149,8 +219,7 @@ export const getMessageCount = query({
 
     const messages = await ctx.db
       .query("globalChatMessages")
-      .withIndex("by_created")
-      .filter((q) => q.gte(q.field("createdAt"), since))
+      .withIndex("by_created", (q) => q.gte("createdAt", since))
       .collect();
 
     return messages.length;
@@ -162,19 +231,18 @@ export const getMessageCount = query({
 // =============================================================================
 
 /**
- * Send a message to global chat
- *
- * Validates authentication, content, and enforces rate limiting.
+ * Send a message to global chat.
+ * Validates authentication, content, and enforces rate limiting (5 messages per 10 seconds).
  * Updates user presence as a side effect.
  *
- * @param token - Session token for authentication
  * @param content - Message content (max 500 characters)
- * @returns Message ID
- * @throws Error if not authenticated, rate limited, or invalid content
+ * @returns Message ID of the created message
+ * @throws CHAT_MESSAGE_TOO_LONG if content exceeds 500 characters
+ * @throws CHAT_MESSAGE_EMPTY if content is empty after trimming
+ * @throws RATE_LIMIT_CHAT_MESSAGE if rate limit exceeded
  */
 export const sendMessage = mutation({
   args: {
-    
     content: v.string(),
   },
   returns: v.id("globalChatMessages"),
@@ -230,20 +298,16 @@ export const sendMessage = mutation({
 });
 
 /**
- * Update user presence (heartbeat)
- *
+ * Update user presence (heartbeat).
  * Called periodically to keep user in the "online" list.
  * Should be called every 30 seconds from the frontend.
  *
- * @param token - Session token for authentication
- * @param status - User status (default: "online")
+ * @param status - User status: "online", "in_game", or "idle" (default: "online")
+ * @returns null
  */
 export const updatePresence = mutation({
   args: {
-    
-    status: v.optional(
-      v.union(v.literal("online"), v.literal("in_game"), v.literal("idle"))
-    ),
+    status: v.optional(v.union(v.literal("online"), v.literal("in_game"), v.literal("idle"))),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -263,17 +327,18 @@ export const updatePresence = mutation({
 // =============================================================================
 
 /**
- * Send a system message
- *
+ * Send a system message to global chat.
  * Internal mutation for system announcements (e.g., "Player won a match").
  * Called from other backend functions, not directly from clients.
  *
  * IMPORTANT: Requires a system user to exist in the database.
- * Create one with: { username: "System", email: "system@localhost", name: "System", createdAt: Date.now() }
+ * Create one with: { username: "system", email: "system@localhost", name: "System", createdAt: Date.now() }
  *
  * @param message - System message content
- * @param systemUserId - Optional: ID of the system user (will auto-fetch if not provided)
- * @returns Message ID
+ * @param systemUserId - Optional ID of the system user (will auto-fetch if not provided)
+ * @returns Message ID of the created system message
+ * @throws NOT_FOUND_USER if system user not found
+ * @internal Called from backend only, not from client
  */
 export const sendSystemMessage = internalMutation({
   args: {
@@ -296,7 +361,8 @@ export const sendSystemMessage = internalMutation({
 
       if (!systemUser) {
         throw createError(ErrorCode.NOT_FOUND_USER, {
-          reason: "System user not found. Create a system user with username 'system' before sending system messages.",
+          reason:
+            "System user not found. Create a system user with username 'system' before sending system messages.",
         });
       }
 

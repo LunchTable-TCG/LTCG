@@ -1,9 +1,7 @@
-// @ts-nocheck
-// TODO: This file depends on Convex game APIs that have not been implemented yet.
 "use client";
 
-import type { Id } from "@convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+import type { Id } from "@convex/_generated/dataModel";
 import type { CardInZone } from "../../hooks/useGameBoard";
 import { BoardCard, EmptySlot } from "../cards/BoardCard";
 
@@ -11,10 +9,10 @@ interface MonsterZoneProps {
   frontline: CardInZone | null;
   support: CardInZone[];
   isOpponent?: boolean;
-  selectedCard?: Id<"cardInstances"> | null;
-  targetableCards?: Set<Id<"cardInstances">>;
-  attackingCard?: Id<"cardInstances"> | null;
-  attackableCards?: Set<Id<"cardInstances">>;
+  selectedCard?: Id<"cardDefinitions"> | null;
+  targetableCards?: Set<Id<"cardDefinitions">>;
+  attackingCard?: Id<"cardDefinitions"> | null;
+  attackableCards?: Set<Id<"cardDefinitions">>;
   onCardClick?: (card: CardInZone) => void;
   onCardAttack?: (card: CardInZone) => void;
   onEmptySlotClick?: (zone: "frontline" | "support", index?: number) => void;
@@ -25,9 +23,9 @@ export function MonsterZone({
   support,
   isOpponent = false,
   selectedCard,
-  targetableCards = new Set<Id<"cardInstances">>(),
+  targetableCards = new Set<Id<"cardDefinitions">>(),
   attackingCard,
-  attackableCards = new Set<Id<"cardInstances">>(),
+  attackableCards = new Set<Id<"cardDefinitions">>(),
   onCardClick,
   onCardAttack,
   onEmptySlotClick,

@@ -5,15 +5,22 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
-import { requireAuthQuery, requireAuthMutation } from "../lib/convexAuth";
-import { ErrorCode, createError } from "../lib/errorCodes";
+import { internalMutation, mutation, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
+import { ErrorCode, createError } from "../lib/errorCodes";
 import { addXP } from "../lib/xpHelpers";
 
 /**
  * Get stages for a specific chapter with user progress
+ *
+ * Retrieves all stages for a chapter with the authenticated user's progress on each stage.
+ * Includes completion status, stars earned, best score, and first clear status.
+ * Stages are sorted by stage number.
+ *
+ * @param chapterId - ID of the chapter to get stages for
+ * @returns Array of stages with progress data, sorted by stage number
  */
 export const getChapterStages = query({
   args: {
@@ -63,7 +70,13 @@ export const getChapterStages = query({
 
 /**
  * Initialize stage progress for a chapter
- * Called when user first views a chapter
+ *
+ * Creates progress records for all stages in a chapter. Only stage 1 is unlocked,
+ * remaining stages are locked until the previous stage is completed.
+ * Called when user first views a chapter. Safe to call multiple times.
+ *
+ * @param chapterId - ID of the chapter to initialize progress for
+ * @returns Success status
  */
 export const initializeChapterStageProgress = mutation({
   args: {
@@ -83,9 +96,7 @@ export const initializeChapterStageProgress = mutation({
     for (const stage of stages) {
       const existing = await ctx.db
         .query("storyStageProgress")
-        .withIndex("by_user_stage", (q) =>
-          q.eq("userId", userId).eq("stageId", stage._id)
-        )
+        .withIndex("by_user_stage", (q) => q.eq("userId", userId).eq("stageId", stage._id))
         .first();
 
       if (!existing) {
@@ -108,6 +119,16 @@ export const initializeChapterStageProgress = mutation({
 
 /**
  * Complete a stage and unlock the next one
+ *
+ * Records stage completion, calculates stars based on remaining LP (1-3 stars),
+ * awards gold and XP with bonuses for stars and first clear. Updates progress
+ * to completed/starred status and unlocks the next stage if this was the first completion.
+ * Returns no rewards if the player lost.
+ *
+ * @param stageId - ID of the stage being completed
+ * @param won - Whether the player won the battle
+ * @param finalLP - Player's remaining LP at battle end
+ * @returns Win status, rewards, stars earned, best score, unlock status, level up info, and new badges
  */
 export const completeStage = mutation({
   args: {
@@ -129,9 +150,7 @@ export const completeStage = mutation({
     // Get progress
     const progress = await ctx.db
       .query("storyStageProgress")
-      .withIndex("by_user_stage", (q) =>
-        q.eq("userId", userId).eq("stageId", args.stageId)
-      )
+      .withIndex("by_user_stage", (q) => q.eq("userId", userId).eq("stageId", args.stageId))
       .first();
 
     if (!progress) {
@@ -205,9 +224,7 @@ export const completeStage = mutation({
       if (nextStage) {
         const nextProgress = await ctx.db
           .query("storyStageProgress")
-          .withIndex("by_user_stage", (q) =>
-            q.eq("userId", userId).eq("stageId", nextStage._id)
-          )
+          .withIndex("by_user_stage", (q) => q.eq("userId", userId).eq("stageId", nextStage._id))
           .first();
 
         if (nextProgress && nextProgress.status === "locked") {
@@ -227,10 +244,12 @@ export const completeStage = mutation({
       starsEarned,
       newBestScore,
       unlockedNextStage: progress.timesCompleted === 0 && stage.stageNumber < 10,
-      levelUp: xpResult.leveledUp ? {
-        newLevel: xpResult.newLevel,
-        oldLevel: xpResult.newLevel - 1
-      } : null,
+      levelUp: xpResult.leveledUp
+        ? {
+            newLevel: xpResult.newLevel,
+            oldLevel: xpResult.newLevel - 1,
+          }
+        : null,
       newBadges: xpResult.badgesAwarded || [],
     };
   },

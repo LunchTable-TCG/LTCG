@@ -1,18 +1,16 @@
-// @ts-nocheck
-// TODO: This file depends on Convex game APIs that have not been implemented yet.
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, X, Zap } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { CardInZone } from "../hooks/useGameBoard";
 
 interface ResponseCard {
-  cardInstanceId: Id<"cardInstances">;
+  cardId: Id<"cardDefinitions">;
   effectName: string;
   effectIndex: number;
   speed: 1 | 2 | 3;
@@ -24,7 +22,7 @@ interface ResponsePromptProps {
   actionType: string;
   responseCards: ResponseCard[];
   timeRemaining: number;
-  onActivate: (cardInstanceId: Id<"cardInstances">, effectIndex: number) => void;
+  onActivate: (cardId: Id<"cardDefinitions">, effectIndex: number) => void;
   onPass: () => void;
 }
 
@@ -60,7 +58,7 @@ export function ResponsePrompt({
 
   const handleActivate = useCallback(
     (card: ResponseCard) => {
-      onActivate(card.cardInstanceId, card.effectIndex);
+      onActivate(card.cardId, card.effectIndex);
     },
     [onActivate]
   );
@@ -137,14 +135,14 @@ export function ResponsePrompt({
                   {responseCards.map((response) => (
                     <button
                       type="button"
-                      key={`${response.cardInstanceId}-${response.effectIndex}`}
+                      key={`${response.cardId}-${response.effectIndex}`}
                       onClick={() => handleActivate(response)}
                       className={cn(
                         "w-full flex items-center gap-2 p-2 rounded-lg border-2 transition-all",
                         "border-slate-700 bg-slate-800/50 hover:border-yellow-500/50 hover:bg-slate-800"
                       )}
                     >
-                      <div className="w-8 h-11 rounded border bg-gradient-to-br from-purple-600 to-purple-800 flex-shrink-0 overflow-hidden">
+                      <div className="w-8 h-11 rounded border bg-linear-to-br from-purple-600 to-purple-800 shrink-0 overflow-hidden">
                         {response.card?.imageUrl ? (
                           <Image
                             src={response.card.imageUrl}
@@ -194,7 +192,7 @@ export function ResponsePrompt({
                 {responseCards.length === 1 && (
                   <Button
                     className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white"
-                    onClick={() => handleActivate(responseCards[0])}
+                    onClick={() => handleActivate(responseCards[0]!)}
                     size="sm"
                   >
                     <Zap className="w-3 h-3 mr-1" />

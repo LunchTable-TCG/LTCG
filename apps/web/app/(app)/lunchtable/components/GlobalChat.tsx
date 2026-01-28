@@ -1,5 +1,10 @@
 "use client";
 
+import { useGlobalChat } from "@/hooks";
+import { cn } from "@/lib/utils";
+import { sanitizeText, sanitizeChatMessage } from "@/lib/sanitize";
+import { api } from "@convex/_generated/api";
+import { useMutation } from "convex/react";
 import {
   Bot,
   ChevronUp,
@@ -17,10 +22,10 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { ChallengeConfirmDialog } from "./ChallengeConfirmDialog";
 import { PlayerProfileDialog } from "./PlayerProfileDialog";
-import { useGlobalChat } from "@/hooks";
+import { ReportUserDialog } from "./ReportUserDialog";
 
 interface ChatMessage {
   id: string;
@@ -91,7 +96,15 @@ export function GlobalChat() {
     onlineUsers: convexOnlineUsers,
     sendMessage: sendMessageAction,
     updatePresence,
+    canLoadMore,
+    loadMore,
   } = useGlobalChat();
+
+  // Challenge mutation
+  const sendChallengeMutation = useMutation(api.social.challenges.sendChallenge);
+
+  // Report mutation
+  const reportUserMutation = useMutation(api.social.reports.reportUser);
 
   const [chatMode, setChatMode] = useState<ChatMode>("global");
   const [message, setMessage] = useState("");
@@ -108,26 +121,31 @@ export function GlobalChat() {
   const [challengeTarget, setChallengeTarget] = useState<{ username: string; rank: string } | null>(
     null
   );
+  const [reportTarget, setReportTarget] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const agentMessagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Transform Convex messages to ChatMessage format
-  const messages: ChatMessage[] = (convexMessages || []).map((msg: NonNullable<typeof convexMessages>[number]) => ({
-    id: msg._id,
-    username: msg.username,
-    message: msg.message,
-    timestamp: msg.createdAt,
-    isSystem: msg.isSystem,
-  }));
+  const messages: ChatMessage[] = (convexMessages || []).map(
+    (msg: NonNullable<typeof convexMessages>[number]) => ({
+      id: msg._id,
+      username: msg.username,
+      message: msg.message,
+      timestamp: msg.createdAt,
+      isSystem: msg.isSystem,
+    })
+  );
 
   // Transform Convex online users to OnlineUser format
-  const onlineUsers: OnlineUser[] = (convexOnlineUsers || []).map((user: NonNullable<typeof convexOnlineUsers>[number]) => ({
-    id: user.userId,
-    username: user.username,
-    rank: "Gold", // TODO: Get rank from user profile
-    status: user.status,
-  }));
+  const onlineUsers: OnlineUser[] = (convexOnlineUsers || []).map(
+    (user: NonNullable<typeof convexOnlineUsers>[number]) => ({
+      id: user.userId,
+      username: user.username,
+      rank: user.rank, // Real rank calculated from ELO
+      status: user.status,
+    })
+  );
 
   const onlineCount = onlineUsers.length;
 
@@ -174,9 +192,6 @@ export function GlobalChat() {
   }, [userMenu]);
 
   // Presence heartbeat is handled by useGlobalChat hook
-
-  // Removed: handleLoadMore - pagination not implemented in MVP
-  // TODO: Implement proper pagination with offset/cursor in future version
 
   const handleSend = async () => {
     if (!message.trim() || isSending) return;
@@ -240,10 +255,43 @@ export function GlobalChat() {
     setUserMenu(null);
   };
 
-  const handleChallengeConfirm = (mode: "casual" | "ranked") => {
-    // TODO: Send challenge via Convex
-    console.log(`Challenging ${challengeTarget?.username} to ${mode} match`);
-    setChallengeTarget(null);
+  const handleChallengeConfirm = async (mode: "casual" | "ranked") => {
+    if (!challengeTarget) return;
+
+    try {
+      const lobbyId = await sendChallengeMutation({
+        opponentUsername: challengeTarget.username,
+        mode,
+      });
+
+      toast.success(`Challenge sent to ${challengeTarget.username}!`, {
+        description: `Lobby created. They will be notified to join.`,
+      });
+      setChallengeTarget(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send challenge");
+      console.error("Challenge failed:", error);
+    }
+  };
+
+  const handleReportUser = async (reason: string) => {
+    if (!reportTarget) return;
+
+    try {
+      await reportUserMutation({
+        reportedUsername: reportTarget,
+        reason,
+      });
+
+      toast.success(`Report submitted`, {
+        description: `Thank you. Moderators will review your report.`,
+      });
+      setReportTarget(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to submit report");
+      console.error("Report failed:", error);
+      throw error;
+    }
   };
 
   const handleAgentSend = () => {
@@ -352,7 +400,18 @@ export function GlobalChat() {
           ref={messagesContainerRef}
           className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-[#3d2b1f] scrollbar-track-transparent"
         >
-          {/* Load More Button - Removed for MVP (pagination not implemented yet) */}
+          {/* Load More Button */}
+          {canLoadMore && (
+            <div className="flex justify-center pb-3">
+              <button
+                type="button"
+                onClick={loadMore}
+                className="px-4 py-2 text-xs font-medium text-[#d4af37] bg-[#d4af37]/10 hover:bg-[#d4af37]/20 border border-[#d4af37]/30 rounded-lg transition-all duration-200"
+              >
+                Load Older Messages
+              </button>
+            </div>
+          )}
 
           {messages.map((msg) => (
             <div
@@ -365,7 +424,7 @@ export function GlobalChat() {
               {msg.isSystem ? (
                 <div className="py-1">
                   <span className="inline-block px-3 py-1 rounded-full bg-[#d4af37]/10 text-[10px] text-[#d4af37] font-medium">
-                    {msg.message}
+                    {sanitizeText(msg.message)}
                   </span>
                 </div>
               ) : (
@@ -381,7 +440,7 @@ export function GlobalChat() {
                     disabled={msg.username === "You"}
                   >
                     <span className="text-xs font-black text-[#d4af37]">
-                      {msg.username[0]?.toUpperCase()}
+                      {sanitizeText(msg.username)[0]?.toUpperCase()}
                     </span>
                   </button>
 
@@ -399,7 +458,7 @@ export function GlobalChat() {
                           )}
                           disabled={msg.username === "You"}
                         >
-                          {msg.username}
+                          {sanitizeText(msg.username)}
                           {mutedUsers.has(msg.username) && (
                             <VolumeX className="w-3 h-3 inline ml-1 text-red-400" />
                           )}
@@ -415,9 +474,12 @@ export function GlobalChat() {
                             ? "text-[#a89f94]/40 italic"
                             : "text-[#e8e0d5]"
                         )}
-                      >
-                        {mutedUsers.has(msg.username) ? "[Message hidden]" : msg.message}
-                      </p>
+                        dangerouslySetInnerHTML={{
+                          __html: mutedUsers.has(msg.username)
+                            ? "[Message hidden]"
+                            : sanitizeChatMessage(msg.message),
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -479,9 +541,10 @@ export function GlobalChat() {
                       {formatTime(msg.timestamp)}
                     </span>
                   </div>
-                  <p className="text-sm text-[#e8e0d5] leading-relaxed wrap-break-word">
-                    {msg.message}
-                  </p>
+                  <p
+                    className="text-sm text-[#e8e0d5] leading-relaxed wrap-break-word"
+                    dangerouslySetInnerHTML={{ __html: sanitizeChatMessage(msg.message) }}
+                  />
                 </div>
               </div>
             </div>
@@ -610,20 +673,19 @@ export function GlobalChat() {
             {/* Users List */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2 max-h-[calc(100vh-220px)] scrollbar-thin scrollbar-thumb-[#3d2b1f] scrollbar-track-transparent">
               {onlineUsers.map((user) => (
-                <button
-                  type="button"
+                <div
                   key={user.id}
                   onClick={() => {
                     setSelectedProfile(user.username);
                     setIsOnlinePanelOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-[#3d2b1f]/50 hover:border-[#d4af37]/30 hover:bg-black/30 transition-all group text-left"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-[#3d2b1f]/50 hover:border-[#d4af37]/30 hover:bg-black/30 transition-all group text-left cursor-pointer"
                 >
                   {/* Avatar with Status */}
                   <div className="relative">
                     <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#8b4513] to-[#3d2b1f] flex items-center justify-center border border-[#d4af37]/20 group-hover:border-[#d4af37]/50 transition-colors">
                       <span className="text-sm font-black text-[#d4af37]">
-                        {user.username[0]?.toUpperCase()}
+                        {sanitizeText(user.username)[0]?.toUpperCase()}
                       </span>
                     </div>
                     <div
@@ -638,7 +700,7 @@ export function GlobalChat() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-[#e8e0d5] text-sm truncate group-hover:text-[#d4af37] transition-colors">
-                        {user.username}
+                        {sanitizeText(user.username)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -672,7 +734,7 @@ export function GlobalChat() {
                       <Trophy className="w-4 h-4" />
                     </button>
                   )}
-                </button>
+                </div>
               ))}
             </div>
           </div>
@@ -743,7 +805,7 @@ export function GlobalChat() {
               <button
                 type="button"
                 onClick={() => {
-                  // TODO: Open report modal
+                  setReportTarget(userMenu.username);
                   setUserMenu(null);
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm text-[#e8e0d5] hover:bg-red-500/10 hover:text-red-400 transition-all"
@@ -770,6 +832,14 @@ export function GlobalChat() {
         onConfirm={handleChallengeConfirm}
         opponentUsername={challengeTarget?.username || ""}
         opponentRank={challengeTarget?.rank}
+      />
+
+      {/* Report User Dialog */}
+      <ReportUserDialog
+        username={reportTarget || ""}
+        isOpen={!!reportTarget}
+        onClose={() => setReportTarget(null)}
+        onSubmit={handleReportUser}
       />
     </div>
   );

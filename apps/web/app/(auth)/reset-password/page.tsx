@@ -1,17 +1,20 @@
 "use client";
 
+import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { motion } from "framer-motion";
 import { AlertCircle, ArrowRight, CheckCircle, Loader2, Lock, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { AuthPageShell } from "@/components/auth/AuthPageShell";
 
 function ResetPasswordForm() {
+  const { signIn } = useAuthActions();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const token = searchParams.get("token");
+  const email = searchParams.get("email");
 
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,14 +35,26 @@ function ResetPasswordForm() {
       return;
     }
 
+    if (!code.trim()) {
+      setError("Please enter the reset code");
+      return;
+    }
+
+    if (!email) {
+      setError("Email is required. Please request a new reset link.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // TODO: Implement actual password reset API call
-      // await api.auth.resetPassword({ token, password });
+      const formData = new FormData();
+      formData.append("email", email);
+      formData.append("code", code);
+      formData.append("newPassword", password);
+      formData.append("flow", "reset-verification");
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await signIn("password", formData);
       setIsSuccess(true);
 
       // Redirect to login after 3 seconds
@@ -53,7 +68,7 @@ function ResetPasswordForm() {
     }
   };
 
-  if (!token) {
+  if (!email) {
     return (
       <div className="text-center py-8">
         <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center">
@@ -63,11 +78,12 @@ function ResetPasswordForm() {
           Invalid Reset Link
         </h2>
         <p className="text-[#a89f94] mb-6">
-          This password reset link is invalid or has expired. Please request a new one.
+          This password reset link is invalid or missing required information. Please request a new
+          one.
         </p>
         <Link
           href="/forgot-password"
-          className="inline-block w-full py-3 rounded-xl bg-gradient-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white text-center font-bold transition-all"
+          className="inline-block w-full py-3 rounded-xl bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] text-white text-center font-bold transition-all"
         >
           Request New Link
         </Link>
@@ -116,6 +132,30 @@ function ResetPasswordForm() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label
+            htmlFor="code"
+            className="block text-[10px] font-black text-[#a89f94] uppercase tracking-widest mb-2"
+          >
+            Reset Code
+          </label>
+          <div className="relative group">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#a89f94] group-focus-within:text-[#d4af37] transition-colors" />
+            <input
+              id="code"
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Enter code from email"
+              required
+              className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-parchment text-[#2a1f14] placeholder:text-[#2a1f14]/40 border border-[#3d2b1f]/20 focus:outline-none focus:border-[#d4af37]/50 focus:ring-2 focus:ring-[#d4af37]/10 transition-all font-medium"
+            />
+          </div>
+          <p className="text-[8px] text-[#a89f94]/60 mt-1.5 ml-1 font-medium italic">
+            Check your email for the reset code
+          </p>
+        </div>
+
         <div>
           <label
             htmlFor="password"
@@ -176,7 +216,7 @@ function ResetPasswordForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="group relative w-full py-4 rounded-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] transition-all duration-300 shadow-lg hover:shadow-gold"
+          className="group relative w-full py-4 rounded-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] transition-all duration-300 shadow-lg hover:shadow-gold"
         >
           <span className="relative flex items-center justify-center gap-2 text-lg font-black uppercase tracking-widest text-white">
             {isLoading ? (

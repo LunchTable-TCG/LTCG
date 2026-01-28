@@ -3,10 +3,10 @@
  * Displays player's calling card and most played card
  */
 
-import { Heart, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { PlayerProfile } from "./types";
+import { Heart, Sparkles } from "lucide-react";
 import { ELEMENT_CONFIG, RARITY_CONFIG } from "./constants";
+import type { PlayerProfile } from "./types";
 
 interface CallingCardSectionProps {
   profile: PlayerProfile;
@@ -60,10 +60,7 @@ export function CallingCardSection({ profile, onCardClick }: CallingCardSectionP
                     const Icon = ELEMENT_CONFIG[profile.callingCard.element].icon;
                     return (
                       <Icon
-                        className={cn(
-                          "w-5 h-5",
-                          ELEMENT_CONFIG[profile.callingCard.element].color
-                        )}
+                        className={cn("w-5 h-5", ELEMENT_CONFIG[profile.callingCard.element].color)}
                       />
                     );
                   })()}
@@ -121,9 +118,7 @@ export function CallingCardSection({ profile, onCardClick }: CallingCardSectionP
                 })()}
               </div>
               <div>
-                <p className="font-bold text-sm text-[#e8e0d5]">
-                  {profile.mostPlayedCard.name}
-                </p>
+                <p className="font-bold text-sm text-[#e8e0d5]">{profile.mostPlayedCard.name}</p>
                 <p className="text-[10px] text-[#a89f94]">
                   Played {profile.mostPlayedCard.timesPlayed.toLocaleString()} times
                 </p>

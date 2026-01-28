@@ -1,10 +1,10 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Compass, Home, Map as MapIcon } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 
 export default function NotFound() {
   const [mounted, setMounted] = useState(false);
@@ -36,7 +36,7 @@ export default function NotFound() {
               }}
               transition={{
                 duration: 3 + Math.random() * 2,
-                repeat: Infinity,
+                repeat: Number.POSITIVE_INFINITY,
                 delay: Math.random() * 2,
               }}
             />
@@ -58,7 +58,7 @@ export default function NotFound() {
           <div className="absolute inset-0 flex items-center justify-center">
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
             >
               <Compass className="w-24 h-24 text-[#d4af37]/50" />
             </motion.div>

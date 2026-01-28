@@ -1,20 +1,75 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import { toast } from "sonner";
+import { handleHookError } from "@/lib/errorHandling";
+
+interface UseGameLobbyReturn {
+  waitingLobbies: ReturnType<typeof useQuery<typeof api.games.listWaitingLobbies>> | undefined;
+  myLobby: ReturnType<typeof useQuery<typeof api.games.getActiveLobby>> | undefined;
+  privateLobby: ReturnType<typeof useQuery<typeof api.games.getMyPrivateLobby>> | undefined;
+  isLoading: boolean;
+  hasActiveLobby: boolean;
+  createLobby: (mode: "casual" | "ranked", isPrivate?: boolean) => Promise<any>;
+  joinLobby: (lobbyId: Id<"gameLobbies">, joinCode?: string) => Promise<any>;
+  joinByCode: (joinCode: string) => Promise<any>;
+  cancelLobby: () => Promise<void>;
+  leaveLobby: () => Promise<void>;
+}
 
 /**
- * useGameLobby Hook
+ * Complete game lobby lifecycle management for multiplayer matchmaking.
  *
- * Complete lobby lifecycle management including:
- * - Creating lobbies (casual/ranked/private)
- * - Joining lobbies (public list or join code)
- * - Cancelling and leaving lobbies
- * - Real-time lobby discovery
+ * Handles all lobby operations from creation to joining to cancellation.
+ * Provides real-time lobby discovery and supports both public and private
+ * games with join codes. All mutations show toast notifications.
+ *
+ * Features:
+ * - Create casual or ranked lobbies
+ * - Create private lobbies with join codes
+ * - Join public lobbies from waiting list
+ * - Join private lobbies via join code
+ * - Cancel your own lobby while waiting
+ * - Leave a lobby you've joined
+ * - Real-time lobby list updates
+ * - Active lobby tracking
+ *
+ * @example
+ * ```typescript
+ * const {
+ *   waitingLobbies,
+ *   myLobby,
+ *   privateLobby,
+ *   hasActiveLobby,
+ *   createLobby,
+ *   joinLobby,
+ *   joinByCode,
+ *   cancelLobby
+ * } = useGameLobby();
+ *
+ * // Create a private ranked lobby
+ * const { joinCode } = await createLobby("ranked", true);
+ * console.log("Share this code:", joinCode);
+ *
+ * // Join a public lobby
+ * await joinLobby(lobbyId);
+ *
+ * // Join with code
+ * await joinByCode("ABC123");
+ *
+ * // Cancel your lobby
+ * if (hasActiveLobby) {
+ *   await cancelLobby();
+ * }
+ * ```
+ *
+ * @returns {UseGameLobbyReturn} Lobby management interface
+ *
+ * @throws {Error} Operations throw on failure (caught internally, toast shown)
  */
-export function useGameLobby() {
+export function useGameLobby(): UseGameLobbyReturn {
   // No auth check needed - this hook should only be used inside <Authenticated>
   const waitingLobbies = useQuery(api.games.listWaitingLobbies, {});
   const myLobby = useQuery(api.games.getActiveLobby, {});
@@ -28,37 +83,31 @@ export function useGameLobby() {
   const leaveMutation = useMutation(api.games.leaveLobby);
 
   // Actions
-  const createLobby = async (
-    mode: "casual" | "ranked",
-    isPrivate = false
-  ) => {
+  const createLobby = async (mode: "casual" | "ranked", isPrivate = false) => {
     try {
       const result = await createMutation({ mode, isPrivate });
       const modeText = mode === "casual" ? "Casual" : "Ranked";
       if (isPrivate && result.joinCode) {
-        toast.success(
-          `${modeText} lobby created! Share code: ${result.joinCode}`
-        );
+        toast.success(`${modeText} lobby created! Share code: ${result.joinCode}`);
       } else {
         toast.success(`${modeText} lobby created! Waiting for opponent...`);
       }
       return result;
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create lobby");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to create lobby");
+      toast.error(message);
       throw error;
     }
   };
 
-  const joinLobby = async (
-    lobbyId: Id<"gameLobbies">,
-    joinCode?: string
-  ) => {
+  const joinLobby = async (lobbyId: Id<"gameLobbies">, joinCode?: string) => {
     try {
       const result = await joinMutation({ lobbyId, joinCode });
       toast.success(`Joined game vs ${result.opponentUsername}`);
       return result;
-    } catch (error: any) {
-      toast.error(error.message || "Failed to join lobby");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to join lobby");
+      toast.error(message);
       throw error;
     }
   };
@@ -68,8 +117,9 @@ export function useGameLobby() {
       const result = await joinByCodeMutation({ joinCode });
       toast.success("Joined private game!");
       return result;
-    } catch (error: any) {
-      toast.error(error.message || "Failed to join with code");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to join with code");
+      toast.error(message);
       throw error;
     }
   };
@@ -78,8 +128,9 @@ export function useGameLobby() {
     try {
       await cancelMutation({});
       toast.success("Lobby cancelled");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to cancel lobby");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to cancel lobby");
+      toast.error(message);
       throw error;
     }
   };
@@ -88,8 +139,9 @@ export function useGameLobby() {
     try {
       await leaveMutation({});
       toast.success("Left lobby");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to leave lobby");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to leave lobby");
+      toast.error(message);
       throw error;
     }
   };

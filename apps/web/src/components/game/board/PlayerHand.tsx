@@ -1,5 +1,3 @@
-// @ts-nocheck
-// TODO: This file depends on Convex game APIs that have not been implemented yet.
 "use client";
 
 import type { Id } from "@convex/_generated/dataModel";
@@ -10,8 +8,8 @@ interface PlayerHandProps {
   cards: CardInZone[];
   handCount: number;
   isOpponent?: boolean;
-  playableCards?: Set<Id<"cardInstances">>;
-  selectedCard?: Id<"cardInstances"> | null;
+  playableCards?: Set<Id<"cardDefinitions">>;
+  selectedCard?: Id<"cardDefinitions"> | null;
   onCardClick?: (card: CardInZone) => void;
 }
 
@@ -40,8 +38,8 @@ export function PlayerHand({
   }
 
   return (
-    <div className="relative py-2 px-1 sm:py-3 sm:px-4 overflow-visible">
-      <div className="flex items-end justify-center pb-1 pt-1">
+    <div className="relative py-10 px-2 sm:py-16 sm:px-6 overflow-visible">
+      <div className="flex items-end justify-center pb-4 pt-4">
         {cards.map((card, index) => (
           <HandCard
             key={card.instanceId}

@@ -111,12 +111,12 @@ export default function ApiKeysPage() {
   const [selectedKey, setSelectedKey] = useState<ApiKey | null>(null);
 
   // Fetch API keys
-  const apiKeys = useQuery(api.admin.admin.listApiKeys, { limit: 100 });
+  const apiKeys = useQuery(api.admin.apiKeys.listApiKeys, { limit: 100 });
 
   // Mutations
-  const revokeKey = useMutation(api.admin.admin.revokeApiKey);
-  const reactivateKey = useMutation(api.admin.admin.reactivateApiKey);
-  const deleteKey = useMutation(api.admin.admin.deleteApiKey);
+  const revokeKey = useMutation(api.admin.apiKeys.revokeApiKey);
+  const reactivateKey = useMutation(api.admin.apiKeys.reactivateApiKey);
+  const deleteKey = useMutation(api.admin.apiKeys.deleteApiKey);
 
   const isLoading = apiKeys === undefined;
 

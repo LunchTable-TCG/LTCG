@@ -6,7 +6,7 @@
  */
 
 import type { Doc, Id } from "../../_generated/dataModel";
-import { handleMainPhase, handleBattlePhase } from "./aiDifficulty";
+import { handleBattlePhase, handleMainPhase } from "./aiDifficulty";
 
 export interface AIAction {
   type: "summon" | "set" | "attack" | "activate_spell" | "end_phase" | "pass";
@@ -19,10 +19,7 @@ export interface AIAction {
 /**
  * Evaluates the current board state from AI's perspective
  */
-export function evaluateBoard(
-  gameState: Doc<"gameStates">,
-  aiPlayerId: Id<"users">
-) {
+export function evaluateBoard(gameState: Doc<"gameStates">, aiPlayerId: Id<"users">) {
   const isHost = gameState.hostId === aiPlayerId;
   const myBoard = isHost ? gameState.hostBoard : gameState.opponentBoard;
   const oppBoard = isHost ? gameState.opponentBoard : gameState.hostBoard;
@@ -40,10 +37,11 @@ export function evaluateBoard(
     myHandSize: myHand.length,
     hasMonsterZoneSpace: myBoard.length < 5,
     isWinning: myLP > oppLP,
-    attackAdvantage: myBoard.some((m) =>
-      !m.hasAttacked &&
-      m.position === 1 &&
-      (oppBoard.length === 0 || oppBoard.some((o) => m.attack > o.attack || m.attack > o.defense))
+    attackAdvantage: myBoard.some(
+      (m) =>
+        !m.hasAttacked &&
+        m.position === 1 &&
+        (oppBoard.length === 0 || oppBoard.some((o) => m.attack > o.attack || m.attack > o.defense))
     ),
   };
 }
@@ -81,6 +79,8 @@ export function findWeakestMonster(
   if (board.length === 0) return null;
 
   let weakest = board[0];
+  if (!weakest) return null;
+
   for (const monster of board) {
     if (monster.attack + monster.defense < weakest.attack + weakest.defense) {
       weakest = monster;
@@ -187,7 +187,9 @@ export async function makeAIDecision(
       });
 
       if (highCostMonsters.length > 0 && myBoard.length >= 1) {
-        const highCostCard = cardData.get(highCostMonsters[0]);
+        const firstHighCost = highCostMonsters[0];
+        if (!firstHighCost) return { type: "pass" };
+        const highCostCard = cardData.get(firstHighCost);
         if (highCostCard) {
           const requiredTributes = highCostCard.cost >= 7 ? 2 : 1;
 
@@ -198,11 +200,11 @@ export async function makeAIDecision(
 
             for (let i = 0; i < requiredTributes; i++) {
               const weakest = findWeakestMonster(
-                myBoard.filter(m => !weakestTributes.includes(m.cardId))
+                myBoard.filter((m) => !weakestTributes.includes(m.cardId))
               );
               if (weakest) {
                 weakestTributes.push(weakest);
-                const weakCard = myBoard.find(m => m.cardId === weakest);
+                const weakCard = myBoard.find((m) => m.cardId === weakest);
                 if (weakCard) {
                   tributePower += weakCard.attack;
                 }
@@ -264,7 +266,10 @@ export async function makeAIDecision(
     if (myHand.length > 4 && evaluation.hasMonsterZoneSpace) {
       const setableCards = myHand.filter((cardId) => {
         const card = cardData.get(cardId);
-        return card && (card.cardType === "creature" || card.cardType === "spell" || card.cardType === "trap");
+        return (
+          card &&
+          (card.cardType === "creature" || card.cardType === "spell" || card.cardType === "trap")
+        );
       });
 
       if (setableCards.length > 0) {

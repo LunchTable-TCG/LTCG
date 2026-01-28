@@ -1,23 +1,20 @@
 import { v } from "convex/values";
-import type { Id, Doc } from "../_generated/dataModel";
+import { paginationOptsValidator } from "convex/server";
+import { internal } from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { requireAuthQuery, requireAuthMutation } from "../lib/convexAuth";
+import { PAGINATION } from "../lib/constants";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { type CardResult, type PackConfig, openPack } from "../lib/helpers";
 import {
-  getPlayerCurrency,
-  getOrCreatePlayerCurrency,
-  recordTransaction,
-} from "../lib/validators";
-import {
+  cardResultValidator,
   playerBalanceValidator,
   transactionHistoryValidator,
-  cardResultValidator,
 } from "../lib/returnValidators";
-import { PAGINATION } from "../lib/constants";
 import type { CurrencyType, TransactionType } from "../lib/types";
-import { openPack, type PackConfig, type CardResult } from "../lib/helpers";
+import { getOrCreatePlayerCurrency, getPlayerCurrency, recordTransaction } from "../lib/validators";
 
 // ============================================================================
 // INTERNAL MUTATIONS (called by other backend functions)
@@ -62,34 +59,35 @@ export const initializePlayerCurrency = internalMutation({
 
     // Record welcome bonus transactions
     if (gold > 0) {
-      await recordTransaction(
-        ctx,
-        args.userId,
-        "gift",
-        "gold",
-        gold,
-        gold,
-        "Welcome bonus"
-      );
+      await recordTransaction(ctx, args.userId, "gift", "gold", gold, gold, "Welcome bonus");
     }
 
     if (gems > 0) {
-      await recordTransaction(
-        ctx,
-        args.userId,
-        "gift",
-        "gems",
-        gems,
-        gems,
-        "Welcome bonus"
-      );
+      await recordTransaction(ctx, args.userId, "gift", "gems", gems, gems, "Welcome bonus");
     }
   },
 });
 
 /**
- * Helper function to adjust player currency
- * Can be called directly from other mutations to avoid ctx.runMutation overhead
+ * Helper function to adjust player currency without authentication overhead
+ *
+ * Used by other mutations to avoid ctx.runMutation overhead and reduce latency.
+ * Handles atomic currency updates, validates sufficient balance, updates lifetime stats,
+ * and records transactions for audit trail.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param params - Currency adjustment parameters
+ * @param params.userId - User ID to adjust currency for
+ * @param params.goldDelta - Amount of gold to add/subtract (positive or negative)
+ * @param params.gemsDelta - Amount of gems to add/subtract (positive or negative)
+ * @param params.transactionType - Type of transaction for audit trail
+ * @param params.description - Human-readable description of the transaction
+ * @param params.referenceId - Optional reference ID (e.g., pack product ID, promo code ID)
+ * @param params.metadata - Optional metadata for the transaction record
+ * @returns Updated currency balances (gold and gems)
+ * @throws {ErrorCode.ECONOMY_INSUFFICIENT_GOLD} If player doesn't have enough gold
+ * @throws {ErrorCode.ECONOMY_INSUFFICIENT_GEMS} If player doesn't have enough gems
  */
 export async function adjustPlayerCurrencyHelper(
   ctx: MutationCtx,
@@ -100,7 +98,7 @@ export async function adjustPlayerCurrencyHelper(
     transactionType: TransactionType;
     description: string;
     referenceId?: string;
-    metadata?: any;
+    metadata?: Record<string, string | number | boolean | undefined>;
   }
 ): Promise<{ gold: number; gems: number }> {
   const currency = await getOrCreatePlayerCurrency(ctx, params.userId);
@@ -201,10 +199,32 @@ export const adjustPlayerCurrency = internalMutation({
     ),
     description: v.string(),
     referenceId: v.optional(v.string()),
-    metadata: v.optional(v.any()), // Keep v.any() here as Convex doesn't support complex union types in args
+    metadata: v.optional(
+      v.union(
+        v.object({
+          productId: v.optional(v.string()),
+          packType: v.optional(v.string()),
+          packName: v.optional(v.string()),
+          achievementId: v.optional(v.string()),
+          questId: v.optional(v.string()),
+          questType: v.optional(v.string()),
+          category: v.optional(v.string()),
+          cardId: v.optional(v.string()),
+          previousPhase: v.optional(v.string()),
+          newPhase: v.optional(v.string()),
+          trigger: v.optional(v.string()),
+          price: v.optional(v.number()),
+          platformFee: v.optional(v.number()),
+        }),
+        v.null()
+      )
+    ),
   },
   handler: async (ctx, args) => {
-    return await adjustPlayerCurrencyHelper(ctx, args);
+    return await adjustPlayerCurrencyHelper(ctx, {
+      ...args,
+      metadata: args.metadata ?? undefined,
+    });
   },
 });
 
@@ -258,6 +278,9 @@ export const getPlayerBalance = query({
 
 /**
  * Get player's transaction history (paginated)
+ * @deprecated Use getTransactionHistoryPaginated for better performance with cursor-based pagination.
+ *             This function uses inefficient offset-based pagination that loads 1000 records into memory
+ *             and filters them client-side.
  */
 export const getTransactionHistory = query({
   args: {
@@ -270,17 +293,16 @@ export const getTransactionHistory = query({
     const page = args.page ?? 1;
     const pageSize = PAGINATION.TRANSACTION_PAGE_SIZE;
 
-    let query = ctx.db
+    const query = ctx.db
       .query("currencyTransactions")
       .withIndex("by_user_time", (q) => q.eq("userId", userId))
       .order("desc");
 
     // Filter by currency type if specified
     if (args.currencyType) {
-      const allTransactions = await query.collect();
-      const filtered = allTransactions.filter(
-        (t) => t.currencyType === args.currencyType
-      );
+      // Limit to 1000 recent transactions to prevent unbounded queries
+      const allTransactions = await query.take(1000);
+      const filtered = allTransactions.filter((t) => t.currencyType === args.currencyType);
 
       const startIdx = (page - 1) * pageSize;
       const endIdx = startIdx + pageSize;
@@ -295,8 +317,8 @@ export const getTransactionHistory = query({
       };
     }
 
-    // No filter - paginate directly
-    const allTransactions = await query.collect();
+    // No filter - limit to 1000 recent transactions
+    const allTransactions = await query.take(1000);
     const startIdx = (page - 1) * pageSize;
     const endIdx = startIdx + pageSize;
     const paginated = allTransactions.slice(startIdx, endIdx);
@@ -308,6 +330,32 @@ export const getTransactionHistory = query({
       total: allTransactions.length,
       hasMore: endIdx < allTransactions.length,
     };
+  },
+});
+
+/**
+ * Get player's transaction history (cursor-based pagination)
+ * Uses Convex's built-in pagination for better performance and scalability
+ */
+export const getTransactionHistoryPaginated = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+    currencyType: v.optional(v.union(v.literal("gold"), v.literal("gems"))),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthQuery(ctx);
+
+    let query = ctx.db
+      .query("currencyTransactions")
+      .withIndex("by_user_time", (q) => q.eq("userId", userId))
+      .order("desc");
+
+    // Apply currency type filter BEFORE pagination to ensure correct page size
+    if (args.currencyType) {
+      query = query.filter((q) => q.eq(q.field("currencyType"), args.currencyType));
+    }
+
+    return await query.paginate(args.paginationOpts);
   },
 });
 
@@ -351,10 +399,7 @@ export const redeemPromoCode = mutation({
       throw createError(ErrorCode.ECONOMY_PROMO_CODE_EXPIRED);
     }
 
-    if (
-      promoCode.maxRedemptions &&
-      promoCode.redemptionCount >= promoCode.maxRedemptions
-    ) {
+    if (promoCode.maxRedemptions && promoCode.redemptionCount >= promoCode.maxRedemptions) {
       throw createError(ErrorCode.ECONOMY_PROMO_CODE_INVALID, {
         reason: "This promo code has reached its redemption limit",
       });
@@ -363,9 +408,7 @@ export const redeemPromoCode = mutation({
     // Check if user already redeemed
     const existingRedemption = await ctx.db
       .query("promoRedemptions")
-      .withIndex("by_user_code", (q) =>
-        q.eq("userId", userId).eq("promoCodeId", promoCode._id)
-      )
+      .withIndex("by_user_code", (q) => q.eq("userId", userId).eq("promoCodeId", promoCode._id))
       .first();
 
     if (existingRedemption) {

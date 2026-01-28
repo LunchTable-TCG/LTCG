@@ -71,20 +71,20 @@ export default function CardAnalyticsPage() {
   const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
 
   // Fetch real data from Convex
-  const topByWinRate = useQuery(api.analytics.cardMeta.getTopCardsByWinRate, {
+  const topByWinRate = useQuery(api.admin.analytics.getTopCardsByWinRate, {
     periodType: period,
     limit: 10,
     minGames: 5,
   });
-  const topByPlayRate = useQuery(api.analytics.cardMeta.getTopCardsByPlayRate, {
+  const topByPlayRate = useQuery(api.admin.analytics.getTopCardsByPlayRate, {
     periodType: period,
     limit: 10,
   });
-  const economySnapshot = useQuery(api.analytics.economy.getCurrentEconomySnapshot);
+  const economySnapshot = useQuery(api.admin.analytics.getCurrentEconomySnapshot);
 
   // Fetch archetype-specific stats when an archetype is selected
   const archetypeStats = useQuery(
-    api.analytics.cardMeta.getCardStatsByArchetype,
+    api.admin.analytics.getCardStatsByArchetype,
     selectedArchetype ? { archetype: selectedArchetype, periodType: period } : "skip"
   );
 

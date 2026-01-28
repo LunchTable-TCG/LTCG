@@ -5,10 +5,19 @@
  * Best Practices: Return validators, proper storage API usage, size validation
  */
 
-import { mutation, query, internalMutation, internalAction, internalQuery } from "../_generated/server";
-import { api, internal } from "../_generated/api";
 import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { api, internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "../_generated/server";
+import { requireAuthMutation } from "../lib/convexAuth";
+import { ErrorCode, createError } from "../lib/errorCodes";
+import { checkRateLimitWrapper } from "../lib/rateLimit";
 import type { SupportedImageFormat } from "../lib/types";
 
 // =============================================================================
@@ -18,9 +27,11 @@ import type { SupportedImageFormat } from "../lib/types";
 const SUPPORTED_FORMATS = ["image/png", "image/jpeg", "image/webp"] as const;
 
 // Type guard for supported image formats
-function isSupportedFormat(contentType: string | null | undefined): contentType is SupportedImageFormat {
+function isSupportedFormat(
+  contentType: string | null | undefined
+): contentType is SupportedImageFormat {
   if (!contentType) return false;
-  return SUPPORTED_FORMATS.some(format => format === contentType);
+  return SUPPORTED_FORMATS.some((format) => format === contentType);
 }
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_THUMBNAIL_SIZE = 1 * 1024 * 1024; // 1MB
@@ -93,6 +104,13 @@ export const generateUploadUrl = mutation({
   args: {},
   returns: v.string(),
   handler: async (ctx) => {
+    // Require authentication for upload URL generation
+    const { userId } = await requireAuthMutation(ctx);
+
+    // SECURITY: Rate limit image uploads to prevent spam/abuse
+    // Max 10 upload URLs per minute per user (configured in lib/rateLimit.ts)
+    await checkRateLimitWrapper(ctx, "IMAGE_UPLOAD", userId);
+
     // Best Practice: Generate temporary upload URL for client-side uploads
     return await ctx.storage.generateUploadUrl();
   },
@@ -115,18 +133,27 @@ export const saveCardImage = mutation({
       .first();
 
     if (!storageFile) {
-      throw new Error("Storage file not found");
+      throw createError(ErrorCode.NOT_FOUND_STORAGE_FILE, {
+        storageId: args.storageId,
+      });
     }
 
     // Validate file type
     if (!isSupportedFormat(storageFile.contentType)) {
-      throw new Error(`Unsupported format: ${storageFile.contentType}`);
+      throw createError(ErrorCode.VALIDATION_UNSUPPORTED_FORMAT, {
+        contentType: storageFile.contentType,
+        supportedFormats: SUPPORTED_FORMATS,
+      });
     }
 
     // Validate file size
     const maxSize = args.imageType === "thumbnail" ? MAX_THUMBNAIL_SIZE : MAX_IMAGE_SIZE;
     if (storageFile.size > maxSize) {
-      throw new Error(`File size ${storageFile.size} exceeds maximum ${maxSize} bytes`);
+      throw createError(ErrorCode.VALIDATION_FILE_TOO_LARGE, {
+        fileSize: storageFile.size,
+        maxSize,
+        imageType: args.imageType,
+      });
     }
 
     // Update card with storage reference
@@ -157,14 +184,13 @@ export const deleteCardImage = mutation({
   handler: async (ctx, args) => {
     const card = await ctx.db.get(args.cardId);
     if (!card) {
-      throw new Error("Card not found");
+      throw createError(ErrorCode.NOT_FOUND_CARD, {
+        cardId: args.cardId,
+      });
     }
 
     // Get storage ID and delete from storage
-    const storageId =
-      args.imageType === "image"
-        ? card.imageStorageId
-        : card.thumbnailStorageId;
+    const storageId = args.imageType === "image" ? card.imageStorageId : card.thumbnailStorageId;
 
     if (storageId) {
       // Best Practice: Delete from both storage and database reference

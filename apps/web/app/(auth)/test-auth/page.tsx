@@ -55,14 +55,9 @@ export default function TestAuthPage() {
 
         <input name="flow" type="hidden" value={step} />
 
-        <button type="submit">
-          {step === "signIn" ? "Sign in" : "Sign up"}
-        </button>
+        <button type="submit">{step === "signIn" ? "Sign in" : "Sign up"}</button>
 
-        <button
-          type="button"
-          onClick={() => setStep(step === "signIn" ? "signUp" : "signIn")}
-        >
+        <button type="button" onClick={() => setStep(step === "signIn" ? "signUp" : "signIn")}>
           {step === "signIn" ? "Sign up instead" : "Sign in instead"}
         </button>
       </form>

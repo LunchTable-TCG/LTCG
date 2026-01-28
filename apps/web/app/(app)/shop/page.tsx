@@ -1,5 +1,14 @@
 "use client";
 
+import { CardSelectorModal } from "@/components/marketplace/CardSelectorModal";
+import { ListingDialog } from "@/components/marketplace/ListingDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useCurrency, useMarketplace, useProfile, useShop } from "@/hooks";
+import { cn } from "@/lib/utils";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
 import {
   Box,
   Clock,
@@ -17,14 +26,8 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import { useProfile, useShop, useCurrency, useMarketplace } from "@/hooks";
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
 
-type TabType = "shop" | "marketplace";
+type TabType = "shop" | "marketplace" | "myListings";
 type ListingType = "fixed" | "auction";
 type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 
@@ -79,11 +82,30 @@ export default function ShopPage() {
   const [selectedShopItem, setSelectedShopItem] = useState<ShopItem | null>(null);
   const [bidAmount, setBidAmount] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [listingDialogCard, setListingDialogCard] = useState<any>(null);
+  const [isCardSelectorOpen, setIsCardSelectorOpen] = useState(false);
 
   // Use custom hooks
-  const { products: shopProducts, purchasePack: purchasePackAction, purchaseBox: purchaseBoxAction, purchaseBundle } = useShop();
+  const {
+    products: shopProducts,
+    purchasePack: purchasePackAction,
+    purchaseBox: purchaseBoxAction,
+    purchaseBundle,
+  } = useShop();
   const { balance, gold: goldBalance, gems: gemBalance } = useCurrency();
-  const { listings: marketplaceListings, buyNow: buyNowAction, placeBid: placeBidAction } = useMarketplace();
+  const {
+    listings: marketplaceListings,
+    myListings,
+    buyNow: buyNowAction,
+    placeBid: placeBidAction,
+    cancelListing,
+  } = useMarketplace();
+
+  // Get user's collection for listing cards
+  const userCards = useQuery(api.core.cards.getUserCards, currentUser ? {} : "skip");
+
+  // Mutations
+  const createListingMutation = useMutation(api.marketplace.createListing);
 
   // Use the marketplace data from the hook (filtering will be done client-side for now)
   const filteredMarketplaceData = marketplaceListings;
@@ -94,9 +116,7 @@ export default function ShopPage() {
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      listings = listings.filter((listing: any) =>
-        listing.cardName.toLowerCase().includes(query)
-      );
+      listings = listings.filter((listing: any) => listing.cardName.toLowerCase().includes(query));
     }
 
     return listings;
@@ -105,21 +125,23 @@ export default function ShopPage() {
   // Transform backend data to frontend format
   const transformedShopItems = useMemo(() => {
     if (!shopProducts) return [];
-    return shopProducts.map((product: any): ShopItem => ({
-      id: product.productId,
-      name: product.name,
-      description: product.description,
-      type: product.productType,
-      goldPrice: product.goldPrice,
-      gemPrice: product.gemPrice,
-      contents: product.packConfig
-        ? `${product.packConfig.cardCount} Cards`
-        : product.boxConfig
-          ? `${product.boxConfig.packCount} Packs`
-          : undefined,
-      quantity: product.currencyConfig?.amount,
-      ...product, // Include original for mutations
-    }));
+    return shopProducts.map(
+      (product: any): ShopItem => ({
+        id: product.productId,
+        name: product.name,
+        description: product.description,
+        type: product.productType,
+        goldPrice: product.goldPrice,
+        gemPrice: product.gemPrice,
+        contents: product.packConfig
+          ? `${product.packConfig.cardCount} Cards`
+          : product.boxConfig
+            ? `${product.boxConfig.packCount} Packs`
+            : undefined,
+        quantity: product.currencyConfig?.amount,
+        ...product, // Include original for mutations
+      })
+    );
   }, [shopProducts]);
 
   // Group shop items by type
@@ -141,16 +163,23 @@ export default function ShopPage() {
       setIsProcessing(true);
       try {
         if (item.productType === "pack") {
-          await purchasePackAction(item.productId, useGems);
+          const result = await purchasePackAction(item.productId, useGems);
+          setSelectedShopItem(null);
+          // Redirect to opening page with pack results
+          const cardsData = encodeURIComponent(JSON.stringify(result));
+          window.location.href = `/shop/open?type=pack&data=${cardsData}`;
         } else if (item.productType === "box") {
-          await purchaseBoxAction(item.productId, useGems);
+          const result = await purchaseBoxAction(item.productId, useGems);
+          setSelectedShopItem(null);
+          // Redirect to opening page with box results
+          const cardsData = encodeURIComponent(JSON.stringify(result));
+          window.location.href = `/shop/open?type=box&data=${cardsData}`;
         } else if (item.productType === "currency") {
           await purchaseBundle(item.productId);
+          setSelectedShopItem(null);
         }
-        setSelectedShopItem(null);
       } catch (error: any) {
         console.error("Purchase failed:", error);
-      } finally {
         setIsProcessing(false);
       }
     },
@@ -177,7 +206,7 @@ export default function ShopPage() {
       if (!bidAmount) return;
       setIsProcessing(true);
       try {
-        await placeBidAction(listing._id, parseInt(bidAmount));
+        await placeBidAction(listing._id, Number.parseInt(bidAmount));
         setBidAmount("");
         setSelectedListing(null);
       } catch (error: any) {
@@ -187,6 +216,36 @@ export default function ShopPage() {
       }
     },
     [bidAmount, placeBidAction]
+  );
+
+  const handleCreateListing = useCallback(
+    async (listingType: "fixed" | "auction", price: number, duration?: number) => {
+      if (!listingDialogCard) return;
+
+      await createListingMutation({
+        cardDefinitionId: listingDialogCard.cardDefinitionId,
+        quantity: 1,
+        listingType,
+        price,
+        duration,
+      });
+      setListingDialogCard(null);
+    },
+    [listingDialogCard, createListingMutation]
+  );
+
+  const handleCancelListing = useCallback(
+    async (listingId: Id<"marketplaceListings">) => {
+      setIsProcessing(true);
+      try {
+        await cancelListing(listingId);
+      } catch (error: any) {
+        console.error("Cancel failed:", error);
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [cancelListing]
   );
 
   const formatTimeRemaining = (endsAt: number) => {
@@ -255,9 +314,11 @@ export default function ShopPage() {
           {[
             { id: "shop" as TabType, label: "Shop", icon: Store },
             { id: "marketplace" as TabType, label: "Marketplace", icon: Users },
+            { id: "myListings" as TabType, label: "My Listings", icon: Package },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const listingCount = tab.id === "myListings" ? (myListings?.length ?? 0) : 0;
             return (
               <button
                 type="button"
@@ -272,6 +333,11 @@ export default function ShopPage() {
               >
                 <Icon className="w-5 h-5" />
                 <span>{tab.label}</span>
+                {tab.id === "myListings" && listingCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs font-bold rounded-full bg-[#d4af37]/20 text-[#d4af37]">
+                    {listingCount}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -377,7 +443,13 @@ export default function ShopPage() {
                 <option value="price_asc">Price: Low to High</option>
                 <option value="price_desc">Price: High to Low</option>
               </select>
-              <Button className="tcg-button-primary">
+              <Button
+                onClick={() => {
+                  // Switch to My Listings tab which has the list from collection button
+                  setActiveTab("myListings");
+                }}
+                className="tcg-button-primary"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 List Card
               </Button>
@@ -412,6 +484,122 @@ export default function ShopPage() {
               </p>
             </div>
           </>
+        )}
+
+        {/* My Listings Tab */}
+        {activeTab === "myListings" && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-[#e8e0d5]">My Active Listings</h2>
+              <Button onClick={() => setIsCardSelectorOpen(true)} className="tcg-button-primary">
+                <Plus className="w-4 h-4 mr-2" />
+                List from Collection
+              </Button>
+            </div>
+
+            {myListings === undefined ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
+              </div>
+            ) : myListings.length === 0 ? (
+              <div className="text-center py-16">
+                <Package className="w-16 h-16 mx-auto mb-4 text-[#a89f94]/50" />
+                <h3 className="text-xl font-semibold text-[#e8e0d5] mb-2">No Active Listings</h3>
+                <p className="text-[#a89f94] mb-6">
+                  You don't have any cards listed on the marketplace yet
+                </p>
+                <Button onClick={() => setActiveTab("marketplace")} className="tcg-button-primary">
+                  Browse Marketplace
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {myListings.map((listing: any) => (
+                  <div
+                    key={listing._id}
+                    className="p-4 rounded-xl bg-black/40 border border-[#3d2b1f] hover:border-[#3d2b1f]/50 transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Card Preview */}
+                      <div className="w-16 aspect-3/4 rounded-lg bg-linear-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center shrink-0">
+                        <Package className="w-8 h-8 text-purple-400/50" />
+                      </div>
+
+                      {/* Listing Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-[#e8e0d5] truncate">
+                            {listing.cardName}
+                          </h3>
+                          <span
+                            className={cn(
+                              "text-xs px-2 py-0.5 rounded font-bold",
+                              listing.listingType === "auction"
+                                ? "bg-orange-600 text-white"
+                                : "bg-green-600 text-white"
+                            )}
+                          >
+                            {listing.listingType === "auction" ? "Auction" : "Buy Now"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-[#a89f94]">
+                          <div className="flex items-center gap-1">
+                            <Coins className="w-4 h-4 text-yellow-400" />
+                            <span className="font-bold text-yellow-300">
+                              {listing.listingType === "auction" && listing.currentBid
+                                ? listing.currentBid.toLocaleString()
+                                : listing.price.toLocaleString()}
+                            </span>
+                          </div>
+                          {listing.listingType === "auction" && listing.endsAt && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              <span>{formatTimeRemaining(listing.endsAt)}</span>
+                            </div>
+                          )}
+                          {listing.listingType === "auction" && (
+                            <span>{listing.bidCount || 0} bids</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <Button
+                        onClick={() => handleCancelListing(listing._id)}
+                        variant="outline"
+                        size="sm"
+                        className="border-red-500/30 text-red-400 hover:bg-red-500/10 shrink-0"
+                        disabled={isProcessing}
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Card Selector Modal */}
+        <CardSelectorModal
+          isOpen={isCardSelectorOpen}
+          onClose={() => setIsCardSelectorOpen(false)}
+          cards={userCards as any}
+          onSelectCard={(card) => {
+            setListingDialogCard(card);
+          }}
+        />
+
+        {/* Listing Dialog */}
+        {listingDialogCard && (
+          <ListingDialog
+            isOpen={!!listingDialogCard}
+            onClose={() => setListingDialogCard(null)}
+            card={listingDialogCard}
+            onConfirm={handleCreateListing}
+          />
         )}
 
         {/* Shop Purchase Dialog */}
@@ -572,7 +760,7 @@ export default function ShopPage() {
                     disabled={
                       isProcessing ||
                       !bidAmount ||
-                      parseInt(bidAmount, 10) <=
+                      Number.parseInt(bidAmount, 10) <=
                         (selectedListing.currentBid || selectedListing.price)
                     }
                     className="flex-1 bg-orange-600 hover:bg-orange-500"

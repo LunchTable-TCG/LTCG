@@ -6,15 +6,13 @@
  */
 
 import { internalMutation } from "../_generated/server";
-import { INFERNAL_DRAGONS_CARDS, ABYSSAL_DEPTHS_CARDS } from "../seeds/starterCards";
+import { ABYSSAL_DEPTHS_CARDS, INFERNAL_DRAGONS_CARDS } from "../seeds/starterCards";
 
 export const seedStarterCards = internalMutation({
   args: {},
   handler: async (ctx) => {
     // Check if cards already exist
-    const existingCards = await ctx.db
-      .query("cardDefinitions")
-      .collect();
+    const existingCards = await ctx.db.query("cardDefinitions").collect();
 
     if (existingCards.length > 0) {
       return {

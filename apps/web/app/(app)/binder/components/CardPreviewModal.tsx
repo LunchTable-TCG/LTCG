@@ -1,9 +1,9 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { Check, Copy, Flame, Heart, Shield, Sparkles, Star, Waves, X, Zap } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 import type { CardData, Element, Rarity } from "./BinderCard";
 
 interface CardPreviewModalProps {

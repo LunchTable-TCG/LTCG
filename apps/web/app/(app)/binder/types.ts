@@ -14,7 +14,6 @@ export interface Deck {
 }
 
 export type ViewMode = "grid" | "list";
-export type SortOption = "name" | "rarity" | "element" | "attack" | "defense" | "cost" | "owned";
 export type BinderTab = "collection" | "deckbuilder";
 
 // Constants

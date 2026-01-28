@@ -1,5 +1,11 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { cn } from "@/lib/utils";
+import { api } from "@convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
 import {
   Bell,
   Check,
@@ -19,11 +25,8 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useState } from "react";
-import { useProfile } from "@/hooks";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type SettingsTab = "account" | "notifications" | "display" | "game" | "privacy";
 
@@ -56,15 +59,37 @@ function Toggle({ enabled, onChange, disabled }: ToggleProps) {
 }
 
 export default function SettingsPage() {
-  const { profile: currentUser, isLoading: profileLoading } = useProfile();
+  const { isAuthenticated } = useAuth();
+  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const preferences = useQuery(
+    api.core.userPreferences.getPreferences,
+    isAuthenticated ? {} : "skip"
+  );
+
+  const updatePreferences = useMutation(api.core.userPreferences.updatePreferences);
+  const updateUsername = useMutation(api.core.userPreferences.updateUsername);
+  const changePassword = useMutation(api.core.userPreferences.changePassword);
+  const deleteAccount = useMutation(api.core.userPreferences.deleteAccount);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Account settings
-  const [username, setUsername] = useState(currentUser?.username || "");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+
+  // Password change
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Account deletion
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmPassword, setDeleteConfirmPassword] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Notification settings
   const [notifications, setNotifications] = useState({
@@ -103,13 +128,123 @@ export default function SettingsPage() {
     showMatchHistory: true,
   });
 
+  // Load preferences when they're available
+  useEffect(() => {
+    if (preferences) {
+      setNotifications(preferences.notifications);
+      setDisplay(preferences.display);
+      setGame(preferences.game);
+      setPrivacy(preferences.privacy);
+    }
+  }, [preferences]);
+
+  // Load current user data
+  useEffect(() => {
+    if (currentUser) {
+      setUsername(currentUser.username || "");
+      setEmail(currentUser.email || "");
+    }
+  }, [currentUser]);
+
   const handleSave = async () => {
     setIsSaving(true);
-    // Settings are saved automatically to localStorage
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2000);
+    try {
+      // Save username if changed
+      if (username !== currentUser?.username) {
+        const result = await updateUsername({ username });
+        if (!result.success) {
+          toast.error(result.error || "Failed to update username");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Save preferences
+      await updatePreferences({
+        notifications,
+        display,
+        game,
+        privacy,
+      });
+
+      setSaveSuccess(true);
+      toast.success("Settings saved successfully");
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      toast.error("Failed to save settings");
+      console.error("Save settings error:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!currentPassword || !newPassword) {
+      toast.error("Please fill in all password fields");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const result = await changePassword({
+        currentPassword,
+        newPassword,
+      });
+
+      if (result.success) {
+        toast.success("Password changed successfully. Please log in again.");
+        setShowPasswordChange(false);
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        // User will be logged out automatically due to session invalidation
+      } else {
+        toast.error(result.error || "Failed to change password");
+      }
+    } catch (error) {
+      toast.error("Failed to change password");
+      console.error("Password change error:", error);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deleteConfirmPassword) {
+      toast.error("Please enter your password to confirm");
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      const result = await deleteAccount({
+        confirmPassword: deleteConfirmPassword,
+      });
+
+      if (result.success) {
+        toast.success("Account deleted successfully");
+        // User will be redirected to login by auth system
+      } else {
+        toast.error(result.error || "Failed to delete account");
+        setIsDeletingAccount(false);
+      }
+    } catch (error) {
+      toast.error("Failed to delete account");
+      console.error("Account deletion error:", error);
+      setIsDeletingAccount(false);
+    }
   };
 
   const tabs: { id: SettingsTab; label: string; icon: typeof Settings }[] = [
@@ -120,7 +255,7 @@ export default function SettingsPage() {
     { id: "privacy", label: "Privacy", icon: Shield },
   ];
 
-  if (profileLoading || !currentUser) {
+  if (!isAuthenticated || !currentUser || preferences === undefined) {
     return (
       <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
@@ -191,7 +326,10 @@ export default function SettingsPage() {
 
                   <div className="space-y-4">
                     <div>
-                      <label htmlFor="settings-username" className="block text-sm font-medium text-[#a89f94] mb-2">
+                      <label
+                        htmlFor="settings-username"
+                        className="block text-sm font-medium text-[#a89f94] mb-2"
+                      >
                         Username
                       </label>
                       <div className="relative">
@@ -207,7 +345,10 @@ export default function SettingsPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="settings-email" className="block text-sm font-medium text-[#a89f94] mb-2">
+                      <label
+                        htmlFor="settings-email"
+                        className="block text-sm font-medium text-[#a89f94] mb-2"
+                      >
                         Email Address
                       </label>
                       <div className="relative">
@@ -225,27 +366,175 @@ export default function SettingsPage() {
 
                     <div className="pt-4 border-t border-[#3d2b1f]">
                       <h3 className="text-lg font-semibold text-[#e8e0d5] mb-4">Security</h3>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5]"
-                      >
-                        <Lock className="w-4 h-4 mr-2" />
-                        Change Password
-                      </Button>
+
+                      {!showPasswordChange ? (
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5]"
+                          onClick={() => setShowPasswordChange(true)}
+                        >
+                          <Lock className="w-4 h-4 mr-2" />
+                          Change Password
+                        </Button>
+                      ) : (
+                        <form onSubmit={handleChangePassword} className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-[#a89f94] mb-2">
+                              Current Password
+                            </label>
+                            <Input
+                              type="password"
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                              className="bg-black/40 border-[#3d2b1f] text-[#e8e0d5]"
+                              placeholder="Enter current password"
+                              disabled={isChangingPassword}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-[#a89f94] mb-2">
+                              New Password
+                            </label>
+                            <Input
+                              type="password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              className="bg-black/40 border-[#3d2b1f] text-[#e8e0d5]"
+                              placeholder="Enter new password (min 8 characters)"
+                              disabled={isChangingPassword}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-[#a89f94] mb-2">
+                              Confirm New Password
+                            </label>
+                            <Input
+                              type="password"
+                              value={confirmNewPassword}
+                              onChange={(e) => setConfirmNewPassword(e.target.value)}
+                              className="bg-black/40 border-[#3d2b1f] text-[#e8e0d5]"
+                              placeholder="Confirm new password"
+                              disabled={isChangingPassword}
+                            />
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              type="submit"
+                              className="flex-1 bg-[#d4af37] hover:bg-[#c49d2e] text-black"
+                              disabled={isChangingPassword}
+                            >
+                              {isChangingPassword ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Changing...
+                                </>
+                              ) : (
+                                "Change Password"
+                              )}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setShowPasswordChange(false);
+                                setCurrentPassword("");
+                                setNewPassword("");
+                                setConfirmNewPassword("");
+                              }}
+                              disabled={isChangingPassword}
+                              className="border-[#3d2b1f] text-[#a89f94]"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </form>
+                      )}
                     </div>
 
                     <div className="pt-4 border-t border-[#3d2b1f]">
                       <h3 className="text-lg font-semibold text-red-400 mb-4">Danger Zone</h3>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start border-red-500/30 text-red-400 hover:bg-red-500/10"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete Account
-                      </Button>
-                      <p className="text-xs text-[#a89f94] mt-2">
-                        This action is irreversible. All your data will be permanently deleted.
-                      </p>
+
+                      {!showDeleteConfirm ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start border-red-500/30 text-red-400 hover:bg-red-500/10"
+                            onClick={() => setShowDeleteConfirm(true)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Account
+                          </Button>
+                          <p className="text-xs text-[#a89f94] mt-2">
+                            This action is irreversible. All your data will be permanently deleted.
+                          </p>
+                        </>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                            <p className="text-sm text-red-400 mb-3">
+                              <strong>Warning:</strong> This will permanently delete your account
+                              and all associated data including:
+                            </p>
+                            <ul className="text-xs text-red-400/80 space-y-1 ml-4 list-disc">
+                              <li>All your cards and decks</li>
+                              <li>Story progress and achievements</li>
+                              <li>Match history and statistics</li>
+                              <li>Friend connections</li>
+                              <li>All purchases and gold</li>
+                            </ul>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-[#a89f94] mb-2">
+                              Enter your password to confirm deletion
+                            </label>
+                            <Input
+                              type="password"
+                              value={deleteConfirmPassword}
+                              onChange={(e) => setDeleteConfirmPassword(e.target.value)}
+                              className="bg-black/40 border-red-500/30 text-[#e8e0d5]"
+                              placeholder="Enter your password"
+                              disabled={isDeletingAccount}
+                            />
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              onClick={handleDeleteAccount}
+                              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                              disabled={isDeletingAccount || !deleteConfirmPassword}
+                            >
+                              {isDeletingAccount ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Deleting...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete My Account
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setShowDeleteConfirm(false);
+                                setDeleteConfirmPassword("");
+                              }}
+                              disabled={isDeletingAccount}
+                              className="border-[#3d2b1f] text-[#a89f94]"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -420,7 +709,7 @@ export default function SettingsPage() {
                           max="100"
                           value={game.soundVolume}
                           onChange={(e) =>
-                            setGame({ ...game, soundVolume: parseInt(e.target.value, 10) })
+                            setGame({ ...game, soundVolume: Number.parseInt(e.target.value, 10) })
                           }
                           className="w-full accent-[#d4af37]"
                         />
@@ -449,7 +738,7 @@ export default function SettingsPage() {
                           max="100"
                           value={game.musicVolume}
                           onChange={(e) =>
-                            setGame({ ...game, musicVolume: parseInt(e.target.value, 10) })
+                            setGame({ ...game, musicVolume: Number.parseInt(e.target.value, 10) })
                           }
                           className="w-full accent-[#d4af37]"
                         />

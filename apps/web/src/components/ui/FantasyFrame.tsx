@@ -1,7 +1,7 @@
 "use client";
 
-import type React from "react";
 import { cn } from "@/lib/utils";
+import type React from "react";
 
 interface FantasyFrameProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "obsidian" | "gold" | "ethereal";
@@ -75,7 +75,7 @@ function Gem({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
         posClass
       )}
     >
-      <div className="w-full h-full rounded-full bg-gradient-to-br from-cyan-300 via-cyan-500 to-cyan-900 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+      <div className="w-full h-full rounded-full bg-linear-to-br from-cyan-300 via-cyan-500 to-cyan-900 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
       <div className="absolute top-[20%] left-[20%] w-[30%] h-[30%] bg-white rounded-full opacity-60 blur-[1px]" />
     </div>
   );

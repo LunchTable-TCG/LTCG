@@ -1,0 +1,23 @@
+{
+  "entryPoints": ["./convex"],
+  "entryPointStrategy": "expand",
+  "out": "./docs/typedoc",
+  "plugin": ["typedoc-plugin-markdown"],
+  "exclude": [
+    "**/node_modules/**",
+    "**/_generated/**",
+    "**/__mocks__/**",
+    "**/*.test.ts",
+    "**/*.test.multipart.ts",
+    "**/test_utils/**"
+  ],
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "includeVersion": true,
+  "readme": "./README.md",
+  "name": "LTCG Convex Backend API",
+  "navigationLinks": {
+    "GitHub": "https://github.com/your-org/ltcg"
+  }
+}

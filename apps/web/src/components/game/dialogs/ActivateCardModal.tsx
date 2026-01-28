@@ -1,9 +1,9 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles, X, Zap } from "lucide-react";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import type { CardInZone } from "../hooks/useGameBoard";
 
 interface ActivateCardModalProps {
@@ -78,7 +78,7 @@ export function ActivateCardModal({
                   {card.imageUrl ? (
                     <Image
                       src={card.imageUrl}
-                      alt={card.name}
+                      alt={card.name || "Card"}
                       width={80}
                       height={112}
                       className="w-full h-full object-cover"
@@ -87,8 +87,8 @@ export function ActivateCardModal({
                     <div
                       className={`w-full h-full flex items-center justify-center ${
                         isSpell
-                          ? "bg-gradient-to-br from-green-600 to-green-800"
-                          : "bg-gradient-to-br from-purple-600 to-purple-800"
+                          ? "bg-linear-to-br from-green-600 to-green-800"
+                          : "bg-linear-to-br from-purple-600 to-purple-800"
                       }`}
                     >
                       <span className="text-[10px] text-white/80 text-center px-2">
@@ -103,7 +103,10 @@ export function ActivateCardModal({
               {card.effects && card.effects.length > 0 && (
                 <div className="mb-3 max-h-24 overflow-y-auto space-y-1">
                   {card.effects.map((effect, index) => (
-                    <div key={`effect-${effect.name}-${index}`} className="p-2 border rounded-md bg-muted/30 text-xs">
+                    <div
+                      key={`effect-${effect.name}-${index}`}
+                      className="p-2 border rounded-md bg-muted/30 text-xs"
+                    >
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="font-medium">{effect.name}</span>
                         {effect.effectType && (
@@ -125,6 +128,15 @@ export function ActivateCardModal({
                     <p className="text-xs text-muted-foreground text-center mb-2">
                       {card.isFaceDown ? "Activate this card?" : "Use this card's effect?"}
                     </p>
+
+                    {/* Helpful hint for trap cards */}
+                    {isTrap && card.isFaceDown && (
+                      <div className="p-2 bg-purple-500/10 border border-purple-500/30 rounded text-center mb-2">
+                        <p className="text-[10px] text-purple-300 font-medium">
+                          💡 Trap cards can be activated during any player's turn!
+                        </p>
+                      </div>
+                    )}
 
                     {/* Activate each effect (usually just one) */}
                     {card.effects && card.effects.length > 0 ? (

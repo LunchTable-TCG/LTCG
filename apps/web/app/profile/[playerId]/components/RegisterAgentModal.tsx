@@ -1,11 +1,12 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { cn } from "@/lib/utils";
+import { sanitizeText, sanitizeURL } from "@/lib/sanitize";
 import { useMutation, useQuery } from "convex/react";
 import { Bot, ChevronLeft, ChevronRight, Image, Link, Loader2, X } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import { ApiKeyDisplay } from "./ApiKeyDisplay";
 import { StarterDeckPicker } from "./StarterDeckPicker";
@@ -225,28 +226,28 @@ export function RegisterAgentModal({ isOpen, onClose, onSuccess }: RegisterAgent
               <div className="space-y-4 p-4 rounded-xl bg-black/30 border border-[#3d2b1f]">
                 <div className="flex justify-between">
                   <span className="text-[#a89f94] text-sm">Name</span>
-                  <span className="text-[#e8e0d5] font-bold">{name}</span>
+                  <span className="text-[#e8e0d5] font-bold">{sanitizeText(name)}</span>
                 </div>
-                {profilePictureUrl && (
+                {profilePictureUrl && sanitizeURL(profilePictureUrl) && (
                   <div className="flex justify-between items-center">
                     <span className="text-[#a89f94] text-sm">Avatar</span>
                     <img
-                      src={profilePictureUrl}
+                      src={sanitizeURL(profilePictureUrl)}
                       alt="Preview"
                       className="w-8 h-8 rounded-lg object-cover border border-[#3d2b1f]"
                     />
                   </div>
                 )}
-                {socialLink && (
+                {socialLink && sanitizeURL(socialLink) && (
                   <div className="flex justify-between">
                     <span className="text-[#a89f94] text-sm">Social</span>
                     <a
-                      href={socialLink}
+                      href={sanitizeURL(socialLink)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#d4af37] text-sm hover:underline truncate max-w-[200px]"
                     >
-                      {socialLink}
+                      {sanitizeText(socialLink)}
                     </a>
                   </div>
                 )}

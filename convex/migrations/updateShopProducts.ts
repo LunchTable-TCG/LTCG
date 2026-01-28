@@ -22,9 +22,7 @@ export default internalMutation({
     let updatedCount = 0;
 
     // Get all shop products
-    const allProducts = await ctx.db
-      .query("shopProducts")
-      .collect();
+    const allProducts = await ctx.db.query("shopProducts").collect();
 
     for (const product of allProducts) {
       if (product.packConfig?.archetype) {

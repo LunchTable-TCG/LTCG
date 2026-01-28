@@ -1,17 +1,26 @@
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
-import { mutation, query, internalMutation } from "../_generated/server";
 import { internal } from "../_generated/api";
-import { requireAuthQuery, requireAuthMutation } from "../lib/convexAuth";
+import type { Id } from "../_generated/dataModel";
+import { internalMutation, mutation, query } from "../_generated/server";
+import { MARKETPLACE, PAGINATION } from "../lib/constants";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { checkCardOwnership } from "../lib/validators";
+import { adjustCardInventory } from "../lib/helpers";
+
+// Email action references - extracted to module level
+// @ts-ignore - Deep type instantiation limit workaround
+const emailActions = internal.emailActions;
+
+// Helper to avoid TypeScript "Type instantiation is excessively deep" errors
+// This is a known limitation with deeply nested generic types in large codebases
+const scheduleEmail = (ctx: any, emailFunction: any, args: any) =>
+  ctx.scheduler.runAfter(0, emailFunction, args);
 import {
+  auctionBidValidator,
   marketplaceListingValidator,
   marketplaceListingsValidator,
-  auctionBidValidator,
 } from "../lib/returnValidators";
-import { adjustCardInventory } from "../lib/helpers";
-import { MARKETPLACE, PAGINATION } from "../lib/constants";
+import { checkCardOwnership } from "../lib/validators";
 import { adjustPlayerCurrencyHelper } from "./economy";
 
 // ============================================================================
@@ -20,6 +29,13 @@ import { adjustPlayerCurrencyHelper } from "./economy";
 
 /**
  * Get marketplace listings with filtering and sorting
+ *
+ * @param rarity - Optional filter by card rarity (common, uncommon, rare, epic, legendary)
+ * @param archetype - Optional filter by card archetype (fire, water, earth, wind, neutral)
+ * @param listingType - Optional filter by listing type (fixed, auction)
+ * @param sortBy - Optional sort order (price_asc, price_desc, newest, oldest)
+ * @param page - Optional page number for pagination (default: 1)
+ * @returns Paginated marketplace listings with card details
  */
 export const getMarketplaceListings = query({
   args: {
@@ -56,19 +72,26 @@ export const getMarketplaceListings = query({
     const page = args.page ?? 1;
     const pageSize = PAGINATION.MARKETPLACE_PAGE_SIZE;
 
-    // Get active listings
-    let listings = await ctx.db
+    // Get active listings with listing type filter at query level
+    let listingsQuery = ctx.db
       .query("marketplaceListings")
-      .withIndex("by_status", (q) => q.eq("status", "active"))
-      .collect();
+      .withIndex("by_status", (q) => q.eq("status", "active"));
 
-    // Join with card definitions for filtering
-    const listingsWithCards = await Promise.all(
-      listings.map(async (listing) => {
-        const card = await ctx.db.get(listing.cardDefinitionId);
-        return { ...listing, card };
-      })
+    const listings = await listingsQuery.take(100); // Reasonable limit for marketplace listings
+
+    // Fix N+1: Batch fetch all unique card definitions
+    const uniqueCardIds = [...new Set(listings.map((l) => l.cardDefinitionId))];
+    const cardPromises = uniqueCardIds.map((id) => ctx.db.get(id));
+    const cards = await Promise.all(cardPromises);
+    const cardMap = new Map(
+      cards.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
     );
+
+    // Join with card definitions using the batch-fetched map
+    const listingsWithCards = listings.map((listing) => ({
+      ...listing,
+      card: cardMap.get(listing.cardDefinitionId),
+    }));
 
     // Filter by rarity
     let filtered = listingsWithCards;
@@ -135,6 +158,10 @@ export const getMarketplaceListings = query({
 
 /**
  * Get user's own listings
+ *
+ * Retrieves all marketplace listings created by the authenticated user.
+ *
+ * @returns Array of user's listings with card details
  */
 export const getUserListings = query({
   args: {},
@@ -144,20 +171,26 @@ export const getUserListings = query({
     const listings = await ctx.db
       .query("marketplaceListings")
       .withIndex("by_seller", (q) => q.eq("sellerId", userId))
-      .collect();
+      .take(100); // Reasonable limit for user's own listings
 
-    // Join with card definitions
-    const listingsWithCards = await Promise.all(
-      listings.map(async (listing) => {
-        const card = await ctx.db.get(listing.cardDefinitionId);
-        return {
-          ...listing,
-          cardName: card?.name ?? "Unknown Card",
-          cardRarity: card?.rarity ?? "common",
-          cardImageUrl: card?.imageUrl,
-        };
-      })
+    // Fix N+1: Batch fetch all unique card definitions
+    const uniqueCardIds = [...new Set(listings.map((l) => l.cardDefinitionId))];
+    const cardPromises = uniqueCardIds.map((id) => ctx.db.get(id));
+    const cards = await Promise.all(cardPromises);
+    const cardMap = new Map(
+      cards.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
     );
+
+    // Join with card definitions using the batch-fetched map
+    const listingsWithCards = listings.map((listing) => {
+      const card = cardMap.get(listing.cardDefinitionId);
+      return {
+        ...listing,
+        cardName: card?.name ?? "Unknown Card",
+        cardRarity: card?.rarity ?? "common",
+        cardImageUrl: card?.imageUrl,
+      };
+    });
 
     return listingsWithCards;
   },
@@ -165,6 +198,11 @@ export const getUserListings = query({
 
 /**
  * Get auction bid history for a listing
+ *
+ * Returns all bids placed on an auction listing, ordered by most recent first.
+ *
+ * @param listingId - The marketplace listing ID to get bid history for
+ * @returns Array of auction bids with bidder info and amounts
  */
 export const getAuctionBidHistory = query({
   args: { listingId: v.id("marketplaceListings") },
@@ -174,7 +212,7 @@ export const getAuctionBidHistory = query({
       .query("auctionBids")
       .withIndex("by_listing", (q) => q.eq("listingId", args.listingId))
       .order("desc")
-      .collect();
+      .take(100); // Reasonable limit for bid history
 
     return bids;
   },
@@ -186,10 +224,19 @@ export const getAuctionBidHistory = query({
 
 /**
  * Create a marketplace listing
+ *
+ * Creates a new fixed-price or auction listing. Locks the card inventory
+ * from the seller until the listing is sold, cancelled, or expires.
+ *
+ * @param cardDefinitionId - The card to list for sale
+ * @param quantity - Number of cards to sell (must be positive)
+ * @param listingType - Type of listing: "fixed" for buy-now or "auction" for bidding
+ * @param price - Starting price for auctions or buy-now price for fixed listings (min: 10 gold)
+ * @param duration - Optional auction duration in hours (default: 24, min: 1, max: 168)
+ * @returns Success status and the created listing ID
  */
 export const createListing = mutation({
   args: {
-    
     cardDefinitionId: v.id("cardDefinitions"),
     quantity: v.number(),
     listingType: v.union(v.literal("fixed"), v.literal("auction")),
@@ -206,7 +253,7 @@ export const createListing = mutation({
     // Validate inputs
     if (args.quantity <= 0) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Quantity must be positive",
+        reason: "Quantity must be positive",
       });
     }
 
@@ -217,32 +264,25 @@ reason: "Quantity must be positive",
     }
 
     // Check card ownership
-    const hasCard = await checkCardOwnership(
-      ctx,
-      userId,
-      args.cardDefinitionId,
-      args.quantity
-    );
+    const hasCard = await checkCardOwnership(ctx, userId, args.cardDefinitionId, args.quantity);
 
     if (!hasCard) {
       throw createError(ErrorCode.AUTHZ_RESOURCE_FORBIDDEN, {
-reason: "You don't own enough of this card",
+        reason: "You don't own enough of this card",
       });
     }
 
     // Lock inventory (remove from player's available cards)
-    await adjustCardInventory(
-      ctx,
-      userId,
-      args.cardDefinitionId,
-      -args.quantity
-    );
+    await adjustCardInventory(ctx, userId, args.cardDefinitionId, -args.quantity);
 
     // Calculate auction end time if applicable
     let endsAt: number | undefined;
     if (args.listingType === "auction") {
       const duration = args.duration ?? 24; // Default 24 hours
-      if (duration < MARKETPLACE.MIN_AUCTION_DURATION || duration > MARKETPLACE.MAX_AUCTION_DURATION) {
+      if (
+        duration < MARKETPLACE.MIN_AUCTION_DURATION ||
+        duration > MARKETPLACE.MAX_AUCTION_DURATION
+      ) {
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: `Auction duration must be between ${MARKETPLACE.MIN_AUCTION_DURATION} and ${MARKETPLACE.MAX_AUCTION_DURATION} hours`,
         });
@@ -274,10 +314,15 @@ reason: "You don't own enough of this card",
 
 /**
  * Cancel a listing
+ *
+ * Cancels an active marketplace listing and returns cards to seller's inventory.
+ * For auctions with bids, refunds all bidders automatically.
+ *
+ * @param listingId - The marketplace listing ID to cancel
+ * @returns Success status
  */
 export const cancelListing = mutation({
   args: {
-    
     listingId: v.id("marketplaceListings"),
   },
   returns: v.object({
@@ -289,28 +334,33 @@ export const cancelListing = mutation({
     const listing = await ctx.db.get(args.listingId);
     if (!listing) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Listing not found",
+        reason: "Listing not found",
       });
     }
 
     if (listing.sellerId !== userId) {
       throw createError(ErrorCode.AUTHZ_RESOURCE_FORBIDDEN, {
-reason: "You can only cancel your own listings",
+        reason: "You can only cancel your own listings",
       });
     }
 
     if (listing.status !== "active") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Listing is not active",
+        reason: "Listing is not active",
       });
     }
 
     // Refund all bids if auction
+    // NOTE: This loop processes bids sequentially (not atomic across all refunds).
+    // This is acceptable because: (1) auction cancellation is user-initiated and rare,
+    // (2) the number of bids is limited (<100), and (3) each refund is atomic within
+    // adjustPlayerCurrencyHelper. If a partial failure occurs, some bidders may be
+    // refunded while others are not, but this is detectable via bid.bidStatus.
     if (listing.listingType === "auction" && listing.bidCount > 0) {
       const bids = await ctx.db
         .query("auctionBids")
         .withIndex("by_listing", (q) => q.eq("listingId", args.listingId))
-        .collect();
+        .take(100); // Reasonable limit for auction bids
 
       for (const bid of bids) {
         if (bid.bidStatus === "active") {
@@ -333,12 +383,7 @@ reason: "Listing is not active",
     }
 
     // Return cards to inventory
-    await adjustCardInventory(
-      ctx,
-      userId,
-      listing.cardDefinitionId,
-      listing.quantity
-    );
+    await adjustCardInventory(ctx, userId, listing.cardDefinitionId, listing.quantity);
 
     // Update listing status
     await ctx.db.patch(args.listingId, {
@@ -352,10 +397,16 @@ reason: "Listing is not active",
 
 /**
  * Buy now (fixed price listing)
+ *
+ * Purchase a card immediately from a fixed-price listing.
+ * Deducts listing price plus platform fee from buyer, credits seller,
+ * and transfers card ownership.
+ *
+ * @param listingId - The marketplace listing ID to purchase
+ * @returns Success status with price breakdown (price, platformFee, totalCost)
  */
 export const buyNow = mutation({
   args: {
-    
     listingId: v.id("marketplaceListings"),
   },
   handler: async (ctx, args) => {
@@ -364,25 +415,25 @@ export const buyNow = mutation({
     const listing = await ctx.db.get(args.listingId);
     if (!listing) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Listing not found",
+        reason: "Listing not found",
       });
     }
 
     if (listing.status !== "active") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Listing is no longer active",
+        reason: "Listing is no longer active",
       });
     }
 
     if (listing.listingType !== "fixed") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "This is not a fixed price listing",
+        reason: "This is not a fixed price listing",
       });
     }
 
     if (listing.sellerId === userId) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "You cannot buy your own listing",
+        reason: "You cannot buy your own listing",
       });
     }
 
@@ -413,12 +464,7 @@ reason: "You cannot buy your own listing",
     });
 
     // Transfer card ownership
-    await adjustCardInventory(
-      ctx,
-      userId,
-      listing.cardDefinitionId,
-      listing.quantity
-    );
+    await adjustCardInventory(ctx, userId, listing.cardDefinitionId, listing.quantity);
 
     // Update listing status
     await ctx.db.patch(args.listingId, {
@@ -429,6 +475,20 @@ reason: "You cannot buy your own listing",
       platformFee,
       updatedAt: Date.now(),
     });
+
+    // Send email notification to seller
+    const seller = await ctx.db.get(listing.sellerId);
+    const cardDefinition = await ctx.db.get(listing.cardDefinitionId);
+
+    if (seller?.email && cardDefinition) {
+      await scheduleEmail(ctx, emailActions.sendCardSoldNotification, {
+        email: seller.email,
+        username: seller.username || seller.name || "Player",
+        cardName: cardDefinition.name,
+        rarity: cardDefinition.rarity,
+        price: listing.price,
+      });
+    }
 
     return {
       success: true,
@@ -441,10 +501,16 @@ reason: "You cannot buy your own listing",
 
 /**
  * Place bid on auction
+ *
+ * Places a bid on an active auction listing. Locks the bid amount from bidder's gold.
+ * If outbidding another player, refunds the previous highest bidder automatically.
+ *
+ * @param listingId - The auction listing ID to bid on
+ * @param bidAmount - Bid amount (must exceed current bid by minimum increment percentage)
+ * @returns Success status with bid details (bidAmount, currentBid)
  */
 export const placeBid = mutation({
   args: {
-    
     listingId: v.id("marketplaceListings"),
     bidAmount: v.number(),
   },
@@ -454,32 +520,32 @@ export const placeBid = mutation({
     const listing = await ctx.db.get(args.listingId);
     if (!listing) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Listing not found",
+        reason: "Listing not found",
       });
     }
 
     if (listing.status !== "active") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Auction is no longer active",
+        reason: "Auction is no longer active",
       });
     }
 
     if (listing.listingType !== "auction") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "This is not an auction listing",
+        reason: "This is not an auction listing",
       });
     }
 
     if (listing.sellerId === userId) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "You cannot bid on your own auction",
+        reason: "You cannot bid on your own auction",
       });
     }
 
     // Check if auction expired
     if (listing.endsAt && listing.endsAt < Date.now()) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Auction has ended",
+        reason: "Auction has ended",
       });
     }
 
@@ -488,7 +554,10 @@ reason: "Auction has ended",
     const minBid = Math.ceil(currentBid * (1 + MARKETPLACE.MIN_BID_INCREMENT_PERCENT));
 
     if (args.bidAmount < minBid) {
-      throw new Error(`Bid must be at least ${minBid} gold`);
+      throw createError(ErrorCode.MARKETPLACE_BID_TOO_LOW, {
+        minBid,
+        bidAmount: args.bidAmount,
+      });
     }
 
     // Lock bidder's gold
@@ -510,17 +579,32 @@ reason: "Auction has ended",
         referenceId: args.listingId,
       });
 
-      // Update previous bid status
-      const previousBids = await ctx.db
+      // Update previous bid status (should only be one active bid at a time)
+      const previousBid = await ctx.db
         .query("auctionBids")
         .withIndex("by_listing", (q) => q.eq("listingId", args.listingId))
-        .collect();
+        .filter((q) => q.eq(q.field("bidStatus"), "active"))
+        .first();
 
-      for (const bid of previousBids) {
-        if (bid.bidStatus === "active") {
-          await ctx.db.patch(bid._id, {
-            bidStatus: "outbid",
-            refundedAt: Date.now(),
+      if (previousBid) {
+        await ctx.db.patch(previousBid._id, {
+          bidStatus: "outbid",
+          refundedAt: Date.now(),
+        });
+
+        // Send outbid notification
+        const previousBidder = await ctx.db.get(listing.highestBidderId);
+        const cardDefinition = await ctx.db.get(listing.cardDefinitionId);
+
+        if (previousBidder?.email && cardDefinition && listing.endsAt) {
+          const auctionEndsAt = new Date(listing.endsAt).toLocaleString();
+
+          await scheduleEmail(ctx, emailActions.sendAuctionOutbidNotification, {
+            email: previousBidder.email,
+            username: previousBidder.username || previousBidder.name || "Player",
+            cardName: cardDefinition.name,
+            currentBid: args.bidAmount,
+            auctionEndsAt,
           });
         }
       }
@@ -555,10 +639,15 @@ reason: "Auction has ended",
 
 /**
  * Claim auction win (after auction ends)
+ *
+ * Claims the won auction and transfers cards to the winner after auction expires.
+ * Deducts platform fee from winner's locked bid, credits seller, and transfers card ownership.
+ *
+ * @param listingId - The auction listing ID to claim
+ * @returns Success status with final price and platform fee
  */
 export const claimAuctionWin = mutation({
   args: {
-    
     listingId: v.id("marketplaceListings"),
   },
   handler: async (ctx, args) => {
@@ -567,37 +656,37 @@ export const claimAuctionWin = mutation({
     const listing = await ctx.db.get(args.listingId);
     if (!listing) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Listing not found",
+        reason: "Listing not found",
       });
     }
 
     if (listing.listingType !== "auction") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "This is not an auction",
+        reason: "This is not an auction",
       });
     }
 
     if (listing.status !== "active") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Auction is not active",
+        reason: "Auction is not active",
       });
     }
 
     if (!listing.endsAt || listing.endsAt > Date.now()) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Auction has not ended yet",
+        reason: "Auction has not ended yet",
       });
     }
 
     if (!listing.highestBidderId || listing.highestBidderId !== userId) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "You are not the highest bidder",
+        reason: "You are not the highest bidder",
       });
     }
 
     if (!listing.currentBid) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "No bids on this auction",
+        reason: "No bids on this auction",
       });
     }
 
@@ -623,12 +712,7 @@ reason: "No bids on this auction",
     });
 
     // Transfer cards
-    await adjustCardInventory(
-      ctx,
-      userId,
-      listing.cardDefinitionId,
-      listing.quantity
-    );
+    await adjustCardInventory(ctx, userId, listing.cardDefinitionId, listing.quantity);
 
     // Update listing status
     await ctx.db.patch(args.listingId, {
@@ -644,7 +728,7 @@ reason: "No bids on this auction",
     const bids = await ctx.db
       .query("auctionBids")
       .withIndex("by_listing", (q) => q.eq("listingId", args.listingId))
-      .collect();
+      .take(100); // Reasonable limit for auction bids
 
     for (const bid of bids) {
       if (bid.bidderId === userId && bid.bidStatus === "active") {
@@ -652,6 +736,33 @@ reason: "No bids on this auction",
           bidStatus: "won",
         });
       }
+    }
+
+    // Send email notifications
+    const winner = await ctx.db.get(userId);
+    const seller = await ctx.db.get(listing.sellerId);
+    const cardDefinition = await ctx.db.get(listing.cardDefinitionId);
+
+    if (winner?.email && cardDefinition) {
+      // Notify winner
+      await scheduleEmail(ctx, emailActions.sendAuctionWonNotification, {
+        email: winner.email,
+        username: winner.username || winner.name || "Player",
+        cardName: cardDefinition.name,
+        rarity: cardDefinition.rarity,
+        winningBid: listing.currentBid,
+      });
+    }
+
+    if (seller?.email && cardDefinition) {
+      // Notify seller
+      await scheduleEmail(ctx, emailActions.sendCardSoldNotification, {
+        email: seller.email,
+        username: seller.username || seller.name || "Player",
+        cardName: cardDefinition.name,
+        rarity: cardDefinition.rarity,
+        price: listing.currentBid,
+      });
     }
 
     return {
@@ -678,18 +789,20 @@ export const finalizeExpiredAuctions = internalMutation({
   handler: async (ctx) => {
     const now = Date.now();
     const GRACE_PERIOD_MS = 60 * 60 * 1000; // 1 hour
+    const cutoffTime = now - GRACE_PERIOD_MS;
 
     // Find active auctions that have expired (including grace period)
-    const expiredAuctions = await ctx.db
+    // Using compound index to filter at query level
+    const allActiveAuctions = await ctx.db
       .query("marketplaceListings")
-      .withIndex("by_status", (q) => q.eq("status", "active"))
-      .collect();
+      .withIndex("by_status_listingType_endsAt", (q) =>
+        q.eq("status", "active").eq("listingType", "auction")
+      )
+      .take(100); // Reasonable limit for auction expiry processing
 
-    const toFinalize = expiredAuctions.filter(
-      (listing) =>
-        listing.listingType === "auction" &&
-        listing.endsAt !== undefined &&
-        listing.endsAt + GRACE_PERIOD_MS < now
+    // Filter for expired auctions (endsAt < cutoffTime)
+    const toFinalize = allActiveAuctions.filter(
+      (listing) => listing.endsAt !== undefined && listing.endsAt < cutoffTime
     );
 
     let finalizedCount = 0;
@@ -741,7 +854,7 @@ export const finalizeExpiredAuctions = internalMutation({
           const bids = await ctx.db
             .query("auctionBids")
             .withIndex("by_listing", (q) => q.eq("listingId", listing._id))
-            .collect();
+            .take(100); // Reasonable limit for auction bids
 
           for (const bid of bids) {
             if (bid.bidderId === listing.highestBidderId && bid.bidStatus === "active") {

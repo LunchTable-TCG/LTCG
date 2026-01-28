@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import type { QueryCtx, MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { ErrorCode, createError } from "./errorCodes";
 
 export interface AuthenticatedUser {
   userId: Id<"users">;
@@ -37,7 +38,7 @@ export async function getCurrentUser(
 export async function requireAuthQuery(ctx: QueryCtx): Promise<AuthenticatedUser> {
   const auth = await getCurrentUser(ctx);
   if (!auth) {
-    throw new Error("Not authenticated");
+    throw createError(ErrorCode.AUTH_REQUIRED);
   }
   return auth;
 }
@@ -49,7 +50,7 @@ export async function requireAuthQuery(ctx: QueryCtx): Promise<AuthenticatedUser
 export async function requireAuthMutation(ctx: MutationCtx): Promise<AuthenticatedUser> {
   const auth = await getCurrentUser(ctx);
   if (!auth) {
-    throw new Error("Not authenticated");
+    throw createError(ErrorCode.AUTH_REQUIRED);
   }
   return auth;
 }

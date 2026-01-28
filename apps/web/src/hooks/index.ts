@@ -5,6 +5,22 @@
  * Import any hook with: import { useHookName } from "@/hooks"
  */
 
+// Shared Types
+export type {
+  BaseHookReturn,
+  HookWithError,
+  MutationHookReturn,
+  ActionResult,
+  PaginationState,
+  SortOption,
+  CardDisplay,
+  DeckDisplay,
+  UserProfileSummary,
+  GameMode,
+  PlayerStatus,
+} from "@/types";
+export { isSortOption, isGameMode, isPlayerStatus } from "@/types";
+
 // Auth Hooks
 // Use useAuthActions from "@convex-dev/auth/react" and Authenticated/Unauthenticated from "convex/react" directly
 
@@ -15,7 +31,7 @@ export { useSpectator } from "./game/useSpectator";
 export { useMatchmaking } from "./game/useMatchmaking";
 
 // Collection Hooks
-export { useDeckBuilder } from "./collection/useDeckBuilder";
+export { useDeckBuilder, useDeck, useValidateDeck } from "./collection/useDeckBuilder";
 export { useCardBinder } from "./collection/useCardBinder";
 
 // Economy Hooks
@@ -29,7 +45,7 @@ export { useGlobalChat } from "./social/useGlobalChat";
 export { usePresence } from "./social/usePresence";
 export { useLeaderboard } from "./social/useLeaderboard";
 export { useProfile } from "./social/useProfile";
-export { useFriends } from "./social/useFriends";
+export { useFriends, useSearchUsers } from "./social/useFriends";
 
 // Story Hooks
 export { useStoryProgress } from "./story/useStoryProgress";
@@ -39,3 +55,4 @@ export { useBadges } from "./story/useBadges";
 // Progression Hooks
 export { useQuests } from "./progression/useQuests";
 export { useAchievements } from "./progression/useAchievements";
+export { useNotifications } from "./progression/useNotifications";

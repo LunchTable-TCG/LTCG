@@ -81,10 +81,10 @@ function getInflationBadge(trend: string | undefined) {
 
 export default function EconomyAnalyticsPage() {
   // Fetch real data from Convex
-  const snapshot = useQuery(api.analytics.economy.getCurrentEconomySnapshot);
-  const metrics = useQuery(api.analytics.economy.getEconomyMetrics, { days: 14 });
-  const wealth = useQuery(api.analytics.economy.getWealthDistribution);
-  const marketplaceStats = useQuery(api.economy.marketplace.getMarketplaceStats);
+  const snapshot = useQuery(api.admin.analytics.getCurrentEconomySnapshot);
+  const metrics = useQuery(api.admin.analytics.getEconomyMetrics, { days: 14 });
+  const wealth = useQuery(api.admin.analytics.getWealthDistribution);
+  const marketplaceStats = useQuery(api.admin.analytics.getMarketplaceStats, { periodType: "all_time" });
 
   const isLoading = snapshot === undefined || metrics === undefined;
 

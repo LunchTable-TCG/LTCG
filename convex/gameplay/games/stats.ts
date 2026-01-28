@@ -1,8 +1,10 @@
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { calculateEloChange } from "../../lib/helpers";
-import { XP_SYSTEM, ELO_SYSTEM } from "../../lib/constants";
+import { internal } from "../../_generated/api";
+import { ELO_SYSTEM, XP_SYSTEM } from "../../lib/constants";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { calculateEloChange } from "../../lib/helpers";
+import { addXP } from "../../lib/xpHelpers";
 
 /**
  * Update player stats and ratings after game completion
@@ -19,7 +21,7 @@ export async function updatePlayerStatsAfterGame(
   if (!winner || !loser) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: "Winner or loser not found",
-      });
+    });
   }
 
   // Determine which rating field to use and XP amount
@@ -60,7 +62,6 @@ export async function updatePlayerStatsAfterGame(
       : XP_SYSTEM.STORY_WIN_XP;
 
   // Update winner XP via playerXP system (maintains single source of truth)
-  const { addXP } = await import("../../lib/xpHelpers");
   await addXP(ctx, winnerId, xpReward);
 
   // Update winner stats
@@ -103,5 +104,76 @@ export async function updatePlayerStatsAfterGame(
     loserRatingAfter,
     xpAwarded: xpReward,
     completedAt: Date.now(),
+  });
+
+  // Update quest progress for both players
+  // Winner: win_game event
+  await ctx.scheduler.runAfter(0, internal.progression.quests.updateQuestProgress, {
+    userId: winnerId,
+    event: {
+      type: "win_game",
+      value: 1,
+      gameMode,
+    },
+  });
+
+  // Both players: play_game event
+  await ctx.scheduler.runAfter(0, internal.progression.quests.updateQuestProgress, {
+    userId: winnerId,
+    event: {
+      type: "play_game",
+      value: 1,
+      gameMode,
+    },
+  });
+
+  await ctx.scheduler.runAfter(0, internal.progression.quests.updateQuestProgress, {
+    userId: loserId,
+    event: {
+      type: "play_game",
+      value: 1,
+      gameMode,
+    },
+  });
+
+  // Update achievement progress for both players
+  // Winner: win_game event
+  await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
+    userId: winnerId,
+    event: {
+      type: "win_game",
+      value: 1,
+      gameMode,
+    },
+  });
+
+  // Winner: ranked-specific achievement if applicable
+  if (isRanked) {
+    await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
+      userId: winnerId,
+      event: {
+        type: "win_ranked",
+        value: 1,
+      },
+    });
+  }
+
+  // Both players: play_game achievement
+  await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
+    userId: winnerId,
+    event: {
+      type: "play_game",
+      value: 1,
+      gameMode,
+    },
+  });
+
+  await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
+    userId: loserId,
+    event: {
+      type: "play_game",
+      value: 1,
+      gameMode,
+    },
   });
 }

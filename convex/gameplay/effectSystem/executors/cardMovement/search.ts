@@ -37,9 +37,9 @@ export async function executeSearch(
 
   // Filter deck by target type and archetype
   // Batch fetch all deck cards to avoid N+1 queries
-  const deckCards = await Promise.all(deck.map(id => ctx.db.get(id)));
+  const deckCards = await Promise.all(deck.map((id) => ctx.db.get(id)));
   const deckCardMap = new Map(
-    deckCards.filter((c): c is NonNullable<typeof c> => c !== null).map(c => [c._id, c])
+    deckCards.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
   );
 
   const matchingCards: Id<"cardDefinitions">[] = [];
@@ -90,25 +90,28 @@ export async function executeSearch(
   // If no card selected yet, return matching cards for selection
   if (!selectedCardId) {
     // Use already-fetched card data for frontend display
-    const availableTargets = matchingCards.slice(0, 10).map((cardId) => {
-      const card = deckCardMap.get(cardId);
-      if (!card) return null;
+    const availableTargets = matchingCards
+      .slice(0, 10)
+      .map((cardId) => {
+        const card = deckCardMap.get(cardId);
+        if (!card) return null;
 
-      return {
-        cardId,
-        name: card.name,
-        cardType: card.cardType,
-        imageUrl: card.imageUrl,
-        monsterStats:
-          card.cardType === "creature"
-            ? {
-                attack: card.attack || 0,
-                defense: card.defense || 0,
-                level: card.cost, // Level is derived from cost
-              }
-            : undefined,
-      };
-    }).filter((t): t is NonNullable<typeof t> => t !== null);
+        return {
+          cardId,
+          name: card.name,
+          cardType: card.cardType,
+          imageUrl: card.imageUrl,
+          monsterStats:
+            card.cardType === "creature"
+              ? {
+                  attack: card.attack || 0,
+                  defense: card.defense || 0,
+                  level: card.cost, // Level is derived from cost
+                }
+              : undefined,
+        };
+      })
+      .filter((t): t is NonNullable<typeof t> => t !== null);
 
     const archetypeText = archetype ? ` ${archetype}` : "";
     const typeText = targetType === "any" ? "card" : targetType;

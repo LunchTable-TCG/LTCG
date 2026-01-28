@@ -1,11 +1,11 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import { Shield, Sword, X } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
-import type { Id } from "@convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import type { CardInZone } from "../hooks/useGameBoard";
 
 interface SummonModalProps {
@@ -39,7 +39,9 @@ export function SummonModal({
 }: SummonModalProps) {
   const [selectedTributes, setSelectedTributes] = useState<Set<Id<"cardDefinitions">>>(new Set());
   const [showTributeSelection, setShowTributeSelection] = useState(false);
-  const [pendingSummonPosition, setPendingSummonPosition] = useState<"attack" | "defense" | null>(null);
+  const [pendingSummonPosition, setPendingSummonPosition] = useState<"attack" | "defense" | null>(
+    null
+  );
 
   // Reset tribute selection state when modal opens/closes or card changes
   useEffect(() => {
@@ -53,12 +55,16 @@ export function SummonModal({
   // Debug logging for tribute selection
   useEffect(() => {
     if (isOpen && card && tributesRequired > 0) {
-      console.log('[SummonModal] Tribute summon debug:', {
+      console.log("[SummonModal] Tribute summon debug:", {
         cardName: card.name,
         cardLevel: card.monsterStats?.level,
         tributesRequired,
         availableTributes: availableTributes.length,
-        tributesList: availableTributes.map(t => ({ name: t.name, id: t.cardId, instanceId: t.instanceId })),
+        tributesList: availableTributes.map((t) => ({
+          name: t.name,
+          id: t.cardId,
+          instanceId: t.instanceId,
+        })),
         showTributeSelection,
         selectedTributes: Array.from(selectedTributes),
       });
@@ -74,35 +80,64 @@ export function SummonModal({
   const canAttemptTributeSummon = !needsTributes || hasEnoughTributes;
 
   const handleSummonClick = (position: "attack" | "defense") => {
+    console.log("[SummonModal] handleSummonClick called:", {
+      position,
+      needsTributes,
+      hasEnoughTributes,
+      availableTributesCount: availableTributes.length,
+      tributesRequired,
+    });
+
     // Prevent summon if tributes are needed but not available
     if (needsTributes && !hasEnoughTributes) {
+      console.log("[SummonModal] Cannot summon - need tributes but dont have enough");
       return;
     }
 
     if (needsTributes && availableTributes.length > 0) {
       // Show tribute selection screen
+      console.log("[SummonModal] Showing tribute selection screen");
       setPendingSummonPosition(position);
       setShowTributeSelection(true);
     } else {
       // Summon directly (no tributes needed)
+      console.log("[SummonModal] Summoning directly without tributes");
       onSummon(position, []);
     }
   };
 
   const handleConfirmTributes = () => {
+    console.log("[SummonModal] handleConfirmTributes called:", {
+      pendingSummonPosition,
+      canProceedWithSummon,
+      selectedTributes: Array.from(selectedTributes),
+      tributesRequired,
+    });
+
     if (pendingSummonPosition && canProceedWithSummon) {
+      console.log(
+        "[SummonModal] Confirming tribute summon with",
+        Array.from(selectedTributes).length,
+        "tributes"
+      );
       onSummon(pendingSummonPosition, Array.from(selectedTributes));
     }
   };
 
   const toggleTribute = (cardId: Id<"cardDefinitions">) => {
+    console.log("[SummonModal] toggleTribute called for cardId:", cardId);
     const newSelected = new Set(selectedTributes);
     if (newSelected.has(cardId)) {
+      console.log("[SummonModal] Deselecting tribute");
       newSelected.delete(cardId);
     } else if (newSelected.size < tributesRequired) {
+      console.log("[SummonModal] Selecting tribute");
       newSelected.add(cardId);
+    } else {
+      console.log("[SummonModal] Cannot select - already have enough tributes");
     }
     setSelectedTributes(newSelected);
+    console.log("[SummonModal] New selected tributes:", Array.from(newSelected));
   };
 
   return (
@@ -135,9 +170,7 @@ export function SummonModal({
                       {card.cardType}
                     </span>
                     {card.monsterStats && (
-                      <span className="text-[#a89f94]">
-                        Lv.{card.monsterStats.level}
-                      </span>
+                      <span className="text-[#a89f94]">Lv.{card.monsterStats.level}</span>
                     )}
                   </div>
                 </div>
@@ -157,15 +190,15 @@ export function SummonModal({
                   {card.imageUrl ? (
                     <Image
                       src={card.imageUrl}
-                      alt={card.name}
+                      alt={card.name || "Card"}
                       width={128}
                       height={176}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center">
+                    <div className="w-full h-full bg-linear-to-br from-amber-600 to-amber-800 flex items-center justify-center">
                       <span className="text-sm text-white/80 text-center px-2">
-                        {card.name}
+                        {card.name || "Unknown Card"}
                       </span>
                     </div>
                   )}
@@ -196,9 +229,12 @@ export function SummonModal({
                   {!card.monsterStats && (
                     <div className="p-3 bg-[#3d2b1f]/30 border border-[#3d2b1f] rounded text-center">
                       <p className="text-xs text-[#a89f94]">
-                        {card.cardType === "spell" && "This spell card can be activated or set face-down"}
-                        {card.cardType === "trap" && "This trap card must be set face-down before activation"}
-                        {card.cardType === "field" && "This field spell affects the entire battlefield"}
+                        {card.cardType === "spell" &&
+                          "This spell card can be activated or set face-down"}
+                        {card.cardType === "trap" &&
+                          "This trap card must be set face-down before activation"}
+                        {card.cardType === "field" &&
+                          "This field spell affects the entire battlefield"}
                       </p>
                     </div>
                   )}
@@ -237,7 +273,8 @@ export function SummonModal({
                   <div className="p-4 bg-red-500/10 border border-red-500/30 rounded text-center mb-3">
                     <p className="text-sm text-red-400 font-medium mb-1">Cannot Play Right Now</p>
                     <p className="text-xs text-[#a89f94]">
-                      This card cannot be played during this phase or you don't have the required resources.
+                      This card cannot be played during this phase or you don't have the required
+                      resources.
                     </p>
                   </div>
                 )}
@@ -275,21 +312,24 @@ export function SummonModal({
 
                 {/* Tribute Warning/Error */}
                 {needsTributes && !showTributeSelection && (
-                  <div className={`p-3 border rounded mb-2 ${
-                    hasEnoughTributes
-                      ? "bg-yellow-500/10 border-yellow-500/30"
-                      : "bg-red-500/10 border-red-500/30"
-                  }`}>
-                    <p className={`text-sm font-medium mb-1 ${
-                      hasEnoughTributes ? "text-yellow-400" : "text-red-400"
-                    }`}>
+                  <div
+                    className={`p-3 border rounded mb-2 ${
+                      hasEnoughTributes
+                        ? "bg-yellow-500/10 border-yellow-500/30"
+                        : "bg-red-500/10 border-red-500/30"
+                    }`}
+                  >
+                    <p
+                      className={`text-sm font-medium mb-1 ${
+                        hasEnoughTributes ? "text-yellow-400" : "text-red-400"
+                      }`}
+                    >
                       {hasEnoughTributes ? "Tribute Required" : "Cannot Summon"}
                     </p>
                     <p className="text-xs text-[#a89f94]">
                       {hasEnoughTributes
                         ? `This Level ${card.monsterStats?.level} monster requires ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}. Click a summon button to select monsters to tribute.`
-                        : `This Level ${card.monsterStats?.level} monster requires ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}, but you only have ${availableTributes.length} monster${availableTributes.length !== 1 ? "s" : ""} on the field. Summon more monsters first.`
-                      }
+                        : `This Level ${card.monsterStats?.level} monster requires ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}, but you only have ${availableTributes.length} monster${availableTributes.length !== 1 ? "s" : ""} on the field. Summon more monsters first.`}
                     </p>
                   </div>
                 )}
@@ -307,7 +347,9 @@ export function SummonModal({
                       <div className="font-bold text-sm text-[#e8e0d5]">Attack Position</div>
                       <div className="text-xs text-[#a89f94]">
                         Summon face-up (ATK: {card.monsterStats?.attack ?? 0})
-                        {needsTributes && hasEnoughTributes && ` - Select ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}`}
+                        {needsTributes &&
+                          hasEnoughTributes &&
+                          ` - Select ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}`}
                       </div>
                     </div>
                   </Button>
@@ -326,7 +368,9 @@ export function SummonModal({
                       <div className="font-bold text-sm text-[#e8e0d5]">Defense Position</div>
                       <div className="text-xs text-[#a89f94]">
                         Summon face-up (DEF: {card.monsterStats?.defense ?? 0})
-                        {needsTributes && hasEnoughTributes && ` - Select ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}`}
+                        {needsTributes &&
+                          hasEnoughTributes &&
+                          ` - Select ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}`}
                       </div>
                     </div>
                   </Button>
@@ -338,7 +382,9 @@ export function SummonModal({
                     {canActivate && (
                       <div className="flex items-center gap-2 my-3">
                         <div className="flex-1 h-px bg-[#3d2b1f]" />
-                        <span className="text-[10px] text-[#a89f94] uppercase tracking-wider">Or</span>
+                        <span className="text-[10px] text-[#a89f94] uppercase tracking-wider">
+                          Or
+                        </span>
                         <div className="flex-1 h-px bg-[#3d2b1f]" />
                       </div>
                     )}
@@ -368,7 +414,8 @@ export function SummonModal({
                   <>
                     <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded mb-3">
                       <p className="text-sm text-yellow-400 font-medium mb-2">
-                        Select {tributesRequired} Monster{tributesRequired > 1 ? "s" : ""} to Tribute
+                        Select {tributesRequired} Monster{tributesRequired > 1 ? "s" : ""} to
+                        Tribute
                       </p>
                       <p className="text-xs text-[#a89f94] mb-3">
                         Selected: {selectedTributes.size} / {tributesRequired}
@@ -392,7 +439,8 @@ export function SummonModal({
                                 {tribute.name}
                               </p>
                               <p className="text-[10px] text-[#a89f94]">
-                                Lv.{tribute.monsterStats?.level} - ATK:{tribute.monsterStats?.attack}
+                                Lv.{tribute.monsterStats?.level} - ATK:
+                                {tribute.monsterStats?.attack}
                               </p>
                             </button>
                           );

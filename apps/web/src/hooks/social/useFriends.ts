@@ -1,54 +1,100 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "../auth/useConvexAuthHook";
-import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import { toast } from "sonner";
+import type { Friend, FriendRequest, FriendRequestResult } from "@/types";
+import { handleHookError } from "@/lib/errorHandling";
+import { useAuth } from "../auth/useConvexAuthHook";
+
+interface UseFriendsReturn {
+  friends: Friend[] | undefined;
+  incomingRequests: FriendRequest[] | undefined;
+  outgoingRequests: FriendRequest[] | undefined;
+  blockedUsers: ReturnType<typeof useQuery<typeof api.social.friends.getBlockedUsers>> | undefined;
+  friendCount: number;
+  incomingRequestCount: number;
+  outgoingRequestCount: number;
+  onlineFriends: Friend[];
+  onlineCount: number;
+  isLoading: boolean;
+  sendFriendRequest: (friendUsername: string) => Promise<FriendRequestResult>;
+  acceptFriendRequest: (friendId: Id<"users">) => Promise<void>;
+  declineFriendRequest: (friendId: Id<"users">) => Promise<void>;
+  cancelFriendRequest: (friendId: Id<"users">) => Promise<void>;
+  removeFriend: (friendId: Id<"users">) => Promise<void>;
+  blockUser: (friendId: Id<"users">) => Promise<void>;
+  unblockUser: (friendId: Id<"users">) => Promise<void>;
+}
 
 /**
- * useFriends Hook
+ * Comprehensive friends management system with requests and blocking.
  *
- * Complete friends management:
- * - View friends list with online status
- * - Send/accept/decline friend requests
- * - Cancel sent requests
+ * Provides complete social features including friend requests, online status
+ * tracking, and blocking functionality. Includes automatic friend request
+ * acceptance for mutual requests. All mutations show toast notifications.
+ *
+ * Features:
+ * - View friends with online status
+ * - Send friend requests (auto-accepts if mutual)
+ * - Accept/decline incoming requests
+ * - Cancel outgoing requests
  * - Remove friends (unfriend)
  * - Block/unblock users
- * - Search for users
+ * - Track online/offline status
+ * - Separate views for incoming/outgoing requests
+ *
+ * @example
+ * ```typescript
+ * const {
+ *   friends,
+ *   onlineFriends,
+ *   incomingRequests,
+ *   sendFriendRequest,
+ *   acceptFriendRequest
+ * } = useFriends();
+ *
+ * // Send friend request
+ * await sendFriendRequest("PlayerName");
+ *
+ * // Accept incoming request
+ * await acceptFriendRequest(userId);
+ *
+ * // Show online friends
+ * console.log(`${onlineCount} friends online`);
+ * ```
+ *
+ * @returns {UseFriendsReturn} Friends management interface
+ *
+ * @throws {Error} When user is not authenticated
  */
-export function useFriends() {
+export function useFriends(): UseFriendsReturn {
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const friends = useQuery(
-    api.friends.getFriends,
-    isAuthenticated ? {} : "skip"
-  );
+  const friends = useQuery(api.social.friends.getFriends, isAuthenticated ? {} : "skip");
 
   const incomingRequests = useQuery(
-    api.friends.getIncomingRequests,
+    api.social.friends.getIncomingRequests,
     isAuthenticated ? {} : "skip"
   );
 
   const outgoingRequests = useQuery(
-    api.friends.getOutgoingRequests,
+    api.social.friends.getOutgoingRequests,
     isAuthenticated ? {} : "skip"
   );
 
-  const blockedUsers = useQuery(
-    api.friends.getBlockedUsers,
-    isAuthenticated ? {} : "skip"
-  );
+  const blockedUsers = useQuery(api.social.friends.getBlockedUsers, isAuthenticated ? {} : "skip");
 
   // Mutations
-  const sendRequestMutation = useMutation(api.friends.sendFriendRequest);
-  const acceptRequestMutation = useMutation(api.friends.acceptFriendRequest);
-  const declineRequestMutation = useMutation(api.friends.declineFriendRequest);
-  const cancelRequestMutation = useMutation(api.friends.cancelFriendRequest);
-  const removeFriendMutation = useMutation(api.friends.removeFriend);
-  const blockUserMutation = useMutation(api.friends.blockUser);
-  const unblockUserMutation = useMutation(api.friends.unblockUser);
+  const sendRequestMutation = useMutation(api.social.friends.sendFriendRequest);
+  const acceptRequestMutation = useMutation(api.social.friends.acceptFriendRequest);
+  const declineRequestMutation = useMutation(api.social.friends.declineFriendRequest);
+  const cancelRequestMutation = useMutation(api.social.friends.cancelFriendRequest);
+  const removeFriendMutation = useMutation(api.social.friends.removeFriend);
+  const blockUserMutation = useMutation(api.social.friends.blockUser);
+  const unblockUserMutation = useMutation(api.social.friends.unblockUser);
 
   // Actions
   const sendFriendRequest = async (friendUsername: string) => {
@@ -61,8 +107,9 @@ export function useFriends() {
         toast.success(`Friend request sent to ${friendUsername}`);
       }
       return result;
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send friend request");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to send friend request");
+      toast.error(message);
       throw error;
     }
   };
@@ -72,8 +119,9 @@ export function useFriends() {
     try {
       await acceptRequestMutation({ friendId });
       toast.success("Friend request accepted!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to accept friend request");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to accept friend request");
+      toast.error(message);
       throw error;
     }
   };
@@ -83,8 +131,9 @@ export function useFriends() {
     try {
       await declineRequestMutation({ friendId });
       toast.info("Friend request declined");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to decline friend request");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to decline friend request");
+      toast.error(message);
       throw error;
     }
   };
@@ -94,8 +143,9 @@ export function useFriends() {
     try {
       await cancelRequestMutation({ friendId });
       toast.info("Friend request cancelled");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to cancel friend request");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to cancel friend request");
+      toast.error(message);
       throw error;
     }
   };
@@ -105,8 +155,9 @@ export function useFriends() {
     try {
       await removeFriendMutation({ friendId });
       toast.info("Friend removed");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to remove friend");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to remove friend");
+      toast.error(message);
       throw error;
     }
   };
@@ -116,8 +167,9 @@ export function useFriends() {
     try {
       await blockUserMutation({ friendId });
       toast.success("User blocked");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to block user");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to block user");
+      toast.error(message);
       throw error;
     }
   };
@@ -127,19 +179,11 @@ export function useFriends() {
     try {
       await unblockUserMutation({ friendId });
       toast.success("User unblocked");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to unblock user");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to unblock user");
+      toast.error(message);
       throw error;
     }
-  };
-
-  // Helper function for searching users
-  const searchUsers = (query: string, limit?: number) => {
-    if (!isAuthenticated) return null;
-    return useQuery(
-      api.friends.searchUsers,
-      query.length > 0 ? { query, limit } : "skip"
-    );
   };
 
   return {
@@ -155,8 +199,8 @@ export function useFriends() {
     outgoingRequestCount: outgoingRequests?.length || 0,
 
     // Online friends
-    onlineFriends: friends?.filter((f: NonNullable<typeof friends>[number]) => f.isOnline) || [],
-    onlineCount: friends?.filter((f: NonNullable<typeof friends>[number]) => f.isOnline).length || 0,
+    onlineFriends: friends?.filter((f) => f.isOnline) || [],
+    onlineCount: friends?.filter((f) => f.isOnline).length || 0,
 
     // Loading states
     isLoading: friends === undefined,
@@ -169,6 +213,26 @@ export function useFriends() {
     removeFriend,
     blockUser,
     unblockUser,
-    searchUsers,
   };
+}
+
+/**
+ * useSearchUsers Hook
+ *
+ * Separate hook for searching users.
+ * Must be called at component top-level, not conditionally.
+ *
+ * @param query - Search query string
+ * @param limit - Optional result limit
+ */
+export function useSearchUsers(
+  query: string,
+  limit?: number
+): ReturnType<typeof useQuery<typeof api.social.friends.searchUsers>> | undefined {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery(
+    api.social.friends.searchUsers,
+    isAuthenticated && query.length > 0 ? { query, limit } : "skip"
+  );
 }

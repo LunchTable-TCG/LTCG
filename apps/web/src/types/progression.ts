@@ -1,0 +1,359 @@
+/**
+ * Progression system types (achievements, quests, badges, notifications).
+ *
+ * This module defines types for player progression tracking including:
+ * - Achievements: Long-term goals with rarity-based rewards
+ * - Quests: Daily/weekly objectives with progress tracking
+ * - Badges: Visual rewards for completing milestones
+ * - Notifications: In-game alerts for progression events
+ */
+
+import type { Id } from "@convex/_generated/dataModel";
+import type { Achievement, UserQuest as Quest } from "./generated";
+
+/**
+ * Achievement data structure from Convex backend.
+ *
+ * Achievements are long-term goals that reward players with gold, XP, and status.
+ *
+ * @example
+ * ```typescript
+ * const achievement: Achievement = {
+ *   _id: "jd8s9d0..." as Id<"achievements">,
+ *   _creationTime: 1234567890,
+ *   achievementId: "first_win",
+ *   name: "First Victory",
+ *   description: "Win your first match",
+ *   category: "combat",
+ *   rarity: "common",
+ *   rewards: { gold: 100, xp: 50 },
+ *   requirement: { type: "wins", count: 1 },
+ *   progress: 1,
+ *   isComplete: true,
+ *   unlockedAt: 1234567890
+ * };
+ * ```
+ *
+ * @see Quest - For time-limited objectives
+ * @see Badge - For visual rewards earned from achievements
+ */
+export type { Achievement };
+
+/**
+ * Quest data structure with progress tracking from Convex backend.
+ *
+ * Quests are daily or weekly objectives that refresh periodically.
+ *
+ * @example
+ * ```typescript
+ * const quest: Quest = {
+ *   _id: "jq7h2k9..." as Id<"userQuests">,
+ *   _creationTime: 1234567890,
+ *   userId: "ju8s9d0..." as Id<"users">,
+ *   questId: "daily_3wins",
+ *   questType: "daily",
+ *   name: "Win 3 Matches",
+ *   description: "Achieve 3 victories in any game mode",
+ *   progress: 2,
+ *   target: 3,
+ *   isComplete: false,
+ *   rewards: { gold: 200, xp: 100 },
+ *   expiresAt: 1234654290
+ * };
+ * ```
+ *
+ * @see Achievement - For permanent progression goals
+ */
+export type { Quest };
+
+/**
+ * Player badge earned from completing achievements or milestones.
+ *
+ * Badges are visual rewards displayed on player profiles and serve as status symbols.
+ *
+ * Valid badge types:
+ * - `"story_complete"` - Completing story chapters
+ * - `"archetype_complete"` - Mastering a deck archetype
+ * - `"achievement"` - Unlocking specific achievements
+ * - `"special"` - Event or seasonal rewards
+ * - `"milestone"` - Reaching level or rank milestones
+ *
+ * @example
+ * ```typescript
+ * const badge: Badge = {
+ *   _id: "jb3k5m8..." as Id<"playerBadges">,
+ *   _creationTime: 1234567890,
+ *   userId: "ju8s9d0..." as Id<"users">,
+ *   badgeId: "chapter1_master",
+ *   badgeType: "story_complete",
+ *   displayName: "Chapter 1 Master",
+ *   description: "Completed all stages in Chapter 1 with 3 stars",
+ *   iconUrl: "/badges/chapter1.png",
+ *   earnedAt: 1234567890
+ * };
+ * ```
+ *
+ * @see Achievement - Badges are often earned from achievements
+ */
+export interface Badge {
+  /** Unique badge instance ID */
+  _id: Id<"playerBadges">;
+  /** Timestamp when the badge was earned */
+  _creationTime: number;
+  /** Owner of the badge */
+  userId: Id<"users">;
+  /** Badge template identifier */
+  badgeId: string;
+  /** Category of the badge */
+  badgeType: "story_complete" | "archetype_complete" | "achievement" | "special" | "milestone";
+  /** Human-readable badge name */
+  displayName: string;
+  /** Description of how the badge was earned */
+  description: string;
+  /** URL to the badge icon image (optional) */
+  iconUrl?: string;
+  /** Associated archetype (for archetype_complete badges) */
+  archetype?: string;
+  /** Timestamp when the badge was earned */
+  earnedAt: number;
+}
+
+/**
+ * Organized collection of player badges with metadata.
+ *
+ * Used in profile displays to show earned badges grouped by category.
+ *
+ * @example
+ * ```typescript
+ * const badgeData: BadgeData = {
+ *   badges: [badge1, badge2, badge3],
+ *   badgesByType: {
+ *     story_complete: [badge1, badge2],
+ *     achievement: [badge3]
+ *   },
+ *   totalBadges: 3
+ * };
+ * ```
+ */
+export interface BadgeData {
+  /** All badges earned by the player */
+  badges: Badge[];
+  /** Badges organized by type */
+  badgesByType: Record<string, Badge[]>;
+  /** Total count of earned badges */
+  totalBadges: number;
+}
+
+/**
+ * In-game notification alerting players to progression events.
+ *
+ * Notifications appear in the notification center and can trigger toasts/popups.
+ *
+ * Valid notification types:
+ * - `"achievement_unlocked"` - Achievement completed
+ * - `"level_up"` - Player leveled up
+ * - `"quest_completed"` - Quest objective finished
+ * - `"badge_earned"` - New badge awarded
+ *
+ * @example
+ * ```typescript
+ * // Achievement notification
+ * const notification: Notification = {
+ *   _id: "jn2k9m3..." as Id<"playerNotifications">,
+ *   _creationTime: 1234567890,
+ *   userId: "ju8s9d0..." as Id<"users">,
+ *   type: "achievement_unlocked",
+ *   title: "Achievement Unlocked!",
+ *   message: "You earned 'First Victory'",
+ *   data: {
+ *     achievementId: "first_win",
+ *     achievementName: "First Victory",
+ *     rarity: "common"
+ *   },
+ *   isRead: false,
+ *   createdAt: 1234567890
+ * };
+ *
+ * // Level up notification
+ * const levelUp: Notification = {
+ *   _id: "jn3m8k2..." as Id<"playerNotifications">,
+ *   _creationTime: 1234567890,
+ *   userId: "ju8s9d0..." as Id<"users">,
+ *   type: "level_up",
+ *   title: "Level Up!",
+ *   message: "You reached level 10",
+ *   data: {
+ *     newLevel: 10,
+ *     xpEarned: 500
+ *   },
+ *   isRead: false,
+ *   createdAt: 1234567890
+ * };
+ * ```
+ */
+export interface Notification {
+  /** Unique notification ID */
+  _id: Id<"playerNotifications">;
+  /** Timestamp when notification was created */
+  _creationTime: number;
+  /** Recipient user ID */
+  userId: Id<"users">;
+  /** Type of progression event */
+  type: "achievement_unlocked" | "level_up" | "quest_completed" | "badge_earned";
+  /** Notification title */
+  title: string;
+  /** Notification message body */
+  message: string;
+  /** Type-specific additional data */
+  data?:
+    | { achievementId: string; achievementName: string; rarity: string }
+    | { newLevel: number; xpEarned: number }
+    | { questId: string; questName: string; rewards: { gold: number; xp: number; gems?: number } }
+    | { badgeId: string; badgeName: string; badgeType: string };
+  /** Whether the notification has been read */
+  isRead: boolean;
+  /** Timestamp when notification was marked as read (optional) */
+  readAt?: number;
+  /** Timestamp when notification was created */
+  createdAt: number;
+}
+
+// =============================================================================
+// Mutation Results
+// =============================================================================
+
+/**
+ * Result of claiming quest rewards.
+ *
+ * @example
+ * ```typescript
+ * const result: QuestRewardResult = {
+ *   success: true,
+ *   rewards: {
+ *     gold: 200,
+ *     xp: 100,
+ *     gems: 5
+ *   }
+ * };
+ * ```
+ */
+export interface QuestRewardResult {
+  /** Indicates if rewards were successfully claimed */
+  success: boolean;
+  /** Rewards awarded to the player */
+  rewards: {
+    /** Gold currency awarded */
+    gold: number;
+    /** Experience points awarded */
+    xp: number;
+    /** Premium currency awarded (optional) */
+    gems?: number;
+  };
+}
+
+/**
+ * Result of notification-related actions (mark as read, delete).
+ *
+ * @example
+ * ```typescript
+ * const result: NotificationActionResult = {
+ *   success: true
+ * };
+ * ```
+ */
+export interface NotificationActionResult {
+  /** Indicates if the action completed successfully */
+  success: boolean;
+}
+
+/**
+ * Result of marking all notifications as read.
+ *
+ * @example
+ * ```typescript
+ * const result: MarkAllAsReadResult = {
+ *   success: true,
+ *   count: 12
+ * };
+ * ```
+ */
+export interface MarkAllAsReadResult {
+  /** Indicates if the operation completed successfully */
+  success: boolean;
+  /** Number of notifications marked as read */
+  count: number;
+}
+
+// =============================================================================
+// Type Guards
+// =============================================================================
+
+/**
+ * Type guard to check if a value is an Achievement.
+ *
+ * @param value - The value to check
+ * @returns True if the value is an Achievement
+ *
+ * @example
+ * ```typescript
+ * const data = await fetchProgression();
+ * if (isAchievement(data)) {
+ *   console.log(`Achievement: ${data.name}`);
+ * }
+ * ```
+ */
+export function isAchievement(value: unknown): value is Achievement {
+  return typeof value === "object" && value !== null && "_id" in value && "category" in value;
+}
+
+/**
+ * Type guard to check if a value is a Quest.
+ *
+ * @param value - The value to check
+ * @returns True if the value is a Quest
+ *
+ * @example
+ * ```typescript
+ * const data = await fetchProgression();
+ * if (isQuest(data)) {
+ *   console.log(`Quest: ${data.progress}/${data.target}`);
+ * }
+ * ```
+ */
+export function isQuest(value: unknown): value is Quest {
+  return typeof value === "object" && value !== null && "_id" in value && "questType" in value;
+}
+
+/**
+ * Type guard to check if a value is a Badge.
+ *
+ * @param value - The value to check
+ * @returns True if the value is a Badge
+ *
+ * @example
+ * ```typescript
+ * const data = await fetchReward();
+ * if (isBadge(data)) {
+ *   showBadgeAnimation(data);
+ * }
+ * ```
+ */
+export function isBadge(value: unknown): value is Badge {
+  return typeof value === "object" && value !== null && "badgeId" in value;
+}
+
+/**
+ * Type guard to check if a value is a Notification.
+ *
+ * @param value - The value to check
+ * @returns True if the value is a Notification
+ *
+ * @example
+ * ```typescript
+ * const items = await fetchInbox();
+ * const notifications = items.filter(isNotification);
+ * ```
+ */
+export function isNotification(value: unknown): value is Notification {
+  return typeof value === "object" && value !== null && "_id" in value && "type" in value;
+}

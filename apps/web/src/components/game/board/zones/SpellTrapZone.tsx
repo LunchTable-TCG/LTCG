@@ -1,5 +1,3 @@
-// @ts-nocheck
-// TODO: This file depends on Convex game APIs that have not been implemented yet.
 "use client";
 
 import type { Id } from "@convex/_generated/dataModel";
@@ -9,8 +7,8 @@ import { BoardCard, EmptySlot } from "../cards/BoardCard";
 interface SpellTrapZoneProps {
   cards: CardInZone[];
   isOpponent?: boolean;
-  selectedCard?: Id<"cardInstances"> | null;
-  activatableCards?: Set<Id<"cardInstances">>;
+  selectedCard?: Id<"cardDefinitions"> | null;
+  activatableCards?: Set<Id<"cardDefinitions">>;
   onCardClick?: (card: CardInZone) => void;
   onEmptySlotClick?: (index?: number) => void;
 }

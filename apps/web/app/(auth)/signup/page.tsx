@@ -1,7 +1,7 @@
-import { Sparkles } from "lucide-react";
-import Link from "next/link";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { Sparkles } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
   title: "Sign Up | Lunchtable TCG",

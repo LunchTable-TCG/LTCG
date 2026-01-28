@@ -13,33 +13,43 @@
  */
 
 import { v } from "convex/values";
-import { query, internalMutation } from "../_generated/server";
-import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
-import { requireAuthQuery } from "../lib/convexAuth";
-import { ErrorCode, createError } from "../lib/errorCodes";
-import { leaderboardEntryValidator, cachedLeaderboardValidator, userRankValidator } from "../lib/returnValidators";
-import { calculateWinRate } from "../lib/helpers";
-import { LEADERBOARD } from "../lib/constants";
-import { gameModeValidator, playerSegmentValidator } from "../schema";
+import { internalMutation, query } from "../_generated/server";
+import type { MutationCtx } from "../_generated/server";
 import {
-  rankedLeaderboard,
-  rankedLeaderboardHumans,
-  rankedLeaderboardAI,
   casualLeaderboard,
-  casualLeaderboardHumans,
   casualLeaderboardAI,
+  casualLeaderboardHumans,
+  rankedLeaderboard,
+  rankedLeaderboardAI,
+  rankedLeaderboardHumans,
   storyLeaderboard,
 } from "../infrastructure/aggregates";
+import { LEADERBOARD } from "../lib/constants";
+import { requireAuthQuery } from "../lib/convexAuth";
+import { ErrorCode, createError } from "../lib/errorCodes";
+import { calculateWinRate } from "../lib/helpers";
+import {
+  battleHistoryEntryValidator,
+  cachedLeaderboardValidator,
+  leaderboardEntryValidator,
+  userRankValidator,
+} from "../lib/returnValidators";
+import { gameModeValidator, playerSegmentValidator } from "../schema";
 
 // ============================================================================
 // PUBLIC QUERIES
 // ============================================================================
 
 /**
- * Get real-time leaderboard (optimized with indexes and .take())
- *
+ * Get real-time leaderboard (optimized with indexes and .take()).
  * Returns top N players based on rating/XP for the specified leaderboard type and player segment.
+ * Uses aggregates for O(log n) performance.
+ *
+ * @param type - Leaderboard type: "ranked" (ELO), "casual" (rating), or "story" (XP)
+ * @param segment - Player segment: "all", "humans", or "ai"
+ * @param limit - Maximum number of entries to return (default: 50)
+ * @returns Array of leaderboard entries with rank, rating, and win/loss stats
  */
 export const getLeaderboard = query({
   args: {
@@ -153,10 +163,13 @@ export const getLeaderboard = query({
 });
 
 /**
- * Get cached leaderboard (faster, but slightly stale - updates every 5 min)
- *
+ * Get cached leaderboard (faster, but slightly stale - updates every 5 min).
  * Returns cached snapshot if available, otherwise returns null.
- * Frontend can fallback to real-time query if needed.
+ * Frontend should fallback to real-time query if null.
+ *
+ * @param type - Leaderboard type: "ranked", "casual", or "story"
+ * @param segment - Player segment: "all", "humans", or "ai"
+ * @returns Cached leaderboard snapshot or null if not yet generated
  */
 export const getCachedLeaderboard = query({
   args: {
@@ -186,9 +199,13 @@ export const getCachedLeaderboard = query({
 });
 
 /**
- * Get user's rank on a specific leaderboard
- *
+ * Get user's rank on a specific leaderboard.
  * Uses aggregate's indexOf() for O(log n) rank lookup instead of O(n) counting.
+ * Automatically filters by player type (human/AI) based on user's isAiAgent flag.
+ *
+ * @param type - Leaderboard type: "ranked", "casual", or "story"
+ * @returns User's rank, rating, percentile, and total players in segment
+ * @throws NOT_FOUND_USER if user not found
  */
 export const getUserRank = query({
   args: {
@@ -233,10 +250,7 @@ export const getUserRank = query({
         rating: playerXP.currentXP,
         level: playerXP.currentLevel,
         totalPlayers,
-        percentile:
-          totalPlayers > 0
-            ? Math.round((rank / totalPlayers) * 100)
-            : 100,
+        percentile: totalPlayers > 0 ? Math.round((rank / totalPlayers) * 100) : 100,
       };
     }
 
@@ -247,12 +261,11 @@ export const getUserRank = query({
 
     const aggregate = type === "ranked" ? rankedLeaderboardHumans : casualLeaderboardHumans;
 
-    const userRating =
-      type === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
+    const userRating = type === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
 
     // Use aggregate for O(log n) rank lookup
     // Pass the negative key (matching our sortKey) and namespace
-    const key = -(userRating);
+    const key = -userRating;
     const index = await aggregate.indexOf(ctx, key, { namespace, id: userId });
     const totalPlayers = await aggregate.count(ctx, { namespace });
 
@@ -263,11 +276,90 @@ export const getUserRank = query({
       rating: userRating,
       level: 1, // Level not used for ranked/casual
       totalPlayers,
-      percentile:
-        totalPlayers > 0
-          ? Math.round((rank / totalPlayers) * 100)
-          : 100,
+      percentile: totalPlayers > 0 ? Math.round((rank / totalPlayers) * 100) : 100,
     };
+  },
+});
+
+/**
+ * Get battle history for the current user.
+ * Returns recent matches with rating changes, opponents, and results.
+ * Can filter by game type (ranked/casual/story) if needed.
+ *
+ * @param limit - Maximum number of matches to return (default: 20)
+ * @param gameType - Optional filter by game type ("ranked", "casual", or "story")
+ * @returns Array of match history entries sorted by most recent first
+ */
+export const getBattleHistory = query({
+  args: {
+    limit: v.optional(v.number()),
+    gameType: v.optional(gameModeValidator),
+  },
+  returns: v.array(battleHistoryEntryValidator),
+  handler: async (ctx, { limit = 20, gameType }) => {
+    const { userId } = await requireAuthQuery(ctx);
+
+    // Get matches where user was winner
+    const wonMatches = await ctx.db
+      .query("matchHistory")
+      .withIndex("by_winner", (q) => q.eq("winnerId", userId))
+      .order("desc")
+      .take(limit);
+
+    // Get matches where user was loser
+    const lostMatches = await ctx.db
+      .query("matchHistory")
+      .withIndex("by_loser", (q) => q.eq("loserId", userId))
+      .order("desc")
+      .take(limit);
+
+    // Combine and format results
+    const wonResults = await Promise.all(
+      wonMatches.map(async (match) => {
+        const opponent = await ctx.db.get(match.loserId);
+        return {
+          _id: match._id,
+          opponentId: match.loserId,
+          opponentUsername: opponent?.username || opponent?.name || "Unknown",
+          gameType: match.gameType,
+          result: "win" as const,
+          ratingBefore: match.winnerRatingBefore,
+          ratingAfter: match.winnerRatingAfter,
+          ratingChange: match.winnerRatingAfter - match.winnerRatingBefore,
+          xpAwarded: match.xpAwarded,
+          completedAt: match.completedAt,
+        };
+      })
+    );
+
+    const lostResults = await Promise.all(
+      lostMatches.map(async (match) => {
+        const opponent = await ctx.db.get(match.winnerId);
+        return {
+          _id: match._id,
+          opponentId: match.winnerId,
+          opponentUsername: opponent?.username || opponent?.name || "Unknown",
+          gameType: match.gameType,
+          result: "loss" as const,
+          ratingBefore: match.loserRatingBefore,
+          ratingAfter: match.loserRatingAfter,
+          ratingChange: match.loserRatingAfter - match.loserRatingBefore,
+          xpAwarded: match.xpAwarded,
+          completedAt: match.completedAt,
+        };
+      })
+    );
+
+    // Combine, sort by completedAt, and apply filters
+    let allMatches = [...wonResults, ...lostResults].sort((a, b) => b.completedAt - a.completedAt);
+
+    // Filter by game type if specified
+    if (gameType) {
+      allMatches = allMatches.filter((m) => m.gameType === gameType);
+    }
+
+    // Return limited results
+    return allMatches.slice(0, limit);
   },
 });
 
@@ -276,9 +368,11 @@ export const getUserRank = query({
 // ============================================================================
 
 /**
- * Refresh all 9 leaderboard snapshots
- *
+ * Refresh all 9 leaderboard snapshots.
  * Called by cron job every 5 minutes to keep snapshots fresh.
+ * Updates snapshots for all combinations of type (ranked/casual/story) × segment (all/humans/ai).
+ *
+ * @internal Called by cron job, not directly from client
  */
 export const refreshAllSnapshots = internalMutation({
   handler: async (ctx) => {
@@ -307,9 +401,7 @@ async function refreshSnapshot(
   // Find existing snapshot
   const existing = await ctx.db
     .query("leaderboardSnapshots")
-    .withIndex("by_leaderboard", (q) =>
-      q.eq("leaderboardType", type).eq("playerSegment", segment)
-    )
+    .withIndex("by_leaderboard", (q) => q.eq("leaderboardType", type).eq("playerSegment", segment))
     .first();
 
   if (existing) {
@@ -397,11 +489,7 @@ async function getLeaderboardRankings(
       .take(limit);
   } else {
     // Use simple index for "all" segment
-    players = await ctx.db
-      .query("users")
-      .withIndex(ratingField)
-      .order("desc")
-      .take(limit);
+    players = await ctx.db.query("users").withIndex(ratingField).order("desc").take(limit);
   }
 
   // Format rankings

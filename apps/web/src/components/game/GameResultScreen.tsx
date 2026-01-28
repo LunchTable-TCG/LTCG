@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
@@ -20,8 +22,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 type GameResult = "victory" | "defeat" | "draw";
 
@@ -333,7 +333,7 @@ export function GameResultScreen({
               >
                 <Button
                   onClick={handlePlayAgain}
-                  className="w-full sm:w-auto bg-gradient-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] text-white font-bold px-8 py-6"
+                  className="w-full sm:w-auto bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] text-white font-bold px-8 py-6"
                 >
                   <RotateCcw className="w-5 h-5 mr-2" />
                   Play Again

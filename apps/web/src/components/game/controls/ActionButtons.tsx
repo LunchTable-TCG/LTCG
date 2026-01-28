@@ -1,7 +1,7 @@
 "use client";
 
-import { Flag, Settings, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Flag, Settings, Swords } from "lucide-react";
 
 interface ActionButtonsProps {
   isPlayerTurn: boolean;

@@ -2,18 +2,18 @@
 
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
-import { X, Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useState } from "react";
 import { ChallengeConfirmDialog } from "./ChallengeConfirmDialog";
 
+import { AgentsTab } from "./profile/AgentsTab";
+import { BadgesTab } from "./profile/BadgesTab";
+import { CallingCardSection } from "./profile/CallingCardSection";
+import { DetailPopup } from "./profile/DetailPopup";
 // Import profile components
 import { ProfileHeader } from "./profile/ProfileHeader";
-import { CallingCardSection } from "./profile/CallingCardSection";
 import { ProfileTabs } from "./profile/ProfileTabs";
 import { StatsTab } from "./profile/StatsTab";
-import { BadgesTab } from "./profile/BadgesTab";
-import { AgentsTab } from "./profile/AgentsTab";
-import { DetailPopup } from "./profile/DetailPopup";
 
 // Import types
 import type { DetailItem, PlayerProfile } from "./profile/types";
@@ -55,7 +55,9 @@ export function PlayerProfileDialog({ isOpen, onClose, username }: PlayerProfile
   const userData = useQuery(api.core.users.getUserProfile, { username });
 
   // Fetch user's unlocked achievements
-  const unlockedAchievements = useQuery(api.progression.achievements.getUnlockedAchievements, { username });
+  const unlockedAchievements = useQuery(api.progression.achievements.getUnlockedAchievements, {
+    username,
+  });
 
   const handleChallengeConfirm = (mode: "casual" | "ranked") => {
     console.log(`Challenging ${username} to ${mode} match`);
@@ -154,8 +156,8 @@ export function PlayerProfileDialog({ isOpen, onClose, username }: PlayerProfile
           totalGames: userData.totalWins + userData.totalLosses,
           wins: userData.totalWins,
           losses: userData.totalLosses,
-          winStreak: 0, // TODO: Add winStreak tracking to schema
-          longestWinStreak: 0, // TODO: Add longestWinStreak tracking to schema
+          winStreak: 0, // currentWinStreak removed from schema
+          longestWinStreak: 0, // longestWinStreak removed from schema
         },
         socials: {},
         agents: [],
@@ -195,7 +197,6 @@ export function PlayerProfileDialog({ isOpen, onClose, username }: PlayerProfile
   return (
     <>
       {/* Backdrop */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: Backdrop overlay for modal */}
       <div
         role="presentation"
         className="fixed inset-0 z-80 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"

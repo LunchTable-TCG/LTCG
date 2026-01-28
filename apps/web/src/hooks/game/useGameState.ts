@@ -1,28 +1,61 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "../auth/useConvexAuthHook";
-import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import { toast } from "sonner";
+import { handleHookError } from "@/lib/errorHandling";
+import { useAuth } from "../auth/useConvexAuthHook";
+
+interface UseGameStateReturn {
+  hasActiveGame: boolean;
+  activeGameInfo: ReturnType<typeof useQuery<typeof api.games.checkForActiveGame>> | undefined;
+  gameState: ReturnType<typeof useQuery<typeof api.games.getGameStateForPlayer>> | undefined;
+  isLoading: boolean;
+  surrender: () => Promise<void>;
+}
 
 /**
- * useGameState Hook
+ * Game state management with reconnection support.
  *
- * Manages game state and reconnection functionality.
- * Provides:
- * - Reconnection detection (checkForActiveGame)
- * - Game state retrieval (secure, sanitized)
- * - Surrender functionality
+ * Handles game state retrieval and provides reconnection detection for players
+ * who refresh the page or disconnect during a game. Also provides surrender
+ * functionality for active games.
+ *
+ * Features:
+ * - Check for active games (reconnection)
+ * - Retrieve secure, sanitized game state
+ * - Surrender active games
+ * - Automatic active game detection on mount
+ *
+ * @example
+ * ```typescript
+ * // Check for reconnection
+ * const { hasActiveGame, activeGameInfo } = useGameState();
+ *
+ * if (hasActiveGame && activeGameInfo) {
+ *   // Redirect to game
+ *   router.push(`/game/${activeGameInfo.lobbyId}`);
+ * }
+ *
+ * // In game component
+ * const { gameState, surrender } = useGameState(lobbyId);
+ *
+ * // Surrender
+ * await surrender();
+ * ```
+ *
+ * @param lobbyId - Optional lobby ID to get detailed game state
+ *
+ * @returns {UseGameStateReturn} Game state interface
+ *
+ * @throws {Error} When user is not authenticated or no active game
  */
-export function useGameState(lobbyId?: Id<"gameLobbies">) {
+export function useGameState(lobbyId?: Id<"gameLobbies">): UseGameStateReturn {
   const { isAuthenticated } = useAuth();
 
   // Check for active game (reconnection)
-  const activeGame = useQuery(
-    api.games.checkForActiveGame,
-    isAuthenticated ? {} : "skip"
-  );
+  const activeGame = useQuery(api.games.checkForActiveGame, isAuthenticated ? {} : "skip");
 
   // Get detailed game state
   const gameState = useQuery(
@@ -38,8 +71,9 @@ export function useGameState(lobbyId?: Id<"gameLobbies">) {
     try {
       await surrenderMutation({ lobbyId });
       toast.info("You surrendered the game");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to surrender");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to surrender");
+      toast.error(message);
       throw error;
     }
   };

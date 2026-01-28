@@ -5,7 +5,7 @@
  * Handles triggers, costs, protection, and multiple effect types.
  */
 
-import type { ParsedEffect, ParsedAbility, TriggerCondition } from "./types";
+import type { ParsedAbility, ParsedEffect, TriggerCondition } from "./types";
 
 // Type guard for target types
 type TargetType = "monster" | "spell" | "trap" | "any";
@@ -39,11 +39,17 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
   const isOPT = text.includes("once per turn");
 
   // Detect protection effects
-  const protection: { cannotBeDestroyedByBattle?: boolean; cannotBeDestroyedByEffects?: boolean; cannotBeTargeted?: boolean; } = {};
+  const protection: {
+    cannotBeDestroyedByBattle?: boolean;
+    cannotBeDestroyedByEffects?: boolean;
+    cannotBeTargeted?: boolean;
+  } = {};
 
   // Check for combined protection: "cannot be destroyed by battle or card effects"
-  if (text.includes("cannot be destroyed by battle or card effects") ||
-      text.includes("cannot be destroyed by battle or effect")) {
+  if (
+    text.includes("cannot be destroyed by battle or card effects") ||
+    text.includes("cannot be destroyed by battle or effect")
+  ) {
     protection.cannotBeDestroyedByBattle = true;
     protection.cannotBeDestroyedByEffects = true;
   } else {
@@ -51,7 +57,10 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
     if (text.includes("cannot be destroyed by battle")) {
       protection.cannotBeDestroyedByBattle = true;
     }
-    if (text.includes("cannot be destroyed by card effects") || text.includes("cannot be destroyed by effect")) {
+    if (
+      text.includes("cannot be destroyed by card effects") ||
+      text.includes("cannot be destroyed by effect")
+    ) {
       protection.cannotBeDestroyedByEffects = true;
     }
   }
@@ -62,33 +71,63 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
   const hasProtection = Object.keys(protection).length > 0;
 
   // Detect continuous effects
-  const isContinuous = text.startsWith("all ") || text.includes("as long as") ||
-                       text.includes("while this card is on the field") ||
-                       (!text.includes("when") && !text.includes("if") &&
-                        (text.includes("gain") && text.includes("atk")) ||
-                        (text.includes("lose") && text.includes("atk")));
+  const isContinuous =
+    text.startsWith("all ") ||
+    text.includes("as long as") ||
+    text.includes("while this card is on the field") ||
+    (!text.includes("when") &&
+      !text.includes("if") &&
+      text.includes("gain") &&
+      text.includes("atk")) ||
+    (text.includes("lose") && text.includes("atk"));
 
   // Detect trigger condition
   // Check more specific patterns first to avoid false matches
-  if (text.includes("when") || text.includes("if") || text.includes("during") || text.includes("at the start")) {
-    if (text.includes("summon")) trigger = "on_summon";
+  if (
+    text.includes("when") ||
+    text.includes("if") ||
+    text.includes("during") ||
+    text.includes("at the start") ||
+    text.includes("each time")
+  ) {
+    // Check for opponent-triggered events
+    if ((text.includes("opponent") || text.includes("they")) && text.includes("summon"))
+      trigger = "on_opponent_summon";
+    else if (text.includes("summon")) trigger = "on_summon";
     else if (text.includes("flip")) trigger = "on_flip";
     // Battle-specific triggers (check before generic destroy)
-    else if (text.includes("inflicts battle damage") || text.includes("inflict battle damage")) trigger = "on_battle_damage";
-    else if (text.includes("destroys a monster by battle") || text.includes("destroy") && text.includes("by battle")) trigger = "on_battle_destroy";
-    else if (text.includes("is attacked") || text.includes("this card is attacked")) trigger = "on_battle_attacked";
+    else if (text.includes("inflicts battle damage") || text.includes("inflict battle damage"))
+      trigger = "on_battle_damage";
+    else if (
+      text.includes("destroys a monster by battle") ||
+      (text.includes("destroy") && text.includes("by battle"))
+    )
+      trigger = "on_battle_destroy";
+    else if (text.includes("is attacked") || text.includes("this card is attacked"))
+      trigger = "on_battle_attacked";
     // Generic destroy (after battle-specific checks)
     else if (text.includes("destroy") && !text.includes("battle")) trigger = "on_destroy";
     // Phase triggers
-    else if (text.includes("start of the battle phase") || text.includes("battle phase") && text.includes("start")) trigger = "on_battle_start";
+    else if (
+      text.includes("start of the battle phase") ||
+      (text.includes("battle phase") && text.includes("start"))
+    )
+      trigger = "on_battle_start";
     else if (text.includes("draw phase")) trigger = "on_draw";
-    else if (text.includes("end phase") || text.includes("during each end phase")) trigger = "on_end";
+    else if (text.includes("end phase") || text.includes("during each end phase"))
+      trigger = "on_end";
   }
 
   // Detect cost patterns on original text BEFORE stripping
   // Costs typically appear before the effect: "Discard 1 card, then Draw 2 cards"
   // Or with a colon: "Pay 1000 LP: Draw 1 card"
-  let cost: { type: "discard" | "pay_lp" | "tribute" | "banish"; value?: number; targetType?: "monster" | "spell" | "trap" | "any" } | undefined;
+  let cost:
+    | {
+        type: "discard" | "pay_lp" | "tribute" | "banish";
+        value?: number;
+        targetType?: "monster" | "spell" | "trap" | "any";
+      }
+    | undefined;
   let costStrippedText = text;
 
   // Pattern: "Discard X card(s)" or "Discard X monster(s)"
@@ -96,8 +135,8 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
   if (discardMatch && discardMatch[1] && discardMatch[2]) {
     cost = {
       type: "discard",
-      value: parseInt(discardMatch[1]),
-      targetType: normalizeTargetType(discardMatch[2])
+      value: Number.parseInt(discardMatch[1]),
+      targetType: normalizeTargetType(discardMatch[2]),
     };
     // Remove cost from text (everything before "then" or ":")
     costStrippedText = text.replace(/^.*?(?:,?\s*then\s*|:\s*)/i, "").trim();
@@ -108,7 +147,7 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
   if (payLPMatch && payLPMatch[1]) {
     cost = {
       type: "pay_lp",
-      value: parseInt(payLPMatch[1])
+      value: Number.parseInt(payLPMatch[1]),
     };
     costStrippedText = text.replace(/^.*?(?:,?\s*then\s*|:\s*)/i, "").trim();
   }
@@ -118,19 +157,24 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
   if (tributeMatch && tributeMatch[1] && tributeMatch[2]) {
     cost = {
       type: "tribute",
-      value: parseInt(tributeMatch[1]),
-      targetType: tributeMatch[2].toLowerCase() === "card" ? "any" : "monster"
+      value: Number.parseInt(tributeMatch[1]),
+      targetType: tributeMatch[2].toLowerCase() === "card" ? "any" : "monster",
     };
     costStrippedText = text.replace(/^.*?(?:,?\s*then\s*|:\s*)/i, "").trim();
   }
 
   // Pattern: "Banish X card(s)" (only if followed by "then" or ":")
   const banishCostMatch = text.match(/banish (\d+) (monster|spell|trap|card)s?/i);
-  if (banishCostMatch && banishCostMatch[1] && banishCostMatch[2] && (text.includes(", then") || text.match(/banish.*:/))) {
+  if (
+    banishCostMatch &&
+    banishCostMatch[1] &&
+    banishCostMatch[2] &&
+    (text.includes(", then") || text.match(/banish.*:/))
+  ) {
     cost = {
       type: "banish",
-      value: parseInt(banishCostMatch[1]),
-      targetType: normalizeTargetType(banishCostMatch[2])
+      value: Number.parseInt(banishCostMatch[1]),
+      targetType: normalizeTargetType(banishCostMatch[2]),
     };
     costStrippedText = text.replace(/^.*?(?:,?\s*then\s*|:\s*)/i, "").trim();
   }
@@ -142,7 +186,9 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
 
   // If only protection effects (no other parseable effects), return protection-only effect
   // Use more precise patterns to avoid matching "destroyed" in "cannot be destroyed"
-  const hasActionEffect = effectText.match(/\bdraw \d+|\bdestroy \d+|\bdeal \d+|\binflict \d+|\bgain \d+|\blose \d+|special summon|search .*deck|add .*(?:deck|graveyard)|banish/);
+  const hasActionEffect = effectText.match(
+    /\bdraw \d+|\bdestroy \d+|\bdeal \d+|\binflict \d+|\bgain \d+|\blose \d+|special summon|search .*deck|add .*(?:deck|graveyard)|banish/
+  );
   if (hasProtection && !hasActionEffect) {
     return {
       type: "modifyATK", // Use modifyATK as a dummy type for protection-only
@@ -160,11 +206,18 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
   // Example: "All Dragon-Type monsters gain an additional 200 ATK"
   if (isContinuous) {
     // Enhanced pattern with optional modifier words (additional, extra, bonus, etc.)
-    const continuousAtkMatch = effectText.match(/all\s+(\w+(?:-type)?)\s+monsters?\s+(?:you control|your opponent controls)\s+(gains?|loses?)\s+(?:an?\s+)?(?:additional|extra|bonus)?\s*(\d+)\s+atk/i);
-    if (continuousAtkMatch && continuousAtkMatch[1] && continuousAtkMatch[2] && continuousAtkMatch[3]) {
+    const continuousAtkMatch = effectText.match(
+      /all\s+(\w+(?:-type)?)\s+monsters?\s+(?:you control|your opponent controls)\s+(gains?|loses?)\s+(?:an?\s+)?(?:additional|extra|bonus)?\s*(\d+)\s+atk/i
+    );
+    if (
+      continuousAtkMatch &&
+      continuousAtkMatch[1] &&
+      continuousAtkMatch[2] &&
+      continuousAtkMatch[3]
+    ) {
       const archetype = continuousAtkMatch[1].toLowerCase();
       const gainOrLose = continuousAtkMatch[2].toLowerCase();
-      const value = parseInt(continuousAtkMatch[3]);
+      const value = Number.parseInt(continuousAtkMatch[3]);
       const isOpponent = effectText.includes("opponent");
 
       return {
@@ -178,11 +231,13 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
     }
 
     // Simpler pattern: "All X monsters gain Y ATK" with optional modifiers
-    const simpleAtkMatch = effectText.match(/all\s+(\w+(?:-type)?)\s+monsters?\s+(gains?|loses?)\s+(?:an?\s+)?(?:additional|extra|bonus)?\s*(\d+)\s+atk/i);
+    const simpleAtkMatch = effectText.match(
+      /all\s+(\w+(?:-type)?)\s+monsters?\s+(gains?|loses?)\s+(?:an?\s+)?(?:additional|extra|bonus)?\s*(\d+)\s+atk/i
+    );
     if (simpleAtkMatch && simpleAtkMatch[1] && simpleAtkMatch[2] && simpleAtkMatch[3]) {
       const archetype = simpleAtkMatch[1].toLowerCase();
       const gainOrLose = simpleAtkMatch[2].toLowerCase();
-      const value = parseInt(simpleAtkMatch[3]);
+      const value = Number.parseInt(simpleAtkMatch[3]);
 
       return {
         type: "modifyATK",
@@ -195,13 +250,50 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
     }
   }
 
+  // Parse Direct Attack ability
+  // Example: "This card can attack directly if your opponent controls no monsters in Attack Position"
+  if (
+    (text.includes("can attack directly") || text.includes("attack directly")) &&
+    text.includes("if")
+  ) {
+    // Detect the condition after "if"
+    let condition = "no_opponent_monsters"; // Default condition
+
+    if (text.includes("no monsters") || text.includes("controls no monsters")) {
+      condition = "no_opponent_attack_monsters";
+    }
+
+    return {
+      type: "directAttack",
+      trigger: "manual",
+      condition,
+      continuous: true, // This is a passive continuous ability
+      isOPT: false,
+    };
+  }
+
+  // Parse continuous triggered damage
+  // Example: "Your opponent takes 200 damage each time they Normal Summon a monster"
+  const continuousDamageMatch = effectText.match(
+    /(?:your opponent takes|opponent takes|inflict)\s+(\d+)\s+damage\s+(?:each time|when)/i
+  );
+  if (continuousDamageMatch && continuousDamageMatch[1]) {
+    return {
+      type: "damage",
+      trigger,
+      value: Number.parseInt(continuousDamageMatch[1]),
+      continuous: true,
+      isOPT: false,
+    };
+  }
+
   // Parse Draw effects
   const drawMatch = effectText.match(/draw (\d+) card/);
   if (drawMatch && drawMatch[1]) {
     return {
       type: "draw",
       trigger,
-      value: parseInt(drawMatch[1]),
+      value: Number.parseInt(drawMatch[1]),
       isOPT,
       ...(cost && { cost }),
     };
@@ -240,7 +332,7 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
   // Parse Destroy effects
   const destroyMatch = effectText.match(/destroy (\d+)?\s*(target)?\s*(monster|spell|trap|card)?/);
   if (destroyMatch || effectText.includes("destroy")) {
-    const targetCount = destroyMatch?.[1] ? parseInt(destroyMatch[1]) : 1;
+    const targetCount = destroyMatch?.[1] ? Number.parseInt(destroyMatch[1]) : 1;
     const targetType = destroyMatch?.[3] ? normalizeTargetType(destroyMatch[3]) : "monster";
 
     return {
@@ -260,21 +352,39 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
     return {
       type: "damage",
       trigger,
-      value: parseInt(damageMatch[1]),
+      value: Number.parseInt(damageMatch[1]),
       isOPT,
       ...(cost && { cost }),
     };
   }
 
-  // Parse ATK/DEF modification (check before LP to avoid false matches)
+  // Parse ATK modification (check before LP to avoid false matches)
   // Supports: "gains 500 ATK", "gains an additional 500 ATK", "gains an extra 500 ATK"
-  const atkMatch = effectText.match(/(gains?|loses?)\s+(?:an?\s+)?(?:additional|extra|bonus)?\s*(\d+)\s*atk/);
+  const atkMatch = effectText.match(
+    /(gains?|loses?)\s+(?:an?\s+)?(?:additional|extra|bonus)?\s*(\d+)\s*atk/
+  );
   if (atkMatch && atkMatch[1] && atkMatch[2]) {
-    const value = parseInt(atkMatch[2]);
+    const value = Number.parseInt(atkMatch[2]);
     return {
       type: "modifyATK",
       trigger,
       value: atkMatch[1].startsWith("lose") ? -value : value,
+      isOPT,
+      ...(cost && { cost }),
+    };
+  }
+
+  // Parse DEF modification
+  // Supports: "gains 500 DEF", "gains an additional 500 DEF", "loses 300 DEF"
+  const defMatch = effectText.match(
+    /(gains?|loses?)\s+(?:an?\s+)?(?:additional|extra|bonus)?\s*(\d+)\s*def(?:ense)?/
+  );
+  if (defMatch && defMatch[1] && defMatch[2]) {
+    const value = Number.parseInt(defMatch[2]);
+    return {
+      type: "modifyDEF",
+      trigger,
+      value: defMatch[1].startsWith("lose") ? -value : value,
       isOPT,
       ...(cost && { cost }),
     };
@@ -286,7 +396,7 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
     return {
       type: "gainLP",
       trigger,
-      value: parseInt(gainLPMatch[1]),
+      value: Number.parseInt(gainLPMatch[1]),
       isOPT,
       ...(cost && { cost }),
     };
@@ -294,11 +404,13 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
 
   // Parse Add from Graveyard to Hand
   // Example: "Add 1 Dragon monster from your graveyard to your hand"
-  if ((effectText.includes("add") || effectText.includes("return")) &&
-      (effectText.includes("graveyard") || effectText.includes("gy")) &&
-      effectText.includes("hand")) {
+  if (
+    (effectText.includes("add") || effectText.includes("return")) &&
+    (effectText.includes("graveyard") || effectText.includes("gy")) &&
+    effectText.includes("hand")
+  ) {
     const countMatch = effectText.match(/(\d+)/);
-    const targetCount = (countMatch && countMatch[1]) ? parseInt(countMatch[1]) : 1;
+    const targetCount = countMatch && countMatch[1] ? Number.parseInt(countMatch[1]) : 1;
 
     // Detect target type from text
     let targetType: "monster" | "spell" | "trap" | "any" = "any";
@@ -332,9 +444,13 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
 
   // Parse Return to Hand effects
   // Example: "Return 1 card to their hand"
-  if (effectText.includes("return") && effectText.includes("hand") && !effectText.includes("graveyard")) {
+  if (
+    effectText.includes("return") &&
+    effectText.includes("hand") &&
+    !effectText.includes("graveyard")
+  ) {
     const countMatch = effectText.match(/(\d+)/);
-    const targetCount = (countMatch && countMatch[1]) ? parseInt(countMatch[1]) : 1;
+    const targetCount = countMatch && countMatch[1] ? Number.parseInt(countMatch[1]) : 1;
 
     return {
       type: "toHand",
@@ -351,7 +467,7 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
   // Example: "Return 1 card to their deck"
   if (effectText.includes("return") && effectText.includes("deck")) {
     const countMatch = effectText.match(/(\d+)/);
-    const targetCount = (countMatch && countMatch[1]) ? parseInt(countMatch[1]) : 1;
+    const targetCount = countMatch && countMatch[1] ? Number.parseInt(countMatch[1]) : 1;
 
     return {
       type: "toGraveyard", // Using toGraveyard type temporarily for deck returns
@@ -366,9 +482,12 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
   // Parse Search effects
   // Examples: "Add 1 Dragon monster from your deck to your hand"
   //           "Search your deck for 1 Spell card and add it to your hand"
-  if (effectText.includes("search") || (effectText.includes("add") && effectText.includes("deck"))) {
+  if (
+    effectText.includes("search") ||
+    (effectText.includes("add") && effectText.includes("deck"))
+  ) {
     const countMatch = effectText.match(/(\d+)/);
-    const targetCount = (countMatch && countMatch[1]) ? parseInt(countMatch[1]) : 1;
+    const targetCount = countMatch && countMatch[1] ? Number.parseInt(countMatch[1]) : 1;
 
     // Detect target type
     let targetType: "monster" | "spell" | "trap" | "any" = "any";
@@ -378,10 +497,7 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
 
     // Detect archetype (e.g., "Dragon monster", "Fire-Type", etc.)
     let condition: string | undefined;
-    const archetypePatterns = [
-      /(\w+(?:-type)?)\s+monster/i,
-      /(\w+)\s+(?:spell|trap)/i,
-    ];
+    const archetypePatterns = [/(\w+(?:-type)?)\s+monster/i, /(\w+)\s+(?:spell|trap)/i];
 
     for (const pattern of archetypePatterns) {
       const match = effectText.match(pattern);
@@ -418,6 +534,60 @@ export function parseAbility(abilityText: string): ParsedEffect | null {
     };
   }
 
+  // Parse Mill effects
+  // Examples: "Mill 3 cards", "Send 5 cards from the top of your deck to the graveyard"
+  const millMatch = effectText.match(/(?:mill|send)\s+(\d+)\s+card/i);
+  if (
+    millMatch &&
+    millMatch[1] &&
+    (effectText.includes("mill") ||
+      (effectText.includes("deck") && effectText.includes("graveyard")))
+  ) {
+    return {
+      type: "mill",
+      trigger,
+      value: Number.parseInt(millMatch[1]),
+      isOPT,
+      ...(cost && { cost }),
+    };
+  }
+
+  // Parse Discard effects
+  // Examples: "Discard 2 cards", "Discard your entire hand"
+  const discardEffectMatch = effectText.match(/discard\s+(\d+)\s+card/i);
+  if (
+    discardEffectMatch &&
+    discardEffectMatch[1] &&
+    !text.includes("then") &&
+    !text.includes(":")
+  ) {
+    // Make sure this is not a cost (costs have "then" or ":")
+    return {
+      type: "discard",
+      trigger,
+      value: Number.parseInt(discardEffectMatch[1]),
+      isOPT,
+    };
+  }
+
+  // Parse Multiple Attack ability
+  // Examples: "Can attack twice per turn", "This card can attack twice"
+  if (
+    (text.includes("attack twice") ||
+      text.includes("attack two times") ||
+      text.includes("attacks twice")) &&
+    !text.includes("when") &&
+    !text.includes("if")
+  ) {
+    return {
+      type: "multipleAttack",
+      trigger: "manual",
+      value: 2, // Number of attacks allowed
+      continuous: true, // Passive continuous ability
+      isOPT: false,
+    };
+  }
+
   // Couldn't parse - return null
   console.warn(`Could not parse ability: ${abilityText}`);
   return null;
@@ -449,15 +619,15 @@ export function parseMultiPartAbility(abilityText: string): ParsedAbility {
     const char = text[i];
     currentClause += char;
 
-    if (char === ':') {
+    if (char === ":") {
       depth++;
-    } else if (char === '.' && depth === 0) {
+    } else if (char === "." && depth === 0) {
       // Period outside of a trigger clause - this is a real separator
       if (currentClause.trim().length > 0) {
         clauses.push(currentClause.trim());
         currentClause = "";
       }
-    } else if (char === '.' && depth > 0) {
+    } else if (char === "." && depth > 0) {
       // Period inside trigger clause - reset depth after completing the triggered effect
       depth = 0;
       if (currentClause.trim().length > 0) {

@@ -135,14 +135,12 @@
     background: linear-gradient(180deg, #171314 0%, #0a0503 100%);
     border: 2px solid transparent;
     border-image: linear-gradient(180deg, rgba(212, 175, 55, 0.5) 0%, rgba(139, 69, 19, 0.3) 100%) 1;
-    box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.8),
-      inset 0 0 40px rgba(139, 69, 19, 0.15),
-      0 8px 32px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), inset 0 0 40px rgba(139, 69, 19, 0.15), 0 8px 32px
+      rgba(0, 0, 0, 0.8);
   }
 
   .bg-parchment {
-    background-image: url('/assets/parchment-frame.png');
+    background-image: url("/assets/parchment-frame.png");
     background-size: 100% 100%;
     background-repeat: no-repeat;
     background-color: #e8e0d5;
@@ -155,66 +153,50 @@
     background: linear-gradient(180deg, #1a1510 0%, #0d0908 100%);
     border: 2px solid transparent;
     border-image: linear-gradient(180deg, #d4af37 0%, #8b4513 100%) 1;
-    box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.8),
-      inset 0 0 60px rgba(212, 175, 55, 0.1),
-      0 0 30px rgba(212, 175, 55, 0.2),
-      0 12px 40px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), inset 0 0 60px rgba(212, 175, 55, 0.1), 0 0 30px
+      rgba(212, 175, 55, 0.2), 0 12px 40px rgba(0, 0, 0, 0.9);
   }
 
   .tcg-panel {
-    background:
-      radial-gradient(ellipse at top, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
       linear-gradient(180deg, rgba(23, 19, 20, 0.98) 0%, rgba(10, 5, 3, 0.95) 100%);
     border: 1px solid rgba(139, 69, 19, 0.4);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.03),
-      inset 0 0 30px rgba(0, 0, 0, 0.5),
-      0 4px 20px rgba(0, 0, 0, 0.6);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 0 30px rgba(0, 0, 0, 0.5), 0 4px
+      20px rgba(0, 0, 0, 0.6);
   }
 
   .tcg-zone-panel {
-    background:
-      radial-gradient(ellipse at top, rgba(212, 175, 55, 0.03) 0%, transparent 60%),
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.03) 0%, transparent 60%),
       linear-gradient(180deg, rgba(15, 12, 10, 0.92) 0%, rgba(8, 5, 3, 0.88) 100%);
     border: 1px solid rgba(139, 69, 19, 0.25);
-    box-shadow:
-      inset 0 0 60px rgba(0, 0, 0, 0.7),
-      0 4px 24px rgba(0, 0, 0, 0.5);
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.7), 0 4px 24px rgba(0, 0, 0, 0.5);
   }
 
   .tcg-button {
     position: relative;
-    background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('/assets/ui/fantasy_wood_btn.png');
+    background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)),
+      url("/assets/ui/fantasy_wood_btn.png");
     background-size: cover;
     border: 2px solid #8b4513;
     color: #ffffff;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.2),
-      inset 0 0 20px rgba(0, 0, 0, 0.5),
-      0 4px 8px rgba(0, 0, 0, 0.5);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.5), 0 4px 8px
+      rgba(0, 0, 0, 0.5);
     transition: all 0.2s ease;
   }
-
-
 
   .tcg-button:hover {
     filter: brightness(1.2) contrast(1.1);
     border-color: #d4af37;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      0 0 15px rgba(212, 175, 55, 0.4),
-      0 6px 12px rgba(0, 0, 0, 0.6);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 15px rgba(212, 175, 55, 0.4), 0 6px 12px
+      rgba(0, 0, 0, 0.6);
     transform: translateY(-1px);
   }
 
   .tcg-button:active {
     transform: translateY(1px);
     filter: brightness(0.9);
-    box-shadow:
-      inset 0 4px 8px rgba(0, 0, 0, 0.6),
-      0 1px 2px rgba(0, 0, 0, 0.4);
+    box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4);
   }
 
   .tcg-button-primary {
@@ -223,46 +205,43 @@
     color: #3e2723;
     font-weight: 800;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      inset 0 -2px 0 rgba(0, 0, 0, 0.2),
-      0 0 20px rgba(212, 175, 55, 0.5),
-      0 4px 12px rgba(0, 0, 0, 0.6);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 0 rgba(0, 0, 0, 0.2), 0 0 20px
+      rgba(212, 175, 55, 0.5), 0 4px 12px rgba(0, 0, 0, 0.6);
   }
 
   .tcg-button-primary:hover {
     background: linear-gradient(180deg, #f9eeb0 0%, #e6be48 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.8),
-      0 0 30px rgba(212, 175, 55, 0.8),
-      0 6px 16px rgba(0, 0, 0, 0.7);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 30px rgba(212, 175, 55, 0.8), 0 6px 16px
+      rgba(0, 0, 0, 0.7);
   }
 
   .tcg-divider {
     height: 2px;
-    background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(139, 69, 19, 0.3) 20%,
-        rgba(212, 175, 55, 0.5) 50%,
-        rgba(139, 69, 19, 0.3) 80%,
-        transparent 100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(139, 69, 19, 0.3) 20%,
+      rgba(212, 175, 55, 0.5) 50%,
+      rgba(139, 69, 19, 0.3) 80%,
+      transparent 100%
+    );
   }
 
   .tcg-divider-vertical {
     width: 2px;
-    background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(139, 69, 19, 0.3) 20%,
-        rgba(212, 175, 55, 0.5) 50%,
-        rgba(139, 69, 19, 0.3) 80%,
-        transparent 100%);
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(139, 69, 19, 0.3) 20%,
+      rgba(212, 175, 55, 0.5) 50%,
+      rgba(139, 69, 19, 0.3) 80%,
+      transparent 100%
+    );
   }
 
   .gold-text {
     color: #d4af37;
-    text-shadow:
-      0 0 10px rgba(212, 175, 55, 0.5),
-      0 2px 4px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5), 0 2px 4px rgba(0, 0, 0, 0.8);
   }
 
   .gold-gradient {
@@ -274,28 +253,22 @@
   }
 
   .ember-glow {
-    box-shadow:
-      0 0 20px rgba(255, 107, 53, 0.4),
-      0 0 40px rgba(255, 107, 53, 0.2),
-      inset 0 0 20px rgba(255, 107, 53, 0.1);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2), inset 0 0 20px
+      rgba(255, 107, 53, 0.1);
   }
 
   .void-glow {
-    box-shadow:
-      0 0 20px rgba(124, 58, 237, 0.4),
-      0 0 40px rgba(124, 58, 237, 0.2),
-      inset 0 0 20px rgba(124, 58, 237, 0.1);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.4), 0 0 40px rgba(124, 58, 237, 0.2), inset 0 0 20px
+      rgba(124, 58, 237, 0.1);
   }
 
   .arcane-glow {
-    box-shadow:
-      0 0 20px rgba(6, 182, 212, 0.4),
-      0 0 40px rgba(6, 182, 212, 0.2),
-      inset 0 0 20px rgba(6, 182, 212, 0.1);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 40px rgba(6, 182, 212, 0.2), inset 0 0 20px
+      rgba(6, 182, 212, 0.1);
   }
 
   .bg-realm {
-    background-image: url('/assets/main_bg.png');
+    background-image: url("/assets/main_bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -303,75 +276,75 @@
   }
 
   .bg-landing {
-    background-image: url('/assets/dashboard-bg.jpg');
+    background-image: url("/assets/dashboard-bg.jpg");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-shop {
-    background-image: url('/assets/backgrounds/shop-bg.png');
+    background-image: url("/assets/backgrounds/shop-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-collection {
-    background-image: url('/assets/backgrounds/collection-bg.png');
+    background-image: url("/assets/backgrounds/collection-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-arena {
-    background-image: url('/assets/backgrounds/game_arena_background.png');
+    background-image: url("/assets/backgrounds/game_arena_background.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-decks {
-    background-image: url('/assets/backgrounds/decks-bg.png');
+    background-image: url("/assets/backgrounds/decks-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-profile {
-    background-image: url('/assets/backgrounds/profile-bg.png');
+    background-image: url("/assets/backgrounds/profile-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-auth {
-    background-image: url('/assets/backgrounds/auth-bg.png');
+    background-image: url("/assets/backgrounds/auth-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-social {
-    background-image: url('/assets/backgrounds/social-bg.png');
+    background-image: url("/assets/backgrounds/social-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-parchment {
-    background-image: url('/assets/textures/parchment.png');
+    background-image: url("/assets/textures/parchment.png");
     background-size: 512px;
     background-repeat: repeat;
   }
 
   .bg-leather {
-    background-image: url('/assets/textures/leather.png');
+    background-image: url("/assets/textures/leather.png");
     background-size: 512px;
     background-repeat: repeat;
   }
 
   .tcg-chat-leather {
-    background-image: url('/assets/textures/leather.png');
+    background-image: url("/assets/textures/leather.png");
     background-size: 512px;
     background-repeat: repeat;
     box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8), 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -424,7 +397,7 @@
   }
 
   .nav-link::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 50%;
@@ -473,25 +446,19 @@
   .stat-orb-gold {
     border-color: #d4af37;
     color: #d4af37;
-    box-shadow:
-      0 0 15px rgba(212, 175, 55, 0.3),
-      inset 0 0 15px rgba(212, 175, 55, 0.1);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.3), inset 0 0 15px rgba(212, 175, 55, 0.1);
   }
 
   .stat-orb-ember {
     border-color: #ff6b35;
     color: #ff6b35;
-    box-shadow:
-      0 0 15px rgba(255, 107, 53, 0.3),
-      inset 0 0 15px rgba(255, 107, 53, 0.1);
+    box-shadow: 0 0 15px rgba(255, 107, 53, 0.3), inset 0 0 15px rgba(255, 107, 53, 0.1);
   }
 
   .stat-orb-frost {
     border-color: #38bdf8;
     color: #38bdf8;
-    box-shadow:
-      0 0 15px rgba(56, 189, 248, 0.3),
-      inset 0 0 15px rgba(56, 189, 248, 0.1);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.3), inset 0 0 15px rgba(56, 189, 248, 0.1);
   }
 
   .mode-card {
@@ -503,7 +470,7 @@
   }
 
   .mode-card::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg, transparent 0%, rgba(212, 175, 55, 0.05) 100%);
@@ -514,9 +481,7 @@
   .mode-card:hover {
     border-color: rgba(212, 175, 55, 0.6);
     transform: translateY(-4px);
-    box-shadow:
-      0 0 30px rgba(212, 175, 55, 0.2),
-      0 12px 40px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.2), 0 12px 40px rgba(0, 0, 0, 0.8);
   }
 
   .mode-card:hover::before {
@@ -541,7 +506,6 @@
 }
 
 @keyframes torch {
-
   0%,
   100% {
     opacity: 0.6;
@@ -555,7 +519,6 @@
 }
 
 @keyframes float-subtle {
-
   0%,
   100% {
     transform: translateY(0);
@@ -567,7 +530,6 @@
 }
 
 @keyframes pulse-gold {
-
   0%,
   100% {
     box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
@@ -590,18 +552,39 @@
 
 /* Star twinkle animations */
 @keyframes twinkle {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes twinkle-delayed {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.3); }
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
 }
 
 @keyframes twinkle-slow {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.9; transform: scale(1.1); }
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.1);
+  }
 }
 
 .animate-twinkle {
@@ -618,15 +601,31 @@
 
 /* Campfire glow animations */
 @keyframes campfire-glow {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
 }
 
 @keyframes campfire-flicker {
-  0%, 100% { opacity: 0.6; }
-  25% { opacity: 0.8; }
-  50% { opacity: 0.5; }
-  75% { opacity: 0.9; }
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  25% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  75% {
+    opacity: 0.9;
+  }
 }
 
 .animate-campfire-glow {
@@ -639,45 +638,105 @@
 
 /* Floating spark animations - travel full viewport height */
 @keyframes spark-tall-1 {
-  0% { transform: translateY(0) translateX(0); opacity: 0.9; }
-  20% { opacity: 1; }
-  80% { opacity: 0.6; }
-  100% { transform: translateY(-95vh) translateX(40px); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.9;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-95vh) translateX(40px);
+    opacity: 0;
+  }
 }
 
 @keyframes spark-tall-2 {
-  0% { transform: translateY(0) translateX(0); opacity: 0.8; }
-  25% { opacity: 1; }
-  75% { opacity: 0.5; }
-  100% { transform: translateY(-90vh) translateX(-30px); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.8;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-90vh) translateX(-30px);
+    opacity: 0;
+  }
 }
 
 @keyframes spark-tall-3 {
-  0% { transform: translateY(0) translateX(0); opacity: 0.85; }
-  30% { opacity: 1; }
-  70% { opacity: 0.4; }
-  100% { transform: translateY(-100vh) translateX(25px); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.85;
+  }
+  30% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(25px);
+    opacity: 0;
+  }
 }
 
 @keyframes spark-tall-4 {
-  0% { transform: translateY(0) translateX(0); opacity: 0.9; }
-  20% { opacity: 1; }
-  85% { opacity: 0.3; }
-  100% { transform: translateY(-85vh) translateX(-50px); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.9;
+  }
+  20% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-85vh) translateX(-50px);
+    opacity: 0;
+  }
 }
 
 @keyframes spark-tall-5 {
-  0% { transform: translateY(0) translateX(0); opacity: 0.8; }
-  25% { opacity: 1; }
-  80% { opacity: 0.5; }
-  100% { transform: translateY(-92vh) translateX(60px); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.8;
+  }
+  25% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-92vh) translateX(60px);
+    opacity: 0;
+  }
 }
 
 @keyframes spark-tall-6 {
-  0% { transform: translateY(0) translateX(0); opacity: 0.85; }
-  30% { opacity: 1; }
-  75% { opacity: 0.4; }
-  100% { transform: translateY(-88vh) translateX(-20px); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.85;
+  }
+  30% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-88vh) translateX(-20px);
+    opacity: 0;
+  }
 }
 
 .animate-spark-tall-1 {

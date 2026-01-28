@@ -1,10 +1,11 @@
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "../_generated/server";
-import { requireAuthQuery, requireAuthMutation } from "../lib/convexAuth";
-import { ErrorCode, createError } from "../lib/errorCodes";
-import { userQuestValidator, questClaimValidator } from "../lib/returnValidators";
 import { internal } from "../_generated/api";
+import { internalMutation, mutation, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
+import { shuffleArray } from "../lib/deterministicRandom";
+import { ErrorCode, createError } from "../lib/errorCodes";
+import { questClaimValidator, userQuestValidator } from "../lib/returnValidators";
 
 // Type definitions matching schema
 type QuestType = "daily" | "weekly" | "achievement";
@@ -37,12 +38,13 @@ interface QuestDefinitionInput {
 }
 
 /**
- * Get user's active quests with progress
+ * Retrieves all active, completed, and claimed quests for the authenticated user.
+ * Returns enriched quest data including progress, rewards, and expiration times.
+ *
+ * @returns Array of user quests with complete quest definition data
  */
 export const getUserQuests = query({
-  args: {
-    
-  },
+  args: {},
   returns: v.array(userQuestValidator),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
@@ -53,14 +55,30 @@ export const getUserQuests = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    // Enrich with quest definitions
-    const enrichedQuests = await Promise.all(
-      userQuests.map(async (uq) => {
-        const definition = await ctx.db
-          .query("questDefinitions")
-          .withIndex("by_quest_id", (q) => q.eq("questId", uq.questId))
-          .first();
+    // OPTIMIZATION: Fetch all quest definitions once, then create a Map for O(1) lookups
+    // This prevents N+1 queries (one query per user quest)
+    const uniqueQuestIds = [...new Set(userQuests.map((uq) => uq.questId))];
 
+    // Fetch all quest definitions in parallel
+    const definitionPromises = uniqueQuestIds.map((questId) =>
+      ctx.db
+        .query("questDefinitions")
+        .withIndex("by_quest_id", (q) => q.eq("questId", questId))
+        .first()
+    );
+    const definitions = await Promise.all(definitionPromises);
+
+    // Create a Map for O(1) lookups by questId
+    const definitionMap = new Map(
+      definitions
+        .filter((def): def is NonNullable<typeof def> => def !== null)
+        .map((def) => [def.questId, def])
+    );
+
+    // Join user quests with definitions using the Map
+    const enrichedQuests = userQuests
+      .map((uq) => {
+        const definition = definitionMap.get(uq.questId);
         if (!definition) return null;
 
         return {
@@ -79,18 +97,22 @@ export const getUserQuests = query({
           expiresAt: uq.expiresAt || 0,
         };
       })
-    );
+      .filter((q) => q !== null);
 
-    return enrichedQuests.filter((q) => q !== null);
+    return enrichedQuests;
   },
 });
 
 /**
- * Claim completed quest rewards
+ * Claims rewards for a completed quest and updates quest status to claimed.
+ * Awards gold, gems, and XP according to the quest's reward definition.
+ * Uses internal currency adjustment helper to maintain transaction ledger.
+ *
+ * @param questRecordId - The ID of the user's quest record to claim
+ * @returns Success status and reward details (gold, XP, gems)
  */
 export const claimQuestReward = mutation({
   args: {
-    
     questRecordId: v.id("userQuests"),
   },
   returns: questClaimValidator,
@@ -165,7 +187,16 @@ export const claimQuestReward = mutation({
 });
 
 /**
- * Update quest progress (internal - called from game events)
+ * Updates progress for all active quests matching the given game event.
+ * Internal mutation called from game events. Checks event type and filters,
+ * updates progress, and creates notifications when quests are completed.
+ *
+ * @param userId - The ID of the user whose quest progress to update
+ * @param event - Game event containing type, value, and optional filters
+ * @param event.type - Event type (e.g., "win_game", "play_card", "deal_damage")
+ * @param event.value - Progress value to add
+ * @param event.gameMode - Optional game mode filter (e.g., "ranked", "casual")
+ * @param event.archetype - Optional archetype filter
  */
 export const updateQuestProgress = internalMutation({
   args: {
@@ -181,9 +212,7 @@ export const updateQuestProgress = internalMutation({
     // Get all active quests for this user
     const userQuests = await ctx.db
       .query("userQuests")
-      .withIndex("by_user_status", (q) =>
-        q.eq("userId", args.userId).eq("status", "active")
-      )
+      .withIndex("by_user_status", (q) => q.eq("userId", args.userId).eq("status", "active"))
       .collect();
 
     // Update progress for matching quests
@@ -212,17 +241,37 @@ export const updateQuestProgress = internalMutation({
         definition.targetValue
       );
 
+      const wasCompleted = userQuest.status === "completed";
+      const justCompleted = !wasCompleted && newProgress >= definition.targetValue;
+
       await ctx.db.patch(userQuest._id, {
         currentProgress: newProgress,
         status: newProgress >= definition.targetValue ? "completed" : "active",
         completedAt: newProgress >= definition.targetValue ? Date.now() : undefined,
       });
+
+      // Create quest completion notification if just completed
+      if (justCompleted) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.progression.notifications.createQuestCompletedNotification,
+          {
+            userId: args.userId,
+            questName: definition.name,
+            questType: definition.questType,
+          }
+        );
+      }
     }
   },
 });
 
 /**
- * Generate daily quests for user (internal cron job)
+ * Generates a new set of daily quests for a specific user.
+ * Selects 3 random active daily quest definitions and creates user quest records
+ * that expire after 24 hours. Internal mutation typically called by cron job.
+ *
+ * @param userId - The ID of the user to generate daily quests for
  */
 export const generateDailyQuests = internalMutation({
   args: {
@@ -239,10 +288,11 @@ export const generateDailyQuests = internalMutation({
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
-    // Select 3 random quests
-    const selectedQuests = dailyQuests
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
+    // OPTIMIZATION: Use deterministic randomness to ensure idempotency on retry
+    // Seed combines userId + date to ensure consistent quest selection per day
+    const dateString = new Date(now).toISOString().split("T")[0]; // YYYY-MM-DD
+    const seed = `${args.userId}-${dateString}`;
+    const selectedQuests = shuffleArray(dailyQuests, seed).slice(0, 3);
 
     // Create user quests
     for (const quest of selectedQuests) {
@@ -259,7 +309,159 @@ export const generateDailyQuests = internalMutation({
 });
 
 /**
- * Clean up expired quests (internal cron job)
+ * Generates daily quests for all active users who don't already have today's quests.
+ * Active users are defined as those with activity in the last 30 days.
+ * Internal mutation scheduled by cron job.
+ *
+ * @returns Success status and number of users processed
+ */
+export const generateDailyQuestsForAll = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // OPTIMIZATION NOTE: This queries ALL users, then filters in memory for active users.
+    // This is acceptable for smaller user bases but may need optimization for scale.
+    // Consider adding a lastActivityAt field and index if this becomes a bottleneck.
+    // Get all users who have logged in within the last 30 days
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+    // Get all users (we'll filter by recent activity)
+    const allUsers = await ctx.db.query("users").collect();
+
+    // Filter to active users only
+    const activeUsers = allUsers.filter((user) => {
+      // Consider user active if they have any recent activity or stats
+      return (
+        (user.lastStatsUpdate && user.lastStatsUpdate > thirtyDaysAgo) ||
+        (user.createdAt && user.createdAt > thirtyDaysAgo) ||
+        (user.totalWins && user.totalWins > 0)
+      );
+    });
+
+    // Generate daily quests for each active user
+    for (const user of activeUsers) {
+      // Check if user already has active daily quests for today
+      const existingDailyQuests = await ctx.db
+        .query("userQuests")
+        .withIndex("by_user_status", (q) => q.eq("userId", user._id).eq("status", "active"))
+        .collect();
+
+      const hasTodaysQuests = existingDailyQuests.some((uq) => {
+        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+        return uq.startedAt && uq.startedAt > oneDayAgo;
+      });
+
+      // Only generate if user doesn't have today's quests yet
+      if (!hasTodaysQuests) {
+        await ctx.scheduler.runAfter(0, internal.progression.quests.generateDailyQuests, {
+          userId: user._id,
+        });
+      }
+    }
+
+    return { success: true, usersProcessed: activeUsers.length };
+  },
+});
+
+/**
+ * Generates a new set of weekly quests for a specific user.
+ * Selects 2 random active weekly quest definitions and creates user quest records
+ * that expire after 7 days. Internal mutation typically called by cron job.
+ *
+ * @param userId - The ID of the user to generate weekly quests for
+ */
+export const generateWeeklyQuests = internalMutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+
+    // Get active weekly quest definitions
+    const weeklyQuests = await ctx.db
+      .query("questDefinitions")
+      .withIndex("by_type", (q) => q.eq("questType", "weekly"))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    // OPTIMIZATION: Use deterministic randomness to ensure idempotency on retry
+    // Seed combines userId + week number to ensure consistent quest selection per week
+    const weekNumber = Math.floor(now / oneWeekMs);
+    const seed = `${args.userId}-week-${weekNumber}`;
+    const selectedQuests = shuffleArray(weeklyQuests, seed).slice(0, 2);
+
+    // Create user quests
+    for (const quest of selectedQuests) {
+      await ctx.db.insert("userQuests", {
+        userId: args.userId,
+        questId: quest.questId,
+        currentProgress: 0,
+        status: "active",
+        startedAt: now,
+        expiresAt: now + oneWeekMs,
+      });
+    }
+  },
+});
+
+/**
+ * Generates weekly quests for all active users who don't already have this week's quests.
+ * Active users are defined as those with activity in the last 30 days.
+ * Internal mutation scheduled by cron job.
+ *
+ * @returns Success status and number of users processed
+ */
+export const generateWeeklyQuestsForAll = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // OPTIMIZATION NOTE: This queries ALL users, then filters in memory for active users.
+    // This is acceptable for smaller user bases but may need optimization for scale.
+    // Consider adding a lastActivityAt field and index if this becomes a bottleneck.
+    // Get all users who have logged in within the last 30 days
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+    // Get all users
+    const allUsers = await ctx.db.query("users").collect();
+
+    // Filter to active users only
+    const activeUsers = allUsers.filter((user) => {
+      return (
+        (user.lastStatsUpdate && user.lastStatsUpdate > thirtyDaysAgo) ||
+        (user.createdAt && user.createdAt > thirtyDaysAgo) ||
+        (user.totalWins && user.totalWins > 0)
+      );
+    });
+
+    // Generate weekly quests for each active user
+    for (const user of activeUsers) {
+      // Check if user already has active weekly quests for this week
+      const existingWeeklyQuests = await ctx.db
+        .query("userQuests")
+        .withIndex("by_user_status", (q) => q.eq("userId", user._id).eq("status", "active"))
+        .collect();
+
+      const hasThisWeeksQuests = existingWeeklyQuests.some((uq) => {
+        const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        return (
+          uq.startedAt && uq.startedAt > oneWeekAgo && uq.expiresAt && uq.expiresAt > Date.now()
+        );
+      });
+
+      // Only generate if user doesn't have this week's quests yet
+      if (!hasThisWeeksQuests) {
+        await ctx.scheduler.runAfter(0, internal.progression.quests.generateWeeklyQuests, {
+          userId: user._id,
+        });
+      }
+    }
+
+    return { success: true, usersProcessed: activeUsers.length };
+  },
+});
+
+/**
+ * Removes all expired quests that have not been claimed.
+ * Internal mutation scheduled by cron job to prevent database bloat.
  */
 export const cleanupExpiredQuests = internalMutation({
   args: {},
@@ -281,7 +483,10 @@ export const cleanupExpiredQuests = internalMutation({
 });
 
 /**
- * Seed initial quest definitions (internal)
+ * Seeds the database with initial quest definitions for daily, weekly, and achievement quests.
+ * Only inserts quests that don't already exist. Internal mutation used during setup.
+ *
+ * @returns Success status and count of quest definitions seeded
  */
 export const seedQuests = internalMutation({
   args: {},

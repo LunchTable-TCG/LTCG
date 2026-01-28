@@ -6,6 +6,8 @@
  * operations (like Math.random()) would produce different results on retry.
  */
 
+import { ErrorCode, createError } from "./errorCodes";
+
 /**
  * Simple hash function to convert a string seed into a number
  */
@@ -13,7 +15,7 @@ function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
   return Math.abs(hash);
@@ -27,14 +29,14 @@ function hashString(str: string): number {
  * @returns A function that returns deterministic random numbers between 0 and 1
  */
 export function createSeededRandom(seed: string | number): () => number {
-  let state = typeof seed === 'string' ? hashString(seed) : seed;
+  let state = typeof seed === "string" ? hashString(seed) : seed;
 
-  return function() {
+  return () => {
     state |= 0;
-    state = state + 0x6D2B79F5 | 0;
-    let t = Math.imul(state ^ state >>> 15, 1 | state);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 
@@ -90,7 +92,7 @@ export function shuffleArray<T>(array: T[], seed: string): T[] {
  */
 export function pickRandom<T>(array: T[], seed: string): T {
   if (array.length === 0) {
-    throw new Error("Cannot pick from empty array");
+    throw createError(ErrorCode.LIBRARY_EMPTY_ARRAY);
   }
   const random = createSeededRandom(seed);
   const index = Math.floor(random() * array.length);

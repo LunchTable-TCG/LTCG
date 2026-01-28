@@ -11,6 +11,7 @@ import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import { mutation, query } from "../../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
+import { ErrorCode, createError } from "../../lib/errorCodes";
 import { executeSpecialSummon } from "../effectSystem/executors/summon/summon";
 
 /**
@@ -41,9 +42,9 @@ export const getGraveyardSummonTargets = query({
     const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
 
     // 3. Filter for monsters only - batch fetch all cards
-    const cards = await Promise.all(graveyard.map(id => ctx.db.get(id)));
+    const cards = await Promise.all(graveyard.map((id) => ctx.db.get(id)));
     const cardMap = new Map(
-      cards.filter((c): c is NonNullable<typeof c> => c !== null).map(c => [c._id, c])
+      cards.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
     );
 
     const targets = [];
@@ -96,9 +97,9 @@ export const getBanishedSummonTargets = query({
     const banished = isHost ? gameState.hostBanished : gameState.opponentBanished;
 
     // 3. Filter for monsters only - batch fetch all cards
-    const cards = await Promise.all(banished.map(id => ctx.db.get(id)));
+    const cards = await Promise.all(banished.map((id) => ctx.db.get(id)));
     const cardMap = new Map(
-      cards.filter((c): c is NonNullable<typeof c> => c !== null).map(c => [c._id, c])
+      cards.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
     );
 
     const targets = [];
@@ -148,7 +149,7 @@ export const completeSpecialSummon = mutation({
       .first();
 
     if (!gameState) {
-      throw new Error("Game state not found");
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND);
     }
 
     // 3. Execute special summon
@@ -221,12 +222,12 @@ export const getDestructionTargets = query({
 
     // Batch fetch all card IDs we'll need
     const allCardIds = [
-      ...board.map(bc => bc.cardId),
-      ...spellTrapZone.filter(st => !st.isFaceDown).map(st => st.cardId),
+      ...board.map((bc) => bc.cardId),
+      ...spellTrapZone.filter((st) => !st.isFaceDown).map((st) => st.cardId),
     ];
-    const cards = await Promise.all(allCardIds.map(id => ctx.db.get(id)));
+    const cards = await Promise.all(allCardIds.map((id) => ctx.db.get(id)));
     const cardMap = new Map(
-      cards.filter((c): c is NonNullable<typeof c> => c !== null).map(c => [c._id, c])
+      cards.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
     );
 
     // 3. Check monster board

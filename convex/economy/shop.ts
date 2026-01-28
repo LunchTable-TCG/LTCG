@@ -1,26 +1,29 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
+import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { requireAuthQuery, requireAuthMutation } from "../lib/convexAuth";
+import { PAGINATION } from "../lib/constants";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import {
-  shopProductValidator,
-  packOpeningHistoryValidator,
-  cardResultValidator,
-} from "../lib/returnValidators";
-import { adjustPlayerCurrencyHelper } from "./economy";
-import { packPurchaseValidator } from "../lib/returnValidators";
-import {
-  weightedRandomRarity,
-  getRandomCard,
-  addCardsToInventory,
-  openPack,
-  type Rarity,
   type Archetype,
+  type Rarity,
+  addCardsToInventory,
+  getRandomCard,
+  openPack,
+  weightedRandomRarity,
 } from "../lib/helpers";
-import { PAGINATION } from "../lib/constants";
+import {
+  cardResultValidator,
+  packOpeningHistoryValidator,
+  shopProductValidator,
+} from "../lib/returnValidators";
+import { packPurchaseValidator } from "../lib/returnValidators";
+import { checkRateLimitWrapper } from "../lib/rateLimit";
 import type { CardResult } from "../lib/types";
+import { validateCurrency, validateCurrencyBalance, validatePositive } from "../lib/validation";
+import { adjustPlayerCurrencyHelper } from "./economy";
 
 // ============================================================================
 // PUBLIC QUERIES
@@ -28,6 +31,9 @@ import type { CardResult } from "../lib/types";
 
 /**
  * Get all active shop products
+ * Returns packs, boxes, and currency bundles sorted by display order
+ *
+ * @returns Array of active shop products
  */
 export const getShopProducts = query({
   args: {},
@@ -35,7 +41,7 @@ export const getShopProducts = query({
     const products = await ctx.db
       .query("shopProducts")
       .withIndex("by_active", (q) => q.eq("isActive", true))
-      .collect();
+      .take(100); // Limit to 100 products (reasonable shop size)
 
     // Sort by sortOrder
     return products.sort((a, b) => a.sortOrder - b.sortOrder);
@@ -44,6 +50,12 @@ export const getShopProducts = query({
 
 /**
  * Get player's pack opening history
+ * Returns paginated list of pack openings with card results
+ *
+ * @param page - Optional page number (defaults to 1)
+ * @returns Paginated pack opening history with cards received
+ * @deprecated Use getPackOpeningHistoryPaginated for better performance with cursor-based pagination.
+ *             This function uses inefficient offset-based pagination that loads 1000 records into memory.
  */
 export const getPackOpeningHistory = query({
   args: {
@@ -54,11 +66,13 @@ export const getPackOpeningHistory = query({
     const page = args.page ?? 1;
     const pageSize = PAGINATION.PACK_HISTORY_PAGE_SIZE;
 
+    // Limit to 1000 recent pack openings for pagination
+    // This prevents unbounded queries while still supporting history
     const allHistory = await ctx.db
       .query("packOpeningHistory")
       .withIndex("by_user_time", (q) => q.eq("userId", userId))
       .order("desc")
-      .collect();
+      .take(1000);
 
     const startIdx = (page - 1) * pageSize;
     const endIdx = startIdx + pageSize;
@@ -74,13 +88,40 @@ export const getPackOpeningHistory = query({
   },
 });
 
+/**
+ * Get player's pack opening history (cursor-based pagination)
+ * Uses Convex's built-in pagination for better performance and scalability
+ *
+ * @param paginationOpts - Convex pagination options (cursor-based)
+ * @returns Paginated pack opening history results
+ */
+export const getPackOpeningHistoryPaginated = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthQuery(ctx);
+
+    return await ctx.db
+      .query("packOpeningHistory")
+      .withIndex("by_user_time", (q) => q.eq("userId", userId))
+      .order("desc")
+      .paginate(args.paginationOpts);
+  },
+});
+
 // ============================================================================
 // PUBLIC MUTATIONS
 // ============================================================================
 
 /**
- * Purchase a card pack
+ * Purchase a card pack and open it immediately
+ * Deducts currency, generates random cards, and adds them to inventory
  * SECURITY: Rate limited to prevent pack opening spam
+ *
+ * @param productId - The shop product ID (must be a pack type)
+ * @param useGems - Whether to use gems (true) or gold (false) for purchase
+ * @returns Pack purchase result with cards received
  */
 export const purchasePack = mutation({
   args: {
@@ -92,9 +133,8 @@ export const purchasePack = mutation({
     const { userId } = await requireAuthMutation(ctx);
 
     // SECURITY: Rate limit pack purchases to prevent spam/abuse
-    // Note: Uncomment when @convex-dev/ratelimiter is fully configured
-    // const { checkRateLimit } = await import("../lib/rateLimit");
-    // await checkRateLimit(ctx, "PACK_PURCHASE", userId);
+    // Max 30 purchases per minute per user (configured in lib/rateLimit.ts)
+    await checkRateLimitWrapper(ctx, "PACK_PURCHASE", userId);
 
     // Get product
     const product = await ctx.db
@@ -127,6 +167,13 @@ export const purchasePack = mutation({
         reason: `This pack cannot be purchased with ${currencyType}`,
       });
     }
+
+    // Validate currency amount
+    validateCurrency(price, 1);
+    validatePositive(price, "Price");
+
+    // Validate user has sufficient balance
+    await validateCurrencyBalance(ctx, userId, args.useGems ? 0 : price, args.useGems ? price : 0);
 
     // Deduct currency
     await adjustPlayerCurrencyHelper(ctx, {
@@ -168,7 +215,12 @@ export const purchasePack = mutation({
 });
 
 /**
- * Purchase a box (multiple packs)
+ * Purchase a box (multiple packs) and open all packs
+ * Opens multiple packs at once and may include bonus cards
+ *
+ * @param productId - The shop product ID (must be a box type)
+ * @param useGems - Whether to use gems (true) or gold (false) for purchase
+ * @returns Box purchase result with all cards received from all packs
  */
 export const purchaseBox = mutation({
   args: {
@@ -222,9 +274,7 @@ export const purchaseBox = mutation({
     // Get pack definition
     const packProduct = await ctx.db
       .query("shopProducts")
-      .withIndex("by_product_id", (q) =>
-        q.eq("productId", product.boxConfig!.packProductId)
-      )
+      .withIndex("by_product_id", (q) => q.eq("productId", product.boxConfig!.packProductId))
       .first();
 
     if (!packProduct || !packProduct.packConfig) {
@@ -302,6 +352,10 @@ export const purchaseBox = mutation({
 
 /**
  * Purchase currency bundle (Gems → Gold conversion)
+ * Converts gems into gold at a fixed exchange rate
+ *
+ * @param productId - The shop product ID (must be a currency type)
+ * @returns Currency bundle purchase result with gems spent and gold received
  */
 export const purchaseCurrencyBundle = mutation({
   args: {

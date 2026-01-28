@@ -1,8 +1,8 @@
+import { authTables } from "@convex-dev/auth/server";
+import { rateLimitTables } from "convex-helpers/server/rateLimit";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import type { Infer } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
-import { rateLimitTables } from "convex-helpers/server/rateLimit";
 
 // ============================================================================
 // SHARED VALIDATORS (Reusable across schema and function args)
@@ -73,6 +73,8 @@ export default defineSchema({
     casualWins: v.optional(v.number()), // default: 0
     casualLosses: v.optional(v.number()), // default: 0
     storyWins: v.optional(v.number()), // default: 0
+    currentWinStreak: v.optional(v.number()), // default: 0, current consecutive wins
+    longestWinStreak: v.optional(v.number()), // default: 0, all-time best win streak
 
     // Leaderboard: Player type
     isAiAgent: v.optional(v.boolean()), // default: false
@@ -85,9 +87,25 @@ export default defineSchema({
     gold: v.optional(v.number()), // default: 500
 
     lastStatsUpdate: v.optional(v.number()),
+
+    // Email tracking
+    welcomeEmailSent: v.optional(v.boolean()), // default: false
+
+    // Moderation fields
+    isBanned: v.optional(v.boolean()), // default: false
+    banReason: v.optional(v.string()),
+    bannedAt: v.optional(v.number()),
+    bannedBy: v.optional(v.id("users")),
+    isSuspended: v.optional(v.boolean()), // default: false
+    suspendedUntil: v.optional(v.number()),
+    suspensionReason: v.optional(v.string()),
+    suspendedBy: v.optional(v.id("users")),
+    warningCount: v.optional(v.number()), // default: 0
   })
     .index("email", ["email"])
     .index("username", ["username"])
+    .index("isBanned", ["isBanned"])
+    .index("isSuspended", ["isSuspended"])
     // Leaderboard indexes
     .index("rankedElo", ["rankedElo"])
     .index("casualRating", ["casualRating"])
@@ -98,16 +116,89 @@ export default defineSchema({
     .index("casualRating_byType", ["isAiAgent", "casualRating"])
     .index("xp_byType", ["isAiAgent", "xp"]),
 
-  // Admin roles for protected operations
+  // Admin roles for protected operations with role hierarchy
   adminRoles: defineTable({
     userId: v.id("users"),
-    role: v.union(v.literal("admin"), v.literal("moderator")),
-    grantedBy: v.optional(v.id("users")),
+    role: v.union(
+      v.literal("moderator"),
+      v.literal("admin"),
+      v.literal("superadmin")
+    ),
+    grantedBy: v.id("users"), // Required: who granted this role
     grantedAt: v.number(),
     isActive: v.boolean(),
   })
     .index("by_user", ["userId"])
     .index("by_role", ["role", "isActive"]),
+
+  // Admin audit logs for tracking all admin operations
+  adminAuditLogs: defineTable({
+    adminId: v.id("users"),
+    action: v.string(), // "delete_user", "delete_test_users", "grant_admin", etc.
+    targetUserId: v.optional(v.id("users")),
+    targetEmail: v.optional(v.string()),
+    /**
+     * v.any() USAGE: Admin audit metadata
+     *
+     * REASON: Different admin actions have different metadata structures
+     * EXPECTED TYPES:
+     * - delete_user: { reason: string, userEmail: string }
+     * - delete_test_users: { deletedCount: number }
+     * - grant_admin: { role: "admin" | "moderator", targetUserId: string }
+     * - get_analytics: { scope: "user" | "platform", userId?: string }
+     * - add_gold: { amount: number, targetUserId: string }
+     * - force_close_game: { closedLobbies: number }
+     *
+     * SECURITY: Written only by internal mutations, admin-authenticated
+     * ALTERNATIVE: Could use a union of specific metadata types
+     */
+    metadata: v.optional(v.any()),
+    timestamp: v.number(),
+    ipAddress: v.optional(v.string()),
+    success: v.boolean(),
+    errorMessage: v.optional(v.string()),
+  })
+    .index("by_admin", ["adminId", "timestamp"])
+    .index("by_action", ["action", "timestamp"])
+    .index("by_timestamp", ["timestamp"])
+    .index("by_success", ["success", "timestamp"])
+    .index("by_target_user", ["targetUserId", "timestamp"]),
+
+  // User preferences/settings
+  userPreferences: defineTable({
+    userId: v.id("users"),
+    notifications: v.object({
+      questComplete: v.boolean(),
+      matchInvites: v.boolean(),
+      friendRequests: v.boolean(),
+      marketplaceSales: v.boolean(),
+      dailyReminders: v.boolean(),
+      promotions: v.boolean(),
+    }),
+    display: v.object({
+      animations: v.boolean(),
+      reducedMotion: v.boolean(),
+      cardQuality: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+      showDamageNumbers: v.boolean(),
+    }),
+    game: v.object({
+      soundEnabled: v.boolean(),
+      musicEnabled: v.boolean(),
+      soundVolume: v.number(),
+      musicVolume: v.number(),
+      autoEndTurn: v.boolean(),
+      confirmActions: v.boolean(),
+      showTutorialHints: v.boolean(),
+    }),
+    privacy: v.object({
+      profilePublic: v.boolean(),
+      showOnlineStatus: v.boolean(),
+      allowFriendRequests: v.boolean(),
+      showMatchHistory: v.boolean(),
+    }),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
 
   // AI Agents registered by users
   agents: defineTable({
@@ -166,16 +257,34 @@ export default defineSchema({
     .index("by_created", ["createdAt"])
     .index("by_user", ["userId"]),
 
+  // User reports for moderation
+  userReports: defineTable({
+    reporterId: v.id("users"),
+    reporterUsername: v.string(),
+    reportedUserId: v.id("users"),
+    reportedUsername: v.string(),
+    reason: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("reviewed"),
+      v.literal("resolved"),
+      v.literal("dismissed")
+    ),
+    reviewedBy: v.optional(v.id("users")),
+    reviewedAt: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_status", ["status", "createdAt"])
+    .index("by_reported_user", ["reportedUserId"])
+    .index("by_reporter", ["reporterId"]),
+
   // User presence tracking (for online users list)
   userPresence: defineTable({
     userId: v.id("users"),
     username: v.string(),
     lastActiveAt: v.number(),
-    status: v.union(
-      v.literal("online"),
-      v.literal("in_game"),
-      v.literal("idle")
-    ),
+    status: v.union(v.literal("online"), v.literal("in_game"), v.literal("idle")),
   })
     .index("by_user", ["userId"])
     .index("by_last_active", ["lastActiveAt"]),
@@ -310,52 +419,66 @@ export default defineSchema({
     opponentHand: v.array(v.id("cardDefinitions")), // Card IDs in opponent's hand
 
     // Monster zones (5 slots)
-    hostBoard: v.array(v.object({
-      cardId: v.id("cardDefinitions"),
-      position: v.number(), // 1 = Attack, -1 = Defense
-      attack: v.number(),
-      defense: v.number(),
-      hasAttacked: v.boolean(),
-      isFaceDown: v.boolean(), // For set monsters
-      // Protection flags
-      cannotBeDestroyedByBattle: v.optional(v.boolean()),
-      cannotBeDestroyedByEffects: v.optional(v.boolean()),
-      cannotBeTargeted: v.optional(v.boolean()),
-    })),
-    opponentBoard: v.array(v.object({
-      cardId: v.id("cardDefinitions"),
-      position: v.number(), // 1 = Attack, -1 = Defense
-      attack: v.number(),
-      defense: v.number(),
-      hasAttacked: v.boolean(),
-      isFaceDown: v.boolean(), // For set monsters
-      // Protection flags
-      cannotBeDestroyedByBattle: v.optional(v.boolean()),
-      cannotBeDestroyedByEffects: v.optional(v.boolean()),
-      cannotBeTargeted: v.optional(v.boolean()),
-    })),
+    hostBoard: v.array(
+      v.object({
+        cardId: v.id("cardDefinitions"),
+        position: v.number(), // 1 = Attack, -1 = Defense
+        attack: v.number(),
+        defense: v.number(),
+        hasAttacked: v.boolean(),
+        isFaceDown: v.boolean(), // For set monsters
+        // Protection flags
+        cannotBeDestroyedByBattle: v.optional(v.boolean()),
+        cannotBeDestroyedByEffects: v.optional(v.boolean()),
+        cannotBeTargeted: v.optional(v.boolean()),
+      })
+    ),
+    opponentBoard: v.array(
+      v.object({
+        cardId: v.id("cardDefinitions"),
+        position: v.number(), // 1 = Attack, -1 = Defense
+        attack: v.number(),
+        defense: v.number(),
+        hasAttacked: v.boolean(),
+        isFaceDown: v.boolean(), // For set monsters
+        // Protection flags
+        cannotBeDestroyedByBattle: v.optional(v.boolean()),
+        cannotBeDestroyedByEffects: v.optional(v.boolean()),
+        cannotBeTargeted: v.optional(v.boolean()),
+      })
+    ),
 
     // Spell/Trap zones (5 slots each)
-    hostSpellTrapZone: v.array(v.object({
-      cardId: v.id("cardDefinitions"),
-      isFaceDown: v.boolean(),
-      isActivated: v.boolean(), // Continuous spells/traps remain on field
-    })),
-    opponentSpellTrapZone: v.array(v.object({
-      cardId: v.id("cardDefinitions"),
-      isFaceDown: v.boolean(),
-      isActivated: v.boolean(), // Continuous spells/traps remain on field
-    })),
+    hostSpellTrapZone: v.array(
+      v.object({
+        cardId: v.id("cardDefinitions"),
+        isFaceDown: v.boolean(),
+        isActivated: v.boolean(), // Continuous spells/traps remain on field
+        turnSet: v.optional(v.number()), // Track when card was set (for trap activation rules)
+      })
+    ),
+    opponentSpellTrapZone: v.array(
+      v.object({
+        cardId: v.id("cardDefinitions"),
+        isFaceDown: v.boolean(),
+        isActivated: v.boolean(), // Continuous spells/traps remain on field
+        turnSet: v.optional(v.number()), // Track when card was set (for trap activation rules)
+      })
+    ),
 
     // Field Spell zones (1 slot each, face-up only)
-    hostFieldSpell: v.optional(v.object({
-      cardId: v.id("cardDefinitions"),
-      isActive: v.boolean(),
-    })),
-    opponentFieldSpell: v.optional(v.object({
-      cardId: v.id("cardDefinitions"),
-      isActive: v.boolean(),
-    })),
+    hostFieldSpell: v.optional(
+      v.object({
+        cardId: v.id("cardDefinitions"),
+        isActive: v.boolean(),
+      })
+    ),
+    opponentFieldSpell: v.optional(
+      v.object({
+        cardId: v.id("cardDefinitions"),
+        isActive: v.boolean(),
+      })
+    ),
 
     hostDeck: v.array(v.id("cardDefinitions")), // Remaining cards in deck
     opponentDeck: v.array(v.id("cardDefinitions")),
@@ -401,12 +524,23 @@ export default defineSchema({
           spellSpeed: v.number(), // 1, 2, or 3
           effect: v.string(),
           targets: v.optional(v.array(v.id("cardDefinitions"))),
+          negated: v.optional(v.boolean()), // True if effect was negated
         })
       )
     ),
 
     // Priority System
     currentPriorityPlayer: v.optional(v.id("users")),
+
+    // Pending Action (waiting for response window to resolve)
+    pendingAction: v.optional(
+      v.object({
+        type: v.union(v.literal("attack"), v.literal("summon")),
+        attackerId: v.optional(v.id("cardDefinitions")), // For attack actions
+        targetId: v.optional(v.id("cardDefinitions")), // For attack actions (undefined = direct attack)
+        summonedCardId: v.optional(v.id("cardDefinitions")), // For summon actions
+      })
+    ),
 
     // Temporary Modifiers (cleared at end of turn)
     temporaryModifiers: v.optional(
@@ -432,11 +566,12 @@ export default defineSchema({
     aiDifficulty: v.optional(
       v.union(
         v.literal("easy"),
-        v.literal("normal"),
+        v.literal("normal"), // Legacy: equivalent to "medium"
+        v.literal("medium"),
         v.literal("hard"),
-        v.literal("legendary")
+        v.literal("boss")
       )
-    ), // AI difficulty level
+    ), // AI difficulty level (matches storyStages difficulty)
 
     // Timestamps
     lastMoveAt: v.number(),
@@ -585,11 +720,7 @@ export default defineSchema({
   matchHistory: defineTable({
     winnerId: v.id("users"),
     loserId: v.id("users"),
-    gameType: v.union(
-      v.literal("ranked"),
-      v.literal("casual"),
-      v.literal("story")
-    ),
+    gameType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
 
     // Rating changes
     winnerRatingBefore: v.number(),
@@ -609,16 +740,8 @@ export default defineSchema({
 
   // Leaderboard snapshots - cached rankings to avoid recalculating
   leaderboardSnapshots: defineTable({
-    leaderboardType: v.union(
-      v.literal("ranked"),
-      v.literal("casual"),
-      v.literal("story")
-    ),
-    playerSegment: v.union(
-      v.literal("all"),
-      v.literal("humans"),
-      v.literal("ai")
-    ),
+    leaderboardType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
+    playerSegment: v.union(v.literal("all"), v.literal("humans"), v.literal("ai")),
 
     // Top N players snapshot
     rankings: v.array(
@@ -698,11 +821,7 @@ export default defineSchema({
     productId: v.string(),
     name: v.string(),
     description: v.string(),
-    productType: v.union(
-      v.literal("pack"),
-      v.literal("box"),
-      v.literal("currency")
-    ),
+    productType: v.union(v.literal("pack"), v.literal("box"), v.literal("currency")),
     goldPrice: v.optional(v.number()),
     gemPrice: v.optional(v.number()),
     packConfig: v.optional(
@@ -814,7 +933,8 @@ export default defineSchema({
     .index("by_seller", ["sellerId", "status"])
     .index("by_card", ["cardDefinitionId", "status"])
     .index("by_type", ["listingType", "status"])
-    .index("by_ends_at", ["endsAt"]),
+    .index("by_ends_at", ["endsAt"])
+    .index("by_status_listingType_endsAt", ["status", "listingType", "endsAt"]),
 
   // Auction bid history
   auctionBids: defineTable({
@@ -843,11 +963,7 @@ export default defineSchema({
   promoCodes: defineTable({
     code: v.string(),
     description: v.string(),
-    rewardType: v.union(
-      v.literal("gold"),
-      v.literal("gems"),
-      v.literal("pack")
-    ),
+    rewardType: v.union(v.literal("gold"), v.literal("gems"), v.literal("pack")),
     rewardAmount: v.number(),
     rewardPackId: v.optional(v.string()),
     maxRedemptions: v.optional(v.number()),
@@ -901,11 +1017,7 @@ export default defineSchema({
     actNumber: v.number(),
     chapterNumber: v.number(),
     difficulty: difficultyValidator,
-    outcome: v.union(
-      v.literal("won"),
-      v.literal("lost"),
-      v.literal("abandoned")
-    ),
+    outcome: v.union(v.literal("won"), v.literal("lost"), v.literal("abandoned")),
     starsEarned: v.number(),
     finalLP: v.number(), // Life points remaining
     rewardsEarned: v.object({
@@ -936,11 +1048,11 @@ export default defineSchema({
     userId: v.id("users"),
     badgeType: v.union(
       v.literal("archetype_complete"), // Completed all chapters for an archetype
-      v.literal("act_complete"),       // Completed entire act
+      v.literal("act_complete"), // Completed entire act
       v.literal("difficulty_complete"), // Completed all chapters on a difficulty
-      v.literal("perfect_chapter"),    // 3 stars on a chapter
-      v.literal("speed_run"),          // Special achievements
-      v.literal("milestone")           // XP/level milestones
+      v.literal("perfect_chapter"), // 3 stars on a chapter
+      v.literal("speed_run"), // Special achievements
+      v.literal("milestone") // XP/level milestones
     ),
     badgeId: v.string(), // e.g., "infernal_dragons_complete", "act_1_hard"
     displayName: v.string(),
@@ -952,6 +1064,26 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_type", ["userId", "badgeType"])
     .index("by_badge", ["badgeId"]),
+
+  // Player notifications - real-time notifications for achievements, level ups, etc.
+  playerNotifications: defineTable({
+    userId: v.id("users"),
+    type: v.union(
+      v.literal("achievement_unlocked"),
+      v.literal("level_up"),
+      v.literal("quest_completed"),
+      v.literal("badge_earned")
+    ),
+    title: v.string(),
+    message: v.string(),
+    data: v.optional(v.any()), // Flexible data field for type-specific info
+    isRead: v.boolean(),
+    readAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_read", ["userId", "isRead"])
+    .index("by_created", ["createdAt"]),
 
   // Chapter definitions (reference data)
   storyChapters: defineTable({
@@ -965,7 +1097,7 @@ export default defineSchema({
     loreText: v.string(), // Lore entry unlocked on completion
     aiOpponentDeckCode: v.string(), // Starter deck code for AI
     aiDifficulty: v.object({
-      normal: v.number(),   // AI strength 1-10
+      normal: v.number(), // AI strength 1-10
       hard: v.number(),
       legendary: v.number(),
     }),
@@ -975,10 +1107,12 @@ export default defineSchema({
       xp: v.number(),
       guaranteedCards: v.optional(v.array(v.string())), // Specific card IDs
     }),
-    unlockRequirements: v.optional(v.object({
-      previousChapter: v.optional(v.boolean()), // Must complete previous chapter
-      minimumLevel: v.optional(v.number()),
-    })),
+    unlockRequirements: v.optional(
+      v.object({
+        previousChapter: v.optional(v.boolean()), // Must complete previous chapter
+        minimumLevel: v.optional(v.number()),
+      })
+    ),
     isActive: v.boolean(),
     createdAt: v.number(),
   })
@@ -1036,11 +1170,7 @@ export default defineSchema({
     questId: v.string(), // Unique identifier (e.g., "daily_win_3")
     name: v.string(),
     description: v.string(),
-    questType: v.union(
-      v.literal("daily"),
-      v.literal("weekly"),
-      v.literal("achievement")
-    ),
+    questType: v.union(v.literal("daily"), v.literal("weekly"), v.literal("achievement")),
     requirementType: v.string(), // "win_games", "play_cards", "deal_damage", etc.
     targetValue: v.number(),
     rewards: v.object({
@@ -1049,11 +1179,13 @@ export default defineSchema({
       gems: v.optional(v.number()),
     }),
     // Optional filters for requirements
-    filters: v.optional(v.object({
-      gameMode: v.optional(v.union(v.literal("ranked"), v.literal("casual"), v.literal("story"))),
-      archetype: v.optional(v.string()),
-      cardType: v.optional(v.string()),
-    })),
+    filters: v.optional(
+      v.object({
+        gameMode: v.optional(v.union(v.literal("ranked"), v.literal("casual"), v.literal("story"))),
+        archetype: v.optional(v.string()),
+        cardType: v.optional(v.string()),
+      })
+    ),
     isActive: v.boolean(),
     createdAt: v.number(),
   })
@@ -1066,11 +1198,7 @@ export default defineSchema({
     userId: v.id("users"),
     questId: v.string(), // References questDefinitions.questId
     currentProgress: v.number(),
-    status: v.union(
-      v.literal("active"),
-      v.literal("completed"),
-      v.literal("claimed")
-    ),
+    status: v.union(v.literal("active"), v.literal("completed"), v.literal("claimed")),
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
     claimedAt: v.optional(v.number()),
@@ -1104,12 +1232,14 @@ export default defineSchema({
     icon: v.string(), // Icon name
     requirementType: v.string(),
     targetValue: v.number(),
-    rewards: v.optional(v.object({
-      gold: v.optional(v.number()),
-      xp: v.optional(v.number()),
-      gems: v.optional(v.number()),
-      badge: v.optional(v.string()),
-    })),
+    rewards: v.optional(
+      v.object({
+        gold: v.optional(v.number()),
+        xp: v.optional(v.number()),
+        gems: v.optional(v.number()),
+        badge: v.optional(v.string()),
+      })
+    ),
     isSecret: v.boolean(), // Hidden until unlocked
     isActive: v.boolean(),
     createdAt: v.number(),
@@ -1142,7 +1272,7 @@ export default defineSchema({
     status: v.union(
       v.literal("pending"), // Friend request sent, awaiting response
       v.literal("accepted"), // Both users are friends
-      v.literal("blocked")   // User has blocked friendId
+      v.literal("blocked") // User has blocked friendId
     ),
     // Who initiated the friend request (for pending status)
     requestedBy: v.id("users"),

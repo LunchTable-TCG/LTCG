@@ -1,5 +1,5 @@
-import { internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { internalMutation } from "./_generated/server";
 
 /**
  * Setup System User
@@ -55,7 +55,10 @@ export const initializeProgressionSystem = internalMutation({
     const questResult = await ctx.scheduler.runAfter(0, internal.progression.quests.seedQuests);
 
     // Seed achievement definitions
-    const achievementResult = await ctx.scheduler.runAfter(0, internal.progression.achievements.seedAchievements);
+    const achievementResult = await ctx.scheduler.runAfter(
+      0,
+      internal.progression.achievements.seedAchievements
+    );
 
     return {
       success: true,

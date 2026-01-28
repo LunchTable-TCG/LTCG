@@ -1,10 +1,10 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { useQuery } from "convex/react";
 import { Bot, Loader2, Plus } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { Button } from "@/components/ui/button";
 import { api } from "../../../../convex/_generated/api";
 import { AgentCard } from "./AgentCard";
 import { RegisterAgentModal } from "./RegisterAgentModal";

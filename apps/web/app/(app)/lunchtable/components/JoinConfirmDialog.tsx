@@ -1,7 +1,7 @@
 "use client";
 
-import { Flame, Gamepad2, Shield, Swords, Trophy, Waves, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Flame, Gamepad2, Shield, Swords, Trophy, Waves, X, Zap } from "lucide-react";
 
 interface GameLobbyEntry {
   id: string;
@@ -65,7 +65,6 @@ export function JoinConfirmDialog({ game, onConfirm, onCancel }: JoinConfirmDial
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: Backdrop overlay for modal */}
       <div
         role="presentation"
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"

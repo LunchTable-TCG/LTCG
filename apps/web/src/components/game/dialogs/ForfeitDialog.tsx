@@ -1,6 +1,5 @@
 "use client";
 
-import { Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Flag } from "lucide-react";
 
 interface ForfeitDialogProps {
   isOpen: boolean;

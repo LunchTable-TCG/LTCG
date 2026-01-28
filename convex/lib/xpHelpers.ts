@@ -1,10 +1,18 @@
+import type { Doc, Id } from "../_generated/dataModel";
 // XP and Level System Helpers
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import type { Id, Doc } from "../_generated/dataModel";
-import { XP_PER_LEVEL, LEVEL_MILESTONES } from "./storyConstants";
+import { internal } from "../_generated/api";
+import { ErrorCode, createError } from "./errorCodes";
+import { LEVEL_MILESTONES, XP_PER_LEVEL } from "./storyConstants";
 
 /**
  * Calculate player level based on total XP using binary search
+ *
+ * Uses binary search for O(log n) performance on the XP_PER_LEVEL lookup table.
+ * Handles edge cases for negative XP (returns level 1) and max level (returns max).
+ *
+ * @param xp - Total XP earned by the player
+ * @returns Player level (1-indexed, minimum 1)
  */
 export function calculateLevel(xp: number): number {
   if (xp < 0) return 1;
@@ -32,6 +40,12 @@ export function calculateLevel(xp: number): number {
 
 /**
  * Calculate XP required for next level
+ *
+ * Returns the total XP threshold needed to reach the next level.
+ * Returns 0 if player is at max level.
+ *
+ * @param currentLevel - Player's current level (1-indexed)
+ * @returns Total XP required for next level, or 0 if max level reached
  */
 export function getXPForNextLevel(currentLevel: number): number {
   if (currentLevel >= XP_PER_LEVEL.length) {
@@ -43,6 +57,13 @@ export function getXPForNextLevel(currentLevel: number): number {
 
 /**
  * Calculate XP progress within current level (0-1)
+ *
+ * Returns a normalized progress value for progress bars and UI display.
+ * Calculates how much XP has been earned within the current level range.
+ *
+ * @param currentXP - Player's current total XP
+ * @param currentLevel - Player's current level (1-indexed)
+ * @returns Progress value from 0.0 (just leveled up) to 1.0 (about to level up)
  */
 export function getLevelProgress(currentXP: number, currentLevel: number): number {
   if (currentLevel >= XP_PER_LEVEL.length) {
@@ -62,6 +83,15 @@ export function getLevelProgress(currentXP: number, currentLevel: number): numbe
 
 /**
  * Get or create player XP record
+ *
+ * Helper to ensure every player has an XP record before awarding XP.
+ * Creates a new record with level 1 and 0 XP if none exists.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param userId - User ID to get or create XP record for
+ * @returns Player XP document
+ * @throws If XP record creation fails
  */
 export async function getOrCreatePlayerXP(
   ctx: MutationCtx,
@@ -87,7 +117,7 @@ export async function getOrCreatePlayerXP(
 
   const newRecord = await ctx.db.get(xpId);
   if (!newRecord) {
-    throw new Error("Failed to create player XP record");
+    throw createError(ErrorCode.LIBRARY_XP_CREATION_FAILED, { userId });
   }
 
   return newRecord;
@@ -95,6 +125,14 @@ export async function getOrCreatePlayerXP(
 
 /**
  * Get player XP record (read-only, for queries)
+ *
+ * Query-safe version that doesn't create records. Returns null if player has no XP record yet.
+ * Use this in query handlers where mutations are not allowed.
+ *
+ * @internal
+ * @param ctx - Query context (read-only)
+ * @param userId - User ID to get XP record for
+ * @returns Player XP document or null if not found
  */
 export async function getPlayerXP(
   ctx: QueryCtx,
@@ -108,7 +146,17 @@ export async function getPlayerXP(
 
 /**
  * Add XP to player and handle level ups
- * Returns: { newLevel, oldLevel, xpAdded, leveledUp, badgesAwarded }
+ *
+ * Core XP system function that awards XP, calculates level progression,
+ * awards milestone badges, and creates notifications for level ups and badge unlocks.
+ * Handles multiple level gains in a single call.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param userId - User ID to award XP to
+ * @param xpAmount - Amount of XP to add (must be non-negative)
+ * @returns Level up result with old level, new level, XP added, and badges awarded
+ * @throws If xpAmount is negative
  */
 export async function addXP(
   ctx: MutationCtx,
@@ -128,7 +176,7 @@ export async function addXP(
   }>;
 }> {
   if (xpAmount < 0) {
-    throw new Error("Cannot add negative XP");
+    throw createError(ErrorCode.LIBRARY_INVALID_XP, { xpAmount });
   }
 
   const xpRecord = await getOrCreatePlayerXP(ctx, userId);
@@ -155,6 +203,13 @@ export async function addXP(
 
   // Award milestone badges for each level reached
   if (leveledUp) {
+    // Create level up notification
+    await ctx.scheduler.runAfter(0, internal.progression.notifications.createLevelUpNotification, {
+      userId,
+      newLevel,
+      oldLevel,
+    });
+
     for (const milestone of LEVEL_MILESTONES) {
       if (newLevel >= milestone.level && oldLevel < milestone.level) {
         // Check if badge already exists
@@ -179,6 +234,17 @@ export async function addXP(
             displayName: milestone.displayName,
             description: milestone.description,
           });
+
+          // Create badge notification
+          await ctx.scheduler.runAfter(
+            0,
+            internal.progression.notifications.createBadgeNotification,
+            {
+              userId,
+              badgeName: milestone.displayName,
+              badgeDescription: milestone.description,
+            }
+          );
         }
       }
     }
@@ -197,6 +263,15 @@ export async function addXP(
 
 /**
  * Check if player has reached a specific level
+ *
+ * Used for gating content behind level requirements (e.g., story chapters, features).
+ * Safe for both queries and mutations.
+ *
+ * @internal
+ * @param ctx - Query or mutation context
+ * @param userId - User ID to check level for
+ * @param requiredLevel - Minimum level required
+ * @returns True if player has reached the required level, false otherwise
  */
 export async function hasReachedLevel(
   ctx: QueryCtx | MutationCtx,

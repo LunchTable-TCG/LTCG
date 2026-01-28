@@ -4,11 +4,10 @@
  * Tests XP calculation, level progression, and badge awarding
  */
 
-import { describe, it, expect } from "vitest";
-import { createTestInstance } from "../test_utils/setup";
-import { calculateLevel, getXPForNextLevel, getLevelProgress } from "./xpHelpers";
+import { describe, expect, it } from "vitest";
+import { createTestInstance } from "../../convex_test_utils/setup";
 import { XP_PER_LEVEL } from "./storyConstants";
-
+import { calculateLevel, getLevelProgress, getXPForNextLevel } from "./xpHelpers";
 
 describe("calculateLevel", () => {
   it("should return level 1 for 0 XP", () => {
@@ -46,6 +45,8 @@ describe("calculateLevel", () => {
     for (let i = 0; i < XP_PER_LEVEL.length - 1; i++) {
       const xp = XP_PER_LEVEL[i];
       const nextXp = XP_PER_LEVEL[i + 1];
+
+      if (xp === undefined || nextXp === undefined) continue;
 
       expect(calculateLevel(xp)).toBe(i + 1);
       expect(calculateLevel(nextXp - 1)).toBe(i + 1);
@@ -173,8 +174,9 @@ describe("addXP", () => {
       const result = await addXP(ctx, userId, 200); // Push to level 10
 
       expect(result.newLevel).toBe(10);
-      expect(result.badgesAwarded.length).toBeGreaterThan(0);
-      expect(result.badgesAwarded[0].badgeId).toBe("milestone_novice");
+      expect(result.badgesAwarded).toBeDefined();
+      expect(result.badgesAwarded?.length).toBeGreaterThan(0);
+      expect(result.badgesAwarded?.[0]?.badgeId).toBe("milestone_novice");
     });
 
     const badge = await t.run(async (ctx) => {

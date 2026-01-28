@@ -1,11 +1,11 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
-import { useEffect, useRef } from "react";
-import { Eye, X, Users, Loader2, Scroll } from "lucide-react";
-import type { Id } from "@convex/_generated/dataModel";
 import { useSpectator } from "@/hooks";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { Eye, Loader2, Scroll, Users, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 interface SpectatorGameViewProps {
   lobbyId: Id<"gameLobbies">;
@@ -19,7 +19,7 @@ export function SpectatorGameView({ lobbyId, onExit }: SpectatorGameViewProps) {
   const { spectatorView: gameState, joinAsSpectator, leaveAsSpectator } = useSpectator(lobbyId);
 
   // Real-time game events (play-by-play feed)
-  const gameEvents = useQuery(api.gameEvents.getRecentGameEvents, {
+  const gameEvents = useQuery(api.gameplay.gameEvents.getRecentGameEvents, {
     lobbyId,
     limit: 50,
   });
@@ -107,11 +107,185 @@ export function SpectatorGameView({ lobbyId, onExit }: SpectatorGameViewProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Game Board (2/3 width on large screens) */}
           <div className="lg:col-span-2 bg-black/40 border border-[#3d2b1f] rounded-lg p-6">
-            <p className="text-center text-[#a89f94]">
-              Game board visualization coming soon...
-            </p>
-            {/* TODO: Add actual game board component */}
-            {/* This will show creatures, fields, etc. from game engine */}
+            {gameState.boardState ? (
+              <div className="space-y-6">
+                {/* Current Phase Indicator */}
+                <div className="text-center">
+                  <span className="inline-block px-4 py-2 bg-[#d4af37]/20 border border-[#d4af37] rounded-lg text-[#d4af37] text-sm font-semibold uppercase tracking-wider">
+                    {gameState.boardState.currentPhase} Phase
+                  </span>
+                </div>
+
+                {/* Opponent's Side (Top) */}
+                <div className="space-y-3 pb-6 border-b-2 border-[#d4af37]/30">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-[#e8e0d5]">
+                      {gameState.opponent?.username}
+                    </h3>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-[#a89f94]">
+                        LP:{" "}
+                        <span className="text-[#d4af37] font-bold">
+                          {gameState.boardState.opponentLifePoints}
+                        </span>
+                      </span>
+                      <span className="text-[#a89f94]">
+                        Deck:{" "}
+                        <span className="text-[#e8e0d5]">
+                          {gameState.boardState.opponentDeckCount}
+                        </span>
+                      </span>
+                      <span className="text-[#a89f94]">
+                        Hand:{" "}
+                        <span className="text-[#e8e0d5]">
+                          {gameState.boardState.opponentHandCount}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Opponent's Field */}
+                  <div className="grid grid-cols-5 gap-2">
+                    {/* Monster Zone */}
+                    {Array.from({ length: 5 }).map((_, idx) => {
+                      const monster = gameState.boardState?.opponentBoard[idx];
+                      return (
+                        <div
+                          key={`opp-monster-${idx}`}
+                          className="aspect-2/3 rounded border border-[#3d2b1f] bg-black/20 flex items-center justify-center text-xs text-[#a89f94]"
+                        >
+                          {monster ? (
+                            <div className="text-center p-1">
+                              <p className="font-semibold text-[#e8e0d5] truncate">
+                                {monster.isFaceDown ? "???" : monster.name}
+                              </p>
+                              {!monster.isFaceDown && (
+                                <p className="text-[10px] text-[#d4af37]">
+                                  {monster.currentAttack}/{monster.currentDefense}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span>Empty</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Opponent's Spell/Trap Zone */}
+                  <div className="grid grid-cols-5 gap-2">
+                    {Array.from({ length: 5 }).map((_, idx) => {
+                      const st = gameState.boardState?.opponentSpellTrapZone[idx];
+                      return (
+                        <div
+                          key={`opp-st-${idx}`}
+                          className="aspect-2/3 rounded border border-[#3d2b1f] bg-black/20 flex items-center justify-center text-[10px] text-[#a89f94]"
+                        >
+                          {st ? (
+                            <span className="text-[#e8e0d5]">
+                              {st.isFaceDown ? "Set" : st.name}
+                            </span>
+                          ) : (
+                            <span>Empty</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Opponent's Graveyard Count */}
+                  <div className="text-right text-sm text-[#a89f94]">
+                    Graveyard:{" "}
+                    <span className="text-[#e8e0d5]">
+                      {gameState.boardState.opponentGraveyard.length}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Host's Side (Bottom) */}
+                <div className="space-y-3 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-[#e8e0d5]">{gameState.host.username}</h3>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-[#a89f94]">
+                        LP:{" "}
+                        <span className="text-[#d4af37] font-bold">
+                          {gameState.boardState.hostLifePoints}
+                        </span>
+                      </span>
+                      <span className="text-[#a89f94]">
+                        Deck:{" "}
+                        <span className="text-[#e8e0d5]">{gameState.boardState.hostDeckCount}</span>
+                      </span>
+                      <span className="text-[#a89f94]">
+                        Hand:{" "}
+                        <span className="text-[#e8e0d5]">{gameState.boardState.hostHandCount}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Host's Spell/Trap Zone */}
+                  <div className="grid grid-cols-5 gap-2">
+                    {Array.from({ length: 5 }).map((_, idx) => {
+                      const st = gameState.boardState?.hostSpellTrapZone[idx];
+                      return (
+                        <div
+                          key={`host-st-${idx}`}
+                          className="aspect-2/3 rounded border border-[#3d2b1f] bg-black/20 flex items-center justify-center text-[10px] text-[#a89f94]"
+                        >
+                          {st ? (
+                            <span className="text-[#e8e0d5]">
+                              {st.isFaceDown ? "Set" : st.name}
+                            </span>
+                          ) : (
+                            <span>Empty</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Host's Monster Zone */}
+                  <div className="grid grid-cols-5 gap-2">
+                    {Array.from({ length: 5 }).map((_, idx) => {
+                      const monster = gameState.boardState?.hostBoard[idx];
+                      return (
+                        <div
+                          key={`host-monster-${idx}`}
+                          className="aspect-2/3 rounded border border-[#3d2b1f] bg-black/20 flex items-center justify-center text-xs text-[#a89f94]"
+                        >
+                          {monster ? (
+                            <div className="text-center p-1">
+                              <p className="font-semibold text-[#e8e0d5] truncate">
+                                {monster.isFaceDown ? "???" : monster.name}
+                              </p>
+                              {!monster.isFaceDown && (
+                                <p className="text-[10px] text-[#d4af37]">
+                                  {monster.currentAttack}/{monster.currentDefense}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span>Empty</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Host's Graveyard Count */}
+                  <div className="text-right text-sm text-[#a89f94]">
+                    Graveyard:{" "}
+                    <span className="text-[#e8e0d5]">
+                      {gameState.boardState.hostGraveyard.length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-[#a89f94]">Loading board state...</p>
+            )}
           </div>
 
           {/* Event Feed (1/3 width on large screens) */}
@@ -142,18 +316,14 @@ export function SpectatorGameView({ lobbyId, onExit }: SpectatorGameViewProps) {
                       <span className="text-[10px] text-[#d4af37] font-bold shrink-0 mt-0.5">
                         T{event.turnNumber}
                       </span>
-                      <p className="text-xs text-[#e8e0d5] leading-relaxed">
-                        {event.description}
-                      </p>
+                      <p className="text-xs text-[#e8e0d5] leading-relaxed">{event.description}</p>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="text-center text-[#a89f94] text-xs py-8">
                   <p>Waiting for game events...</p>
-                  <p className="mt-2 text-[10px]">
-                    Events will appear here as the game progresses
-                  </p>
+                  <p className="mt-2 text-[10px]">Events will appear here as the game progresses</p>
                 </div>
               )}
             </div>

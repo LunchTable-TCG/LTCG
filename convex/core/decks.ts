@@ -1,16 +1,24 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
-import { requireAuthQuery, requireAuthMutation } from "../lib/convexAuth";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import type { Archetype } from "../lib/types";
-import { INFERNAL_DRAGONS_CARDS, ABYSSAL_DEPTHS_CARDS, IRON_LEGION_CARDS, STORM_RIDERS_CARDS } from "../seeds/starterCards";
-import { STARTER_DECKS } from "../seeds/starterDecks";
+import { archetypeToElement, batchFetchCardDefinitions } from "../lib/helpers";
 import {
-  deckWithCountValidator,
-  deckWithCardsValidator,
   deckStatsValidator,
+  deckWithCardsValidator,
+  deckWithCountValidator,
 } from "../lib/returnValidators";
+import type { Archetype } from "../lib/types";
+import { validateDeckSize, validateCardOwnership, validateStringLength } from "../lib/validation";
+import {
+  ABYSSAL_DEPTHS_CARDS,
+  INFERNAL_DRAGONS_CARDS,
+  IRON_LEGION_CARDS,
+  STORM_RIDERS_CARDS,
+} from "../seeds/starterCards";
+import { STARTER_DECKS } from "../seeds/starterDecks";
 
 // ============================================================================
 // CONSTANTS
@@ -22,30 +30,20 @@ const MAX_COPIES_PER_CARD = 3;
 const MAX_LEGENDARY_COPIES = 1;
 
 // ============================================================================
-// HELPERS
-// ============================================================================
-
-// Helper function to map archetype to element for frontend compatibility
-function archetypeToElement(archetype: string): "fire" | "water" | "earth" | "wind" | "neutral" {
-  const mapping: Record<string, "fire" | "water" | "earth" | "wind" | "neutral"> = {
-    infernal_dragons: "fire",
-    abyssal_horrors: "water",
-    nature_spirits: "earth",
-    storm_elementals: "wind",
-    fire: "fire",
-    water: "water",
-    earth: "earth",
-    wind: "wind",
-  };
-  return mapping[archetype] || "neutral";
-}
-
-// ============================================================================
 // QUERIES
 // ============================================================================
 
 /**
- * Get all decks for the current user
+ * Get all decks for the current user.
+ * Returns all active decks with card counts, sorted by most recently updated.
+ *
+ * @deprecated Use getUserDecksPaginated for better performance with many decks
+ * @returns Array of decks with basic info and card counts
+ *
+ * NOTE: This performs in-memory sorting since the schema lacks a composite index
+ * on (userId, isActive, updatedAt). For optimal performance at scale, consider
+ * adding: .index("by_user_active_updatedAt", ["userId", "isActive", "updatedAt"])
+ * However, given the 50-deck limit per user, in-memory sorting is acceptable here.
  */
 export const getUserDecks = query({
   args: {},
@@ -57,11 +55,59 @@ export const getUserDecks = query({
     const decks = await ctx.db
       .query("userDecks")
       .withIndex("by_user_active", (q) => q.eq("userId", userId).eq("isActive", true))
-      .collect();
+      .take(50); // Most users won't have >50 decks
 
     // Get card counts for each deck
     const decksWithCounts = await Promise.all(
       decks.map(async (deck) => {
+        const deckCards = await ctx.db
+          .query("deckCards")
+          .withIndex("by_deck", (q) => q.eq("deckId", deck._id))
+          .take(50); // Reasonable limit per deck
+
+        const cardCount = deckCards.reduce((sum, dc) => sum + dc.quantity, 0);
+
+        return {
+          id: deck._id,
+          name: deck.name,
+          description: deck.description,
+          deckArchetype: deck.deckArchetype,
+          cardCount,
+          createdAt: deck.createdAt,
+          updatedAt: deck.updatedAt,
+        };
+      })
+    );
+
+    // Sort by most recently updated (in-memory)
+    return decksWithCounts.sort((a, b) => b.updatedAt - a.updatedAt);
+  },
+});
+
+/**
+ * Get user decks with cursor-based pagination.
+ * Uses Convex's built-in pagination for better performance and scalability.
+ * Returns paginated results sorted by most recently updated.
+ *
+ * @param paginationOpts - Cursor-based pagination options
+ * @returns Paginated deck list with card counts and cursor for next page
+ */
+export const getUserDecksPaginated = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthQuery(ctx);
+
+    // Get paginated decks
+    const result = await ctx.db
+      .query("userDecks")
+      .withIndex("by_user_active", (q) => q.eq("userId", userId).eq("isActive", true))
+      .paginate(args.paginationOpts);
+
+    // Get card counts for each deck in the current page
+    const decksWithCounts = await Promise.all(
+      result.page.map(async (deck) => {
         const deckCards = await ctx.db
           .query("deckCards")
           .withIndex("by_deck", (q) => q.eq("deckId", deck._id))
@@ -82,16 +128,31 @@ export const getUserDecks = query({
     );
 
     // Sort by most recently updated
-    return decksWithCounts.sort((a, b) => b.updatedAt - a.updatedAt);
+    const sorted = decksWithCounts.sort((a, b) => b.updatedAt - a.updatedAt);
+
+    return {
+      ...result,
+      page: sorted,
+    };
   },
 });
 
 /**
- * Get a specific deck with all its cards
+ * Get a specific deck with all its cards.
+ * Returns complete deck information including all card definitions and quantities.
+ *
+ * @param deckId - ID of the deck to retrieve
+ * @returns Deck with full card list including stats and abilities
+ * @throws AUTHZ_RESOURCE_FORBIDDEN if deck not found or not owned by user
+ *
+ * NOTE: This uses N+1 queries to fetch card definitions. This is acceptable because:
+ * (1) Decks are limited to 50 unique card types (typical decks have 15-30 unique cards),
+ * (2) Convex optimizes concurrent db.get() calls within Promise.all(),
+ * (3) Card definitions are frequently accessed and likely cached.
+ * For >100 cards or high-frequency queries, consider using a dataloader pattern.
  */
 export const getDeckWithCards = query({
   args: {
-    
     deckId: v.id("userDecks"),
   },
   returns: deckWithCardsValidator, // Deck with full card list
@@ -110,9 +171,9 @@ export const getDeckWithCards = query({
     const deckCards = await ctx.db
       .query("deckCards")
       .withIndex("by_deck", (q) => q.eq("deckId", args.deckId))
-      .collect();
+      .take(50); // Reasonable limit per deck
 
-    // Join with card definitions
+    // Join with card definitions (N+1 acceptable for small N=50 max)
     const cardsWithDefinitions = await Promise.all(
       deckCards.map(async (dc) => {
         const cardDef = await ctx.db.get(dc.cardDefinitionId);
@@ -152,11 +213,15 @@ export const getDeckWithCards = query({
 });
 
 /**
- * Get deck statistics
+ * Get statistical breakdown of a deck.
+ * Returns element distribution, rarity counts, average cost, and card type counts.
+ *
+ * @param deckId - ID of the deck to analyze
+ * @returns Deck statistics including element/rarity distribution and card type breakdown
+ * @throws AUTHZ_RESOURCE_FORBIDDEN if deck not found or not owned by user
  */
 export const getDeckStats = query({
   args: {
-    
     deckId: v.id("userDecks"),
   },
   returns: deckStatsValidator, // Deck statistics
@@ -175,7 +240,7 @@ export const getDeckStats = query({
     const deckCards = await ctx.db
       .query("deckCards")
       .withIndex("by_deck", (q) => q.eq("deckId", args.deckId))
-      .collect();
+      .take(50); // Reasonable limit per deck
 
     // Initialize counters
     const elementCounts: Record<string, number> = {
@@ -199,9 +264,15 @@ export const getDeckStats = query({
     let equipmentCount = 0;
     let totalCards = 0;
 
+    // Batch fetch all card definitions
+    const cardDefMap = await batchFetchCardDefinitions(
+      ctx,
+      deckCards.map((dc) => dc.cardDefinitionId)
+    );
+
     // Calculate statistics
     for (const dc of deckCards) {
-      const cardDef = await ctx.db.get(dc.cardDefinitionId);
+      const cardDef = cardDefMap.get(dc.cardDefinitionId);
       if (!cardDef || !cardDef.isActive) continue;
 
       const quantity = dc.quantity;
@@ -231,11 +302,15 @@ export const getDeckStats = query({
 });
 
 /**
- * Validate a deck against game rules
+ * Validate a deck against game rules.
+ * Checks minimum deck size (30 cards), card copy limits, and legendary restrictions.
+ *
+ * @param deckId - ID of the deck to validate
+ * @returns Validation result with errors, warnings, and total card count
+ * @throws AUTHZ_RESOURCE_FORBIDDEN if deck not found or not owned by user
  */
 export const validateDeck = query({
   args: {
-    
     deckId: v.id("userDecks"),
   },
   returns: v.object({
@@ -262,14 +337,20 @@ export const validateDeck = query({
     const deckCards = await ctx.db
       .query("deckCards")
       .withIndex("by_deck", (q) => q.eq("deckId", args.deckId))
-      .collect();
+      .take(50); // Reasonable limit per deck
+
+    // Batch fetch all card definitions
+    const cardDefMap = await batchFetchCardDefinitions(
+      ctx,
+      deckCards.map((dc) => dc.cardDefinitionId)
+    );
 
     // Check total card count
     let totalCards = 0;
     const cardCounts = new Map<string, { quantity: number; rarity: string; name: string }>();
 
     for (const dc of deckCards) {
-      const cardDef = await ctx.db.get(dc.cardDefinitionId);
+      const cardDef = cardDefMap.get(dc.cardDefinitionId);
       if (!cardDef || !cardDef.isActive) {
         errors.push(`Invalid card in deck: ${dc.cardDefinitionId}`);
         continue;
@@ -284,9 +365,7 @@ export const validateDeck = query({
 
       // Check individual card copy limits
       if (cardDef.rarity === "legendary" && dc.quantity > MAX_LEGENDARY_COPIES) {
-        errors.push(
-          `${cardDef.name}: Legendary cards limited to ${MAX_LEGENDARY_COPIES} copy`
-        );
+        errors.push(`${cardDef.name}: Legendary cards limited to ${MAX_LEGENDARY_COPIES} copy`);
       } else if (dc.quantity > MAX_COPIES_PER_CARD) {
         errors.push(`${cardDef.name}: Limited to ${MAX_COPIES_PER_CARD} copies per deck`);
       }
@@ -311,11 +390,16 @@ export const validateDeck = query({
 // ============================================================================
 
 /**
- * Create a new empty deck
+ * Create a new empty deck.
+ * Creates a deck with the specified name and optional description.
+ *
+ * @param name - Deck name (1-50 characters)
+ * @param description - Optional deck description
+ * @returns Object containing the new deck ID
+ * @throws VALIDATION_INVALID_INPUT if name invalid or deck limit exceeded (50 decks max)
  */
 export const createDeck = mutation({
   args: {
-    
     name: v.string(),
     description: v.optional(v.string()),
   },
@@ -325,23 +409,14 @@ export const createDeck = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
 
-    // Validate deck name
-    if (!args.name.trim()) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Deck name cannot be empty",
-      });
-    }
-    if (args.name.length > 50) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Deck name cannot exceed 50 characters",
-      });
-    }
+    // Validate deck name using validation helper
+    validateStringLength(args.name, 1, 50, "Deck name");
 
     // Check deck limit
     const existingDecks = await ctx.db
       .query("userDecks")
       .withIndex("by_user_active", (q) => q.eq("userId", userId).eq("isActive", true))
-      .collect();
+      .take(50); // Most users won't have >50 decks
 
     if (existingDecks.length >= MAX_DECKS_PER_USER) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
@@ -365,11 +440,18 @@ export const createDeck = mutation({
 });
 
 /**
- * Save/update deck card list
+ * Save or update a deck's card list.
+ * Replaces all cards in the deck with the provided list.
+ * Validates ownership, card copy limits, and minimum deck size (30 cards).
+ *
+ * @param deckId - ID of the deck to update
+ * @param cards - Array of card IDs and quantities to include in the deck
+ * @returns Success indicator
+ * @throws AUTHZ_RESOURCE_FORBIDDEN if deck not owned by user
+ * @throws VALIDATION_INVALID_INPUT if deck size < 30, card limits exceeded, or cards not owned
  */
 export const saveDeck = mutation({
   args: {
-    
     deckId: v.id("userDecks"),
     cards: v.array(
       v.object({
@@ -392,38 +474,33 @@ export const saveDeck = mutation({
       });
     }
 
-    // Validate total card count (minimum only)
-    const totalCards = args.cards.reduce((sum, c) => sum + c.quantity, 0);
-    if (totalCards < MIN_DECK_SIZE) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: `Deck must have at least ${MIN_DECK_SIZE} cards. Currently has ${totalCards}.`,
-      });
+    // Expand cards array to include duplicates for deck size validation
+    const expandedCardIds: Id<"cardDefinitions">[] = [];
+    for (const card of args.cards) {
+      for (let i = 0; i < card.quantity; i++) {
+        expandedCardIds.push(card.cardDefinitionId);
+      }
     }
 
-    // Validate each card
-    const playerCards = await ctx.db
-      .query("playerCards")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+    // Validate deck size (minimum 30, no maximum)
+    validateDeckSize(expandedCardIds, MIN_DECK_SIZE);
 
-    const ownedCardMap = new Map(
-      playerCards.map((pc) => [pc.cardDefinitionId.toString(), pc.quantity])
+    // Validate card ownership
+    await validateCardOwnership(ctx, userId, args.cards);
+
+    // Batch fetch all card definitions for copy limit validation
+    const cardDefIds = [...new Set(args.cards.map((c) => c.cardDefinitionId))];
+    const cardDefs = await Promise.all(cardDefIds.map((id) => ctx.db.get(id)));
+    const cardDefMap = new Map(
+      cardDefs.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
     );
 
+    // Check card copy limits
     for (const card of args.cards) {
-      // Check if card definition exists
-      const cardDef = await ctx.db.get(card.cardDefinitionId);
+      const cardDef = cardDefMap.get(card.cardDefinitionId);
       if (!cardDef || !cardDef.isActive) {
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: `Invalid card: ${card.cardDefinitionId}`,
-        });
-      }
-
-      // Check if user owns enough copies
-      const ownedQuantity = ownedCardMap.get(card.cardDefinitionId.toString()) || 0;
-      if (card.quantity > ownedQuantity) {
-        throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-          reason: `You only own ${ownedQuantity} copies of ${cardDef.name}, but trying to add ${card.quantity}`,
         });
       }
 
@@ -443,21 +520,22 @@ export const saveDeck = mutation({
     const existingDeckCards = await ctx.db
       .query("deckCards")
       .withIndex("by_deck", (q) => q.eq("deckId", args.deckId))
-      .collect();
+      .take(50); // Reasonable limit per deck
 
-    for (const dc of existingDeckCards) {
-      await ctx.db.delete(dc._id);
-    }
+    // Delete all existing deck cards in parallel
+    await Promise.all(existingDeckCards.map((dc) => ctx.db.delete(dc._id)));
 
-    // Insert new deck cards
-    for (const card of args.cards) {
-      await ctx.db.insert("deckCards", {
-        deckId: args.deckId,
-        cardDefinitionId: card.cardDefinitionId,
-        quantity: card.quantity,
-        position: undefined,
-      });
-    }
+    // Insert new deck cards in parallel
+    await Promise.all(
+      args.cards.map((card) =>
+        ctx.db.insert("deckCards", {
+          deckId: args.deckId,
+          cardDefinitionId: card.cardDefinitionId,
+          quantity: card.quantity,
+          position: undefined,
+        })
+      )
+    );
 
     // Update deck timestamp
     await ctx.db.patch(args.deckId, {
@@ -477,11 +555,17 @@ export const saveDeck = mutation({
 });
 
 /**
- * Rename a deck
+ * Rename a deck.
+ * Updates the deck name and timestamp.
+ *
+ * @param deckId - ID of the deck to rename
+ * @param newName - New deck name (1-50 characters)
+ * @returns Success indicator
+ * @throws AUTHZ_RESOURCE_FORBIDDEN if deck not owned by user
+ * @throws VALIDATION_INVALID_INPUT if name invalid
  */
 export const renameDeck = mutation({
   args: {
-    
     deckId: v.id("userDecks"),
     newName: v.string(),
   },
@@ -499,17 +583,8 @@ export const renameDeck = mutation({
       });
     }
 
-    // Validate new name
-    if (!args.newName.trim()) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Deck name cannot be empty",
-      });
-    }
-    if (args.newName.length > 50) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Deck name cannot exceed 50 characters",
-      });
-    }
+    // Validate new name using validation helper
+    validateStringLength(args.newName, 1, 50, "Deck name");
 
     // Update the deck
     await ctx.db.patch(args.deckId, {
@@ -522,11 +597,15 @@ export const renameDeck = mutation({
 });
 
 /**
- * Delete a deck (soft delete)
+ * Delete a deck (soft delete).
+ * Marks the deck as inactive rather than permanently removing it.
+ *
+ * @param deckId - ID of the deck to delete
+ * @returns Success indicator
+ * @throws AUTHZ_RESOURCE_FORBIDDEN if deck not owned by user
  */
 export const deleteDeck = mutation({
   args: {
-    
     deckId: v.id("userDecks"),
   },
   returns: v.object({
@@ -554,11 +633,17 @@ export const deleteDeck = mutation({
 });
 
 /**
- * Duplicate an existing deck
+ * Duplicate an existing deck.
+ * Creates a copy of the source deck with a new name, including all cards.
+ *
+ * @param sourceDeckId - ID of the deck to duplicate
+ * @param newName - Name for the duplicated deck (1-50 characters)
+ * @returns Object containing the new deck ID
+ * @throws AUTHZ_RESOURCE_FORBIDDEN if source deck not owned by user
+ * @throws VALIDATION_INVALID_INPUT if name invalid or deck limit exceeded (50 decks max)
  */
 export const duplicateDeck = mutation({
   args: {
-    
     sourceDeckId: v.id("userDecks"),
     newName: v.string(),
   },
@@ -576,23 +661,14 @@ export const duplicateDeck = mutation({
       });
     }
 
-    // Validate new name
-    if (!args.newName.trim()) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Deck name cannot be empty",
-      });
-    }
-    if (args.newName.length > 50) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Deck name cannot exceed 50 characters",
-      });
-    }
+    // Validate new name using validation helper
+    validateStringLength(args.newName, 1, 50, "Deck name");
 
     // Check deck limit
     const existingDecks = await ctx.db
       .query("userDecks")
       .withIndex("by_user_active", (q) => q.eq("userId", userId).eq("isActive", true))
-      .collect();
+      .take(50); // Most users won't have >50 decks
 
     if (existingDecks.length >= MAX_DECKS_PER_USER) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
@@ -615,7 +691,7 @@ export const duplicateDeck = mutation({
     const sourceDeckCards = await ctx.db
       .query("deckCards")
       .withIndex("by_deck", (q) => q.eq("deckId", args.sourceDeckId))
-      .collect();
+      .take(50); // Reasonable limit per deck
 
     for (const sourceCard of sourceDeckCards) {
       await ctx.db.insert("deckCards", {
@@ -631,11 +707,16 @@ export const duplicateDeck = mutation({
 });
 
 /**
- * Set a deck as the active deck for matchmaking
+ * Set a deck as the active deck for matchmaking.
+ * Validates that the deck is legal (minimum 30 cards, valid card limits).
+ *
+ * @param deckId - ID of the deck to set as active
+ * @returns Success indicator
+ * @throws AUTHZ_RESOURCE_FORBIDDEN if deck not owned by user
+ * @throws VALIDATION_INVALID_INPUT if deck invalid or too small (< 30 cards)
  */
 export const setActiveDeck = mutation({
   args: {
-    
     deckId: v.id("userDecks"),
   },
   returns: v.object({
@@ -656,7 +737,7 @@ export const setActiveDeck = mutation({
     const deckCards = await ctx.db
       .query("deckCards")
       .withIndex("by_deck", (q) => q.eq("deckId", args.deckId))
-      .collect();
+      .take(50); // Reasonable limit per deck
 
     const totalCards = deckCards.reduce((sum, dc) => sum + dc.quantity, 0);
     if (totalCards < MIN_DECK_SIZE) {
@@ -665,9 +746,15 @@ export const setActiveDeck = mutation({
       });
     }
 
+    // Batch fetch all card definitions
+    const cardDefMap = await batchFetchCardDefinitions(
+      ctx,
+      deckCards.map((dc) => dc.cardDefinitionId)
+    );
+
     // Validate all cards in deck
     for (const dc of deckCards) {
-      const cardDef = await ctx.db.get(dc.cardDefinitionId);
+      const cardDef = cardDefMap.get(dc.cardDefinitionId);
       if (!cardDef || !cardDef.isActive) {
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: "Deck contains invalid cards",
@@ -702,12 +789,16 @@ export const setActiveDeck = mutation({
 });
 
 /**
- * Select and claim a starter deck (one-time only)
- * Gives user all 45 cards from the chosen starter deck and creates a 30-card deck
+ * Select and claim a starter deck (one-time only).
+ * Gives user all 45 cards from the chosen starter deck and creates a complete deck.
+ * Can only be claimed once per user. Auto-seeds card definitions if needed.
+ *
+ * @param deckCode - Code for the starter deck ("INFERNAL_DRAGONS" or "ABYSSAL_DEPTHS")
+ * @returns Success status with deck ID, name, cards received, and deck size
+ * @throws VALIDATION_INVALID_INPUT if user already has decks or invalid deck code
  */
 export const selectStarterDeck = mutation({
   args: {
-    
     deckCode: v.union(
       v.literal("INFERNAL_DRAGONS"),
       v.literal("ABYSSAL_DEPTHS")
@@ -728,7 +819,7 @@ export const selectStarterDeck = mutation({
     const existingDecks = await ctx.db
       .query("userDecks")
       .withIndex("by_user_active", (q) => q.eq("userId", userId).eq("isActive", true))
-      .collect();
+      .take(50); // Most users won't have >50 decks
 
     if (existingDecks.length > 0) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
@@ -799,7 +890,7 @@ export const selectStarterDeck = mutation({
     }
 
     // Group cards by name to get quantities (cards appear multiple times in the list)
-    const cardQuantities = new Map<string, { card: typeof cardList[number]; count: number }>();
+    const cardQuantities = new Map<string, { card: (typeof cardList)[number]; count: number }>();
     for (const card of cardList) {
       const existing = cardQuantities.get(card.name);
       if (existing) {

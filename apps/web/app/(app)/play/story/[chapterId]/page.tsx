@@ -1,18 +1,18 @@
 "use client";
 
+import { StoryStageNode } from "@/components/story/StoryStageNode";
+import { FantasyFrame } from "@/components/ui/FantasyFrame";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Gift, Loader2, Lock, Play, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use, useState, useEffect } from "react";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { StoryStageNode } from "@/components/story/StoryStageNode";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { FantasyFrame } from "@/components/ui/FantasyFrame";
-import { cn } from "@/lib/utils";
+import { use, useEffect, useState } from "react";
 
 interface ChapterPageProps {
   params: Promise<{ chapterId: string }>;
@@ -21,7 +21,7 @@ interface ChapterPageProps {
 export default function ChapterPage({ params }: ChapterPageProps) {
   const resolvedParams = use(params);
   const chapterId = resolvedParams.chapterId;
-  const [actNumber, chapterNumber] = chapterId.split('-').map(Number);
+  const [actNumber, chapterNumber] = chapterId.split("-").map(Number);
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
@@ -32,13 +32,17 @@ export default function ChapterPage({ params }: ChapterPageProps) {
 
   const [selectedStage, setSelectedStage] = useState<any | null>(null);
 
-  const initializeStageProgress = useMutation(api.progression.storyStages.initializeChapterStageProgress);
+  const initializeStageProgress = useMutation(
+    api.progression.storyStages.initializeChapterStageProgress
+  );
 
   // Initialize stage progress when chapter loads
   useEffect(() => {
     if (chapterDetails && chapterDetails._id) {
       // Check if any stage has progress - if not, initialize
-      const hasProgress = chapterDetails.stages?.some((s: any) => s.status !== "locked" || s.timesCompleted > 0);
+      const hasProgress = chapterDetails.stages?.some(
+        (s: any) => s.status !== "locked" || s.timesCompleted > 0
+      );
       if (!hasProgress) {
         initializeStageProgress({ chapterId: chapterDetails._id }).catch(console.error);
       }
@@ -113,7 +117,9 @@ export default function ChapterPage({ params }: ChapterPageProps) {
     );
   }
 
-  const completedStages = stages.filter((s: (typeof stages)[number]) => s.status === "starred" || s.status === "completed").length;
+  const completedStages = stages.filter(
+    (s: (typeof stages)[number]) => s.status === "starred" || s.status === "completed"
+  ).length;
   const starCount = stages.filter((s: (typeof stages)[number]) => s.status === "starred").length;
 
   return (
@@ -189,13 +195,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <StoryStageNode
-                    stage={{
-                      ...stage,
-                      chapterId,
-                    }}
-                    onClick={() => setSelectedStage(stage)}
-                  />
+                  <StoryStageNode stage={stage} onClick={() => setSelectedStage(stage)} />
                 </motion.div>
               ))}
             </div>
@@ -226,9 +226,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
                     <span className="text-[#d4af37] font-bold">
                       {selectedStage.rewardGold} Gold
                     </span>
-                    <span className="text-purple-400 font-bold">
-                      {selectedStage.rewardXp} XP
-                    </span>
+                    <span className="text-purple-400 font-bold">{selectedStage.rewardXp} XP</span>
                   </div>
                 </div>
 

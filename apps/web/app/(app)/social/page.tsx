@@ -1,5 +1,13 @@
 "use client";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useFriends, useProfile } from "@/hooks";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { cn } from "@/lib/utils";
+import { api } from "@convex/_generated/api";
+import { useQuery } from "convex/react";
 import {
   Ban,
   Check,
@@ -16,14 +24,6 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
-import { useProfile, useFriends } from "@/hooks";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 type FriendStatus = "online" | "offline" | "in-game";
 type TabType = "friends" | "requests" | "search";
@@ -83,7 +83,9 @@ export default function SocialPage() {
   // Real-time search results from Convex
   const searchResults = useQuery(
     api.social.friends.searchUsers,
-    isAuthenticated && searchQuery.trim().length > 0 ? { query: searchQuery.trim(), limit: 20 } : "skip"
+    isAuthenticated && searchQuery.trim().length > 0
+      ? { query: searchQuery.trim(), limit: 20 }
+      : "skip"
   );
 
   type FriendType = NonNullable<typeof friends>[number];

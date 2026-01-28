@@ -24,21 +24,21 @@ export const joinAsSpectator = mutation({
 
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Game not found",
-    });
+        reason: "Game not found",
+      });
     }
 
     // Verify game is spectatable
     if (lobby.isPrivate || lobby.allowSpectators === false) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Cannot spectate this game",
-    });
+        reason: "Cannot spectate this game",
+      });
     }
 
     if (lobby.status !== "active") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Game is not active",
-    });
+        reason: "Game is not active",
+      });
     }
 
     const currentCount = lobby.spectatorCount || 0;
@@ -47,8 +47,8 @@ reason: "Game is not active",
     const maxSpectators = lobby.maxSpectators || SPECTATOR.MAX_SPECTATORS_PER_GAME;
     if (currentCount >= maxSpectators) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Game is at maximum spectator capacity",
-    });
+        reason: "Game is at maximum spectator capacity",
+      });
     }
 
     // Increment count

@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import {
   ChevronDown,
   Crown,
@@ -17,9 +18,9 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import type { SortOption } from "@/types";
+import type { ViewMode } from "../types";
 import { BinderCard, type CardData, type Element, type Rarity } from "./BinderCard";
-import type { SortOption, ViewMode } from "../types";
 
 const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: string }> = {
   legendary: { bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/40" },
@@ -337,9 +338,7 @@ export function CollectionView({
         </div>
       )}
 
-      <p className="text-sm text-[#a89f94] mb-4">
-        Showing {cards.length} cards
-      </p>
+      <p className="text-sm text-[#a89f94] mb-4">Showing {cards.length} cards</p>
 
       {/* Card Grid/List */}
       {cards.length === 0 ? (

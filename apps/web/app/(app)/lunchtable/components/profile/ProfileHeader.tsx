@@ -3,11 +3,11 @@
  * Displays player avatar, username, ranks, status, socials, and challenge button
  */
 
-import { Gamepad2, Swords, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { PlayerProfile } from "./types";
+import { Gamepad2, Swords, Trophy } from "lucide-react";
+import { DiscordIcon, TwitchIcon, TwitterIcon } from "./SocialIcons";
 import { RANK_COLORS } from "./constants";
-import { TwitterIcon, DiscordIcon, TwitchIcon } from "./SocialIcons";
+import type { PlayerProfile } from "./types";
 
 interface ProfileHeaderProps {
   profile: PlayerProfile;

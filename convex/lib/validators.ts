@@ -5,13 +5,14 @@
  * Eliminates duplicate session validation and ownership checks.
  */
 
-import type { QueryCtx, MutationCtx } from "../_generated/server";
-import type { Id, Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { ErrorCode, createError } from "./errorCodes";
 import type {
   AuthenticatedUser,
   CurrencyType,
-  TransactionType,
   TransactionMetadata,
+  TransactionType,
 } from "./types";
 
 /**
@@ -27,7 +28,17 @@ import type {
 /**
  * Check if user owns enough of a specific card
  *
- * @returns true if user owns at least the required quantity
+ * Queries playerCards table for ownership record.
+ * Returns false if card not found in inventory.
+ *
+ * @param ctx - Query or mutation context
+ * @param userId - Player's user ID
+ * @param cardDefinitionId - Card definition ID to check
+ * @param requiredQuantity - Minimum quantity required
+ * @returns true if user owns at least the required quantity, false otherwise
+ * @example
+ * await checkCardOwnership(ctx, userId, blueEyesId, 3) // true if owns 3+ Blue-Eyes
+ * await checkCardOwnership(ctx, userId, darkMagicianId, 1) // true if owns 1+ Dark Magician
  */
 export async function checkCardOwnership(
   ctx: QueryCtx | MutationCtx,
@@ -65,7 +76,7 @@ export async function getPlayerCurrency(
     .first();
 
   if (!currency) {
-    throw new Error("Currency record not found. User may need to sign up again.");
+    throw createError(ErrorCode.SYSTEM_CURRENCY_NOT_FOUND, { userId });
   }
 
   return currency;
@@ -74,7 +85,17 @@ export async function getPlayerCurrency(
 /**
  * Get or create player currency record (mutation only)
  *
+ * Queries for existing currency record, creates default one if not found.
+ * Creates record with 0 gold/gems and empty lifetime stats.
+ * This shouldn't normally happen after signup integration.
+ *
+ * @param ctx - Mutation context
+ * @param userId - Player's user ID
  * @returns Player's currency record
+ * @throws Error if creation fails
+ * @example
+ * const currency = await getOrCreatePlayerCurrency(ctx, userId)
+ * console.log(currency.gold) // 0 (if newly created)
  */
 export async function getOrCreatePlayerCurrency(
   ctx: MutationCtx,
@@ -103,7 +124,7 @@ export async function getOrCreatePlayerCurrency(
 
   const newCurrency = await ctx.db.get(currencyId);
   if (!newCurrency) {
-    throw new Error("Failed to create currency record");
+    throw createError(ErrorCode.SYSTEM_CURRENCY_CREATION_FAILED, { userId });
   }
 
   return newCurrency as Doc<"playerCurrency">;
@@ -111,6 +132,22 @@ export async function getOrCreatePlayerCurrency(
 
 /**
  * Record a currency transaction to the ledger
+ *
+ * Creates immutable audit trail entry in currencyTransactions table.
+ * Used for tracking all gold/gem changes (earned, spent, awarded).
+ *
+ * @param ctx - Mutation context
+ * @param userId - Player who made the transaction
+ * @param transactionType - Type of transaction ("earned" | "spent" | "awarded" | "purchased")
+ * @param currencyType - Currency affected ("gold" | "gems")
+ * @param amount - Transaction amount (positive or negative)
+ * @param balanceAfter - Player's balance after transaction
+ * @param description - Human-readable description of transaction
+ * @param referenceId - Optional reference ID (e.g., purchase ID, quest ID)
+ * @param metadata - Optional additional data for analytics
+ * @example
+ * await recordTransaction(ctx, userId, "earned", "gold", 100, 1500, "Quest completed")
+ * await recordTransaction(ctx, userId, "spent", "gems", -200, 800, "Bought card pack")
  */
 export async function recordTransaction(
   ctx: MutationCtx,

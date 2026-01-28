@@ -30,8 +30,8 @@ interface EconomyMetric {
 
 export default function MarketplaceAnalyticsPage() {
   // Fetch real marketplace stats
-  const marketplaceStats = useQuery(api.economy.marketplace.getMarketplaceStats);
-  const economyMetrics = useQuery(api.analytics.economy.getEconomyMetrics, { days: 7 });
+  const marketplaceStats = useQuery(apimarketplace.getMarketplaceStats);
+  const economyMetrics = useQuery(api.admin.analytics.getEconomyMetrics, { days: 7 });
 
   const isLoading = marketplaceStats === undefined;
 

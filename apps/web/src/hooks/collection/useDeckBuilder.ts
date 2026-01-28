@@ -1,28 +1,81 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "../auth/useConvexAuthHook";
-import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import { toast } from "sonner";
+import { handleHookError } from "@/lib/errorHandling";
+import { useAuth } from "../auth/useConvexAuthHook";
+
+interface UseDeckBuilderReturn {
+  decks: ReturnType<typeof useQuery<typeof api.decks.getUserDecks>> | undefined;
+  isLoading: boolean;
+  createDeck: (name: string) => Promise<Id<"userDecks">>;
+  saveDeck: (
+    deckId: Id<"userDecks">,
+    cards: Array<{ cardDefinitionId: Id<"cardDefinitions">; quantity: number }>
+  ) => Promise<void>;
+  renameDeck: (deckId: Id<"userDecks">, newName: string) => Promise<void>;
+  deleteDeck: (deckId: Id<"userDecks">) => Promise<void>;
+  duplicateDeck: (deckId: Id<"userDecks">, newName?: string) => Promise<Id<"userDecks">>;
+  setActiveDeck: (deckId: Id<"userDecks">) => Promise<void>;
+}
 
 /**
- * useDeckBuilder Hook
+ * Deck building and management hook with complete CRUD operations.
  *
- * Complete deck CRUD operations:
- * - Create, save, rename, delete, duplicate decks
- * - Set active deck
- * - Validate deck composition
- * - Retrieve deck details with cards
+ * Provides all functionality needed to create, modify, and manage player decks.
+ * Includes validation, duplication, and active deck selection. All mutations
+ * show toast notifications for user feedback.
+ *
+ * Features:
+ * - Create new decks with custom names
+ * - Save deck composition (card list with quantities)
+ * - Rename existing decks
+ * - Delete decks
+ * - Duplicate decks with automatic naming
+ * - Set active deck for gameplay
+ *
+ * @example
+ * ```typescript
+ * const {
+ *   decks,
+ *   isLoading,
+ *   createDeck,
+ *   saveDeck,
+ *   setActiveDeck
+ * } = useDeckBuilder();
+ *
+ * // Create a new deck
+ * const deckId = await createDeck("My Dragon Deck");
+ *
+ * // Save cards to deck
+ * await saveDeck(deckId, [
+ *   { cardDefinitionId: card1Id, quantity: 3 },
+ *   { cardDefinitionId: card2Id, quantity: 2 }
+ * ]);
+ *
+ * // Set as active deck
+ * await setActiveDeck(deckId);
+ * ```
+ *
+ * @returns {Object} Deck builder interface containing:
+ * - `decks` - Array of user's decks (basic info)
+ * - `isLoading` - Loading state boolean
+ * - `createDeck(name)` - Create new deck, returns deck ID
+ * - `saveDeck(deckId, cards)` - Save card composition to deck
+ * - `renameDeck(deckId, newName)` - Rename a deck
+ * - `deleteDeck(deckId)` - Delete a deck
+ * - `duplicateDeck(deckId, newName?)` - Duplicate deck, returns new deck ID
+ * - `setActiveDeck(deckId)` - Set deck as active for gameplay
+ *
+ * @throws {Error} When user is not authenticated
  */
-export function useDeckBuilder() {
+export function useDeckBuilder(): UseDeckBuilderReturn {
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const decks = useQuery(
-    api.decks.getUserDecks,
-    isAuthenticated ? {} : "skip"
-  );
+  const decks = useQuery(api.decks.getUserDecks, isAuthenticated ? {} : "skip");
 
   // Mutations
   const createMutation = useMutation(api.decks.createDeck);
@@ -32,31 +85,16 @@ export function useDeckBuilder() {
   const duplicateMutation = useMutation(api.decks.duplicateDeck);
   const setActiveMutation = useMutation(api.decks.setActiveDeck);
 
-  // Helper function to get a specific deck
-  const useDeck = (deckId: Id<"userDecks"> | null) => {
-    return useQuery(
-      api.decks.getDeckWithCards,
-      isAuthenticated && deckId ? { deckId } : "skip"
-    );
-  };
-
-  // Helper function to validate a deck
-  const useValidateDeck = (deckId: Id<"userDecks"> | null) => {
-    return useQuery(
-      api.decks.validateDeck,
-      isAuthenticated && deckId ? { deckId } : "skip"
-    );
-  };
-
   // Actions
   const createDeck = async (name: string) => {
     if (!isAuthenticated) throw new Error("Not authenticated");
     try {
-      const deckId = await createMutation({ name });
+      const result = await createMutation({ name });
       toast.success(`Deck "${name}" created`);
-      return deckId;
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create deck");
+      return result.deckId;
+    } catch (error) {
+      const message = handleHookError(error, "Failed to create deck");
+      toast.error(message);
       throw error;
     }
   };
@@ -69,8 +107,9 @@ export function useDeckBuilder() {
     try {
       await saveMutation({ deckId, cards });
       toast.success("Deck saved");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save deck");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to save deck");
+      toast.error(message);
       throw error;
     }
   };
@@ -80,8 +119,9 @@ export function useDeckBuilder() {
     try {
       await renameMutation({ deckId, newName });
       toast.success(`Deck renamed to "${newName}"`);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to rename deck");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to rename deck");
+      toast.error(message);
       throw error;
     }
   };
@@ -91,8 +131,9 @@ export function useDeckBuilder() {
     try {
       await deleteMutation({ deckId });
       toast.success("Deck deleted");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete deck");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to delete deck");
+      toast.error(message);
       throw error;
     }
   };
@@ -104,14 +145,15 @@ export function useDeckBuilder() {
       const sourceDeck = decks?.find((d: NonNullable<typeof decks>[number]) => d.id === deckId);
       const duplicateName = newName || (sourceDeck ? `${sourceDeck.name} (Copy)` : "Deck Copy");
 
-      const newDeckId = await duplicateMutation({
+      const result = await duplicateMutation({
         newName: duplicateName,
-        sourceDeckId: deckId
+        sourceDeckId: deckId,
       });
       toast.success("Deck duplicated");
-      return newDeckId;
-    } catch (error: any) {
-      toast.error(error.message || "Failed to duplicate deck");
+      return result.deckId;
+    } catch (error) {
+      const message = handleHookError(error, "Failed to duplicate deck");
+      toast.error(message);
       throw error;
     }
   };
@@ -121,8 +163,9 @@ export function useDeckBuilder() {
     try {
       await setActiveMutation({ deckId });
       toast.success("Active deck updated");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to set active deck");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to set active deck");
+      toast.error(message);
       throw error;
     }
   };
@@ -132,10 +175,6 @@ export function useDeckBuilder() {
     decks,
     isLoading: decks === undefined,
 
-    // Getters (hooks to be used in components)
-    useDeck,
-    useValidateDeck,
-
     // Actions
     createDeck,
     saveDeck,
@@ -144,4 +183,72 @@ export function useDeckBuilder() {
     duplicateDeck,
     setActiveDeck,
   };
+}
+
+/**
+ * Retrieves detailed information for a specific deck including all cards.
+ *
+ * This hook must be called at component top-level (React hooks rules apply).
+ * Use alongside useDeckBuilder for deck editing interfaces.
+ *
+ * @example
+ * ```typescript
+ * function DeckEditor({ deckId }: { deckId: Id<"userDecks"> }) {
+ *   const deckDetails = useDeck(deckId);
+ *
+ *   if (!deckDetails) return <Loading />;
+ *
+ *   return (
+ *     <div>
+ *       <h2>{deckDetails.name}</h2>
+ *       {deckDetails.cards.map(card => <CardView key={card._id} card={card} />)}
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @param deckId - The deck ID to fetch, or null to skip the query
+ *
+ * @returns Deck details with full card information, or undefined while loading
+ */
+export function useDeck(deckId: Id<"userDecks"> | null) {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery(api.decks.getDeckWithCards, isAuthenticated && deckId ? { deckId } : "skip");
+}
+
+/**
+ * Validates deck composition against game rules.
+ *
+ * Checks deck size requirements, card quantity limits, and other deck construction
+ * rules. Use this to show validation errors in the deck builder UI. This hook must
+ * be called at component top-level (React hooks rules apply).
+ *
+ * @example
+ * ```typescript
+ * function DeckBuilder({ deckId }: { deckId: Id<"userDecks"> }) {
+ *   const validation = useValidateDeck(deckId);
+ *
+ *   if (!validation) return <Loading />;
+ *
+ *   return (
+ *     <div>
+ *       {!validation.isValid && (
+ *         <Alert variant="error">
+ *           {validation.errors.map(err => <div key={err}>{err}</div>)}
+ *         </Alert>
+ *       )}
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @param deckId - The deck ID to validate, or null to skip the query
+ *
+ * @returns Validation result with isValid boolean and errors array, or undefined while loading
+ */
+export function useValidateDeck(deckId: Id<"userDecks"> | null) {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery(api.decks.validateDeck, isAuthenticated && deckId ? { deckId } : "skip");
 }

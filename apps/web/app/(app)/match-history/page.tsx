@@ -1,5 +1,11 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { useProfile } from "@/hooks";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { cn } from "@/lib/utils";
+import { api } from "@convex/_generated/api";
+import { useQuery } from "convex/react";
 import {
   Calendar,
   ChevronRight,
@@ -15,12 +21,6 @@ import {
   Trophy,
 } from "lucide-react";
 import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
-import { useProfile } from "@/hooks";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 type MatchResult = "victory" | "defeat" | "draw";
 type MatchMode = "ranked" | "casual" | "story" | "practice";
@@ -75,7 +75,8 @@ export default function MatchHistoryPage() {
   const isLoading = profileLoading || matchHistory === undefined;
 
   const matches = matchHistory ?? [];
-  const filteredMatches = filter === "all" ? matches : matches.filter((m: (typeof matches)[number]) => m.mode === filter);
+  const filteredMatches =
+    filter === "all" ? matches : matches.filter((m: (typeof matches)[number]) => m.mode === filter);
 
   const stats = {
     total: matches.length,
@@ -84,7 +85,11 @@ export default function MatchHistoryPage() {
     draws: 0, // Draw support not implemented yet
     winRate:
       matches.length > 0
-        ? Math.round((matches.filter((m: (typeof matches)[number]) => m.result === "victory").length / matches.length) * 100)
+        ? Math.round(
+            (matches.filter((m: (typeof matches)[number]) => m.result === "victory").length /
+              matches.length) *
+              100
+          )
         : 0,
   };
 

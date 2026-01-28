@@ -62,7 +62,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
   // Fetch the current user's admin role from Convex
   const adminRole = useQuery(api.admin.admin.getMyAdminRole);
   // Fetch the current user's player data (for mutations that require playerId)
-  const currentPlayer = useQuery(api.players.players.me);
+  const currentPlayer = useQuery(api.core.users.me);
 
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo<AdminContextValue>(() => {

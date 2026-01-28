@@ -1,28 +1,30 @@
 "use client";
 
+import { StoryChapterCard } from "@/components/story/StoryChapterCard";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import { BookOpen, ChevronLeft, Loader2, Shield, Star, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { StoryChapterCard } from "@/components/story/StoryChapterCard";
-import { cn } from "@/lib/utils";
-import { useMemo, useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 // Mock chapter metadata (UI names and descriptions)
 const CHAPTER_INFO = [
   {
     chapterNumber: 1,
     name: "Infernal Dragons",
-    description: "Face the fury of the Fire Dragon Legion. Master aggressive strategies and burn damage mechanics.",
+    description:
+      "Face the fury of the Fire Dragon Legion. Master aggressive strategies and burn damage mechanics.",
     archetype: "infernal_dragons",
   },
   {
     chapterNumber: 2,
     name: "Abyssal Horrors",
-    description: "Descend into the deep. Learn control tactics and master the art of freezing your opponents.",
+    description:
+      "Descend into the deep. Learn control tactics and master the art of freezing your opponents.",
     archetype: "abyssal_horrors",
   },
   {
@@ -46,7 +48,8 @@ const CHAPTER_INFO = [
   {
     chapterNumber: 6,
     name: "Celestial Guardians",
-    description: "Ascend to the heavens. Discover defensive formations and divine protection spells.",
+    description:
+      "Ascend to the heavens. Discover defensive formations and divine protection spells.",
     archetype: "celestial_guardians",
   },
   {
@@ -78,7 +81,7 @@ const CHAPTER_INFO = [
 export default function StoryModePage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip") as any;
 
   // Fetch real data with type assertions to avoid deep instantiation errors
   const allChapters = useQuery(
@@ -170,14 +173,13 @@ export default function StoryModePage() {
   return (
     <div className="min-h-screen bg-[#0d0a09] relative">
       {/* Background */}
-      <div className="fixed inset-0 bg-black/60" />
       <div
-        className="absolute inset-0 opacity-10"
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.3) 1px, transparent 0)`,
-          backgroundSize: "40px 40px",
+          backgroundImage: "url('/assets/backgrounds/story-bg.png')",
         }}
       />
+      <div className="fixed inset-0 bg-black/40" />
 
       {/* Hero Section */}
       <div className="relative z-10 pt-24 pb-10 px-4">
@@ -246,28 +248,34 @@ export default function StoryModePage() {
 
           {/* Chapters Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
-            {chapters.length > 0 ? chapters.map((chapter, index) => (
-              <motion.div
-                key={chapter.chapterId}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <StoryChapterCard
-                  chapter={chapter}
-                  onClick={() => {
-                    if (chapter.isUnlocked) {
-                      router.push(`/play/story/${chapter.chapterId}`);
-                    }
-                  }}
-                />
-              </motion.div>
-            )) : (
+            {chapters.length > 0 ? (
+              chapters.map((chapter: any, index: number) => (
+                <motion.div
+                  key={chapter.chapterId}
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <StoryChapterCard
+                    chapter={chapter}
+                    onClick={() => {
+                      if (chapter.isUnlocked) {
+                        router.push(`/play/story/${chapter.chapterId}`);
+                      }
+                    }}
+                  />
+                </motion.div>
+              ))
+            ) : (
               <div className="col-span-full text-center py-16">
                 <Loader2 className="w-8 h-8 animate-spin text-[#d4af37] mx-auto mb-4" />
                 <p className="text-[#a89f94] mb-4">Loading chapters...</p>
                 <p className="text-[#a89f94] text-sm">
-                  Run <code className="bg-black/40 px-2 py-1 rounded">bun convex run scripts/seedStoryChapters:seedStoryChapters</code> to initialize chapters.
+                  Run{" "}
+                  <code className="bg-black/40 px-2 py-1 rounded">
+                    bun convex run scripts/seedStoryChapters:seedStoryChapters
+                  </code>{" "}
+                  to initialize chapters.
                 </p>
               </div>
             )}

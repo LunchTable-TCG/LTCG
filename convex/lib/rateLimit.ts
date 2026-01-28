@@ -8,8 +8,9 @@
  */
 
 import { defineRateLimits } from "convex-helpers/server/rateLimit";
-import { MutationCtx } from "../_generated/server";
+import type { MutationCtx } from "../_generated/server";
 import { RATELIMIT_CONFIG } from "./constants";
+import { ErrorCode, createError } from "./errorCodes";
 
 const SECOND = 1000; // ms
 const MINUTE = 60 * SECOND;
@@ -38,6 +39,14 @@ export const { checkRateLimit, rateLimit, resetRateLimit } = defineRateLimits({
   // Game operations
   CREATE_LOBBY: { kind: "token bucket", rate: 10, period: MINUTE, capacity: 10 }, // 10 per minute
   JOIN_LOBBY: { kind: "token bucket", rate: 30, period: MINUTE, capacity: 30 }, // 30 per minute
+  LOBBY_ACTION: { kind: "token bucket", rate: 20, period: MINUTE, capacity: 20 }, // 20 per minute
+
+  // Story and progression operations
+  STORY_PROGRESS: { kind: "token bucket", rate: 20, period: MINUTE, capacity: 20 }, // 20 per minute
+  NOTIFICATION_READ: { kind: "token bucket", rate: 30, period: MINUTE, capacity: 30 }, // 30 per minute
+
+  // Storage operations
+  IMAGE_UPLOAD: { kind: "token bucket", rate: 10, period: MINUTE, capacity: 10 }, // 10 per minute
 });
 
 /**
@@ -53,7 +62,21 @@ export const { checkRateLimit, rateLimit, resetRateLimit } = defineRateLimits({
  */
 export async function checkRateLimitWrapper(
   ctx: MutationCtx,
-  operation: "AUTH_SIGNUP" | "AUTH_SIGNIN" | "PACK_PURCHASE" | "PROMO_CODE" | "MARKETPLACE_LIST" | "MARKETPLACE_BID" | "FRIEND_REQUEST" | "GLOBAL_CHAT" | "CREATE_LOBBY" | "JOIN_LOBBY",
+  operation:
+    | "AUTH_SIGNUP"
+    | "AUTH_SIGNIN"
+    | "PACK_PURCHASE"
+    | "PROMO_CODE"
+    | "MARKETPLACE_LIST"
+    | "MARKETPLACE_BID"
+    | "FRIEND_REQUEST"
+    | "GLOBAL_CHAT"
+    | "CREATE_LOBBY"
+    | "JOIN_LOBBY"
+    | "LOBBY_ACTION"
+    | "STORY_PROGRESS"
+    | "NOTIFICATION_READ"
+    | "IMAGE_UPLOAD",
   key?: string
 ): Promise<void> {
   // In development/testing, rate limiting might be disabled
@@ -70,9 +93,10 @@ export async function checkRateLimitWrapper(
 
     if (!result.ok && result.retryAt) {
       const retryAfterSeconds = Math.ceil((result.retryAt - Date.now()) / 1000);
-      throw new Error(
-        `Rate limit exceeded for ${operation}. Please try again in ${retryAfterSeconds} seconds.`
-      );
+      throw createError(ErrorCode.SYSTEM_RATE_LIMIT_CONFIG, {
+        operation,
+        retryAfterSeconds,
+      });
     }
   } catch (error) {
     // Re-throw rate limit errors
@@ -93,7 +117,21 @@ export async function checkRateLimitWrapper(
  */
 export async function resetRateLimitWrapper(
   ctx: MutationCtx,
-  operation: "AUTH_SIGNUP" | "AUTH_SIGNIN" | "PACK_PURCHASE" | "PROMO_CODE" | "MARKETPLACE_LIST" | "MARKETPLACE_BID" | "FRIEND_REQUEST" | "GLOBAL_CHAT" | "CREATE_LOBBY" | "JOIN_LOBBY",
+  operation:
+    | "AUTH_SIGNUP"
+    | "AUTH_SIGNIN"
+    | "PACK_PURCHASE"
+    | "PROMO_CODE"
+    | "MARKETPLACE_LIST"
+    | "MARKETPLACE_BID"
+    | "FRIEND_REQUEST"
+    | "GLOBAL_CHAT"
+    | "CREATE_LOBBY"
+    | "JOIN_LOBBY"
+    | "LOBBY_ACTION"
+    | "STORY_PROGRESS"
+    | "NOTIFICATION_READ"
+    | "IMAGE_UPLOAD",
   key?: string
 ): Promise<void> {
   try {

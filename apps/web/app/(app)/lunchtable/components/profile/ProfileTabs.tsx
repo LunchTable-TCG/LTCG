@@ -3,8 +3,8 @@
  * Tab switcher for profile sections (stats, badges, agents)
  */
 
-import { Bot, Medal, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Bot, Medal, Target } from "lucide-react";
 
 interface ProfileTabsProps {
   activeTab: "stats" | "badges" | "agents";

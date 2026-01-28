@@ -10,11 +10,11 @@
  * Used for pack opening and random card generation
  */
 export const RARITY_WEIGHTS = {
-  common: 650,     // 65%
-  uncommon: 200,   // 20%
-  rare: 100,       // 10%
-  epic: 40,        // 4%
-  legendary: 10,   // 1%
+  common: 650, // 65%
+  uncommon: 200, // 20%
+  rare: 100, // 10%
+  epic: 40, // 4%
+  legendary: 10, // 1%
 } as const;
 
 /**
@@ -66,11 +66,11 @@ export const PAGINATION = {
  * Chat Configuration
  */
 export const CHAT = {
-  /** Rate limit: max messages per time window */
-  RATE_LIMIT_MAX_MESSAGES: 5,
+  /** Rate limit: max messages per time window (per user) */
+  RATE_LIMIT_MAX_MESSAGES: 10,
 
   /** Rate limit: time window in milliseconds */
-  RATE_LIMIT_WINDOW_MS: 10000, // 10 seconds
+  RATE_LIMIT_WINDOW_MS: 60000, // 60 seconds
 
   /** Presence timeout in milliseconds */
   PRESENCE_TIMEOUT_MS: 300000, // 5 minutes

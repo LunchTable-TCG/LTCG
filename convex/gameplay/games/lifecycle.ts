@@ -1,12 +1,12 @@
 import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
-import { mutation, internalMutation } from "../../_generated/server";
+import { internalMutation, mutation } from "../../_generated/server";
 import type { MutationCtx } from "../../_generated/server";
-import { getCurrentUser, requireAuthQuery, requireAuthMutation } from "../../lib/convexAuth";
-import { ErrorCode, createError } from "../../lib/errorCodes";
-import { updatePlayerStatsAfterGame } from "./stats";
-import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
+import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
 import { shuffleArray } from "../../lib/deterministicRandom";
+import { ErrorCode, createError } from "../../lib/errorCodes";
+import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
+import { updatePlayerStatsAfterGame } from "./stats";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -42,8 +42,27 @@ async function updatePresenceInternal(
 }
 
 /**
- * Helper function to initialize game state
- * Can be called directly from other mutations to avoid ctx.runMutation overhead
+ * Helper function to initialize game state without mutation overhead
+ *
+ * Used by game lifecycle mutations to set up a new game efficiently.
+ * Loads and shuffles both players' decks, deals initial hands (5 cards each),
+ * initializes empty boards and graveyards, sets starting LP (8000), and configures
+ * turn tracking, phases, and AI settings for story mode.
+ *
+ * @internal
+ * @param ctx - Mutation context
+ * @param params - Game initialization parameters
+ * @param params.lobbyId - Lobby ID for the game
+ * @param params.gameId - Unique game ID (used as deterministic shuffle seed)
+ * @param params.hostId - User ID of the host player
+ * @param params.opponentId - User ID of the opponent player (or AI)
+ * @param params.currentTurnPlayerId - User ID of the player who goes first
+ * @param params.gameMode - Game mode ("pvp" or "story", defaults to "pvp")
+ * @param params.isAIOpponent - Whether opponent is AI (defaults to false)
+ * @param params.aiDifficulty - AI difficulty level for story mode
+ * @param params.aiDeck - Pre-built deck for AI opponent in story mode
+ * @returns Promise that resolves when game state is initialized
+ * @throws {ErrorCode.VALIDATION_INVALID_INPUT} If player or deck is invalid
  */
 export async function initializeGameStateHelper(
   ctx: MutationCtx,
@@ -55,7 +74,7 @@ export async function initializeGameStateHelper(
     currentTurnPlayerId: Id<"users">;
     gameMode?: "pvp" | "story";
     isAIOpponent?: boolean;
-    aiDifficulty?: "easy" | "normal" | "hard" | "legendary";
+    aiDifficulty?: "easy" | "normal" | "medium" | "hard" | "boss"; // "normal" for backwards compatibility
     aiDeck?: Id<"cardDefinitions">[];
   }
 ): Promise<void> {
@@ -248,7 +267,6 @@ export const initializeGameState = internalMutation({
  */
 export const surrenderGame = mutation({
   args: {
-    
     lobbyId: v.id("gameLobbies"),
   },
   handler: async (ctx, args) => {
@@ -258,22 +276,22 @@ export const surrenderGame = mutation({
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Game not found",
-    });
+        reason: "Game not found",
+      });
     }
 
     // Verify game is active
     if (lobby.status !== "active") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Game is not active",
-    });
+        reason: "Game is not active",
+      });
     }
 
     // Verify user is in this game
     if (lobby.hostId !== userId && lobby.opponentId !== userId) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "You are not in this game",
-    });
+        reason: "You are not in this game",
+      });
     }
 
     // Determine winner (the player who didn't surrender)
@@ -281,8 +299,8 @@ reason: "You are not in this game",
 
     if (!winnerId) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Cannot determine winner",
-    });
+        reason: "Cannot determine winner",
+      });
     }
 
     // Update lobby
@@ -331,14 +349,14 @@ export const updateTurn = internalMutation({
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Lobby not found",
-    });
+        reason: "Lobby not found",
+      });
     }
 
     if (lobby.status !== "active") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Game is not active",
-    });
+        reason: "Game is not active",
+      });
     }
 
     const now = Date.now();
@@ -382,24 +400,23 @@ export const forfeitGame = internalMutation({
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Lobby not found",
-    });
+        reason: "Lobby not found",
+      });
     }
 
     if (lobby.status !== "active") {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Game is not active",
-    });
+        reason: "Game is not active",
+      });
     }
 
     // Determine winner (the player who didn't forfeit)
-    const winnerId =
-      args.forfeitingPlayerId === lobby.hostId ? lobby.opponentId : lobby.hostId;
+    const winnerId = args.forfeitingPlayerId === lobby.hostId ? lobby.opponentId : lobby.hostId;
 
     if (!winnerId) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Cannot determine winner",
-    });
+        reason: "Cannot determine winner",
+      });
     }
 
     // Update lobby
@@ -446,8 +463,8 @@ export const completeGame = internalMutation({
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-reason: "Lobby not found",
-    });
+        reason: "Lobby not found",
+      });
     }
 
     // Update lobby

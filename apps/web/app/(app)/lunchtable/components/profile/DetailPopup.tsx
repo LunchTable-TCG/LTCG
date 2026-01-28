@@ -3,10 +3,10 @@
  * Universal modal for displaying card, badge, and achievement details
  */
 
-import { Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Star, X } from "lucide-react";
+import { BADGE_ICONS, ELEMENT_CONFIG, RARITY_CONFIG } from "./constants";
 import type { DetailItem } from "./types";
-import { ELEMENT_CONFIG, RARITY_CONFIG, BADGE_ICONS } from "./constants";
 
 interface DetailPopupProps {
   detail: DetailItem | null;
@@ -19,7 +19,6 @@ export function DetailPopup({ detail, onClose }: DetailPopupProps) {
   return (
     <>
       {/* Detail Backdrop */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: Backdrop overlay for modal */}
       <div
         role="presentation"
         className="fixed inset-0 z-90 bg-black/50"
@@ -50,18 +49,14 @@ export function DetailPopup({ detail, onClose }: DetailPopupProps) {
                   className={cn(
                     "w-16 h-16 rounded-xl flex items-center justify-center border-2",
                     detail.element && ELEMENT_CONFIG[detail.element].bg,
-                    detail.rarity
-                      ? RARITY_CONFIG[detail.rarity].border
-                      : "border-[#3d2b1f]"
+                    detail.rarity ? RARITY_CONFIG[detail.rarity].border : "border-[#3d2b1f]"
                   )}
                 >
                   {detail.element &&
                     (() => {
                       const Icon = ELEMENT_CONFIG[detail.element].icon;
                       return (
-                        <Icon
-                          className={cn("w-8 h-8", ELEMENT_CONFIG[detail.element].color)}
-                        />
+                        <Icon className={cn("w-8 h-8", ELEMENT_CONFIG[detail.element].color)} />
                       );
                     })()}
                 </div>
