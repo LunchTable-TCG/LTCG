@@ -77,7 +77,12 @@ export function shuffleArray<T>(array: T[], seed: string): T[] {
 
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+    const temp = shuffled[i];
+    const swapVal = shuffled[j];
+    if (temp !== undefined && swapVal !== undefined) {
+      shuffled[i] = swapVal;
+      shuffled[j] = temp;
+    }
   }
 
   return shuffled;
@@ -96,5 +101,9 @@ export function pickRandom<T>(array: T[], seed: string): T {
   }
   const random = createSeededRandom(seed);
   const index = Math.floor(random() * array.length);
-  return array[index]!;
+  const result = array[index];
+  if (result === undefined) {
+    throw createError(ErrorCode.LIBRARY_EMPTY_ARRAY);
+  }
+  return result;
 }

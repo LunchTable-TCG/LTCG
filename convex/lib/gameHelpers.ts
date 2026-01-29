@@ -7,7 +7,7 @@
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import { parseAbility } from "../effectSystem";
+import { getCardAbility } from "./abilityHelpers";
 import { recordEventHelper, recordGameEndHelper } from "../gameplay/gameEvents";
 import { ErrorCode, createError } from "./errorCodes";
 
@@ -110,8 +110,11 @@ export async function shuffleDeck(
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const temp = shuffled[i];
-    shuffled[i] = shuffled[j]!;
-    shuffled[j] = temp!;
+    const swapVal = shuffled[j];
+    if (temp !== undefined && swapVal !== undefined) {
+      shuffled[i] = swapVal;
+      shuffled[j] = temp;
+    }
   }
 
   // Get player username for events
@@ -527,10 +530,12 @@ export function getModifiedStats(
  * @returns Total ATK/DEF bonuses from all continuous effects
  */
 export async function applyContinuousEffects(
+  // biome-ignore lint/suspicious/noExplicitAny: Convex context type varies
   ctx: { db: any },
   gameState: Doc<"gameStates">,
   cardId: Id<"cardDefinitions">,
-  _cardDef: any, // Full card definition with archetype (unused in current implementation)
+  // biome-ignore lint/suspicious/noExplicitAny: Card definition structure varies
+  _cardDef: any,
   isHost: boolean
 ): Promise<{ atkBonus: number; defBonus: number }> {
   let atkBonus = 0;
@@ -549,49 +554,52 @@ export async function applyContinuousEffects(
 
     // Level conditions (e.g., "level_4_or_lower", "level_7_or_higher")
     const levelMatch = condition.match(/level_(\d+)_or_(lower|higher)/i);
-    if (levelMatch && levelMatch[1] && levelMatch[2]) {
+    if (levelMatch?.[1] && levelMatch[2]) {
       const threshold = Number.parseInt(levelMatch[1]);
       const comparison = levelMatch[2].toLowerCase();
       const cardLevel = card.cost || 0; // Level is derived from cost
 
       if (comparison === "lower") {
         return cardLevel <= threshold;
-      } else if (comparison === "higher") {
+      }
+      if (comparison === "higher") {
         return cardLevel >= threshold;
       }
     }
 
     // ATK threshold conditions (e.g., "atk_1500_or_less", "atk_2000_or_more")
     const atkMatch = condition.match(/atk_(\d+)_or_(less|more)/i);
-    if (atkMatch && atkMatch[1] && atkMatch[2]) {
+    if (atkMatch?.[1] && atkMatch[2]) {
       const threshold = Number.parseInt(atkMatch[1]);
       const comparison = atkMatch[2].toLowerCase();
       const cardAtk = card.attack || 0;
 
       if (comparison === "less") {
         return cardAtk <= threshold;
-      } else if (comparison === "more") {
+      }
+      if (comparison === "more") {
         return cardAtk >= threshold;
       }
     }
 
     // DEF threshold conditions (e.g., "def_1500_or_less", "def_2000_or_more")
     const defMatch = condition.match(/def_(\d+)_or_(less|more)/i);
-    if (defMatch && defMatch[1] && defMatch[2]) {
+    if (defMatch?.[1] && defMatch[2]) {
       const threshold = Number.parseInt(defMatch[1]);
       const comparison = defMatch[2].toLowerCase();
       const cardDef = card.defense || 0;
 
       if (comparison === "less") {
         return cardDef <= threshold;
-      } else if (comparison === "more") {
+      }
+      if (comparison === "more") {
         return cardDef >= threshold;
       }
     }
 
     // Extract archetype from condition (e.g., "Warrior_monsters" → "warrior")
     const archetypeMatch = condition.match(/^(.+)_monsters$/i);
-    if (archetypeMatch && archetypeMatch[1]) {
+    if (archetypeMatch?.[1]) {
       const requiredArchetype = archetypeMatch[1].toLowerCase();
 
       if (card.archetype?.toLowerCase().includes(requiredArchetype)) return true;
@@ -603,16 +611,16 @@ export async function applyContinuousEffects(
 
   // Check field spells (affects both players unless specified)
   const playerFieldSpell = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
-  if (playerFieldSpell && playerFieldSpell.isActive) {
+  if (playerFieldSpell?.isActive) {
     const fieldCard = await ctx.db.get(playerFieldSpell.cardId);
-    if (fieldCard?.ability) {
-      const parsedAbility = parseAbility(fieldCard.ability);
-      if (parsedAbility?.continuous) {
-        if (matchesCondition(parsedAbility.condition)) {
-          if (parsedAbility.type === "modifyATK") {
-            atkBonus += parsedAbility.value || 0;
-          } else if (parsedAbility.type === "modifyDEF") {
-            defBonus += parsedAbility.value || 0;
+    const parsedAbility = getCardAbility(fieldCard);
+    if (parsedAbility) {
+      for (const effect of parsedAbility.effects) {
+        if (effect.continuous && matchesCondition(effect.condition)) {
+          if (effect.type === "modifyATK") {
+            atkBonus += effect.value || 0;
+          } else if (effect.type === "modifyDEF") {
+            defBonus += effect.value || 0;
           }
         }
       }
@@ -621,16 +629,16 @@ export async function applyContinuousEffects(
 
   // Check opponent's field spell (some affect opponent's monsters)
   const opponentFieldSpell = isHost ? gameState.opponentFieldSpell : gameState.hostFieldSpell;
-  if (opponentFieldSpell && opponentFieldSpell.isActive) {
+  if (opponentFieldSpell?.isActive) {
     const fieldCard = await ctx.db.get(opponentFieldSpell.cardId);
-    if (fieldCard?.ability) {
-      const parsedAbility = parseAbility(fieldCard.ability);
-      if (parsedAbility?.continuous) {
-        if (parsedAbility.condition?.includes("opponent_monsters")) {
-          if (parsedAbility.type === "modifyATK") {
-            atkBonus += parsedAbility.value || 0;
-          } else if (parsedAbility.type === "modifyDEF") {
-            defBonus += parsedAbility.value || 0;
+    const parsedAbility = getCardAbility(fieldCard);
+    if (parsedAbility) {
+      for (const effect of parsedAbility.effects) {
+        if (effect.continuous && effect.condition?.includes("opponent_monsters")) {
+          if (effect.type === "modifyATK") {
+            atkBonus += effect.value || 0;
+          } else if (effect.type === "modifyDEF") {
+            defBonus += effect.value || 0;
           }
         }
       }
@@ -643,14 +651,16 @@ export async function applyContinuousEffects(
     if (!backrowCard || backrowCard.isFaceDown) continue;
 
     const backrowCardDef = await ctx.db.get(backrowCard.cardId);
-    if (backrowCardDef?.cardType === "trap" && backrowCardDef.ability) {
-      const parsedAbility = parseAbility(backrowCardDef.ability);
-      if (parsedAbility?.continuous) {
-        if (matchesCondition(parsedAbility.condition)) {
-          if (parsedAbility.type === "modifyATK") {
-            atkBonus += parsedAbility.value || 0;
-          } else if (parsedAbility.type === "modifyDEF") {
-            defBonus += parsedAbility.value || 0;
+    if (backrowCardDef?.cardType === "trap") {
+      const parsedAbility = getCardAbility(backrowCardDef);
+      if (parsedAbility) {
+        for (const effect of parsedAbility.effects) {
+          if (effect.continuous && matchesCondition(effect.condition)) {
+            if (effect.type === "modifyATK") {
+              atkBonus += effect.value || 0;
+            } else if (effect.type === "modifyDEF") {
+              defBonus += effect.value || 0;
+            }
           }
         }
       }
@@ -661,22 +671,24 @@ export async function applyContinuousEffects(
   const allBoards = [...gameState.hostBoard, ...gameState.opponentBoard];
   for (const boardCard of allBoards) {
     const cardDefinition = await ctx.db.get(boardCard.cardId);
-    if (!cardDefinition?.ability) continue;
+    const parsedAbility = getCardAbility(cardDefinition);
+    if (!parsedAbility) continue;
 
-    const parsedEffect = parseAbility(cardDefinition.ability);
-    if (!parsedEffect || !parsedEffect.continuous) continue;
+    for (const effect of parsedAbility.effects) {
+      if (!effect.continuous) continue;
 
-    const effectOwnerIsHost = gameState.hostBoard.some((c) => c.cardId === boardCard.cardId);
-    const targetIsOppMonster =
-      parsedEffect.condition === "opponent_monsters" && effectOwnerIsHost !== isHost;
-    const targetIsOwnMonster =
-      parsedEffect.condition !== "opponent_monsters" && effectOwnerIsHost === isHost;
+      const effectOwnerIsHost = gameState.hostBoard.some((c) => c.cardId === boardCard.cardId);
+      const targetIsOppMonster =
+        effect.condition === "opponent_monsters" && effectOwnerIsHost !== isHost;
+      const targetIsOwnMonster =
+        effect.condition !== "opponent_monsters" && effectOwnerIsHost === isHost;
 
-    if (targetIsOppMonster || (targetIsOwnMonster && matchesCondition(parsedEffect.condition))) {
-      if (parsedEffect.type === "modifyATK") {
-        atkBonus += parsedEffect.value || 0;
-      } else if (parsedEffect.type === "modifyDEF") {
-        defBonus += parsedEffect.value || 0;
+      if (targetIsOppMonster || (targetIsOwnMonster && matchesCondition(effect.condition))) {
+        if (effect.type === "modifyATK") {
+          atkBonus += effect.value || 0;
+        } else if (effect.type === "modifyDEF") {
+          defBonus += effect.value || 0;
+        }
       }
     }
   }
@@ -696,7 +708,7 @@ export async function applyContinuousEffects(
  * @param cardId - Card definition ID to check
  * @returns True if the card has already used its OPT effect this turn
  */
-export function hasUsedOPT(gameState: Doc<"gameStates">, cardId: Id<"cardDefinitions">): boolean {
+export function hasUsedOPT(gameState: Doc<"gameStates">, cardId: Id<"cardDefinitions">) {
   const optUsed = gameState.optUsedThisTurn || [];
   return optUsed.includes(cardId);
 }

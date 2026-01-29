@@ -3,6 +3,8 @@
  * NO type assertions needed - everything is explicitly typed
  */
 
+import type { JsonAbilityInfer } from "../gameplay/effectSystem/jsonEffectValidators";
+
 // Card property types matching schema exactly
 export type CardRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type CardType = "creature" | "spell" | "trap" | "equipment";
@@ -15,6 +17,9 @@ export type Archetype =
   | "celestial_guardians";
 export type DeckArchetype = "fire" | "water" | "earth" | "wind" | "neutral";
 
+// JSON ability type alias for seed data
+export type JsonAbility = JsonAbilityInfer;
+
 // Monster card definition
 export interface MonsterCardSeed {
   readonly name: string;
@@ -24,7 +29,7 @@ export interface MonsterCardSeed {
   readonly cost: number;
   readonly attack: number;
   readonly defense: number;
-  readonly ability?: string;
+  readonly ability?: JsonAbility;
 }
 
 // Spell card definition
@@ -34,7 +39,7 @@ export interface SpellCardSeed {
   readonly cardType: "spell";
   readonly archetype: Archetype;
   readonly cost: number;
-  readonly ability?: string;
+  readonly ability?: JsonAbility;
 }
 
 // Trap card definition
@@ -44,7 +49,7 @@ export interface TrapCardSeed {
   readonly cardType: "trap";
   readonly archetype: Archetype;
   readonly cost: number;
-  readonly ability?: string;
+  readonly ability?: JsonAbility;
 }
 
 // Equipment card definition
@@ -56,7 +61,7 @@ export interface EquipmentCardSeed {
   readonly cost: number;
   readonly attack?: number;
   readonly defense?: number;
-  readonly ability?: string;
+  readonly ability?: JsonAbility;
 }
 
 // Union of all card types

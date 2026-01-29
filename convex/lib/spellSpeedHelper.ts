@@ -1,7 +1,7 @@
 /**
  * Spell Speed Helper
  *
- * Derives spell speed from card type and ability text.
+ * Derives spell speed from card type and JSON ability structure.
  *
  * Yu-Gi-Oh Spell Speed Rules:
  * - Spell Speed 1: Normal Spell, Field Spell, Continuous Spell, Equip Spell, creature effects (ignition)
@@ -14,7 +14,7 @@ import type { Doc } from "../_generated/dataModel";
 /**
  * Get spell speed for a card
  *
- * Determines spell speed based on card type and ability text.
+ * Determines spell speed based on card type and JSON ability structure.
  * Used for chain resolution and response validation.
  *
  * Spell Speed Rules:
@@ -31,7 +31,12 @@ import type { Doc } from "../_generated/dataModel";
  */
 export function getSpellSpeed(card: Doc<"cardDefinitions">): 1 | 2 | 3 {
   const cardType = card.cardType;
-  const ability = card.ability?.toLowerCase() || "";
+  const ability = card.ability;
+
+  // If ability has explicit spellSpeed, use it
+  if (ability?.spellSpeed) {
+    return ability.spellSpeed;
+  }
 
   // Creatures (monsters): Spell Speed 1
   if (cardType === "creature") {
@@ -46,14 +51,17 @@ export function getSpellSpeed(card: Doc<"cardDefinitions">): 1 | 2 | 3 {
   // Spells
   if (cardType === "spell") {
     // Quick-Play Spell: Spell Speed 2
-    // Detect by ability text containing quick-play indicators or response triggers
-    if (
-      ability.includes("quick-play") ||
-      ability.includes("during either player's turn") ||
-      ability.includes("when") ||
-      ability.includes("if")
-    ) {
-      return 2;
+    // Detect by ability trigger being "quick" or having response triggers
+    if (ability) {
+      const trigger = ability.trigger;
+      if (
+        trigger === "quick" ||
+        trigger === "on_opponent_summon" ||
+        trigger === "on_opponent_attacks" ||
+        trigger === "on_opponent_activates"
+      ) {
+        return 2;
+      }
     }
 
     // Normal Spell: Spell Speed 1
@@ -63,13 +71,15 @@ export function getSpellSpeed(card: Doc<"cardDefinitions">): 1 | 2 | 3 {
   // Traps
   if (cardType === "trap") {
     // Counter Trap: Spell Speed 3
-    // Detect by ability text containing negate or counter keywords
-    if (
-      ability.includes("negate") ||
-      ability.includes("counter") ||
-      ability.includes("cannot be activated")
-    ) {
-      return 3;
+    // Detect by ability having negate effect type or explicit spellSpeed 3
+    if (ability) {
+      const hasNegateEffect = ability.effects?.some(
+        (effect: { type?: string; effectType?: string }) =>
+          effect.type === "negate" || effect.effectType === "negate"
+      );
+      if (hasNegateEffect) {
+        return 3;
+      }
     }
 
     // Normal/Continuous Trap: Spell Speed 2
@@ -95,7 +105,7 @@ export function getSpellSpeed(card: Doc<"cardDefinitions">): 1 | 2 | 3 {
  * canActivateOnOpponentTurn(mysticalSpaceTyphoon) // true (Quick-Play)
  * canActivateOnOpponentTurn(darkHole) // false (Normal Spell)
  */
-export function canActivateOnOpponentTurn(card: Doc<"cardDefinitions">): boolean {
+export function canActivateOnOpponentTurn(card: Doc<"cardDefinitions">) {
   const cardType = card.cardType;
   const spellSpeed = getSpellSpeed(card);
 
@@ -132,7 +142,7 @@ export function canActivateOnOpponentTurn(card: Doc<"cardDefinitions">): boolean
 export function canChainTo(
   chainCard: Doc<"cardDefinitions">,
   lastChainCard: Doc<"cardDefinitions">
-): boolean {
+) {
   const chainSpeed = getSpellSpeed(chainCard);
   const lastSpeed = getSpellSpeed(lastChainCard);
 

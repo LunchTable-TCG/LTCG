@@ -1,10 +1,10 @@
 import { v } from "convex/values";
-import { query, internalMutation, type MutationCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import { type MutationCtx, internalMutation, query } from "../_generated/server";
+import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthQuery } from "../lib/convexAuth";
 import { achievementUnlockedValidator, achievementValidator } from "../lib/returnValidators";
-import { adjustPlayerCurrencyHelper } from "../economy/economy";
-import type { Id } from "../_generated/dataModel";
 
 // Type definitions matching schema
 type AchievementCategory =
@@ -169,7 +169,13 @@ export const updateAchievementProgress = internalMutation({
       archetype: v.optional(v.string()),
     }),
   },
-  handler: async (ctx: MutationCtx, args: { userId: Id<"users">; event: { type: string; value: number; gameMode?: string; archetype?: string } }) => {
+  handler: async (
+    ctx: MutationCtx,
+    args: {
+      userId: Id<"users">;
+      event: { type: string; value: number; gameMode?: string; archetype?: string };
+    }
+  ) => {
     // Get all active achievement definitions
     const definitions = await ctx.db
       .query("achievementDefinitions")

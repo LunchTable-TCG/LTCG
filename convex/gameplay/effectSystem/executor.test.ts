@@ -5,15 +5,17 @@
  * Covers happy paths, error cases, and edge conditions.
  */
 
-import { describe, expect, it } from "vitest";
 import { convexTest } from "convex-test";
+import { describe, expect, it } from "vitest";
 import { api } from "../../_generated/api";
-import schema from "../../schema";
 import type { Id } from "../../_generated/dataModel";
+import schema from "../../schema";
+import type { JsonAbility } from "./types";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast
-const apiAny = api as any;
+// biome-ignore lint/suspicious/noExplicitAny: Required for TS2589 workaround
+const _apiAny = api as any;
 
 const modules = import.meta.glob("../../**/*.ts");
 
@@ -137,6 +139,10 @@ describe("executeEffect - Main Dispatcher", () => {
       });
     });
 
+    const optAbility: JsonAbility = {
+      effects: [{ type: "draw", trigger: "manual", value: 1, isOPT: true }],
+    };
+
     const cardId = await t.run(async (ctx) => {
       return await ctx.db.insert("cardDefinitions", {
         name: "OPT Card",
@@ -144,7 +150,7 @@ describe("executeEffect - Main Dispatcher", () => {
         cardType: "spell",
         archetype: "neutral",
         cost: 1,
-        ability: "Draw 1 card",
+        ability: optAbility,
         isActive: true,
         createdAt: Date.now(),
       });
@@ -230,6 +236,18 @@ describe("executeEffect - Main Dispatcher", () => {
       });
     });
 
+    const protectedAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 0,
+          isContinuous: true,
+          protection: { cannotBeTargeted: true },
+        },
+      ],
+    };
+
     const protectedCardId = await t.run(async (ctx) => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Protected Monster",
@@ -239,7 +257,7 @@ describe("executeEffect - Main Dispatcher", () => {
         cost: 5,
         attack: 2000,
         defense: 1500,
-        ability: "Cannot be targeted",
+        ability: protectedAbility,
         isActive: true,
         createdAt: Date.now(),
       });
@@ -358,6 +376,21 @@ describe("executeEffect - Main Dispatcher", () => {
       });
     });
 
+    const destroyAbility: JsonAbility = {
+      effects: [
+        {
+          type: "destroy",
+          trigger: "manual",
+          target: {
+            count: 1,
+            location: "board",
+            owner: "opponent",
+            condition: { cardType: "monster" },
+          },
+        },
+      ],
+    };
+
     const cardId = await t.run(async (ctx) => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Destroy Spell",
@@ -365,7 +398,7 @@ describe("executeEffect - Main Dispatcher", () => {
         cardType: "spell",
         archetype: "neutral",
         cost: 2,
-        ability: "Destroy 1 target monster",
+        ability: destroyAbility,
         isActive: true,
         createdAt: Date.now(),
       });
@@ -519,6 +552,7 @@ describe("executeEffect - Main Dispatcher", () => {
         ctx,
         gameState,
         lobbyId,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing unknown effect type handling
         { type: "unknownEffect" as any, trigger: "manual" },
         userId,
         cardId,
@@ -543,6 +577,13 @@ describe("executeMultiPartAbility", () => {
       });
     });
 
+    const multiEffectAbility: JsonAbility = {
+      effects: [
+        { type: "draw", trigger: "manual", value: 2 },
+        { type: "damage", trigger: "manual", value: 500 },
+      ],
+    };
+
     const cardId = await t.run(async (ctx) => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Multi-Effect Card",
@@ -550,7 +591,7 @@ describe("executeMultiPartAbility", () => {
         cardType: "spell",
         archetype: "neutral",
         cost: 3,
-        ability: "Draw 2 cards. Deal 500 damage.",
+        ability: multiEffectAbility,
         isActive: true,
         createdAt: Date.now(),
       });
@@ -670,6 +711,18 @@ describe("executeMultiPartAbility", () => {
       });
     });
 
+    const protectedAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 0,
+          isContinuous: true,
+          protection: { cannotBeDestroyedByBattle: true },
+        },
+      ],
+    };
+
     const cardId = await t.run(async (ctx) => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Protected Card",
@@ -679,7 +732,7 @@ describe("executeMultiPartAbility", () => {
         cost: 5,
         attack: 2500,
         defense: 2000,
-        ability: "Cannot be destroyed by battle.",
+        ability: protectedAbility,
         isActive: true,
         createdAt: Date.now(),
       });

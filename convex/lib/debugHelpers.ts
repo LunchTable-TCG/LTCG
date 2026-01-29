@@ -4,8 +4,8 @@
  * Provides decorators and utilities to easily add debugging to mutations, queries, and actions
  */
 
-import type { MutationCtx, QueryCtx, ActionCtx } from "../_generated/server";
-import { logger, performance, createTraceContext, type LogContext } from "./debug";
+import type { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
+import { type LogContext, createTraceContext, logger, performance } from "./debug";
 
 // ============================================================================
 // Type Definitions
@@ -64,6 +64,7 @@ export function withMutationDebug<TArgs extends Record<string, unknown>, TResult
       performance.start(opId);
     }
 
+    // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
     const userId = args["userId"] as string | undefined;
     logger.mutation(functionName, userId || "unknown", logArgs ? args : undefined);
 
@@ -73,7 +74,10 @@ export function withMutationDebug<TArgs extends Record<string, unknown>, TResult
       const result = await handler(ctx, args);
 
       if (logResult) {
-        logger.debug(`${functionName} completed successfully`, { ...traceCtx, resultType: typeof result });
+        logger.debug(`${functionName} completed successfully`, {
+          ...traceCtx,
+          resultType: typeof result,
+        });
       }
 
       if (measurePerf) {
@@ -125,6 +129,7 @@ export function withQueryDebug<TArgs extends Record<string, unknown>, TResult>(
       performance.start(opId);
     }
 
+    // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
     const userId = args["userId"] as string | undefined;
     logger.query(functionName, userId, logArgs ? args : undefined);
 
@@ -134,7 +139,10 @@ export function withQueryDebug<TArgs extends Record<string, unknown>, TResult>(
       const result = await handler(ctx, args);
 
       if (logResult) {
-        logger.debug(`${functionName} completed successfully`, { ...traceCtx, resultType: typeof result });
+        logger.debug(`${functionName} completed successfully`, {
+          ...traceCtx,
+          resultType: typeof result,
+        });
       }
 
       if (measurePerf) {
@@ -186,6 +194,7 @@ export function withActionDebug<TArgs extends Record<string, unknown>, TResult>(
       performance.start(opId);
     }
 
+    // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
     const userId = args["userId"] as string | undefined;
     logger.action(functionName, { ...options?.context, userId, args: logArgs ? args : undefined });
 
@@ -195,7 +204,10 @@ export function withActionDebug<TArgs extends Record<string, unknown>, TResult>(
       const result = await handler(ctx, args);
 
       if (logResult) {
-        logger.debug(`${functionName} completed successfully`, { ...traceCtx, resultType: typeof result });
+        logger.debug(`${functionName} completed successfully`, {
+          ...traceCtx,
+          resultType: typeof result,
+        });
       }
 
       if (measurePerf) {
@@ -268,13 +280,19 @@ export async function withBatchOperation<T, R>(
   const errors: Array<{ index: number; error: Error }> = [];
 
   for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (!item) continue;
     try {
-      const result = await processor(items[i]!, i);
+      const result = await processor(item, i);
       results.push(result);
       logger.debug(`Batch ${operationName} item ${i + 1}/${items.length} succeeded`, traceCtx);
     } catch (error) {
       errors.push({ index: i, error: error as Error });
-      logger.error(`Batch ${operationName} item ${i + 1}/${items.length} failed`, error as Error, traceCtx);
+      logger.error(
+        `Batch ${operationName} item ${i + 1}/${items.length} failed`,
+        error as Error,
+        traceCtx
+      );
     }
   }
 

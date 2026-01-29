@@ -6,7 +6,7 @@ export async function executeSpecialSummon(
   gameState: Doc<"gameStates">,
   targetCardId: Id<"cardDefinitions">,
   playerId: Id<"users">,
-  fromLocation: "hand" | "graveyard" | "deck" | "board"
+  fromLocation: "hand" | "graveyard" | "deck" | "board" | "banished"
 ): Promise<{ success: boolean; message: string }> {
   const isHost = playerId === gameState.hostId;
   const board = isHost ? gameState.hostBoard : gameState.opponentBoard;

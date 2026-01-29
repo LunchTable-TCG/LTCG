@@ -1,9 +1,9 @@
+import bcrypt from "bcryptjs";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "./lib/convexAuth";
 import { ErrorCode, createError } from "./lib/errorCodes";
 import { STARTER_DECKS, type StarterDeckCode, VALID_DECK_CODES } from "./seeds/starterDecks";
-import bcrypt from "bcryptjs";
 
 const MAX_AGENTS_PER_USER = 3;
 
@@ -67,6 +67,7 @@ function getKeyPrefix(key: string): string {
  * @returns The agent record if valid, null otherwise
  */
 export async function validateApiKeyInternal(
+  // biome-ignore lint/suspicious/noExplicitAny: Convex context type abstraction
   ctx: { db: any },
   apiKey: string
 ): Promise<{ agentId: string; userId: string } | null> {
@@ -80,6 +81,7 @@ export async function validateApiKeyInternal(
     // Note: We need to iterate because bcrypt hashes can't be directly queried
     const allKeys = await ctx.db
       .query("apiKeys")
+      // biome-ignore lint/suspicious/noExplicitAny: Convex filter callback type
       .filter((q: any) => q.eq(q.field("isActive"), true))
       .collect();
 
@@ -93,7 +95,7 @@ export async function validateApiKeyInternal(
 
         // Get the agent to ensure it's still active
         const agent = await ctx.db.get(keyRecord.agentId);
-        if (agent && agent.isActive) {
+        if (agent?.isActive) {
           return {
             agentId: agent._id,
             userId: agent.userId,

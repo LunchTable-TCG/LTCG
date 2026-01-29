@@ -15,7 +15,10 @@ export async function executeModifyATK(
     return { success: false, message: "Target not found on field" };
   }
 
-  const card = board[cardIndex]!;
+  const card = board[cardIndex];
+  if (!card) {
+    return { success: false, message: "Card not found at index" };
+  }
   const newBoard = [...board];
   newBoard[cardIndex] = {
     ...card,

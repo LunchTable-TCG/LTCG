@@ -7,9 +7,9 @@
 
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { logger, performance, logCardEffect } from "../../lib/debug";
+import { getCardAbility } from "../../lib/abilityHelpers";
+import { logCardEffect, logger, performance } from "../../lib/debug";
 import { hasUsedOPT, markOPTUsed } from "../../lib/gameHelpers";
-import { parseAbility } from "./parser";
 import type { EffectResult, ParsedAbility, ParsedEffect } from "./types";
 
 // Import all effect executors (organized by category)
@@ -27,6 +27,7 @@ import { executeModifyDEF } from "./executors/combat/modifyDEF";
 import { executeDestroy } from "./executors/summon/destroy";
 import { executeSpecialSummon } from "./executors/summon/summon";
 import { executeNegate } from "./executors/utility/negate";
+import { checkStateBasedActions } from "../gameEngine/stateBasedActions";
 
 /**
  * Execute a parsed effect
@@ -124,7 +125,7 @@ export async function executeEffect(
   let result: EffectResult;
 
   switch (effect.type) {
-    case "draw":
+    case "draw": {
       // Edge case: Validate draw value is positive
       const drawValue = effect.value || 1;
       if (drawValue <= 0 || Number.isNaN(drawValue)) {
@@ -133,6 +134,7 @@ export async function executeEffect(
         result = await executeDraw(ctx, gameState, playerId, drawValue);
       }
       break;
+    }
 
     case "destroy":
       if (!targets || targets.length === 0) {
@@ -165,29 +167,33 @@ export async function executeEffect(
             destroyResult.destroyedCardId
           ) {
             const destroyedCard = await ctx.db.get(destroyResult.destroyedCardId);
-            if (destroyedCard?.ability) {
-              const parsedEffect = parseAbility(destroyedCard.ability);
-              if (parsedEffect && parsedEffect.trigger === "on_destroy") {
-                // Refresh game state
-                const refreshedState = await ctx.db
-                  .query("gameStates")
-                  .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
-                  .first();
+            const parsedAbility = getCardAbility(destroyedCard);
+            if (parsedAbility) {
+              // Find on_destroy triggered effects
+              for (const parsedEffect of parsedAbility.effects) {
+                if (parsedEffect.trigger === "on_destroy") {
+                  // Refresh game state
+                  const refreshedState = await ctx.db
+                    .query("gameStates")
+                    .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+                    .first();
 
-                if (refreshedState && destroyResult.destroyedCardOwnerId) {
-                  const triggerResult = await executeEffect(
-                    ctx,
-                    refreshedState,
-                    lobbyId,
-                    parsedEffect,
-                    destroyResult.destroyedCardOwnerId,
-                    destroyResult.destroyedCardId,
-                    []
-                  );
+                  if (refreshedState && destroyResult.destroyedCardOwnerId) {
+                    const triggerResult = await executeEffect(
+                      ctx,
+                      refreshedState,
+                      lobbyId,
+                      parsedEffect,
+                      destroyResult.destroyedCardOwnerId,
+                      destroyResult.destroyedCardId,
+                      []
+                    );
 
-                  if (triggerResult.success) {
-                    destroyResults.push(`${destroyedCard.name} effect: ${triggerResult.message}`);
+                    if (triggerResult.success) {
+                      destroyResults.push(`${destroyedCard?.name} effect: ${triggerResult.message}`);
+                    }
                   }
+                  break; // Only execute the first on_destroy effect
                 }
               }
             }
@@ -220,31 +226,35 @@ export async function executeEffect(
             destroyResult.destroyedCardId
           ) {
             const destroyedCard = await ctx.db.get(destroyResult.destroyedCardId);
-            if (destroyedCard?.ability) {
-              const parsedEffect = parseAbility(destroyedCard.ability);
-              if (parsedEffect && parsedEffect.trigger === "on_destroy") {
-                // Refresh game state before executing trigger
-                const refreshedState = await ctx.db
-                  .query("gameStates")
-                  .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
-                  .first();
+            const parsedAbility = getCardAbility(destroyedCard);
+            if (parsedAbility) {
+              // Find on_destroy triggered effects
+              for (const parsedEffect of parsedAbility.effects) {
+                if (parsedEffect.trigger === "on_destroy") {
+                  // Refresh game state before executing trigger
+                  const refreshedState = await ctx.db
+                    .query("gameStates")
+                    .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+                    .first();
 
-                if (refreshedState && destroyResult.destroyedCardOwnerId) {
-                  // Execute the on_destroy trigger
-                  const triggerResult = await executeEffect(
-                    ctx,
-                    refreshedState,
-                    lobbyId,
-                    parsedEffect,
-                    destroyResult.destroyedCardOwnerId,
-                    destroyResult.destroyedCardId,
-                    []
-                  );
+                  if (refreshedState && destroyResult.destroyedCardOwnerId) {
+                    // Execute the on_destroy trigger
+                    const triggerResult = await executeEffect(
+                      ctx,
+                      refreshedState,
+                      lobbyId,
+                      parsedEffect,
+                      destroyResult.destroyedCardOwnerId,
+                      destroyResult.destroyedCardId,
+                      []
+                    );
 
-                  // Append trigger result to message
-                  if (triggerResult.success) {
-                    result.message += ` → ${destroyedCard.name} effect: ${triggerResult.message}`;
+                    // Append trigger result to message
+                    if (triggerResult.success) {
+                      result.message += ` → ${destroyedCard?.name} effect: ${triggerResult.message}`;
+                    }
                   }
+                  break; // Only execute the first on_destroy effect
                 }
               }
             }
@@ -253,7 +263,7 @@ export async function executeEffect(
       }
       break;
 
-    case "damage":
+    case "damage": {
       // Edge case: Validate damage value is non-negative
       const damageValue = effect.value || 0;
       if (damageValue < 0 || Number.isNaN(damageValue)) {
@@ -262,8 +272,9 @@ export async function executeEffect(
         result = await executeDamage(ctx, gameState, lobbyId, opponentId, damageValue);
       }
       break;
+    }
 
-    case "gainLP":
+    case "gainLP": {
       // Edge case: Validate LP gain value is non-negative
       const lpValue = effect.value || 0;
       if (lpValue < 0 || Number.isNaN(lpValue)) {
@@ -272,6 +283,7 @@ export async function executeEffect(
         result = await executeGainLP(ctx, gameState, lobbyId, playerId, lpValue);
       }
       break;
+    }
 
     case "modifyATK":
       if (!targets || targets.length === 0) {
@@ -438,7 +450,7 @@ export async function executeEffect(
       result = { success: true, message: "Direct attack ability active" };
       break;
 
-    case "mill":
+    case "mill": {
       // Edge case: Validate mill value is positive
       const millValue = effect.value || 1;
       if (millValue <= 0 || Number.isNaN(millValue)) {
@@ -447,8 +459,9 @@ export async function executeEffect(
         result = await executeMill(ctx, gameState, opponentId, millValue);
       }
       break;
+    }
 
-    case "discard":
+    case "discard": {
       // Edge case: Validate discard value is positive
       const discardValue = effect.value || 1;
       if (discardValue <= 0 || Number.isNaN(discardValue)) {
@@ -458,6 +471,7 @@ export async function executeEffect(
         result = await executeDiscard(ctx, gameState, playerId, discardValue, targets);
       }
       break;
+    }
 
     case "multipleAttack":
       // multipleAttack is a passive ability checked in combatSystem.ts
@@ -490,6 +504,28 @@ export async function executeEffect(
       lobbyId,
       playerId,
     });
+
+    // Run state-based action checks after successful effect resolution
+    // Skip hand limit check (only enforced at end of turn)
+    const sbaResult = await checkStateBasedActions(ctx, lobbyId, {
+      skipHandLimit: true,
+    });
+
+    if (sbaResult.gameEnded) {
+      logger.info("Game ended by SBA after effect", {
+        lobbyId,
+        effectType: effect.type,
+        winnerId: sbaResult.winnerId,
+      });
+      result.message += ` (Game ended: ${sbaResult.endReason})`;
+    } else if (sbaResult.anyChanged) {
+      logger.debug("SBA made changes after effect", {
+        lobbyId,
+        effectType: effect.type,
+        cycleCount: sbaResult.cycleCount,
+        destroyedCount: sbaResult.allDestroyedCards.length,
+      });
+    }
   } else {
     logger.warn(`Card effect failed: ${effect.type}`, {
       cardId,

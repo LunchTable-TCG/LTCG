@@ -2,8 +2,8 @@
 // Queries and mutations for story mode progression, XP, and badges
 
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 import { internalMutation, mutation, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -60,7 +60,7 @@ export const getPlayerProgress = query({
       if (!progressByAct[progress.actNumber]) {
         progressByAct[progress.actNumber] = [];
       }
-      progressByAct[progress.actNumber]!.push(progress);
+      progressByAct[progress.actNumber]?.push(progress);
     }
 
     return {
@@ -288,7 +288,7 @@ export const getPlayerBadges = query({
       if (!badgesByType[badge.badgeType]) {
         badgesByType[badge.badgeType] = [];
       }
-      badgesByType[badge.badgeType]!.push(badge);
+      badgesByType[badge.badgeType]?.push(badge);
     }
 
     return {

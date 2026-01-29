@@ -13,7 +13,8 @@ import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { moveCard } from "../../lib/gameHelpers";
 import { validateMonsterZone } from "../../lib/validation";
-import { executeEffect, parseAbility } from "../effectSystem";
+import { executeEffect } from "../effectSystem";
+import { getCardAbility } from "../../lib/abilityHelpers";
 import { recordEventHelper } from "../gameEvents";
 import { validateFlipSummon, validateNormalSummon, validateSetMonster } from "../summonValidator";
 
@@ -154,15 +155,14 @@ export const normalSummon = mutation({
 
     // Parse ability for protection flags
     let protectionFlags = {};
-    if (card.ability) {
-      const parsedEffect = parseAbility(card.ability);
-      if (parsedEffect?.protection) {
-        protectionFlags = {
-          cannotBeDestroyedByBattle: parsedEffect.protection.cannotBeDestroyedByBattle,
-          cannotBeDestroyedByEffects: parsedEffect.protection.cannotBeDestroyedByEffects,
-          cannotBeTargeted: parsedEffect.protection.cannotBeTargeted,
-        };
-      }
+    const parsedAbility = getCardAbility(card);
+    const firstEffect = parsedAbility?.effects[0];
+    if (firstEffect?.protection) {
+      protectionFlags = {
+        cannotBeDestroyedByBattle: firstEffect.protection.cannotBeDestroyedByBattle,
+        cannotBeDestroyedByEffects: firstEffect.protection.cannotBeDestroyedByEffects,
+        cannotBeTargeted: firstEffect.protection.cannotBeTargeted,
+      };
     }
 
     const newBoardCard = {
@@ -207,40 +207,39 @@ export const normalSummon = mutation({
     // 12. Check for "When summoned" trigger effects
     let triggerEffectResult = { success: true, message: "No trigger" };
 
-    if (card.ability) {
-      const parsedEffect = parseAbility(card.ability);
+    const summonAbility = getCardAbility(card);
+    const summonEffect = summonAbility?.effects.find((e) => e.trigger === "on_summon");
 
-      // Only execute if this is an "on_summon" trigger
-      if (parsedEffect && parsedEffect.trigger === "on_summon") {
-        const refreshedState = await ctx.db
-          .query("gameStates")
-          .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-          .first();
+    // Only execute if this is an "on_summon" trigger
+    if (summonEffect) {
+      const refreshedState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+        .first();
 
-        if (refreshedState) {
-          triggerEffectResult = await executeEffect(
-            ctx,
-            refreshedState,
-            args.lobbyId,
-            parsedEffect,
-            user.userId,
-            args.cardId,
-            [] // No targets for auto-trigger effects for now
-          );
+      if (refreshedState) {
+        triggerEffectResult = await executeEffect(
+          ctx,
+          refreshedState,
+          args.lobbyId,
+          summonEffect,
+          user.userId,
+          args.cardId,
+          [] // No targets for auto-trigger effects for now
+        );
 
-          if (triggerEffectResult.success) {
-            // Record trigger activation
-            await recordEventHelper(ctx, {
-              lobbyId: args.lobbyId,
-              gameId: lobby.gameId,
-              turnNumber: lobby.turnNumber,
-              eventType: "effect_activated",
-              playerId: user.userId,
-              playerUsername: user.username,
-              description: `${card.name} effect: ${triggerEffectResult.message}`,
-              metadata: { cardId: args.cardId, trigger: "on_summon" },
-            });
-          }
+        if (triggerEffectResult.success) {
+          // Record trigger activation
+          await recordEventHelper(ctx, {
+            lobbyId: args.lobbyId,
+            gameId: lobby.gameId,
+            turnNumber: lobby.turnNumber,
+            eventType: "effect_activated",
+            playerId: user.userId,
+            playerUsername: user.username,
+            description: `${card.name} effect: ${triggerEffectResult.message}`,
+            metadata: { cardId: args.cardId, trigger: "on_summon" },
+          });
         }
       }
     }
@@ -255,15 +254,14 @@ export const normalSummon = mutation({
       // Only check active (face-up) continuous traps
       if (!zoneCard.isFaceDown && zoneCard.isActivated) {
         const trapCard = await ctx.db.get(zoneCard.cardId);
-        if (trapCard && trapCard.ability && trapCard.cardType === "trap") {
-          const parsedEffect = parseAbility(trapCard.ability);
+        if (trapCard?.cardType === "trap") {
+          const trapAbility = getCardAbility(trapCard);
+          const trapEffect = trapAbility?.effects.find(
+            (e) => e.trigger === "on_opponent_summon" && e.continuous
+          );
 
           // Check if this trap triggers on opponent summon
-          if (
-            parsedEffect &&
-            parsedEffect.trigger === "on_opponent_summon" &&
-            parsedEffect.continuous
-          ) {
+          if (trapEffect) {
             const refreshedState = await ctx.db
               .query("gameStates")
               .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
@@ -274,7 +272,7 @@ export const normalSummon = mutation({
                 ctx,
                 refreshedState,
                 args.lobbyId,
-                parsedEffect,
+                trapEffect,
                 opponentId,
                 zoneCard.cardId,
                 [] // No targets needed for automatic triggers
@@ -570,8 +568,12 @@ export const flipSummon = mutation({
     // 7. Update card to face-up
     const positionValue = args.newPosition === "attack" ? 1 : -1; // 1 = ATK, -1 = DEF
     const newBoard = [...board];
+    const currentCard = newBoard[cardIndex];
+    if (!currentCard) {
+      throw createError(ErrorCode.GAME_CARD_NOT_FOUND);
+    }
     newBoard[cardIndex] = {
-      ...newBoard[cardIndex]!,
+      ...currentCard,
       position: positionValue,
       isFaceDown: false, // Flip to face-up
     };
@@ -601,40 +603,39 @@ export const flipSummon = mutation({
     // 9. Trigger FLIP effect if exists
     let flipEffectResult = { success: true, message: "No FLIP effect" };
 
-    if (card.ability) {
-      const parsedEffect = parseAbility(card.ability);
+    const flipAbility = getCardAbility(card);
+    const flipEffect = flipAbility?.effects.find((e) => e.trigger === "on_flip");
 
-      // Only execute if this is an "on_flip" trigger
-      if (parsedEffect && parsedEffect.trigger === "on_flip") {
-        const refreshedState = await ctx.db
-          .query("gameStates")
-          .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-          .first();
+    // Only execute if this is an "on_flip" trigger
+    if (flipEffect) {
+      const refreshedState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+        .first();
 
-        if (refreshedState) {
-          flipEffectResult = await executeEffect(
-            ctx,
-            refreshedState,
-            args.lobbyId,
-            parsedEffect,
-            user.userId,
-            args.cardId,
-            [] // No targets for auto-trigger effects for now
-          );
+      if (refreshedState) {
+        flipEffectResult = await executeEffect(
+          ctx,
+          refreshedState,
+          args.lobbyId,
+          flipEffect,
+          user.userId,
+          args.cardId,
+          [] // No targets for auto-trigger effects for now
+        );
 
-          if (flipEffectResult.success) {
-            // Record FLIP effect activation
-            await recordEventHelper(ctx, {
-              lobbyId: args.lobbyId,
-              gameId: lobby.gameId,
-              turnNumber: lobby.turnNumber,
-              eventType: "effect_activated",
-              playerId: user.userId,
-              playerUsername: user.username,
-              description: `FLIP: ${card.name} effect: ${flipEffectResult.message}`,
-              metadata: { cardId: args.cardId, trigger: "on_flip" },
-            });
-          }
+        if (flipEffectResult.success) {
+          // Record FLIP effect activation
+          await recordEventHelper(ctx, {
+            lobbyId: args.lobbyId,
+            gameId: lobby.gameId,
+            turnNumber: lobby.turnNumber,
+            eventType: "effect_activated",
+            playerId: user.userId,
+            playerUsername: user.username,
+            description: `FLIP: ${card.name} effect: ${flipEffectResult.message}`,
+            metadata: { cardId: args.cardId, trigger: "on_flip" },
+          });
         }
       }
     }

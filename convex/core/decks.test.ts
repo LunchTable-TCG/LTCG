@@ -5,13 +5,14 @@
  * Covers happy paths, validation errors, and edge cases.
  */
 
-import { describe, expect, it } from "vitest";
 import { createTestInstance } from "@convex-test-utils/setup";
+import { describe, expect, it } from "vitest";
 import { api } from "../_generated/api";
 import type { MutationCtx } from "../_generated/server";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast
+// biome-ignore lint/suspicious/noExplicitAny: Required for TS2589 workaround
 const apiAny = api as any;
 const coreDecks = apiAny["core/decks"];
 
@@ -39,9 +40,10 @@ describe("createDeck", () => {
 
     expect(result.deckId).toBeDefined();
 
-    const deck = await t.run(async (ctx: MutationCtx) => {
+    const deck = (await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.get(result.deckId);
-    }) as any; // Type assertion to avoid union type issues
+      // biome-ignore lint/suspicious/noExplicitAny: Type assertion to avoid union type issues
+    })) as any;
 
     expect(deck?.name).toBe("My First Deck");
     expect(deck?.description).toBe("Test deck");
@@ -197,6 +199,7 @@ describe("saveDeck", () => {
     });
 
     expect(deckCards).toHaveLength(10);
+    // biome-ignore lint/suspicious/noExplicitAny: Test type workaround for query results
     expect(deckCards.reduce((sum: number, dc: any) => sum + dc.quantity, 0)).toBe(30);
   });
 
@@ -764,9 +767,10 @@ describe("duplicateDeck", () => {
     expect(result.deckId).toBeDefined();
     expect(result.deckId).not.toBe(originalDeckId);
 
-    const newDeck = await t.run(async (ctx: MutationCtx) => {
+    const newDeck = (await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.get(result.deckId);
-    }) as any; // Type assertion to avoid union type issues
+      // biome-ignore lint/suspicious/noExplicitAny: Type assertion to avoid union type issues
+    })) as any;
 
     expect(newDeck?.name).toBe("Duplicated Deck");
     expect(newDeck?.description).toBe("Original description");
@@ -891,8 +895,8 @@ describe("setActiveDeck", () => {
       return id;
     });
 
-    await expect(
-      asUser.mutation(coreDecks.setActiveDeck, { deckId })
-    ).rejects.toThrowError(/Invalid input/);
+    await expect(asUser.mutation(coreDecks.setActiveDeck, { deckId })).rejects.toThrowError(
+      /Invalid input/
+    );
   });
 });

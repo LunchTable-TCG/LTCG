@@ -27,6 +27,8 @@ import { components } from "../_generated/api";
  * a plain object with shards count. This is a known limitation of
  * the component's type definitions.
  */
-export const spectatorCounter = new ShardedCounter(components.shardedCounter, {
-  shards: 20,
-} as any);
+export const spectatorCounter = new ShardedCounter(
+  components.shardedCounter,
+  // biome-ignore lint/suspicious/noExplicitAny: Convex component type workaround
+  { shards: 20 } as any
+);

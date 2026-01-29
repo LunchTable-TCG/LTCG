@@ -181,6 +181,7 @@ describe("Specific Permission Checks", () => {
   testCases.forEach(({ permission, roles }) => {
     it(`should correctly check permission '${permission}'`, () => {
       Object.entries(roles).forEach(([role, shouldHave]) => {
+        // biome-ignore lint/suspicious/noExplicitAny: Test permission string cast
         expect(hasPermission(role as UserRole, permission as any)).toBe(shouldHave);
       });
     });

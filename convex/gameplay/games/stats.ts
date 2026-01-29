@@ -1,13 +1,13 @@
+import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { internal } from "../../_generated/api";
 import { ELO_SYSTEM, XP_SYSTEM } from "../../lib/constants";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { calculateEloChange } from "../../lib/helpers";
 import { addXP } from "../../lib/xpHelpers";
 
 // Type boundary to prevent TS2589 with deeply nested Convex types
-// @ts-ignore - TS2589: Type instantiation too deep
+// biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
 const internalAny = internal as any;
 
 /**
@@ -140,7 +140,7 @@ export async function updatePlayerStatsAfterGame(
 
   // Update achievement progress for both players
   // Winner: win_game event
-  await ctx.scheduler.runAfter(0, internalAny.progression.achievements['updateAchievementProgress'], {
+  await ctx.scheduler.runAfter(0, internalAny.progression.achievements.updateAchievementProgress, {
     userId: winnerId,
     event: winGameEvent,
   });
@@ -151,19 +151,23 @@ export async function updatePlayerStatsAfterGame(
       type: "win_ranked" as const,
       value: 1,
     };
-    await ctx.scheduler.runAfter(0, internalAny.progression.achievements['updateAchievementProgress'], {
-      userId: winnerId,
-      event: winRankedEvent,
-    });
+    await ctx.scheduler.runAfter(
+      0,
+      internalAny.progression.achievements.updateAchievementProgress,
+      {
+        userId: winnerId,
+        event: winRankedEvent,
+      }
+    );
   }
 
   // Both players: play_game achievement
-  await ctx.scheduler.runAfter(0, internalAny.progression.achievements['updateAchievementProgress'], {
+  await ctx.scheduler.runAfter(0, internalAny.progression.achievements.updateAchievementProgress, {
     userId: winnerId,
     event: playGameEvent,
   });
 
-  await ctx.scheduler.runAfter(0, internalAny.progression.achievements['updateAchievementProgress'], {
+  await ctx.scheduler.runAfter(0, internalAny.progression.achievements.updateAchievementProgress, {
     userId: loserId,
     event: playGameEvent,
   });

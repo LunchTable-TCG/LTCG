@@ -31,9 +31,9 @@ import { ErrorCode, createError } from "./errorCodes";
  */
 export function validateDeckSize(
   cardIds: Id<"cardDefinitions">[],
-  min: number = 30,
+  min = 30,
   max: number = Number.POSITIVE_INFINITY
-): void {
+) {
   const deckSize = cardIds.length;
 
   if (deckSize < min) {
@@ -73,7 +73,7 @@ export async function validateCardOwnership(
   ctx: QueryCtx | MutationCtx,
   userId: Id<"users">,
   cards: Array<{ cardDefinitionId: Id<"cardDefinitions">; quantity: number }>
-): Promise<void> {
+) {
   // Fetch all player's cards
   const playerCards = await ctx.db
     .query("playerCards")
@@ -135,8 +135,8 @@ export function validateMonsterZone(
     hasAttacked: boolean;
     isFaceDown: boolean;
   }>,
-  maxSize: number = 5
-): void {
+  maxSize = 5
+) {
   if (zone.length >= maxSize) {
     throw createError(ErrorCode.GAME_ZONE_FULL, {
       reason: "Monster zone is full",
@@ -159,7 +159,7 @@ export function validateMonsterZone(
  * validateLifePoints(-100) // Throws: below minimum
  * validateLifePoints(10000) // Throws: above maximum
  */
-export function validateLifePoints(lp: number, min: number = 0, max: number = 8000): void {
+export function validateLifePoints(lp: number, min = 0, max = 8000) {
   if (lp < min) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: `Life points cannot be below ${min}`,
@@ -197,11 +197,7 @@ export function validateLifePoints(lp: number, min: number = 0, max: number = 80
  * validateCurrency(-100) // Throws: negative amount not allowed
  * validateCurrency(2000000000) // Throws: exceeds maximum
  */
-export function validateCurrency(
-  amount: number,
-  min: number = 0,
-  max: number = 1_000_000_000
-): void {
+export function validateCurrency(amount: number, min = 0, max = 1_000_000_000) {
   if (!Number.isInteger(amount)) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: "Currency amount must be an integer",
@@ -247,9 +243,9 @@ export function validateCurrency(
 export async function validateCurrencyBalance(
   ctx: QueryCtx | MutationCtx,
   userId: Id<"users">,
-  requiredGold: number = 0,
-  requiredGems: number = 0
-): Promise<void> {
+  requiredGold = 0,
+  requiredGems = 0
+) {
   // Get user's currency
   const currency = await ctx.db
     .query("playerCurrency")
@@ -296,7 +292,7 @@ export async function validateCurrencyBalance(
  * validateLobbyCapacity(lobby) // Default 2 players
  * validateLobbyCapacity(lobby, 4) // Custom 4 players
  */
-export function validateLobbyCapacity(lobby: Doc<"gameLobbies">, maxPlayers: number = 2): void {
+export function validateLobbyCapacity(lobby: Doc<"gameLobbies">, maxPlayers = 2) {
   const currentPlayers = lobby.opponentId ? 2 : 1;
 
   if (currentPlayers >= maxPlayers) {
@@ -319,7 +315,7 @@ export function validateLobbyCapacity(lobby: Doc<"gameLobbies">, maxPlayers: num
  * validateLobbyStatus(lobby, ["active"]) // Must be in active game
  * validateLobbyStatus(lobby, ["waiting", "active"]) // Either is valid
  */
-export function validateLobbyStatus(lobby: Doc<"gameLobbies">, allowedStatuses: string[]): void {
+export function validateLobbyStatus(lobby: Doc<"gameLobbies">, allowedStatuses: string[]) {
   if (!allowedStatuses.includes(lobby.status)) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: `Lobby is ${lobby.status}, must be ${allowedStatuses.join(" or ")}`,
@@ -348,12 +344,7 @@ export function validateLobbyStatus(lobby: Doc<"gameLobbies">, allowedStatuses: 
  * validateRange(5, 1, 10, "Level") // Valid
  * validateRange(15, 1, 10, "Level") // Throws: Level must be between 1 and 10
  */
-export function validateRange(
-  value: number,
-  min: number,
-  max: number,
-  fieldName: string = "Value"
-): void {
+export function validateRange(value: number, min: number, max: number, fieldName = "Value") {
   if (value < min || value > max) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: `${fieldName} must be between ${min} and ${max}`,
@@ -381,12 +372,7 @@ export function validateRange(
  * validateStringLength("", 1, 50, "Username") // Throws: too short
  * validateStringLength(longText, 1, 50, "Username") // Throws: too long
  */
-export function validateStringLength(
-  value: string,
-  min: number = 1,
-  max: number = 1000,
-  fieldName: string = "Text"
-): void {
+export function validateStringLength(value: string, min = 1, max = 1000, fieldName = "Text") {
   const trimmed = value.trim();
 
   if (trimmed.length < min) {
@@ -423,10 +409,10 @@ export function validateStringLength(
  */
 export function validateArrayLength<T>(
   array: T[],
-  min: number = 1,
+  min = 1,
   max: number = Number.POSITIVE_INFINITY,
-  fieldName: string = "Array"
-): void {
+  fieldName = "Array"
+) {
   if (array.length < min) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: `${fieldName} must contain at least ${min} ${min === 1 ? "item" : "items"}`,
@@ -458,7 +444,7 @@ export function validateArrayLength<T>(
  * validatePositive(0, "Price") // Throws: Price must be positive
  * validatePositive(-10, "Price") // Throws: Price must be positive
  */
-export function validatePositive(value: number, fieldName: string = "Value"): void {
+export function validatePositive(value: number, fieldName = "Value") {
   if (value <= 0) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: `${fieldName} must be positive`,
@@ -480,7 +466,7 @@ export function validatePositive(value: number, fieldName: string = "Value"): vo
  * validateNonNegative(5, "Quantity") // Valid
  * validateNonNegative(-1, "Quantity") // Throws: Quantity cannot be negative
  */
-export function validateNonNegative(value: number, fieldName: string = "Value"): void {
+export function validateNonNegative(value: number, fieldName = "Value") {
   if (value < 0) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: `${fieldName} cannot be negative`,

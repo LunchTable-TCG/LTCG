@@ -6,13 +6,13 @@
  */
 
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { mutation } from "../_generated/server";
+import type { MutationCtx } from "../_generated/server";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { requireRole } from "../lib/roles";
-import { internal } from "../_generated/api";
-import type { MutationCtx } from "../_generated/server";
 
 /**
  * Local helper to schedule audit logging without triggering TS2589
@@ -24,6 +24,7 @@ async function scheduleAuditLog(
     action: string;
     targetUserId?: Id<"users">;
     targetEmail?: string;
+    // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata structure for audit logging
     metadata?: any;
     success: boolean;
     errorMessage?: string;
@@ -260,7 +261,10 @@ export const batchGrantPacks = mutation({
     quantity: v.number(),
     reason: v.string(),
   },
-  handler: async (ctx, { playerIds: _playerIds, packType: _packType, quantity: _quantity, reason: _reason }) => {
+  handler: async (
+    ctx,
+    { playerIds: _playerIds, packType: _packType, quantity: _quantity, reason: _reason }
+  ) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 

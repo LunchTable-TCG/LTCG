@@ -23,7 +23,7 @@ export type { Rarity, Archetype, PackConfig, CardResult };
  * @param user - User document
  * @returns Display name (username → name → "Unknown")
  */
-export function getDisplayUsername(user: Doc<"users">): string {
+export function getDisplayUsername(user: Doc<"users">) {
   return user.username || user.name || "Unknown";
 }
 
@@ -370,7 +370,7 @@ export function calculateEloChange(
   kFactor: number = ELO_SYSTEM.K_FACTOR
 ): { winnerNewRating: number; loserNewRating: number } {
   // Calculate expected win probability for both players
-  const expectedWinner = 1 / (1 + Math.pow(10, (loserRating - winnerRating) / 400));
+  const expectedWinner = 1 / (1 + 10 ** ((loserRating - winnerRating) / 400));
   const expectedLoser = 1 - expectedWinner;
 
   // Calculate rating changes
@@ -404,7 +404,7 @@ export function calculateWinRate(
     "rankedWins" | "casualWins" | "storyWins" | "rankedLosses" | "casualLosses"
   >,
   gameType: "ranked" | "casual" | "story"
-): number {
+) {
   const wins =
     gameType === "ranked"
       ? player.rankedWins || 0

@@ -6,13 +6,13 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
+import type { MutationCtx } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { requireRole } from "../lib/roles";
-import type { MutationCtx } from "../_generated/server";
 
 /**
  * Local helper to schedule audit logging without triggering TS2589
@@ -26,6 +26,7 @@ async function scheduleAuditLog(
     action: string;
     targetUserId?: Id<"users">;
     targetEmail?: string;
+    // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata structure for audit logging
     metadata?: any;
     success: boolean;
     errorMessage?: string;
@@ -493,6 +494,7 @@ export const getAdminAuditLogs = query({
     const offset = args.offset ?? 0;
 
     // Collect logs based on most specific filter
+    // biome-ignore lint/suspicious/noImplicitAnyLet: Type inferred from conditional query results
     let logs;
 
     if (args.adminId) {
@@ -528,10 +530,12 @@ export const getAdminAuditLogs = query({
 
     // Apply additional filters in memory
     if (args.startDate) {
-      logs = logs.filter((log) => log.timestamp >= args.startDate!);
+      const startDate = args.startDate;
+      logs = logs.filter((log) => log.timestamp >= startDate);
     }
     if (args.endDate) {
-      logs = logs.filter((log) => log.timestamp <= args.endDate!);
+      const endDate = args.endDate;
+      logs = logs.filter((log) => log.timestamp <= endDate);
     }
     if (args.adminId && args.action) {
       logs = logs.filter((log) => log.action === args.action);
@@ -596,10 +600,12 @@ export const getAuditLogStats = query({
     let logs = await ctx.db.query("adminAuditLogs").withIndex("by_timestamp").collect();
 
     if (args.startDate) {
-      logs = logs.filter((log) => log.timestamp >= args.startDate!);
+      const startDate = args.startDate;
+      logs = logs.filter((log) => log.timestamp >= startDate);
     }
     if (args.endDate) {
-      logs = logs.filter((log) => log.timestamp <= args.endDate!);
+      const endDate = args.endDate;
+      logs = logs.filter((log) => log.timestamp <= endDate);
     }
 
     // Calculate statistics

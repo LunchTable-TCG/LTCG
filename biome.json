@@ -31,7 +31,8 @@
         "useConst": "error",
         "noNonNullAssertion": "warn",
         "useExportType": "error",
-        "useImportType": "error"
+        "useImportType": "error",
+        "noInferrableTypes": "warn"
       },
       "suspicious": {
         "noExplicitAny": "error",

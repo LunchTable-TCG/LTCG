@@ -1,5 +1,5 @@
-import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
+import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation, mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
@@ -438,9 +438,15 @@ export const redeemPromoCode = mutation({
       rewardDescription = `${promoCode.rewardAmount} Gems`;
     } else if (promoCode.rewardType === "pack") {
       // Look up pack product
+      const rewardPackId = promoCode.rewardPackId;
+      if (!rewardPackId) {
+        throw createError(ErrorCode.ECONOMY_INVALID_PRODUCT, {
+          reason: "Promo code has no reward pack",
+        });
+      }
       const packProduct = await ctx.db
         .query("shopProducts")
-        .withIndex("by_product_id", (q) => q.eq("productId", promoCode.rewardPackId!))
+        .withIndex("by_product_id", (q) => q.eq("productId", rewardPackId))
         .first();
 
       if (!packProduct || !packProduct.packConfig) {
@@ -463,7 +469,7 @@ export const redeemPromoCode = mutation({
 
         await ctx.db.insert("packOpeningHistory", {
           userId,
-          productId: promoCode.rewardPackId!,
+          productId: rewardPackId,
           packType: packProduct.name,
           cardsReceived: packCards.map((c) => ({
             cardDefinitionId: c.cardDefinitionId,

@@ -2,10 +2,15 @@
  * Effect System Types
  *
  * Type definitions for card effects, triggers, and abilities.
+ * Supports both legacy text-parsed effects and new JSON-based effect definitions.
  */
 
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
+
+// ============================================================================
+// CORE EFFECT TYPES
+// ============================================================================
 
 export type EffectType =
   | "draw" // Draw X cards
@@ -38,13 +43,240 @@ export type TriggerCondition =
   | "on_end" // During end phase
   | "manual"; // Manual activation (spells/traps)
 
+// ============================================================================
+// JSON EFFECT SYSTEM - Type-safe effect definitions
+// ============================================================================
+
+/**
+ * Target owner specifier for effects
+ */
+export type TargetOwner = "self" | "opponent" | "both" | "controller";
+
+/**
+ * Card type filter for targeting
+ */
+export type CardTypeFilter = "monster" | "spell" | "trap" | "any";
+
+/**
+ * Location zones in the game
+ */
+export type ZoneLocation = "board" | "hand" | "graveyard" | "deck" | "banished" | "field_spell";
+
+/**
+ * Effect duration specifiers
+ */
+export type EffectDuration = "turn" | "phase" | "permanent" | "until_end_of_battle";
+
+/**
+ * Numeric range for conditions (min/max bounds)
+ */
+export interface NumericRange {
+  min?: number;
+  max?: number;
+  exact?: number;
+}
+
+/**
+ * Archetype identifiers matching the schema
+ */
+export type ArchetypeId =
+  | "infernal_dragons"
+  | "abyssal_horrors"
+  | "nature_spirits"
+  | "storm_elementals"
+  | "shadow_assassins"
+  | "celestial_guardians"
+  | "undead_legion"
+  | "divine_knights"
+  | "arcane_mages"
+  | "mechanical_constructs"
+  | "neutral"
+  // Legacy archetypes for backwards compatibility
+  | "fire"
+  | "water"
+  | "earth"
+  | "wind";
+
+/**
+ * Card rarity levels
+ */
+export type CardRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
+
+/**
+ * JSON-based condition for targeting and filtering cards
+ *
+ * Supports complex logical combinations with 'and'/'or' operators
+ */
+export interface JsonCondition {
+  // Logical operators for combining conditions
+  type?: "and" | "or";
+  conditions?: JsonCondition[];
+
+  // Card attribute filters
+  archetype?: ArchetypeId | ArchetypeId[];
+  cardType?: CardTypeFilter | CardTypeFilter[];
+  rarity?: CardRarity | CardRarity[];
+
+  // Stat-based filters
+  attack?: NumericRange;
+  defense?: NumericRange;
+  level?: NumericRange | number; // Level/cost of the card
+
+  // Ownership filters
+  targetOwner?: TargetOwner;
+  controller?: TargetOwner;
+
+  // Location filters
+  location?: ZoneLocation | ZoneLocation[];
+
+  // Position filters (for monsters on board)
+  position?: "attack" | "defense" | "facedown";
+  isFaceDown?: boolean;
+
+  // Game state conditions
+  lpBelow?: number;
+  lpAbove?: number;
+  graveyardContains?: {
+    count?: NumericRange;
+    cardType?: CardTypeFilter;
+    archetype?: ArchetypeId;
+  };
+  handSize?: NumericRange;
+  boardCount?: NumericRange;
+  deckSize?: NumericRange;
+
+  // Name-based filters
+  nameContains?: string;
+  nameExact?: string;
+
+  // Battle conditions
+  battlePosition?: "attacking" | "defending";
+  wasDestroyedBy?: "battle" | "effect" | "any";
+
+  // Turn conditions
+  turnCount?: NumericRange;
+  isFirstTurn?: boolean;
+  isMyTurn?: boolean;
+
+  // Field state conditions
+  hasNoMonstersInAttackPosition?: boolean;
+  opponentHasNoMonsters?: boolean;
+  controlsNoMonsters?: boolean;
+}
+
+/**
+ * Cost definition for effect activation
+ */
+export interface JsonCost {
+  type: "discard" | "pay_lp" | "tribute" | "banish" | "send_to_gy" | "return_to_deck";
+  value?: number; // Amount (LP or card count)
+  condition?: JsonCondition; // Filter for cards that can be used as cost
+  from?: ZoneLocation; // Where to take cards from (default: hand for discard, board for tribute)
+}
+
+/**
+ * Protection flags for cards
+ */
+export interface JsonProtection {
+  cannotBeDestroyedByBattle?: boolean;
+  cannotBeDestroyedByEffects?: boolean;
+  cannotBeTargeted?: boolean;
+  cannotBeBanished?: boolean;
+  cannotBeReturned?: boolean;
+  immuneToEffects?: JsonCondition; // Only immune to effects matching this condition
+}
+
+/**
+ * Target specification for effects
+ */
+export interface JsonTarget {
+  count?: number | "all"; // Number of targets or 'all' matching
+  min?: number; // Minimum targets (optional, defaults to count)
+  max?: number; // Maximum targets
+  condition?: JsonCondition; // Filter for valid targets
+  location?: ZoneLocation; // Where targets must be
+  owner?: TargetOwner; // Who owns the targets
+  selection?: "player_choice" | "random" | "all_matching"; // How targets are selected
+}
+
+/**
+ * JSON-based effect definition
+ *
+ * This is the core structure for defining card effects in JSON format.
+ * It extends ParsedEffect while providing more structured targeting and conditions.
+ */
+export interface JsonEffect {
+  // Effect identification
+  type: EffectType;
+  trigger: TriggerCondition;
+
+  // Effect values
+  value?: number; // Primary numeric value (damage, LP, draw count, etc.)
+  duration?: EffectDuration; // How long the effect lasts
+
+  // Targeting
+  target?: JsonTarget; // For effects that target specific cards
+  targetLocation?: ZoneLocation; // Simplified target location
+  targetOwner?: TargetOwner; // Simplified target owner
+
+  // Conditions
+  condition?: JsonCondition; // Activation condition
+  activationCondition?: JsonCondition; // When this effect can be activated
+
+  // Costs
+  cost?: JsonCost;
+  costs?: JsonCost[]; // Multiple costs (pay all)
+
+  // Restrictions
+  isOPT?: boolean; // Once per turn
+  isHOPT?: boolean; // Hard once per turn (card name based)
+  isContinuous?: boolean; // Continuous effect (stays active)
+  chainable?: boolean; // Can be chained to other effects
+  spellSpeed?: 1 | 2 | 3; // Spell speed for chain resolution
+
+  // Protection (for monsters)
+  protection?: JsonProtection;
+
+  // Effect-specific parameters
+  searchCondition?: JsonCondition; // For search effects - what cards can be searched
+  summonFrom?: ZoneLocation; // For summon effects - where to summon from
+  sendTo?: ZoneLocation; // For movement effects - destination zone
+
+  // Stat modification specifics
+  statTarget?: "self" | "target" | "all_matching";
+  statCondition?: JsonCondition; // Which cards get the stat modification
+
+  // Negation specifics
+  negateType?: "activation" | "effect" | "both";
+  negateAndDestroy?: boolean;
+
+  // Multi-effect support
+  then?: JsonEffect; // Execute this effect after (chained)
+  or?: JsonEffect; // Alternative effect (player choice)
+
+  // Metadata
+  effectId?: string; // Unique identifier for this effect
+  description?: string; // Human-readable description
+}
+
+/**
+ * Complete JSON ability definition for a card
+ *
+ * A card can have multiple effects (e.g., ignition + continuous + trigger)
+ */
+export interface JsonAbility {
+  effects: JsonEffect[];
+  abilityText?: string; // Original ability text for display
+  spellSpeed?: 1 | 2 | 3; // Overall spell speed of the card
+}
+
 export interface ParsedEffect {
   type: EffectType;
   trigger: TriggerCondition;
   value?: number; // Numeric value (e.g., "Draw 2" -> value: 2)
   targetCount?: number; // Number of targets required
   targetType?: "monster" | "spell" | "trap" | "any";
-  targetLocation?: "board" | "hand" | "graveyard" | "deck";
+  targetLocation?: "board" | "hand" | "graveyard" | "deck" | "banished";
   condition?: string; // Additional conditions
   continuous?: boolean; // Is this a continuous effect?
   isOPT?: boolean; // Once per turn restriction
@@ -81,6 +313,7 @@ export interface EffectResult {
 
   // Selection data for two-step effects
   requiresSelection?: boolean;
+  selectionType?: string; // Context type for the selection (e.g., "tribute", "target")
   selectionSource?: "deck" | "graveyard" | "banished" | "hand" | "board";
   availableTargets?: Array<{
     cardId: Id<"cardDefinitions">;

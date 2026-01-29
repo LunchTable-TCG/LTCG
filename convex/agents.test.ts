@@ -5,8 +5,8 @@
  * These tests verify the core bcrypt functionality and key generation.
  */
 
-import { describe, expect, it } from "vitest";
 import bcrypt from "bcryptjs";
+import { describe, expect, it } from "vitest";
 
 describe("Bcrypt API Key Hashing", () => {
   describe("Hash generation and validation", () => {
@@ -56,7 +56,7 @@ describe("Bcrypt API Key Hashing", () => {
       // Extract salt rounds from hash (format: $2a$rounds$salt+hash)
       const match = hash.match(/^\$2[aby]\$(\d{2})\$/);
       expect(match).toBeTruthy();
-      expect(match![1]).toBe("12");
+      expect(match?.[1]).toBe("12");
     });
 
     it("should handle errors gracefully during verification", async () => {

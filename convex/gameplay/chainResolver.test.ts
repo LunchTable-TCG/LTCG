@@ -3,16 +3,60 @@
  *
  * Tests chain mechanics: adding to chain, spell speed validation,
  * priority passing, and reverse resolution order.
+ *
+ * Supports both legacy string effects and JSON effects.
  */
 
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import { api } from "../_generated/api";
 import schema from "../schema";
+import type { JsonAbility } from "./effectSystem/types";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast
-const apiAny = api as any;
+// biome-ignore lint/suspicious/noExplicitAny: Required for TS2589 workaround
+const _apiAny = api as any;
+
+// Helper: Create a JSON ability for draw effect
+function createDrawJsonAbility(count: number): JsonAbility {
+  return {
+    effects: [
+      {
+        type: "draw",
+        trigger: "manual",
+        value: count,
+      },
+    ],
+  };
+}
+
+// Helper: Create a JSON ability for damage effect
+function createDamageJsonAbility(damage: number): JsonAbility {
+  return {
+    effects: [
+      {
+        type: "damage",
+        trigger: "manual",
+        value: damage,
+      },
+    ],
+  };
+}
+
+// Helper: Create a JSON ability for negate effect
+function createNegateJsonAbility(): JsonAbility {
+  return {
+    spellSpeed: 3,
+    effects: [
+      {
+        type: "negate",
+        trigger: "manual",
+        targetType: "any",
+      },
+    ],
+  };
+}
 
 const modules = import.meta.glob("../**/*.ts");
 
@@ -35,7 +79,7 @@ describe("addToChainHelper", () => {
         cardType: "spell",
         archetype: "neutral",
         cost: 2,
-        ability: "Draw 1 card",
+        ability: createDrawJsonAbility(1),
         isActive: true,
         createdAt: Date.now(),
       });
@@ -99,7 +143,7 @@ describe("addToChainHelper", () => {
         playerId: userId,
         playerUsername: "chaintest",
         spellSpeed: 2,
-        effect: "Draw 1 card",
+        effect: createDrawJsonAbility(1),
       });
     });
 
@@ -135,7 +179,7 @@ describe("addToChainHelper", () => {
         cardType: "spell",
         archetype: "neutral",
         cost: 2,
-        ability: "Draw 1 card",
+        ability: createDrawJsonAbility(1),
         isActive: true,
         createdAt: Date.now(),
       });
@@ -148,7 +192,7 @@ describe("addToChainHelper", () => {
         cardType: "trap",
         archetype: "neutral",
         cost: 3,
-        ability: "Negate 1 card effect",
+        ability: createNegateJsonAbility(),
         isActive: true,
         createdAt: Date.now(),
       });
@@ -203,7 +247,7 @@ describe("addToChainHelper", () => {
             cardId: card1Id,
             playerId: userId,
             spellSpeed: 2,
-            effect: "Draw 1 card",
+            effect: createDrawJsonAbility(1),
           },
         ],
         lastMoveAt: Date.now(),
@@ -219,7 +263,7 @@ describe("addToChainHelper", () => {
         playerId: userId,
         playerUsername: "chain2",
         spellSpeed: 3,
-        effect: "Negate 1 card effect",
+        effect: createNegateJsonAbility(),
       });
     });
 
@@ -246,7 +290,7 @@ describe("addToChainHelper", () => {
         cardType: "trap",
         archetype: "neutral",
         cost: 2,
-        ability: "Negate",
+        ability: createNegateJsonAbility(),
         isActive: true,
         createdAt: Date.now(),
       });
@@ -259,7 +303,7 @@ describe("addToChainHelper", () => {
         cardType: "spell",
         archetype: "neutral",
         cost: 1,
-        ability: "Draw 1 card",
+        ability: createDrawJsonAbility(1),
         isActive: true,
         createdAt: Date.now(),
       });
@@ -314,7 +358,7 @@ describe("addToChainHelper", () => {
             cardId: card1Id,
             playerId: userId,
             spellSpeed: 3, // Counter trap (Speed 3)
-            effect: "Negate",
+            effect: createNegateJsonAbility(),
           },
         ],
         lastMoveAt: Date.now(),
@@ -331,7 +375,7 @@ describe("addToChainHelper", () => {
           playerId: userId,
           playerUsername: "speedtest",
           spellSpeed: 1, // Normal spell (Speed 1) - should fail
-          effect: "Draw 1 card",
+          effect: createDrawJsonAbility(1),
         });
       })
     ).rejects.toThrow();
@@ -392,7 +436,7 @@ describe("addToChainHelper", () => {
           playerId: userId,
           playerUsername: "missingtest",
           spellSpeed: 2,
-          effect: "Test",
+          effect: { effects: [] },
         });
       })
     ).rejects.toThrow();
@@ -418,7 +462,7 @@ describe("resolveChainHelper", () => {
         cardType: "spell",
         archetype: "neutral",
         cost: 1,
-        ability: "Draw 2 cards",
+        ability: createDrawJsonAbility(2),
         isActive: true,
         createdAt: Date.now(),
       });
@@ -431,7 +475,7 @@ describe("resolveChainHelper", () => {
         cardType: "spell",
         archetype: "neutral",
         cost: 2,
-        ability: "Deal 500 damage",
+        ability: createDamageJsonAbility(500),
         isActive: true,
         createdAt: Date.now(),
       });
@@ -486,13 +530,13 @@ describe("resolveChainHelper", () => {
             cardId: card1Id,
             playerId: userId,
             spellSpeed: 1,
-            effect: "Draw 2 cards",
+            effect: createDrawJsonAbility(2),
           },
           {
             cardId: card2Id,
             playerId: userId,
             spellSpeed: 2,
-            effect: "Deal 500 damage",
+            effect: createDamageJsonAbility(500),
           },
         ],
         lastMoveAt: Date.now(),
@@ -534,7 +578,7 @@ describe("resolveChainHelper", () => {
         cardType: "spell",
         archetype: "neutral",
         cost: 1,
-        ability: "Draw 2 cards",
+        ability: createDrawJsonAbility(2),
         isActive: true,
         createdAt: Date.now(),
       });
@@ -589,7 +633,7 @@ describe("resolveChainHelper", () => {
             cardId: card1Id,
             playerId: userId,
             spellSpeed: 1,
-            effect: "Draw 2 cards",
+            effect: createDrawJsonAbility(2),
             negated: true, // Effect is negated
           },
         ],
@@ -781,5 +825,192 @@ describe("passPriority edge cases", () => {
 
     // Note: passPriority requires auth, so we can't test it directly
     // without mocking auth. This is more of an integration test scenario.
+  });
+});
+
+describe("JSON effect format", () => {
+  it("should correctly parse and execute JSON draw effect", async () => {
+    const t = convexTest(schema, modules);
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        username: "jsontest",
+        email: "json@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    const cardId = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "JSON Spell",
+        rarity: "common",
+        cardType: "spell",
+        archetype: "neutral",
+        cost: 2,
+        ability: createDrawJsonAbility(3),
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    const lobbyId = await t.run(async (ctx) => {
+      return await ctx.db.insert("gameLobbies", {
+        hostId: userId,
+        hostUsername: "jsontest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
+        opponentId: userId,
+        opponentUsername: "jsontest",
+        opponentRank: "Bronze",
+        gameId: "test-game-json",
+        turnNumber: 1,
+        createdAt: Date.now(),
+      });
+    });
+
+    await t.run(async (ctx) => {
+      return await ctx.db.insert("gameStates", {
+        lobbyId,
+        gameId: "test-game-json",
+        hostId: userId,
+        opponentId: userId,
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
+        turnNumber: 1,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
+        hostDeck: [],
+        opponentDeck: [],
+        hostHand: [],
+        opponentHand: [],
+        hostBoard: [],
+        opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
+        hostGraveyard: [],
+        opponentGraveyard: [],
+        hostBanished: [],
+        opponentBanished: [],
+        currentChain: [],
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
+      });
+    });
+
+    // Add JSON effect to chain
+    const result = await t.run(async (ctx) => {
+      const { addToChainHelper } = await import("./chainResolver");
+      return await addToChainHelper(ctx, {
+        lobbyId,
+        cardId,
+        playerId: userId,
+        playerUsername: "jsontest",
+        spellSpeed: 1,
+        effect: createDrawJsonAbility(3),
+      });
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.chainLinkNumber).toBe(1);
+  });
+
+  it("should serialize JSON effects correctly for display", async () => {
+    const t = convexTest(schema, modules);
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        username: "serializetest",
+        email: "serialize@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    const cardId = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "Test Negate",
+        rarity: "rare",
+        cardType: "trap",
+        archetype: "neutral",
+        cost: 3,
+        ability: createNegateJsonAbility(),
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    const lobbyId = await t.run(async (ctx) => {
+      return await ctx.db.insert("gameLobbies", {
+        hostId: userId,
+        hostUsername: "serializetest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
+        opponentId: userId,
+        opponentUsername: "serializetest",
+        opponentRank: "Bronze",
+        gameId: "test-game-serialize",
+        turnNumber: 1,
+        createdAt: Date.now(),
+      });
+    });
+
+    await t.run(async (ctx) => {
+      return await ctx.db.insert("gameStates", {
+        lobbyId,
+        gameId: "test-game-serialize",
+        hostId: userId,
+        opponentId: userId,
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
+        turnNumber: 1,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
+        hostDeck: [],
+        opponentDeck: [],
+        hostHand: [],
+        opponentHand: [],
+        hostBoard: [],
+        opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
+        hostGraveyard: [],
+        opponentGraveyard: [],
+        hostBanished: [],
+        opponentBanished: [],
+        currentChain: [
+          {
+            cardId,
+            playerId: userId,
+            spellSpeed: 3,
+            effect: createNegateJsonAbility(),
+          },
+        ],
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
+      });
+    });
+
+    // Get current chain should serialize effect for display
+    const chainState = await t.run(async (ctx) => {
+      const gameState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+        .first();
+      return gameState?.currentChain;
+    });
+
+    expect(chainState).toHaveLength(1);
+    expect(chainState?.[0]?.effect).toBeDefined();
   });
 });

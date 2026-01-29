@@ -1,239 +1,1422 @@
 /**
- * Multi-Part Effect Parser Tests
+ * Effect System Tests - JSON Only
  *
- * Tests the parsing of complex multi-clause abilities
+ * Tests JSON-based effect parsing exclusively.
+ * Text parsing has been deprecated and removed.
  */
 
 import { describe, expect, test } from "vitest";
-import { parseAbility, parseMultiPartAbility } from "../gameplay/effectSystem";
+import { parseJsonAbility, parseUnifiedAbility } from "../gameplay/effectSystem";
+import type { JsonAbility, JsonEffect } from "../gameplay/effectSystem/types";
 
-describe("Multi-Part Effect Parser", () => {
-  test("should parse protection + continuous effect", () => {
-    const ability = "Cannot be destroyed by battle. All Dragon-Type monsters gain 500 ATK.";
-    const result = parseMultiPartAbility(ability);
+// ============================================================================
+// JSON PARSER - SIMPLE EFFECTS
+// ============================================================================
 
-    expect(result.hasMultiPart).toBe(true);
-    expect(result.effects).toHaveLength(2);
+describe("JSON Effect Parser - Simple Effects", () => {
+  test("should parse draw effect", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "manual",
+          value: 2,
+        },
+      ],
+    };
 
-    // First effect: protection
-    const effect0 = result.effects[0];
-    expect(effect0).toBeDefined();
-    if (!effect0) throw new Error("Effect 0 not found");
-    expect(effect0.protection?.cannotBeDestroyedByBattle).toBe(true);
-    expect(effect0.continuous).toBe(true);
+    const result = parseJsonAbility(jsonAbility);
 
-    // Second effect: continuous ATK boost
-    const effect1 = result.effects[1];
-    expect(effect1).toBeDefined();
-    if (!effect1) throw new Error("Effect 1 not found");
-    expect(effect1.type).toBe("modifyATK");
-    expect(effect1.value).toBe(500);
-    expect(effect1.continuous).toBe(true);
-    expect(effect1.condition).toContain("dragon");
-  });
-
-  test("should parse continuous + OPT trigger", () => {
-    const ability = "All Dragon-Type monsters gain 300 ATK. Once per turn: Draw 1 card.";
-    const result = parseMultiPartAbility(ability);
-
-    expect(result.hasMultiPart).toBe(true);
-    expect(result.effects).toHaveLength(2);
-
-    // First effect: continuous ATK boost
-    const effect0 = result.effects[0];
-    expect(effect0).toBeDefined();
-    if (!effect0) throw new Error("Effect 0 not found");
-    expect(effect0.type).toBe("modifyATK");
-    expect(effect0.value).toBe(300);
-    expect(effect0.continuous).toBe(true);
-
-    // Second effect: OPT draw
-    const effect1 = result.effects[1];
-    expect(effect1).toBeDefined();
-    if (!effect1) throw new Error("Effect 1 not found");
-    expect(effect1.type).toBe("draw");
-    expect(effect1.value).toBe(1);
-    expect(effect1.isOPT).toBe(true);
-  });
-
-  test("should parse protection + continuous + triggered effect", () => {
-    const ability =
-      "Cannot be destroyed by battle. All Dragon-Type monsters you control gain 500 ATK. When this card destroys a monster by battle: Draw 1 card.";
-    const result = parseMultiPartAbility(ability);
-
-    expect(result.hasMultiPart).toBe(true);
-    expect(result.effects).toHaveLength(3);
-
-    // First effect: protection
-    const effect0 = result.effects[0];
-    expect(effect0).toBeDefined();
-    if (!effect0) throw new Error("Effect 0 not found");
-    expect(effect0.protection?.cannotBeDestroyedByBattle).toBe(true);
-
-    // Second effect: continuous ATK boost
-    const effect1 = result.effects[1];
-    expect(effect1).toBeDefined();
-    if (!effect1) throw new Error("Effect 1 not found");
-    expect(effect1.type).toBe("modifyATK");
-    expect(effect1.value).toBe(500);
-    expect(effect1.continuous).toBe(true);
-
-    // Third effect: battle destroy trigger
-    const effect2 = result.effects[2];
-    expect(effect2).toBeDefined();
-    if (!effect2) throw new Error("Effect 2 not found");
-    expect(effect2.type).toBe("draw");
-    expect(effect2.trigger).toBe("on_battle_destroy");
-    expect(effect2.value).toBe(1);
-  });
-
-  test("should parse battle phase trigger + temporary modifier", () => {
-    const ability = "At the start of the Battle Phase: This card gains 500 ATK until end of turn.";
-    const result = parseMultiPartAbility(ability);
-
-    expect(result.hasMultiPart).toBe(false); // Single clause with colon
     expect(result.effects).toHaveLength(1);
-
-    // Single triggered effect
-    const effect0 = result.effects[0];
-    expect(effect0).toBeDefined();
-    if (!effect0) throw new Error("Effect 0 not found");
-    expect(effect0.type).toBe("modifyATK");
-    expect(effect0.trigger).toBe("on_battle_start");
-    expect(effect0.value).toBe(500);
+    expect(result.effects[0]?.type).toBe("draw");
+    expect(result.effects[0]?.value).toBe(2);
+    expect(result.effects[0]?.trigger).toBe("manual");
   });
 
-  test("should parse multi-protection", () => {
-    const ability = "Cannot be destroyed by battle or card effects.";
-    const result = parseMultiPartAbility(ability);
+  test("should parse damage effect", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "damage",
+          trigger: "manual",
+          value: 500,
+        },
+      ],
+    };
 
-    expect(result.hasMultiPart).toBe(false);
+    const result = parseJsonAbility(jsonAbility);
+
     expect(result.effects).toHaveLength(1);
-
-    // Combined protection
-    const effect0 = result.effects[0];
-    expect(effect0).toBeDefined();
-    if (!effect0) throw new Error("Effect 0 not found");
-    expect(effect0.protection?.cannotBeDestroyedByBattle).toBe(true);
-    expect(effect0.protection?.cannotBeDestroyedByEffects).toBe(true);
+    expect(result.effects[0]?.type).toBe("damage");
+    expect(result.effects[0]?.value).toBe(500);
   });
 
-  test("should parse end phase + OPT trigger", () => {
-    const ability = "During each End Phase: Deal 500 damage.";
-    const result = parseMultiPartAbility(ability);
+  test("should parse gainLP effect", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "gainLP",
+          trigger: "manual",
+          value: 1000,
+        },
+      ],
+    };
 
-    expect(result.hasMultiPart).toBe(false);
+    const result = parseJsonAbility(jsonAbility);
+
     expect(result.effects).toHaveLength(1);
-
-    const effect0 = result.effects[0];
-    expect(effect0).toBeDefined();
-    if (!effect0) throw new Error("Effect 0 not found");
-    expect(effect0.type).toBe("damage");
-    expect(effect0.trigger).toBe("on_end");
-    expect(effect0.value).toBe(500);
+    expect(result.effects[0]?.type).toBe("gainLP");
+    expect(result.effects[0]?.value).toBe(1000);
   });
 
-  test("should parse complex 4-part ability", () => {
-    const ability =
-      "Cannot be destroyed by battle. Cannot be targeted by opponent's card effects. All Dragon-Type monsters gain 300 ATK. Once per turn: Add 1 Dragon monster from your graveyard to your hand.";
-    const result = parseMultiPartAbility(ability);
+  test("should parse mill effect", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "mill",
+          trigger: "manual",
+          value: 3,
+        },
+      ],
+    };
 
-    expect(result.hasMultiPart).toBe(true);
-    expect(result.effects).toHaveLength(4);
+    const result = parseJsonAbility(jsonAbility);
 
-    // Protection 1
-    const effect0 = result.effects[0];
-    expect(effect0).toBeDefined();
-    if (!effect0) throw new Error("Effect 0 not found");
-    expect(effect0.protection?.cannotBeDestroyedByBattle).toBe(true);
-
-    // Protection 2
-    const effect1 = result.effects[1];
-    expect(effect1).toBeDefined();
-    if (!effect1) throw new Error("Effect 1 not found");
-    expect(effect1.protection?.cannotBeTargeted).toBe(true);
-
-    // Continuous ATK
-    const effect2 = result.effects[2];
-    expect(effect2).toBeDefined();
-    if (!effect2) throw new Error("Effect 2 not found");
-    expect(effect2.type).toBe("modifyATK");
-    expect(effect2.continuous).toBe(true);
-
-    // OPT GY recursion
-    const effect3 = result.effects[3];
-    expect(effect3).toBeDefined();
-    if (!effect3) throw new Error("Effect 3 not found");
-    expect(effect3.type).toBe("toHand");
-    expect(effect3.targetLocation).toBe("graveyard");
-    expect(effect3.isOPT).toBe(true);
-  });
-
-  test("should handle simple single-clause ability", () => {
-    const ability = "Draw 2 cards";
-    const result = parseMultiPartAbility(ability);
-
-    expect(result.hasMultiPart).toBe(false);
     expect(result.effects).toHaveLength(1);
-
-    const effect0 = result.effects[0];
-    expect(effect0).toBeDefined();
-    if (!effect0) throw new Error("Effect 0 not found");
-    expect(effect0.type).toBe("draw");
-    expect(effect0.value).toBe(2);
+    expect(result.effects[0]?.type).toBe("mill");
+    expect(result.effects[0]?.value).toBe(3);
   });
 
-  test("should handle empty ability", () => {
-    const ability = "";
-    const result = parseMultiPartAbility(ability);
+  test("should parse discard effect", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "discard",
+          trigger: "manual",
+          value: 1,
+        },
+      ],
+    };
 
-    expect(result.hasMultiPart).toBe(false);
-    expect(result.effects).toHaveLength(0);
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("discard");
+    expect(result.effects[0]?.value).toBe(1);
   });
 
-  test("should parse summon trigger with multi-part effect", () => {
-    const ability = "When summoned: Deal 500 damage. All Fire-Type monsters gain 200 ATK.";
-    const result = parseMultiPartAbility(ability);
+  test("should parse negate effect", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "negate",
+          trigger: "manual",
+          negateType: "activation",
+          negateAndDestroy: true,
+        },
+      ],
+    };
 
-    expect(result.hasMultiPart).toBe(true);
-    expect(result.effects).toHaveLength(2);
+    const result = parseJsonAbility(jsonAbility);
 
-    // Triggered damage
-    const effect0 = result.effects[0];
-    expect(effect0).toBeDefined();
-    if (!effect0) throw new Error("Effect 0 not found");
-    expect(effect0.type).toBe("damage");
-    expect(effect0.trigger).toBe("on_summon");
-    expect(effect0.value).toBe(500);
-
-    // Continuous buff
-    const effect1 = result.effects[1];
-    expect(effect1).toBeDefined();
-    if (!effect1) throw new Error("Effect 1 not found");
-    expect(effect1.type).toBe("modifyATK");
-    expect(effect1.continuous).toBe(true);
-    expect(effect1.value).toBe(200);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("negate");
   });
 });
 
-describe("parseAbility backwards compatibility", () => {
-  test("should still work for simple abilities", () => {
-    const ability = "Draw 2 cards";
-    const result = parseAbility(ability);
+// ============================================================================
+// JSON PARSER - EFFECTS WITH COSTS
+// ============================================================================
 
-    expect(result).not.toBeNull();
-    expect(result?.type).toBe("draw");
-    expect(result?.value).toBe(2);
+describe("JSON Effect Parser - Effects with Costs", () => {
+  test("should parse effect with discard cost", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "manual",
+          value: 2,
+          cost: {
+            type: "discard",
+            value: 1,
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.cost?.type).toBe("discard");
+    expect(result.effects[0]?.cost?.value).toBe(1);
   });
 
-  test("should parse first parseable effect from multi-part ability", () => {
-    const ability = "Cannot be destroyed by battle. Draw 2 cards.";
-    const result = parseAbility(ability);
+  test("should parse effect with LP cost", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "destroy",
+          trigger: "manual",
+          target: {
+            location: "board",
+            owner: "opponent",
+            count: 1,
+          },
+          cost: {
+            type: "pay_lp",
+            value: 1000,
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.cost?.type).toBe("pay_lp");
+    expect(result.effects[0]?.cost?.value).toBe(1000);
+  });
+
+  test("should parse effect with tribute cost", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "summon",
+          trigger: "manual",
+          summonFrom: "graveyard",
+          cost: {
+            type: "tribute",
+            value: 1,
+            condition: { cardType: "monster" },
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.cost?.type).toBe("tribute");
+    expect(result.effects[0]?.cost?.value).toBe(1);
+    expect(result.effects[0]?.cost?.targetType).toBe("monster");
+  });
+
+  test("should parse effect with banish cost", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "search",
+          trigger: "manual",
+          targetLocation: "deck",
+          cost: {
+            type: "banish",
+            value: 2,
+            from: "graveyard",
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.cost?.type).toBe("banish");
+    expect(result.effects[0]?.cost?.value).toBe(2);
+  });
+});
+
+// ============================================================================
+// JSON PARSER - EFFECTS WITH TARGETING
+// ============================================================================
+
+describe("JSON Effect Parser - Effects with Targeting", () => {
+  test("should parse destroy effect with targeting", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "destroy",
+          trigger: "manual",
+          target: {
+            location: "board",
+            owner: "opponent",
+            count: 1,
+            condition: { cardType: "monster" },
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("destroy");
+    expect(result.effects[0]?.targetCount).toBe(1);
+    expect(result.effects[0]?.targetLocation).toBe("board");
+    expect(result.effects[0]?.targetType).toBe("monster");
+  });
+
+  test("should parse banish effect with targeting", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "banish",
+          trigger: "manual",
+          target: {
+            location: "graveyard",
+            owner: "opponent",
+            count: 2,
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("banish");
+    expect(result.effects[0]?.targetCount).toBe(2);
+    expect(result.effects[0]?.targetLocation).toBe("graveyard");
+  });
+
+  test("should parse toHand effect from graveyard", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "toHand",
+          trigger: "manual",
+          target: {
+            location: "graveyard",
+            owner: "self",
+            count: 1,
+            condition: { cardType: "monster" },
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("toHand");
+    expect(result.effects[0]?.targetLocation).toBe("graveyard");
+    expect(result.effects[0]?.targetType).toBe("monster");
+  });
+
+  test("should parse search effect with archetype condition", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "search",
+          trigger: "manual",
+          target: {
+            location: "deck",
+            owner: "self",
+            count: 1,
+          },
+          searchCondition: { archetype: "infernal_dragons" },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("search");
+    expect(result.effects[0]?.targetLocation).toBe("deck");
+  });
+
+  test("should parse destroy with player choice targeting", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "destroy",
+          trigger: "manual",
+          target: {
+            location: "board",
+            owner: "opponent",
+            count: 2,
+            selection: "player_choice",
+            condition: { cardType: "spell" },
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("destroy");
+    expect(result.effects[0]?.targetCount).toBe(2);
+    expect(result.effects[0]?.targetType).toBe("spell");
+  });
+});
+
+// ============================================================================
+// JSON PARSER - OPT EFFECTS
+// ============================================================================
+
+describe("JSON Effect Parser - OPT Effects", () => {
+  test("should parse effect with OPT restriction", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "manual",
+          value: 1,
+          isOPT: true,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.isOPT).toBe(true);
+  });
+
+  test("should parse effect with HOPT restriction", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "search",
+          trigger: "manual",
+          targetLocation: "deck",
+          isHOPT: true,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("search");
+  });
+
+  test("should parse triggered OPT effect", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "on_summon",
+          value: 1,
+          isOPT: true,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.trigger).toBe("on_summon");
+    expect(result.effects[0]?.isOPT).toBe(true);
+  });
+});
+
+// ============================================================================
+// JSON PARSER - CONTINUOUS EFFECTS
+// ============================================================================
+
+describe("JSON Effect Parser - Continuous Effects", () => {
+  test("should parse continuous ATK modifier", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 500,
+          isContinuous: true,
+          condition: { archetype: "infernal_dragons" },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.continuous).toBe(true);
+    expect(result.effects[0]?.type).toBe("modifyATK");
+    expect(result.effects[0]?.value).toBe(500);
+  });
+
+  test("should parse continuous DEF modifier", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyDEF",
+          trigger: "manual",
+          value: 300,
+          isContinuous: true,
+          condition: { cardType: "monster", targetOwner: "self" },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.continuous).toBe(true);
+    expect(result.effects[0]?.type).toBe("modifyDEF");
+    expect(result.effects[0]?.value).toBe(300);
+  });
+
+  test("should parse continuous effect with archetype restriction", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 400,
+          isContinuous: true,
+          condition: { archetype: "celestial_guardians" },
+          statTarget: "all_matching",
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.continuous).toBe(true);
+    expect(result.effects[0]?.condition).toContain("celestial_guardians");
+  });
+
+  test("should parse continuous negative modifier", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: -500,
+          isContinuous: true,
+          condition: { cardType: "monster", targetOwner: "opponent" },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.continuous).toBe(true);
+    expect(result.effects[0]?.value).toBe(-500);
+  });
+});
+
+// ============================================================================
+// JSON PARSER - MULTI-EFFECT ABILITIES
+// ============================================================================
+
+describe("JSON Effect Parser - Multi-Effect Abilities", () => {
+  test("should parse ability with multiple effects", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 500,
+          isContinuous: true,
+          condition: { archetype: "infernal_dragons" },
+        },
+        {
+          type: "draw",
+          trigger: "on_battle_destroy",
+          value: 1,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(2);
+    expect(result.hasMultiPart).toBe(true);
+    expect(result.effects[0]?.type).toBe("modifyATK");
+    expect(result.effects[1]?.type).toBe("draw");
+    expect(result.effects[1]?.trigger).toBe("on_battle_destroy");
+  });
+
+  test("should parse ability with three effects", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 300,
+          isContinuous: true,
+        },
+        {
+          type: "draw",
+          trigger: "on_summon",
+          value: 1,
+          isOPT: true,
+        },
+        {
+          type: "destroy",
+          trigger: "on_destroy",
+          target: { location: "board", owner: "opponent", count: 1 },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(3);
+    expect(result.hasMultiPart).toBe(true);
+  });
+
+  test("should parse chained 'then' effects", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "destroy",
+          trigger: "manual",
+          target: { location: "board", owner: "opponent", count: 1 },
+          then: {
+            type: "draw",
+            trigger: "manual",
+            value: 1,
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    // 'then' effects should be flattened into the effects array
+    expect(result.effects.length).toBeGreaterThanOrEqual(2);
+    expect(result.effects[0]?.type).toBe("destroy");
+    expect(result.effects[1]?.type).toBe("draw");
+  });
+
+  test("should parse single effect as non-multipart", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "manual",
+          value: 2,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.hasMultiPart).toBe(false);
+  });
+
+  test("should parse ability with continuous effect and protection", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 0,
+          isContinuous: true,
+          protection: { cannotBeDestroyedByBattle: true },
+        },
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 500,
+          isContinuous: true,
+          condition: { archetype: "infernal_dragons" },
+        },
+        {
+          type: "draw",
+          trigger: "on_battle_destroy",
+          value: 1,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(3);
+    expect(result.hasMultiPart).toBe(true);
+
+    expect(result.effects[0]?.protection?.cannotBeDestroyedByBattle).toBe(true);
+    expect(result.effects[1]?.type).toBe("modifyATK");
+    expect(result.effects[1]?.value).toBe(500);
+    expect(result.effects[2]?.type).toBe("draw");
+    expect(result.effects[2]?.trigger).toBe("on_battle_destroy");
+  });
+});
+
+// ============================================================================
+// JSON PARSER - TRIGGERED EFFECTS
+// ============================================================================
+
+describe("JSON Effect Parser - Triggered Effects", () => {
+  test("should parse on_summon trigger", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "on_summon",
+          value: 1,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+    expect(result.effects[0]?.trigger).toBe("on_summon");
+  });
+
+  test("should parse on_destroy trigger", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "damage",
+          trigger: "on_destroy",
+          value: 500,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+    expect(result.effects[0]?.trigger).toBe("on_destroy");
+  });
+
+  test("should parse on_battle_damage trigger", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "on_battle_damage",
+          value: 1,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+    expect(result.effects[0]?.trigger).toBe("on_battle_damage");
+  });
+
+  test("should parse on_battle_destroy trigger", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "search",
+          trigger: "on_battle_destroy",
+          targetLocation: "deck",
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+    expect(result.effects[0]?.trigger).toBe("on_battle_destroy");
+  });
+
+  test("should parse on_flip trigger", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "destroy",
+          trigger: "on_flip",
+          target: { location: "board", owner: "opponent", count: 1 },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+    expect(result.effects[0]?.trigger).toBe("on_flip");
+  });
+
+  test("should parse on_end trigger", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "on_end",
+          value: 1,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+    expect(result.effects[0]?.trigger).toBe("on_end");
+  });
+
+  test("should parse on_battle_attacked trigger", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "on_battle_attacked",
+          value: 500,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+    expect(result.effects[0]?.trigger).toBe("on_battle_attacked");
+  });
+
+  test("should parse on_opponent_summon trigger", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "damage",
+          trigger: "on_opponent_summon",
+          value: 200,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+    expect(result.effects[0]?.trigger).toBe("on_opponent_summon");
+  });
+
+  test("should parse all trigger types", () => {
+    const triggers = [
+      "on_summon",
+      "on_destroy",
+      "on_battle_damage",
+      "on_battle_destroy",
+      "on_battle_attacked",
+      "on_flip",
+      "on_draw",
+      "on_end",
+      "on_opponent_summon",
+      "on_battle_start",
+      "manual",
+    ] as const;
+
+    for (const trigger of triggers) {
+      const jsonAbility: JsonAbility = {
+        effects: [
+          {
+            type: "draw",
+            trigger,
+            value: 1,
+          },
+        ],
+      };
+
+      const result = parseJsonAbility(jsonAbility);
+      expect(result.effects[0]?.trigger).toBe(trigger);
+    }
+  });
+});
+
+// ============================================================================
+// JSON PARSER - PROTECTION FLAGS
+// ============================================================================
+
+describe("JSON Effect Parser - Protection Effects", () => {
+  test("should parse cannotBeDestroyedByBattle protection", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 0,
+          isContinuous: true,
+          protection: {
+            cannotBeDestroyedByBattle: true,
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.protection?.cannotBeDestroyedByBattle).toBe(true);
+  });
+
+  test("should parse cannotBeDestroyedByEffects protection", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 0,
+          isContinuous: true,
+          protection: {
+            cannotBeDestroyedByEffects: true,
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.protection?.cannotBeDestroyedByEffects).toBe(true);
+  });
+
+  test("should parse cannotBeTargeted protection", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 0,
+          isContinuous: true,
+          protection: {
+            cannotBeTargeted: true,
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.protection?.cannotBeTargeted).toBe(true);
+  });
+
+  test("should parse combined protection flags", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 0,
+          isContinuous: true,
+          protection: {
+            cannotBeDestroyedByBattle: true,
+            cannotBeDestroyedByEffects: true,
+            cannotBeTargeted: true,
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.protection?.cannotBeDestroyedByBattle).toBe(true);
+    expect(result.effects[0]?.protection?.cannotBeDestroyedByEffects).toBe(true);
+    expect(result.effects[0]?.protection?.cannotBeTargeted).toBe(true);
+  });
+});
+
+// ============================================================================
+// JSON PARSER - EFFECT TYPE COVERAGE
+// ============================================================================
+
+describe("JSON Effect Parser - All Effect Types", () => {
+  const effectTypes: Array<{
+    type: JsonEffect["type"];
+    extraProps?: Partial<JsonEffect>;
+  }> = [
+    { type: "draw", extraProps: { value: 2 } },
+    { type: "destroy", extraProps: { target: { location: "board", owner: "opponent", count: 1 } } },
+    { type: "damage", extraProps: { value: 500 } },
+    { type: "gainLP", extraProps: { value: 1000 } },
+    { type: "modifyATK", extraProps: { value: 500 } },
+    { type: "modifyDEF", extraProps: { value: 500 } },
+    { type: "summon", extraProps: { summonFrom: "graveyard" } },
+    { type: "search", extraProps: { targetLocation: "deck" } },
+    { type: "toHand", extraProps: { targetLocation: "graveyard" } },
+    { type: "toGraveyard", extraProps: { targetLocation: "board" } },
+    { type: "banish", extraProps: { targetLocation: "graveyard" } },
+    { type: "mill", extraProps: { value: 3 } },
+    { type: "discard", extraProps: { value: 1 } },
+    { type: "negate" },
+    { type: "directAttack", extraProps: { condition: { opponentHasNoMonsters: true } } },
+    { type: "multipleAttack", extraProps: { value: 2, isContinuous: true } },
+  ];
+
+  for (const { type, extraProps } of effectTypes) {
+    test(`should parse ${type} effect`, () => {
+      const jsonAbility: JsonAbility = {
+        effects: [
+          {
+            type,
+            trigger: "manual",
+            ...extraProps,
+          } as JsonEffect,
+        ],
+      };
+
+      const result = parseJsonAbility(jsonAbility);
+
+      expect(result.effects).toHaveLength(1);
+      expect(result.effects[0]?.type).toBe(type);
+    });
+  }
+});
+
+// ============================================================================
+// UNIFIED PARSER TESTS (JSON only)
+// ============================================================================
+
+describe("Unified Parser - JSON Format", () => {
+  test("should parse JSON abilities via unified interface", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "manual",
+          value: 2,
+        },
+      ],
+    };
+
+    const result = parseUnifiedAbility(jsonAbility);
 
     expect(result).not.toBeNull();
-    // parseAbility (original function) parses the whole text and returns the first parseable action
-    // In this case, it finds "draw 2 cards" as the action effect
-    expect(result?.type).toBe("draw");
-    expect(result?.value).toBe(2);
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("draw");
+    expect(result.effects[0]?.value).toBe(2);
+  });
+
+  test("should handle complex JSON ability via unified interface", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "damage",
+          trigger: "on_summon",
+          value: 500,
+        },
+      ],
+    };
+
+    const result = parseUnifiedAbility(jsonAbility);
+
+    expect(result.effects[0]?.type).toBe("damage");
+    expect(result.effects[0]?.trigger).toBe("on_summon");
+    expect(result.effects[0]?.value).toBe(500);
+  });
+
+  test("should parse JSON ability with spell speed", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "negate",
+          trigger: "manual",
+          negateType: "activation",
+          spellSpeed: 2,
+        },
+      ],
+      spellSpeed: 2,
+    };
+
+    const result = parseUnifiedAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("negate");
+  });
+});
+
+// ============================================================================
+// JSON PARSER - COMPLEX CONDITIONS
+// ============================================================================
+
+describe("JSON Effect Parser - Complex Conditions", () => {
+  test("should parse effect with level condition", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "summon",
+          trigger: "manual",
+          summonFrom: "graveyard",
+          searchCondition: {
+            cardType: "monster",
+            level: { max: 4 },
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("summon");
+  });
+
+  test("should parse effect with attack range condition", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "destroy",
+          trigger: "manual",
+          target: {
+            location: "board",
+            owner: "opponent",
+            count: 1,
+            condition: {
+              attack: { max: 1500 },
+            },
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("destroy");
+  });
+
+  test("should parse effect with graveyard count condition", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 300,
+          isContinuous: true,
+          activationCondition: {
+            graveyardContains: {
+              count: { min: 3 },
+              cardType: "monster",
+            },
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.continuous).toBe(true);
+  });
+
+  test("should parse effect with LP condition", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "manual",
+          value: 2,
+          activationCondition: {
+            lpBelow: 2000,
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("draw");
+  });
+
+  test("should parse effect with board count condition", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "damage",
+          trigger: "manual",
+          value: 1000,
+          activationCondition: {
+            boardCount: { min: 2 },
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("damage");
+  });
+
+  test("should parse effect with compound AND condition", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "summon",
+          trigger: "manual",
+          summonFrom: "graveyard",
+          activationCondition: {
+            type: "and",
+            conditions: [
+              { graveyardContains: { count: { min: 2 } } },
+              { lpBelow: 4000 },
+            ],
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("summon");
+  });
+
+  test("should parse effect with compound OR condition", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "manual",
+          value: 1,
+          activationCondition: {
+            type: "or",
+            conditions: [
+              { handSize: { max: 1 } },
+              { lpBelow: 2000 },
+            ],
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("draw");
+  });
+});
+
+// ============================================================================
+// JSON PARSER - ARCHETYPE-SPECIFIC EFFECTS
+// ============================================================================
+
+describe("JSON Effect Parser - Archetype Effects", () => {
+  test("should parse effect targeting infernal_dragons archetype", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 500,
+          isContinuous: true,
+          condition: { archetype: "infernal_dragons" },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.continuous).toBe(true);
+    expect(result.effects[0]?.condition).toContain("infernal_dragons");
+  });
+
+  test("should parse effect targeting celestial_guardians archetype", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyDEF",
+          trigger: "manual",
+          value: 400,
+          isContinuous: true,
+          condition: { archetype: "celestial_guardians" },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects[0]?.continuous).toBe(true);
+    expect(result.effects[0]?.condition).toContain("celestial_guardians");
+  });
+
+  test("should parse search for archetype cards", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "search",
+          trigger: "manual",
+          target: {
+            location: "deck",
+            owner: "self",
+            count: 1,
+          },
+          searchCondition: { archetype: "shadow_assassins" },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("search");
+  });
+
+  test("should parse effect targeting multiple archetypes", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 200,
+          isContinuous: true,
+          condition: { archetype: ["undead_legion", "abyssal_horrors"] },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.continuous).toBe(true);
+  });
+});
+
+// ============================================================================
+// JSON PARSER - DURATION AND SPECIAL MODIFIERS
+// ============================================================================
+
+describe("JSON Effect Parser - Duration and Modifiers", () => {
+  test("should parse effect with turn duration", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyATK",
+          trigger: "manual",
+          value: 1000,
+          duration: "turn",
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("modifyATK");
+    expect(result.effects[0]?.value).toBe(1000);
+  });
+
+  test("should parse effect with phase duration", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "modifyDEF",
+          trigger: "on_battle_start",
+          value: 500,
+          duration: "phase",
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.trigger).toBe("on_battle_start");
+  });
+
+  test("should parse chainable effect", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "negate",
+          trigger: "manual",
+          negateType: "activation",
+          chainable: true,
+          spellSpeed: 2,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("negate");
+  });
+
+  test("should parse negate and destroy effect", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "negate",
+          trigger: "manual",
+          negateType: "activation",
+          negateAndDestroy: true,
+          spellSpeed: 3,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("negate");
+  });
+});
+
+// ============================================================================
+// JSON PARSER - EMPTY AND EDGE CASES
+// ============================================================================
+
+describe("JSON Effect Parser - Edge Cases", () => {
+  test("should handle empty effects array", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(0);
+    expect(result.hasMultiPart).toBe(false);
+  });
+
+  test("should handle effect with minimal properties", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "manual",
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("draw");
+    expect(result.effects[0]?.trigger).toBe("manual");
+    expect(result.effects[0]?.value).toBeUndefined();
+  });
+
+  test("should handle effect with undefined optional fields", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "damage",
+          trigger: "manual",
+          value: 500,
+          cost: undefined,
+          target: undefined,
+          condition: undefined,
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.cost).toBeUndefined();
+    expect(result.effects[0]?.targetCount).toBeUndefined();
+  });
+
+  test("should handle effect with ability text metadata", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "draw",
+          trigger: "manual",
+          value: 2,
+          description: "Draw 2 cards",
+          effectId: "draw_2",
+        },
+      ],
+      abilityText: "Draw 2 cards from your deck.",
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("draw");
+  });
+
+  test("should handle target with all selection", () => {
+    const jsonAbility: JsonAbility = {
+      effects: [
+        {
+          type: "destroy",
+          trigger: "manual",
+          target: {
+            location: "board",
+            owner: "opponent",
+            count: "all",
+            selection: "all_matching",
+            condition: { cardType: "spell" },
+          },
+        },
+      ],
+    };
+
+    const result = parseJsonAbility(jsonAbility);
+
+    expect(result.effects).toHaveLength(1);
+    expect(result.effects[0]?.type).toBe("destroy");
+    // count: "all" should result in targetCount of 1 (default fallback)
+    expect(result.effects[0]?.targetCount).toBe(1);
   });
 });

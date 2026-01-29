@@ -1,7 +1,7 @@
 import type { Doc, Id } from "../../../../_generated/dataModel";
 import type { MutationCtx } from "../../../../_generated/server";
+import { getCardAbility } from "../../../../lib/abilityHelpers";
 import { recordEventHelper } from "../../../gameEvents";
-import { parseAbility } from "../../parser";
 
 export async function executeDestroy(
   ctx: MutationCtx,
@@ -16,7 +16,6 @@ export async function executeDestroy(
   destroyedCardOwnerId?: Id<"users">;
   hadDestroyTrigger?: boolean;
 }> {
-
   // Check both boards for target
   const hostBoard = gameState.hostBoard;
   const opponentBoard = gameState.opponentBoard;
@@ -49,9 +48,9 @@ export async function executeDestroy(
 
   // Check if card has on_destroy trigger (will be handled by executor.ts)
   let hadDestroyTrigger = false;
-  if (card?.ability) {
-    const parsedEffect = parseAbility(card.ability);
-    hadDestroyTrigger = parsedEffect?.trigger === "on_destroy";
+  const parsedAbility = getCardAbility(card);
+  if (parsedAbility) {
+    hadDestroyTrigger = parsedAbility.effects.some((effect) => effect.trigger === "on_destroy");
   }
 
   // Remove from board

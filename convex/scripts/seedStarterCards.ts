@@ -35,7 +35,7 @@ export const seedStarterCards = internalMutation({
         cost: card.cost,
         attack: "attack" in card ? card.attack : undefined,
         defense: "defense" in card ? card.defense : undefined,
-        ability: "ability" in card ? (card.ability as string | undefined) : undefined,
+        ability: "ability" in card ? card.ability : undefined,
         isActive: true,
         createdAt: now,
       });
@@ -52,7 +52,7 @@ export const seedStarterCards = internalMutation({
         cost: card.cost,
         attack: "attack" in card ? card.attack : undefined,
         defense: "defense" in card ? card.defense : undefined,
-        ability: "ability" in card ? (card.ability as string | undefined) : undefined,
+        ability: "ability" in card ? card.ability : undefined,
         isActive: true,
         createdAt: now,
       });

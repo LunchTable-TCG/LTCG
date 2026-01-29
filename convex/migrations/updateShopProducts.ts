@@ -32,6 +32,7 @@ export default internalMutation({
           await ctx.db.patch(product._id, {
             packConfig: {
               ...product.packConfig,
+              // biome-ignore lint/suspicious/noExplicitAny: Dynamic archetype type
               archetype: newArchetype as any,
             },
           });

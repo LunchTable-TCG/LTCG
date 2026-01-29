@@ -276,8 +276,8 @@ async function processQueue(
   const sortedQueue = [...queue].sort((a, b) => a.rating - b.rating);
 
   for (let i = 0; i < sortedQueue.length; i++) {
-    const player1 = sortedQueue[i]!;
-    if (matched.has(player1._id)) continue;
+    const player1 = sortedQueue[i];
+    if (!player1 || matched.has(player1._id)) continue;
 
     // Calculate rating window based on wait time
     const waitTimeSeconds = Math.floor((now - player1.joinedAt) / 1000);
@@ -289,8 +289,8 @@ async function processQueue(
 
     // Find best opponent within rating window
     for (let j = i + 1; j < sortedQueue.length; j++) {
-      const player2 = sortedQueue[j]!;
-      if (matched.has(player2._id)) continue;
+      const player2 = sortedQueue[j];
+      if (!player2 || matched.has(player2._id)) continue;
 
       const ratingDiff = Math.abs(player1.rating - player2.rating);
 
@@ -298,6 +298,7 @@ async function processQueue(
       if (ratingDiff <= ratingWindow) {
         // Match found! Create game
         try {
+          // @ts-ignore - TS2589: Type instantiation too deep with internal references
           await ctx.runMutation(internal.social.matchmaking.createMatchedGame, {
             player1Id: player1.userId,
             player2Id: player2.userId,

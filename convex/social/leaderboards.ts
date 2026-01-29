@@ -58,6 +58,7 @@ export const getLeaderboard = query({
   returns: v.array(leaderboardEntryValidator),
   handler: async (ctx, { type, segment, limit = LEADERBOARD.RANKS_TO_DISPLAY }) => {
     // Select the appropriate aggregate based on type
+    // biome-ignore lint/suspicious/noImplicitAnyLet: Aggregate type inferred from conditional assignment
     let aggregate;
     let namespace: "human" | "ai" | undefined;
 
@@ -474,6 +475,7 @@ async function getLeaderboardRankings(
   // Ranked and Casual modes use users table
   const ratingField = type === "ranked" ? "rankedElo" : "casualRating";
 
+  // biome-ignore lint/suspicious/noImplicitAnyLet: Players type inferred from conditional query
   let players;
 
   if (segment === "humans" || segment === "ai") {

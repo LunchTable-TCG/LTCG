@@ -52,13 +52,10 @@ export const initializeProgressionSystem = internalMutation({
   args: {},
   handler: async (ctx) => {
     // Seed quest definitions
-    await ctx.scheduler.runAfter(0, internal.progression.quests["seedQuests"]);
+    await ctx.scheduler.runAfter(0, internal.progression.quests.seedQuests);
 
     // Seed achievement definitions
-    await ctx.scheduler.runAfter(
-      0,
-      internal.progression.achievements["seedAchievements"]
-    );
+    await ctx.scheduler.runAfter(0, internal.progression.achievements.seedAchievements);
 
     return {
       success: true,

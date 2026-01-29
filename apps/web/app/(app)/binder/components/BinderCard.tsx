@@ -8,6 +8,13 @@ export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type Element = "fire" | "water" | "earth" | "wind" | "neutral";
 export type CardType = "creature" | "spell" | "trap" | "equipment";
 
+// JSON Ability type from the backend (simplified for frontend display)
+export interface JsonAbility {
+  name?: string;
+  effects?: Array<{ type?: string; description?: string }>;
+  // Other fields omitted - not needed for display
+}
+
 export interface CardData {
   id: string;
   cardDefinitionId?: string; // For deck operations
@@ -19,10 +26,27 @@ export interface CardData {
   attack?: number;
   defense?: number;
   cost: number;
-  ability?: string;
+  ability?: JsonAbility;
   flavorText?: string;
   owned: number;
   isFavorite?: boolean;
+}
+
+/**
+ * Get a display string from a JSON ability for UI purposes
+ */
+export function getAbilityDisplayText(ability?: JsonAbility): string | undefined {
+  if (!ability) return undefined;
+  // Prefer the name if available
+  if (ability.name) return ability.name;
+  // Fall back to effect type descriptions
+  if (ability.effects && ability.effects.length > 0) {
+    const effectDescs = ability.effects
+      .map(e => e.description || e.type)
+      .filter(Boolean);
+    return effectDescs.join(", ");
+  }
+  return undefined;
 }
 
 interface BinderCardProps {

@@ -394,7 +394,7 @@ export const getGameSpectatorView = query({
     // Return sanitized game state
     return {
       lobbyId: lobby._id,
-      gameId: lobby.gameId!,
+      gameId: lobby.gameId ?? "",
 
       // Player info
       host: {
@@ -405,8 +405,8 @@ export const getGameSpectatorView = query({
       },
       opponent: opponent
         ? {
-            userId: lobby.opponentId!,
-            username: lobby.opponentUsername!,
+            userId: lobby.opponentId ?? ("" as Id<"users">),
+            username: lobby.opponentUsername ?? "",
             rank: lobby.opponentRank,
           }
         : null,
@@ -458,7 +458,10 @@ export const checkForActiveGame = query({
       return null;
     }
 
-    const game = activeGames[0]!; // Safe: checked length > 0
+    const game = activeGames[0];
+    if (!game) {
+      return null;
+    }
 
     // Check if game is recent (not stale from cleanup failure)
     const FIVE_MINUTES = 5 * 60 * 1000;
@@ -471,7 +474,7 @@ export const checkForActiveGame = query({
     return {
       hasActiveGame: true,
       lobbyId: game._id,
-      gameId: game.gameId!,
+      gameId: game.gameId ?? "",
       isHost: game.hostId === userId,
       opponentUsername: game.hostId === userId ? game.opponentUsername : game.hostUsername,
       turnNumber: game.turnNumber,
@@ -543,7 +546,7 @@ export const getAvailableActions = query({
         break;
 
       case "battle_start":
-      case "battle":
+      case "battle": {
         // Can attack with monsters that haven't attacked yet
         const canAttack = myBoard.some((card) => !card.hasAttacked && card.position === 1);
         if (canAttack) {
@@ -551,6 +554,7 @@ export const getAvailableActions = query({
         }
         actions.push("advancePhase");
         break;
+      }
 
       case "battle_end":
         actions.push("advancePhase");
@@ -759,14 +763,14 @@ export const getGameStateForPlayer = query({
 
     // Return sanitized state (hide opponent's hand and deck) with full card data
     return {
-      gameId: lobby.gameId!,
+      gameId: lobby.gameId ?? "",
       lobbyId: args.lobbyId,
 
       // Player identity
       isHost,
       playerId: userId,
-      opponentId: isHost ? lobby.opponentId! : lobby.hostId,
-      opponentUsername: isHost ? lobby.opponentUsername! : lobby.hostUsername,
+      opponentId: isHost ? (lobby.opponentId ?? ("" as Id<"users">)) : lobby.hostId,
+      opponentUsername: isHost ? (lobby.opponentUsername ?? "") : lobby.hostUsername,
 
       // Turn info
       currentTurnPlayerId: gameState.currentTurnPlayerId,

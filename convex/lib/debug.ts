@@ -37,8 +37,11 @@ export interface PerformanceMetric {
 // Environment Configuration
 // ============================================================================
 
+// biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
 const IS_PRODUCTION = process.env["CONVEX_CLOUD_URL"] !== undefined;
-const LOG_LEVEL: LogLevel = (process.env["LOG_LEVEL"] as LogLevel) || (IS_PRODUCTION ? "info" : "debug");
+const LOG_LEVEL: LogLevel =
+  // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
+  (process.env["LOG_LEVEL"] as LogLevel) || (IS_PRODUCTION ? "info" : "debug");
 
 // Log level hierarchy
 const LOG_LEVELS: Record<LogLevel, number> = {
@@ -62,7 +65,7 @@ class ConvexLogger {
   /**
    * Check if a log level should be emitted
    */
-  private shouldLog(level: LogLevel): boolean {
+  private shouldLog(level: LogLevel) {
     return LOG_LEVELS[level] >= this.minLevel;
   }
 
@@ -74,7 +77,7 @@ class ConvexLogger {
     message: string,
     context?: LogContext,
     error?: Error
-  ): string {
+  ) {
     const timestamp = new Date().toISOString();
     const contextStr = context ? ` | ${JSON.stringify(context)}` : "";
     const errorStr = error ? ` | Error: ${error.message}\nStack: ${error.stack}` : "";
@@ -85,7 +88,7 @@ class ConvexLogger {
   /**
    * Log debug information (development only)
    */
-  debug(message: string, context?: LogContext): void {
+  debug(message: string, context?: LogContext) {
     if (this.shouldLog("debug")) {
       console.log(this.formatMessage("debug", message, context));
     }
@@ -94,7 +97,7 @@ class ConvexLogger {
   /**
    * Log informational messages
    */
-  info(message: string, context?: LogContext): void {
+  info(message: string, context?: LogContext) {
     if (this.shouldLog("info")) {
       console.log(this.formatMessage("info", message, context));
     }
@@ -103,7 +106,7 @@ class ConvexLogger {
   /**
    * Log warnings
    */
-  warn(message: string, context?: LogContext): void {
+  warn(message: string, context?: LogContext) {
     if (this.shouldLog("warn")) {
       console.warn(this.formatMessage("warn", message, context));
     }
@@ -112,7 +115,7 @@ class ConvexLogger {
   /**
    * Log errors with full context
    */
-  error(message: string, error?: Error, context?: LogContext): void {
+  error(message: string, error?: Error, context?: LogContext) {
     if (this.shouldLog("error")) {
       console.error(this.formatMessage("error", message, context, error));
     }
@@ -121,42 +124,42 @@ class ConvexLogger {
   /**
    * Log function entry (debug only)
    */
-  functionEntry(functionName: string, args?: Record<string, unknown>): void {
+  functionEntry(functionName: string, args?: Record<string, unknown>) {
     this.debug(`→ ${functionName}`, { args });
   }
 
   /**
    * Log function exit (debug only)
    */
-  functionExit(functionName: string, result?: unknown): void {
+  functionExit(functionName: string, result?: unknown) {
     this.debug(`← ${functionName}`, { result: typeof result });
   }
 
   /**
    * Log database operation
    */
-  dbOperation(operation: string, table: string, context?: LogContext): void {
+  dbOperation(operation: string, table: string, context?: LogContext) {
     this.debug(`DB: ${operation} on ${table}`, context);
   }
 
   /**
    * Log mutation
    */
-  mutation(name: string, userId: string, args?: Record<string, unknown>): void {
+  mutation(name: string, userId: string, args?: Record<string, unknown>) {
     this.info(`Mutation: ${name}`, { userId, args });
   }
 
   /**
    * Log query
    */
-  query(name: string, userId?: string, args?: Record<string, unknown>): void {
+  query(name: string, userId?: string, args?: Record<string, unknown>) {
     this.debug(`Query: ${name}`, { userId, args });
   }
 
   /**
    * Log action
    */
-  action(name: string, context?: LogContext): void {
+  action(name: string, context?: LogContext) {
     this.info(`Action: ${name}`, context);
   }
 }
@@ -171,7 +174,7 @@ class PerformanceMonitor {
   /**
    * Start timing an operation
    */
-  start(operationId: string): void {
+  start(operationId: string) {
     this.timers.set(operationId, Date.now());
     logger.debug(`⏱️  Started: ${operationId}`);
   }
@@ -179,7 +182,7 @@ class PerformanceMonitor {
   /**
    * End timing and log duration
    */
-  end(operationId: string, context?: LogContext): number {
+  end(operationId: string, context?: LogContext) {
     const startTime = this.timers.get(operationId);
     if (!startTime) {
       logger.warn(`No timer found for operation: ${operationId}`);
@@ -226,7 +229,7 @@ class PerformanceMonitor {
 /**
  * Generate a unique trace ID for request correlation
  */
-export function generateTraceId(): string {
+export function generateTraceId() {
   return `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
@@ -269,6 +272,7 @@ export function logAndSanitizeError(
 /**
  * Wrap a function with error logging
  */
+// biome-ignore lint/suspicious/noExplicitAny: Generic function wrapper type
 export function withErrorLogging<T extends (...args: any[]) => any>(
   fn: T,
   functionName: string
@@ -307,11 +311,7 @@ export function withErrorLogging<T extends (...args: any[]) => any>(
 /**
  * Log game state for debugging
  */
-export function logGameState(
-  lobbyId: string,
-  phase: string,
-  context: LogContext
-): void {
+export function logGameState(lobbyId: string, phase: string, context: LogContext) {
   logger.debug(`Game State: ${lobbyId}`, { phase, ...context });
 }
 
@@ -323,7 +323,7 @@ export function logCardEffect(
   effectType: string,
   success: boolean,
   context?: LogContext
-): void {
+) {
   const level = success ? "info" : "warn";
   logger[level](`Card Effect: ${cardName} - ${effectType}`, { ...context, success });
 }
@@ -331,11 +331,7 @@ export function logCardEffect(
 /**
  * Log matchmaking event
  */
-export function logMatchmaking(
-  event: string,
-  playerId: string,
-  context?: LogContext
-): void {
+export function logMatchmaking(event: string, playerId: string, context?: LogContext) {
   logger.info(`Matchmaking: ${event}`, { playerId, ...context });
 }
 

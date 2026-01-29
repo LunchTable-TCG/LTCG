@@ -4,8 +4,8 @@
  * Tests XP calculation, level progression, and badge awarding
  */
 
-import { describe, expect, it } from "vitest";
 import { createTestInstance } from "@convex-test-utils/setup";
+import { describe, expect, it } from "vitest";
 import type { MutationCtx } from "../_generated/server";
 import { XP_PER_LEVEL } from "./storyConstants";
 import { calculateLevel, getLevelProgress, getXPForNextLevel } from "./xpHelpers";
@@ -139,7 +139,9 @@ describe("addXP", () => {
 
     const xpRecord = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
+        // biome-ignore lint/suspicious/noExplicitAny: Test table name cast for convex-test
         .query("playerXP" as any)
+        // biome-ignore lint/suspicious/noExplicitAny: Test index and query callback workaround
         .withIndex("by_user" as any, (q: any) => q.eq("userId", userId))
         .first();
     });
@@ -182,7 +184,9 @@ describe("addXP", () => {
 
     const badge = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
+        // biome-ignore lint/suspicious/noExplicitAny: Test table name cast for convex-test
         .query("playerBadges" as any)
+        // biome-ignore lint/suspicious/noExplicitAny: Test index and query callback workaround
         .withIndex("by_user" as any, (q: any) => q.eq("userId", userId))
         .first();
     });
@@ -222,12 +226,15 @@ describe("addXP", () => {
 
     const badges = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
+        // biome-ignore lint/suspicious/noExplicitAny: Test table name cast for convex-test
         .query("playerBadges" as any)
+        // biome-ignore lint/suspicious/noExplicitAny: Test index and query callback workaround
         .withIndex("by_user" as any, (q: any) => q.eq("userId", userId))
         .collect();
     });
 
     // Should only have one milestone_novice badge
+    // biome-ignore lint/suspicious/noExplicitAny: Test filter callback workaround
     const noviceBadges = badges.filter((b: any) => b.badgeId === "milestone_novice");
     expect(noviceBadges.length).toBe(1);
   });
@@ -264,7 +271,9 @@ describe("addXP", () => {
 
     const xpRecord = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
+        // biome-ignore lint/suspicious/noExplicitAny: Test table name cast for convex-test
         .query("playerXP" as any)
+        // biome-ignore lint/suspicious/noExplicitAny: Test index and query callback workaround
         .withIndex("by_user" as any, (q: any) => q.eq("userId", userId))
         .first();
     });
@@ -330,7 +339,9 @@ describe("addXP", () => {
 
     const xpRecord = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db
+        // biome-ignore lint/suspicious/noExplicitAny: Test table name cast for convex-test
         .query("playerXP" as any)
+        // biome-ignore lint/suspicious/noExplicitAny: Test index and query callback workaround
         .withIndex("by_user" as any, (q: any) => q.eq("userId", userId))
         .first();
     });

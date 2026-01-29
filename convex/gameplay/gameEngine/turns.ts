@@ -13,9 +13,9 @@ import {
   clearOPTTracking,
   clearTemporaryModifiers,
   drawCards,
-  enforceHandLimit,
 } from "../../lib/gameHelpers";
 import { recordEventHelper } from "../gameEvents";
+import { checkStateBasedActions, checkDeckOutCondition } from "./stateBasedActions";
 
 /**
  * End Turn
@@ -72,8 +72,23 @@ export const endTurn = mutation({
 
     // 6. Trigger end-of-turn effects (future implementation)
 
-    // 7. Enforce hand size limit (6 cards max)
-    await enforceHandLimit(ctx, gameState, user.userId, lobby.turnNumber);
+    // 7. Enforce hand size limit via state-based actions (6 cards max)
+    // SBA will handle discarding excess cards
+    const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {
+      skipHandLimit: false, // Enforce hand limit at end of turn
+      turnNumber: lobby.turnNumber,
+    });
+
+    // Check if game ended during SBA (unlikely at end of turn, but possible)
+    if (sbaResult.gameEnded) {
+      return {
+        success: true,
+        gameEnded: true,
+        winnerId: sbaResult.winnerId,
+        newTurnPlayer: undefined,
+        newTurnNumber: undefined,
+      };
+    }
 
     // 7.5. Clear temporary modifiers (ATK/DEF bonuses "until end of turn")
     await clearTemporaryModifiers(ctx, gameState, "end");
@@ -99,20 +114,20 @@ export const endTurn = mutation({
     // 9. Record turn_end event
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
+      gameId: lobby.gameId ?? "",
+      turnNumber: lobby.turnNumber ?? 0,
       eventType: "turn_end",
       playerId: user.userId,
       playerUsername: user.username,
       description: `${user.username}'s turn ended`,
       metadata: {
-        turnNumber: lobby.turnNumber!,
+        turnNumber: lobby.turnNumber ?? 0,
       },
     });
 
     // 10. Switch to next player
     const nextPlayerId = isHost ? gameState.opponentId : gameState.hostId;
-    const nextTurnNumber = lobby.turnNumber! + 1;
+    const nextTurnNumber = (lobby.turnNumber ?? 0) + 1;
 
     await ctx.db.patch(args.lobbyId, {
       currentTurnPlayerId: nextPlayerId,
@@ -131,7 +146,7 @@ export const endTurn = mutation({
     const nextPlayer = await ctx.db.get(nextPlayerId);
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
+      gameId: lobby.gameId ?? "",
       turnNumber: nextTurnNumber,
       eventType: "turn_start",
       playerId: nextPlayerId,
@@ -159,6 +174,26 @@ export const endTurn = mutation({
       console.log(
         `Turn ${nextTurnNumber}: ${nextPlayer?.username} drew ${drawnCards.length} card(s)`
       );
+
+      // Check for deck-out condition (player needs to draw but deck is empty)
+      if (drawnCards.length === 0) {
+        const deckOutResult = await checkDeckOutCondition(
+          ctx,
+          args.lobbyId,
+          nextPlayerId,
+          nextTurnNumber
+        );
+        if (deckOutResult.gameEnded) {
+          return {
+            success: true,
+            gameEnded: true,
+            winnerId: deckOutResult.winnerId,
+            newTurnPlayer: nextPlayer?.username || "Unknown",
+            newTurnNumber: nextTurnNumber,
+            endReason: "deck_out",
+          };
+        }
+      }
     } else {
       console.log(`Turn ${nextTurnNumber}: Skipping draw for first player's first turn`);
     }
@@ -171,7 +206,7 @@ export const endTurn = mutation({
     // Record phase change to Main Phase 1
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
+      gameId: lobby.gameId ?? "",
       turnNumber: nextTurnNumber,
       eventType: "phase_changed",
       playerId: nextPlayerId,

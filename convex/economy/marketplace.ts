@@ -12,11 +12,10 @@ const emailActions = internal.emailActions;
 
 // Helper to avoid TypeScript "Type instantiation is excessively deep" errors
 // This is a known limitation with deeply nested generic types in large codebases
+// biome-ignore lint/suspicious/noExplicitAny: Convex scheduler type workaround for TS2589
 const scheduleEmail = (ctx: any, emailFunction: any, args: any) =>
   ctx.scheduler.runAfter(0, emailFunction, args);
-import {
-  auctionBidValidator,
-} from "../lib/returnValidators";
+import { auctionBidValidator } from "../lib/returnValidators";
 import { checkCardOwnership } from "../lib/validators";
 import { adjustPlayerCurrencyHelper } from "./economy";
 
@@ -70,7 +69,7 @@ export const getMarketplaceListings = query({
     const pageSize = PAGINATION.MARKETPLACE_PAGE_SIZE;
 
     // Get active listings with listing type filter at query level
-    let listingsQuery = ctx.db
+    const listingsQuery = ctx.db
       .query("marketplaceListings")
       .withIndex("by_status", (q) => q.eq("status", "active"));
 
@@ -366,7 +365,7 @@ export const cancelListing = mutation({
             userId: bid.bidderId,
             goldDelta: bid.bidAmount,
             transactionType: "auction_refund",
-            description: `Auction cancelled - refund`,
+            description: "Auction cancelled - refund",
             referenceId: args.listingId,
           });
 

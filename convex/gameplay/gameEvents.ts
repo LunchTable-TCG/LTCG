@@ -183,7 +183,7 @@ export const getGameEventStats = query({
       lastEvent: events[events.length - 1]?.timestamp,
       gameDuration:
         events.length > 0 && events[0] && events[events.length - 1]
-          ? events[events.length - 1]!.timestamp - events[0]!.timestamp
+          ? (events[events.length - 1]?.timestamp ?? 0) - (events[0]?.timestamp ?? 0)
           : 0,
     };
   },
@@ -223,6 +223,7 @@ export async function recordEventHelper(
     playerId: Id<"users">;
     playerUsername: string;
     description: string;
+    // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata structure for game events
     metadata?: any;
   }
 ): Promise<void> {
@@ -230,7 +231,8 @@ export async function recordEventHelper(
     lobbyId: params.lobbyId,
     gameId: params.gameId,
     turnNumber: params.turnNumber,
-    eventType: params.eventType as any, // Type assertion for union type
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for dynamic event type union
+    eventType: params.eventType as any,
     playerId: params.playerId,
     playerUsername: params.playerUsername,
     description: params.description,

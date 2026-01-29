@@ -10,6 +10,7 @@
 
 import { v } from "convex/values";
 import type { GenericValidator } from "convex/values";
+import { jsonAbilityValidator } from "../gameplay/effectSystem/jsonEffectValidators";
 
 // ============================================================================
 // AUTHENTICATION VALIDATORS
@@ -525,7 +526,7 @@ export const cardWithOwnershipValidator = v.object({
   attack: v.optional(v.number()),
   defense: v.optional(v.number()),
   cost: v.number(),
-  ability: v.optional(v.string()),
+  ability: v.optional(jsonAbilityValidator),
   flavorText: v.optional(v.string()),
   imageUrl: v.optional(v.string()),
   owned: v.number(), // How many copies the user owns
@@ -588,7 +589,7 @@ export const deckCardEntryValidator = v.object({
   attack: v.optional(v.number()),
   defense: v.optional(v.number()),
   cost: v.number(),
-  ability: v.optional(v.string()),
+  ability: v.optional(jsonAbilityValidator),
   flavorText: v.optional(v.string()),
   imageUrl: v.optional(v.string()),
   quantity: v.number(),

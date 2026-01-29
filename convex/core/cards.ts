@@ -5,6 +5,7 @@ import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { archetypeToElement } from "../lib/helpers";
 import { cardWithOwnershipValidator } from "../lib/returnValidators";
+import { jsonAbilityValidator } from "../gameplay/effectSystem/jsonEffectValidators";
 
 // ============================================================================
 // QUERIES
@@ -59,7 +60,9 @@ export const getUserCards = query({
     // Batch fetch card definitions to avoid N+1 queries
     const cardDefIds = playerCards.map((pc) => pc.cardDefinitionId);
     const cardDefs = await Promise.all(cardDefIds.map((id) => ctx.db.get(id)));
-    const cardDefMap = new Map(cardDefs.filter((c) => c !== null).map((c) => [c!._id, c!]));
+    const cardDefMap = new Map(
+      cardDefs.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
+    );
 
     // Join with card definitions using the map
     const cardsWithDefinitions = playerCards
@@ -111,7 +114,9 @@ export const getUserFavoriteCards = query({
     // Batch fetch card definitions to avoid N+1 queries
     const cardDefIds = favoriteCards.map((pc) => pc.cardDefinitionId);
     const cardDefs = await Promise.all(cardDefIds.map((id) => ctx.db.get(id)));
-    const cardDefMap = new Map(cardDefs.filter((c) => c !== null).map((c) => [c!._id, c!]));
+    const cardDefMap = new Map(
+      cardDefs.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
+    );
 
     // Join with card definitions using the map
     const cardsWithDefinitions = favoriteCards
@@ -253,18 +258,17 @@ export const addCardsToInventory = mutation({
         lastUpdatedAt: Date.now(),
       });
       return { success: true, newQuantity: existingCard.quantity + args.quantity };
-    } else {
-      // Create new ownership record
-      await ctx.db.insert("playerCards", {
-        userId,
-        cardDefinitionId: args.cardDefinitionId,
-        quantity: args.quantity,
-        isFavorite: false,
-        acquiredAt: Date.now(),
-        lastUpdatedAt: Date.now(),
-      });
-      return { success: true, newQuantity: args.quantity };
     }
+    // Create new ownership record
+    await ctx.db.insert("playerCards", {
+      userId,
+      cardDefinitionId: args.cardDefinitionId,
+      quantity: args.quantity,
+      isFavorite: false,
+      acquiredAt: Date.now(),
+      lastUpdatedAt: Date.now(),
+    });
+    return { success: true, newQuantity: args.quantity };
   },
 });
 
@@ -365,7 +369,7 @@ export const createCardDefinition = internalMutation({
     attack: v.optional(v.number()),
     defense: v.optional(v.number()),
     cost: v.number(),
-    ability: v.optional(v.string()),
+    ability: v.optional(jsonAbilityValidator),
     flavorText: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
   },

@@ -1,20 +1,13 @@
-import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
+import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { PAGINATION } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import {
-  addCardsToInventory,
-  getRandomCard,
-  openPack,
-  weightedRandomRarity,
-} from "../lib/helpers";
-import {
-  cardResultValidator,
-} from "../lib/returnValidators";
-import { packPurchaseValidator } from "../lib/returnValidators";
+import { addCardsToInventory, getRandomCard, openPack, weightedRandomRarity } from "../lib/helpers";
 import { checkRateLimitWrapper } from "../lib/rateLimit";
+import { cardResultValidator } from "../lib/returnValidators";
+import { packPurchaseValidator } from "../lib/returnValidators";
 import type { CardResult } from "../lib/types";
 import { validateCurrency, validateCurrencyBalance, validatePositive } from "../lib/validation";
 import { adjustPlayerCurrencyHelper } from "./economy";
@@ -266,9 +259,15 @@ export const purchaseBox = mutation({
     }
 
     // Get pack definition
+    const packProductId = product.boxConfig?.packProductId;
+    if (!packProductId) {
+      throw createError(ErrorCode.ECONOMY_INVALID_PRODUCT, {
+        reason: "Box configuration missing pack product ID",
+      });
+    }
     const packProduct = await ctx.db
       .query("shopProducts")
-      .withIndex("by_product_id", (q) => q.eq("productId", product.boxConfig!.packProductId))
+      .withIndex("by_product_id", (q) => q.eq("productId", packProductId))
       .first();
 
     if (!packProduct || !packProduct.packConfig) {

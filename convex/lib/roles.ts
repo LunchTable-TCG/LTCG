@@ -142,14 +142,14 @@ export async function getUserRole(ctx: SharedCtx, userId: Id<"users">): Promise<
 /**
  * Check if a role has sufficient privilege level
  */
-export function hasRoleLevel(userRole: UserRole, requiredRole: UserRole): boolean {
+export function hasRoleLevel(userRole: UserRole, requiredRole: UserRole) {
   return roleHierarchy[userRole] >= roleHierarchy[requiredRole];
 }
 
 /**
  * Check if user has a specific permission
  */
-export function hasPermission(role: UserRole, permission: Permission): boolean {
+export function hasPermission(role: UserRole, permission: Permission) {
   const permissions = rolePermissions[role];
   return permissions.includes(permission);
 }
@@ -168,7 +168,7 @@ export function getRolePermissions(role: UserRole): Permission[] {
  * - Admins can manage moderator roles
  * - Cannot manage roles equal to or higher than your own
  */
-export function canManageRole(actorRole: UserRole, targetRole: UserRole): boolean {
+export function canManageRole(actorRole: UserRole, targetRole: UserRole) {
   // Superadmin can manage all roles
   if (actorRole === "superadmin") {
     return true;

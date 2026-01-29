@@ -14,7 +14,7 @@ import { internalMutation } from "../_generated/server";
 export const migrateAdminRoles = internalMutation({
   args: {},
   handler: async (ctx) => {
-    let migrationLog = {
+    const migrationLog = {
       totalRecords: 0,
       updatedRecords: 0,
       skippedRecords: 0,
@@ -67,7 +67,7 @@ export const migrateAdminRoles = internalMutation({
       }
 
       console.log("[Migration] Admin role migration completed");
-      console.log(`[Migration] Summary:`, migrationLog);
+      console.log("[Migration] Summary:", migrationLog);
 
       return {
         success: true,

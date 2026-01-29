@@ -20,8 +20,10 @@ import {
   getModifiedStats,
   moveCard,
 } from "../lib/gameHelpers";
-import { executeEffect, parseAbility } from "./effectSystem/index";
+import { executeEffect } from "./effectSystem/index";
+import { getCardFirstEffect } from "../lib/abilityHelpers";
 import { recordEventHelper } from "./gameEvents";
+import { checkStateBasedActions } from "./gameEngine/stateBasedActions";
 
 interface BattleResult {
   destroyed: Id<"cardDefinitions">[];
@@ -175,8 +177,8 @@ export const declareAttack = mutation({
       let canDirectAttack = opponentBoard.length === 0; // Default: only if no monsters
 
       // Check if attacker has a directAttack ability that allows attacking directly
-      if (!canDirectAttack && attackerCard.ability) {
-        const parsedAbility = parseAbility(attackerCard.ability);
+      if (!canDirectAttack) {
+        const parsedAbility = getCardFirstEffect(attackerCard);
         if (parsedAbility?.type === "directAttack") {
           // Check the condition for direct attack
           if (parsedAbility.condition === "no_opponent_attack_monsters") {
@@ -345,10 +347,28 @@ export const declareAttack = mutation({
       [isHost ? "hostBoard" : "opponentBoard"]: updatedPlayerBoard,
     });
 
-    // 13. Return battle result
+    // 13. Run state-based action checks after combat
+    // This catches any monsters that should be destroyed due to stat changes
+    // and checks win conditions after damage
+    const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {
+      skipHandLimit: true,
+      turnNumber: lobby.turnNumber,
+    });
+
+    // If SBA ended the game, update battle result
+    if (sbaResult.gameEnded) {
+      battleResult.gameEnded = true;
+    }
+
+    // 14. Return battle result
     return {
       success: true,
       battleResult,
+      sbaResult: {
+        gameEnded: sbaResult.gameEnded,
+        winnerId: sbaResult.winnerId,
+        destroyedCards: sbaResult.allDestroyedCards,
+      },
     };
   },
 });
@@ -420,8 +440,8 @@ async function resolveBattle(
     result.gameEnded = gameEnded;
 
     // Check for "When inflicts battle damage" trigger on attacker
-    if (attackerCard.ability) {
-      const parsedEffect = parseAbility(attackerCard.ability);
+    {
+      const parsedEffect = getCardFirstEffect(attackerCard);
       if (parsedEffect && parsedEffect.trigger === "on_battle_damage") {
         const refreshedState = await ctx.db
           .query("gameStates")
@@ -471,8 +491,8 @@ async function resolveBattle(
   }
 
   // Check for "When attacked" trigger on defender BEFORE damage calculation
-  if (defenderCard.ability) {
-    const parsedEffect = parseAbility(defenderCard.ability);
+  {
+    const parsedEffect = getCardFirstEffect(defenderCard);
     if (parsedEffect && parsedEffect.trigger === "on_battle_attacked") {
       const refreshedState = await ctx.db
         .query("gameStates")
@@ -557,8 +577,8 @@ async function resolveBattle(
       result.gameEnded = gameEnded;
 
       // Check for "When destroys monster by battle" trigger on attacker
-      if (attackerCard.ability) {
-        const parsedEffect = parseAbility(attackerCard.ability);
+      {
+        const parsedEffect = getCardFirstEffect(attackerCard);
         if (parsedEffect && parsedEffect.trigger === "on_battle_destroy") {
           const refreshedState = await ctx.db
             .query("gameStates")
@@ -593,8 +613,8 @@ async function resolveBattle(
       }
 
       // Check for "When inflicts battle damage" trigger on attacker
-      if (attackerCard.ability) {
-        const parsedEffect = parseAbility(attackerCard.ability);
+      {
+        const parsedEffect = getCardFirstEffect(attackerCard);
         if (parsedEffect && parsedEffect.trigger === "on_battle_damage") {
           const refreshedState = await ctx.db
             .query("gameStates")
@@ -712,8 +732,9 @@ async function resolveBattle(
         false
       );
 
-      // Check for piercing damage
-      const hasPiercing = attackerCard.ability?.toLowerCase().includes("piercing");
+      // Check for piercing damage (check if ability name contains "piercing" or has a piercing effect)
+      const hasPiercing = attackerCard.ability?.name?.toLowerCase().includes("piercing") ||
+        attackerCard.ability?.effects?.some((e: { type?: string }) => e.type === "piercing");
       if (hasPiercing) {
         const piercingDamage = attacker.attack - defenderValue;
         const gameEnded = await applyDamage(
@@ -729,8 +750,8 @@ async function resolveBattle(
         result.gameEnded = gameEnded;
 
         // Check for "When inflicts battle damage" trigger on attacker (piercing)
-        if (attackerCard.ability) {
-          const parsedEffect = parseAbility(attackerCard.ability);
+        {
+          const parsedEffect = getCardFirstEffect(attackerCard);
           if (parsedEffect && parsedEffect.trigger === "on_battle_damage") {
             const refreshedState = await ctx.db
               .query("gameStates")
@@ -766,8 +787,8 @@ async function resolveBattle(
       }
 
       // Check for "When destroys monster by battle" trigger on attacker
-      if (attackerCard.ability) {
-        const parsedEffect = parseAbility(attackerCard.ability);
+      {
+        const parsedEffect = getCardFirstEffect(attackerCard);
         if (parsedEffect && parsedEffect.trigger === "on_battle_destroy") {
           const refreshedState = await ctx.db
             .query("gameStates")
@@ -902,8 +923,8 @@ async function destroyCard(
   });
 
   // Check for "When destroyed" trigger effects BEFORE moving to graveyard
-  if (card?.ability) {
-    const parsedEffect = parseAbility(card.ability);
+  {
+    const parsedEffect = getCardFirstEffect(card);
 
     if (parsedEffect && parsedEffect.trigger === "on_destroy") {
       const refreshedState = await ctx.db

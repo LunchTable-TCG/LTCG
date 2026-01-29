@@ -12,7 +12,7 @@ import { fullUserValidator } from "./lib/returnValidators";
  * - At least one lowercase letter
  * - At least one number
  */
-function validatePasswordRequirements(password: string): void {
+function validatePasswordRequirements(password: string) {
   if (!password || password.length < 8) {
     throw new ConvexError({
       code: "PASSWORD_TOO_SHORT",
@@ -42,13 +42,7 @@ function validatePasswordRequirements(password: string): void {
   }
 
   // SECURITY: Check for common passwords
-  const commonPasswords = [
-    "password",
-    "12345678",
-    "password1",
-    "qwerty123",
-    "admin123",
-  ];
+  const commonPasswords = ["password", "12345678", "password1", "qwerty123", "admin123"];
   if (commonPasswords.includes(password.toLowerCase())) {
     throw new ConvexError({
       code: "PASSWORD_TOO_COMMON",
@@ -61,7 +55,7 @@ function validatePasswordRequirements(password: string): void {
  * SECURITY: Validate username format server-side
  * Must match client validation: 3-20 alphanumeric characters
  */
-function validateUsername(username: string): void {
+function validateUsername(username: string) {
   const usernameRegex = /^[a-zA-Z0-9]{3,20}$/;
 
   if (!username || !usernameRegex.test(username)) {
@@ -81,16 +75,21 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 
       profile(params) {
         console.log("🔐 Password provider profile() called", {
+          // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
           flow: params["flow"],
+          // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
           email: params["email"],
         });
+        // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
         const flow = params["flow"] as string;
 
         // Only initialize custom fields on signUp, not signIn
         if (flow === "signUp") {
           console.log("📝 Creating new user profile");
 
+          // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
           const name = params["name"] as string;
+          // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
           const email = params["email"] as string;
 
           // SECURITY: Validate username format server-side
@@ -124,6 +123,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         }
 
         // For signIn, normalize email
+        // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
         const email = params["email"] as string;
         return {
           email: email.trim().toLowerCase(),

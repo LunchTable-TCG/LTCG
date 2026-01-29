@@ -11,11 +11,20 @@ import { v } from "convex/values";
 import { mutation } from "../../_generated/server";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
-import { parseAbility } from "../effectSystem";
+import { getSpellSpeed } from "../../lib/spellSpeedHelper";
+import { addToChainHelper, type ChainEffect } from "../chainResolver";
+import { getCardAbility, getRawJsonAbility } from "../../lib/abilityHelpers";
 import { executeSearch } from "../effectSystem/executors/cardMovement/search";
 import { recordEventHelper } from "../gameEvents";
-import { getSpellSpeed } from "../../lib/spellSpeedHelper";
-import { addToChainHelper } from "../chainResolver";
+
+/**
+ * Get the effect to use for chain resolution.
+ * Returns the JSON ability from the card.
+ */
+function getChainEffect(card: { ability?: unknown }): ChainEffect {
+  const jsonAbility = getRawJsonAbility(card as any);
+  return jsonAbility ?? { effects: [] };
+}
 
 /**
  * Set a Spell or Trap card face-down in the Spell/Trap Zone
@@ -112,8 +121,8 @@ export const setSpellTrap = mutation({
     const eventType = card.cardType === "spell" ? "spell_set" : "trap_set";
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
+      gameId: lobby.gameId ?? "",
+      turnNumber: lobby.turnNumber ?? 0,
       eventType,
       playerId: user.userId,
       playerUsername: user.username,
@@ -231,8 +240,8 @@ export const activateSpell = mutation({
     // 9. Record spell_activated event
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
+      gameId: lobby.gameId ?? "",
+      turnNumber: lobby.turnNumber ?? 0,
       eventType: "spell_activated",
       playerId: user.userId,
       playerUsername: user.username,
@@ -246,7 +255,7 @@ export const activateSpell = mutation({
 
     // 10. Add to chain system (instead of executing immediately)
     const spellSpeed = getSpellSpeed(card);
-    const ability = card.ability || "";
+    const effect = getChainEffect(card);
 
     // Add to chain
     const chainResult = await addToChainHelper(ctx, {
@@ -255,7 +264,7 @@ export const activateSpell = mutation({
       playerId: user.userId,
       playerUsername: user.username,
       spellSpeed,
-      effect: ability,
+      effect,
       targets: args.targets,
     });
 
@@ -317,8 +326,9 @@ export const completeSearchEffect = mutation({
     }
 
     // 4. Parse ability to get search effect
-    const parsedAbility = parseAbility(sourceCard.ability);
-    if (!parsedAbility || parsedAbility.type !== "search") {
+    const parsedAbility = getCardAbility(sourceCard);
+    const searchEffect = parsedAbility?.effects.find((e) => e.type === "search");
+    if (!searchEffect) {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: "Source card does not have a search effect",
       });
@@ -329,7 +339,7 @@ export const completeSearchEffect = mutation({
       ctx,
       gameState,
       user.userId,
-      parsedAbility,
+      searchEffect,
       args.selectedCardId
     );
 
@@ -430,8 +440,8 @@ export const activateTrap = mutation({
     // 8. Record trap_activated event
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
+      gameId: lobby.gameId ?? "",
+      turnNumber: lobby.turnNumber ?? 0,
       eventType: "trap_activated",
       playerId: user.userId,
       playerUsername: user.username,
@@ -445,7 +455,7 @@ export const activateTrap = mutation({
 
     // 9. Add to chain system (instead of executing immediately)
     const trapSpeed = getSpellSpeed(card);
-    const ability = card.ability || "";
+    const effect = getChainEffect(card);
 
     // Add to chain
     const chainResult = await addToChainHelper(ctx, {
@@ -454,7 +464,7 @@ export const activateTrap = mutation({
       playerId: user.userId,
       playerUsername: user.username,
       spellSpeed: trapSpeed,
-      effect: ability,
+      effect,
       targets: args.targets,
     });
 

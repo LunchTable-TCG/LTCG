@@ -142,14 +142,14 @@ export const initializeStoryBattle = mutation({
  *
  * For MVP: Queries cards of the given archetype and builds a 45-card deck
  */
-async function buildAIDeck(
-  ctx: any,
-  archetype: string
-): Promise<Id<"cardDefinitions">[]> {
+// biome-ignore lint/suspicious/noExplicitAny: Convex context type workaround
+async function buildAIDeck(ctx: any, archetype: string): Promise<Id<"cardDefinitions">[]> {
   // Query all active cards of this archetype
   const archetypeCards = await ctx.db
     .query("cardDefinitions")
+    // biome-ignore lint/suspicious/noExplicitAny: Convex query builder type
     .withIndex("by_archetype", (q: any) => q.eq("archetype", archetype))
+    // biome-ignore lint/suspicious/noExplicitAny: Convex filter type
     .filter((q: any) => q.eq(q.field("isActive"), true))
     .collect();
 
@@ -161,8 +161,11 @@ async function buildAIDeck(
 
   // Build deck: 45 cards
   // Strategy: Mix of creatures (60%), spells (25%), traps (15%)
+  // biome-ignore lint/suspicious/noExplicitAny: Card type filtering
   const creatures = archetypeCards.filter((c: any) => c.cardType === "creature");
+  // biome-ignore lint/suspicious/noExplicitAny: Card type filtering
   const spells = archetypeCards.filter((c: any) => c.cardType === "spell");
+  // biome-ignore lint/suspicious/noExplicitAny: Card type filtering
   const traps = archetypeCards.filter((c: any) => c.cardType === "trap");
 
   const deck: Id<"cardDefinitions">[] = [];
@@ -207,10 +210,12 @@ async function buildAIDeck(
  *
  * For MVP: Creates a single AI user with a dummy deck
  */
+// biome-ignore lint/suspicious/noExplicitAny: Convex context type workaround
 async function getOrCreateAIUser(ctx: any): Promise<Id<"users">> {
   // Check if AI user already exists
   const existingAI = await ctx.db
     .query("users")
+    // biome-ignore lint/suspicious/noExplicitAny: Convex query builder type
     .withIndex("username", (q: any) => q.eq("username", "StoryModeAI"))
     .first();
 

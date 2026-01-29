@@ -9,6 +9,7 @@
  */
 
 import type { Id } from "@convex/_generated/dataModel";
+import type { JsonAbility } from "../lib/utils";
 
 /**
  * Card representation in the player's hand.
@@ -30,7 +31,15 @@ import type { Id } from "@convex/_generated/dataModel";
  *   level: 7,
  *   rarity: "rare",
  *   archetype: "Spellcaster",
- *   ability: "When this card is Normal Summoned: You can Special Summon 1 'Dark Magician Girl' from your hand.",
+ *   ability: {
+ *     effects: [{
+ *       type: "summon",
+ *       trigger: "on_summon",
+ *       description: "Special Summon 1 'Dark Magician Girl' from your hand"
+ *     }],
+ *     abilityText: "When this card is Normal Summoned: You can Special Summon 1 'Dark Magician Girl' from your hand."
+ *   },
+ *   abilityText: "When this card is Normal Summoned: You can Special Summon 1 'Dark Magician Girl' from your hand.",
  *   effectType: "trigger"
  * };
  * ```
@@ -56,8 +65,10 @@ export interface HandCard {
   rarity: string;
   /** Deck archetype (optional) */
   archetype?: string;
-  /** Card effect text (optional) */
-  ability?: string;
+  /** Card ability as JSON structure (optional) */
+  ability?: JsonAbility;
+  /** Human-readable ability text for display (optional) */
+  abilityText?: string;
   /** Effect category (trigger, continuous, etc.) */
   effectType?: string;
 }
@@ -83,8 +94,17 @@ export interface HandCard {
  *   archetype: "Dragon",
  *   position: "attack",
  *   isFaceDown: false,
- *   ability: "This legendary dragon is a powerful engine of destruction.",
- *   effectType: "normal"
+ *   ability: {
+ *     effects: [{
+ *       type: "damage",
+ *       trigger: "on_battle_destroy",
+ *       value: 500,
+ *       description: "Deal 500 damage when destroying a monster by battle"
+ *     }],
+ *     abilityText: "When this card destroys a monster by battle: Inflict 500 damage to your opponent."
+ *   },
+ *   abilityText: "When this card destroys a monster by battle: Inflict 500 damage to your opponent.",
+ *   effectType: "trigger"
  * };
  * ```
  *
@@ -114,8 +134,10 @@ export interface BoardCard {
   position?: "attack" | "defense";
   /** Whether the card is face-down */
   isFaceDown: boolean;
-  /** Card effect text (optional) */
-  ability?: string;
+  /** Card ability as JSON structure (optional) */
+  ability?: JsonAbility;
+  /** Human-readable ability text for display (optional) */
+  abilityText?: string;
   /** Effect category */
   effectType?: string;
 }

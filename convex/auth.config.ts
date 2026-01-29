@@ -6,6 +6,7 @@
 export default {
   providers: [
     {
+      // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
       domain: process.env["CONVEX_SITE_URL"],
       applicationID: "convex",
     },

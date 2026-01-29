@@ -1,5 +1,5 @@
-import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
+import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -10,7 +10,7 @@ import {
   deckWithCardsValidator,
   deckWithCountValidator,
 } from "../lib/returnValidators";
-import { validateDeckSize, validateCardOwnership, validateStringLength } from "../lib/validation";
+import { validateCardOwnership, validateDeckSize, validateStringLength } from "../lib/validation";
 import {
   ABYSSAL_DEPTHS_CARDS,
   INFERNAL_DRAGONS_CARDS,
@@ -173,29 +173,31 @@ export const getDeckWithCards = query({
       .take(50); // Reasonable limit per deck
 
     // Join with card definitions (N+1 acceptable for small N=50 max)
-    const cardsWithDefinitions = (await Promise.all(
-      deckCards.map(async (dc) => {
-        const cardDef = await ctx.db.get(dc.cardDefinitionId);
-        if (!cardDef || !cardDef.isActive) return null;
+    const cardsWithDefinitions = (
+      await Promise.all(
+        deckCards.map(async (dc) => {
+          const cardDef = await ctx.db.get(dc.cardDefinitionId);
+          if (!cardDef || !cardDef.isActive) return null;
 
-        return {
-          cardDefinitionId: dc.cardDefinitionId,
-          name: cardDef.name,
-          rarity: cardDef.rarity,
-          archetype: cardDef.archetype,
-          element: archetypeToElement(cardDef.archetype),
-          cardType: cardDef.cardType,
-          attack: cardDef.attack,
-          defense: cardDef.defense,
-          cost: cardDef.cost,
-          ability: cardDef.ability,
-          flavorText: cardDef.flavorText,
-          imageUrl: cardDef.imageUrl,
-          quantity: dc.quantity,
-          position: dc.position,
-        };
-      })
-    )).filter((c): c is NonNullable<typeof c> => c !== null);
+          return {
+            cardDefinitionId: dc.cardDefinitionId,
+            name: cardDef.name,
+            rarity: cardDef.rarity,
+            archetype: cardDef.archetype,
+            element: archetypeToElement(cardDef.archetype),
+            cardType: cardDef.cardType,
+            attack: cardDef.attack,
+            defense: cardDef.defense,
+            cost: cardDef.cost,
+            ability: cardDef.ability,
+            flavorText: cardDef.flavorText,
+            imageUrl: cardDef.imageUrl,
+            quantity: dc.quantity,
+            position: dc.position,
+          };
+        })
+      )
+    ).filter((c): c is NonNullable<typeof c> => c !== null);
 
     return {
       id: deck._id,
@@ -506,7 +508,8 @@ export const saveDeck = mutation({
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: `${cardDef.name}: Legendary cards limited to ${MAX_LEGENDARY_COPIES} copy`,
         });
-      } else if (card.quantity > MAX_COPIES_PER_CARD) {
+      }
+      if (card.quantity > MAX_COPIES_PER_CARD) {
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: `${cardDef.name}: Limited to ${MAX_COPIES_PER_CARD} copies per deck`,
         });
@@ -763,7 +766,8 @@ export const setActiveDeck = mutation({
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: `${cardDef.name}: Legendary cards limited to ${MAX_LEGENDARY_COPIES} copy`,
         });
-      } else if (dc.quantity > MAX_COPIES_PER_CARD) {
+      }
+      if (dc.quantity > MAX_COPIES_PER_CARD) {
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: `${cardDef.name}: Limited to ${MAX_COPIES_PER_CARD} copies per deck`,
         });

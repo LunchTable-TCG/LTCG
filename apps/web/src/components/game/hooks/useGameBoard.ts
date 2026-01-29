@@ -2,6 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { getAbilityDisplayText } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useMemo } from "react";
 
@@ -682,7 +683,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
           ? [
               {
                 name: card.name || "Card Effect",
-                description: card.ability,
+                description: getAbilityDisplayText(card.ability) ?? "",
                 effectType: card.effectType,
               },
             ]
@@ -713,7 +714,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
           ? [
               {
                 name: card.name || "Card Effect",
-                description: card.ability,
+                description: getAbilityDisplayText(card.ability) ?? "",
                 effectType: card.effectType,
               },
             ]
@@ -732,7 +733,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
           ? [
               {
                 name: card.name || "Card Effect",
-                description: card.ability,
+                description: getAbilityDisplayText(card.ability) ?? "",
                 effectType: card.effectType,
               },
             ]
@@ -752,7 +753,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
               ? [
                   {
                     name: gameState.myFieldSpell.name || "Field Spell",
-                    description: gameState.myFieldSpell.ability,
+                    description: getAbilityDisplayText(gameState.myFieldSpell.ability) ?? "",
                     effectType: gameState.myFieldSpell.effectType,
                   },
                 ]
@@ -807,7 +808,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
           ? [
               {
                 name: card.name || "Card Effect",
-                description: card.ability,
+                description: getAbilityDisplayText(card.ability) ?? "",
                 effectType: card.effectType,
               },
             ]
@@ -826,7 +827,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
           ? [
               {
                 name: card.name || "Card Effect",
-                description: card.ability,
+                description: getAbilityDisplayText(card.ability) ?? "",
                 effectType: card.effectType,
               },
             ]
@@ -846,7 +847,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
               ? [
                   {
                     name: gameState.opponentFieldSpell.name || "Field Spell",
-                    description: gameState.opponentFieldSpell.ability,
+                    description: getAbilityDisplayText(gameState.opponentFieldSpell.ability) ?? "",
                     effectType: gameState.opponentFieldSpell.effectType,
                   },
                 ]

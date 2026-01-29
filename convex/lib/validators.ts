@@ -8,11 +8,7 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { ErrorCode, createError } from "./errorCodes";
-import type {
-  CurrencyType,
-  TransactionMetadata,
-  TransactionType,
-} from "./types";
+import type { CurrencyType, TransactionMetadata, TransactionType } from "./types";
 
 /**
  * DEPRECATED: Use getCurrentUser or requireAuth from convexAuth.ts instead

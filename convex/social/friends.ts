@@ -9,6 +9,7 @@ import { ErrorCode, createError } from "../lib/errorCodes";
 const emailActions = internal.emailActions;
 
 // Helper to avoid TypeScript "Type instantiation is excessively deep" errors
+// biome-ignore lint/suspicious/noExplicitAny: Convex scheduler type workaround for TS2589
 const scheduleEmail = (ctx: any, emailFunction: any, args: any) =>
   ctx.scheduler.runAfter(0, emailFunction, args);
 import {
@@ -629,7 +630,7 @@ export const getBlockedUsers = query({
     );
 
     return blockedUsers.filter((u) => u !== null) as Array<{
-      userId: any;
+      userId: Id<"users">;
       username: string | undefined;
       blockedAt: number;
     }>;

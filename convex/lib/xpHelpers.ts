@@ -1,7 +1,7 @@
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 // XP and Level System Helpers
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { internal } from "../_generated/api";
 import { ErrorCode, createError } from "./errorCodes";
 import { LEVEL_MILESTONES, XP_PER_LEVEL } from "./storyConstants";
 
@@ -14,7 +14,7 @@ import { LEVEL_MILESTONES, XP_PER_LEVEL } from "./storyConstants";
  * @param xp - Total XP earned by the player
  * @returns Player level (1-indexed, minimum 1)
  */
-export function calculateLevel(xp: number): number {
+export function calculateLevel(xp: number) {
   if (xp < 0) return 1;
   const maxLevelXP = XP_PER_LEVEL[XP_PER_LEVEL.length - 1];
   if (maxLevelXP !== undefined && xp >= maxLevelXP) {
@@ -47,7 +47,7 @@ export function calculateLevel(xp: number): number {
  * @param currentLevel - Player's current level (1-indexed)
  * @returns Total XP required for next level, or 0 if max level reached
  */
-export function getXPForNextLevel(currentLevel: number): number {
+export function getXPForNextLevel(currentLevel: number) {
   if (currentLevel >= XP_PER_LEVEL.length) {
     return 0; // Max level reached
   }
@@ -65,7 +65,7 @@ export function getXPForNextLevel(currentLevel: number): number {
  * @param currentLevel - Player's current level (1-indexed)
  * @returns Progress value from 0.0 (just leveled up) to 1.0 (about to level up)
  */
-export function getLevelProgress(currentXP: number, currentLevel: number): number {
+export function getLevelProgress(currentXP: number, currentLevel: number) {
   if (currentLevel >= XP_PER_LEVEL.length) {
     return 1; // Max level
   }
@@ -204,6 +204,7 @@ export async function addXP(
   // Award milestone badges for each level reached
   if (leveledUp) {
     // Create level up notification
+    // @ts-ignore - TS2589: Type instantiation is excessively deep with internal references
     await ctx.scheduler.runAfter(0, internal.progression.notifications.createLevelUpNotification, {
       userId,
       newLevel,
@@ -236,6 +237,7 @@ export async function addXP(
           });
 
           // Create badge notification
+          // @ts-ignore - TS2589: Type instantiation is excessively deep with internal references
           await ctx.scheduler.runAfter(
             0,
             internal.progression.notifications.createBadgeNotification,

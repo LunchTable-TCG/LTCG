@@ -1,5 +1,5 @@
-import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
+import { internalAction } from "./_generated/server";
 
 /**
  * Transactional Email Actions using Resend API
@@ -8,7 +8,8 @@ import { v } from "convex/values";
  * All emails are sent asynchronously and logged for monitoring.
  */
 
-const EMAIL_FROM = process.env['AUTH_EMAIL'] ?? "Lunchtable <onboarding@resend.dev>";
+// biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
+const EMAIL_FROM = process.env["AUTH_EMAIL"] ?? "Lunchtable <onboarding@resend.dev>";
 
 async function sendEmail({
   to,
@@ -19,11 +20,12 @@ async function sendEmail({
   subject: string;
   html: string;
 }): Promise<void> {
-  const apiKey = process.env['RESEND_API_KEY'];
+  // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
+  const apiKey = process.env["RESEND_API_KEY"];
 
   if (!apiKey) {
     console.log("=".repeat(60));
-    console.log(`EMAIL (Development Mode)`);
+    console.log("EMAIL (Development Mode)");
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
     console.log("⚠️  Set RESEND_API_KEY to send real emails");

@@ -31,6 +31,7 @@ import {
   DeckEditor,
   DeckList,
   type Element,
+  getAbilityDisplayText,
   type Rarity,
 } from "./components";
 import type { BinderTab, DeckCard, ViewMode } from "./types";
@@ -157,7 +158,7 @@ function BinderContent() {
       filtered = filtered.filter(
         (card) =>
           card.name.toLowerCase().includes(query) ||
-          card.ability?.toLowerCase().includes(query) ||
+          getAbilityDisplayText(card.ability)?.toLowerCase().includes(query) ||
           card.flavorText?.toLowerCase().includes(query)
       );
     }
@@ -330,20 +331,7 @@ function BinderContent() {
   useEffect(() => {
     if (selectedDeckData && selectedDeckData.cards) {
       const loadedCards: DeckCard[] = selectedDeckData.cards.map(
-        (apiCard: {
-          cardDefinitionId: Id<"cardDefinitions">;
-          name: string;
-          rarity: Rarity;
-          element: Element;
-          cardType: CardType;
-          attack?: number;
-          defense?: number;
-          cost: number;
-          ability?: string;
-          flavorText?: string;
-          imageUrl?: string;
-          quantity: number;
-        }) => ({
+        (apiCard) => ({
           card: {
             id: apiCard.cardDefinitionId,
             cardDefinitionId: apiCard.cardDefinitionId,

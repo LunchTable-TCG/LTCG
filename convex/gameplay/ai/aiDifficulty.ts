@@ -14,9 +14,12 @@ import { canSummonWithoutTribute, findStrongestMonster, findWeakestMonster } fro
 export function handleMainPhase(
   difficulty: "easy" | "medium" | "hard" | "boss",
   hasNormalSummoned: boolean,
+  // biome-ignore lint/suspicious/noExplicitAny: AI evaluation object has flexible structure
   evaluation: any,
   myHand: Id<"cardDefinitions">[],
+  // biome-ignore lint/suspicious/noExplicitAny: Board card structure varies
   myBoard: any[],
+  // biome-ignore lint/suspicious/noExplicitAny: Board card structure varies
   oppBoard: any[],
   cardData: Map<string, Doc<"cardDefinitions">>
 ): AIAction {
@@ -203,7 +206,9 @@ export function handleMainPhase(
  */
 export function handleBattlePhase(
   difficulty: "easy" | "medium" | "hard" | "boss",
+  // biome-ignore lint/suspicious/noExplicitAny: Board card structure varies
   myBoard: any[],
+  // biome-ignore lint/suspicious/noExplicitAny: Board card structure varies
   oppBoard: any[]
 ): AIAction {
   // Easy: Sometimes attacks recklessly

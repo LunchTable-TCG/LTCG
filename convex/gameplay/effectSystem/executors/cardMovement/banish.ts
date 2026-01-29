@@ -16,8 +16,12 @@ export async function executeBanish(
   gameState: Doc<"gameStates">,
   targetCardId: Id<"cardDefinitions">,
   playerId: Id<"users">,
-  fromLocation: "board" | "graveyard" | "hand" | "deck" = "board"
+  fromLocation: "board" | "graveyard" | "hand" | "deck" | "banished" = "board"
 ): Promise<{ success: boolean; message: string }> {
+  // Can't banish something already banished
+  if (fromLocation === "banished") {
+    return { success: false, message: "Card is already banished" };
+  }
   const isHost = playerId === gameState.hostId;
 
   // Get card details

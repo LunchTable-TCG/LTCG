@@ -66,8 +66,12 @@ export async function executeNegate(
 
   // Mark the chain link as negated
   const updatedChain = [...currentChain];
+  const chainLink = updatedChain[targetChainIndex];
+  if (!chainLink) {
+    return { success: false, message: "Chain link not found" };
+  }
   updatedChain[targetChainIndex] = {
-    ...updatedChain[targetChainIndex]!,
+    ...chainLink,
     negated: true,
   };
 

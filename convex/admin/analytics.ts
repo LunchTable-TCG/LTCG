@@ -565,14 +565,14 @@ export const getPlayerEngagement = query({
 
     // Calculate engagement metrics
     const totalGames = recentGames.length;
-    const daysActive = new Set(
-      recentGames.map((g) => new Date(g._creationTime).toDateString())
-    ).size;
+    const daysActive = new Set(recentGames.map((g) => new Date(g._creationTime).toDateString()))
+      .size;
 
     // Calculate last active time from most recent game or user creation
-    const lastActiveAt = recentGames.length > 0
-      ? Math.max(...recentGames.map((g) => g._creationTime))
-      : (user.createdAt || user._creationTime);
+    const lastActiveAt =
+      recentGames.length > 0
+        ? Math.max(...recentGames.map((g) => g._creationTime))
+        : user.createdAt || user._creationTime;
 
     return {
       userId,

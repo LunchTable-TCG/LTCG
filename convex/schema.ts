@@ -3,6 +3,7 @@ import { rateLimitTables } from "convex-helpers/server/rateLimit";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import type { Infer } from "convex/values";
+import { jsonAbilityValidator } from "./gameplay/effectSystem/jsonEffectValidators";
 
 // ============================================================================
 // SHARED VALIDATORS (Reusable across schema and function args)
@@ -518,7 +519,7 @@ export default defineSchema({
           cardId: v.id("cardDefinitions"),
           playerId: v.id("users"),
           spellSpeed: v.number(), // 1, 2, or 3
-          effect: v.string(),
+          effect: jsonAbilityValidator, // JSON format only
           targets: v.optional(v.array(v.id("cardDefinitions"))),
           negated: v.optional(v.boolean()), // True if effect was negated
         })
@@ -568,6 +569,29 @@ export default defineSchema({
         v.literal("boss")
       )
     ), // AI difficulty level (matches storyStages difficulty)
+
+    // Response Window (for priority/chain system)
+    responseWindow: v.optional(
+      v.object({
+        type: v.union(
+          v.literal("summon"),
+          v.literal("attack_declaration"),
+          v.literal("spell_activation"),
+          v.literal("trap_activation"),
+          v.literal("effect_activation"),
+          v.literal("damage_calculation"),
+          v.literal("end_phase"),
+          v.literal("open")
+        ),
+        triggerPlayerId: v.id("users"),
+        activePlayerId: v.id("users"),
+        canRespond: v.boolean(),
+        chainOpen: v.boolean(),
+        passCount: v.number(),
+        createdAt: v.number(),
+        expiresAt: v.optional(v.number()),
+      })
+    ),
 
     // Timestamps
     lastMoveAt: v.number(),
@@ -630,7 +654,7 @@ export default defineSchema({
     attack: v.optional(v.number()),
     defense: v.optional(v.number()),
     cost: v.number(),
-    ability: v.optional(v.string()),
+    ability: v.optional(jsonAbilityValidator), // JSON ability format
     flavorText: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
     imageStorageId: v.optional(v.id("_storage")),

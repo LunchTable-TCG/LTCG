@@ -12,7 +12,7 @@ export async function executeToHand(
   lobbyId: Id<"gameLobbies">,
   targetCardId: Id<"cardDefinitions">,
   playerId: Id<"users">,
-  sourceLocation: "graveyard" | "hand" | "board" | "deck"
+  sourceLocation: "graveyard" | "hand" | "board" | "deck" | "banished"
 ): Promise<{ success: boolean; message: string }> {
   const isHost = playerId === gameState.hostId;
   const hand = isHost ? gameState.hostHand : gameState.opponentHand;

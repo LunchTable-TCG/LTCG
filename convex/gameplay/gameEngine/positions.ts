@@ -71,7 +71,10 @@ export const changePosition = mutation({
       throw createError(ErrorCode.GAME_CARD_NOT_FOUND);
     }
 
-    const boardCard = board[cardIndex]!;
+    const boardCard = board[cardIndex];
+    if (!boardCard) {
+      throw createError(ErrorCode.GAME_CARD_NOT_FOUND);
+    }
     const currentPosition = boardCard.position;
     const newPosition = currentPosition === 1 ? -1 : 1; // Toggle: 1 (ATK) ↔ -1 (DEF)
     const newPositionName = newPosition === 1 ? "attack" : "defense";
@@ -91,8 +94,8 @@ export const changePosition = mutation({
     // 8. Record position_changed event
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
-      gameId: lobby.gameId!,
-      turnNumber: lobby.turnNumber!,
+      gameId: lobby.gameId ?? "",
+      turnNumber: lobby.turnNumber ?? 0,
       eventType: "position_changed",
       playerId: user.userId,
       playerUsername: user.username,

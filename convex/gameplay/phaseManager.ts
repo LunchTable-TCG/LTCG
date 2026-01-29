@@ -9,11 +9,13 @@ import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { mutation, query } from "../_generated/server";
-import { createError, ErrorCode } from "../lib/errorCodes";
+import { getCardAbility } from "../lib/abilityHelpers";
 import { requireAuthMutation } from "../lib/convexAuth";
+import { ErrorCode, createError } from "../lib/errorCodes";
 import { drawCards } from "../lib/gameHelpers";
-import { executeEffect, parseAbility } from "./effectSystem/index";
+import { executeEffect } from "./effectSystem/index";
 import { recordEventHelper } from "./gameEvents";
+import { checkStateBasedActions, checkDeckOutCondition } from "./gameEngine/stateBasedActions";
 
 /**
  * Game Phase Types
@@ -213,11 +215,20 @@ export const advancePhase = mutation({
       lobby.turnNumber
     );
 
-    // 11. Return new phase and available actions
+    // 11. Run state-based action checks after phase transition
+    // Only enforce hand limit at end phase
+    const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {
+      skipHandLimit: nextPhase !== "end",
+      turnNumber: lobby.turnNumber,
+    });
+
+    // 12. Return new phase and available actions
     return {
       newPhase: nextPhase,
       phasesVisited,
       availableActions: await getAvailableActionsForPhase(nextPhase, gameState),
+      gameEnded: sbaResult.gameEnded,
+      winnerId: sbaResult.winnerId,
     };
   },
 });
@@ -251,21 +262,31 @@ async function executePhaseLogic(
   if (!lobby) return;
 
   switch (phase) {
-    case "draw":
+    case "draw": {
       // Auto-draw 1 card (skip on turn 1 for first player)
       const shouldSkipDraw = turnNumber === 1 && playerId === lobby.hostId;
       if (!shouldSkipDraw) {
-        await drawCards(ctx, gameState, playerId, 1);
+        const drawnCards = await drawCards(ctx, gameState, playerId, 1);
+
+        // Check for deck-out condition (player needs to draw but deck is empty)
+        if (drawnCards.length === 0) {
+          const deckOutResult = await checkDeckOutCondition(ctx, lobbyId, playerId, turnNumber);
+          if (deckOutResult.gameEnded) {
+            // Game ended due to deck out - will be handled by the caller
+            return;
+          }
+        }
       }
       // Draw phase auto-advances to Standby
       break;
+    }
 
     case "standby":
       // Trigger standby effects (future implementation)
       // Auto-advances to Main Phase 1
       break;
 
-    case "battle_start":
+    case "battle_start": {
       // Validate required lobby fields
       if (!lobby.gameId) {
         throw createError(ErrorCode.GAME_NOT_STARTED, {
@@ -289,6 +310,7 @@ async function executePhaseLogic(
       await executePhaseTriggeredEffects(ctx, lobbyId, gameState, playerId, "battle_start");
       // Auto-advances to Battle (main battle phase)
       break;
+    }
 
     case "battle_end":
       // Battle Phase cleanup (future implementation)
@@ -372,13 +394,13 @@ async function executePhaseTriggeredEffects(
   // Scan all cards for matching trigger
   for (const boardCard of allBoards) {
     const card = boardCardMap.get(boardCard.cardId);
-    if (!card?.ability) continue;
+    const parsedAbility = getCardAbility(card);
+    if (!parsedAbility) continue;
 
-    const parsedEffect = parseAbility(card.ability);
-    if (!parsedEffect) continue;
-
-    // Check if this effect triggers during this phase
-    if (parsedEffect.trigger === triggerCondition) {
+    // Check each effect in the ability for matching trigger
+    for (const parsedEffect of parsedAbility.effects) {
+      // Check if this effect triggers during this phase
+      if (parsedEffect.trigger !== triggerCondition) continue;
       // Get refreshed game state
       const refreshedState = await ctx.db
         .query("gameStates")
@@ -408,7 +430,7 @@ async function executePhaseTriggeredEffects(
           eventType: "effect_activated",
           playerId: boardCard.ownerId,
           playerUsername: user?.username || "Unknown",
-          description: `${card.name} phase effect: ${effectResult.message}`,
+          description: `${card?.name ?? "Unknown card"} phase effect: ${effectResult.message}`,
           metadata: {
             cardId: boardCard.cardId,
             trigger: phase,

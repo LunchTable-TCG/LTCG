@@ -16,18 +16,48 @@ import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import { requireAuthMutation } from "../lib/convexAuth";
-import { createError, ErrorCode } from "../lib/errorCodes";
-import { executeEffect, parseAbility } from "./effectSystem/index";
+import { ErrorCode, createError } from "../lib/errorCodes";
+import {
+  executeEffect,
+  parseJsonAbility,
+  type JsonAbility,
+} from "./effectSystem/index";
+import { jsonAbilityValidator } from "./effectSystem/jsonEffectValidators";
 import { recordEventHelper } from "./gameEvents";
+import { checkStateBasedActions } from "./gameEngine/stateBasedActions";
+
+/**
+ * Type for chain effect - JSON ability only (text parsing has been removed)
+ */
+export type ChainEffect = JsonAbility;
 
 // Type definitions for chain links
 interface ChainLink {
   cardId: Id<"cardDefinitions">;
   playerId: Id<"users">;
   spellSpeed: number;
-  effect: string;
+  effect: ChainEffect;
   targets?: Id<"cardDefinitions">[];
   negated?: boolean;
+}
+
+/**
+ * Helper to parse chain effect (JSON format only)
+ */
+function parseChainEffect(effect: ChainEffect) {
+  return parseJsonAbility(effect);
+}
+
+/**
+ * Helper to serialize effect for logging/display
+ */
+function serializeEffectForDisplay(effect: ChainEffect): string {
+  if (effect.effects.length > 0) {
+    const firstEffect = effect.effects[0];
+    const effectType = firstEffect?.type || "unknown";
+    return `[Effect: ${effectType}]`;
+  }
+  return "[Effect]";
 }
 
 /**
@@ -45,7 +75,7 @@ interface ChainLink {
  * @param params.playerId - User ID of the player activating the effect
  * @param params.playerUsername - Username for event recording
  * @param params.spellSpeed - Spell speed (1 = Normal, 2 = Quick, 3 = Counter)
- * @param params.effect - Effect text to execute when chain resolves
+ * @param params.effect - Effect to execute when chain resolves (JsonAbility)
  * @param params.targets - Optional array of target card IDs
  * @returns Chain state with success flag, chain link number, and total chain length
  * @throws {ErrorCode.GAME_INVALID_SPELL_SPEED} If spell speed is incompatible with current chain
@@ -58,7 +88,7 @@ export async function addToChainHelper(
     playerId: Id<"users">;
     playerUsername: string;
     spellSpeed: 1 | 2 | 3;
-    effect: string;
+    effect: ChainEffect;
     targets?: Id<"cardDefinitions">[];
   }
 ): Promise<{ success: boolean; chainLinkNumber: number; currentChainLength: number }> {
@@ -143,7 +173,7 @@ export async function addToChainHelper(
       cardName: card?.name,
       chainLinkNumber: updatedChain.length,
       spellSpeed: args.spellSpeed,
-      effect: args.effect,
+      effect: serializeEffectForDisplay(args.effect),
     },
   });
 
@@ -160,13 +190,19 @@ export async function addToChainHelper(
  *
  * Validates spell speed compatibility and adds to current chain.
  * Records: chain_link_added
+ *
+ * @param lobbyId - Game lobby ID
+ * @param cardId - Card being activated
+ * @param spellSpeed - 1 (Normal), 2 (Quick), or 3 (Counter)
+ * @param effect - Effect to execute (JsonAbility)
+ * @param targets - Optional target card IDs
  */
 export const addToChain = mutation({
   args: {
     lobbyId: v.id("gameLobbies"),
     cardId: v.id("cardDefinitions"),
     spellSpeed: v.number(), // 1, 2, or 3
-    effect: v.string(),
+    effect: jsonAbilityValidator, // JSON format only
     targets: v.optional(v.array(v.id("cardDefinitions"))),
   },
   handler: async (ctx, args) => {
@@ -206,7 +242,12 @@ export async function resolveChainHelper(
   params: {
     lobbyId: Id<"gameLobbies">;
   }
-): Promise<{ success: boolean; resolvedChainLinks: number }> {
+): Promise<{
+  success: boolean;
+  resolvedChainLinks: number;
+  gameEnded?: boolean;
+  winnerId?: Id<"users">;
+}> {
   const args = params;
   // 1. Get lobby
   const lobby = await ctx.db.get(args.lobbyId);
@@ -316,8 +357,9 @@ export async function resolveChainHelper(
       continue;
     }
 
-    // Parse and execute effect
-    const parsedEffect = parseAbility(chainLink.effect);
+    // Parse and execute effect (supports both text and JSON formats)
+    const parsedAbility = parseChainEffect(chainLink.effect);
+    const parsedEffect = parsedAbility?.effects[0] ?? null;
 
     if (parsedEffect) {
       // Refresh game state before each effect resolution
@@ -350,7 +392,7 @@ export async function resolveChainHelper(
             cardId: chainLink.cardId,
             cardName: card?.name,
             chainLink: i + 1,
-            effect: chainLink.effect,
+            effect: serializeEffectForDisplay(chainLink.effect),
             success: effectResult.success,
           },
         });
@@ -369,7 +411,7 @@ export async function resolveChainHelper(
           cardId: chainLink.cardId,
           cardName: card?.name,
           chainLink: i + 1,
-          effect: chainLink.effect,
+          effect: serializeEffectForDisplay(chainLink.effect),
         },
       });
     }
@@ -405,16 +447,24 @@ export async function resolveChainHelper(
     eventType: "chain_resolved",
     playerId: firstChainLink.playerId,
     playerUsername: "System",
-    description: `Chain fully resolved`,
+    description: "Chain fully resolved",
     metadata: {
       chainLength: currentChain.length,
     },
   });
 
-  // 8. Return success
+  // 8. Run state-based action checks after chain resolution
+  const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {
+    skipHandLimit: true,
+    turnNumber: lobby.turnNumber,
+  });
+
+  // 9. Return success
   return {
     success: true,
     resolvedChainLinks: currentChain.length,
+    gameEnded: sbaResult.gameEnded,
+    winnerId: sbaResult.winnerId,
   };
 }
 
@@ -496,18 +546,17 @@ export const passPriority = mutation({
         success: true,
         priorityPassedTo: "opponent",
       };
-    } else {
-      // Both players passed - resolve chain
-      await resolveChainHelper(ctx, {
-        lobbyId: args.lobbyId,
-      });
-
-      return {
-        success: true,
-        priorityPassedTo: "none",
-        chainResolved: true,
-      };
     }
+    // Both players passed - resolve chain
+    await resolveChainHelper(ctx, {
+      lobbyId: args.lobbyId,
+    });
+
+    return {
+      success: true,
+      priorityPassedTo: "none",
+      chainResolved: true,
+    };
   },
 });
 
@@ -548,7 +597,7 @@ export const getCurrentChain = query({
           playerId: link.playerId,
           playerName: player?.username || "Unknown",
           spellSpeed: link.spellSpeed,
-          effect: link.effect,
+          effect: serializeEffectForDisplay(link.effect as ChainEffect),
         };
       })
     );

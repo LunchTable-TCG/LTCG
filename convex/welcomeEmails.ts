@@ -5,6 +5,7 @@ import { internalMutation } from "./_generated/server";
 const emailActions = internal.emailActions;
 
 // Helper to avoid TypeScript "Type instantiation is excessively deep" errors
+// biome-ignore lint/suspicious/noExplicitAny: Convex scheduler type workaround for TS2589
 const scheduleEmail = (ctx: any, emailFunction: any, args: any) =>
   ctx.scheduler.runAfter(0, emailFunction, args);
 
