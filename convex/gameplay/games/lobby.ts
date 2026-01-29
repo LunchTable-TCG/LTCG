@@ -129,18 +129,28 @@ async function validateUserCanCreateGame(ctx: MutationCtx): Promise<{
     });
   }
 
-  // Validate deck has minimum cards
+  // Validate deck has required card count (30-60 cards)
   const deckCards = await ctx.db
     .query("deckCards")
     .withIndex("by_deck", (q) => q.eq("deckId", activeDeckId))
     .collect();
 
   const totalCards = deckCards.reduce((sum, dc) => sum + dc.quantity, 0);
-  if (totalCards < 30) {
+  const MIN_DECK_SIZE = 30;
+  const MAX_DECK_SIZE = 60;
+
+  if (totalCards < MIN_DECK_SIZE) {
     throw createError(ErrorCode.VALIDATION_INVALID_DECK, {
-      reason: `Your deck must have at least 30 cards. Currently has ${totalCards}`,
+      reason: `Your deck must have at least ${MIN_DECK_SIZE} cards. Currently has ${totalCards}`,
       totalCards,
-      requiredCards: 30,
+      requiredCards: MIN_DECK_SIZE,
+    });
+  }
+  if (totalCards > MAX_DECK_SIZE) {
+    throw createError(ErrorCode.VALIDATION_INVALID_DECK, {
+      reason: `Your deck cannot exceed ${MAX_DECK_SIZE} cards. Currently has ${totalCards}`,
+      totalCards,
+      maxCards: MAX_DECK_SIZE,
     });
   }
 

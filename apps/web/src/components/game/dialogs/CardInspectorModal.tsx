@@ -3,7 +3,20 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUp, Shield, Sparkles, Star, Sword, X, Zap } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowDown,
+  ArrowUp,
+  Clock,
+  Coins,
+  Shield,
+  ShieldAlert,
+  Sparkles,
+  Star,
+  Sword,
+  X,
+  Zap,
+} from "lucide-react";
 import Image from "next/image";
 import type { CardInZone } from "../hooks/useGameBoard";
 
@@ -287,23 +300,108 @@ export function CardInspectorModal({
                       <Zap className="w-3 h-3" />
                       Abilities
                     </h3>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {card.effects.map((effect, index) => (
                         <div
                           key={`ability-${effect.name}-${index}`}
                           className="p-2 border rounded-lg bg-muted/20"
                         >
-                          <div className="flex items-center gap-1.5 mb-0.5">
+                          {/* Effect header with name and type badges */}
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                             <span className="font-medium text-xs">{effect.name}</span>
                             {effect.effectType && (
                               <span className="text-[10px] px-1 py-0.5 bg-primary/10 text-primary rounded capitalize">
                                 {effect.effectType}
                               </span>
                             )}
+                            {effect.trigger && effect.trigger !== "manual" && (
+                              <span className="text-[10px] px-1 py-0.5 bg-blue-500/10 text-blue-400 rounded">
+                                {effect.trigger}
+                              </span>
+                            )}
+                            {effect.spellSpeed && effect.spellSpeed > 1 && (
+                              <span
+                                className={cn(
+                                  "text-[10px] px-1 py-0.5 rounded",
+                                  effect.spellSpeed === 3
+                                    ? "bg-red-500/10 text-red-400"
+                                    : "bg-yellow-500/10 text-yellow-400"
+                                )}
+                              >
+                                Speed {effect.spellSpeed}
+                              </span>
+                            )}
                           </div>
-                          <p className="text-[10px] text-muted-foreground">{effect.description}</p>
+
+                          {/* Effect description */}
+                          <p className="text-[10px] text-muted-foreground mb-1">
+                            {effect.description}
+                          </p>
+
+                          {/* Restrictions and costs */}
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {/* Cost display */}
+                            {effect.cost && (
+                              <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-amber-500/10 text-amber-400 rounded border border-amber-500/20">
+                                <Coins className="w-2.5 h-2.5" />
+                                {effect.cost.description}
+                              </span>
+                            )}
+
+                            {/* OPT restriction */}
+                            {effect.isOPT && !effect.isHOPT && (
+                              <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-orange-500/10 text-orange-400 rounded border border-orange-500/20">
+                                <Clock className="w-2.5 h-2.5" />
+                                Once per turn
+                              </span>
+                            )}
+
+                            {/* Hard OPT restriction */}
+                            {effect.isHOPT && (
+                              <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded border border-red-500/20">
+                                <AlertCircle className="w-2.5 h-2.5" />
+                                Hard once per turn
+                              </span>
+                            )}
+
+                            {/* Continuous effect */}
+                            {effect.isContinuous && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-cyan-500/10 text-cyan-400 rounded border border-cyan-500/20">
+                                Continuous
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Protection Flags */}
+                {(card.cannotBeDestroyedByBattle ||
+                  card.cannotBeDestroyedByEffects ||
+                  card.cannotBeTargeted) && (
+                  <div className="mb-3">
+                    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                      <ShieldAlert className="w-3 h-3" />
+                      Protection
+                    </h3>
+                    <div className="flex flex-wrap gap-1">
+                      {card.cannotBeDestroyedByBattle && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded border border-blue-500/20">
+                          Battle Immune
+                        </span>
+                      )}
+                      {card.cannotBeDestroyedByEffects && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/10 text-purple-400 rounded border border-purple-500/20">
+                          Effect Immune
+                        </span>
+                      )}
+                      {card.cannotBeTargeted && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 rounded border border-green-500/20">
+                          Cannot be Targeted
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}

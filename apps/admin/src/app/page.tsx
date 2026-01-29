@@ -10,9 +10,8 @@ import { StatCard, StatGrid } from "@/components/data";
 import { PageWrapper } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { api } from "@convex/_generated/api";
 import { BarList, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
-import { useQuery } from "convex/react";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import Link from "next/link";
 
 // =============================================================================
@@ -20,9 +19,9 @@ import Link from "next/link";
 // =============================================================================
 
 export default function DashboardPage() {
-  // Fetch system stats
-  const stats = useQuery(api.admin.admin.getSystemStats);
-  const suspiciousReport = useQuery(api.admin.admin.getSuspiciousActivityReport, {
+  // Fetch system stats using helper to avoid TS2589
+  const stats = useConvexQuery(apiAny.admin.admin.getSystemStats, {});
+  const suspiciousReport = useConvexQuery(apiAny.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
 
@@ -133,7 +132,7 @@ export default function DashboardPage() {
             {stats?.activeSeason ? (
               <div className="flex items-center gap-3">
                 <Badge variant="default" className="text-lg px-3 py-1">
-                  {stats.activeSeason}
+                  {(stats.activeSeason as any).name ?? "Active Season"}
                 </Badge>
                 <Text className="text-muted-foreground">Currently active</Text>
               </div>
@@ -182,7 +181,7 @@ export default function DashboardPage() {
             </Button>
           </Flex>
           <div className="mt-4 flex flex-wrap gap-4">
-            {suspiciousReport.summary.map((item) => (
+            {suspiciousReport.summary.map((item: any) => (
               <div key={item.category} className="flex items-center gap-2">
                 <Badge
                   variant={

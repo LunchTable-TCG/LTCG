@@ -1,6 +1,10 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import {
+  getAbilityDisplayText,
+  type JsonAbility,
+} from "@/lib/cardHelpers";
 import { Flame, Heart, Shield, Star, Waves, Zap } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -8,12 +12,9 @@ export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type Element = "fire" | "water" | "earth" | "wind" | "neutral";
 export type CardType = "creature" | "spell" | "trap" | "equipment";
 
-// JSON Ability type from the backend (simplified for frontend display)
-export interface JsonAbility {
-  name?: string;
-  effects?: Array<{ type?: string; description?: string }>;
-  // Other fields omitted - not needed for display
-}
+// Re-export for backwards compatibility
+export type { JsonAbility };
+export { getAbilityDisplayText };
 
 export interface CardData {
   id: string;
@@ -30,23 +31,6 @@ export interface CardData {
   flavorText?: string;
   owned: number;
   isFavorite?: boolean;
-}
-
-/**
- * Get a display string from a JSON ability for UI purposes
- */
-export function getAbilityDisplayText(ability?: JsonAbility): string | undefined {
-  if (!ability) return undefined;
-  // Prefer the name if available
-  if (ability.name) return ability.name;
-  // Fall back to effect type descriptions
-  if (ability.effects && ability.effects.length > 0) {
-    const effectDescs = ability.effects
-      .map(e => e.description || e.type)
-      .filter(Boolean);
-    return effectDescs.join(", ");
-  }
-  return undefined;
 }
 
 interface BinderCardProps {

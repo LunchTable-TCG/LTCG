@@ -264,6 +264,70 @@ describe("saveDeck", () => {
     ).rejects.toThrowError(/Invalid deck configuration/);
   });
 
+  it("should reject deck over maximum size", async () => {
+    const t = createTestInstance();
+
+    const userId = await t.run(async (ctx: MutationCtx) => {
+      return await ctx.db.insert("users", {
+        username: "bigdeck",
+        email: "big@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    const asUser = t.withIdentity({ subject: userId });
+
+    // Create 21 different cards (21 * 3 = 63 cards, exceeds 60 max)
+    const cardIds = await t.run(async (ctx: MutationCtx) => {
+      const ids = [];
+      for (let i = 0; i < 21; i++) {
+        const cardDefId = await ctx.db.insert("cardDefinitions", {
+          name: `Big Card ${i}`,
+          rarity: "common",
+          cardType: "creature",
+          archetype: "neutral",
+          cost: 3,
+          attack: 1500,
+          defense: 1000,
+          isActive: true,
+          createdAt: Date.now(),
+        });
+
+        await ctx.db.insert("playerCards", {
+          userId,
+          cardDefinitionId: cardDefId,
+          quantity: 3,
+          isFavorite: false,
+          acquiredAt: Date.now(),
+          lastUpdatedAt: Date.now(),
+        });
+
+        ids.push(cardDefId);
+      }
+      return ids;
+    });
+
+    const deckId = await t.run(async (ctx: MutationCtx) => {
+      return await ctx.db.insert("userDecks", {
+        userId,
+        name: "Big Deck",
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
+    await expect(
+      asUser.mutation(coreDecks.saveDeck, {
+        deckId,
+        cards: cardIds.map((id: string) => ({
+          cardDefinitionId: id,
+          quantity: 3, // 21 cards * 3 = 63 total, exceeds 60 max
+        })),
+      })
+    ).rejects.toThrowError(/Invalid deck configuration/);
+  });
+
   it("should reject card over max copies limit", async () => {
     const t = createTestInstance();
 
@@ -615,6 +679,67 @@ describe("validateDeck", () => {
     expect(result.errors.length).toBeGreaterThan(0);
   });
 
+  it("should detect deck over maximum size", async () => {
+    const t = createTestInstance();
+
+    const userId = await t.run(async (ctx: MutationCtx) => {
+      return await ctx.db.insert("users", {
+        username: "maxvalidator",
+        email: "maxvalid@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    const asUser = t.withIdentity({ subject: userId });
+
+    // Create 21 different cards (21 * 3 = 63 cards, exceeds 60 max)
+    const cardIds = await t.run(async (ctx: MutationCtx) => {
+      const ids = [];
+      for (let i = 0; i < 21; i++) {
+        const cardDefId = await ctx.db.insert("cardDefinitions", {
+          name: `Max Card ${i}`,
+          rarity: "common",
+          cardType: "creature",
+          archetype: "neutral",
+          cost: 3,
+          attack: 1500,
+          defense: 1000,
+          isActive: true,
+          createdAt: Date.now(),
+        });
+        ids.push(cardDefId);
+      }
+      return ids;
+    });
+
+    const deckId = await t.run(async (ctx: MutationCtx) => {
+      const id = await ctx.db.insert("userDecks", {
+        userId,
+        name: "Max Size Deck",
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      for (const cardId of cardIds) {
+        await ctx.db.insert("deckCards", {
+          deckId: id,
+          cardDefinitionId: cardId,
+          quantity: 3, // 21 * 3 = 63 cards, exceeds 60 max
+        });
+      }
+
+      return id;
+    });
+
+    const result = await asUser.query(coreDecks.validateDeck, { deckId });
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors[0]).toContain("cannot exceed 60 cards");
+    expect(result.totalCards).toBe(63);
+  });
+
   it("should detect too many copies", async () => {
     const t = createTestInstance();
 
@@ -891,6 +1016,64 @@ describe("setActiveDeck", () => {
         cardDefinitionId: cardId,
         quantity: 20, // Under 30
       });
+
+      return id;
+    });
+
+    await expect(asUser.mutation(coreDecks.setActiveDeck, { deckId })).rejects.toThrowError(
+      /Invalid input/
+    );
+  });
+
+  it("should reject deck over maximum size", async () => {
+    const t = createTestInstance();
+
+    const userId = await t.run(async (ctx: MutationCtx) => {
+      return await ctx.db.insert("users", {
+        username: "bigactive",
+        email: "bigactive@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    const asUser = t.withIdentity({ subject: userId });
+
+    // Create 21 different cards (21 * 3 = 63 cards, exceeds 60 max)
+    const cardIds = await t.run(async (ctx: MutationCtx) => {
+      const ids = [];
+      for (let i = 0; i < 21; i++) {
+        const cardDefId = await ctx.db.insert("cardDefinitions", {
+          name: `Big Active Card ${i}`,
+          rarity: "common",
+          cardType: "creature",
+          archetype: "neutral",
+          cost: 3,
+          attack: 1500,
+          defense: 1000,
+          isActive: true,
+          createdAt: Date.now(),
+        });
+        ids.push(cardDefId);
+      }
+      return ids;
+    });
+
+    const deckId = await t.run(async (ctx: MutationCtx) => {
+      const id = await ctx.db.insert("userDecks", {
+        userId,
+        name: "Big Active Deck",
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      for (const cardId of cardIds) {
+        await ctx.db.insert("deckCards", {
+          deckId: id,
+          cardDefinitionId: cardId,
+          quantity: 3, // 21 * 3 = 63 cards, exceeds 60 max
+        });
+      }
 
       return id;
     });

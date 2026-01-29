@@ -9,7 +9,7 @@
  */
 
 import type { Id } from "@convex/_generated/dataModel";
-import type { JsonAbility } from "../lib/utils";
+import type { JsonAbility } from "../lib/cardHelpers";
 
 /**
  * Card representation in the player's hand.
@@ -159,7 +159,17 @@ export interface BoardCard {
  *   rarity: "rare",
  *   archetype: "Trap",
  *   isFaceDown: true,
- *   ability: "When an opponent's monster declares an attack: Destroy all your opponent's Attack Position monsters.",
+ *   ability: {
+ *     effects: [{
+ *       type: "destroy",
+ *       trigger: "on_battle_attacked",
+ *       target: { count: "all", owner: "opponent" },
+ *       description: "Destroy all opponent's Attack Position monsters"
+ *     }],
+ *     abilityText: "When an opponent's monster declares an attack: Destroy all your opponent's Attack Position monsters.",
+ *     spellSpeed: 2
+ *   },
+ *   abilityText: "When an opponent's monster declares an attack: Destroy all your opponent's Attack Position monsters.",
  *   effectType: "normal"
  * };
  * ```
@@ -181,8 +191,10 @@ export interface BackrowCard {
   archetype?: string;
   /** Whether the card is face-down (set) */
   isFaceDown: boolean;
-  /** Card effect text (optional) */
-  ability?: string;
+  /** Card ability as JSON structure (optional) */
+  ability?: JsonAbility;
+  /** Human-readable ability text for display (optional) */
+  abilityText?: string;
   /** Effect category */
   effectType?: string;
 }

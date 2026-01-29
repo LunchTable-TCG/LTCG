@@ -3,6 +3,7 @@ import type { Doc, Id } from "../../_generated/dataModel";
 import { internalQuery, query } from "../../_generated/server";
 import { requireAuthQuery } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { DEFAULT_TIMEOUT_CONFIG } from "../timeoutSystem";
 
 // ============================================================================
 // CONSTANTS
@@ -782,6 +783,7 @@ export const getGameStateForPlayer = query({
       currentChain: gameState.currentChain || [],
       currentPriorityPlayer: gameState.currentPriorityPlayer,
       pendingAction: gameState.pendingAction, // For attack/summon response windows
+      pendingReplay: gameState.pendingReplay, // For battle replay (when monster count changes)
       myNormalSummonedThisTurn: isHost
         ? gameState.hostNormalSummonedThisTurn || false
         : gameState.opponentNormalSummonedThisTurn || false,
@@ -854,5 +856,217 @@ export const getWaitingLobbiesForCleanup = internalQuery({
       hostId: lobby.hostId,
       hostUsername: lobby.hostUsername,
     }));
+  },
+});
+
+// ============================================================================
+// NEW GAME FEATURE QUERIES
+// ============================================================================
+
+/**
+ * Get pending optional triggers for the authenticated user
+ *
+ * Returns optional trigger effects that the current player can choose to activate.
+ * Filters by the current user's playerId.
+ *
+ * @param lobbyId - The game lobby ID
+ * @returns Array of pending optional triggers for the current user
+ */
+export const getPendingOptionalTriggers = query({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthQuery(ctx);
+
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      return [];
+    }
+
+    const pendingTriggers = gameState.pendingOptionalTriggers || [];
+
+    // Filter by current user's playerId
+    return pendingTriggers.filter((trigger) => trigger.playerId === userId);
+  },
+});
+
+/**
+ * Get timeout status for the game
+ *
+ * Returns timeout information including:
+ * - actionTimeRemainingMs (calculated from responseWindow.expiresAt)
+ * - matchTimeRemainingMs (calculated from matchTimerStart + totalMatchMs - now)
+ * - isWarning (< warningAtMs)
+ * - isTimedOut
+ * - isMatchTimedOut
+ *
+ * Uses DEFAULT_TIMEOUT_CONFIG if no config set.
+ *
+ * @param lobbyId - The game lobby ID
+ * @returns Timeout status object or null if no game state
+ */
+export const getTimeoutStatus = query({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuthQuery(ctx);
+
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      return null;
+    }
+
+    const config = gameState.timeoutConfig || DEFAULT_TIMEOUT_CONFIG;
+    const now = Date.now();
+
+    // Calculate action time remaining from response window
+    let actionTimeRemainingMs = config.perActionMs;
+    let isTimedOut = false;
+
+    if (gameState.responseWindow?.expiresAt) {
+      actionTimeRemainingMs = Math.max(0, gameState.responseWindow.expiresAt - now);
+      isTimedOut = actionTimeRemainingMs === 0;
+    }
+
+    // Calculate match time remaining
+    let matchTimeRemainingMs = config.totalMatchMs;
+    let isMatchTimedOut = false;
+
+    if (gameState.matchTimerStart) {
+      const elapsed = now - gameState.matchTimerStart;
+      matchTimeRemainingMs = Math.max(0, config.totalMatchMs - elapsed);
+      isMatchTimedOut = matchTimeRemainingMs === 0;
+    }
+
+    // Check warning threshold
+    const isWarning =
+      actionTimeRemainingMs > 0 && actionTimeRemainingMs <= config.warningAtMs;
+
+    return {
+      actionTimeRemainingMs,
+      matchTimeRemainingMs,
+      isWarning,
+      isTimedOut,
+      isMatchTimedOut,
+    };
+  },
+});
+
+/**
+ * Get SEGOC queue status
+ *
+ * Returns information about the SEGOC (Simultaneous Effects Go On Chain) queue.
+ *
+ * @param lobbyId - The game lobby ID
+ * @returns { hasItems: boolean, itemCount: number, nextItem?: SegocQueueItem }
+ */
+export const getSegocQueueStatus = query({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuthQuery(ctx);
+
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      return {
+        hasItems: false,
+        itemCount: 0,
+        nextItem: undefined,
+      };
+    }
+
+    const segocQueue = gameState.segocQueue || [];
+    const hasItems = segocQueue.length > 0;
+    const itemCount = segocQueue.length;
+
+    // Get the next item (first in queue, sorted by segocOrder)
+    const sortedQueue = [...segocQueue].sort((a, b) => a.segocOrder - b.segocOrder);
+    const nextItem = sortedQueue[0];
+
+    return {
+      hasItems,
+      itemCount,
+      nextItem,
+    };
+  },
+});
+
+/**
+ * Get current phase information
+ *
+ * Returns the current phase and available skip actions for the phase.
+ *
+ * @param lobbyId - The game lobby ID
+ * @returns { currentPhase, availableSkips: string[], isInteractivePhase: boolean }
+ */
+export const getCurrentPhaseInfo = query({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuthQuery(ctx);
+
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      return {
+        currentPhase: null,
+        availableSkips: [],
+        isInteractivePhase: false,
+      };
+    }
+
+    const currentPhase = gameState.currentPhase || "draw";
+
+    // Determine available skip actions based on current phase
+    const availableSkips: string[] = [];
+
+    switch (currentPhase) {
+      case "main1":
+        // From Main 1, can skip battle phase or skip to end
+        availableSkips.push("skipBattlePhase", "skipToEndPhase");
+        break;
+      case "battle_start":
+      case "battle":
+      case "battle_end":
+        // During battle, can skip to main2 or end
+        availableSkips.push("skipBattlePhase", "skipToEndPhase");
+        break;
+      case "main2":
+        // From Main 2, can skip to end
+        availableSkips.push("skipMainPhase2");
+        break;
+      default:
+        // No skips available for draw, standby, end phases
+        break;
+    }
+
+    // Interactive phases where player makes decisions
+    const interactivePhases = ["main1", "battle", "main2"];
+    const isInteractivePhase = interactivePhases.includes(currentPhase);
+
+    return {
+      currentPhase,
+      availableSkips,
+      isInteractivePhase,
+    };
   },
 });

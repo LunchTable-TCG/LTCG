@@ -97,6 +97,7 @@ export function GameLobby() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [joiningGame, setJoiningGame] = useState<GameLobbyEntry | null>(null);
   const [spectatingGameId, setSpectatingGameId] = useState<string | null>(null);
+  const [quickMatchMode, setQuickMatchMode] = useState<"casual" | "ranked">("casual");
 
   // Use custom hooks
   const {
@@ -168,8 +169,7 @@ export function GameLobby() {
 
   const handleQuickMatch = async () => {
     try {
-      // TODO: Add mode selector UI (casual/ranked) - defaulting to casual for now
-      await joinQueue("casual");
+      await joinQueue(quickMatchMode);
     } catch (error) {
       logError("join queue", error);
     }
@@ -331,14 +331,48 @@ export function GameLobby() {
 
           {/* Quick Match / Matchmaking Status */}
           {!myActiveLobby && !isSearching && (
-            <button
-              type="button"
-              onClick={handleQuickMatch}
-              className="h-12 px-5 rounded-lg font-bold uppercase tracking-wide text-sm flex items-center gap-2 transition-all bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg hover:shadow-xl"
-            >
-              <Sparkles className="w-4 h-4" />
-              Quick Match
-            </button>
+            <div className="flex items-center gap-0">
+              {/* Mode Selector */}
+              <div className="flex rounded-l-lg overflow-hidden border border-r-0 border-[#3d2b1f] bg-black/30 h-12">
+                <button
+                  type="button"
+                  onClick={() => setQuickMatchMode("casual")}
+                  className={cn(
+                    "px-3 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5",
+                    quickMatchMode === "casual"
+                      ? "bg-linear-to-r from-green-600 to-green-500 text-white"
+                      : "text-[#a89f94] hover:text-[#e8e0d5] hover:bg-white/5"
+                  )}
+                  title="Casual - No rank changes"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  Casual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickMatchMode("ranked")}
+                  className={cn(
+                    "px-3 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5",
+                    quickMatchMode === "ranked"
+                      ? "bg-linear-to-r from-amber-600 to-yellow-500 text-[#1a1614]"
+                      : "text-[#a89f94] hover:text-[#e8e0d5] hover:bg-white/5"
+                  )}
+                  title="Ranked - Affects your rank"
+                >
+                  <Trophy className="w-3.5 h-3.5" />
+                  Ranked
+                </button>
+              </div>
+              {/* Quick Match Button */}
+              <button
+                type="button"
+                onClick={handleQuickMatch}
+                className="h-12 px-5 rounded-r-lg font-bold uppercase tracking-wide text-sm flex items-center gap-2 transition-all bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg hover:shadow-xl"
+              >
+                <Sparkles className="w-4 h-4" />
+                Quick Match
+              </button>
+            </div>
           )}
 
           {/* Matchmaking Status with Details */}
@@ -347,7 +381,20 @@ export function GameLobby() {
               <Loader2 className="w-4 h-4 animate-spin" />
               <div className="flex flex-col">
                 <span className="text-sm font-bold">Searching for opponent...</span>
-                <span className="text-xs text-purple-400">Quick match coming soon</span>
+                <span className="text-xs text-purple-400 flex items-center gap-1">
+                  {quickMatchMode === "ranked" ? (
+                    <>
+                      <Trophy className="w-3 h-3 text-amber-400" />
+                      <span className="text-amber-400">Ranked</span>
+                    </>
+                  ) : (
+                    <>
+                      <Users className="w-3 h-3 text-green-400" />
+                      <span className="text-green-400">Casual</span>
+                    </>
+                  )}
+                  {" "}match
+                </span>
               </div>
               <button
                 type="button"

@@ -9,8 +9,8 @@ import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { logCardEffect, logger, performance } from "../../lib/debug";
-import { hasUsedOPT, markOPTUsed } from "../../lib/gameHelpers";
 import type { EffectResult, ParsedAbility, ParsedEffect } from "./types";
+import { checkCanActivateOPT, markEffectUsed } from "./optTracker";
 
 // Import all effect executors (organized by category)
 import { executeBanish } from "./executors/cardMovement/banish";
@@ -33,6 +33,15 @@ import { checkStateBasedActions } from "../gameEngine/stateBasedActions";
  * Execute a parsed effect
  *
  * Returns EffectResult which may include selection data for two-step effects.
+ *
+ * @param ctx - Mutation context
+ * @param gameState - Current game state
+ * @param lobbyId - Lobby ID for event recording
+ * @param effect - The parsed effect to execute
+ * @param playerId - Player activating the effect
+ * @param cardId - Card definition ID of the effect source
+ * @param targets - Optional target card IDs
+ * @param effectIndex - Index of the effect on the card (0-indexed, defaults to 0)
  */
 export async function executeEffect(
   ctx: MutationCtx,
@@ -41,7 +50,8 @@ export async function executeEffect(
   effect: ParsedEffect,
   playerId: Id<"users">,
   cardId: Id<"cardDefinitions">,
-  targets?: Id<"cardDefinitions">[]
+  targets?: Id<"cardDefinitions">[],
+  effectIndex = 0
 ): Promise<EffectResult> {
   const opId = `effect_${effect.type}_${Date.now()}`;
   performance.start(opId);
@@ -77,11 +87,29 @@ export async function executeEffect(
     return { success: false, message: "Invalid game state" };
   }
 
-  // Check OPT restriction
-  if (effect.isOPT && hasUsedOPT(gameState, cardId)) {
-    logger.debug("OPT restriction blocked effect", { cardId, cardName, effectType: effect.type });
-    logCardEffect(cardName, effect.type, false, { reason: "OPT_USED", lobbyId });
-    return { success: false, message: "This card's effect can only be used once per turn" };
+  // Check OPT/HOPT restrictions using the new tracking system
+  // ParsedEffect uses isOPT, JsonEffect may also have isHOPT
+  const isHOPT = "isHOPT" in effect && effect.isHOPT === true;
+  const hasOPTRestriction = effect.isOPT || isHOPT;
+
+  if (hasOPTRestriction) {
+    const optCheck = checkCanActivateOPT(gameState, cardId, effectIndex, playerId, isHOPT);
+    if (!optCheck.canActivate) {
+      logger.debug("OPT/HOPT restriction blocked effect", {
+        cardId,
+        cardName,
+        effectType: effect.type,
+        effectIndex,
+        isHOPT,
+        reason: optCheck.reason,
+      });
+      logCardEffect(cardName, effect.type, false, {
+        reason: isHOPT ? "HOPT_USED" : "OPT_USED",
+        lobbyId,
+        effectIndex,
+      });
+      return { success: false, message: optCheck.reason || "Effect restriction active" };
+    }
   }
 
   const isHost = playerId === gameState.hostId;
@@ -483,10 +511,15 @@ export async function executeEffect(
       result = { success: false, message: `Unknown effect type: ${effect.type}` };
   }
 
-  // Mark card as having used OPT effect if successful
-  if (result.success && effect.isOPT) {
-    await markOPTUsed(ctx, gameState, cardId);
-    logger.debug("Marked OPT as used", { cardId, cardName });
+  // Mark card as having used OPT/HOPT effect if successful
+  if (result.success && hasOPTRestriction) {
+    await markEffectUsed(ctx, gameState, cardId, effectIndex, playerId, isHOPT);
+    logger.debug(`Marked ${isHOPT ? "HOPT" : "OPT"} as used`, {
+      cardId,
+      cardName,
+      effectIndex,
+      isHOPT,
+    });
   }
 
   // Log effect result
@@ -582,7 +615,8 @@ export async function executeMultiPartAbility(
   let effectsExecuted = 0;
   let anySuccess = false;
 
-  for (const effect of parsedAbility.effects) {
+  for (let effectIndex = 0; effectIndex < parsedAbility.effects.length; effectIndex++) {
+    const effect = parsedAbility.effects[effectIndex];
     // Edge case: Skip null/undefined effects
     if (!effect) {
       messages.push("Skipped invalid effect");
@@ -598,8 +632,17 @@ export async function executeMultiPartAbility(
       continue;
     }
 
-    // Execute triggered or manual effects
-    const result = await executeEffect(ctx, gameState, lobbyId, effect, playerId, cardId, targets);
+    // Execute triggered or manual effects with correct effectIndex for OPT/HOPT tracking
+    const result = await executeEffect(
+      ctx,
+      gameState,
+      lobbyId,
+      effect,
+      playerId,
+      cardId,
+      targets,
+      effectIndex
+    );
     if (result.success) {
       anySuccess = true;
       effectsExecuted++;

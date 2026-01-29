@@ -17,9 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api } from "@convex/_generated/api";
 import { Badge, BarChart, Card, Flex, Text, Title } from "@tremor/react";
-import { useQuery } from "convex/react";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -28,18 +27,6 @@ import { useState } from "react";
 // =============================================================================
 
 type PeriodType = "daily" | "weekly" | "monthly" | "all_time";
-
-interface CardMetaStat {
-  cardId: string;
-  cardName: string;
-  rarity: string;
-  archetype?: string;
-  winRate: number;
-  playRate: number;
-  pickRate: number;
-  gamesIncluded: number;
-  timesPlayed: number;
-}
 
 // =============================================================================
 // Helper Functions
@@ -70,79 +57,79 @@ export default function CardAnalyticsPage() {
   const [period, setPeriod] = useState<PeriodType>("weekly");
   const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
 
-  // Fetch real data from Convex
-  const topByWinRate = useQuery(api.admin.analytics.getTopCardsByWinRate, {
+  // Fetch real data from Convex using apiAny to avoid TS2589
+  const topByWinRate = useConvexQuery(apiAny.admin.analytics.getTopCardsByWinRate, {
     periodType: period,
     limit: 10,
     minGames: 5,
   });
-  const topByPlayRate = useQuery(api.admin.analytics.getTopCardsByPlayRate, {
+  const topByPlayRate = useConvexQuery(apiAny.admin.analytics.getTopCardsByPlayRate, {
     periodType: period,
     limit: 10,
   });
-  const economySnapshot = useQuery(api.admin.analytics.getCurrentEconomySnapshot);
+  const economySnapshot = useConvexQuery(apiAny.admin.analytics.getCurrentEconomySnapshot, {});
 
   // Fetch archetype-specific stats when an archetype is selected
-  const archetypeStats = useQuery(
-    api.admin.analytics.getCardStatsByArchetype,
+  const archetypeStats = useConvexQuery(
+    apiAny.admin.analytics.getCardStatsByArchetype,
     selectedArchetype ? { archetype: selectedArchetype, periodType: period } : "skip"
   );
 
   const isLoading = topByWinRate === undefined || topByPlayRate === undefined;
 
-  // Transform data for charts
+  // Transform data for charts - use 'any' to avoid type instantiation issues
   const winRateData =
-    topByWinRate?.map((card: CardMetaStat) => ({
+    (topByWinRate as any[] | undefined)?.map((card) => ({
       name: card.cardName,
       "Win Rate": card.winRate,
-      Games: card.gamesIncluded,
+      Games: card.gamesPlayed,
       rarity: card.rarity,
     })) ?? [];
 
   // Win rate leaderboard
   const winRateLeaderboard =
-    topByWinRate?.map((card: CardMetaStat, idx: number) => ({
+    (topByWinRate as any[] | undefined)?.map((card, idx) => ({
       rank: idx + 1,
       name: card.cardName,
       value: card.winRate,
-      subtitle: `${card.gamesIncluded} games • ${card.rarity}`,
+      subtitle: `${card.gamesPlayed} games • ${card.rarity}`,
     })) ?? [];
 
   // Play rate leaderboard
   const playRateLeaderboard =
-    topByPlayRate?.map((card: CardMetaStat, idx: number) => ({
+    (topByPlayRate as any[] | undefined)?.map((card, idx) => ({
       rank: idx + 1,
       name: card.cardName,
-      value: card.timesPlayed,
-      subtitle: `${card.playRate.toFixed(1)}% play rate • ${card.rarity}`,
+      value: card.timesPlayed || card.totalGames,
+      subtitle: `${card.playRate?.toFixed(1) ?? 0}% play rate • ${card.rarity}`,
     })) ?? [];
 
   // Calculate average stats
   const avgWinRate = topByWinRate?.length
-    ? topByWinRate.reduce((sum: number, c: CardMetaStat) => sum + c.winRate, 0) /
+    ? (topByWinRate as any[]).reduce((sum, c) => sum + c.winRate, 0) /
       topByWinRate.length
     : 0;
   const avgPlayRate = topByPlayRate?.length
-    ? topByPlayRate.reduce((sum: number, c: CardMetaStat) => sum + c.playRate, 0) /
+    ? (topByPlayRate as any[]).reduce((sum, c) => sum + (c.playRate ?? 0), 0) /
       topByPlayRate.length
     : 0;
 
   // Extract unique archetypes
   const uniqueArchetypes = Array.from(
     new Set(
-      topByPlayRate
-        ?.filter((c: CardMetaStat) => c.archetype)
-        .map((c: CardMetaStat) => c.archetype) ?? []
+      (topByPlayRate as any[] | undefined)
+        ?.filter((c) => c.archetype)
+        .map((c) => c.archetype) ?? []
     )
   ) as string[];
 
   // Transform archetype stats for display
   const archetypeLeaderboard =
-    archetypeStats?.map((card: CardMetaStat, idx: number) => ({
+    (archetypeStats as any[] | undefined)?.map((card, idx) => ({
       rank: idx + 1,
       name: card.cardName,
       value: card.winRate,
-      subtitle: `${card.gamesIncluded} games • ${card.playRate.toFixed(1)}% play rate`,
+      subtitle: `${card.gamesPlayed} games`,
     })) ?? [];
 
   return (
@@ -275,13 +262,13 @@ export default function CardAnalyticsPage() {
                   <th className="text-left py-2 px-3 font-medium">Card</th>
                   <th className="text-left py-2 px-3 font-medium">Rarity</th>
                   <th className="text-right py-2 px-3 font-medium">Win Rate</th>
-                  <th className="text-right py-2 px-3 font-medium">Play Rate</th>
-                  <th className="text-right py-2 px-3 font-medium">Pick Rate</th>
+                  <th className="text-right py-2 px-3 font-medium">W/L</th>
+                  <th className="text-right py-2 px-3 font-medium">Archetype</th>
                   <th className="text-right py-2 px-3 font-medium">Games</th>
                 </tr>
               </thead>
               <tbody>
-                {topByWinRate.map((card: CardMetaStat, idx: number) => (
+                {(topByWinRate as any[]).map((card, idx) => (
                   <tr key={idx} className="border-b border-muted/50 hover:bg-muted/30">
                     <td className="py-2 px-3 font-medium">{card.cardName}</td>
                     <td className="py-2 px-3">
@@ -304,10 +291,10 @@ export default function CardAnalyticsPage() {
                         {card.winRate.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right">{card.playRate.toFixed(1)}%</td>
-                    <td className="py-2 px-3 text-right">{card.pickRate.toFixed(1)}%</td>
+                    <td className="py-2 px-3 text-right">{card.wins}/{card.gamesPlayed}</td>
+                    <td className="py-2 px-3 text-right">{card.archetype}</td>
                     <td className="py-2 px-3 text-right text-muted-foreground">
-                      {card.gamesIncluded}
+                      {card.gamesPlayed}
                     </td>
                   </tr>
                 ))}
@@ -335,12 +322,12 @@ export default function CardAnalyticsPage() {
           </Flex>
           <div className="mt-4 grid gap-4 md:grid-cols-5">
             {uniqueArchetypes.slice(0, 5).map((archetype: string) => {
-              const count =
-                topByPlayRate?.filter((c: CardMetaStat) => c.archetype === archetype).length ?? 0;
-              const avgWin = topByPlayRate
-                ? topByPlayRate
-                    .filter((c: CardMetaStat) => c.archetype === archetype)
-                    .reduce((sum: number, c: CardMetaStat) => sum + c.winRate, 0) / count
+              const cardsInArchetype = (topByPlayRate as any[] | undefined)?.filter((c) => c.archetype === archetype) ?? [];
+              const count = cardsInArchetype.length;
+              // Get win rate from winRate data for cards in this archetype
+              const winRateCards = (topByWinRate as any[] | undefined)?.filter((c) => c.archetype === archetype) ?? [];
+              const avgWin = winRateCards.length > 0
+                ? winRateCards.reduce((sum: number, c: any) => sum + c.winRate, 0) / winRateCards.length
                 : 0;
               const isSelected = selectedArchetype === archetype;
               return (
@@ -388,12 +375,12 @@ export default function CardAnalyticsPage() {
                   <th className="text-left py-2 px-3 font-medium">Card</th>
                   <th className="text-left py-2 px-3 font-medium">Rarity</th>
                   <th className="text-right py-2 px-3 font-medium">Win Rate</th>
-                  <th className="text-right py-2 px-3 font-medium">Play Rate</th>
+                  <th className="text-right py-2 px-3 font-medium">W/L</th>
                   <th className="text-right py-2 px-3 font-medium">Games</th>
                 </tr>
               </thead>
               <tbody>
-                {archetypeStats.map((card: CardMetaStat, idx: number) => (
+                {(archetypeStats as any[]).map((card, idx) => (
                   <tr key={idx} className="border-b border-muted/50 hover:bg-muted/30">
                     <td className="py-2 px-3 font-medium">{card.cardName}</td>
                     <td className="py-2 px-3">
@@ -416,9 +403,9 @@ export default function CardAnalyticsPage() {
                         {card.winRate.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right">{card.playRate.toFixed(1)}%</td>
+                    <td className="py-2 px-3 text-right">{card.wins}/{card.gamesPlayed}</td>
                     <td className="py-2 px-3 text-right text-muted-foreground">
-                      {card.gamesIncluded}
+                      {card.gamesPlayed}
                     </td>
                   </tr>
                 ))}

@@ -12,7 +12,54 @@ import { mutation } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import {
+  addCardsToInventory,
+  adjustCardInventory,
+  getRandomCard,
+  weightedRandomRarity,
+} from "../lib/helpers";
 import { requireRole } from "../lib/roles";
+import type { PackConfig, Rarity } from "../lib/types";
+
+/**
+ * Open a pack for a player without charging currency (admin grant)
+ * Similar to openPack in helpers.ts but without economy tracking.
+ */
+async function openPackForAdmin(
+  ctx: MutationCtx,
+  packConfig: PackConfig,
+  userId: Id<"users">
+): Promise<Array<{ cardDefinitionId: Id<"cardDefinitions">; name: string; rarity: string }>> {
+  const { cardCount, guaranteedRarity, archetype } = packConfig;
+  const cards: Array<{ cardDefinitionId: Id<"cardDefinitions">; name: string; rarity: string }> =
+    [];
+
+  for (let i = 0; i < cardCount; i++) {
+    const isLastCard = i === cardCount - 1;
+    let rarity: Rarity;
+
+    // Last card gets guaranteed rarity
+    if (isLastCard && guaranteedRarity) {
+      rarity = guaranteedRarity;
+    } else {
+      rarity = weightedRandomRarity();
+    }
+
+    // Get random card of this rarity
+    const card = await getRandomCard(ctx, rarity, archetype);
+
+    // Add to inventory
+    await addCardsToInventory(ctx, userId, card._id, 1);
+
+    cards.push({
+      cardDefinitionId: card._id,
+      name: card.name,
+      rarity: card.rarity,
+    });
+  }
+
+  return cards;
+}
 
 /**
  * Local helper to schedule audit logging without triggering TS2589
@@ -231,7 +278,11 @@ export const batchResetRatings = mutation({
 
 /**
  * Grant premium status to multiple players
- * TODO: Implement when premium system exists
+ * NOTE: Premium system is not yet implemented in the schema.
+ * When implemented, this function should:
+ * 1. Set isPremium = true on user
+ * 2. Set premiumExpiresAt = Date.now() + (durationDays * 86400000)
+ * 3. Log the grant action for audit
  */
 export const batchGrantPremium = mutation({
   args: {
@@ -243,16 +294,24 @@ export const batchGrantPremium = mutation({
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
-    // TODO: Implement premium grant logic when premium system exists
+    // Premium system not yet implemented in schema
+    // Required fields: users.isPremium (boolean), users.premiumExpiresAt (number)
     throw createError(ErrorCode.NOT_IMPLEMENTED, {
-      reason: "Premium system not yet implemented",
+      reason:
+        "Premium system not yet implemented. Schema needs isPremium and premiumExpiresAt fields on users table.",
     });
   },
 });
 
 /**
  * Grant card packs to multiple players
- * TODO: Implement when pack system exists
+ * Opens packs immediately and adds cards to player inventory.
+ * Requires admin role or higher.
+ *
+ * @param playerIds - Array of user IDs to grant packs to
+ * @param packType - Product ID of the pack (e.g., "starter-pack", "booster-pack")
+ * @param quantity - Number of packs to grant per player
+ * @param reason - Reason for the grant (for audit logging)
  */
 export const batchGrantPacks = mutation({
   args: {
@@ -261,79 +320,479 @@ export const batchGrantPacks = mutation({
     quantity: v.number(),
     reason: v.string(),
   },
-  handler: async (
-    ctx,
-    { playerIds: _playerIds, packType: _packType, quantity: _quantity, reason: _reason }
-  ) => {
+  handler: async (ctx, { playerIds, packType, quantity, reason }) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
-    // TODO: Implement pack grant logic when pack system exists
-    throw createError(ErrorCode.NOT_IMPLEMENTED, {
-      reason: "Pack system not yet implemented",
-    });
+    // Validate quantity
+    if (quantity <= 0 || quantity > 100) {
+      throw createError(ErrorCode.VALIDATION_RANGE, {
+        field: "quantity",
+        min: 1,
+        max: 100,
+        value: quantity,
+      });
+    }
+
+    // Get pack product configuration
+    const packProduct = await ctx.db
+      .query("shopProducts")
+      .withIndex("by_product_id", (q) => q.eq("productId", packType))
+      .first();
+
+    if (!packProduct) {
+      throw createError(ErrorCode.NOT_FOUND_PRODUCT, {
+        productId: packType,
+      });
+    }
+
+    if (packProduct.productType !== "pack" || !packProduct.packConfig) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: `Product "${packType}" is not a valid pack type`,
+      });
+    }
+
+    const results: Array<{
+      playerId: Id<"users">;
+      success: boolean;
+      cardsGranted?: number;
+      error?: string;
+    }> = [];
+
+    for (const playerId of playerIds) {
+      try {
+        const player = await ctx.db.get(playerId);
+        if (!player) {
+          results.push({
+            playerId,
+            success: false,
+            error: "Player not found",
+          });
+          continue;
+        }
+
+        let totalCardsGranted = 0;
+
+        // Open packs for this player
+        for (let i = 0; i < quantity; i++) {
+          const cards = await openPackForAdmin(ctx, packProduct.packConfig, playerId);
+          totalCardsGranted += cards.length;
+        }
+
+        // Log action
+        await scheduleAuditLog(ctx, {
+          adminId,
+          action: "batch_grant_packs",
+          targetUserId: playerId,
+          targetEmail: player.email,
+          metadata: {
+            packType,
+            quantity,
+            reason,
+            cardsGranted: totalCardsGranted,
+            playerUsername: player.username,
+          },
+          success: true,
+        });
+
+        results.push({
+          playerId,
+          success: true,
+          cardsGranted: totalCardsGranted,
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        results.push({
+          playerId,
+          success: false,
+          error: errorMessage,
+        });
+
+        // Log failed action
+        await scheduleAuditLog(ctx, {
+          adminId,
+          action: "batch_grant_packs",
+          targetUserId: playerId,
+          metadata: {
+            packType,
+            quantity,
+            reason,
+            error: errorMessage,
+          },
+          success: false,
+          errorMessage,
+        });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    const failureCount = results.filter((r) => !r.success).length;
+    const totalCards = results.reduce((sum, r) => sum + (r.cardsGranted || 0), 0);
+
+    return {
+      success: true,
+      message: `Granted ${quantity} ${packType} pack(s) to ${successCount} players (${totalCards} total cards). ${failureCount} failed.`,
+      results,
+    };
   },
 });
 
 /**
  * Grant specific cards to a player
- * TODO: Implement when card inventory system is available
+ * Adds cards directly to player's inventory.
+ * Requires admin role or higher.
+ *
+ * @param playerId - User ID of the player to grant cards to
+ * @param cardIds - Array of card definition IDs to grant (1 copy each)
+ * @param reason - Reason for the grant (for audit logging)
  */
 export const grantCardsToPlayer = mutation({
   args: {
     playerId: v.id("users"),
-    cardIds: v.array(v.string()),
+    cardIds: v.array(v.id("cardDefinitions")),
     reason: v.string(),
   },
-  handler: async (ctx, { playerId: _playerId, cardIds: _cardIds, reason: _reason }) => {
+  handler: async (ctx, { playerId, cardIds, reason }) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
-    // TODO: Implement card grant logic
-    throw createError(ErrorCode.NOT_IMPLEMENTED, {
-      reason: "Card inventory management not yet implemented",
+    // Validate player exists
+    const player = await ctx.db.get(playerId);
+    if (!player) {
+      throw createError(ErrorCode.NOT_FOUND_USER, { userId: playerId });
+    }
+
+    // Validate card limit
+    if (cardIds.length === 0) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "No cards specified",
+      });
+    }
+    if (cardIds.length > 100) {
+      throw createError(ErrorCode.VALIDATION_RANGE, {
+        field: "cardIds",
+        max: 100,
+        value: cardIds.length,
+      });
+    }
+
+    const results: Array<{
+      cardId: Id<"cardDefinitions">;
+      success: boolean;
+      cardName?: string;
+      error?: string;
+    }> = [];
+
+    for (const cardId of cardIds) {
+      try {
+        // Validate card exists
+        const cardDef = await ctx.db.get(cardId);
+        if (!cardDef) {
+          results.push({
+            cardId,
+            success: false,
+            error: "Card definition not found",
+          });
+          continue;
+        }
+
+        // Add card to inventory
+        await addCardsToInventory(ctx, playerId, cardId, 1);
+
+        results.push({
+          cardId,
+          success: true,
+          cardName: cardDef.name,
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        results.push({
+          cardId,
+          success: false,
+          error: errorMessage,
+        });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    const failureCount = results.filter((r) => !r.success).length;
+
+    // Log action
+    await scheduleAuditLog(ctx, {
+      adminId,
+      action: "grant_cards_to_player",
+      targetUserId: playerId,
+      targetEmail: player.email,
+      metadata: {
+        reason,
+        cardsGranted: successCount,
+        cardsFailed: failureCount,
+        cardNames: results.filter((r) => r.success).map((r) => r.cardName),
+        playerUsername: player.username,
+      },
+      success: failureCount === 0,
+      errorMessage: failureCount > 0 ? `${failureCount} cards failed to grant` : undefined,
     });
+
+    return {
+      success: failureCount === 0,
+      message: `Granted ${successCount} cards to ${player.username || "player"}. ${failureCount} failed.`,
+      results,
+    };
   },
 });
 
 /**
  * Remove specific cards from a player
- * TODO: Implement when card inventory system is available
+ * Removes cards from player's inventory (1 copy each).
+ * Requires admin role or higher.
+ *
+ * @param playerId - User ID of the player to remove cards from
+ * @param cardIds - Array of card definition IDs to remove (1 copy each)
+ * @param reason - Reason for the removal (for audit logging)
  */
 export const removeCardsFromPlayer = mutation({
   args: {
     playerId: v.id("users"),
-    cardIds: v.array(v.string()),
+    cardIds: v.array(v.id("cardDefinitions")),
     reason: v.string(),
   },
-  handler: async (ctx, _args) => {
+  handler: async (ctx, { playerId, cardIds, reason }) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
-    // TODO: Implement card removal logic
-    throw createError(ErrorCode.NOT_IMPLEMENTED, {
-      reason: "Card inventory management not yet implemented",
+    // Validate player exists
+    const player = await ctx.db.get(playerId);
+    if (!player) {
+      throw createError(ErrorCode.NOT_FOUND_USER, { userId: playerId });
+    }
+
+    // Validate card limit
+    if (cardIds.length === 0) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "No cards specified",
+      });
+    }
+    if (cardIds.length > 100) {
+      throw createError(ErrorCode.VALIDATION_RANGE, {
+        field: "cardIds",
+        max: 100,
+        value: cardIds.length,
+      });
+    }
+
+    const results: Array<{
+      cardId: Id<"cardDefinitions">;
+      success: boolean;
+      cardName?: string;
+      error?: string;
+    }> = [];
+
+    for (const cardId of cardIds) {
+      try {
+        // Get card definition for logging
+        const cardDef = await ctx.db.get(cardId);
+        if (!cardDef) {
+          results.push({
+            cardId,
+            success: false,
+            error: "Card definition not found",
+          });
+          continue;
+        }
+
+        // Check if player owns the card
+        const playerCard = await ctx.db
+          .query("playerCards")
+          .withIndex("by_user_card", (q) => q.eq("userId", playerId).eq("cardDefinitionId", cardId))
+          .first();
+
+        if (!playerCard || playerCard.quantity <= 0) {
+          results.push({
+            cardId,
+            success: false,
+            cardName: cardDef.name,
+            error: "Player does not own this card",
+          });
+          continue;
+        }
+
+        // Remove card from inventory (decrease by 1)
+        await adjustCardInventory(ctx, playerId, cardId, -1);
+
+        results.push({
+          cardId,
+          success: true,
+          cardName: cardDef.name,
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        results.push({
+          cardId,
+          success: false,
+          error: errorMessage,
+        });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    const failureCount = results.filter((r) => !r.success).length;
+
+    // Log action
+    await scheduleAuditLog(ctx, {
+      adminId,
+      action: "remove_cards_from_player",
+      targetUserId: playerId,
+      targetEmail: player.email,
+      metadata: {
+        reason,
+        cardsRemoved: successCount,
+        cardsFailed: failureCount,
+        cardNames: results.filter((r) => r.success).map((r) => r.cardName),
+        playerUsername: player.username,
+      },
+      success: failureCount === 0,
+      errorMessage: failureCount > 0 ? `${failureCount} cards failed to remove` : undefined,
     });
+
+    return {
+      success: failureCount === 0,
+      message: `Removed ${successCount} cards from ${player.username || "player"}. ${failureCount} failed.`,
+      results,
+    };
   },
 });
 
 /**
  * Grant specific cards to multiple players
- * TODO: Implement when card inventory system is available
+ * Adds the same set of cards to all specified players.
+ * Requires admin role or higher.
+ *
+ * @param playerIds - Array of user IDs to grant cards to
+ * @param cardIds - Array of card definition IDs to grant (1 copy each)
+ * @param reason - Reason for the grant (for audit logging)
  */
 export const batchGrantCards = mutation({
   args: {
     playerIds: v.array(v.id("users")),
-    cardIds: v.array(v.string()),
+    cardIds: v.array(v.id("cardDefinitions")),
     reason: v.string(),
   },
-  handler: async (ctx, { playerIds: _playerIds, cardIds: _cardIds, reason: _reason }) => {
+  handler: async (ctx, { playerIds, cardIds, reason }) => {
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
-    // TODO: Implement batch card grant logic
-    throw createError(ErrorCode.NOT_IMPLEMENTED, {
-      reason: "Card inventory management not yet implemented",
-    });
+    // Validate inputs
+    if (playerIds.length === 0) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "No players specified",
+      });
+    }
+    if (cardIds.length === 0) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "No cards specified",
+      });
+    }
+    if (playerIds.length > 100) {
+      throw createError(ErrorCode.VALIDATION_RANGE, {
+        field: "playerIds",
+        max: 100,
+        value: playerIds.length,
+      });
+    }
+    if (cardIds.length > 50) {
+      throw createError(ErrorCode.VALIDATION_RANGE, {
+        field: "cardIds",
+        max: 50,
+        value: cardIds.length,
+      });
+    }
+
+    // Pre-validate all cards exist
+    const cardDefinitions: Map<Id<"cardDefinitions">, { name: string; rarity: string }> = new Map();
+    for (const cardId of cardIds) {
+      const cardDef = await ctx.db.get(cardId);
+      if (!cardDef) {
+        throw createError(ErrorCode.NOT_FOUND_CARD, { cardId });
+      }
+      cardDefinitions.set(cardId, { name: cardDef.name, rarity: cardDef.rarity });
+    }
+
+    const results: Array<{
+      playerId: Id<"users">;
+      success: boolean;
+      cardsGranted?: number;
+      error?: string;
+    }> = [];
+
+    for (const playerId of playerIds) {
+      try {
+        const player = await ctx.db.get(playerId);
+        if (!player) {
+          results.push({
+            playerId,
+            success: false,
+            error: "Player not found",
+          });
+          continue;
+        }
+
+        // Grant all cards to this player
+        for (const cardId of cardIds) {
+          await addCardsToInventory(ctx, playerId, cardId, 1);
+        }
+
+        // Log action
+        await scheduleAuditLog(ctx, {
+          adminId,
+          action: "batch_grant_cards",
+          targetUserId: playerId,
+          targetEmail: player.email,
+          metadata: {
+            reason,
+            cardsGranted: cardIds.length,
+            cardNames: cardIds.map((id) => cardDefinitions.get(id)?.name),
+            playerUsername: player.username,
+          },
+          success: true,
+        });
+
+        results.push({
+          playerId,
+          success: true,
+          cardsGranted: cardIds.length,
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        results.push({
+          playerId,
+          success: false,
+          error: errorMessage,
+        });
+
+        // Log failed action
+        await scheduleAuditLog(ctx, {
+          adminId,
+          action: "batch_grant_cards",
+          targetUserId: playerId,
+          metadata: {
+            reason,
+            error: errorMessage,
+          },
+          success: false,
+          errorMessage,
+        });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    const failureCount = results.filter((r) => !r.success).length;
+    const totalCardsGranted = results.reduce((sum, r) => sum + (r.cardsGranted || 0), 0);
+
+    return {
+      success: failureCount === 0,
+      message: `Granted ${cardIds.length} card(s) to ${successCount} players (${totalCardsGranted} total). ${failureCount} failed.`,
+      results,
+    };
   },
 });

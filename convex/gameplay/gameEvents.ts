@@ -283,12 +283,15 @@ export const recordEvent = mutation({
       v.literal("chain_resolving"),
       v.literal("chain_resolved"),
 
-      // Combat Events (5)
+      // Combat Events (8)
       v.literal("battle_phase_entered"),
       v.literal("attack_declared"),
       v.literal("damage_calculated"),
       v.literal("damage"),
       v.literal("card_destroyed_battle"),
+      v.literal("replay_triggered"), // Battle replay triggered (monster count changed)
+      v.literal("replay_target_selected"), // Attacker chose new target during replay
+      v.literal("replay_cancelled"), // Attacker cancelled attack during replay
 
       // Zone Transition Events (6)
       v.literal("card_drawn"),

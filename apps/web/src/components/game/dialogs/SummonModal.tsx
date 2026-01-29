@@ -1,9 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
-import { Shield, Sword, X } from "lucide-react";
+import { AlertCircle, Clock, Coins, Shield, Sword, X, Zap } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { CardInZone } from "../hooks/useGameBoard";
@@ -243,19 +244,79 @@ export function SummonModal({
 
               {/* Card Effects */}
               {card.effects && card.effects.length > 0 && (
-                <div className="mb-4 max-h-32 overflow-y-auto space-y-2 p-3 bg-[#0d0a09] border border-[#3d2b1f] rounded">
-                  <p className="text-xs font-semibold text-amber-400 mb-2">Card Effects:</p>
+                <div className="mb-4 max-h-40 overflow-y-auto space-y-2 p-3 bg-[#0d0a09] border border-[#3d2b1f] rounded">
+                  <p className="text-xs font-semibold text-amber-400 mb-2 flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5" />
+                    Card Effects
+                  </p>
                   {card.effects.map((effect, index) => (
-                    <div key={`effect-${effect.name}-${index}`} className="text-xs text-[#a89f94]">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div
+                      key={`effect-${effect.name}-${index}`}
+                      className="text-xs text-[#a89f94] border-l-2 border-amber-500/30 pl-2"
+                    >
+                      {/* Effect header with name and badges */}
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                         <span className="font-medium text-[#e8e0d5]">{effect.name}</span>
                         {effect.effectType && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
+                          <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded capitalize">
                             {effect.effectType}
                           </span>
                         )}
+                        {effect.trigger && effect.trigger !== "manual" && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
+                            {effect.trigger}
+                          </span>
+                        )}
+                        {effect.spellSpeed && effect.spellSpeed > 1 && (
+                          <span
+                            className={cn(
+                              "text-[10px] px-1.5 py-0.5 rounded",
+                              effect.spellSpeed === 3
+                                ? "bg-red-500/20 text-red-400"
+                                : "bg-yellow-500/20 text-yellow-400"
+                            )}
+                          >
+                            Speed {effect.spellSpeed}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-[11px] leading-relaxed">{effect.description}</p>
+
+                      {/* Effect description */}
+                      <p className="text-[11px] leading-relaxed mb-1">{effect.description}</p>
+
+                      {/* Restrictions and costs */}
+                      <div className="flex flex-wrap gap-1">
+                        {/* Cost display */}
+                        {effect.cost && (
+                          <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-amber-500/10 text-amber-300 rounded border border-amber-500/20">
+                            <Coins className="w-2.5 h-2.5" />
+                            {effect.cost.description}
+                          </span>
+                        )}
+
+                        {/* OPT restriction */}
+                        {effect.isOPT && !effect.isHOPT && (
+                          <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-orange-500/10 text-orange-300 rounded border border-orange-500/20">
+                            <Clock className="w-2.5 h-2.5" />
+                            Once per turn
+                          </span>
+                        )}
+
+                        {/* Hard OPT restriction */}
+                        {effect.isHOPT && (
+                          <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-red-500/10 text-red-300 rounded border border-red-500/20">
+                            <AlertCircle className="w-2.5 h-2.5" />
+                            Hard once per turn
+                          </span>
+                        )}
+
+                        {/* Continuous effect */}
+                        {effect.isContinuous && (
+                          <span className="text-[9px] px-1.5 py-0.5 bg-cyan-500/10 text-cyan-300 rounded border border-cyan-500/20">
+                            Continuous
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

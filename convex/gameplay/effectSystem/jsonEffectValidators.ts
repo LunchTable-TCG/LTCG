@@ -602,6 +602,13 @@ export const jsonGenericEffectValidator = v.object({
   reveal: v.optional(v.boolean()),
   destroyAfter: v.optional(v.boolean()),
   faceDown: v.optional(v.boolean()),
+
+  // Stat modification fields (for modifyATK/modifyDEF)
+  statTarget: v.optional(v.union(v.literal("self"), v.literal("target"), v.literal("all_matching"))),
+  statCondition: v.optional(v.any()), // JsonCondition for filtering which cards get stat mods
+
+  // Negate effect fields
+  negateType: v.optional(v.union(v.literal("activation"), v.literal("effect"), v.literal("summon"), v.literal("attack"))),
 });
 export type JsonGenericEffectInfer = Infer<typeof jsonGenericEffectValidator>;
 

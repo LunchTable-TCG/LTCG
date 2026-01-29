@@ -44,11 +44,7 @@ interface EconomyMetric {
   top10PercentGold: number;
 }
 
-interface WealthDistributionItem {
-  label: string;
-  count: number;
-  totalGold: number;
-}
+// WealthDistributionItem type - now inferred from API response
 
 // =============================================================================
 // Helper Functions
@@ -104,10 +100,10 @@ export default function EconomyAnalyticsPage() {
 
   // Transform wealth distribution for donut chart
   const wealthDistributionData =
-    wealth?.distribution?.map((d: WealthDistributionItem) => ({
+    (wealth?.distribution as any[] | undefined)?.map((d) => ({
       name: d.label,
       value: d.count,
-      totalGold: d.totalGold,
+      totalGold: d.totalGold ?? 0,
     })) ?? [];
 
   // Calculate inflation/deflation percentage

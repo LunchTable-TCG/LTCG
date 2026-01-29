@@ -10,10 +10,10 @@ import { mutation } from "../../_generated/server";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import {
-  clearOPTTracking,
   clearTemporaryModifiers,
   drawCards,
 } from "../../lib/gameHelpers";
+import { resetOPTEffects } from "../effectSystem/optTracker";
 import { recordEventHelper } from "../gameEvents";
 import { checkStateBasedActions, checkDeckOutCondition } from "./stateBasedActions";
 
@@ -93,8 +93,9 @@ export const endTurn = mutation({
     // 7.5. Clear temporary modifiers (ATK/DEF bonuses "until end of turn")
     await clearTemporaryModifiers(ctx, gameState, "end");
 
-    // 7.6. Clear OPT (Once Per Turn) tracking
-    await clearOPTTracking(ctx, gameState);
+    // 7.6. OPT/HOPT tracking now resets at turn START for the turn player
+    // (This is more accurate to Yu-Gi-Oh rules where "once per turn" means once during your turn)
+    // The resetOPTEffects is called after switching to the next player
 
     // 8. Clear "this turn" flags
     const playerBoard = isHost ? gameState.hostBoard : gameState.opponentBoard;
@@ -156,6 +157,24 @@ export const endTurn = mutation({
         turnNumber: nextTurnNumber,
       },
     });
+
+    // 12.5. Reset OPT/HOPT effects for the new turn player
+    // OPT resets at the start of the turn player's turn
+    // HOPT expires based on the resetOnTurn field (player's next turn)
+    // We need to refresh gameState first since turnNumber was updated in lobby but not gameState yet
+    const gameStateForOPT = await ctx.db.get(gameState._id);
+    if (gameStateForOPT) {
+      // Update the turnNumber in gameState to match lobby before resetting OPT
+      await ctx.db.patch(gameStateForOPT._id, {
+        currentTurnPlayerId: nextPlayerId,
+        turnNumber: nextTurnNumber,
+      });
+      // Fetch again with updated turnNumber for proper HOPT expiry calculation
+      const updatedGameState = await ctx.db.get(gameStateForOPT._id);
+      if (updatedGameState) {
+        await resetOPTEffects(ctx, updatedGameState, nextPlayerId);
+      }
+    }
 
     // 13. Auto-execute Draw Phase and advance to Main Phase 1
     const shouldSkipDraw = nextTurnNumber === 1 && nextPlayerId === lobby.hostId;

@@ -25,11 +25,18 @@ import {
 import { jsonAbilityValidator } from "./effectSystem/jsonEffectValidators";
 import { recordEventHelper } from "./gameEvents";
 import { checkStateBasedActions } from "./gameEngine/stateBasedActions";
+import { resetPriorityAfterChainLink } from "./responseWindow";
+import { checkReplayCondition } from "./replaySystem";
 
 /**
  * Type for chain effect - JSON ability only (text parsing has been removed)
  */
 export type ChainEffect = JsonAbility;
+
+/**
+ * Maximum chain length (12 links, like Yu-Gi-Oh official rules)
+ */
+const MAX_CHAIN_LENGTH = 12;
 
 // Type definitions for chain links
 interface ChainLink {
@@ -119,12 +126,62 @@ export async function addToChainHelper(
   // 3. Get current chain (or initialize empty)
   const currentChain: ChainLink[] = gameState.currentChain || [];
 
-  // 4. Validate spell speed
+  // 4. Chain link limit check (12 max like Yu-Gi-Oh)
+  if (currentChain.length >= MAX_CHAIN_LENGTH) {
+    throw createError(ErrorCode.GAME_CHAIN_LIMIT_EXCEEDED, {
+      reason: "Chain cannot exceed 12 links",
+      currentLength: currentChain.length,
+      maxLength: MAX_CHAIN_LENGTH,
+    });
+  }
+
+  // 5. Recursion detection - prevent same card from being added multiple times
+  // unless it has a different effect type (for cards with multiple effects)
+  const cardAlreadyInChain = currentChain.some(
+    (link) =>
+      link.cardId === args.cardId &&
+      link.effect.effects[0]?.type === args.effect.effects[0]?.type
+  );
+
+  if (cardAlreadyInChain) {
+    // Check if card has OPT (once per turn) - for now, we block duplicate cards
+    // In a full implementation, we'd check the card's OPT status
+    throw createError(ErrorCode.GAME_CARD_ALREADY_IN_CHAIN, {
+      reason: "This card is already in the chain",
+      cardId: args.cardId,
+    });
+  }
+
+  // 6. Validate spell speed (with Speed 3 exclusive window rules)
   if (currentChain.length > 0) {
     const lastChainLink = currentChain[currentChain.length - 1];
-    if (lastChainLink && args.spellSpeed < lastChainLink.spellSpeed) {
+    if (!lastChainLink) throw createError(ErrorCode.GAME_INVALID_CHAIN_STATE, {});
+
+    // Speed 3 exclusive rule: Only Speed 3 can respond to Speed 3
+    if (lastChainLink.spellSpeed === 3) {
+      if (args.spellSpeed !== 3) {
+        throw createError(ErrorCode.GAME_INVALID_SPELL_SPEED, {
+          reason: "Only Counter Traps (Speed 3) can respond to Counter Traps",
+          attemptedSpeed: args.spellSpeed,
+          requiredSpeed: 3,
+        });
+      }
+    }
+
+    // Check if any Speed 3 exists in chain - locks out non-Speed 3
+    const hasSpeed3InChain = currentChain.some((link) => link.spellSpeed === 3);
+    if (hasSpeed3InChain && args.spellSpeed < 3) {
       throw createError(ErrorCode.GAME_INVALID_SPELL_SPEED, {
-        reason: `Cannot chain Spell Speed ${args.spellSpeed} to Spell Speed ${lastChainLink.spellSpeed}`,
+        reason: "Cannot chain Speed < 3 after a Counter Trap has been activated",
+        attemptedSpeed: args.spellSpeed,
+        chainContainsSpeed3: true,
+      });
+    }
+
+    // Normal rule: Can't chain lower speed to higher
+    if (args.spellSpeed < lastChainLink.spellSpeed) {
+      throw createError(ErrorCode.GAME_INVALID_SPELL_SPEED, {
+        reason: `Cannot chain Speed ${args.spellSpeed} to Speed ${lastChainLink.spellSpeed}`,
         currentSpellSpeed: args.spellSpeed,
         requiredSpellSpeed: lastChainLink.spellSpeed,
       });
@@ -142,11 +199,22 @@ export async function addToChainHelper(
 
   const updatedChain = [...currentChain, newChainLink];
 
-  // 6. Update game state with chain and priority
+  // 6. Update game state with chain, priority, and track the activation
   const opponentId = args.playerId === gameState.hostId ? gameState.opponentId : gameState.hostId;
+
+  // Track priority history for the activation
+  const history = gameState.priorityHistory || [];
+  const priorityHistoryEntry = {
+    playerId: args.playerId,
+    action: "activated",
+    timestamp: Date.now(),
+    chainLength: updatedChain.length,
+  };
+
   await ctx.db.patch(gameState._id, {
     currentChain: updatedChain,
     currentPriorityPlayer: opponentId, // Give opponent priority to respond
+    priorityHistory: [...history.slice(-49), priorityHistoryEntry], // Keep last 50 entries
   });
 
   // 7. Get card details
@@ -247,6 +315,7 @@ export async function resolveChainHelper(
   resolvedChainLinks: number;
   gameEnded?: boolean;
   winnerId?: Id<"users">;
+  replayTriggered?: boolean;
 }> {
   const args = params;
   // 1. Get lobby
@@ -316,9 +385,22 @@ export async function resolveChainHelper(
   });
 
   // 5. Resolve chain in reverse order (CL3 → CL2 → CL1)
+  // Track visited effect IDs to prevent infinite loops during resolution
+  const visitedEffectIds = new Set<string>();
+
   for (let i = currentChain.length - 1; i >= 0; i--) {
     const chainLink = currentChain[i];
     if (!chainLink) continue;
+
+    // Loop prevention: Check if this exact effect has already been executed
+    const effectType = chainLink.effect.effects[0]?.type || "unknown";
+    const effectKey = `${chainLink.cardId}-${effectType}-${i}`;
+    if (visitedEffectIds.has(effectKey)) {
+      // Log warning and skip to prevent infinite loop
+      console.warn(`Skipping duplicate effect execution: ${effectKey}`);
+      continue;
+    }
+    visitedEffectIds.add(effectKey);
 
     const card = await ctx.db.get(chainLink.cardId);
 
@@ -433,11 +515,24 @@ export async function resolveChainHelper(
     }
   }
 
-  // 6. Clear chain
+  // 6. Clear chain and reset priority to turn player
+  // After chain resolution, turn player gets priority first for next action
+  const turnPlayerId = lobby.currentTurnPlayerId;
+
   await ctx.db.patch(gameState._id, {
     currentChain: [],
-    currentPriorityPlayer: undefined,
+    currentPriorityPlayer: turnPlayerId,
   });
+
+  // 6b. Reset priority in response window if it exists
+  const refreshedStateAfterChain = await ctx.db
+    .query("gameStates")
+    .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+    .first();
+
+  if (refreshedStateAfterChain && turnPlayerId) {
+    await resetPriorityAfterChainLink(ctx, refreshedStateAfterChain, turnPlayerId);
+  }
 
   // 7. Record chain_resolved event
   await recordEventHelper(ctx, {
@@ -459,12 +554,28 @@ export async function resolveChainHelper(
     turnNumber: lobby.turnNumber,
   });
 
-  // 9. Return success
+  // 9. Check for battle replay condition
+  // After chain resolution, check if replay should be triggered
+  // (opponent's monster count may have changed during chain resolution)
+  let replayTriggered = false;
+  if (!sbaResult.gameEnded) {
+    const latestState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (latestState) {
+      replayTriggered = await checkReplayCondition(ctx, args.lobbyId, latestState);
+    }
+  }
+
+  // 10. Return success
   return {
     success: true,
     resolvedChainLinks: currentChain.length,
     gameEnded: sbaResult.gameEnded,
     winnerId: sbaResult.winnerId,
+    replayTriggered,
   };
 }
 

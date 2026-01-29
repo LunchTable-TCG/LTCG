@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { getAbilityDisplayText } from "@/lib/utils";
+import { getCardEffectsArray, type JsonAbility } from "@/lib/cardHelpers";
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useMemo } from "react";
 
@@ -50,7 +50,7 @@ interface GameStateCard {
   attack?: number;
   defense?: number;
   cost?: number;
-  ability?: string;
+  ability?: JsonAbility;
   effectType?: string;
 }
 
@@ -165,6 +165,16 @@ export interface CardInZone {
     name: string;
     description: string;
     effectType?: string;
+    trigger?: string;
+    cost?: {
+      type: string;
+      value?: number;
+      description: string;
+    };
+    isOPT?: boolean;
+    isHOPT?: boolean;
+    spellSpeed?: 1 | 2 | 3;
+    isContinuous?: boolean;
   }>;
 }
 
@@ -679,15 +689,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
                 level: card.cost || 0, // cost represents the monster level/tribute requirement
               }
             : undefined,
-        effects: card.ability
-          ? [
-              {
-                name: card.name || "Card Effect",
-                description: getAbilityDisplayText(card.ability) ?? "",
-                effectType: card.effectType,
-              },
-            ]
-          : [],
+        effects: getCardEffectsArray(card.ability),
         isFaceDown: false,
       })),
       handCount: gameState.myHand.length,
@@ -710,15 +712,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
           defense: card.currentDefense,
           level: card.cost || 0, // cost represents the monster level/tribute requirement
         },
-        effects: card.ability
-          ? [
-              {
-                name: card.name || "Card Effect",
-                description: getAbilityDisplayText(card.ability) ?? "",
-                effectType: card.effectType,
-              },
-            ]
-          : [],
+        effects: getCardEffectsArray(card.ability),
       })),
       backrow: gameState.mySpellTrapZone.map((card) => ({
         instanceId: card._id,
@@ -729,15 +723,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         rarity: card.rarity,
         archetype: card.archetype,
         isFaceDown: card.isFaceDown,
-        effects: card.ability
-          ? [
-              {
-                name: card.name || "Card Effect",
-                description: getAbilityDisplayText(card.ability) ?? "",
-                effectType: card.effectType,
-              },
-            ]
-          : [],
+        effects: getCardEffectsArray(card.ability),
       })),
       fieldSpell: gameState.myFieldSpell
         ? {
@@ -749,15 +735,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
             rarity: gameState.myFieldSpell.rarity,
             archetype: gameState.myFieldSpell.archetype,
             isFaceDown: false, // Field spells are always face-up
-            effects: gameState.myFieldSpell.ability
-              ? [
-                  {
-                    name: gameState.myFieldSpell.name || "Field Spell",
-                    description: getAbilityDisplayText(gameState.myFieldSpell.ability) ?? "",
-                    effectType: gameState.myFieldSpell.effectType,
-                  },
-                ]
-              : [],
+            effects: getCardEffectsArray(gameState.myFieldSpell.ability),
           }
         : null,
       graveyard: gameState.myGraveyard.map((card) => ({
@@ -804,15 +782,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
           defense: card.currentDefense,
           level: card.cost || 0, // cost represents the monster level/tribute requirement
         },
-        effects: card.ability
-          ? [
-              {
-                name: card.name || "Card Effect",
-                description: getAbilityDisplayText(card.ability) ?? "",
-                effectType: card.effectType,
-              },
-            ]
-          : [],
+        effects: getCardEffectsArray(card.ability),
       })),
       backrow: gameState.opponentSpellTrapZone.map((card) => ({
         instanceId: card._id,
@@ -823,15 +793,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         rarity: card.rarity,
         archetype: card.archetype,
         isFaceDown: card.isFaceDown,
-        effects: card.ability
-          ? [
-              {
-                name: card.name || "Card Effect",
-                description: getAbilityDisplayText(card.ability) ?? "",
-                effectType: card.effectType,
-              },
-            ]
-          : [],
+        effects: getCardEffectsArray(card.ability),
       })),
       fieldSpell: gameState.opponentFieldSpell
         ? {
@@ -843,15 +805,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
             rarity: gameState.opponentFieldSpell.rarity,
             archetype: gameState.opponentFieldSpell.archetype,
             isFaceDown: false, // Field spells are always face-up
-            effects: gameState.opponentFieldSpell.ability
-              ? [
-                  {
-                    name: gameState.opponentFieldSpell.name || "Field Spell",
-                    description: getAbilityDisplayText(gameState.opponentFieldSpell.ability) ?? "",
-                    effectType: gameState.opponentFieldSpell.effectType,
-                  },
-                ]
-              : [],
+            effects: getCardEffectsArray(gameState.opponentFieldSpell.ability),
           }
         : null,
       graveyard: gameState.opponentGraveyard.map((card) => ({

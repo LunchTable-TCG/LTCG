@@ -10,6 +10,7 @@ import type { MutationCtx } from "../_generated/server";
 import { getCardAbility } from "./abilityHelpers";
 import { recordEventHelper, recordGameEndHelper } from "../gameplay/gameEvents";
 import { ErrorCode, createError } from "./errorCodes";
+import type { JsonCondition, NumericRange } from "../gameplay/effectSystem/types";
 
 export type CardZone = "hand" | "deck" | "board" | "graveyard" | "banished" | "extraDeck";
 
@@ -699,22 +700,27 @@ export async function applyContinuousEffects(
 /**
  * Check if a card has used its Once Per Turn (OPT) effect
  *
+ * LEGACY COMPATIBILITY FUNCTION - Use optTracker.checkCanActivateOPT for new code.
+ *
  * Pure function that checks OPT tracking array to prevent cards from using
- * their OPT effects multiple times in the same turn. OPT tracking is cleared
- * at the end of each turn.
+ * their OPT effects multiple times in the same turn.
  *
  * @internal
  * @param gameState - Current game state document
  * @param cardId - Card definition ID to check
  * @returns True if the card has already used its OPT effect this turn
+ * @deprecated Use optTracker.checkCanActivateOPT with effectIndex for precise tracking
  */
 export function hasUsedOPT(gameState: Doc<"gameStates">, cardId: Id<"cardDefinitions">) {
-  const optUsed = gameState.optUsedThisTurn || [];
-  return optUsed.includes(cardId);
+  // Import the new tracker's hasUsedAnyOPT for compatibility
+  const { hasUsedAnyOPT } = require("../gameplay/effectSystem/optTracker");
+  return hasUsedAnyOPT(gameState, cardId);
 }
 
 /**
  * Mark a card as having used its Once Per Turn (OPT) effect
+ *
+ * LEGACY COMPATIBILITY FUNCTION - Use optTracker.markEffectUsed for new code.
  *
  * Adds card to OPT tracking array to prevent multiple uses of OPT effects
  * in the same turn. Called after successfully activating an OPT effect.
@@ -724,38 +730,191 @@ export function hasUsedOPT(gameState: Doc<"gameStates">, cardId: Id<"cardDefinit
  * @param gameState - Current game state document
  * @param cardId - Card definition ID to mark as used
  * @returns Promise that resolves when OPT is marked
+ * @deprecated Use optTracker.markEffectUsed with effectIndex for precise tracking
  */
 export async function markOPTUsed(
   ctx: MutationCtx,
   gameState: Doc<"gameStates">,
   cardId: Id<"cardDefinitions">
 ): Promise<void> {
-  const optUsed = gameState.optUsedThisTurn || [];
-
-  if (!optUsed.includes(cardId)) {
-    optUsed.push(cardId);
-    await ctx.db.patch(gameState._id, {
-      optUsedThisTurn: optUsed,
-    });
-  }
+  // Import the new tracker's markCardOPTUsed for compatibility
+  const { markCardOPTUsed } = require("../gameplay/effectSystem/optTracker");
+  // Need to determine playerId - assume current turn player
+  await markCardOPTUsed(ctx, gameState, cardId, gameState.currentTurnPlayerId);
 }
 
 /**
  * Clear OPT tracking at end of turn
  *
- * Helper to reset OPT tracking array at turn end, allowing cards to use
- * their OPT effects again next turn. Called by turn management system.
+ * LEGACY COMPATIBILITY FUNCTION - Use optTracker.resetOPTEffects at turn START instead.
+ *
+ * Note: The new OPT system resets at turn START (for the turn player), not at turn END.
+ * This function is kept for backward compatibility but should be migrated to
+ * resetOPTEffects called at the beginning of each player's turn.
  *
  * @internal
  * @param ctx - Mutation context
  * @param gameState - Current game state document
  * @returns Promise that resolves when OPT tracking is cleared
+ * @deprecated Use optTracker.resetOPTEffects at turn start instead
  */
 export async function clearOPTTracking(
   ctx: MutationCtx,
   gameState: Doc<"gameStates">
 ): Promise<void> {
-  await ctx.db.patch(gameState._id, {
-    optUsedThisTurn: [],
-  });
+  // For backward compatibility, clear all OPT records
+  // New code should use resetOPTEffects at turn start with the turn player ID
+  const { clearAllOPTTracking } = require("../gameplay/effectSystem/optTracker");
+  await clearAllOPTTracking(ctx, gameState);
+}
+
+// ============================================================================
+// TRIGGER CONDITION EVALUATION
+// ============================================================================
+
+/**
+ * Helper to check if a value satisfies a numeric range condition
+ */
+function checkNumericRange(value: number, range: NumericRange | undefined): boolean {
+  if (!range) return true;
+  if (range.exact !== undefined && value !== range.exact) return false;
+  if (range.min !== undefined && value < range.min) return false;
+  if (range.max !== undefined && value > range.max) return false;
+  return true;
+}
+
+/**
+ * Evaluate game-state conditions for trigger activation
+ *
+ * Checks various game-state conditions before allowing a triggered effect
+ * to execute. Supports LP thresholds, board counts, hand size, graveyard
+ * counts, deck size, and opponent board conditions.
+ *
+ * @internal
+ * @param _ctx - Mutation context (reserved for future archetype lookups)
+ * @param gameState - Current game state document
+ * @param condition - The activation condition to evaluate (JsonCondition)
+ * @param playerId - User ID of the player whose perspective to evaluate from
+ * @returns True if all conditions are met, false otherwise
+ */
+export async function evaluateTriggerCondition(
+  _ctx: MutationCtx,
+  gameState: Doc<"gameStates">,
+  condition: JsonCondition | undefined,
+  playerId: Id<"users">
+): Promise<boolean> {
+  // No condition means always activates
+  if (!condition) return true;
+
+  const isHost = playerId === gameState.hostId;
+
+  // Get player-relative data
+  const playerLP = isHost ? gameState.hostLifePoints : gameState.opponentLifePoints;
+  const playerBoard = isHost ? gameState.hostBoard : gameState.opponentBoard;
+  const opponentBoard = isHost ? gameState.opponentBoard : gameState.hostBoard;
+  const playerGraveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
+  const playerHand = isHost ? gameState.hostHand : gameState.opponentHand;
+  const playerDeck = isHost ? gameState.hostDeck : gameState.opponentDeck;
+
+  // LP conditions
+  if (condition.lpBelow !== undefined && playerLP >= condition.lpBelow) {
+    return false;
+  }
+  if (condition.lpAbove !== undefined && playerLP <= condition.lpAbove) {
+    return false;
+  }
+
+  // Board count conditions (player's monsters)
+  if (condition.boardCount !== undefined) {
+    if (!checkNumericRange(playerBoard.length, condition.boardCount)) {
+      return false;
+    }
+  }
+
+  // Opponent board count - check if opponent controls monsters
+  // This uses the opponentHasNoMonsters flag or we can check opponentBoardCount from JsonCondition
+  if (condition.opponentHasNoMonsters && opponentBoard.length > 0) {
+    return false;
+  }
+
+  // Player controls no monsters
+  if (condition.controlsNoMonsters && playerBoard.length > 0) {
+    return false;
+  }
+
+  // Hand size conditions
+  if (condition.handSize !== undefined) {
+    if (!checkNumericRange(playerHand.length, condition.handSize)) {
+      return false;
+    }
+  }
+
+  // Graveyard conditions
+  if (condition.graveyardContains !== undefined) {
+    const gyCondition = condition.graveyardContains;
+
+    // Check graveyard count
+    if (gyCondition.count !== undefined) {
+      if (!checkNumericRange(playerGraveyard.length, gyCondition.count)) {
+        return false;
+      }
+    }
+
+    // Note: cardType and archetype filtering would require fetching card definitions
+    // For now, we only support count-based conditions
+    // Future enhancement: filter graveyard by cardType/archetype
+  }
+
+  // Deck size conditions
+  if (condition.deckSize !== undefined) {
+    if (!checkNumericRange(playerDeck.length, condition.deckSize)) {
+      return false;
+    }
+  }
+
+  // Turn conditions
+  if (condition.isFirstTurn !== undefined) {
+    const isFirstTurn = gameState.turnNumber === 1;
+    if (condition.isFirstTurn !== isFirstTurn) {
+      return false;
+    }
+  }
+
+  if (condition.isMyTurn !== undefined) {
+    const isMyTurn = gameState.currentTurnPlayerId === playerId;
+    if (condition.isMyTurn !== isMyTurn) {
+      return false;
+    }
+  }
+
+  if (condition.turnCount !== undefined) {
+    if (!checkNumericRange(gameState.turnNumber, condition.turnCount)) {
+      return false;
+    }
+  }
+
+  // Handle logical operators (and/or)
+  if (condition.type === "and" && condition.conditions) {
+    for (const subCondition of condition.conditions) {
+      const result = await evaluateTriggerCondition(_ctx, gameState, subCondition, playerId);
+      if (!result) return false;
+    }
+  }
+
+  if (condition.type === "or" && condition.conditions) {
+    let anyPassed = false;
+    for (const subCondition of condition.conditions) {
+      const result = await evaluateTriggerCondition(_ctx, gameState, subCondition, playerId);
+      if (result) {
+        anyPassed = true;
+        break;
+      }
+    }
+    if (condition.conditions.length > 0 && !anyPassed) {
+      return false;
+    }
+  }
+
+  // All conditions passed
+  return true;
 }

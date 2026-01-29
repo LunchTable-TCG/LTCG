@@ -103,7 +103,6 @@ export default function AuditLogPage() {
 
   const logs = useQuery(api.admin.admin.getAuditLog, {
     limit,
-    targetType: targetType === "all" ? undefined : targetType,
   }) as AuditLogEntry[] | undefined;
 
   const columns: ColumnDef<AuditLogEntry>[] = [

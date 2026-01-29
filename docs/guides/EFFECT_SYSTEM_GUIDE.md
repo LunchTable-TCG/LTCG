@@ -6,15 +6,41 @@
 
 ## Overview
 
-The effect system parses and executes card abilities, handles triggers, manages chains, and applies continuous effects. It supports all major card game mechanics including destruction, damage, stat modification, searching, and special summons.
+The effect system executes JSON-defined card abilities, handles triggers, manages chains, and applies continuous effects. All 178 cards use structured JSON format for type-safe effect definitions.
 
 ### Current Status
+- ✅ 178 cards loaded with JSON abilities
 - ✅ 16 effect types implemented
 - ✅ 11 trigger conditions working
 - ✅ Trap activation UI complete
 - ✅ Continuous effects for ATK bonuses
+- ✅ JSON ability validation at schema level
 - ⚠️ Card selection UI not integrated (see MASTER_TODO.md)
-- ⚠️ DEF continuous effects not implemented
+- ⚠️ DEF continuous effects not fully implemented
+
+---
+
+## JSON Ability Format
+
+All card abilities are defined in structured JSON format. See [JSON_ABILITY_FORMAT.md](./JSON_ABILITY_FORMAT.md) for complete reference.
+
+**Basic Structure:**
+```json
+{
+  "ability": {
+    "effects": [
+      {
+        "type": "draw",
+        "trigger": "manual",
+        "value": 2,
+        "description": "Draw 2 cards"
+      }
+    ],
+    "spellSpeed": 1,
+    "isContinuous": false
+  }
+}
+```
 
 ---
 
@@ -22,102 +48,108 @@ The effect system parses and executes card abilities, handles triggers, manages 
 
 ### Implemented ✅
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `draw` | Draw cards | "Draw 2 cards" |
-| `destroy` | Destroy cards | "Destroy 1 monster" |
-| `damage` | Deal damage to opponent | "Inflict 500 damage" |
-| `gainLP` | Heal life points | "Gain 1000 LP" |
-| `modifyATK` | Change ATK stat | "Gain 500 ATK" |
-| `modifyDEF` | Change DEF stat | "Gain 500 DEF" |
-| `summon` | Special summon | "Special summon 1 monster" |
-| `toHand` | Add to hand | "Add 1 card to hand" |
-| `toGraveyard` | Send to graveyard | "Send 1 card to GY" |
-| `banish` | Banish cards | "Banish 1 card" |
-| `search` | Search deck | "Search 1 Warrior monster" |
-| `negate` | Negate activation | "Negate the activation" |
-| `directAttack` | Attack directly | "This card can attack directly" |
-| `mill` | Mill cards from deck | "Send top 3 cards to GY" |
-| `discard` | Discard from hand | "Discard 1 card" |
-| `multipleAttack` | Attack multiple times | "Can attack twice" |
+| Type | Description | JSON Example |
+|------|-------------|--------------|
+| `draw` | Draw cards | `{type: "draw", value: 2}` |
+| `destroy` | Destroy cards | `{type: "destroy", target: {...}}` |
+| `damage` | Deal damage | `{type: "damage", value: 500}` |
+| `gainLP` | Heal life points | `{type: "gainLP", value: 1000}` |
+| `modifyATK` | Change ATK stat | `{type: "modifyATK", value: 500}` |
+| `modifyDEF` | Change DEF stat | `{type: "modifyDEF", value: 500}` |
+| `summon` | Special summon | `{type: "summon", summonFrom: "graveyard"}` |
+| `toHand` | Add to hand | `{type: "toHand", target: {...}}` |
+| `toGraveyard` | Send to graveyard | `{type: "toGraveyard"}` |
+| `banish` | Banish cards | `{type: "banish"}` |
+| `search` | Search deck | `{type: "search", targetLocation: "deck"}` |
+| `negate` | Negate activation | `{type: "negate"}` |
+| `directAttack` | Attack directly | Special ability flag |
+| `mill` | Mill from deck | `{type: "mill", value: 3}` |
+| `discard` | Discard from hand | `{type: "discard"}` |
+| `multipleAttack` | Attack multiple times | Special ability flag |
 
 ---
 
 ## Trigger Conditions (11 Total)
 
-### Trigger Types ✅
-
-| Trigger | When It Fires | Example Card |
+| Trigger | When It Fires | JSON Example |
 |---------|---------------|--------------|
-| `manual` | Player activates | Normal Spell |
-| `on_summon` | When you summon | "When summoned: Draw 1" |
-| `on_opponent_summon` | When opponent summons | "When opponent summons: Destroy 1" |
-| `on_destroy` | When destroyed | "When destroyed: Search 1" |
-| `on_flip` | When flipped face-up | "FLIP: Destroy 1 monster" |
-| `on_battle_damage` | After dealing battle damage | "After damage: Draw 1" |
-| `on_battle_destroy` | After destroying in battle | "After destroying: Gain 500 LP" |
-| `on_battle_attacked` | When attacked | "When attacked: Negate" |
-| `on_battle_start` | At battle phase start | "At battle start: Gain 1000 ATK" |
-| `on_draw` | When you draw | "When you draw: Inflict 500" |
-| `on_end` | At end phase | "At end phase: Destroy 1" |
+| `manual` | Player activates | Normal Spell activation |
+| `continuous` | Always active | ATK boost effects |
+| `on_summon` | When you summon | `{trigger: "on_summon"}` |
+| `on_opponent_summon` | Opponent summons | Reactive effects |
+| `on_destroy` | When destroyed | Float effects |
+| `on_flip` | Flipped face-up | Flip effects |
+| `on_battle_damage` | After damage dealt | Battle rewards |
+| `on_battle_destroy` | After battle destroy | Victory effects |
+| `on_attacked` | When attacked | Defensive triggers |
+| `on_end_phase` | At end phase | Cleanup effects |
+| `on_draw` | When you draw | Draw punishment |
 
 ---
 
-## Ability Parser
+## JSON Parsing & Execution
 
-### How Parsing Works
+### How It Works
 
-The parser converts natural language abilities into structured effect objects.
+1. **Schema Validation**: JSON abilities validated at database level
+2. **Runtime Parsing**: `jsonParser.ts` converts JSON to `ParsedAbility`
+3. **Effect Execution**: Dispatched to type-specific executors
+4. **Result Handling**: Success/failure returned with UI updates
 
-**Example Input:**
+**File:** `convex/gameplay/effectSystem/jsonParser.ts`
+
 ```typescript
-ability: "When this card is Normal Summoned: Draw 2 cards"
-```
+export function parseJsonAbility(ability: JsonAbility): ParsedAbility {
+  const effects: ParsedEffect[] = [];
 
-**Parser Output:**
-```typescript
-{
-  type: "draw",
-  trigger: "on_summon",
-  value: 2,
-  condition: null,
-  target: null,
-  continuous: false,
-  isOPT: false
+  // Process each effect in the ability
+  for (const jsonEffect of ability.effects) {
+    const parsedEffect = parseJsonEffect(jsonEffect, ability.spellSpeed);
+    effects.push(parsedEffect);
+  }
+
+  return {
+    effects,
+    spellSpeed: ability.spellSpeed,
+    abilityText: ability.abilityText
+  };
 }
 ```
 
-### Supported Patterns
+### Effect Execution Flow
 
-**Simple Effects:**
-```
-"Draw 2 cards" → { type: "draw", value: 2 }
-"Gain 500 ATK" → { type: "modifyATK", value: 500 }
-"Inflict 1000 damage" → { type: "damage", value: 1000 }
-```
+**File:** `convex/gameplay/effectSystem/executor.ts`
 
-**Conditional Effects:**
-```
-"If you have 3 or more monsters: Destroy 1"
-→ { type: "destroy", condition: "3_or_more_monsters" }
-```
+```typescript
+export async function executeEffect(
+  ctx: MutationCtx,
+  gameState: Doc<"gameStates">,
+  lobbyId: Id<"gameLobbies">,
+  effect: ParsedEffect,
+  playerId: Id<"users">,
+  cardId: Id<"cardDefinitions">,
+  targets?: Id<"cardDefinitions">[],
+  effectIndex: number = 0
+): Promise<EffectResult> {
+  // Check OPT restrictions
+  if (effect.isOPT) {
+    const canActivate = await checkCanActivateOPT(ctx, gameState, cardId, effectIndex);
+    if (!canActivate) {
+      return { success: false, message: "Already used this turn" };
+    }
+  }
 
-**Targeting:**
-```
-"Destroy 1 Spell or Trap card"
-→ { type: "destroy", target: "spell_trap", value: 1 }
-```
-
-**Continuous Effects:**
-```
-"All Warrior monsters gain 500 ATK"
-→ { type: "modifyATK", continuous: true, condition: "Warrior_monsters", value: 500 }
-```
-
-**Once Per Turn:**
-```
-"Once per turn: Draw 1 card"
-→ { type: "draw", value: 1, isOPT: true }
+  // Route to specific executor based on type
+  switch (effect.type) {
+    case "draw":
+      return await executeDraw(ctx, gameState, lobbyId, effect, playerId);
+    case "damage":
+      return await executeDamage(ctx, gameState, lobbyId, effect, playerId);
+    case "destroy":
+      return await executeDestroy(ctx, gameState, lobbyId, effect, playerId, targets);
+    // ... other effect types
+  }
+}
 ```
 
 ---
@@ -126,100 +158,43 @@ ability: "When this card is Normal Summoned: Draw 2 cards"
 
 Each effect type has a dedicated executor in `convex/gameplay/effectSystem/executors/`.
 
-### Example: Draw Effect
+### Example: Damage Effect
 
-**File:** `convex/gameplay/effectSystem/executors/index.ts`
+**File:** `convex/gameplay/effectSystem/executors/combat/damage.ts`
 
 ```typescript
-async function executeDraw(
+export async function executeDamage(
   ctx: MutationCtx,
   gameState: Doc<"gameStates">,
-  playerId: Id<"users">,
-  effect: ParsedAbility
+  lobbyId: Id<"gameLobbies">,
+  effect: ParsedEffect,
+  playerId: Id<"users">
 ): Promise<EffectResult> {
-  const cardsToDraw = effect.value || 1;
+  const damageValue = effect.value || 0;
+  const targetOwner = effect.targetOwner || "opponent";
+
+  // Determine target
   const isHost = gameState.hostId === playerId;
+  const targetIsHost = targetOwner === "self" ? isHost : !isHost;
 
-  const deck = isHost ? gameState.hostDeck : gameState.opponentDeck;
-  const hand = isHost ? gameState.hostHand : gameState.opponentHand;
-
-  if (deck.length < cardsToDraw) {
-    return {
-      success: false,
-      message: "Not enough cards in deck"
-    };
-  }
-
-  // Draw cards from top of deck
-  const drawnCards = deck.slice(0, cardsToDraw);
-  const newDeck = deck.slice(cardsToDraw);
-  const newHand = [...hand, ...drawnCards];
-
-  // Update game state
-  if (isHost) {
-    gameState.hostDeck = newDeck;
-    gameState.hostHand = newHand;
+  // Apply damage
+  if (targetIsHost) {
+    gameState.hostLP = Math.max(0, gameState.hostLP - damageValue);
   } else {
-    gameState.opponentDeck = newDeck;
-    gameState.opponentHand = newHand;
+    gameState.opponentLP = Math.max(0, gameState.opponentLP - damageValue);
   }
 
-  await ctx.db.patch(gameState._id, gameState);
+  await ctx.db.patch(gameState._id, {
+    hostLP: gameState.hostLP,
+    opponentLP: gameState.opponentLP
+  });
 
   return {
     success: true,
-    message: `Drew ${cardsToDraw} card(s)`
+    message: `Inflicted ${damageValue} damage`
   };
 }
 ```
-
-### Example: Search Effect (Two-Step)
-
-**File:** `convex/gameplay/effectSystem/executors/search.ts`
-
-Search effects require player selection, so they use a two-step process:
-
-**Step 1: Return matching cards**
-```typescript
-export async function executeSearch(
-  ctx: MutationCtx,
-  gameState: Doc<"gameStates">,
-  playerId: Id<"users">,
-  effect: ParsedAbility,
-  selectedCardId?: Id<"cardDefinitions"> // Optional for step 2
-): Promise<EffectResult> {
-  // If no card selected yet, return options
-  if (!selectedCardId) {
-    const matchingCards = await findMatchingCards(
-      ctx,
-      deck,
-      effect.condition // e.g., "Warrior_monsters"
-    );
-
-    return {
-      success: true,
-      matchingCards, // Frontend will show selection modal
-      pendingSelection: true
-    };
-  }
-
-  // Step 2: Add selected card to hand
-  const cardIndex = deck.indexOf(selectedCardId);
-  if (cardIndex === -1) {
-    return { success: false, message: "Card not found" };
-  }
-
-  // Move card from deck to hand
-  // ...
-
-  return {
-    success: true,
-    message: `Added card to hand`
-  };
-}
-```
-
-⚠️ **Frontend integration not complete** - See MASTER_TODO.md
 
 ---
 
@@ -227,52 +202,57 @@ export async function executeSearch(
 
 ### Overview
 
-Continuous effects are always active while the card is face-up on the field. They don't activate or resolve on the chain.
+Continuous effects are always active while the card is face-up. They don't activate or use the chain.
 
 **Examples:**
-- Field Spells: "All DARK monsters gain 200 ATK"
-- Continuous Traps: "All Warrior monsters gain 500 ATK"
-- Monster Effects: "This card cannot be destroyed by battle"
+- "All your monsters gain 300 ATK"
+- "This card cannot be destroyed by battle"
+- Field Spells providing archetype bonuses
 
 ### Implementation
 
 **File:** `convex/gameplay/effectSystem/continuousEffects.ts`
 
 ```typescript
-export function calculateContinuousModifiers(
+export async function applyContinuousModifiers(
+  ctx: QueryCtx,
   gameState: Doc<"gameStates">,
   cardId: Id<"cardDefinitions">,
   card: Doc<"cardDefinitions">,
   isHost: boolean
-): { atkBonus: number; defBonus: number } {
+): Promise<{ atkBonus: number; defBonus: number }> {
   let atkBonus = 0;
   let defBonus = 0;
 
   // Check field spell
-  const fieldSpell = isHost
-    ? gameState.hostFieldSpell
-    : gameState.opponentFieldSpell;
-
+  const fieldSpell = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
   if (fieldSpell) {
-    const parsed = parseAbility(fieldSpell.ability);
-    if (parsed?.continuous && parsed.type === "modifyATK") {
-      if (matchesCondition(card, parsed.condition)) {
-        atkBonus += parsed.value || 0;
+    const fieldCard = await ctx.db.get(fieldSpell.cardId);
+    if (fieldCard?.ability) {
+      const ability = parseJsonAbility(fieldCard.ability);
+      for (const effect of ability.effects) {
+        if (effect.isContinuous && effect.type === "modifyATK") {
+          if (matchesCondition(card, effect)) {
+            atkBonus += effect.value || 0;
+          }
+        }
       }
     }
   }
 
-  // Check continuous traps in backrow
-  const backrow = isHost
-    ? gameState.hostSpellTrapZone
-    : gameState.opponentSpellTrapZone;
-
-  for (const trapCard of backrow) {
-    if (trapCard.cardType === "trap" && !trapCard.isFaceDown) {
-      const parsed = parseAbility(trapCard.ability);
-      if (parsed?.continuous && parsed.type === "modifyATK") {
-        if (matchesCondition(card, parsed.condition)) {
-          atkBonus += parsed.value || 0;
+  // Check continuous traps/spells in backrow
+  const backrow = isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
+  for (const backrowCard of backrow) {
+    if (!backrowCard.isFaceDown) {
+      const cardDef = await ctx.db.get(backrowCard.cardId);
+      if (cardDef?.ability) {
+        const ability = parseJsonAbility(cardDef.ability);
+        for (const effect of ability.effects) {
+          if (effect.isContinuous && effect.type === "modifyATK") {
+            if (matchesCondition(card, effect)) {
+              atkBonus += effect.value || 0;
+            }
+          }
         }
       }
     }
@@ -282,75 +262,101 @@ export function calculateContinuousModifiers(
 }
 ```
 
-### Condition Matching
+### Current Status
+- ✅ ATK bonuses from field spells
+- ✅ ATK bonuses from continuous traps
+- ✅ Archetype-based matching
+- ⚠️ DEF bonuses partially implemented
 
-```typescript
-function matchesCondition(
-  card: Doc<"cardDefinitions">,
-  condition: string | null
-): boolean {
-  if (!condition) return true;
+---
 
-  // Archetype matching
-  if (condition.endsWith("_monsters")) {
-    const archetype = condition.replace("_monsters", "");
+## Chain System
 
-    // Check card's archetype field
-    if (card.archetype?.toLowerCase() === archetype.toLowerCase()) {
-      return true;
-    }
+### Chain Basics
 
-    // Check if name contains archetype
-    if (card.name.toLowerCase().includes(archetype.toLowerCase())) {
-      return true;
-    }
-  }
+Effects form a chain when activated in response to each other. Chains resolve backwards (LIFO).
 
-  return false;
-}
+**Example:**
+```
+1. Player activates Spell A
+2. Opponent chains Trap B (targets Spell A)
+3. Player chains Counter Trap C (targets Trap B)
+
+Resolution (backwards):
+← 3. Counter Trap C resolves (negates Trap B)
+← 2. Trap B is negated (doesn't resolve)
+← 1. Spell A resolves normally
 ```
 
-### Current Limitations
+### Implementation
 
-- ✅ ATK bonuses work
-- ❌ DEF bonuses NOT implemented (see MASTER_TODO.md)
-- ❌ Level-based conditions NOT implemented
-- ❌ ATK threshold conditions NOT implemented
+**File:** `convex/gameplay/chainResolver.ts`
+
+```typescript
+export const resolveChain = internalMutation({
+  handler: async (ctx, { lobbyId }) => {
+    const gameState = await getGameState(ctx, lobbyId);
+    const chain = gameState.currentChain || [];
+
+    // Resolve in reverse order (LIFO)
+    for (let i = chain.length - 1; i >= 0; i--) {
+      const link = chain[i];
+
+      if (!link.negated) {
+        const card = await ctx.db.get(link.cardId);
+        if (card?.ability) {
+          const ability = getCardAbility(card);
+          if (ability) {
+            await executeEffect(
+              ctx,
+              gameState,
+              lobbyId,
+              ability.effects[link.effectIndex || 0],
+              link.playerId,
+              link.cardId
+            );
+          }
+        }
+      }
+    }
+
+    // Clear chain
+    await ctx.db.patch(gameState._id, { currentChain: [] });
+  }
+});
+```
 
 ---
 
 ## Trap Activation
 
-### How Traps Work
+### Flow
 
-1. **Set Face-Down:** Player sets trap during their turn
-2. **Wait:** Cannot activate same turn
-3. **Activate:** Can activate on either player's turn (via ActivateCardModal)
-4. **Resolve:** Effect executes
+1. **Set Face-Down**: Player sets trap during their Main Phase
+2. **Wait**: Cannot activate same turn
+3. **Activate**: Click trap to activate (via ActivateCardModal)
+4. **Resolve**: Effect executes immediately or enters chain
 
 ### ActivateCardModal
 
 **File:** `apps/web/src/components/game/dialogs/ActivateCardModal.tsx`
 
 **Features:**
-- Shows when player clicks face-down trap
-- Displays card details
-- Confirm/Cancel buttons
-- Validates activation timing (not same turn)
+- Displays trap card details
+- Validates activation timing
+- Confirms player intent
+- Triggers backend activation
 
 **Usage:**
 ```typescript
-// In GameBoard.tsx
-const [showActivateModal, setShowActivateModal] = useState(false);
-const [cardToActivate, setCardToActivate] = useState(null);
-
-// When player clicks face-down trap
-const handleTrapClick = (card) => {
-  setCardToActivate(card);
-  setShowActivateModal(true);
+// In GameBoard component
+const handleTrapClick = (trapCard: BoardCard) => {
+  if (trapCard.isFaceDown && !trapCard.setThisTurn) {
+    setCardToActivate(trapCard);
+    setShowActivateModal(true);
+  }
 };
 
-// Activate handler
 const handleConfirmActivate = async () => {
   await activateTrap(cardToActivate.instanceId);
   setShowActivateModal(false);
@@ -359,225 +365,140 @@ const handleConfirmActivate = async () => {
 
 ---
 
-## Card Selection Modal
+## Auto-Triggers
 
-### Overview
+### How They Work
 
-⚠️ **Component created but NOT integrated** - See MASTER_TODO.md
-
-**File:** `apps/web/src/components/game/dialogs/CardSelectionModal.tsx`
-
-**Features:**
-- Single or multi-select mode
-- Zone-specific display (deck, graveyard, banished, board, hand)
-- Visual card previews
-- Selection counter
-- Confirm/Cancel actions
-
-### Intended Usage
-
-```typescript
-// Step 1: Backend returns matching cards
-const result = await activateSpell(cardId);
-
-if (result.matchingCards) {
-  // Step 2: Show selection modal
-  setCardSelection({
-    cards: result.matchingCards,
-    zone: "deck",
-    title: "Search Your Deck",
-    description: "Select 1 card to add to your hand",
-    callback: async (selectedIds) => {
-      // Step 3: Complete effect with selection
-      await completeSearchEffect(cardId, selectedIds[0]);
-    }
-  });
-}
-```
-
-### Missing Integration
-
-1. Backend mutations need to return `matchingCards`
-2. GameBoard needs selection state management
-3. Need `completeSearchEffect` mutation
-
-See MASTER_TODO.md for full details.
-
----
-
-## Chain System
-
-### Chain Basics
-
-When multiple effects activate in response to each other, they form a "chain" that resolves backwards (LIFO - Last In, First Out).
+When trigger conditions are met (summon, destroy, battle damage), effects automatically activate.
 
 **Example:**
 ```
-1. Player activates Spell A
-2. Opponent activates Trap B (negates Spell A)
-3. Player activates Trap C (negates Trap B)
-
-Resolution:
-← 3. Trap C resolves (negates Trap B)
-← 2. Trap B is negated (doesn't resolve)
-← 1. Spell A resolves normally
-```
-
-### Chain Implementation
-
-**File:** `convex/gameplay/chainResolver.ts`
-
-```typescript
-export async function resolveChain(
-  ctx: MutationCtx,
-  gameState: Doc<"gameStates">
-) {
-  const chain = gameState.currentChain || [];
-
-  // Resolve in reverse order (LIFO)
-  for (let i = chain.length - 1; i >= 0; i--) {
-    const chainLink = chain[i];
-
-    if (!chainLink.negated) {
-      // Execute effect
-      const result = await executeEffect(
-        ctx,
-        gameState,
-        chainLink.playerId,
-        chainLink.effect
-      );
-
-      // Record event
-      await recordGameEvent(ctx, gameState._id, {
-        eventType: "chain_resolved",
-        description: `${chainLink.cardName} resolved`,
-        chainLinkNumber: i + 1
-      });
-    }
-  }
-
-  // Clear chain after resolution
-  gameState.currentChain = [];
-  await ctx.db.patch(gameState._id, { currentChain: [] });
-}
-```
-
----
-
-## Auto-Triggers
-
-### How Auto-Triggers Work
-
-When trigger conditions are met, effects automatically activate and show toast notifications.
-
-**Example Flow:**
-```
-1. Player summons Blue-Eyes (ATK 3000)
-2. Blue-Eyes has ability: "When summoned: Draw 1 card"
+1. Player summons "Cinder Wyrm"
+2. Cinder Wyrm has ability: { trigger: "on_summon", type: "draw" }
 3. System detects on_summon trigger
-4. Effect executes automatically
-5. Toast shows: "Blue-Eyes ability activated: Drew 1 card"
+4. Draw effect executes automatically
+5. Toast notification: "Cinder Wyrm effect activated!"
 ```
 
 ### Trigger Detection
 
-**File:** `convex/gameplay/gameEngine/index.ts`
+**File:** `convex/gameplay/triggerSystem.ts`
 
 ```typescript
-async function checkAndExecuteTriggers(
+export async function checkAndExecuteTriggers(
   ctx: MutationCtx,
   gameState: Doc<"gameStates">,
-  triggerType: TriggerType,
-  sourceCard?: BoardCard
+  lobbyId: Id<"gameLobbies">,
+  triggerType: TriggerCondition,
+  sourceCardId?: Id<"cardDefinitions">
 ) {
-  // Check all cards on field for matching triggers
-  const allBoardCards = [
+  // Check all board cards for matching triggers
+  const allCards = [
     ...gameState.hostBoard,
     ...gameState.opponentBoard
   ];
 
-  for (const boardCard of allBoardCards) {
+  for (const boardCard of allCards) {
     const card = await ctx.db.get(boardCard.cardId);
-    if (!card?.ability) continue;
+    if (!card) continue;
 
-    const parsed = parseAbility(card.ability);
-    if (parsed?.trigger === triggerType) {
-      // Execute effect
-      await executeEffect(ctx, gameState, boardCard.owner, parsed);
+    const ability = getCardAbility(card);
+    if (!ability) continue;
 
-      // Show toast (via game event)
-      await recordGameEvent(ctx, gameState._id, {
-        eventType: "effect_activated",
-        description: `${card.name} ability activated!`,
-        affectedCards: [card._id]
-      });
+    for (const effect of ability.effects) {
+      if (effect.trigger === triggerType) {
+        // Execute trigger
+        await executeEffect(
+          ctx,
+          gameState,
+          lobbyId,
+          effect,
+          boardCard.owner,
+          card._id
+        );
+
+        // Record event for toast
+        await recordEventHelper(ctx, lobbyId, {
+          eventType: "effect_activated",
+          description: `${card.name} effect activated!`,
+          playerId: boardCard.owner
+        });
+      }
     }
   }
 }
 ```
 
-### Protection Badges
+---
 
-Cards with protection abilities show visual badges:
+## Protection Effects
 
-**Examples:**
-- 🛡️ "Cannot be destroyed by battle"
-- 🚫 "Cannot be targeted"
-- 💪 "Cannot be destroyed by effects"
+### Visual Indicators
 
-**Implementation:**
-```typescript
-// In BoardCard component
-{card.cannotBeDestroyed && (
-  <div className="absolute top-1 right-1 bg-blue-500 text-white px-1 rounded text-xs">
-    🛡️
-  </div>
-)}
+Cards with protection show badges on the board:
+
+- 🛡️ Cannot be destroyed by battle
+- 🚫 Cannot be targeted
+- 💪 Cannot be destroyed by effects
+
+### JSON Definition
+
+```json
+{
+  "type": "modifyATK",
+  "trigger": "continuous",
+  "value": 0,
+  "isContinuous": true,
+  "protection": {
+    "cannotBeTargeted": true
+  }
+}
 ```
 
 ---
 
-## Testing
+## Testing Effect Execution
 
-### Test Effect Execution
+### Manual Testing Checklist
 
-**Test Draw:**
+**Draw Effect:**
 ```
-1. Activate card with "Draw 2 cards"
-2. ✅ Hand size increases by 2
-3. ✅ Deck size decreases by 2
-4. ✅ Toast notification shows
-```
-
-**Test Search (when integrated):**
-```
-1. Activate "Search 1 Warrior monster"
-2. ⚠️ CardSelectionModal should appear
-3. ⚠️ Shows all Warrior monsters from deck
-4. Click to select
-5. ⚠️ Card added to hand
+✅ Activate card with draw effect
+✅ Hand size increases
+✅ Deck size decreases
+✅ Toast notification appears
 ```
 
-**Test Continuous Effect:**
+**Damage Effect:**
 ```
-1. Activate field spell "All DARK monsters gain 200 ATK"
-2. Summon DARK monster (base 1500 ATK)
-3. Attack with it
-4. ✅ Should deal 1700 damage (1500 + 200)
-5. Destroy field spell
-6. Attack again
-7. ✅ Should deal 1500 damage
+✅ Activate damage effect
+✅ Opponent LP decreases correctly
+✅ Game ends at LP = 0
 ```
 
-**Test Trap Activation:**
+**Continuous ATK:**
 ```
-1. Set trap face-down
-2. End turn (cannot activate same turn)
-3. Opponent takes action
-4. Click trap card
-5. ✅ ActivateCardModal appears
-6. Confirm activation
-7. ✅ Effect resolves
+✅ Activate field spell with ATK boost
+✅ Monster ATK increases on board
+✅ Damage calculation uses boosted ATK
+✅ Destroying field spell removes boost
+```
+
+**Trap Activation:**
+```
+✅ Set trap face-down
+✅ Cannot activate same turn
+✅ Can activate on subsequent turns
+✅ ActivateCardModal appears
+✅ Effect resolves correctly
+```
+
+**Triggered Effects:**
+```
+✅ Summon monster with on_summon trigger
+✅ Effect activates automatically
+✅ Toast shows activation message
+✅ Effect resolves correctly
 ```
 
 ---
@@ -585,38 +506,51 @@ Cards with protection abilities show visual badges:
 ## Known Issues & TODOs
 
 ### Critical (See MASTER_TODO.md)
-- ❌ CardSelectionModal not integrated
-- ❌ Search effects can't complete without selection
-- ❌ Special summon from GY blocked
+- ❌ CardSelectionModal not integrated with search effects
+- ❌ Special summon selection not available
+- ❌ Multi-target selection needs UI work
 
-### High
-- ⚠️ DEF continuous effects not working
-- ⚠️ Complex conditions not supported (level, ATK threshold)
+### High Priority
+- ⚠️ DEF continuous effects need completion
+- ⚠️ Complex conditions (level, ATK threshold) not supported
+- ⚠️ Some unparsed effects need manual conversion
 
-### Medium
-- Multi-target selection needs testing
-- Zone-specific selections (banished, etc.)
-- Effect negation in chains needs more testing
+### Medium Priority
+- Zone-specific card selections (banished, etc.)
+- Effect negation in complex chains
+- SEGOC (Simultaneous Effects Go On Chain) ordering
 
 ---
 
 ## File Structure
 
 ```
-convex/gameplay/effectSystem/
-├── parser.ts              # Ability parsing
-├── executor.ts            # Main execution dispatcher
-├── types.ts               # TypeScript types
-├── continuousEffects.ts   # Continuous effect evaluation
-└── executors/
-    ├── index.ts           # Basic executors (draw, damage, etc.)
-    ├── destroy.ts         # Destruction logic
-    ├── search.ts          # Search with selection
-    ├── mill.ts            # Mill/send to GY
-    ├── discard.ts         # Discard from hand
-    ├── modifyATK.ts       # ATK modification
-    ├── modifyDEF.ts       # DEF modification
-    └── negate.ts          # Effect negation
+convex/
+├── gameplay/effectSystem/
+│   ├── types.ts                  # TypeScript type definitions
+│   ├── jsonParser.ts             # JSON ability parser ✅
+│   ├── jsonEffectValidators.ts   # Schema validators ✅
+│   ├── executor.ts               # Main effect dispatcher ✅
+│   ├── continuousEffects.ts      # Continuous effect evaluation ✅
+│   └── executors/
+│       ├── cardMovement/
+│       │   ├── draw.ts           # Draw cards
+│       │   ├── search.ts         # Search deck
+│       │   ├── toHand.ts         # Add to hand
+│       │   ├── toGraveyard.ts    # Send to GY
+│       │   ├── banish.ts         # Banish cards
+│       │   ├── mill.ts           # Mill from deck
+│       │   └── discard.ts        # Discard from hand
+│       ├── combat/
+│       │   ├── damage.ts         # Inflict damage
+│       │   ├── gainLP.ts         # Heal LP
+│       │   ├── modifyATK.ts      # Change ATK
+│       │   └── modifyDEF.ts      # Change DEF
+│       ├── summon/
+│       │   ├── summon.ts         # Special summon
+│       │   └── destroy.ts        # Destroy cards
+│       └── utility/
+│           └── negate.ts         # Negate effects
 
 apps/web/src/components/game/dialogs/
 ├── ActivateCardModal.tsx        # Trap activation ✅
@@ -625,6 +559,8 @@ apps/web/src/components/game/dialogs/
 
 ---
 
-**See also:**
-- [MASTER_TODO.md](../../MASTER_TODO.md) - Implementation status and priorities
-- [Integration Patterns](../reference/INTEGRATION_PATTERNS.md) - Code integration examples
+## See Also
+
+- [JSON Ability Format Guide](./JSON_ABILITY_FORMAT.md) - Complete JSON reference
+- [Schema Documentation](../schema.md) - Database schema
+- [MASTER_TODO.md](../../MASTER_TODO.md) - Implementation priorities

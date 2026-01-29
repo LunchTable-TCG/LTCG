@@ -17,22 +17,124 @@ import { ErrorCode, createError } from "./errorCodes";
 // DECK VALIDATION
 // ============================================================================
 
+// Deck validation constants - keep in sync with convex/core/decks.ts
+const MIN_DECK_SIZE = 30;
+const MAX_DECK_SIZE = 60;
+const MAX_COPIES_PER_CARD = 3;
+const MAX_LEGENDARY_COPIES = 1;
+
+/**
+ * Deck validation result
+ */
+export interface DeckValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+/**
+ * Card definition info needed for validation
+ */
+export interface CardDefInfo {
+  id: Id<"cardDefinitions">;
+  name: string;
+  rarity: string;
+}
+
+/**
+ * Validate a deck's card list against game rules.
+ * Returns validation result with all errors found.
+ *
+ * Validates:
+ * - Minimum 30 cards in main deck
+ * - Maximum 60 cards in main deck (standard TCG limit)
+ * - Maximum 3 copies of any single card (by card definition ID)
+ * - Maximum 1 copy of legendary cards
+ *
+ * @param cards - Array of card definition IDs in the deck (with duplicates representing multiple copies)
+ * @param cardDefLookup - Optional function to get card definition info for better error messages
+ * @returns Validation result with valid boolean and errors array
+ *
+ * @example
+ * // Simple validation with just IDs
+ * const result = validateDeckCards(cardIds);
+ * if (!result.valid) {
+ *   console.log(result.errors);
+ * }
+ *
+ * @example
+ * // With card info for better error messages
+ * const result = validateDeckCards(cardIds, (id) => cardMap.get(id));
+ */
+export function validateDeckCards(
+  cards: Id<"cardDefinitions">[],
+  cardDefLookup?: (id: Id<"cardDefinitions">) => CardDefInfo | undefined
+): DeckValidationResult {
+  const errors: string[] = [];
+  const deckSize = cards.length;
+
+  // Check minimum deck size
+  if (deckSize < MIN_DECK_SIZE) {
+    errors.push(
+      `Deck needs at least ${MIN_DECK_SIZE} cards. Currently has ${deckSize}.`
+    );
+  }
+
+  // Check maximum deck size
+  if (deckSize > MAX_DECK_SIZE) {
+    errors.push(
+      `Deck cannot exceed ${MAX_DECK_SIZE} cards. Currently has ${deckSize}.`
+    );
+  }
+
+  // Count copies of each card
+  const cardCounts = new Map<string, number>();
+  for (const cardId of cards) {
+    const count = cardCounts.get(cardId) || 0;
+    cardCounts.set(cardId, count + 1);
+  }
+
+  // Check copy limits
+  for (const [cardId, quantity] of Array.from(cardCounts.entries())) {
+    const cardDef = cardDefLookup?.(cardId as Id<"cardDefinitions">);
+    const cardName = cardDef?.name || `Card ${cardId}`;
+    const rarity = cardDef?.rarity || "unknown";
+
+    // Check legendary limit (max 1)
+    if (rarity === "legendary" && quantity > MAX_LEGENDARY_COPIES) {
+      errors.push(
+        `${cardName}: Legendary cards limited to ${MAX_LEGENDARY_COPIES} copy`
+      );
+    }
+    // Check standard limit (max 3)
+    else if (quantity > MAX_COPIES_PER_CARD) {
+      errors.push(
+        `${cardName}: Limited to ${MAX_COPIES_PER_CARD} copies per deck`
+      );
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
 /**
  * Validate deck size is within allowed range
  *
  * @param cardIds - Array of card definition IDs in the deck
  * @param min - Minimum deck size (default: 30)
- * @param max - Maximum deck size (default: Infinity for no maximum)
+ * @param max - Maximum deck size (default: 60)
  * @throws VALIDATION_INVALID_DECK if deck size is outside allowed range
  *
  * @example
  * validateDeckSize(cardIds, 30, 60) // Valid: 30-60 cards
- * validateDeckSize(cardIds, 30) // Valid: minimum 30 cards, no maximum
+ * validateDeckSize(cardIds, 30) // Valid: minimum 30 cards, max 60 (default)
  */
 export function validateDeckSize(
   cardIds: Id<"cardDefinitions">[],
-  min = 30,
-  max: number = Number.POSITIVE_INFINITY
+  min = MIN_DECK_SIZE,
+  max = MAX_DECK_SIZE
 ) {
   const deckSize = cardIds.length;
 

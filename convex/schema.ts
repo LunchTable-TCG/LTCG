@@ -358,12 +358,15 @@ export default defineSchema({
       v.literal("chain_resolving"),
       v.literal("chain_resolved"),
 
-      // Combat Events (5)
+      // Combat Events (8)
       v.literal("battle_phase_entered"),
       v.literal("attack_declared"),
       v.literal("damage_calculated"),
       v.literal("damage"),
       v.literal("card_destroyed_battle"),
+      v.literal("replay_triggered"), // Battle replay triggered (monster count changed)
+      v.literal("replay_target_selected"), // Attacker chose new target during replay
+      v.literal("replay_cancelled"), // Attacker cancelled attack during replay
 
       // Zone Transition Events (6)
       v.literal("card_drawn"),
@@ -536,6 +539,23 @@ export default defineSchema({
         attackerId: v.optional(v.id("cardDefinitions")), // For attack actions
         targetId: v.optional(v.id("cardDefinitions")), // For attack actions (undefined = direct attack)
         summonedCardId: v.optional(v.id("cardDefinitions")), // For summon actions
+        // For battle replay detection
+        originalMonsterCount: v.optional(v.number()), // Opponent's monster count at attack declaration
+      })
+    ),
+
+    // Battle Replay State (Yu-Gi-Oh replay mechanic)
+    // Triggered when opponent's monster count changes after attack declaration but before damage
+    pendingReplay: v.optional(
+      v.object({
+        attackerId: v.id("cardDefinitions"), // The attacking monster
+        attackerOwnerId: v.id("users"), // Player who declared the attack
+        originalTargetId: v.optional(v.id("cardDefinitions")), // Original target (if any)
+        originalMonsterCount: v.number(), // Opponent's monster count at attack declaration
+        currentMonsterCount: v.number(), // Opponent's monster count now (changed)
+        triggeredAt: v.number(), // Timestamp when replay was triggered
+        availableTargets: v.array(v.id("cardDefinitions")), // Valid targets for replay
+        canAttackDirectly: v.boolean(), // True if opponent's field is now empty
       })
     ),
 
@@ -552,9 +572,78 @@ export default defineSchema({
       )
     ),
 
-    // Once Per Turn (OPT) Tracking (cleared at end of turn)
+    // Once Per Turn (OPT) Tracking - resets at start of turn player's turn
+    // Tracks card instance + effect index (same card can have multiple effects)
     optUsedThisTurn: v.optional(
-      v.array(v.id("cardDefinitions")) // Cards that have used their OPT effect this turn
+      v.array(
+        v.object({
+          cardId: v.id("cardDefinitions"),
+          effectIndex: v.number(), // Which effect on the card (0-indexed)
+          playerId: v.id("users"), // Who used the effect
+          turnUsed: v.number(), // Turn number when used
+        })
+      )
+    ),
+
+    // Hard Once Per Turn (HOPT) Tracking - resets at start of that player's NEXT turn
+    // Key distinction: OPT resets when YOUR turn starts, HOPT resets on your NEXT turn
+    // (persists through opponent's turn)
+    hoptUsedEffects: v.optional(
+      v.array(
+        v.object({
+          cardId: v.id("cardDefinitions"),
+          effectIndex: v.number(), // Which effect on the card (0-indexed)
+          playerId: v.id("users"), // Who used the effect
+          turnUsed: v.number(), // Turn number when used
+          resetOnTurn: v.number(), // Turn number when this should reset (player's next turn)
+        })
+      )
+    ),
+
+    // Optional Trigger Tracking
+    pendingOptionalTriggers: v.optional(
+      v.array(
+        v.object({
+          cardId: v.id("cardDefinitions"),
+          cardName: v.string(),
+          effectIndex: v.number(),
+          trigger: v.string(), // TriggerCondition as string
+          playerId: v.id("users"),
+          addedAt: v.number(),
+        })
+      )
+    ),
+    skippedOptionalTriggers: v.optional(
+      v.array(
+        v.object({
+          cardId: v.id("cardDefinitions"),
+          trigger: v.string(), // TriggerCondition as string
+          turnSkipped: v.number(),
+        })
+      )
+    ),
+
+    // SEGOC Queue for simultaneous trigger ordering (Yu-Gi-Oh style)
+    // When multiple effects trigger at the same time, they are ordered:
+    // 1. Turn player's mandatory effects
+    // 2. Opponent's mandatory effects
+    // 3. Turn player's optional effects
+    // 4. Opponent's optional effects
+    // Within each category, ordered by timestamp (first triggered = first in chain)
+    segocQueue: v.optional(
+      v.array(
+        v.object({
+          cardId: v.id("cardDefinitions"),
+          cardName: v.string(),
+          playerId: v.id("users"),
+          trigger: v.string(), // TriggerCondition as string
+          effectIndex: v.number(),
+          isOptional: v.boolean(),
+          isTurnPlayer: v.boolean(),
+          addedAt: v.number(),
+          segocOrder: v.number(), // 1=turn mandatory, 2=opp mandatory, 3=turn optional, 4=opp optional
+        })
+      )
     ),
 
     // AI & Story Mode (for single-player battles)
@@ -591,6 +680,44 @@ export default defineSchema({
         createdAt: v.number(),
         expiresAt: v.optional(v.number()),
       })
+    ),
+
+    // Priority tracking for debugging/replays
+    priorityHistory: v.optional(
+      v.array(
+        v.object({
+          playerId: v.id("users"),
+          action: v.string(), // "passed", "responded", "activated"
+          timestamp: v.number(),
+          chainLength: v.number(),
+        })
+      )
+    ),
+
+    // Timeout Configuration (competitive timing enforcement)
+    timeoutConfig: v.optional(
+      v.object({
+        perActionMs: v.number(), // Milliseconds per action (default: 180000 = 3 min)
+        totalMatchMs: v.number(), // Milliseconds for total match (default: 1800000 = 30 min)
+        autoPassOnTimeout: v.boolean(), // Auto-pass when action times out
+        warningAtMs: v.number(), // Warning threshold in ms (default: 30000 = 30 sec)
+      })
+    ),
+
+    // Match Timer (tracks overall match duration)
+    matchTimerStart: v.optional(v.number()), // Timestamp when match started
+    turnTimerStart: v.optional(v.number()), // Timestamp when current action timer started
+
+    // Timeout Tracking (records all timeout occurrences)
+    timeoutsUsed: v.optional(
+      v.array(
+        v.object({
+          playerId: v.id("users"), // Player who timed out
+          occurredAt: v.number(), // Timestamp of timeout
+          action: v.string(), // Action type that timed out
+          timeRemainingMs: v.number(), // Time remaining when timeout was recorded
+        })
+      )
     ),
 
     // Timestamps

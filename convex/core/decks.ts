@@ -24,7 +24,8 @@ import { STARTER_DECKS } from "../seeds/starterDecks";
 // ============================================================================
 
 const MAX_DECKS_PER_USER = 50;
-const MIN_DECK_SIZE = 30; // Minimum deck size (no maximum)
+const MIN_DECK_SIZE = 30;
+const MAX_DECK_SIZE = 60; // Standard TCG limit
 const MAX_COPIES_PER_CARD = 3;
 const MAX_LEGENDARY_COPIES = 1;
 
@@ -370,9 +371,12 @@ export const validateDeck = query({
       }
     }
 
-    // Check deck size (minimum only, no maximum)
+    // Check deck size (minimum 30, maximum 60)
     if (totalCards < MIN_DECK_SIZE) {
       errors.push(`Deck needs at least ${MIN_DECK_SIZE} cards. Currently has ${totalCards}.`);
+    }
+    if (totalCards > MAX_DECK_SIZE) {
+      errors.push(`Deck cannot exceed ${MAX_DECK_SIZE} cards. Currently has ${totalCards}.`);
     }
 
     return {
@@ -481,8 +485,8 @@ export const saveDeck = mutation({
       }
     }
 
-    // Validate deck size (minimum 30, no maximum)
-    validateDeckSize(expandedCardIds, MIN_DECK_SIZE);
+    // Validate deck size (minimum 30, maximum 60)
+    validateDeckSize(expandedCardIds, MIN_DECK_SIZE, MAX_DECK_SIZE);
 
     // Validate card ownership
     await validateCardOwnership(ctx, userId, args.cards);
@@ -708,12 +712,12 @@ export const duplicateDeck = mutation({
 
 /**
  * Set a deck as the active deck for matchmaking.
- * Validates that the deck is legal (minimum 30 cards, valid card limits).
+ * Validates that the deck is legal (30-60 cards, valid card limits).
  *
  * @param deckId - ID of the deck to set as active
  * @returns Success indicator
  * @throws AUTHZ_RESOURCE_FORBIDDEN if deck not owned by user
- * @throws VALIDATION_INVALID_INPUT if deck invalid or too small (< 30 cards)
+ * @throws VALIDATION_INVALID_INPUT if deck invalid, too small (< 30 cards), or too large (> 60 cards)
  */
 export const setActiveDeck = mutation({
   args: {
@@ -743,6 +747,11 @@ export const setActiveDeck = mutation({
     if (totalCards < MIN_DECK_SIZE) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
         reason: `Deck must have at least ${MIN_DECK_SIZE} cards to be set as active. Currently has ${totalCards}.`,
+      });
+    }
+    if (totalCards > MAX_DECK_SIZE) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: `Deck cannot exceed ${MAX_DECK_SIZE} cards to be set as active. Currently has ${totalCards}.`,
       });
     }
 

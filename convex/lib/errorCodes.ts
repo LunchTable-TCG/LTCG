@@ -100,6 +100,9 @@ export const ErrorCode = {
   GAME_CANNOT_ADVANCE_PHASE: "GAME_8021",
   GAME_AI_TURN_ERROR: "GAME_8022",
   GAME_NOT_STARTED: "GAME_8023",
+  GAME_CHAIN_LIMIT_EXCEEDED: "GAME_8024",
+  GAME_CARD_ALREADY_IN_CHAIN: "GAME_8025",
+  GAME_INVALID_CHAIN_STATE: "GAME_8026",
 
   // Matchmaking Errors (8xxx - Game Related)
   MATCHMAKING_ALREADY_IN_QUEUE: "MATCHMAKING_8005",
@@ -234,6 +237,9 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   GAME_8021: "Cannot advance from End Phase - use endTurn instead",
   GAME_8022: "AI turn execution failed",
   GAME_8023: "Game has not started yet",
+  GAME_8024: "Chain cannot exceed 12 links",
+  GAME_8025: "Card is already in the chain",
+  GAME_8026: "Invalid chain state",
 
   // Matchmaking
   MATCHMAKING_8005: "You are already in the matchmaking queue",

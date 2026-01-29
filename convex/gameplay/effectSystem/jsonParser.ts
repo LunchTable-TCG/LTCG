@@ -78,6 +78,9 @@ export function parseJsonEffect(effect: JsonEffect, _spellSpeed?: 1 | 2 | 3): Pa
     value: effect.value,
     isOPT: effect.isOPT,
     continuous: effect.isContinuous,
+    // SEGOC ordering: pass through optional/mandatory flags
+    isOptional: effect.isOptional,
+    isMandatory: effect.isMandatory,
   };
 
   // Convert cost if present
@@ -111,6 +114,11 @@ export function parseJsonEffect(effect: JsonEffect, _spellSpeed?: 1 | 2 | 3): Pa
   // Set condition string if present
   if (effect.condition) {
     baseEffect.condition = serializeCondition(effect.condition);
+  }
+
+  // Preserve activation condition for game-state evaluation
+  if (effect.activationCondition) {
+    baseEffect.activationCondition = effect.activationCondition;
   }
 
   return baseEffect;

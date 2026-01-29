@@ -234,6 +234,10 @@ export interface JsonEffect {
   chainable?: boolean; // Can be chained to other effects
   spellSpeed?: 1 | 2 | 3; // Spell speed for chain resolution
 
+  // SEGOC ordering flags
+  isOptional?: boolean; // Optional trigger (player can choose not to activate)
+  isMandatory?: boolean; // Mandatory trigger (must activate if conditions met)
+
   // Protection (for monsters)
   protection?: JsonProtection;
 
@@ -279,7 +283,11 @@ export interface ParsedEffect {
   targetLocation?: "board" | "hand" | "graveyard" | "deck" | "banished";
   condition?: string; // Additional conditions
   continuous?: boolean; // Is this a continuous effect?
-  isOPT?: boolean; // Once per turn restriction
+  isOPT?: boolean; // Once per turn restriction (resets at start of turn player's turn)
+  isHOPT?: boolean; // Hard once per turn restriction (resets at start of player's NEXT turn)
+  // Optional vs Mandatory trigger distinction
+  isOptional?: boolean; // Player can choose to activate (optional trigger)
+  isMandatory?: boolean; // Must activate if conditions met (default for triggers)
   // Cost field for effects that require payment
   cost?: {
     type: "discard" | "pay_lp" | "tribute" | "banish";
@@ -292,6 +300,9 @@ export interface ParsedEffect {
     cannotBeDestroyedByEffects?: boolean;
     cannotBeTargeted?: boolean;
   };
+  // Activation condition for triggered effects (game-state requirements)
+  // Evaluated before the effect can execute (LP thresholds, board counts, etc.)
+  activationCondition?: JsonCondition;
 }
 
 // Multi-part ability support

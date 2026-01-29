@@ -99,6 +99,29 @@ export type {
   GraveyardCard,
 } from "./game";
 
+// Card helper types and functions (for JSON abilities)
+export type {
+  EffectType,
+  TriggerCondition,
+  CostType,
+  JsonCost,
+  JsonEffect,
+  JsonAbility,
+  DisplayEffect,
+} from "../lib/cardHelpers";
+
+export {
+  getCardEffectsArray,
+  getAbilityDisplayText,
+  isJsonAbility,
+  getTriggerLabel,
+  getEffectTypeLabel,
+  hasOPTRestriction,
+  hasHOPTRestriction,
+  isContinuousAbility,
+  getProtectionFlags,
+} from "../lib/cardHelpers";
+
 // Story types
 export type {
   StoryChapter,

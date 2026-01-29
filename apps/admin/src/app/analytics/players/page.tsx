@@ -31,12 +31,7 @@ interface DailyStat {
   day7Retention?: number;
 }
 
-interface EngagedPlayer {
-  playerName: string;
-  totalSessionTime: number;
-  totalGamesPlayed: number;
-  daysActive: number;
-}
+// EngagedPlayer type - now inferred from API response
 
 // =============================================================================
 // Component
@@ -112,11 +107,11 @@ export default function PlayerAnalyticsPage() {
 
   // Transform top engaged players for leaderboard
   const engagementLeaderboard =
-    topEngaged?.map((player: EngagedPlayer, idx: number) => ({
+    (topEngaged as any[] | undefined)?.map((player, idx) => ({
       rank: idx + 1,
-      name: player.playerName,
-      value: Math.round(player.totalSessionTime / 60000), // Convert to minutes
-      subtitle: `${player.totalGamesPlayed} games • ${player.daysActive} days active`,
+      name: player.username || player.playerName,
+      value: player.engagementScore ?? Math.round((player.totalSessionTime ?? 0) / 60000),
+      subtitle: `${player.gamesPlayed ?? player.totalGamesPlayed} games • ${player.daysActive} days active`,
     })) ?? [];
 
   // Get trend indicator for retention

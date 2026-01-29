@@ -1014,3 +1014,412 @@ describe("JSON effect format", () => {
     expect(chainState?.[0]?.effect).toBeDefined();
   });
 });
+
+describe("Chain link limits and loop protection", () => {
+  it("should reject adding to chain when at max length (12)", async () => {
+    const t = convexTest(schema, modules);
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        username: "chainlimit",
+        email: "chainlimit@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create 12 different cards for the chain
+    const cardIds = await t.run(async (ctx) => {
+      const ids = [];
+      for (let i = 0; i < 13; i++) {
+        const id = await ctx.db.insert("cardDefinitions", {
+          name: `Chain Card ${i + 1}`,
+          rarity: "common",
+          cardType: "trap",
+          archetype: "neutral",
+          cost: 1,
+          ability: createDrawJsonAbility(1),
+          isActive: true,
+          createdAt: Date.now(),
+        });
+        ids.push(id);
+      }
+      return ids;
+    });
+
+    const lobbyId = await t.run(async (ctx) => {
+      return await ctx.db.insert("gameLobbies", {
+        hostId: userId,
+        hostUsername: "chainlimit",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
+        opponentId: userId,
+        opponentUsername: "chainlimit",
+        opponentRank: "Bronze",
+        gameId: "test-game-limit",
+        turnNumber: 1,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create game state with 12 chain links (max)
+    const existingChain = cardIds.slice(0, 12).map((cardId, idx) => ({
+      cardId,
+      playerId: userId,
+      spellSpeed: 2 as const,
+      effect: createDrawJsonAbility(1),
+    }));
+
+    await t.run(async (ctx) => {
+      return await ctx.db.insert("gameStates", {
+        lobbyId,
+        gameId: "test-game-limit",
+        hostId: userId,
+        opponentId: userId,
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
+        turnNumber: 1,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
+        hostDeck: [],
+        opponentDeck: [],
+        hostHand: [],
+        opponentHand: [],
+        hostBoard: [],
+        opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
+        hostGraveyard: [],
+        opponentGraveyard: [],
+        hostBanished: [],
+        opponentBanished: [],
+        currentChain: existingChain,
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
+      });
+    });
+
+    // Try to add 13th card - should fail
+    await expect(
+      t.run(async (ctx) => {
+        const { addToChainHelper } = await import("./chainResolver");
+        return await addToChainHelper(ctx, {
+          lobbyId,
+          cardId: cardIds[12]!, // 13th card
+          playerId: userId,
+          playerUsername: "chainlimit",
+          spellSpeed: 2,
+          effect: createDrawJsonAbility(1),
+        });
+      })
+    ).rejects.toThrow(/Chain cannot exceed 12 links/);
+  });
+
+  it("should reject duplicate card in chain (recursion detection)", async () => {
+    const t = convexTest(schema, modules);
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        username: "dupetest",
+        email: "dupe@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    const cardId = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "Recursive Card",
+        rarity: "rare",
+        cardType: "trap",
+        archetype: "neutral",
+        cost: 2,
+        ability: createDrawJsonAbility(1),
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    const lobbyId = await t.run(async (ctx) => {
+      return await ctx.db.insert("gameLobbies", {
+        hostId: userId,
+        hostUsername: "dupetest",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
+        opponentId: userId,
+        opponentUsername: "dupetest",
+        opponentRank: "Bronze",
+        gameId: "test-game-dupe",
+        turnNumber: 1,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create game state with the card already in chain
+    await t.run(async (ctx) => {
+      return await ctx.db.insert("gameStates", {
+        lobbyId,
+        gameId: "test-game-dupe",
+        hostId: userId,
+        opponentId: userId,
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
+        turnNumber: 1,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
+        hostDeck: [],
+        opponentDeck: [],
+        hostHand: [],
+        opponentHand: [],
+        hostBoard: [],
+        opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
+        hostGraveyard: [],
+        opponentGraveyard: [],
+        hostBanished: [],
+        opponentBanished: [],
+        currentChain: [
+          {
+            cardId,
+            playerId: userId,
+            spellSpeed: 2,
+            effect: createDrawJsonAbility(1),
+          },
+        ],
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
+      });
+    });
+
+    // Try to add same card again - should fail
+    await expect(
+      t.run(async (ctx) => {
+        const { addToChainHelper } = await import("./chainResolver");
+        return await addToChainHelper(ctx, {
+          lobbyId,
+          cardId, // Same card
+          playerId: userId,
+          playerUsername: "dupetest",
+          spellSpeed: 2,
+          effect: createDrawJsonAbility(1), // Same effect type
+        });
+      })
+    ).rejects.toThrow(/already in the chain/);
+  });
+
+  it("should allow same card with different effect type", async () => {
+    const t = convexTest(schema, modules);
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        username: "multieffect",
+        email: "multi@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    const cardId = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "Multi-Effect Card",
+        rarity: "rare",
+        cardType: "trap",
+        archetype: "neutral",
+        cost: 2,
+        ability: createDrawJsonAbility(1),
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    const lobbyId = await t.run(async (ctx) => {
+      return await ctx.db.insert("gameLobbies", {
+        hostId: userId,
+        hostUsername: "multieffect",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
+        opponentId: userId,
+        opponentUsername: "multieffect",
+        opponentRank: "Bronze",
+        gameId: "test-game-multi",
+        turnNumber: 1,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create game state with the card already in chain with draw effect
+    await t.run(async (ctx) => {
+      return await ctx.db.insert("gameStates", {
+        lobbyId,
+        gameId: "test-game-multi",
+        hostId: userId,
+        opponentId: userId,
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
+        turnNumber: 1,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
+        hostDeck: [],
+        opponentDeck: [],
+        hostHand: [],
+        opponentHand: [],
+        hostBoard: [],
+        opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
+        hostGraveyard: [],
+        opponentGraveyard: [],
+        hostBanished: [],
+        opponentBanished: [],
+        currentChain: [
+          {
+            cardId,
+            playerId: userId,
+            spellSpeed: 2,
+            effect: createDrawJsonAbility(1), // Draw effect
+          },
+        ],
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
+      });
+    });
+
+    // Try to add same card with different effect type - should succeed
+    const result = await t.run(async (ctx) => {
+      const { addToChainHelper } = await import("./chainResolver");
+      return await addToChainHelper(ctx, {
+        lobbyId,
+        cardId, // Same card
+        playerId: userId,
+        playerUsername: "multieffect",
+        spellSpeed: 2,
+        effect: createDamageJsonAbility(500), // Different effect type
+      });
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.chainLinkNumber).toBe(2);
+  });
+
+  it("should allow chains up to 12 links", async () => {
+    const t = convexTest(schema, modules);
+
+    const userId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        username: "maxchain",
+        email: "maxchain@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create 12 different cards
+    const cardIds = await t.run(async (ctx) => {
+      const ids = [];
+      for (let i = 0; i < 12; i++) {
+        const id = await ctx.db.insert("cardDefinitions", {
+          name: `Max Chain Card ${i + 1}`,
+          rarity: "common",
+          cardType: "trap",
+          archetype: "neutral",
+          cost: 1,
+          ability: createDrawJsonAbility(1),
+          isActive: true,
+          createdAt: Date.now(),
+        });
+        ids.push(id);
+      }
+      return ids;
+    });
+
+    const lobbyId = await t.run(async (ctx) => {
+      return await ctx.db.insert("gameLobbies", {
+        hostId: userId,
+        hostUsername: "maxchain",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
+        opponentId: userId,
+        opponentUsername: "maxchain",
+        opponentRank: "Bronze",
+        gameId: "test-game-maxchain",
+        turnNumber: 1,
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create game state with 11 chain links
+    const existingChain = cardIds.slice(0, 11).map((cardId) => ({
+      cardId,
+      playerId: userId,
+      spellSpeed: 2 as const,
+      effect: createDrawJsonAbility(1),
+    }));
+
+    await t.run(async (ctx) => {
+      return await ctx.db.insert("gameStates", {
+        lobbyId,
+        gameId: "test-game-maxchain",
+        hostId: userId,
+        opponentId: userId,
+        currentTurnPlayerId: userId,
+        currentPhase: "main1",
+        turnNumber: 1,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
+        hostDeck: [],
+        opponentDeck: [],
+        hostHand: [],
+        opponentHand: [],
+        hostBoard: [],
+        opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
+        hostGraveyard: [],
+        opponentGraveyard: [],
+        hostBanished: [],
+        opponentBanished: [],
+        currentChain: existingChain,
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
+      });
+    });
+
+    // Add 12th card - should succeed (exactly at limit)
+    const result = await t.run(async (ctx) => {
+      const { addToChainHelper } = await import("./chainResolver");
+      return await addToChainHelper(ctx, {
+        lobbyId,
+        cardId: cardIds[11]!, // 12th card
+        playerId: userId,
+        playerUsername: "maxchain",
+        spellSpeed: 2,
+        effect: createDrawJsonAbility(1),
+      });
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.chainLinkNumber).toBe(12);
+    expect(result.currentChainLength).toBe(12);
+  });
+});

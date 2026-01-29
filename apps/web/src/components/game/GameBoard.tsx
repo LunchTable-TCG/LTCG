@@ -1,11 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { componentLogger, logger, perf, useDebugLifecycle } from "@/lib/debug";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import {
   Flag,
   Heart,
@@ -32,8 +31,11 @@ import { AttackModal } from "./dialogs/AttackModal";
 import { CardInspectorModal } from "./dialogs/CardInspectorModal";
 import { CardSelectionModal } from "./dialogs/CardSelectionModal";
 import { ForfeitDialog } from "./dialogs/ForfeitDialog";
+import { OptionalTriggerPrompt } from "./dialogs/OptionalTriggerPrompt";
 import { ResponsePrompt } from "./dialogs/ResponsePrompt";
 import { SummonModal } from "./dialogs/SummonModal";
+import { PhaseSkipButtons, type GamePhase } from "./controls/PhaseSkipButtons";
+import { TimeoutDisplay } from "./controls/TimeoutDisplay";
 import { type CardInZone, useGameBoard } from "./hooks/useGameBoard";
 
 interface GameBoardProps {
@@ -84,12 +86,13 @@ export function GameBoard({
   log.debug("GameBoard rendered", { lobbyId, playerId, gameMode });
 
   // First check lobby status - MUST be called before any conditional returns
-  const lobbyDetails = useQuery(api.gameplay.games.queries.getLobbyDetails, { lobbyId });
+  const lobbyDetails = useConvexQuery(apiAny.gameplay.games.queries.getLobbyDetails, { lobbyId });
 
-  // Selection effect mutations
-  const completeSearchEffect = useMutation(
-    api.gameplay.gameEngine.spellsTraps.completeSearchEffect
-  );
+  // Selection effect mutations - use apiAny to avoid TS2589
+  const completeSearchEffectMutation = useMutation(apiAny.gameplay.gameEngine.spellsTraps.completeSearchEffect);
+  const completeSearchEffect = useCallback(async (args: { lobbyId: Id<"gameLobbies">; sourceCardId: Id<"cardDefinitions">; selectedCardId: Id<"cardDefinitions"> }) => {
+    return completeSearchEffectMutation(args);
+  }, [completeSearchEffectMutation]);
 
   const {
     // State
@@ -150,11 +153,21 @@ export function GameBoard({
     callback: (cardIds: Id<"cardDefinitions">[]) => void;
   } | null>(null);
 
-  // AI Turn Automation (Story Mode)
-  const executeAITurn = useMutation(api.gameplay.ai.aiTurn.executeAITurn);
-  const gameState = useQuery(
-    api.gameplay.games.queries.getGameStateForPlayer,
+  // AI Turn Automation (Story Mode) - use apiAny to avoid TS2589
+  const executeAITurnMutation = useMutation(apiAny.gameplay.ai.aiTurn.executeAITurn);
+  const gameState = useConvexQuery(
+    apiAny.gameplay.games.queries.getGameStateForPlayer,
     lobbyId ? { lobbyId } : "skip"
+  );
+
+  // New feature queries
+  const pendingOptionalTriggers = useConvexQuery(
+    apiAny.gameplay.games.queries.getPendingOptionalTriggers,
+    { lobbyId }
+  );
+  const timeoutStatus = useConvexQuery(
+    apiAny.gameplay.games.queries.getTimeoutStatus,
+    { lobbyId }
   );
 
   useEffect(() => {
@@ -170,7 +183,7 @@ export function GameBoard({
       // Delay AI turn slightly for better UX
       setTimeout(async () => {
         try {
-          await executeAITurn({ gameId: gameState.gameId });
+          await executeAITurnMutation({ gameId: gameState.gameId });
         } catch (error) {
           console.error("AI turn failed:", error);
         } finally {
@@ -178,27 +191,28 @@ export function GameBoard({
         }
       }, 1000);
     }
-  }, [gameMode, gameState, lobbyDetails, gameEnded, isAIThinking, executeAITurn]);
+  }, [gameMode, gameState, lobbyDetails, gameEnded, isAIThinking, executeAITurnMutation]);
 
   // Effect Notifications - Subscribe to auto-triggered effects
   const lastEventTimestamp = useRef<number>(Date.now());
-  const gameEvents = useQuery(
-    api.gameplay.gameEvents.subscribeToGameEvents,
-    lobbyId
-      ? {
-          lobbyId,
-          sinceTimestamp: lastEventTimestamp.current,
-          eventTypes: ["effect_activated"],
-          limit: 10,
-        }
-      : "skip"
+  const gameEventsArgs = lobbyId
+    ? {
+        lobbyId,
+        sinceTimestamp: lastEventTimestamp.current,
+        eventTypes: ["effect_activated"],
+        limit: 10,
+      }
+    : "skip";
+  const gameEvents = useConvexQuery(
+    apiAny.gameplay.gameEvents.subscribeToGameEvents,
+    gameEventsArgs
   );
 
   // Show toast notifications for auto-triggered effects
   useEffect(() => {
     if (!gameEvents || gameEvents.length === 0) return;
 
-    gameEvents.forEach((event) => {
+    gameEvents.forEach((event: { timestamp: number; description?: string; metadata?: { trigger?: string; cardName?: string } }) => {
       // Update last seen timestamp
       if (event.timestamp > lastEventTimestamp.current) {
         lastEventTimestamp.current = event.timestamp;
@@ -803,7 +817,7 @@ export function GameBoard({
 
       {/* Game Content Container - full height, no scroll */}
       <div className="relative z-10 flex flex-col h-full">
-        {/* Top Bar: Opponent Life Points + Forfeit Button */}
+        {/* Top Bar: Opponent Life Points + Timeout + Forfeit Button */}
         <div className="px-2 pt-2 flex items-center justify-between gap-2 shrink-0">
           <LifePointsBar
             playerName={opponent.playerName}
@@ -813,15 +827,28 @@ export function GameBoard({
             isActive={!isPlayerTurn}
             isAi={opponent.playerType === "ai"}
           />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowForfeitDialog(true)}
-            className="text-red-500 hover:text-red-400 hover:bg-red-500/10 text-[10px] h-7 px-2"
-          >
-            <Flag className="h-3 w-3 mr-1" />
-            <span className="hidden sm:inline">Forfeit</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Timeout Display */}
+            {timeoutStatus && (
+              <TimeoutDisplay
+                actionTimeRemainingMs={timeoutStatus.actionTimeRemainingMs}
+                matchTimeRemainingMs={timeoutStatus.matchTimeRemainingMs}
+                isWarning={timeoutStatus.isWarning}
+                isTimedOut={timeoutStatus.isTimedOut}
+                isMatchTimedOut={timeoutStatus.isMatchTimedOut}
+                className="hidden sm:flex"
+              />
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowForfeitDialog(true)}
+              className="text-red-500 hover:text-red-400 hover:bg-red-500/10 text-[10px] h-7 px-2"
+            >
+              <Flag className="h-3 w-3 mr-1" />
+              <span className="hidden sm:inline">Forfeit</span>
+            </Button>
+          </div>
         </div>
 
         {/* Opponent Hand */}
@@ -888,19 +915,28 @@ export function GameBoard({
             isActive={isPlayerTurn}
           />
 
-          <ActionButtons
-            isPlayerTurn={isPlayerTurn}
-            isBattlePhase={isBattlePhase}
-            canAttack={canAttack}
-            canEndTurn={validActions?.canEndTurn ?? false}
-            onEndTurn={handleEndTurn}
-            onAttack={() => {
-              if (defaultAttacker) {
-                setSelectedFieldCard(defaultAttacker);
-                setShowAttackModal(true);
-              }
-            }}
-          />
+          <div className="flex items-center gap-2">
+            {/* Phase Skip Buttons */}
+            <PhaseSkipButtons
+              lobbyId={lobbyId}
+              currentPhase={currentPhase as GamePhase}
+              isCurrentPlayerTurn={isPlayerTurn}
+            />
+
+            <ActionButtons
+              isPlayerTurn={isPlayerTurn}
+              isBattlePhase={isBattlePhase}
+              canAttack={canAttack}
+              canEndTurn={validActions?.canEndTurn ?? false}
+              onEndTurn={handleEndTurn}
+              onAttack={() => {
+                if (defaultAttacker) {
+                  setSelectedFieldCard(defaultAttacker);
+                  setShowAttackModal(true);
+                }
+              }}
+            />
+          </div>
         </div>
 
         {/* Modals */}
@@ -1012,6 +1048,18 @@ export function GameBoard({
           }}
           onCancel={() => setCardSelection(null)}
         />
+
+        {/* Optional Trigger Prompt */}
+        {playerId && pendingOptionalTriggers && pendingOptionalTriggers.length > 0 && (
+          <OptionalTriggerPrompt
+            pendingTriggers={pendingOptionalTriggers}
+            lobbyId={lobbyId}
+            currentPlayerId={playerId}
+            onClose={() => {
+              // Component manages its own state - closing handled internally
+            }}
+          />
+        )}
       </div>
 
       {/* AI Thinking Overlay (Story Mode) */}

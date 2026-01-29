@@ -7,9 +7,11 @@
 
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
-import type { MutationCtx } from "../_generated/server";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { rankedLeaderboardHumans } from "../infrastructure/aggregates";
+import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import {
@@ -85,6 +87,24 @@ export const getSystemStats = query({
     const totalApiKeys = allApiKeys.length;
     const activeApiKeys = allApiKeys.filter((k) => k.isActive).length;
 
+    // Get active season info (placeholder until seasons table is added)
+    // For now, create a synthetic "eternal" season based on date
+    const now = new Date();
+    const seasonNumber = Math.floor(
+      (now.getFullYear() - 2024) * 4 + Math.floor(now.getMonth() / 3) + 1
+    );
+    const seasonStartMonth = Math.floor(now.getMonth() / 3) * 3; // 0, 3, 6, or 9
+    const seasonStart = new Date(now.getFullYear(), seasonStartMonth, 1).getTime();
+    const seasonEnd = new Date(now.getFullYear(), seasonStartMonth + 3, 0, 23, 59, 59).getTime();
+
+    const activeSeason = {
+      id: `season_${seasonNumber}`,
+      name: `Season ${seasonNumber}`,
+      startDate: seasonStart,
+      endDate: seasonEnd,
+      isActive: true,
+    };
+
     return {
       totalPlayers,
       humanPlayers,
@@ -96,7 +116,7 @@ export const getSystemStats = query({
       totalApiKeys,
       activeApiKeys,
       playersInQueue,
-      activeSeason: null, // TODO: Implement season management
+      activeSeason,
     };
   },
 });
@@ -137,6 +157,37 @@ export const getSuspiciousActivityReport = query({
       (log) => log.action === "warn_player" && log.timestamp >= cutoffTime && log.success
     );
 
+    // Analyze suspicious matchups - players who repeatedly play against the same opponent
+    const recentMatches = await ctx.db
+      .query("matchHistory")
+      .withIndex("by_completed")
+      .order("desc")
+      .filter((q) => q.gte(q.field("completedAt"), cutoffTime))
+      .take(1000);
+
+    // Count matchup frequency between player pairs
+    const matchupCounts = new Map<string, number>();
+    for (const match of recentMatches) {
+      // Create a normalized key (smaller ID first)
+      const ids = [match.winnerId, match.loserId].sort();
+      const key = `${ids[0]}_${ids[1]}`;
+      matchupCounts.set(key, (matchupCounts.get(key) || 0) + 1);
+    }
+
+    // Flag matchups with 5+ games in the lookback period as suspicious
+    const suspiciousMatchups = Array.from(matchupCounts.values()).filter(
+      (count) => count >= 5
+    ).length;
+
+    // Analyze abnormal rating changes - look for rating changes > 50 in a single match
+    // This could indicate win trading or exploit abuse
+    const abnormalThreshold = 50; // Standard K-factor is 32, so 50+ is unusual
+    const abnormalRatingChanges = recentMatches.filter((match) => {
+      const winnerChange = match.winnerRatingAfter - match.winnerRatingBefore;
+      const loserChange = Math.abs(match.loserRatingAfter - match.loserRatingBefore);
+      return winnerChange > abnormalThreshold || loserChange > abnormalThreshold;
+    }).length;
+
     // Build summary by category
     const summary: Array<{
       category: string;
@@ -172,8 +223,8 @@ export const getSuspiciousActivityReport = query({
     return {
       reportGeneratedAt: Date.now(),
       lookbackDays,
-      suspiciousMatchups: 0, // TODO: Implement matchup analysis
-      abnormalRatingChanges: 0, // TODO: Implement rating analysis
+      suspiciousMatchups,
+      abnormalRatingChanges,
       recentBans: recentBans.length,
       recentWarnings: recentWarnings.length,
       summary,
@@ -210,6 +261,54 @@ export const getMyAdminRole = query({
       .filter((q) => q.eq(q.field("isActive"), true))
       .first();
 
+    // Define permissions based on role
+    const permissionsMap: Record<UserRole, string[]> = {
+      user: [],
+      moderator: [
+        "view_reports",
+        "view_audit_logs",
+        "view_player_profiles",
+        "warn_players",
+        "mute_players",
+        "review_reports",
+      ],
+      admin: [
+        "view_reports",
+        "view_audit_logs",
+        "view_player_profiles",
+        "warn_players",
+        "mute_players",
+        "review_reports",
+        "ban_players",
+        "suspend_players",
+        "grant_moderator_role",
+        "revoke_moderator_role",
+        "manage_cards",
+        "manage_shop",
+        "add_currency",
+      ],
+      superadmin: [
+        "view_reports",
+        "view_audit_logs",
+        "view_player_profiles",
+        "warn_players",
+        "mute_players",
+        "review_reports",
+        "ban_players",
+        "suspend_players",
+        "grant_moderator_role",
+        "revoke_moderator_role",
+        "manage_cards",
+        "manage_shop",
+        "add_currency",
+        "grant_admin_role",
+        "revoke_admin_role",
+        "delete_users",
+        "system_config",
+        "database_operations",
+      ],
+    };
+
     return {
       role,
       roleLevel,
@@ -217,7 +316,7 @@ export const getMyAdminRole = query({
       isModerator: roleLevel >= roleHierarchy.moderator,
       isFullAdmin: roleLevel >= roleHierarchy.admin,
       isSuperAdmin: role === "superadmin",
-      permissions: [], // TODO: Add explicit permissions if needed
+      permissions: permissionsMap[role] || [],
       grantedAt: adminRole?.grantedAt,
       grantedBy: adminRole?.grantedBy,
     };
@@ -395,26 +494,121 @@ export const grantAdminRole = mutation({
 });
 
 /**
- * Get audit log entries
- * TODO: Implement filtering and pagination
+ * Get audit log entries with filtering and pagination
+ *
+ * Supports filtering by:
+ * - action: specific action type (e.g., "ban_player", "grant_role")
+ * - adminId: specific admin who performed actions
+ * - targetUserId: specific user who was targeted
+ * - success: filter by success/failure status
+ * - startDate/endDate: date range filtering
+ *
+ * Pagination uses cursor-based approach for efficiency
  */
 export const getAuditLog = query({
   args: {
     limit: v.number(),
-    targetType: v.optional(v.string()),
+    cursor: v.optional(v.number()), // timestamp cursor for pagination
+    action: v.optional(v.string()),
+    adminId: v.optional(v.id("users")),
+    targetUserId: v.optional(v.id("users")),
+    success: v.optional(v.boolean()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    // Get audit logs
-    const logs = await ctx.db
-      .query("adminAuditLogs")
-      .withIndex("by_timestamp")
-      .order("desc")
-      .take(args.limit);
+    const { limit, cursor, action, adminId, targetUserId, success, startDate, endDate } = args;
 
-    return logs;
+    // Choose the best index based on filters
+    // biome-ignore lint/suspicious/noImplicitAnyLet: Type inferred from conditional query assignments
+    let query;
+
+    if (adminId) {
+      // Filter by admin - use by_admin index
+      query = ctx.db
+        .query("adminAuditLogs")
+        .withIndex("by_admin", (q) => q.eq("adminId", adminId))
+        .order("desc");
+    } else if (targetUserId) {
+      // Filter by target user - use by_target_user index
+      query = ctx.db
+        .query("adminAuditLogs")
+        .withIndex("by_target_user", (q) => q.eq("targetUserId", targetUserId))
+        .order("desc");
+    } else if (action) {
+      // Filter by action - use by_action index
+      query = ctx.db
+        .query("adminAuditLogs")
+        .withIndex("by_action", (q) => q.eq("action", action))
+        .order("desc");
+    } else if (success !== undefined) {
+      // Filter by success status - use by_success index
+      query = ctx.db
+        .query("adminAuditLogs")
+        .withIndex("by_success", (q) => q.eq("success", success))
+        .order("desc");
+    } else {
+      // Default: sort by timestamp
+      query = ctx.db.query("adminAuditLogs").withIndex("by_timestamp").order("desc");
+    }
+
+    // Apply cursor-based pagination (get logs older than cursor timestamp)
+    if (cursor) {
+      query = query.filter((q) => q.lt(q.field("timestamp"), cursor));
+    }
+
+    // Apply date range filters
+    if (startDate) {
+      query = query.filter((q) => q.gte(q.field("timestamp"), startDate));
+    }
+    if (endDate) {
+      query = query.filter((q) => q.lte(q.field("timestamp"), endDate));
+    }
+
+    // Apply additional filters that couldn't use indexes
+    if (action && !adminId && !targetUserId && success === undefined) {
+      // action was already handled by index
+    } else if (action) {
+      query = query.filter((q) => q.eq(q.field("action"), action));
+    }
+
+    if (success !== undefined && adminId) {
+      query = query.filter((q) => q.eq(q.field("success"), success));
+    }
+
+    // Fetch logs with limit + 1 to check for more pages
+    const logs = await query.take(limit + 1);
+
+    // Determine if there are more results
+    const hasMore = logs.length > limit;
+    const results = hasMore ? logs.slice(0, limit) : logs;
+
+    // Get next cursor (timestamp of last result)
+    const nextCursor =
+      hasMore && results.length > 0 ? results[results.length - 1]?.timestamp : undefined;
+
+    // Enrich logs with admin and target user details
+    const enrichedLogs = await Promise.all(
+      results.map(async (log) => {
+        const admin = await ctx.db.get(log.adminId);
+        const targetUser = log.targetUserId ? await ctx.db.get(log.targetUserId) : null;
+
+        return {
+          ...log,
+          adminUsername: admin?.username || admin?.name || "Unknown",
+          targetUsername: targetUser?.username || targetUser?.name || log.targetEmail || undefined,
+        };
+      })
+    );
+
+    return {
+      logs: enrichedLogs,
+      nextCursor,
+      hasMore,
+    };
   },
 });
 
@@ -552,26 +746,78 @@ export const getPlayerProfile = query({
     const player = await ctx.db.get(playerId);
     if (!player) return null;
 
+    // Calculate rank and percentile using the aggregate
+    const { rank, percentile } = await calculatePlayerRankAndPercentile(ctx, player);
+
+    // Try to find peak rating from match history
+    const playerMatches = await ctx.db
+      .query("matchHistory")
+      .withIndex("by_winner", (q) => q.eq("winnerId", playerId))
+      .take(100);
+
+    // Find peak rating from match history
+    let peakRating = player.rankedElo || ELO_SYSTEM.DEFAULT_RATING;
+    for (const match of playerMatches) {
+      if (match.winnerRatingAfter > peakRating) {
+        peakRating = match.winnerRatingAfter;
+      }
+    }
+
+    // Get player XP data for total score
+    const playerXP = await ctx.db
+      .query("playerXP")
+      .withIndex("by_user", (q) => q.eq("userId", playerId))
+      .first();
+
     return {
       _id: player._id,
       name: player.username || "Unknown",
       username: player.username,
       type: player.isAiAgent ? ("ai" as const) : ("human" as const),
-      eloRating: player.rankedElo || 1000,
-      seasonRating: player.casualRating || 1000,
-      rank: 0, // TODO: Calculate actual rank
-      percentile: 0, // TODO: Calculate percentile
-      lastActiveAt: player.createdAt || player._creationTime,
+      eloRating: player.rankedElo || ELO_SYSTEM.DEFAULT_RATING,
+      seasonRating: player.casualRating || ELO_SYSTEM.DEFAULT_RATING,
+      rank,
+      percentile,
+      lastActiveAt: player.lastStatsUpdate || player.createdAt || player._creationTime,
       createdAt: player.createdAt,
       aiDifficulty: player.isAiAgent ? ("medium" as const) : undefined,
       aiPersonality: player.isAiAgent ? "balanced" : undefined,
-      peakRating: player.rankedElo || 1000,
+      peakRating,
       seasonId: null,
       stats: {
         gamesPlayed: (player.totalWins || 0) + (player.totalLosses || 0),
         gamesWon: player.totalWins || 0,
-        totalScore: 0,
+        totalScore: playerXP?.lifetimeXP || 0,
       },
     };
   },
 });
+
+/**
+ * Helper function to calculate player rank and percentile
+ * Uses the ranked leaderboard aggregate for O(log n) performance
+ */
+async function calculatePlayerRankAndPercentile(
+  ctx: QueryCtx,
+  player: Doc<"users">
+): Promise<{ rank: number; percentile: number }> {
+  const isAiAgent = player.isAiAgent || false;
+  const namespace: "human" | "ai" = isAiAgent ? "ai" : "human";
+
+  const playerRating = player.rankedElo || ELO_SYSTEM.DEFAULT_RATING;
+
+  // Use aggregate for O(log n) rank lookup
+  // The aggregate uses negative rating for descending sort
+  const key = -playerRating;
+  const index = await rankedLeaderboardHumans.indexOf(ctx, key, { namespace, id: player._id });
+  const totalPlayers = await rankedLeaderboardHumans.count(ctx, { namespace });
+
+  const rank = index + 1; // indexOf returns 0-based, convert to 1-based rank
+
+  // Calculate percentile (higher is better - top 1% = 99 percentile)
+  // Formula: ((totalPlayers - rank) / totalPlayers) * 100
+  const percentile =
+    totalPlayers > 0 ? Math.round(((totalPlayers - rank + 1) / totalPlayers) * 100) : 0;
+
+  return { rank, percentile };
+}

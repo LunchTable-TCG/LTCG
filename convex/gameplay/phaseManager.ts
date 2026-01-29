@@ -14,8 +14,8 @@ import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { drawCards } from "../lib/gameHelpers";
 import { executeEffect } from "./effectSystem/index";
+import { checkDeckOutCondition, checkStateBasedActions } from "./gameEngine/stateBasedActions";
 import { recordEventHelper } from "./gameEvents";
-import { checkStateBasedActions, checkDeckOutCondition } from "./gameEngine/stateBasedActions";
 
 /**
  * Game Phase Types
@@ -234,6 +234,324 @@ export const advancePhase = mutation({
 });
 
 /**
+ * Skip Battle Phase - go from Main 1 directly to Main 2
+ *
+ * Allows the turn player to skip the Battle Phase entirely,
+ * moving directly from Main Phase 1 to Main Phase 2.
+ */
+export const skipBattlePhase = mutation({
+  args: { lobbyId: v.id("gameLobbies") },
+  handler: async (ctx, args) => {
+    // 1. Validate session
+    const user = await requireAuthMutation(ctx);
+
+    // 2. Get lobby
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw createError(ErrorCode.NOT_FOUND_LOBBY, {
+        reason: "Lobby not found",
+        lobbyId: args.lobbyId,
+      });
+    }
+
+    // 3. Verify it's the player's turn
+    if (lobby.currentTurnPlayerId !== user.userId) {
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN, {
+        reason: "Not your turn",
+        currentTurnPlayerId: lobby.currentTurnPlayerId,
+        userId: user.userId,
+      });
+    }
+
+    // 4. Get game state
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game state not found",
+        lobbyId: args.lobbyId,
+      });
+    }
+
+    // 5. Validate current phase
+    const currentPhase: GamePhase = gameState.currentPhase || "main1";
+
+    // Can only skip battle from main1 or during battle phases
+    if (!["main1", "battle_start", "battle", "battle_end"].includes(currentPhase)) {
+      throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
+        reason: "Can only skip Battle Phase from Main Phase 1 or during Battle Phase",
+        currentPhase,
+      });
+    }
+
+    // 6. Calculate skipped phases
+    const skippedPhases = getSkippedPhases(currentPhase, "main2");
+
+    // 7. Update phase to main2
+    await ctx.db.patch(gameState._id, {
+      currentPhase: "main2",
+    });
+
+    // 8. Record event
+    if (lobby.gameId && lobby.turnNumber !== undefined) {
+      await recordEventHelper(ctx, {
+        lobbyId: args.lobbyId,
+        gameId: lobby.gameId,
+        turnNumber: lobby.turnNumber,
+        eventType: "phase_changed",
+        playerId: user.userId,
+        playerUsername: user.username || "Unknown",
+        description: `${user.username} skipped Battle Phase`,
+        metadata: {
+          skipped: true,
+          fromPhase: currentPhase,
+          toPhase: "main2",
+          skippedPhases,
+        },
+      });
+    }
+
+    return {
+      success: true,
+      newPhase: "main2" as GamePhase,
+      skippedPhases,
+    };
+  },
+});
+
+/**
+ * Skip to End Phase - from any phase, jump to End Phase
+ *
+ * Allows the turn player to skip all remaining phases and
+ * proceed directly to the End Phase.
+ */
+export const skipToEndPhase = mutation({
+  args: { lobbyId: v.id("gameLobbies") },
+  handler: async (ctx, args) => {
+    // 1. Validate session
+    const user = await requireAuthMutation(ctx);
+
+    // 2. Get lobby
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw createError(ErrorCode.NOT_FOUND_LOBBY, {
+        reason: "Lobby not found",
+        lobbyId: args.lobbyId,
+      });
+    }
+
+    // 3. Verify it's the player's turn
+    if (lobby.currentTurnPlayerId !== user.userId) {
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN, {
+        reason: "Not your turn",
+        currentTurnPlayerId: lobby.currentTurnPlayerId,
+        userId: user.userId,
+      });
+    }
+
+    // 4. Get game state
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game state not found",
+        lobbyId: args.lobbyId,
+      });
+    }
+
+    // 5. Validate current phase
+    const currentPhase: GamePhase = gameState.currentPhase || "draw";
+
+    // Cannot skip from end phase (already there)
+    if (currentPhase === "end") {
+      throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
+        reason: "Already in End Phase",
+        currentPhase,
+      });
+    }
+
+    // Cannot skip from draw or standby (mandatory phases)
+    if (currentPhase === "draw" || currentPhase === "standby") {
+      throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
+        reason: "Cannot skip Draw Phase or Standby Phase",
+        currentPhase,
+      });
+    }
+
+    // 6. Calculate skipped phases
+    const skippedPhases = getSkippedPhases(currentPhase, "end");
+
+    // 7. Update phase to end
+    await ctx.db.patch(gameState._id, {
+      currentPhase: "end",
+    });
+
+    // 8. Validate required lobby fields
+    if (!lobby.gameId || lobby.turnNumber === undefined) {
+      throw createError(ErrorCode.GAME_NOT_STARTED, {
+        reason: "Game not started or missing game data",
+      });
+    }
+
+    // 9. Record event
+    await recordEventHelper(ctx, {
+      lobbyId: args.lobbyId,
+      gameId: lobby.gameId,
+      turnNumber: lobby.turnNumber,
+      eventType: "phase_changed",
+      playerId: user.userId,
+      playerUsername: user.username || "Unknown",
+      description: `${user.username} skipped to End Phase`,
+      metadata: {
+        skipped: true,
+        fromPhase: currentPhase,
+        toPhase: "end",
+        skippedPhases,
+      },
+    });
+
+    // 10. Execute End Phase logic
+    await executePhaseLogic(ctx, args.lobbyId, gameState._id, "end", user.userId, lobby.turnNumber);
+
+    // 11. Run state-based action checks (enforce hand limit at end phase)
+    const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {
+      skipHandLimit: false,
+      turnNumber: lobby.turnNumber,
+    });
+
+    return {
+      success: true,
+      newPhase: "end" as GamePhase,
+      skippedPhases,
+      gameEnded: sbaResult.gameEnded,
+      winnerId: sbaResult.winnerId,
+    };
+  },
+});
+
+/**
+ * Skip Main Phase 2 - go directly to End Phase
+ *
+ * Allows the turn player to skip Main Phase 2 and proceed
+ * directly to the End Phase. Only valid when in Main Phase 2.
+ */
+export const skipMainPhase2 = mutation({
+  args: { lobbyId: v.id("gameLobbies") },
+  handler: async (ctx, args) => {
+    // 1. Validate session
+    const user = await requireAuthMutation(ctx);
+
+    // 2. Get lobby
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw createError(ErrorCode.NOT_FOUND_LOBBY, {
+        reason: "Lobby not found",
+        lobbyId: args.lobbyId,
+      });
+    }
+
+    // 3. Verify it's the player's turn
+    if (lobby.currentTurnPlayerId !== user.userId) {
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN, {
+        reason: "Not your turn",
+        currentTurnPlayerId: lobby.currentTurnPlayerId,
+        userId: user.userId,
+      });
+    }
+
+    // 4. Get game state
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game state not found",
+        lobbyId: args.lobbyId,
+      });
+    }
+
+    // 5. Validate current phase is main2
+    const currentPhase: GamePhase = gameState.currentPhase || "draw";
+
+    if (currentPhase !== "main2") {
+      throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
+        reason: "Can only skip Main Phase 2 when in Main Phase 2",
+        currentPhase,
+      });
+    }
+
+    // 6. Update phase to end
+    await ctx.db.patch(gameState._id, {
+      currentPhase: "end",
+    });
+
+    // 7. Validate required lobby fields
+    if (!lobby.gameId || lobby.turnNumber === undefined) {
+      throw createError(ErrorCode.GAME_NOT_STARTED, {
+        reason: "Game not started or missing game data",
+      });
+    }
+
+    // 8. Record event
+    await recordEventHelper(ctx, {
+      lobbyId: args.lobbyId,
+      gameId: lobby.gameId,
+      turnNumber: lobby.turnNumber,
+      eventType: "phase_changed",
+      playerId: user.userId,
+      playerUsername: user.username || "Unknown",
+      description: `${user.username} skipped Main Phase 2`,
+      metadata: {
+        skipped: true,
+        fromPhase: "main2",
+        toPhase: "end",
+        skippedPhases: ["main2"],
+      },
+    });
+
+    // 9. Execute End Phase logic
+    await executePhaseLogic(ctx, args.lobbyId, gameState._id, "end", user.userId, lobby.turnNumber);
+
+    // 10. Run state-based action checks (enforce hand limit at end phase)
+    const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {
+      skipHandLimit: false,
+      turnNumber: lobby.turnNumber,
+    });
+
+    return {
+      success: true,
+      newPhase: "end" as GamePhase,
+      skippedPhases: ["main2"] as GamePhase[],
+      gameEnded: sbaResult.gameEnded,
+      winnerId: sbaResult.winnerId,
+    };
+  },
+});
+
+/**
+ * Helper: Get phases that will be skipped between two phases
+ */
+function getSkippedPhases(fromPhase: GamePhase, toPhase: GamePhase): GamePhase[] {
+  const fromIndex = PHASE_SEQUENCE.indexOf(fromPhase);
+  const toIndex = PHASE_SEQUENCE.indexOf(toPhase);
+
+  if (fromIndex === -1 || toIndex === -1 || fromIndex >= toIndex) {
+    return [];
+  }
+
+  // Return all phases between (exclusive of fromPhase, inclusive up to but not including toPhase)
+  return PHASE_SEQUENCE.slice(fromIndex + 1, toIndex);
+}
+
+/**
  * Check if a phase should auto-advance
  * Players only stop at: Main1, Battle, Main2
  * All other phases auto-advance after executing their logic
@@ -276,13 +594,21 @@ async function executePhaseLogic(
             return;
           }
         }
+
+        // After drawing, check for "on_draw" triggered effects
+        // Refresh game state after draw operation
+        const refreshedGameState = await ctx.db.get(gameStateId);
+        if (refreshedGameState) {
+          await executePhaseTriggeredEffects(ctx, lobbyId, refreshedGameState, playerId, "draw");
+        }
       }
       // Draw phase auto-advances to Standby
       break;
     }
 
     case "standby":
-      // Trigger standby effects (future implementation)
+      // Trigger standby phase effects
+      await executePhaseTriggeredEffects(ctx, lobbyId, gameState, playerId, "standby");
       // Auto-advances to Main Phase 1
       break;
 
@@ -341,7 +667,7 @@ async function executePhaseTriggeredEffects(
   lobbyId: Id<"gameLobbies">,
   gameState: Doc<"gameStates">,
   playerId: Id<"users">,
-  phase: "battle_start" | "end"
+  phase: "battle_start" | "end" | "draw" | "standby"
 ): Promise<void> {
   const lobby = await ctx.db.get(lobbyId);
   if (!lobby) return;
@@ -387,6 +713,8 @@ async function executePhaseTriggeredEffects(
   const triggerMap: Record<string, string> = {
     battle_start: "on_battle_start",
     end: "on_end",
+    draw: "on_draw",
+    standby: "on_standby",
   };
 
   const triggerCondition = triggerMap[phase];
