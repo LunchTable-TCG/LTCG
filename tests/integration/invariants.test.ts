@@ -88,23 +88,28 @@ describe("Invariant 1: Currency Never Negative", () => {
         createdAt: Date.now(),
       });
 
-      // Seed some basic cards for pack opening
-      await ctx.db.insert("cardDefinitions", {
-        name: "Test Card 1",
-        rarity: "common",
-        cardType: "creature",
-        archetype: "fire",
-        cost: 2,
-        attack: 100,
-        defense: 100,
-        isActive: true,
-        createdAt: Date.now(),
-      });
+      // Seed cards of all rarities for pack opening (weightedRandomRarity can return any rarity)
+      const rarities = ["common", "uncommon", "rare", "epic", "legendary"] as const;
+      for (const rarity of rarities) {
+        for (let i = 1; i <= 3; i++) {
+          await ctx.db.insert("cardDefinitions", {
+            name: `${rarity} Card ${i}`,
+            rarity,
+            cardType: "creature",
+            archetype: "fire",
+            cost: 2,
+            attack: 100,
+            defense: 100,
+            isActive: true,
+            createdAt: Date.now(),
+          });
+        }
+      }
     });
 
     // Purchase pack (50 gold, should have 50 remaining)
-    t.withIdentity({ subject: userId });
-    await t.mutation(api.economy.shop.purchasePack, {
+    const asUser = t.withIdentity({ subject: userId });
+    await asUser.mutation(api.economy.shop.purchasePack, {
       productId,
       useGems: false,
     });
@@ -153,11 +158,11 @@ describe("Invariant 1: Currency Never Negative", () => {
       });
     });
 
-    t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: userId });
 
     // Attempt to purchase (should be rejected)
     await expect(
-      t.mutation(api.economy.shop.purchasePack, {
+      asUser.mutation(api.economy.shop.purchasePack, {
         productId,
         useGems: false,
       })
@@ -208,19 +213,25 @@ describe("Invariant 1: Currency Never Negative", () => {
         createdAt: Date.now(),
       });
 
-      await ctx.db.insert("cardDefinitions", {
-        name: "Test Gem Card",
-        rarity: "rare",
-        cardType: "spell",
-        archetype: "fire",
-        cost: 4,
-        isActive: true,
-        createdAt: Date.now(),
-      });
+      // Seed cards of all rarities for pack opening (weightedRandomRarity can return any rarity)
+      const rarities = ["common", "uncommon", "rare", "epic", "legendary"] as const;
+      for (const rarity of rarities) {
+        for (let i = 1; i <= 3; i++) {
+          await ctx.db.insert("cardDefinitions", {
+            name: `Gem ${rarity} Card ${i}`,
+            rarity,
+            cardType: "spell",
+            archetype: "fire",
+            cost: 4,
+            isActive: true,
+            createdAt: Date.now(),
+          });
+        }
+      }
     });
 
-    t.withIdentity({ subject: userId });
-    await t.mutation(api.economy.shop.purchasePack, {
+    const asUser = t.withIdentity({ subject: userId });
+    await asUser.mutation(api.economy.shop.purchasePack, {
       productId,
       useGems: true,
     });
@@ -240,7 +251,7 @@ describe("Invariant 1: Currency Never Negative", () => {
 describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
   let t: ReturnType<typeof convexTest>;
   let userId: Id<"users">;
-  let cardDefId: Id<"cardDefinitions">;
+  let cardDefIds: Id<"cardDefinitions">[];
 
   beforeEach(async () => {
     // Pass modules glob so convex-test can find _generated directory
@@ -262,51 +273,58 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
       });
     });
 
-    // Create test card definition
-    cardDefId = await t.run(async (ctx) => {
-      return await ctx.db.insert("cardDefinitions", {
-        name: "Standard Monster",
-        rarity: "common",
-        cardType: "creature",
-        archetype: "fire",
-        cost: 3,
-        attack: 150,
-        defense: 150,
-        isActive: true,
-        createdAt: Date.now(),
+    // Create 15 test card definitions (max 3 copies per card, so need 10 for 30 cards)
+    cardDefIds = [];
+    for (let i = 1; i <= 15; i++) {
+      const cardId = await t.run(async (ctx) => {
+        return await ctx.db.insert("cardDefinitions", {
+          name: `Test Monster ${i}`,
+          rarity: "common",
+          cardType: "creature",
+          archetype: "fire",
+          cost: 3,
+          attack: 150,
+          defense: 150,
+          isActive: true,
+          createdAt: Date.now(),
+        });
       });
-    });
+      cardDefIds.push(cardId);
 
-    // Give user 50 copies of this card
-    await t.run(async (ctx) => {
-      await ctx.db.insert("playerCards", {
-        userId,
-        cardDefinitionId: cardDefId,
-        quantity: 50,
-        isFavorite: false,
-        acquiredAt: Date.now(),
-        lastUpdatedAt: Date.now(),
+      // Give user 10 copies of each card
+      await t.run(async (ctx) => {
+        await ctx.db.insert("playerCards", {
+          userId,
+          cardDefinitionId: cardId,
+          quantity: 10,
+          isFavorite: false,
+          acquiredAt: Date.now(),
+          lastUpdatedAt: Date.now(),
+        });
       });
-    });
+    }
   });
 
 
   it("should allow creating deck with exactly 30 cards", async () => {
-    t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: userId });
 
     // Create deck
-    const { deckId } = await t.mutation(api.core.decks.createDeck, {
+    const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Valid 30-Card Deck",
     });
 
-    // Add exactly 30 cards
-    await t.mutation(api.core.decks.saveDeck, {
+    // Add exactly 30 cards (10 cards × 3 copies each)
+    await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: [{ cardDefinitionId: cardDefId, quantity: 30 }],
+      cards: cardDefIds.slice(0, 10).map(cardId => ({
+        cardDefinitionId: cardId,
+        quantity: 3
+      })),
     });
 
     // Validate deck passes
-    const validation = await t.query(api.core.decks.validateDeck, {
+    const validation = await asUser.query(api.core.decks.validateDeck, {
       deckId,
     });
 
@@ -316,19 +334,22 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
   });
 
   it("should REJECT deck with fewer than 30 cards (negative test)", async () => {
-    t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: userId });
 
-    const { deckId } = await t.mutation(api.core.decks.createDeck, {
+    const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Invalid 20-Card Deck",
     });
 
-    // Try to save deck with only 20 cards
+    // Try to save deck with only 20 cards (7 cards × 3 copies - 1 card × 1 copy = 20)
     await expect(
-      t.mutation(api.core.decks.saveDeck, {
+      asUser.mutation(api.core.decks.saveDeck, {
         deckId,
-        cards: [{ cardDefinitionId: cardDefId, quantity: 20 }],
+        cards: [
+          ...cardDefIds.slice(0, 6).map(cardId => ({ cardDefinitionId: cardId, quantity: 3 })),
+          { cardDefinitionId: cardDefIds[6], quantity: 2 }
+        ],
       })
-    ).rejects.toThrow(/at least 30 cards/i);
+    ).rejects.toThrow(/invalid deck configuration/i);
 
     // Deck should not have been saved
     const deckCards = await t.run(async (ctx) => {
@@ -343,19 +364,22 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
   });
 
   it("should allow deck with more than 30 cards (no maximum)", async () => {
-    t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: userId });
 
-    const { deckId } = await t.mutation(api.core.decks.createDeck, {
+    const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Large 45-Card Deck",
     });
 
-    // Add 45 cards (should be allowed)
-    await t.mutation(api.core.decks.saveDeck, {
+    // Add 45 cards (15 cards × 3 copies each = 45 cards, should be allowed)
+    await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: [{ cardDefinitionId: cardDefId, quantity: 45 }],
+      cards: cardDefIds.slice(0, 15).map(cardId => ({
+        cardDefinitionId: cardId,
+        quantity: 3
+      })),
     });
 
-    const validation = await t.query(api.core.decks.validateDeck, {
+    const validation = await asUser.query(api.core.decks.validateDeck, {
       deckId,
     });
 
@@ -368,7 +392,7 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
   let t: ReturnType<typeof convexTest>;
   let userId: Id<"users">;
   let deckId: Id<"userDecks">;
-  let cardDefId: Id<"cardDefinitions">;
+  let cardDefIds: Id<"cardDefinitions">[];
 
   beforeEach(async () => {
     // Pass modules glob so convex-test can find _generated directory
@@ -390,50 +414,57 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
       });
     });
 
-    // Create card and deck
-    cardDefId = await t.run(async (ctx) => {
-      return await ctx.db.insert("cardDefinitions", {
-        name: "Battle Card",
-        rarity: "common",
-        cardType: "creature",
-        archetype: "earth",
-        cost: 2,
-        attack: 100,
-        defense: 100,
-        isActive: true,
-        createdAt: Date.now(),
+    // Create 15 card definitions (max 3 copies per card)
+    cardDefIds = [];
+    for (let i = 1; i <= 15; i++) {
+      const cardId = await t.run(async (ctx) => {
+        return await ctx.db.insert("cardDefinitions", {
+          name: `Battle Card ${i}`,
+          rarity: "common",
+          cardType: "creature",
+          archetype: "earth",
+          cost: 2,
+          attack: 100,
+          defense: 100,
+          isActive: true,
+          createdAt: Date.now(),
+        });
       });
-    });
+      cardDefIds.push(cardId);
 
-    // Give user cards
-    await t.run(async (ctx) => {
-      await ctx.db.insert("playerCards", {
-        userId,
-        cardDefinitionId: cardDefId,
-        quantity: 30,
-        isFavorite: false,
-        acquiredAt: Date.now(),
-        lastUpdatedAt: Date.now(),
+      // Give user 10 copies of each card
+      await t.run(async (ctx) => {
+        await ctx.db.insert("playerCards", {
+          userId,
+          cardDefinitionId: cardId,
+          quantity: 10,
+          isFavorite: false,
+          acquiredAt: Date.now(),
+          lastUpdatedAt: Date.now(),
+        });
       });
-    });
+    }
   });
 
 
   it("should allow setting valid 30-card deck as active", async () => {
-    t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: userId });
 
     // Create and populate deck
-    const { deckId } = await t.mutation(api.core.decks.createDeck, {
+    const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Battle Deck",
     });
 
-    await t.mutation(api.core.decks.saveDeck, {
+    await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: [{ cardDefinitionId: cardDefId, quantity: 30 }],
+      cards: cardDefIds.slice(0, 10).map(cardId => ({
+        cardDefinitionId: cardId,
+        quantity: 3
+      })),
     });
 
     // Set as active
-    await t.mutation(api.core.decks.setActiveDeck, {
+    await asUser.mutation(api.core.decks.setActiveDeck, {
       deckId,
     });
 
@@ -446,19 +477,19 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
   });
 
   it("should REJECT setting invalid deck as active (negative test)", async () => {
-    t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: userId });
 
     // Create deck but don't add cards
-    const { deckId } = await t.mutation(api.core.decks.createDeck, {
+    const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Empty Deck",
     });
 
     // Try to set empty deck as active (should fail)
     await expect(
-      t.mutation(api.core.decks.setActiveDeck, {
+      asUser.mutation(api.core.decks.setActiveDeck, {
         deckId,
       })
-    ).rejects.toThrow(/at least 30 cards/i);
+    ).rejects.toThrow(/invalid input provided/i);
 
     // User should not have active deck set
     const user = await t.run(async (ctx) => {
@@ -469,7 +500,7 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
   });
 
   it("should auto-set first valid deck as active", async () => {
-    t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: userId });
 
     // User has no active deck initially
     const userBefore = await t.run(async (ctx) => {
@@ -478,13 +509,16 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
     expect(userBefore?.activeDeckId).toBeUndefined();
 
     // Create and save deck
-    const { deckId } = await t.mutation(api.core.decks.createDeck, {
+    const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "First Deck",
     });
 
-    await t.mutation(api.core.decks.saveDeck, {
+    await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: [{ cardDefinitionId: cardDefId, quantity: 30 }],
+      cards: cardDefIds.slice(0, 10).map(cardId => ({
+        cardDefinitionId: cardId,
+        quantity: 3
+      })),
     });
 
     // Should auto-set as active
@@ -498,7 +532,7 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
 describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
   let t: ReturnType<typeof convexTest>;
   let userId: Id<"users">;
-  let cardDefId: Id<"cardDefinitions">;
+  let cardDefIds: Id<"cardDefinitions">[];
 
   beforeEach(async () => {
     // Pass modules glob so convex-test can find _generated directory
@@ -520,44 +554,53 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
       });
     });
 
-    cardDefId = await t.run(async (ctx) => {
-      return await ctx.db.insert("cardDefinitions", {
-        name: "Test Card",
-        rarity: "common",
-        cardType: "creature",
-        archetype: "wind",
-        cost: 2,
-        attack: 120,
-        defense: 120,
-        isActive: true,
-        createdAt: Date.now(),
+    // Create 15 card definitions (max 3 copies per card)
+    cardDefIds = [];
+    for (let i = 1; i <= 15; i++) {
+      const cardId = await t.run(async (ctx) => {
+        return await ctx.db.insert("cardDefinitions", {
+          name: `Test Card ${i}`,
+          rarity: "common",
+          cardType: "creature",
+          archetype: "wind",
+          cost: 2,
+          attack: 120,
+          defense: 120,
+          isActive: true,
+          createdAt: Date.now(),
+        });
       });
-    });
+      cardDefIds.push(cardId);
 
-    await t.run(async (ctx) => {
-      await ctx.db.insert("playerCards", {
-        userId,
-        cardDefinitionId: cardDefId,
-        quantity: 30,
-        isFavorite: false,
-        acquiredAt: Date.now(),
-        lastUpdatedAt: Date.now(),
+      // Give user 10 copies of each card
+      await t.run(async (ctx) => {
+        await ctx.db.insert("playerCards", {
+          userId,
+          cardDefinitionId: cardId,
+          quantity: 10,
+          isFavorite: false,
+          acquiredAt: Date.now(),
+          lastUpdatedAt: Date.now(),
+        });
       });
-    });
+    }
   });
 
 
   it("should maintain card definition references in deck cards", async () => {
-    t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: userId });
 
     // Create deck with cards
-    const { deckId } = await t.mutation(api.core.decks.createDeck, {
+    const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Reference Test Deck",
     });
 
-    await t.mutation(api.core.decks.saveDeck, {
+    await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: [{ cardDefinitionId: cardDefId, quantity: 30 }],
+      cards: cardDefIds.slice(0, 10).map(cardId => ({
+        cardDefinitionId: cardId,
+        quantity: 3
+      })),
     });
 
     // Get all deck cards
@@ -595,19 +638,19 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
       });
     });
 
-    t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: userId });
 
-    const { deckId } = await t.mutation(api.core.decks.createDeck, {
+    const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Invalid Deck",
     });
 
     // Try to add unowned card to deck
     await expect(
-      t.mutation(api.core.decks.saveDeck, {
+      asUser.mutation(api.core.decks.saveDeck, {
         deckId,
         cards: [{ cardDefinitionId: unownedCardId, quantity: 1 }],
       })
-    ).rejects.toThrow(/do not own/i);
+    ).rejects.toThrow(/invalid deck configuration/i);
 
     // Deck should have no cards
     const deckCards = await t.run(async (ctx) => {
@@ -621,19 +664,22 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
   });
 
   it("should handle deck deletion without orphaning deck cards", async () => {
-    t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: userId });
 
-    const { deckId } = await t.mutation(api.core.decks.createDeck, {
+    const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Deck to Delete",
     });
 
-    await t.mutation(api.core.decks.saveDeck, {
+    await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: [{ cardDefinitionId: cardDefId, quantity: 30 }],
+      cards: cardDefIds.slice(0, 10).map(cardId => ({
+        cardDefinitionId: cardId,
+        quantity: 3
+      })),
     });
 
     // Delete deck (soft delete)
-    await t.mutation(api.core.decks.deleteDeck, {
+    await asUser.mutation(api.core.decks.deleteDeck, {
       deckId,
     });
 

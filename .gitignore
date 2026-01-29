@@ -131,6 +131,11 @@ Thumbs.db
 *.sln
 *.sw?
 .cursor/
+.codex/
+.agents/
+
+# Claude
+.claude/
 
 # Logs
 logs/

@@ -1,0 +1,193 @@
+/**
+ * Agent Management API Endpoints
+ *
+ * Handles agent registration, authentication, and rate limit status.
+ * Used by ElizaOS agents and other external clients.
+ */
+
+import { httpAction } from "../_generated/server";
+import { api } from "../_generated/api";
+import {
+  authHttpAction,
+} from "./middleware/auth";
+import {
+  successResponse,
+  errorResponse,
+  parseJsonBody,
+  validateRequiredFields,
+  corsPreflightResponse,
+} from "./middleware/responses";
+import {
+  getRateLimitStatus,
+  DEFAULT_RATE_LIMITS,
+} from "./middleware/rateLimit";
+
+/**
+ * POST /api/agents/register
+ * Register a new AI agent and receive an API key
+ * No authentication required
+ */
+export const register = httpAction(async (ctx, request) => {
+  // Handle CORS preflight
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+
+  try {
+    // Parse request body
+    const body = await parseJsonBody<{
+      name: string;
+      personality?: string;
+      difficulty?: string;
+      starterDeckCode?: string;
+    }>(request);
+
+    if (body instanceof Response) return body; // Error parsing JSON
+
+    // Validate required fields
+    const validation = validateRequiredFields(body, ["name"]);
+    if (validation) return validation;
+
+    // Call existing registerAgent mutation
+    // Note: registerAgent returns { agentId, apiKey, keyPrefix }
+    const result = await ctx.runMutation((api as any).agents.registerAgent, {
+      name: body.name,
+      profilePictureUrl: undefined, // Optional
+      socialLink: undefined, // Optional
+      starterDeckCode: body.starterDeckCode || "STARTER_BALANCED", // Default deck
+    });
+
+    // Return success with agent info
+    return successResponse(
+      {
+        playerId: result.agentId,
+        apiKey: result.apiKey, // Only shown once!
+        keyPrefix: result.keyPrefix,
+      },
+      201 // Created
+    );
+  } catch (error) {
+    // Check if error is from validation in registerAgent
+    if (error instanceof Error) {
+      if (error.message.includes("already exists")) {
+        return errorResponse(
+          "AGENT_NAME_EXISTS",
+          "An agent with this name already exists for your account",
+          409
+        );
+      }
+      if (error.message.includes("maximum")) {
+        return errorResponse(
+          "MAX_AGENTS_REACHED",
+          "Maximum number of agents reached (3 per user)",
+          403
+        );
+      }
+    }
+
+    return errorResponse(
+      "REGISTRATION_FAILED",
+      "Failed to register agent",
+      500,
+      { error: error instanceof Error ? error.message : String(error) }
+    );
+  }
+});
+
+/**
+ * GET /api/agents/me
+ * Get authenticated agent information
+ * Requires API key authentication
+ */
+export const me = authHttpAction(async (ctx, request, auth) => {
+  // Handle CORS preflight
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "GET") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only GET method is allowed", 405);
+  }
+
+  try {
+    // Get agent details
+    const agent = await ctx.runQuery((api as any).agents.getAgent, {
+      agentId: auth.agentId,
+    });
+
+    if (!agent) {
+      return errorResponse("AGENT_NOT_FOUND", "Agent not found", 404);
+    }
+
+    // Get user details for rating/stats
+    const user = await ctx.runQuery((api as any).core.users.getUser, {
+      userId: auth.userId,
+    });
+
+    // Return agent profile
+    return successResponse({
+      playerId: agent._id,
+      name: agent.name,
+      rating: user?.rankedElo || 1000,
+      gold: user?.gold || 0,
+      premium: user?.premiumCurrency || 0,
+      stats: {
+        gamesPlayed: agent.stats.gamesPlayed,
+        gamesWon: agent.stats.gamesWon,
+        winRate:
+          agent.stats.gamesPlayed > 0
+            ? (agent.stats.gamesWon / agent.stats.gamesPlayed) * 100
+            : 0,
+        totalScore: agent.stats.totalScore,
+      },
+      createdAt: agent.createdAt,
+      isActive: agent.isActive,
+    });
+  } catch (error) {
+    return errorResponse(
+      "FETCH_FAILED",
+      "Failed to fetch agent information",
+      500,
+      { error: error instanceof Error ? error.message : String(error) }
+    );
+  }
+});
+
+/**
+ * GET /api/agents/rate-limit
+ * Get current rate limit status
+ * Requires API key authentication
+ */
+export const rateLimit = authHttpAction(async (ctx, request, auth) => {
+  // Handle CORS preflight
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "GET") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only GET method is allowed", 405);
+  }
+
+  try {
+    const status = await getRateLimitStatus(ctx, auth, DEFAULT_RATE_LIMITS);
+
+    return successResponse({
+      remaining: status.remaining,
+      limit: status.limit,
+      resetAt: status.resetAt,
+      dailyRemaining: status.dailyRemaining,
+      dailyLimit: status.dailyLimit,
+    });
+  } catch (error) {
+    return errorResponse(
+      "RATE_LIMIT_CHECK_FAILED",
+      "Failed to check rate limit status",
+      500,
+      { error: error instanceof Error ? error.message : String(error) }
+    );
+  }
+});

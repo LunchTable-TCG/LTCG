@@ -18,6 +18,7 @@ import {
   Store,
   Tag,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -127,14 +128,9 @@ export default function PackOpeningPage() {
       }
     : { name: "Card Pack", cardCount: 0 };
 
-  const handleOpenPack = useCallback(async () => {
+  const handleOpenPack = useCallback(() => {
     setPhase("opening");
-
-    // Simulate pack opening animation delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // Cards are already loaded from openingData
-    setPhase("revealing");
+    // Video will trigger transition to revealing phase via onEnded event
   }, []);
 
   const handleRevealCard = useCallback((index: number) => {
@@ -325,8 +321,15 @@ export default function PackOpeningPage() {
                 className="relative mb-8"
               >
                 <div className="absolute inset-0 bg-[#d4af37]/20 rounded-2xl blur-xl" />
-                <div className="relative w-48 h-64 rounded-2xl bg-linear-to-br from-[#d4af37]/30 to-[#8b4513]/30 border-2 border-[#d4af37]/50 flex items-center justify-center">
-                  <Package className="w-20 h-20 text-[#d4af37]" />
+                <div className="relative w-64 h-80 rounded-2xl flex items-center justify-center">
+                  <Image
+                    src={openingType === "box" ? "/assets/shop/box.png" : "/assets/shop/pack.png"}
+                    alt={openingType === "box" ? "Booster Box" : "Booster Pack"}
+                    width={256}
+                    height={320}
+                    className="w-full h-full object-contain drop-shadow-2xl"
+                    priority
+                  />
                 </div>
               </motion.div>
 
@@ -349,7 +352,7 @@ export default function PackOpeningPage() {
             </motion.div>
           )}
 
-          {/* Opening Phase - Animation */}
+          {/* Opening Phase - Video Animation */}
           {phase === "opening" && (
             <motion.div
               key="opening"
@@ -358,23 +361,23 @@ export default function PackOpeningPage() {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center min-h-[60vh]"
             >
-              <motion.div
-                animate={{
-                  scale: [1, 1.2, 1.5, 0],
-                  rotateY: [0, 180, 360, 720],
-                  opacity: [1, 1, 1, 0],
-                }}
-                transition={{
-                  duration: 2,
-                  ease: "easeInOut",
-                }}
-                className="relative"
-              >
-                <div className="absolute inset-0 bg-[#d4af37] rounded-2xl blur-2xl animate-pulse" />
-                <div className="relative w-48 h-64 rounded-2xl bg-linear-to-br from-[#d4af37] to-[#8b4513] border-2 border-[#d4af37] flex items-center justify-center">
-                  <Sparkles className="w-20 h-20 text-white animate-spin" />
-                </div>
-              </motion.div>
+              <div className="relative w-full max-w-2xl aspect-video">
+                <video
+                  autoPlay
+                  muted
+                  playsInline
+                  onEnded={() => setPhase("revealing")}
+                  onError={() => {
+                    // Fallback to revealing phase if video fails to load
+                    console.error("Failed to load pack opening video");
+                    setTimeout(() => setPhase("revealing"), 500);
+                  }}
+                  className="w-full h-full object-contain"
+                >
+                  <source src="/assets/shop/packopening.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
             </motion.div>
           )}
 

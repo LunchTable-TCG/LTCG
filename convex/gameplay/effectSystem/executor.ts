@@ -11,6 +11,7 @@ import { getCardAbility } from "../../lib/abilityHelpers";
 import { logCardEffect, logger, performance } from "../../lib/debug";
 import type { EffectResult, ParsedAbility, ParsedEffect } from "./types";
 import { checkCanActivateOPT, markEffectUsed } from "./optTracker";
+import { executeCost, validateCost } from "./costValidator";
 
 // Import all effect executors (organized by category)
 import { executeBanish } from "./executors/cardMovement/banish";
@@ -30,6 +31,12 @@ import { executeNegate } from "./executors/utility/negate";
 import { checkStateBasedActions } from "../gameEngine/stateBasedActions";
 
 /**
+ * Maximum depth for recursive effect triggers (e.g., on_destroy chains)
+ * Prevents infinite loops while allowing reasonable trigger chains
+ */
+const MAX_TRIGGER_DEPTH = 10;
+
+/**
  * Execute a parsed effect
  *
  * Returns EffectResult which may include selection data for two-step effects.
@@ -42,6 +49,7 @@ import { checkStateBasedActions } from "../gameEngine/stateBasedActions";
  * @param cardId - Card definition ID of the effect source
  * @param targets - Optional target card IDs
  * @param effectIndex - Index of the effect on the card (0-indexed, defaults to 0)
+ * @param triggerDepth - Current depth of recursive trigger chain (defaults to 0)
  */
 export async function executeEffect(
   ctx: MutationCtx,
@@ -51,10 +59,24 @@ export async function executeEffect(
   playerId: Id<"users">,
   cardId: Id<"cardDefinitions">,
   targets?: Id<"cardDefinitions">[],
-  effectIndex = 0
+  effectIndex = 0,
+  triggerDepth = 0
 ): Promise<EffectResult> {
   const opId = `effect_${effect.type}_${Date.now()}`;
   performance.start(opId);
+
+  // Check trigger depth limit to prevent infinite loops
+  if (triggerDepth >= MAX_TRIGGER_DEPTH) {
+    const errorMsg = `Maximum trigger depth (${MAX_TRIGGER_DEPTH}) reached`;
+    logger.error(errorMsg, undefined, {
+      cardId,
+      effectType: effect.type,
+      triggerDepth,
+      lobbyId,
+    });
+    performance.end(opId, { cardId, effectType: effect.type, success: false, error: "MAX_DEPTH" });
+    return { success: false, message: errorMsg };
+  }
 
   // Get card info for logging
   const card = await ctx.db.get(cardId);
@@ -147,6 +169,96 @@ export async function executeEffect(
         };
       }
     }
+
+    // Validation 2: Target count matches requirement
+    if (effect.targetCount && validTargets.length !== effect.targetCount) {
+      return {
+        success: false,
+        message: `Effect requires exactly ${effect.targetCount} target(s), got ${validTargets.length}`,
+      };
+    }
+  }
+
+
+  // Validate and execute cost payment BEFORE effect execution
+  // This prevents exploitation where effects execute without paying costs
+  if (effect.cost) {
+    logger.debug("Validating effect cost", {
+      cardId,
+      cardName,
+      costType: effect.cost.type,
+      costValue: effect.cost.value,
+    });
+
+    // Step 1: Validate player can pay the cost
+    const costValidation = await validateCost(ctx, gameState, playerId, effect, targets);
+
+    if (!costValidation.canPay) {
+      logger.warn("Cost validation failed", {
+        cardId,
+        cardName,
+        reason: costValidation.reason,
+      });
+      logCardEffect(cardName, effect.type, false, {
+        reason: "COST_VALIDATION_FAILED",
+        lobbyId,
+        costType: effect.cost.type,
+      });
+      return {
+        success: false,
+        message: costValidation.reason || "Cannot pay cost",
+      };
+    }
+
+    // Step 2: If cost requires selection and none provided, return selection data
+    if (
+      costValidation.requiresSelection &&
+      (!targets || targets.length < (costValidation.minSelections || 1))
+    ) {
+      logger.debug("Cost requires target selection", {
+        cardId,
+        cardName,
+        selectionSource: costValidation.selectionSource,
+        availableCount: costValidation.availableTargets?.length || 0,
+      });
+      return {
+        success: false,
+        message: costValidation.selectionPrompt || "Cost requires selection",
+        requiresSelection: true,
+        selectionType: "cost",
+        selectionSource: costValidation.selectionSource,
+        availableTargets: costValidation.availableTargets,
+        minSelections: costValidation.minSelections,
+        maxSelections: costValidation.maxSelections,
+        selectionPrompt: costValidation.selectionPrompt,
+      };
+    }
+
+    // Step 3: Execute cost payment (deduct resources)
+    const costExecution = await executeCost(ctx, gameState, playerId, effect, targets);
+
+    if (!costExecution.success) {
+      logger.error("Cost execution failed", undefined, {
+        cardId,
+        cardName,
+        reason: costExecution.message,
+      });
+      logCardEffect(cardName, effect.type, false, {
+        reason: "COST_EXECUTION_FAILED",
+        lobbyId,
+        costType: effect.cost.type,
+      });
+      return {
+        success: false,
+        message: costExecution.message,
+      };
+    }
+
+    logger.info("Cost paid successfully", {
+      cardId,
+      cardName,
+      paidCost: costExecution.paidCost,
+    });
   }
 
   // Execute the effect and capture result
@@ -214,7 +326,9 @@ export async function executeEffect(
                       parsedEffect,
                       destroyResult.destroyedCardOwnerId,
                       destroyResult.destroyedCardId,
-                      []
+                      [],
+                      0, // effectIndex for the on_destroy trigger
+                      triggerDepth + 1 // Increment trigger depth
                     );
 
                     if (triggerResult.success) {
@@ -274,7 +388,9 @@ export async function executeEffect(
                       parsedEffect,
                       destroyResult.destroyedCardOwnerId,
                       destroyResult.destroyedCardId,
-                      []
+                      [],
+                      0, // effectIndex for the on_destroy trigger
+                      triggerDepth + 1 // Increment trigger depth
                     );
 
                     // Append trigger result to message

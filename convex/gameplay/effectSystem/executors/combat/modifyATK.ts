@@ -6,28 +6,48 @@ export async function executeModifyATK(
   gameState: Doc<"gameStates">,
   targetCardId: Id<"cardDefinitions">,
   modifier: number,
-  isHost: boolean
+  _isHost: boolean // Deprecated parameter, kept for compatibility
 ): Promise<{ success: boolean; message: string }> {
-  const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
-  const cardIndex = board.findIndex((bc) => bc.cardId === targetCardId);
+  // Determine which board the target is on
+  const hostIndex = gameState.hostBoard.findIndex((bc) => bc.cardId === targetCardId);
+  const opponentIndex = gameState.opponentBoard.findIndex((bc) => bc.cardId === targetCardId);
 
-  if (cardIndex === -1) {
+  if (hostIndex === -1 && opponentIndex === -1) {
     return { success: false, message: "Target not found on field" };
   }
 
-  const card = board[cardIndex];
-  if (!card) {
-    return { success: false, message: "Card not found at index" };
-  }
-  const newBoard = [...board];
-  newBoard[cardIndex] = {
-    ...card,
-    attack: Math.max(0, card.attack + modifier),
-  };
+  // Target is on host's board
+  if (hostIndex !== -1) {
+    const card = gameState.hostBoard[hostIndex];
+    if (!card) {
+      return { success: false, message: "Card not found at index" };
+    }
+    const newBoard = [...gameState.hostBoard];
+    newBoard[hostIndex] = {
+      ...card,
+      attack: Math.max(0, card.attack + modifier),
+    };
 
-  await ctx.db.patch(gameState._id, {
-    [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
-  });
+    await ctx.db.patch(gameState._id, {
+      hostBoard: newBoard,
+    });
+  }
+  // Target is on opponent's board
+  else {
+    const card = gameState.opponentBoard[opponentIndex];
+    if (!card) {
+      return { success: false, message: "Card not found at index" };
+    }
+    const newBoard = [...gameState.opponentBoard];
+    newBoard[opponentIndex] = {
+      ...card,
+      attack: Math.max(0, card.attack + modifier),
+    };
+
+    await ctx.db.patch(gameState._id, {
+      opponentBoard: newBoard,
+    });
+  }
 
   const cardDef = await ctx.db.get(targetCardId);
   return {

@@ -22,11 +22,13 @@ export default defineConfig({
       "**/__tests__/**/*.{ts,tsx}",
     ],
 
-    // Exclude node_modules
+    // Exclude node_modules and symlinked convex directories
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
       "**/.{idea,git,cache,output,temp}/**",
+      // Exclude symlinked convex directories to avoid running tests multiple times
+      "apps/*/convex/**",
     ],
 
     // Server configuration for convex-test

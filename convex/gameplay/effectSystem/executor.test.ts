@@ -11,13 +11,12 @@ import { api } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import schema from "../../schema";
 import type { JsonAbility } from "./types";
+import { modules } from "../../test.setup";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast
 // biome-ignore lint/suspicious/noExplicitAny: Required for TS2589 workaround
 const _apiAny = api as any;
-
-const modules = import.meta.glob("../../**/*.ts");
 
 describe("executeEffect - Main Dispatcher", () => {
   it("should execute draw effect", async () => {
@@ -199,7 +198,14 @@ describe("executeEffect - Main Dispatcher", () => {
         opponentGraveyard: [],
         hostBanished: [],
         opponentBanished: [],
-        optUsedThisTurn: [cardId], // Card already used
+        optUsedThisTurn: [
+          {
+            cardId: cardId,
+            effectIndex: 0,
+            playerId: userId,
+            turnUsed: 1,
+          },
+        ], // Card already used
         lastMoveAt: Date.now(),
         createdAt: Date.now(),
       });

@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import { api } from "../_generated/api";
 import schema from "../schema";
 import type { JsonAbility } from "./effectSystem/types";
+import { modules } from "../test.setup";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast
@@ -57,8 +58,6 @@ function createNegateJsonAbility(): JsonAbility {
     ],
   };
 }
-
-const modules = import.meta.glob("../**/*.ts");
 
 describe("addToChainHelper", () => {
   it("should add first effect to empty chain", async () => {

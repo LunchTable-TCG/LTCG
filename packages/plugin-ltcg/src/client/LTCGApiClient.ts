@@ -1,0 +1,560 @@
+/**
+ * LTCG HTTP API Client
+ *
+ * Main client for interacting with the LTCG REST API.
+ * Implements all 27 endpoints with full error handling and retry logic.
+ */
+
+import { API_ENDPOINTS, TIMEOUTS, RETRY_CONFIG } from '../constants';
+import type {
+  RegisterAgentRequest,
+  RegisterAgentResponse,
+  AgentProfile,
+  RateLimitStatus,
+  GameStateResponse,
+  AvailableActionsResponse,
+  GameEvent,
+  SummonRequest,
+  SetCardRequest,
+  ActivateSpellRequest,
+  ActivateTrapRequest,
+  AttackRequest,
+  ChangePositionRequest,
+  FlipSummonRequest,
+  ChainResponseRequest,
+  EndTurnRequest,
+  SurrenderRequest,
+  EnterMatchmakingRequest,
+  EnterMatchmakingResponse,
+  Lobby,
+  JoinLobbyRequest,
+  JoinLobbyResponse,
+  Deck,
+  CardDefinition,
+  StarterDeck,
+  CreateDeckRequest,
+  ApiSuccessResponse,
+  ApiErrorResponse,
+} from '../types/api';
+import {
+  LTCGApiError,
+  AuthenticationError,
+  NetworkError,
+  RateLimitError,
+  parseErrorResponse,
+} from './errors';
+
+export interface LTCGApiClientConfig {
+  apiKey: string;
+  baseUrl: string;
+  timeout?: number;
+  maxRetries?: number;
+  debug?: boolean;
+}
+
+export class LTCGApiClient {
+  private readonly apiKey: string;
+  private readonly baseUrl: string;
+  private readonly timeout: number;
+  private readonly maxRetries: number;
+  private readonly debug: boolean;
+
+  constructor(config: LTCGApiClientConfig) {
+    if (!config.apiKey) {
+      throw new Error('API key is required');
+    }
+    if (!config.baseUrl) {
+      throw new Error('Base URL is required');
+    }
+
+    this.apiKey = config.apiKey;
+    this.baseUrl = config.baseUrl.endsWith('/') ? config.baseUrl.slice(0, -1) : config.baseUrl;
+    this.timeout = config.timeout ?? TIMEOUTS.DEFAULT;
+    this.maxRetries = config.maxRetries ?? RETRY_CONFIG.maxAttempts;
+    this.debug = config.debug ?? false;
+  }
+
+  // ============================================================================
+  // Private Helper Methods
+  // ============================================================================
+
+  /**
+   * Make an HTTP request with retry logic
+   */
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    timeout: number = this.timeout,
+    requiresAuth: boolean = true
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+      try {
+        if (this.debug) {
+          console.log(`[LTCG API] ${options.method || 'GET'} ${endpoint} (attempt ${attempt + 1})`);
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          ...(options.headers as Record<string, string>),
+        };
+
+        if (requiresAuth) {
+          headers['Authorization'] = `Bearer ${this.apiKey}`;
+        }
+
+        const response = await fetch(url, {
+          ...options,
+          headers,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        // Parse response
+        const body = await response.json();
+
+        // Handle errors
+        if (!response.ok) {
+          const error = parseErrorResponse(response.status, body);
+
+          // Retry on rate limit errors (429)
+          if (error instanceof RateLimitError && attempt < this.maxRetries - 1) {
+            const delay = error.retryAfter ? error.retryAfter * 1000 : this.calculateBackoff(attempt);
+            if (this.debug) {
+              console.log(`[LTCG API] Rate limited, retrying after ${delay}ms`);
+            }
+            await this.sleep(delay);
+            continue;
+          }
+
+          // Retry on 5xx errors
+          if (response.status >= 500 && attempt < this.maxRetries - 1) {
+            const delay = this.calculateBackoff(attempt);
+            if (this.debug) {
+              console.log(`[LTCG API] Server error (${response.status}), retrying after ${delay}ms`);
+            }
+            await this.sleep(delay);
+            continue;
+          }
+
+          throw error;
+        }
+
+        // Success response
+        const successResponse = body as ApiSuccessResponse<T>;
+        return successResponse.data;
+      } catch (error) {
+        lastError = error as Error;
+
+        // Don't retry on authentication errors
+        if (error instanceof AuthenticationError) {
+          throw error;
+        }
+
+        // Don't retry on abort (timeout)
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new NetworkError(
+            `Request timeout after ${timeout}ms`,
+            error,
+            { endpoint, attempt: attempt + 1 }
+          );
+        }
+
+        // Network errors - retry with backoff
+        if (attempt < this.maxRetries - 1) {
+          const delay = this.calculateBackoff(attempt);
+          if (this.debug) {
+            console.log(`[LTCG API] Network error, retrying after ${delay}ms:`, error);
+          }
+          await this.sleep(delay);
+          continue;
+        }
+
+        // Max retries exceeded
+        throw new NetworkError(
+          `Failed after ${this.maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`,
+          error instanceof Error ? error : undefined,
+          { endpoint, attempts: this.maxRetries }
+        );
+      }
+    }
+
+    // Should never reach here, but TypeScript doesn't know that
+    throw lastError || new NetworkError('Request failed');
+  }
+
+  /**
+   * Calculate exponential backoff delay
+   */
+  private calculateBackoff(attempt: number): number {
+    const delay = RETRY_CONFIG.baseDelay * Math.pow(2, attempt);
+    return Math.min(delay, RETRY_CONFIG.maxDelay);
+  }
+
+  /**
+   * Sleep for a given duration
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // ============================================================================
+  // Agent Management (3 endpoints)
+  // ============================================================================
+
+  /**
+   * Register a new AI agent
+   * POST /api/agents/register
+   */
+  async registerAgent(name: string, starterDeckCode?: string): Promise<RegisterAgentResponse> {
+    const body: RegisterAgentRequest = {
+      name,
+      starterDeckCode,
+    };
+
+    return this.request<RegisterAgentResponse>(
+      API_ENDPOINTS.REGISTER_AGENT,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+      this.timeout,
+      false // Registration doesn't require auth
+    );
+  }
+
+  /**
+   * Get current agent's profile
+   * GET /api/agents/me
+   */
+  async getAgentProfile(): Promise<AgentProfile> {
+    return this.request<AgentProfile>(API_ENDPOINTS.GET_AGENT_PROFILE, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get current rate limit status
+   * GET /api/agents/rate-limit
+   */
+  async getRateLimit(): Promise<RateLimitStatus> {
+    return this.request<RateLimitStatus>(API_ENDPOINTS.GET_RATE_LIMIT, {
+      method: 'GET',
+    });
+  }
+
+  // ============================================================================
+  // Game State (4 endpoints)
+  // ============================================================================
+
+  /**
+   * Get list of games waiting for your turn
+   * GET /api/agents/pending-turns
+   */
+  async getPendingTurns(): Promise<Array<{ gameId: string; turnNumber: number }>> {
+    return this.request<Array<{ gameId: string; turnNumber: number }>>(
+      API_ENDPOINTS.GET_PENDING_TURNS,
+      {
+        method: 'GET',
+      }
+    );
+  }
+
+  /**
+   * Get detailed game state
+   * GET /api/agents/games/state?gameId=xxx
+   */
+  async getGameState(gameId: string): Promise<GameStateResponse> {
+    return this.request<GameStateResponse>(`${API_ENDPOINTS.GET_GAME_STATE}?gameId=${gameId}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get available actions for current turn
+   * GET /api/agents/games/available-actions?gameId=xxx
+   */
+  async getAvailableActions(gameId: string): Promise<AvailableActionsResponse> {
+    return this.request<AvailableActionsResponse>(
+      `${API_ENDPOINTS.GET_AVAILABLE_ACTIONS}?gameId=${gameId}`,
+      {
+        method: 'GET',
+      }
+    );
+  }
+
+  /**
+   * Get game event history
+   * GET /api/agents/games/history?gameId=xxx
+   */
+  async getGameHistory(gameId: string): Promise<GameEvent[]> {
+    return this.request<GameEvent[]>(`${API_ENDPOINTS.GET_GAME_HISTORY}?gameId=${gameId}`, {
+      method: 'GET',
+    });
+  }
+
+  // ============================================================================
+  // Game Actions (10 endpoints)
+  // ============================================================================
+
+  /**
+   * Summon a monster from hand
+   * POST /api/agents/games/actions/summon
+   */
+  async summon(request: SummonRequest): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_SUMMON, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Set a card face-down
+   * POST /api/agents/games/actions/set-card
+   */
+  async setCard(request: SetCardRequest): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_SET_CARD, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Activate a spell card
+   * POST /api/agents/games/actions/activate-spell
+   */
+  async activateSpell(request: ActivateSpellRequest): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_ACTIVATE_SPELL, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Activate a trap card
+   * POST /api/agents/games/actions/activate-trap
+   */
+  async activateTrap(request: ActivateTrapRequest): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_ACTIVATE_TRAP, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Declare an attack
+   * POST /api/agents/games/actions/attack
+   */
+  async attack(request: AttackRequest): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_ATTACK, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Change monster battle position
+   * POST /api/agents/games/actions/change-position
+   */
+  async changePosition(request: ChangePositionRequest): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_CHANGE_POSITION, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Flip summon a face-down monster
+   * POST /api/agents/games/actions/flip-summon
+   */
+  async flipSummon(request: FlipSummonRequest): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_FLIP_SUMMON, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Respond to chain activation
+   * POST /api/agents/games/actions/chain-response
+   */
+  async chainResponse(request: ChainResponseRequest): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_CHAIN_RESPONSE, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * End current turn
+   * POST /api/agents/games/actions/end-turn
+   */
+  async endTurn(request: EndTurnRequest): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_END_TURN, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Surrender the game
+   * POST /api/agents/games/actions/surrender
+   */
+  async surrender(request: SurrenderRequest): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_SURRENDER, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  // ============================================================================
+  // Matchmaking (4 endpoints)
+  // ============================================================================
+
+  /**
+   * Enter matchmaking queue
+   * POST /api/agents/matchmaking/enter
+   */
+  async enterMatchmaking(request: EnterMatchmakingRequest): Promise<EnterMatchmakingResponse> {
+    return this.request<EnterMatchmakingResponse>(
+      API_ENDPOINTS.MATCHMAKING_ENTER,
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+      },
+      TIMEOUTS.MATCHMAKING // Use longer timeout for matchmaking
+    );
+  }
+
+  /**
+   * Get available lobbies
+   * GET /api/agents/matchmaking/lobbies?mode=xxx
+   */
+  async getLobbies(mode?: string): Promise<Lobby[]> {
+    const endpoint = mode
+      ? `${API_ENDPOINTS.MATCHMAKING_LOBBIES}?mode=${mode}`
+      : API_ENDPOINTS.MATCHMAKING_LOBBIES;
+
+    return this.request<Lobby[]>(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Join an existing lobby
+   * POST /api/agents/matchmaking/join
+   */
+  async joinLobby(request: JoinLobbyRequest): Promise<JoinLobbyResponse> {
+    return this.request<JoinLobbyResponse>(
+      API_ENDPOINTS.MATCHMAKING_JOIN,
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+      },
+      TIMEOUTS.MATCHMAKING
+    );
+  }
+
+  /**
+   * Leave a lobby
+   * POST /api/agents/matchmaking/leave
+   */
+  async leaveLobby(lobbyId: string): Promise<{ success: true; message: string }> {
+    return this.request<{ success: true; message: string }>(API_ENDPOINTS.MATCHMAKING_LEAVE, {
+      method: 'POST',
+      body: JSON.stringify({ lobbyId }),
+    });
+  }
+
+  // ============================================================================
+  // Decks & Cards (6 endpoints)
+  // ============================================================================
+
+  /**
+   * Get all decks for current agent
+   * GET /api/agents/decks
+   */
+  async getDecks(): Promise<Deck[]> {
+    return this.request<Deck[]>(API_ENDPOINTS.GET_DECKS, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get specific deck by ID
+   * GET /api/agents/decks/:id
+   */
+  async getDeck(deckId: string): Promise<Deck> {
+    const endpoint = API_ENDPOINTS.GET_DECK.replace(':id', deckId);
+    return this.request<Deck>(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get available starter decks
+   * GET /api/agents/starter-decks
+   */
+  async getStarterDecks(): Promise<StarterDeck[]> {
+    return this.request<StarterDeck[]>(
+      API_ENDPOINTS.GET_STARTER_DECKS,
+      {
+        method: 'GET',
+      },
+      this.timeout,
+      false // Starter decks don't require auth
+    );
+  }
+
+  /**
+   * Create a new deck
+   * POST /api/agents/decks/create
+   */
+  async createDeck(request: CreateDeckRequest): Promise<Deck> {
+    return this.request<Deck>(API_ENDPOINTS.CREATE_DECK, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Get all available cards
+   * GET /api/agents/cards?type=xxx&archetype=xxx
+   */
+  async getCards(filters?: { type?: string; archetype?: string; race?: string }): Promise<CardDefinition[]> {
+    let endpoint = API_ENDPOINTS.GET_CARDS;
+
+    if (filters) {
+      const params = new URLSearchParams();
+      if (filters.type) params.append('type', filters.type);
+      if (filters.archetype) params.append('archetype', filters.archetype);
+      if (filters.race) params.append('race', filters.race);
+
+      const queryString = params.toString();
+      if (queryString) {
+        endpoint = `${endpoint}?${queryString}`;
+      }
+    }
+
+    return this.request<CardDefinition[]>(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get specific card by ID
+   * GET /api/agents/cards/:id
+   */
+  async getCard(cardId: string): Promise<CardDefinition> {
+    const endpoint = API_ENDPOINTS.GET_CARD.replace(':id', cardId);
+    return this.request<CardDefinition>(endpoint, {
+      method: 'GET',
+    });
+  }
+}

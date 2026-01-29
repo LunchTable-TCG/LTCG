@@ -25,6 +25,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useMemo, useState } from "react";
 
 type TabType = "shop" | "marketplace" | "myListings";
@@ -830,9 +831,25 @@ export default function ShopPage() {
 function ShopItemCard({ item, onPurchase }: { item: ShopItem; onPurchase: () => void }) {
   return (
     <div data-testid="pack-product" className="p-4 rounded-xl border border-[#3d2b1f] bg-black/40 hover:bg-black/60 transition-all">
-      <div className="aspect-square rounded-lg bg-[#d4af37]/10 flex items-center justify-center mb-4">
-        {item.type === "pack" && <Package className="w-16 h-16 text-[#d4af37]" />}
-        {item.type === "box" && <Box className="w-16 h-16 text-[#d4af37]" />}
+      <div className="aspect-square rounded-lg bg-linear-to-br from-[#d4af37]/10 to-transparent flex items-center justify-center mb-4 overflow-hidden">
+        {item.type === "pack" && (
+          <Image
+            src="/assets/shop/pack.png"
+            alt="Booster Pack"
+            width={200}
+            height={200}
+            className="w-full h-full object-contain"
+          />
+        )}
+        {item.type === "box" && (
+          <Image
+            src="/assets/shop/box.png"
+            alt="Booster Box"
+            width={200}
+            height={200}
+            className="w-full h-full object-contain"
+          />
+        )}
       </div>
       <h3 className="font-bold text-[#e8e0d5] mb-1">{item.name}</h3>
       <p className="text-sm text-[#a89f94] mb-2">{item.description}</p>
