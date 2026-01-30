@@ -1,12 +1,22 @@
+import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
   title: "Log In | Lunchtable TCG",
   description: "Log in to your Lunchtable TCG account.",
 };
+
+function AuthFormFallback() {
+  return (
+    <div className="w-full max-w-md text-center py-8">
+      <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#d4af37]" />
+      <p className="text-[#a89f94] mt-4 text-sm">Loading...</p>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   return (
@@ -25,7 +35,9 @@ export default function LoginPage() {
       <div className="relative p-8 rounded-2xl tcg-chat-leather shadow-2xl overflow-hidden">
         <div className="ornament-corner ornament-corner-tl" />
         <div className="ornament-corner ornament-corner-tr" />
-        <AuthForm mode="signIn" />
+        <Suspense fallback={<AuthFormFallback />}>
+          <AuthForm mode="signIn" />
+        </Suspense>
       </div>
     </AuthPageShell>
   );
