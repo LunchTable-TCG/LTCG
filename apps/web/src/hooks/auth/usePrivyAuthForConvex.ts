@@ -1,58 +1,33 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 
 /**
- * Hook that bridges Privy authentication to Convex
- * This is passed to ConvexProviderWithAuth to enable authenticated Convex calls
+ * Bridges Privy authentication to Convex.
+ * Returns the interface expected by ConvexProviderWithAuth.
+ *
+ * This hook provides:
+ * - isLoading: true while Privy is initializing
+ * - isAuthenticated: true when user is logged in with Privy
+ * - fetchAccessToken: function to get the Privy JWT for Convex
  */
 export function usePrivyAuthForConvex() {
   const { ready, authenticated, getAccessToken } = usePrivy();
 
-  // Debug: log auth state changes
-  useEffect(() => {
-    console.log("[CONVEX AUTH] State:", { ready, authenticated });
-  }, [ready, authenticated]);
-
   const fetchAccessToken = useCallback(
-    async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
-      console.log("[CONVEX AUTH] fetchAccessToken called:", { forceRefreshToken, ready, authenticated });
-
+    async ({ forceRefreshToken: _forceRefreshToken }: { forceRefreshToken: boolean }) => {
       if (!authenticated) {
-        console.log("[CONVEX AUTH] Not authenticated, returning null");
         return null;
       }
 
       try {
-        const token = await getAccessToken();
-        if (token) {
-          console.log("[CONVEX AUTH] Token obtained, length:", token.length);
-          // Decode and log claims (without signature)
-          try {
-            const parts = token.split(".");
-            if (parts[1]) {
-              const payload = JSON.parse(atob(parts[1]));
-              console.log("[CONVEX AUTH] Token claims:", {
-                iss: payload.iss,
-                aud: payload.aud,
-                sub: payload.sub?.substring(0, 20) + "...",
-                exp: new Date(payload.exp * 1000).toISOString(),
-              });
-            }
-          } catch {
-            console.log("[CONVEX AUTH] Could not decode token payload");
-          }
-        } else {
-          console.log("[CONVEX AUTH] getAccessToken returned null/undefined");
-        }
-        return token;
-      } catch (err) {
-        console.error("[CONVEX AUTH] Error getting access token:", err);
+        return await getAccessToken();
+      } catch {
         return null;
       }
     },
-    [getAccessToken, ready, authenticated]
+    [getAccessToken, authenticated]
   );
 
   return {

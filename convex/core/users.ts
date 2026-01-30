@@ -11,19 +11,36 @@ import {
  * Get current authenticated user
  *
  * Returns the complete user object for the authenticated user.
- * Returns null if not authenticated.
+ * Returns null if not authenticated OR if user doesn't exist in DB yet.
  * Uses Convex Auth's built-in session management (no token parameter needed).
  *
- * @returns Full user object with all fields, or null if not authenticated
+ * @returns Full user object with all fields, or null if not authenticated/not found
  */
 export const currentUser = query({
   args: {},
   returns: fullUserValidator, // Full user object with all fields
   handler: async (ctx) => {
-    const auth = await getCurrentUser(ctx);
-    if (!auth) return null;
+    // First check if we have an identity (JWT is valid)
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      // Not authenticated - return null (no error)
+      return null;
+    }
 
-    const user = await ctx.db.get(auth.userId);
+    // Look up user by Privy ID
+    const privyId = identity.subject;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("privyId", (q) => q.eq("privyId", privyId))
+      .first();
+
+    if (!user) {
+      // User is authenticated but hasn't been created in DB yet
+      // This is normal during the signup flow - return null (no error)
+      console.log("[currentUser] Authenticated user not found in DB:", privyId.substring(0, 20) + "...");
+      return null;
+    }
+
     return user;
   },
 });

@@ -5,107 +5,48 @@ import { useConvexAuth } from "convex/react";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface AuthFormProps {
   mode: "signIn" | "signUp";
 }
 
+/**
+ * Login/signup form component.
+ * Only handles the login UI and redirect - AuthGuard handles user creation.
+ */
 export function AuthForm({ mode }: AuthFormProps) {
-  const { ready, authenticated, user } = usePrivy();
-  const { isAuthenticated: convexAuthenticated, isLoading: convexLoading } = useConvexAuth();
+  const { ready, authenticated } = usePrivy();
+  const { isAuthenticated: convexAuthenticated } = useConvexAuth();
   const router = useRouter();
-  const [syncing, setSyncing] = useState(false);
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
-  const [pendingSync, setPendingSync] = useState(false);
-  const syncAttempted = useRef(false);
-
-  const createOrGetUser = useConvexMutation(apiAny.auth.syncUser.createOrGetUser);
-
-  // Debug: Call the auth debug query to see server-side auth state
-  const debugAuth = useConvexQuery(apiAny.auth.syncUser.debugAuthState, {});
 
   const isSignUp = mode === "signUp";
+  const returnTo = searchParams.get("returnTo") || "/lunchtable";
 
-  // Debug logging
+  // If both Privy and Convex are authenticated, redirect to destination
+  // AuthGuard will handle user creation on the destination page
   useEffect(() => {
-    console.log("[AUTH] State:", {
-      privyReady: ready,
-      privyAuthenticated: authenticated,
-      convexAuthenticated,
-      convexLoading,
-      pendingSync,
-      syncing,
-      debugAuth,
-    });
-  }, [ready, authenticated, convexAuthenticated, convexLoading, pendingSync, syncing, debugAuth]);
-
-  // When Convex becomes authenticated and we have a pending sync, perform the sync
-  useEffect(() => {
-    async function syncUser() {
-      if (pendingSync && convexAuthenticated && !convexLoading && !syncAttempted.current) {
-        syncAttempted.current = true;
-        console.log("[AUTH] Convex authenticated, syncing user...");
-        setSyncing(true);
-        setPendingSync(false);
-
-        try {
-          const result = await createOrGetUser({
-            email: user?.email?.address,
-          });
-
-          console.log("[AUTH] User synced:", result);
-
-          // If new user without username, redirect to username setup
-          if (result.isNewUser || !result.hasUsername) {
-            router.push("/setup-username");
-          } else {
-            router.push("/lunchtable");
-          }
-        } catch (err) {
-          console.error("[AUTH] Failed to sync user:", err);
-          setError("Failed to set up your account. Please try again.");
-          setSyncing(false);
-          syncAttempted.current = false;
-        }
-      }
+    if (authenticated && convexAuthenticated) {
+      router.replace(returnTo);
     }
+  }, [authenticated, convexAuthenticated, router, returnTo]);
 
-    syncUser();
-  }, [pendingSync, convexAuthenticated, convexLoading, createOrGetUser, user, router]);
-
-  // Use the useLogin hook with onComplete callback per Privy docs
-  // onComplete fires after auth AND wallet creation (if configured)
   const { login } = useLogin({
-    onComplete: async ({ wasAlreadyAuthenticated }) => {
-      console.log("[AUTH] Privy onComplete:", { wasAlreadyAuthenticated });
-
-      // Skip if already authenticated (user was already logged in)
-      if (wasAlreadyAuthenticated) {
-        router.push("/lunchtable");
-        return;
-      }
-
-      // Mark that we need to sync once Convex is authenticated
-      setPendingSync(true);
-      syncAttempted.current = false;
+    onComplete: () => {
+      // Just wait for the useEffect above to handle redirect
+      // AuthGuard on the destination page will handle user creation
     },
-    onError: (error) => {
-      console.error("[AUTH] Login error:", error);
+    onError: (err) => {
+      console.error("[AuthForm] Login error:", err);
       setError("Login failed. Please try again.");
     },
   });
 
-  const handleLogin = () => {
-    setError(null);
-    // Privy will show its modal for email login
-    login();
-  };
-
-  // Show loading state while Privy initializes or syncing
-  if (!ready || syncing) {
+  // Show loading while Privy initializes
+  if (!ready) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -113,14 +54,12 @@ export function AuthForm({ mode }: AuthFormProps) {
         className="w-full max-w-md text-center"
       >
         <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#d4af37]" />
-        <p className="text-[#a89f94] mt-4 text-sm">
-          {syncing ? "Setting up your account..." : "Loading..."}
-        </p>
+        <p className="text-[#a89f94] mt-4 text-sm">Loading...</p>
       </motion.div>
     );
   }
 
-  // If already authenticated, show syncing message
+  // If authenticated, show "entering" message while redirect happens
   if (authenticated) {
     return (
       <motion.div
@@ -164,18 +103,6 @@ export function AuthForm({ mode }: AuthFormProps) {
         </p>
       </div>
 
-      {/* Debug Auth State (temporary) */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs mb-4 font-mono"
-      >
-        <div className="font-bold mb-1">Debug Auth State:</div>
-        <div>Privy: {ready ? "ready" : "loading"} | {authenticated ? "auth" : "no-auth"}</div>
-        <div>Convex: {convexLoading ? "loading" : "ready"} | {convexAuthenticated ? "auth" : "no-auth"}</div>
-        <div>Server sees: {debugAuth === undefined ? "loading..." : JSON.stringify(debugAuth)}</div>
-      </motion.div>
-
       {/* Error message */}
       {error && (
         <motion.div
@@ -193,7 +120,10 @@ export function AuthForm({ mode }: AuthFormProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
         type="button"
-        onClick={handleLogin}
+        onClick={() => {
+          setError(null);
+          login();
+        }}
         className="group relative w-full py-4 rounded-xl overflow-hidden bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] transition-all duration-300 shadow-lg hover:shadow-gold"
       >
         <span className="relative flex items-center justify-center gap-2 text-lg font-black uppercase tracking-widest text-white">
@@ -227,7 +157,9 @@ export function AuthForm({ mode }: AuthFormProps) {
         className="mt-8 pt-6 border-t border-white/10 text-center"
       >
         <p className="text-[#a89f94] text-xs font-medium">
-          {isSignUp ? "Already a recognized archivist?" : "New to the halls of Lunchtable?"}{" "}
+          {isSignUp
+            ? "Already a recognized archivist?"
+            : "New to the halls of Lunchtable?"}{" "}
           <Link
             href={isSignUp ? "/login" : "/signup"}
             className="text-[#d4af37] font-black uppercase tracking-widest hover:underline ml-1"

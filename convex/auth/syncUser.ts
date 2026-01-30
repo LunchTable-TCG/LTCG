@@ -1,41 +1,9 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { mutation } from "../_generated/server";
 
 /**
- * Debug query to check auth state - does NOT require authentication
- * Use this to verify what the server sees
- */
-export const debugAuthState = query({
-  args: {},
-  async handler(ctx) {
-    const identity = await ctx.auth.getUserIdentity();
-
-    console.log("[DEBUG AUTH] Raw identity:", JSON.stringify(identity, null, 2));
-
-    if (!identity) {
-      return {
-        authenticated: false,
-        message: "No identity - token may not be sent or JWT verification failed",
-        identity: null,
-      };
-    }
-
-    return {
-      authenticated: true,
-      message: "Authentication successful",
-      identity: {
-        subject: identity.subject,
-        issuer: identity.issuer,
-        tokenIdentifier: identity.tokenIdentifier,
-        // Don't include full identity for security
-      },
-    };
-  },
-});
-
-/**
- * Create or get a user based on their Privy ID
- * Called after successful Privy authentication to sync user to Convex
+ * Create or get a user based on their Privy ID.
+ * Called automatically by AuthGuard when a new user authenticates.
  */
 export const createOrGetUser = mutation({
   args: {
@@ -43,19 +11,9 @@ export const createOrGetUser = mutation({
     walletAddress: v.optional(v.string()),
   },
   async handler(ctx, args) {
-    // Debug: Log all auth context info
-    console.log("[AUTH DEBUG] Starting createOrGetUser, args:", JSON.stringify(args));
-
     const identity = await ctx.auth.getUserIdentity();
-
-    console.log("[AUTH DEBUG] getUserIdentity result:", identity ? "got identity" : "null");
-    console.log("[AUTH DEBUG] identity object:", JSON.stringify(identity, null, 2));
-
     if (!identity) {
-      console.error("[AUTH DEBUG] FAILURE - No identity. This means:");
-      console.error("[AUTH DEBUG] 1. No Authorization header sent, OR");
-      console.error("[AUTH DEBUG] 2. JWT verification failed (wrong issuer/aud/algorithm/key)");
-      throw new Error("Not authenticated - getUserIdentity returned null");
+      throw new Error("Not authenticated");
     }
 
     const privyId = identity.subject; // did:privy:xxx
@@ -109,8 +67,8 @@ export const createOrGetUser = mutation({
 });
 
 /**
- * Set or update the username for the current user
- * Required before playing the game
+ * Set or update the username for the current user.
+ * Required before playing the game.
  */
 export const setUsername = mutation({
   args: {
@@ -133,12 +91,13 @@ export const setUsername = mutation({
       throw new Error("User not found. Please authenticate first.");
     }
 
-    // Check username availability
+    // Validate username
     const usernameNormalized = args.username.toLowerCase().trim();
     if (usernameNormalized.length < 3 || usernameNormalized.length > 20) {
       throw new Error("Username must be between 3 and 20 characters");
     }
 
+    // Check availability
     const existingUsername = await ctx.db
       .query("users")
       .withIndex("username", (q) => q.eq("username", usernameNormalized))
@@ -158,7 +117,8 @@ export const setUsername = mutation({
 });
 
 /**
- * Get the current user's profile
+ * Get the current user's profile.
+ * Returns null if not authenticated or user not found.
  */
 export const getCurrentUserProfile = mutation({
   args: {},
