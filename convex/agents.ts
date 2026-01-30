@@ -268,6 +268,39 @@ export const getAgent = query({
   },
 });
 
+/**
+ * Internal query to get agent by ID for HTTP handlers.
+ * Accepts agentId directly (for API key auth contexts).
+ */
+export const getAgentByIdInternal = internalQuery({
+  args: {
+    agentId: v.id("agents"),
+  },
+  handler: async (ctx, args) => {
+    const agent = await ctx.db.get(args.agentId);
+
+    if (!agent || !agent.isActive) {
+      return null;
+    }
+
+    // Get user stats for elo/wins/losses
+    const user = await ctx.db.get(agent.userId);
+
+    return {
+      agentId: agent._id,
+      userId: agent.userId,
+      name: agent.name,
+      elo: user?.rankedElo ?? 1000,
+      wins: user?.rankedWins ?? 0,
+      losses: user?.rankedLosses ?? 0,
+      createdAt: agent._creationTime,
+      walletAddress: agent.walletAddress,
+      walletChainType: agent.walletChainType,
+      walletCreatedAt: agent.walletCreatedAt,
+    };
+  },
+});
+
 // ============================================
 // MUTATIONS
 // ============================================

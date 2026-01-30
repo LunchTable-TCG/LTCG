@@ -1,7 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { mutation, query } from "../_generated/server";
+import { mutation, query, internalQuery } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { archetypeToElement, batchFetchCardDefinitions } from "../lib/helpers";
@@ -80,6 +80,50 @@ export const getUserDecks = query({
     );
 
     // Sort by most recently updated (in-memory)
+    return decksWithCounts.sort((a, b) => b.updatedAt - a.updatedAt);
+  },
+});
+
+/**
+ * Internal query for HTTP handlers that accepts userId directly.
+ * Used by HTTP layer with API key auth (doesn't use Convex auth context).
+ */
+export const getUserDecksInternal = internalQuery({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Get all active decks for this user
+    const decks = await ctx.db
+      .query("userDecks")
+      .withIndex("by_user_active", (q) => q.eq("userId", args.userId).eq("isActive", true))
+      .take(50);
+
+    // Get card counts for each deck
+    const decksWithCounts = await Promise.all(
+      decks.map(async (deck) => {
+        const deckCards = await ctx.db
+          .query("deckCards")
+          .withIndex("by_deck", (q) => q.eq("deckId", deck._id))
+          .take(50);
+
+        const cardCount = deckCards.reduce((sum, dc) => sum + dc.quantity, 0);
+
+        return {
+          _id: deck._id,
+          name: deck.name,
+          description: deck.description,
+          archetype: deck.deckArchetype,
+          cards: [], // Empty for list view, use getDeckWithCards for full cards
+          isValid: true,
+          isActive: deck.isActive,
+          createdAt: deck.createdAt,
+          updatedAt: deck.updatedAt,
+          cardCount,
+        };
+      })
+    );
+
     return decksWithCounts.sort((a, b) => b.updatedAt - a.updatedAt);
   },
 });

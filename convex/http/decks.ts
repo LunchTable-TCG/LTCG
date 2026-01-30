@@ -7,6 +7,7 @@
 
 // Import at runtime only (not for type checking) to avoid TS2589
 const api: any = require("../_generated/api").api;
+const internal: any = require("../_generated/api").internal;
 import {
   authHttpAction,
 } from "./middleware/auth";
@@ -35,20 +36,17 @@ export const getUserDecks = authHttpAction(async (ctx, request, auth) => {
   }
 
   try {
-    // Get user's decks
-    const decks = await ctx.runQuery(api.core.decks.getUserDecks, {
+    // Get user's decks using internal query (accepts userId directly)
+    const decks = await ctx.runQuery(internal.core.decks.getUserDecksInternal, {
       userId: auth.userId,
     });
 
-    // Format deck data
+    // Format deck data (internal query already returns formatted data)
     const formattedDecks = decks.map((deck: any) => ({
       deckId: deck._id,
       name: deck.name,
       archetype: deck.archetype,
-      cardCount: deck.cards.length,
-      mainDeckCount: deck.cards.filter((c: any) => c.zone === "main").length,
-      extraDeckCount: deck.cards.filter((c: any) => c.zone === "extra").length,
-      sideDeckCount: deck.cards.filter((c: any) => c.zone === "side").length,
+      cardCount: deck.cardCount,
       isValid: deck.isValid,
       isActive: deck.isActive,
       createdAt: deck.createdAt,

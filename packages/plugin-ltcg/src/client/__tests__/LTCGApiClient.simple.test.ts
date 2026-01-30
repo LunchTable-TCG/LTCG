@@ -81,12 +81,12 @@ describe('LTCGApiClient - Basic Functionality', () => {
         ok: true,
         json: async () => ({
           success: true,
-          data: [{ code: 'starter_warrior', name: 'Warrior Deck' }],
+          data: { userId: 'u1', agentId: 'a1', apiKey: 'key', keyPrefix: 'ltcg_' },
           timestamp: Date.now(),
         }),
       });
 
-      await client.getStarterDecks();
+      await client.registerAgent('TestAgent');
 
       const callHeaders = mockFetch.mock.calls[0][1].headers;
       expect(callHeaders.Authorization).toBeUndefined();

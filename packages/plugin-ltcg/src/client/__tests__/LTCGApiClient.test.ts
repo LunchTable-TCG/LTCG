@@ -112,13 +112,13 @@ describe('LTCGApiClient', () => {
       );
     });
 
-    it('should not include Authorization header for public endpoints', async () => {
+    it('should not include Authorization header for register (public endpoint)', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true, data: [], timestamp: Date.now() }),
+        json: async () => ({ success: true, data: { userId: 'u1', agentId: 'a1', apiKey: 'key', keyPrefix: 'ltcg_' }, timestamp: Date.now() }),
       });
 
-      await client.getStarterDecks();
+      await client.registerAgent('TestAgent');
 
       const headers = mockFetch.mock.calls[0][1].headers;
       expect(headers.Authorization).toBeUndefined();
@@ -934,7 +934,7 @@ describe('LTCGApiClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true, data: lobbies, timestamp: Date.now() }),
+        json: async () => ({ success: true, data: { lobbies, count: lobbies.length }, timestamp: Date.now() }),
       });
 
       const result = await client.getLobbies();
@@ -949,7 +949,7 @@ describe('LTCGApiClient', () => {
     it('should filter lobbies by mode', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true, data: [], timestamp: Date.now() }),
+        json: async () => ({ success: true, data: { lobbies: [], count: 0 }, timestamp: Date.now() }),
       });
 
       await client.getLobbies('ranked');
@@ -1036,7 +1036,7 @@ describe('LTCGApiClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true, data: decks, timestamp: Date.now() }),
+        json: async () => ({ success: true, data: { decks, count: decks.length }, timestamp: Date.now() }),
       });
 
       const result = await client.getDecks();
@@ -1070,10 +1070,10 @@ describe('LTCGApiClient', () => {
   });
 
   describe('getStarterDecks', () => {
-    it('should get starter decks without auth', async () => {
+    it('should get starter decks', async () => {
       const starterDecks = [
         {
-          code: 'starter_warrior',
+          deckCode: 'starter_warrior',
           name: 'Warrior Starter',
           description: 'A basic warrior deck',
           archetype: 'warrior',
@@ -1082,16 +1082,12 @@ describe('LTCGApiClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true, data: starterDecks, timestamp: Date.now() }),
+        json: async () => ({ success: true, data: { starterDecks }, timestamp: Date.now() }),
       });
 
       const result = await client.getStarterDecks();
 
       expect(result).toEqual(starterDecks);
-
-      // Verify no Authorization header
-      const headers = mockFetch.mock.calls[0][1].headers;
-      expect(headers.Authorization).toBeUndefined();
     });
   });
 
@@ -1133,7 +1129,7 @@ describe('LTCGApiClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true, data: cards, timestamp: Date.now() }),
+        json: async () => ({ success: true, data: { cards, count: cards.length, totalCards: cards.length }, timestamp: Date.now() }),
       });
 
       const result = await client.getCards();
@@ -1148,7 +1144,7 @@ describe('LTCGApiClient', () => {
     it('should get cards with filters', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true, data: [], timestamp: Date.now() }),
+        json: async () => ({ success: true, data: { cards: [], count: 0, totalCards: 100 }, timestamp: Date.now() }),
       });
 
       await client.getCards({ type: 'monster', archetype: 'warrior', race: 'Dragon' });

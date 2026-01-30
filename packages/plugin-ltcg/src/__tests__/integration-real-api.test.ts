@@ -43,8 +43,8 @@ describe('Real API Integration Tests', () => {
     }
   });
 
-  describe('Unauthenticated Endpoints', () => {
-    it('should get starter decks without auth', async () => {
+  describe('Authenticated Endpoints - Starter Decks', () => {
+    it('should get starter decks', async () => {
       if (SKIP_INTEGRATION) return;
 
       const starterDecks = await client.getStarterDecks();
@@ -56,7 +56,7 @@ describe('Real API Integration Tests', () => {
 
       // Verify deck structure
       const firstDeck = starterDecks[0];
-      expect(firstDeck).toHaveProperty('code');
+      expect(firstDeck).toHaveProperty('deckCode');
       expect(firstDeck).toHaveProperty('name');
       expect(firstDeck).toHaveProperty('description');
     });
@@ -73,26 +73,26 @@ describe('Real API Integration Tests', () => {
 
       // Verify card structure
       const firstCard = cards[0];
-      expect(firstCard).toHaveProperty('id');
+      expect(firstCard).toHaveProperty('cardId');
       expect(firstCard).toHaveProperty('name');
-      expect(firstCard).toHaveProperty('type');
+      expect(firstCard).toHaveProperty('archetype');
     });
 
-    it('should filter cards by type', async () => {
+    it('should filter cards by archetype', async () => {
       if (SKIP_INTEGRATION) return;
 
-      const monsters = await client.getCards({ type: 'monster' });
-      const spells = await client.getCards({ type: 'spell' });
+      const infernoCards = await client.getCards({ archetype: 'infernal_dragons' });
+      const abyssCards = await client.getCards({ archetype: 'abyssal_horrors' });
 
-      console.log('👹 Monsters:', monsters.length);
-      console.log('✨ Spells:', spells.length);
+      console.log('🔥 Infernal Dragons:', infernoCards.length);
+      console.log('🌊 Abyssal Horrors:', abyssCards.length);
 
       // All returned cards should match filter
-      for (const card of monsters.slice(0, 5)) {
-        expect(card.type.toLowerCase()).toBe('monster');
+      for (const card of infernoCards.slice(0, 5)) {
+        expect(card.archetype).toBe('infernal_dragons');
       }
-      for (const card of spells.slice(0, 5)) {
-        expect(card.type.toLowerCase()).toBe('spell');
+      for (const card of abyssCards.slice(0, 5)) {
+        expect(card.archetype).toBe('abyssal_horrors');
       }
     });
   });
@@ -105,12 +105,12 @@ describe('Real API Integration Tests', () => {
 
       console.log('👤 Agent Profile:', {
         id: profile.agentId,
-        username: profile.username,
+        name: profile.name,
         elo: profile.elo,
       });
 
       expect(profile).toHaveProperty('agentId');
-      expect(profile).toHaveProperty('username');
+      expect(profile).toHaveProperty('name');
       expect(profile).toHaveProperty('elo');
       expect(typeof profile.elo).toBe('number');
     });
@@ -123,10 +123,10 @@ describe('Real API Integration Tests', () => {
       console.log('📚 Agent Decks:', decks.length);
 
       expect(Array.isArray(decks)).toBe(true);
-      // Agent should have at least one deck
+      // Agent may or may not have decks depending on setup
       if (decks.length > 0) {
         const firstDeck = decks[0];
-        expect(firstDeck).toHaveProperty('_id');
+        expect(firstDeck).toHaveProperty('deckId');
         expect(firstDeck).toHaveProperty('name');
       }
     });
@@ -144,7 +144,7 @@ describe('Real API Integration Tests', () => {
         const firstLobby = lobbies[0];
         expect(firstLobby).toHaveProperty('lobbyId');
         expect(firstLobby).toHaveProperty('mode');
-        expect(firstLobby).toHaveProperty('status');
+        // API returns canJoin instead of status for available lobbies
       }
     });
   });
@@ -162,8 +162,9 @@ describe('Real API Integration Tests', () => {
         await badClient.getAgentProfile();
         expect(true).toBe(false); // Should have thrown
       } catch (error: any) {
-        console.log('🔒 Auth error handled:', error.message);
-        expect(error.message).toContain('auth');
+        console.log('🔒 Auth error handled:', error.message, error.code);
+        // Check that we got an authentication error (401 status or auth-related code)
+        expect(error.statusCode === 401 || error.code === 'UNAUTHORIZED' || error.name === 'AuthenticationError').toBe(true);
       }
     });
 

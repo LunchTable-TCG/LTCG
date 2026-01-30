@@ -123,7 +123,7 @@ export const register = httpAction(async (ctx, request) => {
  * Get authenticated agent information
  * Requires API key authentication
  */
-export const me = authHttpAction(async (_ctx, request, auth) => {
+export const me = authHttpAction(async (ctx, request, auth) => {
   // Handle CORS preflight
   if (request.method === "OPTIONS") {
     return corsPreflightResponse();
@@ -134,34 +134,27 @@ export const me = authHttpAction(async (_ctx, request, auth) => {
   }
 
   try {
-    // Note: We skip calling getAgent to avoid TypeScript deep instantiation errors
-    // The auth object already provides agentId and userId which is sufficient
-    // For full agent details, clients can call specific endpoints as needed
+    // Get full agent profile using internal query
+    const agent = await ctx.runQuery(internal.agents.getAgentByIdInternal, {
+      agentId: auth.agentId,
+    });
 
-    // Return minimal agent profile from auth context
-    const agent = {
-      _id: auth.agentId,
-      userId: auth.userId,
-      // Additional fields would come from separate API calls if needed
-    };
+    if (!agent) {
+      return errorResponse("AGENT_NOT_FOUND", "Agent not found", 404);
+    }
 
-    // User stats placeholder (avoid TypeScript deep instantiation)
-    const user = {
-      rankedElo: 1000,
-      gold: 0,
-      premiumCurrency: 0,
-    };
-
-    // Return minimal agent profile
-    // Note: For full details, use GET /api/agents/{id} endpoint
+    // Return full agent profile matching AgentProfile type
     return successResponse({
-      playerId: agent._id,
+      agentId: agent.agentId,
       userId: agent.userId,
-      rating: user.rankedElo,
-      gold: user.gold,
-      premium: user.premiumCurrency,
-      // Full stats available through other endpoints
-      message: "Use dedicated endpoints for detailed agent information",
+      name: agent.name,
+      elo: agent.elo,
+      wins: agent.wins,
+      losses: agent.losses,
+      createdAt: agent.createdAt,
+      walletAddress: agent.walletAddress,
+      walletChainType: agent.walletChainType,
+      walletCreatedAt: agent.walletCreatedAt,
     });
   } catch (error) {
     return errorResponse(

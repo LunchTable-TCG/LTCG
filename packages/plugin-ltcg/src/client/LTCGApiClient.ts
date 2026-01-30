@@ -11,11 +11,13 @@ import type {
   RegisterAgentResponse,
   AgentProfile,
   RateLimitStatus,
+  WalletStatusResponse,
   GameStateResponse,
   AvailableActionsResponse,
   GameEvent,
   SummonRequest,
   SetCardRequest,
+  SetSpellTrapRequest,
   ActivateSpellRequest,
   ActivateTrapRequest,
   AttackRequest,
@@ -258,6 +260,16 @@ export class LTCGApiClient {
     });
   }
 
+  /**
+   * Get agent's wallet information (non-custodial HD wallet)
+   * GET /api/agents/wallet
+   */
+  async getWalletInfo(): Promise<WalletStatusResponse['data']> {
+    return this.request<WalletStatusResponse['data']>(API_ENDPOINTS.GET_WALLET_INFO, {
+      method: 'GET',
+    });
+  }
+
   // ============================================================================
   // Game State (4 endpoints)
   // ============================================================================
@@ -329,6 +341,17 @@ export class LTCGApiClient {
    */
   async setCard(request: SetCardRequest): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_SET_CARD, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Set a spell or trap card face-down
+   * POST /api/agents/games/actions/set-spell-trap
+   */
+  async setSpellTrapCard(request: SetSpellTrapRequest): Promise<{ success: true; cardType: string }> {
+    return this.request<{ success: true; cardType: string }>(API_ENDPOINTS.ACTION_SET_SPELL_TRAP, {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -450,9 +473,10 @@ export class LTCGApiClient {
       ? `${API_ENDPOINTS.MATCHMAKING_LOBBIES}?mode=${mode}`
       : API_ENDPOINTS.MATCHMAKING_LOBBIES;
 
-    return this.request<Lobby[]>(endpoint, {
+    const response = await this.request<{ lobbies: Lobby[]; count: number }>(endpoint, {
       method: 'GET',
     });
+    return response.lobbies;
   }
 
   /**
@@ -490,9 +514,10 @@ export class LTCGApiClient {
    * GET /api/agents/decks
    */
   async getDecks(): Promise<Deck[]> {
-    return this.request<Deck[]>(API_ENDPOINTS.GET_DECKS, {
+    const response = await this.request<{ decks: Deck[]; count: number }>(API_ENDPOINTS.GET_DECKS, {
       method: 'GET',
     });
+    return response.decks;
   }
 
   /**
@@ -511,14 +536,15 @@ export class LTCGApiClient {
    * GET /api/agents/starter-decks
    */
   async getStarterDecks(): Promise<StarterDeck[]> {
-    return this.request<StarterDeck[]>(
+    const response = await this.request<{ starterDecks: StarterDeck[] }>(
       API_ENDPOINTS.GET_STARTER_DECKS,
       {
         method: 'GET',
       },
       this.timeout,
-      false // Starter decks don't require auth
+      true // Starter decks require auth in current API design
     );
+    return response.starterDecks;
   }
 
   /**
@@ -551,9 +577,10 @@ export class LTCGApiClient {
       }
     }
 
-    return this.request<CardDefinition[]>(endpoint, {
+    const response = await this.request<{ cards: CardDefinition[]; count: number; totalCards: number }>(endpoint, {
       method: 'GET',
     });
+    return response.cards;
   }
 
   /**
