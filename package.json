@@ -67,10 +67,10 @@
   },
   "dependencies": {
     "@convex-dev/aggregate": "^0.2.1",
-    "@convex-dev/auth": "^0.0.90",
     "@convex-dev/ratelimiter": "^0.1.7",
     "@convex-dev/sharded-counter": "^0.2.0",
     "@oslojs/crypto": "^1.0.1",
+    "@privy-io/node": "^0.8.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-progress": "^1.1.8",
     "@solana/wallet-adapter-base": "^0.9.27",

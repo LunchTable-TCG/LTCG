@@ -3,9 +3,9 @@
 import { LogoutConfirmDialog } from "@/components/dialogs/LogoutConfirmDialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useAuth, useAuthActions } from "@/hooks/auth/useConvexAuthHook";
+import { useAuth, useLogout } from "@/hooks/auth/useConvexAuthHook";
+import { useConvexQuery, apiAny } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
-import { useQuery } from "convex/react";
 import {
   BookOpen,
   ChevronRight,
@@ -24,7 +24,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
-import { api } from "../../../convex/_generated/api";
 
 interface SidebarContextType {
   isOpen: boolean;
@@ -85,12 +84,12 @@ export function Navbar() {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const { isOpen, setIsOpen, toggle } = useSidebar();
   const { isAuthenticated } = useAuth();
-  const { signOut } = useAuthActions();
+  const { logout } = useLogout();
 
-  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
 
   const handleSignOut = async () => {
-    await signOut();
+    await logout();
     window.location.href = "/login";
   };
 

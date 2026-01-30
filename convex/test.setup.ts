@@ -6,4 +6,4 @@
 
 // Load all Convex modules for testing
 // This works with Vite/Vitest but not with Bun's test runner
-export const modules = import.meta.glob("./**/*.ts");
+export const modules = (import.meta as any).glob("./**/*.ts");

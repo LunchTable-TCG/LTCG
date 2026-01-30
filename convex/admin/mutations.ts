@@ -79,17 +79,7 @@ export const deleteUserByEmail = mutation({
 
       targetUserId = user._id;
 
-      // Delete auth sessions for this user
-      const sessions = await ctx.db
-        .query("authSessions")
-        .withIndex("userId", (q) => q.eq("userId", user._id))
-        .collect();
-
-      for (const session of sessions) {
-        await ctx.db.delete(session._id);
-      }
-
-      // Delete user
+      // Delete user (Privy manages auth sessions externally)
       await ctx.db.delete(user._id);
 
       message = `Deleted user ${args.email}`;
@@ -102,7 +92,6 @@ export const deleteUserByEmail = mutation({
         targetEmail: args.email,
         metadata: {
           userEmail: args.email,
-          sessionCount: sessions.length,
         },
         success: true,
       });
@@ -146,16 +135,7 @@ export const deleteTestUsers = mutation({
 
       for (const user of allUsers) {
         if (user.email?.includes("testuser")) {
-          // Delete auth sessions
-          const sessions = await ctx.db
-            .query("authSessions")
-            .withIndex("userId", (q) => q.eq("userId", user._id))
-            .collect();
-
-          for (const session of sessions) {
-            await ctx.db.delete(session._id);
-          }
-
+          // Delete user (Privy manages auth sessions externally)
           await ctx.db.delete(user._id);
           deletedCount++;
           if (user.email) {

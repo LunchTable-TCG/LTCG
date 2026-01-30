@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { v } from "convex/values";
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "./lib/convexAuth";
 import { ErrorCode, createError } from "./lib/errorCodes";
 import { STARTER_DECKS, type StarterDeckCode, VALID_DECK_CODES } from "./seeds/starterDecks";
@@ -30,8 +31,9 @@ function generateApiKey(): string {
  * @returns Promise resolving to the bcrypt hash
  */
 function hashApiKey(key: string): string {
-  const saltRounds = 12; // Good balance of security and performance
-  // Use hashSync instead of hash to avoid setTimeout (not allowed in Convex mutations)
+  // Reduced from 12 to 4 rounds for Convex serverless (1s timeout limit)
+  // Still secure with strong random API keys (32+ chars)
+  const saltRounds = 4;
   return bcrypt.hashSync(key, saltRounds);
 }
 
@@ -41,9 +43,11 @@ function hashApiKey(key: string): string {
  * @param hash - The stored bcrypt hash to compare against
  * @returns Promise resolving to true if key matches, false otherwise
  */
-async function verifyApiKey(key: string, hash: string): Promise<boolean> {
+function verifyApiKey(key: string, hash: string): boolean {
   try {
-    return await bcrypt.compare(key, hash);
+    // Use compareSync instead of compare because Convex queries/mutations
+    // don't allow setTimeout (which async bcrypt uses internally)
+    return bcrypt.compareSync(key, hash);
   } catch (error) {
     // If hash format is invalid or comparison fails, return false
     console.error("API key verification error:", error);
@@ -71,23 +75,41 @@ export async function validateApiKeyInternal(
   // biome-ignore lint/suspicious/noExplicitAny: Convex context type abstraction
   ctx: { db: any },
   apiKey: string
-): Promise<{ agentId: string; userId: string } | null> {
+): Promise<{ agentId: string; userId: string; isValid?: boolean; apiKeyId?: string } | null> {
   // Basic format validation
   if (!apiKey || !apiKey.startsWith("ltcg_") || apiKey.length < 37) {
     return null;
   }
 
   try {
-    // Get all active API keys and check each one
-    // Note: We need to iterate because bcrypt hashes can't be directly queried
-    const allKeys = await ctx.db
+    // Extract prefix for fast database lookup (first 12 chars including "ltcg_")
+    const keyPrefixToFind = `${apiKey.substring(0, 12)}...`;
+    console.log("[API_KEY_DEBUG] Looking for prefix:", keyPrefixToFind);
+
+    // DEBUG: Get all keys to see what's in the database
+    const allKeys = await ctx.db.query("apiKeys").collect();
+    console.log("[API_KEY_DEBUG] Total keys in DB:", allKeys.length);
+    for (const k of allKeys.slice(0, 5)) {
+      console.log("[API_KEY_DEBUG] DB key:", k.keyPrefix, "isActive:", k.isActive);
+    }
+
+    // Query keys matching this prefix - try filter first to debug
+    const matchingKeys = await ctx.db
       .query("apiKeys")
-      // biome-ignore lint/suspicious/noExplicitAny: Convex filter callback type
-      .filter((q: any) => q.eq(q.field("isActive"), true))
+      .filter((q: any) =>
+        q.and(
+          q.eq(q.field("keyPrefix"), keyPrefixToFind),
+          q.eq(q.field("isActive"), true)
+        )
+      )
       .collect();
 
-    for (const keyRecord of allKeys) {
-      const isValid = await verifyApiKey(apiKey, keyRecord.keyHash);
+    console.log("[API_KEY_DEBUG] Found matching keys:", matchingKeys.length);
+
+    for (const keyRecord of matchingKeys) {
+      console.log("[API_KEY_DEBUG] Comparing against stored prefix:", keyRecord.keyPrefix);
+      const isValid = verifyApiKey(apiKey, keyRecord.keyHash);
+      console.log("[API_KEY_DEBUG] bcrypt compareSync result:", isValid);
       if (isValid) {
         // Update last used timestamp
         await ctx.db.patch(keyRecord._id, {
@@ -98,8 +120,10 @@ export async function validateApiKeyInternal(
         const agent = await ctx.db.get(keyRecord.agentId);
         if (agent?.isActive) {
           return {
+            isValid: true,
             agentId: agent._id,
             userId: agent.userId,
+            apiKeyId: keyRecord._id,
           };
         }
       }
@@ -302,7 +326,9 @@ export const registerAgentInternal = internalMutation({
   handler: async (ctx, args) => {
     // For HTTP API registrations, create a system user for the agent
     // These users don't have email/auth as they're API-only agents
+    const internalAgentId = `agent:${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     const userId = await ctx.db.insert("users", {
+      privyId: internalAgentId, // Internal agent ID (not a Privy DID)
       username: `agent_${args.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
       email: `agent_${Date.now()}@ltcg.api`, // Placeholder email for API agents
       isAnonymous: false,
@@ -359,6 +385,7 @@ export const registerAgentInternal = internalMutation({
       agentId,
       apiKey, // Full key - shown only once!
       keyPrefix,
+      internalAgentId, // For wallet ownership
       message: "Agent registered successfully",
     };
   },
@@ -366,6 +393,7 @@ export const registerAgentInternal = internalMutation({
 
 /**
  * Register a new AI agent (authenticated version)
+ * Creates an HD wallet for the agent derived from the user's wallet tree
  */
 export const registerAgent = mutation({
   args: {
@@ -375,7 +403,7 @@ export const registerAgent = mutation({
     starterDeckCode: v.string(),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuthMutation(ctx);
+    const { userId, privyId } = await requireAuthMutation(ctx);
 
     // Check agent limit
     const existingAgents = await ctx.db
@@ -462,11 +490,20 @@ export const registerAgent = mutation({
       createdAt: Date.now(),
     });
 
+    // 8. Schedule HD wallet creation for the agent
+    // Wallet is derived from user's HD tree at next available index
+    // This is non-blocking - wallet will be created asynchronously
+    await ctx.scheduler.runAfter(0, internal.wallet.createAgentWallet.createWalletForUserAgent, {
+      agentId,
+      userId,
+      privyUserId: privyId,
+    });
+
     return {
       agentId,
       apiKey, // Full key - shown only once!
       keyPrefix,
-      message: "Agent registered successfully",
+      message: "Agent registered successfully. HD wallet creation in progress.",
     };
   },
 });
@@ -653,5 +690,19 @@ export const deleteAgent = mutation({
     }
 
     return { success: true };
+  },
+});
+
+// TEMPORARY DEBUG - Remove after debugging
+export const debugApiKeys = query({
+  args: {},
+  handler: async (ctx) => {
+    const keys = await ctx.db.query("apiKeys").take(10);
+    return keys.map(k => ({
+      prefix: k.keyPrefix,
+      isActive: k.isActive,
+      hasHash: !!k.keyHash,
+      hashLength: k.keyHash?.length,
+    }));
   },
 });

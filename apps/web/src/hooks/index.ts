@@ -22,7 +22,8 @@ export type {
 export { isSortOption, isGameMode, isPlayerStatus } from "@/types";
 
 // Auth Hooks
-// Use useAuthActions from "@convex-dev/auth/react" and Authenticated/Unauthenticated from "convex/react" directly
+// Use usePrivy, useLogin, useLogout from "@privy-io/react-auth" for authentication
+// User data is synced to Convex via auth/syncUser mutations
 
 // Game Hooks
 export { useGameLobby } from "./game/useGameLobby";

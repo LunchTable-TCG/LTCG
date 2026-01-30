@@ -5,7 +5,7 @@ import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
 import { Toaster } from "@/components/ui/toaster";
 import { NotificationToast } from "@/components/notifications/NotificationToast";
-import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
+import { PrivyAuthProvider } from "@/components/PrivyAuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -62,18 +62,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ConvexAuthNextjsServerProvider>
-      <html lang="en" className="dark">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} ${crimsonText.variable} antialiased min-h-screen bg-background font-serif`}
-        >
+    <html lang="en" className="dark">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} ${crimsonText.variable} antialiased min-h-screen bg-background font-serif`}
+      >
+        <PrivyAuthProvider>
           <ConvexClientProvider>
             <NotificationToast />
             <LayoutWrapper>{children}</LayoutWrapper>
             <Toaster />
           </ConvexClientProvider>
-        </body>
-      </html>
-    </ConvexAuthNextjsServerProvider>
+        </PrivyAuthProvider>
+      </body>
+    </html>
   );
 }

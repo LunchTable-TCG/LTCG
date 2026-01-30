@@ -1,4 +1,3 @@
-import { authTables } from "@convex-dev/auth/server";
 import { rateLimitTables } from "convex-helpers/server/rateLimit";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
@@ -43,10 +42,12 @@ export const progressStatusValidator = v.union(
 export type ProgressStatus = Infer<typeof progressStatusValidator>;
 
 export default defineSchema({
-  ...authTables,
   ...rateLimitTables,
   users: defineTable({
-    // Convex Auth fields
+    // Privy authentication (optional during migration from old auth system)
+    privyId: v.optional(v.string()), // Privy DID (did:privy:xxx)
+
+    // Profile fields
     name: v.optional(v.string()),
     image: v.optional(v.string()),
     email: v.optional(v.string()),
@@ -102,7 +103,13 @@ export default defineSchema({
     suspensionReason: v.optional(v.string()),
     suspendedBy: v.optional(v.id("users")),
     warningCount: v.optional(v.number()), // default: 0
+
+    // HD Wallet tracking (non-custodial)
+    // User's master wallet is at index 0, agent wallets start at index 1
+    // Derivation path (Solana): m/44'/501'/i/0' where i = wallet index
+    nextWalletIndex: v.optional(v.number()), // default: 1 (0 is user's main wallet)
   })
+    .index("privyId", ["privyId"])
     .index("email", ["email"])
     .index("username", ["username"])
     .index("isBanned", ["isBanned"])
@@ -211,9 +218,20 @@ export default defineSchema({
     }),
     createdAt: v.number(),
     isActive: v.boolean(),
+    // Non-custodial HD Wallet fields (Privy embedded wallet)
+    // Keys are sharded via Shamir's Secret Sharing - we NEVER have private keys
+    // Derivation path (Solana): m/44'/501'/walletIndex/0'
+    privyUserId: v.optional(v.string()), // Privy user ID that owns this wallet (did:privy:xxx)
+    walletIndex: v.optional(v.number()), // HD wallet index in user's wallet tree
+    walletId: v.optional(v.string()), // Privy wallet ID
+    walletAddress: v.optional(v.string()), // Solana public address (non-custodial)
+    walletChainType: v.optional(v.string()), // 'solana'
+    walletCreatedAt: v.optional(v.number()), // Wallet creation timestamp
   })
     .index("by_user", ["userId"])
-    .index("by_name", ["name"]),
+    .index("by_name", ["name"])
+    .index("by_wallet", ["walletAddress"])
+    .index("by_privy_user", ["privyUserId"]),
 
   // API keys for agents (hashed, never store plaintext)
   apiKeys: defineTable({
@@ -227,6 +245,7 @@ export default defineSchema({
   })
     .index("by_key_hash", ["keyHash"])
     .index("by_agent", ["agentId"])
+    .index("by_prefix_active", ["keyPrefix", "isActive"])
     .index("by_user", ["userId"]),
 
   // Reference data for the 4 starter decks

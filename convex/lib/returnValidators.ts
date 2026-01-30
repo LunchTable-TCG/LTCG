@@ -17,10 +17,10 @@ import { jsonAbilityValidator } from "../gameplay/effectSystem/jsonEffectValidat
 // ============================================================================
 
 /**
- * DEPRECATED: Old token-based auth validators removed
- * Use Convex Auth's built-in session management instead
- * - Frontend: useConvexAuth() for auth state
- * - Backend: getAuthUserId(ctx) for user ID
+ * Authentication is handled by Privy with Convex JWT verification
+ * - Frontend: usePrivy() for auth actions, useConvexAuth() for Convex auth state
+ * - Backend: ctx.auth.getUserIdentity() returns Privy user identity
+ * - User lookup: Query users table by privyId index
  */
 
 // ============================================================================

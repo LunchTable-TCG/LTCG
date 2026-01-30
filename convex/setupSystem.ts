@@ -28,6 +28,7 @@ export const createSystemUser = internalMutation({
 
     // Create system user
     const systemUserId = await ctx.db.insert("users", {
+      privyId: "system:internal", // Internal system ID (not a Privy DID)
       username: "system",
       email: "system@localhost",
       name: "System",

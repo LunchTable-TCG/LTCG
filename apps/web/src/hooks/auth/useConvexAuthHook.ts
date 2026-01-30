@@ -1,10 +1,13 @@
 /**
  * Auth hooks re-export
- * Convex Auth provides these hooks directly from their packages
+ * Uses Privy for authentication with Convex for data storage
  */
 
 // Re-export auth state hook from convex/react
 export { useConvexAuth as useAuth } from "convex/react";
 
-// Re-export auth actions from @convex-dev/auth/react
-export { useAuthActions } from "@convex-dev/auth/react";
+// Re-export Privy hooks for auth actions
+export { usePrivy, useLogin, useLogout } from "@privy-io/react-auth";
+
+// Re-export our custom hook for Convex integration
+export { usePrivyAuthForConvex } from "./usePrivyAuthForConvex";

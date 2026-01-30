@@ -1,4 +1,3 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { ErrorCode, createError } from "./errorCodes";
@@ -6,21 +5,29 @@ import { ErrorCode, createError } from "./errorCodes";
 export interface AuthenticatedUser {
   userId: Id<"users">;
   username: string;
+  privyId: string; // Privy DID (did:privy:xxx) for HD wallet operations
 }
 
 /**
  * Get the current authenticated user
- * Returns null if not authenticated
+ * Uses Privy JWT verification via ctx.auth.getUserIdentity()
+ * Returns null if not authenticated or user not found in DB
  */
 export async function getCurrentUser(
   ctx: QueryCtx | MutationCtx
 ): Promise<AuthenticatedUser | null> {
-  const userId = await getAuthUserId(ctx);
-  if (userId === null) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
     return null;
   }
 
-  const user = await ctx.db.get(userId);
+  // identity.subject is the Privy DID (did:privy:xxx)
+  const privyId = identity.subject;
+  const user = await ctx.db
+    .query("users")
+    .withIndex("privyId", (q) => q.eq("privyId", privyId))
+    .first();
+
   if (!user) {
     return null;
   }
@@ -28,6 +35,7 @@ export async function getCurrentUser(
   return {
     userId: user._id,
     username: user.username || user.name || "",
+    privyId, // Include Privy DID for wallet operations
   };
 }
 

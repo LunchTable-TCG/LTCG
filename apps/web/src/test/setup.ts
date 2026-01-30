@@ -30,13 +30,24 @@ vi.mock("@/hooks/auth/useConvexAuthHook", () => ({
   })),
 }));
 
-// Mock Convex Dev auth actions
-vi.mock("@convex-dev/auth/react", () => ({
-  useAuthActions: vi.fn(() => ({
-    signIn: vi.fn(),
-    signUp: vi.fn(),
-    signOut: vi.fn(),
+// Mock Privy authentication
+vi.mock("@privy-io/react-auth", () => ({
+  usePrivy: vi.fn(() => ({
+    ready: true,
+    authenticated: true,
+    user: {
+      id: "did:privy:test-user",
+      email: { address: "test@example.com" },
+    },
+    logout: vi.fn(),
   })),
+  useLogin: vi.fn(() => ({
+    login: vi.fn(),
+  })),
+  useLogout: vi.fn(() => ({
+    logout: vi.fn(),
+  })),
+  PrivyProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 // Mock Next.js navigation

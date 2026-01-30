@@ -20,6 +20,7 @@ import type * as admin_roles from "../admin/roles.js";
 import type * as admin_shopSetup from "../admin/shopSetup.js";
 import type * as agents from "../agents.js";
 import type * as auth from "../auth.js";
+import type * as auth_syncUser from "../auth/syncUser.js";
 import type * as cards from "../cards.js";
 import type * as chainResolver from "../chainResolver.js";
 import type * as core_cards from "../core/cards.js";
@@ -168,6 +169,8 @@ import type * as social_reports from "../social/reports.js";
 import type * as storage_cards from "../storage/cards.js";
 import type * as storage_images from "../storage/images.js";
 import type * as story from "../story.js";
+import type * as wallet_createAgentWallet from "../wallet/createAgentWallet.js";
+import type * as wallet_updateAgentWallet from "../wallet/updateAgentWallet.js";
 import type * as welcomeEmails from "../welcomeEmails.js";
 
 import type {
@@ -189,6 +192,7 @@ declare const fullApi: ApiFromModules<{
   "admin/shopSetup": typeof admin_shopSetup;
   agents: typeof agents;
   auth: typeof auth;
+  "auth/syncUser": typeof auth_syncUser;
   cards: typeof cards;
   chainResolver: typeof chainResolver;
   "core/cards": typeof core_cards;
@@ -337,6 +341,8 @@ declare const fullApi: ApiFromModules<{
   "storage/cards": typeof storage_cards;
   "storage/images": typeof storage_images;
   story: typeof story;
+  "wallet/createAgentWallet": typeof wallet_createAgentWallet;
+  "wallet/updateAgentWallet": typeof wallet_updateAgentWallet;
   welcomeEmails: typeof welcomeEmails;
 }>;
 

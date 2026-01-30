@@ -53,7 +53,7 @@ export const register = httpAction(async (ctx, request) => {
     if (validation) return validation;
 
     // Call internal registerAgent mutation (no auth required)
-    // Note: registerAgentInternal returns { agentId, apiKey, keyPrefix }
+    // Note: registerAgentInternal returns { agentId, apiKey, keyPrefix, internalAgentId }
     const result = await ctx.runMutation(internal.agents.registerAgentInternal, {
       name: body.name,
       profilePictureUrl: undefined, // Optional
@@ -61,12 +61,32 @@ export const register = httpAction(async (ctx, request) => {
       starterDeckCode: body.starterDeckCode || "STARTER_BALANCED", // Default deck
     });
 
+    // Create HD wallet for the agent (async, non-blocking)
+    // The wallet creation happens in the background
+    let walletAddress: string | undefined;
+    try {
+      const walletResult = await ctx.runAction(
+        internal.wallet.createAgentWallet.createSolanaWallet,
+        {
+          agentId: result.agentId,
+          ownerUserId: result.internalAgentId,
+        }
+      );
+      if (walletResult.success) {
+        walletAddress = walletResult.walletAddress;
+      }
+    } catch (walletError) {
+      // Log but don't fail registration if wallet creation fails
+      console.error("Wallet creation failed:", walletError);
+    }
+
     // Return success with agent info
     return successResponse(
       {
         playerId: result.agentId,
         apiKey: result.apiKey, // Only shown once!
         keyPrefix: result.keyPrefix,
+        walletAddress, // Solana wallet address (if created)
       },
       201 // Created
     );
