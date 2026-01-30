@@ -3,6 +3,6 @@
   "buildCommand": "npx convex deploy && bun run generate:types && cd apps/web && bun run build",
   "devCommand": "bun run dev:web",
   "installCommand": "bun install",
-  "framework": null,
+  "framework": "nextjs",
   "outputDirectory": "apps/web/.next"
 }
