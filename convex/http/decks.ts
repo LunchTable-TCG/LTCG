@@ -374,3 +374,62 @@ export const getCard = authHttpAction(async (ctx, request, _auth) => {
     );
   }
 });
+
+/**
+ * POST /api/agents/decks/select-starter
+ * Select a starter deck for an existing agent that doesn't have one
+ * Requires API key authentication
+ */
+export const selectStarterDeck = authHttpAction(async (ctx, request, auth) => {
+  // Handle CORS preflight
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+
+  try {
+    const body = await parseJsonBody<{
+      starterDeckCode: string;
+    }>(request);
+
+    if (body instanceof Response) return body;
+
+    const validation = validateRequiredFields(body, ["starterDeckCode"]);
+    if (validation) return validation;
+
+    // Call internal mutation to select starter deck
+    const result = await ctx.runMutation(internal.agents.selectStarterDeckInternal, {
+      userId: auth.userId,
+      starterDeckCode: body.starterDeckCode,
+    });
+
+    return successResponse(result, 201);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("Invalid starter deck code")) {
+        return errorResponse(
+          "INVALID_STARTER_DECK",
+          "Invalid starter deck code. Valid codes: INFERNAL_DRAGONS, ABYSSAL_DEPTHS, IRON_LEGION, STORM_RIDERS",
+          400
+        );
+      }
+      if (error.message.includes("already has a deck")) {
+        return errorResponse(
+          "DECK_EXISTS",
+          "Agent already has a deck",
+          409
+        );
+      }
+    }
+
+    return errorResponse(
+      "SELECT_STARTER_FAILED",
+      "Failed to select starter deck",
+      500,
+      { error: error instanceof Error ? error.message : String(error) }
+    );
+  }
+});

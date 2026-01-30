@@ -590,6 +590,183 @@ export const registerAgentInternal = internalMutation({
 });
 
 /**
+ * Select a starter deck for an existing agent that doesn't have one
+ * Used for agents registered before starter deck creation was implemented
+ */
+export const selectStarterDeckInternal = internalMutation({
+  args: {
+    userId: v.id("users"),
+    starterDeckCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Validate starter deck code
+    if (!isValidDeckCode(args.starterDeckCode)) {
+      throw createError(ErrorCode.AGENT_INVALID_STARTER_DECK, { code: args.starterDeckCode });
+    }
+
+    // Get user
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw createError(ErrorCode.USER_NOT_FOUND, { userId: args.userId });
+    }
+
+    // Check if user already has an active deck
+    if (user.activeDeckId) {
+      throw new Error("Agent already has a deck");
+    }
+
+    // Get starter deck metadata
+    const starterDeck = STARTER_DECKS.find((d) => d.deckCode === args.starterDeckCode);
+    if (!starterDeck) {
+      throw createError(ErrorCode.AGENT_INVALID_STARTER_DECK, { code: args.starterDeckCode });
+    }
+
+    // Load card list based on deck code
+    const cardListMap: Record<string, readonly (typeof INFERNAL_DRAGONS_CARDS)[number][]> = {
+      INFERNAL_DRAGONS: INFERNAL_DRAGONS_CARDS,
+      ABYSSAL_DEPTHS: ABYSSAL_DEPTHS_CARDS,
+      IRON_LEGION: IRON_LEGION_CARDS,
+      STORM_RIDERS: STORM_RIDERS_CARDS,
+    };
+
+    const cardList = cardListMap[args.starterDeckCode];
+    if (!cardList) {
+      throw createError(ErrorCode.AGENT_INVALID_STARTER_DECK, { code: args.starterDeckCode });
+    }
+
+    const now = Date.now();
+
+    // Auto-seed cards if they don't exist
+    const firstCard = cardList[0];
+    if (firstCard) {
+      const existingCardDefs = await ctx.db
+        .query("cardDefinitions")
+        .withIndex("by_name", (q) => q.eq("name", firstCard.name))
+        .first();
+
+      if (!existingCardDefs) {
+        const allCards = [
+          ...INFERNAL_DRAGONS_CARDS,
+          ...ABYSSAL_DEPTHS_CARDS,
+          ...IRON_LEGION_CARDS,
+          ...STORM_RIDERS_CARDS,
+        ];
+        for (const card of allCards) {
+          await ctx.db.insert("cardDefinitions", {
+            name: card.name,
+            rarity: card.rarity,
+            cardType: card.cardType,
+            archetype: card.archetype,
+            cost: card.cost,
+            attack: "attack" in card ? card.attack : undefined,
+            defense: "defense" in card ? card.defense : undefined,
+            ability: "ability" in card ? card.ability : undefined,
+            isActive: true,
+            createdAt: now,
+          });
+        }
+      }
+    }
+
+    // Group cards by name to get quantities
+    const cardQuantities = new Map<string, { card: (typeof cardList)[number]; count: number }>();
+    for (const card of cardList) {
+      const existing = cardQuantities.get(card.name);
+      if (existing) {
+        existing.count++;
+      } else {
+        cardQuantities.set(card.name, { card, count: 1 });
+      }
+    }
+
+    // Create player card inventory
+    for (const [cardName, { card, count }] of Array.from(cardQuantities.entries())) {
+      const cardDef = await ctx.db
+        .query("cardDefinitions")
+        .withIndex("by_name", (q) => q.eq("name", cardName))
+        .filter((q) => q.eq(q.field("archetype"), card.archetype))
+        .filter((q) => q.eq(q.field("cardType"), card.cardType))
+        .first();
+
+      if (!cardDef) continue;
+
+      const existingPlayerCard = await ctx.db
+        .query("playerCards")
+        .withIndex("by_user_card", (q) =>
+          q.eq("userId", args.userId).eq("cardDefinitionId", cardDef._id)
+        )
+        .first();
+
+      if (existingPlayerCard) {
+        await ctx.db.patch(existingPlayerCard._id, {
+          quantity: existingPlayerCard.quantity + count,
+          lastUpdatedAt: now,
+        });
+      } else {
+        await ctx.db.insert("playerCards", {
+          userId: args.userId,
+          cardDefinitionId: cardDef._id,
+          quantity: count,
+          isFavorite: false,
+          acquiredAt: now,
+          lastUpdatedAt: now,
+        });
+      }
+    }
+
+    // Create the deck
+    const deckId = await ctx.db.insert("userDecks", {
+      userId: args.userId,
+      name: starterDeck.name,
+      description: starterDeck.description,
+      deckArchetype: starterDeck.archetype,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Add cards to the deck
+    const deckCardCounts = new Map<Id<"cardDefinitions">, number>();
+
+    for (const card of cardList) {
+      const cardDef = await ctx.db
+        .query("cardDefinitions")
+        .withIndex("by_name", (q) => q.eq("name", card.name))
+        .filter((q) => q.eq(q.field("archetype"), card.archetype))
+        .filter((q) => q.eq(q.field("cardType"), card.cardType))
+        .first();
+
+      if (cardDef) {
+        const existing = deckCardCounts.get(cardDef._id);
+        deckCardCounts.set(cardDef._id, (existing || 0) + 1);
+      }
+    }
+
+    for (const [cardDefId, quantity] of Array.from(deckCardCounts.entries())) {
+      await ctx.db.insert("deckCards", {
+        deckId,
+        cardDefinitionId: cardDefId,
+        quantity,
+        position: undefined,
+      });
+    }
+
+    // Set as active deck
+    await ctx.db.patch(args.userId, {
+      activeDeckId: deckId,
+    });
+
+    return {
+      success: true,
+      deckId,
+      deckName: starterDeck.name,
+      cardCount: cardList.length,
+      message: "Starter deck selected and set as active",
+    };
+  },
+});
+
+/**
  * Register a new AI agent (authenticated version)
  * Creates an HD wallet for the agent derived from the user's wallet tree
  */
