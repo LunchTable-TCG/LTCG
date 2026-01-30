@@ -12,6 +12,7 @@ describe('Find Game Action', () => {
 
   beforeEach(() => {
     // Create mock runtime
+    // Note: The action uses state.values for game/lobby IDs, not runtime.get()/set()
     mockRuntime = {
       getSetting: mock((key: string) => {
         if (key === 'LTCG_API_KEY') return 'test-api-key';
@@ -21,11 +22,6 @@ describe('Find Game Action', () => {
         if (key === 'LTCG_PREFERRED_DECK_ID') return 'deck-123';
         return null;
       }),
-      get: mock(async (key: string) => {
-        if (key === 'LTCG_CURRENT_GAME_ID') return null;
-        return null;
-      }),
-      set: mock(async () => {}),
       useModel: mock(async () => {
         return JSON.stringify({
           lobbyIndex: 0,
@@ -81,10 +77,8 @@ describe('Find Game Action', () => {
     });
 
     it('should not validate when already in game', async () => {
-      mockRuntime.get = mock(async (key: string) => {
-        if (key === 'LTCG_CURRENT_GAME_ID') return 'existing-game-123';
-        return null;
-      }) as any;
+      // The action checks state.values.LTCG_CURRENT_GAME_ID, not runtime.get()
+      mockState.values.LTCG_CURRENT_GAME_ID = 'existing-game-123';
 
       const result = await findGameAction.validate(mockRuntime, mockMessage, mockState);
       expect(result).toBe(false);
@@ -136,7 +130,8 @@ describe('Find Game Action', () => {
       expect(result.values?.joinedExisting).toBe(true);
       expect(result.values?.gameId).toBe('game-789');
       expect(mockCallback).toHaveBeenCalled();
-      expect(mockRuntime.set).toHaveBeenCalledWith('LTCG_CURRENT_GAME_ID', 'game-789');
+      // The action stores game ID in state.values, not runtime.set()
+      expect(mockState.values.LTCG_CURRENT_GAME_ID).toBe('game-789');
     });
   });
 
@@ -166,7 +161,8 @@ describe('Find Game Action', () => {
       expect(result.values?.status).toBe('waiting');
       expect(result.values?.lobbyId).toBe('new-lobby-123');
       expect(mockCallback).toHaveBeenCalled();
-      expect(mockRuntime.set).toHaveBeenCalledWith('LTCG_CURRENT_LOBBY_ID', 'new-lobby-123');
+      // The action stores lobby ID in state.values, not runtime.set()
+      expect(mockState.values.LTCG_CURRENT_LOBBY_ID).toBe('new-lobby-123');
     });
 
     it('should handle instant match when creating lobby', async () => {
@@ -193,7 +189,8 @@ describe('Find Game Action', () => {
 
       expect(result.success).toBe(true);
       expect(result.values?.gameId).toBe('instant-game-456');
-      expect(mockRuntime.set).toHaveBeenCalledWith('LTCG_CURRENT_GAME_ID', 'instant-game-456');
+      // The action stores game ID in state.values, not runtime.set()
+      expect(mockState.values.LTCG_CURRENT_GAME_ID).toBe('instant-game-456');
     });
   });
 

@@ -18,7 +18,7 @@ describe('Register Agent Action', () => {
         if (key === 'AGENT_NAME') return 'TestAgent';
         return null;
       }),
-      set: mock(async () => {}),
+      setSetting: mock(async () => {}),
       useModel: mock(async () => {
         return JSON.stringify({ deckIndex: 0 });
       }),
@@ -130,9 +130,9 @@ describe('Register Agent Action', () => {
       LTCGApiClient.prototype.registerAgent = originalRegisterAgent;
 
       expect(result.success).toBe(true);
-      expect(mockRuntime.set).toHaveBeenCalledWith('LTCG_API_KEY', 'ltcg_test_key_789');
-      expect(mockRuntime.set).toHaveBeenCalledWith('LTCG_AGENT_ID', 'agent-456');
-      expect(mockRuntime.set).toHaveBeenCalledWith('LTCG_USER_ID', 'user-123');
+      expect(mockRuntime.setSetting).toHaveBeenCalledWith('LTCG_API_KEY', 'ltcg_test_key_789', true);
+      expect(mockRuntime.setSetting).toHaveBeenCalledWith('LTCG_AGENT_ID', 'agent-456');
+      expect(mockRuntime.setSetting).toHaveBeenCalledWith('LTCG_USER_ID', 'user-123');
       expect(mockCallback).toHaveBeenCalled();
     });
   });
