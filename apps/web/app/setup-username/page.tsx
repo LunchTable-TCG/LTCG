@@ -4,7 +4,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
 
 export default function SetupUsernamePage() {
@@ -51,10 +51,20 @@ export default function SetupUsernamePage() {
     );
   }
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (avoid side-effects during render)
+  useEffect(() => {
+    if (ready && !authenticated) {
+      router.replace("/login");
+    }
+  }, [ready, authenticated, router]);
+
+  // While auth state is resolving or redirecting, show loading
   if (!authenticated) {
-    router.push("/login");
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1a1410] via-[#2a1f14] to-[#1a1410]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#d4af37]" />
+      </div>
+    );
   }
 
   return (

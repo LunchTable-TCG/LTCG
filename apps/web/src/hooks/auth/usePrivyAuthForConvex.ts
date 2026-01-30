@@ -1,7 +1,7 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 /**
  * Hook that bridges Privy authentication to Convex
@@ -10,13 +10,24 @@ import { useCallback } from "react";
 export function usePrivyAuthForConvex() {
   const { ready, authenticated, getAccessToken } = usePrivy();
 
+  // Debug: log auth state changes
+  useEffect(() => {
+    console.log("[CONVEX AUTH] State:", { ready, authenticated });
+  }, [ready, authenticated]);
+
   const fetchAccessToken = useCallback(
-    async (_options: { forceRefreshToken: boolean }) => {
+    async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
+      console.log("[CONVEX AUTH] fetchAccessToken called:", { forceRefreshToken, ready, authenticated });
+
+      if (!authenticated) {
+        console.log("[CONVEX AUTH] Not authenticated, returning null");
+        return null;
+      }
+
       try {
         const token = await getAccessToken();
         if (token) {
-          // Debug: log token info (first 50 chars only for security)
-          console.log("[CONVEX AUTH] Token obtained:", token.substring(0, 50) + "...");
+          console.log("[CONVEX AUTH] Token obtained, length:", token.length);
           // Decode and log claims (without signature)
           try {
             const parts = token.split(".");
@@ -33,7 +44,7 @@ export function usePrivyAuthForConvex() {
             console.log("[CONVEX AUTH] Could not decode token payload");
           }
         } else {
-          console.log("[CONVEX AUTH] No token returned from getAccessToken");
+          console.log("[CONVEX AUTH] getAccessToken returned null/undefined");
         }
         return token;
       } catch (err) {
@@ -41,7 +52,7 @@ export function usePrivyAuthForConvex() {
         return null;
       }
     },
-    [getAccessToken]
+    [getAccessToken, ready, authenticated]
   );
 
   return {

@@ -4,12 +4,21 @@
  * SECURITY: Configure Privy JWT verification using Custom JWT provider
  * Privy JWTs use ES256 algorithm with issuer "privy.io"
  *
- * Uses Privy's public JWKS endpoint for automatic key rotation support.
  * See: https://docs.privy.io/authentication/user-authentication/access-tokens
  */
 
-// Privy App ID - hardcoded for now to debug auth issues
-const PRIVY_APP_ID = "cml0fnzn501t7lc0buoz8kt74";
+// Privy App ID (prefer server-side env, fallback to NEXT_PUBLIC for dev parity)
+const PRIVY_APP_ID =
+  process.env["PRIVY_APP_ID"] ??
+  process.env["NEXT_PUBLIC_PRIVY_APP_ID"] ??
+  "cml0fnzn501t7lc0buoz8kt74";
+
+if (!PRIVY_APP_ID) {
+  throw new Error("Missing PRIVY_APP_ID for Convex auth configuration");
+}
+
+// Use Privy's JWKS URL to avoid breakage when keys rotate
+const PRIVY_JWKS_URL = `https://auth.privy.io/api/v1/apps/${PRIVY_APP_ID}/jwks.json`;
 
 export default {
   providers: [
@@ -21,8 +30,8 @@ export default {
       algorithm: "ES256",
       // Privy App ID - must match the "aud" claim in JWTs
       applicationID: PRIVY_APP_ID,
-      // Use Privy's public JWKS endpoint (supports key rotation)
-      jwks: `https://auth.privy.io/api/v1/apps/${PRIVY_APP_ID}/jwks.json`,
+      // JWKS URL to allow key rotation without code changes
+      jwks: PRIVY_JWKS_URL,
     },
   ],
 };
