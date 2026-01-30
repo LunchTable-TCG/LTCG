@@ -537,7 +537,7 @@ export class LTCGApiClient {
    * GET /api/agents/cards?type=xxx&archetype=xxx
    */
   async getCards(filters?: { type?: string; archetype?: string; race?: string }): Promise<CardDefinition[]> {
-    let endpoint = API_ENDPOINTS.GET_CARDS;
+    let endpoint: string = API_ENDPOINTS.GET_CARDS;
 
     if (filters) {
       const params = new URLSearchParams();

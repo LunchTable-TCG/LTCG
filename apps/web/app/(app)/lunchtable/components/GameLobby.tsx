@@ -22,7 +22,7 @@ import {
   Waves,
   Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CreateGameModal } from "./CreateGameModal";
 import { JoinConfirmDialog } from "./JoinConfirmDialog";
 import { SpectatorGameView } from "./SpectatorGameView";

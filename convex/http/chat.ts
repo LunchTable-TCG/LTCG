@@ -62,6 +62,7 @@ export const send = authHttpAction(async (ctx, request, _authData) => {
 
     // Send message via authenticated mutation
     // The globalChat.sendMessage mutation handles rate limiting and validation
+    // @ts-ignore - TS2589: Type instantiation is excessively deep with api references
     const messageId = await ctx.runMutation(api.globalChat.sendMessage as any, {
       content: body.content,
     });

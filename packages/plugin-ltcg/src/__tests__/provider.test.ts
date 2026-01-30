@@ -130,19 +130,19 @@ function createRealMemory(): Memory {
 }
 
 describe('Provider Tests', () => {
-  // Find the HELLO_WORLD_PROVIDER from the providers array
-  const helloWorldProvider = plugin.providers?.find(
-    (provider) => provider.name === 'HELLO_WORLD_PROVIDER'
+  // Find the LTCG_GAME_STATE provider from the providers array
+  const gameStateProvider = plugin.providers?.find(
+    (provider) => provider.name === 'LTCG_GAME_STATE'
   );
 
-  describe('HELLO_WORLD_PROVIDER', () => {
+  describe('LTCG_GAME_STATE', () => {
     it('should exist in the plugin', () => {
       expect(plugin.providers).toBeDefined();
       expect(Array.isArray(plugin.providers)).toBe(true);
 
       if (plugin.providers) {
         expect(plugin.providers.length).toBeGreaterThan(0);
-        const result = plugin.providers.find((p) => p.name === 'HELLO_WORLD_PROVIDER');
+        const result = plugin.providers.find((p) => p.name === 'LTCG_GAME_STATE');
         expect(result).toBeDefined();
         documentTestResult('Provider exists check', {
           found: !!result,
@@ -152,33 +152,33 @@ describe('Provider Tests', () => {
     });
 
     it('should have the correct structure', () => {
-      if (helloWorldProvider) {
-        expect(helloWorldProvider).toHaveProperty('name', 'HELLO_WORLD_PROVIDER');
-        expect(helloWorldProvider).toHaveProperty('description');
-        expect(helloWorldProvider).toHaveProperty('get');
-        expect(typeof helloWorldProvider.get).toBe('function');
+      if (gameStateProvider) {
+        expect(gameStateProvider).toHaveProperty('name', 'LTCG_GAME_STATE');
+        expect(gameStateProvider).toHaveProperty('description');
+        expect(gameStateProvider).toHaveProperty('get');
+        expect(typeof gameStateProvider.get).toBe('function');
 
         documentTestResult('Provider structure check', {
-          name: helloWorldProvider.name,
-          description: helloWorldProvider.description,
-          hasGetMethod: typeof helloWorldProvider.get === 'function',
+          name: gameStateProvider.name,
+          description: gameStateProvider.description,
+          hasGetMethod: typeof gameStateProvider.get === 'function',
         });
       }
     });
 
     it('should have a description explaining its purpose', () => {
-      if (helloWorldProvider && helloWorldProvider.description) {
-        expect(typeof helloWorldProvider.description).toBe('string');
-        expect(helloWorldProvider.description.length).toBeGreaterThan(0);
+      if (gameStateProvider && gameStateProvider.description) {
+        expect(typeof gameStateProvider.description).toBe('string');
+        expect(gameStateProvider.description.length).toBeGreaterThan(0);
 
         documentTestResult('Provider description check', {
-          description: helloWorldProvider.description,
+          description: gameStateProvider.description,
         });
       }
     });
 
     it('should return provider data from the get method', async () => {
-      if (helloWorldProvider) {
+      if (gameStateProvider) {
         const runtime = createRealRuntime();
         const message = createRealMemory();
         const state = {
@@ -192,7 +192,7 @@ describe('Provider Tests', () => {
 
         try {
           logger.info('Calling provider.get with real implementation');
-          result = await helloWorldProvider.get(runtime, message, state);
+          result = await gameStateProvider.get(runtime, message, state);
 
           expect(result).toBeDefined();
           expect(result).toHaveProperty('text');
@@ -221,7 +221,7 @@ describe('Provider Tests', () => {
     });
 
     it('should handle error conditions gracefully', async () => {
-      if (helloWorldProvider) {
+      if (gameStateProvider) {
         const runtime = createRealRuntime();
         // Create an invalid memory object to simulate an error scenario
         const invalidMemory = {
@@ -240,7 +240,7 @@ describe('Provider Tests', () => {
 
         try {
           logger.info('Calling provider.get with invalid memory object');
-          result = await helloWorldProvider.get(runtime, invalidMemory, state);
+          result = await gameStateProvider.get(runtime, invalidMemory, state);
 
           // Even with invalid input, it should not throw errors
           expect(result).toBeDefined();
