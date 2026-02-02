@@ -5,6 +5,7 @@
  * Tracks usage in Convex database for distributed rate limiting.
  */
 
+import { internal } from "../../_generated/api";
 import type { AuthenticatedRequest } from "./auth";
 
 export interface RateLimitConfig {
@@ -29,24 +30,31 @@ export const DEFAULT_RATE_LIMITS: RateLimitConfig = {
 /**
  * Check if API key has exceeded rate limits
  * Returns rate limit status or throws error if exceeded
+ *
+ * @param ctx - HTTP action context with runQuery/runMutation
+ * @param auth - Authenticated request with apiKeyId
+ * @param config - Rate limit configuration
+ * @param endpoint - Optional endpoint path for tracking
  */
 export async function checkRateLimit(
   ctx: any,
   auth: AuthenticatedRequest,
-  config: RateLimitConfig = DEFAULT_RATE_LIMITS
+  config: RateLimitConfig = DEFAULT_RATE_LIMITS,
+  endpoint?: string
 ): Promise<RateLimitStatus> {
   const now = Date.now();
   const oneMinuteAgo = now - 60 * 1000;
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
-  // Query recent API requests for this API key
-  // Note: This requires an apiKeyUsage table to be added to schema
-  // For now, we'll implement a simple in-memory counter
-  // TODO: Implement proper database tracking
-
-  // Get usage counts (placeholder - needs real implementation)
-  const minuteUsage = await getMinuteUsage(ctx, auth.apiKeyId, oneMinuteAgo);
-  const dailyUsage = await getDailyUsage(ctx, auth.apiKeyId, oneDayAgo);
+  // Query recent API requests for this API key from database
+  const minuteUsage = await ctx.runQuery(internal.http.middleware.rateLimitInternal.getUsageCount, {
+    apiKeyId: auth.apiKeyId,
+    since: oneMinuteAgo,
+  });
+  const dailyUsage = await ctx.runQuery(internal.http.middleware.rateLimitInternal.getUsageCount, {
+    apiKeyId: auth.apiKeyId,
+    since: oneDayAgo,
+  });
 
   // Calculate remaining requests
   const minuteRemaining = Math.max(0, config.perMinuteLimit - minuteUsage);
@@ -89,68 +97,21 @@ export async function checkRateLimit(
     );
   }
 
-  // Record this request
-  await recordApiRequest(ctx, auth.apiKeyId, now);
+  // Record this request in the database
+  await ctx.runMutation(internal.http.middleware.rateLimitInternal.recordUsage, {
+    apiKeyId: auth.apiKeyId,
+    timestamp: now,
+    endpoint,
+  });
 
   // Return rate limit status
   return {
-    remaining: minuteRemaining,
+    remaining: minuteRemaining - 1, // Subtract 1 for the current request
     limit: config.perMinuteLimit,
     resetAt: Math.ceil((oneMinuteAgo + 60 * 1000) / 1000),
-    dailyRemaining,
+    dailyRemaining: dailyRemaining - 1,
     dailyLimit: config.dailyLimit,
   };
-}
-
-/**
- * Get request count in last minute
- * TODO: Implement with actual database query
- */
-async function getMinuteUsage(_ctx: any, _apiKeyId: string, _since: number): Promise<number> {
-  // Placeholder implementation
-  // In production, query apiKeyUsage table:
-  // const usage = await ctx.db.query("apiKeyUsage")
-  //   .withIndex("by_key_and_time", q => q
-  //     .eq("apiKeyId", apiKeyId)
-  //     .gte("timestamp", since)
-  //   )
-  //   .collect();
-  // return usage.length;
-
-  return 0; // Temporary - no rate limiting until table is created
-}
-
-/**
- * Get request count in last 24 hours
- * TODO: Implement with actual database query
- */
-async function getDailyUsage(_ctx: any, _apiKeyId: string, _since: number): Promise<number> {
-  // Placeholder implementation
-  // In production, query apiKeyUsage table:
-  // const usage = await ctx.db.query("apiKeyUsage")
-  //   .withIndex("by_key_and_time", q => q
-  //     .eq("apiKeyId", apiKeyId)
-  //     .gte("timestamp", since)
-  //   )
-  //   .collect();
-  // return usage.length;
-
-  return 0; // Temporary - no rate limiting until table is created
-}
-
-/**
- * Record an API request for rate limiting
- * TODO: Implement with actual database insert
- */
-async function recordApiRequest(_ctx: any, _apiKeyId: string, _timestamp: number): Promise<void> {
-  // Placeholder implementation
-  // In production, insert into apiKeyUsage table:
-  // await ctx.db.insert("apiKeyUsage", {
-  //   apiKeyId,
-  //   timestamp,
-  //   endpoint: request.url, // Add endpoint tracking
-  // });
-  // Temporary - no-op until table is created
 }
 
 /**
@@ -166,8 +127,14 @@ export async function getRateLimitStatus(
   const oneMinuteAgo = now - 60 * 1000;
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
-  const minuteUsage = await getMinuteUsage(ctx, auth.apiKeyId, oneMinuteAgo);
-  const dailyUsage = await getDailyUsage(ctx, auth.apiKeyId, oneDayAgo);
+  const minuteUsage = await ctx.runQuery(internal.http.middleware.rateLimitInternal.getUsageCount, {
+    apiKeyId: auth.apiKeyId,
+    since: oneMinuteAgo,
+  });
+  const dailyUsage = await ctx.runQuery(internal.http.middleware.rateLimitInternal.getUsageCount, {
+    apiKeyId: auth.apiKeyId,
+    since: oneDayAgo,
+  });
 
   return {
     remaining: Math.max(0, config.perMinuteLimit - minuteUsage),
@@ -176,4 +143,21 @@ export async function getRateLimitStatus(
     dailyRemaining: Math.max(0, config.dailyLimit - dailyUsage),
     dailyLimit: config.dailyLimit,
   };
+}
+
+/**
+ * Record a completed request with response status
+ * Call this after the request completes to track response codes
+ */
+export async function recordRequestComplete(
+  _ctx: any,
+  _auth: AuthenticatedRequest,
+  _endpoint: string,
+  _responseStatus: number,
+  _durationMs: number
+): Promise<void> {
+  // Note: The initial request is already recorded in checkRateLimit
+  // This is for updating with response status if needed
+  // For now, we just record successful completions separately
+  // Future: Could update the existing record instead
 }

@@ -219,7 +219,7 @@ We focus on tests that surface:
 
 ### Seeding Strategy
 
-**Location**: `tests/fixtures/` and `convex_test_utils/`
+**Location**: `tests/fixtures/` and `convex/__tests__/helpers/`
 
 #### Fixture Factories
 ```typescript
@@ -621,9 +621,9 @@ ltcg-monorepo/
 │   └── setup/
 │       ├── fixtures.ts
 │       └── helpers.ts
-├── convex_test_utils/          # Shared test utilities
-│   ├── setup.ts
-│   └── helpers.ts
+├── convex/__tests__/helpers/   # Convex test utilities
+│   ├── index.ts
+│   └── testAuth.ts
 ├── docs/
 │   └── testing.md              # This document
 ├── vitest.config.ts            # Vitest configuration

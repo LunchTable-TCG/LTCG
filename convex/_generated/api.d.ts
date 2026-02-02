@@ -114,6 +114,7 @@ import type * as http_games from "../http/games.js";
 import type * as http_matchmaking from "../http/matchmaking.js";
 import type * as http_middleware_auth from "../http/middleware/auth.js";
 import type * as http_middleware_rateLimit from "../http/middleware/rateLimit.js";
+import type * as http_middleware_rateLimitInternal from "../http/middleware/rateLimitInternal.js";
 import type * as http_middleware_responses from "../http/middleware/responses.js";
 import type * as http_story from "../http/story.js";
 import type * as http_types from "../http/types.js";
@@ -310,6 +311,7 @@ declare const fullApi: ApiFromModules<{
   "http/matchmaking": typeof http_matchmaking;
   "http/middleware/auth": typeof http_middleware_auth;
   "http/middleware/rateLimit": typeof http_middleware_rateLimit;
+  "http/middleware/rateLimitInternal": typeof http_middleware_rateLimitInternal;
   "http/middleware/responses": typeof http_middleware_responses;
   "http/story": typeof http_story;
   "http/types": typeof http_types;

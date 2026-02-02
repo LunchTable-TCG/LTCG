@@ -262,6 +262,17 @@ export default defineSchema({
     .index("by_prefix_active", ["keyPrefix", "isActive"])
     .index("by_user", ["userId"]),
 
+  // API key usage tracking for rate limiting
+  apiKeyUsage: defineTable({
+    apiKeyId: v.id("apiKeys"),
+    timestamp: v.number(),
+    endpoint: v.optional(v.string()), // API endpoint called
+    responseStatus: v.optional(v.number()), // HTTP status code
+    durationMs: v.optional(v.number()), // Request duration
+  })
+    .index("by_key_and_time", ["apiKeyId", "timestamp"])
+    .index("by_timestamp", ["timestamp"]),
+
   // Agent decision history for analytics and debugging
   agentDecisions: defineTable({
     agentId: v.id("agents"),

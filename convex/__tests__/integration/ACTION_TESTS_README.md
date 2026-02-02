@@ -206,7 +206,7 @@ Located in `/tests/integration/actions.test.ts`:
 
 - `/convex/emailActions.ts` - Email action implementations
 - `/convex/economy/shop.ts` - Shop action implementations
-- `/convex_test_utils/setup.ts` - Test utilities
+- `/convex/__tests__/helpers/` - Test utilities
 - `/tests/fixtures/users.ts` - User test fixtures
 
 ## Future Improvements

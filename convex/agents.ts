@@ -934,10 +934,7 @@ export const updateAgent = mutation({
   },
   handler: async (ctx, args) => {
     // Get authenticated user
-    const auth = await getCurrentUser(ctx);
-    if (!auth) {
-      throw createError(ErrorCode.AUTH_REQUIRED);
-    }
+    const auth = await requireAuthMutation(ctx);
 
     // Verify agent ownership
     const agent = await ctx.db.get(args.agentId);

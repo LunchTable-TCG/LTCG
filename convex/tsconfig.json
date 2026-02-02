@@ -13,7 +13,6 @@
     "baseUrl": ".",
     "types": ["vite/client", "node"],
     "paths": {
-      "@convex-test-utils/*": ["../convex_test_utils/*"],
       "@data/*": ["../data/*"]
     },
 
@@ -50,7 +49,6 @@
     "./**/*.test.ts",
     "./**/*.test.multipart.ts",
     "./test_utils",
-    "./__mocks__",
-    "../convex_test_utils"
+    "./__mocks__"
   ]
 }

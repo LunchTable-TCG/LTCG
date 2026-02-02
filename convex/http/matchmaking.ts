@@ -84,6 +84,51 @@ export const enter = authHttpAction(async (ctx, request, auth) => {
 });
 
 /**
+ * Check if a user is eligible to join a lobby
+ * Returns eligibility status and reason if not eligible
+ */
+interface EligibilityResult {
+  canJoin: boolean;
+  reason?: string;
+}
+
+function checkEligibility(
+  user: { rankedElo?: number; isBanned?: boolean; isSuspended?: boolean } | null,
+  lobby: { mode: string; hostRating?: number; maxRatingDiff?: number }
+): EligibilityResult {
+  // Check if user exists
+  if (!user) {
+    return { canJoin: false, reason: "User not found" };
+  }
+
+  // Check if user is banned
+  if (user.isBanned) {
+    return { canJoin: false, reason: "Account is banned" };
+  }
+
+  // Check if user is suspended
+  if (user.isSuspended) {
+    return { canJoin: false, reason: "Account is suspended" };
+  }
+
+  // For ranked mode, check rating difference
+  if (lobby.mode === "ranked" && lobby.hostRating !== undefined) {
+    const userRating = user.rankedElo || 1000;
+    const maxDiff = lobby.maxRatingDiff || 300; // Default 300 rating difference
+    const ratingDiff = Math.abs(userRating - lobby.hostRating);
+
+    if (ratingDiff > maxDiff) {
+      return {
+        canJoin: false,
+        reason: `Rating difference too large (${ratingDiff} > ${maxDiff})`,
+      };
+    }
+  }
+
+  return { canJoin: true };
+}
+
+/**
  * GET /api/agents/matchmaking/lobbies
  * List available lobbies to join
  * Requires API key authentication
@@ -102,10 +147,22 @@ export const lobbies = authHttpAction(async (ctx, request, auth) => {
     const modeParam = getQueryParam(request, "mode");
     const mode = (modeParam || "all") as "casual" | "ranked" | "all";
 
-    // Get user rating for ranked matchmaking
+    // Get user data for eligibility checks
     const user = await ctx.runQuery((api as any).core.users.getUser, {
       userId: auth.userId,
     });
+
+    // Check if user is banned/suspended (early exit)
+    if (user?.isBanned) {
+      return errorResponse("ACCOUNT_BANNED", "Your account is banned from matchmaking", 403);
+    }
+    if (user?.isSuspended) {
+      return errorResponse(
+        "ACCOUNT_SUSPENDED",
+        "Your account is suspended from matchmaking",
+        403
+      );
+    }
 
     const userRating = user?.rankedElo || 1000;
 
@@ -118,23 +175,33 @@ export const lobbies = authHttpAction(async (ctx, request, auth) => {
       }
     );
 
-    // Format lobby data
-    const formattedLobbies = waitingLobbies.map((lobby: any) => ({
-      lobbyId: lobby._id,
-      host: {
-        username: lobby.hostUsername,
-        rating: lobby.hostRating,
-      },
-      mode: lobby.mode,
-      deckArchetype: lobby.deckArchetype,
-      createdAt: lobby.createdAt,
-      ratingWindow: lobby.maxRatingDiff || null,
-      canJoin: true, // TODO: Add eligibility check
-    }));
+    // Format lobby data with eligibility check
+    const formattedLobbies = waitingLobbies.map((lobby: any) => {
+      const eligibility = checkEligibility(user, {
+        mode: lobby.mode,
+        hostRating: lobby.hostRating,
+        maxRatingDiff: lobby.maxRatingDiff,
+      });
+
+      return {
+        lobbyId: lobby._id,
+        host: {
+          username: lobby.hostUsername,
+          rating: lobby.hostRating,
+        },
+        mode: lobby.mode,
+        deckArchetype: lobby.deckArchetype,
+        createdAt: lobby.createdAt,
+        ratingWindow: lobby.maxRatingDiff || 300,
+        canJoin: eligibility.canJoin,
+        eligibilityReason: eligibility.reason || null,
+      };
+    });
 
     return successResponse({
       lobbies: formattedLobbies,
       count: formattedLobbies.length,
+      eligibleCount: formattedLobbies.filter((l: any) => l.canJoin).length,
     });
   } catch (error) {
     return errorResponse("FETCH_LOBBIES_FAILED", "Failed to fetch lobbies", 500, {

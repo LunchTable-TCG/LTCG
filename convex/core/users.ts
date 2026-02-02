@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "../_generated/server";
-import { getCurrentUser } from "../lib/convexAuth";
+import { requireAuthMutation } from "../lib/convexAuth";
 import {
   fullUserValidator,
   userInfoValidator,
@@ -221,10 +221,7 @@ export const setMyUsername = mutation({
     username: v.string(),
   },
   handler: async (ctx, args) => {
-    const auth = await getCurrentUser(ctx);
-    if (!auth) {
-      throw new Error("Not authenticated");
-    }
+    const auth = await requireAuthMutation(ctx);
 
     // Validate username format
     const usernameRegex = /^[a-zA-Z0-9]{3,20}$/;

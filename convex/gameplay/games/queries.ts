@@ -1190,6 +1190,29 @@ export const getGameStateForPlayerInternal = internalQuery({
     );
     const opponentBoard = opponentBoardData.filter(Boolean);
 
+    // Calculate timeout status
+    const config = gameState.timeoutConfig || DEFAULT_TIMEOUT_CONFIG;
+    const now = Date.now();
+
+    let actionTimeRemainingMs = config.perActionMs;
+    let isTimedOut = false;
+
+    if (gameState.responseWindow?.expiresAt) {
+      actionTimeRemainingMs = Math.max(0, gameState.responseWindow.expiresAt - now);
+      isTimedOut = actionTimeRemainingMs === 0;
+    }
+
+    let matchTimeRemainingMs = config.totalMatchMs;
+    let isMatchTimedOut = false;
+
+    if (gameState.matchTimerStart) {
+      const elapsed = now - gameState.matchTimerStart;
+      matchTimeRemainingMs = Math.max(0, config.totalMatchMs - elapsed);
+      isMatchTimedOut = matchTimeRemainingMs === 0;
+    }
+
+    const isWarning = actionTimeRemainingMs > 0 && actionTimeRemainingMs <= config.warningAtMs;
+
     return {
       lobbyId: lobby._id,
       gameId: gameState.gameId,
@@ -1219,6 +1242,14 @@ export const getGameStateForPlayerInternal = internalQuery({
       normalSummonedThisTurn: isHost
         ? gameState.hostNormalSummonedThisTurn
         : gameState.opponentNormalSummonedThisTurn,
+      // Timeout status
+      timeoutStatus: {
+        actionTimeRemainingMs,
+        matchTimeRemainingMs,
+        isWarning,
+        isTimedOut,
+        isMatchTimedOut,
+      },
     };
   },
 });

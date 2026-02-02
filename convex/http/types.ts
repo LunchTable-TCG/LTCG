@@ -201,7 +201,12 @@ export interface PendingTurn {
   opponent: {
     username: string;
   };
+  /** Seconds remaining for current action, null if no timeout active */
   timeRemaining: number | null;
+  /** True if within warning threshold (e.g., < 30 seconds) */
+  timeoutWarning: boolean;
+  /** Seconds remaining for entire match, null if no match timer */
+  matchTimeRemaining: number | null;
 }
 
 /**
@@ -399,6 +404,14 @@ export interface InternalGameState {
   chainState?: {
     waitingForResponse: boolean;
     currentChain: unknown[];
+  };
+  // Timeout status fields
+  timeoutStatus?: {
+    actionTimeRemainingMs: number;
+    matchTimeRemainingMs: number;
+    isWarning: boolean;
+    isTimedOut: boolean;
+    isMatchTimedOut: boolean;
   };
 }
 

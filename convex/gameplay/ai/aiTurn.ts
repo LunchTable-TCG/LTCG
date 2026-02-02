@@ -8,6 +8,7 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "../../_generated/dataModel";
 import { internalMutation, mutation } from "../../_generated/server";
+import { getCardAbility } from "../../lib/abilityHelpers";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { drawCards } from "../../lib/gameHelpers";
 import { type AIAction, makeAIDecision } from "./aiEngine";
@@ -26,9 +27,13 @@ interface StateChanges {
   opponentBoard: BoardCard[];
   opponentHand: Id<"cardDefinitions">[];
   opponentGraveyard: Id<"cardDefinitions">[];
+  opponentDeck: Id<"cardDefinitions">[];
+  opponentLifePoints: number;
   hostBoard: BoardCard[];
+  hostHand: Id<"cardDefinitions">[];
   hostLifePoints: number;
   hostGraveyard: Id<"cardDefinitions">[];
+  hostDeck: Id<"cardDefinitions">[];
   opponentNormalSummonedThisTurn: boolean;
 }
 
@@ -184,11 +189,149 @@ function executeAction(
       // Remove from hand
       stateChanges.opponentHand = stateChanges.opponentHand.filter((id) => id !== action.cardId);
 
-      // For now, move to graveyard (spell effect execution would need more infrastructure)
+      // Move to graveyard (spells go to GY after activation, except continuous/field)
       stateChanges.opponentGraveyard.push(action.cardId);
 
-      // TODO: Implement actual spell effects based on card ability
-      return { success: true, description: `Activated spell: ${card.name}` };
+      // Execute spell effects based on card ability
+      const ability = getCardAbility(card);
+      if (!ability || ability.effects.length === 0) {
+        return { success: true, description: `Activated spell: ${card.name} (no effect defined)` };
+      }
+
+      const effectResults: string[] = [];
+
+      for (const effect of ability.effects) {
+        // Only execute manual-trigger effects (spell activations)
+        if (effect.trigger !== "manual") continue;
+
+        switch (effect.type) {
+          case "draw": {
+            // AI draws cards
+            const drawCount = effect.value || 1;
+            for (let i = 0; i < drawCount && stateChanges.opponentDeck.length > 0; i++) {
+              const drawnCard = stateChanges.opponentDeck.shift();
+              if (drawnCard) {
+                stateChanges.opponentHand.push(drawnCard);
+              }
+            }
+            effectResults.push(`Drew ${drawCount} card(s)`);
+            break;
+          }
+
+          case "destroy": {
+            // Destroy target cards - AI targets opponent's (host's) monsters
+            const targetCount = effect.targetCount || 1;
+            const targetOwner = effect.targetLocation === "board" ? "opponent" : "self";
+
+            if (targetOwner === "opponent" || effect.condition?.includes("opponent")) {
+              // Destroy opponent's (host's) monsters
+              let destroyed = 0;
+              while (destroyed < targetCount && stateChanges.hostBoard.length > 0) {
+                const target = stateChanges.hostBoard.shift();
+                if (target) {
+                  stateChanges.hostGraveyard.push(target.cardId);
+                  destroyed++;
+                }
+              }
+              if (destroyed > 0) {
+                effectResults.push(`Destroyed ${destroyed} opponent monster(s)`);
+              }
+            } else {
+              // Destroy all monsters (both sides) - for effects like "Dark Hole"
+              const hostDestroyed = stateChanges.hostBoard.length;
+              const oppDestroyed = stateChanges.opponentBoard.length;
+              for (const m of stateChanges.hostBoard) {
+                stateChanges.hostGraveyard.push(m.cardId);
+              }
+              for (const m of stateChanges.opponentBoard) {
+                stateChanges.opponentGraveyard.push(m.cardId);
+              }
+              stateChanges.hostBoard = [];
+              stateChanges.opponentBoard = [];
+              effectResults.push(`Destroyed ${hostDestroyed + oppDestroyed} monster(s)`);
+            }
+            break;
+          }
+
+          case "damage": {
+            // Deal damage to opponent (host)
+            const damageAmount = effect.value || 0;
+            stateChanges.hostLifePoints = Math.max(0, stateChanges.hostLifePoints - damageAmount);
+            effectResults.push(`Dealt ${damageAmount} damage`);
+            break;
+          }
+
+          case "gainLP": {
+            // AI gains LP
+            const healAmount = effect.value || 0;
+            stateChanges.opponentLifePoints = stateChanges.opponentLifePoints + healAmount;
+            effectResults.push(`Gained ${healAmount} LP`);
+            break;
+          }
+
+          case "modifyATK": {
+            // Modify ATK of monsters - typically targets AI's own monsters
+            const atkMod = effect.value || 0;
+            for (const monster of stateChanges.opponentBoard) {
+              monster.attack = Math.max(0, monster.attack + atkMod);
+            }
+            effectResults.push(`Modified ATK by ${atkMod}`);
+            break;
+          }
+
+          case "modifyDEF": {
+            // Modify DEF of monsters
+            const defMod = effect.value || 0;
+            for (const monster of stateChanges.opponentBoard) {
+              monster.defense = Math.max(0, monster.defense + defMod);
+            }
+            effectResults.push(`Modified DEF by ${defMod}`);
+            break;
+          }
+
+          case "toHand": {
+            // Return cards to hand - AI returns opponent's monsters
+            if (stateChanges.hostBoard.length > 0) {
+              const target = stateChanges.hostBoard.shift();
+              if (target) {
+                stateChanges.hostHand.push(target.cardId);
+                effectResults.push(`Returned a monster to opponent's hand`);
+              }
+            }
+            break;
+          }
+
+          case "toGraveyard": {
+            // Send cards to graveyard (mill effect)
+            const millCount = effect.value || 1;
+            for (let i = 0; i < millCount && stateChanges.hostDeck.length > 0; i++) {
+              const milled = stateChanges.hostDeck.shift();
+              if (milled) {
+                stateChanges.hostGraveyard.push(milled);
+              }
+            }
+            effectResults.push(`Sent ${millCount} card(s) to opponent's graveyard`);
+            break;
+          }
+
+          case "banish": {
+            // Banish cards - target opponent's graveyard or board
+            if (stateChanges.hostGraveyard.length > 0) {
+              stateChanges.hostGraveyard.shift(); // Remove from GY (banished zone not tracked in state changes)
+              effectResults.push(`Banished a card from opponent's graveyard`);
+            }
+            break;
+          }
+
+          default:
+            // Effect type not implemented for AI yet
+            effectResults.push(`Effect ${effect.type} activated`);
+            break;
+        }
+      }
+
+      const effectDesc = effectResults.length > 0 ? `: ${effectResults.join(", ")}` : "";
+      return { success: true, description: `Activated ${card.name}${effectDesc}` };
     }
 
     case "end_phase":
@@ -260,9 +403,13 @@ export const executeAITurn = mutation({
       opponentBoard: [...gameState.opponentBoard],
       opponentHand: [...gameState.opponentHand],
       opponentGraveyard: [...gameState.opponentGraveyard],
+      opponentDeck: [...gameState.opponentDeck],
+      opponentLifePoints: gameState.opponentLifePoints,
       hostBoard: [...gameState.hostBoard],
+      hostHand: [...gameState.hostHand],
       hostLifePoints: gameState.hostLifePoints,
       hostGraveyard: [...gameState.hostGraveyard],
+      hostDeck: [...gameState.hostDeck],
       opponentNormalSummonedThisTurn: gameState.opponentNormalSummonedThisTurn || false,
     };
 
@@ -382,9 +529,13 @@ export const executeAITurn = mutation({
         opponentBoard: resetBoard,
         opponentHand: stateChanges.opponentHand,
         opponentGraveyard: stateChanges.opponentGraveyard,
+        opponentDeck: stateChanges.opponentDeck,
+        opponentLifePoints: stateChanges.opponentLifePoints,
         hostBoard: stateChanges.hostBoard,
+        hostHand: stateChanges.hostHand,
         hostLifePoints: stateChanges.hostLifePoints,
         hostGraveyard: stateChanges.hostGraveyard,
+        hostDeck: stateChanges.hostDeck,
         // Turn state
         opponentNormalSummonedThisTurn: false,
         hostNormalSummonedThisTurn: false,
@@ -484,9 +635,13 @@ export const executeAITurnInternal = internalMutation({
       opponentBoard: [...gameState.opponentBoard],
       opponentHand: [...gameState.opponentHand],
       opponentGraveyard: [...gameState.opponentGraveyard],
+      opponentDeck: [...gameState.opponentDeck],
+      opponentLifePoints: gameState.opponentLifePoints,
       hostBoard: [...gameState.hostBoard],
+      hostHand: [...gameState.hostHand],
       hostLifePoints: gameState.hostLifePoints,
       hostGraveyard: [...gameState.hostGraveyard],
+      hostDeck: [...gameState.hostDeck],
       opponentNormalSummonedThisTurn: gameState.opponentNormalSummonedThisTurn || false,
     };
 
@@ -599,9 +754,13 @@ export const executeAITurnInternal = internalMutation({
         opponentBoard: resetBoard,
         opponentHand: stateChanges.opponentHand,
         opponentGraveyard: stateChanges.opponentGraveyard,
+        opponentDeck: stateChanges.opponentDeck,
+        opponentLifePoints: stateChanges.opponentLifePoints,
         hostBoard: stateChanges.hostBoard,
+        hostHand: stateChanges.hostHand,
         hostLifePoints: stateChanges.hostLifePoints,
         hostGraveyard: stateChanges.hostGraveyard,
+        hostDeck: stateChanges.hostDeck,
         opponentNormalSummonedThisTurn: false,
         hostNormalSummonedThisTurn: false,
         currentTurnPlayerId: gameState.hostId,

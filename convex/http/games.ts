@@ -133,6 +133,12 @@ export const pendingTurns = authHttpAction(async (ctx, request, auth) => {
 
     // Derive isHost from lobby to determine opponent username
     const isHost = auth.userId === activeLobby.hostId;
+
+    // Calculate time remaining from timeout status (in seconds for API response)
+    const timeRemaining = gameState.timeoutStatus
+      ? Math.ceil(gameState.timeoutStatus.actionTimeRemainingMs / 1000)
+      : null;
+
     return successResponse([
       {
         gameId: gameState.gameId,
@@ -142,7 +148,11 @@ export const pendingTurns = authHttpAction(async (ctx, request, auth) => {
         opponent: {
           username: isHost ? activeLobby.opponentUsername : activeLobby.hostUsername,
         },
-        timeRemaining: null, // TODO: Calculate from timeout system
+        timeRemaining,
+        timeoutWarning: gameState.timeoutStatus?.isWarning || false,
+        matchTimeRemaining: gameState.timeoutStatus
+          ? Math.ceil(gameState.timeoutStatus.matchTimeRemainingMs / 1000)
+          : null,
       },
     ]);
   } catch (error) {

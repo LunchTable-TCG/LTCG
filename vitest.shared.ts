@@ -23,7 +23,6 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./apps/web/src"),
       "@convex": path.resolve(__dirname, "./convex"),
       "@convex/_generated": path.resolve(__dirname, "./convex/_generated"),
-      "@convex-test-utils": path.resolve(__dirname, "./convex_test_utils"),
     },
   },
 });

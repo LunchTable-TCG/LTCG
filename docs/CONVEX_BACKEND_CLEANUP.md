@@ -81,19 +81,32 @@ The admin role functions in `admin/admin.ts` vs `admin/roles.ts` serve different
 - `convex/admin/admin.ts` (lines 487-591) - Keep this version
 - `convex/admin/queries.ts` - Remove duplicate, update frontend to use `admin.ts` version
 
-#### 2. Mixed Auth Patterns
+#### 2. Mixed Auth Patterns (RESOLVED)
 
-**Problem**: Inconsistent authentication approaches across modules:
-- Some use `requireAuthMutation`/`requireAuthQuery` from `lib/convexAuth.ts`
-- Some use `getCurrentUser` helper pattern
-- Some have inline auth checks
+**Problem**: Inconsistent authentication approaches across modules.
 
-**Recommendation**: Standardize on `requireAuthMutation`/`requireAuthQuery` pattern. Create migration guide.
+**Solution**: Auth patterns are now standardized. The codebase uses:
+- `requireAuthMutation`/`requireAuthQuery` - When authentication is **required** (throws error if not authenticated)
+- `getCurrentUser` - When authentication is **optional** (returns null if not authenticated, allowing graceful handling)
 
-**Files to Review**:
-- All files in `convex/core/`
-- All files in `convex/gameplay/`
-- All files in `convex/progression/`
+**Pattern Guide**:
+```typescript
+// Use when auth is REQUIRED (most cases)
+const auth = await requireAuthMutation(ctx);
+// Throws AUTH_REQUIRED error automatically
+
+// Use when auth is OPTIONAL (return defaults for guests)
+const auth = await getCurrentUser(ctx);
+if (!auth) {
+  return null; // or default value
+}
+```
+
+**Files Updated**:
+- `convex/agents.ts` - Migrated to `requireAuthMutation`
+- `convex/core/users.ts` - Migrated to `requireAuthMutation`
+
+The remaining `getCurrentUser` usages are intentional for optional-auth scenarios.
 
 ### LOW Priority
 
