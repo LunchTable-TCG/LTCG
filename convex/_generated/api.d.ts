@@ -16,6 +16,7 @@ import type * as __tests___helpers_testAuth from "../__tests__/helpers/testAuth.
 import type * as admin_admin from "../admin/admin.js";
 import type * as admin_analytics from "../admin/analytics.js";
 import type * as admin_apiKeys from "../admin/apiKeys.js";
+import type * as admin_assets from "../admin/assets.js";
 import type * as admin_batchAdmin from "../admin/batchAdmin.js";
 import type * as admin_cleanupAuth from "../admin/cleanupAuth.js";
 import type * as admin_moderation from "../admin/moderation.js";
@@ -214,6 +215,7 @@ declare const fullApi: ApiFromModules<{
   "admin/admin": typeof admin_admin;
   "admin/analytics": typeof admin_analytics;
   "admin/apiKeys": typeof admin_apiKeys;
+  "admin/assets": typeof admin_assets;
   "admin/batchAdmin": typeof admin_batchAdmin;
   "admin/cleanupAuth": typeof admin_cleanupAuth;
   "admin/moderation": typeof admin_moderation;
