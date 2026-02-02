@@ -19,6 +19,7 @@
         "@tailwindcss/postcss": "4",
         "@types/dompurify": "^3.2.0",
         "@vercel/blob": "^2.0.1",
+        "@vercel/edge-config": "^1.4.3",
         "bcryptjs": "^3.0.3",
         "bs58": "^6.0.0",
         "class-variance-authority": "^0.7.1",
@@ -1122,6 +1123,10 @@
     "@vercel/cervel": ["@vercel/cervel@0.0.10", "", { "dependencies": { "execa": "3.2.0", "rolldown": "1.0.0-beta.59", "srvx": "0.8.9", "tsx": "4.21.0" }, "peerDependencies": { "typescript": "^4.0.0 || ^5.0.0" }, "bin": { "cervel": "bin/cervel.mjs" } }, "sha512-uctvhSFBcCOH/aUIkIXkJSCS2R5OOpVNsNkb+ViaMff8NGVMiDXDUyfaW8LGcNu4WWMKQe2FTRCqPcNdEmMrZg=="],
 
     "@vercel/detect-agent": ["@vercel/detect-agent@1.1.0", "", {}, "sha512-Zfq6FbIcYl9gaAmVu6ROsqUiCNwpEj3Ljz/tMX5fl12Z95OFOxzf7vlO03WE5JBU/ri1tBDFHnW41dihMINOPQ=="],
+
+    "@vercel/edge-config": ["@vercel/edge-config@1.4.3", "", { "dependencies": { "@vercel/edge-config-fs": "0.1.0" }, "peerDependencies": { "@opentelemetry/api": "^1.7.0", "next": ">=1" }, "optionalPeers": ["@opentelemetry/api", "next"] }, "sha512-8vTDATodRrH49wMzKEjZ8/5H2qs1aPkD0uRK585f/Fx4YN2wfHfY/3td9OFrh+gdnCq07z8A5f0hoY6xhBcPkg=="],
+
+    "@vercel/edge-config-fs": ["@vercel/edge-config-fs@0.1.0", "", {}, "sha512-NRIBwfcS0bUoUbRWlNGetqjvLSwgYH/BqKqDN7vK1g32p7dN96k0712COgaz6VFizAm9b0g6IG6hR6+hc0KCPg=="],
 
     "@vercel/elysia": ["@vercel/elysia@0.1.27", "", { "dependencies": { "@vercel/node": "5.5.28", "@vercel/static-config": "3.1.2" } }, "sha512-vMXA3WRTTyHjuueDLymZQ2btb0zN8LZlwCtG4oEFCePcP6zdPFht8BLXNfVetEGz26TYZSoLKdZxVo4CgV9MLg=="],
 

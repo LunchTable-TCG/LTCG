@@ -17,7 +17,7 @@ import { join, relative, extname } from "node:path";
 // Configuration
 // =============================================================================
 
-const PUBLIC_DIR = join(import.meta.dir, "../apps/web/public/assets");
+const PUBLIC_DIR = join(new URL(".", import.meta.url).pathname, "../apps/web/public/assets");
 const DRY_RUN = process.argv.includes("--dry-run");
 
 const SUPPORTED_EXTENSIONS = new Set([
@@ -91,7 +91,8 @@ async function uploadAssets() {
   console.log("🚀 Vercel Blob Asset Upload\n");
 
   // Check for token
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  const blobToken = process.env["BLOB_READ_WRITE_TOKEN"];
+  if (!blobToken) {
     console.error("❌ BLOB_READ_WRITE_TOKEN environment variable is not set");
     console.log("\nSet it with:");
     console.log('  export BLOB_READ_WRITE_TOKEN="your_token_here"');
@@ -115,6 +116,7 @@ async function uploadAssets() {
   // Upload each file
   for (let i = 0; i < files.length; i++) {
     const filePath = files[i];
+    if (!filePath) continue;
     const relativePath = relative(PUBLIC_DIR, filePath);
     const blobPath = relativePath; // Keep the same structure
 
@@ -169,9 +171,8 @@ async function uploadAssets() {
   }
 
   // Output the base URL
-  if (results.length > 0) {
+  if (results.length > 0 && results[0]) {
     const sampleUrl = results[0].url;
-    const baseUrl = sampleUrl.substring(0, sampleUrl.lastIndexOf("/"));
     // Extract just the store base URL (before the file path)
     const parts = new URL(sampleUrl);
     const storeBaseUrl = `${parts.protocol}//${parts.host}`;

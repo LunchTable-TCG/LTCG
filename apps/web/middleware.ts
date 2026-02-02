@@ -1,3 +1,4 @@
+import { get } from "@vercel/edge-config";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -18,11 +19,50 @@ const protectedRoutes = [
 ];
 
 /**
- * Middleware for route protection
- * Checks for Privy auth token cookie and redirects to login if not present
+ * Routes that should bypass maintenance mode
  */
-export function middleware(request: NextRequest) {
+const maintenanceBypassRoutes = ["/maintenance", "/api", "/_next", "/favicon.ico"];
+
+/**
+ * Feature flags from Edge Config
+ */
+interface FeatureFlags {
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
+}
+
+/**
+ * Middleware for route protection and Edge Config features
+ * - Checks maintenance mode from Edge Config
+ * - Checks for Privy auth token cookie and redirects to login if not present
+ */
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Skip Edge Config checks for static assets and API routes
+  const shouldCheckEdgeConfig = !pathname.startsWith("/_next") && !pathname.includes(".");
+
+  if (shouldCheckEdgeConfig) {
+    try {
+      // Check maintenance mode from Edge Config (ultra-fast at edge)
+      const featureFlags = await get<FeatureFlags>("featureFlags");
+
+      if (featureFlags?.maintenanceMode) {
+        // Allow bypass routes during maintenance
+        const isBypassRoute = maintenanceBypassRoutes.some(
+          (route) => pathname === route || pathname.startsWith(route)
+        );
+
+        if (!isBypassRoute) {
+          // Redirect to maintenance page
+          const maintenanceUrl = new URL("/maintenance", request.url);
+          return NextResponse.redirect(maintenanceUrl);
+        }
+      }
+    } catch {
+      // Edge Config not available - continue without it
+    }
+  }
 
   // Check if the current path is a protected route
   const isProtected = protectedRoutes.some(
