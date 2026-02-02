@@ -8,11 +8,11 @@
  * - Zone restrictions
  */
 
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
 import schema from "@convex/schema";
 import { modules } from "@convex/test.setup";
-import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
+import { convexTest } from "convex-test";
+import { describe, expect, it } from "vitest";
 
 describe("Targeting System", () => {
   describe("Valid Targeting", () => {

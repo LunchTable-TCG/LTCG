@@ -138,7 +138,7 @@ describe("Agent Chat E2E Tests", () => {
       const messages = ["First message", "Second message", "Third message"];
 
       // Send multiple messages
-      messages.forEach((msg, index) => {
+      messages.forEach((msg, _index) => {
         cy.get('input[type="text"], textarea, [contenteditable="true"]')
           .filter(":visible")
           .first()

@@ -264,7 +264,7 @@ export function GlobalChat() {
       });
 
       toast.success(`Challenge sent to ${challengeTarget.username}!`, {
-        description: `Lobby created. They will be notified to join.`,
+        description: "Lobby created. They will be notified to join.",
       });
       setChallengeTarget(null);
     } catch (error: unknown) {
@@ -283,8 +283,8 @@ export function GlobalChat() {
         reason,
       });
 
-      toast.success(`Report submitted`, {
-        description: `Thank you. Moderators will review your report.`,
+      toast.success("Report submitted", {
+        description: "Thank you. Moderators will review your report.",
       });
       setReportTarget(null);
     } catch (error: unknown) {

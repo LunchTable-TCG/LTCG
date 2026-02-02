@@ -1,6 +1,11 @@
 import { cronJobs } from "convex/server";
 import { internal } from "../_generated/api";
 
+// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
+// for newly added modules that haven't been regenerated yet
+// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround
+const internalAny = internal as any;
+
 const crons = cronJobs();
 
 // Cleanup stale game lobbies every minute
@@ -59,6 +64,26 @@ crons.interval(
   "send-welcome-emails",
   { hours: 1 },
   internal.welcomeEmails.sendWelcomeEmailsToNewUsers
+);
+
+// ============================================================================
+// TOKEN MARKETPLACE MAINTENANCE
+// ============================================================================
+
+// Expire stale pending token purchases every minute
+// (purchases stuck in "awaiting_signature" that have passed their expiresAt)
+crons.interval(
+  "expire-stale-token-purchases",
+  { minutes: 1 },
+  internalAny.economy.tokenMaintenance.expireStalePurchases
+);
+
+// Refresh token balances for active marketplace users every 5 minutes
+// (keeps balances fresh for active traders without excessive RPC calls)
+crons.interval(
+  "refresh-active-token-balances",
+  { minutes: 5 },
+  internalAny.economy.tokenMaintenance.refreshActiveBalances
 );
 
 export default crons;

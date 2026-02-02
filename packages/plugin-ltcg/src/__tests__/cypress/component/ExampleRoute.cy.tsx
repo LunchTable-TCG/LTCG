@@ -5,7 +5,7 @@ import "../../../frontend/index.css";
 // We need to import the component directly since it's not exported
 // In a real scenario, you'd export the component from index.tsx
 const ExampleRoute = () => {
-  const [config, setConfig] = React.useState(window.ELIZA_CONFIG);
+  const [config, _setConfig] = React.useState(window.ELIZA_CONFIG);
 
   React.useEffect(() => {
     document.documentElement.classList.add("dark");
@@ -70,7 +70,7 @@ describe("ExampleRoute Component Tests", () => {
   describe("Configuration Handling", () => {
     it("should handle ELIZA_CONFIG changes", () => {
       const initialAgentId = "initial-agent-id";
-      const updatedAgentId = "updated-agent-id";
+      const _updatedAgentId = "updated-agent-id";
 
       // Set initial config
       cy.window().then((win) => {

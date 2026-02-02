@@ -20,10 +20,6 @@ export class LTCGRealtimeService extends Service {
 
   capabilityDescription = "Provides real-time game state updates via Convex subscriptions";
 
-  constructor(runtime: IAgentRuntime) {
-    super(runtime);
-  }
-
   static async start(runtime: IAgentRuntime): Promise<LTCGRealtimeService> {
     logger.info("*** Starting LTCG real-time service ***");
 
@@ -123,6 +119,6 @@ export class LTCGRealtimeService extends Service {
    * Check if real-time client is available
    */
   isAvailable(): boolean {
-    return this.client !== null && this.client.isClientConnected();
+    return this.client?.isClientConnected();
   }
 }

@@ -129,7 +129,7 @@ Select which lobby to join. Consider:
 
 Respond with JSON: { "lobbyIndex": <index> }`;
 
-        const decision = await runtime.useModel(ModelType.TEXT_GENERATION, {
+        const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
           prompt,
           temperature: 0.5,
           maxTokens: 100,
@@ -170,7 +170,8 @@ Respond with JSON: { "lobbyIndex": <index> }`;
           await callback({
             text: `Instantly matched! Game ID: ${gameId.slice(0, 8)}...`,
             actions: ["FIND_GAME"],
-            thought: `No existing lobbies found but matchmaking instantly paired with opponent, starting game now`,
+            thought:
+              "No existing lobbies found but matchmaking instantly paired with opponent, starting game now",
           } as Content);
         } else {
           // Waiting in lobby

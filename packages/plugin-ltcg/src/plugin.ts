@@ -3,7 +3,6 @@ import {
   type Action,
   type ActionResult,
   type Content,
-  type GenerateTextParams,
   type HandlerCallback,
   type IAgentRuntime,
   type Memory,
@@ -16,13 +15,13 @@ import {
   type State,
   logger,
 } from "@elizaos/core";
+import type { AgentPanel } from "./frontend";
 
 // Re-export core types for plugin consumers
 export type {
   Action,
   ActionResult,
   Content,
-  GenerateTextParams,
   HandlerCallback,
   IAgentRuntime,
   Memory,
@@ -31,6 +30,13 @@ export type {
   State,
 };
 export { ModelType, Service };
+
+/**
+ * Extended Plugin interface with LTCG-specific panels
+ */
+export interface LTCGPlugin extends Plugin {
+  panels?: AgentPanel[];
+}
 import { z } from "zod";
 
 // Import LTCG actions, providers, and evaluators
@@ -97,19 +103,17 @@ const configSchema = z.object({
     .optional(),
 });
 
-const plugin: Plugin & { panels?: any } = {
+const plugin: LTCGPlugin = {
   name: "ltcg",
   description:
     "LTCG card game plugin - enables AI agents to play the Legendary Trading Card Game with full gameplay capabilities, real-time updates, and customizable personalities",
-  // Set lowest priority so real models take precedence
-  priority: -1000,
   config: {
-    LTCG_API_KEY: process.env['LTCG_API_KEY'],
-    LTCG_API_URL: process.env['LTCG_API_URL'],
-    LTCG_CALLBACK_URL: process.env['LTCG_CALLBACK_URL'],
-    LTCG_WEBHOOK_SECRET: process.env['LTCG_WEBHOOK_SECRET'],
-    LTCG_AUTO_MATCHMAKING: process.env['LTCG_AUTO_MATCHMAKING'],
-    LTCG_DEBUG_MODE: process.env['LTCG_DEBUG_MODE'],
+    LTCG_API_KEY: process.env.LTCG_API_KEY,
+    LTCG_API_URL: process.env.LTCG_API_URL,
+    LTCG_CALLBACK_URL: process.env.LTCG_CALLBACK_URL,
+    LTCG_WEBHOOK_SECRET: process.env.LTCG_WEBHOOK_SECRET,
+    LTCG_AUTO_MATCHMAKING: process.env.LTCG_AUTO_MATCHMAKING,
+    LTCG_DEBUG_MODE: process.env.LTCG_DEBUG_MODE,
   },
   async init(config: Record<string, string>) {
     logger.info("*** Initializing LTCG plugin ***");
@@ -143,14 +147,6 @@ const plugin: Plugin & { panels?: any } = {
       );
     }
   },
-  models: {
-    [ModelType.TEXT_SMALL]: async (_runtime: IAgentRuntime, _params: GenerateTextParams) => {
-      return "Test response for small model";
-    },
-    [ModelType.TEXT_LARGE]: async (_runtime: IAgentRuntime, _params: GenerateTextParams) => {
-      return "Test response for large model";
-    },
-  },
   routes: [
     // Health check endpoint
     {
@@ -172,32 +168,17 @@ const plugin: Plugin & { panels?: any } = {
     ...panelRoutes,
   ],
   events: {
+    // Event handlers for debugging - only log in debug mode
     MESSAGE_RECEIVED: [
-      async (params: Record<string, unknown>) => {
-        logger.info("MESSAGE_RECEIVED event received");
-        // print the keys
-        logger.info({ keys: Object.keys(params) }, "MESSAGE_RECEIVED param keys");
-      },
-    ],
-    VOICE_MESSAGE_RECEIVED: [
-      async (params: Record<string, unknown>) => {
-        logger.info("VOICE_MESSAGE_RECEIVED event received");
-        // print the keys
-        logger.info({ keys: Object.keys(params) }, "VOICE_MESSAGE_RECEIVED param keys");
+      async (_params: Record<string, unknown>) => {
+        if (process.env.LTCG_DEBUG_MODE === "true") {
+          logger.debug("LTCG: MESSAGE_RECEIVED event");
+        }
       },
     ],
     WORLD_CONNECTED: [
-      async (params: Record<string, unknown>) => {
-        logger.info("WORLD_CONNECTED event received");
-        // print the keys
-        logger.info({ keys: Object.keys(params) }, "WORLD_CONNECTED param keys");
-      },
-    ],
-    WORLD_JOINED: [
-      async (params: Record<string, unknown>) => {
-        logger.info("WORLD_JOINED event received");
-        // print the keys
-        logger.info({ keys: Object.keys(params) }, "WORLD_JOINED param keys");
+      async (_params: Record<string, unknown>) => {
+        logger.info("LTCG: Connected to world");
       },
     ],
   },

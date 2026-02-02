@@ -58,7 +58,7 @@ export function ListingDialog({
 }: ListingDialogProps) {
   const [listingType, setListingType] = useState<"fixed" | "auction">("fixed");
   const [price, setPrice] = useState(SUGGESTED_PRICES[card.rarity].toString());
-  const [duration, setDuration] = useState(AUCTION_DURATIONS[3]!.value);
+  const [duration, setDuration] = useState(AUCTION_DURATIONS[3]?.value);
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
 
   // Use external submitting state if provided, otherwise use internal
@@ -68,7 +68,7 @@ export function ListingDialog({
 
   const handleSubmit = async () => {
     const priceNum = Number.parseInt(price);
-    if (isNaN(priceNum) || priceNum <= 0) {
+    if (Number.isNaN(priceNum) || priceNum <= 0) {
       return;
     }
 
@@ -79,7 +79,7 @@ export function ListingDialog({
       if (externalIsSubmitting === undefined) {
         onClose();
       }
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by parent
     } finally {
       setInternalIsSubmitting(false);

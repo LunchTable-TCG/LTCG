@@ -30,7 +30,7 @@ export const activateTrapAction: Action = {
     try {
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for activate trap validation");
@@ -71,7 +71,7 @@ export const activateTrapAction: Action = {
 
       // Get game state and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
       const boardAnalysis = boardAnalysisResult.data;
@@ -109,7 +109,7 @@ export const activateTrapAction: Action = {
         recentEvents = await client.getGameHistory(gameState.gameId);
         // Get last 3 events for context
         recentEvents = recentEvents.slice(-3);
-      } catch (error) {
+      } catch (_error) {
         logger.warn("Failed to get game history for trap context");
       }
 
@@ -129,8 +129,8 @@ Game Context:
 - Your LP: ${gameState.hostPlayer.lifePoints}
 - Opponent LP: ${gameState.opponentPlayer.lifePoints}
 - Current Phase: ${gameState.phase}
-- Board Advantage: ${boardAnalysis?.['advantage'] || "UNKNOWN"}
-- Threat Level: ${boardAnalysis?.['threatLevel'] || "UNKNOWN"}
+- Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
+- Threat Level: ${boardAnalysis?.threatLevel || "UNKNOWN"}
 
 Recent Events:
 ${recentContext}
@@ -153,7 +153,7 @@ Consider:
 
 Respond with JSON: { "shouldActivate": true/false, "trapIndex": <index if activating>, "targets": [<target indices if needed>], "reasoning": "<brief>" }`;
 
-      const decision = await runtime.useModel(ModelType.TEXT_GENERATION, {
+      const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
         prompt,
         temperature: 0.7,
         maxTokens: 300,

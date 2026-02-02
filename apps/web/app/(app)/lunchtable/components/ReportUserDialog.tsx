@@ -27,7 +27,7 @@ export function ReportUserDialog({ username, isOpen, onClose, onSubmit }: Report
       await onSubmit(reason.trim());
       setReason("");
       onClose();
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done in parent component
     } finally {
       setIsSubmitting(false);

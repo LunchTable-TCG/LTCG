@@ -156,7 +156,8 @@ function executeAction(
           success: true,
           description: `${attackerCard?.name || "Monster"} destroyed ${targetCard?.name || "monster"}`,
         };
-      } else if (attacker.attack === targetDEF && target.position === 1) {
+      }
+      if (attacker.attack === targetDEF && target.position === 1) {
         // Both destroyed
         stateChanges.hostBoard.splice(targetIndex, 1);
         stateChanges.hostGraveyard.push(target.cardId);
@@ -166,11 +167,10 @@ function executeAction(
           success: true,
           description: `${attackerCard?.name || "Monster"} and ${targetCard?.name || "monster"} destroyed each other`,
         };
-      } else {
-        // Attacker loses or can't destroy target - mark as attacked but no destruction
-        stateChanges.opponentBoard[attackerIndex] = { ...attacker, hasAttacked: true };
-        return { success: false, description: `${attackerCard?.name || "Monster"} attack failed` };
       }
+      // Attacker loses or can't destroy target - mark as attacked but no destruction
+      stateChanges.opponentBoard[attackerIndex] = { ...attacker, hasAttacked: true };
+      return { success: false, description: `${attackerCard?.name || "Monster"} attack failed` };
     }
 
     case "activate_spell": {

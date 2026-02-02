@@ -12,6 +12,7 @@ import { mutation } from "../../_generated/server";
 import { getCardAbility, getRawJsonAbility } from "../../lib/abilityHelpers";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { validateGameActive } from "../../lib/gameValidation";
 import { getSpellSpeed } from "../../lib/spellSpeedHelper";
 import { type ChainEffect, addToChainHelper } from "../chainResolver";
 import { executeSearch } from "../effectSystem/executors/cardMovement/search";
@@ -51,13 +52,16 @@ export const setSpellTrap = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
@@ -169,13 +173,16 @@ export const activateSpell = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
-    // 3. Validate it's the current player's turn (or valid activation timing)
+    // 4. Validate it's the current player's turn (or valid activation timing)
     // Note: Quick-Play spells can be activated on opponent's turn
     // For MVP, we'll only allow activation on your own turn
 
@@ -307,7 +314,10 @@ export const completeSearchEffect = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get game state
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get game state
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
@@ -378,13 +388,16 @@ export const activateTrap = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
-    // 3. Get game state
+    // 4. Get game state
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))

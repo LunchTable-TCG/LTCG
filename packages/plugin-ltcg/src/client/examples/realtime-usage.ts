@@ -17,9 +17,9 @@ import { ConvexRealtimeClient } from "../realtimeClient";
  */
 function initializeClient() {
   const client = new ConvexRealtimeClient({
-    convexUrl: process.env['CONVEX_URL'] || "https://your-deployment.convex.cloud",
+    convexUrl: process.env.CONVEX_URL || "https://your-deployment.convex.cloud",
     authToken: "your-jwt-token-from-agent-registration",
-    debug: process.env['NODE_ENV'] === "development",
+    debug: process.env.NODE_ENV === "development",
   });
 
   return client;
@@ -332,7 +332,7 @@ export class LTCGRealtimeService {
     this.client = new ConvexRealtimeClient({
       convexUrl: config.convexUrl,
       authToken: config.authToken,
-      debug: process.env['NODE_ENV'] === "development",
+      debug: process.env.NODE_ENV === "development",
     });
 
     console.log("LTCG Real-time service initialized");

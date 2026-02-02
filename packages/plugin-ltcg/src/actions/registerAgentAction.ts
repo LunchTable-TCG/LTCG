@@ -120,8 +120,6 @@ export const registerAgentAction: Action = {
             starterDecks.find((d) => d.archetype.toLowerCase().includes("trap")) ||
             starterDecks.find((d) => d.archetype.toLowerCase().includes("control"));
           break;
-
-        case "balanced":
         default:
           selectedDeck =
             starterDecks.find((d) => d.archetype.toLowerCase().includes("balanced")) ||
@@ -145,7 +143,7 @@ Consider the play style preference when choosing.
 
 Respond with JSON: { "deckIndex": <index> }`;
 
-        const decision = await runtime.useModel(ModelType.TEXT_GENERATION, {
+        const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
           prompt,
           temperature: 0.5,
           maxTokens: 50,

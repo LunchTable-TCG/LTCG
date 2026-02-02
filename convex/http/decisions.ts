@@ -126,7 +126,7 @@ export const getDecisions = authHttpAction(async (ctx, request, auth) => {
     const limit = limitParam ? Number.parseInt(limitParam, 10) : 50;
 
     // Validate limit
-    if (isNaN(limit) || limit < 1 || limit > 100) {
+    if (Number.isNaN(limit) || limit < 1 || limit > 100) {
       return errorResponse("INVALID_LIMIT", "Limit must be a number between 1 and 100", 400);
     }
 

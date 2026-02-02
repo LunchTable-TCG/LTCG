@@ -120,7 +120,7 @@ export const storyModeAction: Action = {
       state.values.LTCG_IS_STORY_MODE = true;
 
       // Build response text
-      let responseText = `Started story battle!\n`;
+      let responseText = "Started story battle!\n";
       responseText += `Chapter: ${result.chapter}\n`;
       responseText += `Stage: ${result.stage.name} (#${result.stage.number})\n`;
       responseText += `AI Opponent: ${result.aiOpponent}\n`;

@@ -57,9 +57,18 @@ export function HandCard({
     ? (card.monsterStats.defense ?? 0) + (card.defenseModifier ?? 0)
     : 0;
 
+  // Build accessible label
+  const statsLabel = card.monsterStats
+    ? `, ${effectiveAttack} attack, ${effectiveDefense} defense, level ${card.monsterStats.level}`
+    : "";
+  const playableLabel = isPlayable ? " - Playable, click to use" : "";
+  const ariaLabel = `${card.name}, ${card.cardType}${statsLabel}${playableLabel}`;
+
   return (
     <motion.button
       onClick={onClick}
+      aria-label={ariaLabel}
+      aria-pressed={isSelected}
       initial={{ opacity: 0, y: 30 }}
       animate={{
         opacity: 1,

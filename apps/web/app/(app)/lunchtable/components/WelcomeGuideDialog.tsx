@@ -209,7 +209,7 @@ export function WelcomeGuideDialog({
                       "relative p-5 rounded-xl border-2 transition-all text-left group",
                       isSelected
                         ? `${deck.bg} ${deck.selectedBorder} shadow-lg ${deck.glow}`
-                        : `bg-black/20 border-[#3d2b1f] hover:border-[#d4af37]/30`
+                        : "bg-black/20 border-[#3d2b1f] hover:border-[#d4af37]/30"
                     )}
                   >
                     {/* Selected indicator */}

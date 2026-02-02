@@ -44,17 +44,26 @@ export function AttackModal({
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm px-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="attack-modal-title"
+            aria-describedby="attack-modal-description"
           >
-            <div className="bg-[#1a1614] border-2 border-red-500/30 rounded-xl shadow-2xl shadow-red-500/20 p-4">
+            <div className="bg-[#1a1614] border-2 border-red-500/30 rounded-xl shadow-2xl shadow-red-500/20 p-4 max-h-[85vh] overflow-y-auto">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="font-bold text-base text-red-400 flex items-center gap-2">
-                    <Swords className="h-5 w-5" />
+                  <h3
+                    id="attack-modal-title"
+                    className="font-bold text-base text-red-400 flex items-center gap-2"
+                  >
+                    <Swords className="h-5 w-5" aria-hidden="true" />
                     Declare Attack
                   </h3>
-                  <p className="text-xs text-[#a89f94] mt-1">Select a target for {attacker.name}</p>
+                  <p id="attack-modal-description" className="text-xs text-[#a89f94] mt-1">
+                    Select a target for {attacker.name}
+                  </p>
                 </div>
                 <Button
                   size="icon"
@@ -82,86 +91,93 @@ export function AttackModal({
               </div>
 
               {/* Target Selection */}
-              <div className="space-y-2">
+              <div className="space-y-2" role="group" aria-label="Attack target selection">
                 <p className="text-sm font-semibold text-[#e8e0d5] mb-2">Choose Target:</p>
 
                 {/* Monster Targets */}
-                {targets.map((target) => {
-                  const isDefense =
-                    target.position === "defense" || target.position === "setDefense";
-                  const hasKnownStats =
-                    !target.isFaceDown &&
-                    target.attack !== undefined &&
-                    target.defense !== undefined;
-                  const targetStat = hasKnownStats
-                    ? isDefense
-                      ? target.defense
-                      : target.attack
-                    : undefined;
-                  const attackerWins =
-                    hasKnownStats && targetStat !== undefined && attacker.attack !== undefined
-                      ? attacker.attack > targetStat
-                      : false;
-                  const isDraw =
-                    hasKnownStats && targetStat !== undefined && attacker.attack !== undefined
-                      ? attacker.attack === targetStat
-                      : false;
+                <div role="listbox" aria-label="Enemy monsters">
+                  {targets.map((target) => {
+                    const isDefense =
+                      target.position === "defense" || target.position === "setDefense";
+                    const hasKnownStats =
+                      !target.isFaceDown &&
+                      target.attack !== undefined &&
+                      target.defense !== undefined;
+                    const targetStat = hasKnownStats
+                      ? isDefense
+                        ? target.defense
+                        : target.attack
+                      : undefined;
+                    const attackerWins =
+                      hasKnownStats && targetStat !== undefined && attacker.attack !== undefined
+                        ? attacker.attack > targetStat
+                        : false;
+                    const isDraw =
+                      hasKnownStats && targetStat !== undefined && attacker.attack !== undefined
+                        ? attacker.attack === targetStat
+                        : false;
 
-                  return (
-                    <Button
-                      key={target.instanceId}
-                      className={cn(
-                        "w-full justify-start gap-3 h-auto py-3 border-2 transition-all",
-                        hasKnownStats &&
-                          attackerWins &&
-                          "bg-green-500/10 border-green-500/40 hover:bg-green-500/20 hover:border-green-500/60",
-                        hasKnownStats &&
-                          isDraw &&
-                          "bg-yellow-500/10 border-yellow-500/40 hover:bg-yellow-500/20 hover:border-yellow-500/60",
-                        hasKnownStats &&
-                          !attackerWins &&
-                          !isDraw &&
-                          "bg-red-500/10 border-red-500/40 hover:bg-red-500/20 hover:border-red-500/60",
-                        !hasKnownStats &&
-                          "bg-purple-500/10 border-purple-500/40 hover:bg-purple-500/20 hover:border-purple-500/60"
-                      )}
-                      variant="outline"
-                      onClick={() => onSelectTarget(target.instanceId)}
-                    >
-                      <div
+                    return (
+                      <Button
+                        key={target.instanceId}
+                        role="option"
+                        aria-label={`Attack ${target.name}${hasKnownStats ? `, ${isDefense ? `Defense ${target.defense}` : `Attack ${target.attack}`}` : ", stats hidden"}${hasKnownStats ? `, ${attackerWins ? "you will win" : isDraw ? "will be a draw" : "you will lose"}` : ""}`}
                         className={cn(
-                          "h-8 w-8 rounded flex items-center justify-center",
-                          isDefense ? "bg-blue-500/20" : "bg-orange-500/20"
+                          "w-full justify-start gap-3 h-auto py-3 border-2 transition-all",
+                          hasKnownStats &&
+                            attackerWins &&
+                            "bg-green-500/10 border-green-500/40 hover:bg-green-500/20 hover:border-green-500/60",
+                          hasKnownStats &&
+                            isDraw &&
+                            "bg-yellow-500/10 border-yellow-500/40 hover:bg-yellow-500/20 hover:border-yellow-500/60",
+                          hasKnownStats &&
+                            !attackerWins &&
+                            !isDraw &&
+                            "bg-red-500/10 border-red-500/40 hover:bg-red-500/20 hover:border-red-500/60",
+                          !hasKnownStats &&
+                            "bg-purple-500/10 border-purple-500/40 hover:bg-purple-500/20 hover:border-purple-500/60"
                         )}
+                        variant="outline"
+                        onClick={() => onSelectTarget(target.instanceId)}
                       >
-                        <Shield
-                          className={cn("h-4 w-4", isDefense ? "text-blue-400" : "text-orange-400")}
-                        />
-                      </div>
-                      <div className="text-left flex-1">
-                        <div className="font-semibold text-sm text-[#e8e0d5]">{target.name}</div>
-                        <div className="text-xs text-[#a89f94]">
-                          {hasKnownStats
-                            ? isDefense
-                              ? `🛡️ ${target.defense} DEF`
-                              : `⚔️ ${target.attack} ATK`
-                            : "❓ Hidden"}
-                        </div>
-                      </div>
-                      {hasKnownStats && (
-                        <div className="text-xs font-bold px-2 py-1 rounded">
-                          {attackerWins ? (
-                            <span className="text-green-400">✓ WIN</span>
-                          ) : isDraw ? (
-                            <span className="text-yellow-400">= DRAW</span>
-                          ) : (
-                            <span className="text-red-400">✗ LOSE</span>
+                        <div
+                          className={cn(
+                            "h-8 w-8 rounded flex items-center justify-center",
+                            isDefense ? "bg-blue-500/20" : "bg-orange-500/20"
                           )}
+                        >
+                          <Shield
+                            className={cn(
+                              "h-4 w-4",
+                              isDefense ? "text-blue-400" : "text-orange-400"
+                            )}
+                          />
                         </div>
-                      )}
-                    </Button>
-                  );
-                })}
+                        <div className="text-left flex-1">
+                          <div className="font-semibold text-sm text-[#e8e0d5]">{target.name}</div>
+                          <div className="text-xs text-[#a89f94]">
+                            {hasKnownStats
+                              ? isDefense
+                                ? `🛡️ ${target.defense} DEF`
+                                : `⚔️ ${target.attack} ATK`
+                              : "❓ Hidden"}
+                          </div>
+                        </div>
+                        {hasKnownStats && (
+                          <div className="text-xs font-bold px-2 py-1 rounded">
+                            {attackerWins ? (
+                              <span className="text-green-400">✓ WIN</span>
+                            ) : isDraw ? (
+                              <span className="text-yellow-400">= DRAW</span>
+                            ) : (
+                              <span className="text-red-400">✗ LOSE</span>
+                            )}
+                          </div>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
 
                 {/* Direct Attack */}
                 {canDirectAttack && (

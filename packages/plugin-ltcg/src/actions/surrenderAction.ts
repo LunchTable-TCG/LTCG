@@ -122,7 +122,7 @@ Are you sure you want to surrender? This will count as a loss.
 
 Respond with JSON: { "confirm": true or false }`;
 
-          const decision = await runtime.useModel(ModelType.TEXT_GENERATION, {
+          const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
             prompt,
             temperature: 0.3,
             maxTokens: 20,
@@ -149,11 +149,11 @@ Respond with JSON: { "confirm": true or false }`;
       // Surrender the game
       const result = await client.surrender({ gameId });
 
-      // Clear game ID from runtime state
-      await runtime.delete?.("LTCG_CURRENT_GAME_ID");
+      // Clear game ID from runtime settings
+      runtime.setSetting("LTCG_CURRENT_GAME_ID", null);
 
       // Also clear lobby ID if present
-      await runtime.delete?.("LTCG_CURRENT_LOBBY_ID");
+      runtime.setSetting("LTCG_CURRENT_LOBBY_ID", null);
 
       await callback({
         text: `Surrendered the game. ${result.message}`,
@@ -181,8 +181,8 @@ Respond with JSON: { "confirm": true or false }`;
 
       // Even if API call failed, try to clean up state
       try {
-        await runtime.delete?.("LTCG_CURRENT_GAME_ID");
-        await runtime.delete?.("LTCG_CURRENT_LOBBY_ID");
+        runtime.setSetting("LTCG_CURRENT_GAME_ID", null);
+        runtime.setSetting("LTCG_CURRENT_LOBBY_ID", null);
       } catch (cleanupError) {
         logger.error({ cleanupError }, "Failed to clean up state after surrender error");
       }

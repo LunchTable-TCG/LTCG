@@ -1,7 +1,7 @@
 // Quick script to fix the username
 import { ConvexHttpClient } from "convex/browser";
 
-const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const client = new ConvexHttpClient(process.env["NEXT_PUBLIC_CONVEX_URL"]!);
 
 async function fixUsername() {
   try {

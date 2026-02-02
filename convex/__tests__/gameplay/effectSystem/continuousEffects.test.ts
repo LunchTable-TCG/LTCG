@@ -4,7 +4,6 @@
  * Tests for JSON condition evaluation and continuous effect calculations.
  */
 
-import { describe, expect, it } from "vitest";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import {
   _matchesCondition,
@@ -23,6 +22,7 @@ import type {
   JsonCondition,
 } from "@convex/gameplay/effectSystem/jsonEffectSchema";
 import { convertLegacyCondition } from "@convex/gameplay/effectSystem/jsonEffectSchema";
+import { describe, expect, it } from "vitest";
 
 // ============================================================================
 // TEST FIXTURES

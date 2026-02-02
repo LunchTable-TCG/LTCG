@@ -91,7 +91,7 @@ export function SummonModal({
 
     // Prevent summon if tributes are needed but not available
     if (needsTributes && !hasEnoughTributes) {
-      console.log("[SummonModal] Cannot summon - need tributes but dont have enough");
+      console.log("[SummonModal] Cannot summon - need tributes but don't have enough");
       return;
     }
 
@@ -159,13 +159,19 @@ export function SummonModal({
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md px-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="summon-modal-title"
+            aria-describedby="summon-modal-description"
           >
-            <div className="bg-[#1a1614] border-2 border-[#3d2b1f] rounded-xl shadow-2xl p-6">
+            <div className="bg-[#1a1614] border-2 border-[#3d2b1f] rounded-xl shadow-2xl p-6 max-h-[85vh] overflow-y-auto">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg text-[#e8e0d5] mb-1">{card.name}</h3>
+                  <h3 id="summon-modal-title" className="font-bold text-lg text-[#e8e0d5] mb-1">
+                    {card.name}
+                  </h3>
                   <div className="flex items-center gap-3 text-sm">
                     <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-medium capitalize">
                       {card.cardType}
@@ -323,9 +329,9 @@ export function SummonModal({
               )}
 
               {/* Play Options */}
-              <div className="space-y-2">
+              <div className="space-y-2" role="group" aria-label="Card play options">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold text-[#e8e0d5]">
+                  <p id="summon-modal-description" className="text-sm font-semibold text-[#e8e0d5]">
                     How would you like to play this card?
                   </p>
                 </div>
@@ -482,13 +488,21 @@ export function SummonModal({
                         Selected: {selectedTributes.size} / {tributesRequired}
                       </p>
 
-                      <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                      <div
+                        className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto"
+                        role="listbox"
+                        aria-label="Available monsters to tribute"
+                        aria-multiselectable="true"
+                      >
                         {availableTributes.map((tribute) => {
                           const isSelected = selectedTributes.has(tribute.cardId);
                           return (
                             <button
                               key={tribute.instanceId}
                               type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              aria-label={`${tribute.name}, Level ${tribute.monsterStats?.level}, Attack ${tribute.monsterStats?.attack}${isSelected ? ", selected" : ""}`}
                               onClick={() => toggleTribute(tribute.cardId)}
                               className={`p-2 rounded border-2 transition-all ${
                                 isSelected

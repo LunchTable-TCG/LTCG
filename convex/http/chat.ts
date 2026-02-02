@@ -124,7 +124,7 @@ export const messages = httpAction(async (ctx, request) => {
     const limit = limitParam ? Number.parseInt(limitParam, 10) : 50;
 
     // Validate limit
-    if (isNaN(limit) || limit < 1 || limit > 100) {
+    if (Number.isNaN(limit) || limit < 1 || limit > 100) {
       return errorResponse("INVALID_LIMIT", "Limit must be between 1 and 100", 400);
     }
 

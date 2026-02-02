@@ -9,6 +9,28 @@ import type { RouteRequest, RouteResponse } from "@elizaos/core";
 import { logger } from "@elizaos/core";
 import { type IStateAggregator, SERVICE_TYPES } from "../services/types";
 
+// Validation patterns for IDs (alphanumeric, dash, underscore, max 64 chars)
+const ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+
+/**
+ * Validate an ID parameter (agentId or gameId)
+ */
+function isValidId(id: string | undefined): id is string {
+  return typeof id === "string" && ID_PATTERN.test(id);
+}
+
+/**
+ * Add CORS and cache headers to response
+ */
+function setCorsHeaders(res: RouteResponse) {
+  if (res.setHeader) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  }
+}
+
 /**
  * Helper to get StateAggregator service from runtime
  * Uses SERVICE_TYPES constant to avoid hardcoded strings
@@ -50,11 +72,13 @@ function sendError(res: RouteResponse, status: number, message: string) {
  * Returns overall agent runtime status
  */
 export async function handleAgentStatus(req: RouteRequest, res: RouteResponse) {
+  setCorsHeaders(res);
+
   try {
     const agentId = req.query?.agentId as string | undefined;
 
-    if (!agentId) {
-      return sendError(res, 400, "Missing agentId parameter");
+    if (!isValidId(agentId)) {
+      return sendError(res, 400, "Missing or invalid agentId parameter");
     }
 
     const aggregator = getAggregator(req);
@@ -76,11 +100,13 @@ export async function handleAgentStatus(req: RouteRequest, res: RouteResponse) {
  * Returns matchmaking status and recent events
  */
 export async function handleMatchmakingStatus(req: RouteRequest, res: RouteResponse) {
+  setCorsHeaders(res);
+
   try {
     const agentId = req.query?.agentId as string | undefined;
 
-    if (!agentId) {
-      return sendError(res, 400, "Missing agentId parameter");
+    if (!isValidId(agentId)) {
+      return sendError(res, 400, "Missing or invalid agentId parameter");
     }
 
     const aggregator = getAggregator(req);
@@ -102,12 +128,14 @@ export async function handleMatchmakingStatus(req: RouteRequest, res: RouteRespo
  * Returns current game state snapshot
  */
 export async function handleGameState(req: RouteRequest, res: RouteResponse) {
+  setCorsHeaders(res);
+
   try {
     const agentId = req.query?.agentId as string | undefined;
     const gameId = req.query?.gameId as string | undefined;
 
-    if (!agentId || !gameId) {
-      return sendError(res, 400, "Missing agentId or gameId parameter");
+    if (!isValidId(agentId) || !isValidId(gameId)) {
+      return sendError(res, 400, "Missing or invalid agentId/gameId parameter");
     }
 
     const aggregator = getAggregator(req);
@@ -129,18 +157,20 @@ export async function handleGameState(req: RouteRequest, res: RouteResponse) {
  * Returns AI decision history for a game
  */
 export async function handleDecisionHistory(req: RouteRequest, res: RouteResponse) {
+  setCorsHeaders(res);
+
   try {
     const query = req.query;
-    const agentId = query?.['agentId'] as string | undefined;
-    const gameId = query?.['gameId'] as string | undefined;
-    const limitStr = query?.['limit'] as string | undefined;
+    const agentId = query?.agentId as string | undefined;
+    const gameId = query?.gameId as string | undefined;
+    const limitStr = query?.limit as string | undefined;
     const limit = limitStr ? Number.parseInt(limitStr, 10) : 20;
 
-    if (!agentId || !gameId) {
-      return sendError(res, 400, "Missing agentId or gameId parameter");
+    if (!isValidId(agentId) || !isValidId(gameId)) {
+      return sendError(res, 400, "Missing or invalid agentId/gameId parameter");
     }
 
-    if (isNaN(limit) || limit < 1 || limit > 100) {
+    if (Number.isNaN(limit) || limit < 1 || limit > 100) {
       return sendError(res, 400, "Invalid limit parameter (must be 1-100)");
     }
 
@@ -163,12 +193,14 @@ export async function handleDecisionHistory(req: RouteRequest, res: RouteRespons
  * Returns performance metrics for the agent
  */
 export async function handleMetrics(req: RouteRequest, res: RouteResponse) {
+  setCorsHeaders(res);
+
   try {
     const query = req.query;
-    const agentId = query?.['agentId'] as string | undefined;
+    const agentId = query?.agentId as string | undefined;
 
-    if (!agentId) {
-      return sendError(res, 400, "Missing agentId parameter");
+    if (!isValidId(agentId)) {
+      return sendError(res, 400, "Missing or invalid agentId parameter");
     }
 
     const aggregator = getAggregator(req);

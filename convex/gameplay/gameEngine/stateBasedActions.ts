@@ -445,7 +445,7 @@ async function checkMonsterDestruction(
     if (destroyed) {
       result.changed = true;
       result.destroyedCards.push(monster.cardId);
-      result.actions.push(`Host monster destroyed by SBA (stats reduced to 0)`);
+      result.actions.push("Host monster destroyed by SBA (stats reduced to 0)");
     }
   }
 
@@ -464,7 +464,7 @@ async function checkMonsterDestruction(
     if (destroyed) {
       result.changed = true;
       result.destroyedCards.push(monster.cardId);
-      result.actions.push(`Opponent monster destroyed by SBA (stats reduced to 0)`);
+      result.actions.push("Opponent monster destroyed by SBA (stats reduced to 0)");
     }
   }
 

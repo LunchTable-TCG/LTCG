@@ -10,6 +10,7 @@ import { internalMutation, mutation } from "../../_generated/server";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { clearTemporaryModifiers, drawCards } from "../../lib/gameHelpers";
+import { validateGameActive } from "../../lib/gameValidation";
 import { resetOPTEffects } from "../effectSystem/optTracker";
 import { recordEventHelper } from "../gameEvents";
 import { checkDeckOutCondition, checkStateBasedActions } from "./stateBasedActions";
@@ -30,13 +31,16 @@ export const endTurn = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
-    // 3. Get game state (source of truth for turn state)
+    // 4. Get game state (source of truth for turn state)
     // Note: We validate turn ownership after loading gameState
     const gameState = await ctx.db
       .query("gameStates")

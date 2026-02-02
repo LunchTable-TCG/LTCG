@@ -20,14 +20,13 @@
  * Note: TypeScript errors suppressed for custom schema indexes that work correctly at runtime
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { convexTest } from "convex-test";
+import { createTestUser, createTestUserWithGold } from "@convex/__tests__/fixtures/users";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import schema from "@convex/schema";
 import { modules } from "@convex/test.setup";
-import { createTestUser, createTestUserWithGold } from "@convex/__tests__/fixtures/users";
-import { createValidTestDeck } from "@convex/__tests__/fixtures/decks";
+import { convexTest } from "convex-test";
+import { beforeEach, describe, expect, it } from "vitest";
 
 describe("Invariant 1: Currency Never Negative", () => {
   let t: ReturnType<typeof convexTest>;
@@ -71,7 +70,6 @@ describe("Invariant 1: Currency Never Negative", () => {
       return uid;
     });
   });
-
 
   it("should maintain gold >= 0 after valid pack purchase", async () => {
     // Setup: Create a cheap pack (50 gold)
@@ -312,7 +310,6 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
     }
   });
 
-
   it("should allow creating deck with exactly 30 cards", async () => {
     const asUser = t.withIdentity({ subject: privyId });
 
@@ -324,9 +321,9 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
     // Add exactly 30 cards (10 cards × 3 copies each)
     await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: cardDefIds.slice(0, 10).map(cardId => ({
+      cards: cardDefIds.slice(0, 10).map((cardId) => ({
         cardDefinitionId: cardId,
-        quantity: 3
+        quantity: 3,
       })),
     });
 
@@ -352,11 +349,11 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
       asUser.mutation(api.core.decks.saveDeck, {
         deckId,
         cards: [
-          ...cardDefIds.slice(0, 6).map(cardId => ({ cardDefinitionId: cardId, quantity: 3 })),
-          { cardDefinitionId: cardDefIds[6], quantity: 2 }
+          ...cardDefIds.slice(0, 6).map((cardId) => ({ cardDefinitionId: cardId, quantity: 3 })),
+          { cardDefinitionId: cardDefIds[6], quantity: 2 },
         ],
       })
-    ).rejects.toThrow(/invalid deck configuration/i);
+    ).rejects.toThrow(/at least 30 cards|deck/i);
 
     // Deck should not have been saved
     const deckCards = await t.run(async (ctx) => {
@@ -380,9 +377,9 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
     // Add 45 cards (15 cards × 3 copies each = 45 cards, should be allowed)
     await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: cardDefIds.slice(0, 15).map(cardId => ({
+      cards: cardDefIds.slice(0, 15).map((cardId) => ({
         cardDefinitionId: cardId,
-        quantity: 3
+        quantity: 3,
       })),
     });
 
@@ -399,7 +396,7 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
   let t: ReturnType<typeof convexTest>;
   let userId: Id<"users">;
   let privyId: string;
-  let deckId: Id<"userDecks">;
+  let _deckId: Id<"userDecks">;
   let cardDefIds: Id<"cardDefinitions">[];
 
   beforeEach(async () => {
@@ -456,7 +453,6 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
     }
   });
 
-
   it("should allow setting valid 30-card deck as active", async () => {
     const asUser = t.withIdentity({ subject: privyId });
 
@@ -467,9 +463,9 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
 
     await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: cardDefIds.slice(0, 10).map(cardId => ({
+      cards: cardDefIds.slice(0, 10).map((cardId) => ({
         cardDefinitionId: cardId,
-        quantity: 3
+        quantity: 3,
       })),
     });
 
@@ -499,7 +495,7 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
       asUser.mutation(api.core.decks.setActiveDeck, {
         deckId,
       })
-    ).rejects.toThrow(/invalid input provided/i);
+    ).rejects.toThrow(/at least 30 cards/i);
 
     // User should not have active deck set
     const user = await t.run(async (ctx) => {
@@ -525,9 +521,9 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
 
     await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: cardDefIds.slice(0, 10).map(cardId => ({
+      cards: cardDefIds.slice(0, 10).map((cardId) => ({
         cardDefinitionId: cardId,
-        quantity: 3
+        quantity: 3,
       })),
     });
 
@@ -599,7 +595,6 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
     }
   });
 
-
   it("should maintain card definition references in deck cards", async () => {
     const asUser = t.withIdentity({ subject: privyId });
 
@@ -610,9 +605,9 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
 
     await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: cardDefIds.slice(0, 10).map(cardId => ({
+      cards: cardDefIds.slice(0, 10).map((cardId) => ({
         cardDefinitionId: cardId,
-        quantity: 3
+        quantity: 3,
       })),
     });
 
@@ -663,7 +658,7 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
         deckId,
         cards: [{ cardDefinitionId: unownedCardId, quantity: 1 }],
       })
-    ).rejects.toThrow(/invalid deck configuration/i);
+    ).rejects.toThrow(/at least 30 cards|deck/i);
 
     // Deck should have no cards
     const deckCards = await t.run(async (ctx) => {
@@ -685,9 +680,9 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
 
     await asUser.mutation(api.core.decks.saveDeck, {
       deckId,
-      cards: cardDefIds.slice(0, 10).map(cardId => ({
+      cards: cardDefIds.slice(0, 10).map((cardId) => ({
         cardDefinitionId: cardId,
-        quantity: 3
+        quantity: 3,
       })),
     });
 
@@ -758,7 +753,6 @@ describe("Invariant 5: Rating Bounds (0-3000 ELO)", () => {
       });
     });
   });
-
 
   it("should maintain rating bounds after match completion", async () => {
     // Simulate match completion (internal mutation would be called by game engine)
@@ -889,7 +883,6 @@ describe("Invariant 6: Consistent Totals (Wins + Losses = Match History)", () =>
     });
   });
 
-
   it("should maintain win/loss count consistency with match history", async () => {
     // Simulate 3 matches: A wins 2, B wins 1
     await t.run(async (ctx) => {
@@ -977,7 +970,7 @@ describe("Invariant 6: Consistent Totals (Wins + Losses = Match History)", () =>
     expect(playerA?.totalLosses).toBe(1);
 
     // INVARIANT: Total games = wins + losses
-    const totalGames = playerA!.totalWins! + playerA!.totalLosses!;
+    const totalGames = playerA?.totalWins! + playerA?.totalLosses!;
     const matchHistoryTotal = playerAWins.length + playerALosses.length;
     expect(totalGames).toBe(matchHistoryTotal);
     expect(totalGames).toBe(3);

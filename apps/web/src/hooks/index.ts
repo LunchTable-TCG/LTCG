@@ -40,6 +40,7 @@ export { useCurrency } from "./economy/useCurrency";
 export { useShop } from "./economy/useShop";
 export { useMarketplace } from "./economy/useMarketplace";
 export { usePromoCode } from "./economy/usePromoCode";
+export { useTokenBalance } from "./economy/useTokenBalance";
 
 // Social Hooks
 export { useGlobalChat } from "./social/useGlobalChat";
@@ -57,3 +58,7 @@ export { useBadges } from "./story/useBadges";
 export { useQuests } from "./progression/useQuests";
 export { useAchievements } from "./progression/useAchievements";
 export { useNotifications } from "./progression/useNotifications";
+
+// Wallet Hooks
+export { useGameWallet } from "./wallet/useGameWallet";
+export type { UseGameWalletReturn, WalletType } from "./wallet/useGameWallet";

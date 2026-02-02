@@ -88,7 +88,7 @@ export const trashTalkAction: Action = {
       const personality = runtime.character?.bio || "Strategic and thoughtful card game player";
 
       // Get trash talk level
-      const trashTalkLevel = runtime.getSetting("LTCG_TRASH_TALK_LEVEL") || "mild";
+      const trashTalkLevel = String(runtime.getSetting("LTCG_TRASH_TALK_LEVEL") || "mild");
 
       // Determine game context for trash talk
       const advantage: string = (boardAnalysis?.advantage as string) || "EVEN";
@@ -144,7 +144,7 @@ ${getTrashTalkExamples(trashTalkLevel, advantage)}
 Your trash talk (just the message, no quotes or labels):`;
 
       // Generate trash talk using LLM
-      const trashTalk = await runtime.useModel(ModelType.TEXT_GENERATION, {
+      const trashTalk = await runtime.useModel(ModelType.TEXT_SMALL, {
         prompt,
         temperature: 0.85, // High temperature for creativity
         maxTokens: 100,
@@ -249,29 +249,28 @@ function getTrashTalkExamples(level: string, advantage: string): string {
       return `- "This is looking good for me!"
 - "Nice game so far!"
 - "I think I've got the edge here."`;
-    } else if (advantage === "EVEN") {
+    }
+    if (advantage === "EVEN") {
       return `- "This is a close one!"
 - "Good moves on both sides!"
 - "Let's see who pulls ahead."`;
-    } else {
-      return `- "I'm not done yet!"
+    }
+    return `- "I'm not done yet!"
 - "Still got some tricks up my sleeve!"
 - "This isn't over."`;
-    }
-  } else {
-    // aggressive
-    if (advantage === "STRONG_ADVANTAGE" || advantage === "SLIGHT_ADVANTAGE") {
-      return `- "Is that your best? I expected more."
+  }
+  // aggressive
+  if (advantage === "STRONG_ADVANTAGE" || advantage === "SLIGHT_ADVANTAGE") {
+    return `- "Is that your best? I expected more."
 - "You're making this too easy!"
 - "Ready to surrender yet?"`;
-    } else if (advantage === "EVEN") {
-      return `- "Think you can keep up with me?"
+  }
+  if (advantage === "EVEN") {
+    return `- "Think you can keep up with me?"
 - "Let's see what you've got!"
 - "This is where it gets interesting."`;
-    } else {
-      return `- "You haven't won yet!"
+  }
+  return `- "You haven't won yet!"
 - "I've come back from worse!"
 - "You'll regret not finishing me off."`;
-    }
-  }
 }

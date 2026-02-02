@@ -64,7 +64,7 @@ export const strategyEvaluator: Evaluator = {
 
       // Get game state and analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
         logger.debug("No game state available for strategy evaluation");
@@ -195,9 +195,10 @@ function evaluateAttack(
   const attackerIndex = params.attackerIndex;
   const targetIndex = params.targetIndex;
 
-  const myMonsters = gameState.hostPlayer.monsterZone;
-  const oppMonsters = gameState.opponentPlayer.monsterZone;
-  const oppBackrow = gameState.opponentPlayer.spellTrapZone.length;
+  // Use new API fields with fallback to legacy fields
+  const myMonsters = gameState.myBoard ?? gameState.hostPlayer?.monsterZone ?? [];
+  const oppMonsters = gameState.opponentBoard ?? gameState.opponentPlayer?.monsterZone ?? [];
+  const oppBackrow = gameState.opponentPlayer?.spellTrapZone?.length ?? 0;
 
   const attacker = myMonsters[attackerIndex];
 
@@ -261,8 +262,10 @@ function evaluateAttack(
 
   if (attackerAtk < targetAtk) {
     // Attacking into stronger monster - bad unless desperate
-    const lpDifference = gameState.hostPlayer.lifePoints - gameState.opponentPlayer.lifePoints;
-    const isDesperate = lpDifference < -3000 || gameState.hostPlayer.lifePoints < 2000;
+    const myLP = gameState.myLifePoints ?? gameState.hostPlayer?.lifePoints ?? 8000;
+    const oppLP = gameState.opponentLifePoints ?? gameState.opponentPlayer?.lifePoints ?? 8000;
+    const lpDifference = myLP - oppLP;
+    const isDesperate = lpDifference < -3000 || myLP < 2000;
 
     if (!isDesperate) {
       return {
@@ -272,14 +275,13 @@ function evaluateAttack(
         reason: `Attacking ${attacker.name} (${attackerAtk} ATK) into stronger ${target.name} (${targetAtk} ${target.position === "attack" ? "ATK" : "DEF"}) will lose your monster`,
         suggestion: "Use removal spell or summon stronger monster",
       };
-    } else {
-      return {
-        quality: "QUESTIONABLE",
-        risk: "HIGH",
-        shouldFilter: false,
-        reason: "Risky attack but desperate situation allows it",
-      };
     }
+    return {
+      quality: "QUESTIONABLE",
+      risk: "HIGH",
+      shouldFilter: false,
+      reason: "Risky attack but desperate situation allows it",
+    };
   }
 
   // Check trap risk
@@ -404,7 +406,7 @@ function evaluateEndTurn(
   const hasNormalSummoned = gameState.hasNormalSummoned;
 
   // If can summon but haven't and board is empty - questionable
-  const myMonsters = gameState.hostPlayer.monsterZone.length;
+  const myMonsters = gameState.myBoard?.length ?? gameState.hostPlayer?.monsterZone?.length ?? 0;
 
   if (!hasNormalSummoned && monstersInHand.length > 0 && myMonsters === 0) {
     const advantage = boardAnalysis?.advantage;

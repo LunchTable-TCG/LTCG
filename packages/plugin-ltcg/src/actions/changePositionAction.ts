@@ -29,7 +29,7 @@ export const changePositionAction: Action = {
     try {
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for change position validation");
@@ -75,7 +75,7 @@ export const changePositionAction: Action = {
 
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, _message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
         throw new Error("Failed to get game state");
@@ -137,7 +137,7 @@ Consider:
 
 Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>" }`;
 
-      const decision = await runtime.useModel(ModelType.TEXT_GENERATION, {
+      const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
         prompt,
         temperature: 0.7,
         maxTokens: 200,

@@ -286,8 +286,8 @@ export const documentTestResult = (testName: string, result: any, error: Error |
           const more = keys.length > 3 ? ` +${keys.length - 3} more` : "";
           logger.info(`  → {${preview}${more}}`);
         }
-      } catch (e) {
-        logger.info(`  → [Complex object]`);
+      } catch (_e) {
+        logger.info("  → [Complex object]");
       }
     }
   }

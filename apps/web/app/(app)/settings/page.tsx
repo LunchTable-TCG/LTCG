@@ -3,9 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
-import { api } from "@convex/_generated/api";
-import { useMutation, useQuery } from "convex/react";
 import {
   Bell,
   Check,
@@ -60,16 +59,16 @@ function Toggle({ enabled, onChange, disabled }: ToggleProps) {
 
 export default function SettingsPage() {
   const { isAuthenticated } = useAuth();
-  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
-  const preferences = useQuery(
-    api.core.userPreferences.getPreferences,
+  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const preferences = useConvexQuery(
+    apiAny.core.userPreferences.getPreferences,
     isAuthenticated ? {} : "skip"
   );
 
-  const updatePreferences = useMutation(api.core.userPreferences.updatePreferences);
-  const updateUsername = useMutation(api.core.userPreferences.updateUsername);
-  const changePassword = useMutation(api.core.userPreferences.changePassword);
-  const deleteAccount = useMutation(api.core.userPreferences.deleteAccount);
+  const updatePreferences = useConvexMutation(apiAny.core.userPreferences.updatePreferences);
+  const updateUsername = useConvexMutation(apiAny.core.userPreferences.updateUsername);
+  const changePassword = useConvexMutation(apiAny.core.userPreferences.changePassword);
+  const deleteAccount = useConvexMutation(apiAny.core.userPreferences.deleteAccount);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [isSaving, setIsSaving] = useState(false);
@@ -128,6 +127,9 @@ export default function SettingsPage() {
     showMatchHistory: true,
   });
 
+  // Track if settings have been modified (dirty state)
+  const [isDirty, setIsDirty] = useState(false);
+
   // Load preferences when they're available
   useEffect(() => {
     if (preferences) {
@@ -137,6 +139,31 @@ export default function SettingsPage() {
       setPrivacy(preferences.privacy);
     }
   }, [preferences]);
+
+  // Track dirty state when settings change
+  useEffect(() => {
+    if (!preferences) return;
+    const hasChanges =
+      JSON.stringify(notifications) !== JSON.stringify(preferences.notifications) ||
+      JSON.stringify(display) !== JSON.stringify(preferences.display) ||
+      JSON.stringify(game) !== JSON.stringify(preferences.game) ||
+      JSON.stringify(privacy) !== JSON.stringify(preferences.privacy) ||
+      username !== (currentUser?.username || "");
+    setIsDirty(hasChanges);
+  }, [notifications, display, game, privacy, username, preferences, currentUser?.username]);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent): void => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   // Load current user data
   useEffect(() => {
@@ -403,47 +430,124 @@ export default function SettingsPage() {
                           Change Password
                         </Button>
                       ) : (
-                        <form onSubmit={handleChangePassword} className="space-y-4">
+                        <form
+                          onSubmit={handleChangePassword}
+                          className="space-y-4"
+                          aria-label="Change password form"
+                        >
                           <div>
-                            <label className="block text-sm font-medium text-[#a89f94] mb-2">
+                            <label
+                              htmlFor="current-password"
+                              className="block text-sm font-medium text-[#a89f94] mb-2"
+                            >
                               Current Password
                             </label>
                             <Input
+                              id="current-password"
                               type="password"
                               value={currentPassword}
                               onChange={(e) => setCurrentPassword(e.target.value)}
                               className="bg-black/40 border-[#3d2b1f] text-[#e8e0d5]"
                               placeholder="Enter current password"
                               disabled={isChangingPassword}
+                              aria-required="true"
                             />
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-[#a89f94] mb-2">
+                            <label
+                              htmlFor="new-password"
+                              className="block text-sm font-medium text-[#a89f94] mb-2"
+                            >
                               New Password
                             </label>
                             <Input
+                              id="new-password"
                               type="password"
                               value={newPassword}
                               onChange={(e) => setNewPassword(e.target.value)}
-                              className="bg-black/40 border-[#3d2b1f] text-[#e8e0d5]"
+                              className={cn(
+                                "bg-black/40 text-[#e8e0d5]",
+                                newPassword.length > 0 && newPassword.length < 8
+                                  ? "border-yellow-500/50"
+                                  : newPassword.length >= 8
+                                    ? "border-green-500/50"
+                                    : "border-[#3d2b1f]"
+                              )}
                               placeholder="Enter new password (min 8 characters)"
                               disabled={isChangingPassword}
+                              aria-required="true"
+                              aria-describedby="password-requirements"
                             />
+                            {/* Password requirements indicator */}
+                            <div id="password-requirements" className="mt-2 space-y-1">
+                              <p
+                                className={cn(
+                                  "text-xs flex items-center gap-1.5",
+                                  newPassword.length >= 8 ? "text-green-400" : "text-[#a89f94]"
+                                )}
+                              >
+                                {newPassword.length >= 8 ? (
+                                  <Check className="w-3 h-3" />
+                                ) : (
+                                  <span className="w-3 h-3 rounded-full border border-current inline-block" />
+                                )}
+                                At least 8 characters{" "}
+                                {newPassword.length > 0 && `(${newPassword.length}/8)`}
+                              </p>
+                            </div>
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-[#a89f94] mb-2">
+                            <label
+                              htmlFor="confirm-new-password"
+                              className="block text-sm font-medium text-[#a89f94] mb-2"
+                            >
                               Confirm New Password
                             </label>
                             <Input
+                              id="confirm-new-password"
                               type="password"
                               value={confirmNewPassword}
                               onChange={(e) => setConfirmNewPassword(e.target.value)}
-                              className="bg-black/40 border-[#3d2b1f] text-[#e8e0d5]"
+                              className={cn(
+                                "bg-black/40 text-[#e8e0d5]",
+                                confirmNewPassword.length > 0 && confirmNewPassword !== newPassword
+                                  ? "border-red-500/50"
+                                  : confirmNewPassword.length > 0 &&
+                                      confirmNewPassword === newPassword
+                                    ? "border-green-500/50"
+                                    : "border-[#3d2b1f]"
+                              )}
                               placeholder="Confirm new password"
                               disabled={isChangingPassword}
+                              aria-required="true"
+                              aria-describedby="password-match"
                             />
+                            {/* Password match indicator */}
+                            {confirmNewPassword.length > 0 && (
+                              <p
+                                id="password-match"
+                                className={cn(
+                                  "text-xs mt-2 flex items-center gap-1.5",
+                                  confirmNewPassword === newPassword
+                                    ? "text-green-400"
+                                    : "text-red-400"
+                                )}
+                              >
+                                {confirmNewPassword === newPassword ? (
+                                  <>
+                                    <Check className="w-3 h-3" />
+                                    Passwords match
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="w-3 h-3 rounded-full bg-red-400 inline-block" />
+                                    Passwords do not match
+                                  </>
+                                )}
+                              </p>
+                            )}
                           </div>
 
                           <div className="flex gap-2">
@@ -892,6 +996,12 @@ export default function SettingsPage() {
 
               {/* Save Button */}
               <div className="mt-8 pt-6 border-t border-[#3d2b1f] flex items-center justify-end gap-4">
+                {isDirty && !saveSuccess && (
+                  <span className="flex items-center gap-2 text-yellow-400 text-sm">
+                    <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                    Unsaved changes
+                  </span>
+                )}
                 {saveSuccess && (
                   <span className="flex items-center gap-2 text-green-400 text-sm">
                     <Check className="w-4 h-4" />

@@ -2,11 +2,17 @@
  * Webhook Route Definitions
  *
  * ElizaOS-compatible route handlers for receiving game webhooks.
+ * Implements proper security: HMAC verification, timestamp validation, replay protection.
  */
 
 import type { RouteRequest, RouteResponse } from "@elizaos/core";
 import { logger } from "@elizaos/core";
-import { type GameWebhookPayload, verifyWebhookSignature } from "./gameEventHandler";
+import {
+  type GameWebhookPayload,
+  checkWebhookIdempotency,
+  validateWebhookTimestamp,
+  verifyWebhookSignature,
+} from "./gameEventHandler";
 
 /**
  * Webhook routes for the LTCG plugin
@@ -20,19 +26,43 @@ export const webhookRoutes = [
       try {
         const payload = req.body as GameWebhookPayload;
 
-        // Validate required fields
-        if (!payload.eventType || !payload.gameId || !payload.agentId) {
+        // 1. Validate required fields
+        if (!payload.eventType || !payload.gameId || !payload.agentId || !payload.timestamp) {
           res.status(400).json({
-            error: "Missing required fields: eventType, gameId, agentId",
+            error: "Missing required fields: eventType, gameId, agentId, timestamp",
           });
           return;
         }
 
-        // Verify signature (in production)
-        const webhookSecret = process.env['LTCG_WEBHOOK_SECRET'];
-        if (webhookSecret && payload.signature) {
+        // 2. Validate timestamp (reject old webhooks - replay attack prevention)
+        if (!validateWebhookTimestamp(payload.timestamp)) {
+          logger.warn(
+            { gameId: payload.gameId, timestamp: payload.timestamp },
+            "Webhook timestamp expired"
+          );
+          res.status(400).json({ error: "Webhook expired" });
+          return;
+        }
+
+        // 3. Check idempotency (reject duplicate webhooks)
+        if (!checkWebhookIdempotency(payload.gameId, payload.timestamp, payload.eventType)) {
+          logger.debug({ gameId: payload.gameId }, "Duplicate webhook ignored");
+          res.status(200).json({ received: true, duplicate: true });
+          return;
+        }
+
+        // 4. Verify HMAC signature (if secret configured)
+        const webhookSecret = process.env.LTCG_WEBHOOK_SECRET;
+        if (webhookSecret) {
+          if (!payload.signature) {
+            logger.warn({ gameId: payload.gameId }, "Missing webhook signature");
+            res.status(401).json({ error: "Missing signature" });
+            return;
+          }
+
           const rawBody = JSON.stringify(req.body);
-          if (!verifyWebhookSignature(rawBody, payload.signature, webhookSecret)) {
+          const isValid = await verifyWebhookSignature(rawBody, payload.signature, webhookSecret);
+          if (!isValid) {
             logger.warn({ gameId: payload.gameId }, "Invalid webhook signature");
             res.status(401).json({ error: "Invalid signature" });
             return;
@@ -41,18 +71,15 @@ export const webhookRoutes = [
 
         logger.info(
           { eventType: payload.eventType, gameId: payload.gameId },
-          "Received game webhook"
+          "Received valid game webhook"
         );
 
-        // Note: In a real implementation, we'd need access to the runtime
-        // This would be injected via middleware or context
-        // For now, acknowledge receipt and let the event system handle it
-
+        // Acknowledge receipt - actual processing happens via TurnOrchestrator
         res.status(200).json({
           received: true,
           eventType: payload.eventType,
           gameId: payload.gameId,
-          timestamp: Date.now(),
+          processedAt: Date.now(),
         });
       } catch (error) {
         logger.error({ error }, "Error processing game webhook");

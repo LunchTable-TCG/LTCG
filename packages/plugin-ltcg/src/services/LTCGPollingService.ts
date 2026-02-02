@@ -257,6 +257,9 @@ export class LTCGPollingService extends Service {
     this.stopDiscovery();
     this.stopMatchmaking();
     this.client = null;
+    // Clear circuit breaker and retry state to prevent memory leaks
+    this.circuitBreakers.clear();
+    this.retryDelays.clear();
     logger.info("Polling service stopped");
   }
 
@@ -673,7 +676,7 @@ export class LTCGPollingService extends Service {
     }
 
     const pendingGames = await this.executeWithRecovery("check_pending_games", async () =>
-      this.client!.getPendingTurns()
+      this.client?.getPendingTurns()
     );
 
     if (!pendingGames) {
@@ -715,7 +718,7 @@ export class LTCGPollingService extends Service {
 
     // Get available lobbies with error recovery
     const lobbies = await this.executeWithRecovery("check_lobbies", async () =>
-      this.client!.getLobbies("all")
+      this.client?.getLobbies("all")
     );
 
     if (!lobbies) {
@@ -749,7 +752,7 @@ export class LTCGPollingService extends Service {
 
       // Join with error recovery
       const joinResult = await this.executeWithRecovery(`join_lobby_${lobby.lobbyId}`, async () =>
-        this.client!.joinLobby({ lobbyId: lobby.lobbyId, deckId })
+        this.client?.joinLobby({ lobbyId: lobby.lobbyId, deckId })
       );
 
       if (!joinResult) {
@@ -800,7 +803,7 @@ export class LTCGPollingService extends Service {
     const gameId = this.currentGameId;
     const gameState = await this.executeWithRecovery(
       `poll_game_${gameId}`,
-      async () => this.client!.getGameState(gameId),
+      async () => this.client?.getGameState(gameId),
       { silent: true }
     );
 
@@ -942,17 +945,9 @@ export class LTCGPollingService extends Service {
    * Check if it's the agent's turn
    */
   private isAgentTurn(state: GameStateResponse): boolean {
-    // The agent is the host if they created the game
-    // Check if current turn matches agent's role
-    // If agent is host, it's their turn when currentTurn === 'host'
-    // We assume the agent making API calls is the one whose hand is visible
-    // So if hand has cards, we can check whose turn it is
-    if (state.currentTurn === "host") {
-      // Agent is likely the host if they're making this call
-      return true;
-    }
-
-    return false;
+    // Use the API's isMyTurn field which correctly identifies whose turn it is
+    // regardless of whether agent is host or opponent
+    return state.isMyTurn === true;
   }
 
   /**
@@ -1036,13 +1031,14 @@ export class LTCGPollingService extends Service {
           );
           break;
 
-        case "chain_waiting":
+        case "chain_waiting": {
           const chainData = event.data as { chainState?: { timeoutMs?: number } };
           await orchestrator.onChainWaiting(
             this.currentGameId,
             chainData.chainState?.timeoutMs ?? 30000
           );
           break;
+        }
       }
     } catch (error) {
       logger.error({ error, eventType: event.type }, "Error triggering orchestrator");

@@ -13,6 +13,7 @@ import { getCardAbility } from "../../lib/abilityHelpers";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { moveCard } from "../../lib/gameHelpers";
+import { validateGameActive } from "../../lib/gameValidation";
 import { validateMonsterZone } from "../../lib/validation";
 import { executeEffect } from "../effectSystem";
 import { recordEventHelper } from "../gameEvents";
@@ -50,13 +51,16 @@ export const normalSummon = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby (for gameId/status only - turn state is in gameStates)
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby (for gameId/status only - turn state is in gameStates)
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
@@ -94,7 +98,6 @@ export const normalSummon = mutation({
     }
 
     const isHost = user.userId === gameState.hostId;
-    const hand = isHost ? gameState.hostHand : gameState.opponentHand;
     const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
     // 5.5. Validate monster zone has space (max 5 monsters)
@@ -127,30 +130,45 @@ export const normalSummon = mutation({
         },
       });
 
-      // Move tributed monsters to graveyard
+      // Record card_to_graveyard events for each tribute (don't use moveCard to avoid stale state issues)
       for (const tributeId of args.tributeCardIds) {
-        await moveCard(
-          ctx,
-          gameState,
-          tributeId,
-          "board",
-          "graveyard",
-          user.userId,
-          gameState.turnNumber
-        );
-
-        // Remove from board
-        const updatedBoard = board.filter((bc) => bc.cardId !== tributeId);
-        await ctx.db.patch(gameState._id, {
-          [isHost ? "hostBoard" : "opponentBoard"]: updatedBoard,
+        const tributeCard = await ctx.db.get(tributeId);
+        await recordEventHelper(ctx, {
+          lobbyId: args.lobbyId,
+          gameId: lobby.gameId,
+          turnNumber: gameState.turnNumber,
+          eventType: "card_to_graveyard",
+          playerId: user.userId,
+          playerUsername: user.username,
+          description: `${user.username}'s ${tributeCard?.name || "card"} was sent to the graveyard`,
+          metadata: { cardId: tributeId, fromZone: "board", toZone: "graveyard" },
         });
       }
+
+      // Remove tributes from board and add to graveyard in one batch operation
+      const tributeSet = new Set(args.tributeCardIds);
+      const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId));
+      const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
+      const graveyardAfterTributes = [...graveyard, ...args.tributeCardIds];
+
+      await ctx.db.patch(gameState._id, {
+        [isHost ? "hostBoard" : "opponentBoard"]: boardAfterTributes,
+        [isHost ? "hostGraveyard" : "opponentGraveyard"]: graveyardAfterTributes,
+      });
     }
 
-    // 8. Remove card from hand
-    const newHand = hand.filter((c) => c !== args.cardId);
+    // 8. Re-fetch game state to get current board after tribute removals
+    const refreshedGameState = await ctx.db.get(gameState._id);
+    if (!refreshedGameState) {
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND);
+    }
+    const currentBoard = isHost ? refreshedGameState.hostBoard : refreshedGameState.opponentBoard;
+    const currentHand = isHost ? refreshedGameState.hostHand : refreshedGameState.opponentHand;
 
-    // 9. Add card to board (face-up normal summon)
+    // 9. Remove card from hand
+    const newHand = currentHand.filter((c) => c !== args.cardId);
+
+    // 10. Add card to board (face-up normal summon)
     const positionValue = args.position === "attack" ? 1 : -1; // 1 = ATK, -1 = DEF
 
     // Parse ability for protection flags
@@ -175,9 +193,9 @@ export const normalSummon = mutation({
       ...protectionFlags,
     };
 
-    const newBoard = [...board, newBoardCard];
+    const newBoard = [...currentBoard, newBoardCard];
 
-    // 10. Mark player as having normal summoned this turn
+    // 11. Mark player as having normal summoned this turn
     await ctx.db.patch(gameState._id, {
       [isHost ? "hostHand" : "opponentHand"]: newHand,
       [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
@@ -340,13 +358,16 @@ export const setMonster = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby (for gameId/status only - turn state is in gameStates)
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby (for gameId/status only - turn state is in gameStates)
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
@@ -509,13 +530,16 @@ export const flipSummon = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby (for gameId/status only - turn state is in gameStates)
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby (for gameId/status only - turn state is in gameStates)
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))

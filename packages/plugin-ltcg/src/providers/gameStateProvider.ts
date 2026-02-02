@@ -21,7 +21,7 @@ export const gameStateProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get game ID from State (set by service or action)
-      const gameId = state.values['LTCG_CURRENT_GAME_ID'] || (message.content as any)?.gameId;
+      const gameId = state.values.LTCG_CURRENT_GAME_ID || (message.content as any)?.gameId;
 
       if (!gameId) {
         return {
@@ -52,8 +52,22 @@ export const gameStateProvider: Provider = {
       // Fetch game state
       const gameState: GameStateResponse = await client.getGameState(gameId);
 
-      // Determine if it's the agent's turn
-      const isMyTurn = gameState.currentTurn === "host"; // Assuming agent is always host
+      // Use API's isMyTurn field (correct regardless of host/opponent role)
+      const isMyTurn = gameState.isMyTurn ?? gameState.currentTurn === "host";
+
+      // Extract values with new API fields and fallbacks
+      const myLP = gameState.myLifePoints ?? gameState.hostPlayer?.lifePoints ?? 8000;
+      const oppLP = gameState.opponentLifePoints ?? gameState.opponentPlayer?.lifePoints ?? 8000;
+      const myMonsterCount =
+        gameState.myBoard?.length ?? gameState.hostPlayer?.monsterZone?.length ?? 0;
+      const oppMonsterCount =
+        gameState.opponentBoard?.length ?? gameState.opponentPlayer?.monsterZone?.length ?? 0;
+      const myBackrowCount = gameState.hostPlayer?.spellTrapZone?.length ?? 0;
+      const oppBackrowCount = gameState.opponentPlayer?.spellTrapZone?.length ?? 0;
+      const myGraveyardCount =
+        gameState.myGraveyardCount ?? gameState.hostPlayer?.graveyard?.length ?? 0;
+      const myBanishedCount = gameState.hostPlayer?.banished?.length ?? 0;
+      const myDeckCount = gameState.myDeckCount ?? gameState.hostPlayer?.deckCount ?? 0;
 
       // Format phase name for display
       const phaseNames: Record<string, string> = {
@@ -70,11 +84,11 @@ export const gameStateProvider: Provider = {
       // Build human-readable text
       const text = `Game State:
 - Turn ${gameState.turnNumber}, ${phaseName} (${isMyTurn ? "YOUR TURN" : "OPPONENT TURN"})
-- Your LP: ${gameState.hostPlayer.lifePoints} | Opponent LP: ${gameState.opponentPlayer.lifePoints}
-- Your Field: ${gameState.hostPlayer.monsterZone.length} monsters, ${gameState.hostPlayer.spellTrapZone.length} spell/trap
-- Opponent Field: ${gameState.opponentPlayer.monsterZone.length} monsters, ${gameState.opponentPlayer.spellTrapZone.length} spell/traps
-- Graveyard: ${gameState.hostPlayer.graveyard.length} cards | Banished: ${gameState.hostPlayer.banished.length} cards
-- Deck: ${gameState.hostPlayer.deckCount} cards remaining`;
+- Your LP: ${myLP} | Opponent LP: ${oppLP}
+- Your Field: ${myMonsterCount} monsters, ${myBackrowCount} spell/trap
+- Opponent Field: ${oppMonsterCount} monsters, ${oppBackrowCount} spell/traps
+- Graveyard: ${myGraveyardCount} cards | Banished: ${myBanishedCount} cards
+- Deck: ${myDeckCount} cards remaining`;
 
       // Structured values for template substitution
       const values = {
@@ -82,12 +96,12 @@ export const gameStateProvider: Provider = {
         turnNumber: gameState.turnNumber,
         phase: gameState.phase,
         isMyTurn,
-        myLifePoints: gameState.hostPlayer.lifePoints,
-        opponentLifePoints: gameState.opponentPlayer.lifePoints,
-        myMonsterCount: gameState.hostPlayer.monsterZone.length,
-        opponentMonsterCount: gameState.opponentPlayer.monsterZone.length,
-        myBackrowCount: gameState.hostPlayer.spellTrapZone.length,
-        opponentBackrowCount: gameState.opponentPlayer.spellTrapZone.length,
+        myLifePoints: myLP,
+        opponentLifePoints: oppLP,
+        myMonsterCount,
+        opponentMonsterCount: oppMonsterCount,
+        myBackrowCount,
+        opponentBackrowCount: oppBackrowCount,
       };
 
       // Structured data for programmatic access
@@ -115,14 +129,24 @@ export const gameStateProvider: Provider = {
  * Calculate board advantage
  */
 function calculateAdvantage(gameState: GameStateResponse): string {
-  const myMonsters = gameState.hostPlayer.monsterZone.length;
-  const opponentMonsters = gameState.opponentPlayer.monsterZone.length;
-  const myLP = gameState.hostPlayer.lifePoints;
-  const opponentLP = gameState.opponentPlayer.lifePoints;
+  // Use new API fields with fallbacks
+  const myBoard = gameState.myBoard ?? gameState.hostPlayer?.monsterZone ?? [];
+  const oppBoard = gameState.opponentBoard ?? gameState.opponentPlayer?.monsterZone ?? [];
+  const myLP = gameState.myLifePoints ?? gameState.hostPlayer?.lifePoints ?? 8000;
+  const opponentLP = gameState.opponentLifePoints ?? gameState.opponentPlayer?.lifePoints ?? 8000;
+
+  const myMonsters = myBoard.length;
+  const opponentMonsters = oppBoard.length;
 
   // Calculate total ATK on board
-  const myTotalAtk = gameState.hostPlayer.monsterZone.reduce((sum, m) => sum + m.atk, 0);
-  const opponentTotalAtk = gameState.opponentPlayer.monsterZone.reduce((sum, m) => sum + m.atk, 0);
+  const myTotalAtk = myBoard.reduce(
+    (sum, m) => sum + ((m as any).attack ?? (m as any).atk ?? 0),
+    0
+  );
+  const opponentTotalAtk = oppBoard.reduce(
+    (sum, m) => sum + ((m as any).attack ?? (m as any).atk ?? 0),
+    0
+  );
 
   // Simple advantage calculation
   const monsterAdvantage = myMonsters - opponentMonsters;

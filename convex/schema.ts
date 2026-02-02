@@ -108,8 +108,14 @@ export default defineSchema({
     // User's master wallet is at index 0, agent wallets start at index 1
     // Derivation path (Solana): m/44'/501'/i/0' where i = wallet index
     nextWalletIndex: v.optional(v.number()), // default: 1 (0 is user's main wallet)
+
+    // Token wallet fields
+    walletAddress: v.optional(v.string()),
+    walletType: v.optional(v.union(v.literal("privy_embedded"), v.literal("external"))),
+    walletConnectedAt: v.optional(v.number()),
   })
     .index("privyId", ["privyId"])
+    .index("walletAddress", ["walletAddress"])
     .index("email", ["email"])
     .index("username", ["username"])
     .index("isBanned", ["isBanned"])
@@ -1123,6 +1129,9 @@ export default defineSchema({
     platformFee: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
+    // Token payment support
+    currencyType: v.optional(v.union(v.literal("gold"), v.literal("token"))),
+    tokenPrice: v.optional(v.number()),
   })
     .index("by_status", ["status", "createdAt"])
     .index("by_seller", ["sellerId", "status"])
@@ -1149,6 +1158,62 @@ export default defineSchema({
   })
     .index("by_listing", ["listingId", "createdAt"])
     .index("by_bidder", ["bidderId", "bidStatus"]),
+
+  // ============================================================================
+  // TOKEN INTEGRATION
+  // ============================================================================
+
+  // Token balance cache for Solana tokens
+  tokenBalanceCache: defineTable({
+    userId: v.id("users"),
+    walletAddress: v.string(),
+    tokenMint: v.string(),
+    balance: v.number(),
+    lastVerifiedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_wallet", ["walletAddress"]),
+
+  // Token transaction history
+  tokenTransactions: defineTable({
+    userId: v.id("users"),
+    transactionType: v.union(
+      v.literal("marketplace_purchase"),
+      v.literal("marketplace_sale"),
+      v.literal("platform_fee")
+    ),
+    amount: v.number(),
+    signature: v.optional(v.string()),
+    status: v.union(v.literal("pending"), v.literal("confirmed"), v.literal("failed")),
+    referenceId: v.optional(v.string()),
+    description: v.string(),
+    createdAt: v.number(),
+    confirmedAt: v.optional(v.number()),
+  })
+    .index("by_user_time", ["userId", "createdAt"])
+    .index("by_signature", ["signature"]),
+
+  // Pending token purchases for marketplace
+  pendingTokenPurchases: defineTable({
+    buyerId: v.id("users"),
+    listingId: v.id("marketplaceListings"),
+    amount: v.number(),
+    buyerWallet: v.string(),
+    sellerWallet: v.string(),
+    status: v.union(
+      v.literal("awaiting_signature"),
+      v.literal("submitted"),
+      v.literal("confirmed"),
+      v.literal("failed"),
+      v.literal("expired")
+    ),
+    transactionSignature: v.optional(v.string()),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_buyer", ["buyerId"])
+    .index("by_listing", ["listingId"])
+    .index("by_status", ["status"]),
 
   // ============================================================================
   // PROMOTIONAL CODES

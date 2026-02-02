@@ -4,11 +4,11 @@
  * Tests for turn transitions, phase changes, flag resets, and draw phase.
  */
 
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
 import type { Id } from "@convex/_generated/dataModel";
 import schema from "@convex/schema";
 import { modules } from "@convex/test.setup";
+import { convexTest } from "convex-test";
+import { describe, expect, it } from "vitest";
 
 // Helper to create test instance
 const createTestInstance = () => convexTest(schema, modules);

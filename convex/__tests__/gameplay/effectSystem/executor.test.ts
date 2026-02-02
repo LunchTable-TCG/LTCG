@@ -5,13 +5,13 @@
  * Covers happy paths, error cases, and edge conditions.
  */
 
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
 import schema from "@convex/schema";
 import { modules } from "@convex/test.setup";
-import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
+import { convexTest } from "convex-test";
+import { describe, expect, it } from "vitest";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast

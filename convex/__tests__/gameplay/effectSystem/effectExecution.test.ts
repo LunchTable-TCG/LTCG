@@ -8,11 +8,11 @@
  * - Draw effects
  */
 
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
 import schema from "@convex/schema";
 import { modules } from "@convex/test.setup";
-import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
+import { convexTest } from "convex-test";
+import { describe, expect, it } from "vitest";
 
 describe("Basic Effect Execution", () => {
   describe("Volcanic Eruption - Destroy Effect", () => {
@@ -394,7 +394,7 @@ describe("Basic Effect Execution", () => {
       });
 
       expect(finalGameState).toBeDefined();
-      if (finalGameState && finalGameState.hostBoard[0]) {
+      if (finalGameState?.hostBoard[0]) {
         expect(finalGameState.hostBoard[0].attack).toBe(2200); // 1400 + 800
       }
     });
@@ -522,7 +522,7 @@ describe("Basic Effect Execution", () => {
       });
 
       expect(finalGameState).toBeDefined();
-      if (finalGameState && finalGameState.opponentBoard[0]) {
+      if (finalGameState?.opponentBoard[0]) {
         expect(finalGameState.opponentBoard[0].attack).toBe(1400); // 2000 - 600
       }
     });
@@ -651,7 +651,7 @@ describe("Basic Effect Execution", () => {
       });
 
       expect(finalGameState).toBeDefined();
-      if (finalGameState && finalGameState.hostBoard[0]) {
+      if (finalGameState?.hostBoard[0]) {
         expect(finalGameState.hostBoard[0].defense).toBe(2800); // 1800 + 1000
       }
     });

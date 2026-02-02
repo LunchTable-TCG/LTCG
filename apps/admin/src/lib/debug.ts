@@ -28,7 +28,7 @@ export interface LogContext {
 // ============================================================================
 
 const IS_BROWSER = typeof window !== "undefined";
-const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
+const IS_DEVELOPMENT = process.env["NODE_ENV"] === "development";
 const LOG_LEVEL: LogLevel =
   (process.env["NEXT_PUBLIC_LOG_LEVEL"] as LogLevel) || (IS_DEVELOPMENT ? "debug" : "warn");
 

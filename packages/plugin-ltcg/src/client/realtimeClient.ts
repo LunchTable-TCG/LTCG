@@ -169,7 +169,8 @@ export class ConvexRealtimeClient {
       if (this.debug) {
         console.log(`[ConvexRealtimeClient] Already subscribed to game ${gameId}`);
       }
-      return this.subscriptions.get(subscriptionId)!.unsubscribe;
+      // Return existing unsubscribe function or no-op if not found
+      return this.subscriptions.get(subscriptionId)?.unsubscribe ?? (() => {});
     }
 
     if (this.debug) {
@@ -237,7 +238,7 @@ export class ConvexRealtimeClient {
       if (this.debug) {
         console.log(`[ConvexRealtimeClient] Already subscribed to turns for ${userId}`);
       }
-      return this.subscriptions.get(subscriptionId)!.unsubscribe;
+      return this.subscriptions.get(subscriptionId)?.unsubscribe;
     }
 
     if (this.debug) {
@@ -274,7 +275,7 @@ export class ConvexRealtimeClient {
           })
           .catch((error: Error) => {
             if (this.debug) {
-              console.error(`[ConvexRealtimeClient] Error checking turn status:`, error);
+              console.error("[ConvexRealtimeClient] Error checking turn status:", error);
             }
             callback([]);
           });
@@ -324,7 +325,7 @@ export class ConvexRealtimeClient {
       if (this.debug) {
         console.log(`[ConvexRealtimeClient] Already subscribed to events for ${gameId}`);
       }
-      return this.subscriptions.get(subscriptionId)!.unsubscribe;
+      return this.subscriptions.get(subscriptionId)?.unsubscribe;
     }
 
     if (this.debug) {

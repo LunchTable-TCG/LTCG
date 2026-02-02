@@ -3,6 +3,7 @@
 import { LogoutConfirmDialog } from "@/components/dialogs/LogoutConfirmDialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { WalletButton } from "@/components/wallet";
 import { useAuth, useLogout } from "@/hooks/auth/useConvexAuthHook";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
@@ -153,6 +154,8 @@ export function Navbar() {
                     </Link>
                   </Button>
 
+                  <WalletButton expandable className="hidden sm:flex" />
+
                   <Link href="/profile" className="group">
                     <div className="relative">
                       <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -253,6 +256,10 @@ export function Navbar() {
                       </p>
                       <p className="text-xs text-muted-foreground">Rating: 1000</p>
                     </div>
+                  </div>
+                  {/* Mobile wallet button */}
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <WalletButton className="w-full justify-center" />
                   </div>
                 </div>
               </div>

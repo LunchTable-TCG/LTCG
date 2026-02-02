@@ -459,7 +459,7 @@ export function GameBoard({
           required: tributesRequired,
           provided: tributesProvided,
         });
-        toast.error(`Tribute Required`, {
+        toast.error("Tribute Required", {
           description: `This Level ${level} monster requires ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}. Please select ${tributesRequired} monster${tributesRequired > 1 ? "s" : ""} from your field to tribute.`,
         });
         return;
@@ -556,7 +556,7 @@ export function GameBoard({
             toast.success("Card added to hand!");
             setSelectedHandCard(null);
             setShowSummonModal(false);
-          } catch (error) {
+          } catch (_error) {
             toast.error("Failed to complete search");
           }
         },
@@ -668,7 +668,7 @@ export function GameBoard({
               toast.success("Card added to hand!");
               setSelectedBackrowCard(null);
               setShowActivateModal(false);
-            } catch (error) {
+            } catch (_error) {
               toast.error("Failed to complete effect");
             }
           },
@@ -827,10 +827,18 @@ export function GameBoard({
     <div
       className="fixed inset-0 z-50 overflow-hidden bg-arena flex flex-col"
       data-testid="game-board"
+      role="application"
+      aria-label={`Game board - ${isPlayerTurn ? "Your turn" : "Opponent's turn"} - ${currentPhase} phase`}
     >
       {/* Decorative Overlay */}
       <div className="absolute inset-0 bg-black/40 z-0" />
       <div className="absolute inset-0 bg-vignette z-0 pointer-events-none" />
+
+      {/* Screen reader announcements */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {isPlayerTurn ? "Your turn" : "Opponent's turn"}, {currentPhase} phase. Your life points:{" "}
+        {player?.lifePoints ?? 0}. Opponent life points: {opponent?.lifePoints ?? 0}.
+      </div>
 
       {/* Game Content Container - full height, no scroll */}
       <div className="relative z-10 flex flex-col h-full">
@@ -869,12 +877,20 @@ export function GameBoard({
         </div>
 
         {/* Opponent Hand */}
-        <div className="shrink-0">
+        <div
+          className="shrink-0"
+          role="region"
+          aria-label={`Opponent's hand: ${opponent.handCount} cards`}
+        >
           <PlayerHand cards={[]} handCount={opponent.handCount} isOpponent />
         </div>
 
         {/* Opponent Board */}
-        <div className="border-b border-slate-700/50 shrink-0">
+        <div
+          className="border-b border-slate-700/50 shrink-0"
+          role="region"
+          aria-label="Opponent's field"
+        >
           <OpponentBoard
             board={opponent}
             selectedCard={selectedFieldCard?.instanceId}
@@ -896,7 +912,7 @@ export function GameBoard({
         </div>
 
         {/* Player Board */}
-        <div className="border-b border-white/5 shrink-0">
+        <div className="border-b border-white/5 shrink-0" role="region" aria-label="Your field">
           <PlayerBoard
             board={player}
             selectedCard={selectedFieldCard?.instanceId}
@@ -912,7 +928,11 @@ export function GameBoard({
         </div>
 
         {/* Player Hand - flexible, takes remaining space */}
-        <div className="flex-1 min-h-0 border-b border-white/5 bg-black/20 overflow-visible relative">
+        <div
+          className="flex-1 min-h-0 border-b border-white/5 bg-black/20 overflow-visible relative"
+          role="region"
+          aria-label={`Your hand: ${player.hand.length} cards`}
+        >
           <div className="absolute inset-0 bg-linear-to-t from-primary/5 to-transparent pointer-events-none" />
           <PlayerHand
             cards={player.hand}
@@ -924,7 +944,11 @@ export function GameBoard({
         </div>
 
         {/* Player Life Points & Actions */}
-        <div className="px-2 py-1.5 flex items-center justify-between gap-2 shrink-0">
+        <div
+          className="px-2 py-1.5 flex items-center justify-between gap-2 shrink-0"
+          role="region"
+          aria-label="Your status and actions"
+        >
           <LifePointsBar
             playerName={player.playerName}
             lifePoints={player.lifePoints}

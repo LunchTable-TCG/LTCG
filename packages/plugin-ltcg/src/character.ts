@@ -17,31 +17,32 @@ export const character: Character = {
     "@elizaos/plugin-sql",
 
     // LTCG Game Plugin - enables card game playing (local plugin object)
-    ltcgPlugin,
+    // Cast to any since Character.plugins only accepts strings but addAgents accepts Plugin | string
+    ltcgPlugin as unknown as string,
 
     // Text-only plugins (no embedding support)
-    ...(process.env['ANTHROPIC_API_KEY']?.trim() ? ["@elizaos/plugin-anthropic"] : []),
-    ...(process.env['OPENROUTER_API_KEY']?.trim() ? ["@elizaos/plugin-openrouter"] : []),
+    ...(process.env.ANTHROPIC_API_KEY?.trim() ? ["@elizaos/plugin-anthropic"] : []),
+    ...(process.env.OPENROUTER_API_KEY?.trim() ? ["@elizaos/plugin-openrouter"] : []),
 
     // Embedding-capable plugins (optional, based on available credentials)
-    ...(process.env['OPENAI_API_KEY']?.trim() ? ["@elizaos/plugin-openai"] : []),
-    ...(process.env['GOOGLE_GENERATIVE_AI_API_KEY']?.trim() ? ["@elizaos/plugin-google-genai"] : []),
+    ...(process.env.OPENAI_API_KEY?.trim() ? ["@elizaos/plugin-openai"] : []),
+    ...(process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ? ["@elizaos/plugin-google-genai"] : []),
 
     // Ollama as fallback (only if no main LLM providers are configured)
-    ...(process.env['OLLAMA_API_ENDPOINT']?.trim() ? ["@elizaos/plugin-ollama"] : []),
+    ...(process.env.OLLAMA_API_ENDPOINT?.trim() ? ["@elizaos/plugin-ollama"] : []),
 
     // Platform plugins
-    ...(process.env['DISCORD_API_TOKEN']?.trim() ? ["@elizaos/plugin-discord"] : []),
-    ...(process.env['TWITTER_API_KEY']?.trim() &&
-    process.env['TWITTER_API_SECRET_KEY']?.trim() &&
-    process.env['TWITTER_ACCESS_TOKEN']?.trim() &&
-    process.env['TWITTER_ACCESS_TOKEN_SECRET']?.trim()
+    ...(process.env.DISCORD_API_TOKEN?.trim() ? ["@elizaos/plugin-discord"] : []),
+    ...(process.env.TWITTER_API_KEY?.trim() &&
+    process.env.TWITTER_API_SECRET_KEY?.trim() &&
+    process.env.TWITTER_ACCESS_TOKEN?.trim() &&
+    process.env.TWITTER_ACCESS_TOKEN_SECRET?.trim()
       ? ["@elizaos/plugin-twitter"]
       : []),
-    ...(process.env['TELEGRAM_BOT_TOKEN']?.trim() ? ["@elizaos/plugin-telegram"] : []),
+    ...(process.env.TELEGRAM_BOT_TOKEN?.trim() ? ["@elizaos/plugin-telegram"] : []),
 
     // Bootstrap plugin
-    ...(!process.env['IGNORE_BOOTSTRAP'] ? ["@elizaos/plugin-bootstrap"] : []),
+    ...(!process.env.IGNORE_BOOTSTRAP ? ["@elizaos/plugin-bootstrap"] : []),
   ],
   settings: {
     secrets: {},

@@ -157,7 +157,7 @@ export function BinderCard({
             transformStyle: "preserve-3d",
             boxShadow: isHovering
               ? `0 25px 50px -12px ${rarity.glow}, 0 0 40px ${rarity.glow}`
-              : `0 10px 30px -10px rgba(0, 0, 0, 0.5)`,
+              : "0 10px 30px -10px rgba(0, 0, 0, 0.5)",
             minHeight: "200px",
           }}
         >

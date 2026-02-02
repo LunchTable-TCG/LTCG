@@ -98,7 +98,7 @@ export function BoardVisualizer({ gameState, className }: BoardVisualizerProps) 
       {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border"></div>
+          <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center">
           <span className="bg-background px-3 text-xs text-muted-foreground uppercase tracking-wide">

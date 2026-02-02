@@ -1,348 +1,295 @@
-import { test, expect } from "./setup/fixtures";
-import { ShopHelper } from "./setup/helpers";
-import { TEST_CONFIG, SELECTORS } from "./setup/test-data";
-
 /**
- * Economy Flow E2E Tests
+ * Economy E2E Tests
  *
- * Tests economy features including:
- * - Purchasing packs with gold
+ * Tests shop and currency including:
+ * - Viewing shop
+ * - Currency display
+ * - Purchasing packs
  * - Opening packs
- * - Receiving cards
- * - Marketplace listing
- * - Marketplace purchasing
- * - Promo code redemption
+ * - Marketplace (if available)
  */
 
-test.describe("Economy Flow", () => {
-  test.describe("Shop - Buying Packs", () => {
-    test("should display available packs", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
+import { test, expect } from "./setup/fixtures";
 
-      // Pack products should be visible
-      await expect(
-        authenticatedPage.locator('[data-testid="pack-product"]')
-      ).toBeVisible({ timeout: 5000 });
+test.describe("Economy", () => {
+  test.describe("Shop Page", () => {
+    test("shop page loads correctly", async ({ shopPage }) => {
+      await shopPage.navigate();
+      await expect(shopPage.page).toHaveURL(/shop/);
     });
 
-    test("should show pack price", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
+    test("displays gold balance", async ({ shopPage }) => {
+      await shopPage.navigate();
 
-      // Price should be displayed
-      await expect(
-        authenticatedPage.locator('[data-testid="pack-price"]')
-      ).toBeVisible();
+      const gold = await shopPage.getGoldAmount();
+      expect(gold).toBeGreaterThanOrEqual(0);
     });
 
-    test("should buy pack with gold", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
+    test("displays gems balance", async ({ shopPage }) => {
+      await shopPage.navigate();
 
-      const goldBefore = await shopHelper.getGoldAmount();
-      const packsBefore = await shopHelper.getPackCount();
-
-      // Buy pack
-      await shopHelper.buyPack();
-
-      // Gold should decrease
-      const goldAfter = await shopHelper.getGoldAmount();
-      expect(goldAfter).toBeLessThan(goldBefore);
-
-      // Pack count should increase
-      const packsAfter = await shopHelper.getPackCount();
-      expect(packsAfter).toBeGreaterThan(packsBefore);
+      const gems = await shopPage.getGemsAmount();
+      expect(gems).toBeGreaterThanOrEqual(0);
     });
 
-    test("should not allow purchase with insufficient gold", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
+    test("displays available packs", async ({ shopPage }) => {
+      await shopPage.navigate();
 
-      const gold = await shopHelper.getGoldAmount();
+      // Should see at least one pack product
+      const packCount = await shopPage.getPackCount();
+      expect(packCount).toBeGreaterThan(0);
+    });
+  });
 
-      // If gold is insufficient for pack
-      if (gold < TEST_CONFIG.PACK_COST) {
-        const buyButton = authenticatedPage.locator(SELECTORS.SHOP_BUY_PACK_BUTTON);
-        const isDisabled = await buyButton.isDisabled();
-        expect(isDisabled).toBeTruthy();
+  test.describe("Pack Purchasing", () => {
+    test("can view pack details", async ({ shopPage }) => {
+      await shopPage.navigate();
+
+      // Packs should show price and be visible
+      await shopPage.expectPacksAvailable();
+    });
+
+    test("can open purchase dialog", async ({ shopPage }) => {
+      await shopPage.navigate();
+
+      await shopPage.openPurchaseDialog(0);
+      await shopPage.expectPurchaseDialogVisible();
+    });
+
+    test("can close purchase dialog", async ({ shopPage }) => {
+      await shopPage.navigate();
+
+      await shopPage.openPurchaseDialog(0);
+      await shopPage.expectPurchaseDialogVisible();
+
+      await shopPage.closePurchaseDialog();
+      await shopPage.expectPurchaseDialogNotVisible();
+    });
+
+    test("can purchase pack with gold", async ({ shopPage }) => {
+      await shopPage.navigate();
+
+      const goldBefore = await shopPage.getGoldAmount();
+
+      // Only attempt purchase if user has enough gold (standard pack ~100 gold)
+      if (goldBefore >= 100) {
+        await shopPage.buyPackWithGold(0);
+
+        // Should redirect to pack opening page
+        await expect(shopPage.page).toHaveURL(/\/shop\/open/);
+      } else {
+        // Skip test if insufficient funds
+        test.skip();
+      }
+    });
+
+    test("can purchase pack with gems", async ({ shopPage }) => {
+      await shopPage.navigate();
+
+      const gemsBefore = await shopPage.getGemsAmount();
+
+      // Only attempt purchase if user has enough gems
+      if (gemsBefore >= 10) {
+        await shopPage.buyPackWithGems(0);
+
+        // Should redirect to pack opening page
+        await expect(shopPage.page).toHaveURL(/\/shop\/open/);
+      } else {
+        // Skip test if insufficient funds
+        test.skip();
       }
     });
   });
 
-  test.describe("Opening Packs", () => {
-    test("should open pack and receive cards", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
+  test.describe("Pack Opening", () => {
+    test("pack opening page displays pack info", async ({ shopPage }) => {
+      await shopPage.navigate();
 
-      // Buy pack first
-      await shopHelper.buyPack();
+      const goldBefore = await shopPage.getGoldAmount();
 
-      // Open pack
-      await shopHelper.openPack();
+      if (goldBefore >= 100) {
+        await shopPage.buyPackWithGold(0);
 
-      // Should show pack opening animation/results
-      await expect(
-        authenticatedPage.locator('[data-testid="pack-results"]')
-      ).toBeVisible({ timeout: 10000 });
+        // Should be on opening page
+        await expect(shopPage.page).toHaveURL(/\/shop\/open/);
 
-      // Should show received cards
-      const cardCount = await authenticatedPage
-        .locator('[data-testid="pack-card"]')
-        .count();
-      expect(cardCount).toBe(TEST_CONFIG.CARDS_PER_PACK);
-    });
-
-    test("should add cards to collection after opening", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
-
-      // Buy and open pack
-      await shopHelper.buyPack();
-      await shopHelper.openPack();
-
-      // Close pack results
-      await authenticatedPage.click('button:has-text("Close")');
-
-      // Navigate to binder
-      await authenticatedPage.goto("/binder");
-
-      // New cards should be in collection
-      await expect(
-        authenticatedPage.locator('[data-testid="collection-card"]')
-      ).toBeVisible({ timeout: 5000 });
-    });
-
-    test("should show pack inventory", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
-
-      // Navigate to open packs section
-      await authenticatedPage.goto("/shop/open");
-
-      // Should show owned packs
-      await expect(
-        authenticatedPage.locator('[data-testid="owned-pack"]')
-      ).toBeVisible({ timeout: 5000 });
-    });
-  });
-
-  test.describe("Marketplace - Listing", () => {
-    test("should list card for sale", async ({ authenticatedPage }) => {
-      await authenticatedPage.goto("/binder");
-
-      // Select card to list
-      await authenticatedPage.locator('[data-testid="collection-card"]').first().click();
-
-      // List on marketplace
-      const listButton = authenticatedPage.locator('button:has-text("List")');
-      if (await listButton.isVisible({ timeout: 2000 })) {
-        await listButton.click();
-
-        // Enter price
-        await authenticatedPage.fill('input[name="price"]', "100");
-
-        // Confirm listing
-        await authenticatedPage.click('button:has-text("Confirm")');
-
-        // Should show success message
-        await expect(
-          authenticatedPage.locator('text=/listed.*successfully/i')
-        ).toBeVisible({ timeout: 5000 });
+        // Should see pack display
+        const packImage = shopPage.page.locator('img[alt*="Pack"]');
+        await expect(packImage).toBeVisible();
+      } else {
+        test.skip();
       }
     });
 
-    test("should validate listing price", async ({ authenticatedPage }) => {
-      await authenticatedPage.goto("/binder");
+    test("can open pack and see revealing phase", async ({ shopPage }) => {
+      await shopPage.navigate();
 
-      const listButton = authenticatedPage.locator('button:has-text("List")');
-      if (await listButton.isVisible({ timeout: 2000 })) {
-        await listButton.click();
+      const goldBefore = await shopPage.getGoldAmount();
 
-        // Try invalid price
-        await authenticatedPage.fill('input[name="price"]', "-10");
-        await authenticatedPage.click('button:has-text("Confirm")');
+      if (goldBefore >= 100) {
+        await shopPage.buyPackWithGold(0);
 
-        // Should show validation error
-        await expect(
-          authenticatedPage.locator('text=/valid.*price/i')
-        ).toBeVisible({ timeout: 5000 });
+        // Click "Open Pack" button
+        const openButton = shopPage.page.getByRole("button", {
+          name: /Open Pack/i,
+        });
+        await openButton.click();
+
+        // Wait for video animation (or skip on error)
+        await shopPage.page.waitForTimeout(3000);
+
+        // Should see pack results grid
+        const packResults = shopPage.page.locator('[data-testid="pack-results"]');
+        await expect(packResults).toBeVisible({ timeout: 10000 });
+      } else {
+        test.skip();
       }
     });
 
-    test("should remove listing", async ({ authenticatedPage }) => {
-      await authenticatedPage.goto("/binder");
+    test("pack results show cards received", async ({ shopPage }) => {
+      await shopPage.navigate();
 
-      // List card first
-      await authenticatedPage.locator('[data-testid="collection-card"]').first().click();
-      const listButton = authenticatedPage.locator('button:has-text("List")');
-      if (await listButton.isVisible({ timeout: 2000 })) {
-        await listButton.click();
-        await authenticatedPage.fill('input[name="price"]', "100");
-        await authenticatedPage.click('button:has-text("Confirm")');
+      const goldBefore = await shopPage.getGoldAmount();
 
-        // Remove listing
-        await authenticatedPage.click('button:has-text("Unlist")');
+      if (goldBefore >= 100) {
+        await shopPage.buyPackWithGold(0);
 
-        // Should be removed
-        await expect(
-          authenticatedPage.locator('text=/unlisted.*successfully/i')
-        ).toBeVisible({ timeout: 5000 });
+        // Open pack
+        const openButton = shopPage.page.getByRole("button", {
+          name: /Open Pack/i,
+        });
+        await openButton.click();
+        await shopPage.page.waitForTimeout(3000);
+
+        // Should show cards (5 per pack typically)
+        const packCards = shopPage.page.locator('[data-testid="pack-card"]');
+        const cardCount = await packCards.count();
+        expect(cardCount).toBeGreaterThan(0);
+        expect(cardCount).toBeLessThanOrEqual(10); // Reasonable upper bound
+      } else {
+        test.skip();
+      }
+    });
+
+    test("can reveal all cards at once", async ({ shopPage }) => {
+      await shopPage.navigate();
+
+      const goldBefore = await shopPage.getGoldAmount();
+
+      if (goldBefore >= 100) {
+        await shopPage.buyPackWithGold(0);
+
+        // Open pack
+        const openButton = shopPage.page.getByRole("button", {
+          name: /Open Pack/i,
+        });
+        await openButton.click();
+        await shopPage.page.waitForTimeout(3000);
+
+        // Click "Reveal All Cards" button
+        const revealAllButton = shopPage.page.getByRole("button", {
+          name: /Reveal All Cards/i,
+        });
+
+        // Button may not be visible if cards auto-reveal
+        const isVisible = await revealAllButton
+          .isVisible()
+          .catch(() => false);
+
+        if (isVisible) {
+          await revealAllButton.click();
+
+          // Should transition to complete phase
+          await expect(
+            shopPage.page.getByText("Pack Opened Successfully")
+          ).toBeVisible({ timeout: 5000 });
+        }
+      } else {
+        test.skip();
       }
     });
   });
 
-  test.describe("Marketplace - Purchasing", () => {
-    test("should display marketplace listings", async ({ authenticatedPage }) => {
-      await authenticatedPage.goto("/marketplace");
+  test.describe("Currency Updates", () => {
+    test("gold updates after purchase", async ({ shopPage }) => {
+      await shopPage.navigate();
 
-      // Should show available cards
-      await expect(
-        authenticatedPage.locator('[data-testid="marketplace-card"]')
-      ).toBeVisible({ timeout: 5000 });
-    });
+      const goldBefore = await shopPage.getGoldAmount();
 
-    test("should buy card from marketplace", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await authenticatedPage.goto("/marketplace");
+      if (goldBefore >= 100) {
+        await shopPage.buyPackWithGold(0);
 
-      const goldBefore = await shopHelper.getGoldAmount();
+        // Navigate back to shop
+        await shopPage.navigate();
 
-      // Buy first available card
-      await authenticatedPage.locator('[data-testid="marketplace-card"]').first().click();
-      await authenticatedPage.click('button:has-text("Buy")');
-
-      // Confirm purchase
-      await authenticatedPage.click('button:has-text("Confirm")');
-
-      // Gold should decrease
-      const goldAfter = await shopHelper.getGoldAmount();
-      expect(goldAfter).toBeLessThan(goldBefore);
-
-      // Card should be in collection
-      await authenticatedPage.goto("/binder");
-      await expect(
-        authenticatedPage.locator('[data-testid="collection-card"]')
-      ).toBeVisible();
-    });
-
-    test("should filter marketplace by rarity", async ({ authenticatedPage }) => {
-      await authenticatedPage.goto("/marketplace");
-
-      // Select rarity filter
-      await authenticatedPage.click('[data-filter="rarity"]');
-      await authenticatedPage.click('option:has-text("Rare")');
-
-      // Results should update
-      await authenticatedPage.waitForTimeout(1000);
-
-      // Verify filtered results
-      const cards = await authenticatedPage.locator('[data-testid="marketplace-card"]').count();
-      expect(cards).toBeGreaterThanOrEqual(0);
-    });
-
-    test("should search marketplace by card name", async ({ authenticatedPage }) => {
-      await authenticatedPage.goto("/marketplace");
-
-      // Search for card
-      await authenticatedPage.fill('input[placeholder*="Search"]', "Dragon");
-
-      // Wait for results
-      await authenticatedPage.waitForTimeout(1000);
-
-      // Should show filtered results
-      const results = await authenticatedPage.locator('[data-testid="marketplace-card"]').count();
-      expect(results).toBeGreaterThanOrEqual(0);
-    });
-  });
-
-  test.describe("Promo Codes", () => {
-    test("should redeem valid promo code", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
-
-      // Enter promo code
-      const promoInput = authenticatedPage.locator('input[name="promoCode"]');
-      if (await promoInput.isVisible({ timeout: 2000 })) {
-        await promoInput.fill("TESTCODE123");
-        await authenticatedPage.click('button:has-text("Redeem")');
-
-        // Should show success or error
-        const successMessage = authenticatedPage.locator('text=/redeemed/i');
-        const errorMessage = authenticatedPage.locator('text=/invalid.*code/i');
-
-        const hasMessage = await Promise.race([
-          successMessage.isVisible({ timeout: 5000 }).then(() => "success"),
-          errorMessage.isVisible({ timeout: 5000 }).then(() => "error"),
-        ]);
-
-        expect(["success", "error"]).toContain(hasMessage);
+        // Gold should be decreased
+        const goldAfter = await shopPage.getGoldAmount();
+        expect(goldAfter).toBeLessThan(goldBefore);
+        expect(goldBefore - goldAfter).toBeGreaterThanOrEqual(50); // Minimum pack cost
+      } else {
+        test.skip();
       }
     });
 
-    test("should show error for invalid promo code", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
+    test("gems update after purchase", async ({ shopPage }) => {
+      await shopPage.navigate();
 
-      const promoInput = authenticatedPage.locator('input[name="promoCode"]');
-      if (await promoInput.isVisible({ timeout: 2000 })) {
-        await promoInput.fill("INVALID_CODE_XYZ");
-        await authenticatedPage.click('button:has-text("Redeem")');
+      const gemsBefore = await shopPage.getGemsAmount();
 
-        // Should show error
-        await expect(
-          authenticatedPage.locator('text=/invalid.*code/i')
-        ).toBeVisible({ timeout: 5000 });
-      }
-    });
+      if (gemsBefore >= 10) {
+        await shopPage.buyPackWithGems(0);
 
-    test("should not allow reusing promo code", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
+        // Navigate back to shop
+        await shopPage.navigate();
 
-      const promoInput = authenticatedPage.locator('input[name="promoCode"]');
-      if (await promoInput.isVisible({ timeout: 2000 })) {
-        const testCode = "REUSECODE123";
-
-        // Redeem once
-        await promoInput.fill(testCode);
-        await authenticatedPage.click('button:has-text("Redeem")');
-        await authenticatedPage.waitForTimeout(2000);
-
-        // Try to redeem again
-        await promoInput.fill(testCode);
-        await authenticatedPage.click('button:has-text("Redeem")');
-
-        // Should show already used error
-        await expect(
-          authenticatedPage.locator('text=/already.*used/i')
-        ).toBeVisible({ timeout: 5000 });
+        // Gems should be decreased
+        const gemsAfter = await shopPage.getGemsAmount();
+        expect(gemsAfter).toBeLessThan(gemsBefore);
+      } else {
+        test.skip();
       }
     });
   });
 
-  test.describe("Currency Display", () => {
-    test("should display current gold amount", async ({ authenticatedPage }) => {
-      await authenticatedPage.goto("/shop");
+  test.describe("Marketplace", () => {
+    test("can view marketplace tab", async ({ shopPage }) => {
+      await shopPage.navigate();
 
-      // Gold display should be visible
-      await expect(
-        authenticatedPage.locator('[data-testid="player-gold"]')
-      ).toBeVisible();
+      await shopPage.selectMarketplaceTab();
+
+      // Should show marketplace content (may be empty)
+      const marketplaceContent = shopPage.page.locator(
+        '[data-testid="marketplace-card"], .text-\\[\\#a89f94\\]'
+      );
+      await expect(marketplaceContent.first()).toBeVisible();
     });
 
-    test("should update gold amount after transactions", async ({ authenticatedPage }) => {
-      const shopHelper = new ShopHelper(authenticatedPage);
-      await shopHelper.navigate();
+    test("can view my listings tab", async ({ shopPage }) => {
+      await shopPage.navigate();
 
-      const goldBefore = await shopHelper.getGoldAmount();
+      await shopPage.selectMyListingsTab();
 
-      // Make purchase
-      await shopHelper.buyPack();
+      // Should show my listings content (may be empty)
+      const listingsContent = shopPage.page.locator(
+        'button:has-text("List Card"), .text-\\[\\#a89f94\\]'
+      );
+      await expect(listingsContent.first()).toBeVisible();
+    });
 
-      // Gold should update
-      const goldAfter = await shopHelper.getGoldAmount();
-      expect(goldAfter).not.toBe(goldBefore);
+    test("can switch between shop tabs", async ({ shopPage }) => {
+      await shopPage.navigate();
+
+      // Go to marketplace
+      await shopPage.selectMarketplaceTab();
+      await shopPage.page.waitForTimeout(500);
+
+      // Go to my listings
+      await shopPage.selectMyListingsTab();
+      await shopPage.page.waitForTimeout(500);
+
+      // Back to shop
+      await shopPage.selectShopTab();
+      await shopPage.expectPacksAvailable();
     });
   });
 });

@@ -262,7 +262,13 @@ export default function StoryModePage() {
 
           {/* Chapters Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
-            {chapters.length > 0 ? (
+            {allChapters === undefined ? (
+              // Still loading from server
+              <div className="col-span-full text-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-[#d4af37] mx-auto mb-4" />
+                <p className="text-[#a89f94]">Loading chapters...</p>
+              </div>
+            ) : chapters.length > 0 ? (
               chapters.map(
                 (
                   chapter: {
@@ -298,16 +304,23 @@ export default function StoryModePage() {
                 )
               )
             ) : (
-              <div className="col-span-full text-center py-16">
-                <Loader2 className="w-8 h-8 animate-spin text-[#d4af37] mx-auto mb-4" />
-                <p className="text-[#a89f94] mb-4">Loading chapters...</p>
-                <p className="text-[#a89f94] text-sm">
-                  Run{" "}
-                  <code className="bg-black/40 px-2 py-1 rounded">
-                    bun convex run scripts/seedStoryChapters:seedStoryChapters
-                  </code>{" "}
-                  to initialize chapters.
+              // No chapters found after loading
+              <div className="col-span-full text-center py-16 bg-black/30 rounded-2xl border border-[#3d2b1f]">
+                <div className="w-20 h-20 rounded-2xl bg-purple-500/20 mx-auto mb-6 flex items-center justify-center border border-purple-500/30">
+                  <BookOpen className="w-10 h-10 text-purple-400" />
+                </div>
+                <p className="text-2xl font-bold text-[#e8e0d5] mb-3">Story Chapters Unavailable</p>
+                <p className="text-[#a89f94] mb-6 max-w-md mx-auto">
+                  The story mode chapters haven't been initialized yet. Please try again later or
+                  contact support if this persists.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="px-6 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 rounded-xl text-purple-200 font-medium transition-colors"
+                >
+                  Retry
+                </button>
               </div>
             )}
           </div>

@@ -37,7 +37,7 @@ export function isConvexError(error: unknown): error is { message: string; code?
     error !== null &&
     typeof error === "object" &&
     "message" in error &&
-    typeof (error as Record<string, unknown>)["message"] === "string"
+    typeof (error as Record<string, unknown>).message === "string"
   );
 }
 

@@ -210,7 +210,7 @@ export const ProjectStarterTestSuite: TestSuite = {
           // In a real scenario with an LLM, we would process the message
           // For now, we just verify the system can handle it
           logger.info("✓ Agent can receive and store messages");
-        } catch (error) {
+        } catch (_error) {
           // If connection setup fails, it's a test environment limitation
           logger.info("⚠ Message processing test skipped (test environment limitation)");
         }
@@ -267,21 +267,21 @@ export const ProjectStarterTestSuite: TestSuite = {
 
     {
       name: "agent_should_maintain_conversation_context",
-      fn: async (runtime: IAgentRuntime) => {
+      fn: async (_runtime: IAgentRuntime) => {
         // Test that the agent can maintain context across messages
         try {
-          const testRoomId = uuidv4() as UUID;
-          const testUserId = uuidv4() as UUID;
+          const _testRoomId = uuidv4() as UUID;
+          const _testUserId = uuidv4() as UUID;
 
           // Create a context provider state
-          const state: State = {
+          const _state: State = {
             values: {},
             data: { conversationContext: true },
             text: "Testing conversation context",
           };
 
           logger.info("✓ Conversation context system is available");
-        } catch (error) {
+        } catch (_error) {
           logger.info("⚠ Conversation context test skipped (test environment limitation)");
         }
       },
@@ -322,7 +322,7 @@ export const ProjectStarterTestSuite: TestSuite = {
         let responseReceived = false;
         const callback: HandlerCallback = async (
           response: Content,
-          files?: any
+          _files?: any
         ): Promise<Memory[]> => {
           if (response.text === "hello world!" && response.action === "HELLO_WORLD") {
             responseReceived = true;
@@ -464,7 +464,7 @@ export const ProjectStarterTestSuite: TestSuite = {
           }
 
           logger.info(`✓ Memory system stored and retrieved ${retrievedMessages.length} messages`);
-        } catch (error) {
+        } catch (_error) {
           // Memory operations might fail in test environment
           logger.info("⚠ Memory system test skipped (test environment limitation)");
         }
@@ -501,7 +501,7 @@ export const ProjectStarterTestSuite: TestSuite = {
           await Promise.all(messagePromises);
 
           logger.info("✓ Successfully handled concurrent message creation");
-        } catch (error) {
+        } catch (_error) {
           logger.info("⚠ Concurrent message test skipped (test environment limitation)");
         }
       },
@@ -517,7 +517,7 @@ export const ProjectStarterTestSuite: TestSuite = {
           if (connection) {
             logger.info("✓ Database connection is working");
           }
-        } catch (error) {
+        } catch (_error) {
           logger.info("⚠ Database connection test skipped");
         }
 

@@ -19,7 +19,7 @@ export const boardAnalysisProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get game ID from state first, then message content
-      const gameId = state.values?.['LTCG_CURRENT_GAME_ID'] || (message.content as any)?.gameId;
+      const gameId = state.values?.LTCG_CURRENT_GAME_ID || (message.content as any)?.gameId;
 
       if (!gameId) {
         return {
@@ -264,13 +264,13 @@ function formatBoardAnalysis(analysis: BoardAnalysis, _gameState: GameStateRespo
   // Helper to get attack value from BoardCard
   const getAtk = (card: BoardCard) => card.currentAttack ?? card.attack ?? 0;
 
-  let text = `Board Analysis:\n`;
+  let text = "Board Analysis:\n";
   text += `- Advantage: ${analysis.advantage.replace(/_/g, " ")}\n`;
 
   if (analysis.myStrongestMonster) {
     text += `- Your Strongest: ${analysis.myStrongestMonster.name} (${getAtk(analysis.myStrongestMonster)} ATK)\n`;
   } else {
-    text += `- Your Strongest: None (no monsters on field)\n`;
+    text += "- Your Strongest: None (no monsters on field)\n";
   }
 
   if (analysis.opponentStrongestMonster) {
@@ -279,23 +279,23 @@ function formatBoardAnalysis(analysis: BoardAnalysis, _gameState: GameStateRespo
       : true;
     text += `- Opponent Strongest: ${analysis.opponentStrongestMonster.name} (${getAtk(analysis.opponentStrongestMonster)} ATK)${isThreat ? " - THREAT!" : ""}\n`;
   } else {
-    text += `- Opponent Strongest: None (no monsters on field)\n`;
+    text += "- Opponent Strongest: None (no monsters on field)\n";
   }
 
   if (analysis.threats.length > 0) {
-    text += `- Threats:\n`;
+    text += "- Threats:\n";
     analysis.threats.forEach((threat) => {
       text += `  * ${threat}\n`;
     });
   }
 
   if (analysis.opportunities.length > 0) {
-    text += `- Attack Opportunities:\n`;
+    text += "- Attack Opportunities:\n";
     analysis.opportunities.forEach((opp) => {
       text += `  * ${opp}\n`;
     });
   } else {
-    text += `- Attack Opportunities: None safe\n`;
+    text += "- Attack Opportunities: None safe\n";
   }
 
   text += `- Recommendation: ${analysis.recommendation}`;

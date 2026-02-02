@@ -19,7 +19,7 @@ export const handProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get game ID from state first, then message content
-      const gameId = state.values?.['LTCG_CURRENT_GAME_ID'] || (message.content as any)?.gameId;
+      const gameId = state.values?.LTCG_CURRENT_GAME_ID || (message.content as any)?.gameId;
 
       if (!gameId) {
         return {
@@ -118,7 +118,8 @@ function formatCard(card: CardInHand): string {
     return `${card.name} [Creature, Cost ${card.cost || 0}] ATK: ${card.attack || 0}, DEF: ${card.defense || 0}
    - ${tributeText}
 ${abilityText}`;
-  } else if (card.cardType === "spell") {
+  }
+  if (card.cardType === "spell") {
     const effectText = card.description
       ? `   - Effect: ${card.description}`
       : card.abilities && card.abilities.length > 0
@@ -127,7 +128,8 @@ ${abilityText}`;
 
     return `${card.name} [Spell]
 ${effectText}`;
-  } else if (card.cardType === "trap") {
+  }
+  if (card.cardType === "trap") {
     const effectText = card.description
       ? `   - Effect: ${card.description}`
       : card.abilities && card.abilities.length > 0
@@ -136,10 +138,9 @@ ${effectText}`;
 
     return `${card.name} [Trap]
 ${effectText}`;
-  } else {
-    // Equipment or other
-    return `${card.name} [${card.cardType}]`;
   }
+  // Equipment or other
+  return `${card.name} [${card.cardType}]`;
 }
 
 /**
@@ -149,9 +150,9 @@ ${effectText}`;
 function getTributeRequirementText(cost: number): string {
   if (cost <= 4) {
     return "No tributes required";
-  } else if (cost <= 6) {
-    return "Requires 1 tribute to summon";
-  } else {
-    return "Requires 2 tributes to summon";
   }
+  if (cost <= 6) {
+    return "Requires 1 tribute to summon";
+  }
+  return "Requires 2 tributes to summon";
 }

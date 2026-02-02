@@ -64,16 +64,16 @@ export const STANDARD_DECKS = {
     name: "Aggro Deck",
     cardIds: [
       ...Array(20).fill("starter_monster_1"), // High attack monsters
-      ...Array(5).fill("starter_spell_1"),    // Direct damage spells
-      ...Array(5).fill("starter_trap_1"),      // Minimal traps
+      ...Array(5).fill("starter_spell_1"), // Direct damage spells
+      ...Array(5).fill("starter_trap_1"), // Minimal traps
     ],
   },
   CONTROL: {
     name: "Control Deck",
     cardIds: [
       ...Array(10).fill("starter_monster_1"),
-      ...Array(10).fill("starter_spell_1"),   // Removal spells
-      ...Array(10).fill("starter_trap_1"),    // Heavy traps
+      ...Array(10).fill("starter_spell_1"), // Removal spells
+      ...Array(10).fill("starter_trap_1"), // Heavy traps
     ],
   },
   BALANCED: {

@@ -129,6 +129,30 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
       <div className="absolute inset-0 bg-vignette z-0" />
       <div className="absolute inset-0 grid-pattern opacity-30 z-0" />
       <div className="container mx-auto px-4 py-8">
+        {/* Profile Context Banner */}
+        {isOwnProfile ? (
+          <div className="mb-4 px-4 py-2 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30 flex items-center gap-2 text-sm">
+            <Shield className="w-4 h-4 text-[#d4af37]" />
+            <span className="text-[#d4af37] font-medium">Viewing your profile</span>
+            <span className="text-[#a89f94]">-</span>
+            <Link
+              href="/settings"
+              className="text-[#a89f94] hover:text-[#d4af37] underline underline-offset-2"
+            >
+              Edit settings
+            </Link>
+          </div>
+        ) : (
+          currentUser && (
+            <div className="mb-4 px-4 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center gap-2 text-sm">
+              <UserPlus className="w-4 h-4 text-purple-400" />
+              <span className="text-purple-400 font-medium">
+                Viewing {profileUser.username || "player"}'s profile
+              </span>
+            </div>
+          )
+        )}
+
         {/* Profile Header */}
         <div className="relative p-8 rounded-2xl tcg-chat-leather mb-8 overflow-hidden shadow-2xl">
           <div className="ornament-corner ornament-corner-tl" />

@@ -56,24 +56,101 @@ export interface WebhookHandlerResult {
   error?: string;
 }
 
+// Webhook security constants
+const WEBHOOK_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+const processedWebhooks = new Set<string>();
+
 /**
- * Verify webhook signature using HMAC
+ * Verify webhook signature using HMAC-SHA256
+ * Uses constant-time comparison to prevent timing attacks
  */
-export function verifyWebhookSignature(
-  _payload: string,
+export async function verifyWebhookSignature(
+  payload: string,
   signature: string,
-  _secret: string
-): boolean {
-  // Use Web Crypto API for HMAC verification
-  // In production, this should use constant-time comparison
+  secret: string
+): Promise<boolean> {
   try {
-    // For now, simple comparison - in production use crypto.subtle
-    // This is a placeholder that should be replaced with proper HMAC
-    return signature.startsWith("ltcg_sig_") && signature.length > 10;
+    // Remove signature prefix if present
+    const cleanSignature = signature.replace(/^ltcg_sig_/, "");
+
+    // Create HMAC using Web Crypto API
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const key = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
+    const data = encoder.encode(payload);
+    const signatureBuffer = await crypto.subtle.sign("HMAC", key, data);
+
+    // Convert to hex string
+    const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    // Constant-time comparison
+    return constantTimeCompare(cleanSignature, expectedSignature);
   } catch (error) {
     logger.error({ error }, "Failed to verify webhook signature");
     return false;
   }
+}
+
+/**
+ * Constant-time string comparison to prevent timing attacks
+ */
+function constantTimeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+/**
+ * Validate webhook timestamp is fresh (prevents replay attacks)
+ */
+export function validateWebhookTimestamp(timestamp: number): boolean {
+  const age = Date.now() - timestamp;
+  return age >= 0 && age < WEBHOOK_MAX_AGE_MS;
+}
+
+/**
+ * Check if webhook has already been processed (idempotency)
+ * Returns true if webhook should be processed, false if duplicate
+ */
+export function checkWebhookIdempotency(
+  gameId: string,
+  timestamp: number,
+  eventType: string
+): boolean {
+  const webhookId = `${gameId}:${timestamp}:${eventType}`;
+
+  if (processedWebhooks.has(webhookId)) {
+    return false; // Already processed
+  }
+
+  processedWebhooks.add(webhookId);
+
+  // Clean up old entries after 10 minutes to prevent memory leak
+  setTimeout(() => processedWebhooks.delete(webhookId), 10 * 60 * 1000);
+
+  return true;
+}
+
+/**
+ * Clear processed webhooks (for testing or service restart)
+ */
+export function clearProcessedWebhooks(): void {
+  processedWebhooks.clear();
 }
 
 /**
@@ -89,7 +166,7 @@ export async function handleGameWebhook(
   logger.info({ eventType, gameId, data }, "Processing game webhook");
 
   // Store game ID in state for actions to use
-  state.values['LTCG_CURRENT_GAME_ID'] = gameId;
+  state.values.LTCG_CURRENT_GAME_ID = gameId;
 
   try {
     switch (eventType) {
@@ -152,9 +229,9 @@ async function handleTurnStarted(
   const gameState = await client.getGameState(gameId);
 
   // Store in state for providers
-  state.values['LTCG_GAME_STATE'] = gameState;
-  state.values['LTCG_CURRENT_PHASE'] = data.phase;
-  state.values['LTCG_TURN_NUMBER'] = data.turnNumber;
+  state.values.LTCG_GAME_STATE = gameState;
+  state.values.LTCG_CURRENT_PHASE = data.phase;
+  state.values.LTCG_TURN_NUMBER = data.turnNumber;
 
   // Emit event that will trigger action selection
   // The action system will pick the appropriate move based on game state
@@ -183,8 +260,8 @@ async function handleChainWaiting(
   );
 
   // Store chain state for chain response action
-  state.values['LTCG_CHAIN_WAITING'] = true;
-  state.values['LTCG_CHAIN_TIMEOUT'] = chainState?.timeoutMs;
+  state.values.LTCG_CHAIN_WAITING = true;
+  state.values.LTCG_CHAIN_TIMEOUT = chainState?.timeoutMs;
 
   return {
     processed: true,
@@ -209,7 +286,7 @@ async function handleOpponentAction(
   );
 
   // Store for react action
-  state.values['LTCG_LAST_OPPONENT_ACTION'] = oppAction;
+  state.values.LTCG_LAST_OPPONENT_ACTION = oppAction;
 
   return {
     processed: true,
@@ -229,8 +306,8 @@ async function handleGameStarted(
   logger.info({ gameId }, "Game has started");
 
   // Store game ID
-  state.values['LTCG_CURRENT_GAME_ID'] = gameId;
-  state.values['LTCG_GAME_ACTIVE'] = true;
+  state.values.LTCG_CURRENT_GAME_ID = gameId;
+  state.values.LTCG_GAME_ACTIVE = true;
 
   return {
     processed: true,
@@ -252,9 +329,9 @@ async function handleGameEnded(
   logger.info({ gameId, winner: result?.winner, reason: result?.reason }, "Game has ended");
 
   // Clear game state
-  state.values['LTCG_CURRENT_GAME_ID'] = undefined;
-  state.values['LTCG_GAME_ACTIVE'] = false;
-  state.values['LTCG_GAME_RESULT'] = result;
+  state.values.LTCG_CURRENT_GAME_ID = undefined;
+  state.values.LTCG_GAME_ACTIVE = false;
+  state.values.LTCG_GAME_RESULT = result;
 
   return {
     processed: true,
@@ -273,7 +350,7 @@ async function handlePhaseChanged(
 ): Promise<WebhookHandlerResult> {
   logger.info({ gameId, phase: data.phase }, "Phase changed");
 
-  state.values['LTCG_CURRENT_PHASE'] = data.phase;
+  state.values.LTCG_CURRENT_PHASE = data.phase;
 
   return {
     processed: true,

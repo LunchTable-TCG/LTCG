@@ -31,7 +31,7 @@ export const chainResponseAction: Action = {
     try {
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for chain response validation");
@@ -43,7 +43,7 @@ export const chainResponseAction: Action = {
 
       // Get hand
       const handResult = await handProvider.get(runtime, message, state);
-      const hand = handResult.data?.['hand'] as CardInHand[];
+      const hand = handResult.data?.hand as CardInHand[];
 
       // Check for Quick-Play spells in hand
       const quickPlaySpells =
@@ -87,10 +87,10 @@ export const chainResponseAction: Action = {
 
       // Get game state, hand, and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       const handResult = await handProvider.get(runtime, message, state);
-      const hand = handResult.data?.['hand'] as CardInHand[];
+      const hand = handResult.data?.hand as CardInHand[];
 
       const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
       const boardAnalysis = boardAnalysisResult.data;
@@ -124,7 +124,7 @@ export const chainResponseAction: Action = {
         if (lastEvent && lastEvent.eventType === "spell_activation") {
           opponentActivation = lastEvent.description || "a card";
         }
-      } catch (error) {
+      } catch (_error) {
         logger.warn("Failed to get game history for chain context");
       }
 
@@ -155,8 +155,8 @@ Game Context:
 - Your LP: ${gameState.hostPlayer.lifePoints}
 - Opponent LP: ${gameState.opponentPlayer.lifePoints}
 - Current Phase: ${gameState.phase}
-- Board Advantage: ${boardAnalysis?.['advantage'] || "UNKNOWN"}
-- Threat Level: ${boardAnalysis?.['threatLevel'] || "UNKNOWN"}
+- Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
+- Threat Level: ${boardAnalysis?.threatLevel || "UNKNOWN"}
 
 Chain Situation:
 - Opponent just activated: ${opponentActivation}
@@ -179,7 +179,7 @@ Consider:
 
 Respond with JSON: { "shouldChain": true/false, "location": "hand"/"field", "cardIndex": <index if chaining>, "targets": [<target indices if needed>], "reasoning": "<brief>" }`;
 
-      const decision = await runtime.useModel(ModelType.TEXT_GENERATION, {
+      const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
         prompt,
         temperature: 0.7,
         maxTokens: 300,

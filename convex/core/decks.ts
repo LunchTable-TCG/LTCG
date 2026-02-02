@@ -647,9 +647,10 @@ export const renameDeck = mutation({
 /**
  * Delete a deck (soft delete).
  * Marks the deck as inactive rather than permanently removing it.
+ * If the deleted deck is the user's active deck, clears or reassigns activeDeckId.
  *
  * @param deckId - ID of the deck to delete
- * @returns Success indicator
+ * @returns Success indicator with newActiveDeckId if reassigned
  * @throws AUTHZ_RESOURCE_FORBIDDEN if deck not owned by user
  */
 export const deleteDeck = mutation({
@@ -658,6 +659,7 @@ export const deleteDeck = mutation({
   },
   returns: v.object({
     success: v.boolean(),
+    newActiveDeckId: v.optional(v.union(v.id("userDecks"), v.null())),
   }),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
@@ -670,13 +672,36 @@ export const deleteDeck = mutation({
       });
     }
 
+    // Check if this is the user's active deck
+    const user = await ctx.db.get(userId);
+    let newActiveDeckId: Id<"userDecks"> | null | undefined;
+
+    if (user?.activeDeckId === args.deckId) {
+      // Find another valid deck to set as active
+      const otherDecks = await ctx.db
+        .query("userDecks")
+        .withIndex("by_user_active", (q) => q.eq("userId", userId).eq("isActive", true))
+        .filter((q) => q.neq(q.field("_id"), args.deckId))
+        .take(1);
+
+      if (otherDecks.length > 0 && otherDecks[0]) {
+        // Set another deck as active
+        newActiveDeckId = otherDecks[0]._id;
+        await ctx.db.patch(userId, { activeDeckId: newActiveDeckId });
+      } else {
+        // No other decks, clear activeDeckId
+        newActiveDeckId = null;
+        await ctx.db.patch(userId, { activeDeckId: undefined });
+      }
+    }
+
     // Soft delete the deck
     await ctx.db.patch(args.deckId, {
       isActive: false,
       updatedAt: Date.now(),
     });
 
-    return { success: true };
+    return { success: true, newActiveDeckId };
   },
 });
 

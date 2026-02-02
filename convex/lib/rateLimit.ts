@@ -46,6 +46,9 @@ export const { checkRateLimit, rateLimit, resetRateLimit } = defineRateLimits({
 
   // Storage operations
   IMAGE_UPLOAD: { kind: "token bucket", rate: 10, period: MINUTE, capacity: 10 }, // 10 per minute
+
+  // Token operations
+  TOKEN_BALANCE_REFRESH: { kind: "token bucket", rate: 6, period: MINUTE, capacity: 6 }, // 6 per minute (once per 10 sec)
 });
 
 /**
@@ -75,7 +78,8 @@ export async function checkRateLimitWrapper(
     | "LOBBY_ACTION"
     | "STORY_PROGRESS"
     | "NOTIFICATION_READ"
-    | "IMAGE_UPLOAD",
+    | "IMAGE_UPLOAD"
+    | "TOKEN_BALANCE_REFRESH",
   key?: string
 ): Promise<void> {
   // In development/testing, rate limiting might be disabled
@@ -131,7 +135,8 @@ export async function resetRateLimitWrapper(
     | "LOBBY_ACTION"
     | "STORY_PROGRESS"
     | "NOTIFICATION_READ"
-    | "IMAGE_UPLOAD",
+    | "IMAGE_UPLOAD"
+    | "TOKEN_BALANCE_REFRESH",
   key?: string
 ): Promise<void> {
   try {

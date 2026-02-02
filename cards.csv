@@ -1,0 +1,301 @@
+setCode,cardNumber,name,cardType,archetype,rarity,level,attack,defense,attribute,monsterType,isEffect,notes
+LT01,LT01-053A,Tidal Serpent,monster,Abyssal Depths,common,3,1800,1000,water,Aqua,false,
+LT01,LT01-053B,Undertow Kraken,monster,Abyssal Depths,common,3,1800,1000,water,Sea Serpent,false,
+LT01,LT01-053C,Oceanic Mermaid,monster,Abyssal Depths,common,3,1600,1200,water,Sea Serpent,false,
+LT01,LT01-043A,Ring of Fire,trap,Infernal Dragons,uncommon,,,,,,,,
+LT01,LT01-043B,Reef Rush,spell,Abyssal Depths,common,,,,,,,,
+LT01,LT01-003A,Scorched Serpent,monster,Infernal Dragons,common,4,1400,1000,fire,Dragon,false,
+LT01,LT01-003B,Battle Soldier,monster,Iron Legion,uncommon,4,1700,1500,earth,Machine,true,
+LT01,LT01-012A,Kindled Basilisk,monster,Infernal Dragons,common,4,1500,1100,fire,Dragon,false,
+LT01,LT01-012B,Tomb Mummy,monster,Necro Empire,common,3,1200,1000,dark,Zombie,false,
+LT01,LT01-046A,Murky Whale,monster,Abyssal Depths,common,4,2100,1500,water,Fish,false,
+LT01,LT01-046B,Sunken Leviathan,monster,Abyssal Depths,common,4,2100,1500,water,Fish,false,
+LT01,LT01-047A,Coral Serpent,monster,Abyssal Depths,common,3,1300,900,water,Sea Serpent,true,
+LT01,LT01-047B,Coral Triton,monster,Abyssal Depths,common,1,900,500,water,Aqua,true,
+LT01,LT01-048A,Undertow Hydra,monster,Abyssal Depths,common,3,1700,1100,water,Fish,false,duplicate name vs other Undertow Hydra entries
+LT01,LT01-048B,Frozen Serpent,monster,Abyssal Depths,common,4,2200,1400,water,Fish,false,
+LT01,LT01-049A,Sunken Squid,monster,Abyssal Depths,common,1,800,600,water,Aqua,true,
+LT01,LT01-049B,Abyssal Hydra,monster,Abyssal Depths,common,3,1800,1000,water,Fish,true,
+LT01,LT01-050A,Sunken Serpent,monster,Abyssal Depths,common,3,1900,900,water,Fish,false,
+LT01,LT01-050B,Abyssal Eel,monster,Abyssal Depths,common,2,1300,900,water,Sea Serpent,true,
+LT01,LT01-051A,Coral Siren,monster,Abyssal Depths,common,2,1400,800,water,Fish,false,
+LT01,LT01-051B,Coral Mermaid,monster,Abyssal Depths,common,4,2200,1400,water,Fish,true,
+LT01,LT01-052A,Oceanic Crab,monster,Abyssal Depths,common,4,2100,1500,water,Sea Serpent,true,
+LT01,LT01-052B,Tidal Eel,monster,Abyssal Depths,common,1,1300,700,water,Sea Serpent,false,
+LT01,LT01-054A,Abyssal Mermaid,monster,Abyssal Depths,common,3,1700,1100,water,Fish,false,
+LT01,LT01-054B,Undertow Hydra,monster,Abyssal Depths,common,4,2500,1100,water,Fish,false,duplicate name/cardNumber collisions
+LT01,LT01-055A,Tidal Hydra,monster,Abyssal Depths,common,1,1300,700,water,Sea Serpent,false,
+LT01,LT01-055B,Abyssal Squid,monster,Abyssal Depths,common,2,1500,700,water,Sea Serpent,false,
+LT01,LT01-056A,Oceanic Serpent,monster,Abyssal Depths,common,3,1700,1100,water,Aqua,false,
+LT01,LT01-056B,Riptide Shark,monster,Abyssal Depths,common,4,2400,1200,water,Fish,false,
+LT01,LT01-057A,Abyssal Siren,monster,Abyssal Depths,common,1,1200,800,water,Aqua,false,
+LT01,LT01-057B,Frozen Triton,monster,Abyssal Depths,common,3,1600,1200,water,Aqua,false,
+LT01,LT01-058A,Glacial Shark,monster,Abyssal Depths,uncommon,5,2100,1500,water,Fish,true,cost: tribute 1
+LT01,LT01-058B,Deep Shark,monster,Abyssal Depths,uncommon,3,1500,700,water,Aqua,true,
+LT01,LT01-059A,Reef Serpent,monster,Abyssal Depths,uncommon,2,1000,600,water,Sea Serpent,true,
+LT01,LT01-059B,Glacial Squid,monster,Abyssal Depths,uncommon,3,1200,1000,water,Aqua,true,
+LT01,LT01-060A,Abyssal Serpent,monster,Abyssal Depths,uncommon,2,1000,600,water,Fish,true,
+LT01,LT01-060B,Oceanic Kraken,monster,Abyssal Depths,uncommon,3,1400,800,water,Fish,true,
+LT01,LT01-061A,Glacial Eel,monster,Abyssal Depths,uncommon,4,1800,1200,water,Sea Serpent,true,
+LT01,LT01-061B,Tidal Shark,monster,Abyssal Depths,uncommon,4,2100,900,water,Fish,true,
+LT01,LT01-062A,Murky Shark,monster,Abyssal Depths,uncommon,2,900,700,water,Aqua,true,
+LT01,LT01-062B,Reef Squid,monster,Abyssal Depths,uncommon,3,1500,700,water,Aqua,true,
+LT01,LT01-063A,Murky Hydra,monster,Abyssal Depths,uncommon,2,900,700,water,Aqua,true,
+LT01,LT01-063B,Murky Eel,monster,Abyssal Depths,uncommon,4,1700,1300,water,Aqua,true,
+LT01,LT01-064A,Oceanic Squid,monster,Abyssal Depths,uncommon,4,2000,1000,water,Aqua,true,
+LT01,LT01-064B,Coral Siren,monster,Abyssal Depths,uncommon,4,1700,1300,water,Sea Serpent,true,duplicate name vs earlier Coral Siren common
+LT01,LT01-065A,Abyssal Kraken,monster,Abyssal Depths,uncommon,4,2100,900,water,Fish,true,
+LT01,LT01-065B,Murky Squid,monster,Abyssal Depths,uncommon,3,1400,800,water,Sea Serpent,true,
+LT01,LT01-066A,Deep Siren,monster,Abyssal Depths,rare,3,1200,800,water,Aqua,true,
+LT01,LT01-066B,Murky Shark,monster,Abyssal Depths,rare,7,2800,1600,water,Sea Serpent,true,cost: tribute 2; duplicate name vs Murky Shark uncommon
+LT01,LT01-067A,Oceanic Leviathan,monster,Abyssal Depths,rare,5,2200,1200,water,Sea Serpent,true,cost: tribute 1
+LT01,LT01-067B,Abyssal Mermaid,monster,Abyssal Depths,rare,7,2900,1500,water,Aqua,true,cost: tribute 2; duplicate name vs Abyssal Mermaid common
+LT01,LT01-068A,Tidal Kraken,monster,Abyssal Depths,rare,6,2500,1500,water,Aqua,true,cost: tribute 1
+LT01,LT01-068B,Riptide Mermaid,monster,Abyssal Depths,rare,6,2600,1400,water,Fish,true,cost: tribute 1
+LT01,LT01-069A,Sunken Whale,monster,Abyssal Depths,rare,7,3000,1400,water,Aqua,true,cost: tribute 2
+LT01,LT01-069B,Glacial Serpent,monster,Abyssal Depths,rare,7,2900,1500,water,Sea Serpent,true,cost: tribute 2
+LT01,LT01-070A,Deep Hydra,monster,Abyssal Depths,rare,7,2500,1900,water,Sea Serpent,true,cost: tribute 2
+LT01,LT01-070B,Murky Leviathan,monster,Abyssal Depths,rare,7,2700,1700,water,Sea Serpent,true,cost: tribute 2
+LT01,LT01-071A,Riptide Shark,monster,Abyssal Depths,epic,7,2300,1900,water,Aqua,true,cost: tribute 2
+LT01,LT01-071B,Deep Lord,monster,Abyssal Depths,epic,8,3400,1600,water,Fish,true,cost: tribute 2
+LT01,LT01-072A,Reef Master,monster,Abyssal Depths,epic,7,2600,1600,water,Aqua,true,cost: tribute 2
+LT01,LT01-072B,Coral Serpent,monster,Abyssal Depths,epic,7,2500,1700,water,Sea Serpent,true,cost: tribute 2; duplicate name vs Coral Serpent common
+LT01,LT01-073A,Coral Kraken,monster,Abyssal Depths,epic,5,2000,1200,water,Fish,true,cost: tribute 1
+LT01,LT01-073B,Reef Monarch,monster,Abyssal Depths,epic,7,2500,1700,water,Aqua,true,cost: tribute 2
+LT01,LT01-074A,Tidal Emperor Nereus,monster,Abyssal Depths,legendary,8,3200,1400,water,Aqua,true,cost: tribute 2; limited
+LT01,LT01-074B,Tidal Emperor Nereus,monster,Abyssal Depths,legendary,8,3200,1400,water,Aqua,true,cost: tribute 2; limited; duplicate legendary entry earlier
+LT01,LT01-075A,Leviathan of the Abyss,monster,Abyssal Depths,legendary,10,3500,2300,water,Sea Serpent,true,cost: tribute 3; limited
+LT01,LT01-075B,Leviathan of the Abyss,monster,Abyssal Depths,legendary,8,3000,1600,water,Fish,true,cost: tribute 2; limited; duplicate name vs level 10 legendary + prismatic
+LT01,LT01-076A,Reef Strike,spell,Abyssal Depths,common,,,,,,,,,
+LT01,LT01-076B,Oceanic Strike,spell,Abyssal Depths,common,,,,,,,,,source text says destroy 0 cards (likely placeholder)
+LT01,LT01-077A,Sunken Force,spell,Abyssal Depths,common,,,,,,,,,source text says destroy 0 cards (likely placeholder)
+LT01,LT01-077B,Reef Strike,spell,Abyssal Depths,common,,,,,,,,,duplicate name vs earlier Reef Strike common
+LT01,LT01-078A,Tidal Surge,spell,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-078B,Riptide Force,spell,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-079A,Undertow Surge,spell,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-079B,Oceanic Force,spell,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-080A,Undertow Quick,spell,Abyssal Depths,uncommon,,,,,,,,,quick spell: +600 atk this turn
+LT01,LT01-080B,Tidal Rush,spell,Abyssal Depths,uncommon,,,,,,,,,duplicate cardNumber vs Undertow Quick above
+LT01,LT01-080C,Tidal Swift,spell,Abyssal Depths,uncommon,,,,,,,,,duplicate cardNumber vs multiple spell entries
+LT01,LT01-081A,Sunken Swift,spell,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-081B,Glacial Dash,spell,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-082A,Frozen Instant,spell,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-082B,Frozen Quick,spell,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-083A,Glacial Blessing,spell,Abyssal Depths,rare,,,,,,,,,duplicate name vs earlier Glacial Blessing
+LT01,LT01-083B,Coral Curse,spell,Abyssal Depths,rare,,,,,,,,,
+LT01,LT01-084A,Glacial Blessing,spell,Abyssal Depths,rare,,,,,,,,,continuous: draw 1 on battle damage
+LT01,LT01-084B,Murky Curse,spell,Abyssal Depths,rare,,,,,,,,,duplicate cardNumber vs earlier Glacial Blessing
+LT01,LT01-084C,Riptide Curse,spell,Abyssal Depths,rare,,,,,,,,,
+LT01,LT01-085A,Reef Fortress,field,Abyssal Depths,rare,,,,,,,,,
+LT01,LT01-085B,Glacial Domain,field,Abyssal Depths,rare,,,,,,,,,
+LT01,LT01-086A,Murky Surprise,trap,Abyssal Depths,common,,,,,,,,,
+LT01,LT01-086B,Undertow Trap,trap,Abyssal Depths,common,,,,,,,,,
+LT01,LT01-087A,Tidal Snare,trap,Abyssal Depths,common,,,,,,,,,
+LT01,LT01-087B,Undertow Ambush,trap,Abyssal Depths,common,,,,,,,,,
+LT01,LT01-088A,Tidal Shield,trap,Abyssal Depths,epic,,,,,,,,,
+LT01,LT01-088B,Murky Denial,trap,Abyssal Depths,epic,,,,,,,,,
+LT01,LT01-089A,Abyssal Domain,trap,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-089B,Sunken Zone,trap,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-090A,Glacial Zone,trap,Abyssal Depths,uncommon,,,,,,,,,continuous trap: cannot be targeted by spell effects
+LT01,LT01-090B,Murky Presence,trap,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-090C,Tidal Field,trap,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-198,Glacial Crab,monster,Abyssal Depths,uncommon,4,1500,1300,water,Aqua,true,
+LT01,LT01-301,Reef Force,spell,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-393A,Reef Blast,spell,Abyssal Depths,rare,,,,,,,,,
+LT01,LT01-393B,Deathless Fury,spell,Necro Empire,uncommon,,,,,,,,,+700 atk
+LT01,LT01-400,Tomb Lair,field,Necro Empire,rare,,,,,,,,,+300 atk + extra summon
+LT01,LT01-403,Crypt Counter,trap,Necro Empire,epic,,,,,,,,,counter negate+destroy
+LT01,LT01-405,Undertow Shark,monster,Abyssal Depths,common,3,1250,1050,water,Aqua,false,
+LT01,LT01-410,Frozen Kraken,monster,Abyssal Depths,common,3,1350,1150,water,Aqua,false,
+LT01,LT01-424,Armored Surprise,monster,Iron Legion,common,3,1300,1100,earth,Machine,false,
+LT01,LT01-446,Plated Curse,spell,Iron Legion,common,,,,,,,,,
+LT01,LT01-451,Infernal God Dragon,monster,Infernal Dragons,legendary,10,4000,3500,fire,Dragon,true,limited prismatic
+LT01,LT01-452,Leviathan of the Abyss,monster,Abyssal Depths,legendary,10,3800,4000,water,Sea Serpent,true,cost: tribute 3; variation: prismatic; limited; prismatic variant
+LT01,LT01-455,Frozen Hydra,monster,Abyssal Depths,rare,5,1950,1650,water,Aqua,true,
+LT01,LT01-459,Lich King Absolute,monster,Necro Empire,legendary,10,3700,3000,dark,Zombie,true,cost: tribute 3; variation: prismatic; limited; ultimate boss
+LT01,LT01-475,Bronze Centurion,monster,Iron Legion,rare,5,2200,1900,earth,Machine,true,
+LT01,LT01-489,Murky Triton,monster,Abyssal Depths,common,3,1050,850,water,Aqua,false,
+LT01,LT01-512,Fortified Trigger,trap,Iron Legion,rare,,,,,,,,,
+LT01,LT01-518,Heavy Sentinel,monster,Iron Legion,rare,5,2100,1800,earth,Machine,true,
+LT01,LT01-519,Fortified Field,field,Iron Legion,rare,,,,,,,,,
+LT01,LT01-528,Tomb King,monster,Necro Empire,legendary,8,2850,2350,dark,Zombie,true,limited
+LT01,LT01-532,Deathless Vampire,monster,Necro Empire,common,3,1050,850,dark,Zombie,false,
+LT01,LT01-558,Fortified Rush,spell,Iron Legion,common,,,,,,,,,
+LT01,LT01-565,Frozen Ambush,spell,Abyssal Depths,common,,,,,,,,,
+LT01,LT01-591A,Steel Sentinel,monster,Iron Legion,rare,5,2150,1850,earth,Machine,true,
+LT01,LT01-591B,Sanctified Sovereign,monster,Necro Empire,legendary,8,3200,2700,dark,Zombie,true,limited
+LT01,LT01-656,Deep Leviathan,monster,Abyssal Depths,epic,7,2650,2250,water,Aqua,true,
+LT01,LT01-659,Withered Vampire,monster,Necro Empire,common,3,1250,1050,dark,Zombie,false,
+LT01,LT01-675,Glacial Hydra,monster,Abyssal Depths,rare,5,2000,1700,water,Aqua,true,
+LT01,LT01-702,Reef Shield,monster,Abyssal Depths,common,3,1200,1000,water,Aqua,false,
+LT01,LT01-709,Fortified Juggernaut,monster,Iron Legion,common,3,1350,1150,earth,Machine,false,
+LT01,LT01-710,Tidal Power,spell,Abyssal Depths,uncommon,,,,,,,,,
+LT01,LT01-713,Withered Skeleton,monster,Necro Empire,common,3,1000,800,dark,Zombie,false,
+LT01,LT01-737,Siege Warden,monster,Iron Legion,common,3,1200,1000,earth,Machine,false,
+LT01,LT01-768,Tidal Blessing,spell,Abyssal Depths,common,,,,,,,,,
+LT01,LT01-823,Heavy Juggernaut,monster,Iron Legion,uncommon,4,1450,1250,earth,Machine,true,
+LT01,LT01-854,Steel Power,spell,Iron Legion,common,,,,,,,,,
+LT01,LT01-899,Rotting Mummy,monster,Necro Empire,common,3,1150,950,dark,Zombie,false,
+LT01,LT01-903,Plated Golem,monster,Iron Legion,common,3,1350,1150,earth,Machine,false,
+LT01,LT01-926,Risen Revenant,monster,Necro Empire,rare,5,2000,1700,dark,Zombie,true,
+LT01,LT01-967,Undertow Hydra,monster,Abyssal Depths,rare,5,2100,1800,water,Aqua,true,
+LT01,LT01-976,Plated Mech,monster,Iron Legion,common,3,1150,950,earth,Machine,false,
+LT01,LT01-979,Tidal Presence,field,Abyssal Depths,common,,,,,,,,,
+LT01,LT01-981,Void Sovereign,monster,Necro Empire,legendary,8,2900,2400,dark,Zombie,true,limited
+LT01,LT01-986,Risen Zombie,monster,Necro Empire,common,3,1050,850,dark,Zombie,false,
+LT01,LT01-001,Ember Wyrmling,monster,Infernal Dragons,common,3,1200,800,fire,Dragon,false,
+LT01,LT01-002,Infernal Hatchling,monster,Infernal Dragons,common,2,800,600,fire,Dragon,false,
+LT01,LT01-004,Flame Whelp,monster,Infernal Dragons,common,1,600,400,fire,Dragon,false,
+LT01,LT01-005,Blazing Drake,monster,Infernal Dragons,common,4,1600,1200,fire,Dragon,false,
+LT01,LT01-006,Cinder Wyrm,monster,Infernal Dragons,common,3,1100,700,fire,Dragon,true,
+LT01,LT01-007,Magma Hatchling,monster,Infernal Dragons,common,2,900,500,fire,Dragon,true,
+LT01,LT01-008,Infernal Scout,monster,Infernal Dragons,common,3,1000,600,fire,Dragon,true,
+LT01,LT01-009,Pyroclast Wyvern,monster,Infernal Dragons,common,4,1300,900,fire,Dragon,true,
+LT01,LT01-010,Smoldering Newt,monster,Infernal Dragons,common,2,700,300,fire,Dragon,true,
+LT01,LT01-011,Ashen Dragonet,monster,Infernal Dragons,common,2,800,800,fire,Dragon,false,
+LT01,LT01-013,Infernal Vanguard,monster,Infernal Dragons,uncommon,4,1600,1000,fire,Dragon,true,
+LT01,LT01-014,Blazetail Guardian,monster,Infernal Dragons,uncommon,4,1400,1400,fire,Dragon,true,
+LT01,LT01-015,Crimson Firebreather,monster,Infernal Dragons,uncommon,4,1800,800,fire,Dragon,true,
+LT01,LT01-016,Volcanic Striker,monster,Infernal Dragons,uncommon,4,1700,900,fire,Dragon,true,
+LT01,LT01-017,Flame Herald,monster,Infernal Dragons,uncommon,3,1200,1000,fire,Dragon,true,
+LT01,LT01-018,Magma Carrier,monster,Infernal Dragons,uncommon,5,2000,1400,fire,Dragon,true,tribute 1
+LT01,LT01-019,Pyre Sentinel,monster,Infernal Dragons,uncommon,4,1500,1500,fire,Dragon,true,
+LT01,LT01-020,Infernal Charger,monster,Infernal Dragons,uncommon,4,1900,600,fire,Dragon,true,
+LT01,LT01-021,Infernal Warlord,monster,Infernal Dragons,rare,6,2400,1800,fire,Dragon,true,tribute 1
+LT01,LT01-022,Volcanic Dragon,monster,Infernal Dragons,rare,7,2600,2000,fire,Dragon,true,tribute 2
+LT01,LT01-023,Infernal Ravager,monster,Infernal Dragons,rare,5,2200,1600,fire,Dragon,true,tribute 1
+LT01,LT01-024,Pyromancer Drake,monster,Infernal Dragons,rare,5,2000,1200,fire,Dragon,true,tribute 1
+LT01,LT01-025,Hellfire Wyrm,monster,Infernal Dragons,rare,6,2300,1400,fire,Dragon,true,tribute 1
+LT01,LT01-026,Infernal Tyrant,monster,Infernal Dragons,epic,7,2800,2200,fire,Dragon,true,tribute 2
+LT01,LT01-027,Volcanic Behemoth,monster,Infernal Dragons,epic,8,3000,2400,fire,Dragon,true,tribute 2
+LT01,LT01-028,Infernal Phoenix,monster,Infernal Dragons,epic,7,2500,2000,fire,Dragon,true,tribute 2
+LT01,LT01-029,Infernal Overlord Vyraxis,monster,Infernal Dragons,legendary,9,3200,2500,fire,Dragon,true,limited
+LT01,LT01-030,Apocalypse Dragon,monster,Infernal Dragons,legendary,10,3500,3000,fire,Dragon,true,limited
+LT01,LT01-031,Dragon's Fury,spell,Infernal Dragons,common,,,,,,,,
+LT01,LT01-032,Volcanic Eruption,spell,Infernal Dragons,common,,,,,,,,
+LT01,LT01-033,Infernal Recovery,spell,Infernal Dragons,common,,,,,,,,
+LT01,LT01-034,Fire Breathing,spell,Infernal Dragons,common,,,,,,,,
+LT01,LT01-035,Sudden Ignition,spell,Infernal Dragons,uncommon,,,,,,,,
+LT01,LT01-036,Infernal Barrier,spell,Infernal Dragons,uncommon,,,,,,,,
+LT01,LT01-037,Scorching Wind,spell,Infernal Dragons,uncommon,,,,,,,,
+LT01,LT01-038,Infernal Furnace,spell,Infernal Dragons,rare,,,,,,,,
+LT01,LT01-039,Dragon's Hoard,spell,Infernal Dragons,rare,,,,,,,,
+LT01,LT01-040,Volcanic Lair,field,Infernal Dragons,rare,,,,,,,,
+LT01,LT01-041,Flame Trap,trap,Infernal Dragons,common,,,,,,,,
+LT01,LT01-042,Burning Revenge,trap,Infernal Dragons,common,,,,,,,,
+LT01,LT01-044,Infernal Presence,trap,Infernal Dragons,uncommon,,,,,,,,
+LT01,LT01-045,Dragon's Wrath,trap,Infernal Dragons,epic,,,,,,,,
+LT01,LT01-091,Plated Golem,monster,Iron Legion,common,3,1900,900,earth,Machine,true,indestructible by battle
+LT01,LT01-092,Plated Sentinel,monster,Iron Legion,common,3,1800,1000,earth,Warrior,false,
+LT01,LT01-093A,Battle Centurion,monster,Iron Legion,common,3,1700,1100,earth,Rock,true,burn 200 on damage
+LT01,LT01-093B,Steel Soldier,monster,Iron Legion,common,3,1800,1000,earth,Rock,false,
+LT01,LT01-094,Armored Warden,monster,Iron Legion,common,1,1400,600,earth,Rock,false,
+LT01,LT01-095,Plated Knight,monster,Iron Legion,common,4,2100,900,earth,Rock,true,battle draw
+LT01,LT01-096,Titanium Warden,monster,Iron Legion,common,4,2500,1100,earth,Warrior,false,
+LT01,LT01-097,Plated Guardian,monster,Iron Legion,common,2,1100,500,earth,Rock,true,archetype buff
+LT01,LT01-098,Titanium Juggernaut,monster,Iron Legion,common,3,1700,1100,earth,Machine,false,
+LT01,LT01-099,Bronze Centurion,monster,Iron Legion,common,4,2400,1200,earth,Machine,false,
+LT01,LT01-100,Iron Centurion,monster,Iron Legion,common,3,1800,1000,earth,Warrior,false,
+LT01,LT01-101,Iron Juggernaut,monster,Iron Legion,common,1,1300,700,earth,Rock,true,piercing
+LT01,LT01-102,Bronze Juggernaut,monster,Iron Legion,common,3,1700,1100,earth,Warrior,false,
+LT01,LT01-103,Siege Colossus,monster,Iron Legion,uncommon,4,1900,1100,earth,Warrior,true,indestructible by battle
+LT01,LT01-104,Siege Warden,monster,Iron Legion,uncommon,4,1800,1200,earth,Rock,true,self boost
+LT01,LT01-105A,Battle Centurion,monster,Iron Legion,uncommon,3,1300,900,earth,Warrior,true,burn 300 on damage
+LT01,LT01-105B,Siege Knight,monster,Iron Legion,uncommon,3,1300,900,earth,Warrior,true,battle draw
+LT01,LT01-106,Fortified Defender,monster,Iron Legion,uncommon,3,1400,800,earth,Warrior,true,spell trap destroy
+LT01,LT01-107,Shielded Mech,monster,Iron Legion,uncommon,5,2300,1300,earth,Warrior,true,tribute, 1, normal, false, false
+LT01,LT01-108A,Battle Centurion,monster,Iron Legion,uncommon,3,1300,900,earth,Warrior,true,on death revive
+LT01,LT01-108B,Armored Mech,monster,Iron Legion,uncommon,2,1000,600,earth,Rock,true,self boost
+LT01,LT01-109,Battle Warden,monster,Iron Legion,uncommon,3,1400,800,earth,Machine,true,indestructible by battle
+LT01,LT01-110,Bronze Guardian,monster,Iron Legion,uncommon,4,1800,1200,earth,Rock,true,
+LT01,LT01-111,Iron Golem,monster,Iron Legion,rare,3,1200,800,earth,Rock,true,piercing + boost
+LT01,LT01-112,Chrome Knight,monster,Iron Legion,rare,6,2300,1700,earth,Machine,true,cost: tribute 1
+LT01,LT01-113,Siege Sentinel,monster,Iron Legion,rare,7,2700,1700,earth,Machine,true,cost: tribute 2
+LT01,LT01-114,Battle Colossus,monster,Iron Legion,rare,7,2500,1900,earth,Machine,true,cost: tribute 2
+LT01,LT01-115,Chrome Juggernaut,monster,Iron Legion,rare,5,2200,1200,earth,Warrior,true,cost: tribute 1
+LT01,LT01-116,Titanium Knight,monster,Iron Legion,epic,8,3100,1900,earth,Warrior,true,cost: tribute 2; negate
+LT01,LT01-117,Iron Knight,monster,Iron Legion,epic,8,3300,1700,earth,Machine,true,cost: tribute 2
+LT01,LT01-118,Siege Imperator,monster,Iron Legion,epic,7,2300,1900,earth,Rock,true,cost: tribute 2
+LT01,LT01-119,Adamantine Colossus,monster,Iron Legion,legendary,7,2600,1200,earth,Warrior,true,cost: tribute 2; limited
+LT01,LT01-120,Iron Emperor Maximus,monster,Iron Legion,legendary,9,2900,2300,earth,Machine,true,cost: tribute 3; limited
+LT01,LT01-121,Chrome Blast,spell,Iron Legion,common,,,,,,,,,
+LT01,LT01-122,Iron Surge,spell,Iron Legion,common,,,,,,,,,placeholder destroy 0
+LT01,LT01-123,Armored Power,spell,Iron Legion,uncommon,,,,,,,,,
+LT01,LT01-124,Siege Strike,spell,Iron Legion,uncommon,,,,,,,,,
+LT01,LT01-125,Shielded Quick,spell,Iron Legion,uncommon,,,,,,,,,quick
+LT01,LT01-126,Iron Swift,spell,Iron Legion,uncommon,,,,,,,,,quick
+LT01,LT01-127,Chrome Quick,spell,Iron Legion,uncommon,,,,,,,,,quick
+LT01,LT01-128A,Armored Aura,spell,Iron Legion,rare,,,,,,,,,continuous: +400 atk to Iron Legion
+LT01,LT01-128B,Steel Field,spell,Iron Legion,rare,,,,,,,,,continuous +400 atk
+LT01,LT01-129A,Risen Lich,monster,Necro Empire,rare,5,2100,1800,dark,Zombie,true,
+LT01,LT01-129B,Fortified Aura,spell,Iron Legion,rare,,,,,,,,,continuous +400 atk
+LT01,LT01-130,Chrome Territory,field,Iron Legion,rare,,,,,,,,,extra normal summon
+LT01,LT01-131A,Fortified Snare,trap,Iron Legion,common,,,,,,,,,
+LT01,LT01-131B,Undead Mummy,monster,Necro Empire,common,3,1150,950,dark,Zombie,false,
+LT01,LT01-132,Chrome Snare,trap,Iron Legion,common,,,,,,,,,
+LT01,LT01-133,Battle Rejection,trap,Iron Legion,epic,,,,,,,,,counter
+LT01,LT01-134,Shielded Field,trap,Iron Legion,uncommon,,,,,,,,,
+LT01,LT01-135,Bronze Domain,trap,Iron Legion,uncommon,,,,,,,,,
+LT01,LT01-167,Rotting Sovereign,monster,Necro Empire,legendary,8,3100,2600,dark,Zombie,true,limited
+LT01,LT01-228,Undead Revenant,monster,Necro Empire,rare,5,2150,1850,dark,Zombie,true,
+LT01,LT01-267,Bronze Strike,spell,Iron Legion,uncommon,,,,,,,,,
+LT01,LT01-296,Rotting Specter,monster,Necro Empire,uncommon,4,1550,1350,dark,Zombie,true,
+LT01,LT01-361,Deathless Wraith,monster,Necro Empire,common,1,1200,800,dark,Zombie,false,
+LT01,LT01-362,Withered Banshee,monster,Necro Empire,common,4,2500,1100,dark,Fiend,false,
+LT01,LT01-365,Crypt Banshee,monster,Necro Empire,common,3,1300,900,dark,Zombie,true,self boost +200
+LT01,LT01-366,Decayed Wight,monster,Necro Empire,common,4,2400,1200,dark,Zombie,true,draw on summon
+LT01,LT01-373,Withered Banshee,monster,Necro Empire,uncommon,4,2000,1000,dark,Fiend,true,all necro +300 atk
+LT01,LT01-377,Decayed Wight,monster,Necro Empire,uncommon,5,2000,1600,dark,Fiend,true,cost: tribute 1; piercing
+LT01,LT01-378,Crypt Banshee,monster,Necro Empire,uncommon,3,1300,900,dark,Fiend,true,self boost +300 per necro
+LT01,LT01-382,Deathless Ghoul,monster,Necro Empire,rare,3,1200,800,dark,Zombie,true,piercing
+LT01,LT01-384,Crypt Banshee,monster,Necro Empire,rare,5,2200,1200,dark,Fiend,true,cost: tribute 1; revive on death
+LT01,LT01-385,Decayed Wight,monster,Necro Empire,rare,5,2000,1400,dark,Zombie,true,cost: tribute 1; search + untargetable
+LT01,LT01-386,Siege Soldier,monster,Iron Legion,common,3,1050,850,earth,Machine,false,
+LT01,LT01-392,Decayed Fury,spell,Necro Empire,common,,,,,,,,,gy to hand
+LT01,LT01-395,Tomb Instant,spell,Necro Empire,uncommon,,,,,,,,,quick indestructible
+LT01,LT01-396,Decayed Burst,spell,Necro Empire,uncommon,,,,,,,,,quick indestructible
+LT01,LT01-398,Withered Domain,spell,Necro Empire,rare,,,,,,,,,draw on damage
+LT01,LT01-399,Ghastly Curse,spell,Necro Empire,rare,,,,,,,,,draw on damage
+LT01,LT01-446,Plated Curse,spell,Iron Legion,common,,,,,,,,,
+LT01,LT01-532,Deathless Vampire,monster,Necro Empire,common,3,1050,850,dark,Zombie,false,
+LT01,LT01-558,Fortified Rush,spell,Iron Legion,common,,,,,,,,,
+LT01,LT01-656,Deep Leviathan,monster,Abyssal Depths,epic,7,2650,2250,water,Aqua,true,
+LT01,LT01-675,Glacial Hydra,monster,Abyssal Depths,rare,5,2000,1700,water,Aqua,true,
+LT01,LT01-702,Reef Shield,monster,Abyssal Depths,common,3,1200,1000,water,Aqua,false,
+LT01,LT01-709,Fortified Juggernaut,monster,Iron Legion,common,3,1350,1150,earth,Machine,false,
+LT01,LT01-713,Withered Skeleton,monster,Necro Empire,common,3,1000,800,dark,Zombie,false,
+LT01,LT01-823,Heavy Juggernaut,monster,Iron Legion,uncommon,4,1450,1250,earth,Machine,true,
+LT01,LT01-854,Steel Power,spell,Iron Legion,common,,,,,,,,,
+LT01,LT01-899,Rotting Mummy,monster,Necro Empire,common,3,1150,950,dark,Zombie,false,
+LT01,LT01-903,Plated Golem,monster,Iron Legion,common,3,1350,1150,earth,Machine,false,
+LT01,LT01-926,Risen Revenant,monster,Necro Empire,rare,5,2000,1700,dark,Zombie,true,
+LT01,LT01-967,Undertow Hydra,monster,Abyssal Depths,rare,5,2100,1800,water,Aqua,true,
+LT01,LT01-976,Plated Mech,monster,Iron Legion,common,3,1150,950,earth,Machine,false,
+LT01,LT01-981,Void Sovereign,monster,Necro Empire,legendary,8,2900,2400,dark,Zombie,true,limited
+LT01,LT01-986,Risen Zombie,monster,Necro Empire,common,3,1050,850,dark,Zombie,false,
+LT01,LT01-451,Infernal God Dragon,monster,Infernal Dragons,legendary,10,4000,3500,fire,Dragon,true,limited prismatic
+LT01,LT01-453,Iron Emperor Maximus,monster,Iron Legion,legendary,9,3500,4500,earth,Machine,true,cost: tribute 3; variation: prismatic; limited; prismatic
+LT01,LT01-459,Lich King Absolute,monster,Necro Empire,legendary,10,3700,3000,dark,Zombie,true,cost: tribute 3; variation: prismatic; limited; ultimate boss
+LT01,LT01-659,Withered Vampire,monster,Necro Empire,common,3,1250,1050,dark,Zombie,false,
+LT01,LT01-713,Withered Skeleton,monster,Necro Empire,common,3,1000,800,dark,Zombie,false,
+LT01,LT01-981,Void Sovereign,monster,Necro Empire,legendary,8,2900,2400,dark,Zombie,true,limited
+LT01,LT01-986,Risen Zombie,monster,Necro Empire,common,3,1050,850,dark,Zombie,false,
+LT01-EVO,LT01-EVO-001,Infernal Vanguard Dragon,monster,Infernal Dragons,rare,5,2200,1600,fire,Dragon,true,evolution
+LT01-EVO,LT01-EVO-002,Blazing Guardian Dragon,monster,Infernal Dragons,rare,5,1800,2000,fire,Dragon,true,evolution
+LT01-EVO,LT01-EVO-003,Infernal Tyrant Dragon,monster,Infernal Dragons,legendary,9,3200,2600,fire,Dragon,true,evolution
+LT01-EVO,LT01-EVO-004,Pyroclast Wyrm Lord,monster,Infernal Dragons,epic,7,2600,1800,fire,Dragon,true,evolution
+LT01-EVO,LT01-EVO-005,Infernal Berserker Dragon,monster,Infernal Dragons,epic,6,2800,1400,fire,Dragon,true,branch evolution
+LT01-EVO,LT01-EVO-006,Tidal Warden,monster,Abyssal Depths,rare,5,1800,2200,water,Sea Serpent,true,evolutionStage=ascended; evolvesFrom=Deep Sea Scout
+LT01-EVO,LT01-EVO-007,Reef Colossus,monster,Abyssal Depths,rare,6,2000,2400,water,Sea Serpent,true,evolutionStage=ascended; evolvesFrom=Coral Guardian
+LT01-EVO,LT01-EVO-008,Abyssal Emperor,monster,Abyssal Depths,epic,8,2800,3200,water,Sea Serpent,true,evolutionStage=apex; lpCost=400; evolvesFrom=Reef Colossus
+LT01-EVO,LT01-EVO-009,Maelstrom Drake,monster,Abyssal Depths,epic,7,2400,2000,water,Sea Serpent,true,evolutionStage=ascended; evolvesFrom=Whirlpool Serpent
+LT01-EVO,LT01-EVO-010,Abyssal Titan,monster,Abyssal Depths,legendary,9,3200,2800,water,Sea Serpent,true,evolutionStage=apex; lpCost=450; evolvesFrom=Maelstrom Drake
+LT01-EVO,LT01-EVO-011,Steel Commander,monster,Iron Legion,rare,5,2000,2200,earth,Machine,true,evolution ascended
+LT01-EVO,LT01-EVO-012,Fortress Guardian,monster,Iron Legion,rare,6,1600,2600,earth,Machine,true,evolution ascended
+LT01-EVO,LT01-EVO-013,Iron Colossus,monster,Iron Legion,epic,8,2800,3400,earth,Machine,true,evolution apex
+LT01-EVO,LT01-EVO-014,Siege Engine,monster,Iron Legion,epic,7,2400,2000,earth,Machine,true,evolution ascended
+LT01-EVO,LT01-EVO-038,Skeletal Knight,monster,Necro Empire,rare,5,2100,1800,dark,Zombie,true,evo ascended
+LT01-EVO,LT01-EVO-039,Grave Warden,monster,Necro Empire,rare,6,1800,2200,dark,Zombie,true,evo ascended
+LT01-EVO,LT01-EVO-040,Death Knight Sovereign,monster,Necro Empire,epic,8,2800,2600,dark,Zombie,true,evo apex
+LT01-EVO,LT01-EVO-041,Specter Lord,monster,Necro Empire,epic,7,2200,2000,dark,Zombie,true,evo ascended
+LT01-EVO,LT01-EVO-042,Necro Archlich,monster,Necro Empire,legendary,9,3000,2800,dark,Zombie,true,evo apex

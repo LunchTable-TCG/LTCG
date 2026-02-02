@@ -19,7 +19,7 @@ export const strategyProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get game ID from state first, then message content
-      const gameId = state.values?.['LTCG_CURRENT_GAME_ID'] || (message.content as any)?.gameId;
+      const gameId = state.values?.LTCG_CURRENT_GAME_ID || (message.content as any)?.gameId;
 
       if (!gameId) {
         return {
@@ -294,14 +294,14 @@ function generatePriorityActions(
  * Format strategy analysis as human-readable text
  */
 function formatStrategyAnalysis(strategy: StrategyAnalysis): string {
-  let text = `Strategic Analysis:\n`;
+  let text = "Strategic Analysis:\n";
   text += `- Game State: ${strategy.gameState.replace(/_/g, " ")}\n`;
   text += `- Recommended Style: ${strategy.playStyle} (${getPlayStyleDescription(strategy.playStyle)})\n`;
   text += `- Win Condition: ${strategy.winCondition}\n`;
   text += `- Risk Level: ${strategy.riskLevel}${strategy.riskLevel === "CRITICAL" ? " - DANGER!" : ""}\n`;
 
   if (strategy.priorityActions.length > 0) {
-    text += `- Priority Actions:\n`;
+    text += "- Priority Actions:\n";
     strategy.priorityActions.forEach((action, index) => {
       text += `  ${index + 1}. ${action}\n`;
     });

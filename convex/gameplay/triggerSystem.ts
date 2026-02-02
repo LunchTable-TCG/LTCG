@@ -687,48 +687,47 @@ export const respondToOptionalTrigger = mutation({
         message: effectResult.message,
         activated: true,
       };
-    } else {
-      // Player chose to skip - add to skipped triggers
-      const skippedTriggers = gameState.skippedOptionalTriggers || [];
-
-      await ctx.db.patch(gameState._id, {
-        pendingOptionalTriggers: updatedPending,
-        skippedOptionalTriggers: [
-          ...skippedTriggers,
-          {
-            cardId: args.cardId,
-            trigger: pendingTrigger.trigger,
-            turnSkipped: gameState.turnNumber,
-          },
-        ],
-      });
-
-      // Record the skip event
-      const lobby = await ctx.db.get(args.lobbyId);
-      if (lobby?.gameId) {
-        await recordEventHelper(ctx, {
-          lobbyId: args.lobbyId,
-          gameId: lobby.gameId,
-          turnNumber: gameState.turnNumber,
-          eventType: "effect_activated",
-          playerId: pendingTrigger.playerId,
-          playerUsername: user.username || "Unknown",
-          description: `${pendingTrigger.cardName} optional ${pendingTrigger.trigger} effect skipped`,
-          metadata: {
-            cardId: args.cardId,
-            trigger: pendingTrigger.trigger,
-            isOptional: true,
-            playerChoseToActivate: false,
-          },
-        });
-      }
-
-      return {
-        success: true,
-        message: "Optional trigger skipped",
-        activated: false,
-      };
     }
+    // Player chose to skip - add to skipped triggers
+    const skippedTriggers = gameState.skippedOptionalTriggers || [];
+
+    await ctx.db.patch(gameState._id, {
+      pendingOptionalTriggers: updatedPending,
+      skippedOptionalTriggers: [
+        ...skippedTriggers,
+        {
+          cardId: args.cardId,
+          trigger: pendingTrigger.trigger,
+          turnSkipped: gameState.turnNumber,
+        },
+      ],
+    });
+
+    // Record the skip event
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (lobby?.gameId) {
+      await recordEventHelper(ctx, {
+        lobbyId: args.lobbyId,
+        gameId: lobby.gameId,
+        turnNumber: gameState.turnNumber,
+        eventType: "effect_activated",
+        playerId: pendingTrigger.playerId,
+        playerUsername: user.username || "Unknown",
+        description: `${pendingTrigger.cardName} optional ${pendingTrigger.trigger} effect skipped`,
+        metadata: {
+          cardId: args.cardId,
+          trigger: pendingTrigger.trigger,
+          isOptional: true,
+          playerChoseToActivate: false,
+        },
+      });
+    }
+
+    return {
+      success: true,
+      message: "Optional trigger skipped",
+      activated: false,
+    };
   },
 });
 

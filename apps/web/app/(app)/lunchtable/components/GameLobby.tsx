@@ -148,7 +148,7 @@ export function GameLobby() {
       setIsCreateModalOpen(false);
 
       // Redirect to game page immediately after creating
-      if (result && result.lobbyId) {
+      if (result?.lobbyId) {
         router.push(`/game/${result.lobbyId}`);
       }
     } catch (error) {
@@ -206,7 +206,7 @@ export function GameLobby() {
       setJoiningGame(null);
 
       // Redirect to game page after successfully joining
-      if (result && result.lobbyId) {
+      if (result?.lobbyId) {
         router.push(`/game/${result.lobbyId}`);
       }
     } catch (error) {

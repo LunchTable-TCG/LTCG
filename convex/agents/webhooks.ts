@@ -201,14 +201,13 @@ export const sendWebhook = action({
         });
         console.log(`[Webhook] Sent ${args.eventType} to agent ${args.agentId}`);
         return { sent: true, status: response.status };
-      } else {
-        // Record failure
-        await ctx.runMutation(internalAny.agents.webhooks.recordWebhookFailure, {
-          agentId: args.agentId,
-        });
-        console.log(`[Webhook] Failed to send to agent ${args.agentId}: ${response.status}`);
-        return { sent: false, reason: "http_error", status: response.status };
       }
+      // Record failure
+      await ctx.runMutation(internalAny.agents.webhooks.recordWebhookFailure, {
+        agentId: args.agentId,
+      });
+      console.log(`[Webhook] Failed to send to agent ${args.agentId}: ${response.status}`);
+      return { sent: false, reason: "http_error", status: response.status };
     } catch (error) {
       // Record failure
       await ctx.runMutation(internalAny.agents.webhooks.recordWebhookFailure, {

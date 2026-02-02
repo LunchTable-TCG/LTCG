@@ -1,107 +1,101 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright configuration for E2E tests
+ * Playwright E2E Testing Configuration
  *
- * Tests are located in the e2e/ directory and test critical game flows
- * including authentication, deck management, gameplay, economy, story mode, and social features.
+ * Architecture follows 2026 standards with:
+ * - Mock JWT authentication (Privy pattern)
+ * - Per-test data seeding via Convex
+ * - Page Object Model for test organization
+ * - Smoke tests for fast PR validation
+ * - Full suite with browser matrix for main branch
  *
  * Prerequisites:
- * - Run `bun run dev` to start the Next.js app on port 3333
+ * - Run `bun run dev` to start the Next.js app on port 3000
  * - Run `bun run dev:convex` to start the Convex backend
- * - Ensure .env.local has required environment variables
+ * - Ensure NODE_ENV=test for test-specific behaviors
  *
  * Usage:
- * - Run all tests: `bun run test:e2e`
- * - Run specific test: `bun run test:e2e e2e/auth.spec.ts`
- * - Run in UI mode: `bun run test:e2e:ui`
- * - Debug mode: `bun run test:e2e:debug`
+ * - Smoke tests: `bunx playwright test --project=smoke`
+ * - All tests: `bunx playwright test`
+ * - Specific browser: `bunx playwright test --project=chromium`
+ * - UI mode: `bunx playwright test --ui`
+ * - Debug mode: `bunx playwright test --debug`
  */
+
+const isCI = !!process.env.CI;
+
 export default defineConfig({
   testDir: './e2e',
-  testMatch: '**/*.spec.ts',
+  fullyParallel: true,
+  forbidOnly: isCI,
+  retries: isCI ? 2 : 0,
+  workers: isCI ? 1 : undefined,
+  reporter: isCI
+    ? [["github"], ["html", { open: "never" }]]
+    : [["list"], ["html"]],
 
-  // Test timeouts
-  timeout: 60000, // 60 seconds per test
-  expect: {
-    timeout: 10000, // 10 seconds for assertions
-  },
+  // Global setup/teardown
+  globalSetup: "./e2e/setup/global-setup.ts",
+  globalTeardown: "./e2e/setup/global-teardown.ts",
 
-  // Run tests sequentially to avoid race conditions in game state
-  fullyParallel: false,
-  workers: 1,
-
-  // Retry failed tests once in CI
-  retries: process.env["CI"] ? 1 : 0,
-
-  // Reporter configuration
-  reporter: [
-    ['list'],
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['json', { outputFile: 'test-results/results.json' }],
-  ],
-
-  // Global configuration
   use: {
-    baseURL: 'http://localhost:3333',
-
-    // Capture trace on all tests
-    trace: 'on',
-
-    // Screenshot on all tests
-    screenshot: 'on',
-
-    // Video on all tests
-    video: 'on',
-
-    // Browser viewport
-    viewport: { width: 1280, height: 720 },
-
-    // Ignore HTTPS errors in development
-    ignoreHTTPSErrors: true,
-
-    // Locale and timezone
-    locale: 'en-US',
-    timezoneId: 'America/Los_Angeles',
-
-    // Action timeout
+    baseURL: process.env.BASE_URL || "http://localhost:3000",
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    video: "on-first-retry",
     actionTimeout: 10000,
-
-    // Navigation timeout
-    navigationTimeout: 15000,
+    navigationTimeout: 30000,
   },
 
-  // Projects - test in different browsers
+  // Test projects
   projects: [
+    // Smoke tests - fast, critical paths only
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "smoke",
+      testMatch: /smoke\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
     },
-    // Uncomment to test in other browsers
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
-    // {
-    //   name: 'mobile-chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
+
+    // Full suite - Chromium
+    {
+      name: "chromium",
+      testIgnore: /smoke\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+
+    // Firefox
+    {
+      name: "firefox",
+      testIgnore: /smoke\.spec\.ts/,
+      use: { ...devices["Desktop Firefox"] },
+    },
+
+    // WebKit (Safari)
+    {
+      name: "webkit",
+      testIgnore: /smoke\.spec\.ts/,
+      use: { ...devices["Desktop Safari"] },
+    },
+
+    // Mobile Chrome
+    {
+      name: "mobile-chrome",
+      testIgnore: /smoke\.spec\.ts/,
+      use: { ...devices["Pixel 5"] },
+    },
   ],
 
-  // Web server configuration - auto-start dev server if not running
-  webServer: {
-    command: 'bun run dev',
-    url: 'http://localhost:3333',
-    reuseExistingServer: !process.env["CI"],
-    timeout: 120000, // 2 minutes to start
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  // Dev server (only when not in CI)
+  webServer: isCI
+    ? undefined
+    : {
+        command: "bun run dev",
+        url: "http://localhost:3000",
+        reuseExistingServer: true,
+        timeout: 120000,
+      },
 
   // Output directories
-  outputDir: 'test-results',
+  outputDir: "./test-results",
 });

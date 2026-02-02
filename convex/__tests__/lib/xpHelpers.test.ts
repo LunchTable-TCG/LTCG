@@ -4,13 +4,13 @@
  * Tests XP calculation, level progression, and badge awarding
  */
 
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
-import schema from "@convex/schema";
-import { modules } from "@convex/test.setup";
 import type { MutationCtx } from "@convex/_generated/server";
 import { XP_PER_LEVEL } from "@convex/lib/storyConstants";
 import { calculateLevel, getLevelProgress, getXPForNextLevel } from "@convex/lib/xpHelpers";
+import schema from "@convex/schema";
+import { modules } from "@convex/test.setup";
+import { convexTest } from "convex-test";
+import { describe, expect, it } from "vitest";
 
 // Helper to create test instance
 const createTestInstance = () => convexTest(schema, modules);

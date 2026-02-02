@@ -133,22 +133,22 @@ export function validateConfig(config: Record<string, any>): NormalizedLTCGConfi
  */
 export function getConfigFromEnv(): Partial<LTCGPluginConfig> {
   return {
-    LTCG_API_KEY: process.env['LTCG_API_KEY'],
-    LTCG_CONVEX_URL: process.env['LTCG_CONVEX_URL'],
-    LTCG_API_URL: process.env['LTCG_API_URL'],
-    LTCG_PLAY_STYLE: process.env['LTCG_PLAY_STYLE'] as any,
-    LTCG_RISK_TOLERANCE: process.env['LTCG_RISK_TOLERANCE'] as any,
-    LTCG_AUTO_MATCHMAKING: process.env['LTCG_AUTO_MATCHMAKING'] === "true",
-    LTCG_RANKED_MODE: process.env['LTCG_RANKED_MODE'] === "true",
-    LTCG_CHAT_ENABLED: process.env['LTCG_CHAT_ENABLED'] !== "false",
-    LTCG_TRASH_TALK_LEVEL: process.env['LTCG_TRASH_TALK_LEVEL'] as any,
-    LTCG_RESPONSE_TIME: process.env['LTCG_RESPONSE_TIME']
-      ? Number.parseInt(process.env['LTCG_RESPONSE_TIME'], 10)
+    LTCG_API_KEY: process.env.LTCG_API_KEY,
+    LTCG_CONVEX_URL: process.env.LTCG_CONVEX_URL,
+    LTCG_API_URL: process.env.LTCG_API_URL,
+    LTCG_PLAY_STYLE: process.env.LTCG_PLAY_STYLE as any,
+    LTCG_RISK_TOLERANCE: process.env.LTCG_RISK_TOLERANCE as any,
+    LTCG_AUTO_MATCHMAKING: process.env.LTCG_AUTO_MATCHMAKING === "true",
+    LTCG_RANKED_MODE: process.env.LTCG_RANKED_MODE === "true",
+    LTCG_CHAT_ENABLED: process.env.LTCG_CHAT_ENABLED !== "false",
+    LTCG_TRASH_TALK_LEVEL: process.env.LTCG_TRASH_TALK_LEVEL as any,
+    LTCG_RESPONSE_TIME: process.env.LTCG_RESPONSE_TIME
+      ? Number.parseInt(process.env.LTCG_RESPONSE_TIME, 10)
       : undefined,
-    LTCG_MAX_CONCURRENT_GAMES: process.env['LTCG_MAX_CONCURRENT_GAMES']
-      ? Number.parseInt(process.env['LTCG_MAX_CONCURRENT_GAMES'], 10)
+    LTCG_MAX_CONCURRENT_GAMES: process.env.LTCG_MAX_CONCURRENT_GAMES
+      ? Number.parseInt(process.env.LTCG_MAX_CONCURRENT_GAMES, 10)
       : undefined,
-    LTCG_PREFERRED_DECK_ID: process.env['LTCG_PREFERRED_DECK_ID'],
-    LTCG_DEBUG_MODE: process.env['LTCG_DEBUG_MODE'] === "true",
+    LTCG_PREFERRED_DECK_ID: process.env.LTCG_PREFERRED_DECK_ID,
+    LTCG_DEBUG_MODE: process.env.LTCG_DEBUG_MODE === "true",
   };
 }

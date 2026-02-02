@@ -135,7 +135,7 @@ export function DecisionCard({ decision, defaultExpanded = false, className }: D
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
-            <path d="M19 9l-7 7-7-7"></path>
+            <path d="M19 9l-7 7-7-7" />
           </svg>
         </div>
       </button>

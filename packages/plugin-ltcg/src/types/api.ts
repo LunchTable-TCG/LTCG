@@ -131,42 +131,78 @@ export interface PlayerState {
 /**
  * Card in hand - uses cardType from backend schema
  * Note: cardType values are 'creature', 'spell', 'trap', 'equipment'
+ *
+ * Authoritative fields (use these):
+ * - cardType (not type)
+ * - attack (not atk)
+ * - defense (not def)
+ * - cost (not level)
  */
 export interface CardInHand {
+  /** Unique card instance ID */
   _id: string;
+  /** Card name */
   name: string;
+  /** Card type - use this over legacy 'type' field */
   cardType: "creature" | "spell" | "trap" | "equipment";
+  /** Mana/resource cost */
   cost?: number;
+  /** Attack value - use this over legacy 'atk' field */
   attack?: number;
+  /** Defense value - use this over legacy 'def' field */
   defense?: number;
+  /** Card element (fire, water, etc.) */
   element?: string;
+  /** Card archetype for synergies */
   archetype?: string;
+  /** Card effect description */
   description?: string;
+  /** Card abilities/effects */
   abilities?: Record<string, any>[];
-  // Legacy fields for compatibility
+  /** Position in hand (0-indexed) */
   handIndex?: number;
+  /** @deprecated Use _id instead */
   cardId?: string;
+  /** @deprecated Use cardType instead */
   type?: "creature" | "spell" | "trap" | "equipment";
+  /** @deprecated Use cost instead */
   level?: number;
+  /** @deprecated Use attack instead */
   atk?: number;
+  /** @deprecated Use defense instead */
   def?: number;
 }
 
 /**
- * Card on the board (monster zone)
+ * Card on the board (monster zone) - new API format
+ *
+ * Note: This uses numeric position (0/1) while MonsterCard uses string position.
+ * When normalizing, convert: 0 = "defense", 1 = "attack"
  */
 export interface BoardCard {
+  /** Unique card instance ID */
   _id: string;
+  /** Card name */
   name: string;
+  /** Card type */
   cardType: "creature" | "spell" | "trap" | "equipment";
+  /** Base attack value */
   attack?: number;
+  /** Base defense value */
   defense?: number;
+  /** Current attack (after modifications) */
   currentAttack?: number;
+  /** Current defense (after modifications) */
   currentDefense?: number;
-  position: 0 | 1; // 0 = defense, 1 = attack
+  /** Battle position: 0 = defense, 1 = attack */
+  position: 0 | 1;
+  /** Whether monster has attacked this turn */
   hasAttacked: boolean;
+  /** Whether card is face-down */
   isFaceDown: boolean;
+  /** Card element */
   element?: string;
+  /** Card cost */
   cost?: number;
 }
 

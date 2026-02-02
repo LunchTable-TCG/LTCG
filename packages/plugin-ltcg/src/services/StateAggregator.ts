@@ -82,6 +82,21 @@ export class StateAggregator extends Service {
   }
 
   /**
+   * Stop and cleanup the service
+   */
+  async stop(): Promise<void> {
+    logger.info("*** Stopping State Aggregator Service ***");
+    // Clear all caches to prevent memory leaks
+    this.gameStateCache.clear();
+    this.matchmakingCache = null;
+    this.metricsCache = null;
+    this.pollingService = null;
+    this.orchestrator = null;
+    this.runtime = null;
+    logger.info("State Aggregator stopped");
+  }
+
+  /**
    * Initialize TTL configuration from environment variables or use defaults
    */
   private initializeTTLConfig(runtime: IAgentRuntime): DataTypeTTLConfig {
@@ -102,7 +117,7 @@ export class StateAggregator extends Service {
     if (!this.pollingService && this.runtime) {
       try {
         this.pollingService = this.runtime.getService(SERVICE_TYPES.POLLING) as IPollingService;
-      } catch (error) {
+      } catch (_error) {
         // Service not available yet
       }
     }
@@ -119,7 +134,7 @@ export class StateAggregator extends Service {
         this.orchestrator = this.runtime.getService(
           SERVICE_TYPES.ORCHESTRATOR
         ) as ITurnOrchestrator;
-      } catch (error) {
+      } catch (_error) {
         // Service not available yet
       }
     }

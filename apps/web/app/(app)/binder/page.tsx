@@ -1,5 +1,15 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useCardBinder, useDeck, useDeckBuilder, useProfile } from "@/hooks";
 import { cn } from "@/lib/utils";
 import type { SortOption } from "@/types";
@@ -107,13 +117,17 @@ function BinderContent() {
   const [editingDeckName, setEditingDeckName] = useState("");
   const [isSavingDeck, setIsSavingDeck] = useState(false);
 
+  // Confirmation dialog state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deckToDelete, setDeckToDelete] = useState<string | null>(null);
+  const [clearDeckConfirmOpen, setClearDeckConfirmOpen] = useState(false);
+
   const selectedDeckData = useDeck(selectedDeckId as Id<"userDecks"> | null);
 
   // Convert API data to CardData format
   const cards: CardData[] = useMemo(() => {
-    console.log("🎴 Raw userCards from API:", userCards);
     if (!userCards) return [];
-    const converted = userCards.map((card: (typeof userCards)[number]) => ({
+    return userCards.map((card: (typeof userCards)[number]) => ({
       id: card.id,
       cardDefinitionId: card.cardDefinitionId,
       name: card.name,
@@ -129,12 +143,6 @@ function BinderContent() {
       owned: card.owned,
       isFavorite: card.isFavorite,
     }));
-    console.log("🎴 Converted cards:", converted.length, "cards");
-    console.log("🎴 First card sample:", converted[0]);
-    console.log("🖼️ First card imageUrl:", converted[0]?.imageUrl);
-    console.log("🖼️ ImageUrl type:", typeof converted[0]?.imageUrl);
-    console.log("🖼️ ImageUrl value (raw):", JSON.stringify(converted[0]?.imageUrl));
-    return converted;
   }, [userCards]);
 
   // Get selected deck details
@@ -150,7 +158,6 @@ function BinderContent() {
 
   // Filter and sort cards
   const filteredCards = useMemo(() => {
-    console.log("🔍 Starting filter with", cards.length, "cards");
     let filtered = [...cards];
 
     if (searchQuery) {
@@ -329,7 +336,7 @@ function BinderContent() {
 
   // Load deck cards when selectedDeckData changes
   useEffect(() => {
-    if (selectedDeckData && selectedDeckData.cards) {
+    if (selectedDeckData?.cards) {
       const loadedCards: DeckCard[] = selectedDeckData.cards.map((apiCard) => ({
         card: {
           id: apiCard.cardDefinitionId,
@@ -375,18 +382,26 @@ function BinderContent() {
     }
   };
 
-  const handleDeleteDeck = async (deckId: string) => {
-    // Ensure this only runs client-side
-    if (typeof window === "undefined") return;
-    if (!window.confirm("Are you sure you want to delete this deck?")) return;
+  const handleDeleteDeck = (deckId: string) => {
+    setDeckToDelete(deckId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteDeck = async () => {
+    if (!deckToDelete) return;
     try {
-      await deleteDeckAction(deckId as Id<"userDecks">);
-      if (selectedDeckId === deckId) {
+      await deleteDeckAction(deckToDelete as Id<"userDecks">);
+      if (selectedDeckId === deckToDelete) {
         setSelectedDeckId(null);
         setCurrentDeckCards([]);
       }
+      toast.success("Deck deleted successfully");
     } catch (error) {
       console.error("Failed to delete deck:", error);
+      toast.error("Failed to delete deck");
+    } finally {
+      setDeleteConfirmOpen(false);
+      setDeckToDelete(null);
     }
   };
 
@@ -401,7 +416,14 @@ function BinderContent() {
   };
 
   const handleClearDeck = () => {
+    if (currentDeckCards.length === 0) return;
+    setClearDeckConfirmOpen(true);
+  };
+
+  const confirmClearDeck = () => {
     setCurrentDeckCards([]);
+    setClearDeckConfirmOpen(false);
+    toast.success("Deck cleared");
   };
 
   const handleSetActiveDeck = async (deckId: string) => {
@@ -419,7 +441,8 @@ function BinderContent() {
       <div
         className="absolute inset-0 opacity-20 z-0"
         style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.3) 1px, transparent 0)`,
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, rgba(212, 175, 55, 0.3) 1px, transparent 0)",
           backgroundSize: "40px 40px",
         }}
       />
@@ -805,6 +828,39 @@ function BinderContent() {
         onClose={() => setPreviewCard(null)}
         onFavorite={handleToggleFavorite}
       />
+
+      {/* Delete Deck Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Deck</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this deck? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeckToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDeck}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear Deck Confirmation Dialog */}
+      <AlertDialog open={clearDeckConfirmOpen} onOpenChange={setClearDeckConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear Deck</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove all cards from this deck? You will need to add cards
+              again before saving.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClearDeck}>Clear Deck</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

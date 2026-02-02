@@ -54,11 +54,14 @@ function formatTimeAgo(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString();
 }
 
+const MATCHES_PER_PAGE = 10;
+
 export default function MatchHistoryPage() {
   const { profile: currentUser, isLoading: profileLoading } = useProfile();
   const { isAuthenticated } = useAuth();
 
   const [filter, setFilter] = useState<"ranked" | "casual" | "story" | "all">("all");
+  const [displayLimit, setDisplayLimit] = useState(MATCHES_PER_PAGE);
 
   // Fetch real match history from Convex
   const matchHistory = useQuery(
@@ -69,8 +72,10 @@ export default function MatchHistoryPage() {
   const isLoading = profileLoading || matchHistory === undefined;
 
   const matches = matchHistory ?? [];
-  const filteredMatches =
+  const allFilteredMatches =
     filter === "all" ? matches : matches.filter((m: (typeof matches)[number]) => m.mode === filter);
+  const filteredMatches = allFilteredMatches.slice(0, displayLimit);
+  const hasMoreMatches = displayLimit < allFilteredMatches.length;
 
   const stats = {
     total: matches.length,
@@ -243,13 +248,14 @@ export default function MatchHistoryPage() {
         </div>
 
         {/* Load More */}
-        {filteredMatches.length > 0 && (
+        {hasMoreMatches && (
           <div className="mt-6 text-center">
             <Button
               variant="outline"
               className="border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5]"
+              onClick={() => setDisplayLimit((prev) => prev + MATCHES_PER_PAGE)}
             >
-              Load More Matches
+              Load More Matches ({allFilteredMatches.length - displayLimit} remaining)
             </Button>
           </div>
         )}

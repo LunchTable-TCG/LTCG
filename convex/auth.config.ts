@@ -9,9 +9,7 @@
 
 // Privy App ID (prefer server-side env, fallback to NEXT_PUBLIC for dev parity)
 const PRIVY_APP_ID =
-  process.env["PRIVY_APP_ID"] ??
-  process.env["NEXT_PUBLIC_PRIVY_APP_ID"] ??
-  "cml0fnzn501t7lc0buoz8kt74";
+  process.env["PRIVY_APP_ID"] ?? process.env["NEXT_PUBLIC_PRIVY_APP_ID"] ?? "cml0fnzn501t7lc0buoz8kt74";
 
 if (!PRIVY_APP_ID) {
   throw new Error("Missing PRIVY_APP_ID for Convex auth configuration");

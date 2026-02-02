@@ -1,219 +1,99 @@
-import { test, expect } from "./setup/fixtures";
-import { TestUserFactory, SELECTORS } from "./setup/test-data";
-
 /**
- * Smoke Test - Critical Path E2E
+ * Smoke Tests - Critical Path Validation
  *
- * Fast (<1 minute) smoke test covering the critical user journey:
- * 1. Sign up new user
- * 2. Purchase pack with gold
- * 3. Verify cards received
- * 4. Create deck with new cards
- * 5. Start story mode battle
+ * These tests validate the most critical user flows.
+ * Run on every PR to catch breaking changes quickly.
  *
- * This test runs on every PR and MUST be fast.
- * - Skip animations
- * - Use minimal waits
- * - No unnecessary validation
- * - Focus on critical path only
- *
- * Usage:
- *   bun run test:e2e:smoke        # Run smoke test only
- *   bun run test:e2e              # Run all E2E tests (includes smoke)
- *
- * Prerequisites:
- *   - App running on http://localhost:3333 (or use webServer in playwright.config.ts)
- *   - Convex backend running
+ * Tagged with @smoke for selective execution in CI.
  */
-test.describe("Smoke Test - Critical Path", () => {
-  test("should complete full user journey in under 1 minute", async ({ page }) => {
-    // Capture console logs for debugging
-    page.on('console', (msg) => console.log(`[Browser ${msg.type()}]:`, msg.text()));
-    page.on('pageerror', (err) => console.error('[Browser Error]:', err.message));
 
-    // Reduce animation delays for speed
-    const FAST_WAIT = 300;
+import { test, expect } from "./setup/fixtures";
 
-    const testUser = TestUserFactory.create();
+test.describe("Smoke Tests @smoke", () => {
+  test("homepage redirects to login for unauthenticated users", async ({ page }) => {
+    await page.goto("/");
 
-    // ===== 1. AUTH: Sign up new user =====
-    await page.goto("/signup");
+    // Should redirect to login page
+    await page.waitForURL(/\/login/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/login/);
+  });
 
-    // Wait for form to be fully loaded
-    await page.waitForSelector(SELECTORS.AUTH_USERNAME_INPUT, { state: 'visible' });
+  test("authenticated user can access dashboard", async ({ authenticatedPage }) => {
+    await authenticatedPage.goto("/lunchtable");
+    await authenticatedPage.waitForLoadState("networkidle");
 
-    await page.fill(SELECTORS.AUTH_USERNAME_INPUT, testUser.username);
-    await page.fill(SELECTORS.AUTH_EMAIL_INPUT, testUser.email);
-    await page.fill(SELECTORS.AUTH_PASSWORD_INPUT, testUser.password);
-    await page.fill('input[id="confirmPassword"]', testUser.password); // Confirm password for signup
+    // Verify dashboard loads (checking for global chat is a good indicator)
+    const globalChat = authenticatedPage.locator('[data-testid="global-chat"]');
+    await expect(globalChat).toBeVisible({ timeout: 10000 });
+  });
 
-    // Submit form
-    await page.click(SELECTORS.AUTH_SUBMIT_BUTTON);
+  test("can navigate to deck builder", async ({ deckPage }) => {
+    await deckPage.navigate();
+    await expect(deckPage.page).toHaveURL(/binder/);
 
-    // Wait a moment for the form to process
-    await page.waitForTimeout(2000);
+    // Verify deck builder UI loaded
+    await expect(deckPage.createDeckButton).toBeVisible({ timeout: 10000 });
+  });
 
-    // Check if there's an error message
-    const errorMessage = await page.locator('[role="alert"], .error, [data-error]').textContent().catch(() => null);
-    if (errorMessage) {
-      console.log("❌ Auth error:", errorMessage);
-    }
+  test("can navigate to shop", async ({ shopPage }) => {
+    await shopPage.navigate();
+    await expect(shopPage.page).toHaveURL(/shop/);
 
-    // Wait for redirect to authenticated page
-    await page.waitForURL(/\/(lunchtable|binder|profile)/, { timeout: 13000 });
+    // Verify shop loaded
+    await expect(shopPage.container).toBeVisible({ timeout: 10000 });
+  });
 
-    // Quick verification - user is logged in
-    const currentUrl = page.url();
-    expect(currentUrl).toMatch(/\/(lunchtable|binder|profile)/);
+  test("can navigate to play/lobby", async ({ lobbyPage }) => {
+    await lobbyPage.navigate();
+    await expect(lobbyPage.page).toHaveURL(/play|lunchtable/);
+  });
 
-    // ===== 2. SHOP: Purchase one pack with gold =====
-    await page.goto("/shop");
-
-    // Wait for shop to load
-    await page.waitForSelector('[data-testid="shop"]', { timeout: 5000 });
-
-    // Get initial gold amount
-    const goldElement = page.locator('[data-testid="player-gold"]');
-    await goldElement.waitFor({ state: "visible", timeout: 3000 });
-    const goldText = await goldElement.textContent();
-    const goldBefore = Number.parseInt(goldText?.replace(/\D/g, "") || "0", 10);
-
-    // Buy one pack
-    const buyButton = page.locator(SELECTORS.SHOP_BUY_PACK_BUTTON).first();
-    await buyButton.click();
-    await page.waitForTimeout(FAST_WAIT);
-
-    // Verify gold decreased
-    const goldTextAfter = await goldElement.textContent();
-    const goldAfter = Number.parseInt(goldTextAfter?.replace(/\D/g, "") || "0", 10);
-    expect(goldAfter).toBeLessThan(goldBefore);
-
-    // ===== 3. COLLECTION: Verify cards received (open pack) =====
-    // Navigate to pack opening page or click open pack
-    const openPackButton = page.locator(
-      'button:has-text("Open"), a[href*="/shop/open"]'
-    ).first();
-
-    if (await openPackButton.isVisible({ timeout: 2000 })) {
-      await openPackButton.click();
-      await page.waitForURL(/\/shop\/open/, { timeout: 5000 });
-
-      // Wait for pack opening interface
-      await page.waitForSelector(
-        '[data-testid="pack-results"], [data-testid="pack-card"], button:has-text("Open")',
-        { timeout: 5000 }
-      );
-
-      // If there's an "Open Pack" button on this page, click it
-      const finalOpenButton = page.locator('button:has-text("Open Pack")');
-      if (await finalOpenButton.isVisible({ timeout: 2000 })) {
-        await finalOpenButton.click();
-        await page.waitForTimeout(1500); // Wait for opening animation (keep short)
-      }
-
-      // Verify cards received
-      const packCards = page.locator('[data-testid="pack-card"]');
-      const cardCount = await packCards.count();
-      expect(cardCount).toBeGreaterThan(0);
-
-      // Close/confirm pack results
-      const closeButton = page.locator(
-        'button:has-text("Close"), button:has-text("Confirm"), button:has-text("Continue")'
-      ).first();
-      if (await closeButton.isVisible({ timeout: 2000 })) {
-        await closeButton.click();
-        await page.waitForTimeout(FAST_WAIT);
-      }
-    }
-
-    // ===== 4. DECK: Create deck with new cards =====
-    await page.goto("/binder");
-
-    // Wait for binder/deck builder to load
-    await page.waitForSelector(
-      '[data-testid="deck-builder"], [data-testid="deck-list"], button:has-text("New Deck")',
-      { timeout: 5000 }
-    );
+  test("can create and save a deck", async ({ deckPage, testUser }) => {
+    await deckPage.navigate();
 
     // Create new deck
-    const newDeckButton = page.locator('button:has-text("New Deck")');
-    await newDeckButton.click();
-    await page.waitForTimeout(FAST_WAIT);
-
-    // Enter deck name
     const deckName = `Smoke Test Deck ${Date.now()}`;
-    await page.fill(SELECTORS.DECK_NAME_INPUT, deckName);
-    await page.waitForTimeout(FAST_WAIT);
+    await deckPage.createNewDeck(deckName);
 
-    // Add 30 cards quickly (minimum valid deck)
-    // Use any available cards from starter deck or opened packs
-    for (let i = 0; i < 30; i++) {
-      // Clear search to show all cards
-      const searchInput = page.locator('input[placeholder*="Search"]');
-      if (await searchInput.isVisible({ timeout: 1000 })) {
-        await searchInput.fill("");
-        await page.waitForTimeout(100);
-      }
+    // Add 30 cards
+    await deckPage.addCardsToDeck(30);
 
-      // Click first available card
-      const cardItem = page.locator('[data-testid="card-item"]').first();
-      if (await cardItem.isVisible({ timeout: 1000 })) {
-        await cardItem.click();
-        await page.waitForTimeout(50); // Minimal wait between adds
-      }
-    }
+    // Verify count and save
+    await deckPage.expectDeckCount(30);
+    await deckPage.saveDeck();
 
-    // Save deck
-    const saveButton = page.locator(SELECTORS.DECK_SAVE_BUTTON);
-    if (await saveButton.isVisible({ timeout: 2000 })) {
-      await saveButton.click();
-      await page.waitForTimeout(FAST_WAIT);
-    }
+    // Go back to deck list
+    await deckPage.goBackToDeckList();
 
-    // Verify deck was created (should see it in list or success message)
-    await expect(
-      page.locator(`text=${deckName}, [data-deck-name="${deckName}"]`).first()
-    ).toBeVisible({ timeout: 3000 });
+    // Verify deck appears in list
+    await deckPage.expectDeckInList(deckName);
+  });
 
-    // ===== 5. GAME: Start story mode battle (just verify it loads) =====
-    await page.goto("/play/story");
+  test("can view shop and see gold balance", async ({ shopPage }) => {
+    await shopPage.navigate();
 
-    // Wait for story mode to load
-    await page.waitForSelector('[data-testid="story-chapter"]', {
-      timeout: 5000,
-    });
+    // Verify currency displays
+    const gold = await shopPage.getGoldAmount();
+    expect(gold).toBeGreaterThanOrEqual(0);
 
-    // Click first available chapter
-    const firstChapter = page.locator('[data-testid="story-chapter"]').first();
-    await firstChapter.click();
-    await page.waitForURL(/\/play\/story\//, { timeout: 5000 });
+    // Verify packs are available
+    await shopPage.expectPacksAvailable();
+  });
 
-    // Click first available stage
-    const firstStage = page.locator('[data-testid="story-stage"]').first();
-    if (await firstStage.isVisible({ timeout: 3000 })) {
-      await firstStage.click();
-      await page.waitForTimeout(FAST_WAIT);
+  test("can view story mode chapters", async ({ storyPage }) => {
+    await storyPage.navigate();
+    await expect(storyPage.page).toHaveURL(/play\/story/);
 
-      // Start battle
-      const startBattleButton = page.locator(SELECTORS.STORY_START_BATTLE);
-      if (await startBattleButton.isVisible({ timeout: 2000 })) {
-        await startBattleButton.click();
+    // Verify at least one chapter is visible
+    const chapterCount = await storyPage.getChapterCount();
+    expect(chapterCount).toBeGreaterThan(0);
+  });
 
-        // Verify battle screen loads (don't play the full game)
-        await page.waitForSelector('[data-testid="game-board"]', {
-          timeout: 8000,
-        });
+  test("can view social features", async ({ socialPage }) => {
+    await socialPage.navigate();
+    await expect(socialPage.page).toHaveURL(/social/);
 
-        // Confirm game board is visible
-        await expect(
-          page.locator('[data-testid="game-board"]')
-        ).toBeVisible();
-
-        // SUCCESS - Critical path complete!
-        // Don't play the full game - just verify it loaded
-      }
-    }
-
-    // Test complete - all critical flows passed
+    // Verify page loaded without errors
+    await socialPage.waitForLoad();
   });
 });

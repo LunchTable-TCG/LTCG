@@ -5,12 +5,12 @@
  * Covers happy paths, validation errors, and edge cases.
  */
 
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
 import { api } from "@convex/_generated/api";
+import type { MutationCtx } from "@convex/_generated/server";
 import schema from "@convex/schema";
 import { modules } from "@convex/test.setup";
-import type { MutationCtx } from "@convex/_generated/server";
+import { convexTest } from "convex-test";
+import { describe, expect, it } from "vitest";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast
@@ -78,7 +78,7 @@ describe("createDeck", () => {
       asUser.mutation(coreDecks.createDeck, {
         name: "   ", // Empty after trim
       })
-    ).rejects.toThrowError(/Invalid input/);
+    ).rejects.toThrowError(/Deck name must be at least 1 character/);
   });
 
   it("should reject deck name over 50 characters", async () => {
@@ -92,7 +92,7 @@ describe("createDeck", () => {
       asUser.mutation(coreDecks.createDeck, {
         name: "A".repeat(51), // 51 characters
       })
-    ).rejects.toThrowError(/Invalid input/);
+    ).rejects.toThrowError(/Deck name cannot exceed 50 characters/);
   });
 
   it("should enforce 50 deck limit", async () => {
@@ -120,7 +120,7 @@ describe("createDeck", () => {
       asUser.mutation(coreDecks.createDeck, {
         name: "Deck 51",
       })
-    ).rejects.toThrowError(/Invalid input/);
+    ).rejects.toThrowError(/Cannot exceed 50 decks per user/);
   });
 });
 
@@ -248,7 +248,7 @@ describe("saveDeck", () => {
           },
         ],
       })
-    ).rejects.toThrowError(/Invalid deck configuration/);
+    ).rejects.toThrowError(/Deck must have at least 30 cards/);
   });
 
   it("should reject deck over maximum size", async () => {
@@ -306,7 +306,7 @@ describe("saveDeck", () => {
           quantity: 3, // 21 cards * 3 = 63 total, exceeds 60 max
         })),
       })
-    ).rejects.toThrowError(/Invalid deck configuration/);
+    ).rejects.toThrowError(/Deck cannot exceed 60 cards/);
   });
 
   it("should reject card over max copies limit", async () => {
@@ -316,8 +316,10 @@ describe("saveDeck", () => {
 
     const asUser = t.withIdentity({ subject: privyId });
 
-    const cardId = await t.run(async (ctx: MutationCtx) => {
-      const cardDefId = await ctx.db.insert("cardDefinitions", {
+    // Create cards: 1 card with 4 copies (violates limit) + 9 cards with 3 copies = 31 cards total (valid size)
+    const { limitedCardId, fillerCardIds } = await t.run(async (ctx: MutationCtx) => {
+      // The card we want to test the limit on
+      const limitedCardId = await ctx.db.insert("cardDefinitions", {
         name: "Limited Card",
         rarity: "rare",
         cardType: "creature",
@@ -331,14 +333,41 @@ describe("saveDeck", () => {
 
       await ctx.db.insert("playerCards", {
         userId,
-        cardDefinitionId: cardDefId,
+        cardDefinitionId: limitedCardId,
         quantity: 10,
         isFavorite: false,
         acquiredAt: Date.now(),
         lastUpdatedAt: Date.now(),
       });
 
-      return cardDefId;
+      // Create 9 filler cards (9 * 3 = 27 cards)
+      const fillerIds = [];
+      for (let i = 0; i < 9; i++) {
+        const cardDefId = await ctx.db.insert("cardDefinitions", {
+          name: `Filler Card ${i}`,
+          rarity: "common",
+          cardType: "creature",
+          archetype: "neutral",
+          cost: 3,
+          attack: 1500,
+          defense: 1000,
+          isActive: true,
+          createdAt: Date.now(),
+        });
+
+        await ctx.db.insert("playerCards", {
+          userId,
+          cardDefinitionId: cardDefId,
+          quantity: 3,
+          isFavorite: false,
+          acquiredAt: Date.now(),
+          lastUpdatedAt: Date.now(),
+        });
+
+        fillerIds.push(cardDefId);
+      }
+
+      return { limitedCardId, fillerCardIds: fillerIds };
     });
 
     const deckId = await t.run(async (ctx: MutationCtx) => {
@@ -351,17 +380,16 @@ describe("saveDeck", () => {
       });
     });
 
+    // Try to save deck with 4 copies of limited card (27 filler + 4 limited = 31 cards, valid size but invalid copies)
     await expect(
       asUser.mutation(coreDecks.saveDeck, {
         deckId,
         cards: [
-          {
-            cardDefinitionId: cardId,
-            quantity: 4, // Max is 3 copies
-          },
+          { cardDefinitionId: limitedCardId, quantity: 4 }, // Max is 3 copies - this should fail
+          ...fillerCardIds.map((id: string) => ({ cardDefinitionId: id, quantity: 3 })),
         ],
       })
-    ).rejects.toThrowError(/Invalid deck configuration/);
+    ).rejects.toThrowError(/Limited to 3 copies/);
   });
 
   it("should enforce legendary card limit of 1", async () => {
@@ -371,8 +399,9 @@ describe("saveDeck", () => {
 
     const asUser = t.withIdentity({ subject: privyId });
 
-    const legendaryCardId = await t.run(async (ctx: MutationCtx) => {
-      const cardDefId = await ctx.db.insert("cardDefinitions", {
+    // Create cards: 1 legendary with 2 copies (violates limit) + 10 common cards with 3 copies = 32 cards total
+    const { legendaryCardId, fillerCardIds } = await t.run(async (ctx: MutationCtx) => {
+      const legendaryCardId = await ctx.db.insert("cardDefinitions", {
         name: "Legendary Dragon",
         rarity: "legendary",
         cardType: "creature",
@@ -386,14 +415,41 @@ describe("saveDeck", () => {
 
       await ctx.db.insert("playerCards", {
         userId,
-        cardDefinitionId: cardDefId,
+        cardDefinitionId: legendaryCardId,
         quantity: 3,
         isFavorite: false,
         acquiredAt: Date.now(),
         lastUpdatedAt: Date.now(),
       });
 
-      return cardDefId;
+      // Create 10 filler cards (10 * 3 = 30 cards)
+      const fillerIds = [];
+      for (let i = 0; i < 10; i++) {
+        const cardDefId = await ctx.db.insert("cardDefinitions", {
+          name: `Filler Card ${i}`,
+          rarity: "common",
+          cardType: "creature",
+          archetype: "neutral",
+          cost: 3,
+          attack: 1500,
+          defense: 1000,
+          isActive: true,
+          createdAt: Date.now(),
+        });
+
+        await ctx.db.insert("playerCards", {
+          userId,
+          cardDefinitionId: cardDefId,
+          quantity: 3,
+          isFavorite: false,
+          acquiredAt: Date.now(),
+          lastUpdatedAt: Date.now(),
+        });
+
+        fillerIds.push(cardDefId);
+      }
+
+      return { legendaryCardId, fillerCardIds: fillerIds };
     });
 
     const deckId = await t.run(async (ctx: MutationCtx) => {
@@ -406,17 +462,16 @@ describe("saveDeck", () => {
       });
     });
 
+    // Try to save deck with 2 copies of legendary card (30 filler + 2 legendary = 32 cards, valid size but invalid legendary copies)
     await expect(
       asUser.mutation(coreDecks.saveDeck, {
         deckId,
         cards: [
-          {
-            cardDefinitionId: legendaryCardId,
-            quantity: 2, // Legendary max is 1
-          },
+          { cardDefinitionId: legendaryCardId, quantity: 2 }, // Legendary max is 1 - this should fail
+          ...fillerCardIds.map((id: string) => ({ cardDefinitionId: id, quantity: 3 })),
         ],
       })
-    ).rejects.toThrowError(/Invalid deck configuration/);
+    ).rejects.toThrowError(/Legendary cards limited to 1 copy/);
   });
 
   it("should reject cards not owned by player", async () => {
@@ -426,8 +481,10 @@ describe("saveDeck", () => {
 
     const asUser = t.withIdentity({ subject: privyId });
 
-    const cardId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("cardDefinitions", {
+    // Create cards: 1 not owned card + 10 owned cards with 3 copies = 33 cards total (valid size)
+    const { notOwnedCardId, ownedCardIds } = await t.run(async (ctx: MutationCtx) => {
+      // Card that player does NOT own
+      const notOwnedCardId = await ctx.db.insert("cardDefinitions", {
         name: "Not Owned Card",
         rarity: "common",
         cardType: "creature",
@@ -438,6 +495,36 @@ describe("saveDeck", () => {
         isActive: true,
         createdAt: Date.now(),
       });
+      // Note: NOT inserting into playerCards for this one
+
+      // Create 10 owned cards (10 * 3 = 30 cards)
+      const ownedIds = [];
+      for (let i = 0; i < 10; i++) {
+        const cardDefId = await ctx.db.insert("cardDefinitions", {
+          name: `Owned Card ${i}`,
+          rarity: "common",
+          cardType: "creature",
+          archetype: "neutral",
+          cost: 3,
+          attack: 1500,
+          defense: 1000,
+          isActive: true,
+          createdAt: Date.now(),
+        });
+
+        await ctx.db.insert("playerCards", {
+          userId,
+          cardDefinitionId: cardDefId,
+          quantity: 3,
+          isFavorite: false,
+          acquiredAt: Date.now(),
+          lastUpdatedAt: Date.now(),
+        });
+
+        ownedIds.push(cardDefId);
+      }
+
+      return { notOwnedCardId, ownedCardIds: ownedIds };
     });
 
     const deckId = await t.run(async (ctx: MutationCtx) => {
@@ -450,17 +537,16 @@ describe("saveDeck", () => {
       });
     });
 
+    // Try to save deck with a card the player doesn't own (30 owned + 3 not owned = 33 cards, valid size but invalid ownership)
     await expect(
       asUser.mutation(coreDecks.saveDeck, {
         deckId,
         cards: [
-          {
-            cardDefinitionId: cardId,
-            quantity: 3,
-          },
+          { cardDefinitionId: notOwnedCardId, quantity: 3 }, // Player doesn't own this - should fail
+          ...ownedCardIds.map((id: string) => ({ cardDefinitionId: id, quantity: 3 })),
         ],
       })
-    ).rejects.toThrowError(/Invalid deck configuration/);
+    ).rejects.toThrowError(/do not own/i);
   });
 
   it("should auto-set as active deck if user has none", async () => {
@@ -930,7 +1016,7 @@ describe("setActiveDeck", () => {
     });
 
     await expect(asUser.mutation(coreDecks.setActiveDeck, { deckId })).rejects.toThrowError(
-      /Invalid input/
+      /Deck must have at least 30 cards/
     );
   });
 
@@ -982,7 +1068,7 @@ describe("setActiveDeck", () => {
     });
 
     await expect(asUser.mutation(coreDecks.setActiveDeck, { deckId })).rejects.toThrowError(
-      /Invalid input/
+      /Deck cannot exceed 60 cards/
     );
   });
 });

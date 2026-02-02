@@ -9,6 +9,10 @@
  */
 
 import type * as __mocks___ratelimiter from "../__mocks__/ratelimiter.js";
+import type * as __tests___fixtures_decks from "../__tests__/fixtures/decks.js";
+import type * as __tests___fixtures_users from "../__tests__/fixtures/users.js";
+import type * as __tests___helpers_index from "../__tests__/helpers/index.js";
+import type * as __tests___helpers_testAuth from "../__tests__/helpers/testAuth.js";
 import type * as admin_admin from "../admin/admin.js";
 import type * as admin_analytics from "../admin/analytics.js";
 import type * as admin_apiKeys from "../admin/apiKeys.js";
@@ -19,6 +23,7 @@ import type * as admin_mutations from "../admin/mutations.js";
 import type * as admin_roles from "../admin/roles.js";
 import type * as admin_shopSetup from "../admin/shopSetup.js";
 import type * as agents from "../agents.js";
+import type * as agents_decisions from "../agents/decisions.js";
 import type * as agents_webhooks from "../agents/webhooks.js";
 import type * as auth from "../auth.js";
 import type * as auth_syncUser from "../auth/syncUser.js";
@@ -35,6 +40,9 @@ import type * as economy_economy from "../economy/economy.js";
 import type * as economy_index from "../economy/index.js";
 import type * as economy_marketplace from "../economy/marketplace.js";
 import type * as economy_shop from "../economy/shop.js";
+import type * as economy_tokenBalance from "../economy/tokenBalance.js";
+import type * as economy_tokenMaintenance from "../economy/tokenMaintenance.js";
+import type * as economy_tokenMarketplace from "../economy/tokenMarketplace.js";
 import type * as effectSystem from "../effectSystem.js";
 import type * as emailActions from "../emailActions.js";
 import type * as friends from "../friends.js";
@@ -101,6 +109,7 @@ import type * as globalChat from "../globalChat.js";
 import type * as http from "../http.js";
 import type * as http_agents from "../http/agents.js";
 import type * as http_chat from "../http/chat.js";
+import type * as http_decisions from "../http/decisions.js";
 import type * as http_decks from "../http/decks.js";
 import type * as http_games from "../http/games.js";
 import type * as http_matchmaking from "../http/matchmaking.js";
@@ -108,6 +117,7 @@ import type * as http_middleware_auth from "../http/middleware/auth.js";
 import type * as http_middleware_rateLimit from "../http/middleware/rateLimit.js";
 import type * as http_middleware_responses from "../http/middleware/responses.js";
 import type * as http_story from "../http/story.js";
+import type * as http_types from "../http/types.js";
 import type * as infrastructure_aggregates from "../infrastructure/aggregates.js";
 import type * as infrastructure_crons from "../infrastructure/crons.js";
 import type * as infrastructure_shardedCounters from "../infrastructure/shardedCounters.js";
@@ -122,11 +132,17 @@ import type * as lib_deterministicRandom from "../lib/deterministicRandom.js";
 import type * as lib_errorCodes from "../lib/errorCodes.js";
 import type * as lib_featureFlags from "../lib/featureFlags.js";
 import type * as lib_gameHelpers from "../lib/gameHelpers.js";
+import type * as lib_gameValidation from "../lib/gameValidation.js";
 import type * as lib_helpers from "../lib/helpers.js";
+import type * as lib_internalHelpers from "../lib/internalHelpers.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_returnValidators from "../lib/returnValidators.js";
 import type * as lib_roles from "../lib/roles.js";
 import type * as lib_schemaValidators from "../lib/schemaValidators.js";
+import type * as lib_solana_connection from "../lib/solana/connection.js";
+import type * as lib_solana_index from "../lib/solana/index.js";
+import type * as lib_solana_tokenBalance from "../lib/solana/tokenBalance.js";
+import type * as lib_solana_tokenTransfer from "../lib/solana/tokenTransfer.js";
 import type * as lib_spellSpeedHelper from "../lib/spellSpeedHelper.js";
 import type * as lib_storyConstants from "../lib/storyConstants.js";
 import type * as lib_types from "../lib/types.js";
@@ -171,8 +187,13 @@ import type * as social_reports from "../social/reports.js";
 import type * as storage_cards from "../storage/cards.js";
 import type * as storage_images from "../storage/images.js";
 import type * as story from "../story.js";
+import type * as testing_cleanup from "../testing/cleanup.js";
+import type * as testing_seedTestDeck from "../testing/seedTestDeck.js";
+import type * as testing_seedTestUser from "../testing/seedTestUser.js";
 import type * as wallet_createAgentWallet from "../wallet/createAgentWallet.js";
+import type * as wallet_index from "../wallet/index.js";
 import type * as wallet_updateAgentWallet from "../wallet/updateAgentWallet.js";
+import type * as wallet_userWallet from "../wallet/userWallet.js";
 import type * as welcomeEmails from "../welcomeEmails.js";
 
 import type {
@@ -183,6 +204,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "__mocks__/ratelimiter": typeof __mocks___ratelimiter;
+  "__tests__/fixtures/decks": typeof __tests___fixtures_decks;
+  "__tests__/fixtures/users": typeof __tests___fixtures_users;
+  "__tests__/helpers/index": typeof __tests___helpers_index;
+  "__tests__/helpers/testAuth": typeof __tests___helpers_testAuth;
   "admin/admin": typeof admin_admin;
   "admin/analytics": typeof admin_analytics;
   "admin/apiKeys": typeof admin_apiKeys;
@@ -193,6 +218,7 @@ declare const fullApi: ApiFromModules<{
   "admin/roles": typeof admin_roles;
   "admin/shopSetup": typeof admin_shopSetup;
   agents: typeof agents;
+  "agents/decisions": typeof agents_decisions;
   "agents/webhooks": typeof agents_webhooks;
   auth: typeof auth;
   "auth/syncUser": typeof auth_syncUser;
@@ -209,6 +235,9 @@ declare const fullApi: ApiFromModules<{
   "economy/index": typeof economy_index;
   "economy/marketplace": typeof economy_marketplace;
   "economy/shop": typeof economy_shop;
+  "economy/tokenBalance": typeof economy_tokenBalance;
+  "economy/tokenMaintenance": typeof economy_tokenMaintenance;
+  "economy/tokenMarketplace": typeof economy_tokenMarketplace;
   effectSystem: typeof effectSystem;
   emailActions: typeof emailActions;
   friends: typeof friends;
@@ -275,6 +304,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "http/agents": typeof http_agents;
   "http/chat": typeof http_chat;
+  "http/decisions": typeof http_decisions;
   "http/decks": typeof http_decks;
   "http/games": typeof http_games;
   "http/matchmaking": typeof http_matchmaking;
@@ -282,6 +312,7 @@ declare const fullApi: ApiFromModules<{
   "http/middleware/rateLimit": typeof http_middleware_rateLimit;
   "http/middleware/responses": typeof http_middleware_responses;
   "http/story": typeof http_story;
+  "http/types": typeof http_types;
   "infrastructure/aggregates": typeof infrastructure_aggregates;
   "infrastructure/crons": typeof infrastructure_crons;
   "infrastructure/shardedCounters": typeof infrastructure_shardedCounters;
@@ -296,11 +327,17 @@ declare const fullApi: ApiFromModules<{
   "lib/errorCodes": typeof lib_errorCodes;
   "lib/featureFlags": typeof lib_featureFlags;
   "lib/gameHelpers": typeof lib_gameHelpers;
+  "lib/gameValidation": typeof lib_gameValidation;
   "lib/helpers": typeof lib_helpers;
+  "lib/internalHelpers": typeof lib_internalHelpers;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/returnValidators": typeof lib_returnValidators;
   "lib/roles": typeof lib_roles;
   "lib/schemaValidators": typeof lib_schemaValidators;
+  "lib/solana/connection": typeof lib_solana_connection;
+  "lib/solana/index": typeof lib_solana_index;
+  "lib/solana/tokenBalance": typeof lib_solana_tokenBalance;
+  "lib/solana/tokenTransfer": typeof lib_solana_tokenTransfer;
   "lib/spellSpeedHelper": typeof lib_spellSpeedHelper;
   "lib/storyConstants": typeof lib_storyConstants;
   "lib/types": typeof lib_types;
@@ -345,8 +382,13 @@ declare const fullApi: ApiFromModules<{
   "storage/cards": typeof storage_cards;
   "storage/images": typeof storage_images;
   story: typeof story;
+  "testing/cleanup": typeof testing_cleanup;
+  "testing/seedTestDeck": typeof testing_seedTestDeck;
+  "testing/seedTestUser": typeof testing_seedTestUser;
   "wallet/createAgentWallet": typeof wallet_createAgentWallet;
+  "wallet/index": typeof wallet_index;
   "wallet/updateAgentWallet": typeof wallet_updateAgentWallet;
+  "wallet/userWallet": typeof wallet_userWallet;
   welcomeEmails: typeof welcomeEmails;
 }>;
 

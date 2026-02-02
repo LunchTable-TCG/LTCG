@@ -16,8 +16,8 @@ export function SkeletonStatCard({ className }: { className?: string }) {
         className
       )}
     >
-      <div className="h-3 w-20 bg-muted rounded"></div>
-      <div className="h-8 w-16 bg-muted rounded mt-1"></div>
+      <div className="h-3 w-20 bg-muted rounded" />
+      <div className="h-8 w-16 bg-muted rounded mt-1" />
     </div>
   );
 }
@@ -29,7 +29,7 @@ export function LoadingState({ message = "Loading...", className }: LoadingState
   return (
     <div className={cn("flex items-center justify-center p-8 text-muted-foreground", className)}>
       <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         <p className="text-sm">{message}</p>
       </div>
     </div>
@@ -61,7 +61,7 @@ export function ErrorState({
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
-            <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <p className="text-sm text-destructive font-medium">{message}</p>
@@ -103,7 +103,7 @@ export function EmptyState({
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
-            <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+            <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
           </svg>
         </div>
         <div>

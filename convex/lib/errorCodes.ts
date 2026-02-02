@@ -101,6 +101,7 @@ export const ErrorCode = {
   GAME_AI_TURN_ERROR: "GAME_8022",
   GAME_NOT_STARTED: "GAME_8023",
   GAME_CHAIN_LIMIT_EXCEEDED: "GAME_8024",
+  GAME_NOT_ACTIVE: "GAME_8027",
   GAME_CARD_ALREADY_IN_CHAIN: "GAME_8025",
   GAME_INVALID_CHAIN_STATE: "GAME_8026",
 
@@ -128,6 +129,18 @@ export const ErrorCode = {
   LIBRARY_INSUFFICIENT_CARDS: "LIBRARY_11005",
   LIBRARY_XP_CREATION_FAILED: "LIBRARY_11006",
   LIBRARY_INVALID_XP: "LIBRARY_11007",
+
+  // Token Errors (12xxx)
+  ECONOMY_INSUFFICIENT_TOKENS: "ECONOMY_12001",
+  ECONOMY_WALLET_NOT_CONNECTED: "ECONOMY_12002",
+  ECONOMY_WALLET_VERIFICATION_FAILED: "ECONOMY_12003",
+  ECONOMY_TOKEN_TRANSACTION_PENDING: "ECONOMY_12004",
+  ECONOMY_TOKEN_TRANSACTION_FAILED: "ECONOMY_12005",
+  ECONOMY_TOKEN_TRANSACTION_EXPIRED: "ECONOMY_12006",
+  ECONOMY_TOKEN_BALANCE_STALE: "ECONOMY_12007",
+  ECONOMY_TOKEN_LISTING_INVALID: "ECONOMY_12008",
+  ECONOMY_TOKEN_PURCHASE_INVALID: "ECONOMY_12009",
+  ECONOMY_TOKEN_TRANSFER_FAILED: "ECONOMY_12010",
 
   // System Errors (9xxx)
   SYSTEM_INTERNAL_ERROR: "SYSTEM_9001",
@@ -240,6 +253,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   GAME_8024: "Chain cannot exceed 12 links",
   GAME_8025: "Card is already in the chain",
   GAME_8026: "Invalid chain state",
+  GAME_8027: "Game is not active",
 
   // Matchmaking
   MATCHMAKING_8005: "You are already in the matchmaking queue",
@@ -266,6 +280,18 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   LIBRARY_11006: "Failed to create player XP record",
   LIBRARY_11007: "Cannot add negative XP",
 
+  // Token Errors
+  ECONOMY_12001: "Insufficient token balance",
+  ECONOMY_12002: "Wallet not connected. Please connect your wallet to continue",
+  ECONOMY_12003: "Wallet verification failed. Please reconnect your wallet",
+  ECONOMY_12004: "A token transaction is already pending for this listing",
+  ECONOMY_12005: "Token transaction failed",
+  ECONOMY_12006: "Token transaction expired. Please try again",
+  ECONOMY_12007: "Token balance is stale. Please refresh your balance",
+  ECONOMY_12008: "Invalid token listing",
+  ECONOMY_12009: "Invalid token purchase request",
+  ECONOMY_12010: "Token transfer failed. Please check your wallet and try again",
+
   // System
   SYSTEM_9001: "An internal error occurred. Please try again",
   SYSTEM_9002: "Database error occurred",
@@ -288,7 +314,8 @@ export const ErrorMessages: Record<ErrorCode, string> = {
  * throw createError(ErrorCode.ECONOMY_INSUFFICIENT_GOLD, { required: 100, available: 50 });
  */
 export function createError(code: ErrorCode, details?: Record<string, unknown>): Error {
-  const message = ErrorMessages[code];
+  // Use details.reason if provided, otherwise fall back to static message
+  const message = (details?.["reason"] as string) || ErrorMessages[code];
   const error = new Error(message) as Error & {
     code: ErrorCode;
     details?: Record<string, unknown>;

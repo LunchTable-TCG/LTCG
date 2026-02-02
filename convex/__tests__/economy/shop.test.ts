@@ -5,12 +5,12 @@
  * Covers happy paths, insufficient funds, invalid products, and edge cases.
  */
 
-import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
 import { api } from "@convex/_generated/api";
+import type { MutationCtx } from "@convex/_generated/server";
 import schema from "@convex/schema";
 import { modules } from "@convex/test.setup";
-import type { MutationCtx } from "@convex/_generated/server";
+import { convexTest } from "convex-test";
+import { describe, expect, it } from "vitest";
 
 // Type helper to avoid TS2589/TS7053 deep instantiation errors
 // biome-ignore lint/suspicious/noExplicitAny: Required for TS2589 workaround
@@ -482,7 +482,7 @@ describe("purchasePack", () => {
         productId: "currency_bundle",
         useGems: true,
       })
-    ).rejects.toThrowError(/Invalid input provided/);
+    ).rejects.toThrowError(/This endpoint is only for pack purchases/);
   });
 
   it("should record pack opening history", async () => {
@@ -776,7 +776,7 @@ describe("purchaseBox", () => {
         productId: "single_pack",
         useGems: false,
       })
-    ).rejects.toThrowError(/Invalid input provided/);
+    ).rejects.toThrowError(/This endpoint is only for box purchases/);
   });
 });
 
@@ -879,6 +879,6 @@ describe("purchaseCurrencyBundle", () => {
       asUser.mutation(economyShop.purchaseCurrencyBundle, {
         productId: "pack_not_currency",
       })
-    ).rejects.toThrowError(/Invalid input provided/);
+    ).rejects.toThrowError(/This endpoint is only for currency purchases/);
   });
 });

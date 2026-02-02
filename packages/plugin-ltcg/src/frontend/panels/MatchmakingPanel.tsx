@@ -41,7 +41,6 @@ function getStatusLabel(status: string, enabled: boolean): string {
       return "IN GAME";
     case "joining":
       return "JOINING";
-    case "idle":
     default:
       return "IDLE";
   }

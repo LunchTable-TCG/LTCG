@@ -569,19 +569,18 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
             success: true,
             chainResolving: result.chainResolved || false,
           };
-        } else {
-          // Activate a card in response (trap or quick-play spell)
-          const cardId = response.cardId;
+        }
+        // Activate a card in response (trap or quick-play spell)
+        const cardId = response.cardId;
 
-          // Try to activate as trap first
-          try {
-            await activateTrapMutation({ lobbyId, cardId });
-            return { success: true, chainResolving: false };
-          } catch {
-            // If not a trap, try as spell
-            await activateSpellMutation({ lobbyId, cardId });
-            return { success: true, chainResolving: false };
-          }
+        // Try to activate as trap first
+        try {
+          await activateTrapMutation({ lobbyId, cardId });
+          return { success: true, chainResolving: false };
+        } catch {
+          // If not a trap, try as spell
+          await activateSpellMutation({ lobbyId, cardId });
+          return { success: true, chainResolving: false };
         }
       } catch (error) {
         console.error("Chain response failed:", error);

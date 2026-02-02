@@ -104,7 +104,7 @@ ${deckOptions}
 
 Respond with JSON: { "deckIndex": <index> }`;
 
-          const decision = await runtime.useModel(ModelType.TEXT_GENERATION, {
+          const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
             prompt,
             temperature: 0.5,
             maxTokens: 50,
@@ -130,7 +130,7 @@ Casual: Practice and fun without rating changes
 
 Respond with JSON: { "mode": "ranked" or "casual" }`;
 
-        const decision = await runtime.useModel(ModelType.TEXT_GENERATION, {
+        const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
           prompt,
           temperature: 0.3,
           maxTokens: 20,
@@ -157,7 +157,7 @@ Public lobbies are better for quick matchmaking.
 
 Respond with JSON: { "isPrivate": true or false }`;
 
-        const decision = await runtime.useModel(ModelType.TEXT_GENERATION, {
+        const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
           prompt,
           temperature: 0.3,
           maxTokens: 20,

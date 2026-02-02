@@ -111,7 +111,7 @@ ${getReactionGuidance(classification.type)}
 Your reaction (just the message, no quotes or labels):`;
 
       // Generate reaction using LLM
-      const reaction = await runtime.useModel(ModelType.TEXT_GENERATION, {
+      const reaction = await runtime.useModel(ModelType.TEXT_SMALL, {
         prompt,
         temperature: 0.8, // High temperature for emotional variety
         maxTokens: 80,
@@ -332,8 +332,6 @@ function getReactionGuidance(type: PlayClassification["type"]) {
 - "Nice try!"
 - "Whew, dodged that one."
 - "Thanks for wasting that card!"`;
-
-    case "NEUTRAL_PLAY":
     default:
       return `Acknowledge the play. Examples:
 - "Alright, your turn."

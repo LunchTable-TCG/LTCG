@@ -164,8 +164,8 @@ export class GameError extends LTCGApiError {
     super(message, code, statusCode, details);
     this.name = "GameError";
     this.gameId = gameId;
-    this.phase = details?.['phase'];
-    this.turnPlayer = details?.['turnPlayer'];
+    this.phase = details?.phase;
+    this.turnPlayer = details?.turnPlayer;
   }
 
   toJSON() {

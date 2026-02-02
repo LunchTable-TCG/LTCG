@@ -1,7 +1,12 @@
 "use client";
 
-import { CardSelectorModal } from "@/components/marketplace/CardSelectorModal";
-import { ListingDialog } from "@/components/marketplace/ListingDialog";
+import {
+  CardSelectorModal,
+  CurrencySelector,
+  ListingDialog,
+  TokenListingDialog,
+  TokenPurchaseFlow,
+} from "@/components/marketplace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCurrency, useMarketplace, useProfile, useShop } from "@/hooks";
@@ -51,15 +56,39 @@ interface MarketListing {
   _id: string;
   sellerId: string;
   sellerName?: string;
+  sellerUsername?: string;
   listingType: ListingType;
   cardName: string;
   cardRarity: Rarity;
+  cardImageUrl?: string;
   quantity: number;
   price: number;
+  tokenPrice?: number;
+  currencyType?: "gold" | "token";
   currentBid?: number;
   highestBidderId?: string;
   bidCount?: number;
   endsAt?: number;
+  createdAt: number;
+}
+
+// Token listing type (from getTokenListings query)
+interface TokenListing {
+  _id: Id<"marketplaceListings">;
+  sellerId: Id<"users">;
+  sellerUsername: string;
+  cardDefinitionId: Id<"cardDefinitions">;
+  cardName: string;
+  cardType: string;
+  cardRarity: Rarity;
+  cardArchetype: string;
+  cardImageUrl?: string;
+  cardAttack?: number;
+  cardDefense?: number;
+  cardCost?: number;
+  quantity: number;
+  tokenPrice: number;
+  currencyType: "token";
   createdAt: number;
 }
 
@@ -72,6 +101,7 @@ const RARITY_COLORS: Record<Rarity, string> = {
 };
 
 const PLATFORM_FEE = 0.05;
+const TOKEN_DECIMALS = 6;
 
 export default function ShopPage() {
   const { profile: currentUser } = useProfile();
@@ -91,6 +121,16 @@ export default function ShopPage() {
     rarity: Rarity;
   } | null>(null);
   const [isCardSelectorOpen, setIsCardSelectorOpen] = useState(false);
+  const [currencyFilter, setCurrencyFilter] = useState<"gold" | "token">("gold");
+  const [listingCurrencyType, setListingCurrencyType] = useState<"gold" | "token">("gold");
+  const [tokenListingCard, setTokenListingCard] = useState<{
+    _id: Id<"playerCards">;
+    name: string;
+    imageUrl?: string;
+    rarity: Rarity;
+    quantity: number;
+  } | null>(null);
+  const [selectedTokenListing, setSelectedTokenListing] = useState<TokenListing | null>(null);
 
   // Use custom hooks
   const {
@@ -111,11 +151,18 @@ export default function ShopPage() {
   // Get user's collection for listing cards
   const userCards = useQuery(api.core.cards.getUserCards, currentUser ? {} : "skip");
 
+  // Token marketplace queries
+  const tokenListingsQuery = useQuery(
+    api.economy.tokenMarketplace.getTokenListings,
+    currencyFilter === "token" && activeTab === "marketplace" ? {} : "skip"
+  );
+
   // Mutations
   const createListingMutation = useMutation(api.marketplace.createListing);
 
-  // Filter marketplace listings
-  const filteredListings = useMemo(() => {
+  // Filter marketplace listings (gold)
+  const filteredGoldListings = useMemo(() => {
+    if (currencyFilter !== "gold") return [];
     let listings = marketplaceListings?.listings ?? [];
 
     if (searchQuery) {
@@ -126,7 +173,18 @@ export default function ShopPage() {
     }
 
     return listings;
-  }, [searchQuery, marketplaceListings]);
+  }, [searchQuery, marketplaceListings, currencyFilter]);
+
+  // Filter token listings
+  const filteredTokenListings = useMemo((): TokenListing[] => {
+    if (currencyFilter !== "token") return [];
+    const listings = (tokenListingsQuery?.listings ?? []) as TokenListing[];
+
+    if (!searchQuery) return listings;
+
+    const query = searchQuery.toLowerCase();
+    return listings.filter((listing) => listing.cardName.toLowerCase().includes(query));
+  }, [searchQuery, tokenListingsQuery, currencyFilter]);
 
   // Transform backend data to frontend format
   const transformedShopItems = useMemo(() => {
@@ -299,24 +357,6 @@ export default function ShopPage() {
       <div className="absolute inset-0 bg-black/60 z-0" />
       <div className="absolute inset-0 bg-vignette z-0" />
 
-      {/* Coming Soon Overlay */}
-      <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div className="text-center p-6 sm:p-8 max-w-md">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 rounded-2xl bg-[#d4af37]/20 border border-[#d4af37]/30 flex items-center justify-center">
-            <Store className="w-10 h-10 sm:w-12 sm:h-12 text-[#d4af37]" />
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#e8e0d5] uppercase tracking-tight mb-3">
-            Coming Soon
-          </h2>
-          <p className="text-[#a89f94] text-base sm:text-lg mb-2">
-            The Shop & Marketplace is under construction.
-          </p>
-          <p className="text-[#a89f94]/70 text-sm">
-            Card packs, boxes, and player-to-player trading will be available soon.
-          </p>
-        </div>
-      </div>
-
       <div className="container mx-auto px-4 pt-28 pb-16 relative z-10">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
@@ -435,6 +475,15 @@ export default function ShopPage() {
         {/* Marketplace Tab */}
         {activeTab === "marketplace" && (
           <>
+            {/* Currency Selector */}
+            <div className="mb-6">
+              <CurrencySelector
+                value={currencyFilter}
+                onChange={setCurrencyFilter}
+                className="max-w-lg"
+              />
+            </div>
+
             {/* Filters */}
             <div className="flex flex-wrap gap-4 mb-6">
               <div className="relative flex-1 min-w-[200px]">
@@ -458,15 +507,18 @@ export default function ShopPage() {
                 <option value="epic">Epic</option>
                 <option value="legendary">Legendary</option>
               </select>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as "all" | "fixed" | "auction")}
-                className="px-4 py-2 rounded-lg bg-black/40 border border-[#3d2b1f] text-[#e8e0d5]"
-              >
-                <option value="all">All Types</option>
-                <option value="fixed">Buy Now</option>
-                <option value="auction">Auction</option>
-              </select>
+              {/* Type filter only shown for gold (auction not supported for tokens) */}
+              {currencyFilter === "gold" && (
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value as "all" | "fixed" | "auction")}
+                  className="px-4 py-2 rounded-lg bg-black/40 border border-[#3d2b1f] text-[#e8e0d5]"
+                >
+                  <option value="all">All Types</option>
+                  <option value="fixed">Buy Now</option>
+                  <option value="auction">Auction</option>
+                </select>
+              )}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
@@ -478,7 +530,7 @@ export default function ShopPage() {
               </select>
               <Button
                 onClick={() => {
-                  // Switch to My Listings tab which has the list from collection button
+                  setListingCurrencyType(currencyFilter);
                   setActiveTab("myListings");
                 }}
                 className="tcg-button-primary"
@@ -488,26 +540,54 @@ export default function ShopPage() {
               </Button>
             </div>
 
-            {/* Listings Grid */}
-            {filteredListings.length === 0 ? (
-              <div className="text-center py-16">
-                <Store className="w-16 h-16 mx-auto mb-4 text-[#a89f94]/50" />
-                <h3 className="text-xl font-semibold text-[#e8e0d5] mb-2">No Listings Found</h3>
-                <p className="text-[#a89f94]">Try adjusting your filters or check back later</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {filteredListings.map((listing: MarketListing) => (
-                  <MarketListingCard
-                    key={listing._id}
-                    listing={listing}
-                    onSelect={() => setSelectedListing(listing)}
-                    isSelected={selectedListing?._id === listing._id}
-                    formatTimeRemaining={formatTimeRemaining}
-                  />
-                ))}
-              </div>
-            )}
+            {/* Gold Listings Grid */}
+            {currencyFilter === "gold" &&
+              (filteredGoldListings.length === 0 ? (
+                <div className="text-center py-16">
+                  <Store className="w-16 h-16 mx-auto mb-4 text-[#a89f94]/50" />
+                  <h3 className="text-xl font-semibold text-[#e8e0d5] mb-2">No Listings Found</h3>
+                  <p className="text-[#a89f94]">Try adjusting your filters or check back later</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {filteredGoldListings.map((listing: MarketListing) => (
+                    <MarketListingCard
+                      key={listing._id}
+                      listing={listing}
+                      onSelect={() => setSelectedListing(listing)}
+                      isSelected={selectedListing?._id === listing._id}
+                      formatTimeRemaining={formatTimeRemaining}
+                    />
+                  ))}
+                </div>
+              ))}
+
+            {/* Token Listings Grid */}
+            {currencyFilter === "token" &&
+              (tokenListingsQuery === undefined ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
+                </div>
+              ) : filteredTokenListings.length === 0 ? (
+                <div className="text-center py-16">
+                  <Store className="w-16 h-16 mx-auto mb-4 text-[#a89f94]/50" />
+                  <h3 className="text-xl font-semibold text-[#e8e0d5] mb-2">
+                    No Token Listings Found
+                  </h3>
+                  <p className="text-[#a89f94]">Be the first to list a card for LTCG tokens!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {filteredTokenListings.map((listing: TokenListing) => (
+                    <TokenListingCard
+                      key={listing._id}
+                      listing={listing}
+                      onSelect={() => setSelectedTokenListing(listing)}
+                      isSelected={selectedTokenListing?._id === listing._id}
+                    />
+                  ))}
+                </div>
+              ))}
 
             {/* Platform fee notice */}
             <div className="mt-8 p-4 rounded-lg bg-black/40 border border-[#3d2b1f] text-sm text-[#a89f94]">
@@ -522,12 +602,32 @@ export default function ShopPage() {
         {/* My Listings Tab */}
         {activeTab === "myListings" && (
           <>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <h2 className="text-2xl font-bold text-[#e8e0d5]">My Active Listings</h2>
-              <Button onClick={() => setIsCardSelectorOpen(true)} className="tcg-button-primary">
-                <Plus className="w-4 h-4 mr-2" />
-                List from Collection
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    setListingCurrencyType("gold");
+                    setIsCardSelectorOpen(true);
+                  }}
+                  variant="outline"
+                  className="border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/10"
+                >
+                  <Coins className="w-4 h-4 mr-2" />
+                  List for Gold
+                </Button>
+                <Button
+                  onClick={() => {
+                    setListingCurrencyType("token");
+                    setIsCardSelectorOpen(true);
+                  }}
+                  variant="outline"
+                  className="border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  <Gem className="w-4 h-4 mr-2" />
+                  List for Token
+                </Button>
+              </div>
             </div>
 
             {myListings === undefined ? (
@@ -627,21 +727,48 @@ export default function ShopPage() {
             quantity: card.owned,
           }))}
           onSelectCard={(card) => {
-            setListingDialogCard({
-              cardDefinitionId: card.cardDefinitionId,
-              name: card.name,
-              rarity: card.rarity,
-            });
+            // Route to appropriate listing dialog based on currency selection
+            if (listingCurrencyType === "token") {
+              setTokenListingCard({
+                _id: card.playerCardId,
+                name: card.name,
+                rarity: card.rarity,
+                quantity: card.quantity,
+              });
+            } else {
+              setListingDialogCard({
+                cardDefinitionId: card.cardDefinitionId,
+                name: card.name,
+                rarity: card.rarity,
+              });
+            }
           }}
         />
 
-        {/* Listing Dialog */}
+        {/* Gold Listing Dialog */}
         {listingDialogCard && (
           <ListingDialog
             isOpen={!!listingDialogCard}
             onClose={() => setListingDialogCard(null)}
             card={listingDialogCard}
             onConfirm={handleCreateListing}
+          />
+        )}
+
+        {/* Token Listing Dialog */}
+        {tokenListingCard && (
+          <TokenListingDialog
+            card={tokenListingCard}
+            open={!!tokenListingCard}
+            onOpenChange={(open) => {
+              if (!open) setTokenListingCard(null);
+            }}
+            onSuccess={() => {
+              setTokenListingCard(null);
+              // Optionally switch to view token marketplace
+              setCurrencyFilter("token");
+              setActiveTab("marketplace");
+            }}
           />
         )}
 
@@ -840,6 +967,32 @@ export default function ShopPage() {
             </div>
           </div>
         )}
+
+        {/* Token Purchase Flow */}
+        {selectedTokenListing && (
+          <TokenPurchaseFlow
+            listing={{
+              _id: selectedTokenListing._id,
+              tokenPrice: selectedTokenListing.tokenPrice,
+              card: {
+                name: selectedTokenListing.cardName,
+                imageUrl: selectedTokenListing.cardImageUrl,
+                rarity: selectedTokenListing.cardRarity,
+              },
+              seller: {
+                username: selectedTokenListing.sellerUsername,
+              },
+            }}
+            open={!!selectedTokenListing}
+            onOpenChange={(open) => {
+              if (!open) setSelectedTokenListing(null);
+            }}
+            onSuccess={() => {
+              setSelectedTokenListing(null);
+              // Refresh the token listings query happens automatically via Convex reactivity
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -985,6 +1138,64 @@ function MarketListingCard({
       {listing.listingType === "auction" && listing.bidCount !== undefined && (
         <p className="text-xs text-[#a89f94] mt-1">{listing.bidCount} bids</p>
       )}
+    </button>
+  );
+}
+
+// Token Listing Card Component
+function TokenListingCard({
+  listing,
+  onSelect,
+  isSelected,
+}: {
+  listing: TokenListing;
+  onSelect: () => void;
+  isSelected: boolean;
+}) {
+  const formatTokenPrice = (rawAmount: number) => {
+    const humanReadable = rawAmount / 10 ** TOKEN_DECIMALS;
+    return humanReadable.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
+
+  return (
+    <button
+      type="button"
+      data-testid="token-marketplace-card"
+      className={cn(
+        "relative p-3 rounded-xl border border-[#3d2b1f] bg-black/40 hover:bg-black/60 transition-all cursor-pointer text-left w-full",
+        isSelected && "ring-2 ring-primary"
+      )}
+      onClick={onSelect}
+    >
+      <span className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded text-xs font-bold bg-primary text-[#1a1614]">
+        Token
+      </span>
+
+      <div className="aspect-3/4 rounded-lg bg-linear-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center mb-3 overflow-hidden">
+        {listing.cardImageUrl ? (
+          <Image
+            src={listing.cardImageUrl}
+            alt={listing.cardName}
+            width={100}
+            height={140}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <Package className="w-12 h-12 text-purple-400/50" />
+        )}
+      </div>
+
+      <p className="font-medium text-sm text-[#e8e0d5] truncate mb-1">{listing.cardName}</p>
+      <p className={cn("text-xs mb-2 capitalize", RARITY_COLORS[listing.cardRarity])}>
+        {listing.cardRarity}
+      </p>
+
+      <div className="flex items-center gap-1">
+        <Gem className="w-4 h-4 text-primary" />
+        <span className="font-bold text-primary">{formatTokenPrice(listing.tokenPrice)} LTCG</span>
+      </div>
+
+      <p className="text-xs text-[#a89f94] mt-1">Seller: {listing.sellerUsername}</p>
     </button>
   );
 }

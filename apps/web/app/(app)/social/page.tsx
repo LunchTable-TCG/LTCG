@@ -7,7 +7,7 @@ import { useFriends, useProfile } from "@/hooks";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   Ban,
   Check,
@@ -23,7 +23,9 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 type FriendStatus = "online" | "offline" | "in-game";
 type TabType = "friends" | "requests" | "search";
@@ -59,6 +61,7 @@ function formatLastSeen(timestamp: number): string {
 }
 
 export default function SocialPage() {
+  const router = useRouter();
   const { profile: currentUser, isLoading: profileLoading } = useProfile();
   const { isAuthenticated } = useAuth();
   const {
@@ -76,6 +79,23 @@ export default function SocialPage() {
 
   const [activeTab, setActiveTab] = useState<TabType>("friends");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Challenge mutation
+  const sendChallenge = useMutation(api.social.challenges.sendChallenge);
+
+  const handleChallenge = async (username: string) => {
+    try {
+      const lobbyId = await sendChallenge({ opponentUsername: username, mode: "casual" });
+      toast.success(`Challenge sent to ${username}!`, {
+        description: "Redirecting to game lobby...",
+      });
+      router.push(`/game/${lobbyId}`);
+    } catch (error) {
+      toast.error("Challenge failed", {
+        description: error instanceof Error ? error.message : "Could not send challenge",
+      });
+    }
+  };
 
   // Real-time search results from Convex
   const searchResults = useQuery(
@@ -174,6 +194,7 @@ export default function SocialPage() {
                       }}
                       onRemove={() => removeFriend(friend.userId)}
                       onBlock={() => blockUser(friend.userId)}
+                      onChallenge={() => friend.username && handleChallenge(friend.username)}
                     />
                   ))}
                 </div>
@@ -198,6 +219,7 @@ export default function SocialPage() {
                         lastSeen: friend.lastInteraction,
                       }}
                       onRemove={() => removeFriend(friend.userId)}
+                      onChallenge={() => friend.username && handleChallenge(friend.username)}
                       onBlock={() => blockUser(friend.userId)}
                     />
                   ))}
@@ -349,10 +371,12 @@ function FriendCard({
   friend,
   onRemove,
   onBlock,
+  onChallenge,
 }: {
   friend: Friend;
   onRemove?: () => void;
   onBlock?: () => void;
+  onChallenge?: () => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -398,11 +422,22 @@ function FriendCard({
           size="sm"
           variant="outline"
           className="border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5]"
+          onClick={() => {
+            toast.info("Messaging coming soon!", {
+              description: "Direct messaging is currently in development.",
+            });
+          }}
+          aria-label={`Message ${friend.username}`}
         >
           <MessageSquare className="w-4 h-4" />
         </Button>
         {friend.status !== "offline" && (
-          <Button size="sm" className="bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]">
+          <Button
+            size="sm"
+            className="bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]"
+            onClick={onChallenge}
+            aria-label={`Challenge ${friend.username} to a game`}
+          >
             <Swords className="w-4 h-4 mr-1" />
             Challenge
           </Button>

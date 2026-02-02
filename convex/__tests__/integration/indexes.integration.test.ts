@@ -14,11 +14,11 @@
  * Table scan: >3000ms (unacceptable)
  */
 
-import { describe, expect, it } from "vitest";
-import { convexTest } from "convex-test";
+import type { Id } from "@convex/_generated/dataModel";
 import schema from "@convex/schema";
 import { modules } from "@convex/test.setup";
-import type { Id } from "@convex/_generated/dataModel";
+import { convexTest } from "convex-test";
+import { describe, expect, it } from "vitest";
 
 // Helper to create test instance
 const createTestInstance = () => convexTest(schema, modules);
@@ -102,9 +102,7 @@ describe("Index Performance Tests", () => {
       const results = await t.run(async (ctx) => {
         return await ctx.db
           .query("users")
-          .withIndex("rankedElo_byType", (q) =>
-            q.eq("isAiAgent", false).gt("rankedElo", 1000)
-          )
+          .withIndex("rankedElo_byType", (q) => q.eq("isAiAgent", false).gt("rankedElo", 1000))
           .order("desc")
           .take(100);
       });
@@ -295,7 +293,7 @@ describe("Index Performance Tests", () => {
             userId,
             productId: "starter_pack",
             packType: "starter",
-            cardsReceived: cardIds.slice(0, 5).map(id => ({
+            cardsReceived: cardIds.slice(0, 5).map((id) => ({
               cardDefinitionId: id,
               name: `Card ${i}`,
               rarity: "common" as const,
@@ -325,7 +323,7 @@ describe("Index Performance Tests", () => {
 
       // Verify results are sorted by time
       for (let i = 0; i < results.length - 1; i++) {
-        expect(results[i]!.openedAt).toBeGreaterThanOrEqual(results[i + 1]!.openedAt);
+        expect(results[i]?.openedAt).toBeGreaterThanOrEqual(results[i + 1]?.openedAt);
       }
     });
 
@@ -375,11 +373,13 @@ describe("Index Performance Tests", () => {
             userId: userIds[i % userIds.length]!,
             productId: "starter_pack",
             packType: "starter",
-            cardsReceived: [{
-              cardDefinitionId: cardId,
-              name: "Test Card",
-              rarity: "common" as const,
-            }],
+            cardsReceived: [
+              {
+                cardDefinitionId: cardId,
+                name: "Test Card",
+                rarity: "common" as const,
+              },
+            ],
             currencyUsed: "gold",
             amountPaid: 100,
             openedAt: Date.now() - i * 30000,
@@ -446,8 +446,7 @@ describe("Index Performance Tests", () => {
         return await ctx.db
           .query("matchmakingQueue")
           .withIndex("by_mode_rating", (q) =>
-            q.eq("mode", "ranked")
-             .gte("rating", targetRating - ratingWindow)
+            q.eq("mode", "ranked").gte("rating", targetRating - ratingWindow)
           )
           .filter((q) => q.lte(q.field("rating"), targetRating + ratingWindow))
           .take(10);
@@ -763,7 +762,7 @@ describe("Index Performance Tests", () => {
 
       // Verify sorting
       for (let i = 0; i < results.length - 1; i++) {
-        expect(results[i]!.createdAt).toBeGreaterThanOrEqual(results[i + 1]!.createdAt);
+        expect(results[i]?.createdAt).toBeGreaterThanOrEqual(results[i + 1]?.createdAt);
       }
     });
   });

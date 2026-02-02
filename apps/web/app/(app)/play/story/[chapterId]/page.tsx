@@ -48,7 +48,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
 
   // Initialize stage progress when chapter loads
   useEffect(() => {
-    if (chapterDetails && chapterDetails._id) {
+    if (chapterDetails?._id) {
       // Check if any stage has progress - if not, initialize
       const hasProgress = chapterDetails.stages?.some(
         (s: { status?: string; timesCompleted?: number }) =>

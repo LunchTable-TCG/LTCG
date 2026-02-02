@@ -18,37 +18,29 @@ export const emotionalStateEvaluator: Evaluator = {
   similes: ["EMOTION_CHECK", "MOOD_FILTER", "SENTIMENT_VALIDATOR"],
 
   examples: [
-    [
-      {
-        name: "{{name1}}",
-        content: {
-          text: "I'm dominating! Time to taunt!",
+    {
+      prompt: "Evaluate emotional state when dominating",
+      messages: [
+        {
+          name: "{{user1}}",
+          content: { text: "I'm dominating! Time to taunt!" },
         },
-      },
-      {
-        name: "{{name2}}",
-        content: {
-          text: "Emotional state: CONFIDENT. Trash talk is appropriate.",
+      ],
+      outcome: "Emotional state: CONFIDENT. Trash talk is appropriate.",
+    },
+    {
+      prompt: "Evaluate emotional state when losing badly",
+      messages: [
+        {
+          name: "{{user1}}",
+          content: { text: "I'm losing badly but want to trash talk" },
         },
-      },
-    ],
-    [
-      {
-        name: "{{name1}}",
-        content: {
-          text: "I'm losing badly but want to trash talk",
-        },
-      },
-      {
-        name: "{{name2}}",
-        content: {
-          text: "Emotional state: DESPERATE. Trash talk would be inappropriate - filtered.",
-        },
-      },
-    ],
+      ],
+      outcome: "Emotional state: DESPERATE. Trash talk would be inappropriate - filtered.",
+    },
   ],
 
-  validate: async (_runtime: IAgentRuntime, _message: Memory, _state: State): Promise<boolean> => {
+  validate: async (_runtime: IAgentRuntime, _message: Memory, _state?: State): Promise<boolean> => {
     // Always validate - emotional state check runs on all messages
     return true;
   },
@@ -56,19 +48,24 @@ export const emotionalStateEvaluator: Evaluator = {
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
-    _options?: any
-  ): Promise<boolean> => {
+    state?: State,
+    _options?: Record<string, unknown>
+  ): Promise<void> => {
     try {
       logger.debug("Evaluating emotional state");
 
+      if (!state) {
+        logger.debug("No state available for emotional evaluation");
+        return;
+      }
+
       // Get game state and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
         logger.debug("No game state available for emotional evaluation");
-        return true; // Allow response if we can't evaluate
+        return; // No game state - nothing to evaluate
       }
 
       const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
@@ -78,13 +75,16 @@ export const emotionalStateEvaluator: Evaluator = {
       const emotionalState = analyzeEmotionalState(gameState, boardAnalysis, state);
 
       // Store emotional state in State object for other actions to use
-      (state.values as any)['LTCG_EMOTIONAL_STATE'] = emotionalState.state;
+      (state.values as any).LTCG_EMOTIONAL_STATE = emotionalState.state;
+      (state.values as any).LTCG_EMOTIONAL_INTENSITY = emotionalState.intensity;
+      (state.values as any).LTCG_FILTERED_ACTIONS = emotionalState.shouldFilter;
 
       // Get the intended action from message or state
       const intendedAction = (message.content as any)?.action || (state as any)?.currentAction;
 
-      // Filter based on emotional state and intended action
+      // Check filter status and log
       const shouldAllow = shouldAllowResponse(emotionalState, intendedAction, runtime);
+      (state.values as any).LTCG_EMOTIONAL_ALLOWED = shouldAllow;
 
       if (!shouldAllow) {
         logger.info(
@@ -93,14 +93,11 @@ export const emotionalStateEvaluator: Evaluator = {
             intendedAction,
             reason: emotionalState.filterReason,
           },
-          "Filtered response due to emotional state"
+          "Action filtered due to emotional state"
         );
       }
-
-      return shouldAllow;
     } catch (error) {
       logger.error({ error }, "Error in emotional state evaluator");
-      return true; // Allow response on error to avoid blocking
     }
   },
 };
@@ -137,10 +134,12 @@ function analyzeEmotionalState(
   state: State
 ): EmotionalStateAnalysis {
   const advantage = boardAnalysis?.advantage || "EVEN";
-  const myLP = gameState.hostPlayer.lifePoints;
-  const oppLP = gameState.opponentPlayer.lifePoints;
-  const myMonsters = gameState.hostPlayer.monsterZone.length;
-  const oppMonsters = gameState.opponentPlayer.monsterZone.length;
+  // Use new API fields with fallback to legacy hostPlayer/opponentPlayer
+  const myLP = gameState.myLifePoints ?? gameState.hostPlayer?.lifePoints ?? 8000;
+  const oppLP = gameState.opponentLifePoints ?? gameState.opponentPlayer?.lifePoints ?? 8000;
+  const myMonsters = gameState.myBoard?.length ?? gameState.hostPlayer?.monsterZone?.length ?? 0;
+  const oppMonsters =
+    gameState.opponentBoard?.length ?? gameState.opponentPlayer?.monsterZone?.length ?? 0;
 
   // Check recent events from state
   const lastAction = (state as any)?.lastAction;

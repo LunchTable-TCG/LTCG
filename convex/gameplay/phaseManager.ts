@@ -13,6 +13,7 @@ import { getCardAbility } from "../lib/abilityHelpers";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { drawCards } from "../lib/gameHelpers";
+import { validateGameActive } from "../lib/gameValidation";
 import { executeEffect } from "./effectSystem/index";
 import { checkDeckOutCondition, checkStateBasedActions } from "./gameEngine/stateBasedActions";
 import { recordEventHelper } from "./gameEvents";
@@ -72,7 +73,10 @@ export const advancePhase = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby (for gameId only - turn state is in gameStates)
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby (for gameId only - turn state is in gameStates)
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY, {
@@ -81,7 +85,7 @@ export const advancePhase = mutation({
       });
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
@@ -245,7 +249,10 @@ export const skipBattlePhase = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby (for gameId only - turn state is in gameStates)
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby (for gameId only - turn state is in gameStates)
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY, {
@@ -254,7 +261,7 @@ export const skipBattlePhase = mutation({
       });
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
@@ -334,7 +341,10 @@ export const skipToEndPhase = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby (for gameId only - turn state is in gameStates)
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby (for gameId only - turn state is in gameStates)
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY, {
@@ -343,7 +353,7 @@ export const skipToEndPhase = mutation({
       });
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
@@ -454,7 +464,10 @@ export const skipMainPhase2 = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby (for gameId only - turn state is in gameStates)
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby (for gameId only - turn state is in gameStates)
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY, {
@@ -463,7 +476,7 @@ export const skipMainPhase2 = mutation({
       });
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))

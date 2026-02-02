@@ -31,6 +31,7 @@ export function ActionButtons({
           variant="destructive"
           onClick={onAttack}
           className="gap-1 h-6 text-[10px] px-2"
+          aria-label="Attack with a monster"
         >
           <Swords className="h-3 w-3" />
           <span className="hidden sm:inline">Attack</span>
@@ -44,6 +45,7 @@ export function ActionButtons({
         disabled={!isPlayerTurn || !canEndTurn}
         onClick={onEndTurn}
         className="gap-1 h-6 text-[10px] px-2"
+        aria-label={isPlayerTurn ? "End your turn" : "Waiting for your turn"}
       >
         <Flag className="h-3 w-3" />
         <span className="hidden sm:inline">End Turn</span>

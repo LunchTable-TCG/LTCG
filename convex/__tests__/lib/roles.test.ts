@@ -5,7 +5,6 @@
  * permission checking, and authorization functions.
  */
 
-import { describe, expect, it } from "vitest";
 import {
   type UserRole,
   canManageRole,
@@ -14,6 +13,7 @@ import {
   hasRoleLevel,
   roleHierarchy,
 } from "@convex/lib/roles";
+import { describe, expect, it } from "vitest";
 
 describe("Role Hierarchy", () => {
   it("should define correct hierarchy levels", () => {

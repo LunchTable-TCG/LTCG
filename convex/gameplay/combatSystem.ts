@@ -28,6 +28,7 @@ import {
   getModifiedStats,
   moveCard,
 } from "../lib/gameHelpers";
+import { validateGameActive } from "../lib/gameValidation";
 import { executeEffect } from "./effectSystem/index";
 import { checkStateBasedActions } from "./gameEngine/stateBasedActions";
 import { recordEventHelper } from "./gameEvents";
@@ -74,13 +75,16 @@ export const declareAttack = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby (for gameId/status only - turn state is in gameStates)
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby (for gameId/status only - turn state is in gameStates)
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
@@ -344,20 +348,27 @@ export const declareAttack = mutation({
       defenderCard
     );
 
-    // 12. Mark attacker as having attacked
-    const updatedPlayerBoard = playerBoard.map((bc) =>
-      bc.cardId === args.attackerCardId ? { ...bc, hasAttacked: true } : bc
-    );
-
-    // Edge case: Verify attacker is still on board after battle
-    const attackerStillExists = updatedPlayerBoard.some((bc) => bc.cardId === args.attackerCardId);
-    if (!attackerStillExists) {
-      console.warn(`Attacker ${args.attackerCardId} was destroyed during battle resolution`);
+    // 12. Mark attacker as having attacked (if still on board)
+    // IMPORTANT: Re-fetch game state to get current board after destruction
+    const updatedGameState = await ctx.db.get(gameState._id);
+    if (!updatedGameState) {
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND);
     }
 
-    await ctx.db.patch(gameState._id, {
-      [isHost ? "hostBoard" : "opponentBoard"]: updatedPlayerBoard,
-    });
+    const currentBoard = isHost ? updatedGameState.hostBoard : updatedGameState.opponentBoard;
+    const attackerStillExists = currentBoard.some((bc) => bc.cardId === args.attackerCardId);
+
+    if (attackerStillExists) {
+      // Only update hasAttacked if attacker survived the battle
+      const updatedPlayerBoard = currentBoard.map((bc) =>
+        bc.cardId === args.attackerCardId ? { ...bc, hasAttacked: true } : bc
+      );
+
+      await ctx.db.patch(gameState._id, {
+        [isHost ? "hostBoard" : "opponentBoard"]: updatedPlayerBoard,
+      });
+    }
+    // If attacker was destroyed, board was already updated by resolveBattle - don't overwrite
 
     // 13. Run state-based action checks after combat
     // This catches any monsters that should be destroyed due to stat changes
@@ -413,13 +424,16 @@ export const declareAttackWithResponse = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby (for gameId/status only - turn state is in gameStates)
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby (for gameId/status only - turn state is in gameStates)
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
@@ -1197,13 +1211,16 @@ export const continueAttackAfterReplay = mutation({
     // 1. Validate session
     const user = await requireAuthMutation(ctx);
 
-    // 2. Get lobby (for gameId/status only - turn state is in gameStates)
+    // 2. Validate game is active
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    // 3. Get lobby (for gameId/status only - turn state is in gameStates)
     const lobby = await ctx.db.get(args.lobbyId);
     if (!lobby) {
       throw createError(ErrorCode.NOT_FOUND_LOBBY);
     }
 
-    // 3. Get game state (single source of truth for turn state)
+    // 4. Get game state (single source of truth for turn state)
     const gameState = await ctx.db
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))

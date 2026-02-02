@@ -108,7 +108,7 @@ export class LTCGApiClient {
         };
 
         if (requiresAuth) {
-          headers["Authorization"] = `Bearer ${this.apiKey}`;
+          headers.Authorization = `Bearer ${this.apiKey}`;
         }
 
         const response = await fetch(url, {
@@ -119,8 +119,22 @@ export class LTCGApiClient {
 
         clearTimeout(timeoutId);
 
-        // Parse response
-        const body = await response.json();
+        // Parse response - handle malformed JSON gracefully
+        let body: any;
+        try {
+          body = await response.json();
+        } catch (jsonError) {
+          // Response is not valid JSON (e.g., HTML error page)
+          const text = await response.text().catch(() => "Unable to read response body");
+          throw new NetworkError(
+            `Invalid JSON response from server: ${text.substring(0, 200)}`,
+            jsonError instanceof Error ? jsonError : undefined,
+            {
+              parseError: String(jsonError),
+              responseText: text.substring(0, 500),
+            }
+          );
+        }
 
         // Handle errors
         if (!response.ok) {
@@ -208,7 +222,7 @@ export class LTCGApiClient {
    * Calculate exponential backoff delay
    */
   private calculateBackoff(attempt: number): number {
-    const delay = RETRY_CONFIG.baseDelay * Math.pow(2, attempt);
+    const delay = RETRY_CONFIG.baseDelay * 2 ** attempt;
     return Math.min(delay, RETRY_CONFIG.maxDelay);
   }
 
@@ -505,7 +519,7 @@ export class LTCGApiClient {
    */
   async getLobbies(mode?: string): Promise<Lobby[]> {
     const endpoint = mode
-      ? `${API_ENDPOINTS.MATCHMAKING_LOBBIES}?mode=${mode}`
+      ? `${API_ENDPOINTS.MATCHMAKING_LOBBIES}?mode=${encodeURIComponent(mode)}`
       : API_ENDPOINTS.MATCHMAKING_LOBBIES;
 
     const response = await this.request<{ lobbies: Lobby[]; count: number }>(endpoint, {

@@ -7,7 +7,8 @@
  * @module http/games
  */
 
-import { api, internal } from "../_generated/api";
+import { api } from "../_generated/api";
+import { internalAny } from "../lib/internalHelpers";
 import { type HttpActionCtx, authHttpAction } from "./middleware/auth";
 import {
   corsPreflightResponse,
@@ -42,8 +43,6 @@ import type {
 // biome-ignore lint/suspicious/noExplicitAny: Required to break TS2589 deep type instantiation
 // @ts-ignore TS2589: Type instantiation may be excessively deep in some configs
 const apiAny: any = api;
-// biome-ignore lint/suspicious/noExplicitAny: Required to break TS2589 deep type instantiation
-const internalAny: any = internal;
 
 // =============================================================================
 // Query Mapping
@@ -322,9 +321,7 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
       }
 
       // Can flip summon face-down monsters
-      const faceDownMonsters = myMonsters.filter(
-        (monster: FieldMonster) => monster && monster.isFaceDown
-      );
+      const faceDownMonsters = myMonsters.filter((monster: FieldMonster) => monster?.isFaceDown);
       if (faceDownMonsters.length > 0) {
         actions.push({
           action: "FLIP_SUMMON",
@@ -362,7 +359,7 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
 
     // Can activate traps anytime
     const setTraps = mySpellTraps.filter(
-      (card: FieldSpellTrap) => card && card.isFaceDown && card.cardType === "trap"
+      (card: FieldSpellTrap) => card?.isFaceDown && card.cardType === "trap"
     );
     if (setTraps.length > 0) {
       actions.push({
@@ -372,7 +369,7 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
     }
 
     // Chain response
-    if (state.chainState && state.chainState.waitingForResponse) {
+    if (state.chainState?.waitingForResponse) {
       actions.push({
         action: "CHAIN_RESPONSE",
         description: "Respond to chain",
@@ -991,22 +988,21 @@ export const chainResponse = authHttpAction(async (ctx, request, _auth) => {
         priorityHolder: result.priorityHolder,
         chainResolved: result.chainResolved || false,
       });
-    } else {
-      // Respond with a card (Quick-Play Spell or Trap)
-      if (!body.cardId) {
-        return errorResponse("MISSING_CARD_ID", "cardId is required when pass is false", 400);
-      }
-
-      // For simplicity, agents should use activate-spell or activate-trap endpoints
-      return errorResponse(
-        "USE_ACTIVATE_ENDPOINT",
-        "Use activate-spell or activate-trap endpoint to respond to chain",
-        400,
-        {
-          hint: "Set pass=true to decline response, or use activate-trap endpoint",
-        }
-      );
     }
+    // Respond with a card (Quick-Play Spell or Trap)
+    if (!body.cardId) {
+      return errorResponse("MISSING_CARD_ID", "cardId is required when pass is false", 400);
+    }
+
+    // For simplicity, agents should use activate-spell or activate-trap endpoints
+    return errorResponse(
+      "USE_ACTIVATE_ENDPOINT",
+      "Use activate-spell or activate-trap endpoint to respond to chain",
+      400,
+      {
+        hint: "Set pass=true to decline response, or use activate-trap endpoint",
+      }
+    );
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("NO_CHAIN")) {

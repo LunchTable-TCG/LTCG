@@ -19,7 +19,7 @@ interface DeckListProps {
   onSelectDeck: (deckId: string) => void;
   onCreateDeck: (name: string) => Promise<void>;
   onSetActiveDeck: (deckId: string) => Promise<void>;
-  onDeleteDeck: (deckId: string) => Promise<void>;
+  onDeleteDeck: (deckId: string) => void;
 }
 
 export function DeckList({

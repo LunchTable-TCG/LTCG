@@ -34,7 +34,7 @@ export const ggAction: Action = {
 
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for GG validation");
@@ -73,7 +73,7 @@ export const ggAction: Action = {
 
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
         throw new Error("Failed to get game state");
@@ -106,7 +106,7 @@ ${getGGGuidance(outcome)}
 Your message (just the message, no quotes or labels):`;
 
       // Generate GG message using LLM
-      const ggMessage = await runtime.useModel(ModelType.TEXT_GENERATION, {
+      const ggMessage = await runtime.useModel(ModelType.TEXT_SMALL, {
         prompt,
         temperature: 0.7, // Moderate temperature for consistent sportsmanship
         maxTokens: 100,
@@ -254,28 +254,26 @@ function getGGGuidance(outcome: GameOutcome) {
 - "GG! That was intense! You had me worried there."
 - "Great match! That could have gone either way."
 - "GG! You really pushed me to my limits."`;
-    } else {
-      return `You won decisively. Be humble and gracious. Examples:
+    }
+    return `You won decisively. Be humble and gracious. Examples:
 - "GG! Well played, thanks for the match."
 - "Good game! You put up a good fight."
 - "GG! That was fun, thanks for playing."`;
-    }
-  } else if (outcome.result === "LOST") {
+  }
+  if (outcome.result === "LOST") {
     if (outcome.wasClose) {
       return `You lost a close game. Show respect and determination. Examples:
 - "GG! So close! Next time I'll get you."
 - "Great game! That was really close."
 - "GG! You just barely edged me out there."`;
-    } else {
-      return `You lost decisively. Be gracious in defeat. Examples:
+    }
+    return `You lost decisively. Be gracious in defeat. Examples:
 - "GG! You got me this time. Well played!"
 - "Good game! Your strategy was solid."
 - "GG! Nice win, I'll come back stronger."`;
-    }
-  } else {
-    return `Unclear outcome. Be friendly and sportsmanlike. Examples:
+  }
+  return `Unclear outcome. Be friendly and sportsmanlike. Examples:
 - "GG! Thanks for the game!"
 - "Good match! That was fun."
 - "GG! Enjoyed playing with you."`;
-  }
 }

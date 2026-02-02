@@ -30,7 +30,7 @@ export const flipSummonAction: Action = {
     try {
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for flip summon validation");
@@ -77,7 +77,7 @@ export const flipSummonAction: Action = {
 
       // Get game state and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
+      const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
       const boardAnalysis = boardAnalysisResult.data;
@@ -127,7 +127,7 @@ Game State:
 - Your LP: ${gameState.hostPlayer.lifePoints}
 - Opponent LP: ${gameState.opponentPlayer.lifePoints}
 - Current Phase: ${gameState.phase}
-- Board Advantage: ${boardAnalysis?.['advantage'] || "UNKNOWN"}
+- Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
 - Opponent's Strongest ATK: ${opponentStrongestAtk}
 - Opponent Monsters: ${opponentMonsters.length}
 - Opponent Backrow: ${gameState.opponentPlayer.spellTrapZone.length} (may have traps)
@@ -147,7 +147,7 @@ Consider:
 
 Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>" }`;
 
-      const decision = await runtime.useModel(ModelType.TEXT_GENERATION, {
+      const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
         prompt,
         temperature: 0.7,
         maxTokens: 250,
