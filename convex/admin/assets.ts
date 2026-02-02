@@ -287,6 +287,115 @@ export const updateAsset = mutation({
 });
 
 /**
+ * Sync blob assets to Convex metadata
+ * Imports blob assets that don't have metadata entries yet
+ * Requires admin role
+ */
+export const syncBlobAssets = mutation({
+  args: {
+    blobs: v.array(
+      v.object({
+        url: v.string(),
+        pathname: v.string(),
+        size: v.number(),
+        uploadedAt: v.string(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
+
+    let synced = 0;
+    let skipped = 0;
+
+    for (const blob of args.blobs) {
+      // Check if we already have metadata for this blob
+      const existing = await ctx.db
+        .query("fileMetadata")
+        .withIndex("by_blob_pathname", (q) => q.eq("blobPathname", blob.pathname))
+        .first();
+
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
+      // Determine category based on pathname
+      let category: AssetCategory = "other";
+      const pathLower = blob.pathname.toLowerCase();
+
+      if (pathLower.startsWith("backgrounds/") || pathLower.includes("-bg.")) {
+        category = "background";
+      } else if (pathLower.startsWith("textures/") || pathLower.includes("parchment") || pathLower.includes("leather")) {
+        category = "texture";
+      } else if (pathLower.startsWith("ui/") || pathLower.includes("button") || pathLower.includes("panel") || pathLower.includes("frame")) {
+        category = "ui_element";
+      } else if (pathLower.startsWith("shop/") || pathLower.includes("pack") || pathLower.includes("box")) {
+        category = "shop_asset";
+      } else if (pathLower.startsWith("story/")) {
+        category = "story_asset";
+      } else if (pathLower.includes("logo")) {
+        category = "logo";
+      } else if (pathLower.startsWith("cards/") || pathLower.includes("card")) {
+        category = "card_image";
+      }
+
+      // Determine content type from extension
+      const ext = blob.pathname.substring(blob.pathname.lastIndexOf(".")).toLowerCase();
+      const contentTypeMap: Record<string, string> = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".svg": "image/svg+xml",
+        ".mp4": "video/mp4",
+        ".webm": "video/webm",
+        ".mp3": "audio/mpeg",
+        ".wav": "audio/wav",
+        ".pdf": "application/pdf",
+      };
+      const contentType = contentTypeMap[ext] || "application/octet-stream";
+
+      // Extract filename from pathname
+      const fileName = blob.pathname.includes("/")
+        ? blob.pathname.substring(blob.pathname.lastIndexOf("/") + 1)
+        : blob.pathname;
+
+      // Create metadata entry
+      await ctx.db.insert("fileMetadata", {
+        userId,
+        storageId: blob.pathname,
+        fileName,
+        contentType,
+        size: blob.size,
+        category,
+        blobUrl: blob.url,
+        blobPathname: blob.pathname,
+        uploadedAt: new Date(blob.uploadedAt).getTime(),
+      });
+
+      synced++;
+    }
+
+    // Audit log
+    await scheduleAuditLog(ctx, {
+      adminId: userId,
+      action: "sync_blob_assets",
+      metadata: {
+        totalBlobs: args.blobs.length,
+        synced,
+        skipped,
+      },
+      success: true,
+    });
+
+    return { synced, skipped, total: args.blobs.length };
+  },
+});
+
+/**
  * Delete asset metadata
  * Note: The actual blob deletion happens via the web app API
  * Requires admin role

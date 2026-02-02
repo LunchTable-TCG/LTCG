@@ -37,9 +37,16 @@ import {
 } from "@/components/ui/select";
 import { RoleGuard } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import { Loader2Icon, SearchIcon, UploadIcon } from "lucide-react";
+import { Loader2Icon, RefreshCwIcon, SearchIcon, UploadIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+
+interface BlobAsset {
+  url: string;
+  pathname: string;
+  size: number;
+  uploadedAt: string;
+}
 
 // Web app URL for API calls
 const WEB_APP_URL = process.env["NEXT_PUBLIC_WEB_APP_URL"] || "http://localhost:3000";
@@ -67,6 +74,47 @@ export default function AssetsPage() {
   const saveAssetMetadata = useConvexMutation(apiAny.admin.assets.saveAssetMetadata);
   const updateAsset = useConvexMutation(apiAny.admin.assets.updateAsset);
   const deleteAssetMetadata = useConvexMutation(apiAny.admin.assets.deleteAssetMetadata);
+  const syncBlobAssets = useConvexMutation(apiAny.admin.assets.syncBlobAssets);
+
+  // Sync state
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Sync handler - fetches blobs from Vercel and syncs to Convex
+  const handleSync = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      // Fetch all blobs from Vercel
+      const response = await fetch(`${WEB_APP_URL}/api/admin/upload`, {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch blobs from storage");
+      }
+
+      const data = await response.json();
+      const blobs: BlobAsset[] = data.blobs || [];
+
+      if (blobs.length === 0) {
+        toast.info("No assets found in blob storage");
+        return;
+      }
+
+      // Sync to Convex
+      const result = await syncBlobAssets({ blobs });
+
+      if (result.synced > 0) {
+        toast.success(`Synced ${result.synced} new assets (${result.skipped} already existed)`);
+      } else {
+        toast.info(`All ${result.skipped} assets already synced`);
+      }
+    } catch (error) {
+      console.error("Sync error:", error);
+      toast.error("Failed to sync assets from blob storage");
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [syncBlobAssets]);
 
   // Handlers
   const handleUploadComplete = useCallback(
@@ -190,10 +238,20 @@ export default function AssetsPage() {
         title="Assets"
         description="Upload and manage Vercel Blob assets"
         actions={
-          <Button onClick={() => setUploadDialogOpen(true)}>
-            <UploadIcon className="mr-2 h-4 w-4" />
-            Upload
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
+              {isSyncing ? (
+                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCwIcon className="mr-2 h-4 w-4" />
+              )}
+              {isSyncing ? "Syncing..." : "Sync from Blob"}
+            </Button>
+            <Button onClick={() => setUploadDialogOpen(true)}>
+              <UploadIcon className="mr-2 h-4 w-4" />
+              Upload
+            </Button>
+          </div>
         }
       >
         {/* Stats */}

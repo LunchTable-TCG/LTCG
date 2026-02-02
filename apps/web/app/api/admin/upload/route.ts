@@ -6,7 +6,7 @@
  */
 
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { del } from "@vercel/blob";
+import { del, list } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
 // Allowed content types for admin uploads
@@ -86,6 +86,54 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Upload failed" },
       { status: 400 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/admin/upload
+ *
+ * Deletes a file from Vercel Blob storage.
+ * Called before removing metadata from Convex.
+ */
+/**
+ * GET /api/admin/upload
+ *
+ * Lists all files in Vercel Blob storage.
+ * Used for syncing blob assets to Convex metadata.
+ */
+export async function GET(): Promise<NextResponse> {
+  try {
+    const allBlobs: Array<{
+      url: string;
+      pathname: string;
+      size: number;
+      uploadedAt: string;
+    }> = [];
+
+    let cursor: string | undefined;
+
+    // Paginate through all blobs
+    do {
+      const result = await list({ cursor, limit: 1000 });
+      allBlobs.push(...result.blobs.map(blob => ({
+        url: blob.url,
+        pathname: blob.pathname,
+        size: blob.size,
+        uploadedAt: blob.uploadedAt.toISOString(),
+      })));
+      cursor = result.hasMore ? result.cursor : undefined;
+    } while (cursor);
+
+    return NextResponse.json({
+      blobs: allBlobs,
+      count: allBlobs.length,
+    });
+  } catch (error) {
+    console.error("List blobs error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to list blobs" },
+      { status: 500 }
     );
   }
 }
