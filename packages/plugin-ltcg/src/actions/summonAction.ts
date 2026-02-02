@@ -61,7 +61,7 @@ export const summonAction: Action = {
       // Check for summonable monsters
       const monstersOnField = gameState.hostPlayer.monsterZone.length;
       const summonableMonsters = hand.filter((card) => {
-        if (card.type !== 'monster') return false;
+        if (card.type !== 'creature') return false;
 
         const level = card.level || 0;
 
@@ -125,7 +125,7 @@ export const summonAction: Action = {
       // Get summonable monsters
       const monstersOnField = gameState.hostPlayer.monsterZone;
       const summonableMonsters = hand.filter((card) => {
-        if (card.type !== 'monster') return false;
+        if (card.type !== 'creature') return false;
 
         const level = card.level || 0;
 

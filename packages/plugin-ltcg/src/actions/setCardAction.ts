@@ -57,7 +57,7 @@ export const setCardAction: Action = {
       const spellTrapZoneFull = gameState.hostPlayer.spellTrapZone.length >= 5;
 
       const settableCards = hand.filter((card) => {
-        if (card.type === 'monster' && !monsterZoneFull) return true;
+        if (card.type === 'creature' && !monsterZoneFull) return true;
         if ((card.type === 'spell' || card.type === 'trap') && !spellTrapZoneFull) return true;
         return false;
       });
@@ -114,7 +114,7 @@ export const setCardAction: Action = {
       const spellTrapZoneFull = gameState.hostPlayer.spellTrapZone.length >= 5;
 
       const settableCards = hand.filter((card) => {
-        if (card.type === 'monster' && !monsterZoneFull) return true;
+        if (card.type === 'creature' && !monsterZoneFull) return true;
         if ((card.type === 'spell' || card.type === 'trap') && !spellTrapZoneFull) return true;
         return false;
       });
@@ -125,7 +125,7 @@ export const setCardAction: Action = {
         .map(
           (card, idx) => {
             const cardTypeName: string = card.cardType || card.type || 'unknown';
-            const isCreature = cardTypeName === 'creature' || cardTypeName === 'monster';
+            const isCreature = cardTypeName === 'creature' || cardTypeName === 'creature';
             return `${idx + 1}. ${card.name} (${cardTypeName.toUpperCase()})${
               isCreature ? ` - ${card.defense ?? card.def ?? 0} DEF` : ''
             }${card.description ? ` - ${card.description.substring(0, 100)}` : ''}`;
@@ -171,7 +171,7 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
 
       // Determine zone based on card type (use cardType, fall back to type)
       const cardTypeName: string = selectedCard.cardType || selectedCard.type || 'unknown';
-      const isCreature = cardTypeName === 'creature' || cardTypeName === 'monster';
+      const isCreature = cardTypeName === 'creature' || cardTypeName === 'creature';
       const zone = isCreature ? 'monster' : 'spellTrap';
 
       // Make API call
@@ -188,7 +188,7 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
         text: responseText,
         actions: ['SET_CARD'],
         source: message.content.source,
-        thought: `Setting ${selectedCard.name} face-down in ${zone} zone to ${selectedCard.type === 'monster' ? 'protect LP with defense' : 'prepare reactive play for future turns'}`,
+        thought: `Setting ${selectedCard.name} face-down in ${zone} zone to ${selectedCard.type === 'creature' ? 'protect LP with defense' : 'prepare reactive play for future turns'}`,
       } as Content);
 
       return {

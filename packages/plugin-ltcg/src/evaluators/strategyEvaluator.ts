@@ -314,7 +314,7 @@ function evaluateSummon(
 
   const monsterToSummon = hand[handIndex];
 
-  if (!monsterToSummon || monsterToSummon.type !== 'monster') {
+  if (!monsterToSummon || monsterToSummon.type !== 'creature') {
     return {
       quality: 'TERRIBLE',
       risk: 'CRITICAL',
@@ -325,7 +325,7 @@ function evaluateSummon(
   }
 
   // Check if summoning weak monster when stronger one available
-  const monstersInHand = hand.filter((card) => card.type === 'monster');
+  const monstersInHand = hand.filter((card) => card.type === 'creature');
   const strongestInHand = monstersInHand.reduce((strongest, monster) => {
     return (monster.atk || 0) > (strongest.atk || 0) ? monster : strongest;
   }, monsterToSummon);
@@ -400,7 +400,7 @@ function evaluateEndTurn(
 ): StrategicEvaluation {
   // Check if ending turn without using resources
   const hand = gameState.hand;
-  const monstersInHand = hand.filter((card) => card.type === 'monster' && (card.level || 4) <= 4);
+  const monstersInHand = hand.filter((card) => card.type === 'creature' && (card.level || 4) <= 4);
   const hasNormalSummoned = gameState.hasNormalSummoned;
 
   // If can summon but haven't and board is empty - questionable

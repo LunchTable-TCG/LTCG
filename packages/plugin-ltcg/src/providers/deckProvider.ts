@@ -54,11 +54,12 @@ export const deckProvider: Provider = {
         : decks[0];
 
       // Analyze deck composition
-      const monsters = currentDeck.cards.filter(c => c.type === 'monster');
+      const monsters = currentDeck.cards.filter(c => c.type === 'creature');
       const spells = currentDeck.cards.filter(c => c.type === 'spell');
       const traps = currentDeck.cards.filter(c => c.type === 'trap');
+      const equipment = currentDeck.cards.filter(c => c.type === 'equipment');
 
-      // Group monsters by level
+      // Group creatures by level
       const monstersByLevel: Record<number, CardDefinition[]> = {};
       for (const monster of monsters) {
         const level = monster.level || 0;

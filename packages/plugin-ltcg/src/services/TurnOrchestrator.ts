@@ -292,7 +292,7 @@ export class TurnOrchestrator extends Service {
 
     const cards = hand.map((card: CardInHand, idx: number) => {
       const cardType = card.type;
-      if (cardType === 'monster') {
+      if (cardType === 'creature') {
         return `${idx}. ${card.name} (Monster, ATK:${card.atk ?? '?'}/DEF:${card.def ?? '?'}, Level:${card.level ?? '?'}) [handIndex: ${card.handIndex}]`;
       } else if (cardType === 'spell') {
         return `${idx}. ${card.name} (Spell) [handIndex: ${card.handIndex}]`;
@@ -676,7 +676,7 @@ Choose wisely!`;
     context: TurnContext
   ): Promise<boolean> {
     const hand = context.gameState.hand ?? [];
-    const monsters = hand.filter((c: CardInHand) => c.type === 'monster');
+    const monsters = hand.filter((c: CardInHand) => c.type === 'creature');
 
     if (monsters.length === 0) {
       logger.info('No monsters in hand to summon');
@@ -722,13 +722,13 @@ Choose wisely!`;
     let handIndex = decision.parameters?.handIndex as number | undefined;
     if (handIndex === undefined) {
       // Prefer setting spells/traps over monsters
-      const spellTraps = hand.filter((c: CardInHand) => c.type !== 'monster');
+      const spellTraps = hand.filter((c: CardInHand) => c.type !== 'creature');
       const toSet = spellTraps[0] ?? hand[0];
       handIndex = toSet.handIndex;
     }
 
     const card = hand.find((c: CardInHand) => c.handIndex === handIndex);
-    const zone = card?.type === 'monster' ? 'monster' : 'spellTrap';
+    const zone = card?.type === 'creature' ? 'monster' : 'spellTrap';
 
     try {
       await this.client!.setCard({

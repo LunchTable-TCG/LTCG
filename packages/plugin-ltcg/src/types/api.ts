@@ -154,7 +154,7 @@ export interface CardInHand {
   // Legacy fields for compatibility
   handIndex?: number;
   cardId?: string;
-  type?: 'monster' | 'spell' | 'trap';
+  type?: 'creature' | 'spell' | 'trap' | 'equipment';
   level?: number;
   atk?: number;
   def?: number;
@@ -205,7 +205,7 @@ export interface SpellTrapCard {
 export interface CardInGraveyard {
   cardId: string;
   name: string;
-  type: 'monster' | 'spell' | 'trap';
+  type: 'creature' | 'spell' | 'trap' | 'equipment';
 }
 
 // ============================================================================
@@ -351,7 +351,7 @@ export interface Deck {
 export interface CardDefinition {
   cardId: string;
   name: string;
-  type: 'monster' | 'spell' | 'trap';
+  type: 'creature' | 'spell' | 'trap' | 'equipment';
   level?: number;
   atk?: number;
   def?: number;

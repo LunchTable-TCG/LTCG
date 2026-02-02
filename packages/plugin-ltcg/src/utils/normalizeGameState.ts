@@ -42,8 +42,8 @@ function normalizeCardInHand(card: CardInHand, index: number): CardInHand {
     ...card,
     handIndex: index,
     cardId: card._id,
-    // Map cardType to legacy type
-    type: card.cardType === 'creature' ? 'monster' : (card.cardType as 'spell' | 'trap'),
+    // Pass through cardType to type field (both now use 'creature')
+    type: card.cardType,
     // Map new field names to legacy names
     level: card.cost,
     atk: card.attack,
