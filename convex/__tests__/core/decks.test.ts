@@ -21,21 +21,33 @@ const coreDecks = apiAny["core/decks"];
 // Helper to create test instance
 const createTestInstance = () => convexTest(schema, modules);
 
+// Helper to create user with privyId for authentication
+async function createTestUser(
+  t: ReturnType<typeof createTestInstance>,
+  email: string,
+  username: string
+) {
+  const privyId = `did:privy:test_${email.replace(/[^a-z0-9]/gi, "_")}`;
+  const userId = await t.run(async (ctx: MutationCtx) => {
+    return await ctx.db.insert("users", {
+      email,
+      username,
+      privyId,
+      createdAt: Date.now(),
+    });
+  });
+  return { userId, privyId };
+}
+
 describe("createDeck", () => {
   it("should create empty deck successfully", async () => {
     const t = createTestInstance();
 
     // Create test user first
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "deckbuilder",
-        email: "deck@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "deck@test.com", "deckbuilder");
 
-    // Set up authenticated context with the actual userId
-    const asUser = t.withIdentity({ subject: userId });
+    // Set up authenticated context with the privyId
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Use proper API call pattern
     const result = await asUser.mutation(coreDecks.createDeck, {
@@ -58,15 +70,9 @@ describe("createDeck", () => {
   it("should reject empty deck name", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "emptyname",
-        email: "empty@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "empty@test.com", "emptyname");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await expect(
       asUser.mutation(coreDecks.createDeck, {
@@ -78,15 +84,9 @@ describe("createDeck", () => {
   it("should reject deck name over 50 characters", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "longname",
-        email: "long@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "long@test.com", "longname");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await expect(
       asUser.mutation(coreDecks.createDeck, {
@@ -98,15 +98,9 @@ describe("createDeck", () => {
   it("should enforce 50 deck limit", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "manydeck",
-        email: "many@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "many@test.com", "manydeck");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Create 50 decks
     await t.run(async (ctx: MutationCtx) => {
@@ -134,15 +128,9 @@ describe("saveDeck", () => {
   it("should save deck with valid cards", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "saver",
-        email: "save@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "save@test.com", "saver");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Create 30 cards for minimum deck size
     const cardIds = await t.run(async (ctx: MutationCtx) => {
@@ -211,15 +199,9 @@ describe("saveDeck", () => {
   it("should reject deck under minimum size", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "smalldeck",
-        email: "small@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "small@test.com", "smalldeck");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const cardId = await t.run(async (ctx: MutationCtx) => {
       const cardDefId = await ctx.db.insert("cardDefinitions", {
@@ -272,15 +254,9 @@ describe("saveDeck", () => {
   it("should reject deck over maximum size", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "bigdeck",
-        email: "big@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "big@test.com", "bigdeck");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Create 21 different cards (21 * 3 = 63 cards, exceeds 60 max)
     const cardIds = await t.run(async (ctx: MutationCtx) => {
@@ -336,15 +312,9 @@ describe("saveDeck", () => {
   it("should reject card over max copies limit", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "copylimit",
-        email: "copy@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "copy@test.com", "copylimit");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const cardId = await t.run(async (ctx: MutationCtx) => {
       const cardDefId = await ctx.db.insert("cardDefinitions", {
@@ -397,15 +367,9 @@ describe("saveDeck", () => {
   it("should enforce legendary card limit of 1", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "legendary",
-        email: "legendary@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "legendary@test.com", "legendary");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const legendaryCardId = await t.run(async (ctx: MutationCtx) => {
       const cardDefId = await ctx.db.insert("cardDefinitions", {
@@ -458,15 +422,9 @@ describe("saveDeck", () => {
   it("should reject cards not owned by player", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "notowned",
-        email: "notowned@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "notowned@test.com", "notowned");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const cardId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("cardDefinitions", {
@@ -508,15 +466,9 @@ describe("saveDeck", () => {
   it("should auto-set as active deck if user has none", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "firstdeck",
-        email: "first@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "first@test.com", "firstdeck");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const cardIds = await t.run(async (ctx: MutationCtx) => {
       const ids = [];
@@ -577,15 +529,9 @@ describe("validateDeck", () => {
   it("should validate legal deck", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "validator",
-        email: "valid@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "valid@test.com", "validator");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const cardIds = await t.run(async (ctx: MutationCtx) => {
       const ids = [];
@@ -636,15 +582,9 @@ describe("validateDeck", () => {
   it("should detect deck under minimum size", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "smallvalidator",
-        email: "smallvalid@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "smallvalid@test.com", "smallvalidator");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const cardId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("cardDefinitions", {
@@ -687,15 +627,9 @@ describe("validateDeck", () => {
   it("should detect deck over maximum size", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "maxvalidator",
-        email: "maxvalid@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "maxvalid@test.com", "maxvalidator");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Create 21 different cards (21 * 3 = 63 cards, exceeds 60 max)
     const cardIds = await t.run(async (ctx: MutationCtx) => {
@@ -748,15 +682,9 @@ describe("validateDeck", () => {
   it("should detect too many copies", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "copychecker",
-        email: "copycheck@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "copycheck@test.com", "copychecker");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const cardId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("cardDefinitions", {
@@ -802,15 +730,9 @@ describe("deleteDeck", () => {
   it("should soft delete deck", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "deleter",
-        email: "delete@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "delete@test.com", "deleter");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const deckId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("userDecks", {
@@ -838,15 +760,9 @@ describe("duplicateDeck", () => {
   it("should duplicate deck with all cards", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "duplicator",
-        email: "duplicate@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "duplicate@test.com", "duplicator");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const cardIds = await t.run(async (ctx: MutationCtx) => {
       const ids = [];
@@ -920,15 +836,9 @@ describe("setActiveDeck", () => {
   it("should set deck as active", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "activesetter",
-        email: "active@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "active@test.com", "activesetter");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const cardIds = await t.run(async (ctx: MutationCtx) => {
       const ids = [];
@@ -983,15 +893,9 @@ describe("setActiveDeck", () => {
   it("should reject deck under minimum size", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "smallactive",
-        email: "smallactive@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "smallactive@test.com", "smallactive");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const cardId = await t.run(async (ctx: MutationCtx) => {
       return await ctx.db.insert("cardDefinitions", {
@@ -1033,15 +937,9 @@ describe("setActiveDeck", () => {
   it("should reject deck over maximum size", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "bigactive",
-        email: "bigactive@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "bigactive@test.com", "bigactive");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Create 21 different cards (21 * 3 = 63 cards, exceeds 60 max)
     const cardIds = await t.run(async (ctx: MutationCtx) => {

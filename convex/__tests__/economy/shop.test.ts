@@ -19,19 +19,31 @@ const economyShop: any = (api as any)["economy/shop"];
 // Helper to create test instance
 const createTestInstance = () => convexTest(schema, modules);
 
+// Helper to create user with privyId for authentication
+async function createTestUser(
+  t: ReturnType<typeof createTestInstance>,
+  email: string,
+  username: string
+) {
+  const privyId = `did:privy:test_${email.replace(/[^a-z0-9]/gi, "_")}`;
+  const userId = await t.run(async (ctx: MutationCtx) => {
+    return await ctx.db.insert("users", {
+      email,
+      username,
+      privyId,
+      createdAt: Date.now(),
+    });
+  });
+  return { userId, privyId };
+}
+
 describe("purchasePack", () => {
   it("should purchase pack with gold successfully", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "shoptest",
-        email: "shop@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "shop@test.com", "shoptest");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Create player currency
     await t.run(async (ctx: MutationCtx) => {
@@ -149,15 +161,9 @@ describe("purchasePack", () => {
   it("should purchase pack with gems successfully", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "gemtest",
-        email: "gem@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "gem@test.com", "gemtest");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {
@@ -271,15 +277,9 @@ describe("purchasePack", () => {
   it("should throw error for insufficient gold", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "poortest",
-        email: "poor@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "poor@test.com", "poortest");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {
@@ -323,15 +323,9 @@ describe("purchasePack", () => {
   it("should throw error for insufficient gems", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "nogems",
-        email: "nogems@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "nogems@test.com", "nogems");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {
@@ -375,15 +369,9 @@ describe("purchasePack", () => {
   it("should throw error for inactive product", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "inactivetest",
-        email: "inactive@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "inactive@test.com", "inactivetest");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {
@@ -427,15 +415,9 @@ describe("purchasePack", () => {
   it("should throw error for non-existent product", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "notfoundtest",
-        email: "notfound@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "notfound@test.com", "notfoundtest");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {
@@ -461,15 +443,9 @@ describe("purchasePack", () => {
   it("should throw error for wrong product type", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "wrongtype",
-        email: "wrongtype@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "wrongtype@test.com", "wrongtype");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {
@@ -512,15 +488,9 @@ describe("purchasePack", () => {
   it("should record pack opening history", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "historytest",
-        email: "history@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "history@test.com", "historytest");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {
@@ -635,15 +605,9 @@ describe("purchaseBox", () => {
   it("should purchase box with multiple packs", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "boxtest",
-        email: "box@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "box@test.com", "boxtest");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {
@@ -772,15 +736,9 @@ describe("purchaseBox", () => {
   it("should throw error for wrong product type on box purchase", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "wrongbox",
-        email: "wrongbox@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "wrongbox@test.com", "wrongbox");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {
@@ -826,15 +784,9 @@ describe("purchaseCurrencyBundle", () => {
   it("should convert gems to gold", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "currencytest",
-        email: "currency@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "currency@test.com", "currencytest");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {
@@ -888,15 +840,9 @@ describe("purchaseCurrencyBundle", () => {
   it("should throw error for wrong product type on currency purchase", async () => {
     const t = createTestInstance();
 
-    const userId = await t.run(async (ctx: MutationCtx) => {
-      return await ctx.db.insert("users", {
-        username: "wrongcurrency",
-        email: "wrongcurrency@test.com",
-        createdAt: Date.now(),
-      });
-    });
+    const { userId, privyId } = await createTestUser(t, "wrongcurrency@test.com", "wrongcurrency");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await t.run(async (ctx: MutationCtx) => {
       await ctx.db.insert("playerCurrency", {

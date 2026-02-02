@@ -32,6 +32,7 @@ import { createValidTestDeck } from "@convex/__tests__/fixtures/decks";
 describe("Invariant 1: Currency Never Negative", () => {
   let t: ReturnType<typeof convexTest>;
   let userId: Id<"users">;
+  let privyId: string;
 
   beforeEach(async () => {
     // Pass modules glob so convex-test can find _generated directory
@@ -39,11 +40,13 @@ describe("Invariant 1: Currency Never Negative", () => {
 
     // Create user with 100 gold
     const user = createTestUserWithGold(100);
+    privyId = `did:privy:test_${user.email.replace(/[^a-z0-9]/gi, "_")}`;
     userId = await t.run(async (ctx) => {
       const uid = await ctx.db.insert("users", {
         email: user.email,
         username: user.username,
         name: user.name,
+        privyId,
         rankedElo: 1000,
         casualRating: 1000,
         totalWins: 0,
@@ -109,7 +112,7 @@ describe("Invariant 1: Currency Never Negative", () => {
     });
 
     // Purchase pack (50 gold, should have 50 remaining)
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
     await asUser.mutation(api.economy.shop.purchasePack, {
       productId,
       useGems: false,
@@ -159,7 +162,7 @@ describe("Invariant 1: Currency Never Negative", () => {
       });
     });
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Attempt to purchase (should be rejected)
     await expect(
@@ -231,7 +234,7 @@ describe("Invariant 1: Currency Never Negative", () => {
       }
     });
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
     await asUser.mutation(api.economy.shop.purchasePack, {
       productId,
       useGems: true,
@@ -252,6 +255,7 @@ describe("Invariant 1: Currency Never Negative", () => {
 describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
   let t: ReturnType<typeof convexTest>;
   let userId: Id<"users">;
+  let privyId: string;
   let cardDefIds: Id<"cardDefinitions">[];
 
   beforeEach(async () => {
@@ -259,11 +263,13 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
     t = convexTest(schema, modules);
 
     const user = createTestUser();
+    privyId = `did:privy:test_${user.email.replace(/[^a-z0-9]/gi, "_")}`;
     userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
         email: user.email,
         username: user.username,
         name: user.name,
+        privyId,
         rankedElo: 1000,
         casualRating: 1000,
         totalWins: 0,
@@ -308,7 +314,7 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
 
 
   it("should allow creating deck with exactly 30 cards", async () => {
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Create deck
     const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
@@ -335,7 +341,7 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
   });
 
   it("should REJECT deck with fewer than 30 cards (negative test)", async () => {
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Invalid 20-Card Deck",
@@ -365,7 +371,7 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
   });
 
   it("should allow deck with more than 30 cards (no maximum)", async () => {
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Large 45-Card Deck",
@@ -392,6 +398,7 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
 describe("Invariant 3: Active Deck Exists Before Game", () => {
   let t: ReturnType<typeof convexTest>;
   let userId: Id<"users">;
+  let privyId: string;
   let deckId: Id<"userDecks">;
   let cardDefIds: Id<"cardDefinitions">[];
 
@@ -400,11 +407,13 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
     t = convexTest(schema, modules);
 
     const user = createTestUser();
+    privyId = `did:privy:test_${user.email.replace(/[^a-z0-9]/gi, "_")}`;
     userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
         email: user.email,
         username: user.username,
         name: user.name,
+        privyId,
         rankedElo: 1000,
         casualRating: 1000,
         totalWins: 0,
@@ -449,7 +458,7 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
 
 
   it("should allow setting valid 30-card deck as active", async () => {
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Create and populate deck
     const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
@@ -478,7 +487,7 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
   });
 
   it("should REJECT setting invalid deck as active (negative test)", async () => {
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Create deck but don't add cards
     const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
@@ -501,7 +510,7 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
   });
 
   it("should auto-set first valid deck as active", async () => {
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // User has no active deck initially
     const userBefore = await t.run(async (ctx) => {
@@ -533,6 +542,7 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
 describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
   let t: ReturnType<typeof convexTest>;
   let userId: Id<"users">;
+  let privyId: string;
   let cardDefIds: Id<"cardDefinitions">[];
 
   beforeEach(async () => {
@@ -540,11 +550,13 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
     t = convexTest(schema, modules);
 
     const user = createTestUser();
+    privyId = `did:privy:test_${user.email.replace(/[^a-z0-9]/gi, "_")}`;
     userId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
         email: user.email,
         username: user.username,
         name: user.name,
+        privyId,
         rankedElo: 1000,
         casualRating: 1000,
         totalWins: 0,
@@ -589,7 +601,7 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
 
 
   it("should maintain card definition references in deck cards", async () => {
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     // Create deck with cards
     const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
@@ -639,7 +651,7 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
       });
     });
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Invalid Deck",
@@ -665,7 +677,7 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
   });
 
   it("should handle deck deletion without orphaning deck cards", async () => {
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     const { deckId } = await asUser.mutation(api.core.decks.createDeck, {
       name: "Deck to Delete",

@@ -29,13 +29,16 @@ async function createUser(
   email: string,
   username: string
 ) {
-  return await t.run(async (ctx: MutationCtx) => {
+  const privyId = `did:privy:test_${email.replace(/[^a-z0-9]/gi, "_")}`;
+  const userId = await t.run(async (ctx: MutationCtx) => {
     return await ctx.db.insert("users", {
       email,
       username,
+      privyId,
       createdAt: Date.now(),
     });
   });
+  return { userId, privyId };
 }
 
 // Helper to create superadmin
@@ -44,23 +47,26 @@ async function createSuperadmin(
   email: string,
   username: string
 ) {
-  return await t.run(async (ctx: MutationCtx) => {
-    const userId = await ctx.db.insert("users", {
+  const privyId = `did:privy:test_${email.replace(/[^a-z0-9]/gi, "_")}`;
+  const userId = await t.run(async (ctx: MutationCtx) => {
+    const uid = await ctx.db.insert("users", {
       email,
       username,
+      privyId,
       createdAt: Date.now(),
     });
 
     await ctx.db.insert("adminRoles", {
-      userId,
+      userId: uid,
       role: "superadmin",
-      grantedBy: userId,
+      grantedBy: uid,
       grantedAt: Date.now(),
       isActive: true,
     });
 
-    return userId;
+    return uid;
   });
+  return { userId, privyId };
 }
 
 // Helper to create user with specific role
@@ -71,23 +77,26 @@ async function createUserWithRole(
   role: "moderator" | "admin" | "superadmin",
   grantedBy: Id<"users">
 ) {
-  return await t.run(async (ctx: MutationCtx) => {
-    const userId = await ctx.db.insert("users", {
+  const privyId = `did:privy:test_${email.replace(/[^a-z0-9]/gi, "_")}`;
+  const userId = await t.run(async (ctx: MutationCtx) => {
+    const uid = await ctx.db.insert("users", {
       email,
       username,
+      privyId,
       createdAt: Date.now(),
     });
 
     await ctx.db.insert("adminRoles", {
-      userId,
+      userId: uid,
       role,
       grantedBy,
       grantedAt: Date.now(),
       isActive: true,
     });
 
-    return userId;
+    return uid;
   });
+  return { userId, privyId };
 }
 
 // =============================================================================
@@ -98,8 +107,8 @@ describe("getSystemStats", () => {
   it("should return system stats for moderator", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const moderatorId = await createUserWithRole(
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -107,7 +116,7 @@ describe("getSystemStats", () => {
       superadminId
     );
 
-    const asModerator = t.withIdentity({ subject: moderatorId });
+    const asModerator = t.withIdentity({ subject: moderatorPrivyId });
     const stats = await asModerator.query(adminAdmin.getSystemStats, {});
 
     expect(stats).toBeDefined();
@@ -119,9 +128,9 @@ describe("getSystemStats", () => {
   it("should deny access to regular users", async () => {
     const t = createTestInstance();
 
-    const userId = await createUser(t, "user@test.com", "regularuser");
+    const { userId, privyId } = await createUser(t, "user@test.com", "regularuser");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await expect(asUser.query(adminAdmin.getSystemStats, {})).rejects.toThrowError(
       /moderator.*required|permission/i
@@ -137,10 +146,10 @@ describe("grantAdminRole", () => {
   it("should allow superadmin to grant admin role", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const targetUserId = await createUser(t, "target@test.com", "targetuser");
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: targetUserId, privyId: targetPrivyId } = await createUser(t, "target@test.com", "targetuser");
 
-    const asSuperadmin = t.withIdentity({ subject: superadminId });
+    const asSuperadmin = t.withIdentity({ subject: superadminPrivyId });
     const result = await asSuperadmin.mutation(adminAdmin.grantAdminRole, {
       userId: targetUserId,
       role: "admin",
@@ -164,11 +173,11 @@ describe("grantAdminRole", () => {
   it("should allow admin to grant moderator role", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
-    const targetUserId = await createUser(t, "target@test.com", "targetuser");
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
+    const { userId: targetUserId, privyId: targetPrivyId } = await createUser(t, "target@test.com", "targetuser");
 
-    const asAdmin = t.withIdentity({ subject: adminId });
+    const asAdmin = t.withIdentity({ subject: adminPrivyId });
     const result = await asAdmin.mutation(adminAdmin.grantAdminRole, {
       userId: targetUserId,
       role: "moderator",
@@ -180,11 +189,11 @@ describe("grantAdminRole", () => {
   it("should NOT allow admin to grant admin role (hierarchy enforcement)", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
-    const targetUserId = await createUser(t, "target@test.com", "targetuser");
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
+    const { userId: targetUserId, privyId: targetPrivyId } = await createUser(t, "target@test.com", "targetuser");
 
-    const asAdmin = t.withIdentity({ subject: adminId });
+    const asAdmin = t.withIdentity({ subject: adminPrivyId });
 
     await expect(
       asAdmin.mutation(adminAdmin.grantAdminRole, {
@@ -197,17 +206,17 @@ describe("grantAdminRole", () => {
   it("should NOT allow moderator to grant any role", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const moderatorId = await createUserWithRole(
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
       "moderator",
       superadminId
     );
-    const targetUserId = await createUser(t, "target@test.com", "targetuser");
+    const { userId: targetUserId, privyId: targetPrivyId } = await createUser(t, "target@test.com", "targetuser");
 
-    const asModerator = t.withIdentity({ subject: moderatorId });
+    const asModerator = t.withIdentity({ subject: moderatorPrivyId });
 
     await expect(
       asModerator.mutation(adminAdmin.grantAdminRole, {
@@ -220,10 +229,10 @@ describe("grantAdminRole", () => {
   it("should deny access to regular users", async () => {
     const t = createTestInstance();
 
-    const userId = await createUser(t, "user@test.com", "regularuser");
-    const targetUserId = await createUser(t, "target@test.com", "targetuser");
+    const { userId, privyId } = await createUser(t, "user@test.com", "regularuser");
+    const { userId: targetUserId, privyId: targetPrivyId } = await createUser(t, "target@test.com", "targetuser");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await expect(
       asUser.mutation(adminAdmin.grantAdminRole, {
@@ -242,10 +251,10 @@ describe("revokeAdminRole", () => {
   it("should allow superadmin to revoke admin role", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
 
-    const asSuperadmin = t.withIdentity({ subject: superadminId });
+    const asSuperadmin = t.withIdentity({ subject: superadminPrivyId });
     const result = await asSuperadmin.mutation(adminAdmin.revokeAdminRole, {
       userId: adminId,
     });
@@ -267,9 +276,9 @@ describe("revokeAdminRole", () => {
   it("should allow admin to revoke moderator role", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
-    const moderatorId = await createUserWithRole(
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
+    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -277,7 +286,7 @@ describe("revokeAdminRole", () => {
       adminId
     );
 
-    const asAdmin = t.withIdentity({ subject: adminId });
+    const asAdmin = t.withIdentity({ subject: adminPrivyId });
     const result = await asAdmin.mutation(adminAdmin.revokeAdminRole, {
       userId: moderatorId,
     });
@@ -288,9 +297,9 @@ describe("revokeAdminRole", () => {
   it("should NOT allow self-revocation (self-protection)", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
 
-    const asSuperadmin = t.withIdentity({ subject: superadminId });
+    const asSuperadmin = t.withIdentity({ subject: superadminPrivyId });
 
     // The error message is "Invalid input provided" from ErrorMessages[VALIDATION_INVALID_INPUT]
     await expect(
@@ -303,9 +312,9 @@ describe("revokeAdminRole", () => {
   it("should NOT allow admin to revoke admin role (hierarchy enforcement)", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
-    const otherAdminId = await createUserWithRole(
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
+    const { userId: otherAdminId, privyId: otherAdminPrivyId } = await createUserWithRole(
       t,
       "admin2@test.com",
       "admin2",
@@ -313,7 +322,7 @@ describe("revokeAdminRole", () => {
       superadminId
     );
 
-    const asAdmin = t.withIdentity({ subject: adminId });
+    const asAdmin = t.withIdentity({ subject: adminPrivyId });
 
     await expect(
       asAdmin.mutation(adminAdmin.revokeAdminRole, {
@@ -331,8 +340,8 @@ describe("getAuditLog", () => {
   it("should return audit logs for moderator", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const moderatorId = await createUserWithRole(
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -358,7 +367,7 @@ describe("getAuditLog", () => {
       });
     });
 
-    const asModerator = t.withIdentity({ subject: moderatorId });
+    const asModerator = t.withIdentity({ subject: moderatorPrivyId });
     const result = await asModerator.query(adminAdmin.getAuditLog, {
       limit: 10,
     });
@@ -371,7 +380,7 @@ describe("getAuditLog", () => {
   it("should filter audit logs by action", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
 
     // Create audit log entries with different actions
     await t.run(async (ctx: MutationCtx) => {
@@ -395,7 +404,7 @@ describe("getAuditLog", () => {
       });
     });
 
-    const asSuperadmin = t.withIdentity({ subject: superadminId });
+    const asSuperadmin = t.withIdentity({ subject: superadminPrivyId });
     const result = await asSuperadmin.query(adminAdmin.getAuditLog, {
       limit: 10,
       action: "grant_role",
@@ -407,7 +416,7 @@ describe("getAuditLog", () => {
   it("should support pagination with cursor", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
 
     // Create many audit log entries
     await t.run(async (ctx: MutationCtx) => {
@@ -421,7 +430,7 @@ describe("getAuditLog", () => {
       }
     });
 
-    const asSuperadmin = t.withIdentity({ subject: superadminId });
+    const asSuperadmin = t.withIdentity({ subject: superadminPrivyId });
 
     // First page
     const page1 = await asSuperadmin.query(adminAdmin.getAuditLog, {
@@ -448,9 +457,9 @@ describe("getAuditLog", () => {
   it("should deny access to regular users", async () => {
     const t = createTestInstance();
 
-    const userId = await createUser(t, "user@test.com", "regularuser");
+    const { userId, privyId } = await createUser(t, "user@test.com", "regularuser");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await expect(asUser.query(adminAdmin.getAuditLog, { limit: 10 })).rejects.toThrowError(
       /moderator.*required|permission/i
@@ -466,8 +475,8 @@ describe("deleteUserByEmail", () => {
   it("should allow admin to delete user by email", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
 
     // Create user to delete (without auth session - that's managed by Convex Auth)
     const targetUserId = await t.run(async (ctx: MutationCtx) => {
@@ -478,7 +487,7 @@ describe("deleteUserByEmail", () => {
       });
     });
 
-    const asAdmin = t.withIdentity({ subject: adminId });
+    const asAdmin = t.withIdentity({ subject: adminPrivyId });
     const result = await asAdmin.mutation(adminMutations.deleteUserByEmail, {
       email: "todelete@test.com",
     });
@@ -496,10 +505,10 @@ describe("deleteUserByEmail", () => {
   it("should return error for non-existent email", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
 
-    const asAdmin = t.withIdentity({ subject: adminId });
+    const asAdmin = t.withIdentity({ subject: adminPrivyId });
     const result = await asAdmin.mutation(adminMutations.deleteUserByEmail, {
       email: "nonexistent@test.com",
     });
@@ -511,8 +520,8 @@ describe("deleteUserByEmail", () => {
   it("should deny access to moderators", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const moderatorId = await createUserWithRole(
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -520,7 +529,7 @@ describe("deleteUserByEmail", () => {
       superadminId
     );
 
-    const asModerator = t.withIdentity({ subject: moderatorId });
+    const asModerator = t.withIdentity({ subject: moderatorPrivyId });
 
     await expect(
       asModerator.mutation(adminMutations.deleteUserByEmail, {
@@ -538,7 +547,7 @@ describe("deleteTestUsers", () => {
   it("should allow superadmin to delete test users", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
 
     // Create test users
     await t.run(async (ctx: MutationCtx) => {
@@ -560,7 +569,7 @@ describe("deleteTestUsers", () => {
       });
     });
 
-    const asSuperadmin = t.withIdentity({ subject: superadminId });
+    const asSuperadmin = t.withIdentity({ subject: superadminPrivyId });
     const result = await asSuperadmin.mutation(adminMutations.deleteTestUsers, {});
 
     expect(result.success).toBe(true);
@@ -586,10 +595,10 @@ describe("deleteTestUsers", () => {
   it("should deny access to admin (requires superadmin)", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
 
-    const asAdmin = t.withIdentity({ subject: adminId });
+    const asAdmin = t.withIdentity({ subject: adminPrivyId });
 
     await expect(asAdmin.mutation(adminMutations.deleteTestUsers, {})).rejects.toThrowError(
       /superadmin.*required|permission/i
@@ -605,9 +614,9 @@ describe("getMyAdminRole", () => {
   it("should return null for regular user", async () => {
     const t = createTestInstance();
 
-    const userId = await createUser(t, "user@test.com", "regularuser");
+    const { userId, privyId } = await createUser(t, "user@test.com", "regularuser");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
     const result = await asUser.query(adminAdmin.getMyAdminRole, {});
 
     expect(result).toBeNull();
@@ -616,8 +625,8 @@ describe("getMyAdminRole", () => {
   it("should return role info for moderator", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const moderatorId = await createUserWithRole(
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -625,7 +634,7 @@ describe("getMyAdminRole", () => {
       superadminId
     );
 
-    const asModerator = t.withIdentity({ subject: moderatorId });
+    const asModerator = t.withIdentity({ subject: moderatorPrivyId });
     const result = await asModerator.query(adminAdmin.getMyAdminRole, {});
 
     expect(result).toBeTruthy();
@@ -638,10 +647,10 @@ describe("getMyAdminRole", () => {
   it("should return role info for admin", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
 
-    const asAdmin = t.withIdentity({ subject: adminId });
+    const asAdmin = t.withIdentity({ subject: adminPrivyId });
     const result = await asAdmin.query(adminAdmin.getMyAdminRole, {});
 
     expect(result).toBeTruthy();
@@ -654,9 +663,9 @@ describe("getMyAdminRole", () => {
   it("should return role info for superadmin", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
 
-    const asSuperadmin = t.withIdentity({ subject: superadminId });
+    const asSuperadmin = t.withIdentity({ subject: superadminPrivyId });
     const result = await asSuperadmin.query(adminAdmin.getMyAdminRole, {});
 
     expect(result).toBeTruthy();
@@ -675,9 +684,9 @@ describe("listAdmins", () => {
   it("should list all admins for moderator", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
     await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
-    const moderatorId = await createUserWithRole(
+    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -685,7 +694,7 @@ describe("listAdmins", () => {
       superadminId
     );
 
-    const asModerator = t.withIdentity({ subject: moderatorId });
+    const asModerator = t.withIdentity({ subject: moderatorPrivyId });
     const admins = await asModerator.query(adminAdmin.listAdmins, {});
 
     expect(admins.length).toBeGreaterThanOrEqual(3);
@@ -694,11 +703,11 @@ describe("listAdmins", () => {
   it("should filter admins by role", async () => {
     const t = createTestInstance();
 
-    const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
+    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(t, "superadmin@test.com", "superadmin");
     await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
     await createUserWithRole(t, "moderator@test.com", "moderator", "moderator", superadminId);
 
-    const asSuperadmin = t.withIdentity({ subject: superadminId });
+    const asSuperadmin = t.withIdentity({ subject: superadminPrivyId });
     const adminsOnly = await asSuperadmin.query(adminAdmin.listAdmins, {
       role: "admin",
     });
@@ -709,9 +718,9 @@ describe("listAdmins", () => {
   it("should deny access to regular users", async () => {
     const t = createTestInstance();
 
-    const userId = await createUser(t, "user@test.com", "regularuser");
+    const { userId, privyId } = await createUser(t, "user@test.com", "regularuser");
 
-    const asUser = t.withIdentity({ subject: userId });
+    const asUser = t.withIdentity({ subject: privyId });
 
     await expect(asUser.query(adminAdmin.listAdmins, {})).rejects.toThrowError(
       /moderator.*required|permission/i

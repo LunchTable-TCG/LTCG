@@ -26,15 +26,18 @@ async function createUserWithCurrency(
   t: ReturnType<typeof createTestInstance>,
   opts: { username: string; gold?: number; gems?: number }
 ) {
-  return await t.run(async (ctx: MutationCtx) => {
-    const userId = await ctx.db.insert("users", {
+  const email = `${opts.username}@test.com`;
+  const privyId = `did:privy:test_${email.replace(/[^a-z0-9]/gi, "_")}`;
+  const userId = await t.run(async (ctx: MutationCtx) => {
+    const uid = await ctx.db.insert("users", {
       username: opts.username,
-      email: `${opts.username}@test.com`,
+      email,
+      privyId,
       createdAt: Date.now(),
     });
 
     await ctx.db.insert("playerCurrency", {
-      userId,
+      userId: uid,
       gold: opts.gold ?? 1000,
       gems: opts.gems ?? 100,
       lifetimeGoldEarned: 0,
@@ -44,8 +47,9 @@ async function createUserWithCurrency(
       lastUpdatedAt: Date.now(),
     });
 
-    return userId;
+    return uid;
   });
+  return { userId, privyId };
 }
 
 // Helper to create test card
@@ -107,7 +111,7 @@ describe("getMarketplaceListings", () => {
   it("should return active listings with card info", async () => {
     const t = createTestInstance();
 
-    const sellerId = await createUserWithCurrency(t, { username: "listseller", gold: 1000 });
+    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, { username: "listseller", gold: 1000 });
     const cardId = await createTestCard(t, { name: "List Card" });
 
     // Create listings directly in database
@@ -146,7 +150,7 @@ describe("getMarketplaceListings", () => {
   it("should filter by listing type", async () => {
     const t = createTestInstance();
 
-    const sellerId = await createUserWithCurrency(t, { username: "typeseller", gold: 1000 });
+    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, { username: "typeseller", gold: 1000 });
     const cardId = await createTestCard(t, { name: "Type Card" });
 
     // Create fixed listing
@@ -184,7 +188,7 @@ describe("getMarketplaceListings", () => {
   it("should not return cancelled or sold listings", async () => {
     const t = createTestInstance();
 
-    const sellerId = await createUserWithCurrency(t, { username: "statusseller", gold: 1000 });
+    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, { username: "statusseller", gold: 1000 });
     const cardId = await createTestCard(t, { name: "Status Card" });
 
     // Create active listing
@@ -239,7 +243,7 @@ describe("getMarketplaceListings", () => {
   it("should support page-based pagination", async () => {
     const t = createTestInstance();
 
-    const sellerId = await createUserWithCurrency(t, { username: "pagseller", gold: 1000 });
+    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, { username: "pagseller", gold: 1000 });
     const cardId = await createTestCard(t, { name: "Pagination Card" });
 
     // Create 5 listings
@@ -265,7 +269,7 @@ describe("getMarketplaceListings", () => {
   it("should filter by rarity", async () => {
     const t = createTestInstance();
 
-    const sellerId = await createUserWithCurrency(t, { username: "rarityseller", gold: 1000 });
+    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, { username: "rarityseller", gold: 1000 });
     const commonCard = await createTestCard(t, { name: "Common Card", rarity: "common" });
     const rareCard = await createTestCard(t, { name: "Rare Card", rarity: "rare" });
 
@@ -307,8 +311,8 @@ describe("getUserListings", () => {
   it("should return only user's own listings", async () => {
     const t = createTestInstance();
 
-    const seller1Id = await createUserWithCurrency(t, { username: "userlisting1", gold: 1000 });
-    const seller2Id = await createUserWithCurrency(t, { username: "userlisting2", gold: 1000 });
+    const { userId: seller1Id, privyId: seller1PrivyId } = await createUserWithCurrency(t, { username: "userlisting1", gold: 1000 });
+    const { userId: seller2Id, privyId: seller2PrivyId } = await createUserWithCurrency(t, { username: "userlisting2", gold: 1000 });
     const cardId = await createTestCard(t, { name: "User Listing Card" });
 
     // Create listings for seller1
@@ -337,8 +341,8 @@ describe("getUserListings", () => {
       price: 150,
     });
 
-    const asSeller1 = t.withIdentity({ subject: seller1Id });
-    const asSeller2 = t.withIdentity({ subject: seller2Id });
+    const asSeller1 = t.withIdentity({ subject: seller1PrivyId });
+    const asSeller2 = t.withIdentity({ subject: seller2PrivyId });
 
     const seller1Listings = await asSeller1.query(economyMarketplace.getUserListings, {});
     expect(seller1Listings.length).toBe(2);
@@ -350,7 +354,7 @@ describe("getUserListings", () => {
   it("should include all statuses for user's own listings", async () => {
     const t = createTestInstance();
 
-    const sellerId = await createUserWithCurrency(t, { username: "mystatuses", gold: 1000 });
+    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, { username: "mystatuses", gold: 1000 });
     const cardId = await createTestCard(t, { name: "My Status Card" });
 
     // Create listings with different statuses
@@ -394,7 +398,7 @@ describe("getUserListings", () => {
       });
     });
 
-    const asSeller = t.withIdentity({ subject: sellerId });
+    const asSeller = t.withIdentity({ subject: sellerPrivyId });
     const listings = await asSeller.query(economyMarketplace.getUserListings, {});
 
     // User should see all their listings regardless of status
@@ -410,8 +414,8 @@ describe("getAuctionBidHistory", () => {
   it("should return bid history for auction", async () => {
     const t = createTestInstance();
 
-    const sellerId = await createUserWithCurrency(t, { username: "auctionseller", gold: 1000 });
-    const bidderId = await createUserWithCurrency(t, { username: "bidder", gold: 5000 });
+    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, { username: "auctionseller", gold: 1000 });
+    const { userId: bidderId, privyId: bidderPrivyId } = await createUserWithCurrency(t, { username: "bidder", gold: 5000 });
     const cardId = await createTestCard(t, { name: "Auction Card" });
 
     const listingId = await createListingDirectly(t, {
@@ -455,8 +459,8 @@ describe("getAuctionBidHistory", () => {
   it("should order bids by time descending", async () => {
     const t = createTestInstance();
 
-    const sellerId = await createUserWithCurrency(t, { username: "orderseller", gold: 1000 });
-    const bidderId = await createUserWithCurrency(t, { username: "orderbidder", gold: 5000 });
+    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, { username: "orderseller", gold: 1000 });
+    const { userId: bidderId, privyId: bidderPrivyId } = await createUserWithCurrency(t, { username: "orderbidder", gold: 5000 });
     const cardId = await createTestCard(t, { name: "Order Card" });
 
     const listingId = await createListingDirectly(t, {
@@ -520,7 +524,7 @@ describe("Marketplace Validation", () => {
   it("should have required fields in listing schema", async () => {
     const t = createTestInstance();
 
-    const sellerId = await createUserWithCurrency(t, { username: "schematest", gold: 1000 });
+    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, { username: "schematest", gold: 1000 });
     const cardId = await createTestCard(t, { name: "Schema Card" });
 
     const listingId = await createListingDirectly(t, {
@@ -549,7 +553,7 @@ describe("Marketplace Validation", () => {
   it("should track auction-specific fields", async () => {
     const t = createTestInstance();
 
-    const sellerId = await createUserWithCurrency(t, { username: "auctionfields", gold: 1000 });
+    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, { username: "auctionfields", gold: 1000 });
     const cardId = await createTestCard(t, { name: "Auction Fields Card" });
     const endsAt = Date.now() + 24 * 60 * 60 * 1000;
 
