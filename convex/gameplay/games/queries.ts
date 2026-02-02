@@ -30,7 +30,7 @@ const RATING_DEFAULTS = {
  */
 export const listWaitingLobbies = query({
   args: {
-    mode: v.optional(v.union(v.literal("casual"), v.literal("ranked"), v.literal("all"))),
+    mode: v.optional(v.union(v.literal("casual"), v.literal("ranked"), v.literal("pvp"), v.literal("all"))),
     userRating: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -89,9 +89,12 @@ export const listWaitingLobbies = query({
  * @returns The user's active lobby or null
  */
 export const getActiveLobby = query({
-  args: {},
-  handler: async (ctx) => {
-    const { userId } = await requireAuthQuery(ctx);
+  args: {
+    userId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    // Use provided userId or get from auth context
+    const userId = args.userId ?? (await requireAuthQuery(ctx)).userId;
 
     // Find user's lobby where they are the host
     const lobby = await ctx.db
@@ -183,7 +186,7 @@ export const getMyPrivateLobby = query({
  */
 export const listActiveGames = query({
   args: {
-    mode: v.optional(v.union(v.literal("casual"), v.literal("ranked"), v.literal("all"))),
+    mode: v.optional(v.union(v.literal("casual"), v.literal("ranked"), v.literal("pvp"), v.literal("all"))),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { mode, limit = 50 }) => {
@@ -588,9 +591,11 @@ export const getAvailableActions = query({
 export const getGameStateForPlayer = query({
   args: {
     lobbyId: v.id("gameLobbies"),
+    userId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuthQuery(ctx);
+    // Use provided userId or get from auth context
+    const userId = args.userId ?? (await requireAuthQuery(ctx)).userId;
 
     // Get lobby
     const lobby = await ctx.db.get(args.lobbyId);

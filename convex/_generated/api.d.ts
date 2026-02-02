@@ -136,7 +136,6 @@ import type * as lib_xpHelpers from "../lib/xpHelpers.js";
 import type * as marketplace from "../marketplace.js";
 import type * as matchmaking from "../matchmaking.js";
 import type * as migrations_addLeaderboardFields from "../migrations/addLeaderboardFields.js";
-import type * as migrations_cardsData from "../migrations/cardsData.js";
 import type * as migrations_loadAllCards from "../migrations/loadAllCards.js";
 import type * as migrations_manualAbilities from "../migrations/manualAbilities.js";
 import type * as migrations_migrateAdminRoles from "../migrations/migrateAdminRoles.js";
@@ -311,7 +310,6 @@ declare const fullApi: ApiFromModules<{
   marketplace: typeof marketplace;
   matchmaking: typeof matchmaking;
   "migrations/addLeaderboardFields": typeof migrations_addLeaderboardFields;
-  "migrations/cardsData": typeof migrations_cardsData;
   "migrations/loadAllCards": typeof migrations_loadAllCards;
   "migrations/manualAbilities": typeof migrations_manualAbilities;
   "migrations/migrateAdminRoles": typeof migrations_migrateAdminRoles;

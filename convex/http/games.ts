@@ -55,45 +55,42 @@ export const pendingTurns = authHttpAction(async (ctx, request, auth) => {
 
   try {
     // Query all active game lobbies where user is a player
-    const getLobbyArgs = { userId: auth.userId };
-    const activeLobby: any = await runGameQuery(ctx, "gameplay.games.queries.getActiveLobby", getLobbyArgs);
+    const activeLobby: any = await runGameQuery(ctx, "gameplay.games.queries.getActiveLobby", { userId: auth.userId });
 
     if (!activeLobby) {
-      return successResponse({ games: [] });
+      return successResponse([]);
     }
 
     // Get game state to check whose turn it is
-    const getGameStateArgs = { lobbyId: activeLobby._id };
+    const getGameStateArgs = { lobbyId: activeLobby._id, userId: auth.userId };
     const gameState: any = await runGameQuery(ctx, "gameplay.games.queries.getGameStateForPlayer", getGameStateArgs);
 
     if (!gameState) {
-      return successResponse({ games: [] });
+      return successResponse([]);
     }
 
     // Check if it's the agent's turn
     const isMyTurn = gameState.currentTurnPlayerId === auth.userId;
 
     if (!isMyTurn) {
-      return successResponse({ games: [] });
+      return successResponse([]);
     }
 
     // Return game info with current phase
-    return successResponse({
-      games: [
-        {
-          gameId: activeLobby._id,
-          lobbyId: activeLobby._id,
-          currentPhase: gameState.currentPhase,
-          turnNumber: gameState.turnNumber,
-          opponent: {
-            username: gameState.isHost
-              ? activeLobby.opponentUsername
-              : activeLobby.hostUsername,
-          },
-          timeRemaining: null, // TODO: Calculate from timeout system
+    return successResponse([
+      {
+        gameId: gameState.gameId,
+        lobbyId: activeLobby._id,
+        currentPhase: gameState.currentPhase,
+        turnNumber: gameState.turnNumber,
+        opponent: {
+          username: gameState.isHost
+            ? activeLobby.opponentUsername
+            : activeLobby.hostUsername,
         },
-      ],
-    });
+        timeRemaining: null, // TODO: Calculate from timeout system
+      },
+    ]);
   } catch (error) {
     return errorResponse(
       "FETCH_PENDING_TURNS_FAILED",
