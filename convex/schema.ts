@@ -1271,7 +1271,19 @@ export default defineSchema({
     ),
     title: v.string(),
     message: v.string(),
-    data: v.optional(v.any()), // Flexible data field for type-specific info
+    /**
+     * v.any() USAGE: Notification data payload
+     *
+     * REASON: Different notification types have different data structures
+     * EXPECTED TYPES by notification type:
+     * - achievement_unlocked: { achievementId: string, achievementName: string }
+     * - level_up: { newLevel: number, xpGained: number }
+     * - quest_completed: { questId: string, reward: { gold?: number, xp?: number } }
+     * - badge_earned: { badgeId: string, badgeName: string }
+     *
+     * ALTERNATIVE: Define NotificationData discriminated union (recommended for v2)
+     */
+    data: v.optional(v.any()),
     isRead: v.boolean(),
     readAt: v.optional(v.number()),
     createdAt: v.number(),
