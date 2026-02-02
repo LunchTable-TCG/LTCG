@@ -130,6 +130,22 @@ export const sendFriendRequest = mutation({
       });
     }
 
+    // Send inbox notification to the friend
+    if (sender) {
+      await ctx.scheduler.runAfter(0, internal.social.inbox.createInboxMessage, {
+        userId: friend._id,
+        type: "friend_request" as const,
+        title: "Friend Request",
+        message: `${sender.username || sender.name || "Someone"} wants to be your friend!`,
+        data: {
+          requesterId: userId,
+          requesterUsername: sender.username || sender.name || "Player",
+        },
+        senderId: userId,
+        senderUsername: sender.username || sender.name,
+      });
+    }
+
     return { success: true, autoAccepted: false };
   },
 });

@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import { mutation } from "../_generated/server";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
@@ -96,6 +97,24 @@ export const sendChallenge = mutation({
       maxSpectators: 10,
       spectatorCount: 0,
       createdAt: now,
+    });
+
+    // Send inbox notification to challenged player
+    await ctx.scheduler.runAfter(0, internal.social.inbox.createInboxMessage, {
+      userId: opponent._id,
+      type: "challenge" as const,
+      title: "Game Challenge!",
+      message: `${user.username} has challenged you to a ${args.mode} match!`,
+      data: {
+        challengerId: user.userId,
+        challengerUsername: user.username,
+        lobbyId,
+        mode: args.mode,
+      },
+      senderId: user.userId,
+      senderUsername: user.username,
+      // Challenge expires in 24 hours
+      expiresAt: now + 24 * 60 * 60 * 1000,
     });
 
     return lobbyId;
