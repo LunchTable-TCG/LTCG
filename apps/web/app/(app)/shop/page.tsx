@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCurrency, useMarketplace, useProfile, useShop } from "@/hooks";
 import { cn } from "@/lib/utils";
+import { getAssetUrl } from "@/lib/blob";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -352,7 +353,7 @@ export default function ShopPage() {
       {/* Background */}
       <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/assets/backgrounds/shop-bg.png')" }}
+        style={{ backgroundImage: `url('${getAssetUrl("/assets/backgrounds/shop-bg.png")}')` }}
       />
       <div className="absolute inset-0 bg-black/60 z-0" />
       <div className="absolute inset-0 bg-vignette z-0" />
@@ -1008,7 +1009,7 @@ function ShopItemCard({ item, onPurchase }: { item: ShopItem; onPurchase: () => 
       <div className="aspect-square rounded-lg bg-linear-to-br from-[#d4af37]/10 to-transparent flex items-center justify-center mb-4 overflow-hidden">
         {item.type === "pack" && (
           <Image
-            src="/assets/shop/pack.png"
+            src={getAssetUrl("/assets/shop/pack.png")}
             alt="Booster Pack"
             width={200}
             height={200}
@@ -1017,7 +1018,7 @@ function ShopItemCard({ item, onPurchase }: { item: ShopItem; onPurchase: () => 
         )}
         {item.type === "box" && (
           <Image
-            src="/assets/shop/box.png"
+            src={getAssetUrl("/assets/shop/box.png")}
             alt="Booster Box"
             width={200}
             height={200}

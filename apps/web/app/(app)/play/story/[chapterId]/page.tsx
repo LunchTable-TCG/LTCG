@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
+import { getAssetUrl } from "@/lib/blob";
 import { api } from "@convex/_generated/api";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Gift, Loader2, Lock, Play, Star } from "lucide-react";
@@ -102,7 +103,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="absolute inset-0 z-0">
           <Image
-            src={`/assets/story/${assetName}.png`}
+            src={getAssetUrl(`/assets/story/${assetName}.png`)}
             alt="Chapter Background"
             fill
             className="object-cover opacity-30 blur-sm"
@@ -138,7 +139,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
       {/* Background Image */}
       <div className="absolute inset-0 z-0" data-testid="chapter-artwork">
         <Image
-          src={`/assets/story/${assetName}.png`}
+          src={getAssetUrl(`/assets/story/${assetName}.png`)}
           alt={chapter.title}
           fill
           className="object-cover opacity-40"

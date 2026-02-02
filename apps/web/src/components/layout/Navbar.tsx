@@ -7,6 +7,7 @@ import { WalletButton } from "@/components/wallet";
 import { useAuth, useLogout } from "@/hooks/auth/useConvexAuthHook";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
+import { getAssetUrl } from "@/lib/blob";
 import {
   BookOpen,
   ChevronRight,
@@ -126,7 +127,7 @@ export function Navbar() {
                   <div className="absolute inset-0 bg-primary/30 rounded-lg blur-lg opacity-50 group-hover:opacity-100 transition-opacity" />
                   <div className="relative w-10 h-10 flex items-center justify-center">
                     <Image
-                      src="/assets/logo-icon.png"
+                      src={getAssetUrl("/assets/logo-icon.png")}
                       alt="LT"
                       width={32}
                       height={32}
@@ -213,7 +214,7 @@ export function Navbar() {
             <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3">
               <div className="w-11 h-11 flex items-center justify-center">
                 <Image
-                  src="/assets/logo-icon.png"
+                  src={getAssetUrl("/assets/logo-icon.png")}
                   alt="LT"
                   width={36}
                   height={36}

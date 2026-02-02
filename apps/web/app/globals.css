@@ -140,7 +140,7 @@
   }
 
   .bg-parchment {
-    background-image: url("/assets/parchment-frame.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/parchment-frame.png");
     background-size: 100% 100%;
     background-repeat: no-repeat;
     background-color: #e8e0d5;
@@ -175,7 +175,7 @@
   .tcg-button {
     position: relative;
     background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)),
-      url("/assets/ui/fantasy_wood_btn.png");
+      url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/ui/fantasy_wood_btn.png");
     background-size: cover;
     border: 2px solid #8b4513;
     color: #ffffff;
@@ -268,7 +268,8 @@
   }
 
   .bg-realm {
-    background-image: url("/assets/main_bg.png");
+    /* main_bg.png doesn't exist - using dashboard-bg.jpg as fallback */
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/dashboard-bg.jpg");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -276,75 +277,75 @@
   }
 
   .bg-landing {
-    background-image: url("/assets/dashboard-bg.jpg");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/dashboard-bg.jpg");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-shop {
-    background-image: url("/assets/backgrounds/shop-bg.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/backgrounds/shop-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-collection {
-    background-image: url("/assets/backgrounds/collection-bg.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/backgrounds/collection-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-arena {
-    background-image: url("/assets/backgrounds/game_arena_background.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/backgrounds/game_arena_background.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-decks {
-    background-image: url("/assets/backgrounds/decks-bg.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/backgrounds/decks-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-profile {
-    background-image: url("/assets/backgrounds/profile-bg.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/backgrounds/profile-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-auth {
-    background-image: url("/assets/backgrounds/auth-bg.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/backgrounds/auth-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-social {
-    background-image: url("/assets/backgrounds/social-bg.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/backgrounds/social-bg.png");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
 
   .bg-parchment {
-    background-image: url("/assets/textures/parchment.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/textures/parchment.png");
     background-size: 512px;
     background-repeat: repeat;
   }
 
   .bg-leather {
-    background-image: url("/assets/textures/leather.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/textures/leather.png");
     background-size: 512px;
     background-repeat: repeat;
   }
 
   .tcg-chat-leather {
-    background-image: url("/assets/textures/leather.png");
+    background-image: url("https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/textures/leather.png");
     background-size: 512px;
     background-repeat: repeat;
     box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8), 0 10px 30px rgba(0, 0, 0, 0.5);

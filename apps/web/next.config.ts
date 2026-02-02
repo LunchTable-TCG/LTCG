@@ -3,6 +3,16 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   reactStrictMode: true,
 
+  // Allow images from Vercel Blob storage
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.public.blob.vercel-storage.com',
+      },
+    ],
+  },
+
   // Remove console logs in production (keep errors and warnings)
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {

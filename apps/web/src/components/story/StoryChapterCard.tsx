@@ -2,6 +2,7 @@
 
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { cn } from "@/lib/utils";
+import { getAssetUrl } from "@/lib/blob";
 import { motion } from "framer-motion";
 import { Lock, Star, Trophy } from "lucide-react";
 import Image from "next/image";
@@ -51,7 +52,7 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
         {/* Background Image */}
         <div className="absolute inset-0" data-testid="chapter-artwork">
           <Image
-            src={`/assets/story/${assetName}.png`}
+            src={getAssetUrl(`/assets/story/${assetName}.png`)}
             alt={chapterName}
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-110"

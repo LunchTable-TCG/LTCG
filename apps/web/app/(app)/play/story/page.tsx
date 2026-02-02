@@ -3,6 +3,7 @@
 import { StoryChapterCard } from "@/components/story/StoryChapterCard";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { cn } from "@/lib/utils";
+import { getAssetUrl } from "@/lib/blob";
 import { api } from "@convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
@@ -188,7 +189,7 @@ export default function StoryModePage() {
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('/assets/backgrounds/story-bg.png')",
+          backgroundImage: `url('${getAssetUrl("/assets/backgrounds/story-bg.png")}')`,
         }}
       />
       <div className="fixed inset-0 bg-black/40" />

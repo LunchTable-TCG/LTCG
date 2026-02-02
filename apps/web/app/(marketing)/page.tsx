@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { getAssetUrl } from "@/lib/blob";
 import { motion } from "framer-motion";
 import { ArrowRight, Flame, type LucideIcon, Play, Scroll, Sparkles, Trophy } from "lucide-react";
 import Image from "next/image";
@@ -29,7 +30,7 @@ export default function Home() {
           >
             <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl opacity-50" />
             <Image
-              src="/assets/logo-main.png"
+              src={getAssetUrl("/assets/logo-main.png")}
               alt="Lunchtable Chronicles"
               width={600}
               height={600}

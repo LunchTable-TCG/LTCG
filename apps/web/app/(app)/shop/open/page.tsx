@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
+import { getAssetUrl } from "@/lib/blob";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -240,6 +241,7 @@ function PackOpeningContent() {
     <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-purple-900/20 via-[#0d0a09] to-[#0d0a09]" />
+      {/* Noise texture - keeping local as it's a tiny repeating pattern */}
       <div className="absolute inset-0 bg-[url('/assets/backgrounds/noise.png')] opacity-5" />
 
       {/* Magical particles during opening */}
@@ -322,7 +324,7 @@ function PackOpeningContent() {
                 <div className="absolute inset-0 bg-[#d4af37]/20 rounded-2xl blur-xl" />
                 <div className="relative w-64 h-80 rounded-2xl flex items-center justify-center">
                   <Image
-                    src={openingType === "box" ? "/assets/shop/box.png" : "/assets/shop/pack.png"}
+                    src={openingType === "box" ? getAssetUrl("/assets/shop/box.png") : getAssetUrl("/assets/shop/pack.png")}
                     alt={openingType === "box" ? "Booster Box" : "Booster Pack"}
                     width={256}
                     height={320}
@@ -373,7 +375,7 @@ function PackOpeningContent() {
                   }}
                   className="w-full h-full object-contain"
                 >
-                  <source src="/assets/shop/packopening.mp4" type="video/mp4" />
+                  <source src={getAssetUrl("/assets/shop/packopening.mp4")} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               </div>
