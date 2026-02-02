@@ -29,7 +29,7 @@ export const webhookRoutes = [
         }
 
         // Verify signature (in production)
-        const webhookSecret = process.env.LTCG_WEBHOOK_SECRET;
+        const webhookSecret = process.env['LTCG_WEBHOOK_SECRET'];
         if (webhookSecret && payload.signature) {
           const rawBody = JSON.stringify(req.body);
           if (!verifyWebhookSignature(rawBody, payload.signature, webhookSecret)) {

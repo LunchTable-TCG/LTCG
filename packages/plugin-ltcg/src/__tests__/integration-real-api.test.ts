@@ -16,8 +16,8 @@ import { LTCGApiClient } from "../client/LTCGApiClient";
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 
-const API_KEY = process.env.LTCG_API_KEY;
-const CONVEX_URL = process.env.CONVEX_URL;
+const API_KEY = process.env['LTCG_API_KEY'];
+const CONVEX_URL = process.env['CONVEX_URL'];
 const BASE_URL = CONVEX_URL?.replace(".cloud", ".site") || "";
 
 // Skip if no credentials

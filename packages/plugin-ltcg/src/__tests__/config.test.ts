@@ -101,15 +101,15 @@ describe("Plugin Configuration Schema", () => {
 
     if (initPlugin) {
       // Ensure env variables don't exist beforehand
-      delete process.env.LTCG_API_KEY;
-      delete process.env.LTCG_CALLBACK_URL;
+      delete process.env['LTCG_API_KEY'];
+      delete process.env['LTCG_CALLBACK_URL'];
 
       // Initialize with config
       await initPlugin(testConfig, createMockRuntime());
 
       // Verify environment variables were set
-      expect(process.env.LTCG_API_KEY).toBe("test-api-key");
-      expect(process.env.LTCG_CALLBACK_URL).toBe("https://test.example.com/webhook");
+      expect(process.env['LTCG_API_KEY']).toBe("test-api-key");
+      expect(process.env['LTCG_CALLBACK_URL']).toBe("https://test.example.com/webhook");
     }
   });
 
@@ -120,14 +120,14 @@ describe("Plugin Configuration Schema", () => {
     };
 
     if (initPlugin) {
-      delete process.env.LTCG_AUTO_MATCHMAKING;
-      delete process.env.LTCG_DEBUG_MODE;
+      delete process.env['LTCG_AUTO_MATCHMAKING'];
+      delete process.env['LTCG_DEBUG_MODE'];
 
       await initPlugin(testConfig, createMockRuntime());
 
       // Boolean values are transformed and stored
-      expect(process.env.LTCG_AUTO_MATCHMAKING).toBe("true");
-      expect(process.env.LTCG_DEBUG_MODE).toBe("false");
+      expect(process.env['LTCG_AUTO_MATCHMAKING']).toBe("true");
+      expect(process.env['LTCG_DEBUG_MODE']).toBe("false");
     }
   });
 

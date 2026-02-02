@@ -104,12 +104,12 @@ const plugin: Plugin & { panels?: any } = {
   // Set lowest priority so real models take precedence
   priority: -1000,
   config: {
-    LTCG_API_KEY: process.env.LTCG_API_KEY,
-    LTCG_API_URL: process.env.LTCG_API_URL,
-    LTCG_CALLBACK_URL: process.env.LTCG_CALLBACK_URL,
-    LTCG_WEBHOOK_SECRET: process.env.LTCG_WEBHOOK_SECRET,
-    LTCG_AUTO_MATCHMAKING: process.env.LTCG_AUTO_MATCHMAKING,
-    LTCG_DEBUG_MODE: process.env.LTCG_DEBUG_MODE,
+    LTCG_API_KEY: process.env['LTCG_API_KEY'],
+    LTCG_API_URL: process.env['LTCG_API_URL'],
+    LTCG_CALLBACK_URL: process.env['LTCG_CALLBACK_URL'],
+    LTCG_WEBHOOK_SECRET: process.env['LTCG_WEBHOOK_SECRET'],
+    LTCG_AUTO_MATCHMAKING: process.env['LTCG_AUTO_MATCHMAKING'],
+    LTCG_DEBUG_MODE: process.env['LTCG_DEBUG_MODE'],
   },
   async init(config: Record<string, string>) {
     logger.info("*** Initializing LTCG plugin ***");

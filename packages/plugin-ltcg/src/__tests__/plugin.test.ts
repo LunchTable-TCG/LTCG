@@ -123,10 +123,10 @@ describe("Plugin Configuration", () => {
   });
 
   it("should initialize properly", async () => {
-    const originalEnv = process.env.LTCG_API_KEY;
+    const originalEnv = process.env['LTCG_API_KEY'];
 
     try {
-      process.env.LTCG_API_KEY = "test-value";
+      process.env['LTCG_API_KEY'] = "test-value";
 
       // Initialize with config - using real runtime
       const runtime = createRealRuntime();
@@ -144,12 +144,12 @@ describe("Plugin Configuration", () => {
         "Plugin initialization",
         {
           success: !error,
-          configValue: process.env.LTCG_API_KEY,
+          configValue: process.env['LTCG_API_KEY'],
         },
         error
       );
     } finally {
-      process.env.LTCG_API_KEY = originalEnv;
+      process.env['LTCG_API_KEY'] = originalEnv;
     }
   });
 

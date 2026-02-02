@@ -4,37 +4,17 @@
  * Starts an ElizaOS agent with the LTCG plugin and runs a story mode game.
  */
 
-import { AgentRuntime, type Character } from '@elizaos/core';
-import { SqlDatabaseAdapter } from '@elizaos/plugin-sql';
-import { bootstrapPlugin } from '@elizaos/plugin-bootstrap';
-import { openRouterPlugin } from '@elizaos/plugin-openrouter';
-import ltcgPlugin from './src/plugin';
 import { LTCGApiClient } from './src/client/LTCGApiClient';
 
 // Load environment
-const LTCG_API_KEY = process.env.LTCG_API_KEY!;
-const LTCG_API_URL = process.env.LTCG_API_URL!;
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY!;
+const LTCG_API_KEY = process.env['LTCG_API_KEY']!;
+const LTCG_API_URL = process.env['LTCG_API_URL']!;
+const OPENROUTER_API_KEY = process.env['OPENROUTER_API_KEY']!;
 
 if (!LTCG_API_KEY || !LTCG_API_URL || !OPENROUTER_API_KEY) {
   console.error('Missing required environment variables');
   process.exit(1);
 }
-
-const character: Character = {
-  name: 'StoryModeAgent',
-  username: 'story-agent',
-  bio: ['AI agent that plays LTCG story mode'],
-  personality: 'You are an AI agent testing the LTCG story mode feature.',
-  style: {
-    all: ['Be strategic', 'Execute game actions'],
-    chat: ['React to game events'],
-  },
-  knowledge: ['LTCG game mechanics', 'Card game strategy'],
-  messageExamples: [],
-  plugins: [],
-  settings: {},
-};
 
 async function runStoryModeGame() {
   console.log('🎮 LTCG Story Mode Test\n');

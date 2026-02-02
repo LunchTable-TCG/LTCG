@@ -65,7 +65,7 @@ export const changePositionAction: Action = {
 
   handler: async (
     runtime: IAgentRuntime,
-    message: Memory,
+    _message: Memory,
     state: State,
     _options: any,
     callback: HandlerCallback
@@ -74,7 +74,7 @@ export const changePositionAction: Action = {
       logger.info("Handling CHANGE_POSITION action");
 
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(runtime, _message, state);
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -170,7 +170,6 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
       await callback({
         text: responseText,
         actions: ["CHANGE_POSITION"],
-        source: message.content.source,
         thought: `Switching ${selected.monster.name} to ${newPosition} position to ${newPosition === "defense" ? "protect against stronger opponent monsters" : "prepare for offensive battle phase"}`,
       } as Content);
 

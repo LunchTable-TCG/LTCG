@@ -50,7 +50,7 @@ export const findGameAction: Action = {
 
   handler: async (
     runtime: IAgentRuntime,
-    message: Memory,
+    _message: Memory,
     state: State,
     _options: any,
     callback: HandlerCallback
@@ -154,7 +154,6 @@ Respond with JSON: { "lobbyIndex": <index> }`;
         await callback({
           text: `Joined game with ${joinResult.opponentName}! Game ID: ${gameId.slice(0, 8)}...`,
           actions: ["FIND_GAME"],
-          source: message.content.source,
           thought: `Found existing ${mode} lobby and joined to start game immediately with available opponent`,
         } as Content);
       } else {
@@ -171,7 +170,6 @@ Respond with JSON: { "lobbyIndex": <index> }`;
           await callback({
             text: `Instantly matched! Game ID: ${gameId.slice(0, 8)}...`,
             actions: ["FIND_GAME"],
-            source: message.content.source,
             thought: `No existing lobbies found but matchmaking instantly paired with opponent, starting game now`,
           } as Content);
         } else {
@@ -179,7 +177,6 @@ Respond with JSON: { "lobbyIndex": <index> }`;
           await callback({
             text: `Created new ${mode} lobby. Waiting for opponent... Lobby ID: ${matchmakingResult.lobbyId.slice(0, 8)}...`,
             actions: ["FIND_GAME"],
-            source: message.content.source,
             thought: `No existing lobbies found and no instant match, created new ${mode} lobby and waiting for opponent to join`,
           } as Content);
 

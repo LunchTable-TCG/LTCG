@@ -11,11 +11,11 @@
  * Run with: bun run examples/aggressive-agent.ts
  */
 
-import { AgentRuntime } from '@elizaos/core';
+import { IAgentRuntime } from '@elizaos/core';
 import type { Character } from '@elizaos/core';
-import { SqlDatabaseAdapter } from '@elizaos/plugin-sql';
+import SqlDatabaseAdapter from '@elizaos/plugin-sql';
 import { bootstrapPlugin } from '@elizaos/plugin-bootstrap';
-import { openRouterPlugin } from '@elizaos/plugin-openrouter';
+import { openrouterPlugin } from '@elizaos/plugin-openrouter';
 import ltcgPlugin from '../src/plugin';
 
 /**
@@ -239,7 +239,7 @@ async function main() {
 
   // Validate environment
   const requiredEnvVars = ['LTCG_API_KEY', 'OPENROUTER_API_KEY'];
-  const missing = requiredEnvVars.filter((varName) => !process.env[varName]);
+  const missing = requiredEnvVars.filter((varName) => !process.env[varName as string]);
 
   if (missing.length > 0) {
     console.error('❌ Missing required environment variables:');
@@ -251,25 +251,25 @@ async function main() {
   // Create SQL database adapter
   const adapter = new SqlDatabaseAdapter({
     connection: {
-      filename: process.env.DATABASE_PATH || './data/dragonstrike.db',
+      filename: process.env['DATABASE_PATH'] || './data/dragonstrike.db',
     },
   });
 
   // Create aggressive agent
-  const agent = new AgentRuntime({
+  const agent = new IAgentRuntime({
     character,
     databaseAdapter: adapter,
     plugins: [
       bootstrapPlugin,
-      openRouterPlugin,
+      openrouterPlugin,
       ltcgPlugin,
     ],
     settings: {
       // OpenRouter Configuration
-      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+      OPENROUTER_API_KEY: process.env['OPENROUTER_API_KEY'],
 
       // LTCG Configuration - AGGRESSIVE MODE
-      LTCG_API_KEY: process.env.LTCG_API_KEY,
+      LTCG_API_KEY: process.env['LTCG_API_KEY'],
       // URLs default to production - override only if needed
 
       // Strategy Settings - Maximum Aggression

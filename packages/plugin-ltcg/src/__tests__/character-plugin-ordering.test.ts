@@ -7,18 +7,18 @@ describe("Project Starter Character Plugin Ordering", () => {
   beforeEach(() => {
     // Save original environment
     originalEnv = {
-      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
-      OLLAMA_API_ENDPOINT: process.env.OLLAMA_API_ENDPOINT,
-      GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-      DISCORD_API_TOKEN: process.env.DISCORD_API_TOKEN,
-      TWITTER_API_KEY: process.env.TWITTER_API_KEY,
-      TWITTER_API_SECRET_KEY: process.env.TWITTER_API_SECRET_KEY,
-      TWITTER_ACCESS_TOKEN: process.env.TWITTER_ACCESS_TOKEN,
-      TWITTER_ACCESS_TOKEN_SECRET: process.env.TWITTER_ACCESS_TOKEN_SECRET,
-      TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
-      IGNORE_BOOTSTRAP: process.env.IGNORE_BOOTSTRAP,
+      ANTHROPIC_API_KEY: process.env['ANTHROPIC_API_KEY'],
+      OPENAI_API_KEY: process.env['OPENAI_API_KEY'],
+      OPENROUTER_API_KEY: process.env['OPENROUTER_API_KEY'],
+      OLLAMA_API_ENDPOINT: process.env['OLLAMA_API_ENDPOINT'],
+      GOOGLE_GENERATIVE_AI_API_KEY: process.env['GOOGLE_GENERATIVE_AI_API_KEY'],
+      DISCORD_API_TOKEN: process.env['DISCORD_API_TOKEN'],
+      TWITTER_API_KEY: process.env['TWITTER_API_KEY'],
+      TWITTER_API_SECRET_KEY: process.env['TWITTER_API_SECRET_KEY'],
+      TWITTER_ACCESS_TOKEN: process.env['TWITTER_ACCESS_TOKEN'],
+      TWITTER_ACCESS_TOKEN_SECRET: process.env['TWITTER_ACCESS_TOKEN_SECRET'],
+      TELEGRAM_BOT_TOKEN: process.env['TELEGRAM_BOT_TOKEN'],
+      IGNORE_BOOTSTRAP: process.env['IGNORE_BOOTSTRAP'],
     };
 
     // Clear all environment variables

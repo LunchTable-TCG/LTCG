@@ -57,7 +57,7 @@ export const createLobbyAction: Action = {
 
   handler: async (
     runtime: IAgentRuntime,
-    message: Memory,
+    _message: Memory,
     state: State,
     _options: any,
     callback: HandlerCallback
@@ -142,7 +142,7 @@ Respond with JSON: { "mode": "ranked" or "casual" }`;
 
       // Determine if lobby should be private
       let isPrivate = false;
-      const messageText = message.content.text?.toLowerCase() || "";
+      const messageText = _message.content.text?.toLowerCase() || "";
 
       if (messageText.includes("private") || messageText.includes("join code")) {
         isPrivate = true;
@@ -188,7 +188,6 @@ Respond with JSON: { "isPrivate": true or false }`;
       await callback({
         text: responseText,
         actions: ["CREATE_LOBBY"],
-        source: message.content.source,
         thought: `Created ${mode} lobby (${isPrivate ? "private with join code for specific opponent" : "public for quick matchmaking"})`,
       } as Content);
 

@@ -47,8 +47,8 @@ export const getWalletInfoAction: Action = {
 
   handler: async (
     runtime: IAgentRuntime,
-    message: Memory,
-    state: State,
+    _message: Memory,
+    _state: State,
     _options: any,
     callback: HandlerCallback
   ): Promise<ActionResult> => {
@@ -80,7 +80,6 @@ Wallets are automatically created during agent registration. If you registered b
         await callback({
           text: responseText,
           actions: ["GET_WALLET_INFO"],
-          source: message.content.source,
           thought: "Agent does not have an associated wallet",
         } as Content);
 
@@ -120,7 +119,6 @@ This is a non-custodial HD wallet managed via Privy. Your private keys are never
       await callback({
         text: responseText,
         actions: ["GET_WALLET_INFO"],
-        source: message.content.source,
         thought: "Successfully retrieved agent wallet information",
       } as Content);
 

@@ -17,13 +17,13 @@ export const LTCG_PRODUCTION_CONFIG = {
    * Production API URL
    * TODO: Update this to your deployed LTCG API URL before publishing
    */
-  API_URL: process.env.LTCG_PRODUCTION_API_URL || "https://ltcg-production.vercel.app",
+  API_URL: process.env['LTCG_PRODUCTION_API_URL'] || "https://ltcg-production.vercel.app",
 
   /**
    * Production Convex deployment URL
    * TODO: Update this to your production Convex deployment URL before publishing
    */
-  CONVEX_URL: process.env.LTCG_PRODUCTION_CONVEX_URL || "https://calm-pelican-123.convex.cloud",
+  CONVEX_URL: process.env['LTCG_PRODUCTION_CONVEX_URL'] || "https://calm-pelican-123.convex.cloud",
 } as const;
 
 /**

@@ -24,25 +24,25 @@ describe("Character Configuration", () => {
     // The actual functionality is tested at runtime by the starter test suite
 
     // Save the original env values
-    const originalOpenAIKey = process.env.OPENAI_API_KEY;
-    const originalAnthropicKey = process.env.ANTHROPIC_API_KEY;
+    const originalOpenAIKey = process.env['OPENAI_API_KEY'];
+    const originalAnthropicKey = process.env['ANTHROPIC_API_KEY'];
 
     try {
       // Verify if plugins array includes the core plugin
       expect(character.plugins).toContain("@elizaos/plugin-sql");
 
       // Plugins array should have conditional plugins based on environment variables
-      if (process.env.OPENAI_API_KEY) {
+      if (process.env['OPENAI_API_KEY']) {
         expect(character.plugins).toContain("@elizaos/plugin-openai");
       }
 
-      if (process.env.ANTHROPIC_API_KEY) {
+      if (process.env['ANTHROPIC_API_KEY']) {
         expect(character.plugins).toContain("@elizaos/plugin-anthropic");
       }
     } finally {
       // Restore original env values
-      process.env.OPENAI_API_KEY = originalOpenAIKey;
-      process.env.ANTHROPIC_API_KEY = originalAnthropicKey;
+      process.env['OPENAI_API_KEY'] = originalOpenAIKey;
+      process.env['ANTHROPIC_API_KEY'] = originalAnthropicKey;
     }
   });
 

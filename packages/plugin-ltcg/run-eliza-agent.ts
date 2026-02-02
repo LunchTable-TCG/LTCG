@@ -5,13 +5,12 @@
  * Uses OpenRouter to make strategic choices.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { LTCGApiClient } from './src/client/LTCGApiClient';
 
 // Load environment
-const LTCG_API_KEY = process.env.LTCG_API_KEY!;
-const LTCG_API_URL = process.env.LTCG_API_URL!;
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY!;
+const LTCG_API_KEY = process.env['LTCG_API_KEY']!;
+const LTCG_API_URL = process.env['LTCG_API_URL']!;
+const OPENROUTER_API_KEY = process.env['OPENROUTER_API_KEY']!;
 
 if (!LTCG_API_KEY || !LTCG_API_URL || !OPENROUTER_API_KEY) {
   console.error('Missing required environment variables');
