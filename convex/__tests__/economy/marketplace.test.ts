@@ -111,7 +111,7 @@ describe("getMarketplaceListings", () => {
   it("should return active listings with card info", async () => {
     const t = createTestInstance();
 
-    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, {
+    const { userId: sellerId, privyId: _sellerPrivyId } = await createUserWithCurrency(t, {
       username: "listseller",
       gold: 1000,
     });
@@ -153,7 +153,7 @@ describe("getMarketplaceListings", () => {
   it("should filter by listing type", async () => {
     const t = createTestInstance();
 
-    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, {
+    const { userId: sellerId, privyId: _sellerPrivyId } = await createUserWithCurrency(t, {
       username: "typeseller",
       gold: 1000,
     });
@@ -194,7 +194,7 @@ describe("getMarketplaceListings", () => {
   it("should not return cancelled or sold listings", async () => {
     const t = createTestInstance();
 
-    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, {
+    const { userId: sellerId, privyId: _sellerPrivyId } = await createUserWithCurrency(t, {
       username: "statusseller",
       gold: 1000,
     });
@@ -252,7 +252,7 @@ describe("getMarketplaceListings", () => {
   it("should support page-based pagination", async () => {
     const t = createTestInstance();
 
-    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, {
+    const { userId: sellerId, privyId: _sellerPrivyId } = await createUserWithCurrency(t, {
       username: "pagseller",
       gold: 1000,
     });
@@ -281,7 +281,7 @@ describe("getMarketplaceListings", () => {
   it("should filter by rarity", async () => {
     const t = createTestInstance();
 
-    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, {
+    const { userId: sellerId, privyId: _sellerPrivyId } = await createUserWithCurrency(t, {
       username: "rarityseller",
       gold: 1000,
     });
@@ -438,11 +438,11 @@ describe("getAuctionBidHistory", () => {
   it("should return bid history for auction", async () => {
     const t = createTestInstance();
 
-    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, {
+    const { userId: sellerId, privyId: _sellerPrivyId } = await createUserWithCurrency(t, {
       username: "auctionseller",
       gold: 1000,
     });
-    const { userId: bidderId, privyId: bidderPrivyId } = await createUserWithCurrency(t, {
+    const { userId: bidderId, privyId: _bidderPrivyId } = await createUserWithCurrency(t, {
       username: "bidder",
       gold: 5000,
     });
@@ -489,11 +489,11 @@ describe("getAuctionBidHistory", () => {
   it("should order bids by time descending", async () => {
     const t = createTestInstance();
 
-    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, {
+    const { userId: sellerId, privyId: _sellerPrivyId } = await createUserWithCurrency(t, {
       username: "orderseller",
       gold: 1000,
     });
-    const { userId: bidderId, privyId: bidderPrivyId } = await createUserWithCurrency(t, {
+    const { userId: bidderId, privyId: _bidderPrivyId } = await createUserWithCurrency(t, {
       username: "orderbidder",
       gold: 5000,
     });
@@ -560,7 +560,7 @@ describe("Marketplace Validation", () => {
   it("should have required fields in listing schema", async () => {
     const t = createTestInstance();
 
-    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, {
+    const { userId: sellerId, privyId: _sellerPrivyId } = await createUserWithCurrency(t, {
       username: "schematest",
       gold: 1000,
     });
@@ -592,7 +592,7 @@ describe("Marketplace Validation", () => {
   it("should track auction-specific fields", async () => {
     const t = createTestInstance();
 
-    const { userId: sellerId, privyId: sellerPrivyId } = await createUserWithCurrency(t, {
+    const { userId: sellerId, privyId: _sellerPrivyId } = await createUserWithCurrency(t, {
       username: "auctionfields",
       gold: 1000,
     });

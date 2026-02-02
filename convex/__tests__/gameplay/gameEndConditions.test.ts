@@ -380,7 +380,7 @@ describe("Game End Conditions - Deck Out", () => {
     const card2 = await createTestCard(t, { name: "Card 2" });
 
     // Host has empty deck - this is the state before draw phase
-    const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
+    const { lobbyId: _lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       hostDeck: [], // Empty deck
       opponentDeck: [card1, card2],
       hostHand: [card1], // Has some cards in hand
@@ -400,7 +400,7 @@ describe("Game End Conditions - Deck Out", () => {
 
     const card1 = await createTestCard(t, { name: "Card 1" });
 
-    const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
+    const { lobbyId: _lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       hostDeck: [card1],
       opponentDeck: [], // Empty deck
       opponentHand: [card1],
@@ -431,7 +431,7 @@ describe("Game End Conditions - Monster Stats SBA", () => {
       defense: 1200,
     });
 
-    const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
+    const { lobbyId: _lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       currentPhase: "main1",
       hostBoard: [
         {
@@ -459,7 +459,7 @@ describe("Game End Conditions - Monster Stats SBA", () => {
     const monster2 = await createTestCard(t, { name: "Monster 2", attack: 1200 });
     const monster3 = await createTestCard(t, { name: "Monster 3", attack: 800 });
 
-    const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
+    const { lobbyId: _lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       currentPhase: "main1",
       hostBoard: [
         { cardId: monster1, position: 1, attack: 1000, defense: 800 },
@@ -489,7 +489,7 @@ describe("Game End Conditions - Hand Limit", () => {
       Array.from({ length: 6 }, (_, i) => createTestCard(t, { name: `Hand Card ${i + 1}` }))
     );
 
-    const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
+    const { lobbyId: _lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       hostHand: cards,
       currentPhase: "end",
     });
@@ -510,7 +510,7 @@ describe("Game End Conditions - Hand Limit", () => {
       Array.from({ length: 9 }, (_, i) => createTestCard(t, { name: `Hand Card ${i + 1}` }))
     );
 
-    const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
+    const { lobbyId: _lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       hostHand: cards,
       currentPhase: "main1", // Not end phase yet
     });
@@ -663,7 +663,7 @@ describe("Game End Conditions - State Consistency", () => {
       defense: 600,
     });
 
-    const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
+    const { lobbyId, gameStateId: _gameStateId } = await createGameWithState(t, host, opponent, {
       opponentLifePoints: 1000,
       currentPhase: "battle",
       hostBoard: [

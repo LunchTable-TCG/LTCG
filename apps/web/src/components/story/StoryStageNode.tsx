@@ -55,7 +55,7 @@ const DIFFICULTY_CONFIG: Record<
 
 export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProps) {
   const difficultyKey = stage.aiDifficulty as keyof typeof DIFFICULTY_CONFIG;
-  const config = DIFFICULTY_CONFIG[difficultyKey] || DIFFICULTY_CONFIG["easy"];
+  const config = DIFFICULTY_CONFIG[difficultyKey] || DIFFICULTY_CONFIG.easy;
 
   // Defensive check - config will always be defined due to fallback above
   if (!config) return null;

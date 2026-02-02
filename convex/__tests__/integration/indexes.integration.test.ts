@@ -71,7 +71,7 @@ describe("Index Performance Tests", () => {
 
       // Verify results are sorted correctly
       for (let i = 0; i < results.length - 1; i++) {
-        expect(results[i]?.rankedElo ?? 0).toBeGreaterThanOrEqual(results[i + 1]?.rankedElo ?? 0!);
+        expect(results[i]?.rankedElo ?? 0).toBeGreaterThanOrEqual(results[i + 1]?.rankedElo ?? 0);
       }
     });
 
@@ -159,7 +159,7 @@ describe("Index Performance Tests", () => {
 
       // Verify sorting
       for (let i = 0; i < results.length - 1; i++) {
-        expect(results[i]?.xp ?? 0).toBeGreaterThanOrEqual(results[i + 1]?.xp ?? 0!);
+        expect(results[i]?.xp ?? 0).toBeGreaterThanOrEqual(results[i + 1]?.xp ?? 0);
       }
 
       console.log(`XP leaderboard query completed in ${duration}ms`);
@@ -369,8 +369,10 @@ describe("Index Performance Tests", () => {
       // Seed 2,000 pack openings across users
       await t.run(async (ctx) => {
         for (let i = 0; i < 2000; i++) {
+          const userIdForPack = userIds[i % userIds.length];
+          if (!userIdForPack) continue;
           await ctx.db.insert("packOpeningHistory", {
-            userId: userIds[i % userIds.length]!,
+            userId: userIdForPack,
             productId: "starter_pack",
             packType: "starter",
             cardsReceived: [
@@ -812,9 +814,11 @@ describe("Index Performance Tests", () => {
       await t.run(async (ctx) => {
         for (let i = 0; i < 1000; i++) {
           const isWin = i % 2 === 0;
+          const opponentId = opponentIds[i % opponentIds.length];
+          if (!opponentId) continue;
           await ctx.db.insert("matchHistory", {
-            winnerId: isWin ? userId : opponentIds[i % opponentIds.length]!,
-            loserId: isWin ? opponentIds[i % opponentIds.length]! : userId,
+            winnerId: isWin ? userId : opponentId,
+            loserId: isWin ? opponentId : userId,
             gameType: i % 3 === 0 ? "ranked" : "casual",
             winnerRatingBefore: 1200,
             winnerRatingAfter: 1210,
@@ -876,9 +880,12 @@ describe("Index Performance Tests", () => {
       const now = Date.now();
       await t.run(async (ctx) => {
         for (let i = 0; i < 1500; i++) {
+          const winnerId = userIds[i % userIds.length];
+          const loserId = userIds[(i + 1) % userIds.length];
+          if (!winnerId || !loserId) continue;
           await ctx.db.insert("matchHistory", {
-            winnerId: userIds[i % userIds.length]!,
-            loserId: userIds[(i + 1) % userIds.length]!,
+            winnerId,
+            loserId,
             gameType: i % 3 === 0 ? "ranked" : "casual",
             winnerRatingBefore: 1000,
             winnerRatingAfter: 1015,

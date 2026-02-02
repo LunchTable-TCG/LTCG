@@ -32,7 +32,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       return React.cloneElement(children, {
         className: cn(
           buttonClasses,
-          typeof childProps["className"] === "string" ? childProps["className"] : ""
+          typeof childProps.className === "string" ? childProps.className : ""
         ),
       } as React.HTMLAttributes<HTMLElement>);
     }

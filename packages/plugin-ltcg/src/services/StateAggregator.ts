@@ -59,6 +59,13 @@ export class StateAggregator extends Service {
     metrics: { hits: 0, misses: 0 },
   };
 
+  static async start(runtime: IAgentRuntime): Promise<Service> {
+    logger.info("*** Starting State Aggregator Service ***");
+    const service = new StateAggregator(runtime);
+    await service.initialize(runtime);
+    return service;
+  }
+
   async initialize(runtime: IAgentRuntime): Promise<void> {
     logger.info("*** Initializing State Aggregator Service ***");
 
@@ -119,7 +126,9 @@ export class StateAggregator extends Service {
   private getPollingService(): IPollingService | null {
     if (!this.pollingService && this._lazyRuntime) {
       try {
-        this.pollingService = this._lazyRuntime.getService(SERVICE_TYPES.POLLING) as unknown as IPollingService | null;
+        this.pollingService = this._lazyRuntime.getService(
+          SERVICE_TYPES.POLLING
+        ) as unknown as IPollingService | null;
       } catch (_error) {
         // Service not available yet
       }

@@ -25,6 +25,7 @@ import type { MutationCtx } from "../../_generated/server";
 
 // Type for the test instance - using any to avoid complex convex-test generic type issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Required to avoid complex convex-test generic type issues
 type TestInstance = any;
 
 /**

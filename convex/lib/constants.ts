@@ -161,13 +161,13 @@ export const RATELIMIT_CONFIG = {
  */
 export const TOKEN = {
   /** SPL token mint address (pump.fun token) - set via env var */
-  MINT_ADDRESS: process.env["LTCG_TOKEN_MINT"] || "",
+  MINT_ADDRESS: process.env.LTCG_TOKEN_MINT || "",
 
   /** Token decimals (pump.fun tokens typically use 6) */
   DECIMALS: 6,
 
   /** Treasury wallet for platform fees - set via env var */
-  TREASURY_WALLET: process.env["LTCG_TREASURY_WALLET"] || "",
+  TREASURY_WALLET: process.env.LTCG_TREASURY_WALLET || "",
 
   /** Platform fee percentage (same as gold marketplace) */
   PLATFORM_FEE_PERCENT: 0.05, // 5%
@@ -194,10 +194,10 @@ export const TOKEN = {
  */
 export const SOLANA = {
   /** RPC URL - prefer Helius for reliability */
-  RPC_URL: process.env["SOLANA_RPC_URL"] || "https://api.mainnet-beta.solana.com",
+  RPC_URL: process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com",
 
   /** Network: mainnet-beta or devnet */
-  NETWORK: (process.env["SOLANA_NETWORK"] || "mainnet-beta") as "mainnet-beta" | "devnet",
+  NETWORK: (process.env.SOLANA_NETWORK || "mainnet-beta") as "mainnet-beta" | "devnet",
 
   /** Commitment level for transactions */
   COMMITMENT: "confirmed" as const,

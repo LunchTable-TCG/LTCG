@@ -28,11 +28,11 @@ export interface TestDeck {
 /**
  * Factory for creating test user data
  */
-export class TestUserFactory {
+export const TestUserFactory = {
   /**
    * Create a single test user
    */
-  static create(overrides?: Partial<TestUser>): TestUser {
+  create(overrides?: Partial<TestUser>): TestUser {
     const timestamp = Date.now();
     const random = Math.random().toString(36).slice(2, 8);
     return {
@@ -41,12 +41,12 @@ export class TestUserFactory {
       displayName: `E2E Test User ${random}`,
       ...overrides,
     };
-  }
+  },
 
   /**
    * Create multiple test users
    */
-  static createMultiple(count: number): TestUser[] {
+  createMultiple(count: number): TestUser[] {
     return Array.from({ length: count }, (_, i) => {
       const timestamp = Date.now() + i;
       const random = Math.random().toString(36).slice(2, 8);
@@ -56,35 +56,35 @@ export class TestUserFactory {
         displayName: `E2E Test User ${i}`,
       });
     });
-  }
+  },
 
   /**
    * Create a deterministic test user for persistent sessions
    * Use this for auth setup that persists between test runs
    */
-  static createPersistent(): TestUser {
+  createPersistent(): TestUser {
     return {
       username: "e2etestuser",
       email: "e2e.persistent@test.ltcg.dev",
       displayName: "E2E Persistent Test User",
     };
-  }
-}
+  },
+};
 
 // =============================================================================
 // TEST DECK FACTORY
 // =============================================================================
 
-export class TestDeckFactory {
-  static create(overrides?: Partial<TestDeck>): TestDeck {
+export const TestDeckFactory = {
+  create(overrides?: Partial<TestDeck>): TestDeck {
     const timestamp = Date.now();
     return {
       name: `Test Deck ${timestamp}`,
       description: "Created by E2E test",
       ...overrides,
     };
-  }
-}
+  },
+};
 
 // =============================================================================
 // TEST CONFIGURATION

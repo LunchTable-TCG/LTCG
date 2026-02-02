@@ -343,7 +343,8 @@ export class LobbyPage extends BasePage {
    * Assert at least one lobby is available
    */
   async expectLobbiesAvailable() {
-    await expect(this.lobbyItems).toHaveCount({ gte: 1 } as any);
+    const count = await this.lobbyItems.count();
+    expect(count).toBeGreaterThanOrEqual(1);
   }
 
   /**

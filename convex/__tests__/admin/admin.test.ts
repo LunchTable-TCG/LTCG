@@ -107,12 +107,12 @@ describe("getSystemStats", () => {
   it("should return system stats for moderator", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
+    const { userId: _moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -132,7 +132,7 @@ describe("getSystemStats", () => {
   it("should deny access to regular users", async () => {
     const t = createTestInstance();
 
-    const { userId, privyId } = await createUser(t, "user@test.com", "regularuser");
+    const { userId: _userId, privyId } = await createUser(t, "user@test.com", "regularuser");
 
     const asUser = t.withIdentity({ subject: privyId });
 
@@ -150,12 +150,12 @@ describe("grantAdminRole", () => {
   it("should allow superadmin to grant admin role", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: _superadminId, privyId: superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: targetUserId, privyId: targetPrivyId } = await createUser(
+    const { userId: targetUserId, privyId: _targetPrivyId } = await createUser(
       t,
       "target@test.com",
       "targetuser"
@@ -185,19 +185,19 @@ describe("grantAdminRole", () => {
   it("should allow admin to grant moderator role", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(
+    const { userId: _adminId, privyId: adminPrivyId } = await createUserWithRole(
       t,
       "admin@test.com",
       "admin",
       "admin",
       superadminId
     );
-    const { userId: targetUserId, privyId: targetPrivyId } = await createUser(
+    const { userId: targetUserId, privyId: _targetPrivyId } = await createUser(
       t,
       "target@test.com",
       "targetuser"
@@ -215,19 +215,19 @@ describe("grantAdminRole", () => {
   it("should NOT allow admin to grant admin role (hierarchy enforcement)", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(
+    const { userId: _adminId, privyId: adminPrivyId } = await createUserWithRole(
       t,
       "admin@test.com",
       "admin",
       "admin",
       superadminId
     );
-    const { userId: targetUserId, privyId: targetPrivyId } = await createUser(
+    const { userId: targetUserId, privyId: _targetPrivyId } = await createUser(
       t,
       "target@test.com",
       "targetuser"
@@ -246,19 +246,19 @@ describe("grantAdminRole", () => {
   it("should NOT allow moderator to grant any role", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
+    const { userId: _moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
       "moderator",
       superadminId
     );
-    const { userId: targetUserId, privyId: targetPrivyId } = await createUser(
+    const { userId: targetUserId, privyId: _targetPrivyId } = await createUser(
       t,
       "target@test.com",
       "targetuser"
@@ -277,8 +277,8 @@ describe("grantAdminRole", () => {
   it("should deny access to regular users", async () => {
     const t = createTestInstance();
 
-    const { userId, privyId } = await createUser(t, "user@test.com", "regularuser");
-    const { userId: targetUserId, privyId: targetPrivyId } = await createUser(
+    const { userId: _userId, privyId } = await createUser(t, "user@test.com", "regularuser");
+    const { userId: targetUserId, privyId: _targetPrivyId } = await createUser(
       t,
       "target@test.com",
       "targetuser"
@@ -308,7 +308,7 @@ describe("revokeAdminRole", () => {
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(
+    const { userId: adminId, privyId: _adminPrivyId } = await createUserWithRole(
       t,
       "admin@test.com",
       "admin",
@@ -338,7 +338,7 @@ describe("revokeAdminRole", () => {
   it("should allow admin to revoke moderator role", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
@@ -350,7 +350,7 @@ describe("revokeAdminRole", () => {
       "admin",
       superadminId
     );
-    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
+    const { userId: moderatorId, privyId: _moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -388,19 +388,19 @@ describe("revokeAdminRole", () => {
   it("should NOT allow admin to revoke admin role (hierarchy enforcement)", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(
+    const { userId: _adminId, privyId: adminPrivyId } = await createUserWithRole(
       t,
       "admin@test.com",
       "admin",
       "admin",
       superadminId
     );
-    const { userId: otherAdminId, privyId: otherAdminPrivyId } = await createUserWithRole(
+    const { userId: otherAdminId, privyId: _otherAdminPrivyId } = await createUserWithRole(
       t,
       "admin2@test.com",
       "admin2",
@@ -426,7 +426,7 @@ describe("getAuditLog", () => {
   it("should return audit logs for moderator", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
@@ -555,7 +555,7 @@ describe("getAuditLog", () => {
   it("should deny access to regular users", async () => {
     const t = createTestInstance();
 
-    const { userId, privyId } = await createUser(t, "user@test.com", "regularuser");
+    const { userId: _userId, privyId } = await createUser(t, "user@test.com", "regularuser");
 
     const asUser = t.withIdentity({ subject: privyId });
 
@@ -573,12 +573,12 @@ describe("deleteUserByEmail", () => {
   it("should allow admin to delete user by email", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(
+    const { userId: _adminId, privyId: adminPrivyId } = await createUserWithRole(
       t,
       "admin@test.com",
       "admin",
@@ -613,12 +613,12 @@ describe("deleteUserByEmail", () => {
   it("should return error for non-existent email", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(
+    const { userId: _adminId, privyId: adminPrivyId } = await createUserWithRole(
       t,
       "admin@test.com",
       "admin",
@@ -638,12 +638,12 @@ describe("deleteUserByEmail", () => {
   it("should deny access to moderators", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
+    const { userId: _moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -669,7 +669,7 @@ describe("deleteTestUsers", () => {
   it("should allow superadmin to delete test users", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: _superadminId, privyId: superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
@@ -721,12 +721,12 @@ describe("deleteTestUsers", () => {
   it("should deny access to admin (requires superadmin)", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(
+    const { userId: _adminId, privyId: adminPrivyId } = await createUserWithRole(
       t,
       "admin@test.com",
       "admin",
@@ -750,7 +750,7 @@ describe("getMyAdminRole", () => {
   it("should return null for regular user", async () => {
     const t = createTestInstance();
 
-    const { userId, privyId } = await createUser(t, "user@test.com", "regularuser");
+    const { userId: _userId, privyId } = await createUser(t, "user@test.com", "regularuser");
 
     const asUser = t.withIdentity({ subject: privyId });
     const result = await asUser.query(adminAdmin.getMyAdminRole, {});
@@ -761,12 +761,12 @@ describe("getMyAdminRole", () => {
   it("should return role info for moderator", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
+    const { userId: _moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -787,12 +787,12 @@ describe("getMyAdminRole", () => {
   it("should return role info for admin", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
-    const { userId: adminId, privyId: adminPrivyId } = await createUserWithRole(
+    const { userId: _adminId, privyId: adminPrivyId } = await createUserWithRole(
       t,
       "admin@test.com",
       "admin",
@@ -813,7 +813,7 @@ describe("getMyAdminRole", () => {
   it("should return role info for superadmin", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: _superadminId, privyId: superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
@@ -838,13 +838,13 @@ describe("listAdmins", () => {
   it("should list all admins for moderator", async () => {
     const t = createTestInstance();
 
-    const { userId: superadminId, privyId: superadminPrivyId } = await createSuperadmin(
+    const { userId: superadminId, privyId: _superadminPrivyId } = await createSuperadmin(
       t,
       "superadmin@test.com",
       "superadmin"
     );
     await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
-    const { userId: moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
+    const { userId: _moderatorId, privyId: moderatorPrivyId } = await createUserWithRole(
       t,
       "moderator@test.com",
       "moderator",
@@ -880,7 +880,7 @@ describe("listAdmins", () => {
   it("should deny access to regular users", async () => {
     const t = createTestInstance();
 
-    const { userId, privyId } = await createUser(t, "user@test.com", "regularuser");
+    const { userId: _userId, privyId } = await createUser(t, "user@test.com", "regularuser");
 
     const asUser = t.withIdentity({ subject: privyId });
 

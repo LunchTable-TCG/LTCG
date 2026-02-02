@@ -21,15 +21,17 @@ export const strategyEvaluator: Evaluator = {
     {
       prompt: "Evaluate attack with weak monster into strong monster",
       messages: [
-        { name: "{{user1}}", content: { text: "I want to attack with weak monster into strong monster" } },
+        {
+          name: "{{user1}}",
+          content: { text: "I want to attack with weak monster into strong monster" },
+        },
       ],
-      outcome: "Strategy evaluation: BAD_PLAY. Attack would lead to losing monster for nothing - FILTERED.",
+      outcome:
+        "Strategy evaluation: BAD_PLAY. Attack would lead to losing monster for nothing - FILTERED.",
     },
     {
       prompt: "Evaluate summoning strongest monster",
-      messages: [
-        { name: "{{user1}}", content: { text: "I will summon my strongest monster" } },
-      ],
+      messages: [{ name: "{{user1}}", content: { text: "I will summon my strongest monster" } }],
       outcome: "Strategy evaluation: GOOD_PLAY. Allowed.",
     },
   ],
@@ -248,9 +250,10 @@ function evaluateAttack(
     };
   }
 
-  // Check if attack will succeed (BoardCard uses .attack/.defense)
+  // Check if attack will succeed (BoardCard uses .attack/.defense and position: 0|1)
   const attackerAtk = attacker.attack ?? 0;
-  const targetAtk = target.position === "attack" ? (target.attack ?? 0) : (target.defense ?? 0);
+  // BoardCard position: 0 = defense, 1 = attack
+  const targetAtk = target.position === 1 ? (target.attack ?? 0) : (target.defense ?? 0);
 
   if (attackerAtk < targetAtk) {
     // Attacking into stronger monster - bad unless desperate
@@ -264,7 +267,7 @@ function evaluateAttack(
         quality: "BAD",
         risk: "HIGH",
         shouldFilter: true,
-        reason: `Attacking ${attacker.name} (${attackerAtk} ATK) into stronger ${target.name} (${targetAtk} ${String(target.position) === "attack" ? "ATK" : "DEF"}) will lose your monster`,
+        reason: `Attacking ${attacker.name} (${attackerAtk} ATK) into stronger ${target.name} (${targetAtk} ${target.position === 1 ? "ATK" : "DEF"}) will lose your monster`,
         suggestion: "Use removal spell or summon stronger monster",
       };
     }

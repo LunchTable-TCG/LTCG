@@ -138,10 +138,7 @@ test.describe("Authentication Flow", () => {
       expect(body).toBeTruthy();
     });
 
-    test("authenticated user sees user-specific content", async ({
-      authenticatedPage,
-      testUser,
-    }) => {
+    test("authenticated user sees user-specific content", async ({ authenticatedPage }) => {
       await authenticatedPage.goto("/lunchtable");
       await authenticatedPage.waitForLoadState("networkidle");
 
@@ -204,7 +201,7 @@ test.describe("Authentication Flow", () => {
       expect(authenticatedPage.url()).toContain("/lunchtable");
     });
 
-    test("user data loads correctly after auth", async ({ authenticatedPage, testUser }) => {
+    test("user data loads correctly after auth", async ({ authenticatedPage }) => {
       await authenticatedPage.goto("/");
       await authenticatedPage.waitForLoadState("networkidle");
 
@@ -268,7 +265,6 @@ test.describe("Authentication Flow", () => {
 
     test("authenticated user has valid session token in localStorage", async ({
       authenticatedPage,
-      testUser,
     }) => {
       await authenticatedPage.goto("/lunchtable");
       await authenticatedPage.waitForLoadState("networkidle");
@@ -284,7 +280,6 @@ test.describe("Authentication Flow", () => {
 
     test("authenticated user has valid user data in localStorage", async ({
       authenticatedPage,
-      testUser,
     }) => {
       await authenticatedPage.goto("/lunchtable");
       await authenticatedPage.waitForLoadState("networkidle");

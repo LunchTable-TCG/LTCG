@@ -137,7 +137,9 @@ export function isApiSuccessResponse<T>(
 /**
  * Check if an API response is an error response
  */
-export function isApiErrorResponse(response: ApiResponse<unknown> | unknown): response is ApiErrorResponse {
+export function isApiErrorResponse(
+  response: ApiResponse<unknown> | unknown
+): response is ApiErrorResponse {
   if (typeof response !== "object" || response === null) return false;
   const r = response as Record<string, unknown>;
   return r.success === false && "error" in r && typeof r.error === "object";

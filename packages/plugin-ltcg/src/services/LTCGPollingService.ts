@@ -246,7 +246,9 @@ export class LTCGPollingService extends Service {
   static async stop(runtime: IAgentRuntime): Promise<void> {
     logger.info("*** Stopping LTCG polling service ***");
 
-    const service = runtime.getService(LTCGPollingService.serviceType) as unknown as LTCGPollingService | null;
+    const service = runtime.getService(
+      LTCGPollingService.serviceType
+    ) as unknown as LTCGPollingService | null;
     if (service) {
       await service.stop();
     }

@@ -103,14 +103,16 @@ export const gameOutcomeEvaluator: Evaluator = {
       messages: [
         { name: "{{user1}}", content: { text: "Game over! You won with 2500 LP remaining." } },
       ],
-      outcome: "Game analysis complete. Key insight: Aggressive early summons established board control leading to victory.",
+      outcome:
+        "Game analysis complete. Key insight: Aggressive early summons established board control leading to victory.",
     },
     {
       prompt: "Analyze game outcome after losing",
       messages: [
         { name: "{{user1}}", content: { text: "Game over! You lost. Opponent had 4000 LP." } },
       ],
-      outcome: "Game analysis complete. Lesson learned: Attacking into stronger monsters on turns 3-4 led to resource disadvantage.",
+      outcome:
+        "Game analysis complete. Lesson learned: Attacking into stronger monsters on turns 3-4 led to resource disadvantage.",
     },
   ],
 

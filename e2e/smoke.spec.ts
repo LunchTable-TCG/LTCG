@@ -48,7 +48,7 @@ test.describe("Smoke Tests @smoke", () => {
     await expect(lobbyPage.page).toHaveURL(/play|lunchtable/);
   });
 
-  test("can create and save a deck", async ({ deckPage, testUser }) => {
+  test("can create and save a deck", async ({ deckPage }) => {
     await deckPage.navigate();
 
     // Create new deck

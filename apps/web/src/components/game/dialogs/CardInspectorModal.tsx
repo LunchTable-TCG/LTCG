@@ -120,7 +120,7 @@ export function CardInspectorModal({
                   <div
                     className={cn(
                       "w-16 h-24 sm:w-20 sm:h-28 rounded-lg border-2 overflow-hidden shrink-0",
-                      RARITY_BORDERS[card.rarity ?? "common"] ?? RARITY_BORDERS["common"]
+                      RARITY_BORDERS[card.rarity ?? "common"] ?? RARITY_BORDERS.common
                     )}
                   >
                     {card.imageUrl ? (

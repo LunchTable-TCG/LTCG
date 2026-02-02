@@ -73,11 +73,6 @@ export class TurnOrchestrator extends Service {
 
   capabilityDescription = "Orchestrates autonomous turn-by-turn gameplay decisions";
 
-  constructor(runtime: IAgentRuntime) {
-    super(runtime);
-    // runtime is set by super(runtime)
-  }
-
   static async start(runtime: IAgentRuntime): Promise<Service> {
     logger.info("*** Starting LTCG Turn Orchestrator ***");
 
@@ -103,7 +98,9 @@ export class TurnOrchestrator extends Service {
 
   static async stop(runtime: IAgentRuntime): Promise<void> {
     logger.info("*** Stopping LTCG Turn Orchestrator ***");
-    const service = runtime.getService(TurnOrchestrator.serviceType) as unknown as TurnOrchestrator | null;
+    const service = runtime.getService(
+      TurnOrchestrator.serviceType
+    ) as unknown as TurnOrchestrator | null;
     if (service) {
       service.isExecutingTurn = false;
     }
