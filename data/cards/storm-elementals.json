@@ -1,0 +1,444 @@
+[
+  {
+    "name": "Zephyr Falcon",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 3,
+    "attack": 1000,
+    "defense": 600,
+    "flavorText": "It rides the lightning across endless skies.",
+    "imageUrl": "/assets/cards/Zephyr_Falcon.png"
+  },
+  {
+    "name": "Wind Sprite",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 1,
+    "attack": 600,
+    "defense": 400,
+    "effects": [
+      {
+        "name": "Self Boost",
+        "description": "This card gains 500 ATK for each other 'Storm Riders' monster you control.",
+        "effectType": "continuous"
+      },
+      {
+        "name": "Burn Damage",
+        "description": "When this card inflicts battle damage: Inflict 500 damage to your opponent.",
+        "effectType": "triggered"
+      }
+    ]
+  },
+  {
+    "name": "Gale Harpy",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 3,
+    "attack": 1200,
+    "defense": 800
+  },
+  {
+    "name": "Swift Eagle",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 4,
+    "attack": 1400,
+    "defense": 600
+  },
+  {
+    "name": "Thunder Hawk",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 3,
+    "attack": 1100,
+    "defense": 900
+  },
+  {
+    "name": "Storm Condor",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 2,
+    "attack": 800,
+    "defense": 600,
+    "effects": [
+      {
+        "name": "Self Boost",
+        "description": "This card gains 300 ATK for each other 'Storm Riders' monster you control.",
+        "effectType": "continuous"
+      }
+    ]
+  },
+  {
+    "name": "Lightning Rider",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 4,
+    "attack": 1300,
+    "defense": 700,
+    "flavorText": "It rides the lightning across endless skies.",
+    "imageUrl": "/assets/cards/Lightning_Rider.png"
+  },
+  {
+    "name": "Cyclone Harpy",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 3,
+    "attack": 1000,
+    "defense": 800
+  },
+  {
+    "name": "Tempest Sparrow",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 1,
+    "attack": 500,
+    "defense": 300
+  },
+  {
+    "name": "Wind Roc",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 4,
+    "attack": 1500,
+    "defense": 1000,
+    "effects": [
+      {
+        "name": "Battle Draw",
+        "description": "When this card destroys a monster by battle: Draw 1 card(s).",
+        "effectType": "triggered"
+      }
+    ]
+  },
+  {
+    "name": "Zephyr Rider",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 2,
+    "attack": 900,
+    "defense": 500,
+    "effects": [
+      {
+        "name": "Battle Destruction",
+        "description": "When this card destroys a monster by battle: Destroy 1 Spell/Trap(s) your opponent controls.",
+        "effectType": "triggered"
+      }
+    ]
+  },
+  {
+    "name": "Gale Condor",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 3,
+    "attack": 1100,
+    "defense": 700,
+    "effects": [
+      {
+        "name": "Self Boost",
+        "description": "This card gains 300 ATK for each other 'Storm Riders' monster you control.",
+        "effectType": "continuous"
+      }
+    ]
+  },
+  {
+    "name": "Storm Vanguard",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 4,
+    "attack": 1600,
+    "defense": 1000
+  },
+  {
+    "name": "Tornado Eagle",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 4,
+    "attack": 1700,
+    "defense": 900,
+    "effects": [
+      {
+        "name": "Cannot Be Destroyed by Battle",
+        "description": "Cannot be destroyed by battle.",
+        "effectType": "continuous"
+      }
+    ],
+    "imageUrl": "/assets/cards/Tornado_Eagle.png"
+  },
+  {
+    "name": "Lightning Phoenix",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 4,
+    "attack": 1500,
+    "defense": 1200
+  },
+  {
+    "name": "Hurricane Griffin",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 5,
+    "attack": 1800,
+    "defense": 800
+  },
+  {
+    "name": "Cyclone Lord",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 4,
+    "attack": 1400,
+    "defense": 1400
+  },
+  {
+    "name": "Thunder Champion",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 5,
+    "attack": 2000,
+    "defense": 1000
+  },
+  {
+    "name": "Zephyr Herald",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 3,
+    "attack": 1200,
+    "defense": 1000
+  },
+  {
+    "name": "Gale Striker",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 4,
+    "attack": 1900,
+    "defense": 600
+  },
+  {
+    "name": "Storm Warlord",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 6,
+    "attack": 2200,
+    "defense": 1600
+  },
+  {
+    "name": "Tornado Thunderbird",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 6,
+    "attack": 2400,
+    "defense": 1400,
+    "flavorText": "Where thunder roars, it answers the call.",
+    "imageUrl": "/assets/cards/Tornado_Thunderbird.png"
+  },
+  {
+    "name": "Hurricane Dragon",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 7,
+    "attack": 2600,
+    "defense": 1800
+  },
+  {
+    "name": "Lightning Sovereign",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 6,
+    "attack": 2100,
+    "defense": 1900
+  },
+  {
+    "name": "Tempest Commander",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 6,
+    "attack": 2300,
+    "defense": 1500
+  },
+  {
+    "name": "Storm Tyrant",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 7,
+    "attack": 2800,
+    "defense": 2000
+  },
+  {
+    "name": "Tornado Overlord",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 7,
+    "attack": 2600,
+    "defense": 2200
+  },
+  {
+    "name": "Lightning Emperor",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 8,
+    "attack": 3000,
+    "defense": 1800
+  },
+  {
+    "name": "Storm Archon Zelos",
+    "rarity": "legendary",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 9,
+    "attack": 3200,
+    "defense": 2400
+  },
+  {
+    "name": "Tempest Archon",
+    "rarity": "legendary",
+    "cardType": "creature",
+    "archetype": "storm_elementals",
+    "cost": 8,
+    "attack": 3200,
+    "defense": 2800,
+    "effects": [
+      {
+        "name": "Triple Strike",
+        "description": "This card can attack up to 3 times per Battle Phase.",
+        "effectType": "continuous"
+      },
+      {
+        "name": "Storm's Fury",
+        "description": "This card inflicts piercing battle damage.",
+        "effectType": "continuous"
+      },
+      {
+        "name": "Wind Walker",
+        "description": "This card can attack directly.",
+        "effectType": "continuous"
+      }
+    ],
+    "flavorText": "The storm incarnate, striking faster than lightning."
+  },
+  {
+    "name": "Gale Blast",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "storm_elementals",
+    "cost": 0,
+    "flavorText": "It rides the lightning across endless skies.",
+    "imageUrl": "/assets/cards/Gale_Blast.png"
+  },
+  {
+    "name": "Swift Strike",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "storm_elementals",
+    "cost": 0
+  },
+  {
+    "name": "Wind Recovery",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "storm_elementals",
+    "cost": 0
+  },
+  {
+    "name": "Sudden Gust",
+    "rarity": "uncommon",
+    "cardType": "spell",
+    "archetype": "storm_elementals",
+    "cost": 0
+  },
+  {
+    "name": "Evasive Maneuver",
+    "rarity": "uncommon",
+    "cardType": "spell",
+    "archetype": "storm_elementals",
+    "cost": 0
+  },
+  {
+    "name": "Lightning Dash",
+    "rarity": "uncommon",
+    "cardType": "spell",
+    "archetype": "storm_elementals",
+    "cost": 0
+  },
+  {
+    "name": "Endless Storm",
+    "rarity": "rare",
+    "cardType": "spell",
+    "archetype": "storm_elementals",
+    "cost": 0
+  },
+  {
+    "name": "Rider's Momentum",
+    "rarity": "rare",
+    "cardType": "spell",
+    "archetype": "storm_elementals",
+    "cost": 0
+  },
+  {
+    "name": "Storm's Eye",
+    "rarity": "rare",
+    "cardType": "spell",
+    "archetype": "storm_elementals",
+    "cost": 0
+  },
+  {
+    "name": "Thunder Revenge",
+    "rarity": "common",
+    "cardType": "trap",
+    "archetype": "storm_elementals",
+    "cost": 0
+  },
+  {
+    "name": "Cyclone Zone",
+    "rarity": "uncommon",
+    "cardType": "trap",
+    "archetype": "storm_elementals",
+    "cost": 0
+  },
+  {
+    "name": "Storm Barrier",
+    "rarity": "uncommon",
+    "cardType": "trap",
+    "archetype": "storm_elementals",
+    "cost": 0,
+    "effects": [
+      {
+        "name": "Storm Barrier",
+        "description": "When your opponent activates a card effect: Negate that effect. If you control an 'Storm Riders' monster, destroy that card. (Counter Trap)",
+        "effectType": "counter"
+      }
+    ]
+  },
+  {
+    "name": "Tempest Counter",
+    "rarity": "epic",
+    "cardType": "trap",
+    "archetype": "storm_elementals",
+    "cost": 0
+  }
+]

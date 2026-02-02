@@ -1,0 +1,449 @@
+[
+  {
+    "name": "Reef Crab",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 2,
+    "attack": 600,
+    "defense": 800
+  },
+  {
+    "name": "Coral Serpent",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 3,
+    "attack": 1000,
+    "defense": 600,
+    "effects": [
+      {
+        "name": "Protection from Effects",
+        "description": "Cannot be targeted by opponent's card effects.",
+        "effectType": "continuous"
+      },
+      {
+        "name": "Piercing",
+        "description": "This card inflicts piercing battle damage.",
+        "effectType": "continuous"
+      }
+    ]
+  },
+  {
+    "name": "Tidal Eel",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 2,
+    "attack": 800,
+    "defense": 400
+  },
+  {
+    "name": "Murky Triton",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 3,
+    "attack": 1200,
+    "defense": 1000,
+    "flavorText": "Currents bow before its terrible might.",
+    "imageUrl": "/assets/cards/Murky_Triton.png"
+  },
+  {
+    "name": "Deep Mermaid",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 4,
+    "attack": 1400,
+    "defense": 800
+  },
+  {
+    "name": "Glacial Crab",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 2,
+    "attack": 500,
+    "defense": 1200,
+    "flavorText": "From the darkest trenches, it rises to claim its prey.",
+    "imageUrl": "/assets/cards/Glacial_Crab.png"
+  },
+  {
+    "name": "Undertow Shark",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 4,
+    "attack": 1300,
+    "defense": 700
+  },
+  {
+    "name": "Frozen Hydra",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 3,
+    "attack": 1100,
+    "defense": 900,
+    "flavorText": "Currents bow before its terrible might.",
+    "imageUrl": "/assets/cards/Frozen_Hydra.png"
+  },
+  {
+    "name": "Sunken Squid",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 2,
+    "attack": 900,
+    "defense": 500,
+    "effects": [
+      {
+        "name": "Draw Power",
+        "description": "When this card is Summoned: Draw 1 card(s).",
+        "effectType": "triggered"
+      }
+    ]
+  },
+  {
+    "name": "Riptide Whale",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 4,
+    "attack": 1500,
+    "defense": 1300
+  },
+  {
+    "name": "Abyssal Siren",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 2,
+    "attack": 700,
+    "defense": 600
+  },
+  {
+    "name": "Oceanic Jellyfish",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 1,
+    "attack": 400,
+    "defense": 400
+  },
+  {
+    "name": "Tidal Serpent",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 4,
+    "attack": 1600,
+    "defense": 1200,
+    "imageUrl": "/assets/cards/Tidal_Serpent.png"
+  },
+  {
+    "name": "Glacial Hydra",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 5,
+    "attack": 1400,
+    "defense": 1600,
+    "flavorText": "The cold depths hold no terror for this ancient one.",
+    "imageUrl": "/assets/cards/Glacial_Hydra.png"
+  },
+  {
+    "name": "Reef Guardian",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 4,
+    "attack": 1200,
+    "defense": 1800
+  },
+  {
+    "name": "Deep Hunter",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 4,
+    "attack": 1800,
+    "defense": 800
+  },
+  {
+    "name": "Frozen Leviathan",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 5,
+    "attack": 1700,
+    "defense": 1400
+  },
+  {
+    "name": "Murky Stalker",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 4,
+    "attack": 1500,
+    "defense": 1000
+  },
+  {
+    "name": "Coral Enchantress",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 3,
+    "attack": 1300,
+    "defense": 1100
+  },
+  {
+    "name": "Undertow Kraken",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 5,
+    "attack": 2000,
+    "defense": 1600
+  },
+  {
+    "name": "Abyssal Lord",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 6,
+    "attack": 2200,
+    "defense": 1800
+  },
+  {
+    "name": "Tidal Dragon",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 7,
+    "attack": 2400,
+    "defense": 2000
+  },
+  {
+    "name": "Glacial Monarch",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 6,
+    "attack": 2000,
+    "defense": 2400
+  },
+  {
+    "name": "Deep Sea Terror",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 7,
+    "attack": 2600,
+    "defense": 1600
+  },
+  {
+    "name": "Frozen Sovereign",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 6,
+    "attack": 2100,
+    "defense": 2100
+  },
+  {
+    "name": "Leviathan Prime",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 8,
+    "attack": 2800,
+    "defense": 2400
+  },
+  {
+    "name": "Abyssal Tyrant",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 8,
+    "attack": 2600,
+    "defense": 2800
+  },
+  {
+    "name": "Kraken Overlord",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 8,
+    "attack": 3000,
+    "defense": 2200
+  },
+  {
+    "name": "Tidal Emperor Nereus",
+    "rarity": "legendary",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 9,
+    "attack": 3200,
+    "defense": 2800,
+    "effects": [
+      {
+        "name": "On Summon Destroy",
+        "description": "When Summoned: Destroy 2 card(s) your opponent controls.",
+        "effectType": "triggered"
+      },
+      {
+        "name": "On Death Revival",
+        "description": "If this card is destroyed: Special Summon 1 'Abyssal Depths' monster from your GY.",
+        "effectType": "triggered"
+      },
+      {
+        "name": "Self Boost",
+        "description": "This card gains 500 ATK for each other 'Abyssal Depths' monster you control.",
+        "effectType": "continuous"
+      }
+    ]
+  },
+  {
+    "name": "Leviathan of the Abyss",
+    "rarity": "legendary",
+    "cardType": "creature",
+    "archetype": "abyssal_horrors",
+    "cost": 10,
+    "attack": 3800,
+    "defense": 4000,
+    "effects": [
+      {
+        "name": "Abyssal Lockdown",
+        "description": "Monsters your opponent controls cannot attack or activate effects.",
+        "effectType": "continuous"
+      },
+      {
+        "name": "Tidal Devastation",
+        "description": "When Summoned: Return all other cards on the field to their owner's hands.",
+        "effectType": "triggered"
+      },
+      {
+        "name": "Deep Sea Immunity",
+        "description": "Cannot be targeted by opponent's card effects.",
+        "effectType": "continuous"
+      }
+    ],
+    "flavorText": "From the deepest trenches, it rises to consume all."
+  },
+  {
+    "name": "Tidal Wave",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Glacial Blessing",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "abyssal_horrors",
+    "cost": 0,
+    "effects": [
+      {
+        "name": "Glacial Blessing",
+        "description": "All 'Abyssal Depths' monsters you control gain 400 ATK. (Continuous Spell)",
+        "effectType": "continuous"
+      }
+    ]
+  },
+  {
+    "name": "Deep Recovery",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Frozen Touch",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Sudden Freeze",
+    "rarity": "uncommon",
+    "cardType": "spell",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Abyssal Shield",
+    "rarity": "uncommon",
+    "cardType": "spell",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Riptide Counter",
+    "rarity": "uncommon",
+    "cardType": "spell",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Endless Depths",
+    "rarity": "rare",
+    "cardType": "spell",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Frozen Prison",
+    "rarity": "rare",
+    "cardType": "spell",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Abyssal Trench",
+    "rarity": "rare",
+    "cardType": "spell",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Frozen Ambush",
+    "rarity": "common",
+    "cardType": "trap",
+    "archetype": "abyssal_horrors",
+    "cost": 0,
+    "flavorText": "Currents bow before its terrible might.",
+    "imageUrl": "/assets/cards/Frozen_Ambush.png"
+  },
+  {
+    "name": "Tidal Revenge",
+    "rarity": "common",
+    "cardType": "trap",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Icy Presence",
+    "rarity": "uncommon",
+    "cardType": "trap",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Abyssal Barrier",
+    "rarity": "uncommon",
+    "cardType": "trap",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  },
+  {
+    "name": "Depth Rejection",
+    "rarity": "epic",
+    "cardType": "trap",
+    "archetype": "abyssal_horrors",
+    "cost": 0
+  }
+]

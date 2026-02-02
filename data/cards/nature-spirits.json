@@ -1,0 +1,441 @@
+[
+  {
+    "name": "Iron Soldier",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 3,
+    "attack": 1000,
+    "defense": 1200
+  },
+  {
+    "name": "Bronze Centurion",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 3,
+    "attack": 1200,
+    "defense": 1000
+  },
+  {
+    "name": "Steel Knight",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 4,
+    "attack": 1400,
+    "defense": 1400
+  },
+  {
+    "name": "Armored Recruit",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 2,
+    "attack": 600,
+    "defense": 800
+  },
+  {
+    "name": "Battle Sentinel",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 4,
+    "attack": 1100,
+    "defense": 1500
+  },
+  {
+    "name": "Plated Defender",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 3,
+    "attack": 800,
+    "defense": 1600,
+    "effects": [
+      {
+        "name": "Cannot Be Destroyed by Battle",
+        "description": "Cannot be destroyed by battle.",
+        "effectType": "continuous"
+      }
+    ]
+  },
+  {
+    "name": "Siege Tank",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 4,
+    "attack": 1500,
+    "defense": 1100
+  },
+  {
+    "name": "Fortified Warden",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 3,
+    "attack": 700,
+    "defense": 1400
+  },
+  {
+    "name": "Heavy Golem",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 4,
+    "attack": 1300,
+    "defense": 1300
+  },
+  {
+    "name": "Chrome Mech",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 2,
+    "attack": 900,
+    "defense": 900
+  },
+  {
+    "name": "Titanium Guard",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 3,
+    "attack": 500,
+    "defense": 1800
+  },
+  {
+    "name": "Battle Juggernaut",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 4,
+    "attack": 1600,
+    "defense": 1200
+  },
+  {
+    "name": "Iron Commander",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 5,
+    "attack": 1700,
+    "defense": 1500
+  },
+  {
+    "name": "Steel Colossus",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 5,
+    "attack": 1400,
+    "defense": 2000
+  },
+  {
+    "name": "Siege Master",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 5,
+    "attack": 1900,
+    "defense": 1300
+  },
+  {
+    "name": "Armored Vanguard",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 4,
+    "attack": 1600,
+    "defense": 1600
+  },
+  {
+    "name": "Fortified General",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 5,
+    "attack": 1800,
+    "defense": 1800
+  },
+  {
+    "name": "Heavy Sentinel",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 5,
+    "attack": 1200,
+    "defense": 2200,
+    "flavorText": "The ground trembles beneath its iron steps.",
+    "imageUrl": "/assets/cards/Heavy_Sentinel.png"
+  },
+  {
+    "name": "Chrome Centurion",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 4,
+    "attack": 1500,
+    "defense": 1700
+  },
+  {
+    "name": "Plated Champion",
+    "rarity": "uncommon",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 5,
+    "attack": 2000,
+    "defense": 1400
+  },
+  {
+    "name": "Iron Warlord",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 6,
+    "attack": 2400,
+    "defense": 2000
+  },
+  {
+    "name": "Titanium Dragon",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 7,
+    "attack": 2200,
+    "defense": 2600
+  },
+  {
+    "name": "Siege Behemoth",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 7,
+    "attack": 2600,
+    "defense": 1800
+  },
+  {
+    "name": "Fortress Guardian",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 6,
+    "attack": 1800,
+    "defense": 3000,
+    "effects": [
+      {
+        "name": "Fortress Shield",
+        "description": "Your other monsters cannot be targeted by opponent effects.",
+        "effectType": "continuous"
+      }
+    ],
+    "flavorText": "An impenetrable wall of steel."
+  },
+  {
+    "name": "Steel Overlord",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 6,
+    "attack": 2300,
+    "defense": 2300
+  },
+  {
+    "name": "Iron Titan",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 8,
+    "attack": 2800,
+    "defense": 3000
+  },
+  {
+    "name": "Adamantine Colossus",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 8,
+    "attack": 2400,
+    "defense": 3200,
+    "effects": [
+      {
+        "name": "Draw Power",
+        "description": "When this card is Summoned: Draw 2 card(s).",
+        "effectType": "triggered"
+      },
+      {
+        "name": "On Summon Destroy",
+        "description": "When Summoned: Destroy 2 card(s) your opponent controls.",
+        "effectType": "triggered"
+      },
+      {
+        "name": "Cannot Be Destroyed by Battle",
+        "description": "Cannot be destroyed by battle.",
+        "effectType": "continuous"
+      }
+    ]
+  },
+  {
+    "name": "Fortress Prime",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 7,
+    "attack": 2600,
+    "defense": 2800
+  },
+  {
+    "name": "Iron Marshal Ferrum",
+    "rarity": "legendary",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 9,
+    "attack": 3000,
+    "defense": 3200
+  },
+  {
+    "name": "Iron Emperor Maximus",
+    "rarity": "legendary",
+    "cardType": "creature",
+    "archetype": "nature_spirits",
+    "cost": 10,
+    "attack": 3500,
+    "defense": 4500,
+    "effects": [
+      {
+        "name": "Impenetrable Armor",
+        "description": "Cannot be destroyed by battle or card effects.",
+        "effectType": "continuous"
+      },
+      {
+        "name": "Imperial Command",
+        "description": "Once per turn: This card's ATK becomes equal to its DEF until end of turn.",
+        "effectType": "ignition"
+      },
+      {
+        "name": "Legion's Shield",
+        "description": "All 'Iron Legion' monsters you control cannot be targeted by opponent's effects.",
+        "effectType": "continuous"
+      }
+    ],
+    "flavorText": "The unbreakable emperor who has never known defeat."
+  },
+  {
+    "name": "Legion's Strength",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Armored Aura",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "nature_spirits",
+    "cost": 0,
+    "effects": [
+      {
+        "name": "Armored Aura",
+        "description": "All 'Iron Legion' monsters you control gain 400 ATK. (Continuous Spell)",
+        "effectType": "continuous"
+      }
+    ],
+    "imageUrl": "/assets/cards/Armored_Aura.png"
+  },
+  {
+    "name": "Iron Recovery",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Defensive Formation",
+    "rarity": "common",
+    "cardType": "spell",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Quick Reinforcement",
+    "rarity": "uncommon",
+    "cardType": "spell",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Iron Wall",
+    "rarity": "uncommon",
+    "cardType": "spell",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Counter Assault",
+    "rarity": "uncommon",
+    "cardType": "spell",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Eternal Fortification",
+    "rarity": "rare",
+    "cardType": "spell",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Legion's Arsenal",
+    "rarity": "rare",
+    "cardType": "spell",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Iron Fortress",
+    "rarity": "rare",
+    "cardType": "spell",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Armored Surprise",
+    "rarity": "common",
+    "cardType": "trap",
+    "archetype": "nature_spirits",
+    "cost": 0,
+    "flavorText": "The ground trembles beneath its iron steps.",
+    "imageUrl": "/assets/cards/Armored_Surprise.png"
+  },
+  {
+    "name": "Legion's Stand",
+    "rarity": "common",
+    "cardType": "trap",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Fortified Field",
+    "rarity": "uncommon",
+    "cardType": "trap",
+    "archetype": "nature_spirits",
+    "cost": 0,
+    "flavorText": "The ground trembles beneath its iron steps.",
+    "imageUrl": "/assets/cards/Fortified_Field.png"
+  },
+  {
+    "name": "Iron Discipline",
+    "rarity": "uncommon",
+    "cardType": "trap",
+    "archetype": "nature_spirits",
+    "cost": 0
+  },
+  {
+    "name": "Impenetrable Wall",
+    "rarity": "epic",
+    "cardType": "trap",
+    "archetype": "nature_spirits",
+    "cost": 0
+  }
+]
