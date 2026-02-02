@@ -24,44 +24,21 @@ import { useState } from "react";
 // Types
 // =============================================================================
 
-type TargetType = "player" | "card" | "listing" | "season" | "config" | "system";
-
 interface AuditLogEntry {
   _id: string;
   _creationTime: number;
-  adminUserId: string;
+  adminId: string;
+  adminUsername?: string;
   action: string;
-  targetType: TargetType;
-  targetId?: string;
-  previousValue?: unknown;
-  newValue?: unknown;
-  reason?: string;
+  targetUserId?: string;
+  targetUsername?: string;
+  targetEmail?: string;
+  metadata?: unknown;
+  timestamp: number;
   ipAddress?: string;
-  createdAt: number;
+  success: boolean;
+  errorMessage?: string;
 }
-
-// =============================================================================
-// Constants
-// =============================================================================
-
-const TARGET_TYPES: { value: TargetType | "all"; label: string }[] = [
-  { value: "all", label: "All Types" },
-  { value: "player", label: "Player" },
-  { value: "card", label: "Card" },
-  { value: "listing", label: "Listing" },
-  { value: "season", label: "Season" },
-  { value: "config", label: "Config" },
-  { value: "system", label: "System" },
-];
-
-const TARGET_TYPE_COLORS: Record<TargetType, string> = {
-  player: "blue",
-  card: "purple",
-  listing: "emerald",
-  season: "amber",
-  config: "gray",
-  system: "red",
-};
 
 // =============================================================================
 // Components
@@ -84,38 +61,33 @@ function ActionBadge({ action }: { action: string }) {
   );
 }
 
-function TargetTypeBadge({ type }: { type: TargetType }) {
-  return (
-    <Badge color={TARGET_TYPE_COLORS[type]} size="sm">
-      {type}
-    </Badge>
-  );
-}
-
 // =============================================================================
 // Main Component
 // =============================================================================
 
 export default function AuditLogPage() {
-  const [targetType, setTargetType] = useState<TargetType | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "success" | "failed">("all");
   const [limit, setLimit] = useState(100);
 
-  const logsData = useConvexQuery(apiAny.admin.admin.getAuditLog, {
+  const logsResponse = useConvexQuery(apiAny.admin.admin.getAuditLog, {
     limit,
   });
 
-  // Ensure logs is always an array (handle errors/non-array responses)
-  const logs: AuditLogEntry[] | undefined = Array.isArray(logsData) ? logsData : undefined;
+  // Extract logs from response object { logs, nextCursor, hasMore }
+  const logs: AuditLogEntry[] | undefined =
+    logsResponse && typeof logsResponse === "object" && "logs" in logsResponse
+      ? (logsResponse.logs as AuditLogEntry[])
+      : undefined;
 
   const columns: ColumnDef<AuditLogEntry>[] = [
     {
-      id: "createdAt",
+      id: "timestamp",
       header: "Time",
       cell: (log: AuditLogEntry) => (
         <div className="text-sm">
-          <div>{new Date(log.createdAt).toLocaleDateString()}</div>
+          <div>{new Date(log.timestamp).toLocaleDateString()}</div>
           <div className="text-xs text-muted-foreground">
-            {new Date(log.createdAt).toLocaleTimeString()}
+            {new Date(log.timestamp).toLocaleTimeString()}
           </div>
         </div>
       ),
@@ -126,32 +98,39 @@ export default function AuditLogPage() {
       cell: (log: AuditLogEntry) => <ActionBadge action={log.action} />,
     },
     {
-      id: "targetType",
+      id: "target",
       header: "Target",
       cell: (log: AuditLogEntry) => (
         <div className="space-y-1">
-          <TargetTypeBadge type={log.targetType} />
-          {log.targetId && (
+          {log.targetUsername ? (
+            <div className="text-sm">{log.targetUsername}</div>
+          ) : log.targetEmail ? (
+            <div className="text-sm">{log.targetEmail}</div>
+          ) : log.targetUserId ? (
             <div className="text-xs text-muted-foreground font-mono">
-              {log.targetId.slice(0, 12)}...
+              {String(log.targetUserId).slice(0, 12)}...
             </div>
+          ) : (
+            <div className="text-muted-foreground">-</div>
           )}
         </div>
       ),
     },
     {
-      id: "reason",
-      header: "Reason",
+      id: "status",
+      header: "Status",
       cell: (log: AuditLogEntry) => (
-        <div className="max-w-xs truncate text-sm text-muted-foreground">{log.reason || "-"}</div>
+        <Badge color={log.success ? "emerald" : "red"} size="sm">
+          {log.success ? "Success" : "Failed"}
+        </Badge>
       ),
     },
     {
-      id: "adminUserId",
+      id: "admin",
       header: "Admin",
       cell: (log: AuditLogEntry) => (
-        <div className="text-xs font-mono text-muted-foreground">
-          {log.adminUserId.slice(0, 12)}...
+        <div className="text-sm">
+          {log.adminUsername || String(log.adminId).slice(0, 12) + "..."}
         </div>
       ),
     },
@@ -163,20 +142,18 @@ export default function AuditLogPage() {
       <Card className="mb-6">
         <div className="flex flex-wrap gap-4">
           <div className="w-48">
-            <Text className="text-sm mb-2">Target Type</Text>
+            <Text className="text-sm mb-2">Status</Text>
             <Select
-              value={targetType}
-              onValueChange={(v) => setTargetType(v as TargetType | "all")}
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as "all" | "success" | "failed")}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TARGET_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="success">Success</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -206,15 +183,15 @@ export default function AuditLogPage() {
             <Text className="text-2xl font-bold">{logs.length}</Text>
           </Card>
           <Card>
-            <Text className="text-sm text-muted-foreground">Player Actions</Text>
+            <Text className="text-sm text-muted-foreground">Successful</Text>
             <Text className="text-2xl font-bold">
-              {logs.filter((l) => l.targetType === "player").length}
+              {logs.filter((l) => l.success).length}
             </Text>
           </Card>
           <Card>
-            <Text className="text-sm text-muted-foreground">System Actions</Text>
+            <Text className="text-sm text-muted-foreground">Failed</Text>
             <Text className="text-2xl font-bold">
-              {logs.filter((l) => l.targetType === "system").length}
+              {logs.filter((l) => !l.success).length}
             </Text>
           </Card>
           <Card>
@@ -222,7 +199,7 @@ export default function AuditLogPage() {
             <Text className="text-2xl font-bold">
               {
                 logs.filter(
-                  (l) => new Date(l.createdAt).toDateString() === new Date().toDateString()
+                  (l) => new Date(l.timestamp).toDateString() === new Date().toDateString()
                 ).length
               }
             </Text>
