@@ -1,5 +1,5 @@
+import { type Locator, expect } from "@playwright/test";
 import { BasePage } from "./BasePage";
-import { Locator, expect } from "@playwright/test";
 
 export class DeckBuilderPage extends BasePage {
   readonly url = "/binder";
@@ -52,15 +52,18 @@ export class DeckBuilderPage extends BasePage {
   }
 
   get backButton(): Locator {
-    return this.deckEditor.locator('button').first();
+    return this.deckEditor.locator("button").first();
   }
 
   get editNameButton(): Locator {
-    return this.deckEditor.locator('button').filter({ has: this.page.locator('svg') }).nth(1);
+    return this.deckEditor
+      .locator("button")
+      .filter({ has: this.page.locator("svg") })
+      .nth(1);
   }
 
   get deckNameInput(): Locator {
-    return this.deckEditor.locator('input').first();
+    return this.deckEditor.locator("input").first();
   }
 
   get deckSearchInput(): Locator {
@@ -72,7 +75,7 @@ export class DeckBuilderPage extends BasePage {
   }
 
   getAvailableCard(index: number): Locator {
-    return this.deckEditor.locator('.grid > div').nth(index);
+    return this.deckEditor.locator(".grid > div").nth(index);
   }
 
   // Actions
@@ -103,7 +106,7 @@ export class DeckBuilderPage extends BasePage {
     await this.waitForLoad();
   }
 
-  async addCardToDeck(index: number = 0) {
+  async addCardToDeck(index = 0) {
     await this.getAvailableCard(index).click();
     await this.page.waitForTimeout(200);
   }
@@ -116,7 +119,7 @@ export class DeckBuilderPage extends BasePage {
 
   async removeCardFromDeck(index: number) {
     const card = this.getCardInDeck(index);
-    const minusButton = card.locator('button').first();
+    const minusButton = card.locator("button").first();
     await minusButton.click();
   }
 
@@ -148,7 +151,7 @@ export class DeckBuilderPage extends BasePage {
   async deleteDeck(deckName: string) {
     const deckCard = this.getDeckCard(deckName);
     await deckCard.hover();
-    const deleteButton = deckCard.locator('button').filter({ hasText: /delete/i });
+    const deleteButton = deckCard.locator("button").filter({ hasText: /delete/i });
     await deleteButton.click();
     // Confirm dialog
     await this.page.locator('button:has-text("Delete")').click();

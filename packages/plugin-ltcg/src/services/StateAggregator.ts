@@ -38,7 +38,10 @@ interface DataTypeTTLConfig {
 export class StateAggregator extends Service {
   static serviceType = SERVICE_TYPES.STATE_AGGREGATOR;
 
-  private runtime: IAgentRuntime | null = null;
+  capabilityDescription = "Aggregates game state data from all LTCG services for UI panels";
+
+  // Use separate property since we initialize lazily via initialize()
+  private _lazyRuntime: IAgentRuntime | null = null;
   private pollingService: IPollingService | null = null;
   private orchestrator: ITurnOrchestrator | null = null;
   private convexClient: ConvexHttpClient | null = null;
@@ -59,7 +62,7 @@ export class StateAggregator extends Service {
   async initialize(runtime: IAgentRuntime): Promise<void> {
     logger.info("*** Initializing State Aggregator Service ***");
 
-    this.runtime = runtime;
+    this._lazyRuntime = runtime;
 
     // Initialize TTL configuration from environment or defaults
     this.ttlConfig = this.initializeTTLConfig(runtime);
@@ -92,7 +95,7 @@ export class StateAggregator extends Service {
     this.metricsCache = null;
     this.pollingService = null;
     this.orchestrator = null;
-    this.runtime = null;
+    this._lazyRuntime = null;
     logger.info("State Aggregator stopped");
   }
 
@@ -114,9 +117,9 @@ export class StateAggregator extends Service {
    * Uses SERVICE_TYPES constant to avoid hardcoded strings
    */
   private getPollingService(): IPollingService | null {
-    if (!this.pollingService && this.runtime) {
+    if (!this.pollingService && this._lazyRuntime) {
       try {
-        this.pollingService = this.runtime.getService(SERVICE_TYPES.POLLING) as IPollingService;
+        this.pollingService = this._lazyRuntime.getService(SERVICE_TYPES.POLLING) as unknown as IPollingService | null;
       } catch (_error) {
         // Service not available yet
       }
@@ -129,11 +132,11 @@ export class StateAggregator extends Service {
    * Uses SERVICE_TYPES constant to avoid hardcoded strings
    */
   private getOrchestrator(): ITurnOrchestrator | null {
-    if (!this.orchestrator && this.runtime) {
+    if (!this.orchestrator && this._lazyRuntime) {
       try {
-        this.orchestrator = this.runtime.getService(
+        this.orchestrator = this._lazyRuntime.getService(
           SERVICE_TYPES.ORCHESTRATOR
-        ) as ITurnOrchestrator;
+        ) as unknown as ITurnOrchestrator | null;
       } catch (_error) {
         // Service not available yet
       }
@@ -274,8 +277,8 @@ export class StateAggregator extends Service {
 
     try {
       // Get real match history from Convex if available
-      if (this.convexClient && this.runtime) {
-        const userId = this.runtime.getSetting("LTCG_USER_ID") as string | undefined;
+      if (this.convexClient && this._lazyRuntime) {
+        const userId = this._lazyRuntime.getSetting("LTCG_USER_ID") as string | undefined;
 
         if (userId) {
           try {

@@ -50,9 +50,7 @@ export async function createMockPrivyToken(
   } = options;
 
   // Ensure userId has the did:privy: prefix
-  const subject = userId.startsWith("did:privy:")
-    ? userId
-    : `did:privy:${userId}`;
+  const subject = userId.startsWith("did:privy:") ? userId : `did:privy:${userId}`;
 
   return await new jose.SignJWT({
     sid: sessionId,

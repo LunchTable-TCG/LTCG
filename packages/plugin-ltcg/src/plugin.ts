@@ -152,7 +152,7 @@ const plugin: LTCGPlugin = {
     {
       name: "ltcg-health",
       path: "/ltcg/health",
-      type: "GET",
+      type: "GET" as const,
       handler: async (_req: RouteRequest, res: RouteResponse) => {
         res.json({
           status: "ok",
@@ -170,14 +170,14 @@ const plugin: LTCGPlugin = {
   events: {
     // Event handlers for debugging - only log in debug mode
     MESSAGE_RECEIVED: [
-      async (_params: Record<string, unknown>) => {
+      async (_params) => {
         if (process.env.LTCG_DEBUG_MODE === "true") {
           logger.debug("LTCG: MESSAGE_RECEIVED event");
         }
       },
     ],
     WORLD_CONNECTED: [
-      async (_params: Record<string, unknown>) => {
+      async (_params) => {
         logger.info("LTCG: Connected to world");
       },
     ],

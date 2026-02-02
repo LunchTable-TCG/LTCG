@@ -25,25 +25,22 @@ export class TestDataFactory {
    * @param opts.gems - Initial gems amount (optional)
    * @returns User data including userId, privyDid, and displayName
    */
-  async createUser(opts: {
-    displayName?: string;
-    gold?: number;
-    gems?: number;
-  } = {}) {
-    const privyDid = `did:privy:test-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2)}`;
+  async createUser(
+    opts: {
+      displayName?: string;
+      gold?: number;
+      gems?: number;
+    } = {}
+  ) {
+    const privyDid = `did:privy:test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const displayName = opts.displayName ?? `TestPlayer_${Date.now()}`;
 
-    const userId = await this.client.mutation(
-      internal.testing.seedTestUser.seedTestUser,
-      {
-        privyDid,
-        displayName,
-        gold: opts.gold,
-        gems: opts.gems,
-      }
-    );
+    const userId = await this.client.mutation(internal.testing.seedTestUser.seedTestUser, {
+      privyDid,
+      displayName,
+      gold: opts.gold,
+      gems: opts.gems,
+    });
 
     this.createdUsers.push(userId);
     return { userId, privyDid, displayName };
@@ -56,18 +53,12 @@ export class TestDataFactory {
    * @param cardIds - Array of card definition IDs to add to the deck
    * @returns The created deck ID
    */
-  async createDeckForUser(
-    userId: Id<"users">,
-    cardIds: Id<"cardDefinitions">[]
-  ) {
-    return await this.client.mutation(
-      internal.testing.seedTestDeck.seedTestDeck,
-      {
-        userId,
-        name: `Test Deck ${Date.now()}`,
-        cardIds,
-      }
-    );
+  async createDeckForUser(userId: Id<"users">, cardIds: Id<"cardDefinitions">[]) {
+    return await this.client.mutation(internal.testing.seedTestDeck.seedTestDeck, {
+      userId,
+      name: `Test Deck ${Date.now()}`,
+      cardIds,
+    });
   }
 
   /**
@@ -79,10 +70,7 @@ export class TestDataFactory {
   async cleanup() {
     for (const userId of this.createdUsers) {
       try {
-        await this.client.mutation(
-          internal.testing.cleanup.cleanupTestUser,
-          { userId }
-        );
+        await this.client.mutation(internal.testing.cleanup.cleanupTestUser, { userId });
       } catch (e) {
         console.warn(`Failed to cleanup user ${userId}:`, e);
       }

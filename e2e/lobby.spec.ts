@@ -12,8 +12,8 @@
  * To run them, set up authenticated browser state first.
  */
 
-import { test, expect, enableConsoleLogs } from "./setup/fixtures";
-import { TEST_CONFIG, SELECTORS, waitForLoadingToComplete } from "./setup/test-data";
+import { enableConsoleLogs, expect, test } from "./setup/fixtures";
+import { TEST_CONFIG, waitForLoadingToComplete } from "./setup/test-data";
 
 // =============================================================================
 // AUTHENTICATED LOBBY TESTS
@@ -103,9 +103,7 @@ test.describe("Game Lobby Flow", () => {
       const isDisabled = await createButton.isDisabled();
       if (!isDisabled) {
         await createButton.click();
-        await expect(
-          page.locator('text=/select.*active.*deck/i')
-        ).toBeVisible({ timeout: 5000 });
+        await expect(page.locator("text=/select.*active.*deck/i")).toBeVisible({ timeout: 5000 });
       }
     });
   });
@@ -136,9 +134,7 @@ test.describe("Game Lobby Flow", () => {
       await page.click('button:has-text("Join")');
 
       // Should show error
-      await expect(
-        page.locator('text=/lobby.*not.*found/i')
-      ).toBeVisible({ timeout: 5000 });
+      await expect(page.locator("text=/lobby.*not.*found/i")).toBeVisible({ timeout: 5000 });
     });
   });
 
@@ -198,9 +194,7 @@ test.describe("Game Lobby Flow", () => {
       const isDisabled = await startButton.isDisabled();
       if (!isDisabled) {
         await startButton.click();
-        await expect(
-          page.locator('text=/need.*more.*players/i')
-        ).toBeVisible({ timeout: 5000 });
+        await expect(page.locator("text=/need.*more.*players/i")).toBeVisible({ timeout: 5000 });
       }
     });
   });
@@ -252,9 +246,7 @@ test.describe("Game Lobby Flow", () => {
       await page.waitForSelector('[data-testid="game-lobby"]');
 
       // Player list should be visible
-      await expect(
-        page.locator('[data-testid="lobby-players"]')
-      ).toBeVisible();
+      await expect(page.locator('[data-testid="lobby-players"]')).toBeVisible();
     });
 
     test("should show player ready status", async ({ page }) => {
@@ -274,9 +266,7 @@ test.describe("Game Lobby Flow", () => {
         await readyButton.click();
 
         // Ready indicator should appear
-        await expect(
-          page.locator('[data-testid="player-ready"]')
-        ).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('[data-testid="player-ready"]')).toBeVisible({ timeout: 5000 });
       }
     });
   });

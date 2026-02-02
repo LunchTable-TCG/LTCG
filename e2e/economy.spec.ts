@@ -9,7 +9,7 @@
  * - Marketplace (if available)
  */
 
-import { test, expect } from "./setup/fixtures";
+import { expect, test } from "./setup/fixtures";
 
 test.describe("Economy", () => {
   test.describe("Shop Page", () => {
@@ -192,17 +192,15 @@ test.describe("Economy", () => {
         });
 
         // Button may not be visible if cards auto-reveal
-        const isVisible = await revealAllButton
-          .isVisible()
-          .catch(() => false);
+        const isVisible = await revealAllButton.isVisible().catch(() => false);
 
         if (isVisible) {
           await revealAllButton.click();
 
           // Should transition to complete phase
-          await expect(
-            shopPage.page.getByText("Pack Opened Successfully")
-          ).toBeVisible({ timeout: 5000 });
+          await expect(shopPage.page.getByText("Pack Opened Successfully")).toBeVisible({
+            timeout: 5000,
+          });
         }
       } else {
         test.skip();

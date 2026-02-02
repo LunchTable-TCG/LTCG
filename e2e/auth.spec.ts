@@ -11,7 +11,7 @@
  * - User data loading (profile info displays correctly)
  */
 
-import { test, expect } from "./setup/fixtures";
+import { expect, test } from "./setup/fixtures";
 
 test.describe("Authentication Flow", () => {
   test.describe("Unauthenticated Access", () => {
@@ -22,11 +22,10 @@ test.describe("Authentication Flow", () => {
       await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
 
       // Login button should be visible
-      const loginButton = page.locator('[data-testid="login-button"]').or(
-        page.locator('button:has-text("Sign In")')
-      ).or(
-        page.locator('button:has-text("Login")')
-      );
+      const loginButton = page
+        .locator('[data-testid="login-button"]')
+        .or(page.locator('button:has-text("Sign In")'))
+        .or(page.locator('button:has-text("Login")'));
       await expect(loginButton.first()).toBeVisible({ timeout: 5000 });
     });
 
@@ -38,9 +37,12 @@ test.describe("Authentication Flow", () => {
 
         // Verify redirect or login prompt
         const onLoginPage = page.url().includes("login");
-        const loginVisible = await page.locator('[data-testid="login-button"]').or(
-          page.locator('button:has-text("Sign In")')
-        ).first().isVisible().catch(() => false);
+        const loginVisible = await page
+          .locator('[data-testid="login-button"]')
+          .or(page.locator('button:has-text("Sign In")'))
+          .first()
+          .isVisible()
+          .catch(() => false);
 
         expect(onLoginPage || loginVisible).toBeTruthy();
       }
@@ -81,12 +83,14 @@ test.describe("Authentication Flow", () => {
         expect(authenticatedPage.url()).toContain(route);
 
         // Should not see login prompt
-        const loginButton = authenticatedPage.locator('[data-testid="login-button"]').or(
-          authenticatedPage.locator('button:has-text("Sign In")')
-        );
-        await expect(loginButton.first()).not.toBeVisible({ timeout: 2000 }).catch(() => {
-          // If element doesn't exist at all, that's fine
-        });
+        const loginButton = authenticatedPage
+          .locator('[data-testid="login-button"]')
+          .or(authenticatedPage.locator('button:has-text("Sign In")'));
+        await expect(loginButton.first())
+          .not.toBeVisible({ timeout: 2000 })
+          .catch(() => {
+            // If element doesn't exist at all, that's fine
+          });
       }
     });
 
@@ -99,9 +103,11 @@ test.describe("Authentication Flow", () => {
 
       // Should not see login button
       const loginButton = authenticatedPage.locator('[data-testid="login-button"]');
-      await expect(loginButton).not.toBeVisible().catch(() => {
-        // Element may not exist, which is also valid
-      });
+      await expect(loginButton)
+        .not.toBeVisible()
+        .catch(() => {
+          // Element may not exist, which is also valid
+        });
 
       // Page should have loaded with content
       const body = await authenticatedPage.textContent("body");
@@ -132,7 +138,10 @@ test.describe("Authentication Flow", () => {
       expect(body).toBeTruthy();
     });
 
-    test("authenticated user sees user-specific content", async ({ authenticatedPage, testUser }) => {
+    test("authenticated user sees user-specific content", async ({
+      authenticatedPage,
+      testUser,
+    }) => {
       await authenticatedPage.goto("/lunchtable");
       await authenticatedPage.waitForLoadState("networkidle");
 
@@ -140,16 +149,17 @@ test.describe("Authentication Flow", () => {
       await authenticatedPage.waitForTimeout(2000);
 
       // Check if user menu or profile elements exist
-      const userMenu = authenticatedPage.locator('[data-testid="user-menu"]').or(
-        authenticatedPage.locator('[data-testid="user-profile"]')
-      ).or(
-        authenticatedPage.locator('button[aria-label*="profile" i]')
-      ).or(
-        authenticatedPage.locator('button[aria-label*="user" i]')
-      );
+      const userMenu = authenticatedPage
+        .locator('[data-testid="user-menu"]')
+        .or(authenticatedPage.locator('[data-testid="user-profile"]'))
+        .or(authenticatedPage.locator('button[aria-label*="profile" i]'))
+        .or(authenticatedPage.locator('button[aria-label*="user" i]'));
 
       // If user-specific elements exist, they should be visible
-      const hasUserElements = await userMenu.first().isVisible({ timeout: 3000 }).catch(() => false);
+      const hasUserElements = await userMenu
+        .first()
+        .isVisible({ timeout: 3000 })
+        .catch(() => false);
 
       // Test passes if we either:
       // 1. See user-specific elements
@@ -256,7 +266,10 @@ test.describe("Authentication Flow", () => {
       expect(authenticatedPage.url()).toContain("/lunchtable");
     });
 
-    test("authenticated user has valid session token in localStorage", async ({ authenticatedPage, testUser }) => {
+    test("authenticated user has valid session token in localStorage", async ({
+      authenticatedPage,
+      testUser,
+    }) => {
       await authenticatedPage.goto("/lunchtable");
       await authenticatedPage.waitForLoadState("networkidle");
 
@@ -269,7 +282,10 @@ test.describe("Authentication Flow", () => {
       expect(hasToken).toBeTruthy();
     });
 
-    test("authenticated user has valid user data in localStorage", async ({ authenticatedPage, testUser }) => {
+    test("authenticated user has valid user data in localStorage", async ({
+      authenticatedPage,
+      testUser,
+    }) => {
       await authenticatedPage.goto("/lunchtable");
       await authenticatedPage.waitForLoadState("networkidle");
 

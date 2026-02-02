@@ -7,7 +7,7 @@
  * To run them, set up authenticated browser state first.
  */
 
-import { test, expect, enableConsoleLogs } from "./setup/fixtures";
+import { enableConsoleLogs, expect, test } from "./setup/fixtures";
 import { waitForLoadingToComplete } from "./setup/test-data";
 
 // =============================================================================
@@ -27,7 +27,7 @@ test.describe("Debug Cards", () => {
     await waitForLoadingToComplete(page);
 
     // Wait for loader to disappear
-    await page.locator('text=Loading Collection...').waitFor({ state: "detached", timeout: 15000 });
+    await page.locator("text=Loading Collection...").waitFor({ state: "detached", timeout: 15000 });
 
     // Wait for at least one card to appear
     await page.waitForSelector('[data-testid="card-item"]', { timeout: 5000 });

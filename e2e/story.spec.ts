@@ -9,7 +9,7 @@
  * - Unlock conditions
  */
 
-import { test, expect } from "./setup/fixtures";
+import { expect, test } from "./setup/fixtures";
 
 test.describe("Story Mode", () => {
   test.describe("Story Page", () => {
@@ -198,7 +198,9 @@ test.describe("Story Mode", () => {
       await storyPage.waitForStagesLoaded();
 
       // Stars indicator should be visible if stages have been completed
-      const starsVisible = await storyPage.stageStars.isVisible({ timeout: 2000 }).catch(() => false);
+      const starsVisible = await storyPage.stageStars
+        .isVisible({ timeout: 2000 })
+        .catch(() => false);
 
       // Test passes whether stars are shown or not (depends on completion state)
       expect(starsVisible !== undefined).toBeTruthy();

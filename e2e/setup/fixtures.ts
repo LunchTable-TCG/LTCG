@@ -16,18 +16,11 @@
  *   });
  */
 
-import { test as base, expect, type Page } from "@playwright/test";
+import { type Page, test as base, expect } from "@playwright/test";
+import { DeckBuilderPage, GamePage, LobbyPage, ShopPage, SocialPage, StoryPage } from "../pages";
+import { TEST_ENV } from "./env";
 import { TestDataFactory } from "./factories";
 import { createMockPrivyToken } from "./mock-privy-token";
-import { TEST_ENV } from "./env";
-import {
-  GamePage,
-  DeckBuilderPage,
-  ShopPage,
-  LobbyPage,
-  SocialPage,
-  StoryPage,
-} from "../pages";
 
 export { expect };
 
@@ -88,10 +81,7 @@ export const test = base.extend<TestFixtures>({
   // Test user fixture with Privy auth token
   testUser: async ({ factory }, use) => {
     const user = await factory.createUser();
-    const token = await createMockPrivyToken(
-      user.privyDid,
-      TEST_ENV.PRIVY_APP_ID
-    );
+    const token = await createMockPrivyToken(user.privyDid, TEST_ENV.PRIVY_APP_ID);
     await use({ ...user, token });
   },
 

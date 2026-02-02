@@ -7,7 +7,7 @@
  * Tagged with @smoke for selective execution in CI.
  */
 
-import { test, expect } from "./setup/fixtures";
+import { expect, test } from "./setup/fixtures";
 
 test.describe("Smoke Tests @smoke", () => {
   test("homepage redirects to login for unauthenticated users", async ({ page }) => {

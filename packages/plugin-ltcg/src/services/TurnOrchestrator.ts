@@ -62,7 +62,7 @@ interface TurnContext {
 export class TurnOrchestrator extends Service {
   static serviceType = SERVICE_TYPES.ORCHESTRATOR;
 
-  private runtime: IAgentRuntime;
+  // Note: runtime is inherited from Service base class as protected
   private client: LTCGApiClient | null = null;
   private isExecutingTurn = false;
   private maxActionsPerTurn = 20; // Safety limit
@@ -75,10 +75,10 @@ export class TurnOrchestrator extends Service {
 
   constructor(runtime: IAgentRuntime) {
     super(runtime);
-    this.runtime = runtime;
+    // runtime is set by super(runtime)
   }
 
-  static async start(runtime: IAgentRuntime): Promise<TurnOrchestrator> {
+  static async start(runtime: IAgentRuntime): Promise<Service> {
     logger.info("*** Starting LTCG Turn Orchestrator ***");
 
     const service = new TurnOrchestrator(runtime);
@@ -103,7 +103,7 @@ export class TurnOrchestrator extends Service {
 
   static async stop(runtime: IAgentRuntime): Promise<void> {
     logger.info("*** Stopping LTCG Turn Orchestrator ***");
-    const service = runtime.getService(TurnOrchestrator.serviceType) as TurnOrchestrator;
+    const service = runtime.getService(TurnOrchestrator.serviceType) as unknown as TurnOrchestrator | null;
     if (service) {
       service.isExecutingTurn = false;
     }

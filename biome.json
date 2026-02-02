@@ -13,7 +13,8 @@
       "apps/admin/src/**",
       "apps/web/src/**",
       "apps/web/app/**",
-      "convex/**"
+      "convex/**",
+      "e2e/**"
     ],
     "ignore": ["**/node_modules/**", "**/.next/**", "**/dist/**", "convex/_generated/**"]
   },

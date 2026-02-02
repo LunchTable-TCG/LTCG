@@ -87,7 +87,7 @@ const DEFAULT_ERROR_RECOVERY: ErrorRecoveryConfig = {
 export class LTCGPollingService extends Service {
   static serviceType = SERVICE_TYPES.POLLING;
 
-  private runtime: IAgentRuntime;
+  // Note: runtime is inherited from Service base class as protected
   private client: LTCGApiClient | null = null;
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private discoveryInterval: ReturnType<typeof setInterval> | null = null;
@@ -131,7 +131,7 @@ export class LTCGPollingService extends Service {
 
   constructor(runtime: IAgentRuntime, config?: PollingConfig) {
     super(runtime);
-    this.runtime = runtime;
+    // runtime is set by super(runtime)
     this.intervalMs = config?.intervalMs ?? 1500;
     this.discoveryIntervalMs = config?.discoveryIntervalMs ?? 5000;
     this.matchmakingIntervalMs = config?.matchmakingIntervalMs ?? 10000;
@@ -167,7 +167,7 @@ export class LTCGPollingService extends Service {
     };
   }
 
-  static async start(runtime: IAgentRuntime): Promise<LTCGPollingService> {
+  static async start(runtime: IAgentRuntime): Promise<Service> {
     const callbackUrl = runtime.getSetting("LTCG_CALLBACK_URL");
     const debugMode = runtime.getSetting("LTCG_DEBUG_MODE") === "true";
     // LTCG_AUTO_MATCHMAKING is already transformed to boolean by config schema
@@ -246,7 +246,7 @@ export class LTCGPollingService extends Service {
   static async stop(runtime: IAgentRuntime): Promise<void> {
     logger.info("*** Stopping LTCG polling service ***");
 
-    const service = runtime.getService(LTCGPollingService.serviceType) as LTCGPollingService;
+    const service = runtime.getService(LTCGPollingService.serviceType) as unknown as LTCGPollingService | null;
     if (service) {
       await service.stop();
     }

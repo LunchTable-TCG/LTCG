@@ -12,8 +12,7 @@
  * To run them, set up authenticated browser state first.
  */
 
-import { test, expect, enableConsoleLogs } from "./setup/fixtures";
-import { TEST_CONFIG, SELECTORS, waitForLoadingToComplete } from "./setup/test-data";
+import { enableConsoleLogs, expect, test } from "./setup/fixtures";
 
 // =============================================================================
 // AUTHENTICATED EFFECT SYSTEM TESTS
@@ -85,9 +84,7 @@ test.describe("Effect System Flow", () => {
 
       // Activate search effect
       // Should show deck search UI
-      await expect(
-        page.locator('[data-testid="deck-search"]')
-      ).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('[data-testid="deck-search"]')).toBeVisible({ timeout: 5000 });
     });
 
     test("should add searched card to hand", async ({ page, gameHelper }) => {
@@ -109,9 +106,7 @@ test.describe("Effect System Flow", () => {
       // Activate effect
       // Opponent responds (or player chains own effect)
       // Should show chain indicator
-      await expect(
-        page.locator('[data-testid="chain-link"]')
-      ).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('[data-testid="chain-link"]')).toBeVisible({ timeout: 5000 });
     });
 
     test("should resolve chain in reverse order", async () => {

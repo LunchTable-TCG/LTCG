@@ -50,7 +50,7 @@ export class TestUserFactory {
     return Array.from({ length: count }, (_, i) => {
       const timestamp = Date.now() + i;
       const random = Math.random().toString(36).slice(2, 8);
-      return this.create({
+      return TestUserFactory.create({
         username: `e2etest${i}_${random}`,
         email: `e2e_${timestamp}_${i}@test.ltcg.dev`,
         displayName: `E2E Test User ${i}`,
@@ -129,11 +129,12 @@ export const TEST_CONFIG = {
 
 export const SELECTORS = {
   // Auth - Privy modal based (not custom form inputs!)
-  AUTH_LOGIN_BUTTON: 'button:has-text("Enter the Hall"), button:has-text("Sign In"), button:has-text("Create Account")',
+  AUTH_LOGIN_BUTTON:
+    'button:has-text("Enter the Hall"), button:has-text("Sign In"), button:has-text("Create Account")',
   AUTH_LOADING: 'text="Loading...", text="Entering the halls..."',
 
   // Username setup (after Privy auth)
-  USERNAME_INPUT: 'input#username',
+  USERNAME_INPUT: "input#username",
   USERNAME_SUBMIT: 'button[type="submit"]:has-text("Enter the Archive")',
 
   // Navigation - sidebar/header links
@@ -168,7 +169,7 @@ export const SELECTORS = {
 
   // Phase indicators
   TURN_NUMBER: '[data-testid="turn-number"]',
-  PHASE_BAR: '[data-phase]',
+  PHASE_BAR: "[data-phase]",
 
   // Shop
   SHOP: '[data-testid="shop"]',
@@ -258,7 +259,7 @@ export function generateRandomString(length = 8): string {
 export async function waitForLoadingToComplete(page: Page, _timeout = TEST_CONFIG.DEFAULT_TIMEOUT) {
   // Wait for common loading indicators to disappear
   const loadingSelectors = [
-    '.animate-spin',
+    ".animate-spin",
     'text="Loading..."',
     'text="Entering the halls..."',
     'text="Setting up your account..."',

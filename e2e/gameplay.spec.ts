@@ -12,7 +12,7 @@
  * Story mode tests provide a way to test gameplay without multiplayer setup.
  */
 
-import { test, expect } from "./setup/fixtures";
+import { expect, test } from "./setup/fixtures";
 
 test.describe("Gameplay", () => {
   test.describe("Game Board UI", () => {
@@ -33,9 +33,9 @@ test.describe("Gameplay", () => {
     test("displays waiting screen when no active game", async ({ gamePage }) => {
       await gamePage.navigate();
       // Should show waiting for opponent or game lobby
-      await expect(
-        gamePage.page.getByText(/Waiting for|No Active Game/i)
-      ).toBeVisible({ timeout: 5000 });
+      await expect(gamePage.page.getByText(/Waiting for|No Active Game/i)).toBeVisible({
+        timeout: 5000,
+      });
     });
   });
 
@@ -134,12 +134,8 @@ test.describe("Gameplay", () => {
       const playerMonsterZone = gamePage.page.locator('[data-zone="player-monsters"]');
       const opponentMonsterZone = gamePage.page.locator('[data-zone="opponent-monsters"]');
 
-      await expect(
-        playerMonsterZone.or(gamePage.playerMonsters.first())
-      ).toBeVisible();
-      await expect(
-        opponentMonsterZone.or(gamePage.opponentMonsters.first())
-      ).toBeVisible();
+      await expect(playerMonsterZone.or(gamePage.playerMonsters.first())).toBeVisible();
+      await expect(opponentMonsterZone.or(gamePage.opponentMonsters.first())).toBeVisible();
     });
   });
 
@@ -308,7 +304,7 @@ test.describe("Gameplay", () => {
 
       // Get current turn number
       const turnText = await gamePage.turnNumber.textContent();
-      const currentTurn = parseInt(turnText || "1");
+      const currentTurn = Number.parseInt(turnText || "1");
 
       // End turn
       await gamePage.endTurn();
@@ -318,7 +314,7 @@ test.describe("Gameplay", () => {
 
       // Turn number should increase
       const newTurnText = await gamePage.turnNumber.textContent();
-      const newTurn = parseInt(newTurnText || "1");
+      const newTurn = Number.parseInt(newTurnText || "1");
       expect(newTurn).toBeGreaterThan(currentTurn);
     });
   });
@@ -365,9 +361,9 @@ test.describe("Gameplay", () => {
       await gamePage.forfeitGame();
 
       // Should return to lobby or show defeat screen
-      await expect(
-        gamePage.page.getByRole("heading", { name: /Defeat|Game Over/i })
-      ).toBeVisible({ timeout: 10000 });
+      await expect(gamePage.page.getByRole("heading", { name: /Defeat|Game Over/i })).toBeVisible({
+        timeout: 10000,
+      });
     });
 
     test.skip("displays game code for multiplayer", async ({ gamePage }) => {

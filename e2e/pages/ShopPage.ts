@@ -1,5 +1,5 @@
+import { type Locator, expect } from "@playwright/test";
 import { BasePage } from "./BasePage";
-import { Locator, expect } from "@playwright/test";
 
 export class ShopPage extends BasePage {
   readonly url = "/shop";
@@ -103,15 +103,15 @@ export class ShopPage extends BasePage {
   }
 
   get raritySelect(): Locator {
-    return this.page.locator('select', { hasText: /All Rarities/i });
+    return this.page.locator("select", { hasText: /All Rarities/i });
   }
 
   get typeSelect(): Locator {
-    return this.page.locator('select', { hasText: /All Types/i });
+    return this.page.locator("select", { hasText: /All Types/i });
   }
 
   get sortSelect(): Locator {
-    return this.page.locator('select', { hasText: /Newest/i });
+    return this.page.locator("select", { hasText: /Newest/i });
   }
 
   // List card button
@@ -142,7 +142,7 @@ export class ShopPage extends BasePage {
     await this.page.waitForTimeout(500);
   }
 
-  async buyPackWithGold(packIndex: number = 0) {
+  async buyPackWithGold(packIndex = 0) {
     const pack = this.getPackProductByIndex(packIndex);
     await pack.locator('[data-testid="pack-price"]').first().click();
     await expect(this.purchaseDialog).toBeVisible({ timeout: 5000 });
@@ -151,7 +151,7 @@ export class ShopPage extends BasePage {
     await this.page.waitForURL(/\/shop\/open/, { timeout: 10000 });
   }
 
-  async buyPackWithGems(packIndex: number = 0) {
+  async buyPackWithGems(packIndex = 0) {
     const pack = this.getPackProductByIndex(packIndex);
     await pack.locator('[data-testid="pack-price"]').last().click();
     await expect(this.purchaseDialog).toBeVisible({ timeout: 5000 });
@@ -159,7 +159,7 @@ export class ShopPage extends BasePage {
     await this.page.waitForURL(/\/shop\/open/, { timeout: 10000 });
   }
 
-  async openPurchaseDialog(packIndex: number = 0) {
+  async openPurchaseDialog(packIndex = 0) {
     const pack = this.getPackProductByIndex(packIndex);
     await pack.locator('[data-testid="pack-price"]').first().click();
     await expect(this.purchaseDialog).toBeVisible({ timeout: 5000 });

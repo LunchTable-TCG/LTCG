@@ -18,34 +18,20 @@ export const strategyEvaluator: Evaluator = {
   similes: ["STRATEGY_CHECK", "TACTICAL_VALIDATOR", "PLAY_QUALITY"],
 
   examples: [
-    [
-      {
-        name: "{{name1}}",
-        content: {
-          text: "I want to attack with weak monster into strong monster",
-        },
-      },
-      {
-        name: "{{name2}}",
-        content: {
-          text: "Strategy evaluation: BAD_PLAY. Attack would lead to losing monster for nothing - FILTERED.",
-        },
-      },
-    ],
-    [
-      {
-        name: "{{name1}}",
-        content: {
-          text: "I will summon my strongest monster",
-        },
-      },
-      {
-        name: "{{name2}}",
-        content: {
-          text: "Strategy evaluation: GOOD_PLAY. Allowed.",
-        },
-      },
-    ],
+    {
+      prompt: "Evaluate attack with weak monster into strong monster",
+      messages: [
+        { name: "{{user1}}", content: { text: "I want to attack with weak monster into strong monster" } },
+      ],
+      outcome: "Strategy evaluation: BAD_PLAY. Attack would lead to losing monster for nothing - FILTERED.",
+    },
+    {
+      prompt: "Evaluate summoning strongest monster",
+      messages: [
+        { name: "{{user1}}", content: { text: "I will summon my strongest monster" } },
+      ],
+      outcome: "Strategy evaluation: GOOD_PLAY. Allowed.",
+    },
   ],
 
   validate: async (_runtime: IAgentRuntime, _message: Memory, _state: State): Promise<boolean> => {
@@ -58,7 +44,7 @@ export const strategyEvaluator: Evaluator = {
     message: Memory,
     state: State,
     _options?: any
-  ): Promise<boolean> => {
+  ): Promise<void> => {
     try {
       logger.debug("Evaluating strategic decision");
 
@@ -68,7 +54,9 @@ export const strategyEvaluator: Evaluator = {
 
       if (!gameState) {
         logger.debug("No game state available for strategy evaluation");
-        return true; // Allow if we can't evaluate
+        // Store result in state - allow if we can't evaluate
+        (state.values as any).LTCG_STRATEGY_ALLOWED = true;
+        return;
       }
 
       const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
@@ -83,7 +71,8 @@ export const strategyEvaluator: Evaluator = {
 
       if (!intendedAction) {
         logger.debug("No intended action to evaluate");
-        return true;
+        (state.values as any).LTCG_STRATEGY_ALLOWED = true;
+        return;
       }
 
       // Get risk tolerance setting
@@ -121,10 +110,13 @@ export const strategyEvaluator: Evaluator = {
         );
       }
 
-      return !evaluation.shouldFilter;
+      // Store evaluation result in state
+      (state.values as any).LTCG_STRATEGY_ALLOWED = !evaluation.shouldFilter;
+      (state.values as any).LTCG_STRATEGY_EVALUATION = evaluation;
     } catch (error) {
       logger.error({ error }, "Error in strategy evaluator");
-      return true; // Allow on error to avoid blocking
+      // Allow on error to avoid blocking
+      (state.values as any).LTCG_STRATEGY_ALLOWED = true;
     }
   },
 };
@@ -256,9 +248,9 @@ function evaluateAttack(
     };
   }
 
-  // Check if attack will succeed
-  const attackerAtk = attacker.atk;
-  const targetAtk = target.position === "attack" ? target.atk : target.def;
+  // Check if attack will succeed (BoardCard uses .attack/.defense)
+  const attackerAtk = attacker.attack ?? 0;
+  const targetAtk = target.position === "attack" ? (target.attack ?? 0) : (target.defense ?? 0);
 
   if (attackerAtk < targetAtk) {
     // Attacking into stronger monster - bad unless desperate
@@ -272,7 +264,7 @@ function evaluateAttack(
         quality: "BAD",
         risk: "HIGH",
         shouldFilter: true,
-        reason: `Attacking ${attacker.name} (${attackerAtk} ATK) into stronger ${target.name} (${targetAtk} ${target.position === "attack" ? "ATK" : "DEF"}) will lose your monster`,
+        reason: `Attacking ${attacker.name} (${attackerAtk} ATK) into stronger ${target.name} (${targetAtk} ${String(target.position) === "attack" ? "ATK" : "DEF"}) will lose your monster`,
         suggestion: "Use removal spell or summon stronger monster",
       };
     }

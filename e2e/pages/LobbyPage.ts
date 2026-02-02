@@ -1,5 +1,5 @@
+import { type Locator, expect } from "@playwright/test";
 import { BasePage } from "./BasePage";
-import { Locator, expect } from "@playwright/test";
 
 export class LobbyPage extends BasePage {
   readonly url = "/lunchtable";
@@ -175,10 +175,12 @@ export class LobbyPage extends BasePage {
   /**
    * Create a new lobby
    */
-  async createLobby(options: {
-    mode: "casual" | "ranked";
-    isPrivate?: boolean;
-  } = { mode: "casual" }) {
+  async createLobby(
+    options: {
+      mode: "casual" | "ranked";
+      isPrivate?: boolean;
+    } = { mode: "casual" }
+  ) {
     // Open create game modal
     await this.createGameButton.click();
     await expect(this.createGameModal).toBeVisible({ timeout: 5000 });
@@ -203,7 +205,7 @@ export class LobbyPage extends BasePage {
   /**
    * Join a lobby by index
    */
-  async joinLobby(index: number = 0) {
+  async joinLobby(index = 0) {
     const lobby = this.getLobbyItem(index);
     await expect(lobby).toBeVisible();
 
@@ -257,7 +259,7 @@ export class LobbyPage extends BasePage {
   /**
    * Watch a game by index
    */
-  async watchGame(index: number = 0) {
+  async watchGame(index = 0) {
     // Switch to watch tab
     await this.watchTab.click();
 

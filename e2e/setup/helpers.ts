@@ -5,14 +5,9 @@
  * Updated for Privy modal authentication.
  */
 
-import type { Page, Locator } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
-import {
-  SELECTORS,
-  TEST_CONFIG,
-  waitForNavigation,
-  waitForLoadingToComplete,
-} from "./test-data";
+import { SELECTORS, TEST_CONFIG, waitForLoadingToComplete, waitForNavigation } from "./test-data";
 
 // =============================================================================
 // AUTHENTICATION HELPER
@@ -105,11 +100,7 @@ export class AuthHelper {
     await this.page.waitForURL(
       (url) => {
         const path = url.pathname;
-        return (
-          !path.includes("/login") &&
-          !path.includes("/signup") &&
-          path !== "/"
-        );
+        return !path.includes("/login") && !path.includes("/signup") && path !== "/";
       },
       { timeout }
     );
@@ -126,9 +117,9 @@ export class AuthHelper {
     await waitForLoadingToComplete(this.page);
 
     // Look for logout button
-    const logoutButton = this.page.locator(
-      'button:has-text("Logout"), button:has-text("Sign Out"), button:has-text("Log Out")'
-    ).first();
+    const logoutButton = this.page
+      .locator('button:has-text("Logout"), button:has-text("Sign Out"), button:has-text("Log Out")')
+      .first();
 
     if (await logoutButton.isVisible({ timeout: 3000 })) {
       await logoutButton.click();
@@ -339,7 +330,9 @@ export class ShopHelper {
    * Open a pack (on the pack opening page)
    */
   async openPack() {
-    const openButton = this.page.locator('button:has-text("Open Pack"), button:has-text("Open")').first();
+    const openButton = this.page
+      .locator('button:has-text("Open Pack"), button:has-text("Open")')
+      .first();
     if (await openButton.isVisible({ timeout: 2000 })) {
       await openButton.click();
       // Wait for pack opening animation

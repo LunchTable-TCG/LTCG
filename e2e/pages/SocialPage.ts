@@ -1,5 +1,5 @@
+import { type Locator, expect } from "@playwright/test";
 import { BasePage } from "./BasePage";
-import { Locator, expect } from "@playwright/test";
 
 export class SocialPage extends BasePage {
   readonly url = "/social";
@@ -96,7 +96,7 @@ export class SocialPage extends BasePage {
     await this.page.waitForTimeout(500); // Debounce
   }
 
-  async sendFriendRequest(resultIndex: number = 0) {
+  async sendFriendRequest(resultIndex = 0) {
     const result = this.getSearchResultItem(resultIndex);
     await result.locator('button:has-text("Add Friend")').click();
     await this.page.waitForTimeout(500);
@@ -108,14 +108,14 @@ export class SocialPage extends BasePage {
   }
 
   // Actions - Friend Requests
-  async acceptFriendRequest(index: number = 0) {
+  async acceptFriendRequest(index = 0) {
     await this.goToRequestsTab();
     const request = this.getRequestItem(index);
     await request.locator('button:has([class*="check"])').click();
     await this.page.waitForTimeout(500);
   }
 
-  async declineFriendRequest(index: number = 0) {
+  async declineFriendRequest(index = 0) {
     await this.goToRequestsTab();
     const request = this.getRequestItem(index);
     await request.locator('button:has([class*="x"])').click();
@@ -123,7 +123,7 @@ export class SocialPage extends BasePage {
   }
 
   // Actions - Friend Management
-  async removeFriend(friendIndex: number = 0) {
+  async removeFriend(friendIndex = 0) {
     await this.goToFriendsTab();
     const friend = this.getFriendItem(friendIndex);
 
@@ -136,7 +136,7 @@ export class SocialPage extends BasePage {
     await this.page.waitForTimeout(500);
   }
 
-  async blockFriend(friendIndex: number = 0) {
+  async blockFriend(friendIndex = 0) {
     await this.goToFriendsTab();
     const friend = this.getFriendItem(friendIndex);
 
@@ -149,14 +149,14 @@ export class SocialPage extends BasePage {
     await this.page.waitForTimeout(500);
   }
 
-  async challengeFriend(friendIndex: number = 0) {
+  async challengeFriend(friendIndex = 0) {
     await this.goToFriendsTab();
     const friend = this.getFriendItem(friendIndex);
     await friend.locator('button:has-text("Challenge")').click();
     await this.page.waitForTimeout(500);
   }
 
-  async messageFriend(friendIndex: number = 0) {
+  async messageFriend(friendIndex = 0) {
     await this.goToFriendsTab();
     const friend = this.getFriendItem(friendIndex);
     await friend.locator('button[aria-label*="Message"]').click();
@@ -227,15 +227,17 @@ export class SocialPage extends BasePage {
     await expect(result).toBeVisible();
   }
 
-  async expectFriendRequestButtonDisabled(resultIndex: number = 0) {
+  async expectFriendRequestButtonDisabled(resultIndex = 0) {
     const result = this.getSearchResultItem(resultIndex);
-    const button = result.locator('button:has-text("Add Friend"), button:has-text("Friends"), button:has-text("Pending")');
+    const button = result.locator(
+      'button:has-text("Add Friend"), button:has-text("Friends"), button:has-text("Pending")'
+    );
     await expect(button).toBeDisabled();
   }
 
   async expectFriendRequestButtonText(resultIndex: number, expectedText: string) {
     const result = this.getSearchResultItem(resultIndex);
-    const button = result.locator('button').last();
+    const button = result.locator("button").last();
     await expect(button).toContainText(expectedText);
   }
 

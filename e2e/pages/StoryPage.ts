@@ -1,5 +1,5 @@
+import { type Locator, expect } from "@playwright/test";
 import { BasePage } from "./BasePage";
-import { Locator, expect } from "@playwright/test";
 
 export class StoryPage extends BasePage {
   readonly url = "/play/story";

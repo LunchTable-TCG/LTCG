@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from "@playwright/test";
+import { type Locator, type Page, expect } from "@playwright/test";
 
 export abstract class BasePage {
   constructor(public page: Page) {}

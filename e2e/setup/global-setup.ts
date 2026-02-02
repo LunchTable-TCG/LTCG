@@ -1,5 +1,5 @@
-import { FullConfig } from "@playwright/test";
-import { validateTestEnv, TEST_ENV } from "./env";
+import type { FullConfig } from "@playwright/test";
+import { TEST_ENV, validateTestEnv } from "./env";
 
 async function globalSetup(_config: FullConfig) {
   console.log("🚀 Starting E2E test setup...");
@@ -39,9 +39,7 @@ async function globalSetup(_config: FullConfig) {
       }
     } catch {
       if (i === maxRetries - 1) {
-        throw new Error(
-          `Web server not available at ${TEST_ENV.BASE_URL}. Run: bun run dev`
-        );
+        throw new Error(`Web server not available at ${TEST_ENV.BASE_URL}. Run: bun run dev`);
       }
       await new Promise((r) => setTimeout(r, 1000));
     }

@@ -9,7 +9,7 @@
  * - Deleting decks
  */
 
-import { test, expect } from "./setup/fixtures";
+import { expect, test } from "./setup/fixtures";
 
 test.describe("Deck Building", () => {
   test.describe("Deck List", () => {
@@ -18,9 +18,7 @@ test.describe("Deck Building", () => {
       await expect(deckPage.deckList).toBeVisible();
     });
 
-    test("can switch between collection and deck builder tabs", async ({
-      deckPage,
-    }) => {
+    test("can switch between collection and deck builder tabs", async ({ deckPage }) => {
       await deckPage.navigate();
       await deckPage.switchToCollectionTab();
       await deckPage.switchToDeckBuilderTab();
@@ -77,9 +75,7 @@ test.describe("Deck Building", () => {
   });
 
   test.describe("Deck Validation", () => {
-    test("save button disabled with less than 30 cards", async ({
-      deckPage,
-    }) => {
+    test("save button disabled with less than 30 cards", async ({ deckPage }) => {
       await deckPage.navigate();
       await deckPage.createNewDeck(`Invalid Deck ${Date.now()}`);
 

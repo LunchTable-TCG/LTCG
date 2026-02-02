@@ -238,7 +238,7 @@ export class ConvexRealtimeClient {
       if (this.debug) {
         console.log(`[ConvexRealtimeClient] Already subscribed to turns for ${userId}`);
       }
-      return this.subscriptions.get(subscriptionId)?.unsubscribe;
+      return this.subscriptions.get(subscriptionId)?.unsubscribe ?? (() => {});
     }
 
     if (this.debug) {
@@ -325,7 +325,7 @@ export class ConvexRealtimeClient {
       if (this.debug) {
         console.log(`[ConvexRealtimeClient] Already subscribed to events for ${gameId}`);
       }
-      return this.subscriptions.get(subscriptionId)?.unsubscribe;
+      return this.subscriptions.get(subscriptionId)?.unsubscribe ?? (() => {});
     }
 
     if (this.debug) {

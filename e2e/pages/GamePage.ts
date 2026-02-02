@@ -1,4 +1,4 @@
-import { Locator, expect } from "@playwright/test";
+import { type Locator, expect } from "@playwright/test";
 import { BasePage } from "./BasePage";
 
 export class GamePage extends BasePage {
@@ -82,7 +82,7 @@ export class GamePage extends BasePage {
 
   // Hand cards are identified by the HandCard component
   get handCards(): Locator {
-    return this.playerHand.locator("button").filter({ hasNot: this.page.locator('[data-testid]') });
+    return this.playerHand.locator("button").filter({ hasNot: this.page.locator("[data-testid]") });
   }
 
   getHandCard(index: number): Locator {
@@ -247,18 +247,16 @@ export class GamePage extends BasePage {
    */
   async waitForPlayerTurn() {
     // Wait for "Your turn" to appear or "Opponent's Turn" to disappear
-    await expect(
-      this.page.getByText(/Your turn|Opponent's Turn/i)
-    ).toBeVisible({ timeout: 30000 });
+    await expect(this.page.getByText(/Your turn|Opponent's Turn/i)).toBeVisible({ timeout: 30000 });
   }
 
   /**
    * Wait for game to end
    */
   async waitForGameEnd() {
-    await expect(
-      this.page.getByRole("heading", { name: /(Victory|Defeat)/i })
-    ).toBeVisible({ timeout: 60000 });
+    await expect(this.page.getByRole("heading", { name: /(Victory|Defeat)/i })).toBeVisible({
+      timeout: 60000,
+    });
   }
 
   // ============================================================================

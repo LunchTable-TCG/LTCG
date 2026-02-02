@@ -119,6 +119,6 @@ export class LTCGRealtimeService extends Service {
    * Check if real-time client is available
    */
   isAvailable(): boolean {
-    return this.client?.isClientConnected();
+    return this.client?.isClientConnected() ?? false;
   }
 }

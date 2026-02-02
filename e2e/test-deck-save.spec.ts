@@ -7,8 +7,8 @@
  * To run them, set up authenticated browser state first.
  */
 
-import { test, expect, enableConsoleLogs } from "./setup/fixtures";
-import { SELECTORS, waitForLoadingToComplete } from "./setup/test-data";
+import { enableConsoleLogs, expect, test } from "./setup/fixtures";
+import { SELECTORS } from "./setup/test-data";
 
 // =============================================================================
 // AUTHENTICATED DECK SAVE TESTS
@@ -32,7 +32,10 @@ test.describe("Test Deck Saving", () => {
 
     // Wait for cards
     await page.waitForSelector('[data-testid="deck-editor"]');
-    await page.locator('[data-testid="card-item"]').first().waitFor({ state: "visible", timeout: 15000 });
+    await page
+      .locator('[data-testid="card-item"]')
+      .first()
+      .waitFor({ state: "visible", timeout: 15000 });
 
     console.log("Cards are visible");
 

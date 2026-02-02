@@ -98,34 +98,20 @@ export const gameOutcomeEvaluator: Evaluator = {
   similes: ["POST_GAME_ANALYSIS", "GAME_REVIEW", "LEARNING_EVALUATOR"],
 
   examples: [
-    [
-      {
-        name: "{{name1}}",
-        content: {
-          text: "Game over! You won with 2500 LP remaining.",
-        },
-      },
-      {
-        name: "{{name2}}",
-        content: {
-          text: "Game analysis complete. Key insight: Aggressive early summons established board control leading to victory.",
-        },
-      },
-    ],
-    [
-      {
-        name: "{{name1}}",
-        content: {
-          text: "Game over! You lost. Opponent had 4000 LP.",
-        },
-      },
-      {
-        name: "{{name2}}",
-        content: {
-          text: "Game analysis complete. Lesson learned: Attacking into stronger monsters on turns 3-4 led to resource disadvantage.",
-        },
-      },
-    ],
+    {
+      prompt: "Analyze game outcome after winning",
+      messages: [
+        { name: "{{user1}}", content: { text: "Game over! You won with 2500 LP remaining." } },
+      ],
+      outcome: "Game analysis complete. Key insight: Aggressive early summons established board control leading to victory.",
+    },
+    {
+      prompt: "Analyze game outcome after losing",
+      messages: [
+        { name: "{{user1}}", content: { text: "Game over! You lost. Opponent had 4000 LP." } },
+      ],
+      outcome: "Game analysis complete. Lesson learned: Attacking into stronger monsters on turns 3-4 led to resource disadvantage.",
+    },
   ],
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
@@ -162,7 +148,7 @@ export const gameOutcomeEvaluator: Evaluator = {
     message: Memory,
     state: State,
     _options?: Record<string, unknown>
-  ): Promise<boolean> => {
+  ): Promise<void> => {
     try {
       logger.info("Starting game outcome analysis");
 
@@ -181,7 +167,8 @@ export const gameOutcomeEvaluator: Evaluator = {
 
       if (!gameId) {
         logger.warn("No gameId found for outcome analysis");
-        return false;
+        (state.values as any).LTCG_GAME_OUTCOME_SUCCESS = false;
+        return;
       }
 
       // Fetch game data in parallel
@@ -193,7 +180,8 @@ export const gameOutcomeEvaluator: Evaluator = {
 
       if (!gameState) {
         logger.warn({ gameId }, "Could not fetch game state for analysis");
-        return false;
+        (state.values as any).LTCG_GAME_OUTCOME_SUCCESS = false;
+        return;
       }
 
       // Determine game outcome
@@ -228,10 +216,12 @@ export const gameOutcomeEvaluator: Evaluator = {
       const summaryText = generateAnalysisSummary(analysis);
       logger.info({ summary: summaryText }, "Game analysis summary");
 
-      return true;
+      // Store success in state
+      (state.values as any).LTCG_GAME_OUTCOME_SUCCESS = true;
+      (state.values as any).LTCG_GAME_ANALYSIS = analysis;
     } catch (error) {
       logger.error({ error }, "Error in game outcome evaluator");
-      return false;
+      (state.values as any).LTCG_GAME_OUTCOME_SUCCESS = false;
     }
   },
 };

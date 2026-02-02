@@ -17,16 +17,15 @@
  * ```
  */
 
-import type { MutationCtx } from "@convex/_generated/server";
-import type schema from "@convex/schema";
-import type { convexTest } from "convex-test";
 import {
   createDeterministicPrivyIdentity,
   createPrivyIdentity,
 } from "../../../tests/helpers/mockPrivyJwt";
+import type { MutationCtx } from "../../_generated/server";
 
-// Type for the test instance
-type TestInstance = ReturnType<typeof convexTest<typeof schema, Record<string, unknown>>>;
+// Type for the test instance - using any to avoid complex convex-test generic type issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TestInstance = any;
 
 /**
  * Options for creating an authenticated test user
@@ -40,7 +39,6 @@ export interface CreateAuthenticatedUserOptions {
   userData?: {
     name?: string;
     gold?: number;
-    gems?: number;
     rankedElo?: number;
     xp?: number;
     level?: number;
@@ -102,7 +100,6 @@ export async function createAuthenticatedUser(
       privyId,
       name: userData.name ?? username,
       gold: userData.gold ?? 1000,
-      gems: userData.gems ?? 0,
       rankedElo: userData.rankedElo ?? 1000,
       xp: userData.xp ?? 0,
       level: userData.level ?? 1,

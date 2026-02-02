@@ -19,8 +19,8 @@
  * To run them, set up authenticated browser state first.
  */
 
-import { test, expect, enableConsoleLogs } from "./setup/fixtures";
-import { TEST_CONFIG, SELECTORS, waitForLoadingToComplete } from "./setup/test-data";
+import { enableConsoleLogs, expect, test } from "./setup/fixtures";
+import { waitForLoadingToComplete } from "./setup/test-data";
 
 // =============================================================================
 // AUTHENTICATED REAL-TIME TESTS
@@ -33,7 +33,10 @@ test.describe("Real-time Data Updates", () => {
   });
 
   test.describe("Currency Update After Purchase", () => {
-    test("should update gold balance in real-time without refresh", async ({ page, shopHelper }) => {
+    test("should update gold balance in real-time without refresh", async ({
+      page,
+      shopHelper,
+    }) => {
       enableConsoleLogs(page);
 
       await shopHelper.navigate();
@@ -50,7 +53,10 @@ test.describe("Real-time Data Updates", () => {
         (expectedGold: number) => {
           const goldElement = document.querySelector('[data-testid="player-gold"]');
           if (!goldElement) return false;
-          const currentGold = Number.parseInt(goldElement.textContent?.replace(/\D/g, "") || "0", 10);
+          const currentGold = Number.parseInt(
+            goldElement.textContent?.replace(/\D/g, "") || "0",
+            10
+          );
           return currentGold < expectedGold;
         },
         goldBefore,

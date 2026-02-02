@@ -9,7 +9,7 @@
  * - Profile viewing
  */
 
-import { test, expect } from "./setup/fixtures";
+import { expect, test } from "./setup/fixtures";
 
 test.describe("Social Features", () => {
   test.describe("Friends Page", () => {
