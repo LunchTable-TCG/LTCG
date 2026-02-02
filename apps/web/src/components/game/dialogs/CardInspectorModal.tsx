@@ -140,7 +140,9 @@ export function CardInspectorModal({
 
                   {/* Basic info */}
                   <div className="flex-1 min-w-0">
-                    <h2 className="font-bold text-xs sm:text-sm leading-tight mb-1 wrap-break-word">{card.name}</h2>
+                    <h2 className="font-bold text-xs sm:text-sm leading-tight mb-1 wrap-break-word">
+                      {card.name}
+                    </h2>
 
                     {/* Rarity */}
                     <div className="flex items-center gap-1 mb-1">

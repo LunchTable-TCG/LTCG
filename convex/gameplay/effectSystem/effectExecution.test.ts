@@ -10,10 +10,9 @@
 
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import type { Id } from "../../_generated/dataModel";
 import schema from "../../schema";
-import type { JsonAbility } from "./types";
 import { modules } from "../../test.setup";
+import type { JsonAbility } from "./types";
 
 describe("Basic Effect Execution", () => {
   describe("Volcanic Eruption - Destroy Effect", () => {

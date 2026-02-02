@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TimeoutDisplay } from "../TimeoutDisplay";
 
 describe("TimeoutDisplay", () => {
@@ -106,9 +106,7 @@ describe("TimeoutDisplay", () => {
     });
 
     it("should not show warning styling when already timed out", () => {
-      render(
-        <TimeoutDisplay {...defaultProps} isWarning={true} isTimedOut={true} />
-      );
+      render(<TimeoutDisplay {...defaultProps} isWarning={true} isTimedOut={true} />);
 
       const actionTimer = screen.getByTestId("action-timer");
       // Should show timeout styling instead
@@ -126,13 +124,7 @@ describe("TimeoutDisplay", () => {
     });
 
     it("should show 0:00 for action time when timed out", () => {
-      render(
-        <TimeoutDisplay
-          {...defaultProps}
-          actionTimeRemainingMs={30000}
-          isTimedOut={true}
-        />
-      );
+      render(<TimeoutDisplay {...defaultProps} actionTimeRemainingMs={30000} isTimedOut={true} />);
 
       expect(screen.getByTestId("action-timer")).toHaveTextContent("0:00");
     });
@@ -147,11 +139,7 @@ describe("TimeoutDisplay", () => {
 
     it("should show 0:00 for match time when match timed out", () => {
       render(
-        <TimeoutDisplay
-          {...defaultProps}
-          matchTimeRemainingMs={300000}
-          isMatchTimedOut={true}
-        />
+        <TimeoutDisplay {...defaultProps} matchTimeRemainingMs={300000} isMatchTimedOut={true} />
       );
 
       expect(screen.getByTestId("match-timer")).toHaveTextContent("0:00");
@@ -179,11 +167,7 @@ describe("TimeoutDisplay", () => {
 
     it("should not show low match time styling when match timed out", () => {
       render(
-        <TimeoutDisplay
-          {...defaultProps}
-          matchTimeRemainingMs={60000}
-          isMatchTimedOut={true}
-        />
+        <TimeoutDisplay {...defaultProps} matchTimeRemainingMs={60000} isMatchTimedOut={true} />
       );
 
       const matchTimer = screen.getByTestId("match-timer");
@@ -243,11 +227,7 @@ describe("TimeoutDisplay", () => {
 
       // Simulate becoming timed out
       rerender(
-        <TimeoutDisplay
-          {...defaultProps}
-          actionTimeRemainingMs={10000}
-          isTimedOut={true}
-        />
+        <TimeoutDisplay {...defaultProps} actionTimeRemainingMs={10000} isTimedOut={true} />
       );
 
       act(() => {
@@ -264,11 +244,7 @@ describe("TimeoutDisplay", () => {
       );
 
       rerender(
-        <TimeoutDisplay
-          {...defaultProps}
-          matchTimeRemainingMs={65000}
-          isMatchTimedOut={true}
-        />
+        <TimeoutDisplay {...defaultProps} matchTimeRemainingMs={65000} isMatchTimedOut={true} />
       );
 
       act(() => {
@@ -280,13 +256,7 @@ describe("TimeoutDisplay", () => {
     });
 
     it("should stop all countdowns when both timers are timed out", () => {
-      render(
-        <TimeoutDisplay
-          {...defaultProps}
-          isTimedOut={true}
-          isMatchTimedOut={true}
-        />
-      );
+      render(<TimeoutDisplay {...defaultProps} isTimedOut={true} isMatchTimedOut={true} />);
 
       // The interval should not be running, but we test the display
       act(() => {
@@ -306,9 +276,7 @@ describe("TimeoutDisplay", () => {
 
       expect(screen.getByTestId("action-timer")).toHaveTextContent("0:10");
 
-      rerender(
-        <TimeoutDisplay {...defaultProps} actionTimeRemainingMs={30000} />
-      );
+      rerender(<TimeoutDisplay {...defaultProps} actionTimeRemainingMs={30000} />);
 
       expect(screen.getByTestId("action-timer")).toHaveTextContent("0:30");
     });
@@ -320,9 +288,7 @@ describe("TimeoutDisplay", () => {
 
       expect(screen.getByTestId("match-timer")).toHaveTextContent("1:00");
 
-      rerender(
-        <TimeoutDisplay {...defaultProps} matchTimeRemainingMs={120000} />
-      );
+      rerender(<TimeoutDisplay {...defaultProps} matchTimeRemainingMs={120000} />);
 
       expect(screen.getByTestId("match-timer")).toHaveTextContent("2:00");
     });

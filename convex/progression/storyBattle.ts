@@ -290,7 +290,8 @@ export const getChaptersInternal = internalQuery({
           totalStages: stages.length,
           totalStars,
           maxStars: stages.length * 3,
-          isUnlocked: chapter.actNumber === 1 && chapter.chapterNumber === 1 || completedStages > 0,
+          isUnlocked:
+            (chapter.actNumber === 1 && chapter.chapterNumber === 1) || completedStages > 0,
         };
       })
     );
@@ -325,9 +326,7 @@ export const getChapterStagesInternal = internalQuery({
       stages.map(async (stage) => {
         const progress = await ctx.db
           .query("storyStageProgress")
-          .withIndex("by_user_stage", (q) =>
-            q.eq("userId", args.userId).eq("stageId", stage._id)
-          )
+          .withIndex("by_user_stage", (q) => q.eq("userId", args.userId).eq("stageId", stage._id))
           .first();
 
         return {
@@ -413,9 +412,7 @@ export const initializeStoryBattleInternal = internalMutation({
     // Initialize stage progress if it doesn't exist
     const existingProgress = await ctx.db
       .query("storyStageProgress")
-      .withIndex("by_user_stage", (q) =>
-        q.eq("userId", args.userId).eq("stageId", stage._id)
-      )
+      .withIndex("by_user_stage", (q) => q.eq("userId", args.userId).eq("stageId", stage._id))
       .first();
 
     if (!existingProgress) {
@@ -428,9 +425,7 @@ export const initializeStoryBattleInternal = internalMutation({
       for (const s of allStages) {
         const existingStageProgress = await ctx.db
           .query("storyStageProgress")
-          .withIndex("by_user_stage", (q) =>
-            q.eq("userId", args.userId).eq("stageId", s._id)
-          )
+          .withIndex("by_user_stage", (q) => q.eq("userId", args.userId).eq("stageId", s._id))
           .first();
 
         if (!existingStageProgress) {
@@ -526,12 +521,9 @@ export const initializeStoryBattleInternal = internalMutation({
 export const quickPlayStoryInternal = internalMutation({
   args: {
     userId: v.id("users"),
-    difficulty: v.optional(v.union(
-      v.literal("easy"),
-      v.literal("medium"),
-      v.literal("hard"),
-      v.literal("boss")
-    )),
+    difficulty: v.optional(
+      v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"), v.literal("boss"))
+    ),
   },
   handler: async (ctx, args) => {
     // Get user

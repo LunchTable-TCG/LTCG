@@ -1,8 +1,8 @@
 "use client";
 
+import type { Badge } from "@/types";
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
-import type { Badge } from "@/types";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UseBadgesReturn {

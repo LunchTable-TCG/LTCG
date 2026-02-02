@@ -8,10 +8,10 @@
  * - Success/failure indicators
  */
 
-import React from 'react';
-import { useAgentStatus, useDecisionHistory } from '../hooks';
-import { DecisionCard, LoadingState, ErrorState, EmptyState } from '../components';
-import { cn } from '../utils';
+import React from "react";
+import { DecisionCard, EmptyState, ErrorState, LoadingState } from "../components";
+import { useAgentStatus, useDecisionHistory } from "../hooks";
+import { cn } from "../utils";
 
 interface DecisionStreamProps {
   agentId: string;
@@ -33,10 +33,10 @@ const FilterButton = React.memo(function FilterButton({
     <button
       onClick={onClick}
       className={cn(
-        'px-3 py-1.5 text-xs rounded-full border transition-colors',
+        "px-3 py-1.5 text-xs rounded-full border transition-colors",
         active
-          ? 'bg-primary text-primary-foreground border-primary'
-          : 'bg-card text-muted-foreground border-border hover:bg-accent'
+          ? "bg-primary text-primary-foreground border-primary"
+          : "bg-card text-muted-foreground border-border hover:bg-accent"
       )}
     >
       {label}
@@ -81,7 +81,7 @@ export function DecisionStream({ agentId }: DecisionStreamProps) {
   if (error) {
     return (
       <ErrorState
-        message={error instanceof Error ? error.message : 'Failed to load decision history'}
+        message={error instanceof Error ? error.message : "Failed to load decision history"}
         onRetry={() => refetch()}
       />
     );
@@ -96,8 +96,9 @@ export function DecisionStream({ agentId }: DecisionStreamProps) {
   const actionTypes = Array.from(new Set(decisions.map((d) => d.action)));
 
   // Calculate success rate
-  const successCount = decisions.filter((d) => d.result === 'success').length;
-  const successRate = decisions.length > 0 ? Math.round((successCount / decisions.length) * 100) : 0;
+  const successCount = decisions.filter((d) => d.result === "success").length;
+  const successRate =
+    decisions.length > 0 ? Math.round((successCount / decisions.length) * 100) : 0;
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 max-w-5xl mx-auto h-full">
@@ -107,7 +108,12 @@ export function DecisionStream({ agentId }: DecisionStreamProps) {
           <h2 className="text-xl font-semibold">AI Decision Stream</h2>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Success Rate:</span>
-            <span className={cn('text-sm font-bold', successRate >= 80 ? 'text-green-400' : 'text-yellow-400')}>
+            <span
+              className={cn(
+                "text-sm font-bold",
+                successRate >= 80 ? "text-green-400" : "text-yellow-400"
+              )}
+            >
               {successRate}%
             </span>
           </div>
@@ -132,11 +138,15 @@ export function DecisionStream({ agentId }: DecisionStreamProps) {
           </label>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <FilterButton label="All" active={filterAction === null} onClick={() => setFilterAction(null)} />
+          <FilterButton
+            label="All"
+            active={filterAction === null}
+            onClick={() => setFilterAction(null)}
+          />
           {actionTypes.map((action) => (
             <FilterButton
               key={action}
-              label={action.replace(/_/g, ' ')}
+              label={action.replace(/_/g, " ")}
               active={filterAction === action}
               onClick={() => setFilterAction(action)}
             />
@@ -155,8 +165,10 @@ export function DecisionStream({ agentId }: DecisionStreamProps) {
           ))
         ) : (
           <EmptyState
-            title={filterAction ? 'No matching decisions' : 'No decisions yet'}
-            description={filterAction ? 'Try selecting a different filter' : 'AI decisions will appear here'}
+            title={filterAction ? "No matching decisions" : "No decisions yet"}
+            description={
+              filterAction ? "Try selecting a different filter" : "AI decisions will appear here"
+            }
             className="py-16"
           />
         )}
@@ -176,13 +188,16 @@ export function DecisionStream({ agentId }: DecisionStreamProps) {
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Failed</span>
             <span className="text-lg font-bold text-red-400">
-              {decisions.filter((d) => d.result === 'failed').length}
+              {decisions.filter((d) => d.result === "failed").length}
             </span>
           </div>
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Avg Time</span>
             <span className="text-lg font-bold tabular-nums">
-              {Math.round(decisions.reduce((sum, d) => sum + d.executionTimeMs, 0) / decisions.length)}ms
+              {Math.round(
+                decisions.reduce((sum, d) => sum + d.executionTimeMs, 0) / decisions.length
+              )}
+              ms
             </span>
           </div>
         </div>

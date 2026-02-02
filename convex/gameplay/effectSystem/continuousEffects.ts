@@ -9,6 +9,7 @@
 
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
+import { getCardAbility } from "../../lib/abilityHelpers";
 import {
   type CardOnBoard,
   type ConditionContext,
@@ -20,7 +21,6 @@ import {
   isJsonCondition,
   isNumericRange,
 } from "./jsonEffectSchema";
-import { getCardAbility } from "../../lib/abilityHelpers";
 
 // ============================================================================
 // MAIN API FUNCTIONS
@@ -219,10 +219,7 @@ export function evaluateJsonCondition(
 /**
  * Evaluate a compound condition (and/or/not)
  */
-function evaluateCompoundCondition(
-  condition: JsonCondition,
-  context: ConditionContext
-): boolean {
+function evaluateCompoundCondition(condition: JsonCondition, context: ConditionContext): boolean {
   const nestedConditions = condition.conditions || [];
 
   switch (condition.type) {
@@ -247,10 +244,7 @@ function evaluateCompoundCondition(
 /**
  * Evaluate a simple (non-compound) condition
  */
-function evaluateSimpleCondition(
-  condition: JsonCondition,
-  context: ConditionContext
-): boolean {
+function evaluateSimpleCondition(condition: JsonCondition, context: ConditionContext): boolean {
   const targetCard = context.targetCard;
   const targetCardDef = context.targetCardDef;
   const gameState = context.gameState;
@@ -448,10 +442,7 @@ function evaluateSimpleCondition(
 /**
  * Evaluate a numeric condition (exact value or range)
  */
-function evaluateNumericCondition(
-  value: number,
-  condition: number | NumericRange
-): boolean {
+function evaluateNumericCondition(value: number, condition: number | NumericRange): boolean {
   if (isNumericRange(condition)) {
     const { min, max } = condition;
     if (min !== undefined && value < min) return false;
@@ -507,30 +498,30 @@ export function evaluateFieldCount(
 
     if (condition.owner === "self" || condition.owner === "both") {
       // Map spell/trap zone cards to CardOnBoard format
-      const selfZone = (
-        isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone
-      ).map((st) => ({
-        cardId: st.cardId,
-        position: 1,
-        attack: 0,
-        defense: 0,
-        hasAttacked: false,
-        isFaceDown: st.isFaceDown,
-      }));
+      const selfZone = (isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone).map(
+        (st) => ({
+          cardId: st.cardId,
+          position: 1,
+          attack: 0,
+          defense: 0,
+          hasAttacked: false,
+          isFaceDown: st.isFaceDown,
+        })
+      );
       spellTrapZonesToCheck.push(selfZone);
     }
 
     if (condition.owner === "opponent" || condition.owner === "both") {
-      const oppZone = (
-        isHost ? gameState.opponentSpellTrapZone : gameState.hostSpellTrapZone
-      ).map((st) => ({
-        cardId: st.cardId,
-        position: 1,
-        attack: 0,
-        defense: 0,
-        hasAttacked: false,
-        isFaceDown: st.isFaceDown,
-      }));
+      const oppZone = (isHost ? gameState.opponentSpellTrapZone : gameState.hostSpellTrapZone).map(
+        (st) => ({
+          cardId: st.cardId,
+          position: 1,
+          attack: 0,
+          defense: 0,
+          hasAttacked: false,
+          isFaceDown: st.isFaceDown,
+        })
+      );
       spellTrapZonesToCheck.push(oppZone);
     }
 
@@ -550,10 +541,7 @@ export function evaluateFieldCount(
 /**
  * Check if a card matches the field count filter
  */
-function matchesFieldCountFilter(
-  card: CardOnBoard,
-  condition: FieldCountCondition
-): boolean {
+function matchesFieldCountFilter(card: CardOnBoard, condition: FieldCountCondition): boolean {
   const filter = condition.filter;
   if (!filter) return true;
 
@@ -687,10 +675,7 @@ export function evaluateCardType(
 /**
  * Check if a card is owned by the host player
  */
-function isCardOwnedByHost(
-  card: CardOnBoard | undefined,
-  gameState: Doc<"gameStates">
-): boolean {
+function isCardOwnedByHost(card: CardOnBoard | undefined, gameState: Doc<"gameStates">): boolean {
   if (!card) return false;
 
   // Check if card is on host's board
@@ -917,7 +902,4 @@ export function calculateContinuousModifiersSync(
 // EXPORTS FOR TESTING
 // ============================================================================
 
-export {
-  matchesCondition as _matchesCondition,
-  matchesLegacyCondition as _matchesLegacyCondition,
-};
+export { matchesCondition as _matchesCondition, matchesLegacyCondition as _matchesLegacyCondition };

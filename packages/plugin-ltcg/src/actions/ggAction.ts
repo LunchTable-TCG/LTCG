@@ -13,22 +13,22 @@ import type {
   IAgentRuntime,
   Memory,
   State,
-} from '@elizaos/core';
-import { logger, ModelType } from '@elizaos/core';
-import { gameStateProvider } from '../providers/gameStateProvider';
-import type { GameStateResponse } from '../types/api';
+} from "@elizaos/core";
+import { ModelType, logger } from "@elizaos/core";
+import { gameStateProvider } from "../providers/gameStateProvider";
+import type { GameStateResponse } from "../types/api";
 
 export const ggAction: Action = {
-  name: 'GG',
-  similes: ['GOOD_GAME', 'WELL_PLAYED', 'GAME_END_MESSAGE'],
-  description: 'Send a good game message at the end of a match',
+  name: "GG",
+  similes: ["GOOD_GAME", "WELL_PLAYED", "GAME_END_MESSAGE"],
+  description: "Send a good game message at the end of a match",
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
     try {
       // Check if chat is enabled
-      const chatEnabled = runtime.getSetting('LTCG_CHAT_ENABLED') !== 'false';
+      const chatEnabled = runtime.getSetting("LTCG_CHAT_ENABLED") !== "false";
       if (!chatEnabled) {
-        logger.debug('Chat is disabled');
+        logger.debug("Chat is disabled");
         return false;
       }
 
@@ -37,12 +37,12 @@ export const ggAction: Action = {
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
-        logger.warn('No game state available for GG validation');
+        logger.warn("No game state available for GG validation");
         return false;
       }
 
       // Game must be completed or about to end
-      const isCompleted = gameState.status === 'completed';
+      const isCompleted = gameState.status === "completed";
       const isAboutToEnd =
         gameState.hostPlayer.lifePoints === 0 ||
         gameState.opponentPlayer.lifePoints === 0 ||
@@ -50,13 +50,13 @@ export const ggAction: Action = {
         gameState.opponentPlayer.deckCount === 0;
 
       if (!isCompleted && !isAboutToEnd) {
-        logger.debug('Game is not completed or about to end');
+        logger.debug("Game is not completed or about to end");
         return false;
       }
 
       return true;
     } catch (error) {
-      logger.error({ error }, 'Error validating GG action');
+      logger.error({ error }, "Error validating GG action");
       return false;
     }
   },
@@ -69,19 +69,19 @@ export const ggAction: Action = {
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
-      logger.info('Handling GG action');
+      logger.info("Handling GG action");
 
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
-        throw new Error('Failed to get game state');
+        throw new Error("Failed to get game state");
       }
 
       // Get character personality
-      const characterName = runtime.character?.name || 'AI Agent';
-      const personality = runtime.character?.bio || 'Strategic and thoughtful card game player';
+      const characterName = runtime.character?.name || "AI Agent";
+      const personality = runtime.character?.bio || "Strategic and thoughtful card game player";
 
       // Determine game outcome
       const outcome = determineGameOutcome(gameState);
@@ -94,7 +94,7 @@ Game Result:
 - Your Life Points: ${outcome.myLP}
 - Opponent Life Points: ${outcome.oppLP}
 - Game Duration: ${gameState.turnNumber} turns
-- Close Game: ${outcome.wasClose ? 'Yes' : 'No'}
+- Close Game: ${outcome.wasClose ? "Yes" : "No"}
 
 Generate a brief good game message (1-2 sentences) that:
 1. Shows good sportsmanship
@@ -112,14 +112,14 @@ Your message (just the message, no quotes or labels):`;
         maxTokens: 100,
       });
 
-      const cleanMessage = ggMessage.trim().replace(/^["']|["']$/g, '');
+      const cleanMessage = ggMessage.trim().replace(/^["']|["']$/g, "");
 
       // Send via callback
       await callback({
         text: cleanMessage,
-        actions: ['GG'],
+        actions: ["GG"],
         source: message.content.source,
-        thought: `Sending ${outcome.result === 'WON' ? 'gracious victory' : outcome.result === 'LOST' ? 'respectful defeat' : 'friendly game end'} message to show sportsmanship`,
+        thought: `Sending ${outcome.result === "WON" ? "gracious victory" : outcome.result === "LOST" ? "respectful defeat" : "friendly game end"} message to show sportsmanship`,
       } as Content);
 
       return {
@@ -131,23 +131,24 @@ Your message (just the message, no quotes or labels):`;
           characterName,
         },
         data: {
-          actionName: 'GG',
+          actionName: "GG",
           outcome,
           generatedMessage: cleanMessage,
         },
       };
     } catch (error) {
-      logger.error({ error }, 'Error in GG action');
+      logger.error({ error }, "Error in GG action");
 
       await callback({
         text: `Failed to send GG message: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: 'GG message generation failed due to LLM error or unable to determine game outcome',
+        thought:
+          "GG message generation failed due to LLM error or unable to determine game outcome",
       } as Content);
 
       return {
         success: false,
-        text: 'Failed to send GG message',
+        text: "Failed to send GG message",
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
@@ -156,46 +157,46 @@ Your message (just the message, no quotes or labels):`;
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'I won the game!',
+          text: "I won the game!",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'GG! That was a great match. Well played!',
-          actions: ['GG'],
-        },
-      },
-    ],
-    [
-      {
-        name: '{{name1}}',
-        content: {
-          text: 'I lost the game',
-        },
-      },
-      {
-        name: '{{name2}}',
-        content: {
-          text: 'GG! You got me this time. Nice strategy!',
-          actions: ['GG'],
+          text: "GG! That was a great match. Well played!",
+          actions: ["GG"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'That was an intense close game',
+          text: "I lost the game",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'GG! What an intense match! That could have gone either way.',
-          actions: ['GG'],
+          text: "GG! You got me this time. Nice strategy!",
+          actions: ["GG"],
+        },
+      },
+    ],
+    [
+      {
+        name: "{{name1}}",
+        content: {
+          text: "That was an intense close game",
+        },
+      },
+      {
+        name: "{{name2}}",
+        content: {
+          text: "GG! What an intense match! That could have gone either way.",
+          actions: ["GG"],
         },
       },
     ],
@@ -206,7 +207,7 @@ Your message (just the message, no quotes or labels):`;
  * Game outcome information
  */
 interface GameOutcome {
-  result: 'WON' | 'LOST' | 'UNKNOWN';
+  result: "WON" | "LOST" | "UNKNOWN";
   myLP: number;
   oppLP: number;
   wasClose: boolean;
@@ -220,14 +221,14 @@ function determineGameOutcome(gameState: GameStateResponse): GameOutcome {
   const myLP = gameState.hostPlayer.lifePoints;
   const oppLP = gameState.opponentPlayer.lifePoints;
 
-  let result: GameOutcome['result'];
+  let result: GameOutcome["result"];
 
   if (myLP > oppLP) {
-    result = 'WON';
+    result = "WON";
   } else if (oppLP > myLP) {
-    result = 'LOST';
+    result = "LOST";
   } else {
-    result = 'UNKNOWN';
+    result = "UNKNOWN";
   }
 
   // Determine if game was close
@@ -247,7 +248,7 @@ function determineGameOutcome(gameState: GameStateResponse): GameOutcome {
  * Get guidance for GG message based on outcome
  */
 function getGGGuidance(outcome: GameOutcome) {
-  if (outcome.result === 'WON') {
+  if (outcome.result === "WON") {
     if (outcome.wasClose) {
       return `You won a close game. Be gracious and acknowledge the competition. Examples:
 - "GG! That was intense! You had me worried there."
@@ -259,7 +260,7 @@ function getGGGuidance(outcome: GameOutcome) {
 - "Good game! You put up a good fight."
 - "GG! That was fun, thanks for playing."`;
     }
-  } else if (outcome.result === 'LOST') {
+  } else if (outcome.result === "LOST") {
     if (outcome.wasClose) {
       return `You lost a close game. Show respect and determination. Examples:
 - "GG! So close! Next time I'll get you."

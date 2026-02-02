@@ -1,11 +1,3 @@
-/**
- * API Request and Response Types
- *
- * These types match the HTTP REST API endpoints implemented in PART 1.
- */
-
-import { Id } from './game';
-
 // ============================================================================
 // Authentication & Agent Management
 // ============================================================================
@@ -36,7 +28,7 @@ export interface AgentProfile {
   createdAt: number;
   // HD Wallet info (non-custodial, Privy-managed)
   walletAddress?: string;
-  walletChainType?: 'solana';
+  walletChainType?: "solana";
   walletCreatedAt?: number;
 }
 
@@ -46,7 +38,7 @@ export interface AgentProfile {
 
 export interface WalletInfo {
   address: string;
-  chainType: 'solana';
+  chainType: "solana";
   walletIndex: number; // HD derivation index
   createdAt: number;
   // Balance info (optional, fetched separately)
@@ -83,12 +75,12 @@ export interface RateLimitStatus {
 export interface GameStateResponse {
   gameId: string;
   lobbyId: string;
-  phase: 'draw' | 'standby' | 'main1' | 'battle' | 'main2' | 'end';
+  phase: "draw" | "standby" | "main1" | "battle" | "main2" | "end";
   turnNumber: number;
   currentTurnPlayer: string;
   isMyTurn: boolean;
-  status: 'waiting' | 'active' | 'completed'; // Added for compatibility
-  currentTurn: 'host' | 'opponent'; // Added for compatibility
+  status: "waiting" | "active" | "completed"; // Added for compatibility
+  currentTurn: "host" | "opponent"; // Added for compatibility
 
   // Life points
   myLifePoints: number;
@@ -143,7 +135,7 @@ export interface PlayerState {
 export interface CardInHand {
   _id: string;
   name: string;
-  cardType: 'creature' | 'spell' | 'trap' | 'equipment';
+  cardType: "creature" | "spell" | "trap" | "equipment";
   cost?: number;
   attack?: number;
   defense?: number;
@@ -154,7 +146,7 @@ export interface CardInHand {
   // Legacy fields for compatibility
   handIndex?: number;
   cardId?: string;
-  type?: 'creature' | 'spell' | 'trap' | 'equipment';
+  type?: "creature" | "spell" | "trap" | "equipment";
   level?: number;
   atk?: number;
   def?: number;
@@ -166,7 +158,7 @@ export interface CardInHand {
 export interface BoardCard {
   _id: string;
   name: string;
-  cardType: 'creature' | 'spell' | 'trap' | 'equipment';
+  cardType: "creature" | "spell" | "trap" | "equipment";
   attack?: number;
   defense?: number;
   currentAttack?: number;
@@ -182,7 +174,7 @@ export interface MonsterCard {
   boardIndex: number;
   cardId: string;
   name: string;
-  position: 'attack' | 'defense' | 'facedown';
+  position: "attack" | "defense" | "facedown";
   atk: number;
   def: number;
   level: number;
@@ -197,7 +189,7 @@ export interface SpellTrapCard {
   cardId: string;
   name: string;
   faceUp: boolean;
-  type: 'spell' | 'trap';
+  type: "spell" | "trap";
   cardType?: string; // Alternative field for card type
   description?: string; // Card effect description
 }
@@ -205,7 +197,7 @@ export interface SpellTrapCard {
 export interface CardInGraveyard {
   cardId: string;
   name: string;
-  type: 'creature' | 'spell' | 'trap' | 'equipment';
+  type: "creature" | "spell" | "trap" | "equipment";
 }
 
 // ============================================================================
@@ -213,7 +205,15 @@ export interface CardInGraveyard {
 // ============================================================================
 
 export interface AvailableAction {
-  type: 'summon' | 'set' | 'activate_spell' | 'activate_trap' | 'attack' | 'change_position' | 'end_turn' | 'chain_response';
+  type:
+    | "summon"
+    | "set"
+    | "activate_spell"
+    | "activate_trap"
+    | "attack"
+    | "change_position"
+    | "end_turn"
+    | "chain_response";
   description: string;
   parameters?: Record<string, any>;
 }
@@ -231,14 +231,14 @@ export interface AvailableActionsResponse {
 export interface SummonRequest {
   gameId: string;
   handIndex: number;
-  position: 'attack' | 'defense';
+  position: "attack" | "defense";
   tributeIndices?: number[];
 }
 
 export interface SetCardRequest {
   gameId: string;
   handIndex: number;
-  zone: 'monster' | 'spellTrap';
+  zone: "monster" | "spellTrap";
 }
 
 export interface SetSpellTrapRequest {
@@ -268,7 +268,7 @@ export interface AttackRequest {
 export interface ChangePositionRequest {
   gameId: string;
   boardIndex: number;
-  newPosition: 'attack' | 'defense';
+  newPosition: "attack" | "defense";
 }
 
 export interface FlipSummonRequest {
@@ -293,8 +293,8 @@ export interface SurrenderRequest {
 }
 
 export interface Target {
-  type: 'monster' | 'spell_trap';
-  owner: 'self' | 'opponent';
+  type: "monster" | "spell_trap";
+  owner: "self" | "opponent";
   index: number;
 }
 
@@ -304,25 +304,25 @@ export interface Target {
 
 export interface EnterMatchmakingRequest {
   deckId: string;
-  mode: 'casual' | 'ranked';
+  mode: "casual" | "ranked";
   isPrivate?: boolean;
 }
 
 export interface EnterMatchmakingResponse {
   lobbyId: string;
   joinCode?: string;
-  status: 'waiting' | 'matched';
+  status: "waiting" | "matched";
   gameId?: string;
 }
 
 export interface Lobby {
   lobbyId: string;
-  mode: 'casual' | 'ranked';
+  mode: "casual" | "ranked";
   hostPlayerId: string;
   hostPlayerName: string;
   isPrivate: boolean;
   joinCode?: string;
-  status: 'waiting' | 'matched';
+  status: "waiting" | "matched";
   createdAt: number;
 }
 
@@ -351,7 +351,7 @@ export interface Deck {
 export interface CardDefinition {
   cardId: string;
   name: string;
-  type: 'creature' | 'spell' | 'trap' | 'equipment';
+  type: "creature" | "spell" | "trap" | "equipment";
   level?: number;
   atk?: number;
   def?: number;
@@ -383,7 +383,7 @@ export interface GameEvent {
   gameId: string;
   turnNumber: number;
   phase: string;
-  eventType: 'summon' | 'spell_activation' | 'attack' | 'damage' | 'draw' | 'turn_end';
+  eventType: "summon" | "spell_activation" | "attack" | "damage" | "draw" | "turn_end";
   playerId: string;
   description: string;
   timestamp: number;
@@ -418,46 +418,46 @@ export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 export enum ApiErrorCode {
   // Authentication
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  INVALID_API_KEY = 'INVALID_API_KEY',
-  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
+  UNAUTHORIZED = "UNAUTHORIZED",
+  INVALID_API_KEY = "INVALID_API_KEY",
+  RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED",
 
   // Game errors
-  GAME_NOT_FOUND = 'GAME_NOT_FOUND',
-  NOT_YOUR_TURN = 'NOT_YOUR_TURN',
-  INVALID_PHASE = 'INVALID_PHASE',
-  INVALID_MOVE = 'INVALID_MOVE',
-  ALREADY_SUMMONED = 'ALREADY_SUMMONED',
-  INSUFFICIENT_TRIBUTES = 'INSUFFICIENT_TRIBUTES',
-  CARD_NOT_FOUND = 'CARD_NOT_FOUND',
-  INVALID_TARGET = 'INVALID_TARGET',
+  GAME_NOT_FOUND = "GAME_NOT_FOUND",
+  NOT_YOUR_TURN = "NOT_YOUR_TURN",
+  INVALID_PHASE = "INVALID_PHASE",
+  INVALID_MOVE = "INVALID_MOVE",
+  ALREADY_SUMMONED = "ALREADY_SUMMONED",
+  INSUFFICIENT_TRIBUTES = "INSUFFICIENT_TRIBUTES",
+  CARD_NOT_FOUND = "CARD_NOT_FOUND",
+  INVALID_TARGET = "INVALID_TARGET",
 
   // Monster position errors
-  CANNOT_FLIP_THIS_TURN = 'CANNOT_FLIP_THIS_TURN',
-  CANNOT_CHANGE_POSITION = 'CANNOT_CHANGE_POSITION',
-  ALREADY_CHANGED_POSITION = 'ALREADY_CHANGED_POSITION',
-  WRONG_POSITION = 'WRONG_POSITION',
+  CANNOT_FLIP_THIS_TURN = "CANNOT_FLIP_THIS_TURN",
+  CANNOT_CHANGE_POSITION = "CANNOT_CHANGE_POSITION",
+  ALREADY_CHANGED_POSITION = "ALREADY_CHANGED_POSITION",
+  WRONG_POSITION = "WRONG_POSITION",
 
   // Spell/Trap errors
-  TRAP_NOT_READY = 'TRAP_NOT_READY',
-  CARD_NOT_IN_ZONE = 'CARD_NOT_IN_ZONE',
-  CARD_ALREADY_FACE_UP = 'CARD_ALREADY_FACE_UP',
-  ZONE_FULL = 'ZONE_FULL',
-  INVALID_CARD_TYPE = 'INVALID_CARD_TYPE',
-  SET_SPELL_TRAP_FAILED = 'SET_SPELL_TRAP_FAILED',
+  TRAP_NOT_READY = "TRAP_NOT_READY",
+  CARD_NOT_IN_ZONE = "CARD_NOT_IN_ZONE",
+  CARD_ALREADY_FACE_UP = "CARD_ALREADY_FACE_UP",
+  ZONE_FULL = "ZONE_FULL",
+  INVALID_CARD_TYPE = "INVALID_CARD_TYPE",
+  SET_SPELL_TRAP_FAILED = "SET_SPELL_TRAP_FAILED",
 
   // Attack errors
-  ALREADY_ATTACKED = 'ALREADY_ATTACKED',
+  ALREADY_ATTACKED = "ALREADY_ATTACKED",
 
   // Matchmaking errors
-  LOBBY_NOT_FOUND = 'LOBBY_NOT_FOUND',
-  LOBBY_FULL = 'LOBBY_FULL',
-  INVALID_DECK = 'INVALID_DECK',
+  LOBBY_NOT_FOUND = "LOBBY_NOT_FOUND",
+  LOBBY_FULL = "LOBBY_FULL",
+  INVALID_DECK = "INVALID_DECK",
 
   // Generic errors
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  INTERNAL_ERROR = 'INTERNAL_ERROR',
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  METHOD_NOT_ALLOWED = 'METHOD_NOT_ALLOWED',
-  NOT_A_PLAYER = 'NOT_A_PLAYER',
+  VALIDATION_ERROR = "VALIDATION_ERROR",
+  INTERNAL_ERROR = "INTERNAL_ERROR",
+  NETWORK_ERROR = "NETWORK_ERROR",
+  METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED",
+  NOT_A_PLAYER = "NOT_A_PLAYER",
 }

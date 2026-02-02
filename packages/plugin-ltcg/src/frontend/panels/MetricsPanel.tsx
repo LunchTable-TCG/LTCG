@@ -8,10 +8,10 @@
  * - Recent games history
  */
 
-import React from 'react';
-import { useMetrics } from '../hooks';
-import { StatCard, LoadingState, ErrorState, EmptyState } from '../components';
-import { cn } from '../utils';
+import React from "react";
+import { EmptyState, ErrorState, LoadingState, StatCard } from "../components";
+import { useMetrics } from "../hooks";
+import { cn } from "../utils";
 
 interface MetricsPanelProps {
   agentId: string;
@@ -22,7 +22,7 @@ interface MetricsPanelProps {
  */
 const WinRateBar = React.memo(function WinRateBar({ winRate }: { winRate: number }) {
   const percentage = Math.round(winRate * 100);
-  const color = winRate >= 0.6 ? 'bg-green-500' : winRate >= 0.4 ? 'bg-yellow-500' : 'bg-red-500';
+  const color = winRate >= 0.6 ? "bg-green-500" : winRate >= 0.4 ? "bg-yellow-500" : "bg-red-500";
 
   return (
     <div className="flex flex-col gap-2">
@@ -32,7 +32,7 @@ const WinRateBar = React.memo(function WinRateBar({ winRate }: { winRate: number
       </div>
       <div className="h-3 bg-muted rounded-full overflow-hidden">
         <div
-          className={cn('h-full transition-all duration-500', color)}
+          className={cn("h-full transition-all duration-500", color)}
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -76,7 +76,7 @@ export function MetricsPanel({ agentId }: MetricsPanelProps) {
   if (error) {
     return (
       <ErrorState
-        message={error instanceof Error ? error.message : 'Failed to load metrics'}
+        message={error instanceof Error ? error.message : "Failed to load metrics"}
         onRetry={() => refetch()}
       />
     );
@@ -109,16 +109,8 @@ export function MetricsPanel({ agentId }: MetricsPanelProps) {
                 value={metrics.lifetime.gamesPlayed}
                 variant="default"
               />
-              <StatCard
-                label="Wins"
-                value={metrics.lifetime.wins}
-                variant="success"
-              />
-              <StatCard
-                label="Losses"
-                value={metrics.lifetime.losses}
-                variant="default"
-              />
+              <StatCard label="Wins" value={metrics.lifetime.wins} variant="success" />
+              <StatCard label="Losses" value={metrics.lifetime.losses} variant="default" />
             </div>
 
             {/* Win Rate Bar */}
@@ -140,19 +132,9 @@ export function MetricsPanel({ agentId }: MetricsPanelProps) {
         <h3 className="text-sm font-medium text-muted-foreground">Performance</h3>
 
         <div className="rounded-lg border border-border bg-card p-4">
-          <MetricRow
-            label="Avg Turn Time"
-            value={metrics.performance.avgTurnTimeMs}
-            unit="ms"
-          />
-          <MetricRow
-            label="Avg Actions Per Turn"
-            value={metrics.performance.avgActionsPerTurn}
-          />
-          <MetricRow
-            label="API Call Count"
-            value={metrics.performance.apiCallCount}
-          />
+          <MetricRow label="Avg Turn Time" value={metrics.performance.avgTurnTimeMs} unit="ms" />
+          <MetricRow label="Avg Actions Per Turn" value={metrics.performance.avgActionsPerTurn} />
+          <MetricRow label="API Call Count" value={metrics.performance.apiCallCount} />
           <MetricRow
             label="API Error Rate"
             value={`${Math.round(metrics.performance.apiErrorRate * 100)}%`}
@@ -182,10 +164,10 @@ export function MetricsPanel({ agentId }: MetricsPanelProps) {
                     <td className="p-3">
                       <span
                         className={cn(
-                          'px-2 py-1 rounded text-xs font-medium',
-                          game.result === 'win'
-                            ? 'bg-green-500/10 text-green-400'
-                            : 'bg-red-500/10 text-red-400'
+                          "px-2 py-1 rounded text-xs font-medium",
+                          game.result === "win"
+                            ? "bg-green-500/10 text-green-400"
+                            : "bg-red-500/10 text-red-400"
                         )}
                       >
                         {game.result.toUpperCase()}

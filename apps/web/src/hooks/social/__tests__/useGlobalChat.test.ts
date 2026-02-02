@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { useGlobalChat } from "../useGlobalChat";
 import * as convexReact from "convex/react";
 import { toast } from "sonner";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useGlobalChat } from "../useGlobalChat";
 
 // Mock imports
 vi.mock("convex/react");

@@ -13,44 +13,44 @@ import type {
   IAgentRuntime,
   Memory,
   State,
-} from '@elizaos/core';
-import { logger, ModelType } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import { extractJsonFromLlmResponse } from '../utils/safeParseJson';
+} from "@elizaos/core";
+import { ModelType, logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const createLobbyAction: Action = {
-  name: 'CREATE_LOBBY',
-  similes: ['HOST_GAME', 'START_LOBBY', 'NEW_GAME'],
-  description: 'Create a new game lobby and wait for opponent',
+  name: "CREATE_LOBBY",
+  similes: ["HOST_GAME", "START_LOBBY", "NEW_GAME"],
+  description: "Create a new game lobby and wait for opponent",
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
     try {
       // Check if already in a game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;
       if (currentGameId) {
-        logger.debug('Agent already in a game');
+        logger.debug("Agent already in a game");
         return false;
       }
 
       // Check if already in a lobby
       const currentLobbyId = state.values.LTCG_CURRENT_LOBBY_ID;
       if (currentLobbyId) {
-        logger.debug('Agent already in a lobby');
+        logger.debug("Agent already in a lobby");
         return false;
       }
 
       // Check API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        logger.warn('LTCG API credentials not configured');
+        logger.warn("LTCG API credentials not configured");
         return false;
       }
 
       return true;
     } catch (error) {
-      logger.error({ error }, 'Error validating create lobby action');
+      logger.error({ error }, "Error validating create lobby action");
       return false;
     }
   },
@@ -63,14 +63,14 @@ export const createLobbyAction: Action = {
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
-      logger.info('Handling CREATE_LOBBY action');
+      logger.info("Handling CREATE_LOBBY action");
 
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        throw new Error('LTCG API credentials not configured');
+        throw new Error("LTCG API credentials not configured");
       }
 
       // Create API client
@@ -80,13 +80,13 @@ export const createLobbyAction: Action = {
       });
 
       // Get deck preference
-      let deckId = runtime.getSetting('LTCG_PREFERRED_DECK_ID') as string;
+      let deckId = runtime.getSetting("LTCG_PREFERRED_DECK_ID") as string;
 
       if (!deckId) {
         // Use LLM to select deck
         const decks = await client.getDecks();
         if (decks.length === 0) {
-          throw new Error('No decks available. Please create a deck first.');
+          throw new Error("No decks available. Please create a deck first.");
         }
 
         if (decks.length === 1) {
@@ -95,9 +95,9 @@ export const createLobbyAction: Action = {
           const deckOptions = decks
             .map(
               (deck, idx) =>
-                `${idx + 1}. ${deck.name} (${deck.cards.length} cards)${deck.archetype ? ` - ${deck.archetype}` : ''}`
+                `${idx + 1}. ${deck.name} (${deck.cards.length} cards)${deck.archetype ? ` - ${deck.archetype}` : ""}`
             )
-            .join('\n');
+            .join("\n");
 
           const prompt = `Select a deck for this game:
 ${deckOptions}
@@ -116,11 +116,11 @@ Respond with JSON: { "deckIndex": <index> }`;
       }
 
       // Get mode preference
-      let mode: 'casual' | 'ranked';
-      const rankedModeSetting = runtime.getSetting('LTCG_RANKED_MODE');
+      let mode: "casual" | "ranked";
+      const rankedModeSetting = runtime.getSetting("LTCG_RANKED_MODE");
 
       if (rankedModeSetting !== undefined) {
-        mode = rankedModeSetting === 'true' ? 'ranked' : 'casual';
+        mode = rankedModeSetting === "true" ? "ranked" : "casual";
       } else {
         // Ask LLM
         const prompt = `Should this lobby be ranked or casual?
@@ -136,17 +136,17 @@ Respond with JSON: { "mode": "ranked" or "casual" }`;
           maxTokens: 20,
         });
 
-        const parsed = extractJsonFromLlmResponse(decision, { mode: 'casual' });
-        mode = parsed.mode === 'ranked' ? 'ranked' : 'casual';
+        const parsed = extractJsonFromLlmResponse(decision, { mode: "casual" });
+        mode = parsed.mode === "ranked" ? "ranked" : "casual";
       }
 
       // Determine if lobby should be private
       let isPrivate = false;
-      const messageText = message.content.text?.toLowerCase() || '';
+      const messageText = message.content.text?.toLowerCase() || "";
 
-      if (messageText.includes('private') || messageText.includes('join code')) {
+      if (messageText.includes("private") || messageText.includes("join code")) {
         isPrivate = true;
-      } else if (messageText.includes('public')) {
+      } else if (messageText.includes("public")) {
         isPrivate = false;
       } else {
         // Ask LLM
@@ -178,23 +178,23 @@ Respond with JSON: { "isPrivate": true or false }`;
       state.values.LTCG_CURRENT_LOBBY_ID = result.lobbyId;
 
       // Build response text
-      let responseText = `Created ${mode} lobby (${isPrivate ? 'Private' : 'Public'})!`;
+      let responseText = `Created ${mode} lobby (${isPrivate ? "Private" : "Public"})!`;
       if (isPrivate && result.joinCode) {
         responseText += `\n🔑 Join Code: ${result.joinCode}`;
       }
       responseText += `\nLobby ID: ${result.lobbyId.slice(0, 8)}...`;
-      responseText += '\nWaiting for opponent...';
+      responseText += "\nWaiting for opponent...";
 
       await callback({
         text: responseText,
-        actions: ['CREATE_LOBBY'],
+        actions: ["CREATE_LOBBY"],
         source: message.content.source,
-        thought: `Created ${mode} lobby (${isPrivate ? 'private with join code for specific opponent' : 'public for quick matchmaking'})`,
+        thought: `Created ${mode} lobby (${isPrivate ? "private with join code for specific opponent" : "public for quick matchmaking"})`,
       } as Content);
 
       return {
         success: true,
-        text: 'Lobby created successfully',
+        text: "Lobby created successfully",
         values: {
           lobbyId: result.lobbyId,
           joinCode: result.joinCode,
@@ -203,7 +203,7 @@ Respond with JSON: { "isPrivate": true or false }`;
           status: result.status,
         },
         data: {
-          actionName: 'CREATE_LOBBY',
+          actionName: "CREATE_LOBBY",
           lobbyId: result.lobbyId,
           joinCode: result.joinCode,
           mode,
@@ -211,17 +211,18 @@ Respond with JSON: { "isPrivate": true or false }`;
         },
       };
     } catch (error) {
-      logger.error({ error }, 'Error in CREATE_LOBBY action');
+      logger.error({ error }, "Error in CREATE_LOBBY action");
 
       await callback({
         text: `Failed to create lobby: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: 'Lobby creation failed due to API error, invalid deck selection, or server connection issue',
+        thought:
+          "Lobby creation failed due to API error, invalid deck selection, or server connection issue",
       } as Content);
 
       return {
         success: false,
-        text: 'Failed to create lobby',
+        text: "Failed to create lobby",
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
@@ -230,46 +231,46 @@ Respond with JSON: { "isPrivate": true or false }`;
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Create a lobby for me',
+          text: "Create a lobby for me",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Created casual lobby (Public)!\nLobby ID: abc123...\nWaiting for opponent...',
-          actions: ['CREATE_LOBBY'],
-        },
-      },
-    ],
-    [
-      {
-        name: '{{name1}}',
-        content: {
-          text: 'Host a private ranked game',
-        },
-      },
-      {
-        name: '{{name2}}',
-        content: {
-          text: 'Created ranked lobby (Private)!\n🔑 Join Code: XYZ789\nLobby ID: def456...\nWaiting for opponent...',
-          actions: ['CREATE_LOBBY'],
+          text: "Created casual lobby (Public)!\nLobby ID: abc123...\nWaiting for opponent...",
+          actions: ["CREATE_LOBBY"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Start a public game',
+          text: "Host a private ranked game",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Created casual lobby (Public)!\nLobby ID: ghi789...\nWaiting for opponent...',
-          actions: ['CREATE_LOBBY'],
+          text: "Created ranked lobby (Private)!\n🔑 Join Code: XYZ789\nLobby ID: def456...\nWaiting for opponent...",
+          actions: ["CREATE_LOBBY"],
+        },
+      },
+    ],
+    [
+      {
+        name: "{{name1}}",
+        content: {
+          text: "Start a public game",
+        },
+      },
+      {
+        name: "{{name2}}",
+        content: {
+          text: "Created casual lobby (Public)!\nLobby ID: ghi789...\nWaiting for opponent...",
+          actions: ["CREATE_LOBBY"],
         },
       },
     ],

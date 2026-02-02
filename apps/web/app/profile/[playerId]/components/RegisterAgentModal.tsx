@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { cn } from "@/lib/utils";
 import { sanitizeText, sanitizeURL } from "@/lib/sanitize";
+import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import { Bot, ChevronLeft, ChevronRight, Image, Link, Loader2, X } from "lucide-react";
 import { useState } from "react";

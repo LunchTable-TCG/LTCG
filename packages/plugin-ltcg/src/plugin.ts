@@ -1,4 +1,4 @@
-import type { Plugin } from '@elizaos/core';
+import type { Plugin } from "@elizaos/core";
 import {
   type Action,
   type ActionResult,
@@ -15,7 +15,7 @@ import {
   Service,
   type State,
   logger,
-} from '@elizaos/core';
+} from "@elizaos/core";
 
 // Re-export core types for plugin consumers
 export type {
@@ -31,18 +31,18 @@ export type {
   State,
 };
 export { ModelType, Service };
-import { z } from 'zod';
+import { z } from "zod";
 
 // Import LTCG actions, providers, and evaluators
-import { ltcgActions } from './actions';
-import { ltcgProviders } from './providers';
-import { ltcgEvaluators } from './evaluators';
-import { webhookRoutes } from './webhooks';
-import { panelRoutes } from './api/routes';
-import { LTCGPollingService } from './services/LTCGPollingService';
-import { TurnOrchestrator } from './services/TurnOrchestrator';
-import { StateAggregator } from './services/StateAggregator';
-import { panels } from './frontend';
+import { ltcgActions } from "./actions";
+import { panelRoutes } from "./api/routes";
+import { ltcgEvaluators } from "./evaluators";
+import { panels } from "./frontend";
+import { ltcgProviders } from "./providers";
+import { LTCGPollingService } from "./services/LTCGPollingService";
+import { StateAggregator } from "./services/StateAggregator";
+import { TurnOrchestrator } from "./services/TurnOrchestrator";
+import { webhookRoutes } from "./webhooks";
 
 /**
  * Define the configuration schema for the LTCG plugin
@@ -60,45 +60,47 @@ import { panels } from './frontend';
 const configSchema = z.object({
   LTCG_API_KEY: z
     .string()
-    .min(1, 'LTCG_API_KEY is required for authentication')
+    .min(1, "LTCG_API_KEY is required for authentication")
     .optional()
     .transform((val) => {
       if (!val) {
-        console.warn('Warning: LTCG_API_KEY is not provided - agent will not be able to play games');
+        console.warn(
+          "Warning: LTCG_API_KEY is not provided - agent will not be able to play games"
+        );
       }
       return val;
     }),
-  LTCG_API_URL: z
-    .string()
-    .url('LTCG_API_URL must be a valid URL')
-    .optional(),
+  LTCG_API_URL: z.string().url("LTCG_API_URL must be a valid URL").optional(),
   LTCG_CALLBACK_URL: z
     .string()
-    .url('LTCG_CALLBACK_URL must be a valid URL for receiving webhooks')
+    .url("LTCG_CALLBACK_URL must be a valid URL for receiving webhooks")
     .optional()
     .transform((val) => {
       if (!val) {
-        console.warn('Warning: LTCG_CALLBACK_URL not provided - using polling fallback for game updates');
+        console.warn(
+          "Warning: LTCG_CALLBACK_URL not provided - using polling fallback for game updates"
+        );
       }
       return val;
     }),
   LTCG_WEBHOOK_SECRET: z
     .string()
-    .min(16, 'LTCG_WEBHOOK_SECRET should be at least 16 characters')
+    .min(16, "LTCG_WEBHOOK_SECRET should be at least 16 characters")
     .optional(),
   LTCG_AUTO_MATCHMAKING: z
     .string()
-    .transform((val) => val === 'true')
+    .transform((val) => val === "true")
     .optional(),
   LTCG_DEBUG_MODE: z
     .string()
-    .transform((val) => val === 'true')
+    .transform((val) => val === "true")
     .optional(),
 });
 
 const plugin: Plugin & { panels?: any } = {
-  name: 'ltcg',
-  description: 'LTCG card game plugin - enables AI agents to play the Legendary Trading Card Game with full gameplay capabilities, real-time updates, and customizable personalities',
+  name: "ltcg",
+  description:
+    "LTCG card game plugin - enables AI agents to play the Legendary Trading Card Game with full gameplay capabilities, real-time updates, and customizable personalities",
   // Set lowest priority so real models take precedence
   priority: -1000,
   config: {
@@ -110,7 +112,7 @@ const plugin: Plugin & { panels?: any } = {
     LTCG_DEBUG_MODE: process.env.LTCG_DEBUG_MODE,
   },
   async init(config: Record<string, string>) {
-    logger.info('*** Initializing LTCG plugin ***');
+    logger.info("*** Initializing LTCG plugin ***");
     try {
       const validatedConfig = await configSchema.parseAsync(config);
 
@@ -121,16 +123,19 @@ const plugin: Plugin & { panels?: any } = {
 
       // Log configuration status (without sensitive data)
       const usePolling = !validatedConfig.LTCG_CALLBACK_URL;
-      logger.info({
-        hasApiKey: !!validatedConfig.LTCG_API_KEY,
-        hasCallbackUrl: !!validatedConfig.LTCG_CALLBACK_URL,
-        autoMatchmaking: validatedConfig.LTCG_AUTO_MATCHMAKING,
-        realtimeMode: usePolling ? 'polling' : 'webhooks',
-      }, 'LTCG plugin configured');
+      logger.info(
+        {
+          hasApiKey: !!validatedConfig.LTCG_API_KEY,
+          hasCallbackUrl: !!validatedConfig.LTCG_CALLBACK_URL,
+          autoMatchmaking: validatedConfig.LTCG_AUTO_MATCHMAKING,
+          realtimeMode: usePolling ? "polling" : "webhooks",
+        },
+        "LTCG plugin configured"
+      );
     } catch (error) {
       if (error instanceof z.ZodError) {
         const errorMessages =
-          error.issues?.map((e) => e.message)?.join(', ') || 'Unknown validation error';
+          error.issues?.map((e) => e.message)?.join(", ") || "Unknown validation error";
         throw new Error(`Invalid LTCG plugin configuration: ${errorMessages}`);
       }
       throw new Error(
@@ -140,23 +145,23 @@ const plugin: Plugin & { panels?: any } = {
   },
   models: {
     [ModelType.TEXT_SMALL]: async (_runtime: IAgentRuntime, { prompt }: GenerateTextParams) => {
-      return 'Test response for small model';
+      return "Test response for small model";
     },
     [ModelType.TEXT_LARGE]: async (_runtime: IAgentRuntime, { prompt }: GenerateTextParams) => {
-      return 'Test response for large model';
+      return "Test response for large model";
     },
   },
   routes: [
     // Health check endpoint
     {
-      name: 'ltcg-health',
-      path: '/ltcg/health',
-      type: 'GET',
+      name: "ltcg-health",
+      path: "/ltcg/health",
+      type: "GET",
       handler: async (_req: RouteRequest, res: RouteResponse) => {
         res.json({
-          status: 'ok',
-          plugin: 'ltcg',
-          version: '1.0.0',
+          status: "ok",
+          plugin: "ltcg",
+          version: "1.0.0",
           timestamp: Date.now(),
         });
       },
@@ -169,30 +174,30 @@ const plugin: Plugin & { panels?: any } = {
   events: {
     MESSAGE_RECEIVED: [
       async (params: Record<string, unknown>) => {
-        logger.info('MESSAGE_RECEIVED event received');
+        logger.info("MESSAGE_RECEIVED event received");
         // print the keys
-        logger.info({ keys: Object.keys(params) }, 'MESSAGE_RECEIVED param keys');
+        logger.info({ keys: Object.keys(params) }, "MESSAGE_RECEIVED param keys");
       },
     ],
     VOICE_MESSAGE_RECEIVED: [
       async (params: Record<string, unknown>) => {
-        logger.info('VOICE_MESSAGE_RECEIVED event received');
+        logger.info("VOICE_MESSAGE_RECEIVED event received");
         // print the keys
-        logger.info({ keys: Object.keys(params) }, 'VOICE_MESSAGE_RECEIVED param keys');
+        logger.info({ keys: Object.keys(params) }, "VOICE_MESSAGE_RECEIVED param keys");
       },
     ],
     WORLD_CONNECTED: [
       async (params: Record<string, unknown>) => {
-        logger.info('WORLD_CONNECTED event received');
+        logger.info("WORLD_CONNECTED event received");
         // print the keys
-        logger.info({ keys: Object.keys(params) }, 'WORLD_CONNECTED param keys');
+        logger.info({ keys: Object.keys(params) }, "WORLD_CONNECTED param keys");
       },
     ],
     WORLD_JOINED: [
       async (params: Record<string, unknown>) => {
-        logger.info('WORLD_JOINED event received');
+        logger.info("WORLD_JOINED event received");
         // print the keys
-        logger.info({ keys: Object.keys(params) }, 'WORLD_JOINED param keys');
+        logger.info({ keys: Object.keys(params) }, "WORLD_JOINED param keys");
       },
     ],
   },

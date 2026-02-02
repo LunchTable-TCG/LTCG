@@ -12,11 +12,11 @@ export type Id<T extends string = string> = string & { __tableName: T };
 // Game Phases
 // ============================================================================
 
-export type GamePhase = 'draw' | 'standby' | 'main1' | 'battle' | 'main2' | 'end';
+export type GamePhase = "draw" | "standby" | "main1" | "battle" | "main2" | "end";
 
-export type TurnPlayer = 'host' | 'opponent';
+export type TurnPlayer = "host" | "opponent";
 
-export type GameStatus = 'waiting' | 'active' | 'completed';
+export type GameStatus = "waiting" | "active" | "completed";
 
 // ============================================================================
 // Card Types
@@ -26,42 +26,42 @@ export type GameStatus = 'waiting' | 'active' | 'completed';
  * Card types matching Convex schema
  * Note: Use 'creature' not 'monster' to match database schema
  */
-export type CardType = 'creature' | 'spell' | 'trap' | 'equipment';
+export type CardType = "creature" | "spell" | "trap" | "equipment";
 
-export type MonsterPosition = 'attack' | 'defense' | 'facedown';
+export type MonsterPosition = "attack" | "defense" | "facedown";
 
-export type SpellType = 'normal' | 'quick-play' | 'continuous' | 'field' | 'equip' | 'ritual';
+export type SpellType = "normal" | "quick-play" | "continuous" | "field" | "equip" | "ritual";
 
-export type TrapType = 'normal' | 'continuous' | 'counter';
+export type TrapType = "normal" | "continuous" | "counter";
 
-export type MonsterAttribute = 'DARK' | 'LIGHT' | 'EARTH' | 'WIND' | 'WATER' | 'FIRE' | 'DIVINE';
+export type MonsterAttribute = "DARK" | "LIGHT" | "EARTH" | "WIND" | "WATER" | "FIRE" | "DIVINE";
 
 export type MonsterRace =
-  | 'Dragon'
-  | 'Spellcaster'
-  | 'Zombie'
-  | 'Warrior'
-  | 'Beast-Warrior'
-  | 'Beast'
-  | 'Winged Beast'
-  | 'Fiend'
-  | 'Fairy'
-  | 'Insect'
-  | 'Dinosaur'
-  | 'Reptile'
-  | 'Fish'
-  | 'Sea Serpent'
-  | 'Machine'
-  | 'Thunder'
-  | 'Aqua'
-  | 'Pyro'
-  | 'Rock'
-  | 'Plant'
-  | 'Psychic'
-  | 'Divine-Beast'
-  | 'Creator God'
-  | 'Wyrm'
-  | 'Cyberse';
+  | "Dragon"
+  | "Spellcaster"
+  | "Zombie"
+  | "Warrior"
+  | "Beast-Warrior"
+  | "Beast"
+  | "Winged Beast"
+  | "Fiend"
+  | "Fairy"
+  | "Insect"
+  | "Dinosaur"
+  | "Reptile"
+  | "Fish"
+  | "Sea Serpent"
+  | "Machine"
+  | "Thunder"
+  | "Aqua"
+  | "Pyro"
+  | "Rock"
+  | "Plant"
+  | "Psychic"
+  | "Divine-Beast"
+  | "Creator God"
+  | "Wyrm"
+  | "Cyberse";
 
 // ============================================================================
 // Game State
@@ -126,7 +126,7 @@ export interface Card {
 }
 
 export interface MonsterCard extends Card {
-  type: 'creature';
+  type: "creature";
   level: number;
   atk: number;
   def: number;
@@ -136,13 +136,13 @@ export interface MonsterCard extends Card {
 }
 
 export interface SpellCard extends Card {
-  type: 'spell';
+  type: "spell";
   spellType: SpellType;
   abilities: CardAbility[];
 }
 
 export interface TrapCard extends Card {
-  type: 'trap';
+  type: "trap";
   trapType: TrapType;
   abilities: CardAbility[];
 }
@@ -185,36 +185,36 @@ export interface CardInGraveyard {
 export interface CardAbility {
   abilityId: string;
   name: string;
-  type: 'trigger' | 'ignition' | 'quick' | 'continuous' | 'flip' | 'summon';
-  timing: 'summon' | 'flip' | 'onDestroy' | 'onDamage' | 'standby' | 'endPhase' | 'any';
+  type: "trigger" | "ignition" | "quick" | "continuous" | "flip" | "summon";
+  timing: "summon" | "flip" | "onDestroy" | "onDamage" | "standby" | "endPhase" | "any";
   description: string;
   cost?: AbilityCost;
   effects: CardEffect[];
 }
 
 export interface AbilityCost {
-  type: 'discard' | 'tribute' | 'lifePoints' | 'banish';
+  type: "discard" | "tribute" | "lifePoints" | "banish";
   amount?: number;
   targets?: string; // Description like "1 monster from hand"
 }
 
 export interface CardEffect {
   effectType:
-    | 'destroy'
-    | 'modifyATK'
-    | 'modifyDEF'
-    | 'draw'
-    | 'damage'
-    | 'heal'
-    | 'specialSummon'
-    | 'banish'
-    | 'returnToHand'
-    | 'negate'
-    | 'preventDestruction';
+    | "destroy"
+    | "modifyATK"
+    | "modifyDEF"
+    | "draw"
+    | "damage"
+    | "heal"
+    | "specialSummon"
+    | "banish"
+    | "returnToHand"
+    | "negate"
+    | "preventDestruction";
 
-  target: 'self' | 'opponent' | 'all' | 'select';
+  target: "self" | "opponent" | "all" | "select";
   value?: number;
-  duration?: 'permanent' | 'untilEndPhase' | 'thisTurn' | 'nextTurn';
+  duration?: "permanent" | "untilEndPhase" | "thisTurn" | "nextTurn";
   condition?: string;
 }
 
@@ -231,7 +231,7 @@ export interface GameAction {
 }
 
 export interface SummonAction extends GameAction {
-  type: 'summon';
+  type: "summon";
   handIndex: number;
   position: MonsterPosition;
   tributesRequired: number;
@@ -239,15 +239,15 @@ export interface SummonAction extends GameAction {
 }
 
 export interface AttackAction extends GameAction {
-  type: 'attack';
+  type: "attack";
   attackerIndex: number;
   possibleTargets: number[];
   canDirectAttack: boolean;
 }
 
 export interface SpellActivationAction extends GameAction {
-  type: 'activate_spell';
-  location: 'hand' | 'field';
+  type: "activate_spell";
+  location: "hand" | "field";
   index: number;
   requiresTarget: boolean;
   validTargets?: Target[];
@@ -273,7 +273,7 @@ export interface BattleResult {
 export interface DamageEvent {
   player: TurnPlayer;
   amount: number;
-  source: 'battle' | 'effect';
+  source: "battle" | "effect";
   cardId?: string;
 }
 
@@ -298,7 +298,7 @@ export interface ChainState {
 }
 
 export interface Target {
-  type: 'monster' | 'spell_trap';
+  type: "monster" | "spell_trap";
   owner: TurnPlayer;
   boardIndex: number;
 }
@@ -308,7 +308,12 @@ export interface Target {
 // ============================================================================
 
 export interface BoardAnalysis {
-  advantage: 'strong_advantage' | 'slight_advantage' | 'even' | 'slight_disadvantage' | 'strong_disadvantage';
+  advantage:
+    | "strong_advantage"
+    | "slight_advantage"
+    | "even"
+    | "slight_disadvantage"
+    | "strong_disadvantage";
   myMonsterCount: number;
   opponentMonsterCount: number;
   myBackrowCount: number;
@@ -328,9 +333,9 @@ export interface BoardAnalysis {
 }
 
 export interface Threat {
-  type: 'stronger_monster' | 'unknown_backrow' | 'direct_attack_open';
+  type: "stronger_monster" | "unknown_backrow" | "direct_attack_open";
   description: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
 }
 
 export interface AttackOpportunity {
@@ -340,13 +345,13 @@ export interface AttackOpportunity {
   targetName?: string;
   isDirect: boolean;
   guaranteedDamage: number;
-  risk: 'none' | 'low' | 'medium' | 'high';
+  risk: "none" | "low" | "medium" | "high";
   recommendation: string;
 }
 
 export interface StrategyRecommendation {
-  playStyle: 'aggressive' | 'defensive' | 'control' | 'balanced';
-  priority: 'establish_board' | 'clear_opponent' | 'protect_life_points' | 'finish_game';
+  playStyle: "aggressive" | "defensive" | "control" | "balanced";
+  priority: "establish_board" | "clear_opponent" | "protect_life_points" | "finish_game";
   suggestedActions: string[];
   reasoning: string;
 }
@@ -363,7 +368,7 @@ export interface DecisionContext {
   turnHistory: string[];
   personality: {
     playStyle: string;
-    riskTolerance: 'low' | 'medium' | 'high';
-    trashTalkLevel: 'none' | 'mild' | 'aggressive';
+    riskTolerance: "low" | "medium" | "high";
+    trashTalkLevel: "none" | "mild" | "aggressive";
   };
 }

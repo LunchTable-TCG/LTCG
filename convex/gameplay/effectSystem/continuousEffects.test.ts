@@ -7,20 +7,20 @@
 import { describe, expect, it } from "vitest";
 import type { Doc, Id } from "../../_generated/dataModel";
 import {
-  evaluateJsonCondition,
-  evaluateFieldCount,
-  evaluateGraveyardContains,
-  evaluateAttribute,
-  evaluateCardType,
   _matchesCondition,
   _matchesLegacyCondition,
+  evaluateAttribute,
+  evaluateCardType,
+  evaluateFieldCount,
+  evaluateGraveyardContains,
+  evaluateJsonCondition,
 } from "./continuousEffects";
 import type {
-  JsonCondition,
-  ConditionContext,
   CardOnBoard,
+  ConditionContext,
   FieldCountCondition,
   GraveyardCondition,
+  JsonCondition,
 } from "./jsonEffectSchema";
 import { convertLegacyCondition } from "./jsonEffectSchema";
 
@@ -29,9 +29,7 @@ import { convertLegacyCondition } from "./jsonEffectSchema";
 // ============================================================================
 
 /** Create a mock game state for testing */
-function createMockGameState(
-  overrides: Partial<Doc<"gameStates">> = {}
-): Doc<"gameStates"> {
+function createMockGameState(overrides: Partial<Doc<"gameStates">> = {}): Doc<"gameStates"> {
   return {
     _id: "gameState123" as Id<"gameStates">,
     _creationTime: Date.now(),
@@ -84,9 +82,7 @@ function createMockCardDef(
 }
 
 /** Create a mock card on board */
-function createMockCardOnBoard(
-  overrides: Partial<CardOnBoard> = {}
-): CardOnBoard {
+function createMockCardOnBoard(overrides: Partial<CardOnBoard> = {}): CardOnBoard {
   return {
     cardId: "card123" as Id<"cardDefinitions">,
     position: 1, // Attack position
@@ -99,9 +95,7 @@ function createMockCardOnBoard(
 }
 
 /** Create a condition context for testing */
-function createMockContext(
-  overrides: Partial<ConditionContext> = {}
-): ConditionContext {
+function createMockContext(overrides: Partial<ConditionContext> = {}): ConditionContext {
   return {
     gameState: createMockGameState(),
     sourceCard: createMockCardOnBoard(),
@@ -129,12 +123,8 @@ describe("evaluateJsonCondition", () => {
         targetCardDef: createMockCardDef({ archetype: "infernal_dragons" }),
       });
 
-      expect(
-        evaluateJsonCondition({ archetype: "infernal_dragons" }, context)
-      ).toBe(true);
-      expect(evaluateJsonCondition({ archetype: "abyssal" }, context)).toBe(
-        false
-      );
+      expect(evaluateJsonCondition({ archetype: "infernal_dragons" }, context)).toBe(true);
+      expect(evaluateJsonCondition({ archetype: "abyssal" }, context)).toBe(false);
     });
 
     it("should match archetype by name", () => {
@@ -145,9 +135,7 @@ describe("evaluateJsonCondition", () => {
         }),
       });
 
-      expect(evaluateJsonCondition({ archetype: "dragon" }, context)).toBe(
-        true
-      );
+      expect(evaluateJsonCondition({ archetype: "dragon" }, context)).toBe(true);
     });
 
     it("should match card type condition", () => {
@@ -155,9 +143,7 @@ describe("evaluateJsonCondition", () => {
         targetCardDef: createMockCardDef({ cardType: "creature" }),
       });
 
-      expect(evaluateJsonCondition({ cardType: "creature" }, context)).toBe(
-        true
-      );
+      expect(evaluateJsonCondition({ cardType: "creature" }, context)).toBe(true);
       expect(evaluateJsonCondition({ cardType: "spell" }, context)).toBe(false);
     });
 
@@ -179,9 +165,7 @@ describe("evaluateJsonCondition", () => {
       expect(evaluateJsonCondition({ level: { max: 3 } }, context)).toBe(false);
       expect(evaluateJsonCondition({ level: { min: 4 } }, context)).toBe(true);
       expect(evaluateJsonCondition({ level: { min: 5 } }, context)).toBe(false);
-      expect(
-        evaluateJsonCondition({ level: { min: 3, max: 5 } }, context)
-      ).toBe(true);
+      expect(evaluateJsonCondition({ level: { min: 3, max: 5 } }, context)).toBe(true);
     });
 
     it("should match attack condition (exact)", () => {
@@ -204,15 +188,9 @@ describe("evaluateJsonCondition", () => {
         }),
       });
 
-      expect(evaluateJsonCondition({ attack: { max: 1500 } }, context)).toBe(
-        true
-      );
-      expect(evaluateJsonCondition({ attack: { max: 1400 } }, context)).toBe(
-        false
-      );
-      expect(evaluateJsonCondition({ attack: { min: 1000 } }, context)).toBe(
-        true
-      );
+      expect(evaluateJsonCondition({ attack: { max: 1500 } }, context)).toBe(true);
+      expect(evaluateJsonCondition({ attack: { max: 1400 } }, context)).toBe(false);
+      expect(evaluateJsonCondition({ attack: { min: 1000 } }, context)).toBe(true);
     });
 
     it("should match defense condition", () => {
@@ -223,12 +201,8 @@ describe("evaluateJsonCondition", () => {
         }),
       });
 
-      expect(evaluateJsonCondition({ defense: { min: 1500 } }, context)).toBe(
-        true
-      );
-      expect(evaluateJsonCondition({ defense: { min: 2500 } }, context)).toBe(
-        false
-      );
+      expect(evaluateJsonCondition({ defense: { min: 1500 } }, context)).toBe(true);
+      expect(evaluateJsonCondition({ defense: { min: 2500 } }, context)).toBe(false);
     });
 
     it("should match name conditions", () => {
@@ -236,21 +210,10 @@ describe("evaluateJsonCondition", () => {
         targetCardDef: createMockCardDef({ name: "Blue-Eyes White Dragon" }),
       });
 
-      expect(
-        evaluateJsonCondition({ nameContains: "White Dragon" }, context)
-      ).toBe(true);
-      expect(evaluateJsonCondition({ nameContains: "Red" }, context)).toBe(
-        false
-      );
-      expect(
-        evaluateJsonCondition(
-          { nameEquals: "Blue-Eyes White Dragon" },
-          context
-        )
-      ).toBe(true);
-      expect(
-        evaluateJsonCondition({ nameEquals: "Blue-Eyes" }, context)
-      ).toBe(false);
+      expect(evaluateJsonCondition({ nameContains: "White Dragon" }, context)).toBe(true);
+      expect(evaluateJsonCondition({ nameContains: "Red" }, context)).toBe(false);
+      expect(evaluateJsonCondition({ nameEquals: "Blue-Eyes White Dragon" }, context)).toBe(true);
+      expect(evaluateJsonCondition({ nameEquals: "Blue-Eyes" }, context)).toBe(false);
     });
   });
 
@@ -266,15 +229,9 @@ describe("evaluateJsonCondition", () => {
         targetCardDef: createMockCardDef(),
       });
 
-      expect(
-        evaluateJsonCondition({ position: "attack" }, attackContext)
-      ).toBe(true);
-      expect(
-        evaluateJsonCondition({ position: "defense" }, attackContext)
-      ).toBe(false);
-      expect(
-        evaluateJsonCondition({ position: "defense" }, defenseContext)
-      ).toBe(true);
+      expect(evaluateJsonCondition({ position: "attack" }, attackContext)).toBe(true);
+      expect(evaluateJsonCondition({ position: "defense" }, attackContext)).toBe(false);
+      expect(evaluateJsonCondition({ position: "defense" }, defenseContext)).toBe(true);
     });
 
     it("should match face-down condition", () => {
@@ -288,12 +245,8 @@ describe("evaluateJsonCondition", () => {
         targetCardDef: createMockCardDef(),
       });
 
-      expect(evaluateJsonCondition({ isFaceDown: false }, faceUpContext)).toBe(
-        true
-      );
-      expect(evaluateJsonCondition({ isFaceDown: true }, faceDownContext)).toBe(
-        true
-      );
+      expect(evaluateJsonCondition({ isFaceDown: false }, faceUpContext)).toBe(true);
+      expect(evaluateJsonCondition({ isFaceDown: true }, faceDownContext)).toBe(true);
     });
 
     it("should match hasAttacked condition", () => {
@@ -302,12 +255,8 @@ describe("evaluateJsonCondition", () => {
         targetCardDef: createMockCardDef(),
       });
 
-      expect(
-        evaluateJsonCondition({ hasAttacked: true }, attackedContext)
-      ).toBe(true);
-      expect(
-        evaluateJsonCondition({ hasAttacked: false }, attackedContext)
-      ).toBe(false);
+      expect(evaluateJsonCondition({ hasAttacked: true }, attackedContext)).toBe(true);
+      expect(evaluateJsonCondition({ hasAttacked: false }, attackedContext)).toBe(false);
     });
 
     it("should match protection conditions", () => {
@@ -320,21 +269,9 @@ describe("evaluateJsonCondition", () => {
         targetCardDef: createMockCardDef(),
       });
 
-      expect(
-        evaluateJsonCondition({ canBeTargeted: false }, protectedContext)
-      ).toBe(true);
-      expect(
-        evaluateJsonCondition(
-          { canBeDestroyedByBattle: false },
-          protectedContext
-        )
-      ).toBe(true);
-      expect(
-        evaluateJsonCondition(
-          { canBeDestroyedByEffects: true },
-          protectedContext
-        )
-      ).toBe(true);
+      expect(evaluateJsonCondition({ canBeTargeted: false }, protectedContext)).toBe(true);
+      expect(evaluateJsonCondition({ canBeDestroyedByBattle: false }, protectedContext)).toBe(true);
+      expect(evaluateJsonCondition({ canBeDestroyedByEffects: true }, protectedContext)).toBe(true);
     });
   });
 
@@ -346,9 +283,7 @@ describe("evaluateJsonCondition", () => {
       });
 
       expect(evaluateJsonCondition({ lpBelow: 3000 }, lowLPContext)).toBe(true);
-      expect(evaluateJsonCondition({ lpBelow: 1000 }, lowLPContext)).toBe(
-        false
-      );
+      expect(evaluateJsonCondition({ lpBelow: 1000 }, lowLPContext)).toBe(false);
     });
 
     it("should match LP above condition", () => {
@@ -357,12 +292,8 @@ describe("evaluateJsonCondition", () => {
         playerIs: "host",
       });
 
-      expect(evaluateJsonCondition({ lpAbove: 5000 }, highLPContext)).toBe(
-        true
-      );
-      expect(evaluateJsonCondition({ lpAbove: 9000 }, highLPContext)).toBe(
-        false
-      );
+      expect(evaluateJsonCondition({ lpAbove: 5000 }, highLPContext)).toBe(true);
+      expect(evaluateJsonCondition({ lpAbove: 9000 }, highLPContext)).toBe(false);
     });
 
     it("should match LP equal condition", () => {
@@ -383,12 +314,8 @@ describe("evaluateJsonCondition", () => {
       });
 
       expect(evaluateJsonCondition({ turnNumber: 5 }, context)).toBe(true);
-      expect(evaluateJsonCondition({ turnNumber: { min: 3 } }, context)).toBe(
-        true
-      );
-      expect(evaluateJsonCondition({ turnNumber: { min: 10 } }, context)).toBe(
-        false
-      );
+      expect(evaluateJsonCondition({ turnNumber: { min: 3 } }, context)).toBe(true);
+      expect(evaluateJsonCondition({ turnNumber: { min: 10 } }, context)).toBe(false);
     });
 
     it("should match phase condition", () => {
@@ -413,10 +340,7 @@ describe("evaluateJsonCondition", () => {
 
       const andCondition: JsonCondition = {
         type: "and",
-        conditions: [
-          { archetype: "infernal_dragons" },
-          { level: { max: 4 } },
-        ],
+        conditions: [{ archetype: "infernal_dragons" }, { level: { max: 4 } }],
       };
 
       expect(evaluateJsonCondition(andCondition, context)).toBe(true);
@@ -560,9 +484,7 @@ describe("evaluateFieldCount", () => {
 
   it("should count monsters on both sides", () => {
     const gameState = createMockGameState({
-      hostBoard: [
-        createMockCardOnBoard({ cardId: "card1" as Id<"cardDefinitions"> }),
-      ],
+      hostBoard: [createMockCardOnBoard({ cardId: "card1" as Id<"cardDefinitions"> })],
       opponentBoard: [
         createMockCardOnBoard({ cardId: "card2" as Id<"cardDefinitions"> }),
         createMockCardOnBoard({ cardId: "card3" as Id<"cardDefinitions"> }),
@@ -653,10 +575,7 @@ describe("evaluateFieldCount", () => {
 describe("evaluateGraveyardContains", () => {
   it("should check if graveyard has any cards", () => {
     const gameState = createMockGameState({
-      hostGraveyard: [
-        "card1" as Id<"cardDefinitions">,
-        "card2" as Id<"cardDefinitions">,
-      ],
+      hostGraveyard: ["card1" as Id<"cardDefinitions">, "card2" as Id<"cardDefinitions">],
     });
 
     const context = createMockContext({ gameState, playerIs: "host" });
@@ -859,9 +778,7 @@ describe("matchesLegacyCondition", () => {
     expect(_matchesLegacyCondition(level4Card, "level_4_or_lower")).toBe(true);
     expect(_matchesLegacyCondition(level4Card, "level_3_or_lower")).toBe(false);
     expect(_matchesLegacyCondition(level4Card, "level_4_or_higher")).toBe(true);
-    expect(_matchesLegacyCondition(level4Card, "level_5_or_higher")).toBe(
-      false
-    );
+    expect(_matchesLegacyCondition(level4Card, "level_5_or_higher")).toBe(false);
   });
 
   it("should match ATK conditions", () => {
@@ -954,11 +871,7 @@ describe("Integration: Complex conditions", () => {
     // Scenario: "All Dragon monsters you control with ATK less than 2000 gain 500 ATK"
     const condition: JsonCondition = {
       type: "and",
-      conditions: [
-        { archetype: "dragon" },
-        { attack: { max: 1999 } },
-        { owner: "self" },
-      ],
+      conditions: [{ archetype: "dragon" }, { attack: { max: 1999 } }, { owner: "self" }],
     };
 
     const matchingCard = createMockCardDef({

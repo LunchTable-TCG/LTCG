@@ -21,14 +21,7 @@ export type CardPosition = z.infer<typeof CardPositionSchema>;
 /**
  * Game phases
  */
-export const GamePhaseSchema = z.enum([
-  "draw",
-  "standby",
-  "main1",
-  "battle",
-  "main2",
-  "end",
-]);
+export const GamePhaseSchema = z.enum(["draw", "standby", "main1", "battle", "main2", "end"]);
 export type GamePhase = z.infer<typeof GamePhaseSchema>;
 
 /**
@@ -346,7 +339,7 @@ export const SaveDecisionRequestSchema = z.object({
   reasoning: z.string().min(1, "reasoning is required"),
   parameters: z.record(z.string(), z.unknown()).optional(),
   executionTimeMs: z.number().optional(),
-  result: z.record(z.string(), z.unknown()).optional(),
+  result: z.string().optional(),
 });
 export type SaveDecisionRequest = z.infer<typeof SaveDecisionRequestSchema>;
 
@@ -363,7 +356,7 @@ export interface Decision {
   reasoning: string;
   parameters?: Record<string, unknown>;
   executionTimeMs?: number;
-  result?: Record<string, unknown>;
+  result?: string;
   _creationTime: number;
 }
 

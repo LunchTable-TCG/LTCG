@@ -13,22 +13,20 @@
  */
 
 import type { Doc } from "../../_generated/dataModel";
+import { logger } from "../../lib/debug";
+import type { ConditionContext } from "./jsonEffectSchema";
+import { isNumericRange } from "./jsonEffectSchema";
 import type {
   JsonAbility,
   JsonCondition,
-  JsonEffect,
   JsonCost,
+  JsonEffect,
   NumericRange,
   ParsedAbility,
   ParsedEffect,
-  ZoneLocation,
   TargetOwner,
+  ZoneLocation,
 } from "./types";
-import type { ConditionContext } from "./jsonEffectSchema";
-import {
-  isNumericRange,
-} from "./jsonEffectSchema";
-import { logger } from "../../lib/debug";
 
 // ============================================================================
 // MAIN PARSER FUNCTIONS
@@ -135,10 +133,7 @@ export function parseJsonEffect(effect: JsonEffect, _spellSpeed?: 1 | 2 | 3): Pa
  * @param context - Game context for evaluation
  * @returns Whether the condition is satisfied
  */
-export function evaluateCondition(
-  condition: JsonCondition,
-  context: ConditionContext
-): boolean {
+export function evaluateCondition(condition: JsonCondition, context: ConditionContext): boolean {
   // Handle compound conditions (and/or)
   if (condition.type === "and" && condition.conditions) {
     return condition.conditions.every((c) => evaluateCondition(c, context));
@@ -155,10 +150,7 @@ export function evaluateCondition(
 /**
  * Evaluate a simple (non-compound) condition
  */
-function evaluateSimpleCondition(
-  condition: JsonCondition,
-  context: ConditionContext
-): boolean {
+function evaluateSimpleCondition(condition: JsonCondition, context: ConditionContext): boolean {
   const { gameState, sourceCardDef, targetCardDef, playerIs } = context;
   const isHost = playerIs === "host";
 
@@ -173,8 +165,7 @@ function evaluateSimpleCondition(
 
     const matches = archetypes.some(
       (archetype) =>
-        card.archetype === archetype ||
-        card.name.toLowerCase().includes(archetype.toLowerCase())
+        card.archetype === archetype || card.name.toLowerCase().includes(archetype.toLowerCase())
     );
 
     if (!matches) return false;
@@ -185,9 +176,7 @@ function evaluateSimpleCondition(
     const card = targetCardDef || sourceCardDef;
     if (!card) return false;
 
-    const cardTypes = Array.isArray(condition.cardType)
-      ? condition.cardType
-      : [condition.cardType];
+    const cardTypes = Array.isArray(condition.cardType) ? condition.cardType : [condition.cardType];
 
     const typeMap: Record<string, string> = {
       monster: "creature",
@@ -267,7 +256,8 @@ function evaluateSimpleCondition(
   }
 
   if (condition.isMyTurn !== undefined) {
-    const isMyTurn = gameState.currentTurnPlayerId === (isHost ? gameState.hostId : gameState.opponentId);
+    const isMyTurn =
+      gameState.currentTurnPlayerId === (isHost ? gameState.hostId : gameState.opponentId);
     if (isMyTurn !== condition.isMyTurn) return false;
   }
 
@@ -408,10 +398,7 @@ export function evaluateArchetypeMatch(
 /**
  * Check if a level falls within a range
  */
-export function evaluateLevelRange(
-  level: number,
-  range: number | NumericRange
-): boolean {
+export function evaluateLevelRange(level: number, range: number | NumericRange): boolean {
   return matchesNumeric(level, range);
 }
 
@@ -424,10 +411,7 @@ export function evaluateLevelRange(
  *
  * Handles then/or branches by creating a flat array.
  */
-export function flattenEffectChain(
-  effect: JsonEffect,
-  spellSpeed?: 1 | 2 | 3
-): ParsedEffect[] {
+export function flattenEffectChain(effect: JsonEffect, spellSpeed?: 1 | 2 | 3): ParsedEffect[] {
   const results: ParsedEffect[] = [];
 
   // Parse the main effect
@@ -526,7 +510,11 @@ function serializeCondition(condition: JsonCondition): string {
     }
   }
 
-  if (condition.level && typeof condition.level === "object" && !("exact" in condition.level && condition.level.exact !== undefined)) {
+  if (
+    condition.level &&
+    typeof condition.level === "object" &&
+    !("exact" in condition.level && condition.level.exact !== undefined)
+  ) {
     const range = condition.level as NumericRange;
     if (range.max !== undefined) {
       return `level_${range.max}_or_lower`;
@@ -561,10 +549,7 @@ function serializeCondition(condition: JsonCondition): string {
 /**
  * Check if a numeric value matches a condition (exact or range)
  */
-function matchesNumeric(
-  value: number,
-  condition: number | NumericRange
-): boolean {
+function matchesNumeric(value: number, condition: number | NumericRange): boolean {
   if (typeof condition === "number") {
     return value === condition;
   }

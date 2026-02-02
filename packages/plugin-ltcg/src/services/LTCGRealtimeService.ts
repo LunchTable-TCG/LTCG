@@ -5,17 +5,21 @@
  * turn notifications, and game events.
  */
 
-import { Service, type IAgentRuntime, logger } from '@elizaos/core';
-import { ConvexRealtimeClient } from '../client/realtimeClient';
-import type { GameStateCallback, TurnNotificationCallback, GameEventCallback } from '../client/events';
+import { type IAgentRuntime, Service, logger } from "@elizaos/core";
+import type {
+  GameEventCallback,
+  GameStateCallback,
+  TurnNotificationCallback,
+} from "../client/events";
+import { ConvexRealtimeClient } from "../client/realtimeClient";
 
 export class LTCGRealtimeService extends Service {
-  static serviceType = 'ltcg-realtime';
+  static serviceType = "ltcg-realtime";
 
   private client: ConvexRealtimeClient | null = null;
   private runtime: IAgentRuntime;
 
-  capabilityDescription = 'Provides real-time game state updates via Convex subscriptions';
+  capabilityDescription = "Provides real-time game state updates via Convex subscriptions";
 
   constructor(runtime: IAgentRuntime) {
     super(runtime);
@@ -23,13 +27,13 @@ export class LTCGRealtimeService extends Service {
   }
 
   static async start(runtime: IAgentRuntime): Promise<LTCGRealtimeService> {
-    logger.info('*** Starting LTCG real-time service ***');
+    logger.info("*** Starting LTCG real-time service ***");
 
     const service = new LTCGRealtimeService(runtime);
 
     // Initialize Convex client if URL is configured
-    const convexUrl = runtime.getSetting('LTCG_CONVEX_URL') || runtime.getSetting('CONVEX_URL');
-    const debugMode = runtime.getSetting('LTCG_DEBUG_MODE') === 'true';
+    const convexUrl = runtime.getSetting("LTCG_CONVEX_URL") || runtime.getSetting("CONVEX_URL");
+    const debugMode = runtime.getSetting("LTCG_DEBUG_MODE") === "true";
 
     if (convexUrl) {
       try {
@@ -38,31 +42,31 @@ export class LTCGRealtimeService extends Service {
           debug: debugMode,
         });
 
-        logger.info('Convex real-time client initialized');
+        logger.info("Convex real-time client initialized");
       } catch (error) {
-        logger.error({ error }, 'Failed to initialize Convex real-time client');
+        logger.error({ error }, "Failed to initialize Convex real-time client");
       }
     } else {
-      logger.warn('CONVEX_URL not configured - real-time updates disabled');
+      logger.warn("CONVEX_URL not configured - real-time updates disabled");
     }
 
     return service;
   }
 
   static async stop(runtime: IAgentRuntime): Promise<void> {
-    logger.info('*** Stopping LTCG real-time service ***');
+    logger.info("*** Stopping LTCG real-time service ***");
 
     const service = runtime.getService(LTCGRealtimeService.serviceType) as LTCGRealtimeService;
 
     if (!service) {
-      throw new Error('LTCG real-time service not found');
+      throw new Error("LTCG real-time service not found");
     }
 
     await service.stop();
   }
 
   async stop(): Promise<void> {
-    logger.info('*** Stopping LTCG real-time service instance ***');
+    logger.info("*** Stopping LTCG real-time service instance ***");
 
     if (this.client) {
       this.client.close();
@@ -86,7 +90,7 @@ export class LTCGRealtimeService extends Service {
    */
   subscribeToGame(gameId: string, callback: GameStateCallback): (() => void) | null {
     if (!this.client) {
-      logger.warn('Convex client not initialized - cannot subscribe to game');
+      logger.warn("Convex client not initialized - cannot subscribe to game");
       return null;
     }
 
@@ -98,7 +102,7 @@ export class LTCGRealtimeService extends Service {
    */
   subscribeToTurns(userId: string, callback: TurnNotificationCallback): (() => void) | null {
     if (!this.client) {
-      logger.warn('Convex client not initialized - cannot subscribe to turns');
+      logger.warn("Convex client not initialized - cannot subscribe to turns");
       return null;
     }
 
@@ -110,7 +114,7 @@ export class LTCGRealtimeService extends Service {
    */
   subscribeToEvents(gameId: string, callback: GameEventCallback): (() => void) | null {
     if (!this.client) {
-      logger.warn('Convex client not initialized - cannot subscribe to events');
+      logger.warn("Convex client not initialized - cannot subscribe to events");
       return null;
     }
 

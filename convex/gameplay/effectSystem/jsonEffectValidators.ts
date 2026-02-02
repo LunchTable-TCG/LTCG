@@ -302,7 +302,13 @@ export const numericOrRangeValidator = v.union(v.number(), numericRangeValidator
  * Field count condition validator
  */
 export const fieldCountConditionValidator = v.object({
-  zone: v.union(v.literal("monster"), v.literal("spell_trap"), v.literal("field"), v.literal("all"), targetZoneValidator),
+  zone: v.union(
+    v.literal("monster"),
+    v.literal("spell_trap"),
+    v.literal("field"),
+    v.literal("all"),
+    targetZoneValidator
+  ),
   owner: targetOwnerValidator,
   count: numericOrRangeValidator,
   filter: v.optional(v.any()), // Recursive - will be JsonCondition
@@ -344,7 +350,9 @@ export const jsonConditionValidator = v.object({
   // Card properties
   archetype: v.optional(v.union(v.string(), v.array(v.string()))),
   attribute: v.optional(v.union(cardAttributeValidator, v.array(cardAttributeValidator))),
-  cardType: v.optional(v.union(v.literal("creature"), v.literal("spell"), v.literal("trap"), v.literal("equipment"))),
+  cardType: v.optional(
+    v.union(v.literal("creature"), v.literal("spell"), v.literal("trap"), v.literal("equipment"))
+  ),
   level: v.optional(numericOrRangeValidator),
   attack: v.optional(numericOrRangeValidator),
   defense: v.optional(numericOrRangeValidator),
@@ -382,7 +390,15 @@ export const jsonConditionValidator = v.object({
   turnOwner: v.optional(v.union(v.literal("self"), v.literal("opponent"))),
 
   // Event conditions
-  summonedBy: v.optional(v.union(v.literal("normal"), v.literal("special"), v.literal("flip"), v.literal("tribute"), v.literal("any"))),
+  summonedBy: v.optional(
+    v.union(
+      v.literal("normal"),
+      v.literal("special"),
+      v.literal("flip"),
+      v.literal("tribute"),
+      v.literal("any")
+    )
+  ),
   destroyedBy: v.optional(v.union(v.literal("battle"), v.literal("effect"), v.literal("any"))),
   summonedFrom: v.optional(targetZoneValidator),
   eventCausedBy: v.optional(v.union(v.literal("self"), v.literal("opponent"))),
@@ -446,7 +462,9 @@ export const jsonCostValidator = v.object({
       type: v.optional(targetTypeValidator),
       cardType: v.optional(targetTypeValidator),
       filter: v.optional(jsonConditionValidator),
-      selection: v.optional(v.union(v.literal("player_choice"), v.literal("specific"), v.literal("random"))),
+      selection: v.optional(
+        v.union(v.literal("player_choice"), v.literal("specific"), v.literal("random"))
+      ),
     })
   ),
   isOptional: v.optional(v.boolean()),
@@ -499,8 +517,19 @@ export const jsonValueCalculationValidator = v.object({
   ),
   fromStat: v.optional(
     v.object({
-      source: v.union(v.literal("this"), v.literal("target"), v.literal("highest_on_field"), v.literal("lowest_on_field")),
-      stat: v.union(v.literal("attack"), v.literal("defense"), v.literal("level"), v.literal("original_attack"), v.literal("original_defense")),
+      source: v.union(
+        v.literal("this"),
+        v.literal("target"),
+        v.literal("highest_on_field"),
+        v.literal("lowest_on_field")
+      ),
+      stat: v.union(
+        v.literal("attack"),
+        v.literal("defense"),
+        v.literal("level"),
+        v.literal("original_attack"),
+        v.literal("original_defense")
+      ),
       modifier: v.optional(v.number()),
       multiplier: v.optional(v.number()),
     })
@@ -597,18 +626,24 @@ export const jsonGenericEffectValidator = v.object({
   canBeNegated: v.optional(v.boolean()),
 
   // Effect-specific fields
-  position: v.optional(v.union(positionValidator, v.literal("top"), v.literal("bottom"), v.literal("shuffle"))),
+  position: v.optional(
+    v.union(positionValidator, v.literal("top"), v.literal("bottom"), v.literal("shuffle"))
+  ),
   newPosition: v.optional(v.union(v.literal("attack"), v.literal("defense"))),
   reveal: v.optional(v.boolean()),
   destroyAfter: v.optional(v.boolean()),
   faceDown: v.optional(v.boolean()),
 
   // Stat modification fields (for modifyATK/modifyDEF)
-  statTarget: v.optional(v.union(v.literal("self"), v.literal("target"), v.literal("all_matching"))),
+  statTarget: v.optional(
+    v.union(v.literal("self"), v.literal("target"), v.literal("all_matching"))
+  ),
   statCondition: v.optional(v.any()), // JsonCondition for filtering which cards get stat mods
 
   // Negate effect fields
-  negateType: v.optional(v.union(v.literal("activation"), v.literal("effect"), v.literal("summon"), v.literal("attack"))),
+  negateType: v.optional(
+    v.union(v.literal("activation"), v.literal("effect"), v.literal("summon"), v.literal("attack"))
+  ),
 });
 export type JsonGenericEffectInfer = Infer<typeof jsonGenericEffectValidator>;
 
@@ -668,7 +703,12 @@ export type JsonSummonRestrictionInfer = Infer<typeof jsonSummonRestrictionValid
  * Continuous effect definition validator
  */
 export const continuousEffectDefinitionValidator = v.object({
-  effectType: v.union(v.literal("modifyATK"), v.literal("modifyDEF"), v.literal("protection"), v.literal("restriction")),
+  effectType: v.union(
+    v.literal("modifyATK"),
+    v.literal("modifyDEF"),
+    v.literal("protection"),
+    v.literal("restriction")
+  ),
   value: v.optional(v.number()),
   valueCalculation: v.optional(jsonValueCalculationValidator),
   condition: v.optional(jsonConditionValidator),

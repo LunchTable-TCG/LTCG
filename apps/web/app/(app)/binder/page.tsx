@@ -31,8 +31,8 @@ import {
   DeckEditor,
   DeckList,
   type Element,
-  getAbilityDisplayText,
   type Rarity,
+  getAbilityDisplayText,
 } from "./components";
 import type { BinderTab, DeckCard, ViewMode } from "./types";
 import { DECK_MIN_SIZE, MAX_COPIES_PER_CARD, MAX_LEGENDARY_COPIES } from "./types";
@@ -330,27 +330,25 @@ function BinderContent() {
   // Load deck cards when selectedDeckData changes
   useEffect(() => {
     if (selectedDeckData && selectedDeckData.cards) {
-      const loadedCards: DeckCard[] = selectedDeckData.cards.map(
-        (apiCard) => ({
-          card: {
-            id: apiCard.cardDefinitionId,
-            cardDefinitionId: apiCard.cardDefinitionId,
-            name: apiCard.name,
-            rarity: apiCard.rarity as Rarity,
-            element: apiCard.element as Element,
-            cardType: apiCard.cardType as CardType,
-            attack: apiCard.attack,
-            defense: apiCard.defense,
-            cost: apiCard.cost,
-            ability: apiCard.ability,
-            flavorText: apiCard.flavorText,
-            imageUrl: apiCard.imageUrl,
-            owned: 0,
-            isFavorite: false,
-          },
-          count: apiCard.quantity,
-        })
-      );
+      const loadedCards: DeckCard[] = selectedDeckData.cards.map((apiCard) => ({
+        card: {
+          id: apiCard.cardDefinitionId,
+          cardDefinitionId: apiCard.cardDefinitionId,
+          name: apiCard.name,
+          rarity: apiCard.rarity as Rarity,
+          element: apiCard.element as Element,
+          cardType: apiCard.cardType as CardType,
+          attack: apiCard.attack,
+          defense: apiCard.defense,
+          cost: apiCard.cost,
+          ability: apiCard.ability,
+          flavorText: apiCard.flavorText,
+          imageUrl: apiCard.imageUrl,
+          owned: 0,
+          isFavorite: false,
+        },
+        count: apiCard.quantity,
+      }));
       setCurrentDeckCards(loadedCards);
     }
   }, [selectedDeckData, selectedDeckId]);

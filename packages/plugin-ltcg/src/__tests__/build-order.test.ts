@@ -1,11 +1,11 @@
-import { describe, expect, it, beforeAll, afterAll } from 'bun:test';
-import fs from 'node:fs';
-import path from 'node:path';
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import fs from "node:fs";
+import path from "node:path";
 
-describe('Build Order Integration Test', () => {
-  const rootDir = path.resolve(__dirname, '../..');
-  const distDir = path.join(rootDir, 'dist');
-  const bunBuildMarker = path.join(distDir, 'index.js'); // Bun creates this
+describe("Build Order Integration Test", () => {
+  const rootDir = path.resolve(__dirname, "../..");
+  const distDir = path.join(rootDir, "dist");
+  const bunBuildMarker = path.join(distDir, "index.js"); // Bun creates this
 
   beforeAll(async () => {
     // Clean dist directory before test
@@ -18,27 +18,27 @@ describe('Build Order Integration Test', () => {
     // Don't clean up after test - keep dist for other tests
   });
 
-  it('should produce correct Bun build outputs', async () => {
+  it("should produce correct Bun build outputs", async () => {
     // Run the JavaScript build only (skip TypeScript declaration generation
     // which may fail due to @elizaos/core type resolution issues)
     const result = await Bun.build({
-      entrypoints: [path.join(rootDir, 'src/index.ts')],
+      entrypoints: [path.join(rootDir, "src/index.ts")],
       outdir: distDir,
-      target: 'node',
-      format: 'esm',
+      target: "node",
+      format: "esm",
       sourcemap: true,
       minify: false,
       external: [
-        'dotenv',
-        'fs',
-        'path',
-        'https',
-        'node:*',
-        '@elizaos/core',
-        '@elizaos/plugin-bootstrap',
-        '@elizaos/plugin-sql',
-        '@elizaos/cli',
-        'zod',
+        "dotenv",
+        "fs",
+        "path",
+        "https",
+        "node:*",
+        "@elizaos/core",
+        "@elizaos/plugin-bootstrap",
+        "@elizaos/plugin-sql",
+        "@elizaos/cli",
+        "zod",
       ],
     });
 
@@ -54,9 +54,9 @@ describe('Build Order Integration Test', () => {
     const distFiles = fs.readdirSync(distDir);
 
     // Should have Bun outputs (index.js)
-    expect(distFiles.some((file) => file === 'index.js')).toBe(true);
+    expect(distFiles.some((file) => file === "index.js")).toBe(true);
 
     // Should have source maps
-    expect(distFiles.some((file) => file.endsWith('.js.map'))).toBe(true);
+    expect(distFiles.some((file) => file.endsWith(".js.map"))).toBe(true);
   }, 30000); // 30 second timeout for build process
 });

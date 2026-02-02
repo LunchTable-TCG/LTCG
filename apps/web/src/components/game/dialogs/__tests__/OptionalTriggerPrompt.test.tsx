@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Id } from "@convex/_generated/dataModel";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  type CardInfo,
   OptionalTriggerPrompt,
   type PendingOptionalTrigger,
-  type CardInfo,
 } from "../OptionalTriggerPrompt";
-import type { Id } from "@convex/_generated/dataModel";
 
 // Create mock function at module scope
 const mockRespondToTrigger = vi.fn();
@@ -40,9 +40,7 @@ vi.mock("next/image", () => ({
 
 // Mock framer-motion to avoid animation complexity in tests
 vi.mock("framer-motion", () => ({
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   motion: {
     div: ({
       children,
@@ -122,41 +120,31 @@ describe("OptionalTriggerPrompt", () => {
   it("should render Activate and Skip buttons", () => {
     render(<OptionalTriggerPrompt {...defaultProps} />);
 
-    expect(
-      screen.getByRole("button", { name: /activate/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /activate/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /skip/i })).toBeInTheDocument();
   });
 
   it("should render effect description when getCardInfo is provided", () => {
     const getCardInfo = vi.fn().mockReturnValue(mockCardInfo);
 
-    render(
-      <OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />);
 
     expect(screen.getByText("Battle Fury")).toBeInTheDocument();
-    expect(
-      screen.getByText("When summoned, destroy one enemy monster.")
-    ).toBeInTheDocument();
+    expect(screen.getByText("When summoned, destroy one enemy monster.")).toBeInTheDocument();
   });
 
   it("should show default description when getCardInfo returns no effect", () => {
     render(<OptionalTriggerPrompt {...defaultProps} />);
 
     expect(
-      screen.getByText(
-        "This card has an optional effect that can be activated."
-      )
+      screen.getByText("This card has an optional effect that can be activated.")
     ).toBeInTheDocument();
   });
 
   it("should render card image when available", () => {
     const getCardInfo = vi.fn().mockReturnValue(mockCardInfo);
 
-    render(
-      <OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />);
 
     const image = screen.getByRole("img", { name: /dragon knight/i });
     expect(image).toBeInTheDocument();
@@ -170,9 +158,7 @@ describe("OptionalTriggerPrompt", () => {
     };
     const getCardInfo = vi.fn().mockReturnValue(cardInfoWithoutImage);
 
-    render(
-      <OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />);
 
     // Should show fallback with card name
     const fallbackTexts = screen.getAllByText("Dragon Knight");
@@ -232,19 +218,14 @@ describe("OptionalTriggerPrompt", () => {
     };
 
     const { container } = render(
-      <OptionalTriggerPrompt
-        {...defaultProps}
-        pendingTriggers={[otherPlayerTrigger]}
-      />
+      <OptionalTriggerPrompt {...defaultProps} pendingTriggers={[otherPlayerTrigger]} />
     );
 
     expect(container.firstChild).toBeNull();
   });
 
   it("should not render when pendingTriggers is empty", () => {
-    const { container } = render(
-      <OptionalTriggerPrompt {...defaultProps} pendingTriggers={[]} />
-    );
+    const { container } = render(<OptionalTriggerPrompt {...defaultProps} pendingTriggers={[]} />);
 
     expect(container.firstChild).toBeNull();
   });
@@ -262,12 +243,7 @@ describe("OptionalTriggerPrompt", () => {
       },
     ];
 
-    render(
-      <OptionalTriggerPrompt
-        {...defaultProps}
-        pendingTriggers={multipleTriggers}
-      />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} pendingTriggers={multipleTriggers} />);
 
     expect(screen.getByText("1 of 2 triggers")).toBeInTheDocument();
   });
@@ -286,12 +262,7 @@ describe("OptionalTriggerPrompt", () => {
       },
     ];
 
-    render(
-      <OptionalTriggerPrompt
-        {...defaultProps}
-        pendingTriggers={multipleTriggers}
-      />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} pendingTriggers={multipleTriggers} />);
 
     // First trigger should be shown - use getAllByText since name appears in multiple places
     const dragonKnightElements = screen.getAllByText("Dragon Knight");
@@ -346,9 +317,7 @@ describe("OptionalTriggerPrompt", () => {
     };
     const getCardInfo = vi.fn().mockReturnValue(cardWithOPT);
 
-    render(
-      <OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />);
 
     expect(screen.getByText("Once per turn")).toBeInTheDocument();
   });
@@ -365,9 +334,7 @@ describe("OptionalTriggerPrompt", () => {
     };
     const getCardInfo = vi.fn().mockReturnValue(cardWithHOPT);
 
-    render(
-      <OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />);
 
     expect(screen.getByText("Hard once per turn")).toBeInTheDocument();
   });
@@ -388,9 +355,7 @@ describe("OptionalTriggerPrompt", () => {
     };
     const getCardInfo = vi.fn().mockReturnValue(cardWithCost);
 
-    render(
-      <OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />);
 
     expect(screen.getByText(/Cost: Discard 1 card/i)).toBeInTheDocument();
   });
@@ -398,9 +363,7 @@ describe("OptionalTriggerPrompt", () => {
   it("should show card type badge", () => {
     const getCardInfo = vi.fn().mockReturnValue(mockCardInfo);
 
-    render(
-      <OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} getCardInfo={getCardInfo} />);
 
     expect(screen.getByText("Monster")).toBeInTheDocument();
   });
@@ -408,9 +371,7 @@ describe("OptionalTriggerPrompt", () => {
   it("should display question prompt", () => {
     render(<OptionalTriggerPrompt {...defaultProps} />);
 
-    expect(
-      screen.getByText("Would you like to activate this effect?")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Would you like to activate this effect?")).toBeInTheDocument();
   });
 
   it("should handle different trigger types with appropriate labels", () => {
@@ -419,12 +380,7 @@ describe("OptionalTriggerPrompt", () => {
       trigger: "on_destroy",
     };
 
-    render(
-      <OptionalTriggerPrompt
-        {...defaultProps}
-        pendingTriggers={[destroyTrigger]}
-      />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} pendingTriggers={[destroyTrigger]} />);
 
     expect(screen.getByText("When Destroyed")).toBeInTheDocument();
   });
@@ -435,12 +391,7 @@ describe("OptionalTriggerPrompt", () => {
       trigger: "custom_unknown_trigger",
     };
 
-    render(
-      <OptionalTriggerPrompt
-        {...defaultProps}
-        pendingTriggers={[unknownTrigger]}
-      />
-    );
+    render(<OptionalTriggerPrompt {...defaultProps} pendingTriggers={[unknownTrigger]} />);
 
     expect(screen.getByText("custom_unknown_trigger")).toBeInTheDocument();
   });

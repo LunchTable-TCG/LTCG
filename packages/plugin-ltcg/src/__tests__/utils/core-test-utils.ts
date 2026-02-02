@@ -1,8 +1,8 @@
-import { mock } from 'bun:test';
-import { composeActionExamples, formatActionNames, formatActions } from '@elizaos/core';
-import type { Action, Content, IAgentRuntime, Memory, State } from '@elizaos/core';
-import { logger } from '@elizaos/core';
-import { v4 as uuidv4 } from 'uuid';
+import { mock } from "bun:test";
+import { composeActionExamples, formatActionNames, formatActions } from "@elizaos/core";
+import type { Action, IAgentRuntime, Memory, State } from "@elizaos/core";
+import { logger } from "@elizaos/core";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Utility functions for reusing core package tests in project-starter tests
@@ -76,7 +76,7 @@ export const setupActionTest = (options: SetupActionTestOptions = {}) => {
   const mockRuntime = createMockRuntimeWithSettings(settingOverrides, characterOverrides);
 
   // Create mock message
-  const mockMessage = createMockMessage('Test message');
+  const mockMessage = createMockMessage("Test message");
 
   // Create mock state with overrides
   const mockState = createMockStateWithOverrides(stateOverrides);
@@ -106,9 +106,9 @@ export const createMockRuntimeWithSettings = (
   const runtime = {
     initPromise: Promise.resolve(),
     character: {
-      name: characterOverrides.name || 'Test Character',
-      bio: characterOverrides.bio || 'A test character for unit tests',
-      system: characterOverrides.system || 'You are a helpful assistant for testing.',
+      name: characterOverrides.name || "Test Character",
+      bio: characterOverrides.bio || "A test character for unit tests",
+      system: characterOverrides.system || "You are a helpful assistant for testing.",
     },
     _settings,
     _secretSettings,
@@ -132,7 +132,7 @@ export const createMockRuntimeWithSettings = (
     }),
     // Model support
     models: {},
-    useModel: mock(async () => '{}'),
+    useModel: mock(async () => "{}"),
     // Database support
     db: {
       get: async () => null,
@@ -170,7 +170,7 @@ export const createMockStateWithOverrides = (
   return {
     values: { ...overrides.values },
     data: { ...overrides.data },
-    text: overrides.text || '',
+    text: overrides.text || "",
   };
 };
 
@@ -182,7 +182,7 @@ export const runCoreActionTests = (actions: Action[]) => {
   // Validate action structure (similar to core tests)
   for (const action of actions) {
     if (!action.name) {
-      throw new Error('Action missing name property');
+      throw new Error("Action missing name property");
     }
     if (!action.description) {
       throw new Error(`Action ${action.name} missing description property`);
@@ -193,10 +193,10 @@ export const runCoreActionTests = (actions: Action[]) => {
     if (!action.similes || !Array.isArray(action.similes)) {
       throw new Error(`Action ${action.name} missing similes array`);
     }
-    if (typeof action.handler !== 'function') {
+    if (typeof action.handler !== "function") {
       throw new Error(`Action ${action.name} missing handler function`);
     }
-    if (typeof action.validate !== 'function') {
+    if (typeof action.validate !== "function") {
       throw new Error(`Action ${action.name} missing validate function`);
     }
   }
@@ -222,23 +222,23 @@ export const runCoreActionTests = (actions: Action[]) => {
   const names = actions.map((action) => action.name);
   const uniqueNames = new Set(names);
   if (names.length !== uniqueNames.size) {
-    throw new Error('Duplicate action names found');
+    throw new Error("Duplicate action names found");
   }
 
   // Test action formatting
   const formattedNames = formatActionNames(actions);
   if (!formattedNames && actions.length > 0) {
-    throw new Error('formatActionNames failed to produce output');
+    throw new Error("formatActionNames failed to produce output");
   }
 
   const formattedActions = formatActions(actions);
   if (!formattedActions && actions.length > 0) {
-    throw new Error('formatActions failed to produce output');
+    throw new Error("formatActions failed to produce output");
   }
 
   const composedExamples = composeActionExamples(actions, 1);
   if (!composedExamples && actions.length > 0) {
-    throw new Error('composeActionExamples failed to produce output');
+    throw new Error("composeActionExamples failed to produce output");
   }
 
   return {
@@ -272,18 +272,18 @@ export const documentTestResult = (testName: string, result: any, error: Error |
   }
 
   if (result) {
-    if (typeof result === 'string') {
+    if (typeof result === "string") {
       if (result.trim() && result.length > 0) {
         const preview = result.length > 60 ? `${result.substring(0, 60)}...` : result;
         logger.info(`  → ${preview}`);
       }
-    } else if (typeof result === 'object') {
+    } else if (typeof result === "object") {
       try {
         // Show key information in a clean format
         const keys = Object.keys(result);
         if (keys.length > 0) {
-          const preview = keys.slice(0, 3).join(', ');
-          const more = keys.length > 3 ? ` +${keys.length - 3} more` : '';
+          const preview = keys.slice(0, 3).join(", ");
+          const more = keys.length > 3 ? ` +${keys.length - 3} more` : "";
           logger.info(`  → {${preview}${more}}`);
         }
       } catch (e) {
@@ -302,7 +302,7 @@ export const createMockMessage = (text: string): Memory => {
     roomId: uuidv4(),
     content: {
       text,
-      source: 'test',
+      source: "test",
     },
   } as Memory;
 };

@@ -1,9 +1,9 @@
 "use client";
 
+import type { GameMode } from "@/types";
+import type { BattleHistoryEntry, LeaderboardEntry } from "@/types";
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
-import type { GameMode } from "@/types";
-import type { LeaderboardEntry, BattleHistoryEntry } from "@/types";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UseLeaderboardReturn {

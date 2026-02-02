@@ -1,10 +1,10 @@
 "use client";
 
+import { handleHookError, logError } from "@/lib/errorHandling";
 import { api } from "@convex/_generated/api";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { handleHookError, logError } from "@/lib/errorHandling";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UseGlobalChatReturn {

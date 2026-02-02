@@ -1,9 +1,4 @@
-/**
- * Loading state component with skeleton UI
- */
-
-import React from 'react';
-import { cn } from '../utils';
+import { cn } from "../utils";
 
 interface LoadingStateProps {
   message?: string;
@@ -15,7 +10,12 @@ interface LoadingStateProps {
  */
 export function SkeletonStatCard({ className }: { className?: string }) {
   return (
-    <div className={cn('flex flex-col gap-1 p-4 rounded-lg border border-border bg-card animate-pulse', className)}>
+    <div
+      className={cn(
+        "flex flex-col gap-1 p-4 rounded-lg border border-border bg-card animate-pulse",
+        className
+      )}
+    >
       <div className="h-3 w-20 bg-muted rounded"></div>
       <div className="h-8 w-16 bg-muted rounded mt-1"></div>
     </div>
@@ -25,9 +25,9 @@ export function SkeletonStatCard({ className }: { className?: string }) {
 /**
  * Generic loading state with optional message
  */
-export function LoadingState({ message = 'Loading...', className }: LoadingStateProps) {
+export function LoadingState({ message = "Loading...", className }: LoadingStateProps) {
   return (
-    <div className={cn('flex items-center justify-center p-8 text-muted-foreground', className)}>
+    <div className={cn("flex items-center justify-center p-8 text-muted-foreground", className)}>
       <div className="flex flex-col items-center gap-3">
         <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
         <p className="text-sm">{message}</p>
@@ -40,7 +40,7 @@ export function LoadingState({ message = 'Loading...', className }: LoadingState
  * Error state component
  */
 export function ErrorState({
-  message = 'Something went wrong',
+  message = "Something went wrong",
   onRetry,
   className,
 }: {
@@ -49,7 +49,7 @@ export function ErrorState({
   className?: string;
 }) {
   return (
-    <div className={cn('flex items-center justify-center p-8', className)}>
+    <div className={cn("flex items-center justify-center p-8", className)}>
       <div className="flex flex-col items-center gap-3 text-center max-w-md">
         <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
           <svg
@@ -82,7 +82,7 @@ export function ErrorState({
  * Empty state component
  */
 export function EmptyState({
-  title = 'No data',
+  title = "No data",
   description,
   className,
 }: {
@@ -91,7 +91,7 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn('flex items-center justify-center p-8', className)}>
+    <div className={cn("flex items-center justify-center p-8", className)}>
       <div className="flex flex-col items-center gap-2 text-center max-w-md">
         <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
           <svg

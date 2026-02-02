@@ -5,9 +5,9 @@
  * Used by ElizaOS agents and other external clients.
  */
 
-import { httpAction, type ActionCtx } from "../../_generated/server";
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
+import { type ActionCtx, httpAction } from "../../_generated/server";
 
 // Module-scope helper to avoid TS2589 in function body
 // biome-ignore lint/suspicious/noExplicitAny: Required to break TS2589 deep type instantiation
@@ -86,12 +86,9 @@ export async function authenticateRequest(
   const apiKey = extractApiKey(request);
 
   if (!apiKey) {
-    throw new AuthenticationError(
-      "MISSING_API_KEY",
-      "Authorization header required",
-      401,
-      { format: "Authorization: Bearer ltcg_..." }
-    );
+    throw new AuthenticationError("MISSING_API_KEY", "Authorization header required", 401, {
+      format: "Authorization: Bearer ltcg_...",
+    });
   }
 
   // Validate API key using existing internal function
@@ -101,11 +98,7 @@ export async function authenticateRequest(
   );
 
   if (!result || !result.isValid || !result.agentId || !result.userId || !result.apiKeyId) {
-    throw new AuthenticationError(
-      "INVALID_API_KEY",
-      "API key is invalid or has been revoked",
-      401
-    );
+    throw new AuthenticationError("INVALID_API_KEY", "API key is invalid or has been revoked", 401);
   }
 
   return {
@@ -127,12 +120,7 @@ export class AuthenticationError extends Error {
   readonly status: number;
   readonly details: Record<string, unknown>;
 
-  constructor(
-    code: string,
-    message: string,
-    status: number = 401,
-    details: Record<string, unknown> = {}
-  ) {
+  constructor(code: string, message: string, status = 401, details: Record<string, unknown> = {}) {
     super(message);
     this.name = "AuthenticationError";
     this.code = code;

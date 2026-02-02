@@ -9,10 +9,11 @@ import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { logCardEffect, logger, performance } from "../../lib/debug";
-import type { EffectResult, ParsedAbility, ParsedEffect } from "./types";
-import { checkCanActivateOPT, markEffectUsed } from "./optTracker";
 import { executeCost, validateCost } from "./costValidator";
+import { checkCanActivateOPT, markEffectUsed } from "./optTracker";
+import type { EffectResult, ParsedAbility, ParsedEffect } from "./types";
 
+import { checkStateBasedActions } from "../gameEngine/stateBasedActions";
 // Import all effect executors (organized by category)
 import { executeBanish } from "./executors/cardMovement/banish";
 import { executeDiscard } from "./executors/cardMovement/discard";
@@ -28,7 +29,6 @@ import { executeModifyDEF } from "./executors/combat/modifyDEF";
 import { executeDestroy } from "./executors/summon/destroy";
 import { executeSpecialSummon } from "./executors/summon/summon";
 import { executeNegate } from "./executors/utility/negate";
-import { checkStateBasedActions } from "../gameEngine/stateBasedActions";
 
 /**
  * Maximum depth for recursive effect triggers (e.g., on_destroy chains)
@@ -178,7 +178,6 @@ export async function executeEffect(
       };
     }
   }
-
 
   // Validate and execute cost payment BEFORE effect execution
   // This prevents exploitation where effects execute without paying costs
@@ -332,7 +331,9 @@ export async function executeEffect(
                     );
 
                     if (triggerResult.success) {
-                      destroyResults.push(`${destroyedCard?.name} effect: ${triggerResult.message}`);
+                      destroyResults.push(
+                        `${destroyedCard?.name} effect: ${triggerResult.message}`
+                      );
                     }
                   }
                   break; // Only execute the first on_destroy effect

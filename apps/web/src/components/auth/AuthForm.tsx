@@ -157,9 +157,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         className="mt-8 pt-6 border-t border-white/10 text-center"
       >
         <p className="text-[#a89f94] text-xs font-medium">
-          {isSignUp
-            ? "Already a recognized archivist?"
-            : "New to the halls of Lunchtable?"}{" "}
+          {isSignUp ? "Already a recognized archivist?" : "New to the halls of Lunchtable?"}{" "}
           <Link
             href={isSignUp ? "/login" : "/signup"}
             className="text-[#d4af37] font-black uppercase tracking-widest hover:underline ml-1"

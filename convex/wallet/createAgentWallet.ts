@@ -96,9 +96,9 @@ export const createWalletForUserAgent = internalAction({
       );
 
       // Get the wallet at the correct index (it should be the last one added)
-      const agentWallet = solanaWallets?.find(
-        (w) => w.wallet_index === walletIndex
-      ) || solanaWallets?.[solanaWallets.length - 1];
+      const agentWallet =
+        solanaWallets?.find((w) => w.wallet_index === walletIndex) ||
+        solanaWallets?.[solanaWallets.length - 1];
 
       if (!agentWallet?.address) {
         throw new Error(`Failed to create HD wallet at index ${walletIndex}`);

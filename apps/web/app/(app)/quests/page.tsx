@@ -55,9 +55,7 @@ export default function QuestsPage() {
         <div className="mb-8 p-6 rounded-xl bg-black/40 border border-[#3d2b1f]">
           <div className="flex items-center justify-between mb-4">
             <div data-testid="player-rank">
-              <h2 className="text-2xl font-bold text-[#e8e0d5]">
-                Level {profile.level ?? 1}
-              </h2>
+              <h2 className="text-2xl font-bold text-[#e8e0d5]">Level {profile.level ?? 1}</h2>
               <p className="text-sm text-[#a89f94]">
                 {xpInLevel.toLocaleString()} / {xpToNext.toLocaleString()} XP
               </p>
@@ -91,9 +89,7 @@ export default function QuestsPage() {
           </div>
           <div className="p-4 rounded-xl bg-linear-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/30">
             <Sparkles className="w-8 h-8 text-purple-400 mb-2" />
-            <p className="text-2xl font-black text-[#e8e0d5]">
-              {profile.rankedElo || 1000}
-            </p>
+            <p className="text-2xl font-black text-[#e8e0d5]">{profile.rankedElo || 1000}</p>
             <p className="text-xs text-[#a89f94]">Ranked ELO</p>
           </div>
           <div className="p-4 rounded-xl bg-linear-to-br from-[#d4af37]/10 to-[#d4af37]/5 border border-[#d4af37]/30">
@@ -392,7 +388,10 @@ export default function QuestsPage() {
 
                             {/* Rewards */}
                             {achievement.rewards && (
-                              <div data-testid="achievement-reward" className="flex items-center gap-3 text-xs">
+                              <div
+                                data-testid="achievement-reward"
+                                className="flex items-center gap-3 text-xs"
+                              >
                                 {achievement.rewards.gold && (
                                   <span className="text-[#d4af37]">
                                     +{achievement.rewards.gold} Gold

@@ -74,16 +74,12 @@ export function validateDeckCards(
 
   // Check minimum deck size
   if (deckSize < MIN_DECK_SIZE) {
-    errors.push(
-      `Deck needs at least ${MIN_DECK_SIZE} cards. Currently has ${deckSize}.`
-    );
+    errors.push(`Deck needs at least ${MIN_DECK_SIZE} cards. Currently has ${deckSize}.`);
   }
 
   // Check maximum deck size
   if (deckSize > MAX_DECK_SIZE) {
-    errors.push(
-      `Deck cannot exceed ${MAX_DECK_SIZE} cards. Currently has ${deckSize}.`
-    );
+    errors.push(`Deck cannot exceed ${MAX_DECK_SIZE} cards. Currently has ${deckSize}.`);
   }
 
   // Count copies of each card
@@ -101,15 +97,11 @@ export function validateDeckCards(
 
     // Check legendary limit (max 1)
     if (rarity === "legendary" && quantity > MAX_LEGENDARY_COPIES) {
-      errors.push(
-        `${cardName}: Legendary cards limited to ${MAX_LEGENDARY_COPIES} copy`
-      );
+      errors.push(`${cardName}: Legendary cards limited to ${MAX_LEGENDARY_COPIES} copy`);
     }
     // Check standard limit (max 3)
     else if (quantity > MAX_COPIES_PER_CARD) {
-      errors.push(
-        `${cardName}: Limited to ${MAX_COPIES_PER_CARD} copies per deck`
-      );
+      errors.push(`${cardName}: Limited to ${MAX_COPIES_PER_CARD} copies per deck`);
     }
   }
 

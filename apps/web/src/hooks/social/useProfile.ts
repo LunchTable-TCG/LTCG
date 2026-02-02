@@ -1,8 +1,8 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import type { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 import { useAuth } from "../auth/useConvexAuthHook";
 
@@ -73,10 +73,10 @@ export function useProfile(userId?: Id<"users">): UseProfileReturn {
   const { isAuthenticated } = useAuth();
 
   // Current user - explicit type annotation avoids TypeScript type depth errors
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip") as
-    | CurrentUserReturn
-    | null
-    | undefined;
+  const currentUser = useConvexQuery(
+    apiAny.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  ) as CurrentUserReturn | null | undefined;
 
   // Other user - explicit type annotation avoids TypeScript type depth errors
   const otherUser = useConvexQuery(apiAny.core.users.getUser, userId ? { userId } : "skip") as

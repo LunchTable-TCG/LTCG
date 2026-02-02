@@ -5,24 +5,24 @@
  * Allows agent to see what's being discussed in the Tavern Hall before deciding to participate.
  */
 
-import type { Provider, IAgentRuntime, Memory, State, ProviderResult } from '@elizaos/core';
-import { logger } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
+import type { IAgentRuntime, Memory, Provider, ProviderResult, State } from "@elizaos/core";
+import { logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
 
 export const globalChatProvider: Provider = {
-  name: 'LTCG_GLOBAL_CHAT',
-  description: 'Provides recent global chat messages and online users in Tavern Hall',
+  name: "LTCG_GLOBAL_CHAT",
+  description: "Provides recent global chat messages and online users in Tavern Hall",
 
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY');
-      const apiUrl = runtime.getSetting('LTCG_API_URL');
+      const apiKey = runtime.getSetting("LTCG_API_KEY");
+      const apiUrl = runtime.getSetting("LTCG_API_URL");
 
       if (!apiKey || !apiUrl) {
         return {
-          text: 'LTCG API credentials not configured.',
-          values: { error: 'MISSING_CONFIG' },
+          text: "LTCG API credentials not configured.",
+          values: { error: "MISSING_CONFIG" },
           data: {},
         };
       }
@@ -38,26 +38,29 @@ export const globalChatProvider: Provider = {
       const onlineData = await client.getOnlineUsers();
 
       // Format messages for LLM context
-      const messageText = chatData.messages.length > 0
-        ? chatData.messages
-            .map((msg) => {
-              const timestamp = new Date(msg.createdAt).toLocaleTimeString();
-              const prefix = msg.isSystem ? '[SYSTEM]' : `${msg.username}:`;
-              return `[${timestamp}] ${prefix} ${msg.message}`;
-            })
-            .join('\n')
-        : 'No recent messages.';
+      const messageText =
+        chatData.messages.length > 0
+          ? chatData.messages
+              .map((msg) => {
+                const timestamp = new Date(msg.createdAt).toLocaleTimeString();
+                const prefix = msg.isSystem ? "[SYSTEM]" : `${msg.username}:`;
+                return `[${timestamp}] ${prefix} ${msg.message}`;
+              })
+              .join("\n")
+          : "No recent messages.";
 
       // Format online users
-      const onlineText = onlineData.users.length > 0
-        ? onlineData.users
-            .map((user) => {
-              const statusEmoji = user.status === 'in_game' ? '🎮' : user.status === 'idle' ? '💤' : '🟢';
-              return `${statusEmoji} ${user.username} (${user.rank}, ${user.rankedElo} ELO)`;
-            })
-            .slice(0, 10)
-            .join('\n')
-        : 'No users online.';
+      const onlineText =
+        onlineData.users.length > 0
+          ? onlineData.users
+              .map((user) => {
+                const statusEmoji =
+                  user.status === "in_game" ? "🎮" : user.status === "idle" ? "💤" : "🟢";
+                return `${statusEmoji} ${user.username} (${user.rank}, ${user.rankedElo} ELO)`;
+              })
+              .slice(0, 10)
+              .join("\n")
+          : "No users online.";
 
       // Build readable text
       const text = `Tavern Hall Chat (Last 10 Messages):
@@ -87,14 +90,14 @@ Context:
 
       return { text, values, data };
     } catch (error) {
-      logger.error({ error }, 'Error fetching global chat');
+      logger.error({ error }, "Error fetching global chat");
 
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error fetching global chat';
+        error instanceof Error ? error.message : "Unknown error fetching global chat";
 
       return {
         text: `Error fetching global chat: ${errorMessage}`,
-        values: { error: 'FETCH_ERROR' },
+        values: { error: "FETCH_ERROR" },
         data: { errorDetails: error },
       };
     }

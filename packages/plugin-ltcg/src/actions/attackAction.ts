@@ -13,18 +13,18 @@ import type {
   IAgentRuntime,
   Memory,
   State,
-} from '@elizaos/core';
-import { logger, ModelType } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import { extractJsonFromLlmResponse } from '../utils/safeParseJson';
-import { gameStateProvider } from '../providers/gameStateProvider';
-import { boardAnalysisProvider } from '../providers/boardAnalysisProvider';
-import type { GameStateResponse, MonsterCard } from '../types/api';
+} from "@elizaos/core";
+import { ModelType, logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
+import { gameStateProvider } from "../providers/gameStateProvider";
+import type { GameStateResponse } from "../types/api";
+import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const attackAction: Action = {
-  name: 'ATTACK',
-  similes: ['ATTACK_OPPONENT', 'BATTLE', 'DECLARE_ATTACK'],
-  description: 'Declare an attack with one of your monsters',
+  name: "ATTACK",
+  similes: ["ATTACK_OPPONENT", "BATTLE", "DECLARE_ATTACK"],
+  description: "Declare an attack with one of your monsters",
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
     try {
@@ -33,12 +33,12 @@ export const attackAction: Action = {
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
-        logger.warn('No game state available for attack validation');
+        logger.warn("No game state available for attack validation");
         return false;
       }
 
       // Must be Battle Phase
-      if (gameState.phase !== 'battle') {
+      if (gameState.phase !== "battle") {
         logger.debug(`Cannot attack in ${gameState.phase} phase`);
         return false;
       }
@@ -48,13 +48,13 @@ export const attackAction: Action = {
       const canAttackMonsters = myMonsters.filter((monster) => monster.canAttack);
 
       if (canAttackMonsters.length === 0) {
-        logger.debug('No monsters can attack');
+        logger.debug("No monsters can attack");
         return false;
       }
 
       return true;
     } catch (error) {
-      logger.error({ error }, 'Error validating attack action');
+      logger.error({ error }, "Error validating attack action");
       return false;
     }
   },
@@ -67,7 +67,7 @@ export const attackAction: Action = {
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
-      logger.info('Handling ATTACK action');
+      logger.info("Handling ATTACK action");
 
       // Get game state and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
@@ -77,15 +77,15 @@ export const attackAction: Action = {
       const boardAnalysis = boardAnalysisResult.data;
 
       if (!gameState) {
-        throw new Error('Failed to get game state');
+        throw new Error("Failed to get game state");
       }
 
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        throw new Error('LTCG API credentials not configured');
+        throw new Error("LTCG API credentials not configured");
       }
 
       // Create API client
@@ -105,23 +105,23 @@ export const attackAction: Action = {
           (monster, idx) =>
             `${idx + 1}. ${monster.name} (${monster.atk} ATK, Position: ${monster.position})`
         )
-        .join('\n');
+        .join("\n");
 
       const targetOptions =
         opponentMonsters.length > 0
           ? opponentMonsters
               .map(
                 (monster, idx) =>
-                  `${idx + 1}. ${monster.name} (${monster.faceUp ? `${monster.atk} ATK, ${monster.def} DEF` : 'Face-down'}, Position: ${monster.position})`
+                  `${idx + 1}. ${monster.name} (${monster.faceUp ? `${monster.atk} ATK, ${monster.def} DEF` : "Face-down"}, Position: ${monster.position})`
               )
-              .join('\n')
-          : 'None - direct attack available';
+              .join("\n")
+          : "None - direct attack available";
 
       const boardContext = `
 Game State:
 - Your LP: ${gameState.hostPlayer.lifePoints}
 - Opponent LP: ${gameState.opponentPlayer.lifePoints}
-- Board Advantage: ${boardAnalysis?.advantage || 'UNKNOWN'}
+- Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
 - Opponent Backrow: ${gameState.opponentPlayer.spellTrapZone.length} cards (may have traps!)
 `;
 
@@ -152,7 +152,7 @@ Respond with JSON: { "attackerIndex": <index>, "targetIndex": <index or null for
       const attacker = attackers[parsed.attackerIndex];
 
       if (!attacker) {
-        throw new Error('Invalid attacker selection');
+        throw new Error("Invalid attacker selection");
       }
 
       // Make API call
@@ -165,16 +165,16 @@ Respond with JSON: { "attackerIndex": <index>, "targetIndex": <index or null for
       // Callback to user
       const target =
         parsed.targetIndex !== null
-          ? opponentMonsters[parsed.targetIndex]?.name || 'unknown target'
-          : 'directly';
+          ? opponentMonsters[parsed.targetIndex]?.name || "unknown target"
+          : "directly";
 
       const responseText = `${attacker.name} attacks ${target}!`;
 
       await callback({
         text: responseText,
-        actions: ['ATTACK'],
+        actions: ["ATTACK"],
         source: message.content.source,
-        thought: `Attacking ${parsed.targetIndex !== null ? 'opponent monster to remove board threat' : 'directly to reduce opponent life points'} with ${attacker.name} (${attacker.atk} ATK)`,
+        thought: `Attacking ${parsed.targetIndex !== null ? "opponent monster to remove board threat" : "directly to reduce opponent life points"} with ${attacker.name} (${attacker.atk} ATK)`,
       } as Content);
 
       return {
@@ -184,27 +184,29 @@ Respond with JSON: { "attackerIndex": <index>, "targetIndex": <index or null for
           attackerName: attacker.name,
           attackerAtk: attacker.atk,
           isDirect: parsed.targetIndex === null,
-          targetName: parsed.targetIndex !== null ? opponentMonsters[parsed.targetIndex]?.name : null,
+          targetName:
+            parsed.targetIndex !== null ? opponentMonsters[parsed.targetIndex]?.name : null,
         },
         data: {
-          actionName: 'ATTACK',
+          actionName: "ATTACK",
           attacker,
           targetIndex: parsed.targetIndex,
           result,
         },
       };
     } catch (error) {
-      logger.error({ error }, 'Error in ATTACK action');
+      logger.error({ error }, "Error in ATTACK action");
 
       await callback({
         text: `Failed to attack: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: 'Attack action failed, likely due to invalid target or battle phase timing restrictions',
+        thought:
+          "Attack action failed, likely due to invalid target or battle phase timing restrictions",
       } as Content);
 
       return {
         success: false,
-        text: 'Failed to declare attack',
+        text: "Failed to declare attack",
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
@@ -213,46 +215,46 @@ Respond with JSON: { "attackerIndex": <index>, "targetIndex": <index or null for
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'I should attack their weak monster',
+          text: "I should attack their weak monster",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Blue-Eyes White Dragon attacks Dark Magician!',
-          actions: ['ATTACK'],
-        },
-      },
-    ],
-    [
-      {
-        name: '{{name1}}',
-        content: {
-          text: 'They have no monsters, direct attack!',
-        },
-      },
-      {
-        name: '{{name2}}',
-        content: {
-          text: 'Celtic Guardian attacks directly!',
-          actions: ['ATTACK'],
+          text: "Blue-Eyes White Dragon attacks Dark Magician!",
+          actions: ["ATTACK"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Time to finish them off',
+          text: "They have no monsters, direct attack!",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'All monsters attack directly for game!',
-          actions: ['ATTACK'],
+          text: "Celtic Guardian attacks directly!",
+          actions: ["ATTACK"],
+        },
+      },
+    ],
+    [
+      {
+        name: "{{name1}}",
+        content: {
+          text: "Time to finish them off",
+        },
+      },
+      {
+        name: "{{name2}}",
+        content: {
+          text: "All monsters attack directly for game!",
+          actions: ["ATTACK"],
         },
       },
     ],

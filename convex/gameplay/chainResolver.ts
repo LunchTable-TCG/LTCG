@@ -17,16 +17,12 @@ import { mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import {
-  executeEffect,
-  parseJsonAbility,
-  type JsonAbility,
-} from "./effectSystem/index";
+import { type JsonAbility, executeEffect, parseJsonAbility } from "./effectSystem/index";
 import { jsonAbilityValidator } from "./effectSystem/jsonEffectValidators";
-import { recordEventHelper } from "./gameEvents";
 import { checkStateBasedActions } from "./gameEngine/stateBasedActions";
-import { resetPriorityAfterChainLink } from "./responseWindow";
+import { recordEventHelper } from "./gameEvents";
 import { checkReplayCondition } from "./replaySystem";
+import { resetPriorityAfterChainLink } from "./responseWindow";
 
 /**
  * Type for chain effect - JSON ability only (text parsing has been removed)
@@ -139,8 +135,7 @@ export async function addToChainHelper(
   // unless it has a different effect type (for cards with multiple effects)
   const cardAlreadyInChain = currentChain.some(
     (link) =>
-      link.cardId === args.cardId &&
-      link.effect.effects[0]?.type === args.effect.effects[0]?.type
+      link.cardId === args.cardId && link.effect.effects[0]?.type === args.effect.effects[0]?.type
   );
 
   if (cardAlreadyInChain) {

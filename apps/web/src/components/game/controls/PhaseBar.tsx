@@ -98,7 +98,9 @@ export function PhaseBar({
         {/* Turn indicator */}
         <div className="flex items-center gap-1 pr-2 border-r">
           <span className="text-[8px] sm:text-[10px] text-muted-foreground">Turn</span>
-          <span className="text-[10px] sm:text-xs font-bold" data-testid="turn-number">{turnNumber}</span>
+          <span className="text-[10px] sm:text-xs font-bold" data-testid="turn-number">
+            {turnNumber}
+          </span>
         </div>
 
         {/* Phase indicators */}

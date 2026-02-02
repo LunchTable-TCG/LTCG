@@ -1,13 +1,13 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createRoot } from 'react-dom/client';
-import './index.css';
-import React from 'react';
-import type { UUID } from '@elizaos/core';
-import { MatchmakingPanel } from './panels/MatchmakingPanel';
-import { GameDashboard } from './panels/GameDashboard';
-import { DecisionStream } from './panels/DecisionStream';
-import { MetricsPanel } from './panels/MetricsPanel';
-import { ErrorBoundary } from './components';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import type { UUID } from "@elizaos/core";
+import React from "react";
+import { ErrorBoundary } from "./components";
+import { DecisionStream } from "./panels/DecisionStream";
+import { GameDashboard } from "./panels/GameDashboard";
+import { MatchmakingPanel } from "./panels/MatchmakingPanel";
+import { MetricsPanel } from "./panels/MetricsPanel";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,7 +45,7 @@ function ExampleRoute() {
 
   // Apply dark mode to the root element
   React.useEffect(() => {
-    document.documentElement.classList.add('dark');
+    document.documentElement.classList.add("dark");
   }, []);
 
   if (!agentId) {
@@ -74,7 +74,7 @@ function ExampleProvider({ agentId }: { agentId: UUID }) {
 }
 
 // Initialize the application - no router needed for iframe
-const rootElement = document.getElementById('root');
+const rootElement = document.getElementById("root");
 if (rootElement) {
   createRoot(rootElement).render(<ExampleRoute />);
 }
@@ -107,37 +107,37 @@ function withErrorBoundary(Component: React.ComponentType<any>) {
  */
 export const panels: AgentPanel[] = [
   {
-    name: 'Matchmaking',
-    path: 'ltcg-matchmaking',
+    name: "Matchmaking",
+    path: "ltcg-matchmaking",
     component: withErrorBoundary(MatchmakingPanel),
-    icon: 'Target',
+    icon: "Target",
     public: false,
-    shortLabel: 'Match',
+    shortLabel: "Match",
   },
   {
-    name: 'Game',
-    path: 'ltcg-game',
+    name: "Game",
+    path: "ltcg-game",
     component: withErrorBoundary(GameDashboard),
-    icon: 'Gamepad2',
+    icon: "Gamepad2",
     public: false,
-    shortLabel: 'Game',
+    shortLabel: "Game",
   },
   {
-    name: 'Decisions',
-    path: 'ltcg-decisions',
+    name: "Decisions",
+    path: "ltcg-decisions",
     component: withErrorBoundary(DecisionStream),
-    icon: 'Brain',
+    icon: "Brain",
     public: false,
-    shortLabel: 'AI',
+    shortLabel: "AI",
   },
   {
-    name: 'Metrics',
-    path: 'ltcg-metrics',
+    name: "Metrics",
+    path: "ltcg-metrics",
     component: withErrorBoundary(MetricsPanel),
-    icon: 'BarChart3',
+    icon: "BarChart3",
     public: false,
-    shortLabel: 'Stats',
+    shortLabel: "Stats",
   },
 ];
 
-export * from './utils';
+export * from "./utils";

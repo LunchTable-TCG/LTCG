@@ -1,8 +1,8 @@
 "use client";
 
+import { logError } from "@/lib/errorHandling";
 import { api } from "@convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { logError } from "@/lib/errorHandling";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UsePresenceReturn {

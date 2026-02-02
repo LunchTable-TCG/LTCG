@@ -46,7 +46,9 @@ export function PlayerSelector({
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch player list from backend
-  const players = useQuery(api.admin.admin.listPlayers, { limit: 200 }) as PlayerOption[] | undefined;
+  const players = useQuery(api.admin.admin.listPlayers, { limit: 200 }) as
+    | PlayerOption[]
+    | undefined;
   const isLoading = players === undefined;
 
   // Filter players by search

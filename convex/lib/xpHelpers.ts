@@ -27,10 +27,7 @@ function isTestEnvironment(ctx: MutationCtx): boolean {
  * Safe scheduler wrapper for test environments
  * Prevents "Write outside of transaction" errors in convex-test
  */
-async function safeSchedule(
-  ctx: MutationCtx,
-  fn: () => Promise<unknown>
-): Promise<void> {
+async function safeSchedule(ctx: MutationCtx, fn: () => Promise<unknown>): Promise<void> {
   // Skip scheduling in test environments to prevent errors
   if (isTestEnvironment(ctx)) {
     return;
@@ -238,11 +235,15 @@ export async function addXP(
   if (leveledUp) {
     // Create level up notification (wrapped to prevent test errors)
     await safeSchedule(ctx, async () => {
-      await ctx.scheduler.runAfter(0, internalAny.progression.notifications.createLevelUpNotification, {
-        userId,
-        newLevel,
-        oldLevel,
-      });
+      await ctx.scheduler.runAfter(
+        0,
+        internalAny.progression.notifications.createLevelUpNotification,
+        {
+          userId,
+          newLevel,
+          oldLevel,
+        }
+      );
     });
 
     for (const milestone of LEVEL_MILESTONES) {

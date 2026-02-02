@@ -17,8 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge, BarChart, Card, Flex, Text, Title } from "@tremor/react";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { Badge, BarChart, Card, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -106,20 +106,16 @@ export default function CardAnalyticsPage() {
 
   // Calculate average stats
   const avgWinRate = topByWinRate?.length
-    ? (topByWinRate as any[]).reduce((sum, c) => sum + c.winRate, 0) /
-      topByWinRate.length
+    ? (topByWinRate as any[]).reduce((sum, c) => sum + c.winRate, 0) / topByWinRate.length
     : 0;
   const avgPlayRate = topByPlayRate?.length
-    ? (topByPlayRate as any[]).reduce((sum, c) => sum + (c.playRate ?? 0), 0) /
-      topByPlayRate.length
+    ? (topByPlayRate as any[]).reduce((sum, c) => sum + (c.playRate ?? 0), 0) / topByPlayRate.length
     : 0;
 
   // Extract unique archetypes
   const uniqueArchetypes = Array.from(
     new Set(
-      (topByPlayRate as any[] | undefined)
-        ?.filter((c) => c.archetype)
-        .map((c) => c.archetype) ?? []
+      (topByPlayRate as any[] | undefined)?.filter((c) => c.archetype).map((c) => c.archetype) ?? []
     )
   ) as string[];
 
@@ -291,7 +287,9 @@ export default function CardAnalyticsPage() {
                         {card.winRate.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right">{card.wins}/{card.gamesPlayed}</td>
+                    <td className="py-2 px-3 text-right">
+                      {card.wins}/{card.gamesPlayed}
+                    </td>
                     <td className="py-2 px-3 text-right">{card.archetype}</td>
                     <td className="py-2 px-3 text-right text-muted-foreground">
                       {card.gamesPlayed}
@@ -322,13 +320,18 @@ export default function CardAnalyticsPage() {
           </Flex>
           <div className="mt-4 grid gap-4 md:grid-cols-5">
             {uniqueArchetypes.slice(0, 5).map((archetype: string) => {
-              const cardsInArchetype = (topByPlayRate as any[] | undefined)?.filter((c) => c.archetype === archetype) ?? [];
+              const cardsInArchetype =
+                (topByPlayRate as any[] | undefined)?.filter((c) => c.archetype === archetype) ??
+                [];
               const count = cardsInArchetype.length;
               // Get win rate from winRate data for cards in this archetype
-              const winRateCards = (topByWinRate as any[] | undefined)?.filter((c) => c.archetype === archetype) ?? [];
-              const avgWin = winRateCards.length > 0
-                ? winRateCards.reduce((sum: number, c: any) => sum + c.winRate, 0) / winRateCards.length
-                : 0;
+              const winRateCards =
+                (topByWinRate as any[] | undefined)?.filter((c) => c.archetype === archetype) ?? [];
+              const avgWin =
+                winRateCards.length > 0
+                  ? winRateCards.reduce((sum: number, c: any) => sum + c.winRate, 0) /
+                    winRateCards.length
+                  : 0;
               const isSelected = selectedArchetype === archetype;
               return (
                 <button
@@ -403,7 +406,9 @@ export default function CardAnalyticsPage() {
                         {card.winRate.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right">{card.wins}/{card.gamesPlayed}</td>
+                    <td className="py-2 px-3 text-right">
+                      {card.wins}/{card.gamesPlayed}
+                    </td>
                     <td className="py-2 px-3 text-right text-muted-foreground">
                       {card.gamesPlayed}
                     </td>

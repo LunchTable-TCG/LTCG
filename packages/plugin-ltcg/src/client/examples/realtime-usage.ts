@@ -5,8 +5,8 @@
  * real-time game updates in the LTCG ElizaOS plugin.
  */
 
-import { ConvexRealtimeClient } from '../realtimeClient';
-import type { GameStateCallback, TurnNotificationCallback, GameEventCallback } from '../events';
+import type { GameEventCallback, GameStateCallback, TurnNotificationCallback } from "../events";
+import { ConvexRealtimeClient } from "../realtimeClient";
 
 // ============================================================================
 // Basic Setup
@@ -17,9 +17,9 @@ import type { GameStateCallback, TurnNotificationCallback, GameEventCallback } f
  */
 function initializeClient() {
   const client = new ConvexRealtimeClient({
-    convexUrl: process.env.CONVEX_URL || 'https://your-deployment.convex.cloud',
-    authToken: 'your-jwt-token-from-agent-registration',
-    debug: process.env.NODE_ENV === 'development',
+    convexUrl: process.env.CONVEX_URL || "https://your-deployment.convex.cloud",
+    authToken: "your-jwt-token-from-agent-registration",
+    debug: process.env.NODE_ENV === "development",
   });
 
   return client;
@@ -45,7 +45,7 @@ function monitorGameState(client: ConvexRealtimeClient, gameId: string) {
     console.log(`  Cards in Hand: ${state.hand.length}`);
 
     // Check if it's my turn
-    if (state.currentTurn === 'host') {
+    if (state.currentTurn === "host") {
       console.log("It's my turn! Time to make a move.");
       // Trigger agent's decision-making logic here
     }
@@ -76,7 +76,7 @@ function monitorTurns(client: ConvexRealtimeClient, userId: string) {
         // Trigger agent's turn logic for this game
       });
     } else {
-      console.log('No pending turns');
+      console.log("No pending turns");
     }
   };
 
@@ -101,17 +101,17 @@ function monitorGameEvents(client: ConvexRealtimeClient, gameId: string) {
 
     // React to specific event types
     switch (event.eventType) {
-      case 'summon':
-        console.log('Opponent summoned a monster!');
+      case "summon":
+        console.log("Opponent summoned a monster!");
         break;
-      case 'attack':
-        console.log('Battle phase action detected!');
+      case "attack":
+        console.log("Battle phase action detected!");
         break;
-      case 'spell_activation':
-        console.log('Spell card activated!');
+      case "spell_activation":
+        console.log("Spell card activated!");
         break;
-      case 'damage':
-        console.log('Damage dealt!');
+      case "damage":
+        console.log("Damage dealt!");
         break;
     }
   };
@@ -145,19 +145,19 @@ async function setupAgentRealtime(config: {
     debug: true,
   });
 
-  console.log('Real-time client initialized');
+  console.log("Real-time client initialized");
 
   // Store unsubscribe functions for cleanup
   const unsubscribers: (() => void)[] = [];
 
   // 1. Subscribe to game state for detailed information
   const unsubGameState = client.subscribeToGame(gameId, (state) => {
-    console.log('\n=== Game State Update ===');
+    console.log("\n=== Game State Update ===");
     console.log(`Phase: ${state.phase}, Turn: ${state.turnNumber}`);
 
     // Agent decision logic would go here
-    if (state.currentTurn === 'host') {
-      console.log('Making decision...');
+    if (state.currentTurn === "host") {
+      console.log("Making decision...");
       // Call your agent's decision-making function
       // makeGameplayDecision(state);
     }
@@ -166,9 +166,9 @@ async function setupAgentRealtime(config: {
 
   // 2. Subscribe to turn notifications
   const unsubTurns = client.subscribeToTurnNotifications(userId, (gameIds) => {
-    console.log('\n=== Turn Notification ===');
+    console.log("\n=== Turn Notification ===");
     if (gameIds.length > 0) {
-      console.log(`Your turn in: ${gameIds.join(', ')}`);
+      console.log(`Your turn in: ${gameIds.join(", ")}`);
       // Trigger turn handler for each game
       // gameIds.forEach(handleMyTurn);
     }
@@ -177,21 +177,21 @@ async function setupAgentRealtime(config: {
 
   // 3. Subscribe to game events for logging/analysis
   const unsubEvents = client.subscribeToGameEvents(gameId, (event) => {
-    console.log('\n=== Game Event ===');
+    console.log("\n=== Game Event ===");
     console.log(`[${event.eventType}] ${event.description}`);
     // Log events for learning/analysis
     // logEventForAnalysis(event);
   });
   unsubscribers.push(unsubEvents);
 
-  console.log('All subscriptions active');
+  console.log("All subscriptions active");
 
   // Return cleanup function
   return () => {
-    console.log('Cleaning up subscriptions...');
+    console.log("Cleaning up subscriptions...");
     unsubscribers.forEach((unsub) => unsub());
     client.close();
-    console.log('Real-time client closed');
+    console.log("Real-time client closed");
   };
 }
 
@@ -206,16 +206,16 @@ async function setupAgentRealtime(config: {
  */
 function setupGracefulShutdown(client: ConvexRealtimeClient) {
   const cleanup = () => {
-    console.log('Shutting down real-time client...');
+    console.log("Shutting down real-time client...");
     client.unsubscribeAll();
     client.close();
-    console.log('Real-time client shutdown complete');
+    console.log("Real-time client shutdown complete");
   };
 
   // Handle various shutdown signals
-  process.on('SIGINT', cleanup);
-  process.on('SIGTERM', cleanup);
-  process.on('exit', cleanup);
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
+  process.on("exit", cleanup);
 
   return cleanup;
 }
@@ -235,16 +235,16 @@ function robustSubscription(client: ConvexRealtimeClient, gameId: string) {
     const unsubscribe = client.subscribeToGame(gameId, (state) => {
       try {
         // Process game state
-        console.log('Game state:', state.phase);
+        console.log("Game state:", state.phase);
       } catch (error) {
-        console.error('Error processing game state:', error);
+        console.error("Error processing game state:", error);
         // Don't let processing errors crash the subscription
       }
     });
 
     return unsubscribe;
   } catch (error) {
-    console.error('Failed to subscribe to game:', error);
+    console.error("Failed to subscribe to game:", error);
     // Handle subscription error (e.g., retry, alert, etc.)
     throw error;
   }
@@ -332,15 +332,15 @@ export class LTCGRealtimeService {
     this.client = new ConvexRealtimeClient({
       convexUrl: config.convexUrl,
       authToken: config.authToken,
-      debug: process.env.NODE_ENV === 'development',
+      debug: process.env.NODE_ENV === "development",
     });
 
-    console.log('LTCG Real-time service initialized');
+    console.log("LTCG Real-time service initialized");
   }
 
   monitorGame(gameId: string, onUpdate: GameStateCallback) {
     if (!this.client) {
-      throw new Error('Client not initialized');
+      throw new Error("Client not initialized");
     }
 
     const key = `game:${gameId}`;
@@ -372,7 +372,7 @@ export class LTCGRealtimeService {
       this.client = null;
     }
 
-    console.log('LTCG Real-time service shut down');
+    console.log("LTCG Real-time service shut down");
   }
 }
 

@@ -7,28 +7,31 @@
  * Reusable, typesafe context for RBAC.
  */
 
+import { useConvexQuery } from "@/lib/convexHelpers";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { type ReactNode, createContext, useContext, useMemo } from "react";
 import type { AdminRole } from "../types";
 import { ROLE_PERMISSIONS } from "../types";
-import { useConvexQuery } from "@/lib/convexHelpers";
 
 // =============================================================================
 // Context Types
 // =============================================================================
 
-type AdminRoleData = {
-  role: AdminRole;
-  roleLevel: number;
-  isAdmin: boolean;
-  isModerator: boolean;
-  isFullAdmin: boolean;
-  isSuperAdmin: boolean;
-  permissions: string[];
-  grantedAt?: number;
-  grantedBy?: Id<"users">;
-} | null | undefined;
+type AdminRoleData =
+  | {
+      role: AdminRole;
+      roleLevel: number;
+      isAdmin: boolean;
+      isModerator: boolean;
+      isFullAdmin: boolean;
+      isSuperAdmin: boolean;
+      permissions: string[];
+      grantedAt?: number;
+      grantedBy?: Id<"users">;
+    }
+  | null
+  | undefined;
 
 interface AdminContextValue {
   /** Current admin role data, null if not admin or loading */

@@ -126,7 +126,10 @@ function executeAction(
       if (stateChanges.hostBoard.length === 0) {
         stateChanges.hostLifePoints = Math.max(0, stateChanges.hostLifePoints - attacker.attack);
         stateChanges.opponentBoard[attackerIndex] = { ...attacker, hasAttacked: true };
-        return { success: true, description: `${attackerCard?.name || "Monster"} attacked directly for ${attacker.attack} damage` };
+        return {
+          success: true,
+          description: `${attackerCard?.name || "Monster"} attacked directly for ${attacker.attack} damage`,
+        };
       }
 
       // Find target (attack first monster for simplicity)
@@ -149,14 +152,20 @@ function executeAction(
         }
 
         stateChanges.opponentBoard[attackerIndex] = { ...attacker, hasAttacked: true };
-        return { success: true, description: `${attackerCard?.name || "Monster"} destroyed ${targetCard?.name || "monster"}` };
+        return {
+          success: true,
+          description: `${attackerCard?.name || "Monster"} destroyed ${targetCard?.name || "monster"}`,
+        };
       } else if (attacker.attack === targetDEF && target.position === 1) {
         // Both destroyed
         stateChanges.hostBoard.splice(targetIndex, 1);
         stateChanges.hostGraveyard.push(target.cardId);
         stateChanges.opponentBoard.splice(attackerIndex, 1);
         stateChanges.opponentGraveyard.push(attacker.cardId);
-        return { success: true, description: `${attackerCard?.name || "Monster"} and ${targetCard?.name || "monster"} destroyed each other` };
+        return {
+          success: true,
+          description: `${attackerCard?.name || "Monster"} and ${targetCard?.name || "monster"} destroyed each other`,
+        };
       } else {
         // Attacker loses or can't destroy target - mark as attacked but no destruction
         stateChanges.opponentBoard[attackerIndex] = { ...attacker, hasAttacked: true };
@@ -184,7 +193,10 @@ function executeAction(
 
     case "end_phase":
     case "pass":
-      return { success: true, description: action.type === "end_phase" ? "Ending phase" : "Passing" };
+      return {
+        success: true,
+        description: action.type === "end_phase" ? "Ending phase" : "Passing",
+      };
 
     default:
       return { success: false, description: "Unknown action type" };

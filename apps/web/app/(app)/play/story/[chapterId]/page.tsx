@@ -240,7 +240,9 @@ export default function ChapterPage({ params }: ChapterPageProps) {
                 Stage {selectedStage.stageNumber}: {selectedStage.name}
               </DialogTitle>
 
-              <p className="text-[#a89f94] mb-6" data-testid="story-dialogue">{selectedStage.description}</p>
+              <p className="text-[#a89f94] mb-6" data-testid="story-dialogue">
+                {selectedStage.description}
+              </p>
 
               {/* Rewards */}
               <div className="space-y-3 mb-6">

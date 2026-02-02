@@ -355,7 +355,9 @@ export const completeStageInternal = internalMutation({
       if (nextStage) {
         const nextProgress = await ctx.db
           .query("storyStageProgress")
-          .withIndex("by_user_stage", (q) => q.eq("userId", args.userId).eq("stageId", nextStage._id))
+          .withIndex("by_user_stage", (q) =>
+            q.eq("userId", args.userId).eq("stageId", nextStage._id)
+          )
           .first();
 
         if (nextProgress && nextProgress.status === "locked") {

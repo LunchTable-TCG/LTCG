@@ -8,9 +8,14 @@
  * a WebSocket connection to receive live updates when data changes.
  */
 
-import { ConvexClient } from 'convex/browser';
-import type { GameStateCallback, TurnNotificationCallback, GameEventCallback, Subscription } from './events';
-import type { GameStateResponse, GameEvent } from '../types/api';
+import { ConvexClient } from "convex/browser";
+import type { GameStateResponse } from "../types/api";
+import type {
+  GameEventCallback,
+  GameStateCallback,
+  Subscription,
+  TurnNotificationCallback,
+} from "./events";
 
 /**
  * Interface for ConvexClient methods used by ConvexRealtimeClient.
@@ -69,7 +74,7 @@ export class ConvexRealtimeClient {
 
   constructor(config: ConvexRealtimeClientConfig) {
     if (!config.convexUrl) {
-      throw new Error('Convex URL is required');
+      throw new Error("Convex URL is required");
     }
 
     // Use injected test client if provided, otherwise create real ConvexClient
@@ -101,7 +106,7 @@ export class ConvexRealtimeClient {
     this.isConnected = true;
 
     if (this.debug) {
-      console.log('[ConvexRealtimeClient] Client initialized');
+      console.log("[ConvexRealtimeClient] Client initialized");
     }
   }
 
@@ -113,7 +118,7 @@ export class ConvexRealtimeClient {
     this.client.setAuth(async () => token);
 
     if (this.debug) {
-      console.log('[ConvexRealtimeClient] Authentication token set');
+      console.log("[ConvexRealtimeClient] Authentication token set");
     }
   }
 
@@ -125,7 +130,7 @@ export class ConvexRealtimeClient {
     this.client.clearAuth?.();
 
     if (this.debug) {
-      console.log('[ConvexRealtimeClient] Authentication token cleared');
+      console.log("[ConvexRealtimeClient] Authentication token cleared");
     }
   }
 
@@ -174,7 +179,7 @@ export class ConvexRealtimeClient {
     // Subscribe to game state query
     // Using string paths since we don't have the generated API object
     const unsubscribe = this.client.onUpdate(
-      'gameplay/games/queries:getGameStateForPlayer' as any,
+      "gameplay/games/queries:getGameStateForPlayer" as any,
       { lobbyId: gameId },
       (result: any) => {
         if (this.debug) {
@@ -191,7 +196,7 @@ export class ConvexRealtimeClient {
     // Store subscription
     const subscription: Subscription = {
       id: subscriptionId,
-      type: 'game',
+      type: "game",
       gameId,
       unsubscribe,
       createdAt: Date.now(),
@@ -241,7 +246,7 @@ export class ConvexRealtimeClient {
 
     // Subscribe to active lobby query and check if it's user's turn
     const unsubscribe = this.client.onUpdate(
-      'gameplay/games/queries:getActiveLobby' as any,
+      "gameplay/games/queries:getActiveLobby" as any,
       { userId },
       (result: any) => {
         if (this.debug) {
@@ -257,7 +262,7 @@ export class ConvexRealtimeClient {
         // Note: In a production implementation, you might want to batch these
         // or have a dedicated query that returns pending turns
         this.client
-          .query('gameplay/games/queries:getGameStateForPlayer' as any, {
+          .query("gameplay/games/queries:getGameStateForPlayer" as any, {
             lobbyId: result._id,
           })
           .then((gameState: any) => {
@@ -279,7 +284,7 @@ export class ConvexRealtimeClient {
     // Store subscription
     const subscription: Subscription = {
       id: subscriptionId,
-      type: 'turns',
+      type: "turns",
       userId,
       unsubscribe,
       createdAt: Date.now(),
@@ -331,7 +336,7 @@ export class ConvexRealtimeClient {
 
     // Subscribe to game state and extract latest event
     const unsubscribe = this.client.onUpdate(
-      'gameplay/games/queries:getGameStateForPlayer' as any,
+      "gameplay/games/queries:getGameStateForPlayer" as any,
       { lobbyId: gameId },
       (result: any) => {
         if (!result || !result.gameEvents || result.gameEvents.length === 0) {
@@ -346,7 +351,10 @@ export class ConvexRealtimeClient {
           lastEventId = latestEvent.eventId;
 
           if (this.debug) {
-            console.log(`[ConvexRealtimeClient] New game event for ${gameId}:`, latestEvent.eventType);
+            console.log(
+              `[ConvexRealtimeClient] New game event for ${gameId}:`,
+              latestEvent.eventType
+            );
           }
 
           callback(latestEvent);
@@ -357,7 +365,7 @@ export class ConvexRealtimeClient {
     // Store subscription
     const subscription: Subscription = {
       id: subscriptionId,
-      type: 'events',
+      type: "events",
       gameId,
       unsubscribe,
       createdAt: Date.now(),
@@ -401,7 +409,9 @@ export class ConvexRealtimeClient {
    */
   unsubscribeAll() {
     if (this.debug) {
-      console.log(`[ConvexRealtimeClient] Unsubscribing from all ${this.subscriptions.size} subscriptions`);
+      console.log(
+        `[ConvexRealtimeClient] Unsubscribing from all ${this.subscriptions.size} subscriptions`
+      );
     }
 
     // Convert to array to avoid iterator issues
@@ -438,7 +448,7 @@ export class ConvexRealtimeClient {
    */
   close() {
     if (this.debug) {
-      console.log('[ConvexRealtimeClient] Closing client');
+      console.log("[ConvexRealtimeClient] Closing client");
     }
 
     this.unsubscribeAll();
@@ -461,22 +471,24 @@ export class ConvexRealtimeClient {
     return {
       gameId: result.lobbyId || result.gameId,
       lobbyId: result.lobbyId || result.gameId,
-      status: result.status || 'active',
-      currentTurn: isHost ? 'host' : 'opponent',
-      currentTurnPlayer: result.currentTurnPlayerId || '',
+      status: result.status || "active",
+      currentTurn: isHost ? "host" : "opponent",
+      currentTurnPlayer: result.currentTurnPlayerId || "",
       isMyTurn: result.isMyTurn ?? isHost,
-      phase: result.currentPhase || 'main1',
+      phase: result.currentPhase || "main1",
       turnNumber: result.turnNumber || 1,
 
       // New format fields
-      myLifePoints: isHost ? (result.hostLifePoints || 0) : (result.opponentLifePoints || 0),
-      opponentLifePoints: isHost ? (result.opponentLifePoints || 0) : (result.hostLifePoints || 0),
+      myLifePoints: isHost ? result.hostLifePoints || 0 : result.opponentLifePoints || 0,
+      opponentLifePoints: isHost ? result.opponentLifePoints || 0 : result.hostLifePoints || 0,
       myBoard: (isHost ? result.hostMonsters : result.opponentMonsters) || [],
       opponentBoard: (isHost ? result.opponentMonsters : result.hostMonsters) || [],
       myDeckCount: (isHost ? result.hostDeckCount : result.opponentDeckCount) || 0,
       opponentDeckCount: (isHost ? result.opponentDeckCount : result.hostDeckCount) || 0,
-      myGraveyardCount: (isHost ? result.hostGraveyard?.length : result.opponentGraveyard?.length) || 0,
-      opponentGraveyardCount: (isHost ? result.opponentGraveyard?.length : result.hostGraveyard?.length) || 0,
+      myGraveyardCount:
+        (isHost ? result.hostGraveyard?.length : result.opponentGraveyard?.length) || 0,
+      opponentGraveyardCount:
+        (isHost ? result.opponentGraveyard?.length : result.hostGraveyard?.length) || 0,
       opponentHandCount: (isHost ? result.opponentHandCount : result.hostHandCount) || 0,
 
       // Legacy fields for compatibility

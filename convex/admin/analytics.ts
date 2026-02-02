@@ -117,10 +117,7 @@ export const getTopCardsByWinRate = query({
     const games = await ctx.db
       .query("gameLobbies")
       .filter((q) =>
-        q.and(
-          q.eq(q.field("status"), "completed"),
-          q.gte(q.field("createdAt"), cutoff)
-        )
+        q.and(q.eq(q.field("status"), "completed"), q.gte(q.field("createdAt"), cutoff))
       )
       .collect();
 
@@ -328,7 +325,9 @@ export const getCardStatsByArchetype = query({
     // Get all cards of this archetype
     const archetypeCards = await ctx.db
       .query("cardDefinitions")
-      .withIndex("by_archetype", (q) => q.eq("archetype", archetype as Doc<"cardDefinitions">["archetype"]))
+      .withIndex("by_archetype", (q) =>
+        q.eq("archetype", archetype as Doc<"cardDefinitions">["archetype"])
+      )
       .collect();
 
     if (archetypeCards.length === 0) return [];
@@ -337,10 +336,7 @@ export const getCardStatsByArchetype = query({
     const games = await ctx.db
       .query("gameLobbies")
       .filter((q) =>
-        q.and(
-          q.eq(q.field("status"), "completed"),
-          q.gte(q.field("createdAt"), cutoff)
-        )
+        q.and(q.eq(q.field("status"), "completed"), q.gte(q.field("createdAt"), cutoff))
       )
       .collect();
 
@@ -485,10 +481,7 @@ export const getCurrentEconomySnapshot = query({
     const weeklyTransactions = await ctx.db
       .query("currencyTransactions")
       .filter((q) =>
-        q.and(
-          q.eq(q.field("currencyType"), "gold"),
-          q.gte(q.field("createdAt"), weekAgo)
-        )
+        q.and(q.eq(q.field("currencyType"), "gold"), q.gte(q.field("createdAt"), weekAgo))
       )
       .collect();
 
@@ -547,7 +540,8 @@ export const getEconomyTrends = query({
     const trends = [];
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
-    const intervalMs = periodType === "daily" ? dayMs : periodType === "weekly" ? 7 * dayMs : 30 * dayMs;
+    const intervalMs =
+      periodType === "daily" ? dayMs : periodType === "weekly" ? 7 * dayMs : 30 * dayMs;
 
     for (let i = days - 1; i >= 0; i--) {
       const periodEnd = now - i * intervalMs;
@@ -557,10 +551,7 @@ export const getEconomyTrends = query({
       const transactions = await ctx.db
         .query("currencyTransactions")
         .filter((q) =>
-          q.and(
-            q.gte(q.field("createdAt"), periodStart),
-            q.lt(q.field("createdAt"), periodEnd)
-          )
+          q.and(q.gte(q.field("createdAt"), periodStart), q.lt(q.field("createdAt"), periodEnd))
         )
         .collect();
 
@@ -577,10 +568,7 @@ export const getEconomyTrends = query({
       const packs = await ctx.db
         .query("packOpeningHistory")
         .filter((q) =>
-          q.and(
-            q.gte(q.field("openedAt"), periodStart),
-            q.lt(q.field("openedAt"), periodEnd)
-          )
+          q.and(q.gte(q.field("openedAt"), periodStart), q.lt(q.field("openedAt"), periodEnd))
         )
         .collect();
 
@@ -636,10 +624,7 @@ export const getEconomyMetrics = query({
       const transactions = await ctx.db
         .query("currencyTransactions")
         .filter((q) =>
-          q.and(
-            q.gte(q.field("createdAt"), dayStart),
-            q.lt(q.field("createdAt"), dayEnd)
-          )
+          q.and(q.gte(q.field("createdAt"), dayStart), q.lt(q.field("createdAt"), dayEnd))
         )
         .collect();
 
@@ -656,10 +641,7 @@ export const getEconomyMetrics = query({
       const packs = await ctx.db
         .query("packOpeningHistory")
         .filter((q) =>
-          q.and(
-            q.gte(q.field("openedAt"), dayStart),
-            q.lt(q.field("openedAt"), dayEnd)
-          )
+          q.and(q.gte(q.field("openedAt"), dayStart), q.lt(q.field("openedAt"), dayEnd))
         )
         .collect();
 
@@ -754,7 +736,7 @@ export const getWealthDistribution = query({
       { min: 5000, max: 10000, label: "5K-10K" },
       { min: 10000, max: 50000, label: "10K-50K" },
       { min: 50000, max: 100000, label: "50K-100K" },
-      { min: 100000, max: Infinity, label: "100K+" },
+      { min: 100000, max: Number.POSITIVE_INFINITY, label: "100K+" },
     ];
 
     const distribution = buckets.map((bucket) => ({
@@ -957,9 +939,7 @@ export const getGameStats = query({
       .collect();
 
     const completedGames = lobbies.filter((l) => l.status === "completed");
-    const activeGames = lobbies.filter(
-      (l) => l.status === "active" || l.status === "waiting"
-    );
+    const activeGames = lobbies.filter((l) => l.status === "active" || l.status === "waiting");
 
     // Calculate average duration for completed games
     let totalDuration = 0;
@@ -1023,9 +1003,7 @@ export const getMatchmakingStats = query({
 
     const completedGames = recentGames.filter((g) => g.status === "completed");
     const matchSuccessRate =
-      recentGames.length > 0
-        ? Math.round((completedGames.length / recentGames.length) * 100)
-        : 0;
+      recentGames.length > 0 ? Math.round((completedGames.length / recentGames.length) * 100) : 0;
 
     return {
       averageQueueTime,
@@ -1161,10 +1139,7 @@ export const getMatchmakingStatsDetailed = query({
       const games = await ctx.db
         .query("gameLobbies")
         .filter((q) =>
-          q.and(
-            q.gte(q.field("createdAt"), dayStart),
-            q.lt(q.field("createdAt"), dayEnd)
-          )
+          q.and(q.gte(q.field("createdAt"), dayStart), q.lt(q.field("createdAt"), dayEnd))
         )
         .collect();
 
@@ -1172,10 +1147,7 @@ export const getMatchmakingStatsDetailed = query({
       const matches = await ctx.db
         .query("matchHistory")
         .filter((q) =>
-          q.and(
-            q.gte(q.field("completedAt"), dayStart),
-            q.lt(q.field("completedAt"), dayEnd)
-          )
+          q.and(q.gte(q.field("completedAt"), dayStart), q.lt(q.field("completedAt"), dayEnd))
         )
         .collect();
 
@@ -1446,9 +1418,7 @@ export const getTopEngagedPlayers = query({
           .collect();
 
         // Calculate unique days active
-        const activeDays = new Set(
-          games.map((g) => new Date(g.createdAt).toDateString())
-        ).size;
+        const activeDays = new Set(games.map((g) => new Date(g.createdAt).toDateString())).size;
 
         // Get last activity
         const lastGame = games.sort((a, b) => b.createdAt - a.createdAt)[0];
@@ -1501,10 +1471,7 @@ export const getDailyActiveStats = query({
       const games = await ctx.db
         .query("gameLobbies")
         .filter((q) =>
-          q.and(
-            q.gte(q.field("createdAt"), dayStart),
-            q.lt(q.field("createdAt"), dayEnd)
-          )
+          q.and(q.gte(q.field("createdAt"), dayStart), q.lt(q.field("createdAt"), dayEnd))
         )
         .collect();
 
@@ -1532,10 +1499,7 @@ export const getDailyActiveStats = query({
       const newUsers = await ctx.db
         .query("users")
         .filter((q) =>
-          q.and(
-            q.gte(q.field("_creationTime"), dayStart),
-            q.lt(q.field("_creationTime"), dayEnd)
-          )
+          q.and(q.gte(q.field("_creationTime"), dayStart), q.lt(q.field("_creationTime"), dayEnd))
         )
         .collect();
 

@@ -5,49 +5,47 @@
  * Implements all 27 endpoints with full error handling and retry logic.
  */
 
-import { API_ENDPOINTS, TIMEOUTS, RETRY_CONFIG } from '../constants';
-import { normalizeGameState } from '../utils/normalizeGameState';
+import { API_ENDPOINTS, RETRY_CONFIG, TIMEOUTS } from "../constants";
 import type {
-  RegisterAgentRequest,
-  RegisterAgentResponse,
-  AgentProfile,
-  RateLimitStatus,
-  WalletStatusResponse,
-  GameStateResponse,
-  AvailableActionsResponse,
-  GameEvent,
-  SummonRequest,
-  SetCardRequest,
-  SetSpellTrapRequest,
   ActivateSpellRequest,
   ActivateTrapRequest,
+  AgentProfile,
+  ApiSuccessResponse,
   AttackRequest,
-  ChangePositionRequest,
-  FlipSummonRequest,
+  AvailableActionsResponse,
+  CardDefinition,
   ChainResponseRequest,
+  ChangePositionRequest,
+  CreateDeckRequest,
+  Deck,
   EndTurnRequest,
-  SurrenderRequest,
   EnterMatchmakingRequest,
   EnterMatchmakingResponse,
-  Lobby,
+  FlipSummonRequest,
+  GameEvent,
+  GameStateResponse,
   JoinLobbyRequest,
   JoinLobbyResponse,
-  Deck,
-  CardDefinition,
+  Lobby,
+  RateLimitStatus,
+  RegisterAgentRequest,
+  RegisterAgentResponse,
+  SetCardRequest,
+  SetSpellTrapRequest,
   StarterDeck,
-  CreateDeckRequest,
-  ApiSuccessResponse,
-  ApiErrorResponse,
-} from '../types/api';
+  SummonRequest,
+  SurrenderRequest,
+  WalletStatusResponse,
+} from "../types/api";
+import { normalizeGameState } from "../utils/normalizeGameState";
 import {
-  LTCGApiError,
   AuthenticationError,
+  GameError,
   NetworkError,
   RateLimitError,
   ValidationError,
-  GameError,
   parseErrorResponse,
-} from './errors';
+} from "./errors";
 
 export interface LTCGApiClientConfig {
   apiKey: string;
@@ -66,14 +64,14 @@ export class LTCGApiClient {
 
   constructor(config: LTCGApiClientConfig) {
     if (!config.apiKey) {
-      throw new Error('API key is required');
+      throw new Error("API key is required");
     }
     if (!config.baseUrl) {
-      throw new Error('Base URL is required');
+      throw new Error("Base URL is required");
     }
 
     this.apiKey = config.apiKey;
-    this.baseUrl = config.baseUrl.endsWith('/') ? config.baseUrl.slice(0, -1) : config.baseUrl;
+    this.baseUrl = config.baseUrl.endsWith("/") ? config.baseUrl.slice(0, -1) : config.baseUrl;
     this.timeout = config.timeout ?? TIMEOUTS.DEFAULT;
     this.maxRetries = config.maxRetries ?? RETRY_CONFIG.maxAttempts;
     this.debug = config.debug ?? false;
@@ -90,7 +88,7 @@ export class LTCGApiClient {
     endpoint: string,
     options: RequestInit = {},
     timeout: number = this.timeout,
-    requiresAuth: boolean = true
+    requiresAuth = true
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     let lastError: Error | null = null;
@@ -98,19 +96,19 @@ export class LTCGApiClient {
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
         if (this.debug) {
-          console.log(`[LTCG API] ${options.method || 'GET'} ${endpoint} (attempt ${attempt + 1})`);
+          console.log(`[LTCG API] ${options.method || "GET"} ${endpoint} (attempt ${attempt + 1})`);
         }
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
 
         const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...(options.headers as Record<string, string>),
         };
 
         if (requiresAuth) {
-          headers['Authorization'] = `Bearer ${this.apiKey}`;
+          headers["Authorization"] = `Bearer ${this.apiKey}`;
         }
 
         const response = await fetch(url, {
@@ -130,7 +128,9 @@ export class LTCGApiClient {
 
           // Retry on rate limit errors (429)
           if (error instanceof RateLimitError && attempt < this.maxRetries - 1) {
-            const delay = error.retryAfter ? error.retryAfter * 1000 : this.calculateBackoff(attempt);
+            const delay = error.retryAfter
+              ? error.retryAfter * 1000
+              : this.calculateBackoff(attempt);
             if (this.debug) {
               console.log(`[LTCG API] Rate limited, retrying after ${delay}ms`);
             }
@@ -142,7 +142,9 @@ export class LTCGApiClient {
           if (response.status >= 500 && attempt < this.maxRetries - 1) {
             const delay = this.calculateBackoff(attempt);
             if (this.debug) {
-              console.log(`[LTCG API] Server error (${response.status}), retrying after ${delay}ms`);
+              console.log(
+                `[LTCG API] Server error (${response.status}), retrying after ${delay}ms`
+              );
             }
             await this.sleep(delay);
             continue;
@@ -158,9 +160,11 @@ export class LTCGApiClient {
         lastError = error as Error;
 
         // Don't retry on API errors that are intentionally thrown (non-retryable)
-        if (error instanceof AuthenticationError ||
-            error instanceof ValidationError ||
-            error instanceof GameError) {
+        if (
+          error instanceof AuthenticationError ||
+          error instanceof ValidationError ||
+          error instanceof GameError
+        ) {
           throw error;
         }
 
@@ -170,12 +174,11 @@ export class LTCGApiClient {
         }
 
         // Don't retry on abort (timeout)
-        if (error instanceof Error && error.name === 'AbortError') {
-          throw new NetworkError(
-            `Request timeout after ${timeout}ms`,
-            error,
-            { endpoint, attempt: attempt + 1 }
-          );
+        if (error instanceof Error && error.name === "AbortError") {
+          throw new NetworkError(`Request timeout after ${timeout}ms`, error, {
+            endpoint,
+            attempt: attempt + 1,
+          });
         }
 
         // Network errors - retry with backoff
@@ -198,7 +201,7 @@ export class LTCGApiClient {
     }
 
     // Should never reach here, but TypeScript doesn't know that
-    throw lastError || new NetworkError('Request failed');
+    throw lastError || new NetworkError("Request failed");
   }
 
   /**
@@ -233,7 +236,7 @@ export class LTCGApiClient {
     return this.request<RegisterAgentResponse>(
       API_ENDPOINTS.REGISTER_AGENT,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(body),
       },
       this.timeout,
@@ -247,7 +250,7 @@ export class LTCGApiClient {
    */
   async getAgentProfile(): Promise<AgentProfile> {
     return this.request<AgentProfile>(API_ENDPOINTS.GET_AGENT_PROFILE, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
@@ -257,7 +260,7 @@ export class LTCGApiClient {
    */
   async getRateLimit(): Promise<RateLimitStatus> {
     return this.request<RateLimitStatus>(API_ENDPOINTS.GET_RATE_LIMIT, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
@@ -265,9 +268,9 @@ export class LTCGApiClient {
    * Get agent's wallet information (non-custodial HD wallet)
    * GET /api/agents/wallet
    */
-  async getWalletInfo(): Promise<WalletStatusResponse['data']> {
-    return this.request<WalletStatusResponse['data']>(API_ENDPOINTS.GET_WALLET_INFO, {
-      method: 'GET',
+  async getWalletInfo(): Promise<WalletStatusResponse["data"]> {
+    return this.request<WalletStatusResponse["data"]>(API_ENDPOINTS.GET_WALLET_INFO, {
+      method: "GET",
     });
   }
 
@@ -283,7 +286,7 @@ export class LTCGApiClient {
     return this.request<Array<{ gameId: string; turnNumber: number }>>(
       API_ENDPOINTS.GET_PENDING_TURNS,
       {
-        method: 'GET',
+        method: "GET",
       }
     );
   }
@@ -293,9 +296,12 @@ export class LTCGApiClient {
    * GET /api/agents/games/state?gameId=xxx
    */
   async getGameState(gameId: string): Promise<GameStateResponse> {
-    const rawState = await this.request<GameStateResponse>(`${API_ENDPOINTS.GET_GAME_STATE}?gameId=${gameId}`, {
-      method: 'GET',
-    });
+    const rawState = await this.request<GameStateResponse>(
+      `${API_ENDPOINTS.GET_GAME_STATE}?gameId=${gameId}`,
+      {
+        method: "GET",
+      }
+    );
     // Normalize to include legacy fields for backward compatibility
     return normalizeGameState(rawState);
   }
@@ -308,7 +314,7 @@ export class LTCGApiClient {
     return this.request<AvailableActionsResponse>(
       `${API_ENDPOINTS.GET_AVAILABLE_ACTIONS}?gameId=${gameId}`,
       {
-        method: 'GET',
+        method: "GET",
       }
     );
   }
@@ -319,7 +325,7 @@ export class LTCGApiClient {
    */
   async getGameHistory(gameId: string): Promise<GameEvent[]> {
     return this.request<GameEvent[]>(`${API_ENDPOINTS.GET_GAME_HISTORY}?gameId=${gameId}`, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
@@ -333,7 +339,7 @@ export class LTCGApiClient {
    */
   async summon(request: SummonRequest): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_SUMMON, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -344,7 +350,7 @@ export class LTCGApiClient {
    */
   async setCard(request: SetCardRequest): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_SET_CARD, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -353,9 +359,11 @@ export class LTCGApiClient {
    * Set a spell or trap card face-down
    * POST /api/agents/games/actions/set-spell-trap
    */
-  async setSpellTrapCard(request: SetSpellTrapRequest): Promise<{ success: true; cardType: string }> {
+  async setSpellTrapCard(
+    request: SetSpellTrapRequest
+  ): Promise<{ success: true; cardType: string }> {
     return this.request<{ success: true; cardType: string }>(API_ENDPOINTS.ACTION_SET_SPELL_TRAP, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -366,7 +374,7 @@ export class LTCGApiClient {
    */
   async activateSpell(request: ActivateSpellRequest): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_ACTIVATE_SPELL, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -377,7 +385,7 @@ export class LTCGApiClient {
    */
   async activateTrap(request: ActivateTrapRequest): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_ACTIVATE_TRAP, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -388,7 +396,7 @@ export class LTCGApiClient {
    */
   async enterBattlePhase(gameId: string): Promise<{ success: true; phase: string }> {
     return this.request<{ success: true; phase: string }>(API_ENDPOINTS.ACTION_ENTER_BATTLE, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ gameId }),
     });
   }
@@ -399,7 +407,7 @@ export class LTCGApiClient {
    */
   async enterMainPhase2(gameId: string): Promise<{ success: true; phase: string }> {
     return this.request<{ success: true; phase: string }>(API_ENDPOINTS.ACTION_ENTER_MAIN2, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ gameId }),
     });
   }
@@ -410,7 +418,7 @@ export class LTCGApiClient {
    */
   async attack(request: AttackRequest): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_ATTACK, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -419,9 +427,11 @@ export class LTCGApiClient {
    * Change monster battle position
    * POST /api/agents/games/actions/change-position
    */
-  async changePosition(request: ChangePositionRequest): Promise<{ success: true; message: string }> {
+  async changePosition(
+    request: ChangePositionRequest
+  ): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_CHANGE_POSITION, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -432,7 +442,7 @@ export class LTCGApiClient {
    */
   async flipSummon(request: FlipSummonRequest): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_FLIP_SUMMON, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -443,7 +453,7 @@ export class LTCGApiClient {
    */
   async chainResponse(request: ChainResponseRequest): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_CHAIN_RESPONSE, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -454,7 +464,7 @@ export class LTCGApiClient {
    */
   async endTurn(request: EndTurnRequest): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_END_TURN, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -465,7 +475,7 @@ export class LTCGApiClient {
    */
   async surrender(request: SurrenderRequest): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.ACTION_SURRENDER, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -482,7 +492,7 @@ export class LTCGApiClient {
     return this.request<EnterMatchmakingResponse>(
       API_ENDPOINTS.MATCHMAKING_ENTER,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(request),
       },
       TIMEOUTS.MATCHMAKING // Use longer timeout for matchmaking
@@ -499,7 +509,7 @@ export class LTCGApiClient {
       : API_ENDPOINTS.MATCHMAKING_LOBBIES;
 
     const response = await this.request<{ lobbies: Lobby[]; count: number }>(endpoint, {
-      method: 'GET',
+      method: "GET",
     });
     return response.lobbies;
   }
@@ -512,7 +522,7 @@ export class LTCGApiClient {
     return this.request<JoinLobbyResponse>(
       API_ENDPOINTS.MATCHMAKING_JOIN,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(request),
       },
       TIMEOUTS.MATCHMAKING
@@ -525,7 +535,7 @@ export class LTCGApiClient {
    */
   async leaveLobby(lobbyId: string): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.MATCHMAKING_LEAVE, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ lobbyId }),
     });
   }
@@ -540,7 +550,7 @@ export class LTCGApiClient {
    */
   async getDecks(): Promise<Deck[]> {
     const response = await this.request<{ decks: Deck[]; count: number }>(API_ENDPOINTS.GET_DECKS, {
-      method: 'GET',
+      method: "GET",
     });
     return response.decks;
   }
@@ -550,9 +560,9 @@ export class LTCGApiClient {
    * GET /api/agents/decks/:id
    */
   async getDeck(deckId: string): Promise<Deck> {
-    const endpoint = API_ENDPOINTS.GET_DECK.replace(':id', deckId);
+    const endpoint = API_ENDPOINTS.GET_DECK.replace(":id", deckId);
     return this.request<Deck>(endpoint, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
@@ -564,7 +574,7 @@ export class LTCGApiClient {
     const response = await this.request<{ starterDecks: StarterDeck[] }>(
       API_ENDPOINTS.GET_STARTER_DECKS,
       {
-        method: 'GET',
+        method: "GET",
       },
       this.timeout,
       true // Starter decks require auth in current API design
@@ -578,7 +588,7 @@ export class LTCGApiClient {
    */
   async createDeck(request: CreateDeckRequest): Promise<Deck> {
     return this.request<Deck>(API_ENDPOINTS.CREATE_DECK, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -587,14 +597,16 @@ export class LTCGApiClient {
    * Get all available cards
    * GET /api/agents/cards?type=xxx&archetype=xxx
    */
-  async getCards(filters?: { type?: string; archetype?: string; race?: string }): Promise<CardDefinition[]> {
+  async getCards(filters?: { type?: string; archetype?: string; race?: string }): Promise<
+    CardDefinition[]
+  > {
     let endpoint: string = API_ENDPOINTS.GET_CARDS;
 
     if (filters) {
       const params = new URLSearchParams();
-      if (filters.type) params.append('type', filters.type);
-      if (filters.archetype) params.append('archetype', filters.archetype);
-      if (filters.race) params.append('race', filters.race);
+      if (filters.type) params.append("type", filters.type);
+      if (filters.archetype) params.append("archetype", filters.archetype);
+      if (filters.race) params.append("race", filters.race);
 
       const queryString = params.toString();
       if (queryString) {
@@ -602,8 +614,12 @@ export class LTCGApiClient {
       }
     }
 
-    const response = await this.request<{ cards: CardDefinition[]; count: number; totalCards: number }>(endpoint, {
-      method: 'GET',
+    const response = await this.request<{
+      cards: CardDefinition[];
+      count: number;
+      totalCards: number;
+    }>(endpoint, {
+      method: "GET",
     });
     return response.cards;
   }
@@ -613,9 +629,9 @@ export class LTCGApiClient {
    * GET /api/agents/cards/:id
    */
   async getCard(cardId: string): Promise<CardDefinition> {
-    const endpoint = API_ENDPOINTS.GET_CARD.replace(':id', cardId);
+    const endpoint = API_ENDPOINTS.GET_CARD.replace(":id", cardId);
     return this.request<CardDefinition>(endpoint, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
@@ -630,7 +646,7 @@ export class LTCGApiClient {
    */
   async sendChatMessage(content: string): Promise<{ messageId: string; timestamp: number }> {
     return this.request<{ messageId: string; timestamp: number }>(API_ENDPOINTS.CHAT_SEND, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ content }),
     });
   }
@@ -640,7 +656,7 @@ export class LTCGApiClient {
    * GET /api/agents/chat/messages?limit=50
    * No authentication required (public read)
    */
-  async getRecentMessages(limit: number = 50): Promise<{
+  async getRecentMessages(limit = 50): Promise<{
     messages: Array<{
       _id: string;
       userId: string;
@@ -664,7 +680,7 @@ export class LTCGApiClient {
       count: number;
     }>(
       endpoint,
-      { method: 'GET' },
+      { method: "GET" },
       this.timeout,
       false // Public endpoint, no auth required
     );
@@ -679,7 +695,7 @@ export class LTCGApiClient {
     users: Array<{
       userId: string;
       username: string;
-      status: 'online' | 'in_game' | 'idle';
+      status: "online" | "in_game" | "idle";
       lastActiveAt: number;
       rank: string;
       rankedElo: number;
@@ -690,7 +706,7 @@ export class LTCGApiClient {
       users: Array<{
         userId: string;
         username: string;
-        status: 'online' | 'in_game' | 'idle';
+        status: "online" | "in_game" | "idle";
         lastActiveAt: number;
         rank: string;
         rankedElo: number;
@@ -698,7 +714,7 @@ export class LTCGApiClient {
       count: number;
     }>(
       API_ENDPOINTS.CHAT_ONLINE_USERS,
-      { method: 'GET' },
+      { method: "GET" },
       this.timeout,
       false // Public endpoint, no auth required
     );
@@ -745,7 +761,7 @@ export class LTCGApiClient {
         isUnlocked: boolean;
       }>;
       count: number;
-    }>(API_ENDPOINTS.STORY_CHAPTERS, { method: 'GET' });
+    }>(API_ENDPOINTS.STORY_CHAPTERS, { method: "GET" });
   }
 
   /**
@@ -762,7 +778,7 @@ export class LTCGApiClient {
       rewardGold: number;
       rewardXp: number;
       firstClearBonus: number;
-      status: 'locked' | 'available' | 'completed' | 'starred';
+      status: "locked" | "available" | "completed" | "starred";
       starsEarned: number;
       bestScore?: number;
       timesCompleted: number;
@@ -780,21 +796,24 @@ export class LTCGApiClient {
         rewardGold: number;
         rewardXp: number;
         firstClearBonus: number;
-        status: 'locked' | 'available' | 'completed' | 'starred';
+        status: "locked" | "available" | "completed" | "starred";
         starsEarned: number;
         bestScore?: number;
         timesCompleted: number;
         firstClearClaimed: boolean;
       }>;
       count: number;
-    }>(`${API_ENDPOINTS.STORY_STAGES}?chapterId=${chapterId}`, { method: 'GET' });
+    }>(`${API_ENDPOINTS.STORY_STAGES}?chapterId=${chapterId}`, { method: "GET" });
   }
 
   /**
    * Start a specific story battle
    * POST /api/agents/story/start
    */
-  async startStoryBattle(chapterId: string, stageNumber?: number): Promise<{
+  async startStoryBattle(
+    chapterId: string,
+    stageNumber?: number
+  ): Promise<{
     gameId: string;
     lobbyId: string;
     stageId: string;
@@ -816,7 +835,7 @@ export class LTCGApiClient {
       rewards: { gold: number; xp: number; firstClearBonus: number };
       message: string;
     }>(API_ENDPOINTS.STORY_START, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ chapterId, stageNumber }),
     });
   }
@@ -825,7 +844,7 @@ export class LTCGApiClient {
    * Start a random story battle instantly (quick play)
    * POST /api/agents/story/quick-play
    */
-  async quickPlayStory(difficulty?: 'easy' | 'medium' | 'hard' | 'boss'): Promise<{
+  async quickPlayStory(difficulty?: "easy" | "medium" | "hard" | "boss"): Promise<{
     gameId: string;
     lobbyId: string;
     stageId: string;
@@ -847,7 +866,7 @@ export class LTCGApiClient {
       rewards: { gold: number; xp: number; firstClearBonus: number };
       message: string;
     }>(API_ENDPOINTS.STORY_QUICK_PLAY, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ difficulty }),
     });
   }
@@ -856,7 +875,11 @@ export class LTCGApiClient {
    * Complete a story stage and receive rewards
    * POST /api/agents/story/complete
    */
-  async completeStoryStage(stageId: string, won: boolean, finalLP: number): Promise<{
+  async completeStoryStage(
+    stageId: string,
+    won: boolean,
+    finalLP: number
+  ): Promise<{
     won: boolean;
     rewards: { gold: number; xp: number };
     starsEarned: number;
@@ -874,7 +897,7 @@ export class LTCGApiClient {
       levelUp?: { newLevel: number; oldLevel: number } | null;
       newBadges?: string[];
     }>(API_ENDPOINTS.STORY_COMPLETE, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ stageId, won, finalLP }),
     });
   }
@@ -893,7 +916,7 @@ export class LTCGApiClient {
       message: string;
       actionsTaken: number;
     }>(API_ENDPOINTS.STORY_AI_TURN, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ gameId }),
     });
   }
@@ -916,13 +939,10 @@ export class LTCGApiClient {
     executionTimeMs?: number;
     result?: string;
   }): Promise<{ success: boolean; decisionId: string }> {
-    return this.request<{ success: boolean; decisionId: string }>(
-      '/api/agents/decisions',
-      {
-        method: 'POST',
-        body: JSON.stringify(decision),
-      }
-    );
+    return this.request<{ success: boolean; decisionId: string }>("/api/agents/decisions", {
+      method: "POST",
+      body: JSON.stringify(decision),
+    });
   }
 
   /**
@@ -932,24 +952,8 @@ export class LTCGApiClient {
   async getDecisions(options?: {
     gameId?: string;
     limit?: number;
-  }): Promise<{ decisions: Array<{
-    _id: string;
-    agentId: string;
-    gameId: string;
-    turnNumber: number;
-    phase: string;
-    action: string;
-    reasoning: string;
-    parameters?: Record<string, unknown>;
-    executionTimeMs?: number;
-    result?: string;
-    createdAt: number;
-  }> }> {
-    const params = new URLSearchParams();
-    if (options?.gameId) params.set('gameId', options.gameId);
-    if (options?.limit) params.set('limit', options.limit.toString());
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return this.request<{ decisions: Array<{
+  }): Promise<{
+    decisions: Array<{
       _id: string;
       agentId: string;
       gameId: string;
@@ -961,7 +965,27 @@ export class LTCGApiClient {
       executionTimeMs?: number;
       result?: string;
       createdAt: number;
-    }> }>(`/api/agents/decisions${query}`, { method: 'GET' });
+    }>;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.gameId) params.set("gameId", options.gameId);
+    if (options?.limit) params.set("limit", options.limit.toString());
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return this.request<{
+      decisions: Array<{
+        _id: string;
+        agentId: string;
+        gameId: string;
+        turnNumber: number;
+        phase: string;
+        action: string;
+        reasoning: string;
+        parameters?: Record<string, unknown>;
+        executionTimeMs?: number;
+        result?: string;
+        createdAt: number;
+      }>;
+    }>(`/api/agents/decisions${query}`, { method: "GET" });
   }
 
   /**
@@ -983,6 +1007,6 @@ export class LTCGApiClient {
       successRate: number;
       successCount: number;
       failureCount: number;
-    }>('/api/agents/decisions/stats', { method: 'GET' });
+    }>("/api/agents/decisions/stats", { method: "GET" });
   }
 }

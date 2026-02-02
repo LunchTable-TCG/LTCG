@@ -5,8 +5,8 @@
  */
 
 import type { Doc } from "../_generated/dataModel";
-import type { ParsedAbility, JsonAbility } from "../gameplay/effectSystem/types";
-import { parseJsonAbility, isJsonAbility } from "../gameplay/effectSystem/jsonParser";
+import { isJsonAbility, parseJsonAbility } from "../gameplay/effectSystem/jsonParser";
+import type { JsonAbility, ParsedAbility } from "../gameplay/effectSystem/types";
 
 /**
  * Get the ability from a card definition.
@@ -24,7 +24,9 @@ import { parseJsonAbility, isJsonAbility } from "../gameplay/effectSystem/jsonPa
  * }
  * ```
  */
-export function getCardAbility(card: Doc<"cardDefinitions"> | null | undefined): ParsedAbility | null {
+export function getCardAbility(
+  card: Doc<"cardDefinitions"> | null | undefined
+): ParsedAbility | null {
   if (!card?.ability) {
     return null;
   }
@@ -63,7 +65,9 @@ export function hasAbility(card: Doc<"cardDefinitions"> | null | undefined): boo
  * @param card - The card definition document
  * @returns The raw JSON ability object or null
  */
-export function getRawJsonAbility(card: Doc<"cardDefinitions"> | null | undefined): JsonAbility | null {
+export function getRawJsonAbility(
+  card: Doc<"cardDefinitions"> | null | undefined
+): JsonAbility | null {
   if (!card) return null;
   return card.ability ?? null;
 }

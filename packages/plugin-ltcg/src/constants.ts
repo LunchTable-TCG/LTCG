@@ -17,13 +17,13 @@ export const LTCG_PRODUCTION_CONFIG = {
    * Production API URL
    * TODO: Update this to your deployed LTCG API URL before publishing
    */
-  API_URL: process.env.LTCG_PRODUCTION_API_URL || 'https://ltcg-production.vercel.app',
+  API_URL: process.env.LTCG_PRODUCTION_API_URL || "https://ltcg-production.vercel.app",
 
   /**
    * Production Convex deployment URL
    * TODO: Update this to your production Convex deployment URL before publishing
    */
-  CONVEX_URL: process.env.LTCG_PRODUCTION_CONVEX_URL || 'https://calm-pelican-123.convex.cloud',
+  CONVEX_URL: process.env.LTCG_PRODUCTION_CONVEX_URL || "https://calm-pelican-123.convex.cloud",
 } as const;
 
 /**
@@ -31,58 +31,58 @@ export const LTCG_PRODUCTION_CONFIG = {
  */
 export const API_ENDPOINTS = {
   // Agent management
-  REGISTER_AGENT: '/api/agents/register',
-  GET_AGENT_PROFILE: '/api/agents/me',
-  GET_RATE_LIMIT: '/api/agents/rate-limit',
-  GET_WALLET_INFO: '/api/agents/wallet',
+  REGISTER_AGENT: "/api/agents/register",
+  GET_AGENT_PROFILE: "/api/agents/me",
+  GET_RATE_LIMIT: "/api/agents/rate-limit",
+  GET_WALLET_INFO: "/api/agents/wallet",
 
   // Game state
-  GET_PENDING_TURNS: '/api/agents/pending-turns',
-  GET_GAME_STATE: '/api/agents/games/state',
-  GET_AVAILABLE_ACTIONS: '/api/agents/games/available-actions',
-  GET_GAME_HISTORY: '/api/agents/games/history',
+  GET_PENDING_TURNS: "/api/agents/pending-turns",
+  GET_GAME_STATE: "/api/agents/games/state",
+  GET_AVAILABLE_ACTIONS: "/api/agents/games/available-actions",
+  GET_GAME_HISTORY: "/api/agents/games/history",
 
   // Game actions
-  ACTION_SUMMON: '/api/agents/games/actions/summon',
-  ACTION_SET_CARD: '/api/agents/games/actions/set-card',
-  ACTION_SET_SPELL_TRAP: '/api/agents/games/actions/set-spell-trap',
-  ACTION_ACTIVATE_SPELL: '/api/agents/games/actions/activate-spell',
-  ACTION_ACTIVATE_TRAP: '/api/agents/games/actions/activate-trap',
-  ACTION_ATTACK: '/api/agents/games/actions/attack',
-  ACTION_CHANGE_POSITION: '/api/agents/games/actions/change-position',
-  ACTION_FLIP_SUMMON: '/api/agents/games/actions/flip-summon',
-  ACTION_CHAIN_RESPONSE: '/api/agents/games/actions/chain-response',
-  ACTION_END_TURN: '/api/agents/games/actions/end-turn',
-  ACTION_SURRENDER: '/api/agents/games/actions/surrender',
-  ACTION_ENTER_BATTLE: '/api/agents/games/actions/enter-battle',
-  ACTION_ENTER_MAIN2: '/api/agents/games/actions/enter-main2',
+  ACTION_SUMMON: "/api/agents/games/actions/summon",
+  ACTION_SET_CARD: "/api/agents/games/actions/set-card",
+  ACTION_SET_SPELL_TRAP: "/api/agents/games/actions/set-spell-trap",
+  ACTION_ACTIVATE_SPELL: "/api/agents/games/actions/activate-spell",
+  ACTION_ACTIVATE_TRAP: "/api/agents/games/actions/activate-trap",
+  ACTION_ATTACK: "/api/agents/games/actions/attack",
+  ACTION_CHANGE_POSITION: "/api/agents/games/actions/change-position",
+  ACTION_FLIP_SUMMON: "/api/agents/games/actions/flip-summon",
+  ACTION_CHAIN_RESPONSE: "/api/agents/games/actions/chain-response",
+  ACTION_END_TURN: "/api/agents/games/actions/end-turn",
+  ACTION_SURRENDER: "/api/agents/games/actions/surrender",
+  ACTION_ENTER_BATTLE: "/api/agents/games/actions/enter-battle",
+  ACTION_ENTER_MAIN2: "/api/agents/games/actions/enter-main2",
 
   // Matchmaking
-  MATCHMAKING_ENTER: '/api/agents/matchmaking/enter',
-  MATCHMAKING_LOBBIES: '/api/agents/matchmaking/lobbies',
-  MATCHMAKING_JOIN: '/api/agents/matchmaking/join',
-  MATCHMAKING_LEAVE: '/api/agents/matchmaking/leave',
+  MATCHMAKING_ENTER: "/api/agents/matchmaking/enter",
+  MATCHMAKING_LOBBIES: "/api/agents/matchmaking/lobbies",
+  MATCHMAKING_JOIN: "/api/agents/matchmaking/join",
+  MATCHMAKING_LEAVE: "/api/agents/matchmaking/leave",
 
   // Story Mode (Instant AI Battles)
-  STORY_CHAPTERS: '/api/agents/story/chapters',
-  STORY_STAGES: '/api/agents/story/stages',
-  STORY_START: '/api/agents/story/start',
-  STORY_QUICK_PLAY: '/api/agents/story/quick-play',
-  STORY_COMPLETE: '/api/agents/story/complete',
-  STORY_AI_TURN: '/api/agents/story/ai-turn',
+  STORY_CHAPTERS: "/api/agents/story/chapters",
+  STORY_STAGES: "/api/agents/story/stages",
+  STORY_START: "/api/agents/story/start",
+  STORY_QUICK_PLAY: "/api/agents/story/quick-play",
+  STORY_COMPLETE: "/api/agents/story/complete",
+  STORY_AI_TURN: "/api/agents/story/ai-turn",
 
   // Decks & Cards
-  GET_DECKS: '/api/agents/decks',
-  GET_DECK: '/api/agents/decks/:id',
-  GET_STARTER_DECKS: '/api/agents/starter-decks',
-  CREATE_DECK: '/api/agents/decks/create',
-  GET_CARDS: '/api/agents/cards',
-  GET_CARD: '/api/agents/cards/:id',
+  GET_DECKS: "/api/agents/decks",
+  GET_DECK: "/api/agents/decks/:id",
+  GET_STARTER_DECKS: "/api/agents/starter-decks",
+  CREATE_DECK: "/api/agents/decks/create",
+  GET_CARDS: "/api/agents/cards",
+  GET_CARD: "/api/agents/cards/:id",
 
   // Global Chat
-  CHAT_SEND: '/api/agents/chat/send',
-  CHAT_MESSAGES: '/api/agents/chat/messages',
-  CHAT_ONLINE_USERS: '/api/agents/chat/online-users',
+  CHAT_SEND: "/api/agents/chat/send",
+  CHAT_MESSAGES: "/api/agents/chat/messages",
+  CHAT_ONLINE_USERS: "/api/agents/chat/online-users",
 } as const;
 
 /**
@@ -130,27 +130,27 @@ export const TRIBUTE_REQUIREMENTS = {
  * Game phases
  */
 export const GAME_PHASES = {
-  DRAW: 'draw',
-  STANDBY: 'standby',
-  MAIN1: 'main1',
-  BATTLE: 'battle',
-  MAIN2: 'main2',
-  END: 'end',
+  DRAW: "draw",
+  STANDBY: "standby",
+  MAIN1: "main1",
+  BATTLE: "battle",
+  MAIN2: "main2",
+  END: "end",
 } as const;
 
 /**
  * Action validation messages
  */
 export const VALIDATION_MESSAGES = {
-  NOT_YOUR_TURN: 'It is not your turn',
-  WRONG_PHASE: 'This action cannot be performed in the current phase',
-  ALREADY_SUMMONED: 'You have already summoned this turn',
-  INSUFFICIENT_TRIBUTES: 'Not enough monsters to tribute',
-  NO_MONSTERS: 'No monsters available',
-  CANNOT_ATTACK: 'This monster cannot attack',
-  INVALID_TARGET: 'Invalid target selected',
-  HAND_EMPTY: 'Your hand is empty',
-  BOARD_FULL: 'Your board is full',
+  NOT_YOUR_TURN: "It is not your turn",
+  WRONG_PHASE: "This action cannot be performed in the current phase",
+  ALREADY_SUMMONED: "You have already summoned this turn",
+  INSUFFICIENT_TRIBUTES: "Not enough monsters to tribute",
+  NO_MONSTERS: "No monsters available",
+  CANNOT_ATTACK: "This monster cannot attack",
+  INVALID_TARGET: "Invalid target selected",
+  HAND_EMPTY: "Your hand is empty",
+  BOARD_FULL: "Your board is full",
 } as const;
 
 /**
@@ -198,23 +198,23 @@ export const PERSONALITY_TRAITS = {
  * Error codes from API
  */
 export const ERROR_CODES = {
-  UNAUTHORIZED: 'UNAUTHORIZED',
-  INVALID_API_KEY: 'INVALID_API_KEY',
-  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
-  GAME_NOT_FOUND: 'GAME_NOT_FOUND',
-  NOT_YOUR_TURN: 'NOT_YOUR_TURN',
-  INVALID_PHASE: 'INVALID_PHASE',
-  INVALID_MOVE: 'INVALID_MOVE',
-  ALREADY_SUMMONED: 'ALREADY_SUMMONED',
-  INSUFFICIENT_TRIBUTES: 'INSUFFICIENT_TRIBUTES',
-  CARD_NOT_FOUND: 'CARD_NOT_FOUND',
-  INVALID_TARGET: 'INVALID_TARGET',
-  LOBBY_NOT_FOUND: 'LOBBY_NOT_FOUND',
-  LOBBY_FULL: 'LOBBY_FULL',
-  INVALID_DECK: 'INVALID_DECK',
-  VALIDATION_ERROR: 'VALIDATION_ERROR',
-  INTERNAL_ERROR: 'INTERNAL_ERROR',
-  NETWORK_ERROR: 'NETWORK_ERROR',
+  UNAUTHORIZED: "UNAUTHORIZED",
+  INVALID_API_KEY: "INVALID_API_KEY",
+  RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
+  GAME_NOT_FOUND: "GAME_NOT_FOUND",
+  NOT_YOUR_TURN: "NOT_YOUR_TURN",
+  INVALID_PHASE: "INVALID_PHASE",
+  INVALID_MOVE: "INVALID_MOVE",
+  ALREADY_SUMMONED: "ALREADY_SUMMONED",
+  INSUFFICIENT_TRIBUTES: "INSUFFICIENT_TRIBUTES",
+  CARD_NOT_FOUND: "CARD_NOT_FOUND",
+  INVALID_TARGET: "INVALID_TARGET",
+  LOBBY_NOT_FOUND: "LOBBY_NOT_FOUND",
+  LOBBY_FULL: "LOBBY_FULL",
+  INVALID_DECK: "INVALID_DECK",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+  NETWORK_ERROR: "NETWORK_ERROR",
 } as const;
 
 /**

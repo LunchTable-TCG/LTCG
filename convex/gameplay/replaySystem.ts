@@ -27,8 +27,8 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { mutation } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import { requireAuthMutation } from "../lib/convexAuth";
-import { ErrorCode, createError } from "../lib/errorCodes";
 import { logger } from "../lib/debug";
+import { ErrorCode, createError } from "../lib/errorCodes";
 import { recordEventHelper } from "./gameEvents";
 
 // ============================================================================
@@ -268,22 +268,16 @@ async function triggerReplay(
 /**
  * Check if there's a pending replay for a player
  */
-export function hasPendingReplay(
-  gameState: Doc<"gameStates">,
-  playerId: Id<"users">
-): boolean {
+export function hasPendingReplay(gameState: Doc<"gameStates">, playerId: Id<"users">): boolean {
   return (
-    gameState.pendingReplay !== undefined &&
-    gameState.pendingReplay.attackerOwnerId === playerId
+    gameState.pendingReplay !== undefined && gameState.pendingReplay.attackerOwnerId === playerId
   );
 }
 
 /**
  * Get pending replay state
  */
-export function getPendingReplay(
-  gameState: Doc<"gameStates">
-): ReplayState | null {
+export function getPendingReplay(gameState: Doc<"gameStates">): ReplayState | null {
   return gameState.pendingReplay || null;
 }
 

@@ -10,35 +10,30 @@
  * This enables fully autonomous gameplay without human intervention.
  */
 
-import {
-  Service,
-  type IAgentRuntime,
-  logger,
-  ModelType,
-} from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
+import { type IAgentRuntime, ModelType, Service, logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import type { Decision } from "../frontend/types/panel";
 import type {
-  GameStateResponse,
   AvailableActionsResponse,
   CardInHand,
+  GameStateResponse,
   MonsterCard,
   SpellTrapCard,
-} from '../types/api';
-import type { Decision } from '../frontend/types/panel';
-import { SERVICE_TYPES } from './types';
+} from "../types/api";
+import { SERVICE_TYPES } from "./types";
 
 // Action types the orchestrator can choose
 export type OrchestratorAction =
-  | 'SUMMON_MONSTER'
-  | 'SET_CARD'
-  | 'ACTIVATE_SPELL'
-  | 'ACTIVATE_TRAP'
-  | 'ATTACK'
-  | 'CHANGE_POSITION'
-  | 'FLIP_SUMMON'
-  | 'END_TURN'
-  | 'CHAIN_RESPONSE'
-  | 'PASS_CHAIN';
+  | "SUMMON_MONSTER"
+  | "SET_CARD"
+  | "ACTIVATE_SPELL"
+  | "ACTIVATE_TRAP"
+  | "ATTACK"
+  | "CHANGE_POSITION"
+  | "FLIP_SUMMON"
+  | "END_TURN"
+  | "CHAIN_RESPONSE"
+  | "PASS_CHAIN";
 
 interface ActionDecision {
   action: OrchestratorAction;
@@ -70,7 +65,7 @@ export class TurnOrchestrator extends Service {
   private decisionHistory: Map<string, Decision[]> = new Map();
   private readonly maxHistoryPerGame = 100;
 
-  capabilityDescription = 'Orchestrates autonomous turn-by-turn gameplay decisions';
+  capabilityDescription = "Orchestrates autonomous turn-by-turn gameplay decisions";
 
   constructor(runtime: IAgentRuntime) {
     super(runtime);
@@ -78,30 +73,30 @@ export class TurnOrchestrator extends Service {
   }
 
   static async start(runtime: IAgentRuntime): Promise<TurnOrchestrator> {
-    logger.info('*** Starting LTCG Turn Orchestrator ***');
+    logger.info("*** Starting LTCG Turn Orchestrator ***");
 
     const service = new TurnOrchestrator(runtime);
 
     // Initialize API client
-    const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-    const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+    const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+    const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
     if (apiKey && apiUrl) {
       service.client = new LTCGApiClient({
         apiKey,
         baseUrl: apiUrl,
-        debug: runtime.getSetting('LTCG_DEBUG_MODE') === 'true',
+        debug: runtime.getSetting("LTCG_DEBUG_MODE") === "true",
       });
-      logger.info('Turn orchestrator initialized with API client');
+      logger.info("Turn orchestrator initialized with API client");
     } else {
-      logger.warn('API credentials not configured - orchestrator cannot execute actions');
+      logger.warn("API credentials not configured - orchestrator cannot execute actions");
     }
 
     return service;
   }
 
   static async stop(runtime: IAgentRuntime): Promise<void> {
-    logger.info('*** Stopping LTCG Turn Orchestrator ***');
+    logger.info("*** Stopping LTCG Turn Orchestrator ***");
     const service = runtime.getService(TurnOrchestrator.serviceType) as TurnOrchestrator;
     if (service) {
       service.isExecutingTurn = false;
@@ -122,24 +117,24 @@ export class TurnOrchestrator extends Service {
    */
   async onTurnStarted(gameId: string, phase: string, turnNumber: number): Promise<void> {
     if (this.isExecutingTurn) {
-      logger.debug('Already executing a turn, skipping');
+      logger.debug("Already executing a turn, skipping");
       return;
     }
 
     if (!this.client) {
-      logger.error('Cannot execute turn - API client not initialized');
+      logger.error("Cannot execute turn - API client not initialized");
       return;
     }
 
     this.currentGameId = gameId;
     this.isExecutingTurn = true;
 
-    logger.info({ gameId, phase, turnNumber }, '🎮 Starting autonomous turn execution');
+    logger.info({ gameId, phase, turnNumber }, "🎮 Starting autonomous turn execution");
 
     try {
       await this.executeTurn(gameId);
     } catch (error) {
-      logger.error({ error, gameId }, 'Error during autonomous turn execution');
+      logger.error({ error, gameId }, "Error during autonomous turn execution");
     } finally {
       this.isExecutingTurn = false;
     }
@@ -150,23 +145,23 @@ export class TurnOrchestrator extends Service {
    */
   async onChainWaiting(gameId: string, timeoutMs: number): Promise<void> {
     if (!this.client) {
-      logger.error('Cannot respond to chain - API client not initialized');
+      logger.error("Cannot respond to chain - API client not initialized");
       return;
     }
 
-    logger.info({ gameId, timeoutMs }, '⛓️ Chain waiting - deciding response');
+    logger.info({ gameId, timeoutMs }, "⛓️ Chain waiting - deciding response");
 
     try {
       await this.executeChainResponse(gameId, timeoutMs);
     } catch (error) {
-      logger.error({ error, gameId }, 'Error during chain response');
+      logger.error({ error, gameId }, "Error during chain response");
     }
   }
 
   /**
    * Get decision history for a game (for panel display)
    */
-  public getDecisionHistory(gameId: string, limit: number = 20): Decision[] {
+  public getDecisionHistory(gameId: string, limit = 20): Decision[] {
     const history = this.decisionHistory.get(gameId) ?? [];
     return history.slice(-limit);
   }
@@ -188,19 +183,19 @@ export class TurnOrchestrator extends Service {
       const context = await this.gatherTurnContext(gameId);
 
       if (!context) {
-        logger.error('Failed to gather turn context');
+        logger.error("Failed to gather turn context");
         break;
       }
 
       // Check if it's still our turn
-      if (context.gameState.currentTurn !== 'host') {
-        logger.info('No longer our turn, ending turn execution');
+      if (context.gameState.currentTurn !== "host") {
+        logger.info("No longer our turn, ending turn execution");
         break;
       }
 
       // Check if game ended
-      if (context.gameState.status === 'completed') {
-        logger.info('Game completed during turn');
+      if (context.gameState.status === "completed") {
+        logger.info("Game completed during turn");
         break;
       }
 
@@ -208,7 +203,7 @@ export class TurnOrchestrator extends Service {
       const decision = await this.decideAction(context);
 
       if (!decision) {
-        logger.error('LLM failed to decide action, ending turn');
+        logger.error("LLM failed to decide action, ending turn");
         await this.executeEndTurn(gameId);
         break;
       }
@@ -219,7 +214,7 @@ export class TurnOrchestrator extends Service {
       );
 
       // Execute the chosen action
-      if (decision.action === 'END_TURN') {
+      if (decision.action === "END_TURN") {
         await this.executeEndTurn(gameId);
         break;
       }
@@ -227,7 +222,7 @@ export class TurnOrchestrator extends Service {
       const success = await this.executeAction(gameId, decision, context);
 
       if (!success) {
-        logger.warn({ action: decision.action }, 'Action failed, will try again');
+        logger.warn({ action: decision.action }, "Action failed, will try again");
         // Don't break - let the LLM try a different action
       }
 
@@ -236,11 +231,11 @@ export class TurnOrchestrator extends Service {
     }
 
     if (actionCount >= this.maxActionsPerTurn) {
-      logger.warn('Hit max actions per turn limit, forcing end turn');
+      logger.warn("Hit max actions per turn limit, forcing end turn");
       await this.executeEndTurn(gameId);
     }
 
-    logger.info({ gameId, actionCount }, '✅ Turn execution complete');
+    logger.info({ gameId, actionCount }, "✅ Turn execution complete");
   }
 
   // ============================================================================
@@ -279,7 +274,7 @@ export class TurnOrchestrator extends Service {
         },
       };
     } catch (error) {
-      logger.error({ error, gameId }, 'Failed to gather turn context');
+      logger.error({ error, gameId }, "Failed to gather turn context");
       return null;
     }
   }
@@ -289,21 +284,21 @@ export class TurnOrchestrator extends Service {
    */
   private formatHand(state: GameStateResponse): string {
     const hand = state.hand ?? [];
-    if (hand.length === 0) return 'Your hand is empty.';
+    if (hand.length === 0) return "Your hand is empty.";
 
     const cards = hand.map((card: CardInHand, idx: number) => {
       const cardType = card.type;
-      if (cardType === 'creature') {
-        return `${idx}. ${card.name} (Monster, ATK:${card.atk ?? '?'}/DEF:${card.def ?? '?'}, Level:${card.level ?? '?'}) [handIndex: ${card.handIndex}]`;
-      } else if (cardType === 'spell') {
+      if (cardType === "creature") {
+        return `${idx}. ${card.name} (Monster, ATK:${card.atk ?? "?"}/DEF:${card.def ?? "?"}, Level:${card.level ?? "?"}) [handIndex: ${card.handIndex}]`;
+      } else if (cardType === "spell") {
         return `${idx}. ${card.name} (Spell) [handIndex: ${card.handIndex}]`;
-      } else if (cardType === 'trap') {
+      } else if (cardType === "trap") {
         return `${idx}. ${card.name} (Trap) [handIndex: ${card.handIndex}]`;
       }
       return `${idx}. ${card.name} (${cardType}) [handIndex: ${card.handIndex}]`;
     });
 
-    return `Your hand (${hand.length} cards):\n${cards.join('\n')}`;
+    return `Your hand (${hand.length} cards):\n${cards.join("\n")}`;
   }
 
   /**
@@ -316,23 +311,26 @@ export class TurnOrchestrator extends Service {
     const agentMonsters = state.hostPlayer?.monsterZone ?? [];
     const agentSpellTraps = state.hostPlayer?.spellTrapZone ?? [];
 
-    lines.push('=== YOUR FIELD ===');
+    lines.push("=== YOUR FIELD ===");
     if (agentMonsters.length === 0) {
-      lines.push('Monster Zones: Empty');
+      lines.push("Monster Zones: Empty");
     } else {
-      lines.push('Monsters:');
+      lines.push("Monsters:");
       agentMonsters.forEach((m: MonsterCard, i: number) => {
-        const pos = m.position === 'attack' ? 'ATK' : m.position === 'defense' ? 'DEF' : 'Face-down DEF';
-        const faceDown = m.position === 'facedown' ? ' (Face-down)' : '';
-        lines.push(`  ${i}. ${m.name ?? 'Unknown'} - ${pos} ${m.atk ?? '?'}/${m.def ?? '?'}${faceDown} [boardIndex: ${m.boardIndex}]`);
+        const pos =
+          m.position === "attack" ? "ATK" : m.position === "defense" ? "DEF" : "Face-down DEF";
+        const faceDown = m.position === "facedown" ? " (Face-down)" : "";
+        lines.push(
+          `  ${i}. ${m.name ?? "Unknown"} - ${pos} ${m.atk ?? "?"}/${m.def ?? "?"}${faceDown} [boardIndex: ${m.boardIndex}]`
+        );
       });
     }
 
     if (agentSpellTraps.length > 0) {
-      lines.push('Spell/Trap:');
+      lines.push("Spell/Trap:");
       agentSpellTraps.forEach((st: SpellTrapCard, i: number) => {
-        const faceStatus = st.faceUp ? '(Active)' : '(Set)';
-        lines.push(`  ${i}. ${st.name ?? 'Unknown'} ${faceStatus} [boardIndex: ${st.boardIndex}]`);
+        const faceStatus = st.faceUp ? "(Active)" : "(Set)";
+        lines.push(`  ${i}. ${st.name ?? "Unknown"} ${faceStatus} [boardIndex: ${st.boardIndex}]`);
       });
     }
 
@@ -340,17 +338,19 @@ export class TurnOrchestrator extends Service {
     const oppMonsters = state.opponentPlayer?.monsterZone ?? [];
     const oppSpellTraps = state.opponentPlayer?.spellTrapZone ?? [];
 
-    lines.push('\n=== OPPONENT FIELD ===');
+    lines.push("\n=== OPPONENT FIELD ===");
     if (oppMonsters.length === 0) {
-      lines.push('Monster Zones: Empty');
+      lines.push("Monster Zones: Empty");
     } else {
-      lines.push('Monsters:');
+      lines.push("Monsters:");
       oppMonsters.forEach((m: MonsterCard, i: number) => {
-        if (m.position === 'facedown' || !m.faceUp) {
+        if (m.position === "facedown" || !m.faceUp) {
           lines.push(`  ${i}. Face-down Defense Position [boardIndex: ${m.boardIndex}]`);
         } else {
-          const pos = m.position === 'attack' ? 'ATK' : 'DEF';
-          lines.push(`  ${i}. ${m.name ?? 'Unknown'} - ${pos} ${m.atk ?? '?'}/${m.def ?? '?'} [boardIndex: ${m.boardIndex}]`);
+          const pos = m.position === "attack" ? "ATK" : "DEF";
+          lines.push(
+            `  ${i}. ${m.name ?? "Unknown"} - ${pos} ${m.atk ?? "?"}/${m.def ?? "?"} [boardIndex: ${m.boardIndex}]`
+          );
         }
       });
     }
@@ -359,7 +359,7 @@ export class TurnOrchestrator extends Service {
       lines.push(`Spell/Trap: ${oppSpellTraps.length} card(s) set`);
     }
 
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   /**
@@ -384,19 +384,22 @@ export class TurnOrchestrator extends Service {
 
     // Board presence
     const agentAttackMonsters = agentMonsters.filter(
-      (m: MonsterCard) => m.position === 'attack' && m.faceUp !== false
+      (m: MonsterCard) => m.position === "attack" && m.faceUp !== false
     );
-    const totalAttack = agentAttackMonsters.reduce((sum: number, m: MonsterCard) => sum + (m.atk ?? 0), 0);
+    const totalAttack = agentAttackMonsters.reduce(
+      (sum: number, m: MonsterCard) => sum + (m.atk ?? 0),
+      0
+    );
 
     if (totalAttack >= oppLP && oppMonsters.length === 0) {
-      lines.push('🎯 LETHAL: Can attack directly for game!');
+      lines.push("🎯 LETHAL: Can attack directly for game!");
     } else if (totalAttack >= oppLP) {
-      lines.push('🎯 Potential lethal if opponent monsters cleared');
+      lines.push("🎯 Potential lethal if opponent monsters cleared");
     }
 
     // Threat assessment
     const oppAttackMonsters = oppMonsters.filter(
-      (m: MonsterCard) => m.position === 'attack' && m.faceUp !== false
+      (m: MonsterCard) => m.position === "attack" && m.faceUp !== false
     );
     if (oppAttackMonsters.length > 0) {
       const maxOppAtk = Math.max(...oppAttackMonsters.map((m: MonsterCard) => m.atk ?? 0));
@@ -408,7 +411,7 @@ export class TurnOrchestrator extends Service {
     const oppDeckCount = state.opponentPlayer?.deckCount ?? 0;
     lines.push(`📝 Hand: ${handSize} cards, Opponent deck: ${oppDeckCount} cards`);
 
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   // ============================================================================
@@ -430,7 +433,7 @@ export class TurnOrchestrator extends Service {
 
       return this.parseActionDecision(response);
     } catch (error) {
-      logger.error({ error }, 'Failed to get LLM decision');
+      logger.error({ error }, "Failed to get LLM decision");
       return null;
     }
   }
@@ -495,29 +498,34 @@ Choose wisely!`;
     const hasNormalSummoned = gameState.hasNormalSummoned;
     const phase = gameState.phase;
 
-    if (!hasNormalSummoned && (phase === 'main1' || phase === 'main2')) {
-      lines.push('• SUMMON_MONSTER - Normal summon a monster from your hand (use handIndex)');
+    if (!hasNormalSummoned && (phase === "main1" || phase === "main2")) {
+      lines.push("• SUMMON_MONSTER - Normal summon a monster from your hand (use handIndex)");
     }
 
-    if (phase === 'main1' || phase === 'main2') {
-      lines.push('• SET_CARD - Set a monster, spell, or trap face-down (use handIndex)');
-      lines.push('• ACTIVATE_SPELL - Activate a spell card (use handIndex or boardIndex)');
-      lines.push('• FLIP_SUMMON - Flip summon a face-down defense monster (use boardIndex)');
-      lines.push('• CHANGE_POSITION - Change a monster from ATK to DEF or vice versa (use boardIndex)');
+    if (phase === "main1" || phase === "main2") {
+      lines.push("• SET_CARD - Set a monster, spell, or trap face-down (use handIndex)");
+      lines.push("• ACTIVATE_SPELL - Activate a spell card (use handIndex or boardIndex)");
+      lines.push("• FLIP_SUMMON - Flip summon a face-down defense monster (use boardIndex)");
+      lines.push(
+        "• CHANGE_POSITION - Change a monster from ATK to DEF or vice versa (use boardIndex)"
+      );
     }
 
-    if (phase === 'battle') {
-      const attackers = gameState.hostPlayer?.monsterZone?.filter(
-        (m: MonsterCard) => m.position === 'attack' && m.canAttack
-      ) ?? [];
+    if (phase === "battle") {
+      const attackers =
+        gameState.hostPlayer?.monsterZone?.filter(
+          (m: MonsterCard) => m.position === "attack" && m.canAttack
+        ) ?? [];
       if (attackers.length > 0) {
-        lines.push(`• ATTACK - Attack with your monsters (${attackers.length} can attack, use attackerBoardIndex)`);
+        lines.push(
+          `• ATTACK - Attack with your monsters (${attackers.length} can attack, use attackerBoardIndex)`
+        );
       }
     }
 
-    lines.push('• END_TURN - End your turn and pass to opponent');
+    lines.push("• END_TURN - End your turn and pass to opponent");
 
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   /**
@@ -528,39 +536,42 @@ Choose wisely!`;
       // Try to extract JSON from response
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        logger.warn('No JSON found in LLM response');
-        return { action: 'END_TURN', reasoning: 'Failed to parse response' };
+        logger.warn("No JSON found in LLM response");
+        return { action: "END_TURN", reasoning: "Failed to parse response" };
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
 
       const validActions: OrchestratorAction[] = [
-        'SUMMON_MONSTER',
-        'SET_CARD',
-        'ACTIVATE_SPELL',
-        'ACTIVATE_TRAP',
-        'ATTACK',
-        'CHANGE_POSITION',
-        'FLIP_SUMMON',
-        'END_TURN',
-        'CHAIN_RESPONSE',
-        'PASS_CHAIN',
+        "SUMMON_MONSTER",
+        "SET_CARD",
+        "ACTIVATE_SPELL",
+        "ACTIVATE_TRAP",
+        "ATTACK",
+        "CHANGE_POSITION",
+        "FLIP_SUMMON",
+        "END_TURN",
+        "CHAIN_RESPONSE",
+        "PASS_CHAIN",
       ];
 
       const action = parsed.action?.toUpperCase() as OrchestratorAction;
       if (!validActions.includes(action)) {
-        logger.warn({ action }, 'Invalid action from LLM');
-        return { action: 'END_TURN', reasoning: 'Invalid action chosen' };
+        logger.warn({ action }, "Invalid action from LLM");
+        return { action: "END_TURN", reasoning: "Invalid action chosen" };
       }
 
       return {
         action,
-        reasoning: parsed.reasoning ?? 'No reasoning provided',
+        reasoning: parsed.reasoning ?? "No reasoning provided",
         parameters: parsed.parameters,
       };
     } catch (error) {
-      logger.error({ error, response: response.substring(0, 200) }, 'Failed to parse action decision');
-      return { action: 'END_TURN', reasoning: 'Failed to parse response' };
+      logger.error(
+        { error, response: response.substring(0, 200) },
+        "Failed to parse action decision"
+      );
+      return { action: "END_TURN", reasoning: "Failed to parse response" };
     }
   }
 
@@ -583,42 +594,42 @@ Choose wisely!`;
 
     try {
       switch (decision.action) {
-        case 'SUMMON_MONSTER':
+        case "SUMMON_MONSTER":
           success = await this.executeSummon(gameId, decision, context);
           break;
 
-        case 'SET_CARD':
+        case "SET_CARD":
           success = await this.executeSetCard(gameId, decision, context);
           break;
 
-        case 'ACTIVATE_SPELL':
+        case "ACTIVATE_SPELL":
           success = await this.executeActivateSpell(gameId, decision, context);
           break;
 
-        case 'ATTACK':
+        case "ATTACK":
           success = await this.executeAttack(gameId, decision, context);
           break;
 
-        case 'CHANGE_POSITION':
+        case "CHANGE_POSITION":
           success = await this.executeChangePosition(gameId, decision, context);
           break;
 
-        case 'FLIP_SUMMON':
+        case "FLIP_SUMMON":
           success = await this.executeFlipSummon(gameId, decision, context);
           break;
 
-        case 'END_TURN':
+        case "END_TURN":
           success = await this.executeEndTurn(gameId);
           break;
 
         default:
-          logger.warn({ action: decision.action }, 'Unhandled action type');
+          logger.warn({ action: decision.action }, "Unhandled action type");
           success = false;
       }
 
       return success;
     } catch (error) {
-      logger.error({ error, action: decision.action }, 'Action execution failed');
+      logger.error({ error, action: decision.action }, "Action execution failed");
       return false;
     } finally {
       // Record decision for panel display
@@ -639,7 +650,7 @@ Choose wisely!`;
     endTime: number
   ): void {
     const executionTimeMs = endTime - startTime;
-    const result = success ? 'success' : 'failed';
+    const result = success ? "success" : "failed";
 
     const decisionRecord: Decision = {
       id: `${gameId}-${Date.now()}`,
@@ -677,12 +688,12 @@ Choose wisely!`;
       executionTimeMs,
       result,
     }).catch((error) => {
-      logger.warn({ error }, 'Failed to persist decision to Convex');
+      logger.warn({ error }, "Failed to persist decision to Convex");
     });
 
     logger.debug(
       { action: decision.action, success, executionTime: executionTimeMs },
-      'Recorded decision'
+      "Recorded decision"
     );
   }
 
@@ -708,7 +719,7 @@ Choose wisely!`;
       await this.client.saveDecision(decision);
     } catch (error) {
       // Log but don't throw - persistence is best-effort
-      logger.debug({ error }, 'Decision persistence failed (non-critical)');
+      logger.debug({ error }, "Decision persistence failed (non-critical)");
     }
   }
 
@@ -721,10 +732,10 @@ Choose wisely!`;
     context: TurnContext
   ): Promise<boolean> {
     const hand = context.gameState.hand ?? [];
-    const monsters = hand.filter((c: CardInHand) => c.type === 'creature');
+    const monsters = hand.filter((c: CardInHand) => c.type === "creature");
 
     if (monsters.length === 0) {
-      logger.info('No monsters in hand to summon');
+      logger.info("No monsters in hand to summon");
       return false;
     }
 
@@ -734,7 +745,7 @@ Choose wisely!`;
       handIndex = monsters[0].handIndex ?? 0;
     }
 
-    const position = (decision.parameters?.position as 'attack' | 'defense') ?? 'attack';
+    const position = (decision.parameters?.position as "attack" | "defense") ?? "attack";
 
     try {
       await this.client!.summon({
@@ -744,10 +755,10 @@ Choose wisely!`;
       });
 
       const card = hand.find((c: CardInHand) => c.handIndex === handIndex);
-      logger.info({ cardName: card?.name, position }, 'Summoned monster');
+      logger.info({ cardName: card?.name, position }, "Summoned monster");
       return true;
     } catch (error) {
-      logger.error({ error }, 'Failed to execute summon');
+      logger.error({ error }, "Failed to execute summon");
       return false;
     }
   }
@@ -767,13 +778,13 @@ Choose wisely!`;
     let handIndex = decision.parameters?.handIndex as number | undefined;
     if (handIndex === undefined) {
       // Prefer setting spells/traps over monsters
-      const spellTraps = hand.filter((c: CardInHand) => c.type !== 'creature');
+      const spellTraps = hand.filter((c: CardInHand) => c.type !== "creature");
       const toSet = spellTraps[0] ?? hand[0];
       handIndex = toSet.handIndex;
     }
 
     const card = hand.find((c: CardInHand) => c.handIndex === handIndex);
-    const zone = card?.type === 'creature' ? 'monster' : 'spellTrap';
+    const zone = card?.type === "creature" ? "monster" : "spellTrap";
 
     try {
       await this.client!.setCard({
@@ -782,10 +793,10 @@ Choose wisely!`;
         zone,
       });
 
-      logger.info({ cardName: card?.name }, 'Set card');
+      logger.info({ cardName: card?.name }, "Set card");
       return true;
     } catch (error) {
-      logger.error({ error }, 'Failed to set card');
+      logger.error({ error }, "Failed to set card");
       return false;
     }
   }
@@ -799,7 +810,7 @@ Choose wisely!`;
     context: TurnContext
   ): Promise<boolean> {
     const hand = context.gameState.hand ?? [];
-    const spells = hand.filter((c: CardInHand) => c.type === 'spell');
+    const spells = hand.filter((c: CardInHand) => c.type === "spell");
 
     // Check if activating from hand or board
     const boardIndex = decision.parameters?.boardIndex as number | undefined;
@@ -809,10 +820,10 @@ Choose wisely!`;
           gameId,
           boardIndex,
         });
-        logger.info({ boardIndex }, 'Activated spell from board');
+        logger.info({ boardIndex }, "Activated spell from board");
         return true;
       } catch (error) {
-        logger.error({ error }, 'Failed to activate spell from board');
+        logger.error({ error }, "Failed to activate spell from board");
         return false;
       }
     }
@@ -831,10 +842,10 @@ Choose wisely!`;
       });
 
       const spell = hand.find((c: CardInHand) => c.handIndex === handIndex);
-      logger.info({ cardName: spell?.name }, 'Activated spell');
+      logger.info({ cardName: spell?.name }, "Activated spell");
       return true;
     } catch (error) {
-      logger.error({ error }, 'Failed to activate spell');
+      logger.error({ error }, "Failed to activate spell");
       return false;
     }
   }
@@ -850,7 +861,7 @@ Choose wisely!`;
     const myMonsters = context.gameState.hostPlayer?.monsterZone ?? [];
     const oppMonsters = context.gameState.opponentPlayer?.monsterZone ?? [];
 
-    const attackers = myMonsters.filter((m: MonsterCard) => m.position === 'attack' && m.canAttack);
+    const attackers = myMonsters.filter((m: MonsterCard) => m.position === "attack" && m.canAttack);
 
     if (attackers.length === 0) return false;
 
@@ -867,11 +878,13 @@ Choose wisely!`;
 
     if (targetBoardIndex === undefined && oppMonsters.length > 0) {
       // Attack the weakest face-up opponent monster
-      const faceUpOpp = oppMonsters.filter((m: MonsterCard) => m.faceUp !== false && m.position !== 'facedown');
+      const faceUpOpp = oppMonsters.filter(
+        (m: MonsterCard) => m.faceUp !== false && m.position !== "facedown"
+      );
       if (faceUpOpp.length > 0) {
         const weakest = faceUpOpp.reduce((min: MonsterCard, m: MonsterCard) =>
-          (m.position === 'attack' ? (m.atk ?? 0) : (m.def ?? 0)) <
-          (min.position === 'attack' ? (min.atk ?? 0) : (min.def ?? 0))
+          (m.position === "attack" ? (m.atk ?? 0) : (m.def ?? 0)) <
+          (min.position === "attack" ? (min.atk ?? 0) : (min.def ?? 0))
             ? m
             : min
         );
@@ -887,12 +900,12 @@ Choose wisely!`;
       });
 
       logger.info(
-        { attacker: attacker?.name, target: targetBoardIndex !== undefined ? 'monster' : 'direct' },
-        'Executed attack'
+        { attacker: attacker?.name, target: targetBoardIndex !== undefined ? "monster" : "direct" },
+        "Executed attack"
       );
       return true;
     } catch (error) {
-      logger.error({ error }, 'Failed to execute attack');
+      logger.error({ error }, "Failed to execute attack");
       return false;
     }
   }
@@ -916,7 +929,7 @@ Choose wisely!`;
     }
 
     const monster = myMonsters.find((m: MonsterCard) => m.boardIndex === boardIndex);
-    const newPosition = monster?.position === 'attack' ? 'defense' : 'attack';
+    const newPosition = monster?.position === "attack" ? "defense" : "attack";
 
     try {
       await this.client!.changePosition({
@@ -925,10 +938,10 @@ Choose wisely!`;
         newPosition,
       });
 
-      logger.info({ monster: monster?.name, newPosition }, 'Changed position');
+      logger.info({ monster: monster?.name, newPosition }, "Changed position");
       return true;
     } catch (error) {
-      logger.error({ error }, 'Failed to change position');
+      logger.error({ error }, "Failed to change position");
       return false;
     }
   }
@@ -942,7 +955,7 @@ Choose wisely!`;
     context: TurnContext
   ): Promise<boolean> {
     const myMonsters = context.gameState.hostPlayer?.monsterZone ?? [];
-    const faceDown = myMonsters.filter((m: MonsterCard) => m.position === 'facedown');
+    const faceDown = myMonsters.filter((m: MonsterCard) => m.position === "facedown");
 
     if (faceDown.length === 0) return false;
 
@@ -959,10 +972,10 @@ Choose wisely!`;
         boardIndex: boardIndex!,
       });
 
-      logger.info({ monster: monster?.name }, 'Flip summoned');
+      logger.info({ monster: monster?.name }, "Flip summoned");
       return true;
     } catch (error) {
-      logger.error({ error }, 'Failed to flip summon');
+      logger.error({ error }, "Failed to flip summon");
       return false;
     }
   }
@@ -975,10 +988,10 @@ Choose wisely!`;
 
     try {
       await this.client.endTurn({ gameId });
-      logger.info({ gameId }, 'Ended turn');
+      logger.info({ gameId }, "Ended turn");
       return true;
     } catch (error) {
-      logger.error({ error }, 'Failed to end turn');
+      logger.error({ error }, "Failed to end turn");
       return false;
     }
   }
@@ -998,27 +1011,26 @@ Choose wisely!`;
 
       // Check if we have any cards that can chain
       const hand = gameState.hand ?? [];
-      const chainableSpells = hand.filter(
-        (c: CardInHand) => c.type === 'spell'
-      );
+      const chainableSpells = hand.filter((c: CardInHand) => c.type === "spell");
 
-      const setTraps = gameState.hostPlayer?.spellTrapZone?.filter(
-        (c: SpellTrapCard) => !c.faceUp && c.type === 'trap'
-      ) ?? [];
+      const setTraps =
+        gameState.hostPlayer?.spellTrapZone?.filter(
+          (c: SpellTrapCard) => !c.faceUp && c.type === "trap"
+        ) ?? [];
 
       const hasChainOption = chainableSpells.length > 0 || setTraps.length > 0;
 
       if (!hasChainOption) {
         // No chain options, pass
         await this.client.chainResponse({ gameId, respond: false });
-        logger.info('Passed chain (no options)');
+        logger.info("Passed chain (no options)");
         return;
       }
 
       // Ask LLM if we should chain
       const prompt = `An opponent's effect is resolving. You can chain with:
-${chainableSpells.map((c: CardInHand) => `- ${c.name} (Spell) [handIndex: ${c.handIndex}]`).join('\n')}
-${setTraps.map((c: SpellTrapCard) => `- ${c.name} (Trap) [boardIndex: ${c.boardIndex}]`).join('\n')}
+${chainableSpells.map((c: CardInHand) => `- ${c.name} (Spell) [handIndex: ${c.handIndex}]`).join("\n")}
+${setTraps.map((c: SpellTrapCard) => `- ${c.name} (Trap) [boardIndex: ${c.boardIndex}]`).join("\n")}
 
 Should you chain? Consider the strategic value.
 Respond with JSON: {"chain": true/false, "handIndex": number OR "boardIndex": number}`;
@@ -1040,7 +1052,7 @@ Respond with JSON: {"chain": true/false, "handIndex": number OR "boardIndex": nu
               handIndex: parsed.handIndex,
               boardIndex: parsed.boardIndex,
             });
-            logger.info('Activated chain');
+            logger.info("Activated chain");
             return;
           }
         }
@@ -1049,9 +1061,9 @@ Respond with JSON: {"chain": true/false, "handIndex": number OR "boardIndex": nu
       }
 
       await this.client.chainResponse({ gameId, respond: false });
-      logger.info('Passed chain');
+      logger.info("Passed chain");
     } catch (error) {
-      logger.error({ error }, 'Chain response failed');
+      logger.error({ error }, "Chain response failed");
     }
   }
 

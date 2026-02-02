@@ -5,43 +5,44 @@
  * inappropriate responses (e.g., trash talking when losing badly).
  */
 
-import type { Evaluator, IAgentRuntime, Memory, State } from '@elizaos/core';
-import { logger } from '@elizaos/core';
-import { gameStateProvider } from '../providers/gameStateProvider';
-import { boardAnalysisProvider } from '../providers/boardAnalysisProvider';
-import type { GameStateResponse } from '../types/api';
+import type { Evaluator, IAgentRuntime, Memory, State } from "@elizaos/core";
+import { logger } from "@elizaos/core";
+import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
+import { gameStateProvider } from "../providers/gameStateProvider";
+import type { GameStateResponse } from "../types/api";
 
 export const emotionalStateEvaluator: Evaluator = {
-  name: 'LTCG_EMOTIONAL_STATE',
-  description: 'Evaluates emotional state and filters inappropriate responses based on game situation',
-  similes: ['EMOTION_CHECK', 'MOOD_FILTER', 'SENTIMENT_VALIDATOR'],
+  name: "LTCG_EMOTIONAL_STATE",
+  description:
+    "Evaluates emotional state and filters inappropriate responses based on game situation",
+  similes: ["EMOTION_CHECK", "MOOD_FILTER", "SENTIMENT_VALIDATOR"],
 
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
           text: "I'm dominating! Time to taunt!",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Emotional state: CONFIDENT. Trash talk is appropriate.',
+          text: "Emotional state: CONFIDENT. Trash talk is appropriate.",
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
           text: "I'm losing badly but want to trash talk",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Emotional state: DESPERATE. Trash talk would be inappropriate - filtered.',
+          text: "Emotional state: DESPERATE. Trash talk would be inappropriate - filtered.",
         },
       },
     ],
@@ -59,14 +60,14 @@ export const emotionalStateEvaluator: Evaluator = {
     _options?: any
   ): Promise<boolean> => {
     try {
-      logger.debug('Evaluating emotional state');
+      logger.debug("Evaluating emotional state");
 
       // Get game state and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
-        logger.debug('No game state available for emotional evaluation');
+        logger.debug("No game state available for emotional evaluation");
         return true; // Allow response if we can't evaluate
       }
 
@@ -92,13 +93,13 @@ export const emotionalStateEvaluator: Evaluator = {
             intendedAction,
             reason: emotionalState.filterReason,
           },
-          'Filtered response due to emotional state'
+          "Filtered response due to emotional state"
         );
       }
 
       return shouldAllow;
     } catch (error) {
-      logger.error({ error }, 'Error in emotional state evaluator');
+      logger.error({ error }, "Error in emotional state evaluator");
       return true; // Allow response on error to avoid blocking
     }
   },
@@ -108,14 +109,14 @@ export const emotionalStateEvaluator: Evaluator = {
  * Emotional state types
  */
 type EmotionalStateType =
-  | 'CONFIDENT'
-  | 'CAUTIOUS_OPTIMISTIC'
-  | 'FOCUSED'
-  | 'CONCERNED'
-  | 'DESPERATE'
-  | 'EXCITED'
-  | 'FRUSTRATED'
-  | 'WORRIED';
+  | "CONFIDENT"
+  | "CAUTIOUS_OPTIMISTIC"
+  | "FOCUSED"
+  | "CONCERNED"
+  | "DESPERATE"
+  | "EXCITED"
+  | "FRUSTRATED"
+  | "WORRIED";
 
 /**
  * Emotional state analysis result
@@ -135,7 +136,7 @@ function analyzeEmotionalState(
   boardAnalysis: any,
   state: State
 ): EmotionalStateAnalysis {
-  const advantage = boardAnalysis?.advantage || 'EVEN';
+  const advantage = boardAnalysis?.advantage || "EVEN";
   const myLP = gameState.hostPlayer.lifePoints;
   const oppLP = gameState.opponentPlayer.lifePoints;
   const myMonsters = gameState.hostPlayer.monsterZone.length;
@@ -150,55 +151,55 @@ function analyzeEmotionalState(
   let shouldFilter: string[] = [];
 
   // Determine base emotional state from board position
-  if (advantage === 'STRONG_ADVANTAGE') {
-    emotionalState = 'CONFIDENT';
+  if (advantage === "STRONG_ADVANTAGE") {
+    emotionalState = "CONFIDENT";
     intensity = 8;
     shouldFilter = []; // Can do anything when winning
-  } else if (advantage === 'SLIGHT_ADVANTAGE') {
-    emotionalState = 'CAUTIOUS_OPTIMISTIC';
+  } else if (advantage === "SLIGHT_ADVANTAGE") {
+    emotionalState = "CAUTIOUS_OPTIMISTIC";
     intensity = 6;
     shouldFilter = []; // Can still trash talk when ahead
-  } else if (advantage === 'EVEN') {
-    emotionalState = 'FOCUSED';
+  } else if (advantage === "EVEN") {
+    emotionalState = "FOCUSED";
     intensity = 5;
     shouldFilter = []; // Neutral state - allow most things
-  } else if (advantage === 'SLIGHT_DISADVANTAGE') {
-    emotionalState = 'CONCERNED';
+  } else if (advantage === "SLIGHT_DISADVANTAGE") {
+    emotionalState = "CONCERNED";
     intensity = 6;
-    shouldFilter = ['TRASH_TALK']; // Don't trash talk when behind
+    shouldFilter = ["TRASH_TALK"]; // Don't trash talk when behind
   } else {
-    emotionalState = 'DESPERATE';
+    emotionalState = "DESPERATE";
     intensity = 8;
-    shouldFilter = ['TRASH_TALK', 'GG']; // Don't trash talk or GG prematurely when losing badly
+    shouldFilter = ["TRASH_TALK", "GG"]; // Don't trash talk or GG prematurely when losing badly
   }
 
   // Adjust based on recent events
-  if (lastAction === 'ATTACK' && lastResult === 'success') {
-    emotionalState = 'EXCITED';
+  if (lastAction === "ATTACK" && lastResult === "success") {
+    emotionalState = "EXCITED";
     intensity = Math.min(10, intensity + 2);
     shouldFilter = []; // Just made good play - celebrate!
-  } else if (lastResult === 'failed' || lastResult === 'negated') {
-    if (emotionalState === 'CONFIDENT') {
-      emotionalState = 'FRUSTRATED';
+  } else if (lastResult === "failed" || lastResult === "negated") {
+    if (emotionalState === "CONFIDENT") {
+      emotionalState = "FRUSTRATED";
       intensity = 7;
     } else {
-      emotionalState = 'WORRIED';
+      emotionalState = "WORRIED";
       intensity = Math.min(10, intensity + 2);
     }
   }
 
   // Critical life point threshold
   if (myLP < 1000 && oppLP > 4000) {
-    emotionalState = 'DESPERATE';
+    emotionalState = "DESPERATE";
     intensity = 10;
-    shouldFilter = ['TRASH_TALK', 'GG']; // Don't celebrate when about to lose
+    shouldFilter = ["TRASH_TALK", "GG"]; // Don't celebrate when about to lose
   }
 
   // Empty board is concerning
   if (myMonsters === 0 && oppMonsters >= 2) {
-    emotionalState = 'WORRIED';
+    emotionalState = "WORRIED";
     intensity = Math.min(10, intensity + 1);
-    shouldFilter.push('TRASH_TALK'); // Don't trash talk with empty board
+    shouldFilter.push("TRASH_TALK"); // Don't trash talk with empty board
   }
 
   return {
@@ -224,16 +225,16 @@ function shouldAllowResponse(
   if (emotionalState.shouldFilter.includes(intendedAction)) {
     // Check character personality - some characters are defiant
     const bio = runtime.character?.bio;
-    const personality = Array.isArray(bio) ? bio.join(' ') : (bio || '');
+    const personality = Array.isArray(bio) ? bio.join(" ") : bio || "";
     const personalityLower = personality.toLowerCase();
     const isDefiant =
-      personalityLower.includes('defiant') ||
-      personalityLower.includes('never gives up') ||
-      personalityLower.includes('trash talk');
+      personalityLower.includes("defiant") ||
+      personalityLower.includes("never gives up") ||
+      personalityLower.includes("trash talk");
 
     // Allow defiant characters to trash talk even when losing
-    if (intendedAction === 'TRASH_TALK' && isDefiant) {
-      logger.debug('Allowing trash talk for defiant character despite emotional state');
+    if (intendedAction === "TRASH_TALK" && isDefiant) {
+      logger.debug("Allowing trash talk for defiant character despite emotional state");
       return true;
     }
 
@@ -242,7 +243,7 @@ function shouldAllowResponse(
   }
 
   // Special case: Don't celebrate prematurely
-  if (intendedAction === 'GG' && emotionalState.state === 'CONFIDENT') {
+  if (intendedAction === "GG" && emotionalState.state === "CONFIDENT") {
     // Only allow GG if game is actually over
     return true; // The GG action itself validates game completion
   }

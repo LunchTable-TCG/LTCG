@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { PhaseSkipButtons, type GamePhase } from "../PhaseSkipButtons";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type GamePhase, PhaseSkipButtons } from "../PhaseSkipButtons";
 
 // Mock convex helpers
 const mockSkipBattlePhase = vi.fn();
@@ -59,9 +59,7 @@ describe("PhaseSkipButtons", () => {
       const battlePhases: GamePhase[] = ["battle_start", "battle", "battle_end"];
 
       for (const phase of battlePhases) {
-        const { unmount } = render(
-          <PhaseSkipButtons {...defaultProps} currentPhase={phase} />
-        );
+        const { unmount } = render(<PhaseSkipButtons {...defaultProps} currentPhase={phase} />);
 
         expect(screen.getByTestId("skip-to-main2-btn")).toBeInTheDocument();
         expect(screen.getByTestId("skip-to-end-btn")).toBeInTheDocument();
@@ -80,25 +78,19 @@ describe("PhaseSkipButtons", () => {
     });
 
     it("should not render during draw phase", () => {
-      const { container } = render(
-        <PhaseSkipButtons {...defaultProps} currentPhase="draw" />
-      );
+      const { container } = render(<PhaseSkipButtons {...defaultProps} currentPhase="draw" />);
 
       expect(container.firstChild).toBeNull();
     });
 
     it("should not render during standby phase", () => {
-      const { container } = render(
-        <PhaseSkipButtons {...defaultProps} currentPhase="standby" />
-      );
+      const { container } = render(<PhaseSkipButtons {...defaultProps} currentPhase="standby" />);
 
       expect(container.firstChild).toBeNull();
     });
 
     it("should not render during end phase", () => {
-      const { container } = render(
-        <PhaseSkipButtons {...defaultProps} currentPhase="end" />
-      );
+      const { container } = render(<PhaseSkipButtons {...defaultProps} currentPhase="end" />);
 
       expect(container.firstChild).toBeNull();
     });
@@ -107,11 +99,7 @@ describe("PhaseSkipButtons", () => {
   describe("Button disabled states", () => {
     it("should disable buttons when not current player's turn", () => {
       render(
-        <PhaseSkipButtons
-          {...defaultProps}
-          currentPhase="main1"
-          isCurrentPlayerTurn={false}
-        />
+        <PhaseSkipButtons {...defaultProps} currentPhase="main1" isCurrentPlayerTurn={false} />
       );
 
       expect(screen.getByTestId("skip-battle-btn")).toBeDisabled();
@@ -120,11 +108,7 @@ describe("PhaseSkipButtons", () => {
 
     it("should enable buttons when it is current player's turn", () => {
       render(
-        <PhaseSkipButtons
-          {...defaultProps}
-          currentPhase="main1"
-          isCurrentPlayerTurn={true}
-        />
+        <PhaseSkipButtons {...defaultProps} currentPhase="main1" isCurrentPlayerTurn={true} />
       );
 
       expect(screen.getByTestId("skip-battle-btn")).not.toBeDisabled();
@@ -267,9 +251,7 @@ describe("PhaseSkipButtons", () => {
 
   describe("Error handling", () => {
     it("should handle mutation errors gracefully", async () => {
-      const consoleError = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
       mockSkipBattlePhase.mockRejectedValue(new Error("Network error"));
 
       const user = userEvent.setup();
@@ -294,9 +276,7 @@ describe("PhaseSkipButtons", () => {
     });
 
     it("should handle skipToEndPhase errors gracefully", async () => {
-      const consoleError = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
       mockSkipToEndPhase.mockRejectedValue(new Error("Network error"));
 
       const user = userEvent.setup();
@@ -316,9 +296,7 @@ describe("PhaseSkipButtons", () => {
     });
 
     it("should handle endTurn errors gracefully", async () => {
-      const consoleError = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
       mockSkipMainPhase2.mockRejectedValue(new Error("Network error"));
 
       const user = userEvent.setup();
@@ -328,10 +306,7 @@ describe("PhaseSkipButtons", () => {
       await user.click(skipButton);
 
       await waitFor(() => {
-        expect(consoleError).toHaveBeenCalledWith(
-          "Failed to end turn:",
-          expect.any(Error)
-        );
+        expect(consoleError).toHaveBeenCalledWith("Failed to end turn:", expect.any(Error));
       });
 
       consoleError.mockRestore();
@@ -372,11 +347,7 @@ describe("PhaseSkipButtons", () => {
     it("should work without onPhaseChange callback", async () => {
       const user = userEvent.setup();
       render(
-        <PhaseSkipButtons
-          lobbyId={mockLobbyId}
-          currentPhase="main1"
-          isCurrentPlayerTurn={true}
-        />
+        <PhaseSkipButtons lobbyId={mockLobbyId} currentPhase="main1" isCurrentPlayerTurn={true} />
       );
 
       const skipButton = screen.getByTestId("skip-battle-btn");

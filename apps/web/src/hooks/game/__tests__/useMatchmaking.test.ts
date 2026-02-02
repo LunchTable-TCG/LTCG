@@ -4,11 +4,11 @@
  * Tests for matchmaking queue functionality.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import { useMatchmaking } from "../useMatchmaking";
+import { act, renderHook } from "@testing-library/react";
 import * as convexReact from "convex/react";
 import { toast } from "sonner";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useMatchmaking } from "../useMatchmaking";
 
 vi.mock("convex/react");
 vi.mock("sonner");

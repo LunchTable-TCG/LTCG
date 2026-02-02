@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Cinzel, Crimson_Text, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
-import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
-import { Toaster } from "@/components/ui/toaster";
-import { NotificationToast } from "@/components/notifications/NotificationToast";
 import { PrivyAuthProvider } from "@/components/PrivyAuthProvider";
+import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
+import { NotificationToast } from "@/components/notifications/NotificationToast";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

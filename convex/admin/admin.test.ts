@@ -160,13 +160,7 @@ describe("grantAdminRole", () => {
     const t = createTestInstance();
 
     const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(
-      t,
-      "admin@test.com",
-      "admin",
-      "admin",
-      superadminId
-    );
+    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
     const targetUserId = await createUser(t, "target@test.com", "targetuser");
 
     const asAdmin = t.withIdentity({ subject: adminId });
@@ -182,13 +176,7 @@ describe("grantAdminRole", () => {
     const t = createTestInstance();
 
     const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(
-      t,
-      "admin@test.com",
-      "admin",
-      "admin",
-      superadminId
-    );
+    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
     const targetUserId = await createUser(t, "target@test.com", "targetuser");
 
     const asAdmin = t.withIdentity({ subject: adminId });
@@ -250,13 +238,7 @@ describe("revokeAdminRole", () => {
     const t = createTestInstance();
 
     const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(
-      t,
-      "admin@test.com",
-      "admin",
-      "admin",
-      superadminId
-    );
+    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
 
     const asSuperadmin = t.withIdentity({ subject: superadminId });
     const result = await asSuperadmin.mutation(adminAdmin.revokeAdminRole, {
@@ -281,13 +263,7 @@ describe("revokeAdminRole", () => {
     const t = createTestInstance();
 
     const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(
-      t,
-      "admin@test.com",
-      "admin",
-      "admin",
-      superadminId
-    );
+    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
     const moderatorId = await createUserWithRole(
       t,
       "moderator@test.com",
@@ -323,13 +299,7 @@ describe("revokeAdminRole", () => {
     const t = createTestInstance();
 
     const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(
-      t,
-      "admin@test.com",
-      "admin",
-      "admin",
-      superadminId
-    );
+    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
     const otherAdminId = await createUserWithRole(
       t,
       "admin2@test.com",
@@ -426,9 +396,7 @@ describe("getAuditLog", () => {
       action: "grant_role",
     });
 
-    expect(result.logs.every((log: { action: string }) => log.action === "grant_role")).toBe(
-      true
-    );
+    expect(result.logs.every((log: { action: string }) => log.action === "grant_role")).toBe(true);
   });
 
   it("should support pagination with cursor", async () => {
@@ -494,13 +462,7 @@ describe("deleteUserByEmail", () => {
     const t = createTestInstance();
 
     const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(
-      t,
-      "admin@test.com",
-      "admin",
-      "admin",
-      superadminId
-    );
+    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
 
     // Create user to delete (without auth session - that's managed by Convex Auth)
     const targetUserId = await t.run(async (ctx: MutationCtx) => {
@@ -530,13 +492,7 @@ describe("deleteUserByEmail", () => {
     const t = createTestInstance();
 
     const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(
-      t,
-      "admin@test.com",
-      "admin",
-      "admin",
-      superadminId
-    );
+    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
 
     const asAdmin = t.withIdentity({ subject: adminId });
     const result = await asAdmin.mutation(adminMutations.deleteUserByEmail, {
@@ -626,13 +582,7 @@ describe("deleteTestUsers", () => {
     const t = createTestInstance();
 
     const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(
-      t,
-      "admin@test.com",
-      "admin",
-      "admin",
-      superadminId
-    );
+    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
 
     const asAdmin = t.withIdentity({ subject: adminId });
 
@@ -684,13 +634,7 @@ describe("getMyAdminRole", () => {
     const t = createTestInstance();
 
     const superadminId = await createSuperadmin(t, "superadmin@test.com", "superadmin");
-    const adminId = await createUserWithRole(
-      t,
-      "admin@test.com",
-      "admin",
-      "admin",
-      superadminId
-    );
+    const adminId = await createUserWithRole(t, "admin@test.com", "admin", "admin", superadminId);
 
     const asAdmin = t.withIdentity({ subject: adminId });
     const result = await asAdmin.query(adminAdmin.getMyAdminRole, {});

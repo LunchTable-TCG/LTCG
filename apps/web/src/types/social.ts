@@ -8,7 +8,7 @@
  */
 
 import type { Id } from "@convex/_generated/dataModel";
-import type { LeaderboardEntry, FriendInfo as Friend, FriendRequest } from "./generated";
+import type { FriendInfo as Friend, FriendRequest, LeaderboardEntry } from "./generated";
 
 /**
  * Player entry in the competitive leaderboard.

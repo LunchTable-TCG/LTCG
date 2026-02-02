@@ -10,8 +10,8 @@ import { describe, expect, it } from "vitest";
 import { api } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import schema from "../../schema";
-import type { JsonAbility } from "./types";
 import { modules } from "../../test.setup";
+import type { JsonAbility } from "./types";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast

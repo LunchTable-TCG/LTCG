@@ -9,12 +9,12 @@
  */
 
 import {
-  buildAbility,
   CONDITIONS,
   COSTS,
   EFFECT_TEMPLATES,
-  simpleAbility,
   TARGETS,
+  buildAbility,
+  simpleAbility,
 } from "./effectLibrary";
 import type { JsonAbility, JsonEffect } from "./types";
 
@@ -26,10 +26,7 @@ import type { JsonAbility, JsonEffect } from "./types";
  * Pot of Greed - Draw 2 cards
  * Classic draw power card
  */
-export const POT_OF_GREED: JsonAbility = simpleAbility(
-  EFFECT_TEMPLATES.draw(2),
-  "Draw 2 cards."
-);
+export const POT_OF_GREED: JsonAbility = simpleAbility(EFFECT_TEMPLATES.draw(2), "Draw 2 cards.");
 
 /**
  * Raigeki - Destroy all opponent's monsters
@@ -105,10 +102,7 @@ export const UPSTART_GOBLIN: JsonAbility = buildAbility(
  * Pot of Desires - Banish 10, draw 2
  */
 export const POT_OF_DESIRES: JsonAbility = simpleAbility(
-  EFFECT_TEMPLATES.withCost(
-    EFFECT_TEMPLATES.draw(2),
-    COSTS.banish(10, "deck")
-  ),
+  EFFECT_TEMPLATES.withCost(EFFECT_TEMPLATES.draw(2), COSTS.banish(10, "deck")),
   "Banish 10 cards from the top of your Deck, face-down; draw 2 cards."
 );
 
@@ -278,10 +272,7 @@ export const MARAUDING_CAPTAIN: JsonAbility = buildAbility(
       type: "summon",
       trigger: "on_summon",
       summonFrom: "hand",
-      searchCondition: CONDITIONS.and(
-        CONDITIONS.cardType("monster"),
-        CONDITIONS.levelAtMost(4)
-      ),
+      searchCondition: CONDITIONS.and(CONDITIONS.cardType("monster"), CONDITIONS.levelAtMost(4)),
     },
     EFFECT_TEMPLATES.grantProtection({ cannotBeTargeted: true }),
   ],
@@ -310,10 +301,7 @@ export const SPIRIT_REAPER: JsonAbility = buildAbility(
  * Marshmallon - Cannot be destroyed by battle, burn when attacked
  */
 export const MARSHMALLON: JsonAbility = buildAbility(
-  [
-    EFFECT_TEMPLATES.battleImmune(),
-    EFFECT_TEMPLATES.burnOnTrigger(1000, "on_battle_attacked"),
-  ],
+  [EFFECT_TEMPLATES.battleImmune(), EFFECT_TEMPLATES.burnOnTrigger(1000, "on_battle_attacked")],
   "Cannot be destroyed by battle. When this card is attacked while face-down: Inflict 1000 damage to the attacking player."
 );
 

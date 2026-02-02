@@ -5,7 +5,7 @@
  * from the REST API to provide clear error handling.
  */
 
-import { ApiErrorCode } from '../types/api';
+import { ApiErrorCode } from "../types/api";
 
 /**
  * Base error class for all LTCG API errors
@@ -19,11 +19,11 @@ export class LTCGApiError extends Error {
   constructor(
     message: string,
     code: string = ApiErrorCode.INTERNAL_ERROR,
-    statusCode: number = 500,
+    statusCode = 500,
     details?: Record<string, any>
   ) {
     super(message);
-    this.name = 'LTCGApiError';
+    this.name = "LTCGApiError";
     this.code = code;
     this.statusCode = statusCode;
     this.details = details;
@@ -52,9 +52,9 @@ export class LTCGApiError extends Error {
  * Thrown when API key is missing, invalid, or expired
  */
 export class AuthenticationError extends LTCGApiError {
-  constructor(message: string = 'Authentication failed', details?: Record<string, any>) {
+  constructor(message = "Authentication failed", details?: Record<string, any>) {
     super(message, ApiErrorCode.UNAUTHORIZED, 401, details);
-    this.name = 'AuthenticationError';
+    this.name = "AuthenticationError";
   }
 }
 
@@ -69,15 +69,15 @@ export class RateLimitError extends LTCGApiError {
   public readonly resetAt: number;
 
   constructor(
-    message: string = 'Rate limit exceeded',
+    message = "Rate limit exceeded",
     retryAfter?: number,
-    remaining: number = 0,
-    limit: number = 60,
+    remaining = 0,
+    limit = 60,
     resetAt?: number,
     details?: Record<string, any>
   ) {
     super(message, ApiErrorCode.RATE_LIMIT_EXCEEDED, 429, details);
-    this.name = 'RateLimitError';
+    this.name = "RateLimitError";
     this.retryAfter = retryAfter;
     this.remaining = remaining;
     this.limit = limit;
@@ -102,9 +102,13 @@ export class RateLimitError extends LTCGApiError {
 export class ValidationError extends LTCGApiError {
   public readonly invalidFields?: string[];
 
-  constructor(message: string = 'Validation failed', invalidFields?: string[], details?: Record<string, any>) {
+  constructor(
+    message = "Validation failed",
+    invalidFields?: string[],
+    details?: Record<string, any>
+  ) {
     super(message, ApiErrorCode.VALIDATION_ERROR, 400, details);
-    this.name = 'ValidationError';
+    this.name = "ValidationError";
     this.invalidFields = invalidFields;
   }
 
@@ -123,9 +127,13 @@ export class ValidationError extends LTCGApiError {
 export class NetworkError extends LTCGApiError {
   public readonly originalError?: Error;
 
-  constructor(message: string = 'Network request failed', originalError?: Error, details?: Record<string, any>) {
+  constructor(
+    message = "Network request failed",
+    originalError?: Error,
+    details?: Record<string, any>
+  ) {
     super(message, ApiErrorCode.NETWORK_ERROR, 0, details);
-    this.name = 'NetworkError';
+    this.name = "NetworkError";
     this.originalError = originalError;
   }
 
@@ -149,12 +157,12 @@ export class GameError extends LTCGApiError {
   constructor(
     message: string,
     code: string,
-    statusCode: number = 400,
+    statusCode = 400,
     gameId?: string,
     details?: Record<string, any>
   ) {
     super(message, code, statusCode, details);
-    this.name = 'GameError';
+    this.name = "GameError";
     this.gameId = gameId;
     this.phase = details?.phase;
     this.turnPlayer = details?.turnPlayer;
@@ -174,12 +182,16 @@ export class GameError extends LTCGApiError {
  * Parse error response from API and throw appropriate error
  */
 export function parseErrorResponse(statusCode: number, body: any): LTCGApiError {
-  const errorCode = body?.error?.code || 'UNKNOWN_ERROR';
-  const errorMessage = body?.error?.message || 'An unknown error occurred';
+  const errorCode = body?.error?.code || "UNKNOWN_ERROR";
+  const errorMessage = body?.error?.message || "An unknown error occurred";
   const errorDetails = body?.error?.details;
 
   // Authentication errors (401)
-  if (statusCode === 401 || errorCode === ApiErrorCode.UNAUTHORIZED || errorCode === ApiErrorCode.INVALID_API_KEY) {
+  if (
+    statusCode === 401 ||
+    errorCode === ApiErrorCode.UNAUTHORIZED ||
+    errorCode === ApiErrorCode.INVALID_API_KEY
+  ) {
     return new AuthenticationError(errorMessage, errorDetails);
   }
 

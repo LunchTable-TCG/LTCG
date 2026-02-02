@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
-import { mutation, internalMutation } from "../../_generated/server";
+import { internalMutation, mutation } from "../../_generated/server";
 import type { MutationCtx } from "../../_generated/server";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { createTraceContext, logMatchmaking, logger, performance } from "../../lib/debug";
@@ -719,7 +719,11 @@ export const createLobbyInternal = internalMutation({
 
     const isPrivate = args.isPrivate || false;
 
-    logger.mutation("createLobbyInternal", "pending", { mode: args.mode, isPrivate, userId: args.userId });
+    logger.mutation("createLobbyInternal", "pending", {
+      mode: args.mode,
+      isPrivate,
+      userId: args.userId,
+    });
 
     try {
       // Get user to get username
@@ -735,7 +739,11 @@ export const createLobbyInternal = internalMutation({
       logger.debug("Validating user can create game");
       const { deckArchetype } = await validateUserCanCreateGameInternal(ctx, args.userId, username);
 
-      const traceCtx = createTraceContext("createLobbyInternal", { userId: args.userId, username, mode: args.mode });
+      const traceCtx = createTraceContext("createLobbyInternal", {
+        userId: args.userId,
+        username,
+        mode: args.mode,
+      });
       logMatchmaking("lobby_create_start", args.userId, traceCtx);
 
       // Generate join code for private matches
@@ -817,9 +825,15 @@ export const joinLobbyInternal = internalMutation({
     }
     const username = user.username || `Agent_${args.userId.slice(-6)}`;
 
-    logger.mutation("joinLobbyInternal", args.userId, { lobbyId: args.lobbyId, hasJoinCode: !!args.joinCode });
+    logger.mutation("joinLobbyInternal", args.userId, {
+      lobbyId: args.lobbyId,
+      hasJoinCode: !!args.joinCode,
+    });
 
-    const traceCtx = createTraceContext("joinLobbyInternal", { userId: args.userId, lobbyId: args.lobbyId });
+    const traceCtx = createTraceContext("joinLobbyInternal", {
+      userId: args.userId,
+      lobbyId: args.lobbyId,
+    });
     logMatchmaking("lobby_join_attempt", args.userId, traceCtx);
 
     try {
@@ -962,7 +976,11 @@ export const joinLobbyInternal = internalMutation({
         opponentUsername: username,
       });
 
-      logMatchmaking("lobby_join_success", args.userId, { ...traceCtx, gameId, hostId: lobby.hostId });
+      logMatchmaking("lobby_join_success", args.userId, {
+        ...traceCtx,
+        gameId,
+        hostId: lobby.hostId,
+      });
       logger.info("Game started successfully", {
         ...traceCtx,
         gameId,
@@ -979,7 +997,10 @@ export const joinLobbyInternal = internalMutation({
         mode: lobby.mode,
       };
     } catch (error) {
-      logger.error("Failed to join lobby", error as Error, { userId: args.userId, lobbyId: args.lobbyId });
+      logger.error("Failed to join lobby", error as Error, {
+        userId: args.userId,
+        lobbyId: args.lobbyId,
+      });
       logMatchmaking("lobby_join_failed", args.userId, {
         lobbyId: args.lobbyId,
         error: (error as Error).message,

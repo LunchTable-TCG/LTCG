@@ -6,8 +6,8 @@
  */
 
 import { v } from "convex/values";
-import { action, internalMutation, internalQuery, mutation } from "../_generated/server";
 import { internal } from "../_generated/api";
+import { action, internalMutation, internalQuery, mutation } from "../_generated/server";
 
 /**
  * Webhook event types
@@ -206,9 +206,7 @@ export const sendWebhook = action({
         await ctx.runMutation(internal.agents.webhooks.recordWebhookFailure, {
           agentId: args.agentId,
         });
-        console.log(
-          `[Webhook] Failed to send to agent ${args.agentId}: ${response.status}`
-        );
+        console.log(`[Webhook] Failed to send to agent ${args.agentId}: ${response.status}`);
         return { sent: false, reason: "http_error", status: response.status };
       }
     } catch (error) {
@@ -229,11 +227,7 @@ export const sendWebhook = action({
 /**
  * Generate webhook signature for verification
  */
-function generateSignature(
-  agentId: string,
-  eventType: string,
-  _secret?: string
-): string {
+function generateSignature(agentId: string, eventType: string, _secret?: string): string {
   // Simple signature format - in production use HMAC
   const data = `${agentId}:${eventType}:${Date.now()}`;
   const base = Buffer.from(data).toString("base64").substring(0, 32);

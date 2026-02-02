@@ -1,10 +1,7 @@
 "use client";
 
+import { type JsonAbility, getAbilityDisplayText } from "@/lib/cardHelpers";
 import { cn } from "@/lib/utils";
-import {
-  getAbilityDisplayText,
-  type JsonAbility,
-} from "@/lib/cardHelpers";
 import { Flame, Heart, Shield, Star, Waves, Zap } from "lucide-react";
 import { useRef, useState } from "react";
 

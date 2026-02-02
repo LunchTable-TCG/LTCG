@@ -8,16 +8,14 @@
 // Import at runtime only (not for type checking) to avoid TS2589
 const api: any = require("../_generated/api").api;
 import { internal } from "../_generated/api";
+import { authHttpAction } from "./middleware/auth";
 import {
-  authHttpAction,
-} from "./middleware/auth";
-import {
-  successResponse,
-  errorResponse,
-  parseJsonBody,
-  validateRequiredFields,
-  getQueryParam,
   corsPreflightResponse,
+  errorResponse,
+  getQueryParam,
+  parseJsonBody,
+  successResponse,
+  validateRequiredFields,
 } from "./middleware/responses";
 
 /**
@@ -37,7 +35,7 @@ export const enter = authHttpAction(async (ctx, request, auth) => {
 
   try {
     const body = await parseJsonBody<{
-      deckId?: string;  // Optional - uses active deck if not provided
+      deckId?: string; // Optional - uses active deck if not provided
       mode: "casual" | "ranked";
       maxRatingDiff?: number;
       isPrivate?: boolean;
@@ -69,30 +67,19 @@ export const enter = authHttpAction(async (ctx, request, auth) => {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("already in a lobby")) {
-        return errorResponse(
-          "ALREADY_IN_LOBBY",
-          "You are already in an active lobby",
-          409
-        );
+        return errorResponse("ALREADY_IN_LOBBY", "You are already in an active lobby", 409);
       }
       if (error.message.includes("deck not found")) {
         return errorResponse("DECK_NOT_FOUND", "Deck not found", 404);
       }
       if (error.message.includes("invalid deck")) {
-        return errorResponse(
-          "INVALID_DECK",
-          "Deck is invalid (must be 40-60 cards)",
-          400
-        );
+        return errorResponse("INVALID_DECK", "Deck is invalid (must be 40-60 cards)", 400);
       }
     }
 
-    return errorResponse(
-      "CREATE_LOBBY_FAILED",
-      "Failed to create lobby",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("CREATE_LOBBY_FAILED", "Failed to create lobby", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -150,12 +137,9 @@ export const lobbies = authHttpAction(async (ctx, request, auth) => {
       count: formattedLobbies.length,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_LOBBIES_FAILED",
-      "Failed to fetch lobbies",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_LOBBIES_FAILED", "Failed to fetch lobbies", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -238,11 +222,7 @@ export const join = authHttpAction(async (ctx, request, auth) => {
         return errorResponse("LOBBY_FULL", "Lobby is already full", 409);
       }
       if (error.message.includes("already in a lobby")) {
-        return errorResponse(
-          "ALREADY_IN_LOBBY",
-          "You are already in an active lobby",
-          409
-        );
+        return errorResponse("ALREADY_IN_LOBBY", "You are already in an active lobby", 409);
       }
       if (error.message.includes("deck not found")) {
         return errorResponse("DECK_NOT_FOUND", "Deck not found", 404);
@@ -256,12 +236,9 @@ export const join = authHttpAction(async (ctx, request, auth) => {
       }
     }
 
-    return errorResponse(
-      "JOIN_LOBBY_FAILED",
-      "Failed to join lobby",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("JOIN_LOBBY_FAILED", "Failed to join lobby", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -297,11 +274,7 @@ export const leave = authHttpAction(async (ctx, request, auth) => {
         return errorResponse("LOBBY_NOT_FOUND", "Lobby not found", 404);
       }
       if (error.message.includes("not the host")) {
-        return errorResponse(
-          "NOT_LOBBY_HOST",
-          "Only the lobby host can cancel",
-          403
-        );
+        return errorResponse("NOT_LOBBY_HOST", "Only the lobby host can cancel", 403);
       }
       if (error.message.includes("game already started")) {
         return errorResponse(
@@ -312,11 +285,8 @@ export const leave = authHttpAction(async (ctx, request, auth) => {
       }
     }
 
-    return errorResponse(
-      "LEAVE_LOBBY_FAILED",
-      "Failed to leave lobby",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("LEAVE_LOBBY_FAILED", "Failed to leave lobby", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });

@@ -1,10 +1,10 @@
 "use client";
 
+import { handleHookError } from "@/lib/errorHandling";
 import { api } from "@convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { handleHookError } from "@/lib/errorHandling";
 
 interface UseMatchmakingReturn {
   isInQueue: boolean;

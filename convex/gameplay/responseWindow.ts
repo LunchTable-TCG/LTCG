@@ -25,11 +25,7 @@ import type { MutationCtx } from "../_generated/server";
 import { logger } from "../lib/debug";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { resolveChainHelper } from "./chainResolver";
-import {
-  checkActionTimeout,
-  isTimeoutActive,
-  type TimeoutStatus,
-} from "./timeoutSystem";
+import { type TimeoutStatus, checkActionTimeout, isTimeoutActive } from "./timeoutSystem";
 
 // Re-export timeout types and helpers for convenience
 export {
@@ -131,10 +127,7 @@ export async function openResponseWindow(
  * - Response window times out
  * - Chain resolves
  */
-export async function closeResponseWindow(
-  ctx: MutationCtx,
-  gameState: Doc<"gameStates">
-) {
+export async function closeResponseWindow(ctx: MutationCtx, gameState: Doc<"gameStates">) {
   await ctx.db.patch(gameState._id, {
     responseWindow: undefined,
     currentPriorityPlayer: undefined,
@@ -557,10 +550,7 @@ export function getTimeoutStatus(gameState: Doc<"gameStates">): TimeoutStatus | 
  * Called when priority passes to a new player to reset their action timer.
  * This ensures each player gets the full action time for their response.
  */
-export async function refreshActionTimeout(
-  ctx: MutationCtx,
-  gameState: Doc<"gameStates">
-) {
+export async function refreshActionTimeout(ctx: MutationCtx, gameState: Doc<"gameStates">) {
   // Only refresh if timeout system is active
   if (!isTimeoutActive(gameState) || !gameState.responseWindow) {
     return;

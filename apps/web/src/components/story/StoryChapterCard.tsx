@@ -83,7 +83,10 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
                 Chapter {chapter.order}
               </span>
               {isUnlocked && (
-                <div className="flex items-center gap-1 text-xs text-yellow-400 bg-black/40 px-2 py-0.5 rounded-full border border-white/10" data-testid="stage-stars">
+                <div
+                  className="flex items-center gap-1 text-xs text-yellow-400 bg-black/40 px-2 py-0.5 rounded-full border border-white/10"
+                  data-testid="stage-stars"
+                >
                   <Star className="w-3 h-3 fill-current" />
                   <span>{chapter.starredStages}</span>
                 </div>

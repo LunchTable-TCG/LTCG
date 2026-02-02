@@ -4,13 +4,13 @@
  * Exports all providers that supply game context data to the LLM.
  */
 
-import { gameStateProvider } from './gameStateProvider';
-import { handProvider } from './handProvider';
-import { boardAnalysisProvider } from './boardAnalysisProvider';
-import { legalActionsProvider } from './legalActionsProvider';
-import { strategyProvider } from './strategyProvider';
-import { deckProvider } from './deckProvider';
-import { globalChatProvider } from './globalChatProvider';
+import { boardAnalysisProvider } from "./boardAnalysisProvider";
+import { deckProvider } from "./deckProvider";
+import { gameStateProvider } from "./gameStateProvider";
+import { globalChatProvider } from "./globalChatProvider";
+import { handProvider } from "./handProvider";
+import { legalActionsProvider } from "./legalActionsProvider";
+import { strategyProvider } from "./strategyProvider";
 
 /**
  * All LTCG providers for ElizaOS agent
@@ -35,10 +35,10 @@ export const ltcgProviders = [
 ];
 
 // Export individual providers for selective use
-export { deckProvider } from './deckProvider';
-export { gameStateProvider } from './gameStateProvider';
-export { handProvider } from './handProvider';
-export { boardAnalysisProvider } from './boardAnalysisProvider';
-export { legalActionsProvider } from './legalActionsProvider';
-export { strategyProvider } from './strategyProvider';
-export { globalChatProvider } from './globalChatProvider';
+export { deckProvider } from "./deckProvider";
+export { gameStateProvider } from "./gameStateProvider";
+export { handProvider } from "./handProvider";
+export { boardAnalysisProvider } from "./boardAnalysisProvider";
+export { legalActionsProvider } from "./legalActionsProvider";
+export { strategyProvider } from "./strategyProvider";
+export { globalChatProvider } from "./globalChatProvider";

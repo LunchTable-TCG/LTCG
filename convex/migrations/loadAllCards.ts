@@ -5,15 +5,15 @@
  * This migration can be run to sync the database with the JSON source.
  */
 
-import { internalMutation, internalQuery } from "../_generated/server";
-import { v } from "convex/values";
 import {
+  ABYSSAL_HORRORS_CARDS,
   ALL_CARDS,
   INFERNAL_DRAGONS_CARDS,
-  ABYSSAL_HORRORS_CARDS,
   NATURE_SPIRITS_CARDS,
   STORM_ELEMENTALS_CARDS,
 } from "@data/cards";
+import { v } from "convex/values";
+import { internalMutation, internalQuery } from "../_generated/server";
 
 export const previewLoad = internalQuery({
   args: {},

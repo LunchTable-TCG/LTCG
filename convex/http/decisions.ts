@@ -11,17 +11,17 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { authHttpAction } from "./middleware/auth";
 import {
-  successResponse,
+  corsPreflightResponse,
   errorResponse,
   getQueryParam,
-  corsPreflightResponse,
   parseJsonBody,
+  successResponse,
 } from "./middleware/responses";
 import {
-  SaveDecisionRequestSchema,
-  type SaveDecisionRequest,
   type Decision,
   type DecisionStats,
+  type SaveDecisionRequest,
+  SaveDecisionRequestSchema,
   formatValidationErrors,
 } from "./types";
 
@@ -67,12 +67,9 @@ export const saveDecision = authHttpAction(async (ctx, request, auth) => {
     // Validate with Zod schema
     const parseResult = SaveDecisionRequestSchema.safeParse(rawBody);
     if (!parseResult.success) {
-      return errorResponse(
-        "VALIDATION_ERROR",
-        "Invalid request body",
-        400,
-        { fields: formatValidationErrors(parseResult.error) }
-      );
+      return errorResponse("VALIDATION_ERROR", "Invalid request body", 400, {
+        fields: formatValidationErrors(parseResult.error),
+      });
     }
 
     const body = parseResult.data;
@@ -97,17 +94,11 @@ export const saveDecision = authHttpAction(async (ctx, request, auth) => {
       }
     );
 
-    return successResponse(
-      { success: true, decisionId: result.decisionId },
-      201
-    );
+    return successResponse({ success: true, decisionId: result.decisionId }, 201);
   } catch (error) {
-    return errorResponse(
-      "SAVE_DECISION_FAILED",
-      "Failed to save decision",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("SAVE_DECISION_FAILED", "Failed to save decision", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -132,41 +123,34 @@ export const getDecisions = authHttpAction(async (ctx, request, auth) => {
   try {
     const gameId = getQueryParam(request, "gameId");
     const limitParam = getQueryParam(request, "limit");
-    const limit = limitParam ? parseInt(limitParam, 10) : 50;
+    const limit = limitParam ? Number.parseInt(limitParam, 10) : 50;
 
     // Validate limit
     if (isNaN(limit) || limit < 1 || limit > 100) {
-      return errorResponse(
-        "INVALID_LIMIT",
-        "Limit must be a number between 1 and 100",
-        400
-      );
+      return errorResponse("INVALID_LIMIT", "Limit must be a number between 1 and 100", 400);
     }
 
     let decisions: Decision[];
 
     if (gameId) {
       // Get decisions for a specific game
-      decisions = await ctx.runQuery(
-        internalAny.agents.decisions.getGameDecisions,
-        { gameId, limit }
-      );
+      decisions = await ctx.runQuery(internalAny.agents.decisions.getGameDecisions, {
+        gameId,
+        limit,
+      });
     } else {
       // Get recent decisions for this agent
-      decisions = await ctx.runQuery(
-        internalAny.agents.decisions.getAgentDecisions,
-        { agentId: auth.agentId, limit }
-      );
+      decisions = await ctx.runQuery(internalAny.agents.decisions.getAgentDecisions, {
+        agentId: auth.agentId,
+        limit,
+      });
     }
 
     return successResponse({ decisions });
   } catch (error) {
-    return errorResponse(
-      "FETCH_DECISIONS_FAILED",
-      "Failed to fetch decisions",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_DECISIONS_FAILED", "Failed to fetch decisions", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -193,11 +177,8 @@ export const getDecisionStats = authHttpAction(async (ctx, request, auth) => {
 
     return successResponse(stats);
   } catch (error) {
-    return errorResponse(
-      "FETCH_STATS_FAILED",
-      "Failed to fetch decision statistics",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_STATS_FAILED", "Failed to fetch decision statistics", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });

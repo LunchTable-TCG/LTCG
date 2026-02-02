@@ -271,10 +271,7 @@ export async function handleTimeout(
  * Called when a player takes an action before timeout.
  * Resets the turn timer start for the next action.
  */
-export async function clearActionTimeout(
-  ctx: MutationCtx,
-  gameState: Doc<"gameStates">
-) {
+export async function clearActionTimeout(ctx: MutationCtx, gameState: Doc<"gameStates">) {
   if (gameState.responseWindow?.expiresAt) {
     await ctx.db.patch(gameState._id, {
       responseWindow: {
@@ -309,10 +306,7 @@ export function isTimeoutActive(gameState: Doc<"gameStates">): boolean {
 /**
  * Get count of timeouts for a specific player
  */
-export function getPlayerTimeoutCount(
-  gameState: Doc<"gameStates">,
-  playerId: Id<"users">
-): number {
+export function getPlayerTimeoutCount(gameState: Doc<"gameStates">, playerId: Id<"users">): number {
   const timeouts = gameState.timeoutsUsed || [];
   return timeouts.filter((t) => t.playerId === playerId).length;
 }

@@ -1,13 +1,13 @@
 "use client";
 
 import { GameBoard } from "@/components/game/GameBoard";
-import { SpectatorGameView } from "../../lunchtable/components/SpectatorGameView";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useEffect } from "react";
+import { SpectatorGameView } from "../../lunchtable/components/SpectatorGameView";
 
 interface GamePageProps {
   params: Promise<{

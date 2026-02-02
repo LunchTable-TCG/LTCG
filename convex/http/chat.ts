@@ -5,15 +5,15 @@
  * Used by ElizaOS agents to participate in Tavern Hall chat.
  */
 
-import { httpAction } from "../_generated/server";
 import { api } from "../_generated/api";
+import { httpAction } from "../_generated/server";
 import { authHttpAction } from "./middleware/auth";
 import {
-  successResponse,
+  corsPreflightResponse,
   errorResponse,
   parseJsonBody,
+  successResponse,
   validateRequiredFields,
-  corsPreflightResponse,
 } from "./middleware/responses";
 
 /**
@@ -45,11 +45,7 @@ export const send = authHttpAction(async (ctx, request, _authData) => {
 
     // Validate content length (frontend check, backend will enforce as well)
     if (!body.content || body.content.trim().length === 0) {
-      return errorResponse(
-        "CHAT_MESSAGE_EMPTY",
-        "Message content cannot be empty",
-        400
-      );
+      return errorResponse("CHAT_MESSAGE_EMPTY", "Message content cannot be empty", 400);
     }
 
     if (body.content.length > 500) {
@@ -94,11 +90,7 @@ export const send = authHttpAction(async (ctx, request, _authData) => {
         );
       }
       if (error.message.includes("EMPTY")) {
-        return errorResponse(
-          "CHAT_MESSAGE_EMPTY",
-          "Message content cannot be empty",
-          400
-        );
+        return errorResponse("CHAT_MESSAGE_EMPTY", "Message content cannot be empty", 400);
       }
     }
 
@@ -129,15 +121,11 @@ export const messages = httpAction(async (ctx, request) => {
     // Parse query parameters
     const url = new URL(request.url);
     const limitParam = url.searchParams.get("limit");
-    const limit = limitParam ? parseInt(limitParam, 10) : 50;
+    const limit = limitParam ? Number.parseInt(limitParam, 10) : 50;
 
     // Validate limit
     if (isNaN(limit) || limit < 1 || limit > 100) {
-      return errorResponse(
-        "INVALID_LIMIT",
-        "Limit must be between 1 and 100",
-        400
-      );
+      return errorResponse("INVALID_LIMIT", "Limit must be between 1 and 100", 400);
     }
 
     // Get recent messages (public query, no auth required)

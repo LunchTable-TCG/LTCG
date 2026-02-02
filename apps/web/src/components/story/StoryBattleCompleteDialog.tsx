@@ -71,7 +71,10 @@ export function StoryBattleCompleteDialog({
           <div className="space-y-6">
             {/* Stars Earned */}
             <FantasyFrame variant="gold" className="p-6 text-center">
-              <div className="flex items-center justify-center gap-2 mb-3" data-testid="stage-stars">
+              <div
+                className="flex items-center justify-center gap-2 mb-3"
+                data-testid="stage-stars"
+              >
                 {[1, 2, 3].map((star) => (
                   <motion.div
                     key={star}

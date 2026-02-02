@@ -17,12 +17,11 @@ import { useMutation, useQuery } from "convex/react";
  *
  * @see https://github.com/get-convex/convex-helpers/blob/main/packages/convex-helpers/server/utils.ts
  */
-export type Expand<ObjectType extends Record<any, any>> =
-  ObjectType extends Record<any, any>
-    ? {
-        [Key in keyof ObjectType]: ObjectType[Key];
-      }
-    : never;
+export type Expand<ObjectType extends Record<any, any>> = ObjectType extends Record<any, any>
+  ? {
+      [Key in keyof ObjectType]: ObjectType[Key];
+    }
+  : never;
 
 // @ts-ignore - Suppress TS2589 for api cast
 export const apiAny = api as any;

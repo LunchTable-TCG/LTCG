@@ -4,7 +4,7 @@ import { LogoutConfirmDialog } from "@/components/dialogs/LogoutConfirmDialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth, useLogout } from "@/hooks/auth/useConvexAuthHook";
-import { useConvexQuery, apiAny } from "@/lib/convexHelpers";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import {
   BookOpen,
@@ -158,7 +158,9 @@ export function Navbar() {
                       <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
                       <Avatar className="relative w-10 h-10 border-2 border-border group-hover:border-primary/50 transition-colors">
                         <AvatarFallback className="bg-secondary text-primary text-sm font-bold">
-                          {currentUser === undefined ? "..." : (currentUser?.username?.[0]?.toUpperCase() || "?")}
+                          {currentUser === undefined
+                            ? "..."
+                            : currentUser?.username?.[0]?.toUpperCase() || "?"}
                         </AvatarFallback>
                       </Avatar>
                     </div>
@@ -238,12 +240,16 @@ export function Navbar() {
                   <div className="flex items-center gap-3 mb-3">
                     <Avatar className="w-12 h-12 border-2 border-primary/50">
                       <AvatarFallback className="bg-secondary text-primary font-bold">
-                        {currentUser === undefined ? "..." : (currentUser?.username?.[0]?.toUpperCase() || "?")}
+                        {currentUser === undefined
+                          ? "..."
+                          : currentUser?.username?.[0]?.toUpperCase() || "?"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-foreground truncate">
-                        {currentUser === undefined ? "Loading..." : (currentUser?.username || "Champion")}
+                        {currentUser === undefined
+                          ? "Loading..."
+                          : currentUser?.username || "Champion"}
                       </p>
                       <p className="text-xs text-muted-foreground">Rating: 1000</p>
                     </div>

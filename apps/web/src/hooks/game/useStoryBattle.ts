@@ -48,12 +48,12 @@
  * @returns {UseStoryBattleReturn} Story battle interface
  */
 
+import { handleHookError, logError } from "@/lib/errorHandling";
+import type { CompleteChapterResult } from "@/types";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useRef } from "react";
-import type { CompleteChapterResult } from "@/types";
-import { handleHookError, logError } from "@/lib/errorHandling";
 
 interface UseStoryBattleProps {
   lobbyId: Id<"gameLobbies">;

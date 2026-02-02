@@ -30,7 +30,9 @@ const RATING_DEFAULTS = {
  */
 export const listWaitingLobbies = query({
   args: {
-    mode: v.optional(v.union(v.literal("casual"), v.literal("ranked"), v.literal("pvp"), v.literal("all"))),
+    mode: v.optional(
+      v.union(v.literal("casual"), v.literal("ranked"), v.literal("pvp"), v.literal("all"))
+    ),
     userRating: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -186,7 +188,9 @@ export const getMyPrivateLobby = query({
  */
 export const listActiveGames = query({
   args: {
-    mode: v.optional(v.union(v.literal("casual"), v.literal("ranked"), v.literal("pvp"), v.literal("all"))),
+    mode: v.optional(
+      v.union(v.literal("casual"), v.literal("ranked"), v.literal("pvp"), v.literal("all"))
+    ),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { mode, limit = 50 }) => {
@@ -978,8 +982,7 @@ export const getTimeoutStatus = query({
     }
 
     // Check warning threshold
-    const isWarning =
-      actionTimeRemainingMs > 0 && actionTimeRemainingMs <= config.warningAtMs;
+    const isWarning = actionTimeRemainingMs > 0 && actionTimeRemainingMs <= config.warningAtMs;
 
     return {
       actionTimeRemainingMs,
@@ -1201,11 +1204,21 @@ export const getGameStateForPlayerInternal = internalQuery({
       myBoard,
       opponentBoard,
       myDeckCount: isHost ? gameState.hostDeck?.length || 0 : gameState.opponentDeck?.length || 0,
-      opponentDeckCount: isHost ? gameState.opponentDeck?.length || 0 : gameState.hostDeck?.length || 0,
-      myGraveyardCount: isHost ? gameState.hostGraveyard?.length || 0 : gameState.opponentGraveyard?.length || 0,
-      opponentGraveyardCount: isHost ? gameState.opponentGraveyard?.length || 0 : gameState.hostGraveyard?.length || 0,
-      opponentHandCount: isHost ? gameState.opponentHand?.length || 0 : gameState.hostHand?.length || 0,
-      normalSummonedThisTurn: isHost ? gameState.hostNormalSummonedThisTurn : gameState.opponentNormalSummonedThisTurn,
+      opponentDeckCount: isHost
+        ? gameState.opponentDeck?.length || 0
+        : gameState.hostDeck?.length || 0,
+      myGraveyardCount: isHost
+        ? gameState.hostGraveyard?.length || 0
+        : gameState.opponentGraveyard?.length || 0,
+      opponentGraveyardCount: isHost
+        ? gameState.opponentGraveyard?.length || 0
+        : gameState.hostGraveyard?.length || 0,
+      opponentHandCount: isHost
+        ? gameState.opponentHand?.length || 0
+        : gameState.hostHand?.length || 0,
+      normalSummonedThisTurn: isHost
+        ? gameState.hostNormalSummonedThisTurn
+        : gameState.opponentNormalSummonedThisTurn,
     };
   },
 });

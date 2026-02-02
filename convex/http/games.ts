@@ -8,34 +8,31 @@
  */
 
 import { api, internal } from "../_generated/api";
+import { type HttpActionCtx, authHttpAction } from "./middleware/auth";
 import {
-  authHttpAction,
-  type HttpActionCtx,
-} from "./middleware/auth";
-import {
-  successResponse,
+  corsPreflightResponse,
   errorResponse,
   getQueryParam,
-  corsPreflightResponse,
   parseJsonBody,
+  successResponse,
   validateRequiredFields,
 } from "./middleware/responses";
-import {
-  type SummonRequest,
-  type SetCardRequest,
-  type FlipSummonRequest,
-  type ChangePositionRequest,
-  type SetSpellTrapRequest,
-  type ActivateCardRequest,
-  type ChainResponseRequest,
-  type AttackRequest,
-  type GameIdRequest,
-  type InternalGameState,
-  type ActiveLobby,
-  type HandCard,
-  type FieldMonster,
-  type FieldSpellTrap,
-  type AvailableAction,
+import type {
+  ActivateCardRequest,
+  ActiveLobby,
+  AttackRequest,
+  AvailableAction,
+  ChainResponseRequest,
+  ChangePositionRequest,
+  FieldMonster,
+  FieldSpellTrap,
+  FlipSummonRequest,
+  GameIdRequest,
+  HandCard,
+  InternalGameState,
+  SetCardRequest,
+  SetSpellTrapRequest,
+  SummonRequest,
 } from "./types";
 
 // =============================================================================
@@ -58,9 +55,11 @@ const internalAny: any = internal;
  */
 const queryMap = {
   "gameplay.games.queries.getActiveLobby": apiAny.gameplay.games.queries.getActiveLobby,
-  "gameplay.games.queries.getGameStateForPlayer": apiAny.gameplay.games.queries.getGameStateForPlayer,
+  "gameplay.games.queries.getGameStateForPlayer":
+    apiAny.gameplay.games.queries.getGameStateForPlayer,
   "gameplay.gameEvents.getGameEvents": apiAny.gameplay.gameEvents.getGameEvents,
-  "gameplay.games.queries.getGameStateForPlayerInternal": internalAny.gameplay.games.queries.getGameStateForPlayerInternal,
+  "gameplay.games.queries.getGameStateForPlayerInternal":
+    internalAny.gameplay.games.queries.getGameStateForPlayerInternal,
 } as const;
 
 type QueryPath = keyof typeof queryMap;
@@ -79,7 +78,7 @@ async function runGameQuery<T>(
   }
   // The query map contains either public queries (runQuery) or internal queries (runQuery)
   // Convex httpAction ctx has runQuery for both
-  return await ctx.runQuery(query, args) as T;
+  return (await ctx.runQuery(query, args)) as T;
 }
 
 // =============================================================================
@@ -148,12 +147,9 @@ export const pendingTurns = authHttpAction(async (ctx, request, auth) => {
       },
     ]);
   } catch (error) {
-    return errorResponse(
-      "FETCH_PENDING_TURNS_FAILED",
-      "Failed to fetch pending turns",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_PENDING_TURNS_FAILED", "Failed to fetch pending turns", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -179,11 +175,7 @@ export const gameState = authHttpAction(async (ctx, request, auth) => {
     const gameId = getQueryParam(request, "gameId");
 
     if (!gameId) {
-      return errorResponse(
-        "MISSING_GAME_ID",
-        "gameId query parameter is required",
-        400
-      );
+      return errorResponse("MISSING_GAME_ID", "gameId query parameter is required", 400);
     }
 
     // Get game state using internal query that accepts gameId string
@@ -218,12 +210,9 @@ export const gameState = authHttpAction(async (ctx, request, auth) => {
       normalSummonedThisTurn: state.normalSummonedThisTurn,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_GAME_STATE_FAILED",
-      "Failed to fetch game state",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_GAME_STATE_FAILED", "Failed to fetch game state", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -249,11 +238,7 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
     const gameId = getQueryParam(request, "gameId");
 
     if (!gameId) {
-      return errorResponse(
-        "MISSING_GAME_ID",
-        "gameId query parameter is required",
-        400
-      );
+      return errorResponse("MISSING_GAME_ID", "gameId query parameter is required", 400);
     }
 
     // Get game state using internal query that accepts gameId string
@@ -363,10 +348,7 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
     if (phase === "battle") {
       const monstersCanAttack = myMonsters.filter(
         (monster: FieldMonster) =>
-          monster &&
-          !monster.isFaceDown &&
-          !monster.hasAttacked &&
-          monster.position === 1 // attack position
+          monster && !monster.isFaceDown && !monster.hasAttacked && monster.position === 1 // attack position
       );
 
       if (monstersCanAttack.length > 0) {
@@ -404,12 +386,9 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
       turnNumber: state.turnNumber,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_ACTIONS_FAILED",
-      "Failed to fetch available actions",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_ACTIONS_FAILED", "Failed to fetch available actions", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -439,22 +418,18 @@ export const gameHistory = authHttpAction(async (ctx, request, _auth) => {
     const offsetParam = getQueryParam(request, "offset");
 
     if (!gameId) {
-      return errorResponse(
-        "MISSING_GAME_ID",
-        "gameId query parameter is required",
-        400
-      );
+      return errorResponse("MISSING_GAME_ID", "gameId query parameter is required", 400);
     }
 
-    const limit = limitParam ? parseInt(limitParam, 10) : 50;
-    const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
+    const limit = limitParam ? Number.parseInt(limitParam, 10) : 50;
+    const offset = offsetParam ? Number.parseInt(offsetParam, 10) : 0;
 
     // Get game events
-    const events = await runGameQuery<unknown[]>(
-      ctx,
-      "gameplay.gameEvents.getGameEvents",
-      { lobbyId: gameId, limit, offset }
-    );
+    const events = await runGameQuery<unknown[]>(ctx, "gameplay.gameEvents.getGameEvents", {
+      lobbyId: gameId,
+      limit,
+      offset,
+    });
 
     return successResponse({
       events,
@@ -463,12 +438,9 @@ export const gameHistory = authHttpAction(async (ctx, request, _auth) => {
       offset,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_HISTORY_FAILED",
-      "Failed to fetch game history",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_HISTORY_FAILED", "Failed to fetch game history", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -505,11 +477,7 @@ export const summonMonster = authHttpAction(async (ctx, request, auth) => {
 
     // Validate position value
     if (body.position !== "attack" && body.position !== "defense") {
-      return errorResponse(
-        "INVALID_POSITION",
-        'Position must be "attack" or "defense"',
-        400
-      );
+      return errorResponse("INVALID_POSITION", 'Position must be "attack" or "defense"', 400);
     }
 
     // Execute summon via internal mutation that accepts gameId string
@@ -544,30 +512,19 @@ export const summonMonster = authHttpAction(async (ctx, request, auth) => {
         return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
       }
       if (error.message.includes("already summoned")) {
-        return errorResponse(
-          "ALREADY_SUMMONED",
-          "You have already Normal Summoned this turn",
-          400
-        );
+        return errorResponse("ALREADY_SUMMONED", "You have already Normal Summoned this turn", 400);
       }
       if (error.message.includes("requires") && error.message.includes("tribute")) {
-        return errorResponse(
-          "INSUFFICIENT_TRIBUTES",
-          "Monster requires tributes to summon",
-          400
-        );
+        return errorResponse("INSUFFICIENT_TRIBUTES", "Monster requires tributes to summon", 400);
       }
       if (error.message.includes("INVALID_MOVE")) {
         return errorResponse("INVALID_MOVE", error.message, 400);
       }
     }
 
-    return errorResponse(
-      "SUMMON_FAILED",
-      "Failed to summon monster",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("SUMMON_FAILED", "Failed to summon monster", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -625,23 +582,16 @@ export const setCard = authHttpAction(async (ctx, request, _auth) => {
         );
       }
       if (error.message.includes("requires") && error.message.includes("tribute")) {
-        return errorResponse(
-          "INSUFFICIENT_TRIBUTES",
-          "Monster requires tributes to set",
-          400
-        );
+        return errorResponse("INSUFFICIENT_TRIBUTES", "Monster requires tributes to set", 400);
       }
       if (error.message.includes("INVALID_MOVE")) {
         return errorResponse("INVALID_MOVE", error.message, 400);
       }
     }
 
-    return errorResponse(
-      "SET_CARD_FAILED",
-      "Failed to set card",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("SET_CARD_FAILED", "Failed to set card", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -669,11 +619,7 @@ export const flipSummonMonster = authHttpAction(async (ctx, request, _auth) => {
 
     // Validate position value
     if (body.newPosition !== "attack" && body.newPosition !== "defense") {
-      return errorResponse(
-        "INVALID_POSITION",
-        'Position must be "attack" or "defense"',
-        400
-      );
+      return errorResponse("INVALID_POSITION", 'Position must be "attack" or "defense"', 400);
     }
 
     interface FlipSummonResult {
@@ -714,12 +660,9 @@ export const flipSummonMonster = authHttpAction(async (ctx, request, _auth) => {
       }
     }
 
-    return errorResponse(
-      "FLIP_SUMMON_FAILED",
-      "Failed to flip summon monster",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FLIP_SUMMON_FAILED", "Failed to flip summon monster", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -768,7 +711,10 @@ export const changeMonsterPosition = authHttpAction(async (ctx, request, _auth) 
       if (error.message.includes("NOT_YOUR_TURN")) {
         return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
       }
-      if (error.message.includes("Cannot change position") || error.message.includes("Battle Phase")) {
+      if (
+        error.message.includes("Cannot change position") ||
+        error.message.includes("Battle Phase")
+      ) {
         return errorResponse(
           "CANNOT_CHANGE_POSITION",
           "Cannot change monster position during Battle Phase",
@@ -787,12 +733,9 @@ export const changeMonsterPosition = authHttpAction(async (ctx, request, _auth) 
       }
     }
 
-    return errorResponse(
-      "CHANGE_POSITION_FAILED",
-      "Failed to change monster position",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("CHANGE_POSITION_FAILED", "Failed to change monster position", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -840,27 +783,16 @@ export const setSpellTrapCard = authHttpAction(async (ctx, request, _auth) => {
         return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
       }
       if (error.message.includes("ZONE_FULL") || error.message.includes("full")) {
-        return errorResponse(
-          "ZONE_FULL",
-          "Spell/Trap Zone is full (max 5 cards)",
-          400
-        );
+        return errorResponse("ZONE_FULL", "Spell/Trap Zone is full (max 5 cards)", 400);
       }
       if (error.message.includes("INVALID_CARD_TYPE")) {
-        return errorResponse(
-          "INVALID_CARD_TYPE",
-          "Card must be a spell or trap",
-          400
-        );
+        return errorResponse("INVALID_CARD_TYPE", "Card must be a spell or trap", 400);
       }
     }
 
-    return errorResponse(
-      "SET_SPELL_TRAP_FAILED",
-      "Failed to set spell/trap card",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("SET_SPELL_TRAP_FAILED", "Failed to set spell/trap card", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -924,11 +856,7 @@ export const activateSpellCard = authHttpAction(async (ctx, request, _auth) => {
         );
       }
       if (error.message.includes("INVALID_CARD_TYPE") || error.message.includes("not a spell")) {
-        return errorResponse(
-          "INVALID_CARD_TYPE",
-          "Card is not a spell card",
-          400
-        );
+        return errorResponse("INVALID_CARD_TYPE", "Card is not a spell card", 400);
       }
       if (error.message.includes("CARD_NOT_IN_ZONE")) {
         return errorResponse(
@@ -939,12 +867,9 @@ export const activateSpellCard = authHttpAction(async (ctx, request, _auth) => {
       }
     }
 
-    return errorResponse(
-      "ACTIVATE_SPELL_FAILED",
-      "Failed to activate spell",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("ACTIVATE_SPELL_FAILED", "Failed to activate spell", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -1005,34 +930,22 @@ export const activateTrapCard = authHttpAction(async (ctx, request, _auth) => {
         );
       }
       if (error.message.includes("INVALID_CARD_TYPE") || error.message.includes("not a trap")) {
-        return errorResponse(
-          "INVALID_CARD_TYPE",
-          "Card is not a trap card",
-          400
-        );
+        return errorResponse("INVALID_CARD_TYPE", "Card is not a trap card", 400);
       }
-      if (error.message.includes("CARD_NOT_IN_ZONE") || error.message.includes("not set on your field")) {
-        return errorResponse(
-          "CARD_NOT_IN_ZONE",
-          "Trap card is not set on your field",
-          400
-        );
+      if (
+        error.message.includes("CARD_NOT_IN_ZONE") ||
+        error.message.includes("not set on your field")
+      ) {
+        return errorResponse("CARD_NOT_IN_ZONE", "Trap card is not set on your field", 400);
       }
       if (error.message.includes("CARD_ALREADY_FACE_UP")) {
-        return errorResponse(
-          "CARD_ALREADY_FACE_UP",
-          "Trap card is already face-up",
-          400
-        );
+        return errorResponse("CARD_ALREADY_FACE_UP", "Trap card is already face-up", 400);
       }
     }
 
-    return errorResponse(
-      "ACTIVATE_TRAP_FAILED",
-      "Failed to activate trap",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("ACTIVATE_TRAP_FAILED", "Failed to activate trap", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -1081,11 +994,7 @@ export const chainResponse = authHttpAction(async (ctx, request, _auth) => {
     } else {
       // Respond with a card (Quick-Play Spell or Trap)
       if (!body.cardId) {
-        return errorResponse(
-          "MISSING_CARD_ID",
-          "cardId is required when pass is false",
-          400
-        );
+        return errorResponse("MISSING_CARD_ID", "cardId is required when pass is false", 400);
       }
 
       // For simplicity, agents should use activate-spell or activate-trap endpoints
@@ -1101,27 +1010,16 @@ export const chainResponse = authHttpAction(async (ctx, request, _auth) => {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("NO_CHAIN")) {
-        return errorResponse(
-          "NO_CHAIN",
-          "No chain to respond to",
-          400
-        );
+        return errorResponse("NO_CHAIN", "No chain to respond to", 400);
       }
       if (error.message.includes("NOT_YOUR_TURN") || error.message.includes("priority")) {
-        return errorResponse(
-          "NOT_YOUR_PRIORITY",
-          "You don't have priority to respond",
-          403
-        );
+        return errorResponse("NOT_YOUR_PRIORITY", "You don't have priority to respond", 403);
       }
     }
 
-    return errorResponse(
-      "CHAIN_RESPONSE_FAILED",
-      "Failed to respond to chain",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("CHAIN_RESPONSE_FAILED", "Failed to respond to chain", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -1184,11 +1082,7 @@ export const attackMonster = authHttpAction(async (ctx, request, auth) => {
         return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
       }
       if (error.message.includes("INVALID_PHASE") || error.message.includes("Battle Phase")) {
-        return errorResponse(
-          "INVALID_PHASE",
-          "Can only attack during Battle Phase",
-          400
-        );
+        return errorResponse("INVALID_PHASE", "Can only attack during Battle Phase", 400);
       }
       if (error.message.includes("already attacked")) {
         return errorResponse(
@@ -1198,27 +1092,16 @@ export const attackMonster = authHttpAction(async (ctx, request, auth) => {
         );
       }
       if (error.message.includes("Attack Position")) {
-        return errorResponse(
-          "WRONG_POSITION",
-          "Monster must be in Attack Position to attack",
-          400
-        );
+        return errorResponse("WRONG_POSITION", "Monster must be in Attack Position to attack", 400);
       }
       if (error.message.includes("not found on your field")) {
-        return errorResponse(
-          "CARD_NOT_FOUND",
-          "Attacker not found on your field",
-          400
-        );
+        return errorResponse("CARD_NOT_FOUND", "Attacker not found on your field", 400);
       }
     }
 
-    return errorResponse(
-      "ATTACK_FAILED",
-      "Failed to declare attack",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("ATTACK_FAILED", "Failed to declare attack", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -1262,21 +1145,14 @@ export const enterBattlePhase = authHttpAction(async (ctx, request, auth) => {
 
     // Verify we're in main1
     if (state.currentPhase !== "main1") {
-      return errorResponse(
-        "INVALID_PHASE",
-        "Can only enter Battle Phase from Main Phase 1",
-        400
-      );
+      return errorResponse("INVALID_PHASE", "Can only enter Battle Phase from Main Phase 1", 400);
     }
 
     // Update phase to battle
-    await ctx.runMutation(
-      internalAny.gameplay.gameEngine.phases.advanceToBattlePhaseInternal,
-      {
-        gameId: body.gameId,
-        userId: auth.userId,
-      }
-    );
+    await ctx.runMutation(internalAny.gameplay.gameEngine.phases.advanceToBattlePhaseInternal, {
+      gameId: body.gameId,
+      userId: auth.userId,
+    });
 
     return successResponse({
       success: true,
@@ -1284,12 +1160,9 @@ export const enterBattlePhase = authHttpAction(async (ctx, request, auth) => {
       message: "Entered Battle Phase",
     });
   } catch (error) {
-    return errorResponse(
-      "PHASE_CHANGE_FAILED",
-      "Failed to enter Battle Phase",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("PHASE_CHANGE_FAILED", "Failed to enter Battle Phase", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -1333,21 +1206,14 @@ export const enterMain2 = authHttpAction(async (ctx, request, auth) => {
 
     // Verify we're in battle phase
     if (state.currentPhase !== "battle") {
-      return errorResponse(
-        "INVALID_PHASE",
-        "Can only enter Main Phase 2 from Battle Phase",
-        400
-      );
+      return errorResponse("INVALID_PHASE", "Can only enter Main Phase 2 from Battle Phase", 400);
     }
 
     // Update phase to main2
-    await ctx.runMutation(
-      internalAny.gameplay.gameEngine.phases.advanceToMainPhase2Internal,
-      {
-        gameId: body.gameId,
-        userId: auth.userId,
-      }
-    );
+    await ctx.runMutation(internalAny.gameplay.gameEngine.phases.advanceToMainPhase2Internal, {
+      gameId: body.gameId,
+      userId: auth.userId,
+    });
 
     return successResponse({
       success: true,
@@ -1355,12 +1221,9 @@ export const enterMain2 = authHttpAction(async (ctx, request, auth) => {
       message: "Entered Main Phase 2",
     });
   } catch (error) {
-    return errorResponse(
-      "PHASE_CHANGE_FAILED",
-      "Failed to enter Main Phase 2",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("PHASE_CHANGE_FAILED", "Failed to enter Main Phase 2", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -1413,7 +1276,10 @@ export const endPlayerTurn = authHttpAction(async (ctx, request, auth) => {
       if (error.message.includes("NOT_YOUR_TURN")) {
         return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
       }
-      if (error.message.includes("INVALID_PHASE") || error.message.includes("Main Phase 2 or End Phase")) {
+      if (
+        error.message.includes("INVALID_PHASE") ||
+        error.message.includes("Main Phase 2 or End Phase")
+      ) {
         return errorResponse(
           "INVALID_PHASE",
           "Must be in Main Phase 2 or End Phase to end turn",
@@ -1422,12 +1288,9 @@ export const endPlayerTurn = authHttpAction(async (ctx, request, auth) => {
       }
     }
 
-    return errorResponse(
-      "END_TURN_FAILED",
-      "Failed to end turn",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("END_TURN_FAILED", "Failed to end turn", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -1454,12 +1317,9 @@ export const surrenderGame = authHttpAction(async (ctx, request, _auth) => {
     if (validation) return validation;
 
     // Execute surrender via game lifecycle
-    await ctx.runMutation(
-      apiAny.gameplay.games.lifecycle.surrenderGame,
-      {
-        lobbyId: body.gameId,
-      }
-    );
+    await ctx.runMutation(apiAny.gameplay.games.lifecycle.surrenderGame, {
+      lobbyId: body.gameId,
+    });
 
     return successResponse({
       success: true,
@@ -1468,26 +1328,15 @@ export const surrenderGame = authHttpAction(async (ctx, request, _auth) => {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("Game is not active")) {
-        return errorResponse(
-          "GAME_NOT_ACTIVE",
-          "Game is not active",
-          400
-        );
+        return errorResponse("GAME_NOT_ACTIVE", "Game is not active", 400);
       }
       if (error.message.includes("You are not in this game")) {
-        return errorResponse(
-          "NOT_IN_GAME",
-          "You are not in this game",
-          403
-        );
+        return errorResponse("NOT_IN_GAME", "You are not in this game", 403);
       }
     }
 
-    return errorResponse(
-      "SURRENDER_FAILED",
-      "Failed to surrender game",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("SURRENDER_FAILED", "Failed to surrender game", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });

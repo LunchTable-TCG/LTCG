@@ -47,7 +47,10 @@ export function CreateGameModal({ isOpen, onClose, onSubmit }: CreateGameModalPr
       />
 
       {/* Modal */}
-      <div data-testid="create-game-modal" className="relative w-full max-w-md mx-4 tcg-chat-leather rounded-2xl border border-[#3d2b1f] shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+      <div
+        data-testid="create-game-modal"
+        className="relative w-full max-w-md mx-4 tcg-chat-leather rounded-2xl border border-[#3d2b1f] shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
+      >
         <div className="ornament-corner ornament-corner-tl" />
         <div className="ornament-corner ornament-corner-tr" />
         <div className="ornament-corner ornament-corner-bl" />

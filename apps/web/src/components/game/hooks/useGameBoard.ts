@@ -1,8 +1,8 @@
 "use client";
 
-import type { Id } from "@convex/_generated/dataModel";
-import { getCardEffectsArray, type JsonAbility } from "@/lib/cardHelpers";
+import { type JsonAbility, getCardEffectsArray } from "@/lib/cardHelpers";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { useCallback, useMemo } from "react";
 
 // =============================================================================
@@ -369,9 +369,15 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   // Mutations using convexHelpers to avoid TS2589
   const normalSummonMutation = useConvexMutation(apiAny.gameplay.gameEngine.summons.normalSummon);
   const setMonsterMutation = useConvexMutation(apiAny.gameplay.gameEngine.summons.setMonster);
-  const setSpellTrapMutation = useConvexMutation(apiAny.gameplay.gameEngine.spellsTraps.setSpellTrap);
-  const activateSpellMutation = useConvexMutation(apiAny.gameplay.gameEngine.spellsTraps.activateSpell);
-  const activateTrapMutation = useConvexMutation(apiAny.gameplay.gameEngine.spellsTraps.activateTrap);
+  const setSpellTrapMutation = useConvexMutation(
+    apiAny.gameplay.gameEngine.spellsTraps.setSpellTrap
+  );
+  const activateSpellMutation = useConvexMutation(
+    apiAny.gameplay.gameEngine.spellsTraps.activateSpell
+  );
+  const activateTrapMutation = useConvexMutation(
+    apiAny.gameplay.gameEngine.spellsTraps.activateTrap
+  );
 
   // Chain system mutations
   const passPriorityMutation = useConvexMutation(apiAny.gameplay.chainResolver.passPriority);

@@ -1114,10 +1114,7 @@ describe("JSON Effect Parser - Complex Conditions", () => {
           summonFrom: "graveyard",
           activationCondition: {
             type: "and",
-            conditions: [
-              { graveyardContains: { count: { min: 2 } } },
-              { lpBelow: 4000 },
-            ],
+            conditions: [{ graveyardContains: { count: { min: 2 } } }, { lpBelow: 4000 }],
           },
         },
       ],
@@ -1138,10 +1135,7 @@ describe("JSON Effect Parser - Complex Conditions", () => {
           value: 1,
           activationCondition: {
             type: "or",
-            conditions: [
-              { handSize: { max: 1 } },
-              { lpBelow: 2000 },
-            ],
+            conditions: [{ handSize: { max: 1 } }, { lpBelow: 2000 }],
           },
         },
       ],

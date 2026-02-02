@@ -142,7 +142,10 @@ function GraveyardPile({
 
           <div className="absolute inset-0 bg-gray-900/40 rounded" />
 
-          <div className="absolute -bottom-1 -right-1 z-10 bg-background border rounded-full px-1 py-0.5 text-[8px] sm:text-[10px] font-medium" data-testid="graveyard-count">
+          <div
+            className="absolute -bottom-1 -right-1 z-10 bg-background border rounded-full px-1 py-0.5 text-[8px] sm:text-[10px] font-medium"
+            data-testid="graveyard-count"
+          >
             {count}
           </div>
         </>

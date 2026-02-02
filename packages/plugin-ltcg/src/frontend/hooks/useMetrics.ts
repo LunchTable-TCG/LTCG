@@ -4,8 +4,8 @@
  * Polls every 10 seconds to track agent performance
  */
 
-import { useQuery } from '@tanstack/react-query';
-import type { AgentMetrics } from '../types/panel';
+import { useQuery } from "@tanstack/react-query";
+import type { AgentMetrics } from "../types/panel";
 
 /**
  * Fetch performance metrics from the API
@@ -25,7 +25,7 @@ async function fetchMetrics(agentId: string): Promise<AgentMetrics> {
  */
 export function useMetrics(agentId: string) {
   return useQuery({
-    queryKey: ['ltcg', 'metrics', agentId],
+    queryKey: ["ltcg", "metrics", agentId],
     queryFn: () => fetchMetrics(agentId),
     refetchInterval: 10000, // Poll every 10 seconds (less frequent than other hooks)
     staleTime: 9000, // Consider data stale after 9 seconds

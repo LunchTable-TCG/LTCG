@@ -108,12 +108,8 @@ export const getAgentDecisionStats = internalQuery({
     return {
       totalDecisions: decisions.length,
       actionCounts,
-      avgExecutionTimeMs:
-        decisions.length > 0 ? totalExecutionTime / decisions.length : 0,
-      successRate:
-        decisions.length > 0
-          ? successCount / decisions.length
-          : 0,
+      avgExecutionTimeMs: decisions.length > 0 ? totalExecutionTime / decisions.length : 0,
+      successRate: decisions.length > 0 ? successCount / decisions.length : 0,
       successCount,
       failureCount,
     };

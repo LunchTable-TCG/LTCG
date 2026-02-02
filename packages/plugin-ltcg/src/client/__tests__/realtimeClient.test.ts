@@ -6,9 +6,9 @@
  * via dependency injection pattern (_testClient config option).
  */
 
-import { describe, it, expect, beforeEach, afterEach, mock, spyOn } from 'bun:test';
-import { ConvexRealtimeClient, type IConvexClient } from '../realtimeClient';
-import type { GameStateResponse, GameEvent } from '../../types/api';
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import type { GameEvent } from "../../types/api";
+import { ConvexRealtimeClient, type IConvexClient } from "../realtimeClient";
 
 // Mock ConvexClient methods using bun:test mock
 const mockOnUpdate = mock();
@@ -28,11 +28,11 @@ function createMockConvexClient(): IConvexClient {
   };
 }
 
-describe('ConvexRealtimeClient', () => {
-  const TEST_CONVEX_URL = 'https://test-deployment.convex.cloud';
-  const TEST_AUTH_TOKEN = 'test-jwt-token-123';
-  const TEST_GAME_ID = 'test-game-123';
-  const TEST_USER_ID = 'test-user-456';
+describe("ConvexRealtimeClient", () => {
+  const TEST_CONVEX_URL = "https://test-deployment.convex.cloud";
+  const TEST_AUTH_TOKEN = "test-jwt-token-123";
+  const TEST_GAME_ID = "test-game-123";
+  const TEST_USER_ID = "test-user-456";
 
   let client: ConvexRealtimeClient;
   let mockClient: IConvexClient;
@@ -56,7 +56,9 @@ describe('ConvexRealtimeClient', () => {
   });
 
   // Helper to create client with mock injected
-  function createTestClient(config: { convexUrl?: string; authToken?: string; debug?: boolean } = {}) {
+  function createTestClient(
+    config: { convexUrl?: string; authToken?: string; debug?: boolean } = {}
+  ) {
     return new ConvexRealtimeClient({
       convexUrl: config.convexUrl ?? TEST_CONVEX_URL,
       authToken: config.authToken,
@@ -69,33 +71,33 @@ describe('ConvexRealtimeClient', () => {
   // Constructor Tests
   // ============================================================================
 
-  describe('constructor', () => {
-    it('should create client with required config', () => {
+  describe("constructor", () => {
+    it("should create client with required config", () => {
       client = createTestClient();
 
       expect(client).toBeInstanceOf(ConvexRealtimeClient);
       expect(client.isClientConnected()).toBe(true);
     });
 
-    it('should create client with auth token', () => {
+    it("should create client with auth token", () => {
       client = createTestClient({ authToken: TEST_AUTH_TOKEN });
 
       expect(mockSetAuth).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it('should throw if Convex URL is missing', () => {
+    it("should throw if Convex URL is missing", () => {
       expect(() => {
-        new ConvexRealtimeClient({ convexUrl: '', _testClient: mockClient });
-      }).toThrow('Convex URL is required');
+        new ConvexRealtimeClient({ convexUrl: "", _testClient: mockClient });
+      }).toThrow("Convex URL is required");
     });
 
-    it('should enable debug mode when specified', () => {
-      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    it("should enable debug mode when specified", () => {
+      const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
 
       client = createTestClient({ debug: true });
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[ConvexRealtimeClient] Client initialized')
+        expect.stringContaining("[ConvexRealtimeClient] Client initialized")
       );
 
       consoleSpy.mockRestore();
@@ -106,34 +108,34 @@ describe('ConvexRealtimeClient', () => {
   // Authentication Tests
   // ============================================================================
 
-  describe('authentication', () => {
+  describe("authentication", () => {
     beforeEach(() => {
       client = createTestClient();
     });
 
-    it('should set authentication token', () => {
+    it("should set authentication token", () => {
       client.setAuth(TEST_AUTH_TOKEN);
       expect(mockSetAuth).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it('should clear authentication token', () => {
+    it("should clear authentication token", () => {
       client.clearAuth();
       expect(mockClearAuth).toHaveBeenCalled();
     });
 
-    it('should log auth changes in debug mode', () => {
+    it("should log auth changes in debug mode", () => {
       client = createTestClient({ debug: true });
 
-      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
 
       client.setAuth(TEST_AUTH_TOKEN);
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[ConvexRealtimeClient] Authentication token set')
+        expect.stringContaining("[ConvexRealtimeClient] Authentication token set")
       );
 
       client.clearAuth();
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[ConvexRealtimeClient] Authentication token cleared')
+        expect.stringContaining("[ConvexRealtimeClient] Authentication token cleared")
       );
 
       consoleSpy.mockRestore();
@@ -144,7 +146,7 @@ describe('ConvexRealtimeClient', () => {
   // Game State Subscription Tests
   // ============================================================================
 
-  describe('subscribeToGame', () => {
+  describe("subscribeToGame", () => {
     beforeEach(() => {
       client = createTestClient();
 
@@ -154,20 +156,20 @@ describe('ConvexRealtimeClient', () => {
       });
     });
 
-    it('should subscribe to game state updates', () => {
+    it("should subscribe to game state updates", () => {
       const callback = mock();
 
       const unsubscribe = client.subscribeToGame(TEST_GAME_ID, callback);
 
       expect(mockOnUpdate).toHaveBeenCalledWith(
-        'gameplay/games/queries:getGameStateForPlayer',
+        "gameplay/games/queries:getGameStateForPlayer",
         { lobbyId: TEST_GAME_ID },
         expect.any(Function)
       );
       expect(unsubscribe).toBeInstanceOf(Function);
     });
 
-    it('should call callback when game state updates', () => {
+    it("should call callback when game state updates", () => {
       const callback = mock();
       let capturedCallback: any;
 
@@ -181,12 +183,12 @@ describe('ConvexRealtimeClient', () => {
       // Simulate game state update from Convex
       const mockGameState = {
         lobbyId: TEST_GAME_ID,
-        status: 'active',
+        status: "active",
         isHost: true,
-        currentPhase: 'main1',
+        currentPhase: "main1",
         turnNumber: 3,
-        hostId: 'host-123',
-        opponentId: 'opponent-456',
+        hostId: "host-123",
+        opponentId: "opponent-456",
         hostLifePoints: 8000,
         opponentLifePoints: 7000,
         hostDeckCount: 30,
@@ -205,14 +207,14 @@ describe('ConvexRealtimeClient', () => {
       expect(callback).toHaveBeenCalledWith(
         expect.objectContaining({
           gameId: TEST_GAME_ID,
-          status: 'active',
-          phase: 'main1',
+          status: "active",
+          phase: "main1",
           turnNumber: 3,
         })
       );
     });
 
-    it('should not create duplicate subscriptions', () => {
+    it("should not create duplicate subscriptions", () => {
       const callback1 = mock();
       const callback2 = mock();
 
@@ -228,7 +230,7 @@ describe('ConvexRealtimeClient', () => {
       expect(unsub2).toBeInstanceOf(Function);
     });
 
-    it('should unsubscribe and clean up tracking', () => {
+    it("should unsubscribe and clean up tracking", () => {
       const callback = mock();
       const mockUnsubscribe = mock();
 
@@ -244,7 +246,7 @@ describe('ConvexRealtimeClient', () => {
       expect(client.getSubscriptionCount()).toBe(0);
     });
 
-    it('should track subscription in active list', () => {
+    it("should track subscription in active list", () => {
       const callback = mock();
 
       client.subscribeToGame(TEST_GAME_ID, callback);
@@ -252,7 +254,7 @@ describe('ConvexRealtimeClient', () => {
       const subscriptions = client.getActiveSubscriptions();
       expect(subscriptions).toHaveLength(1);
       expect(subscriptions[0]).toMatchObject({
-        type: 'game',
+        type: "game",
         gameId: TEST_GAME_ID,
       });
     });
@@ -262,7 +264,7 @@ describe('ConvexRealtimeClient', () => {
   // Turn Notification Subscription Tests
   // ============================================================================
 
-  describe('subscribeToTurnNotifications', () => {
+  describe("subscribeToTurnNotifications", () => {
     beforeEach(() => {
       client = createTestClient();
 
@@ -272,20 +274,20 @@ describe('ConvexRealtimeClient', () => {
       });
     });
 
-    it('should subscribe to turn notifications', () => {
+    it("should subscribe to turn notifications", () => {
       const callback = mock();
 
       const unsubscribe = client.subscribeToTurnNotifications(TEST_USER_ID, callback);
 
       expect(mockOnUpdate).toHaveBeenCalledWith(
-        'gameplay/games/queries:getActiveLobby',
+        "gameplay/games/queries:getActiveLobby",
         { userId: TEST_USER_ID },
         expect.any(Function)
       );
       expect(unsubscribe).toBeInstanceOf(Function);
     });
 
-    it('should call callback with empty array when no active lobby', () => {
+    it("should call callback with empty array when no active lobby", () => {
       const callback = mock();
       let capturedCallback: any;
 
@@ -302,7 +304,7 @@ describe('ConvexRealtimeClient', () => {
       expect(callback).toHaveBeenCalledWith([]);
     });
 
-    it('should call callback with game IDs when it is user turn', async () => {
+    it("should call callback with game IDs when it is user turn", async () => {
       const callback = mock();
       let capturedCallback: any;
 
@@ -328,13 +330,13 @@ describe('ConvexRealtimeClient', () => {
       // Wait for async query to complete
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      expect(mockQuery).toHaveBeenCalledWith('gameplay/games/queries:getGameStateForPlayer', {
+      expect(mockQuery).toHaveBeenCalledWith("gameplay/games/queries:getGameStateForPlayer", {
         lobbyId: TEST_GAME_ID,
       });
       expect(callback).toHaveBeenCalledWith([TEST_GAME_ID]);
     });
 
-    it('should call callback with empty array when not user turn', async () => {
+    it("should call callback with empty array when not user turn", async () => {
       const callback = mock();
       let capturedCallback: any;
 
@@ -344,7 +346,7 @@ describe('ConvexRealtimeClient', () => {
       });
 
       mockQuery.mockResolvedValue({
-        currentTurnPlayerId: 'other-user-789',
+        currentTurnPlayerId: "other-user-789",
       });
 
       client.subscribeToTurnNotifications(TEST_USER_ID, callback);
@@ -363,7 +365,7 @@ describe('ConvexRealtimeClient', () => {
       expect(callback).toHaveBeenCalledWith([]);
     });
 
-    it('should track subscription in active list', () => {
+    it("should track subscription in active list", () => {
       const callback = mock();
 
       client.subscribeToTurnNotifications(TEST_USER_ID, callback);
@@ -371,7 +373,7 @@ describe('ConvexRealtimeClient', () => {
       const subscriptions = client.getActiveSubscriptions();
       expect(subscriptions).toHaveLength(1);
       expect(subscriptions[0]).toMatchObject({
-        type: 'turns',
+        type: "turns",
         userId: TEST_USER_ID,
       });
     });
@@ -381,14 +383,14 @@ describe('ConvexRealtimeClient', () => {
   // Game Events Subscription Tests
   // ============================================================================
 
-  describe('subscribeToGameEvents', () => {
+  describe("subscribeToGameEvents", () => {
     beforeEach(() => {
       client = createTestClient();
 
       mockOnUpdate.mockReturnValue(() => {});
     });
 
-    it('should subscribe to game events', () => {
+    it("should subscribe to game events", () => {
       const callback = mock();
 
       const unsubscribe = client.subscribeToGameEvents(TEST_GAME_ID, callback);
@@ -397,7 +399,7 @@ describe('ConvexRealtimeClient', () => {
       expect(unsubscribe).toBeInstanceOf(Function);
     });
 
-    it('should call callback only for new events', () => {
+    it("should call callback only for new events", () => {
       const callback = mock();
       let capturedCallback: any;
 
@@ -409,24 +411,24 @@ describe('ConvexRealtimeClient', () => {
       client.subscribeToGameEvents(TEST_GAME_ID, callback);
 
       const mockEvent1: GameEvent = {
-        eventId: 'event-1',
+        eventId: "event-1",
         gameId: TEST_GAME_ID,
         turnNumber: 1,
-        phase: 'main1',
-        eventType: 'summon',
-        playerId: 'player-123',
-        description: 'Summoned Blue-Eyes White Dragon',
+        phase: "main1",
+        eventType: "summon",
+        playerId: "player-123",
+        description: "Summoned Blue-Eyes White Dragon",
         timestamp: Date.now(),
       };
 
       const mockEvent2: GameEvent = {
-        eventId: 'event-2',
+        eventId: "event-2",
         gameId: TEST_GAME_ID,
         turnNumber: 1,
-        phase: 'battle',
-        eventType: 'attack',
-        playerId: 'player-123',
-        description: 'Attacked with Blue-Eyes White Dragon',
+        phase: "battle",
+        eventType: "attack",
+        playerId: "player-123",
+        description: "Attacked with Blue-Eyes White Dragon",
         timestamp: Date.now(),
       };
 
@@ -454,7 +456,7 @@ describe('ConvexRealtimeClient', () => {
       expect(callback).toHaveBeenCalledTimes(1);
     });
 
-    it('should not call callback when no events exist', () => {
+    it("should not call callback when no events exist", () => {
       const callback = mock();
       let capturedCallback: any;
 
@@ -478,7 +480,7 @@ describe('ConvexRealtimeClient', () => {
       expect(callback).not.toHaveBeenCalled();
     });
 
-    it('should track subscription in active list', () => {
+    it("should track subscription in active list", () => {
       const callback = mock();
 
       client.subscribeToGameEvents(TEST_GAME_ID, callback);
@@ -486,7 +488,7 @@ describe('ConvexRealtimeClient', () => {
       const subscriptions = client.getActiveSubscriptions();
       expect(subscriptions).toHaveLength(1);
       expect(subscriptions[0]).toMatchObject({
-        type: 'events',
+        type: "events",
         gameId: TEST_GAME_ID,
       });
     });
@@ -496,14 +498,14 @@ describe('ConvexRealtimeClient', () => {
   // Subscription Management Tests
   // ============================================================================
 
-  describe('subscription management', () => {
+  describe("subscription management", () => {
     beforeEach(() => {
       client = createTestClient();
 
       mockOnUpdate.mockReturnValue(() => {});
     });
 
-    it('should unsubscribe by key', () => {
+    it("should unsubscribe by key", () => {
       const callback = mock();
       const mockUnsubscribe = mock();
 
@@ -519,7 +521,7 @@ describe('ConvexRealtimeClient', () => {
       expect(client.getSubscriptionCount()).toBe(0);
     });
 
-    it('should unsubscribe all subscriptions', () => {
+    it("should unsubscribe all subscriptions", () => {
       const callback = mock();
       const mockUnsubscribe1 = mock();
       const mockUnsubscribe2 = mock();
@@ -530,8 +532,8 @@ describe('ConvexRealtimeClient', () => {
         .mockReturnValueOnce(mockUnsubscribe2)
         .mockReturnValueOnce(mockUnsubscribe3);
 
-      client.subscribeToGame('game-1', callback);
-      client.subscribeToGame('game-2', callback);
+      client.subscribeToGame("game-1", callback);
+      client.subscribeToGame("game-2", callback);
       client.subscribeToTurnNotifications(TEST_USER_ID, callback);
 
       expect(client.getSubscriptionCount()).toBe(3);
@@ -544,59 +546,59 @@ describe('ConvexRealtimeClient', () => {
       expect(client.getSubscriptionCount()).toBe(0);
     });
 
-    it('should handle unsubscribe errors gracefully', () => {
+    it("should handle unsubscribe errors gracefully", () => {
       const callback = mock();
       const mockUnsubscribe = mock().mockImplementation(() => {
-        throw new Error('Unsubscribe failed');
+        throw new Error("Unsubscribe failed");
       });
 
       mockOnUpdate.mockReturnValue(mockUnsubscribe);
 
       client = createTestClient({ debug: true });
 
-      const consoleSpy = spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = spyOn(console, "error").mockImplementation(() => {});
 
       client.subscribeToGame(TEST_GAME_ID, callback);
       client.unsubscribeAll();
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[ConvexRealtimeClient] Error unsubscribing'),
+        expect.stringContaining("[ConvexRealtimeClient] Error unsubscribing"),
         expect.any(Error)
       );
 
       consoleSpy.mockRestore();
     });
 
-    it('should get all active subscriptions', () => {
+    it("should get all active subscriptions", () => {
       const callback = mock();
 
-      client.subscribeToGame('game-1', callback);
-      client.subscribeToGame('game-2', callback);
+      client.subscribeToGame("game-1", callback);
+      client.subscribeToGame("game-2", callback);
       client.subscribeToTurnNotifications(TEST_USER_ID, callback);
 
       const subscriptions = client.getActiveSubscriptions();
 
       expect(subscriptions).toHaveLength(3);
-      expect(subscriptions[0].type).toBe('game');
-      expect(subscriptions[1].type).toBe('game');
-      expect(subscriptions[2].type).toBe('turns');
+      expect(subscriptions[0].type).toBe("game");
+      expect(subscriptions[1].type).toBe("game");
+      expect(subscriptions[2].type).toBe("turns");
     });
 
-    it('should get subscription count', () => {
+    it("should get subscription count", () => {
       const callback = mock();
 
       expect(client.getSubscriptionCount()).toBe(0);
 
-      client.subscribeToGame('game-1', callback);
+      client.subscribeToGame("game-1", callback);
       expect(client.getSubscriptionCount()).toBe(1);
 
-      client.subscribeToGame('game-2', callback);
+      client.subscribeToGame("game-2", callback);
       expect(client.getSubscriptionCount()).toBe(2);
 
       client.subscribeToTurnNotifications(TEST_USER_ID, callback);
       expect(client.getSubscriptionCount()).toBe(3);
 
-      client.unsubscribe('game:game-1');
+      client.unsubscribe("game:game-1");
       expect(client.getSubscriptionCount()).toBe(2);
 
       client.unsubscribeAll();
@@ -608,8 +610,8 @@ describe('ConvexRealtimeClient', () => {
   // Client Lifecycle Tests
   // ============================================================================
 
-  describe('client lifecycle', () => {
-    it('should close client and clean up subscriptions', () => {
+  describe("client lifecycle", () => {
+    it("should close client and clean up subscriptions", () => {
       client = createTestClient();
 
       const callback = mock();
@@ -631,15 +633,15 @@ describe('ConvexRealtimeClient', () => {
       expect(client.isClientConnected()).toBe(false);
     });
 
-    it('should log close action in debug mode', () => {
+    it("should log close action in debug mode", () => {
       client = createTestClient({ debug: true });
 
-      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
 
       client.close();
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[ConvexRealtimeClient] Closing client')
+        expect.stringContaining("[ConvexRealtimeClient] Closing client")
       );
 
       consoleSpy.mockRestore();
@@ -650,11 +652,11 @@ describe('ConvexRealtimeClient', () => {
   // Debug Logging Tests
   // ============================================================================
 
-  describe('debug logging', () => {
-    it('should log subscription actions in debug mode', () => {
+  describe("debug logging", () => {
+    it("should log subscription actions in debug mode", () => {
       client = createTestClient({ debug: true });
 
-      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
       const callback = mock();
 
       mockOnUpdate.mockReturnValue(() => {});
@@ -668,10 +670,10 @@ describe('ConvexRealtimeClient', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should log duplicate subscription attempts in debug mode', () => {
+    it("should log duplicate subscription attempts in debug mode", () => {
       client = createTestClient({ debug: true });
 
-      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = spyOn(console, "log").mockImplementation(() => {});
       const callback = mock();
 
       mockOnUpdate.mockReturnValue(() => {});

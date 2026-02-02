@@ -4,8 +4,8 @@
  * Polls every 5 seconds to keep status up-to-date
  */
 
-import { useQuery } from '@tanstack/react-query';
-import type { AgentStatus } from '../types/panel';
+import { useQuery } from "@tanstack/react-query";
+import type { AgentStatus } from "../types/panel";
 
 /**
  * Fetch agent status from the API
@@ -25,7 +25,7 @@ async function fetchAgentStatus(agentId: string): Promise<AgentStatus> {
  */
 export function useAgentStatus(agentId: string) {
   return useQuery({
-    queryKey: ['ltcg', 'status', agentId],
+    queryKey: ["ltcg", "status", agentId],
     queryFn: () => fetchAgentStatus(agentId),
     refetchInterval: 5000, // Poll every 5 seconds
     staleTime: 4000, // Consider data stale after 4 seconds

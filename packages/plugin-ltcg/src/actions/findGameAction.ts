@@ -13,38 +13,37 @@ import type {
   IAgentRuntime,
   Memory,
   State,
-} from '@elizaos/core';
-import { logger, ModelType } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import { extractJsonFromLlmResponse } from '../utils/safeParseJson';
-import type { Lobby } from '../types/api';
+} from "@elizaos/core";
+import { ModelType, logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const findGameAction: Action = {
-  name: 'FIND_GAME',
-  similes: ['SEARCH_GAME', 'MATCHMAKING', 'PLAY_GAME'],
-  description: 'Automatically find and join an available game',
+  name: "FIND_GAME",
+  similes: ["SEARCH_GAME", "MATCHMAKING", "PLAY_GAME"],
+  description: "Automatically find and join an available game",
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
     try {
       // Check if already in a game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;
       if (currentGameId) {
-        logger.debug('Agent already in a game');
+        logger.debug("Agent already in a game");
         return false;
       }
 
       // Check API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        logger.warn('LTCG API credentials not configured');
+        logger.warn("LTCG API credentials not configured");
         return false;
       }
 
       return true;
     } catch (error) {
-      logger.error({ error }, 'Error validating find game action');
+      logger.error({ error }, "Error validating find game action");
       return false;
     }
   },
@@ -57,14 +56,14 @@ export const findGameAction: Action = {
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
-      logger.info('Handling FIND_GAME action');
+      logger.info("Handling FIND_GAME action");
 
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        throw new Error('LTCG API credentials not configured');
+        throw new Error("LTCG API credentials not configured");
       }
 
       // Create API client
@@ -74,36 +73,36 @@ export const findGameAction: Action = {
       });
 
       // Check auto-matchmaking setting
-      const autoMatchmaking = runtime.getSetting('LTCG_AUTO_MATCHMAKING');
-      if (autoMatchmaking === 'false') {
+      const autoMatchmaking = runtime.getSetting("LTCG_AUTO_MATCHMAKING");
+      if (autoMatchmaking === "false") {
         await callback({
-          text: 'Auto-matchmaking is disabled. Please enable it or use CREATE_LOBBY instead.',
+          text: "Auto-matchmaking is disabled. Please enable it or use CREATE_LOBBY instead.",
           error: true,
-          thought: 'Cannot proceed with matchmaking as auto-matchmaking is disabled in settings',
+          thought: "Cannot proceed with matchmaking as auto-matchmaking is disabled in settings",
         } as Content);
 
         return {
           success: false,
-          text: 'Auto-matchmaking disabled',
+          text: "Auto-matchmaking disabled",
         };
       }
 
       // Get deck preference
-      let deckId = runtime.getSetting('LTCG_PREFERRED_DECK_ID') as string;
+      let deckId = runtime.getSetting("LTCG_PREFERRED_DECK_ID") as string;
 
       if (!deckId) {
         // Use starter deck as fallback
         const decks = await client.getDecks();
         if (decks.length === 0) {
-          throw new Error('No decks available. Please create a deck first.');
+          throw new Error("No decks available. Please create a deck first.");
         }
         deckId = decks[0].deckId;
         logger.debug(`Using first available deck: ${deckId}`);
       }
 
       // Get mode preference
-      const rankedMode = runtime.getSetting('LTCG_RANKED_MODE') === 'true';
-      const mode = rankedMode ? 'ranked' : 'casual';
+      const rankedMode = runtime.getSetting("LTCG_RANKED_MODE") === "true";
+      const mode = rankedMode ? "ranked" : "casual";
 
       // Get available lobbies
       const lobbies = await client.getLobbies(mode);
@@ -116,9 +115,9 @@ export const findGameAction: Action = {
         const lobbyOptions = lobbies
           .map(
             (lobby, idx) =>
-              `${idx + 1}. Lobby ${lobby.lobbyId.slice(0, 8)}... - Host: ${lobby.hostPlayerName}, Mode: ${lobby.mode}, Private: ${lobby.isPrivate ? 'Yes' : 'No'}`
+              `${idx + 1}. Lobby ${lobby.lobbyId.slice(0, 8)}... - Host: ${lobby.hostPlayerName}, Mode: ${lobby.mode}, Private: ${lobby.isPrivate ? "Yes" : "No"}`
           )
-          .join('\n');
+          .join("\n");
 
         const prompt = `Available game lobbies:
 ${lobbyOptions}
@@ -140,7 +139,7 @@ Respond with JSON: { "lobbyIndex": <index> }`;
         const selectedLobby = lobbies[parsed.lobbyIndex];
 
         if (!selectedLobby) {
-          throw new Error('Invalid lobby selection');
+          throw new Error("Invalid lobby selection");
         }
 
         // Join selected lobby
@@ -154,7 +153,7 @@ Respond with JSON: { "lobbyIndex": <index> }`;
 
         await callback({
           text: `Joined game with ${joinResult.opponentName}! Game ID: ${gameId.slice(0, 8)}...`,
-          actions: ['FIND_GAME'],
+          actions: ["FIND_GAME"],
           source: message.content.source,
           thought: `Found existing ${mode} lobby and joined to start game immediately with available opponent`,
         } as Content);
@@ -162,16 +161,16 @@ Respond with JSON: { "lobbyIndex": <index> }`;
         // No lobbies available, create new one
         const matchmakingResult = await client.enterMatchmaking({
           deckId,
-          mode: mode as 'casual' | 'ranked',
+          mode: mode as "casual" | "ranked",
           isPrivate: false,
         });
 
-        if (matchmakingResult.status === 'matched' && matchmakingResult.gameId) {
+        if (matchmakingResult.status === "matched" && matchmakingResult.gameId) {
           gameId = matchmakingResult.gameId;
 
           await callback({
             text: `Instantly matched! Game ID: ${gameId.slice(0, 8)}...`,
-            actions: ['FIND_GAME'],
+            actions: ["FIND_GAME"],
             source: message.content.source,
             thought: `No existing lobbies found but matchmaking instantly paired with opponent, starting game now`,
           } as Content);
@@ -179,7 +178,7 @@ Respond with JSON: { "lobbyIndex": <index> }`;
           // Waiting in lobby
           await callback({
             text: `Created new ${mode} lobby. Waiting for opponent... Lobby ID: ${matchmakingResult.lobbyId.slice(0, 8)}...`,
-            actions: ['FIND_GAME'],
+            actions: ["FIND_GAME"],
             source: message.content.source,
             thought: `No existing lobbies found and no instant match, created new ${mode} lobby and waiting for opponent to join`,
           } as Content);
@@ -189,14 +188,14 @@ Respond with JSON: { "lobbyIndex": <index> }`;
 
           return {
             success: true,
-            text: 'Created lobby and waiting for opponent',
+            text: "Created lobby and waiting for opponent",
             values: {
               lobbyId: matchmakingResult.lobbyId,
               mode,
-              status: 'waiting',
+              status: "waiting",
             },
             data: {
-              actionName: 'FIND_GAME',
+              actionName: "FIND_GAME",
               lobbyId: matchmakingResult.lobbyId,
               joinCode: matchmakingResult.joinCode,
             },
@@ -209,29 +208,30 @@ Respond with JSON: { "lobbyIndex": <index> }`;
 
       return {
         success: true,
-        text: joinedExisting ? 'Successfully joined game' : 'Successfully matched',
+        text: joinedExisting ? "Successfully joined game" : "Successfully matched",
         values: {
           gameId,
           mode,
           joinedExisting,
         },
         data: {
-          actionName: 'FIND_GAME',
+          actionName: "FIND_GAME",
           gameId,
         },
       };
     } catch (error) {
-      logger.error({ error }, 'Error in FIND_GAME action');
+      logger.error({ error }, "Error in FIND_GAME action");
 
       await callback({
         text: `Failed to find game: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: 'Matchmaking failed due to API error, no available decks, or lobby connection issue',
+        thought:
+          "Matchmaking failed due to API error, no available decks, or lobby connection issue",
       } as Content);
 
       return {
         success: false,
-        text: 'Failed to find game',
+        text: "Failed to find game",
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
@@ -240,46 +240,46 @@ Respond with JSON: { "lobbyIndex": <index> }`;
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Find me a game to play',
+          text: "Find me a game to play",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Searching for available games... Joined game with OpponentAgent! Game ID: abc123...',
-          actions: ['FIND_GAME'],
-        },
-      },
-    ],
-    [
-      {
-        name: '{{name1}}',
-        content: {
-          text: 'I want to play a match',
-        },
-      },
-      {
-        name: '{{name2}}',
-        content: {
-          text: 'Created new casual lobby. Waiting for opponent... Lobby ID: xyz789...',
-          actions: ['FIND_GAME'],
+          text: "Searching for available games... Joined game with OpponentAgent! Game ID: abc123...",
+          actions: ["FIND_GAME"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Start matchmaking',
+          text: "I want to play a match",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Instantly matched! Game ID: def456...',
-          actions: ['FIND_GAME'],
+          text: "Created new casual lobby. Waiting for opponent... Lobby ID: xyz789...",
+          actions: ["FIND_GAME"],
+        },
+      },
+    ],
+    [
+      {
+        name: "{{name1}}",
+        content: {
+          text: "Start matchmaking",
+        },
+      },
+      {
+        name: "{{name2}}",
+        content: {
+          text: "Instantly matched! Game ID: def456...",
+          actions: ["FIND_GAME"],
         },
       },
     ],

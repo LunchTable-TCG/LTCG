@@ -8,11 +8,11 @@
 import { internal } from "../_generated/api";
 import { authHttpAction } from "./middleware/auth";
 import {
-  successResponse,
-  errorResponse,
-  parseJsonBody,
-  getQueryParam,
   corsPreflightResponse,
+  errorResponse,
+  getQueryParam,
+  parseJsonBody,
+  successResponse,
 } from "./middleware/responses";
 
 /**
@@ -41,12 +41,9 @@ export const chapters = authHttpAction(async (ctx, request, auth) => {
       count: chaptersWithProgress.length,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_CHAPTERS_FAILED",
-      "Failed to fetch chapters",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_CHAPTERS_FAILED", "Failed to fetch chapters", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -82,12 +79,9 @@ export const stages = authHttpAction(async (ctx, request, auth) => {
       count: stagesWithProgress.length,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_STAGES_FAILED",
-      "Failed to fetch stages",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_STAGES_FAILED", "Failed to fetch stages", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -172,12 +166,9 @@ export const start = authHttpAction(async (ctx, request, auth) => {
       }
     }
 
-    return errorResponse(
-      "START_STORY_BATTLE_FAILED",
-      "Failed to start story battle",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("START_STORY_BATTLE_FAILED", "Failed to start story battle", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -207,13 +198,10 @@ export const quickPlay = authHttpAction(async (ctx, request, auth) => {
 
     if (body instanceof Response) return body;
 
-    const result = await ctx.runMutation(
-      internal.progression.storyBattle.quickPlayStoryInternal,
-      {
-        userId: auth.userId,
-        difficulty: body.difficulty,
-      }
-    );
+    const result = await ctx.runMutation(internal.progression.storyBattle.quickPlayStoryInternal, {
+      userId: auth.userId,
+      difficulty: body.difficulty,
+    });
 
     return successResponse(
       {
@@ -249,20 +237,13 @@ export const quickPlay = authHttpAction(async (ctx, request, auth) => {
         );
       }
       if (error.message.includes("No chapters")) {
-        return errorResponse(
-          "NO_CHAPTERS",
-          "No story chapters are available yet",
-          404
-        );
+        return errorResponse("NO_CHAPTERS", "No story chapters are available yet", 404);
       }
     }
 
-    return errorResponse(
-      "QUICK_PLAY_FAILED",
-      "Failed to start quick play battle",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("QUICK_PLAY_FAILED", "Failed to start quick play battle", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -306,15 +287,12 @@ export const complete = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("MISSING_FINAL_LP", "finalLP field is required", 400);
     }
 
-    const result = await ctx.runMutation(
-      internal.progression.storyStages.completeStageInternal,
-      {
-        userId: auth.userId,
-        stageId: body.stageId as any,
-        won: body.won,
-        finalLP: body.finalLP,
-      }
-    );
+    const result = await ctx.runMutation(internal.progression.storyStages.completeStageInternal, {
+      userId: auth.userId,
+      stageId: body.stageId as any,
+      won: body.won,
+      finalLP: body.finalLP,
+    });
 
     return successResponse({
       won: result.won,
@@ -335,12 +313,9 @@ export const complete = authHttpAction(async (ctx, request, auth) => {
       }
     }
 
-    return errorResponse(
-      "COMPLETE_STAGE_FAILED",
-      "Failed to complete stage",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("COMPLETE_STAGE_FAILED", "Failed to complete stage", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -375,10 +350,9 @@ export const aiTurn = authHttpAction(async (ctx, request, _auth) => {
     }
 
     // Execute AI turn using internal mutation
-    const result = await ctx.runMutation(
-      internal.gameplay.ai.aiTurn.executeAITurnInternal,
-      { gameId: body.gameId }
-    );
+    const result = await ctx.runMutation(internal.gameplay.ai.aiTurn.executeAITurnInternal, {
+      gameId: body.gameId,
+    });
 
     return successResponse({
       success: result.success,
@@ -391,19 +365,12 @@ export const aiTurn = authHttpAction(async (ctx, request, _auth) => {
         return errorResponse("GAME_NOT_FOUND", "Game not found", 404);
       }
       if (error.message.includes("Not AI's turn")) {
-        return errorResponse(
-          "NOT_AI_TURN",
-          "It is not the AI's turn",
-          400
-        );
+        return errorResponse("NOT_AI_TURN", "It is not the AI's turn", 400);
       }
     }
 
-    return errorResponse(
-      "AI_TURN_FAILED",
-      "Failed to execute AI turn",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("AI_TURN_FAILED", "Failed to execute AI turn", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });

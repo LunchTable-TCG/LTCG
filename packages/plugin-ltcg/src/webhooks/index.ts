@@ -5,5 +5,5 @@
  * These routes are registered with ElizaOS and receive push notifications.
  */
 
-export * from './gameEventHandler';
-export { webhookRoutes } from './routes';
+export * from "./gameEventHandler";
+export { webhookRoutes } from "./routes";

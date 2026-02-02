@@ -10,7 +10,7 @@
  * TODO: Remove this file once @elizaos/core publishes correct type declarations.
  */
 
-declare module '@elizaos/core' {
+declare module "@elizaos/core" {
   // ============================================================================
   // Core Types
   // ============================================================================
@@ -128,11 +128,7 @@ declare module '@elizaos/core' {
     similes?: string[];
     description: string;
     examples?: ActionExample[][];
-    validate: (
-      runtime: IAgentRuntime,
-      message: Memory,
-      state: State
-    ) => Promise<boolean>;
+    validate: (runtime: IAgentRuntime, message: Memory, state: State) => Promise<boolean>;
     handler: (
       runtime: IAgentRuntime,
       message: Memory,
@@ -164,11 +160,7 @@ declare module '@elizaos/core' {
   export interface Provider {
     name: string;
     description?: string;
-    get: (
-      runtime: IAgentRuntime,
-      message: Memory,
-      state: State
-    ) => Promise<ProviderResult>;
+    get: (runtime: IAgentRuntime, message: Memory, state: State) => Promise<ProviderResult>;
   }
 
   export interface ProviderResult {
@@ -186,11 +178,7 @@ declare module '@elizaos/core' {
     description?: string;
     similes?: string[];
     examples?: EvaluatorExample[] | ActionExample[][];
-    validate: (
-      runtime: IAgentRuntime,
-      message: Memory,
-      state: State
-    ) => Promise<boolean>;
+    validate: (runtime: IAgentRuntime, message: Memory, state: State) => Promise<boolean>;
     handler: (
       runtime: IAgentRuntime,
       message: Memory,
@@ -271,23 +259,19 @@ declare module '@elizaos/core' {
   // ============================================================================
 
   export interface Logger {
-    info: ((message: string) => void) &
-      ((data: Record<string, unknown>, message: string) => void);
-    warn: ((message: string) => void) &
-      ((data: Record<string, unknown>, message: string) => void);
-    error: ((message: string) => void) &
-      ((data: Record<string, unknown>, message: string) => void);
-    debug: ((message: string) => void) &
-      ((data: Record<string, unknown>, message: string) => void);
+    info: ((message: string) => void) & ((data: Record<string, unknown>, message: string) => void);
+    warn: ((message: string) => void) & ((data: Record<string, unknown>, message: string) => void);
+    error: ((message: string) => void) & ((data: Record<string, unknown>, message: string) => void);
+    debug: ((message: string) => void) & ((data: Record<string, unknown>, message: string) => void);
   }
 
   export const logger: Logger;
 
   export enum ModelType {
-    TEXT_GENERATION = 'TEXT_GENERATION',
-    TEXT_EMBEDDING = 'TEXT_EMBEDDING',
-    IMAGE_GENERATION = 'IMAGE_GENERATION',
-    TEXT_SMALL = 'TEXT_SMALL',
-    TEXT_LARGE = 'TEXT_LARGE',
+    TEXT_GENERATION = "TEXT_GENERATION",
+    TEXT_EMBEDDING = "TEXT_EMBEDDING",
+    IMAGE_GENERATION = "IMAGE_GENERATION",
+    TEXT_SMALL = "TEXT_SMALL",
+    TEXT_LARGE = "TEXT_LARGE",
   }
 }

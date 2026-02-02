@@ -294,11 +294,11 @@ function generateEffectDescription(effect: JsonEffect): string {
       return `${(value ?? 0) >= 0 ? "Increase" : "Decrease"} DEF by ${Math.abs(value ?? 0)}`;
     case "destroy": {
       const targetCount = effect.target?.count;
-      return `Destroy ${targetCount === "all" ? "all" : targetCount ?? 1} card${targetCount === 1 ? "" : "s"}`;
+      return `Destroy ${targetCount === "all" ? "all" : (targetCount ?? 1)} card${targetCount === 1 ? "" : "s"}`;
     }
     case "banish": {
       const targetCount = effect.target?.count;
-      return `Banish ${targetCount === "all" ? "all" : targetCount ?? 1} card${targetCount === 1 ? "" : "s"}`;
+      return `Banish ${targetCount === "all" ? "all" : (targetCount ?? 1)} card${targetCount === 1 ? "" : "s"}`;
     }
     case "toHand":
       return "Add card(s) to hand";
@@ -393,7 +393,9 @@ function convertEffectToDisplay(effect: JsonEffect, abilityName?: string): Displ
  * ))}
  * ```
  */
-export function getCardEffectsArray(ability: JsonAbility | string | null | undefined): DisplayEffect[] {
+export function getCardEffectsArray(
+  ability: JsonAbility | string | null | undefined
+): DisplayEffect[] {
   // Handle null/undefined
   if (!ability) return [];
 
@@ -472,7 +474,9 @@ export function getCardEffectsArray(ability: JsonAbility | string | null | undef
  * @param ability - The JSON ability or legacy string
  * @returns A simple string representation of the ability
  */
-export function getAbilityDisplayText(ability: JsonAbility | string | null | undefined): string | undefined {
+export function getAbilityDisplayText(
+  ability: JsonAbility | string | null | undefined
+): string | undefined {
   if (!ability) return undefined;
 
   // Handle legacy string abilities
@@ -548,9 +552,7 @@ export function isContinuousAbility(ability: JsonAbility | null | undefined): bo
 /**
  * Get protection flags from an ability
  */
-export function getProtectionFlags(
-  ability: JsonAbility | null | undefined
-): {
+export function getProtectionFlags(ability: JsonAbility | null | undefined): {
   cannotBeDestroyedByBattle: boolean;
   cannotBeDestroyedByEffects: boolean;
   cannotBeTargeted: boolean;
@@ -573,9 +575,12 @@ export function getProtectionFlags(
   // Check effect-level protection
   for (const effect of ability.effects) {
     if (effect.protection) {
-      flags.cannotBeDestroyedByBattle = flags.cannotBeDestroyedByBattle || (effect.protection.cannotBeDestroyedByBattle ?? false);
-      flags.cannotBeDestroyedByEffects = flags.cannotBeDestroyedByEffects || (effect.protection.cannotBeDestroyedByEffects ?? false);
-      flags.cannotBeTargeted = flags.cannotBeTargeted || (effect.protection.cannotBeTargeted ?? false);
+      flags.cannotBeDestroyedByBattle =
+        flags.cannotBeDestroyedByBattle || (effect.protection.cannotBeDestroyedByBattle ?? false);
+      flags.cannotBeDestroyedByEffects =
+        flags.cannotBeDestroyedByEffects || (effect.protection.cannotBeDestroyedByEffects ?? false);
+      flags.cannotBeTargeted =
+        flags.cannotBeTargeted || (effect.protection.cannotBeTargeted ?? false);
     }
   }
 

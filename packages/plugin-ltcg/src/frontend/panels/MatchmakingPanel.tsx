@@ -8,10 +8,9 @@
  * - Next scan countdown
  */
 
-import React from 'react';
-import { useMatchmakingStatus } from '../hooks';
-import { StatusBadge, StatCard, LoadingState, ErrorState, EmptyState } from '../components';
-import { cn } from '../utils';
+import React from "react";
+import { EmptyState, ErrorState, LoadingState, StatCard, StatusBadge } from "../components";
+import { useMatchmakingStatus } from "../hooks";
 
 interface MatchmakingPanelProps {
   agentId: string;
@@ -33,18 +32,18 @@ function formatRelativeTime(timestamp: number): string {
  * Get status label from matchmaking status
  */
 function getStatusLabel(status: string, enabled: boolean): string {
-  if (!enabled) return 'DISABLED';
+  if (!enabled) return "DISABLED";
 
   switch (status) {
-    case 'scanning':
-      return 'SCANNING';
-    case 'in_game':
-      return 'IN GAME';
-    case 'joining':
-      return 'JOINING';
-    case 'idle':
+    case "scanning":
+      return "SCANNING";
+    case "in_game":
+      return "IN GAME";
+    case "joining":
+      return "JOINING";
+    case "idle":
     default:
-      return 'IDLE';
+      return "IDLE";
   }
 }
 
@@ -88,14 +87,16 @@ export function MatchmakingPanel({ agentId }: MatchmakingPanelProps) {
   if (error) {
     return (
       <ErrorState
-        message={error instanceof Error ? error.message : 'Failed to load matchmaking status'}
+        message={error instanceof Error ? error.message : "Failed to load matchmaking status"}
         onRetry={() => refetch()}
       />
     );
   }
 
   if (!data) {
-    return <EmptyState title="No matchmaking data" description="Matchmaking service not available" />;
+    return (
+      <EmptyState title="No matchmaking data" description="Matchmaking service not available" />
+    );
   }
 
   const statusLabel = getStatusLabel(data.status, data.enabled);
@@ -154,7 +155,7 @@ export function MatchmakingPanel({ agentId }: MatchmakingPanelProps) {
       </div>
 
       {/* Next scan countdown */}
-      {data.enabled && data.status === 'scanning' && (
+      {data.enabled && data.status === "scanning" && (
         <div className="flex items-center justify-center p-4 rounded-lg bg-muted/30 border border-border">
           <div className="text-sm text-muted-foreground">
             <CountdownTimer nextScanIn={data.nextScanIn} />

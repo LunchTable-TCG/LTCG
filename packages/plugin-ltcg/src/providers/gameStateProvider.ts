@@ -9,13 +9,14 @@
  * - Graveyard and banished card counts
  */
 
-import type { Provider, IAgentRuntime, Memory, State, ProviderResult } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import type { GameStateResponse } from '../types/api';
+import type { IAgentRuntime, Memory, Provider, ProviderResult, State } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import type { GameStateResponse } from "../types/api";
 
 export const gameStateProvider: Provider = {
-  name: 'LTCG_GAME_STATE',
-  description: 'Provides current game state overview including life points, turn info, and board summary',
+  name: "LTCG_GAME_STATE",
+  description:
+    "Provides current game state overview including life points, turn info, and board summary",
 
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
@@ -24,20 +25,20 @@ export const gameStateProvider: Provider = {
 
       if (!gameId) {
         return {
-          text: 'No active game. Use FIND_GAME or JOIN_LOBBY to start playing.',
-          values: { error: 'NO_GAME_ID' },
+          text: "No active game. Use FIND_GAME or JOIN_LOBBY to start playing.",
+          values: { error: "NO_GAME_ID" },
           data: {},
         };
       }
 
       // Get API credentials from runtime settings
-      const apiKey = runtime.getSetting('LTCG_API_KEY');
-      const apiUrl = runtime.getSetting('LTCG_API_URL');
+      const apiKey = runtime.getSetting("LTCG_API_KEY");
+      const apiUrl = runtime.getSetting("LTCG_API_URL");
 
       if (!apiKey || !apiUrl) {
         return {
-          text: 'LTCG API credentials not configured. Please set LTCG_API_KEY and LTCG_API_URL.',
-          values: { error: 'MISSING_CONFIG' },
+          text: "LTCG API credentials not configured. Please set LTCG_API_KEY and LTCG_API_URL.",
+          values: { error: "MISSING_CONFIG" },
           data: {},
         };
       }
@@ -52,23 +53,23 @@ export const gameStateProvider: Provider = {
       const gameState: GameStateResponse = await client.getGameState(gameId);
 
       // Determine if it's the agent's turn
-      const isMyTurn = gameState.currentTurn === 'host'; // Assuming agent is always host
+      const isMyTurn = gameState.currentTurn === "host"; // Assuming agent is always host
 
       // Format phase name for display
       const phaseNames: Record<string, string> = {
-        draw: 'Draw Phase',
-        standby: 'Standby Phase',
-        main1: 'Main Phase 1',
-        battle: 'Battle Phase',
-        main2: 'Main Phase 2',
-        end: 'End Phase',
+        draw: "Draw Phase",
+        standby: "Standby Phase",
+        main1: "Main Phase 1",
+        battle: "Battle Phase",
+        main2: "Main Phase 2",
+        end: "End Phase",
       };
 
       const phaseName = phaseNames[gameState.phase] || gameState.phase;
 
       // Build human-readable text
       const text = `Game State:
-- Turn ${gameState.turnNumber}, ${phaseName} (${isMyTurn ? 'YOUR TURN' : 'OPPONENT TURN'})
+- Turn ${gameState.turnNumber}, ${phaseName} (${isMyTurn ? "YOUR TURN" : "OPPONENT TURN"})
 - Your LP: ${gameState.hostPlayer.lifePoints} | Opponent LP: ${gameState.opponentPlayer.lifePoints}
 - Your Field: ${gameState.hostPlayer.monsterZone.length} monsters, ${gameState.hostPlayer.spellTrapZone.length} spell/trap
 - Opponent Field: ${gameState.opponentPlayer.monsterZone.length} monsters, ${gameState.opponentPlayer.spellTrapZone.length} spell/traps
@@ -99,11 +100,11 @@ export const gameStateProvider: Provider = {
       return { text, values, data };
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error fetching game state';
+        error instanceof Error ? error.message : "Unknown error fetching game state";
 
       return {
         text: `Error fetching game state: ${errorMessage}`,
-        values: { error: 'FETCH_ERROR' },
+        values: { error: "FETCH_ERROR" },
         data: { errorDetails: error },
       };
     }
@@ -131,9 +132,9 @@ function calculateAdvantage(gameState: GameStateResponse): string {
   // Weighted score
   const score = monsterAdvantage * 500 + atkAdvantage + lpAdvantage / 10;
 
-  if (score > 2000) return 'STRONG_ADVANTAGE';
-  if (score > 500) return 'SLIGHT_ADVANTAGE';
-  if (score > -500) return 'EVEN';
-  if (score > -2000) return 'SLIGHT_DISADVANTAGE';
-  return 'STRONG_DISADVANTAGE';
+  if (score > 2000) return "STRONG_ADVANTAGE";
+  if (score > 500) return "SLIGHT_ADVANTAGE";
+  if (score > -500) return "EVEN";
+  if (score > -2000) return "SLIGHT_DISADVANTAGE";
+  return "STRONG_DISADVANTAGE";
 }

@@ -1,17 +1,17 @@
 import bcrypt from "bcryptjs";
 import { v } from "convex/values";
-import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "./lib/convexAuth";
 import { ErrorCode, createError } from "./lib/errorCodes";
-import { STARTER_DECKS, type StarterDeckCode, VALID_DECK_CODES } from "./seeds/starterDecks";
 import {
   ABYSSAL_DEPTHS_CARDS,
   INFERNAL_DRAGONS_CARDS,
   IRON_LEGION_CARDS,
   STORM_RIDERS_CARDS,
 } from "./seeds/starterCards";
-import type { Id } from "./_generated/dataModel";
+import { STARTER_DECKS, type StarterDeckCode, VALID_DECK_CODES } from "./seeds/starterDecks";
 
 const MAX_AGENTS_PER_USER = 3;
 
@@ -96,10 +96,7 @@ export async function validateApiKeyInternal(
     const matchingKeys = await ctx.db
       .query("apiKeys")
       .filter((q: any) =>
-        q.and(
-          q.eq(q.field("keyPrefix"), keyPrefixToFind),
-          q.eq(q.field("isActive"), true)
-        )
+        q.and(q.eq(q.field("keyPrefix"), keyPrefixToFind), q.eq(q.field("isActive"), true))
       )
       .collect();
 
@@ -1061,7 +1058,7 @@ export const debugApiKeys = query({
   args: {},
   handler: async (ctx) => {
     const keys = await ctx.db.query("apiKeys").take(10);
-    return keys.map(k => ({
+    return keys.map((k) => ({
       prefix: k.keyPrefix,
       isActive: k.isActive,
       hasHash: !!k.keyHash,

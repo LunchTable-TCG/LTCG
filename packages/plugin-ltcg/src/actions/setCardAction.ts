@@ -13,18 +13,18 @@ import type {
   IAgentRuntime,
   Memory,
   State,
-} from '@elizaos/core';
-import { logger, ModelType } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import { extractJsonFromLlmResponse } from '../utils/safeParseJson';
-import { gameStateProvider } from '../providers/gameStateProvider';
-import { handProvider } from '../providers/handProvider';
-import type { CardInHand, GameStateResponse } from '../types/api';
+} from "@elizaos/core";
+import { ModelType, logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import { gameStateProvider } from "../providers/gameStateProvider";
+import { handProvider } from "../providers/handProvider";
+import type { CardInHand, GameStateResponse } from "../types/api";
+import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const setCardAction: Action = {
-  name: 'SET_CARD',
-  similes: ['SET', 'SET_MONSTER', 'SET_SPELL_TRAP'],
-  description: 'Set a card face-down on the field',
+  name: "SET_CARD",
+  similes: ["SET", "SET_MONSTER", "SET_SPELL_TRAP"],
+  description: "Set a card face-down on the field",
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
     try {
@@ -33,12 +33,12 @@ export const setCardAction: Action = {
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
-        logger.warn('No game state available for set validation');
+        logger.warn("No game state available for set validation");
         return false;
       }
 
       // Must be in Main Phase
-      if (gameState.phase !== 'main1' && gameState.phase !== 'main2') {
+      if (gameState.phase !== "main1" && gameState.phase !== "main2") {
         logger.debug(`Cannot set in ${gameState.phase} phase`);
         return false;
       }
@@ -48,7 +48,7 @@ export const setCardAction: Action = {
       const hand = handResult.data?.hand as CardInHand[];
 
       if (!hand || hand.length === 0) {
-        logger.debug('Hand is empty');
+        logger.debug("Hand is empty");
         return false;
       }
 
@@ -57,19 +57,19 @@ export const setCardAction: Action = {
       const spellTrapZoneFull = gameState.hostPlayer.spellTrapZone.length >= 5;
 
       const settableCards = hand.filter((card) => {
-        if (card.type === 'creature' && !monsterZoneFull) return true;
-        if ((card.type === 'spell' || card.type === 'trap') && !spellTrapZoneFull) return true;
+        if (card.type === "creature" && !monsterZoneFull) return true;
+        if ((card.type === "spell" || card.type === "trap") && !spellTrapZoneFull) return true;
         return false;
       });
 
       if (settableCards.length === 0) {
-        logger.debug('No settable cards or zones full');
+        logger.debug("No settable cards or zones full");
         return false;
       }
 
       return true;
     } catch (error) {
-      logger.error({ error }, 'Error validating set card action');
+      logger.error({ error }, "Error validating set card action");
       return false;
     }
   },
@@ -82,7 +82,7 @@ export const setCardAction: Action = {
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
-      logger.info('Handling SET_CARD action');
+      logger.info("Handling SET_CARD action");
 
       // Get game state and hand
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
@@ -92,15 +92,15 @@ export const setCardAction: Action = {
       const hand = handResult.data?.hand as CardInHand[];
 
       if (!gameState || !hand) {
-        throw new Error('Failed to get game state or hand');
+        throw new Error("Failed to get game state or hand");
       }
 
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        throw new Error('LTCG API credentials not configured');
+        throw new Error("LTCG API credentials not configured");
       }
 
       // Create API client
@@ -114,24 +114,22 @@ export const setCardAction: Action = {
       const spellTrapZoneFull = gameState.hostPlayer.spellTrapZone.length >= 5;
 
       const settableCards = hand.filter((card) => {
-        if (card.type === 'creature' && !monsterZoneFull) return true;
-        if ((card.type === 'spell' || card.type === 'trap') && !spellTrapZoneFull) return true;
+        if (card.type === "creature" && !monsterZoneFull) return true;
+        if ((card.type === "spell" || card.type === "trap") && !spellTrapZoneFull) return true;
         return false;
       });
 
       // Use LLM to select which card to set
       // Note: Use cardType (creature/spell/trap) and fall back to type for compatibility
       const cardOptions = settableCards
-        .map(
-          (card, idx) => {
-            const cardTypeName: string = card.cardType || card.type || 'unknown';
-            const isCreature = cardTypeName === 'creature' || cardTypeName === 'creature';
-            return `${idx + 1}. ${card.name} (${cardTypeName.toUpperCase()})${
-              isCreature ? ` - ${card.defense ?? card.def ?? 0} DEF` : ''
-            }${card.description ? ` - ${card.description.substring(0, 100)}` : ''}`;
-          }
-        )
-        .join('\n');
+        .map((card, idx) => {
+          const cardTypeName: string = card.cardType || card.type || "unknown";
+          const isCreature = cardTypeName === "creature" || cardTypeName === "creature";
+          return `${idx + 1}. ${card.name} (${cardTypeName.toUpperCase()})${
+            isCreature ? ` - ${card.defense ?? card.def ?? 0} DEF` : ""
+          }${card.description ? ` - ${card.description.substring(0, 100)}` : ""}`;
+        })
+        .join("\n");
 
       const boardContext = `
 Game State:
@@ -162,17 +160,17 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
       });
 
       // Parse LLM decision
-      const parsed = extractJsonFromLlmResponse(decision, { handIndex: 0, zone: 'monster' });
+      const parsed = extractJsonFromLlmResponse(decision, { handIndex: 0, zone: "monster" });
       const selectedCard = settableCards[parsed.handIndex];
 
       if (!selectedCard) {
-        throw new Error('Invalid card selection');
+        throw new Error("Invalid card selection");
       }
 
       // Determine zone based on card type (use cardType, fall back to type)
-      const cardTypeName: string = selectedCard.cardType || selectedCard.type || 'unknown';
-      const isCreature = cardTypeName === 'creature' || cardTypeName === 'creature';
-      const zone = isCreature ? 'monster' : 'spellTrap';
+      const cardTypeName: string = selectedCard.cardType || selectedCard.type || "unknown";
+      const isCreature = cardTypeName === "creature" || cardTypeName === "creature";
+      const zone = isCreature ? "monster" : "spellTrap";
 
       // Make API call
       const result = await client.setCard({
@@ -186,9 +184,9 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
 
       await callback({
         text: responseText,
-        actions: ['SET_CARD'],
+        actions: ["SET_CARD"],
         source: message.content.source,
-        thought: `Setting ${selectedCard.name} face-down in ${zone} zone to ${selectedCard.type === 'creature' ? 'protect LP with defense' : 'prepare reactive play for future turns'}`,
+        thought: `Setting ${selectedCard.name} face-down in ${zone} zone to ${selectedCard.type === "creature" ? "protect LP with defense" : "prepare reactive play for future turns"}`,
       } as Content);
 
       return {
@@ -200,24 +198,25 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
           zone,
         },
         data: {
-          actionName: 'SET_CARD',
+          actionName: "SET_CARD",
           cardSet: selectedCard,
           zone,
           result,
         },
       };
     } catch (error) {
-      logger.error({ error }, 'Error in SET_CARD action');
+      logger.error({ error }, "Error in SET_CARD action");
 
       await callback({
         text: `Failed to set card: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: 'Set card action failed, zone may be full or card selection invalid for current game state',
+        thought:
+          "Set card action failed, zone may be full or card selection invalid for current game state",
       } as Content);
 
       return {
         success: false,
-        text: 'Failed to set card',
+        text: "Failed to set card",
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
@@ -226,46 +225,46 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'I need to set up some defense',
+          text: "I need to set up some defense",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'I set a monster face-down!',
-          actions: ['SET_CARD'],
-        },
-      },
-    ],
-    [
-      {
-        name: '{{name1}}',
-        content: {
-          text: 'Let me prepare a trap',
-        },
-      },
-      {
-        name: '{{name2}}',
-        content: {
-          text: 'I set Mirror Force face-down!',
-          actions: ['SET_CARD'],
+          text: "I set a monster face-down!",
+          actions: ["SET_CARD"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'I should save this spell for later',
+          text: "Let me prepare a trap",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'I set a spell card face-down!',
-          actions: ['SET_CARD'],
+          text: "I set Mirror Force face-down!",
+          actions: ["SET_CARD"],
+        },
+      },
+    ],
+    [
+      {
+        name: "{{name1}}",
+        content: {
+          text: "I should save this spell for later",
+        },
+      },
+      {
+        name: "{{name2}}",
+        content: {
+          text: "I set a spell card face-down!",
+          actions: ["SET_CARD"],
         },
       },
     ],

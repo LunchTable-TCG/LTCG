@@ -1,11 +1,11 @@
 "use client";
 
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { usePrivy } from "@privy-io/react-auth";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
-import { Loader2 } from "lucide-react";
 import { apiAny } from "@/lib/convexHelpers";
+import { usePrivy } from "@privy-io/react-auth";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { Loader2 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { type ReactNode, useEffect, useRef } from "react";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -43,14 +43,10 @@ export function AuthGuard({
 
   // Auth providers state
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
-  const { isAuthenticated: convexAuthenticated, isLoading: convexLoading } =
-    useConvexAuth();
+  const { isAuthenticated: convexAuthenticated, isLoading: convexLoading } = useConvexAuth();
 
   // User data - only query when Convex is authenticated
-  const currentUser = useQuery(
-    apiAny.core.users.currentUser,
-    convexAuthenticated ? {} : "skip"
-  );
+  const currentUser = useQuery(apiAny.core.users.currentUser, convexAuthenticated ? {} : "skip");
 
   // Mutation to create user - useRef to prevent re-creation on every render
   const createOrGetUser = useMutation(apiAny.auth.syncUser.createOrGetUser);
@@ -196,9 +192,7 @@ function AuthLoadingScreen({ message }: { message: string }) {
     <div className="min-h-screen flex items-center justify-center bg-[#0d0a09]">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
-        <p className="text-[#a89f94] text-sm uppercase tracking-widest font-bold">
-          {message}
-        </p>
+        <p className="text-[#a89f94] text-sm uppercase tracking-widest font-bold">{message}</p>
       </div>
     </div>
   );

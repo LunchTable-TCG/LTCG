@@ -848,7 +848,10 @@ export default function ShopPage() {
 // Shop Item Card Component
 function ShopItemCard({ item, onPurchase }: { item: ShopItem; onPurchase: () => void }) {
   return (
-    <div data-testid="pack-product" className="p-4 rounded-xl border border-[#3d2b1f] bg-black/40 hover:bg-black/60 transition-all">
+    <div
+      data-testid="pack-product"
+      className="p-4 rounded-xl border border-[#3d2b1f] bg-black/40 hover:bg-black/60 transition-all"
+    >
       <div className="aspect-square rounded-lg bg-linear-to-br from-[#d4af37]/10 to-transparent flex items-center justify-center mb-4 overflow-hidden">
         {item.type === "pack" && (
           <Image

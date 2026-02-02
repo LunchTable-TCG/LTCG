@@ -1,9 +1,9 @@
 "use client";
 
+import { useNotifications } from "@/hooks";
 import { Award, Gift, Star, Trophy } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { useNotifications } from "@/hooks";
 
 /**
  * NotificationToast Component
@@ -43,7 +43,10 @@ export function NotificationToast() {
               <p className="font-bold text-sm">{notification.title}</p>
               <p className="text-xs text-[#a89f94] mt-0.5">{notification.message}</p>
               {data.rewards && (
-                <div data-testid="achievement-reward" className="flex items-center gap-2 mt-1 text-xs">
+                <div
+                  data-testid="achievement-reward"
+                  className="flex items-center gap-2 mt-1 text-xs"
+                >
                   {data.rewards.gold && (
                     <span className="text-yellow-400">+{data.rewards.gold} Gold</span>
                   )}

@@ -4,7 +4,7 @@
  * Wraps JSON.parse with error handling for LLM responses.
  */
 
-import { logger } from '@elizaos/core';
+import { logger } from "@elizaos/core";
 
 /**
  * Safely parse JSON string with fallback value
@@ -24,7 +24,7 @@ export function safeParseJson<T>(json: string, fallback: T, context?: string): T
         json: json.substring(0, 200),
         context,
       },
-      'Failed to parse JSON'
+      "Failed to parse JSON"
     );
     return fallback;
   }
@@ -70,7 +70,7 @@ export function extractJsonFromLlmResponse<T>(response: string, fallback: T): T 
 
   logger.warn(
     { response: response.substring(0, 200) },
-    'Could not extract valid JSON from LLM response'
+    "Could not extract valid JSON from LLM response"
   );
   return fallback;
 }

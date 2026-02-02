@@ -77,9 +77,7 @@ function checkOPT(
   // Check if this specific effect has been used this turn by this player
   const usedRecord = optRecords.find(
     (record) =>
-      record.cardId === cardId &&
-      record.effectIndex === effectIndex &&
-      record.playerId === playerId
+      record.cardId === cardId && record.effectIndex === effectIndex && record.playerId === playerId
   );
 
   if (usedRecord) {
@@ -185,9 +183,7 @@ async function markOPTUsed(
   // Check if already recorded (prevent duplicates)
   const alreadyRecorded = optRecords.some(
     (record) =>
-      record.cardId === cardId &&
-      record.effectIndex === effectIndex &&
-      record.playerId === playerId
+      record.cardId === cardId && record.effectIndex === effectIndex && record.playerId === playerId
   );
 
   if (alreadyRecorded) {
@@ -318,15 +314,11 @@ export async function resetOPTEffects(
 
   // Reset OPT for the turn player only
   // Other player's OPT effects remain restricted until their turn
-  const newOptRecords = optRecords.filter(
-    (record) => record.playerId !== turnPlayerId
-  );
+  const newOptRecords = optRecords.filter((record) => record.playerId !== turnPlayerId);
 
   // Clean up expired HOPT records
   // Keep records where resetOnTurn is still in the future
-  const newHoptRecords = hoptRecords.filter(
-    (record) => record.resetOnTurn > gameState.turnNumber
-  );
+  const newHoptRecords = hoptRecords.filter((record) => record.resetOnTurn > gameState.turnNumber);
 
   const optCleared = optRecords.length - newOptRecords.length;
   const hoptCleared = hoptRecords.length - newHoptRecords.length;

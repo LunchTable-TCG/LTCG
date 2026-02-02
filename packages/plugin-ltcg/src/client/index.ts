@@ -4,8 +4,8 @@
  * Export all client components for external use
  */
 
-export { LTCGApiClient } from './LTCGApiClient';
-export type { LTCGApiClientConfig } from './LTCGApiClient';
+export { LTCGApiClient } from "./LTCGApiClient";
+export type { LTCGApiClientConfig } from "./LTCGApiClient";
 
 export {
   LTCGApiError,
@@ -15,10 +15,10 @@ export {
   NetworkError,
   GameError,
   parseErrorResponse,
-} from './errors';
+} from "./errors";
 
-export { ConvexRealtimeClient } from './realtimeClient';
-export type { ConvexRealtimeClientConfig } from './realtimeClient';
+export { ConvexRealtimeClient } from "./realtimeClient";
+export type { ConvexRealtimeClientConfig } from "./realtimeClient";
 
 export type {
   GameStateUpdatedEvent,
@@ -35,4 +35,4 @@ export type {
   GameEventEmitter,
   Subscription,
   SubscriptionOptions,
-} from './events';
+} from "./events";

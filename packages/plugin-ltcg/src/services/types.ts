@@ -6,24 +6,24 @@
  * concrete implementations directly.
  */
 
-import type { LTCGApiClient } from '../client/LTCGApiClient';
+import type { LTCGApiClient } from "../client/LTCGApiClient";
 import type {
-  MatchmakingStatus,
-  Decision,
-  AgentStatus,
-  GameSnapshot,
   AgentMetrics,
-} from '../frontend/types/panel';
-import type { GameStateResponse } from '../types/api';
+  AgentStatus,
+  Decision,
+  GameSnapshot,
+  MatchmakingStatus,
+} from "../frontend/types/panel";
+import type { GameStateResponse } from "../types/api";
 
 // ============================================================================
 // Service Type Constants
 // ============================================================================
 
 export const SERVICE_TYPES = {
-  POLLING: 'ltcg-polling',
-  ORCHESTRATOR: 'ltcg-turn-orchestrator',
-  STATE_AGGREGATOR: 'ltcg-state-aggregator',
+  POLLING: "ltcg-polling",
+  ORCHESTRATOR: "ltcg-turn-orchestrator",
+  STATE_AGGREGATOR: "ltcg-state-aggregator",
 } as const;
 
 // ============================================================================
@@ -153,18 +153,18 @@ export interface IStateAggregator {
  * Events emitted by the polling service
  */
 export type PollingEventType =
-  | 'turn_started'
-  | 'chain_waiting'
-  | 'game_started'
-  | 'game_ended'
-  | 'phase_changed'
-  | 'opponent_action';
+  | "turn_started"
+  | "chain_waiting"
+  | "game_started"
+  | "game_ended"
+  | "phase_changed"
+  | "opponent_action";
 
 /**
  * Event payload for turn started
  */
 export interface TurnStartedEvent {
-  type: 'turn_started';
+  type: "turn_started";
   gameId: string;
   phase: string;
   turnNumber: number;
@@ -175,7 +175,7 @@ export interface TurnStartedEvent {
  * Event payload for chain waiting
  */
 export interface ChainWaitingEvent {
-  type: 'chain_waiting';
+  type: "chain_waiting";
   gameId: string;
   timeoutMs: number;
   gameState: GameStateResponse;

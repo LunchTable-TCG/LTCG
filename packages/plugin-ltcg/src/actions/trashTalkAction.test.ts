@@ -1,10 +1,10 @@
-import { describe, expect, it, beforeEach, mock } from 'bun:test';
-import { trashTalkAction } from './trashTalkAction';
-import type { IAgentRuntime, Memory, State } from '@elizaos/core';
-import { gameStateProvider } from '../providers/gameStateProvider';
-import { boardAnalysisProvider } from '../providers/boardAnalysisProvider';
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+import type { IAgentRuntime, Memory, State } from "@elizaos/core";
+import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
+import { gameStateProvider } from "../providers/gameStateProvider";
+import { trashTalkAction } from "./trashTalkAction";
 
-describe('Trash Talk Action', () => {
+describe("Trash Talk Action", () => {
   let mockRuntime: IAgentRuntime;
   let mockMessage: Memory;
   let mockState: State;
@@ -14,30 +14,30 @@ describe('Trash Talk Action', () => {
     // Create mock runtime
     mockRuntime = {
       getSetting: mock((key: string) => {
-        if (key === 'LTCG_API_KEY') return 'test-api-key';
-        if (key === 'LTCG_API_URL') return 'http://localhost:3000';
-        if (key === 'LTCG_CHAT_ENABLED') return 'true';
-        if (key === 'LTCG_TRASH_TALK_LEVEL') return 'mild';
+        if (key === "LTCG_API_KEY") return "test-api-key";
+        if (key === "LTCG_API_URL") return "http://localhost:3000";
+        if (key === "LTCG_CHAT_ENABLED") return "true";
+        if (key === "LTCG_TRASH_TALK_LEVEL") return "mild";
         return null;
       }),
       useModel: mock(async () => {
-        return 'Nice try, but I have the advantage here!';
+        return "Nice try, but I have the advantage here!";
       }),
       character: {
-        name: 'TestAgent',
-        bio: 'A competitive but friendly card game player',
+        name: "TestAgent",
+        bio: "A competitive but friendly card game player",
       },
     } as any;
 
     // Mock message with game ID
     mockMessage = {
-      id: 'test-message-id',
-      entityId: 'test-entity',
-      roomId: 'test-room',
+      id: "test-message-id",
+      entityId: "test-entity",
+      roomId: "test-room",
       content: {
-        text: 'I want to trash talk',
-        source: 'test',
-        gameId: 'test-game-123',
+        text: "I want to trash talk",
+        source: "test",
+        gameId: "test-game-123",
       },
     } as Memory;
 
@@ -45,48 +45,48 @@ describe('Trash Talk Action', () => {
     mockState = {
       values: {},
       data: {},
-      text: '',
+      text: "",
     };
 
     // Mock callback
     mockCallback = mock();
   });
 
-  describe('Action Structure', () => {
-    it('should have correct name', () => {
-      expect(trashTalkAction.name).toBe('TRASH_TALK');
+  describe("Action Structure", () => {
+    it("should have correct name", () => {
+      expect(trashTalkAction.name).toBe("TRASH_TALK");
     });
 
-    it('should have similes', () => {
-      expect(trashTalkAction.similes).toContain('TAUNT');
-      expect(trashTalkAction.similes).toContain('BANTER');
-      expect(trashTalkAction.similes).toContain('TEASE');
+    it("should have similes", () => {
+      expect(trashTalkAction.similes).toContain("TAUNT");
+      expect(trashTalkAction.similes).toContain("BANTER");
+      expect(trashTalkAction.similes).toContain("TEASE");
     });
 
-    it('should have description', () => {
+    it("should have description", () => {
       expect(trashTalkAction.description).toBeDefined();
       expect(trashTalkAction.description.length).toBeGreaterThan(0);
     });
 
-    it('should have examples', () => {
+    it("should have examples", () => {
       expect(trashTalkAction.examples).toBeDefined();
       expect(trashTalkAction.examples.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Validation', () => {
-    it('should validate when chat enabled and in active game', async () => {
+  describe("Validation", () => {
+    it("should validate when chat enabled and in active game", async () => {
       // Mock providers
       const mockGameStateProvider = {
         get: mock(async () => ({
-          text: 'Game state',
+          text: "Game state",
           values: {},
           data: {
             gameState: {
-              gameId: 'test-game-123',
-              status: 'active',
-              phase: 'main1',
-              currentTurn: 'host',
+              gameId: "test-game-123",
+              status: "active",
+              phase: "main1",
+              currentTurn: "host",
               hostPlayer: { lifePoints: 8000, monsterZone: [], spellTrapZone: [] },
               opponentPlayer: { lifePoints: 8000, monsterZone: [], spellTrapZone: [] },
             },
@@ -106,9 +106,9 @@ describe('Trash Talk Action', () => {
       (gameStateProvider as any).get = originalProvider;
     });
 
-    it('should not validate when chat is disabled', async () => {
+    it("should not validate when chat is disabled", async () => {
       mockRuntime.getSetting = mock((key: string) => {
-        if (key === 'LTCG_CHAT_ENABLED') return 'false';
+        if (key === "LTCG_CHAT_ENABLED") return "false";
         return null;
       });
 
@@ -117,10 +117,10 @@ describe('Trash Talk Action', () => {
       expect(isValid).toBe(false);
     });
 
-    it('should not validate when trash talk level is none', async () => {
+    it("should not validate when trash talk level is none", async () => {
       mockRuntime.getSetting = mock((key: string) => {
-        if (key === 'LTCG_CHAT_ENABLED') return 'true';
-        if (key === 'LTCG_TRASH_TALK_LEVEL') return 'none';
+        if (key === "LTCG_CHAT_ENABLED") return "true";
+        if (key === "LTCG_TRASH_TALK_LEVEL") return "none";
         return null;
       });
 
@@ -129,16 +129,16 @@ describe('Trash Talk Action', () => {
       expect(isValid).toBe(false);
     });
 
-    it('should not validate when game is not active', async () => {
+    it("should not validate when game is not active", async () => {
       const mockGameStateProvider = {
         get: mock(async () => ({
-          text: 'Game state',
+          text: "Game state",
           values: {},
           data: {
             gameState: {
-              gameId: 'test-game-123',
-              status: 'completed',
-              phase: 'end',
+              gameId: "test-game-123",
+              status: "completed",
+              phase: "end",
             },
           },
         })),
@@ -155,20 +155,20 @@ describe('Trash Talk Action', () => {
     });
   });
 
-  describe('Handler', () => {
-    it('should generate trash talk for winning position', async () => {
+  describe("Handler", () => {
+    it("should generate trash talk for winning position", async () => {
       // Mock providers
       const mockGameStateProvider = {
         get: mock(async () => ({
-          text: 'Game state',
+          text: "Game state",
           values: {},
           data: {
             gameState: {
-              gameId: 'test-game-123',
-              status: 'active',
-              phase: 'main1',
+              gameId: "test-game-123",
+              status: "active",
+              phase: "main1",
               turnNumber: 5,
-              hostPlayer: { lifePoints: 8000, monsterZone: [{ name: 'Dragon', atk: 3000 }] },
+              hostPlayer: { lifePoints: 8000, monsterZone: [{ name: "Dragon", atk: 3000 }] },
               opponentPlayer: { lifePoints: 4000, monsterZone: [] },
             },
           },
@@ -177,10 +177,10 @@ describe('Trash Talk Action', () => {
 
       const mockBoardAnalysisProvider = {
         get: mock(async () => ({
-          text: 'Board analysis',
+          text: "Board analysis",
           values: {},
           data: {
-            advantage: 'STRONG_ADVANTAGE',
+            advantage: "STRONG_ADVANTAGE",
             myMonsterCount: 1,
             opponentMonsterCount: 0,
           },
@@ -208,19 +208,19 @@ describe('Trash Talk Action', () => {
       (boardAnalysisProvider as any).get = originalBoardAnalysis;
     });
 
-    it('should generate different trash talk for losing position', async () => {
+    it("should generate different trash talk for losing position", async () => {
       const mockGameStateProvider = {
         get: mock(async () => ({
-          text: 'Game state',
+          text: "Game state",
           values: {},
           data: {
             gameState: {
-              gameId: 'test-game-123',
-              status: 'active',
-              phase: 'main1',
+              gameId: "test-game-123",
+              status: "active",
+              phase: "main1",
               turnNumber: 5,
               hostPlayer: { lifePoints: 2000, monsterZone: [] },
-              opponentPlayer: { lifePoints: 8000, monsterZone: [{ name: 'Dragon', atk: 3000 }] },
+              opponentPlayer: { lifePoints: 8000, monsterZone: [{ name: "Dragon", atk: 3000 }] },
             },
           },
         })),
@@ -228,10 +228,10 @@ describe('Trash Talk Action', () => {
 
       const mockBoardAnalysisProvider = {
         get: mock(async () => ({
-          text: 'Board analysis',
+          text: "Board analysis",
           values: {},
           data: {
-            advantage: 'STRONG_DISADVANTAGE',
+            advantage: "STRONG_DISADVANTAGE",
             myMonsterCount: 0,
             opponentMonsterCount: 1,
           },
@@ -256,24 +256,24 @@ describe('Trash Talk Action', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.values?.advantage).toBe('STRONG_DISADVANTAGE');
+      expect(result.values?.advantage).toBe("STRONG_DISADVANTAGE");
 
       (gameStateProvider as any).get = originalGameState;
       (boardAnalysisProvider as any).get = originalBoardAnalysis;
     });
 
-    it('should respect trash talk level setting', async () => {
+    it("should respect trash talk level setting", async () => {
       mockRuntime.getSetting = mock((key: string) => {
-        if (key === 'LTCG_TRASH_TALK_LEVEL') return 'aggressive';
-        return 'true';
+        if (key === "LTCG_TRASH_TALK_LEVEL") return "aggressive";
+        return "true";
       });
 
       const mockGameStateProvider = {
         get: mock(async () => ({
           data: {
             gameState: {
-              gameId: 'test-game-123',
-              status: 'active',
+              gameId: "test-game-123",
+              status: "active",
               turnNumber: 5,
               hostPlayer: { lifePoints: 8000 },
               opponentPlayer: { lifePoints: 4000 },
@@ -284,7 +284,7 @@ describe('Trash Talk Action', () => {
 
       const mockBoardAnalysisProvider = {
         get: mock(async () => ({
-          data: { advantage: 'STRONG_ADVANTAGE' },
+          data: { advantage: "STRONG_ADVANTAGE" },
         })),
       };
 
@@ -302,7 +302,7 @@ describe('Trash Talk Action', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.values?.trashTalkLevel).toBe('aggressive');
+      expect(result.values?.trashTalkLevel).toBe("aggressive");
 
       (gameStateProvider as any).get = originalGameState;
       (boardAnalysisProvider as any).get = originalBoardAnalysis;

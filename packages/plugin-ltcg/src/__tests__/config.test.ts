@@ -1,21 +1,21 @@
-import { describe, expect, it, beforeEach, afterEach, mock, spyOn } from 'bun:test';
-import plugin from '../plugin';
-import { z } from 'zod';
-import { createMockRuntime } from './utils/core-test-utils';
-import { logger } from '@elizaos/core';
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import { logger } from "@elizaos/core";
+import { z } from "zod";
+import plugin from "../plugin";
+import { createMockRuntime } from "./utils/core-test-utils";
 
 // Access the plugin's init function
 const initPlugin = plugin.init;
 
-describe('Plugin Configuration Schema', () => {
+describe("Plugin Configuration Schema", () => {
   // Create a backup of the original env values
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
     // Use spyOn for logger methods
-    spyOn(logger, 'info');
-    spyOn(logger, 'error');
-    spyOn(logger, 'warn');
+    spyOn(logger, "info");
+    spyOn(logger, "error");
+    spyOn(logger, "warn");
     // Reset environment variables before each test
     process.env = { ...originalEnv };
   });
@@ -25,10 +25,10 @@ describe('Plugin Configuration Schema', () => {
     process.env = { ...originalEnv };
   });
 
-  it('should accept valid configuration', async () => {
+  it("should accept valid configuration", async () => {
     const validConfig = {
-      LTCG_API_KEY: 'valid-api-key',
-      LTCG_CALLBACK_URL: 'https://example.com/webhook',
+      LTCG_API_KEY: "valid-api-key",
+      LTCG_CALLBACK_URL: "https://example.com/webhook",
     };
 
     if (initPlugin) {
@@ -42,7 +42,7 @@ describe('Plugin Configuration Schema', () => {
     }
   });
 
-  it('should accept empty configuration with warnings', async () => {
+  it("should accept empty configuration with warnings", async () => {
     // The plugin accepts empty config but logs warnings about missing keys
     const emptyConfig = {};
 
@@ -58,10 +58,10 @@ describe('Plugin Configuration Schema', () => {
     }
   });
 
-  it('should accept configuration with additional properties', async () => {
+  it("should accept configuration with additional properties", async () => {
     const configWithExtra = {
-      LTCG_API_KEY: 'valid-api-key',
-      EXTRA_PROPERTY: 'should be ignored',
+      LTCG_API_KEY: "valid-api-key",
+      EXTRA_PROPERTY: "should be ignored",
     };
 
     if (initPlugin) {
@@ -75,9 +75,9 @@ describe('Plugin Configuration Schema', () => {
     }
   });
 
-  it('should reject invalid LTCG_API_URL configuration', async () => {
+  it("should reject invalid LTCG_API_URL configuration", async () => {
     const invalidConfig = {
-      LTCG_API_URL: 'not-a-valid-url', // Invalid URL format
+      LTCG_API_URL: "not-a-valid-url", // Invalid URL format
     };
 
     if (initPlugin) {
@@ -89,14 +89,14 @@ describe('Plugin Configuration Schema', () => {
       }
       // Should throw because LTCG_API_URL must be a valid URL
       expect(error).not.toBeNull();
-      expect(error?.message).toContain('Invalid LTCG plugin configuration');
+      expect(error?.message).toContain("Invalid LTCG plugin configuration");
     }
   });
 
-  it('should set environment variables from valid config', async () => {
+  it("should set environment variables from valid config", async () => {
     const testConfig = {
-      LTCG_API_KEY: 'test-api-key',
-      LTCG_CALLBACK_URL: 'https://test.example.com/webhook',
+      LTCG_API_KEY: "test-api-key",
+      LTCG_CALLBACK_URL: "https://test.example.com/webhook",
     };
 
     if (initPlugin) {
@@ -108,15 +108,15 @@ describe('Plugin Configuration Schema', () => {
       await initPlugin(testConfig, createMockRuntime());
 
       // Verify environment variables were set
-      expect(process.env.LTCG_API_KEY).toBe('test-api-key');
-      expect(process.env.LTCG_CALLBACK_URL).toBe('https://test.example.com/webhook');
+      expect(process.env.LTCG_API_KEY).toBe("test-api-key");
+      expect(process.env.LTCG_CALLBACK_URL).toBe("https://test.example.com/webhook");
     }
   });
 
-  it('should set boolean config values as strings', async () => {
+  it("should set boolean config values as strings", async () => {
     const testConfig = {
-      LTCG_AUTO_MATCHMAKING: 'true',
-      LTCG_DEBUG_MODE: 'false',
+      LTCG_AUTO_MATCHMAKING: "true",
+      LTCG_DEBUG_MODE: "false",
     };
 
     if (initPlugin) {
@@ -126,21 +126,21 @@ describe('Plugin Configuration Schema', () => {
       await initPlugin(testConfig, createMockRuntime());
 
       // Boolean values are transformed and stored
-      expect(process.env.LTCG_AUTO_MATCHMAKING).toBe('true');
-      expect(process.env.LTCG_DEBUG_MODE).toBe('false');
+      expect(process.env.LTCG_AUTO_MATCHMAKING).toBe("true");
+      expect(process.env.LTCG_DEBUG_MODE).toBe("false");
     }
   });
 
-  it('should handle zod validation errors gracefully', async () => {
+  it("should handle zod validation errors gracefully", async () => {
     // Create a mock of zod's parseAsync that throws a ZodError
     // Using Zod 4 API with invalid_format for URL validation errors
     const mockZodError = new z.ZodError([
       {
         code: z.ZodIssueCode.invalid_format,
-        format: 'url',
-        message: 'LTCG_API_URL must be a valid URL',
-        path: ['LTCG_API_URL'],
-        input: 'not-a-valid-url',
+        format: "url",
+        message: "LTCG_API_URL must be a valid URL",
+        path: ["LTCG_API_URL"],
+        input: "not-a-valid-url",
       },
     ]);
 
@@ -166,9 +166,9 @@ describe('Plugin Configuration Schema', () => {
     schema.parseAsync = originalParseAsync;
   });
 
-  it('should rethrow non-zod errors', async () => {
+  it("should rethrow non-zod errors", async () => {
     // Create a generic error
-    const genericError = new Error('Something went wrong');
+    const genericError = new Error("Something went wrong");
 
     // Create a simple schema for mocking
     const schema = z.object({

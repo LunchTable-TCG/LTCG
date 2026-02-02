@@ -160,7 +160,15 @@ export async function makeAIDecision(
 
   // MAIN PHASE 1
   if (phase === "main1") {
-    return handleMainPhase(difficulty, hasNormalSummoned, evaluation, myHand, myBoard, oppBoard, cardData);
+    return handleMainPhase(
+      difficulty,
+      hasNormalSummoned,
+      evaluation,
+      myHand,
+      myBoard,
+      oppBoard,
+      cardData
+    );
   }
 
   // BATTLE PHASE

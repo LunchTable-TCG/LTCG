@@ -13,18 +13,18 @@ import type {
   IAgentRuntime,
   Memory,
   State,
-} from '@elizaos/core';
-import { logger, ModelType } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import { extractJsonFromLlmResponse } from '../utils/safeParseJson';
-import { gameStateProvider } from '../providers/gameStateProvider';
-import { boardAnalysisProvider } from '../providers/boardAnalysisProvider';
-import type { GameStateResponse, SpellTrapCard, GameEvent } from '../types/api';
+} from "@elizaos/core";
+import { ModelType, logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
+import { gameStateProvider } from "../providers/gameStateProvider";
+import type { GameEvent, GameStateResponse } from "../types/api";
+import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const activateTrapAction: Action = {
-  name: 'ACTIVATE_TRAP',
-  similes: ['TRIGGER_TRAP', 'USE_TRAP', 'SPRING_TRAP'],
-  description: 'Activate a set trap card in response to opponent\'s action',
+  name: "ACTIVATE_TRAP",
+  similes: ["TRIGGER_TRAP", "USE_TRAP", "SPRING_TRAP"],
+  description: "Activate a set trap card in response to opponent's action",
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
     try {
@@ -33,17 +33,17 @@ export const activateTrapAction: Action = {
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
-        logger.warn('No game state available for activate trap validation');
+        logger.warn("No game state available for activate trap validation");
         return false;
       }
 
       // Must have at least one set trap
       const setTraps = gameState.hostPlayer.spellTrapZone.filter(
-        (card) => card.type === 'trap' && !card.faceUp
+        (card) => card.type === "trap" && !card.faceUp
       );
 
       if (setTraps.length === 0) {
-        logger.debug('No set traps available');
+        logger.debug("No set traps available");
         return false;
       }
 
@@ -54,7 +54,7 @@ export const activateTrapAction: Action = {
 
       return true;
     } catch (error) {
-      logger.error({ error }, 'Error validating activate trap action');
+      logger.error({ error }, "Error validating activate trap action");
       return false;
     }
   },
@@ -67,7 +67,7 @@ export const activateTrapAction: Action = {
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
-      logger.info('Handling ACTIVATE_TRAP action');
+      logger.info("Handling ACTIVATE_TRAP action");
 
       // Get game state and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
@@ -77,15 +77,15 @@ export const activateTrapAction: Action = {
       const boardAnalysis = boardAnalysisResult.data;
 
       if (!gameState) {
-        throw new Error('Failed to get game state');
+        throw new Error("Failed to get game state");
       }
 
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        throw new Error('LTCG API credentials not configured');
+        throw new Error("LTCG API credentials not configured");
       }
 
       // Create API client
@@ -96,11 +96,11 @@ export const activateTrapAction: Action = {
 
       // Get set traps
       const setTraps = gameState.hostPlayer.spellTrapZone.filter(
-        (card) => card.type === 'trap' && !card.faceUp
+        (card) => card.type === "trap" && !card.faceUp
       );
 
       if (setTraps.length === 0) {
-        throw new Error('No set traps available');
+        throw new Error("No set traps available");
       }
 
       // Get recent game events for context
@@ -110,26 +110,27 @@ export const activateTrapAction: Action = {
         // Get last 3 events for context
         recentEvents = recentEvents.slice(-3);
       } catch (error) {
-        logger.warn('Failed to get game history for trap context');
+        logger.warn("Failed to get game history for trap context");
       }
 
       // Build context about what just happened
-      const recentContext = recentEvents.length > 0
-        ? recentEvents.map(e => `- ${e.description}`).join('\n')
-        : 'No recent events';
+      const recentContext =
+        recentEvents.length > 0
+          ? recentEvents.map((e) => `- ${e.description}`).join("\n")
+          : "No recent events";
 
       // Format trap options
       const trapOptions = setTraps
         .map((card, idx) => `${idx + 1}. ${card.name} (Set at board position ${card.boardIndex})`)
-        .join('\n');
+        .join("\n");
 
       const boardContext = `
 Game Context:
 - Your LP: ${gameState.hostPlayer.lifePoints}
 - Opponent LP: ${gameState.opponentPlayer.lifePoints}
 - Current Phase: ${gameState.phase}
-- Board Advantage: ${boardAnalysis?.advantage || 'UNKNOWN'}
-- Threat Level: ${boardAnalysis?.threatLevel || 'UNKNOWN'}
+- Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
+- Threat Level: ${boardAnalysis?.threatLevel || "UNKNOWN"}
 
 Recent Events:
 ${recentContext}
@@ -159,27 +160,33 @@ Respond with JSON: { "shouldActivate": true/false, "trapIndex": <index if activa
       });
 
       // Parse LLM decision
-      const parsed = extractJsonFromLlmResponse(decision, { shouldActivate: false, trapIndex: 0, targets: [], reasoning: '' });
+      const parsed = extractJsonFromLlmResponse(decision, {
+        shouldActivate: false,
+        trapIndex: 0,
+        targets: [],
+        reasoning: "",
+      });
 
       if (!parsed.shouldActivate) {
         // Agent decided not to activate trap
         await callback({
-          text: `I'll hold my traps for now. ${parsed.reasoning || ''}`,
-          actions: ['ACTIVATE_TRAP'],
+          text: `I'll hold my traps for now. ${parsed.reasoning || ""}`,
+          actions: ["ACTIVATE_TRAP"],
           source: message.content.source,
-          thought: 'Choosing not to activate trap now to save resources for more critical moment or better activation window',
+          thought:
+            "Choosing not to activate trap now to save resources for more critical moment or better activation window",
         } as Content);
 
         return {
           success: true,
-          text: 'Decided not to activate trap',
+          text: "Decided not to activate trap",
           values: {
             activated: false,
             reasoning: parsed.reasoning,
           },
           data: {
-            actionName: 'ACTIVATE_TRAP',
-            decision: 'hold',
+            actionName: "ACTIVATE_TRAP",
+            decision: "hold",
           },
         };
       }
@@ -188,7 +195,7 @@ Respond with JSON: { "shouldActivate": true/false, "trapIndex": <index if activa
       const selectedTrap = setTraps[parsed.trapIndex];
 
       if (!selectedTrap) {
-        throw new Error('Invalid trap selection');
+        throw new Error("Invalid trap selection");
       }
 
       // Make API call
@@ -203,7 +210,7 @@ Respond with JSON: { "shouldActivate": true/false, "trapIndex": <index if activa
 
       await callback({
         text: responseText,
-        actions: ['ACTIVATE_TRAP'],
+        actions: ["ACTIVATE_TRAP"],
         source: message.content.source,
         thought: `Activating ${selectedTrap.name} now to counter opponent's play and prevent potential damage or board loss`,
       } as Content);
@@ -217,24 +224,25 @@ Respond with JSON: { "shouldActivate": true/false, "trapIndex": <index if activa
           reasoning: parsed.reasoning,
         },
         data: {
-          actionName: 'ACTIVATE_TRAP',
+          actionName: "ACTIVATE_TRAP",
           trapActivated: selectedTrap,
           targets: parsed.targets,
           result,
         },
       };
     } catch (error) {
-      logger.error({ error }, 'Error in ACTIVATE_TRAP action');
+      logger.error({ error }, "Error in ACTIVATE_TRAP action");
 
       await callback({
         text: `Failed to activate trap: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: 'Trap activation failed due to invalid timing window, missing activation conditions, or incorrect targeting',
+        thought:
+          "Trap activation failed due to invalid timing window, missing activation conditions, or incorrect targeting",
       } as Content);
 
       return {
         success: false,
-        text: 'Failed to activate trap',
+        text: "Failed to activate trap",
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
@@ -243,46 +251,46 @@ Respond with JSON: { "shouldActivate": true/false, "trapIndex": <index if activa
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Opponent just summoned a strong monster',
+          text: "Opponent just summoned a strong monster",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'I activate my trap card - Trap Hole!',
-          actions: ['ACTIVATE_TRAP'],
-        },
-      },
-    ],
-    [
-      {
-        name: '{{name1}}',
-        content: {
-          text: 'They\'re attacking with all monsters',
-        },
-      },
-      {
-        name: '{{name2}}',
-        content: {
-          text: 'I activate my trap card - Mirror Force!',
-          actions: ['ACTIVATE_TRAP'],
+          text: "I activate my trap card - Trap Hole!",
+          actions: ["ACTIVATE_TRAP"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Should I activate my trap now?',
+          text: "They're attacking with all monsters",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'I\'ll hold my traps for now. Better to save them for a critical moment.',
-          actions: ['ACTIVATE_TRAP'],
+          text: "I activate my trap card - Mirror Force!",
+          actions: ["ACTIVATE_TRAP"],
+        },
+      },
+    ],
+    [
+      {
+        name: "{{name1}}",
+        content: {
+          text: "Should I activate my trap now?",
+        },
+      },
+      {
+        name: "{{name2}}",
+        content: {
+          text: "I'll hold my traps for now. Better to save them for a critical moment.",
+          actions: ["ACTIVATE_TRAP"],
         },
       },
     ],

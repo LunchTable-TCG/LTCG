@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Text } from "@tremor/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
 import { PlayerSelector } from "./PlayerSelector";
-import type { Id } from "@convex/_generated/dataModel";
 
 // =============================================================================
 // Types
@@ -65,12 +65,14 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
 
     setIsSubmitting(true);
     try {
-      const result = await batchGrantGold({
+      const result = (await batchGrantGold({
         playerIds: selectedPlayers,
         amount: Number.parseInt(amount, 10),
         reason: reason.trim(),
-      }) as BatchOperationResponse;
-      toast.success(`Granted ${amount} gold to ${result.results.filter((r) => r.success).length} players`);
+      })) as BatchOperationResponse;
+      toast.success(
+        `Granted ${amount} gold to ${result.results.filter((r) => r.success).length} players`
+      );
       setSelectedPlayers([]);
       setAmount("");
       setReason("");
@@ -157,12 +159,14 @@ export function GrantPremiumForm({ onSuccess }: BatchOperationFormProps) {
 
     setIsSubmitting(true);
     try {
-      const result = await batchGrantPremium({
+      const result = (await batchGrantPremium({
         playerIds: selectedPlayers,
         durationDays: Number.parseInt(amount, 10),
         reason: reason.trim(),
-      }) as BatchOperationResponse;
-      toast.success(`Granted ${amount} premium to ${result.results.filter((r) => r.success).length} players`);
+      })) as BatchOperationResponse;
+      toast.success(
+        `Granted ${amount} premium to ${result.results.filter((r) => r.success).length} players`
+      );
       setSelectedPlayers([]);
       setAmount("");
       setReason("");
@@ -244,10 +248,10 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
 
     setIsSubmitting(true);
     try {
-      const result = await batchResetRatings({
+      const result = (await batchResetRatings({
         playerIds: selectedPlayers,
         reason: reason.trim(),
-      }) as BatchOperationResponse;
+      })) as BatchOperationResponse;
       toast.success(`Reset ratings for ${result.results.filter((r) => r.success).length} players`);
       setSelectedPlayers([]);
       setReason("");
@@ -334,13 +338,15 @@ export function GrantPacksForm({ onSuccess }: BatchOperationFormProps) {
 
     setIsSubmitting(true);
     try {
-      const result = await batchGrantPacks({
+      const result = (await batchGrantPacks({
         playerIds: selectedPlayers,
         packType: packDefinitionId.trim(),
         quantity: Number.parseInt(quantity, 10),
         reason: reason.trim(),
-      }) as BatchOperationResponse;
-      toast.success(`Granted ${quantity} packs to ${result.results.filter((r) => r.success).length} players`);
+      })) as BatchOperationResponse;
+      toast.success(
+        `Granted ${quantity} packs to ${result.results.filter((r) => r.success).length} players`
+      );
       setSelectedPlayers([]);
       setPackDefinitionId("");
       setQuantity("1");
@@ -747,9 +753,7 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
         cardIds: validGrants.map((g) => g.cardId.trim()),
         reason: reason.trim(),
       });
-      toast.success(
-        `Granted cards to ${selectedPlayers.length} players successfully`,
-      );
+      toast.success(`Granted cards to ${selectedPlayers.length} players successfully`);
       setSelectedPlayers([]);
       setCardGrants([{ cardId: "", quantity: 1 }]);
       setReason("");

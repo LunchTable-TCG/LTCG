@@ -4,8 +4,8 @@
  */
 
 import "@testing-library/jest-dom";
-import { vi } from "vitest";
 import React from "react";
+import { vi } from "vitest";
 
 // Make React available globally for JSX
 (global as any).React = React;

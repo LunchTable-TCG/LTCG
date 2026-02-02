@@ -454,11 +454,7 @@ export interface ContinuousEffectDefinition {
  * Type guard to check if a condition is a compound condition
  */
 export function isCompoundCondition(condition: JsonCondition): boolean {
-  return (
-    condition.type === "and" ||
-    condition.type === "or" ||
-    condition.type === "not"
-  );
+  return condition.type === "and" || condition.type === "or" || condition.type === "not";
 }
 
 /**
@@ -471,7 +467,9 @@ export function isNumericRange(value: number | NumericRange | undefined): value 
 /**
  * Check if a string condition (legacy format) or JSON condition
  */
-export function isJsonCondition(condition: string | JsonCondition | undefined): condition is JsonCondition {
+export function isJsonCondition(
+  condition: string | JsonCondition | undefined
+): condition is JsonCondition {
   return typeof condition === "object" && condition !== null;
 }
 
@@ -704,7 +702,15 @@ export interface JsonDuration {
   type: JsonDurationType;
   turnCount?: number;
   countOwner?: "self" | "opponent" | "both";
-  expirePhase?: "draw" | "standby" | "main1" | "battle_start" | "battle" | "battle_end" | "main2" | "end";
+  expirePhase?:
+    | "draw"
+    | "standby"
+    | "main1"
+    | "battle_start"
+    | "battle"
+    | "battle_end"
+    | "main2"
+    | "end";
 }
 
 // ============================================================================
@@ -1295,7 +1301,13 @@ export function jsonEffectToParsedEffect(effect: JsonEffect | JsonGenericEffect)
     else if (type === "spell" || type === "trap" || type === "any") targetType = type;
 
     const zone = target.zone ?? target.location;
-    if (zone === "board" || zone === "hand" || zone === "graveyard" || zone === "deck" || zone === "banished") {
+    if (
+      zone === "board" ||
+      zone === "hand" ||
+      zone === "graveyard" ||
+      zone === "deck" ||
+      zone === "banished"
+    ) {
       targetLocation = zone;
     }
   }
@@ -1309,14 +1321,20 @@ export function jsonEffectToParsedEffect(effect: JsonEffect | JsonGenericEffect)
   }
   if (genericEffect.targetLocation) {
     const loc = genericEffect.targetLocation;
-    if (loc === "board" || loc === "hand" || loc === "graveyard" || loc === "deck" || loc === "banished") {
+    if (
+      loc === "board" ||
+      loc === "hand" ||
+      loc === "graveyard" ||
+      loc === "deck" ||
+      loc === "banished"
+    ) {
       targetLocation = loc;
     }
   }
 
   return {
     type: effectType as EffectType,
-    trigger: ((genericEffect.trigger ?? "manual") as TriggerCondition),
+    trigger: (genericEffect.trigger ?? "manual") as TriggerCondition,
     value,
     targetCount,
     targetType,
@@ -1327,7 +1345,9 @@ export function jsonEffectToParsedEffect(effect: JsonEffect | JsonGenericEffect)
     cost: genericEffect.cost
       ? {
           type: genericEffect.cost.type as "discard" | "pay_lp" | "tribute" | "banish",
-          value: genericEffect.cost.value ?? (genericEffect.cost.target as JsonCostTarget | undefined)?.count,
+          value:
+            genericEffect.cost.value ??
+            (genericEffect.cost.target as JsonCostTarget | undefined)?.count,
           targetType: ((genericEffect.cost.target as JsonCostTarget | undefined)?.type ??
             (genericEffect.cost.target as JsonCostTarget | undefined)?.cardType) as
             | "monster"
@@ -1393,7 +1413,8 @@ export function parsedEffectToJsonEffect(effect: ParsedEffect): JsonGenericEffec
       zone: (effect.targetLocation as TargetZone) ?? "board",
     };
     if (effect.targetType) {
-      (jsonEffect.target as JsonTarget).cardType = effect.targetType === "monster" ? "creature" : effect.targetType;
+      (jsonEffect.target as JsonTarget).cardType =
+        effect.targetType === "monster" ? "creature" : effect.targetType;
     }
   }
 

@@ -4,9 +4,9 @@
  * Displays a single AI decision with collapsible details
  */
 
-import React from 'react';
-import { cn } from '../utils';
-import type { Decision } from '../types/panel';
+import React from "react";
+import type { Decision } from "../types/panel";
+import { cn } from "../utils";
 
 interface DecisionCardProps {
   decision: Decision;
@@ -17,16 +17,16 @@ interface DecisionCardProps {
 /**
  * Get result badge styling
  */
-function getResultStyles(result: Decision['result']): string {
+function getResultStyles(result: Decision["result"]): string {
   switch (result) {
-    case 'success':
-      return 'bg-green-500/10 text-green-400 border-green-500/20';
-    case 'failed':
-      return 'bg-red-500/10 text-red-400 border-red-500/20';
-    case 'pending':
-      return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+    case "success":
+      return "bg-green-500/10 text-green-400 border-green-500/20";
+    case "failed":
+      return "bg-red-500/10 text-red-400 border-red-500/20";
+    case "pending":
+      return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
     default:
-      return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+      return "bg-gray-500/10 text-gray-400 border-gray-500/20";
   }
 }
 
@@ -35,28 +35,28 @@ function getResultStyles(result: Decision['result']): string {
  */
 function getActionIcon(action: string): string {
   switch (action.toUpperCase()) {
-    case 'SUMMON_MONSTER':
-      return '🐉';
-    case 'SET_CARD':
-      return '🃏';
-    case 'ACTIVATE_SPELL':
-      return '✨';
-    case 'ACTIVATE_TRAP':
-      return '🪤';
-    case 'ATTACK':
-      return '⚔️';
-    case 'CHANGE_POSITION':
-      return '🔄';
-    case 'FLIP_SUMMON':
-      return '🔃';
-    case 'END_TURN':
-      return '🏁';
-    case 'CHAIN_RESPONSE':
-      return '⛓️';
-    case 'PASS_CHAIN':
-      return '⏭️';
+    case "SUMMON_MONSTER":
+      return "🐉";
+    case "SET_CARD":
+      return "🃏";
+    case "ACTIVATE_SPELL":
+      return "✨";
+    case "ACTIVATE_TRAP":
+      return "🪤";
+    case "ATTACK":
+      return "⚔️";
+    case "CHANGE_POSITION":
+      return "🔄";
+    case "FLIP_SUMMON":
+      return "🔃";
+    case "END_TURN":
+      return "🏁";
+    case "CHAIN_RESPONSE":
+      return "⛓️";
+    case "PASS_CHAIN":
+      return "⏭️";
     default:
-      return '🎯';
+      return "🎯";
   }
 }
 
@@ -65,7 +65,12 @@ function getActionIcon(action: string): string {
  */
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
-  return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return date.toLocaleTimeString("en-US", {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 /**
@@ -79,8 +84,10 @@ export function DecisionCard({ decision, defaultExpanded = false, className }: D
   return (
     <div
       className={cn(
-        'rounded-lg border bg-card overflow-hidden transition-all',
-        getResultStyles(decision.result).includes('green') ? 'border-green-500/20' : 'border-border',
+        "rounded-lg border bg-card overflow-hidden transition-all",
+        getResultStyles(decision.result).includes("green")
+          ? "border-green-500/20"
+          : "border-border",
         className
       )}
     >
@@ -93,10 +100,10 @@ export function DecisionCard({ decision, defaultExpanded = false, className }: D
           <span className="text-xl flex-shrink-0">{getActionIcon(decision.action)}</span>
           <div className="flex flex-col gap-1 min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-sm">{decision.action.replace(/_/g, ' ')}</span>
+              <span className="font-medium text-sm">{decision.action.replace(/_/g, " ")}</span>
               <span
                 className={cn(
-                  'px-2 py-0.5 text-xs rounded-full border',
+                  "px-2 py-0.5 text-xs rounded-full border",
                   getResultStyles(decision.result)
                 )}
               >
@@ -117,7 +124,10 @@ export function DecisionCard({ decision, defaultExpanded = false, className }: D
             {decision.executionTimeMs}ms
           </span>
           <svg
-            className={cn('h-4 w-4 text-muted-foreground transition-transform', isExpanded && 'rotate-180')}
+            className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform",
+              isExpanded && "rotate-180"
+            )}
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -144,7 +154,9 @@ export function DecisionCard({ decision, defaultExpanded = false, className }: D
             <div>
               <h4 className="text-xs font-medium text-muted-foreground mb-1">Parameters</h4>
               <div className="bg-background/50 rounded p-2 font-mono text-xs">
-                <pre className="overflow-x-auto">{JSON.stringify(decision.parameters, null, 2)}</pre>
+                <pre className="overflow-x-auto">
+                  {JSON.stringify(decision.parameters, null, 2)}
+                </pre>
               </div>
             </div>
           )}

@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { useShop } from "../useShop";
 import * as convexReact from "convex/react";
 import { toast } from "sonner";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useShop } from "../useShop";
 
 // Mock imports
 vi.mock("convex/react");

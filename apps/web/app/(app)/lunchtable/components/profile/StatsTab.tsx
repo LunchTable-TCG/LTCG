@@ -30,8 +30,13 @@ export function StatsTab({ profile, onAchievementClick }: StatsTabProps) {
           <p className="text-2xl font-black text-[#d4af37]">{profile.stats.totalGames}</p>
           <p className="text-[10px] text-[#a89f94] uppercase tracking-wider">Games</p>
         </div>
-        <div className="text-center p-3 rounded-xl bg-black/30 border border-[#3d2b1f]" data-testid="player-wins">
-          <p className="text-2xl font-black text-green-400" data-testid="win-count">{profile.stats.wins}</p>
+        <div
+          className="text-center p-3 rounded-xl bg-black/30 border border-[#3d2b1f]"
+          data-testid="player-wins"
+        >
+          <p className="text-2xl font-black text-green-400" data-testid="win-count">
+            {profile.stats.wins}
+          </p>
           <p className="text-[10px] text-[#a89f94] uppercase tracking-wider">Wins</p>
         </div>
         <div className="text-center p-3 rounded-xl bg-black/30 border border-[#3d2b1f]">
@@ -99,7 +104,10 @@ export function StatsTab({ profile, onAchievementClick }: StatsTabProps) {
                 </div>
                 <p className="text-[10px] text-[#a89f94] mb-1">{ach.description}</p>
                 {hasProgress && (
-                  <div data-testid="achievement-progress" className="h-1.5 rounded-full bg-black/50 overflow-hidden">
+                  <div
+                    data-testid="achievement-progress"
+                    className="h-1.5 rounded-full bg-black/50 overflow-hidden"
+                  >
                     <div
                       className="h-full rounded-full bg-linear-to-r from-[#d4af37] to-[#f4d03f] transition-all"
                       style={{ width: `${progressPercent}%` }}

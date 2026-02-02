@@ -1,27 +1,27 @@
-import { describe, expect, it, beforeEach, afterEach, mock, spyOn } from 'bun:test';
-import plugin from '../plugin';
-import { LTCGRealtimeService } from '../services/LTCGRealtimeService';
-import { logger } from '@elizaos/core';
-import type { IAgentRuntime, Memory, State } from '@elizaos/core';
-import { v4 as uuidv4 } from 'uuid';
+import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import { logger } from "@elizaos/core";
+import type { IAgentRuntime, Memory, State } from "@elizaos/core";
+import { v4 as uuidv4 } from "uuid";
+import plugin from "../plugin";
+import { LTCGRealtimeService } from "../services/LTCGRealtimeService";
 
-describe('Error Handling', () => {
+describe("Error Handling", () => {
   beforeEach(() => {
     // Use spyOn for logger methods
-    spyOn(logger, 'info');
-    spyOn(logger, 'error');
-    spyOn(logger, 'warn');
+    spyOn(logger, "info");
+    spyOn(logger, "error");
+    spyOn(logger, "warn");
   });
 
-  describe('REGISTER_AGENT Action Error Handling', () => {
-    it('should log errors in action handlers', async () => {
+  describe("REGISTER_AGENT Action Error Handling", () => {
+    it("should log errors in action handlers", async () => {
       // Find the action
-      const action = plugin.actions?.find((a) => a.name === 'REGISTER_AGENT');
+      const action = plugin.actions?.find((a) => a.name === "REGISTER_AGENT");
 
       if (action && action.handler) {
         // Force the handler to throw an error
-        const mockError = new Error('Test error in action');
-        spyOn(console, 'error').mockImplementation(() => {});
+        const mockError = new Error("Test error in action");
+        spyOn(console, "error").mockImplementation(() => {});
 
         // Create a custom mock runtime
         const mockRuntime = {
@@ -33,21 +33,21 @@ describe('Error Handling', () => {
           entityId: uuidv4(),
           roomId: uuidv4(),
           content: {
-            text: 'Register agent',
-            source: 'test',
+            text: "Register agent",
+            source: "test",
           },
         } as Memory;
 
         const mockState = {
           values: {},
           data: {},
-          text: '',
+          text: "",
         } as State;
 
         const mockCallback = mock();
 
         // Mock the logger.error to verify it's called
-        spyOn(logger, 'error');
+        spyOn(logger, "error");
 
         // Test the error handling by observing the behavior
         try {
@@ -64,8 +64,8 @@ describe('Error Handling', () => {
     });
   });
 
-  describe('Service Error Handling', () => {
-    it('should handle service initialization errors gracefully', async () => {
+  describe("Service Error Handling", () => {
+    it("should handle service initialization errors gracefully", async () => {
       const mockRuntime = {
         getSetting: mock(() => null),
         setSetting: mock(async (key: string, value: any, persistent?: boolean) => {}),
@@ -83,28 +83,28 @@ describe('Error Handling', () => {
       } catch (error: any) {
         // If it throws, it should be a meaningful error
         expect(error).toBeDefined();
-        expect(typeof error.message).toBe('string');
+        expect(typeof error.message).toBe("string");
       }
     });
   });
 
-  describe('Plugin Events Error Handling', () => {
-    it('should handle errors in event handlers gracefully', async () => {
+  describe("Plugin Events Error Handling", () => {
+    it("should handle errors in event handlers gracefully", async () => {
       if (plugin.events && plugin.events.MESSAGE_RECEIVED) {
         const messageHandler = plugin.events.MESSAGE_RECEIVED[0];
 
         // Create a mock that will trigger an error
         const mockParams = {
           message: {
-            id: 'test-id',
-            content: { text: 'Hello!' },
+            id: "test-id",
+            content: { text: "Hello!" },
           },
-          source: 'test',
+          source: "test",
           runtime: {},
         };
 
         // Spy on the logger
-        spyOn(logger, 'error');
+        spyOn(logger, "error");
 
         // This is a partial test - in a real handler, we'd have more robust error handling
         try {
@@ -119,8 +119,8 @@ describe('Error Handling', () => {
     });
   });
 
-  describe('Provider Error Handling', () => {
-    it('should handle errors in provider.get method', async () => {
+  describe("Provider Error Handling", () => {
+    it("should handle errors in provider.get method", async () => {
       // Get first provider from LTCG plugin
       const provider = plugin.providers?.[0];
 
@@ -135,15 +135,15 @@ describe('Error Handling', () => {
           entityId: uuidv4(),
           roomId: uuidv4(),
           content: {
-            text: 'Test message',
-            source: 'test',
+            text: "Test message",
+            source: "test",
           },
         } as Memory;
 
         const mockState = {
           values: {},
           data: {},
-          text: '',
+          text: "",
         } as State;
 
         // The provider should handle missing config gracefully

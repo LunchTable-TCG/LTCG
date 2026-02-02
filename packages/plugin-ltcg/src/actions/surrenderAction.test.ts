@@ -1,14 +1,11 @@
-import { describe, expect, it, beforeEach, mock } from 'bun:test';
-import { surrenderAction } from './surrenderAction';
-import type { IAgentRuntime, Memory, State } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import { gameStateProvider } from '../providers/gameStateProvider';
-import {
-  setupActionTest,
-  type MockRuntime,
-} from '../__tests__/utils/core-test-utils';
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+import type { Memory, State } from "@elizaos/core";
+import { type MockRuntime, setupActionTest } from "../__tests__/utils/core-test-utils";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import { gameStateProvider } from "../providers/gameStateProvider";
+import { surrenderAction } from "./surrenderAction";
 
-describe('Surrender Action', () => {
+describe("Surrender Action", () => {
   let mockRuntime: MockRuntime;
   let mockMessage: Memory;
   let mockState: State;
@@ -20,14 +17,14 @@ describe('Surrender Action', () => {
       stateOverrides: {
         values: {
           // ElizaOS pattern: transient game state in state.values
-          LTCG_CURRENT_GAME_ID: 'active-game-123',
+          LTCG_CURRENT_GAME_ID: "active-game-123",
         },
       },
       settingOverrides: {
         // ElizaOS pattern: persistent settings via runtime.getSetting
-        LTCG_API_KEY: 'test-api-key',
-        LTCG_API_URL: 'http://localhost:3000',
-        LTCG_AUTO_SURRENDER: 'true',
+        LTCG_API_KEY: "test-api-key",
+        LTCG_API_URL: "http://localhost:3000",
+        LTCG_AUTO_SURRENDER: "true",
       },
     });
 
@@ -38,8 +35,8 @@ describe('Surrender Action', () => {
 
     // Override message content
     mockMessage.content = {
-      text: 'I surrender',
-      source: 'test',
+      text: "I surrender",
+      source: "test",
     };
 
     // Setup useModel mock for confirmation
@@ -48,39 +45,39 @@ describe('Surrender Action', () => {
     }) as any;
   });
 
-  describe('Action Structure', () => {
-    it('should have correct name', () => {
-      expect(surrenderAction.name).toBe('SURRENDER');
+  describe("Action Structure", () => {
+    it("should have correct name", () => {
+      expect(surrenderAction.name).toBe("SURRENDER");
     });
 
-    it('should have similes', () => {
-      expect(surrenderAction.similes).toContain('FORFEIT');
-      expect(surrenderAction.similes).toContain('CONCEDE');
-      expect(surrenderAction.similes).toContain('GIVE_UP');
+    it("should have similes", () => {
+      expect(surrenderAction.similes).toContain("FORFEIT");
+      expect(surrenderAction.similes).toContain("CONCEDE");
+      expect(surrenderAction.similes).toContain("GIVE_UP");
     });
 
-    it('should have description', () => {
+    it("should have description", () => {
       expect(surrenderAction.description).toBeDefined();
       expect(surrenderAction.description.length).toBeGreaterThan(0);
     });
 
-    it('should have examples', () => {
+    it("should have examples", () => {
       expect(surrenderAction.examples).toBeDefined();
       expect(surrenderAction.examples.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Validation', () => {
-    it('should validate when in active game', async () => {
+  describe("Validation", () => {
+    it("should validate when in active game", async () => {
       const originalGameStateGet = gameStateProvider.get;
 
       gameStateProvider.get = async () => ({
-        text: '',
+        text: "",
         values: {},
         data: {
           gameState: {
-            gameId: 'active-game-123',
-            status: 'active',
+            gameId: "active-game-123",
+            status: "active",
           },
         },
       });
@@ -92,7 +89,7 @@ describe('Surrender Action', () => {
       expect(result).toBe(true);
     });
 
-    it('should not validate when not in game', async () => {
+    it("should not validate when not in game", async () => {
       // ElizaOS pattern: clear state.values to simulate no active game
       mockState.values.LTCG_CURRENT_GAME_ID = undefined;
 
@@ -100,16 +97,16 @@ describe('Surrender Action', () => {
       expect(result).toBe(false);
     });
 
-    it('should not validate when game already completed', async () => {
+    it("should not validate when game already completed", async () => {
       const originalGameStateGet = gameStateProvider.get;
 
       gameStateProvider.get = async () => ({
-        text: '',
+        text: "",
         values: {},
         data: {
           gameState: {
-            gameId: 'active-game-123',
-            status: 'completed',
+            gameId: "active-game-123",
+            status: "completed",
           },
         },
       });
@@ -121,11 +118,11 @@ describe('Surrender Action', () => {
       expect(result).toBe(false);
     });
 
-    it('should validate even if game state unavailable (cleanup)', async () => {
+    it("should validate even if game state unavailable (cleanup)", async () => {
       const originalGameStateGet = gameStateProvider.get;
 
       gameStateProvider.get = async () => {
-        throw new Error('Cannot get game state');
+        throw new Error("Cannot get game state");
       };
 
       const result = await surrenderAction.validate(mockRuntime, mockMessage, mockState);
@@ -136,13 +133,13 @@ describe('Surrender Action', () => {
     });
   });
 
-  describe('Handler - Auto Surrender', () => {
-    it('should surrender immediately when auto-surrender enabled', async () => {
+  describe("Handler - Auto Surrender", () => {
+    it("should surrender immediately when auto-surrender enabled", async () => {
       const originalSurrender = LTCGApiClient.prototype.surrender;
 
       LTCGApiClient.prototype.surrender = mock(async () => ({
         success: true,
-        message: 'Game ended by surrender',
+        message: "Game ended by surrender",
       })) as any;
 
       const result = await surrenderAction.handler(
@@ -162,21 +159,21 @@ describe('Surrender Action', () => {
     });
   });
 
-  describe('Handler - Confirmation Flow', () => {
-    it('should ask for confirmation when auto-surrender disabled', async () => {
+  describe("Handler - Confirmation Flow", () => {
+    it("should ask for confirmation when auto-surrender disabled", async () => {
       // ElizaOS pattern: use runtime._settings directly to override
-      mockRuntime._settings.LTCG_AUTO_SURRENDER = 'false';
+      mockRuntime._settings.LTCG_AUTO_SURRENDER = "false";
 
       const originalGameStateGet = gameStateProvider.get;
       const originalSurrender = LTCGApiClient.prototype.surrender;
 
       gameStateProvider.get = async () => ({
-        text: '',
+        text: "",
         values: {},
         data: {
           gameState: {
-            gameId: 'active-game-123',
-            status: 'active',
+            gameId: "active-game-123",
+            status: "active",
             hostPlayer: { lifePoints: 2000, monsterZone: [] },
             opponentPlayer: { lifePoints: 8000, monsterZone: [{}] },
             turnNumber: 10,
@@ -186,7 +183,7 @@ describe('Surrender Action', () => {
 
       LTCGApiClient.prototype.surrender = mock(async () => ({
         success: true,
-        message: 'Game ended by surrender',
+        message: "Game ended by surrender",
       })) as any;
 
       const result = await surrenderAction.handler(
@@ -204,9 +201,9 @@ describe('Surrender Action', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should cancel surrender when confirmation declined', async () => {
+    it("should cancel surrender when confirmation declined", async () => {
       // ElizaOS pattern: use runtime._settings directly to override
-      mockRuntime._settings.LTCG_AUTO_SURRENDER = 'false';
+      mockRuntime._settings.LTCG_AUTO_SURRENDER = "false";
 
       mockRuntime.useModel = mock(async () => {
         return JSON.stringify({ confirm: false });
@@ -215,12 +212,12 @@ describe('Surrender Action', () => {
       const originalGameStateGet = gameStateProvider.get;
 
       gameStateProvider.get = async () => ({
-        text: '',
+        text: "",
         values: {},
         data: {
           gameState: {
-            gameId: 'active-game-123',
-            status: 'active',
+            gameId: "active-game-123",
+            status: "active",
             hostPlayer: { lifePoints: 2000, monsterZone: [] },
             opponentPlayer: { lifePoints: 8000, monsterZone: [{}] },
             turnNumber: 10,
@@ -239,17 +236,17 @@ describe('Surrender Action', () => {
       gameStateProvider.get = originalGameStateGet;
 
       expect(result.success).toBe(false);
-      expect(result.text).toContain('cancelled');
+      expect(result.text).toContain("cancelled");
       expect(mockCallback).toHaveBeenCalled();
     });
   });
 
-  describe('Handler - Error Handling', () => {
-    it('should clean up state even when API fails', async () => {
+  describe("Handler - Error Handling", () => {
+    it("should clean up state even when API fails", async () => {
       const originalSurrender = LTCGApiClient.prototype.surrender;
 
       LTCGApiClient.prototype.surrender = mock(async () => {
-        throw new Error('API Error');
+        throw new Error("API Error");
       }) as any;
 
       const result = await surrenderAction.handler(
@@ -267,7 +264,7 @@ describe('Surrender Action', () => {
       // Note: State cleanup is still attempted via runtime.delete (legacy)
     });
 
-    it('should handle missing game ID gracefully', async () => {
+    it("should handle missing game ID gracefully", async () => {
       // ElizaOS pattern: clear state.values to simulate no active game
       mockState.values.LTCG_CURRENT_GAME_ID = undefined;
 

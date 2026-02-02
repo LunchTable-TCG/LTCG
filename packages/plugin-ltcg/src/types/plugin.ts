@@ -50,7 +50,7 @@ export interface LTCGPluginConfig {
    * @optional
    * @default 'balanced'
    */
-  LTCG_PLAY_STYLE?: 'aggressive' | 'defensive' | 'control' | 'balanced';
+  LTCG_PLAY_STYLE?: "aggressive" | "defensive" | "control" | "balanced";
 
   /**
    * Risk tolerance for decision-making
@@ -61,7 +61,7 @@ export interface LTCGPluginConfig {
    * @optional
    * @default 'medium'
    */
-  LTCG_RISK_TOLERANCE?: 'low' | 'medium' | 'high';
+  LTCG_RISK_TOLERANCE?: "low" | "medium" | "high";
 
   /**
    * Automatically search for and join games when idle
@@ -98,7 +98,7 @@ export interface LTCGPluginConfig {
    * @optional
    * @default 'mild'
    */
-  LTCG_TRASH_TALK_LEVEL?: 'none' | 'mild' | 'aggressive';
+  LTCG_TRASH_TALK_LEVEL?: "none" | "mild" | "aggressive";
 
   /**
    * Artificial delay between actions (milliseconds)
@@ -137,7 +137,8 @@ export interface LTCGPluginConfig {
 /**
  * Validated and normalized plugin configuration with defaults applied
  */
-export interface NormalizedLTCGConfig extends Required<Omit<LTCGPluginConfig, 'LTCG_API_URL' | 'LTCG_PREFERRED_DECK_ID'>> {
+export interface NormalizedLTCGConfig
+  extends Required<Omit<LTCGPluginConfig, "LTCG_API_URL" | "LTCG_PREFERRED_DECK_ID">> {
   LTCG_API_URL?: string;
   LTCG_PREFERRED_DECK_ID?: string;
 }

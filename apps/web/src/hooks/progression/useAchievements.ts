@@ -1,8 +1,8 @@
 "use client";
 
+import type { Achievement } from "@/types";
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
-import type { Achievement } from "@/types";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UseAchievementsReturn {

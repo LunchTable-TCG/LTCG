@@ -55,7 +55,9 @@ export function PhaseSkipButtons({
   // Determine which phases allow which skip actions
   const battlePhases: GamePhase[] = ["battle_start", "battle", "battle_end"];
   const canSkipBattle = currentPhase === "main1" || battlePhases.includes(currentPhase);
-  const canSkipToEnd = ["main1", "battle_start", "battle", "battle_end", "main2"].includes(currentPhase);
+  const canSkipToEnd = ["main1", "battle_start", "battle", "battle_end", "main2"].includes(
+    currentPhase
+  );
   const canEndTurn = currentPhase === "main2";
 
   const handleSkipBattle = async () => {
@@ -123,7 +125,9 @@ export function PhaseSkipButtons({
           )}
           data-testid="skip-battle-btn"
         >
-          <SkipForward className={cn("h-3 w-3", loadingAction === "skipBattle" && "animate-pulse")} />
+          <SkipForward
+            className={cn("h-3 w-3", loadingAction === "skipBattle" && "animate-pulse")}
+          />
           <span className="hidden sm:inline">Skip Battle</span>
           <span className="sm:hidden">Skip</span>
         </Button>
@@ -142,7 +146,9 @@ export function PhaseSkipButtons({
           )}
           data-testid="skip-to-main2-btn"
         >
-          <SkipForward className={cn("h-3 w-3", loadingAction === "skipBattle" && "animate-pulse")} />
+          <SkipForward
+            className={cn("h-3 w-3", loadingAction === "skipBattle" && "animate-pulse")}
+          />
           <span className="hidden sm:inline">To Main 2</span>
           <span className="sm:hidden">M2</span>
         </Button>
@@ -161,7 +167,9 @@ export function PhaseSkipButtons({
           )}
           data-testid="skip-to-end-btn"
         >
-          <FastForward className={cn("h-3 w-3", loadingAction === "skipToEnd" && "animate-pulse")} />
+          <FastForward
+            className={cn("h-3 w-3", loadingAction === "skipToEnd" && "animate-pulse")}
+          />
           <span className="hidden sm:inline">Skip to End</span>
           <span className="sm:hidden">End</span>
         </Button>

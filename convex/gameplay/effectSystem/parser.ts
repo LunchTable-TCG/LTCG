@@ -5,8 +5,8 @@
  * Only JSON format is supported - text parsing has been removed.
  */
 
-import type { ParsedAbility, JsonAbility } from "./types";
 import { parseJsonAbility } from "./jsonParser";
+import type { JsonAbility, ParsedAbility } from "./types";
 
 /**
  * Parse a JSON ability definition into ParsedAbility format

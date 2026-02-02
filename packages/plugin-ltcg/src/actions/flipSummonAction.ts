@@ -13,18 +13,18 @@ import type {
   IAgentRuntime,
   Memory,
   State,
-} from '@elizaos/core';
-import { logger, ModelType } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import { extractJsonFromLlmResponse } from '../utils/safeParseJson';
-import { gameStateProvider } from '../providers/gameStateProvider';
-import { boardAnalysisProvider } from '../providers/boardAnalysisProvider';
-import type { GameStateResponse, MonsterCard } from '../types/api';
+} from "@elizaos/core";
+import { ModelType, logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
+import { gameStateProvider } from "../providers/gameStateProvider";
+import type { GameStateResponse } from "../types/api";
+import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const flipSummonAction: Action = {
-  name: 'FLIP_SUMMON',
-  similes: ['FLIP', 'FLIP_UP', 'REVEAL_MONSTER'],
-  description: 'Flip a face-down monster to face-up attack position',
+  name: "FLIP_SUMMON",
+  similes: ["FLIP", "FLIP_UP", "REVEAL_MONSTER"],
+  description: "Flip a face-down monster to face-up attack position",
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
     try {
@@ -33,23 +33,23 @@ export const flipSummonAction: Action = {
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
-        logger.warn('No game state available for flip summon validation');
+        logger.warn("No game state available for flip summon validation");
         return false;
       }
 
       // Must be in Main Phase
-      if (gameState.phase !== 'main1' && gameState.phase !== 'main2') {
+      if (gameState.phase !== "main1" && gameState.phase !== "main2") {
         logger.debug(`Cannot flip summon in ${gameState.phase} phase`);
         return false;
       }
 
       // Must have at least one face-down monster
       const faceDownMonsters = gameState.hostPlayer.monsterZone.filter(
-        (monster) => monster.position === 'facedown'
+        (monster) => monster.position === "facedown"
       );
 
       if (faceDownMonsters.length === 0) {
-        logger.debug('No face-down monsters available');
+        logger.debug("No face-down monsters available");
         return false;
       }
 
@@ -60,7 +60,7 @@ export const flipSummonAction: Action = {
 
       return true;
     } catch (error) {
-      logger.error({ error }, 'Error validating flip summon action');
+      logger.error({ error }, "Error validating flip summon action");
       return false;
     }
   },
@@ -73,7 +73,7 @@ export const flipSummonAction: Action = {
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
-      logger.info('Handling FLIP_SUMMON action');
+      logger.info("Handling FLIP_SUMMON action");
 
       // Get game state and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
@@ -83,15 +83,15 @@ export const flipSummonAction: Action = {
       const boardAnalysis = boardAnalysisResult.data;
 
       if (!gameState) {
-        throw new Error('Failed to get game state');
+        throw new Error("Failed to get game state");
       }
 
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        throw new Error('LTCG API credentials not configured');
+        throw new Error("LTCG API credentials not configured");
       }
 
       // Create API client
@@ -102,33 +102,32 @@ export const flipSummonAction: Action = {
 
       // Get face-down monsters
       const faceDownMonsters = gameState.hostPlayer.monsterZone.filter(
-        (monster) => monster.position === 'facedown'
+        (monster) => monster.position === "facedown"
       );
 
       if (faceDownMonsters.length === 0) {
-        throw new Error('No face-down monsters available');
+        throw new Error("No face-down monsters available");
       }
 
       // Format monster options
       const monsterOptions = faceDownMonsters
         .map(
           (monster, idx) =>
-            `${idx + 1}. Face-down monster at position ${monster.boardIndex} (${monster.name || 'Unknown'})`
+            `${idx + 1}. Face-down monster at position ${monster.boardIndex} (${monster.name || "Unknown"})`
         )
-        .join('\n');
+        .join("\n");
 
       // Get opponent's strongest monster for comparison
       const opponentMonsters = gameState.opponentPlayer.monsterZone;
-      const opponentStrongestAtk = opponentMonsters.length > 0
-        ? Math.max(...opponentMonsters.map(m => m.atk))
-        : 0;
+      const opponentStrongestAtk =
+        opponentMonsters.length > 0 ? Math.max(...opponentMonsters.map((m) => m.atk)) : 0;
 
       const boardContext = `
 Game State:
 - Your LP: ${gameState.hostPlayer.lifePoints}
 - Opponent LP: ${gameState.opponentPlayer.lifePoints}
 - Current Phase: ${gameState.phase}
-- Board Advantage: ${boardAnalysis?.advantage || 'UNKNOWN'}
+- Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
 - Opponent's Strongest ATK: ${opponentStrongestAtk}
 - Opponent Monsters: ${opponentMonsters.length}
 - Opponent Backrow: ${gameState.opponentPlayer.spellTrapZone.length} (may have traps)
@@ -155,11 +154,11 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
       });
 
       // Parse LLM decision
-      const parsed = extractJsonFromLlmResponse(decision, { monsterIndex: 0, reasoning: '' });
+      const parsed = extractJsonFromLlmResponse(decision, { monsterIndex: 0, reasoning: "" });
       const selectedMonster = faceDownMonsters[parsed.monsterIndex];
 
       if (!selectedMonster) {
-        throw new Error('Invalid monster selection');
+        throw new Error("Invalid monster selection");
       }
 
       // Make API call
@@ -173,7 +172,7 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
 
       await callback({
         text: responseText,
-        actions: ['FLIP_SUMMON'],
+        actions: ["FLIP_SUMMON"],
         source: message.content.source,
         thought: `Flip summoning ${selectedMonster.name} to trigger flip effect and transition to attack position for offensive pressure`,
       } as Content);
@@ -189,23 +188,24 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
           reasoning: parsed.reasoning,
         },
         data: {
-          actionName: 'FLIP_SUMMON',
+          actionName: "FLIP_SUMMON",
           monsterFlipped: selectedMonster,
           result,
         },
       };
     } catch (error) {
-      logger.error({ error }, 'Error in FLIP_SUMMON action');
+      logger.error({ error }, "Error in FLIP_SUMMON action");
 
       await callback({
         text: `Failed to flip summon: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: 'Flip summon failed, monster may not have been set for required duration or normal summon already used',
+        thought:
+          "Flip summon failed, monster may not have been set for required duration or normal summon already used",
       } as Content);
 
       return {
         success: false,
-        text: 'Failed to flip summon',
+        text: "Failed to flip summon",
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
@@ -214,46 +214,46 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Time to reveal my face-down monster',
+          text: "Time to reveal my face-down monster",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'I flip summon Man-Eater Bug!',
-          actions: ['FLIP_SUMMON'],
-        },
-      },
-    ],
-    [
-      {
-        name: '{{name1}}',
-        content: {
-          text: 'I need to trigger that flip effect',
-        },
-      },
-      {
-        name: '{{name2}}',
-        content: {
-          text: 'I flip summon Magician of Faith to get back my spell!',
-          actions: ['FLIP_SUMMON'],
+          text: "I flip summon Man-Eater Bug!",
+          actions: ["FLIP_SUMMON"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Let me switch to offense',
+          text: "I need to trigger that flip effect",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'I flip summon my face-down monster into attack position!',
-          actions: ['FLIP_SUMMON'],
+          text: "I flip summon Magician of Faith to get back my spell!",
+          actions: ["FLIP_SUMMON"],
+        },
+      },
+    ],
+    [
+      {
+        name: "{{name1}}",
+        content: {
+          text: "Let me switch to offense",
+        },
+      },
+      {
+        name: "{{name2}}",
+        content: {
+          text: "I flip summon my face-down monster into attack position!",
+          actions: ["FLIP_SUMMON"],
         },
       },
     ],

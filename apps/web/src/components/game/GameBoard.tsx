@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { Id } from "@convex/_generated/dataModel";
-import { componentLogger, logger, perf, useDebugLifecycle } from "@/lib/debug";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { componentLogger, logger, perf, useDebugLifecycle } from "@/lib/debug";
+import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import {
   Flag,
@@ -26,6 +26,8 @@ import { PlayerBoard } from "./board/PlayerBoard";
 import { PlayerHand } from "./board/PlayerHand";
 import { ActionButtons } from "./controls/ActionButtons";
 import { PhaseBar } from "./controls/PhaseBar";
+import { type GamePhase, PhaseSkipButtons } from "./controls/PhaseSkipButtons";
+import { TimeoutDisplay } from "./controls/TimeoutDisplay";
 import { ActivateCardModal } from "./dialogs/ActivateCardModal";
 import { AttackModal } from "./dialogs/AttackModal";
 import { CardInspectorModal } from "./dialogs/CardInspectorModal";
@@ -34,8 +36,6 @@ import { ForfeitDialog } from "./dialogs/ForfeitDialog";
 import { OptionalTriggerPrompt } from "./dialogs/OptionalTriggerPrompt";
 import { ResponsePrompt } from "./dialogs/ResponsePrompt";
 import { SummonModal } from "./dialogs/SummonModal";
-import { PhaseSkipButtons, type GamePhase } from "./controls/PhaseSkipButtons";
-import { TimeoutDisplay } from "./controls/TimeoutDisplay";
 import { type CardInZone, useGameBoard } from "./hooks/useGameBoard";
 
 interface GameBoardProps {
@@ -89,10 +89,19 @@ export function GameBoard({
   const lobbyDetails = useConvexQuery(apiAny.gameplay.games.queries.getLobbyDetails, { lobbyId });
 
   // Selection effect mutations - use apiAny to avoid TS2589
-  const completeSearchEffectMutation = useMutation(apiAny.gameplay.gameEngine.spellsTraps.completeSearchEffect);
-  const completeSearchEffect = useCallback(async (args: { lobbyId: Id<"gameLobbies">; sourceCardId: Id<"cardDefinitions">; selectedCardId: Id<"cardDefinitions"> }) => {
-    return completeSearchEffectMutation(args);
-  }, [completeSearchEffectMutation]);
+  const completeSearchEffectMutation = useMutation(
+    apiAny.gameplay.gameEngine.spellsTraps.completeSearchEffect
+  );
+  const completeSearchEffect = useCallback(
+    async (args: {
+      lobbyId: Id<"gameLobbies">;
+      sourceCardId: Id<"cardDefinitions">;
+      selectedCardId: Id<"cardDefinitions">;
+    }) => {
+      return completeSearchEffectMutation(args);
+    },
+    [completeSearchEffectMutation]
+  );
 
   const {
     // State
@@ -165,10 +174,7 @@ export function GameBoard({
     apiAny.gameplay.games.queries.getPendingOptionalTriggers,
     { lobbyId }
   );
-  const timeoutStatus = useConvexQuery(
-    apiAny.gameplay.games.queries.getTimeoutStatus,
-    { lobbyId }
-  );
+  const timeoutStatus = useConvexQuery(apiAny.gameplay.games.queries.getTimeoutStatus, { lobbyId });
 
   useEffect(() => {
     if (gameMode !== "story") return;
@@ -212,41 +218,47 @@ export function GameBoard({
   useEffect(() => {
     if (!gameEvents || gameEvents.length === 0) return;
 
-    gameEvents.forEach((event: { timestamp: number; description?: string; metadata?: { trigger?: string; cardName?: string } }) => {
-      // Update last seen timestamp
-      if (event.timestamp > lastEventTimestamp.current) {
-        lastEventTimestamp.current = event.timestamp;
+    gameEvents.forEach(
+      (event: {
+        timestamp: number;
+        description?: string;
+        metadata?: { trigger?: string; cardName?: string };
+      }) => {
+        // Update last seen timestamp
+        if (event.timestamp > lastEventTimestamp.current) {
+          lastEventTimestamp.current = event.timestamp;
+        }
+
+        // Don't show notifications for manual activations (handled by other toasts)
+        if (event.metadata?.trigger === "manual") return;
+
+        // Get trigger type for icon selection
+        const trigger = event.metadata?.trigger as string | undefined;
+        const cardName = event.metadata?.cardName as string | undefined;
+
+        // Select icon based on trigger type
+        let icon: React.ReactNode;
+        if (trigger?.includes("summon")) {
+          icon = <Sparkles className="h-4 w-4" />;
+        } else if (trigger?.includes("battle") || trigger?.includes("attack")) {
+          icon = <Swords className="h-4 w-4" />;
+        } else if (trigger?.includes("destroy")) {
+          icon = <Skull className="h-4 w-4" />;
+        } else if (trigger?.includes("draw") || trigger?.includes("end")) {
+          icon = <Heart className="h-4 w-4" />;
+        } else {
+          icon = <Sparkles className="h-4 w-4" />;
+        }
+
+        // Show toast notification
+        toast(cardName || "Card Effect", {
+          description: event.description,
+          icon,
+          duration: 3000,
+          className: "border-l-4 border-l-purple-500",
+        });
       }
-
-      // Don't show notifications for manual activations (handled by other toasts)
-      if (event.metadata?.trigger === "manual") return;
-
-      // Get trigger type for icon selection
-      const trigger = event.metadata?.trigger as string | undefined;
-      const cardName = event.metadata?.cardName as string | undefined;
-
-      // Select icon based on trigger type
-      let icon: React.ReactNode;
-      if (trigger?.includes("summon")) {
-        icon = <Sparkles className="h-4 w-4" />;
-      } else if (trigger?.includes("battle") || trigger?.includes("attack")) {
-        icon = <Swords className="h-4 w-4" />;
-      } else if (trigger?.includes("destroy")) {
-        icon = <Skull className="h-4 w-4" />;
-      } else if (trigger?.includes("draw") || trigger?.includes("end")) {
-        icon = <Heart className="h-4 w-4" />;
-      } else {
-        icon = <Sparkles className="h-4 w-4" />;
-      }
-
-      // Show toast notification
-      toast(cardName || "Card Effect", {
-        description: event.description,
-        icon,
-        duration: 3000,
-        className: "border-l-4 border-l-purple-500",
-      });
-    });
+    );
   }, [gameEvents]);
 
   const attackableAttackers = useMemo(() => {
@@ -453,9 +465,8 @@ export function GameBoard({
         return;
       }
 
-      const result = await perf.time(
-        `normalSummon_${selectedHandCard.name}`,
-        async () => normalSummon(selectedHandCard.instanceId, position, tributeIds)
+      const result = await perf.time(`normalSummon_${selectedHandCard.name}`, async () =>
+        normalSummon(selectedHandCard.instanceId, position, tributeIds)
       );
 
       if (result.success) {
@@ -733,7 +744,10 @@ export function GameBoard({
             <div className="flex flex-col items-center gap-2 mt-2">
               <p className="text-xs text-[#a89f94]">Private Game Code:</p>
               <div className="px-4 py-2 rounded-lg bg-[#d4af37]/20 border border-[#d4af37]/30">
-                <p className="text-2xl font-mono font-bold text-[#d4af37] tracking-wider" data-testid="game-code">
+                <p
+                  className="text-2xl font-mono font-bold text-[#d4af37] tracking-wider"
+                  data-testid="game-code"
+                >
                   {lobbyDetails.joinCode}
                 </p>
               </div>
@@ -810,7 +824,10 @@ export function GameBoard({
   const canSetSpellTrap = (isSpell || isTrap) && (validActions?.canSetSpellTrap ?? false);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-arena flex flex-col" data-testid="game-board">
+    <div
+      className="fixed inset-0 z-50 overflow-hidden bg-arena flex flex-col"
+      data-testid="game-board"
+    >
       {/* Decorative Overlay */}
       <div className="absolute inset-0 bg-black/40 z-0" />
       <div className="absolute inset-0 bg-vignette z-0 pointer-events-none" />
@@ -1061,7 +1078,6 @@ export function GameBoard({
           />
         )}
       </div>
-
     </div>
   );
 }

@@ -5,37 +5,37 @@
  * and provide the expected type transformations.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import type {
+  ArrayElement,
+  Brand,
+  MakeOptional,
+  Maybe,
   Nullable,
   Optional,
-  Maybe,
-  RequireProps,
-  MakeOptional,
   OptionalExcept,
   PickByType,
-  ArrayElement,
-  ValueOf,
+  RequireProps,
   Result,
-  Brand,
+  ValueOf,
 } from "../utils";
 
 import {
-  isDefined,
-  isNonEmptyArray,
-  hasKey,
-  isNull,
-  isUndefined,
-  isFunction,
-  isString,
-  isNumber,
-  isBoolean,
-  isObject,
-  ok,
-  err,
-  isOk,
-  isErr,
   brand,
+  err,
+  hasKey,
+  isBoolean,
+  isDefined,
+  isErr,
+  isFunction,
+  isNonEmptyArray,
+  isNull,
+  isNumber,
+  isObject,
+  isOk,
+  isString,
+  isUndefined,
+  ok,
 } from "../utils";
 
 // =============================================================================
@@ -217,7 +217,7 @@ describe("Type Guards - Runtime", () => {
 
   it("isFunction - checks for function type", () => {
     expect(isFunction(() => {})).toBe(true);
-    expect(isFunction(function () {})).toBe(true);
+    expect(isFunction(() => {})).toBe(true);
     expect(isFunction(async () => {})).toBe(true);
     expect(isFunction("function")).toBe(false);
     expect(isFunction(null)).toBe(false);

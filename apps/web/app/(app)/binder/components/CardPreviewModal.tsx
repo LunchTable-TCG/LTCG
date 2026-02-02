@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Check, Copy, Flame, Heart, Shield, Sparkles, Star, Waves, X, Zap } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { getAbilityDisplayText, type CardData, type Element, type Rarity } from "./BinderCard";
+import { type CardData, type Element, type Rarity, getAbilityDisplayText } from "./BinderCard";
 
 interface CardPreviewModalProps {
   card: CardData | null;
@@ -233,7 +233,9 @@ export function CardPreviewModal({ card, isOpen, onClose, onFavorite }: CardPrev
                   )}
                   {card.defense !== undefined && (
                     <div className="text-center p-2 sm:p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                      <p className="text-xl sm:text-2xl font-black text-green-400">{card.defense}</p>
+                      <p className="text-xl sm:text-2xl font-black text-green-400">
+                        {card.defense}
+                      </p>
                       <p className="text-[9px] text-[#a89f94] uppercase tracking-wider">Defense</p>
                     </div>
                   )}
@@ -249,7 +251,9 @@ export function CardPreviewModal({ card, isOpen, onClose, onFavorite }: CardPrev
                       Ability
                     </p>
                   </div>
-                  <p className="text-sm text-[#e8e0d5] leading-relaxed">{getAbilityDisplayText(card.ability)}</p>
+                  <p className="text-sm text-[#e8e0d5] leading-relaxed">
+                    {getAbilityDisplayText(card.ability)}
+                  </p>
                 </div>
               )}
 

@@ -16,10 +16,10 @@
 
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
+import { getCardAbility } from "../../lib/abilityHelpers";
 import { logger } from "../../lib/debug";
 import { moveCard } from "../../lib/gameHelpers";
 import { executeEffect } from "../effectSystem/index";
-import { getCardAbility } from "../../lib/abilityHelpers";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
 
 /** Result from a single SBA check cycle */
@@ -694,15 +694,7 @@ async function checkHandSizeLimit(
 
     // Move excess cards to graveyard
     for (const cardId of cardsToDiscard) {
-      await moveCard(
-        ctx,
-        gameState,
-        cardId,
-        "hand",
-        "graveyard",
-        gameState.opponentId,
-        turnNumber
-      );
+      await moveCard(ctx, gameState, cardId, "hand", "graveyard", gameState.opponentId, turnNumber);
     }
 
     // Update hand

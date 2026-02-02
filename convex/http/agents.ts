@@ -5,22 +5,17 @@
  * Used by ElizaOS agents and other external clients.
  */
 
-import { httpAction } from "../_generated/server";
 import { internal } from "../_generated/api";
+import { httpAction } from "../_generated/server";
+import { authHttpAction } from "./middleware/auth";
+import { DEFAULT_RATE_LIMITS, getRateLimitStatus } from "./middleware/rateLimit";
 import {
-  authHttpAction,
-} from "./middleware/auth";
-import {
-  successResponse,
+  corsPreflightResponse,
   errorResponse,
   parseJsonBody,
+  successResponse,
   validateRequiredFields,
-  corsPreflightResponse,
 } from "./middleware/responses";
-import {
-  getRateLimitStatus,
-  DEFAULT_RATE_LIMITS,
-} from "./middleware/rateLimit";
 
 /**
  * POST /api/agents/register
@@ -121,12 +116,9 @@ export const register = httpAction(async (ctx, request) => {
       }
     }
 
-    return errorResponse(
-      "REGISTRATION_FAILED",
-      "Failed to register agent",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("REGISTRATION_FAILED", "Failed to register agent", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -169,12 +161,9 @@ export const me = authHttpAction(async (ctx, request, auth) => {
       walletCreatedAt: agent.walletCreatedAt,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_FAILED",
-      "Failed to fetch agent information",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_FAILED", "Failed to fetch agent information", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -225,12 +214,9 @@ export const wallet = authHttpAction(async (ctx, request, auth) => {
       },
     });
   } catch (error) {
-    return errorResponse(
-      "WALLET_FETCH_FAILED",
-      "Failed to fetch wallet information",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("WALLET_FETCH_FAILED", "Failed to fetch wallet information", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -260,11 +246,8 @@ export const rateLimit = authHttpAction(async (ctx, request, auth) => {
       dailyLimit: status.dailyLimit,
     });
   } catch (error) {
-    return errorResponse(
-      "RATE_LIMIT_CHECK_FAILED",
-      "Failed to check rate limit status",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("RATE_LIMIT_CHECK_FAILED", "Failed to check rate limit status", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });

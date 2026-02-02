@@ -5,20 +5,20 @@
  * appropriate agent actions in real-time.
  */
 
-import type { IAgentRuntime, Memory, State, Content } from '@elizaos/core';
-import { logger } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
+import type { IAgentRuntime, State } from "@elizaos/core";
+import { logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
 
 /**
  * Webhook event types sent by the game server
  */
 export type WebhookEventType =
-  | 'turn_started'        // It's the agent's turn
-  | 'game_started'        // Game has begun
-  | 'game_ended'          // Game completed
-  | 'opponent_action'     // Opponent made a move
-  | 'chain_waiting'       // Waiting for chain response
-  | 'phase_changed';      // Phase transitioned
+  | "turn_started" // It's the agent's turn
+  | "game_started" // Game has begun
+  | "game_ended" // Game completed
+  | "opponent_action" // Opponent made a move
+  | "chain_waiting" // Waiting for chain response
+  | "phase_changed"; // Phase transitioned
 
 /**
  * Webhook payload structure
@@ -28,7 +28,7 @@ export interface GameWebhookPayload {
   gameId: string;
   agentId: string;
   timestamp: number;
-  signature: string;  // HMAC signature for verification
+  signature: string; // HMAC signature for verification
   data: {
     phase?: string;
     turnNumber?: number;
@@ -41,7 +41,7 @@ export interface GameWebhookPayload {
       timeoutMs: number;
     };
     gameResult?: {
-      winner: 'agent' | 'opponent';
+      winner: "agent" | "opponent";
       reason: string;
     };
   };
@@ -73,11 +73,11 @@ export function verifyWebhookSignature(
 
     // For now, simple comparison - in production use crypto.subtle
     // This is a placeholder that should be replaced with proper HMAC
-    const expectedSignature = `ltcg_sig_${Buffer.from(data).toString('base64').substring(0, 32)}`;
+    const expectedSignature = `ltcg_sig_${Buffer.from(data).toString("base64").substring(0, 32)}`;
 
-    return signature.startsWith('ltcg_sig_') && signature.length > 10;
+    return signature.startsWith("ltcg_sig_") && signature.length > 10;
   } catch (error) {
-    logger.error({ error }, 'Failed to verify webhook signature');
+    logger.error({ error }, "Failed to verify webhook signature");
     return false;
   }
 }
@@ -92,37 +92,37 @@ export async function handleGameWebhook(
 ): Promise<WebhookHandlerResult> {
   const { eventType, gameId, data } = payload;
 
-  logger.info({ eventType, gameId, data }, 'Processing game webhook');
+  logger.info({ eventType, gameId, data }, "Processing game webhook");
 
   // Store game ID in state for actions to use
   state.values.LTCG_CURRENT_GAME_ID = gameId;
 
   try {
     switch (eventType) {
-      case 'turn_started':
+      case "turn_started":
         return await handleTurnStarted(gameId, data, runtime, state);
 
-      case 'chain_waiting':
+      case "chain_waiting":
         return await handleChainWaiting(gameId, data, runtime, state);
 
-      case 'opponent_action':
+      case "opponent_action":
         return await handleOpponentAction(gameId, data, runtime, state);
 
-      case 'game_started':
+      case "game_started":
         return await handleGameStarted(gameId, data, runtime, state);
 
-      case 'game_ended':
+      case "game_ended":
         return await handleGameEnded(gameId, data, runtime, state);
 
-      case 'phase_changed':
+      case "phase_changed":
         return await handlePhaseChanged(gameId, data, runtime, state);
 
       default:
-        logger.warn({ eventType }, 'Unknown webhook event type');
-        return { processed: false, error: 'Unknown event type' };
+        logger.warn({ eventType }, "Unknown webhook event type");
+        return { processed: false, error: "Unknown event type" };
     }
   } catch (error) {
-    logger.error({ error, eventType, gameId }, 'Error handling game webhook');
+    logger.error({ error, eventType, gameId }, "Error handling game webhook");
     return {
       processed: false,
       error: error instanceof Error ? error.message : String(error),
@@ -135,18 +135,21 @@ export async function handleGameWebhook(
  */
 async function handleTurnStarted(
   gameId: string,
-  data: GameWebhookPayload['data'],
+  data: GameWebhookPayload["data"],
   runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
-  logger.info({ gameId, phase: data.phase, turn: data.turnNumber }, 'Turn started - agent should act');
+  logger.info(
+    { gameId, phase: data.phase, turn: data.turnNumber },
+    "Turn started - agent should act"
+  );
 
   // Get API client
-  const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-  const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+  const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+  const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
   if (!apiKey || !apiUrl) {
-    return { processed: false, error: 'API credentials not configured' };
+    return { processed: false, error: "API credentials not configured" };
   }
 
   const client = new LTCGApiClient({ apiKey, baseUrl: apiUrl });
@@ -161,11 +164,11 @@ async function handleTurnStarted(
 
   // Emit event that will trigger action selection
   // The action system will pick the appropriate move based on game state
-  logger.info({ gameId, phase: data.phase }, 'Game state fetched, ready for action selection');
+  logger.info({ gameId, phase: data.phase }, "Game state fetched, ready for action selection");
 
   return {
     processed: true,
-    actionTaken: 'turn_notification_processed',
+    actionTaken: "turn_notification_processed",
   };
 }
 
@@ -174,7 +177,7 @@ async function handleTurnStarted(
  */
 async function handleChainWaiting(
   gameId: string,
-  data: GameWebhookPayload['data'],
+  data: GameWebhookPayload["data"],
   runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
@@ -182,7 +185,7 @@ async function handleChainWaiting(
 
   logger.info(
     { gameId, isWaiting: chainState?.isWaiting, timeoutMs: chainState?.timeoutMs },
-    'Chain waiting for response'
+    "Chain waiting for response"
   );
 
   // Store chain state for chain response action
@@ -191,7 +194,7 @@ async function handleChainWaiting(
 
   return {
     processed: true,
-    actionTaken: 'chain_notification_processed',
+    actionTaken: "chain_notification_processed",
   };
 }
 
@@ -200,7 +203,7 @@ async function handleChainWaiting(
  */
 async function handleOpponentAction(
   gameId: string,
-  data: GameWebhookPayload['data'],
+  data: GameWebhookPayload["data"],
   runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
@@ -208,7 +211,7 @@ async function handleOpponentAction(
 
   logger.info(
     { gameId, actionType: oppAction?.type, description: oppAction?.description },
-    'Opponent made an action'
+    "Opponent made an action"
   );
 
   // Store for react action
@@ -216,7 +219,7 @@ async function handleOpponentAction(
 
   return {
     processed: true,
-    actionTaken: 'opponent_action_noted',
+    actionTaken: "opponent_action_noted",
   };
 }
 
@@ -225,11 +228,11 @@ async function handleOpponentAction(
  */
 async function handleGameStarted(
   gameId: string,
-  data: GameWebhookPayload['data'],
+  data: GameWebhookPayload["data"],
   runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
-  logger.info({ gameId }, 'Game has started');
+  logger.info({ gameId }, "Game has started");
 
   // Store game ID
   state.values.LTCG_CURRENT_GAME_ID = gameId;
@@ -237,7 +240,7 @@ async function handleGameStarted(
 
   return {
     processed: true,
-    actionTaken: 'game_started_acknowledged',
+    actionTaken: "game_started_acknowledged",
   };
 }
 
@@ -246,16 +249,13 @@ async function handleGameStarted(
  */
 async function handleGameEnded(
   gameId: string,
-  data: GameWebhookPayload['data'],
+  data: GameWebhookPayload["data"],
   runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   const result = data.gameResult;
 
-  logger.info(
-    { gameId, winner: result?.winner, reason: result?.reason },
-    'Game has ended'
-  );
+  logger.info({ gameId, winner: result?.winner, reason: result?.reason }, "Game has ended");
 
   // Clear game state
   state.values.LTCG_CURRENT_GAME_ID = undefined;
@@ -264,7 +264,7 @@ async function handleGameEnded(
 
   return {
     processed: true,
-    actionTaken: result?.winner === 'agent' ? 'victory_acknowledged' : 'defeat_acknowledged',
+    actionTaken: result?.winner === "agent" ? "victory_acknowledged" : "defeat_acknowledged",
   };
 }
 
@@ -273,16 +273,16 @@ async function handleGameEnded(
  */
 async function handlePhaseChanged(
   gameId: string,
-  data: GameWebhookPayload['data'],
+  data: GameWebhookPayload["data"],
   runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
-  logger.info({ gameId, phase: data.phase }, 'Phase changed');
+  logger.info({ gameId, phase: data.phase }, "Phase changed");
 
   state.values.LTCG_CURRENT_PHASE = data.phase;
 
   return {
     processed: true,
-    actionTaken: 'phase_change_noted',
+    actionTaken: "phase_change_noted",
   };
 }

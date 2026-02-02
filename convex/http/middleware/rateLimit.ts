@@ -106,11 +106,7 @@ export async function checkRateLimit(
  * Get request count in last minute
  * TODO: Implement with actual database query
  */
-async function getMinuteUsage(
-  _ctx: any,
-  _apiKeyId: string,
-  _since: number
-): Promise<number> {
+async function getMinuteUsage(_ctx: any, _apiKeyId: string, _since: number): Promise<number> {
   // Placeholder implementation
   // In production, query apiKeyUsage table:
   // const usage = await ctx.db.query("apiKeyUsage")
@@ -128,11 +124,7 @@ async function getMinuteUsage(
  * Get request count in last 24 hours
  * TODO: Implement with actual database query
  */
-async function getDailyUsage(
-  _ctx: any,
-  _apiKeyId: string,
-  _since: number
-): Promise<number> {
+async function getDailyUsage(_ctx: any, _apiKeyId: string, _since: number): Promise<number> {
   // Placeholder implementation
   // In production, query apiKeyUsage table:
   // const usage = await ctx.db.query("apiKeyUsage")
@@ -150,11 +142,7 @@ async function getDailyUsage(
  * Record an API request for rate limiting
  * TODO: Implement with actual database insert
  */
-async function recordApiRequest(
-  _ctx: any,
-  _apiKeyId: string,
-  _timestamp: number
-): Promise<void> {
+async function recordApiRequest(_ctx: any, _apiKeyId: string, _timestamp: number): Promise<void> {
   // Placeholder implementation
   // In production, insert into apiKeyUsage table:
   // await ctx.db.insert("apiKeyUsage", {
@@ -162,7 +150,6 @@ async function recordApiRequest(
   //   timestamp,
   //   endpoint: request.url, // Add endpoint tracking
   // });
-
   // Temporary - no-op until table is created
 }
 

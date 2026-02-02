@@ -31,7 +31,7 @@ import {
 import { executeEffect } from "./effectSystem/index";
 import { checkStateBasedActions } from "./gameEngine/stateBasedActions";
 import { recordEventHelper } from "./gameEvents";
-import { getOpponentMonsterCount, clearPendingReplay } from "./replaySystem";
+import { clearPendingReplay, getOpponentMonsterCount } from "./replaySystem";
 
 interface BattleResult {
   destroyed: Id<"cardDefinitions">[];
@@ -486,7 +486,7 @@ export const declareAttackWithResponse = mutation({
           reason: "Target not found on opponent's field",
         });
       }
-      defenderCard = await ctx.db.get(args.targetCardId) ?? undefined;
+      defenderCard = (await ctx.db.get(args.targetCardId)) ?? undefined;
     } else {
       // Direct attack validation
       let canDirectAttack = opponentBoard.length === 0;
@@ -1509,7 +1509,7 @@ export const declareAttackInternal = internalMutation({
     let targetBoardCard: any = null;
     let targetCard: Doc<"cardDefinitions"> | null = null;
     let damage = 0;
-    let destroyed: string[] = [];
+    const destroyed: string[] = [];
 
     // 9. Handle target
     if (args.targetCardId) {
@@ -1528,9 +1528,10 @@ export const declareAttackInternal = internalMutation({
       targetCard = await ctx.db.get(targetCardIdAsId);
 
       // Calculate battle result
-      const targetValue = targetBoardCard.position === 1
-        ? targetBoardCard.attack // ATK position - use ATK
-        : targetBoardCard.defense; // DEF position - use DEF
+      const targetValue =
+        targetBoardCard.position === 1
+          ? targetBoardCard.attack // ATK position - use ATK
+          : targetBoardCard.defense; // DEF position - use DEF
 
       if (targetBoardCard.position === 1) {
         // Attack vs Attack
@@ -1612,9 +1613,10 @@ export const declareAttackInternal = internalMutation({
       eventType: "attack_declared",
       playerId: args.userId,
       playerUsername: username,
-      description: attackType === "direct"
-        ? `${attackerCard.name} attacked directly for ${damage} damage!`
-        : `${attackerCard.name} attacked ${targetCard?.name || "Monster"}`,
+      description:
+        attackType === "direct"
+          ? `${attackerCard.name} attacked directly for ${damage} damage!`
+          : `${attackerCard.name} attacked ${targetCard?.name || "Monster"}`,
       metadata: {
         attackerCardId: args.attackerCardId,
         attackerName: attackerCard.name,

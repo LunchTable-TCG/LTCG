@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import type { SortOption } from "@/types";
 import {
   ChevronDown,
   Crown,
@@ -18,7 +19,6 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import type { SortOption } from "@/types";
 import type { ViewMode } from "../types";
 import { BinderCard, type CardData, type Element, type Rarity } from "./BinderCard";
 

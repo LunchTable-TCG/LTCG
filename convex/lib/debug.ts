@@ -72,12 +72,7 @@ class ConvexLogger {
   /**
    * Format log message with context
    */
-  private formatMessage(
-    level: LogLevel,
-    message: string,
-    context?: LogContext,
-    error?: Error
-  ) {
+  private formatMessage(level: LogLevel, message: string, context?: LogContext, error?: Error) {
     const timestamp = new Date().toISOString();
     const contextStr = context ? ` | ${JSON.stringify(context)}` : "";
     const errorStr = error ? ` | Error: ${error.message}\nStack: ${error.stack}` : "";

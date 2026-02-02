@@ -5,7 +5,13 @@
  * for backward compatibility with existing actions.
  */
 
-import type { GameStateResponse, PlayerState, MonsterCard, SpellTrapCard, BoardCard, CardInHand } from '../types/api';
+import type {
+  BoardCard,
+  CardInHand,
+  GameStateResponse,
+  MonsterCard,
+  PlayerState,
+} from "../types/api";
 
 /**
  * Normalized game state with both new and legacy fields
@@ -23,7 +29,7 @@ function boardCardToMonsterCard(card: BoardCard, index: number): MonsterCard {
     boardIndex: index,
     cardId: card._id,
     name: card.name,
-    position: card.isFaceDown ? 'facedown' : (card.position === 1 ? 'attack' : 'defense'),
+    position: card.isFaceDown ? "facedown" : card.position === 1 ? "attack" : "defense",
     atk: card.currentAttack ?? card.attack ?? 0,
     def: card.currentDefense ?? card.defense ?? 0,
     level: card.cost ?? 0,
@@ -67,13 +73,11 @@ export function normalizeGameState(state: GameStateResponse): NormalizedGameStat
   );
 
   // Normalize hand cards
-  const normalizedHand = (state.hand || []).map((card, idx) =>
-    normalizeCardInHand(card, idx)
-  );
+  const normalizedHand = (state.hand || []).map((card, idx) => normalizeCardInHand(card, idx));
 
   // Build legacy player states
   const hostPlayer: PlayerState = {
-    playerId: state.currentTurnPlayer || '',
+    playerId: state.currentTurnPlayer || "",
     lifePoints: state.myLifePoints,
     deckCount: state.myDeckCount,
     monsterZone: myMonsterZone,
@@ -84,7 +88,7 @@ export function normalizeGameState(state: GameStateResponse): NormalizedGameStat
   };
 
   const opponentPlayer: PlayerState = {
-    playerId: '',
+    playerId: "",
     lifePoints: state.opponentLifePoints,
     deckCount: state.opponentDeckCount,
     monsterZone: opponentMonsterZone,
@@ -100,9 +104,9 @@ export function normalizeGameState(state: GameStateResponse): NormalizedGameStat
     hostPlayer,
     opponentPlayer,
     // Ensure canChangePosition exists
-    canChangePosition: state.canChangePosition || myMonsterZone.map(m => m.canChangePosition),
+    canChangePosition: state.canChangePosition || myMonsterZone.map((m) => m.canChangePosition),
     // Add legacy status and currentTurn fields
-    status: 'active' as const, // Game state is only returned for active games
-    currentTurn: state.isMyTurn ? 'host' as const : 'opponent' as const,
+    status: "active" as const, // Game state is only returned for active games
+    currentTurn: state.isMyTurn ? ("host" as const) : ("opponent" as const),
   };
 }

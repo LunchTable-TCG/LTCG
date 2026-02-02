@@ -1,14 +1,14 @@
-import { mock, spyOn } from 'bun:test';
-import { Content, IAgentRuntime, Memory, State, logger } from '@elizaos/core';
+import { mock, spyOn } from "bun:test";
+import { type IAgentRuntime, type Memory, type State, logger } from "@elizaos/core";
+import { character } from "../index";
+import plugin from "../plugin";
 import {
-  createMockRuntime as createCoreMockRuntime,
   createMockMessage as createCoreMockMessage,
+  createMockRuntime as createCoreMockRuntime,
   createMockState as createCoreMockState,
   documentTestResult,
   runCoreActionTests,
-} from './utils/core-test-utils';
-import { character } from '../index';
-import plugin from '../plugin';
+} from "./utils/core-test-utils";
 
 /**
  * Creates an enhanced mock runtime for testing that includes the project's
@@ -30,7 +30,7 @@ export function createMockRuntime(overrides: Partial<IAgentRuntime> = {}): IAgen
     initialize: mock(),
     getService: mock(),
     getSetting: mock().mockReturnValue(null),
-    useModel: mock().mockResolvedValue('Test model response'),
+    useModel: mock().mockResolvedValue("Test model response"),
     getProviderResults: mock().mockResolvedValue([]),
     evaluateProviders: mock().mockResolvedValue([]),
     evaluate: mock().mockResolvedValue([]),
@@ -88,7 +88,7 @@ export function setupTest(
 
   // Create a message
   const mockMessage = createMockMessage(
-    options.messageText || 'Test message',
+    options.messageText || "Test message",
     options.messageOverrides || {}
   );
 
@@ -111,10 +111,10 @@ export { documentTestResult, runCoreActionTests };
 
 // Add spy on logger for common usage in tests
 export function setupLoggerSpies() {
-  spyOn(logger, 'info').mockImplementation(() => {});
-  spyOn(logger, 'error').mockImplementation(() => {});
-  spyOn(logger, 'warn').mockImplementation(() => {});
-  spyOn(logger, 'debug').mockImplementation(() => {});
+  spyOn(logger, "info").mockImplementation(() => {});
+  spyOn(logger, "error").mockImplementation(() => {});
+  spyOn(logger, "warn").mockImplementation(() => {});
+  spyOn(logger, "debug").mockImplementation(() => {});
 
   // allow tests to restore originals
   return () => mock.restore();

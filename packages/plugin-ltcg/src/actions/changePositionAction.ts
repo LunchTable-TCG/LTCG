@@ -13,16 +13,16 @@ import type {
   IAgentRuntime,
   Memory,
   State,
-} from '@elizaos/core';
-import { logger, ModelType } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import { extractJsonFromLlmResponse } from '../utils/safeParseJson';
-import { gameStateProvider } from '../providers/gameStateProvider';
-import type { GameStateResponse, MonsterCard } from '../types/api';
+} from "@elizaos/core";
+import { ModelType, logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import { gameStateProvider } from "../providers/gameStateProvider";
+import type { GameStateResponse } from "../types/api";
+import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const changePositionAction: Action = {
-  name: 'CHANGE_POSITION',
-  similes: ['SWITCH_POSITION', 'FLIP_POSITION', 'DEFENSE_MODE', 'ATTACK_MODE'],
+  name: "CHANGE_POSITION",
+  similes: ["SWITCH_POSITION", "FLIP_POSITION", "DEFENSE_MODE", "ATTACK_MODE"],
   description: "Change a monster's battle position between attack and defense",
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
@@ -32,12 +32,12 @@ export const changePositionAction: Action = {
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
-        logger.warn('No game state available for change position validation');
+        logger.warn("No game state available for change position validation");
         return false;
       }
 
       // Must be Main Phase
-      if (gameState.phase !== 'main1' && gameState.phase !== 'main2') {
+      if (gameState.phase !== "main1" && gameState.phase !== "main2") {
         logger.debug(`Cannot change position in ${gameState.phase} phase`);
         return false;
       }
@@ -52,13 +52,13 @@ export const changePositionAction: Action = {
       });
 
       if (changeableMonsters.length === 0) {
-        logger.debug('No monsters can change position');
+        logger.debug("No monsters can change position");
         return false;
       }
 
       return true;
     } catch (error) {
-      logger.error({ error }, 'Error validating change position action');
+      logger.error({ error }, "Error validating change position action");
       return false;
     }
   },
@@ -71,22 +71,22 @@ export const changePositionAction: Action = {
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
-      logger.info('Handling CHANGE_POSITION action');
+      logger.info("Handling CHANGE_POSITION action");
 
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
-        throw new Error('Failed to get game state');
+        throw new Error("Failed to get game state");
       }
 
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        throw new Error('LTCG API credentials not configured');
+        throw new Error("LTCG API credentials not configured");
       }
 
       // Create API client
@@ -113,7 +113,7 @@ export const changePositionAction: Action = {
           (m, idx) =>
             `${idx + 1}. ${m.monster.name} (${m.monster.atk} ATK / ${m.monster.def} DEF) - Currently in ${m.monster.position} position`
         )
-        .join('\n');
+        .join("\n");
 
       const boardContext = `
 Game State:
@@ -144,15 +144,18 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
       });
 
       // Parse LLM decision
-      const parsed = extractJsonFromLlmResponse(decision, { monsterIndex: 0, newPosition: 'defense' });
+      const parsed = extractJsonFromLlmResponse(decision, {
+        monsterIndex: 0,
+        newPosition: "defense",
+      });
       const selected = changeableMonsters[parsed.monsterIndex];
 
       if (!selected) {
-        throw new Error('Invalid monster selection');
+        throw new Error("Invalid monster selection");
       }
 
       // Determine new position
-      const newPosition = selected.monster.position === 'attack' ? 'defense' : 'attack';
+      const newPosition = selected.monster.position === "attack" ? "defense" : "attack";
 
       // Make API call
       const result = await client.changePosition({
@@ -166,9 +169,9 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
 
       await callback({
         text: responseText,
-        actions: ['CHANGE_POSITION'],
+        actions: ["CHANGE_POSITION"],
         source: message.content.source,
-        thought: `Switching ${selected.monster.name} to ${newPosition} position to ${newPosition === 'defense' ? 'protect against stronger opponent monsters' : 'prepare for offensive battle phase'}`,
+        thought: `Switching ${selected.monster.name} to ${newPosition} position to ${newPosition === "defense" ? "protect against stronger opponent monsters" : "prepare for offensive battle phase"}`,
       } as Content);
 
       return {
@@ -180,24 +183,25 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
           newPosition,
         },
         data: {
-          actionName: 'CHANGE_POSITION',
+          actionName: "CHANGE_POSITION",
           monster: selected.monster,
           newPosition,
           result,
         },
       };
     } catch (error) {
-      logger.error({ error }, 'Error in CHANGE_POSITION action');
+      logger.error({ error }, "Error in CHANGE_POSITION action");
 
       await callback({
         text: `Failed to change position: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: 'Position change failed, monster may have already changed position this turn or invalid selection',
+        thought:
+          "Position change failed, monster may have already changed position this turn or invalid selection",
       } as Content);
 
       return {
         success: false,
-        text: 'Failed to change monster position',
+        text: "Failed to change monster position",
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
@@ -206,46 +210,46 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Their monster is too strong, I need to defend',
+          text: "Their monster is too strong, I need to defend",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'I switch Kuriboh to defense position!',
-          actions: ['CHANGE_POSITION'],
-        },
-      },
-    ],
-    [
-      {
-        name: '{{name1}}',
-        content: {
-          text: 'Time to go on the offensive',
-        },
-      },
-      {
-        name: '{{name2}}',
-        content: {
-          text: 'I switch Blue-Eyes White Dragon to attack position!',
-          actions: ['CHANGE_POSITION'],
+          text: "I switch Kuriboh to defense position!",
+          actions: ["CHANGE_POSITION"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Better protect my weaker monsters',
+          text: "Time to go on the offensive",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'I switch my monster to defense position!',
-          actions: ['CHANGE_POSITION'],
+          text: "I switch Blue-Eyes White Dragon to attack position!",
+          actions: ["CHANGE_POSITION"],
+        },
+      },
+    ],
+    [
+      {
+        name: "{{name1}}",
+        content: {
+          text: "Better protect my weaker monsters",
+        },
+      },
+      {
+        name: "{{name2}}",
+        content: {
+          text: "I switch my monster to defense position!",
+          actions: ["CHANGE_POSITION"],
         },
       },
     ],

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import { logger } from "@/lib/debug";
+import React, { Component, type ErrorInfo, type ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -44,16 +44,12 @@ export class ErrorBoundary extends Component<Props, State> {
     const { onError, boundaryName = "ErrorBoundary" } = this.props;
 
     // Log error with full context
-    logger.error(
-      `Error caught by ${boundaryName}`,
-      error,
-      {
-        component: boundaryName,
-        componentStack: errorInfo.componentStack,
-        errorMessage: error.message,
-        errorStack: error.stack,
-      }
-    );
+    logger.error(`Error caught by ${boundaryName}`, error, {
+      component: boundaryName,
+      componentStack: errorInfo.componentStack,
+      errorMessage: error.message,
+      errorStack: error.stack,
+    });
 
     // Call custom error handler if provided
     if (onError) {

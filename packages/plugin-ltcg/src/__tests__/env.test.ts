@@ -1,15 +1,10 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from "bun:test";
+import fs from "node:fs";
+import path from "node:path";
 
-describe('Environment Setup', () => {
-  it('should verify configuration files exist', () => {
-    const requiredFiles = [
-      'package.json',
-      'tsconfig.json',
-      'tsconfig.build.json',
-      'bunfig.toml',
-    ];
+describe("Environment Setup", () => {
+  it("should verify configuration files exist", () => {
+    const requiredFiles = ["package.json", "tsconfig.json", "tsconfig.build.json", "bunfig.toml"];
 
     for (const file of requiredFiles) {
       const filePath = path.join(process.cwd(), file);
@@ -17,11 +12,11 @@ describe('Environment Setup', () => {
     }
   });
 
-  it('should have proper src directory structure', () => {
-    const srcDir = path.join(process.cwd(), 'src');
+  it("should have proper src directory structure", () => {
+    const srcDir = path.join(process.cwd(), "src");
     expect(fs.existsSync(srcDir)).toBe(true);
 
-    const requiredSrcFiles = ['index.ts', 'plugin.ts'];
+    const requiredSrcFiles = ["index.ts", "plugin.ts"];
 
     for (const file of requiredSrcFiles) {
       const filePath = path.join(srcDir, file);
@@ -29,59 +24,59 @@ describe('Environment Setup', () => {
     }
   });
 
-  it('should have a valid package.json with required fields', () => {
-    const packageJsonPath = path.join(process.cwd(), 'package.json');
+  it("should have a valid package.json with required fields", () => {
+    const packageJsonPath = path.join(process.cwd(), "package.json");
     expect(fs.existsSync(packageJsonPath)).toBe(true);
 
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-    expect(packageJson).toHaveProperty('name');
-    expect(typeof packageJson.name).toBe('string');
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+    expect(packageJson).toHaveProperty("name");
+    expect(typeof packageJson.name).toBe("string");
     expect(packageJson.name.length).toBeGreaterThan(0);
-    expect(packageJson).toHaveProperty('version');
-    expect(packageJson).toHaveProperty('type', 'module');
-    expect(packageJson).toHaveProperty('main');
-    expect(packageJson).toHaveProperty('module');
-    expect(packageJson).toHaveProperty('types');
-    expect(packageJson).toHaveProperty('dependencies');
-    expect(packageJson).toHaveProperty('devDependencies');
-    expect(packageJson).toHaveProperty('scripts');
+    expect(packageJson).toHaveProperty("version");
+    expect(packageJson).toHaveProperty("type", "module");
+    expect(packageJson).toHaveProperty("main");
+    expect(packageJson).toHaveProperty("module");
+    expect(packageJson).toHaveProperty("types");
+    expect(packageJson).toHaveProperty("dependencies");
+    expect(packageJson).toHaveProperty("devDependencies");
+    expect(packageJson).toHaveProperty("scripts");
 
     // Check for required dependencies
-    expect(packageJson.dependencies).toHaveProperty('@elizaos/core');
+    expect(packageJson.dependencies).toHaveProperty("@elizaos/core");
 
     // Check for required scripts
-    expect(packageJson.scripts).toHaveProperty('build');
-    expect(packageJson.scripts).toHaveProperty('test');
+    expect(packageJson.scripts).toHaveProperty("build");
+    expect(packageJson.scripts).toHaveProperty("test");
   });
 
-  it('should have a valid tsconfig.json with required configuration', () => {
-    const tsconfigPath = path.join(process.cwd(), 'tsconfig.json');
+  it("should have a valid tsconfig.json with required configuration", () => {
+    const tsconfigPath = path.join(process.cwd(), "tsconfig.json");
     expect(fs.existsSync(tsconfigPath)).toBe(true);
 
-    const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf8'));
-    expect(tsconfig).toHaveProperty('compilerOptions');
+    const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, "utf8"));
+    expect(tsconfig).toHaveProperty("compilerOptions");
 
     // Check compiler options
-    expect(tsconfig.compilerOptions).toHaveProperty('target');
-    expect(tsconfig.compilerOptions).toHaveProperty('module');
-    expect(tsconfig.compilerOptions).toHaveProperty('moduleResolution');
-    expect(tsconfig.compilerOptions).toHaveProperty('esModuleInterop');
+    expect(tsconfig.compilerOptions).toHaveProperty("target");
+    expect(tsconfig.compilerOptions).toHaveProperty("module");
+    expect(tsconfig.compilerOptions).toHaveProperty("moduleResolution");
+    expect(tsconfig.compilerOptions).toHaveProperty("esModuleInterop");
   });
 
-  it('should have a valid build.ts for building', () => {
-    const buildTsPath = path.join(process.cwd(), 'build.ts');
+  it("should have a valid build.ts for building", () => {
+    const buildTsPath = path.join(process.cwd(), "build.ts");
     expect(fs.existsSync(buildTsPath)).toBe(true);
 
-    const buildTs = fs.readFileSync(buildTsPath, 'utf8');
-    expect(buildTs).toContain('build');
-    expect(buildTs).toContain('src/index.ts');
+    const buildTs = fs.readFileSync(buildTsPath, "utf8");
+    expect(buildTs).toContain("build");
+    expect(buildTs).toContain("src/index.ts");
   });
 
-  it('should have a valid README.md file', () => {
-    const readmePath = path.join(process.cwd(), 'README.md');
+  it("should have a valid README.md file", () => {
+    const readmePath = path.join(process.cwd(), "README.md");
     expect(fs.existsSync(readmePath)).toBe(true);
 
-    const readme = fs.readFileSync(readmePath, 'utf8');
-    expect(readme).toContain('# LTCG ElizaOS Plugin');
+    const readme = fs.readFileSync(readmePath, "utf8");
+    expect(readme).toContain("# LTCG ElizaOS Plugin");
   });
 });

@@ -14,36 +14,36 @@ import type {
   IAgentRuntime,
   Memory,
   State,
-} from '@elizaos/core';
-import { logger } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
+} from "@elizaos/core";
+import { logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
 
 export const sendChatMessageAction: Action = {
-  name: 'SEND_CHAT_MESSAGE',
-  similes: ['CHAT', 'SAY', 'TALK_IN_CHAT', 'TAVERN_CHAT'],
-  description: 'Send a message to the global chat (Tavern Hall)',
+  name: "SEND_CHAT_MESSAGE",
+  similes: ["CHAT", "SAY", "TALK_IN_CHAT", "TAVERN_CHAT"],
+  description: "Send a message to the global chat (Tavern Hall)",
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
     try {
       // Check if chat is enabled
-      const chatEnabled = runtime.getSetting('LTCG_CHAT_ENABLED') !== 'false';
+      const chatEnabled = runtime.getSetting("LTCG_CHAT_ENABLED") !== "false";
       if (!chatEnabled) {
-        logger.debug('Chat is disabled');
+        logger.debug("Chat is disabled");
         return false;
       }
 
       // Check API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        logger.warn('LTCG API credentials not configured');
+        logger.warn("LTCG API credentials not configured");
         return false;
       }
 
       return true;
     } catch (error) {
-      logger.error({ error }, 'Error validating send chat message action');
+      logger.error({ error }, "Error validating send chat message action");
       return false;
     }
   },
@@ -56,15 +56,15 @@ export const sendChatMessageAction: Action = {
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
-      logger.info('Handling SEND_CHAT_MESSAGE action');
+      logger.info("Handling SEND_CHAT_MESSAGE action");
 
       // Get message content from state or message
       // LLM will provide the message content in the response
-      let chatMessage = (message.content as any)?.text || message.content || '';
+      let chatMessage = (message.content as any)?.text || message.content || "";
 
       // If no explicit message provided, this shouldn't happen as LLM should provide it
-      if (!chatMessage || typeof chatMessage !== 'string') {
-        throw new Error('No chat message content provided');
+      if (!chatMessage || typeof chatMessage !== "string") {
+        throw new Error("No chat message content provided");
       }
 
       // Trim and validate message
@@ -72,17 +72,17 @@ export const sendChatMessageAction: Action = {
 
       if (chatMessage.length === 0) {
         await callback?.({
-          text: 'Cannot send empty message',
-          actions: ['SEND_CHAT_MESSAGE'],
+          text: "Cannot send empty message",
+          actions: ["SEND_CHAT_MESSAGE"],
           source: message.content.source,
-          thought: 'Attempted to send empty chat message',
+          thought: "Attempted to send empty chat message",
         } as Content);
 
         return {
           success: false,
-          text: 'Cannot send empty message',
+          text: "Cannot send empty message",
           values: {
-            error: 'EMPTY_MESSAGE',
+            error: "EMPTY_MESSAGE",
           },
           data: {},
         };
@@ -90,17 +90,17 @@ export const sendChatMessageAction: Action = {
 
       if (chatMessage.length > 500) {
         await callback?.({
-          text: 'Message too long (max 500 characters)',
-          actions: ['SEND_CHAT_MESSAGE'],
+          text: "Message too long (max 500 characters)",
+          actions: ["SEND_CHAT_MESSAGE"],
           source: message.content.source,
-          thought: 'Message exceeds character limit',
+          thought: "Message exceeds character limit",
         } as Content);
 
         return {
           success: false,
-          text: 'Message too long',
+          text: "Message too long",
           values: {
-            error: 'MESSAGE_TOO_LONG',
+            error: "MESSAGE_TOO_LONG",
             maxLength: 500,
             actualLength: chatMessage.length,
           },
@@ -109,8 +109,8 @@ export const sendChatMessageAction: Action = {
       }
 
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       // Create API client
       const client = new LTCGApiClient({
@@ -121,14 +121,14 @@ export const sendChatMessageAction: Action = {
       // Send message
       const result = await client.sendChatMessage(chatMessage);
 
-      logger.info({ messageId: result.messageId }, 'Chat message sent successfully');
+      logger.info({ messageId: result.messageId }, "Chat message sent successfully");
 
       // Notify callback
       await callback?.({
         text: chatMessage,
-        actions: ['SEND_CHAT_MESSAGE'],
+        actions: ["SEND_CHAT_MESSAGE"],
         source: message.content.source,
-        thought: 'Sent message to global chat',
+        thought: "Sent message to global chat",
       } as Content);
 
       return {
@@ -137,7 +137,7 @@ export const sendChatMessageAction: Action = {
         values: {
           messageId: result.messageId,
           timestamp: result.timestamp,
-          actionName: 'SEND_CHAT_MESSAGE',
+          actionName: "SEND_CHAT_MESSAGE",
         },
         data: {
           messageId: result.messageId,
@@ -146,25 +146,24 @@ export const sendChatMessageAction: Action = {
         },
       };
     } catch (error) {
-      logger.error({ error }, 'Error sending chat message');
+      logger.error({ error }, "Error sending chat message");
 
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to send chat message';
+      const errorMessage = error instanceof Error ? error.message : "Failed to send chat message";
 
       // Check for rate limit error
-      if (errorMessage.includes('rate limit') || errorMessage.includes('RATE_LIMIT')) {
+      if (errorMessage.includes("rate limit") || errorMessage.includes("RATE_LIMIT")) {
         await callback?.({
-          text: 'Rate limited. Please wait before sending another message (5 messages per 10 seconds).',
-          actions: ['SEND_CHAT_MESSAGE'],
+          text: "Rate limited. Please wait before sending another message (5 messages per 10 seconds).",
+          actions: ["SEND_CHAT_MESSAGE"],
           source: message.content.source,
-          thought: 'Hit chat rate limit',
+          thought: "Hit chat rate limit",
         } as Content);
 
         return {
           success: false,
-          text: 'Rate limited',
+          text: "Rate limited",
           values: {
-            error: 'RATE_LIMIT',
+            error: "RATE_LIMIT",
             retryAfter: 10000, // 10 seconds
           },
           data: { errorDetails: error },
@@ -173,7 +172,7 @@ export const sendChatMessageAction: Action = {
 
       await callback?.({
         text: `Failed to send message: ${errorMessage}`,
-        actions: ['SEND_CHAT_MESSAGE'],
+        actions: ["SEND_CHAT_MESSAGE"],
         source: message.content.source,
         thought: `Error sending chat message: ${errorMessage}`,
       } as Content);
@@ -182,7 +181,7 @@ export const sendChatMessageAction: Action = {
         success: false,
         text: `Failed to send message: ${errorMessage}`,
         values: {
-          error: 'SEND_FAILED',
+          error: "SEND_FAILED",
         },
         data: { errorDetails: error },
       };
@@ -192,31 +191,31 @@ export const sendChatMessageAction: Action = {
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'You should join the global chat',
+          text: "You should join the global chat",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Anyone up for a match? Looking for a challenge!',
-          actions: ['SEND_CHAT_MESSAGE'],
+          text: "Anyone up for a match? Looking for a challenge!",
+          actions: ["SEND_CHAT_MESSAGE"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Say something in chat',
+          text: "Say something in chat",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Just finished an intense game. GG to my opponent!',
-          actions: ['SEND_CHAT_MESSAGE'],
+          text: "Just finished an intense game. GG to my opponent!",
+          actions: ["SEND_CHAT_MESSAGE"],
         },
       },
     ],

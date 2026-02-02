@@ -194,7 +194,10 @@ export function GameResultScreen({
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-6"
               >
-                <div className="p-6 rounded-xl bg-black/60 border border-[#3d2b1f]" data-testid="battle-rewards">
+                <div
+                  className="p-6 rounded-xl bg-black/60 border border-[#3d2b1f]"
+                  data-testid="battle-rewards"
+                >
                   <h2 className="text-lg font-bold text-[#e8e0d5] mb-4 flex items-center gap-2">
                     <Star className="w-5 h-5 text-[#d4af37]" />
                     Rewards Earned

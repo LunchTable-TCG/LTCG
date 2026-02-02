@@ -6,7 +6,7 @@
  * game state changes, turn notifications, and game events.
  */
 
-import type { GameStateResponse, GameEvent } from '../types/api';
+import type { GameEvent, GameStateResponse } from "../types/api";
 
 // ============================================================================
 // Event Types
@@ -17,7 +17,7 @@ import type { GameStateResponse, GameEvent } from '../types/api';
  * Emitted whenever any aspect of the game state changes
  */
 export interface GameStateUpdatedEvent {
-  type: 'game_state_updated';
+  type: "game_state_updated";
   gameId: string;
   state: GameStateResponse;
   timestamp: number;
@@ -28,7 +28,7 @@ export interface GameStateUpdatedEvent {
  * Emitted when the current turn player changes to this agent
  */
 export interface TurnNotificationEvent {
-  type: 'turn_notification';
+  type: "turn_notification";
   gameId: string;
   phase: string;
   isMyTurn: boolean;
@@ -40,7 +40,7 @@ export interface TurnNotificationEvent {
  * Emitted when a player takes an action (summon, attack, spell activation, etc.)
  */
 export interface GameEventOccurredEvent {
-  type: 'game_event_occurred';
+  type: "game_event_occurred";
   gameId: string;
   event: GameEvent;
   timestamp: number;
@@ -51,10 +51,10 @@ export interface GameEventOccurredEvent {
  * Emitted when the game reaches a terminal state (win/loss/draw)
  */
 export interface GameEndedEvent {
-  type: 'game_ended';
+  type: "game_ended";
   gameId: string;
-  winner?: 'host' | 'opponent';
-  reason: 'victory' | 'surrender' | 'timeout' | 'draw';
+  winner?: "host" | "opponent";
+  reason: "victory" | "surrender" | "timeout" | "draw";
   timestamp: number;
 }
 
@@ -63,7 +63,7 @@ export interface GameEndedEvent {
  * Emitted when the agent can respond to the opponent's chain
  */
 export interface ChainWindowOpenEvent {
-  type: 'chain_window_open';
+  type: "chain_window_open";
   gameId: string;
   chainLength: number;
   timeRemaining: number; // milliseconds
@@ -121,21 +121,21 @@ export interface GameEventEmitter {
   /**
    * Subscribe to a specific event type
    */
-  on(event: 'game_state_updated', callback: EventCallback<GameStateUpdatedEvent>): () => void;
-  on(event: 'turn_notification', callback: EventCallback<TurnNotificationEvent>): () => void;
-  on(event: 'game_event_occurred', callback: EventCallback<GameEventOccurredEvent>): () => void;
-  on(event: 'game_ended', callback: EventCallback<GameEndedEvent>): () => void;
-  on(event: 'chain_window_open', callback: EventCallback<ChainWindowOpenEvent>): () => void;
+  on(event: "game_state_updated", callback: EventCallback<GameStateUpdatedEvent>): () => void;
+  on(event: "turn_notification", callback: EventCallback<TurnNotificationEvent>): () => void;
+  on(event: "game_event_occurred", callback: EventCallback<GameEventOccurredEvent>): () => void;
+  on(event: "game_ended", callback: EventCallback<GameEndedEvent>): () => void;
+  on(event: "chain_window_open", callback: EventCallback<ChainWindowOpenEvent>): () => void;
   on(event: string, callback: EventCallback): () => void;
 
   /**
    * Emit an event to all subscribers
    */
-  emit(event: 'game_state_updated', data: GameStateUpdatedEvent): void;
-  emit(event: 'turn_notification', data: TurnNotificationEvent): void;
-  emit(event: 'game_event_occurred', data: GameEventOccurredEvent): void;
-  emit(event: 'game_ended', data: GameEndedEvent): void;
-  emit(event: 'chain_window_open', data: ChainWindowOpenEvent): void;
+  emit(event: "game_state_updated", data: GameStateUpdatedEvent): void;
+  emit(event: "turn_notification", data: TurnNotificationEvent): void;
+  emit(event: "game_event_occurred", data: GameEventOccurredEvent): void;
+  emit(event: "game_ended", data: GameEndedEvent): void;
+  emit(event: "chain_window_open", data: ChainWindowOpenEvent): void;
   emit(event: string, data: any): void;
 
   /**
@@ -153,7 +153,7 @@ export interface GameEventEmitter {
  */
 export interface Subscription {
   id: string;
-  type: 'game' | 'turns' | 'events';
+  type: "game" | "turns" | "events";
   gameId?: string;
   userId?: string;
   unsubscribe: () => void;

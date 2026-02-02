@@ -13,33 +13,33 @@ import type {
   IAgentRuntime,
   Memory,
   State,
-} from '@elizaos/core';
-import { logger, ModelType } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import { extractJsonFromLlmResponse } from '../utils/safeParseJson';
-import { gameStateProvider } from '../providers/gameStateProvider';
-import type { GameStateResponse } from '../types/api';
+} from "@elizaos/core";
+import { ModelType, logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import { gameStateProvider } from "../providers/gameStateProvider";
+import type { GameStateResponse } from "../types/api";
+import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const surrenderAction: Action = {
-  name: 'SURRENDER',
-  similes: ['FORFEIT', 'CONCEDE', 'GIVE_UP'],
-  description: 'Forfeit the current game',
+  name: "SURRENDER",
+  similes: ["FORFEIT", "CONCEDE", "GIVE_UP"],
+  description: "Forfeit the current game",
 
   validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
     try {
       // Must be in an active game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;
       if (!currentGameId) {
-        logger.debug('No active game to surrender');
+        logger.debug("No active game to surrender");
         return false;
       }
 
       // Check API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        logger.warn('LTCG API credentials not configured');
+        logger.warn("LTCG API credentials not configured");
         return false;
       }
 
@@ -49,23 +49,23 @@ export const surrenderAction: Action = {
         const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
         if (!gameState) {
-          logger.debug('Could not get game state');
+          logger.debug("Could not get game state");
           return false;
         }
 
-        if (gameState.status === 'completed') {
-          logger.debug('Game already completed');
+        if (gameState.status === "completed") {
+          logger.debug("Game already completed");
           return false;
         }
 
         return true;
       } catch (error) {
         // If we can't get game state, still allow surrender as cleanup
-        logger.warn({ error }, 'Could not verify game state, allowing surrender');
+        logger.warn({ error }, "Could not verify game state, allowing surrender");
         return true;
       }
     } catch (error) {
-      logger.error({ error }, 'Error validating surrender action');
+      logger.error({ error }, "Error validating surrender action");
       return false;
     }
   },
@@ -78,21 +78,21 @@ export const surrenderAction: Action = {
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
-      logger.info('Handling SURRENDER action');
+      logger.info("Handling SURRENDER action");
 
       // Get current game ID
       const gameId = state.values.LTCG_CURRENT_GAME_ID as string;
 
       if (!gameId) {
-        throw new Error('No active game found');
+        throw new Error("No active game found");
       }
 
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY') as string;
-      const apiUrl = runtime.getSetting('LTCG_API_URL') as string;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        throw new Error('LTCG API credentials not configured');
+        throw new Error("LTCG API credentials not configured");
       }
 
       // Create API client
@@ -102,8 +102,8 @@ export const surrenderAction: Action = {
       });
 
       // Optional confirmation via LLM
-      const autoSurrender = runtime.getSetting('LTCG_AUTO_SURRENDER');
-      if (autoSurrender !== 'true') {
+      const autoSurrender = runtime.getSetting("LTCG_AUTO_SURRENDER");
+      if (autoSurrender !== "true") {
         // Ask LLM for confirmation
         const gameStateResult = await gameStateProvider.get(runtime, message, state);
         const gameState = gameStateResult.data?.gameState as GameStateResponse;
@@ -131,15 +131,16 @@ Respond with JSON: { "confirm": true or false }`;
           const parsed = extractJsonFromLlmResponse(decision, { confirm: false });
           if (!parsed.confirm) {
             await callback({
-              text: 'Surrender cancelled. Continuing the game.',
-              actions: ['SURRENDER'],
+              text: "Surrender cancelled. Continuing the game.",
+              actions: ["SURRENDER"],
               source: message.content.source,
-              thought: 'Evaluated game state and decided to continue fighting instead of surrendering',
+              thought:
+                "Evaluated game state and decided to continue fighting instead of surrendering",
             } as Content);
 
             return {
               success: false,
-              text: 'Surrender cancelled by agent decision',
+              text: "Surrender cancelled by agent decision",
             };
           }
         }
@@ -149,51 +150,53 @@ Respond with JSON: { "confirm": true or false }`;
       const result = await client.surrender({ gameId });
 
       // Clear game ID from runtime state
-      await runtime.delete?.('LTCG_CURRENT_GAME_ID');
+      await runtime.delete?.("LTCG_CURRENT_GAME_ID");
 
       // Also clear lobby ID if present
-      await runtime.delete?.('LTCG_CURRENT_LOBBY_ID');
+      await runtime.delete?.("LTCG_CURRENT_LOBBY_ID");
 
       await callback({
         text: `Surrendered the game. ${result.message}`,
-        actions: ['SURRENDER'],
+        actions: ["SURRENDER"],
         source: message.content.source,
-        thought: 'Decided to surrender as game state is unwinnable or continuation would waste resources',
+        thought:
+          "Decided to surrender as game state is unwinnable or continuation would waste resources",
       } as Content);
 
       return {
         success: true,
-        text: 'Successfully surrendered',
+        text: "Successfully surrendered",
         values: {
           gameId,
           message: result.message,
         },
         data: {
-          actionName: 'SURRENDER',
+          actionName: "SURRENDER",
           gameId,
           result,
         },
       };
     } catch (error) {
-      logger.error({ error }, 'Error in SURRENDER action');
+      logger.error({ error }, "Error in SURRENDER action");
 
       // Even if API call failed, try to clean up state
       try {
-        await runtime.delete?.('LTCG_CURRENT_GAME_ID');
-        await runtime.delete?.('LTCG_CURRENT_LOBBY_ID');
+        await runtime.delete?.("LTCG_CURRENT_GAME_ID");
+        await runtime.delete?.("LTCG_CURRENT_LOBBY_ID");
       } catch (cleanupError) {
-        logger.error({ cleanupError }, 'Failed to clean up state after surrender error');
+        logger.error({ cleanupError }, "Failed to clean up state after surrender error");
       }
 
       await callback({
         text: `Failed to surrender: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: 'Surrender attempt failed due to API error or game already ended, but cleaning up local state',
+        thought:
+          "Surrender attempt failed due to API error or game already ended, but cleaning up local state",
       } as Content);
 
       return {
         success: false,
-        text: 'Failed to surrender',
+        text: "Failed to surrender",
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
@@ -202,46 +205,46 @@ Respond with JSON: { "confirm": true or false }`;
   examples: [
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
           text: "I can't win this, I surrender",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Surrendered the game. Game ended by surrender.',
-          actions: ['SURRENDER'],
+          text: "Surrendered the game. Game ended by surrender.",
+          actions: ["SURRENDER"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Forfeit the match',
+          text: "Forfeit the match",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Surrendered the game. Game ended by surrender.',
-          actions: ['SURRENDER'],
+          text: "Surrendered the game. Game ended by surrender.",
+          actions: ["SURRENDER"],
         },
       },
     ],
     [
       {
-        name: '{{name1}}',
+        name: "{{name1}}",
         content: {
-          text: 'Give up, opponent is too strong',
+          text: "Give up, opponent is too strong",
         },
       },
       {
-        name: '{{name2}}',
+        name: "{{name2}}",
         content: {
-          text: 'Surrendered the game. Game ended by surrender.',
-          actions: ['SURRENDER'],
+          text: "Surrendered the game. Game ended by surrender.",
+          actions: ["SURRENDER"],
         },
       },
     ],

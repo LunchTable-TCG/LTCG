@@ -13,15 +13,15 @@
  * Within each category, ordered by timestamp (first triggered = first in chain order)
  */
 
+import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import { v } from "convex/values";
 import { mutation } from "../_generated/server";
 import { getCardAbility } from "../lib/abilityHelpers";
 import { evaluateTriggerCondition } from "../lib/gameHelpers";
 import { executeEffect } from "./effectSystem/index";
-import { recordEventHelper } from "./gameEvents";
 import type { ParsedEffect, TriggerCondition } from "./effectSystem/types";
+import { recordEventHelper } from "./gameEvents";
 
 // ============================================================================
 // TYPES
@@ -174,9 +174,7 @@ export async function executeTriggeredEffects(
       const pendingTriggers = refreshedState.pendingOptionalTriggers || [];
       const alreadyPending = pendingTriggers.some(
         (pending) =>
-          pending.cardId === cardId &&
-          pending.effectIndex === index &&
-          pending.trigger === trigger
+          pending.cardId === cardId && pending.effectIndex === index && pending.trigger === trigger
       );
 
       if (!alreadyPending) {
@@ -378,9 +376,12 @@ export async function buildSegocQueue(
 
       // Calculate SEGOC order: 1-4 based on player + mandatory/optional
       let segocOrder: number;
-      if (!isOptional && isTurnPlayer) segocOrder = 1; // Turn player's mandatory
-      else if (!isOptional && !isTurnPlayer) segocOrder = 2; // Opponent's mandatory
-      else if (isOptional && isTurnPlayer) segocOrder = 3; // Turn player's optional
+      if (!isOptional && isTurnPlayer)
+        segocOrder = 1; // Turn player's mandatory
+      else if (!isOptional && !isTurnPlayer)
+        segocOrder = 2; // Opponent's mandatory
+      else if (isOptional && isTurnPlayer)
+        segocOrder = 3; // Turn player's optional
       else segocOrder = 4; // Opponent's optional
 
       queue.push({
@@ -609,10 +610,7 @@ export const respondToOptionalTrigger = mutation({
     const user = await ctx.db
       .query("users")
       .filter((q) =>
-        q.or(
-          q.eq(q.field("email"), identity.email),
-          q.eq(q.field("_id"), pendingTrigger.playerId)
-        )
+        q.or(q.eq(q.field("email"), identity.email), q.eq(q.field("_id"), pendingTrigger.playerId))
       )
       .first();
 

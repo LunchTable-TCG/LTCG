@@ -7,25 +7,25 @@
  * - Archetype information
  */
 
-import type { Provider, IAgentRuntime, Memory, State, ProviderResult } from '@elizaos/core';
-import { logger } from '@elizaos/core';
-import { LTCGApiClient } from '../client/LTCGApiClient';
-import type { Deck, CardDefinition } from '../types/api';
+import type { IAgentRuntime, Memory, Provider, ProviderResult, State } from "@elizaos/core";
+import { logger } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
+import type { CardDefinition } from "../types/api";
 
 export const deckProvider: Provider = {
-  name: 'LTCG_MY_DECK',
-  description: 'Provides information about the agent\'s current deck and card collection',
+  name: "LTCG_MY_DECK",
+  description: "Provides information about the agent's current deck and card collection",
 
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get API credentials
-      const apiKey = runtime.getSetting('LTCG_API_KEY');
-      const apiUrl = runtime.getSetting('LTCG_API_URL');
+      const apiKey = runtime.getSetting("LTCG_API_KEY");
+      const apiUrl = runtime.getSetting("LTCG_API_URL");
 
       if (!apiKey || !apiUrl) {
         return {
-          text: 'Not registered yet. Use REGISTER_AGENT to get started.',
-          values: { error: 'MISSING_CONFIG' },
+          text: "Not registered yet. Use REGISTER_AGENT to get started.",
+          values: { error: "MISSING_CONFIG" },
           data: {},
         };
       }
@@ -41,23 +41,23 @@ export const deckProvider: Provider = {
 
       if (decks.length === 0) {
         return {
-          text: 'No decks available. Please create a deck or contact an administrator.',
+          text: "No decks available. Please create a deck or contact an administrator.",
           values: { deckCount: 0 },
           data: {},
         };
       }
 
       // Use preferred deck or first available
-      const preferredDeckId = runtime.getSetting('LTCG_PREFERRED_DECK_ID') as string;
+      const preferredDeckId = runtime.getSetting("LTCG_PREFERRED_DECK_ID") as string;
       const currentDeck = preferredDeckId
-        ? decks.find(d => d.deckId === preferredDeckId) || decks[0]
+        ? decks.find((d) => d.deckId === preferredDeckId) || decks[0]
         : decks[0];
 
       // Analyze deck composition
-      const monsters = currentDeck.cards.filter(c => c.type === 'creature');
-      const spells = currentDeck.cards.filter(c => c.type === 'spell');
-      const traps = currentDeck.cards.filter(c => c.type === 'trap');
-      const equipment = currentDeck.cards.filter(c => c.type === 'equipment');
+      const monsters = currentDeck.cards.filter((c) => c.type === "creature");
+      const spells = currentDeck.cards.filter((c) => c.type === "spell");
+      const traps = currentDeck.cards.filter((c) => c.type === "trap");
+      const equipment = currentDeck.cards.filter((c) => c.type === "equipment");
 
       // Group creatures by level
       const monstersByLevel: Record<number, CardDefinition[]> = {};
@@ -75,7 +75,7 @@ export const deckProvider: Provider = {
         .slice(0, 3);
 
       // Build readable text
-      const text = `My Deck: "${currentDeck.name}"${currentDeck.archetype ? ` (${currentDeck.archetype})` : ''}
+      const text = `My Deck: "${currentDeck.name}"${currentDeck.archetype ? ` (${currentDeck.archetype})` : ""}
 
 Card Composition:
 - ${monsters.length} Monsters (${Object.keys(monstersByLevel).length} different levels)
@@ -84,15 +84,18 @@ Card Composition:
 - Total: ${currentDeck.cards.length} cards
 
 Strongest Monsters:
-${strongestMonsters.map((m, i) => `${i + 1}. ${m.name} - Level ${m.level || '?'}, ${m.atk || 0} ATK / ${m.def || 0} DEF`).join('\n')}
+${strongestMonsters.map((m, i) => `${i + 1}. ${m.name} - Level ${m.level || "?"}, ${m.atk || 0} ATK / ${m.def || 0} DEF`).join("\n")}
 
 Level Distribution:
 ${Object.entries(monstersByLevel)
   .sort(([a], [b]) => Number(a) - Number(b))
-  .map(([level, cards]) => `- Level ${level}: ${cards.length} monster${cards.length > 1 ? 's' : ''} (${cards.map(c => c.name).join(', ')})`)
-  .join('\n')}
+  .map(
+    ([level, cards]) =>
+      `- Level ${level}: ${cards.length} monster${cards.length > 1 ? "s" : ""} (${cards.map((c) => c.name).join(", ")})`
+  )
+  .join("\n")}
 
-Available Decks: ${decks.length} total (${decks.map(d => d.name).join(', ')})`;
+Available Decks: ${decks.length} total (${decks.map((d) => d.name).join(", ")})`;
 
       // Structured values for template substitution
       const values = {
@@ -121,14 +124,13 @@ Available Decks: ${decks.length} total (${decks.map(d => d.name).join(', ')})`;
 
       return { text, values, data };
     } catch (error) {
-      logger.error({ error }, 'Error fetching deck information');
+      logger.error({ error }, "Error fetching deck information");
 
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error fetching deck';
+      const errorMessage = error instanceof Error ? error.message : "Unknown error fetching deck";
 
       return {
         text: `Error fetching deck: ${errorMessage}`,
-        values: { error: 'FETCH_ERROR' },
+        values: { error: "FETCH_ERROR" },
         data: { errorDetails: error },
       };
     }

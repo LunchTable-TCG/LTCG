@@ -68,10 +68,15 @@ export function BoardCard({
     : 0;
 
   // Determine test ID based on card type and owner
-  const isMonster = card.cardType === "monster" || card.cardType === "creature" || card.monsterStats;
+  const isMonster =
+    card.cardType === "monster" || card.cardType === "creature" || card.monsterStats;
   const testId = isMonster
-    ? (isOpponent ? "opponent-monster" : "player-monster")
-    : (isOpponent ? "opponent-spell-trap" : "player-spell-trap");
+    ? isOpponent
+      ? "opponent-monster"
+      : "player-monster"
+    : isOpponent
+      ? "opponent-spell-trap"
+      : "player-spell-trap";
 
   return (
     <motion.button

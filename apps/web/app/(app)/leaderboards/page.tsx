@@ -248,7 +248,10 @@ export default function LeaderboardsPage() {
         )}
 
         {/* Leaderboard Table */}
-        <div data-testid="leaderboard" className="rounded-xl bg-black/40 border border-[#3d2b1f] overflow-hidden">
+        <div
+          data-testid="leaderboard"
+          className="rounded-xl bg-black/40 border border-[#3d2b1f] overflow-hidden"
+        >
           {/* Header - Hidden on mobile */}
           <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-[#3d2b1f] text-xs font-bold text-[#a89f94] uppercase tracking-wider">
             <div className="col-span-1">Rank</div>
@@ -315,7 +318,9 @@ export default function LeaderboardsPage() {
                       </div>
                       <div className="grid grid-cols-4 gap-2 text-center">
                         <div>
-                          <p className="text-xs text-[#a89f94]">{activeType === "story" ? "XP" : "Rating"}</p>
+                          <p className="text-xs text-[#a89f94]">
+                            {activeType === "story" ? "XP" : "Rating"}
+                          </p>
                           <p className="font-bold text-[#e8e0d5]">{player.rating}</p>
                         </div>
                         <div>
@@ -425,7 +430,9 @@ export default function LeaderboardsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-center">
                     <div>
-                      <p className="text-xs text-[#a89f94]">{activeType === "story" ? "XP" : "Rating"}</p>
+                      <p className="text-xs text-[#a89f94]">
+                        {activeType === "story" ? "XP" : "Rating"}
+                      </p>
                       <p className="font-bold text-[#e8e0d5]">{userRank.rating}</p>
                     </div>
                     <div>
@@ -508,7 +515,9 @@ export default function LeaderboardsPage() {
                             <div
                               className={cn(
                                 "px-2 py-1 rounded text-xs font-bold",
-                                isWin ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                                isWin
+                                  ? "bg-green-500/20 text-green-400"
+                                  : "bg-red-500/20 text-red-400"
                               )}
                             >
                               {isWin ? "WIN" : "LOSS"}
@@ -557,7 +566,9 @@ export default function LeaderboardsPage() {
                           </div>
                           <div>
                             <p className="text-xs text-[#a89f94]">After</p>
-                            <p className="text-sm font-medium text-[#e8e0d5]">{match.ratingAfter}</p>
+                            <p className="text-sm font-medium text-[#e8e0d5]">
+                              {match.ratingAfter}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -569,7 +580,9 @@ export default function LeaderboardsPage() {
                           <div
                             className={cn(
                               "px-2 py-1 rounded text-xs font-bold text-center",
-                              isWin ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                              isWin
+                                ? "bg-green-500/20 text-green-400"
+                                : "bg-red-500/20 text-red-400"
                             )}
                           >
                             {isWin ? "WIN" : "LOSS"}

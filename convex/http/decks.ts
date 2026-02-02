@@ -8,16 +8,14 @@
 // Import at runtime only (not for type checking) to avoid TS2589
 const api: any = require("../_generated/api").api;
 const internal: any = require("../_generated/api").internal;
+import { authHttpAction } from "./middleware/auth";
 import {
-  authHttpAction,
-} from "./middleware/auth";
-import {
-  successResponse,
-  errorResponse,
-  parseJsonBody,
-  validateRequiredFields,
-  getQueryParam,
   corsPreflightResponse,
+  errorResponse,
+  getQueryParam,
+  parseJsonBody,
+  successResponse,
+  validateRequiredFields,
 } from "./middleware/responses";
 
 /**
@@ -58,12 +56,9 @@ export const getUserDecks = authHttpAction(async (ctx, request, auth) => {
       count: formattedDecks.length,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_DECKS_FAILED",
-      "Failed to fetch decks",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_DECKS_FAILED", "Failed to fetch decks", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -86,11 +81,7 @@ export const getDeck = authHttpAction(async (ctx, request, auth) => {
     const deckId = getQueryParam(request, "deckId");
 
     if (!deckId) {
-      return errorResponse(
-        "MISSING_DECK_ID",
-        "deckId query parameter is required",
-        400
-      );
+      return errorResponse("MISSING_DECK_ID", "deckId query parameter is required", 400);
     }
 
     // Get deck with cards
@@ -116,12 +107,9 @@ export const getDeck = authHttpAction(async (ctx, request, auth) => {
       updatedAt: deck.updatedAt,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_DECK_FAILED",
-      "Failed to fetch deck",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_DECK_FAILED", "Failed to fetch deck", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -148,12 +136,9 @@ export const getStarterDecks = authHttpAction(async (ctx, request, _auth) => {
       starterDecks,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_STARTER_DECKS_FAILED",
-      "Failed to fetch starter decks",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_STARTER_DECKS_FAILED", "Failed to fetch starter decks", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -186,12 +171,9 @@ export const createDeck = authHttpAction(async (ctx, request, auth) => {
 
     // Validate deck size (40-60 cards for main deck)
     if (body.cardIds.length < 40 || body.cardIds.length > 60) {
-      return errorResponse(
-        "INVALID_DECK_SIZE",
-        "Deck must contain 40-60 cards",
-        400,
-        { cardCount: body.cardIds.length }
-      );
+      return errorResponse("INVALID_DECK_SIZE", "Deck must contain 40-60 cards", 400, {
+        cardCount: body.cardIds.length,
+      });
     }
 
     // Create deck
@@ -214,34 +196,19 @@ export const createDeck = authHttpAction(async (ctx, request, auth) => {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("deck name already exists")) {
-        return errorResponse(
-          "DECK_NAME_EXISTS",
-          "A deck with this name already exists",
-          409
-        );
+        return errorResponse("DECK_NAME_EXISTS", "A deck with this name already exists", 409);
       }
       if (error.message.includes("card not found")) {
-        return errorResponse(
-          "INVALID_CARD",
-          "One or more card IDs are invalid",
-          400
-        );
+        return errorResponse("INVALID_CARD", "One or more card IDs are invalid", 400);
       }
       if (error.message.includes("copy limit")) {
-        return errorResponse(
-          "COPY_LIMIT_EXCEEDED",
-          "Maximum 3 copies of a card allowed",
-          400
-        );
+        return errorResponse("COPY_LIMIT_EXCEEDED", "Maximum 3 copies of a card allowed", 400);
       }
     }
 
-    return errorResponse(
-      "CREATE_DECK_FAILED",
-      "Failed to create deck",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("CREATE_DECK_FAILED", "Failed to create deck", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -277,13 +244,11 @@ export const getAllCards = authHttpAction(async (ctx, request, _auth) => {
     }
 
     if (archetypeParam) {
-      filteredCards = filteredCards.filter(
-        (card: any) => card.archetype === archetypeParam
-      );
+      filteredCards = filteredCards.filter((card: any) => card.archetype === archetypeParam);
     }
 
     // Apply limit
-    const limit = limitParam ? parseInt(limitParam) : filteredCards.length;
+    const limit = limitParam ? Number.parseInt(limitParam) : filteredCards.length;
     filteredCards = filteredCards.slice(0, limit);
 
     // Format card data
@@ -307,12 +272,9 @@ export const getAllCards = authHttpAction(async (ctx, request, _auth) => {
       totalCards: cards.length,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_CARDS_FAILED",
-      "Failed to fetch cards",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_CARDS_FAILED", "Failed to fetch cards", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -335,11 +297,7 @@ export const getCard = authHttpAction(async (ctx, request, _auth) => {
     const cardId = getQueryParam(request, "cardId");
 
     if (!cardId) {
-      return errorResponse(
-        "MISSING_CARD_ID",
-        "cardId query parameter is required",
-        400
-      );
+      return errorResponse("MISSING_CARD_ID", "cardId query parameter is required", 400);
     }
 
     // Get card definition
@@ -366,12 +324,9 @@ export const getCard = authHttpAction(async (ctx, request, _auth) => {
       artworkUrl: card.artworkUrl || null,
     });
   } catch (error) {
-    return errorResponse(
-      "FETCH_CARD_FAILED",
-      "Failed to fetch card",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("FETCH_CARD_FAILED", "Failed to fetch card", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -417,19 +372,12 @@ export const selectStarterDeck = authHttpAction(async (ctx, request, auth) => {
         );
       }
       if (error.message.includes("already has a deck")) {
-        return errorResponse(
-          "DECK_EXISTS",
-          "Agent already has a deck",
-          409
-        );
+        return errorResponse("DECK_EXISTS", "Agent already has a deck", 409);
       }
     }
 
-    return errorResponse(
-      "SELECT_STARTER_FAILED",
-      "Failed to select starter deck",
-      500,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("SELECT_STARTER_FAILED", "Failed to select starter deck", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });

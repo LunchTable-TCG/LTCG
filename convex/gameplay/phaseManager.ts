@@ -417,7 +417,14 @@ export const skipToEndPhase = mutation({
     });
 
     // 10. Execute End Phase logic
-    await executePhaseLogic(ctx, args.lobbyId, gameState._id, "end", user.userId, gameState.turnNumber);
+    await executePhaseLogic(
+      ctx,
+      args.lobbyId,
+      gameState._id,
+      "end",
+      user.userId,
+      gameState.turnNumber
+    );
 
     // 11. Run state-based action checks (enforce hand limit at end phase)
     const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {
@@ -518,7 +525,14 @@ export const skipMainPhase2 = mutation({
     });
 
     // 9. Execute End Phase logic
-    await executePhaseLogic(ctx, args.lobbyId, gameState._id, "end", user.userId, gameState.turnNumber);
+    await executePhaseLogic(
+      ctx,
+      args.lobbyId,
+      gameState._id,
+      "end",
+      user.userId,
+      gameState.turnNumber
+    );
 
     // 10. Run state-based action checks (enforce hand limit at end phase)
     const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {

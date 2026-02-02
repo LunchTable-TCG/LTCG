@@ -6,9 +6,9 @@
 
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import { modules } from "../../test.setup";
-import schema from "../../schema";
 import type { Id } from "../../_generated/dataModel";
+import schema from "../../schema";
+import { modules } from "../../test.setup";
 
 // Helper to create test instance
 const createTestInstance = () => convexTest(schema, modules);

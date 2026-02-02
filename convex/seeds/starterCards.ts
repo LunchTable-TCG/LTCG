@@ -7,13 +7,13 @@
 
 // Import from centralized JSON card data
 import {
-  INFERNAL_DRAGONS_CARDS as INFERNAL_DRAGONS_JSON,
   ABYSSAL_HORRORS_CARDS as ABYSSAL_HORRORS_JSON,
+  ALL_CARDS,
+  type Card,
+  INFERNAL_DRAGONS_CARDS as INFERNAL_DRAGONS_JSON,
   NATURE_SPIRITS_CARDS as NATURE_SPIRITS_JSON,
   STORM_ELEMENTALS_CARDS as STORM_ELEMENTALS_JSON,
-  ALL_CARDS,
   getCardsByArchetype,
-  type Card,
 } from "@data/cards";
 
 import type { CardSeed } from "./types";
@@ -44,17 +44,13 @@ function toCardSeed(card: Card): CardSeed {
 }
 
 // Export cards in CardSeed format for backward compatibility
-export const INFERNAL_DRAGONS_CARDS: readonly CardSeed[] =
-  INFERNAL_DRAGONS_JSON.map(toCardSeed);
+export const INFERNAL_DRAGONS_CARDS: readonly CardSeed[] = INFERNAL_DRAGONS_JSON.map(toCardSeed);
 
-export const ABYSSAL_DEPTHS_CARDS: readonly CardSeed[] =
-  ABYSSAL_HORRORS_JSON.map(toCardSeed);
+export const ABYSSAL_DEPTHS_CARDS: readonly CardSeed[] = ABYSSAL_HORRORS_JSON.map(toCardSeed);
 
-export const IRON_LEGION_CARDS: readonly CardSeed[] =
-  NATURE_SPIRITS_JSON.map(toCardSeed);
+export const IRON_LEGION_CARDS: readonly CardSeed[] = NATURE_SPIRITS_JSON.map(toCardSeed);
 
-export const STORM_RIDERS_CARDS: readonly CardSeed[] =
-  STORM_ELEMENTALS_JSON.map(toCardSeed);
+export const STORM_RIDERS_CARDS: readonly CardSeed[] = STORM_ELEMENTALS_JSON.map(toCardSeed);
 
 // Re-export utilities for convenience
 export { ALL_CARDS, getCardsByArchetype };

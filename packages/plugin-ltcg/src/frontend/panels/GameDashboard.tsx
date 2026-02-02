@@ -9,17 +9,17 @@
  * - Hand viewer
  */
 
-import React from 'react';
-import { useAgentStatus, useGameState } from '../hooks';
+import React from "react";
 import {
-  StatusBadge,
-  StatCard,
   BoardVisualizer,
-  LoadingState,
-  ErrorState,
   EmptyState,
-} from '../components';
-import { cn } from '../utils';
+  ErrorState,
+  LoadingState,
+  StatCard,
+  StatusBadge,
+} from "../components";
+import { useAgentStatus, useGameState } from "../hooks";
+import { cn } from "../utils";
 
 interface GameDashboardProps {
   agentId: string;
@@ -32,25 +32,25 @@ const HandCard = React.memo(function HandCard({
   type,
   name,
 }: {
-  type: 'monster' | 'spell' | 'trap';
+  type: "monster" | "spell" | "trap";
   name: string;
 }) {
   const typeColors = {
-    monster: 'bg-orange-500/10 border-orange-500/30 text-orange-400',
-    spell: 'bg-green-500/10 border-green-500/30 text-green-400',
-    trap: 'bg-purple-500/10 border-purple-500/30 text-purple-400',
+    monster: "bg-orange-500/10 border-orange-500/30 text-orange-400",
+    spell: "bg-green-500/10 border-green-500/30 text-green-400",
+    trap: "bg-purple-500/10 border-purple-500/30 text-purple-400",
   };
 
   const typeIcons = {
-    monster: '🐉',
-    spell: '✨',
-    trap: '🪤',
+    monster: "🐉",
+    spell: "✨",
+    trap: "🪤",
   };
 
   return (
     <div
       className={cn(
-        'flex flex-col items-center gap-1 p-2 rounded border min-w-[80px]',
+        "flex flex-col items-center gap-1 p-2 rounded border min-w-[80px]",
         typeColors[type]
       )}
     >
@@ -86,7 +86,7 @@ export function GameDashboard({ agentId }: GameDashboardProps) {
   if (error) {
     return (
       <ErrorState
-        message={error instanceof Error ? error.message : 'Failed to load game state'}
+        message={error instanceof Error ? error.message : "Failed to load game state"}
         onRetry={() => refetch()}
       />
     );
@@ -103,17 +103,17 @@ export function GameDashboard({ agentId }: GameDashboardProps) {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Game Dashboard</h2>
           <StatusBadge
-            variant={gameState.isMyTurn ? 'active' : 'idle'}
-            label={gameState.isMyTurn ? 'YOUR TURN' : 'WAITING'}
+            variant={gameState.isMyTurn ? "active" : "idle"}
+            label={gameState.isMyTurn ? "YOUR TURN" : "WAITING"}
           />
         </div>
         <div className="flex items-center gap-3 text-sm text-muted-foreground font-mono">
           <span>Game: {gameState.gameId.slice(0, 12)}...</span>
-          {gameState.status === 'completed' && gameState.winner && (
+          {gameState.status === "completed" && gameState.winner && (
             <>
               <span>•</span>
-              <span className={gameState.winner === 'agent' ? 'text-green-400' : 'text-red-400'}>
-                Winner: {gameState.winner === 'agent' ? 'You' : 'Opponent'}
+              <span className={gameState.winner === "agent" ? "text-green-400" : "text-red-400"}>
+                Winner: {gameState.winner === "agent" ? "You" : "Opponent"}
               </span>
             </>
           )}
@@ -126,7 +126,7 @@ export function GameDashboard({ agentId }: GameDashboardProps) {
         <StatCard
           label="Current Phase"
           value={gameState.phase.toUpperCase()}
-          variant={gameState.isMyTurn ? 'primary' : 'default'}
+          variant={gameState.isMyTurn ? "primary" : "default"}
         />
       </div>
 
@@ -155,20 +155,25 @@ export function GameDashboard({ agentId }: GameDashboardProps) {
       </div>
 
       {/* Game completed banner */}
-      {gameState.status === 'completed' && (
+      {gameState.status === "completed" && (
         <div
           className={cn(
-            'rounded-lg border p-6 text-center',
-            gameState.winner === 'agent'
-              ? 'bg-green-500/10 border-green-500/30'
-              : 'bg-red-500/10 border-red-500/30'
+            "rounded-lg border p-6 text-center",
+            gameState.winner === "agent"
+              ? "bg-green-500/10 border-green-500/30"
+              : "bg-red-500/10 border-red-500/30"
           )}
         >
-          <h3 className={cn('text-lg font-bold', gameState.winner === 'agent' ? 'text-green-400' : 'text-red-400')}>
-            {gameState.winner === 'agent' ? '🎉 Victory!' : '💀 Defeat'}
+          <h3
+            className={cn(
+              "text-lg font-bold",
+              gameState.winner === "agent" ? "text-green-400" : "text-red-400"
+            )}
+          >
+            {gameState.winner === "agent" ? "🎉 Victory!" : "💀 Defeat"}
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            {gameState.winner === 'agent' ? 'You won the game!' : 'Opponent won the game.'}
+            {gameState.winner === "agent" ? "You won the game!" : "Opponent won the game."}
           </p>
         </div>
       )}

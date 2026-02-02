@@ -84,7 +84,9 @@ export function TimeoutDisplay({
           "flex items-center gap-1.5 px-2 py-0.5 rounded",
           "transition-all duration-200",
           showActionTimeout && "bg-red-500/20 border border-red-500/50",
-          showActionWarning && !showActionTimeout && "bg-amber-500/20 border border-amber-500/50 animate-warning-pulse",
+          showActionWarning &&
+            !showActionTimeout &&
+            "bg-amber-500/20 border border-amber-500/50 animate-warning-pulse",
           !showActionWarning && !showActionTimeout && "bg-muted/30"
         )}
         data-testid="action-timer"
@@ -131,10 +133,7 @@ export function TimeoutDisplay({
           <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
         ) : (
           <Clock
-            className={cn(
-              "h-3.5 w-3.5",
-              matchLow ? "text-amber-500" : "text-muted-foreground"
-            )}
+            className={cn("h-3.5 w-3.5", matchLow ? "text-amber-500" : "text-muted-foreground")}
           />
         )}
         <div className="flex flex-col">

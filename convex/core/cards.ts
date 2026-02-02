@@ -1,11 +1,11 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation, mutation, query } from "../_generated/server";
+import { jsonAbilityValidator } from "../gameplay/effectSystem/jsonEffectValidators";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { archetypeToElement } from "../lib/helpers";
 import { cardWithOwnershipValidator } from "../lib/returnValidators";
-import { jsonAbilityValidator } from "../gameplay/effectSystem/jsonEffectValidators";
 
 // ============================================================================
 // QUERIES

@@ -33,7 +33,7 @@ export async function executeDraw(
     // Partial draw - drew what was available
     return {
       success: true,
-      message: `Drew ${actualDrawCount} card(s) (only ${actualDrawCount} available)`
+      message: `Drew ${actualDrawCount} card(s) (only ${actualDrawCount} available)`,
     };
   }
 

@@ -1,12 +1,12 @@
 "use client";
 
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { handleHookError, logError } from "@/lib/errorHandling";
+import type { Notification } from "@/types";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
-import type { Notification } from "@/types";
-import { handleHookError, logError } from "@/lib/errorHandling";
 import { useAuth } from "../auth/useConvexAuthHook";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 
 interface UseNotificationsReturn {
   unreadNotifications: Notification[];

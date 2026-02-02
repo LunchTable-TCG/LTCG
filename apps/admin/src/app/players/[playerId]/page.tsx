@@ -56,7 +56,9 @@ export default function PlayerDetailPage() {
 
   // Fetch player data
   const profile = useQuery(apiAny.admin.admin.getPlayerProfile, { playerId });
-  const moderationStatus = useQuery(apiAny.admin.moderation.getPlayerModerationStatus, { playerId });
+  const moderationStatus = useQuery(apiAny.admin.moderation.getPlayerModerationStatus, {
+    playerId,
+  });
   const moderationHistory = useQuery(apiAny.admin.moderation.getModerationHistory, {
     playerId,
     limit: 20,
@@ -64,26 +66,28 @@ export default function PlayerDetailPage() {
   // Fetch player engagement data
   const engagementData = useQuery(apiAny.admin.analytics.getPlayerEngagement, {
     userId: playerId,
-    days: 30
+    days: 30,
   });
 
   // Transform engagement data to match expected format
-  const engagement = engagementData ? {
-    totals: {
-      gamesPlayed: engagementData.metrics.totalGames,
-      daysActive: engagementData.metrics.daysActive,
-      avgSessionLength: 0,
-      totalSessions: engagementData.metrics.daysActive,
-      totalSessionTime: 0,
-      totalGamesPlayed: engagementData.metrics.totalGames,
-      totalGamesWon: 0,
-      totalCardsPlayed: 0,
-      totalPacksOpened: 0,
-    },
-    metrics: engagementData.metrics,
-    currentStreak: 0,
-    dailyData: [], // TODO: Backend doesn't provide daily breakdown yet
-  } : undefined;
+  const engagement = engagementData
+    ? {
+        totals: {
+          gamesPlayed: engagementData.metrics.totalGames,
+          daysActive: engagementData.metrics.daysActive,
+          avgSessionLength: 0,
+          totalSessions: engagementData.metrics.daysActive,
+          totalSessionTime: 0,
+          totalGamesPlayed: engagementData.metrics.totalGames,
+          totalGamesWon: 0,
+          totalCardsPlayed: 0,
+          totalPacksOpened: 0,
+        },
+        metrics: engagementData.metrics,
+        currentStreak: 0,
+        dailyData: [], // TODO: Backend doesn't provide daily breakdown yet
+      }
+    : undefined;
 
   // Mutations
   const updateUsernameMutation = useConvexMutation(apiAny.core.users.adminUpdateUsername);
@@ -501,11 +505,13 @@ export default function PlayerDetailPage() {
                 </div>
               ) : (
                 <ModerationTimeline
-                  entries={moderationHistory?.map((h: any) => ({
-                    action: h.action,
-                    reason: h.reason,
-                    createdAt: h.timestamp || h.createdAt,
-                  })) ?? []}
+                  entries={
+                    moderationHistory?.map((h: any) => ({
+                      action: h.action,
+                      reason: h.reason,
+                      createdAt: h.timestamp || h.createdAt,
+                    })) ?? []
+                  }
                 />
               )}
             </div>

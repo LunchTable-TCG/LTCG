@@ -23,10 +23,7 @@ export interface ApiErrorResponse {
 /**
  * Create a successful JSON response
  */
-export function successResponse<T>(
-  data: T,
-  status: number = 200
-): Response {
+export function successResponse<T>(data: T, status = 200): Response {
   const body: ApiSuccessResponse<T> = {
     success: true,
     data,
@@ -50,7 +47,7 @@ export function successResponse<T>(
 export function errorResponse(
   code: string,
   message: string,
-  status: number = 400,
+  status = 400,
   details?: Record<string, any>
 ): Response {
   const body: ApiErrorResponse = {
@@ -93,38 +90,26 @@ export function corsPreflightResponse(): Response {
  * Parse JSON body from request
  * Returns error response if invalid
  */
-export async function parseJsonBody<T = any>(
-  request: Request
-): Promise<T | Response> {
+export async function parseJsonBody<T = any>(request: Request): Promise<T | Response> {
   try {
     const contentType = request.headers.get("Content-Type");
     if (!contentType || !contentType.includes("application/json")) {
-      return errorResponse(
-        "INVALID_CONTENT_TYPE",
-        "Content-Type must be application/json",
-        400
-      );
+      return errorResponse("INVALID_CONTENT_TYPE", "Content-Type must be application/json", 400);
     }
 
     const body = await request.json();
     return body as T;
   } catch (error) {
-    return errorResponse(
-      "INVALID_JSON",
-      "Request body must be valid JSON",
-      400,
-      { error: error instanceof Error ? error.message : String(error) }
-    );
+    return errorResponse("INVALID_JSON", "Request body must be valid JSON", 400, {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
 /**
  * Extract query parameter from URL
  */
-export function getQueryParam(
-  request: Request,
-  paramName: string
-): string | null {
+export function getQueryParam(request: Request, paramName: string): string | null {
   const url = new URL(request.url);
   return url.searchParams.get(paramName);
 }

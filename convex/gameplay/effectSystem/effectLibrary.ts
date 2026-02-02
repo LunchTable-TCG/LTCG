@@ -538,7 +538,11 @@ export const EFFECT_TEMPLATES = {
    * Draw cards with a cost
    * @example EFFECT_TEMPLATES.drawWithCost(2, COSTS.discard(1))
    */
-  drawWithCost: (count: number, cost: JsonCost, trigger: TriggerCondition = "manual"): JsonEffect => ({
+  drawWithCost: (
+    count: number,
+    cost: JsonCost,
+    trigger: TriggerCondition = "manual"
+  ): JsonEffect => ({
     type: "draw",
     trigger,
     value: count,
@@ -837,7 +841,10 @@ export const EFFECT_TEMPLATES = {
    * Special summon from hand
    * @example EFFECT_TEMPLATES.summonFromHand(CONDITIONS.levelAtMost(4))
    */
-  summonFromHand: (condition?: JsonCondition, trigger: TriggerCondition = "manual"): JsonEffect => ({
+  summonFromHand: (
+    condition?: JsonCondition,
+    trigger: TriggerCondition = "manual"
+  ): JsonEffect => ({
     type: "summon",
     trigger,
     summonFrom: "hand",
@@ -862,7 +869,10 @@ export const EFFECT_TEMPLATES = {
    * Special summon from deck
    * @example EFFECT_TEMPLATES.summonFromDeck(CONDITIONS.levelAtMost(3))
    */
-  summonFromDeck: (condition?: JsonCondition, trigger: TriggerCondition = "manual"): JsonEffect => ({
+  summonFromDeck: (
+    condition?: JsonCondition,
+    trigger: TriggerCondition = "manual"
+  ): JsonEffect => ({
     type: "summon",
     trigger,
     summonFrom: "deck",
@@ -877,7 +887,11 @@ export const EFFECT_TEMPLATES = {
    * Add card from graveyard to hand
    * @example EFFECT_TEMPLATES.toHand("graveyard", CONDITIONS.cardType("spell"))
    */
-  toHand: (from: ZoneLocation, condition?: JsonCondition, trigger: TriggerCondition = "manual"): JsonEffect => ({
+  toHand: (
+    from: ZoneLocation,
+    condition?: JsonCondition,
+    trigger: TriggerCondition = "manual"
+  ): JsonEffect => ({
     type: "toHand",
     trigger,
     targetLocation: from,
@@ -931,7 +945,11 @@ export const EFFECT_TEMPLATES = {
    * Mill cards from deck to graveyard
    * @example EFFECT_TEMPLATES.mill(3) // Mill 3 cards
    */
-  mill: (count: number, targetOwner: TargetOwner = "self", trigger: TriggerCondition = "manual"): JsonEffect => ({
+  mill: (
+    count: number,
+    targetOwner: TargetOwner = "self",
+    trigger: TriggerCondition = "manual"
+  ): JsonEffect => ({
     type: "mill",
     trigger,
     value: count,
@@ -968,7 +986,10 @@ export const EFFECT_TEMPLATES = {
    * Negate activation of a card
    * @example EFFECT_TEMPLATES.negateActivation(CONDITIONS.cardType("spell"))
    */
-  negateActivation: (condition?: JsonCondition, trigger: TriggerCondition = "manual"): JsonEffect => ({
+  negateActivation: (
+    condition?: JsonCondition,
+    trigger: TriggerCondition = "manual"
+  ): JsonEffect => ({
     type: "negate",
     trigger,
     negateType: "activation",
@@ -980,7 +1001,10 @@ export const EFFECT_TEMPLATES = {
    * Negate activation and destroy
    * @example EFFECT_TEMPLATES.negateAndDestroy(CONDITIONS.spellOrTrap())
    */
-  negateAndDestroy: (condition?: JsonCondition, trigger: TriggerCondition = "manual"): JsonEffect => ({
+  negateAndDestroy: (
+    condition?: JsonCondition,
+    trigger: TriggerCondition = "manual"
+  ): JsonEffect => ({
     type: "negate",
     trigger,
     negateType: "activation",
@@ -1151,7 +1175,9 @@ export const EFFECT_TEMPLATES = {
  */
 export function buildAbility(effects: JsonEffect[], abilityText?: string): JsonAbility {
   // Determine overall spell speed from effects
-  const spellSpeeds = effects.map((e) => e.spellSpeed).filter((s): s is 1 | 2 | 3 => s !== undefined);
+  const spellSpeeds = effects
+    .map((e) => e.spellSpeed)
+    .filter((s): s is 1 | 2 | 3 => s !== undefined);
   const maxSpellSpeed = spellSpeeds.length > 0 ? Math.max(...spellSpeeds) : undefined;
 
   return {

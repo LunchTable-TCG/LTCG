@@ -4,8 +4,8 @@
  * Exports all evaluators that filter responses and validate strategic decisions.
  */
 
-import { emotionalStateEvaluator } from './emotionalStateEvaluator';
-import { strategyEvaluator } from './strategyEvaluator';
+import { emotionalStateEvaluator } from "./emotionalStateEvaluator";
+import { strategyEvaluator } from "./strategyEvaluator";
 
 /**
  * All LTCG evaluators

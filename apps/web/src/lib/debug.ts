@@ -29,13 +29,12 @@ export interface LogContext {
 
 const IS_BROWSER = typeof window !== "undefined";
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
-const LOG_LEVEL: LogLevel = (process.env["NEXT_PUBLIC_LOG_LEVEL"] as LogLevel) ||
-  (IS_DEVELOPMENT ? "debug" : "warn");
+const LOG_LEVEL: LogLevel =
+  (process.env["NEXT_PUBLIC_LOG_LEVEL"] as LogLevel) || (IS_DEVELOPMENT ? "debug" : "warn");
 
 // Enable verbose logging via localStorage
-const VERBOSE_LOGGING = IS_BROWSER &&
-  typeof localStorage !== "undefined" &&
-  localStorage.getItem("debug") === "true";
+const VERBOSE_LOGGING =
+  IS_BROWSER && typeof localStorage !== "undefined" && localStorage.getItem("debug") === "true";
 
 const LOG_LEVELS: Record<LogLevel, number> = {
   debug: 0,
@@ -60,7 +59,11 @@ class FrontendLogger {
     return LOG_LEVELS[level] >= this.minLevel;
   }
 
-  private formatMessage(level: LogLevel, message: string, context?: LogContext): [string, LogContext | {}] {
+  private formatMessage(
+    level: LogLevel,
+    message: string,
+    context?: LogContext
+  ): [string, LogContext | {}] {
     const timestamp = new Date().toISOString();
     const emoji = {
       debug: "🔍",
@@ -149,8 +152,7 @@ export function componentLogger(componentName: string) {
     error: (message: string, error?: Error, context?: Omit<LogContext, "component">) =>
       logger.error(message, error, { ...context, component: componentName }),
 
-    render: (props?: Record<string, unknown>) =>
-      logger.render(componentName, props),
+    render: (props?: Record<string, unknown>) => logger.render(componentName, props),
   };
 }
 

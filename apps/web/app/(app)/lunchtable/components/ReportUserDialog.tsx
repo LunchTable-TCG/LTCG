@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { X, Flag, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AlertTriangle, Flag, X } from "lucide-react";
+import { useState } from "react";
 
 interface ReportUserDialogProps {
   username: string;

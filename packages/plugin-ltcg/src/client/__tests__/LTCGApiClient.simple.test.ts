@@ -3,23 +3,18 @@
  * Converted to bun:test for ElizaOS pattern compatibility
  */
 
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { LTCGApiClient } from '../LTCGApiClient';
-import {
-  AuthenticationError,
-  RateLimitError,
-  ValidationError,
-  GameError,
-} from '../errors';
-import { ApiErrorCode } from '../../types/api';
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { ApiErrorCode } from "../../types/api";
+import { LTCGApiClient } from "../LTCGApiClient";
+import { AuthenticationError, GameError, RateLimitError, ValidationError } from "../errors";
 
 // Mock fetch globally using bun:test mock
 const mockFetch = mock();
 global.fetch = mockFetch as unknown as typeof fetch;
 
-describe('LTCGApiClient - Basic Functionality', () => {
-  const TEST_API_KEY = 'ltcg_test_key_123';
-  const TEST_BASE_URL = 'https://api.example.com';
+describe("LTCGApiClient - Basic Functionality", () => {
+  const TEST_API_KEY = "ltcg_test_key_123";
+  const TEST_BASE_URL = "https://api.example.com";
 
   let client: LTCGApiClient;
 
@@ -33,68 +28,68 @@ describe('LTCGApiClient - Basic Functionality', () => {
     mockFetch.mockReset();
   });
 
-  describe('constructor', () => {
-    it('should create client with required config', () => {
+  describe("constructor", () => {
+    it("should create client with required config", () => {
       expect(client).toBeInstanceOf(LTCGApiClient);
     });
 
-    it('should throw if API key is missing', () => {
+    it("should throw if API key is missing", () => {
       expect(() => {
-        new LTCGApiClient({ apiKey: '', baseUrl: TEST_BASE_URL });
-      }).toThrow('API key is required');
+        new LTCGApiClient({ apiKey: "", baseUrl: TEST_BASE_URL });
+      }).toThrow("API key is required");
     });
 
-    it('should throw if base URL is missing', () => {
+    it("should throw if base URL is missing", () => {
       expect(() => {
-        new LTCGApiClient({ apiKey: TEST_API_KEY, baseUrl: '' });
-      }).toThrow('Base URL is required');
+        new LTCGApiClient({ apiKey: TEST_API_KEY, baseUrl: "" });
+      }).toThrow("Base URL is required");
     });
   });
 
-  describe('successful requests', () => {
-    it('should make authenticated request with Authorization header', async () => {
+  describe("successful requests", () => {
+    it("should make authenticated request with Authorization header", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { agentId: 'test', name: 'TestAgent' },
+          data: { agentId: "test", name: "TestAgent" },
           timestamp: Date.now(),
         }),
       });
 
       const result = await client.getAgentProfile();
 
-      expect(result).toEqual({ agentId: 'test', name: 'TestAgent' });
+      expect(result).toEqual({ agentId: "test", name: "TestAgent" });
       expect(mockFetch).toHaveBeenCalledWith(
         `${TEST_BASE_URL}/api/agents/me`,
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: `Bearer ${TEST_API_KEY}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           }),
         })
       );
     });
 
-    it('should make unauthenticated request without Authorization header', async () => {
+    it("should make unauthenticated request without Authorization header", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { userId: 'u1', agentId: 'a1', apiKey: 'key', keyPrefix: 'ltcg_' },
+          data: { userId: "u1", agentId: "a1", apiKey: "key", keyPrefix: "ltcg_" },
           timestamp: Date.now(),
         }),
       });
 
-      await client.registerAgent('TestAgent');
+      await client.registerAgent("TestAgent");
 
       const callHeaders = mockFetch.mock.calls[0][1].headers;
       expect(callHeaders.Authorization).toBeUndefined();
     });
   });
 
-  describe('error handling', () => {
-    it('should throw AuthenticationError on 401', async () => {
+  describe("error handling", () => {
+    it("should throw AuthenticationError on 401", async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 401,
@@ -102,7 +97,7 @@ describe('LTCGApiClient - Basic Functionality', () => {
           success: false,
           error: {
             code: ApiErrorCode.UNAUTHORIZED,
-            message: 'Invalid API key',
+            message: "Invalid API key",
           },
           timestamp: Date.now(),
         }),
@@ -111,7 +106,7 @@ describe('LTCGApiClient - Basic Functionality', () => {
       await expect(client.getAgentProfile()).rejects.toThrow(AuthenticationError);
     });
 
-    it('should throw RateLimitError on 429', async () => {
+    it("should throw RateLimitError on 429", async () => {
       // Mock for all retry attempts
       mockFetch.mockResolvedValue({
         ok: false,
@@ -120,7 +115,7 @@ describe('LTCGApiClient - Basic Functionality', () => {
           success: false,
           error: {
             code: ApiErrorCode.RATE_LIMIT_EXCEEDED,
-            message: 'Rate limit exceeded',
+            message: "Rate limit exceeded",
             details: {
               retryAfter: 30,
               remaining: 0,
@@ -139,7 +134,7 @@ describe('LTCGApiClient - Basic Functionality', () => {
       expect(error.limit).toBe(60);
     });
 
-    it('should throw ValidationError on 400', async () => {
+    it("should throw ValidationError on 400", async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 400,
@@ -147,22 +142,22 @@ describe('LTCGApiClient - Basic Functionality', () => {
           success: false,
           error: {
             code: ApiErrorCode.VALIDATION_ERROR,
-            message: 'Missing required fields',
+            message: "Missing required fields",
             details: {
-              missingFields: ['name'],
+              missingFields: ["name"],
             },
           },
           timestamp: Date.now(),
         }),
       });
 
-      const error = await client.registerAgent('').catch((e) => e);
+      const error = await client.registerAgent("").catch((e) => e);
 
       expect(error).toBeInstanceOf(ValidationError);
-      expect(error.invalidFields).toEqual(['name']);
+      expect(error.invalidFields).toEqual(["name"]);
     });
 
-    it('should throw GameError for game-specific errors', async () => {
+    it("should throw GameError for game-specific errors", async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 400,
@@ -170,10 +165,10 @@ describe('LTCGApiClient - Basic Functionality', () => {
           success: false,
           error: {
             code: ApiErrorCode.NOT_YOUR_TURN,
-            message: 'Not your turn',
+            message: "Not your turn",
             details: {
-              gameId: 'game123',
-              phase: 'battle',
+              gameId: "game123",
+              phase: "battle",
             },
           },
           timestamp: Date.now(),
@@ -181,47 +176,47 @@ describe('LTCGApiClient - Basic Functionality', () => {
       });
 
       const error = await client
-        .summon({ gameId: 'game123', handIndex: 0, position: 'attack' })
+        .summon({ gameId: "game123", handIndex: 0, position: "attack" })
         .catch((e) => e);
 
       expect(error).toBeInstanceOf(GameError);
-      expect(error.gameId).toBe('game123');
+      expect(error.gameId).toBe("game123");
     });
   });
 
-  describe('API endpoints', () => {
-    it('should call registerAgent endpoint', async () => {
+  describe("API endpoints", () => {
+    it("should call registerAgent endpoint", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { userId: 'u1', agentId: 'a1', apiKey: 'key', keyPrefix: 'ltcg' },
+          data: { userId: "u1", agentId: "a1", apiKey: "key", keyPrefix: "ltcg" },
           timestamp: Date.now(),
         }),
       });
 
-      await client.registerAgent('Agent1', 'starter_warrior');
+      await client.registerAgent("Agent1", "starter_warrior");
 
       expect(mockFetch).toHaveBeenCalledWith(
         `${TEST_BASE_URL}/api/agents/register`,
         expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ name: 'Agent1', starterDeckCode: 'starter_warrior' }),
+          method: "POST",
+          body: JSON.stringify({ name: "Agent1", starterDeckCode: "starter_warrior" }),
         })
       );
     });
 
-    it('should call getGameState with query parameter', async () => {
+    it("should call getGameState with query parameter", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { gameId: 'game123', status: 'active' },
+          data: { gameId: "game123", status: "active" },
           timestamp: Date.now(),
         }),
       });
 
-      await client.getGameState('game123');
+      await client.getGameState("game123");
 
       expect(mockFetch).toHaveBeenCalledWith(
         `${TEST_BASE_URL}/api/agents/games/state?gameId=game123`,
@@ -229,18 +224,18 @@ describe('LTCGApiClient - Basic Functionality', () => {
       );
     });
 
-    it('should call attack endpoint', async () => {
+    it("should call attack endpoint", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { success: true, message: 'Attack successful' },
+          data: { success: true, message: "Attack successful" },
           timestamp: Date.now(),
         }),
       });
 
       await client.attack({
-        gameId: 'game123',
+        gameId: "game123",
         attackerBoardIndex: 0,
         targetBoardIndex: 1,
       });
@@ -250,7 +245,7 @@ describe('LTCGApiClient - Basic Functionality', () => {
       expect(body.targetBoardIndex).toBe(1);
     });
 
-    it('should call getCards with filters', async () => {
+    it("should call getCards with filters", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -260,7 +255,7 @@ describe('LTCGApiClient - Basic Functionality', () => {
         }),
       });
 
-      await client.getCards({ type: 'monster', archetype: 'warrior' });
+      await client.getCards({ type: "monster", archetype: "warrior" });
 
       expect(mockFetch).toHaveBeenCalledWith(
         `${TEST_BASE_URL}/api/agents/cards?type=monster&archetype=warrior`,
@@ -268,21 +263,21 @@ describe('LTCGApiClient - Basic Functionality', () => {
       );
     });
 
-    it('should call enterMatchmaking endpoint', async () => {
+    it("should call enterMatchmaking endpoint", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { lobbyId: 'lobby123', status: 'waiting' },
+          data: { lobbyId: "lobby123", status: "waiting" },
           timestamp: Date.now(),
         }),
       });
 
-      await client.enterMatchmaking({ deckId: 'deck123', mode: 'ranked' });
+      await client.enterMatchmaking({ deckId: "deck123", mode: "ranked" });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.deckId).toBe('deck123');
-      expect(body.mode).toBe('ranked');
+      expect(body.deckId).toBe("deck123");
+      expect(body.mode).toBe("ranked");
     });
   });
 });

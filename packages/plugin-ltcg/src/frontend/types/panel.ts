@@ -17,7 +17,7 @@ export interface AgentStatus {
 
 export interface MatchmakingStatus {
   enabled: boolean;
-  status: 'idle' | 'scanning' | 'joining' | 'in_game';
+  status: "idle" | "scanning" | "joining" | "in_game";
   lobbiesScanned: number;
   recentJoins: MatchmakingEvent[];
   stats: {
@@ -53,12 +53,12 @@ export interface GameSnapshot {
   hand: {
     count: number;
     cards: Array<{
-      type: 'monster' | 'spell' | 'trap';
+      type: "monster" | "spell" | "trap";
       name: string;
     }>;
   };
-  status: 'waiting' | 'active' | 'completed';
-  winner?: 'agent' | 'opponent';
+  status: "waiting" | "active" | "completed";
+  winner?: "agent" | "opponent";
 }
 
 export interface Decision {
@@ -69,7 +69,7 @@ export interface Decision {
   action: string;
   reasoning: string;
   parameters: Record<string, unknown>;
-  result: 'success' | 'failed' | 'pending';
+  result: "success" | "failed" | "pending";
   executionTimeMs: number;
   confidence?: number;
 }
@@ -90,7 +90,7 @@ export interface AgentMetrics {
   recentGames: Array<{
     gameId: string;
     timestamp: number;
-    result: 'win' | 'loss';
+    result: "win" | "loss";
     duration: number;
     turns: number;
   }>;

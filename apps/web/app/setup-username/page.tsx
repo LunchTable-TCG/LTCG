@@ -1,11 +1,11 @@
 "use client";
 
+import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
 import { usePrivy } from "@privy-io/react-auth";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
 
 export default function SetupUsernamePage() {
   const { ready, authenticated, logout } = usePrivy();
@@ -87,9 +87,7 @@ export default function SetupUsernamePage() {
             One Last Step
           </motion.div>
           <h1 className="text-3xl sm:text-4xl font-black mb-3">
-            <span className="text-[#e8e0d5] uppercase tracking-tighter">
-              Choose Your Name
-            </span>
+            <span className="text-[#e8e0d5] uppercase tracking-tighter">Choose Your Name</span>
           </h1>
           <p className="text-[#a89f94] text-sm font-medium italic">
             How shall the Grand Archive know you?

@@ -1,9 +1,9 @@
 "use client";
 
+import { handleHookError } from "@/lib/errorHandling";
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
-import { handleHookError } from "@/lib/errorHandling";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 /**

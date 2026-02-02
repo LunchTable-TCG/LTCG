@@ -4,8 +4,8 @@
  * Polls every 5 seconds to keep game state up-to-date
  */
 
-import { useQuery } from '@tanstack/react-query';
-import type { GameSnapshot } from '../types/panel';
+import { useQuery } from "@tanstack/react-query";
+import type { GameSnapshot } from "../types/panel";
 
 /**
  * Fetch game state from the API
@@ -27,7 +27,7 @@ async function fetchGameState(agentId: string, gameId: string): Promise<GameSnap
  */
 export function useGameState(agentId: string, gameId: string | null) {
   return useQuery({
-    queryKey: ['ltcg', 'game', agentId, gameId],
+    queryKey: ["ltcg", "game", agentId, gameId],
     queryFn: () => fetchGameState(agentId, gameId!),
     refetchInterval: 5000, // Poll every 5 seconds
     staleTime: 4000, // Consider data stale after 4 seconds

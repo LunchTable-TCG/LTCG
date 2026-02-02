@@ -4,8 +4,8 @@
  * Catches React errors in panel components and displays a fallback UI
  */
 
-import React from 'react';
-import { ErrorState } from './LoadingState';
+import React from "react";
+import { ErrorState } from "./LoadingState";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -31,7 +31,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Panel Error Boundary caught an error:', error, errorInfo);
+    console.error("Panel Error Boundary caught an error:", error, errorInfo);
   }
 
   handleReset = () => {
@@ -46,7 +46,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
       return (
         <ErrorState
-          message={this.state.error?.message || 'An unexpected error occurred'}
+          message={this.state.error?.message || "An unexpected error occurred"}
           onRetry={this.handleReset}
         />
       );

@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { cn } from "@/lib/utils";
 import { sanitizeText, sanitizeURL } from "@/lib/sanitize";
+import { cn } from "@/lib/utils";
 import { useMutation } from "convex/react";
 import {
   AlertTriangle,

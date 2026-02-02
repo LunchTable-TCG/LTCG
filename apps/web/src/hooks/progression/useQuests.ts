@@ -1,11 +1,11 @@
 "use client";
 
+import { handleHookError } from "@/lib/errorHandling";
+import type { Quest, QuestRewardResult } from "@/types";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
-import type { Quest, QuestRewardResult } from "@/types";
-import { handleHookError } from "@/lib/errorHandling";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UseQuestsReturn {
