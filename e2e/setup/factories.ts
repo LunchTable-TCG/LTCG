@@ -58,11 +58,15 @@ export class TestDataFactory {
    * @returns The created deck ID
    */
   async createDeckForUser(userId: Id<"users">, cardIds: Id<"cardDefinitions">[]) {
-    return await this.client.mutation(internal.testing.seedTestDeck.seedTestDeck, {
-      userId,
-      name: `Test Deck ${Date.now()}`,
-      cardIds,
-    });
+    // Type assertion needed for internal function references in test context
+    return await this.client.mutation(
+      internal.testing.seedTestDeck.seedTestDeck as any,
+      {
+        userId,
+        name: `Test Deck ${Date.now()}`,
+        cardIds,
+      }
+    ) as Id<"userDecks">;
   }
 
   /**
@@ -74,7 +78,11 @@ export class TestDataFactory {
   async cleanup() {
     for (const userId of this.createdUsers) {
       try {
-        await this.client.mutation(internal.testing.cleanup.cleanupTestUser, { userId });
+        // Type assertion needed for internal function references in test context
+        await this.client.mutation(
+          internal.testing.cleanup.cleanupTestUser as any,
+          { userId }
+        );
       } catch (e) {
         console.warn(`Failed to cleanup user ${userId}:`, e);
       }
