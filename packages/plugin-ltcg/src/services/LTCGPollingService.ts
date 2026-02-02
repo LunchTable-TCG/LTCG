@@ -42,6 +42,33 @@ interface GameStateSnapshot {
   lastEventId?: string;
 }
 
+// Circuit breaker states
+type CircuitState = 'closed' | 'open' | 'half-open';
+
+interface CircuitBreaker {
+  state: CircuitState;
+  failureCount: number;
+  lastFailureTime: number;
+  successCount: number;
+}
+
+// Error recovery configuration
+interface ErrorRecoveryConfig {
+  maxRetries: number;
+  baseDelayMs: number;
+  maxDelayMs: number;
+  circuitBreakerThreshold: number;
+  circuitBreakerResetMs: number;
+}
+
+const DEFAULT_ERROR_RECOVERY: ErrorRecoveryConfig = {
+  maxRetries: 3,
+  baseDelayMs: 1000,
+  maxDelayMs: 30000,
+  circuitBreakerThreshold: 5,
+  circuitBreakerResetMs: 60000,
+};
+
 export class LTCGPollingService extends Service {
   static serviceType = 'ltcg-polling';
 
@@ -58,6 +85,11 @@ export class LTCGPollingService extends Service {
   private autoMatchmaking: boolean;
   private debug: boolean;
   private isPolling = false;
+
+  // Error recovery state
+  private errorRecovery: ErrorRecoveryConfig = DEFAULT_ERROR_RECOVERY;
+  private circuitBreakers: Map<string, CircuitBreaker> = new Map();
+  private retryDelays: Map<string, number> = new Map();
 
   // Matchmaking event tracking
   private matchmakingEvents: MatchmakingEvent[] = [];
@@ -393,22 +425,26 @@ export class LTCGPollingService extends Service {
       return;
     }
 
-    try {
-      const pendingGames = await this.client.getPendingTurns();
+    const pendingGames = await this.executeWithRecovery(
+      'check_pending_games',
+      async () => this.client!.getPendingTurns()
+    );
 
-      logger.debug({ count: pendingGames.length }, 'Checked for pending games');
+    if (!pendingGames) {
+      // Failed - error recovery handles logging and backoff
+      return;
+    }
 
-      for (const game of pendingGames) {
-        // Only start polling if we're not already polling this game
-        if (this.currentGameId !== game.gameId) {
-          logger.info({ gameId: game.gameId, turnNumber: game.turnNumber }, 'Auto-detected game requiring turn');
-          this.startPollingGame(game.gameId);
-          // Only poll one game at a time
-          break;
-        }
+    logger.debug({ count: pendingGames.length }, 'Checked for pending games');
+
+    for (const game of pendingGames) {
+      // Only start polling if we're not already polling this game
+      if (this.currentGameId !== game.gameId) {
+        logger.info({ gameId: game.gameId, turnNumber: game.turnNumber }, 'Auto-detected game requiring turn');
+        this.startPollingGame(game.gameId);
+        // Only poll one game at a time
+        break;
       }
-    } catch (error) {
-      logger.warn({ error }, 'Failed to check pending games');
     }
   }
 
@@ -427,58 +463,68 @@ export class LTCGPollingService extends Service {
       return;
     }
 
-    try {
-      // Get available lobbies (all modes - casual and ranked)
-      const lobbies = await this.client.getLobbies('all');
+    // Get available lobbies with error recovery
+    const lobbies = await this.executeWithRecovery(
+      'check_lobbies',
+      async () => this.client!.getLobbies('all')
+    );
 
-      // Update last scan timestamp
-      this.matchmakingStats.lastScanAt = Date.now();
+    if (!lobbies) {
+      // Failed - error recovery handles logging and backoff
+      return;
+    }
 
-      logger.debug({ count: lobbies.length }, 'Checked for available lobbies');
+    // Update last scan timestamp
+    this.matchmakingStats.lastScanAt = Date.now();
 
-      if (lobbies.length > 0) {
-        // Join the first available lobby
-        const lobby = lobbies[0];
-        logger.info({ lobbyId: lobby.lobbyId, host: lobby.hostPlayerName }, '🎯 Auto-joining available lobby');
+    logger.debug({ count: lobbies.length }, 'Checked for available lobbies');
 
-        try {
-          // Get deck ID for joining
-          const deckId = await this.getDeckId();
-          if (!deckId) {
-            logger.warn('No deck available for auto-matchmaking');
-            return;
-          }
+    if (lobbies.length > 0) {
+      // Join the first available lobby
+      const lobby = lobbies[0];
+      logger.info({ lobbyId: lobby.lobbyId, host: lobby.hostPlayerName }, '🎯 Auto-joining available lobby');
 
-          const joinResult = await this.client.joinLobby({ lobbyId: lobby.lobbyId, deckId });
-          logger.info({
-            gameId: joinResult.gameId,
-            opponent: lobby.hostPlayerName
-          }, '✅ Successfully joined lobby - game starting!');
-
-          // Record the join event
-          this.matchmakingEvents.push({
-            timestamp: Date.now(),
-            lobbyId: lobby.lobbyId,
-            hostUsername: lobby.hostPlayerName,
-            gameId: joinResult.gameId,
-          });
-
-          // Update stats
-          this.matchmakingStats.lobbiesJoined++;
-          this.matchmakingStats.gamesStarted++;
-
-          // Trim event history
-          if (this.matchmakingEvents.length > this.maxEventHistory) {
-            this.matchmakingEvents.shift();
-          }
-
-          // The discovery loop will detect when it's our turn
-        } catch (joinError) {
-          logger.warn({ error: joinError, lobbyId: lobby.lobbyId }, 'Failed to join lobby');
-        }
+      // Get deck ID for joining
+      const deckId = await this.getDeckId();
+      if (!deckId) {
+        logger.warn('No deck available for auto-matchmaking');
+        return;
       }
-    } catch (error) {
-      logger.warn({ error }, 'Failed to check available lobbies');
+
+      // Join with error recovery
+      const joinResult = await this.executeWithRecovery(
+        `join_lobby_${lobby.lobbyId}`,
+        async () => this.client!.joinLobby({ lobbyId: lobby.lobbyId, deckId })
+      );
+
+      if (!joinResult) {
+        logger.warn({ lobbyId: lobby.lobbyId }, 'Failed to join lobby');
+        return;
+      }
+
+      logger.info({
+        gameId: joinResult.gameId,
+        opponent: lobby.hostPlayerName
+      }, '✅ Successfully joined lobby - game starting!');
+
+      // Record the join event
+      this.matchmakingEvents.push({
+        timestamp: Date.now(),
+        lobbyId: lobby.lobbyId,
+        hostUsername: lobby.hostPlayerName,
+        gameId: joinResult.gameId,
+      });
+
+      // Update stats
+      this.matchmakingStats.lobbiesJoined++;
+      this.matchmakingStats.gamesStarted++;
+
+      // Trim event history
+      if (this.matchmakingEvents.length > this.maxEventHistory) {
+        this.matchmakingEvents.shift();
+      }
+
+      // The discovery loop will detect when it's our turn
     }
   }
 
@@ -490,28 +536,35 @@ export class LTCGPollingService extends Service {
       return;
     }
 
-    try {
-      const gameState = await this.client.getGameState(this.currentGameId);
-      const newSnapshot = this.createSnapshot(gameState);
+    const gameId = this.currentGameId;
+    const gameState = await this.executeWithRecovery(
+      `poll_game_${gameId}`,
+      async () => this.client!.getGameState(gameId),
+      { silent: true }
+    );
 
-      // Detect changes and emit events
-      const events = this.detectChanges(this.lastSnapshot, newSnapshot, gameState);
+    if (!gameState) {
+      // Failed to get game state - error recovery handles logging
+      return;
+    }
 
-      logger.debug({ gameId: this.currentGameId, eventCount: events.length }, 'Polled game state');
+    const newSnapshot = this.createSnapshot(gameState);
 
-      for (const event of events) {
-        await this.emitEvent(event, gameState);
-      }
+    // Detect changes and emit events
+    const events = this.detectChanges(this.lastSnapshot, newSnapshot, gameState);
 
-      this.lastSnapshot = newSnapshot;
+    logger.debug({ gameId: this.currentGameId, eventCount: events.length }, 'Polled game state');
 
-      // Check if game ended
-      if (gameState.status === 'completed') {
-        logger.info({ gameId: this.currentGameId, status: gameState.status }, 'Game ended, stopping polling');
-        this.stopPolling();
-      }
-    } catch (error) {
-      logger.warn({ error, gameId: this.currentGameId }, 'Poll failed');
+    for (const event of events) {
+      await this.emitEvent(event, gameState);
+    }
+
+    this.lastSnapshot = newSnapshot;
+
+    // Check if game ended
+    if (gameState.status === 'completed') {
+      logger.info({ gameId: this.currentGameId, status: gameState.status }, 'Game ended, stopping polling');
+      this.stopPolling();
     }
   }
 
@@ -727,5 +780,165 @@ export class LTCGPollingService extends Service {
     } catch (error) {
       logger.error({ error, eventType: event.type }, 'Error triggering orchestrator');
     }
+  }
+
+  // ============================================================================
+  // Error Recovery Methods
+  // ============================================================================
+
+  /**
+   * Get or create a circuit breaker for an operation
+   */
+  private getCircuitBreaker(operationName: string): CircuitBreaker {
+    if (!this.circuitBreakers.has(operationName)) {
+      this.circuitBreakers.set(operationName, {
+        state: 'closed',
+        failureCount: 0,
+        lastFailureTime: 0,
+        successCount: 0,
+      });
+    }
+    return this.circuitBreakers.get(operationName)!;
+  }
+
+  /**
+   * Check if an operation should be allowed by the circuit breaker
+   */
+  private isCircuitOpen(operationName: string): boolean {
+    const breaker = this.getCircuitBreaker(operationName);
+
+    if (breaker.state === 'open') {
+      // Check if enough time has passed to try again (half-open)
+      const timeSinceFailure = Date.now() - breaker.lastFailureTime;
+      if (timeSinceFailure >= this.errorRecovery.circuitBreakerResetMs) {
+        breaker.state = 'half-open';
+        breaker.successCount = 0;
+        logger.info({ operationName }, 'Circuit breaker moving to half-open state');
+        return false;
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Record a successful operation for the circuit breaker
+   */
+  private recordSuccess(operationName: string): void {
+    const breaker = this.getCircuitBreaker(operationName);
+
+    if (breaker.state === 'half-open') {
+      breaker.successCount++;
+      // After 3 successful calls, close the circuit
+      if (breaker.successCount >= 3) {
+        breaker.state = 'closed';
+        breaker.failureCount = 0;
+        logger.info({ operationName }, 'Circuit breaker closed after successful recovery');
+      }
+    } else {
+      breaker.failureCount = 0;
+    }
+
+    // Reset retry delay on success
+    this.retryDelays.delete(operationName);
+  }
+
+  /**
+   * Record a failed operation for the circuit breaker
+   */
+  private recordFailure(operationName: string): void {
+    const breaker = this.getCircuitBreaker(operationName);
+    breaker.failureCount++;
+    breaker.lastFailureTime = Date.now();
+
+    if (breaker.state === 'half-open') {
+      // Failed during half-open, go back to open
+      breaker.state = 'open';
+      logger.warn({ operationName, failureCount: breaker.failureCount }, 'Circuit breaker re-opened after half-open failure');
+    } else if (breaker.failureCount >= this.errorRecovery.circuitBreakerThreshold) {
+      breaker.state = 'open';
+      logger.warn({ operationName, failureCount: breaker.failureCount }, 'Circuit breaker opened due to repeated failures');
+    }
+  }
+
+  /**
+   * Get the current retry delay for an operation (exponential backoff)
+   */
+  private getRetryDelay(operationName: string): number {
+    const currentDelay = this.retryDelays.get(operationName) ?? this.errorRecovery.baseDelayMs;
+    // Exponential backoff with jitter
+    const nextDelay = Math.min(
+      currentDelay * 2 + Math.random() * 500,
+      this.errorRecovery.maxDelayMs
+    );
+    this.retryDelays.set(operationName, nextDelay);
+    return currentDelay;
+  }
+
+  /**
+   * Execute an operation with error recovery (circuit breaker + exponential backoff)
+   */
+  private async executeWithRecovery<T>(
+    operationName: string,
+    operation: () => Promise<T>,
+    options?: { silent?: boolean }
+  ): Promise<T | null> {
+    // Check circuit breaker
+    if (this.isCircuitOpen(operationName)) {
+      if (!options?.silent) {
+        logger.debug({ operationName }, 'Circuit breaker open, skipping operation');
+      }
+      return null;
+    }
+
+    try {
+      const result = await operation();
+      this.recordSuccess(operationName);
+      return result;
+    } catch (error) {
+      this.recordFailure(operationName);
+      const delay = this.getRetryDelay(operationName);
+
+      if (!options?.silent) {
+        logger.warn(
+          { error, operationName, nextRetryDelayMs: delay },
+          'Operation failed, will retry with backoff'
+        );
+      }
+
+      return null;
+    }
+  }
+
+  /**
+   * Get health status of the service
+   */
+  getHealthStatus(): {
+    isHealthy: boolean;
+    circuitBreakers: Record<string, { state: CircuitState; failureCount: number }>;
+    isPolling: boolean;
+    currentGameId: string | null;
+  } {
+    const breakers: Record<string, { state: CircuitState; failureCount: number }> = {};
+
+    for (const [name, breaker] of this.circuitBreakers) {
+      breakers[name] = {
+        state: breaker.state,
+        failureCount: breaker.failureCount,
+      };
+    }
+
+    // Service is healthy if no circuits are open
+    const hasOpenCircuit = Array.from(this.circuitBreakers.values()).some(
+      (b) => b.state === 'open'
+    );
+
+    return {
+      isHealthy: !hasOpenCircuit,
+      circuitBreakers: breakers,
+      isPolling: this.isPolling,
+      currentGameId: this.currentGameId,
+    };
   }
 }
