@@ -380,24 +380,6 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
               </p>
               <AgentManagement />
             </div>
-
-            {/* Profile Settings */}
-            <div className="p-8 rounded-2xl tcg-chat-leather relative overflow-hidden shadow-2xl">
-              <div className="ornament-corner ornament-corner-tl opacity-50" />
-              <h3 className="text-xl font-black mb-4 flex items-center gap-3 text-[#e8e0d5] uppercase tracking-tighter relative z-10">
-                <Shield className="w-6 h-6 text-[#d4af37]" />
-                Archivist Settings
-              </h3>
-              <p className="text-[#a89f94] text-xs font-medium italic mb-6 relative z-10">
-                Modify your presence within the Grand Archive.
-              </p>
-              <Button
-                variant="outline"
-                className="border-[#3d2b1f] bg-black/40 text-[#a89f94] hover:text-[#d4af37] font-black uppercase tracking-widest text-xs h-11 px-8 relative z-10"
-              >
-                Edit Inscriptions
-              </Button>
-            </div>
           </div>
         )}
       </div>

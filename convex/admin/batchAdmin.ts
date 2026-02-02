@@ -17,7 +17,7 @@ import {
   getRandomCard,
   weightedRandomRarity,
 } from "../lib/helpers";
-import { auditLogAction } from "../lib/internalHelpers";
+import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
 import type { PackConfig, Rarity } from "../lib/types";
 
@@ -59,26 +59,6 @@ async function openPackForAdmin(
   }
 
   return cards;
-}
-
-/**
- * Local helper to schedule audit logging without triggering TS2589
- */
-async function scheduleAuditLog(
-  ctx: MutationCtx,
-  params: {
-    adminId: Id<"users">;
-    action: string;
-    targetUserId?: Id<"users">;
-    targetEmail?: string;
-    // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata structure for audit logging
-    metadata?: any;
-    success: boolean;
-    errorMessage?: string;
-    ipAddress?: string;
-  }
-) {
-  await ctx.scheduler.runAfter(0, auditLogAction, params);
 }
 
 // =============================================================================

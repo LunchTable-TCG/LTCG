@@ -6,34 +6,13 @@
  */
 
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
-import type { MutationCtx } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { auditLogAction } from "../lib/internalHelpers";
+import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
-
-/**
- * Local helper to schedule audit logging without triggering TS2589
- * Type boundary prevents "Type instantiation is excessively deep" errors
- */
-async function scheduleAuditLog(
-  ctx: MutationCtx,
-  params: {
-    adminId: Id<"users">;
-    action: string;
-    targetUserId?: Id<"users">;
-    targetEmail?: string;
-    // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata structure for audit logging
-    metadata?: any;
-    success: boolean;
-    errorMessage?: string;
-    ipAddress?: string;
-  }
-) {
-  await ctx.scheduler.runAfter(0, auditLogAction, params);
-}
 
 /**
  * Delete a user by email (admin operation)
@@ -554,6 +533,83 @@ export const getAdminAuditLogs = query({
         offset,
         hasMore: offset + limit < totalCount,
       },
+    };
+  },
+});
+
+/**
+ * Seed quests and achievements definitions
+ *
+ * Populates the database with quest and achievement definitions.
+ * Safe to run multiple times - won't create duplicates.
+ * Requires admin role.
+ */
+export const seedProgressionSystem = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
+
+    // Schedule both seed functions
+    await ctx.scheduler.runAfter(0, internal.progression.quests.seedQuests);
+    await ctx.scheduler.runAfter(0, internal.progression.achievements.seedAchievements);
+
+    // Log the action
+    await scheduleAuditLog(ctx, {
+      adminId: userId,
+      action: "seed_progression_system",
+      metadata: {},
+      success: true,
+    });
+
+    return {
+      success: true,
+      message: "Progression system seeding scheduled. Quests and achievements will be populated shortly.",
+    };
+  },
+});
+
+/**
+ * Dev-only: Seed quests and achievements without admin role
+ *
+ * For initial setup only. Populates quest and achievement definitions.
+ * Safe to run multiple times - won't create duplicates.
+ * Only requires authentication (no admin role).
+ */
+export const devSeedProgressionSystem = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Just require authentication, no admin role needed
+    const { userId } = await requireAuthMutation(ctx);
+
+    // Check if already seeded (has any quest definitions)
+    const existingQuests = await ctx.db.query("questDefinitions").first();
+    const existingAchievements = await ctx.db.query("achievementDefinitions").first();
+
+    if (existingQuests && existingAchievements) {
+      return {
+        success: true,
+        message: "Progression system already seeded.",
+        alreadySeeded: true,
+      };
+    }
+
+    // Schedule both seed functions
+    await ctx.scheduler.runAfter(0, internal.progression.quests.seedQuests);
+    await ctx.scheduler.runAfter(0, internal.progression.achievements.seedAchievements);
+
+    // Log the action
+    await scheduleAuditLog(ctx, {
+      adminId: userId,
+      action: "dev_seed_progression_system",
+      metadata: {},
+      success: true,
+    });
+
+    return {
+      success: true,
+      message: "Progression system seeding scheduled. Quests and achievements will be populated shortly.",
+      alreadySeeded: false,
     };
   },
 });

@@ -6,12 +6,10 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
-import type { MutationCtx } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { auditLogAction } from "../lib/internalHelpers";
+import { scheduleAuditLog } from "../lib/internalHelpers";
 import {
   type UserRole,
   canManageRole,
@@ -19,27 +17,6 @@ import {
   requireRole,
   roleHierarchy,
 } from "../lib/roles";
-
-/**
- * Local helper to schedule audit logging without triggering TS2589
- * Type boundary prevents "Type instantiation is excessively deep" errors
- */
-async function scheduleAuditLog(
-  ctx: MutationCtx,
-  params: {
-    adminId: Id<"users">;
-    action: string;
-    targetUserId?: Id<"users">;
-    targetEmail?: string;
-    // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata structure for audit logging
-    metadata?: any;
-    success: boolean;
-    errorMessage?: string;
-    ipAddress?: string;
-  }
-) {
-  await ctx.scheduler.runAfter(0, auditLogAction, params);
-}
 
 /**
  * Grant a role to a user

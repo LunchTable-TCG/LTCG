@@ -10,6 +10,8 @@
  */
 
 import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 
 /**
  * Internal API reference cast to any to break deep type instantiation.
@@ -31,3 +33,40 @@ export const internalAny: any = internal;
  * Use this for scheduling audit log writes without TS2589 errors.
  */
 export const auditLogAction = internalAny.lib.adminAudit.logAdminAction;
+
+/**
+ * Audit log parameters type for admin actions
+ */
+export interface AuditLogParams {
+  adminId: Id<"users">;
+  action: string;
+  targetUserId?: Id<"users">;
+  targetEmail?: string;
+  // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata structure for audit logging
+  metadata?: any;
+  success: boolean;
+  errorMessage?: string;
+  ipAddress?: string;
+}
+
+/**
+ * Schedule an audit log entry for admin actions.
+ *
+ * This is the single source of truth for audit logging across all admin modules.
+ * Use this instead of defining local helpers to avoid code duplication.
+ *
+ * @example
+ * ```typescript
+ * import { scheduleAuditLog } from "../lib/internalHelpers";
+ *
+ * await scheduleAuditLog(ctx, {
+ *   adminId: userId,
+ *   action: "delete_user",
+ *   targetUserId: targetId,
+ *   success: true,
+ * });
+ * ```
+ */
+export async function scheduleAuditLog(ctx: MutationCtx, params: AuditLogParams) {
+  await ctx.scheduler.runAfter(0, auditLogAction, params);
+}

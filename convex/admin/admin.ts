@@ -6,14 +6,14 @@
  */
 
 import { v } from "convex/values";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
-import type { MutationCtx, QueryCtx } from "../_generated/server";
+import type { QueryCtx } from "../_generated/server";
 import { rankedLeaderboardHumans } from "../infrastructure/aggregates";
 import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { auditLogAction } from "../lib/internalHelpers";
+import { scheduleAuditLog } from "../lib/internalHelpers";
 import {
   type UserRole,
   canManageRole,
@@ -21,26 +21,6 @@ import {
   requireRole,
   roleHierarchy,
 } from "../lib/roles";
-
-/**
- * Local helper to schedule audit logging without triggering TS2589
- */
-async function scheduleAuditLog(
-  ctx: MutationCtx,
-  params: {
-    adminId: Id<"users">;
-    action: string;
-    targetUserId?: Id<"users">;
-    targetEmail?: string;
-    // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata structure for audit logging
-    metadata?: any;
-    success: boolean;
-    errorMessage?: string;
-    ipAddress?: string;
-  }
-) {
-  await ctx.scheduler.runAfter(0, auditLogAction, params);
-}
 
 // =============================================================================
 // System Stats & Dashboard
