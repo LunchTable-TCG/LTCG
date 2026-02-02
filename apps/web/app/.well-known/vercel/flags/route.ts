@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { type ApiData } from "flags";
-import { FLAG_DEFAULTS, type AppFeatureFlags } from "@/lib/flags";
 
 /**
  * Vercel Flags Explorer Endpoint
