@@ -307,7 +307,7 @@ class GameSubscriptionManager {
    */
   cleanup() {
     console.log(`Cleaning up ${this.gameSubscriptions.size} game subscriptions`);
-    for (const [gameId, unsubscribe] of this.gameSubscriptions.entries()) {
+    for (const [_gameId, unsubscribe] of this.gameSubscriptions.entries()) {
       unsubscribe();
     }
     this.gameSubscriptions.clear();

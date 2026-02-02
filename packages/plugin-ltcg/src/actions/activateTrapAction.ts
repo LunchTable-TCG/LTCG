@@ -30,7 +30,7 @@ export const activateTrapAction: Action = {
     try {
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for activate trap validation");
@@ -71,7 +71,7 @@ export const activateTrapAction: Action = {
 
       // Get game state and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
       const boardAnalysis = boardAnalysisResult.data;
@@ -129,8 +129,8 @@ Game Context:
 - Your LP: ${gameState.hostPlayer.lifePoints}
 - Opponent LP: ${gameState.opponentPlayer.lifePoints}
 - Current Phase: ${gameState.phase}
-- Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
-- Threat Level: ${boardAnalysis?.threatLevel || "UNKNOWN"}
+- Board Advantage: ${boardAnalysis?.['advantage'] || "UNKNOWN"}
+- Threat Level: ${boardAnalysis?.['threatLevel'] || "UNKNOWN"}
 
 Recent Events:
 ${recentContext}

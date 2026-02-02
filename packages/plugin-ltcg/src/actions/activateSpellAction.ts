@@ -30,7 +30,7 @@ export const activateSpellAction: Action = {
     try {
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for activate spell validation");
@@ -39,7 +39,7 @@ export const activateSpellAction: Action = {
 
       // Check hand for spell cards
       const handResult = await handProvider.get(runtime, message, state);
-      const hand = handResult.data?.hand as CardInHand[];
+      const hand = handResult.data?.['hand'] as CardInHand[];
 
       const spellsInHand = hand?.filter((card) => card.type === "spell") || [];
 
@@ -74,10 +74,10 @@ export const activateSpellAction: Action = {
 
       // Get game state and hand
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       const handResult = await handProvider.get(runtime, message, state);
-      const hand = handResult.data?.hand as CardInHand[];
+      const hand = handResult.data?.['hand'] as CardInHand[];
 
       if (!gameState || !hand) {
         throw new Error("Failed to get game state or hand");

@@ -28,7 +28,7 @@ export const endTurnAction: Action = {
     try {
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for end turn validation");
@@ -36,7 +36,7 @@ export const endTurnAction: Action = {
       }
 
       // Check if it's our turn
-      const isMyTurn = gameStateResult.data?.isMyTurn;
+      const isMyTurn = gameStateResult.data?.['isMyTurn'];
 
       if (!isMyTurn) {
         logger.debug("Cannot end turn when it is not your turn");
@@ -63,7 +63,7 @@ export const endTurnAction: Action = {
 
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         throw new Error("Failed to get game state");

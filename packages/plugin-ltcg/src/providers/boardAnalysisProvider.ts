@@ -260,7 +260,7 @@ function analyzeBoardState(gameState: GameStateResponse): BoardAnalysis {
 /**
  * Format board analysis as human-readable text
  */
-function formatBoardAnalysis(analysis: BoardAnalysis, gameState: GameStateResponse): string {
+function formatBoardAnalysis(analysis: BoardAnalysis, _gameState: GameStateResponse): string {
   // Helper to get attack value from BoardCard
   const getAtk = (card: BoardCard) => card.currentAttack ?? card.attack ?? 0;
 

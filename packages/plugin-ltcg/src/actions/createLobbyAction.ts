@@ -23,7 +23,7 @@ export const createLobbyAction: Action = {
   similes: ["HOST_GAME", "START_LOBBY", "NEW_GAME"],
   description: "Create a new game lobby and wait for opponent",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (runtime: IAgentRuntime, _message: Memory, state: State): Promise<boolean> => {
     try {
       // Check if already in a game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;

@@ -23,7 +23,7 @@ export const findGameAction: Action = {
   similes: ["SEARCH_GAME", "MATCHMAKING", "PLAY_GAME"],
   description: "Automatically find and join an available game",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (runtime: IAgentRuntime, _message: Memory, state: State): Promise<boolean> => {
     try {
       // Check if already in a game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;

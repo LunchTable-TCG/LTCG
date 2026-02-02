@@ -34,7 +34,7 @@ export const ggAction: Action = {
 
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for GG validation");
@@ -73,7 +73,7 @@ export const ggAction: Action = {
 
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         throw new Error("Failed to get game state");

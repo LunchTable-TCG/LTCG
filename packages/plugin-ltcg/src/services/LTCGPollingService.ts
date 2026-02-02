@@ -940,10 +940,6 @@ export class LTCGPollingService extends Service {
   private isAgentTurn(state: GameStateResponse): boolean {
     // The agent is the host if they created the game
     // Check if current turn matches agent's role
-    const agentPlayerId = state.hostPlayer?.playerId;
-    const currentTurnPlayerId =
-      state.currentTurn === "host" ? state.hostPlayer?.playerId : state.opponentPlayer?.playerId;
-
     // If agent is host, it's their turn when currentTurn === 'host'
     // We assume the agent making API calls is the one whose hand is visible
     // So if hand has cards, we can check whose turn it is

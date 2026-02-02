@@ -58,7 +58,6 @@ export class TurnOrchestrator extends Service {
   private runtime: IAgentRuntime;
   private client: LTCGApiClient | null = null;
   private isExecutingTurn = false;
-  private currentGameId: string | null = null;
   private maxActionsPerTurn = 20; // Safety limit
 
   // Decision history tracking for panels
@@ -126,7 +125,6 @@ export class TurnOrchestrator extends Service {
       return;
     }
 
-    this.currentGameId = gameId;
     this.isExecutingTurn = true;
 
     logger.info({ gameId, phase, turnNumber }, "🎮 Starting autonomous turn execution");
@@ -442,7 +440,7 @@ export class TurnOrchestrator extends Service {
    * Build comprehensive decision prompt
    */
   private buildDecisionPrompt(context: TurnContext): string {
-    const { phase, turnNumber, lifePoints, hand, boardAnalysis, strategy, gameState } = context;
+    const { phase, turnNumber, lifePoints, hand, boardAnalysis, strategy } = context;
 
     const availableActionsText = this.formatAvailableActions(context);
 

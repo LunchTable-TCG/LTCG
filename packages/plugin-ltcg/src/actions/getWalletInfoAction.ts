@@ -22,7 +22,7 @@ export const getWalletInfoAction: Action = {
   similes: ["CHECK_WALLET", "WALLET_STATUS", "WALLET_BALANCE", "MY_WALLET"],
   description: "Check the agent's Solana wallet address and balance",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (runtime: IAgentRuntime, _message: Memory, _state: State): Promise<boolean> => {
     try {
       // Must have API key (be registered)
       const apiKey = runtime.getSetting("LTCG_API_KEY") as string;

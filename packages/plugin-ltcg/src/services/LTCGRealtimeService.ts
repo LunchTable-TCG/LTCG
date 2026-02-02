@@ -17,13 +17,11 @@ export class LTCGRealtimeService extends Service {
   static serviceType = "ltcg-realtime";
 
   private client: ConvexRealtimeClient | null = null;
-  private runtime: IAgentRuntime;
 
   capabilityDescription = "Provides real-time game state updates via Convex subscriptions";
 
   constructor(runtime: IAgentRuntime) {
     super(runtime);
-    this.runtime = runtime;
   }
 
   static async start(runtime: IAgentRuntime): Promise<LTCGRealtimeService> {

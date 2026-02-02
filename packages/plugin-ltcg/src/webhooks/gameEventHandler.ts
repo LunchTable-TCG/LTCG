@@ -60,21 +60,15 @@ export interface WebhookHandlerResult {
  * Verify webhook signature using HMAC
  */
 export function verifyWebhookSignature(
-  payload: string,
+  _payload: string,
   signature: string,
-  secret: string
+  _secret: string
 ): boolean {
   // Use Web Crypto API for HMAC verification
   // In production, this should use constant-time comparison
   try {
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(secret);
-    const data = encoder.encode(payload);
-
     // For now, simple comparison - in production use crypto.subtle
     // This is a placeholder that should be replaced with proper HMAC
-    const expectedSignature = `ltcg_sig_${Buffer.from(data).toString("base64").substring(0, 32)}`;
-
     return signature.startsWith("ltcg_sig_") && signature.length > 10;
   } catch (error) {
     logger.error({ error }, "Failed to verify webhook signature");
@@ -178,7 +172,7 @@ async function handleTurnStarted(
 async function handleChainWaiting(
   gameId: string,
   data: GameWebhookPayload["data"],
-  runtime: IAgentRuntime,
+  _runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   const chainState = data.chainState;
@@ -204,7 +198,7 @@ async function handleChainWaiting(
 async function handleOpponentAction(
   gameId: string,
   data: GameWebhookPayload["data"],
-  runtime: IAgentRuntime,
+  _runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   const oppAction = data.opponentAction;
@@ -228,8 +222,8 @@ async function handleOpponentAction(
  */
 async function handleGameStarted(
   gameId: string,
-  data: GameWebhookPayload["data"],
-  runtime: IAgentRuntime,
+  _data: GameWebhookPayload["data"],
+  _runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   logger.info({ gameId }, "Game has started");
@@ -250,7 +244,7 @@ async function handleGameStarted(
 async function handleGameEnded(
   gameId: string,
   data: GameWebhookPayload["data"],
-  runtime: IAgentRuntime,
+  _runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   const result = data.gameResult;
@@ -274,7 +268,7 @@ async function handleGameEnded(
 async function handlePhaseChanged(
   gameId: string,
   data: GameWebhookPayload["data"],
-  runtime: IAgentRuntime,
+  _runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   logger.info({ gameId, phase: data.phase }, "Phase changed");

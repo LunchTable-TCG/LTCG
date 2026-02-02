@@ -189,7 +189,7 @@ function evaluateStrategicDecision(
 function evaluateAttack(
   params: any,
   gameState: GameStateResponse,
-  boardAnalysis: any,
+  _boardAnalysis: any,
   riskTolerance: string
 ): StrategicEvaluation {
   const attackerIndex = params.attackerIndex;
@@ -307,7 +307,7 @@ function evaluateSummon(
   params: any,
   gameState: GameStateResponse,
   boardAnalysis: any,
-  riskTolerance: string
+  _riskTolerance: string
 ): StrategicEvaluation {
   const handIndex = params.handIndex;
   const hand = gameState.hand;
@@ -361,8 +361,8 @@ function evaluateSummon(
 function evaluateSpellTrap(
   params: any,
   gameState: GameStateResponse,
-  boardAnalysis: any,
-  riskTolerance: string
+  _boardAnalysis: any,
+  _riskTolerance: string
 ): StrategicEvaluation {
   // Basic validation - can be enhanced later
   const handIndex = params.handIndex;
@@ -392,11 +392,11 @@ function evaluateSpellTrap(
  * Evaluate end turn decision
  */
 function evaluateEndTurn(
-  params: any,
+  _params: any,
   gameState: GameStateResponse,
   boardAnalysis: any,
-  legalActions: any,
-  riskTolerance: string
+  _legalActions: any,
+  _riskTolerance: string
 ): StrategicEvaluation {
   // Check if ending turn without using resources
   const hand = gameState.hand;

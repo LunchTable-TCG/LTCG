@@ -22,7 +22,7 @@ export const storyModeAction: Action = {
   similes: ["PLAY_STORY", "QUICK_PLAY", "PLAY_AI", "PRACTICE", "PVE", "SINGLE_PLAYER"],
   description: "Start an instant AI battle in story mode without waiting for matchmaking",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (runtime: IAgentRuntime, _message: Memory, state: State): Promise<boolean> => {
     try {
       // Check if already in a game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;

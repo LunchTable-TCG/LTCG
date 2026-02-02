@@ -16,7 +16,7 @@ export const deckProvider: Provider = {
   name: "LTCG_MY_DECK",
   description: "Provides information about the agent's current deck and card collection",
 
-  async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
+  async get(runtime: IAgentRuntime, _message: Memory, _state: State): Promise<ProviderResult> {
     try {
       // Get API credentials
       const apiKey = runtime.getSetting("LTCG_API_KEY");
@@ -57,7 +57,6 @@ export const deckProvider: Provider = {
       const monsters = currentDeck.cards.filter((c) => c.type === "creature");
       const spells = currentDeck.cards.filter((c) => c.type === "spell");
       const traps = currentDeck.cards.filter((c) => c.type === "trap");
-      const equipment = currentDeck.cards.filter((c) => c.type === "equipment");
 
       // Group creatures by level
       const monstersByLevel: Record<number, CardDefinition[]> = {};

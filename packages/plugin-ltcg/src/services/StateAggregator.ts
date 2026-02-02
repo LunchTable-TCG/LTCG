@@ -49,7 +49,7 @@ export class StateAggregator extends Service {
   private metricsCache: { metrics: AgentMetrics; timestamp: number } | null = null;
 
   // Cache TTL configuration (in milliseconds)
-  private ttlConfig: DataTypeTTLConfig;
+  private ttlConfig!: DataTypeTTLConfig;
   private cacheStats: CacheStats = {
     gameState: { hits: 0, misses: 0 },
     matchmaking: { hits: 0, misses: 0 },
@@ -85,8 +85,6 @@ export class StateAggregator extends Service {
    * Initialize TTL configuration from environment variables or use defaults
    */
   private initializeTTLConfig(runtime: IAgentRuntime): DataTypeTTLConfig {
-    const defaultTTL = Number.parseInt(runtime.getSetting("LTCG_CACHE_TTL_MS") as string) || 5000;
-
     return {
       gameState:
         Number.parseInt(runtime.getSetting("LTCG_CACHE_TTL_GAME_STATE_MS") as string) || 2000,
@@ -151,7 +149,7 @@ export class StateAggregator extends Service {
   /**
    * Get matchmaking status and recent events
    */
-  async getMatchmakingStatus(agentId: string): Promise<MatchmakingStatus> {
+  async getMatchmakingStatus(_agentId: string): Promise<MatchmakingStatus> {
     // Check cache first
     if (
       this.matchmakingCache &&
@@ -182,7 +180,7 @@ export class StateAggregator extends Service {
   /**
    * Get current game state snapshot
    */
-  async getGameState(agentId: string, gameId: string): Promise<GameSnapshot> {
+  async getGameState(_agentId: string, gameId: string): Promise<GameSnapshot> {
     // Check cache first
     const cached = this.gameStateCache.get(gameId);
     if (cached && Date.now() - cached.timestamp < this.ttlConfig.gameState) {
@@ -217,7 +215,7 @@ export class StateAggregator extends Service {
    * Get decision history for a game
    */
   async getDecisionHistory(
-    agentId: string,
+    _agentId: string,
     gameId: string,
     limit = 20
   ): Promise<{ decisions: Decision[] }> {
@@ -233,7 +231,7 @@ export class StateAggregator extends Service {
   /**
    * Get performance metrics
    */
-  async getMetrics(agentId: string): Promise<AgentMetrics> {
+  async getMetrics(_agentId: string): Promise<AgentMetrics> {
     // Check cache first
     if (this.metricsCache && Date.now() - this.metricsCache.timestamp < this.ttlConfig.metrics) {
       this.cacheStats.metrics.hits++;

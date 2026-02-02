@@ -13,7 +13,7 @@ export const globalChatProvider: Provider = {
   name: "LTCG_GLOBAL_CHAT",
   description: "Provides recent global chat messages and online users in Tavern Hall",
 
-  async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
+  async get(runtime: IAgentRuntime, _message: Memory, _state: State): Promise<ProviderResult> {
     try {
       // Get API credentials
       const apiKey = runtime.getSetting("LTCG_API_KEY");

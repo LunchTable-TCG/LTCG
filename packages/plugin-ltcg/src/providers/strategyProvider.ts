@@ -115,7 +115,6 @@ function analyzeStrategy(gameState: GameStateResponse): StrategyAnalysis {
   const myMonsters = gameState.myBoard || [];
   const opponentMonsters = gameState.opponentBoard || [];
   // Note: Spell/trap zones not returned separately in current API
-  const myBackrow: any[] = [];
   const opponentBackrow: any[] = [];
 
   // Helper to get attack value from BoardCard
@@ -244,8 +243,8 @@ function calculateCanWinThisTurn(
  * Generate priority actions based on strategy
  */
 function generatePriorityActions(
-  gameState: GameStateResponse,
-  gameStateEval: StrategyAnalysis["gameState"],
+  _gameState: GameStateResponse,
+  _gameStateEval: StrategyAnalysis["gameState"],
   priority: StrategyAnalysis["priority"],
   canWinThisTurn: boolean
 ): string[] {

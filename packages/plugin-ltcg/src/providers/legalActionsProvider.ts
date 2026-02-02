@@ -15,7 +15,7 @@ export const legalActionsProvider: Provider = {
   name: "LTCG_LEGAL_ACTIONS",
   description: "Lists all legal actions currently available to the agent",
 
-  async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
+  async get(runtime: IAgentRuntime, message: Memory, _state: State): Promise<ProviderResult> {
     try {
       // Get game ID from message content
       const gameId = (message.content as any)?.gameId;

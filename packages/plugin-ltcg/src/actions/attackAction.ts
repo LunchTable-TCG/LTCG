@@ -30,7 +30,7 @@ export const attackAction: Action = {
     try {
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for attack validation");
@@ -71,7 +71,7 @@ export const attackAction: Action = {
 
       // Get game state and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
       const boardAnalysis = boardAnalysisResult.data;
@@ -121,7 +121,7 @@ export const attackAction: Action = {
 Game State:
 - Your LP: ${gameState.hostPlayer.lifePoints}
 - Opponent LP: ${gameState.opponentPlayer.lifePoints}
-- Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
+- Board Advantage: ${boardAnalysis?.['advantage'] || "UNKNOWN"}
 - Opponent Backrow: ${gameState.opponentPlayer.spellTrapZone.length} cards (may have traps!)
 `;
 

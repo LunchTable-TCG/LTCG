@@ -144,10 +144,10 @@ const plugin: Plugin & { panels?: any } = {
     }
   },
   models: {
-    [ModelType.TEXT_SMALL]: async (_runtime: IAgentRuntime, { prompt }: GenerateTextParams) => {
+    [ModelType.TEXT_SMALL]: async (_runtime: IAgentRuntime, _params: GenerateTextParams) => {
       return "Test response for small model";
     },
-    [ModelType.TEXT_LARGE]: async (_runtime: IAgentRuntime, { prompt }: GenerateTextParams) => {
+    [ModelType.TEXT_LARGE]: async (_runtime: IAgentRuntime, _params: GenerateTextParams) => {
       return "Test response for large model";
     },
   },

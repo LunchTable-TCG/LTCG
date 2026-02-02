@@ -23,7 +23,7 @@ export const sendChatMessageAction: Action = {
   similes: ["CHAT", "SAY", "TALK_IN_CHAT", "TAVERN_CHAT"],
   description: "Send a message to the global chat (Tavern Hall)",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (runtime: IAgentRuntime, _message: Memory, _state: State): Promise<boolean> => {
     try {
       // Check if chat is enabled
       const chatEnabled = runtime.getSetting("LTCG_CHAT_ENABLED") !== "false";
@@ -51,7 +51,7 @@ export const sendChatMessageAction: Action = {
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
+    _state: State,
     _options: any,
     callback: HandlerCallback
   ): Promise<ActionResult> => {

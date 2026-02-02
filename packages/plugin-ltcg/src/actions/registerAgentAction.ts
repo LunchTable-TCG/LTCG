@@ -24,7 +24,7 @@ export const registerAgentAction: Action = {
   similes: ["CREATE_ACCOUNT", "SIGN_UP", "INITIALIZE"],
   description: "Register a new agent account with LTCG and get API key",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (runtime: IAgentRuntime, _message: Memory, _state: State): Promise<boolean> => {
     try {
       // Must NOT already have API key
       const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
@@ -50,7 +50,7 @@ export const registerAgentAction: Action = {
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
+    _state: State,
     _options: any,
     callback: HandlerCallback
   ): Promise<ActionResult> => {

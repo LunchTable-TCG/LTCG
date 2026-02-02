@@ -29,7 +29,7 @@ export const changePositionAction: Action = {
     try {
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         logger.warn("No game state available for change position validation");
@@ -46,7 +46,7 @@ export const changePositionAction: Action = {
       const myMonsters = gameState.hostPlayer.monsterZone;
       const canChangePosition = gameState.canChangePosition || [];
 
-      const changeableMonsters = myMonsters.filter((monster, idx) => {
+      const changeableMonsters = myMonsters.filter((_monster, idx) => {
         // Check if this monster can change position (not already changed this turn)
         return canChangePosition[idx] !== false;
       });
@@ -75,7 +75,7 @@ export const changePositionAction: Action = {
 
       // Get game state
       const gameStateResult = await gameStateProvider.get(runtime, _message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         throw new Error("Failed to get game state");
