@@ -152,9 +152,30 @@ export default function AssetsPage() {
     }
   }, [deleteConfirmAsset, deleteAssetMetadata]);
 
-  const handleDeleteFromSheet = useCallback(async (asset: Asset) => {
-    setDeleteConfirmAsset(asset);
-  }, []);
+  const handleDeleteFromSheet = useCallback(
+    async (asset: Asset) => {
+      // Actually delete the asset (sheet already has its own confirmation dialog)
+      // Delete from Vercel Blob first
+      if (asset.blobUrl) {
+        const response = await fetch(`${WEB_APP_URL}/api/admin/upload`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: asset.blobUrl }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to delete from blob storage");
+        }
+      }
+
+      // Then delete metadata from Convex
+      await deleteAssetMetadata({ assetId: asset._id });
+
+      // Clear selection
+      setSelectedAsset(null);
+    },
+    [deleteAssetMetadata]
+  );
 
   // Format total size
   const formatTotalSize = (bytes: number) => {

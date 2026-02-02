@@ -41,7 +41,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
-      onBeforeGenerateToken: async (pathname, clientPayload) => {
+      onBeforeGenerateToken: async (_pathname, clientPayload) => {
         // Parse client payload for admin validation
         // In production, you'd validate the admin JWT here
         // For now, we trust the payload since the admin app controls the request
@@ -72,7 +72,6 @@ export async function POST(request: Request): Promise<NextResponse> {
           url: blob.url,
           pathname: blob.pathname,
           contentType: blob.contentType,
-          size: blob.size,
           tokenPayload,
         });
 
