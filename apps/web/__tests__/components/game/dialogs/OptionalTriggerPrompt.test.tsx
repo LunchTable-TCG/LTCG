@@ -6,7 +6,7 @@ import {
   type CardInfo,
   OptionalTriggerPrompt,
   type PendingOptionalTrigger,
-} from "../OptionalTriggerPrompt";
+} from "@/components/game/dialogs/OptionalTriggerPrompt";
 
 // Create mock function at module scope
 const mockRespondToTrigger = vi.fn();

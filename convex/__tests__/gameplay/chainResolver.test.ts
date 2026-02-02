@@ -9,10 +9,10 @@
 
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import { api } from "../_generated/api";
-import schema from "../schema";
-import { modules } from "../test.setup";
-import type { JsonAbility } from "./effectSystem/types";
+import { api } from "@convex/_generated/api";
+import schema from "@convex/schema";
+import { modules } from "@convex/test.setup";
+import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast
@@ -135,7 +135,7 @@ describe("addToChainHelper", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { addToChainHelper } = await import("./chainResolver");
+      const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
       return await addToChainHelper(ctx, {
         lobbyId,
         cardId,
@@ -255,7 +255,7 @@ describe("addToChainHelper", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { addToChainHelper } = await import("./chainResolver");
+      const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
       return await addToChainHelper(ctx, {
         lobbyId,
         cardId: card2Id,
@@ -367,7 +367,7 @@ describe("addToChainHelper", () => {
 
     await expect(
       t.run(async (ctx) => {
-        const { addToChainHelper } = await import("./chainResolver");
+        const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
         return await addToChainHelper(ctx, {
           lobbyId,
           cardId: card2Id,
@@ -428,7 +428,7 @@ describe("addToChainHelper", () => {
 
     await expect(
       t.run(async (ctx) => {
-        const { addToChainHelper } = await import("./chainResolver");
+        const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
         return await addToChainHelper(ctx, {
           lobbyId: invalidLobbyId,
           cardId,
@@ -544,7 +544,7 @@ describe("resolveChainHelper", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { resolveChainHelper } = await import("./chainResolver");
+      const { resolveChainHelper } = await import("@convex/gameplay/chainResolver");
       return await resolveChainHelper(ctx, { lobbyId });
     });
 
@@ -642,7 +642,7 @@ describe("resolveChainHelper", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { resolveChainHelper } = await import("./chainResolver");
+      const { resolveChainHelper } = await import("@convex/gameplay/chainResolver");
       return await resolveChainHelper(ctx, { lobbyId });
     });
 
@@ -713,7 +713,7 @@ describe("resolveChainHelper", () => {
 
     await expect(
       t.run(async (ctx) => {
-        const { resolveChainHelper } = await import("./chainResolver");
+        const { resolveChainHelper } = await import("@convex/gameplay/chainResolver");
         return await resolveChainHelper(ctx, { lobbyId });
       })
     ).rejects.toThrow();
@@ -753,7 +753,7 @@ describe("resolveChainHelper", () => {
 
     await expect(
       t.run(async (ctx) => {
-        const { resolveChainHelper } = await import("./chainResolver");
+        const { resolveChainHelper } = await import("@convex/gameplay/chainResolver");
         return await resolveChainHelper(ctx, { lobbyId });
       })
     ).rejects.toThrow();
@@ -904,7 +904,7 @@ describe("JSON effect format", () => {
 
     // Add JSON effect to chain
     const result = await t.run(async (ctx) => {
-      const { addToChainHelper } = await import("./chainResolver");
+      const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
       return await addToChainHelper(ctx, {
         lobbyId,
         cardId,
@@ -1106,7 +1106,7 @@ describe("Chain link limits and loop protection", () => {
     // Try to add 13th card - should fail
     await expect(
       t.run(async (ctx) => {
-        const { addToChainHelper } = await import("./chainResolver");
+        const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
         return await addToChainHelper(ctx, {
           lobbyId,
           cardId: cardIds[12]!, // 13th card
@@ -1204,7 +1204,7 @@ describe("Chain link limits and loop protection", () => {
     // Try to add same card again - should fail
     await expect(
       t.run(async (ctx) => {
-        const { addToChainHelper } = await import("./chainResolver");
+        const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
         return await addToChainHelper(ctx, {
           lobbyId,
           cardId, // Same card
@@ -1301,7 +1301,7 @@ describe("Chain link limits and loop protection", () => {
 
     // Try to add same card with different effect type - should succeed
     const result = await t.run(async (ctx) => {
-      const { addToChainHelper } = await import("./chainResolver");
+      const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
       return await addToChainHelper(ctx, {
         lobbyId,
         cardId, // Same card
@@ -1406,7 +1406,7 @@ describe("Chain link limits and loop protection", () => {
 
     // Add 12th card - should succeed (exactly at limit)
     const result = await t.run(async (ctx) => {
-      const { addToChainHelper } = await import("./chainResolver");
+      const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
       return await addToChainHelper(ctx, {
         lobbyId,
         cardId: cardIds[11]!, // 12th card

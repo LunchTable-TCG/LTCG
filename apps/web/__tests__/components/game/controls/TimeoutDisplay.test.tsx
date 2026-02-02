@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TimeoutDisplay } from "../TimeoutDisplay";
+import { TimeoutDisplay } from "@/components/game/controls/TimeoutDisplay";
 
 describe("TimeoutDisplay", () => {
   const defaultProps = {

@@ -13,7 +13,7 @@ import {
   hasPermission,
   hasRoleLevel,
   roleHierarchy,
-} from "./roles";
+} from "@convex/lib/roles";
 
 describe("Role Hierarchy", () => {
   it("should define correct hierarchy levels", () => {

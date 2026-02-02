@@ -18,7 +18,7 @@ import type {
   RequireProps,
   Result,
   ValueOf,
-} from "../utils";
+} from "@/types/utils";
 
 import {
   brand,
@@ -36,7 +36,7 @@ import {
   isString,
   isUndefined,
   ok,
-} from "../utils";
+} from "@/types/utils";
 
 // =============================================================================
 // Type Tests (Compile-time checks)

@@ -22,11 +22,12 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { convexTest } from "convex-test";
-import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
-import schema from "../../convex/schema";
-import { createTestUser, createTestUserWithGold } from "../fixtures/users";
-import { createValidTestDeck } from "../fixtures/decks";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import schema from "@convex/schema";
+import { modules } from "@convex/test.setup";
+import { createTestUser, createTestUserWithGold } from "@convex/__tests__/fixtures/users";
+import { createValidTestDeck } from "@convex/__tests__/fixtures/decks";
 
 describe("Invariant 1: Currency Never Negative", () => {
   let t: ReturnType<typeof convexTest>;
@@ -34,7 +35,7 @@ describe("Invariant 1: Currency Never Negative", () => {
 
   beforeEach(async () => {
     // Pass modules glob so convex-test can find _generated directory
-    t = convexTest(schema, import.meta.glob("../../convex/**/*.ts"));
+    t = convexTest(schema, modules);
 
     // Create user with 100 gold
     const user = createTestUserWithGold(100);
@@ -255,7 +256,7 @@ describe("Invariant 2: Deck Validity (Exactly 30+ Cards)", () => {
 
   beforeEach(async () => {
     // Pass modules glob so convex-test can find _generated directory
-    t = convexTest(schema, import.meta.glob("../../convex/**/*.ts"));
+    t = convexTest(schema, modules);
 
     const user = createTestUser();
     userId = await t.run(async (ctx) => {
@@ -396,7 +397,7 @@ describe("Invariant 3: Active Deck Exists Before Game", () => {
 
   beforeEach(async () => {
     // Pass modules glob so convex-test can find _generated directory
-    t = convexTest(schema, import.meta.glob("../../convex/**/*.ts"));
+    t = convexTest(schema, modules);
 
     const user = createTestUser();
     userId = await t.run(async (ctx) => {
@@ -536,7 +537,7 @@ describe("Invariant 4: No Orphaned Records (Referential Integrity)", () => {
 
   beforeEach(async () => {
     // Pass modules glob so convex-test can find _generated directory
-    t = convexTest(schema, import.meta.glob("../../convex/**/*.ts"));
+    t = convexTest(schema, modules);
 
     const user = createTestUser();
     userId = await t.run(async (ctx) => {
@@ -710,7 +711,7 @@ describe("Invariant 5: Rating Bounds (0-3000 ELO)", () => {
 
   beforeEach(async () => {
     // Pass modules glob so convex-test can find _generated directory
-    t = convexTest(schema, import.meta.glob("../../convex/**/*.ts"));
+    t = convexTest(schema, modules);
 
     const winner = createTestUser();
     const loser = createTestUser();
@@ -840,7 +841,7 @@ describe("Invariant 6: Consistent Totals (Wins + Losses = Match History)", () =>
 
   beforeEach(async () => {
     // Pass modules glob so convex-test can find _generated directory
-    t = convexTest(schema, import.meta.glob("../../convex/**/*.ts"));
+    t = convexTest(schema, modules);
 
     const playerA = createTestUser();
     const playerB = createTestUser();

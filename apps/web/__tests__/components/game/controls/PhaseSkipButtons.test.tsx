@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { type GamePhase, PhaseSkipButtons } from "../PhaseSkipButtons";
+import { type GamePhase, PhaseSkipButtons } from "@/components/game/controls/PhaseSkipButtons";
 
 // Mock convex helpers
 const mockSkipBattlePhase = vi.fn();

@@ -4,11 +4,16 @@
  * Tests XP calculation, level progression, and badge awarding
  */
 
-import { createTestInstance } from "@convex-test-utils/setup";
+import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import type { MutationCtx } from "../_generated/server";
-import { XP_PER_LEVEL } from "./storyConstants";
-import { calculateLevel, getLevelProgress, getXPForNextLevel } from "./xpHelpers";
+import schema from "@convex/schema";
+import { modules } from "@convex/test.setup";
+import type { MutationCtx } from "@convex/_generated/server";
+import { XP_PER_LEVEL } from "@convex/lib/storyConstants";
+import { calculateLevel, getLevelProgress, getXPForNextLevel } from "@convex/lib/xpHelpers";
+
+// Helper to create test instance
+const createTestInstance = () => convexTest(schema, modules);
 
 describe("calculateLevel", () => {
   it("should return level 1 for 0 XP", () => {
@@ -127,7 +132,7 @@ describe("addXP", () => {
 
     // Add XP via internal mutation (we'll test through story.ts which uses addXP)
     await t.run(async (ctx: MutationCtx) => {
-      const { addXP } = await import("./xpHelpers");
+      const { addXP } = await import("@convex/lib/xpHelpers");
       const result = await addXP(ctx, userId, 150);
 
       expect(result.newLevel).toBe(2); // 150 XP = level 2
@@ -173,7 +178,7 @@ describe("addXP", () => {
     });
 
     await t.run(async (ctx: MutationCtx) => {
-      const { addXP } = await import("./xpHelpers");
+      const { addXP } = await import("@convex/lib/xpHelpers");
       const result = await addXP(ctx, userId, 200); // Push to level 10
 
       expect(result.newLevel).toBe(10);
@@ -219,7 +224,7 @@ describe("addXP", () => {
 
     // Award level 10 twice
     await t.run(async (ctx: MutationCtx) => {
-      const { addXP } = await import("./xpHelpers");
+      const { addXP } = await import("@convex/lib/xpHelpers");
       await addXP(ctx, userId, 200);
       await addXP(ctx, userId, 100);
     });
@@ -261,7 +266,7 @@ describe("addXP", () => {
     });
 
     await t.run(async (ctx: MutationCtx) => {
-      const { addXP } = await import("./xpHelpers");
+      const { addXP } = await import("@convex/lib/xpHelpers");
       const result = await addXP(ctx, userId, 1000); // Jump to level 6
 
       expect(result.newLevel).toBe(6);
@@ -304,7 +309,7 @@ describe("addXP", () => {
 
     await expect(
       t.run(async (ctx: MutationCtx) => {
-        const { addXP } = await import("./xpHelpers");
+        const { addXP } = await import("@convex/lib/xpHelpers");
         await addXP(ctx, userId, -100); // Negative XP
       })
     ).rejects.toThrowError("Cannot add negative XP");
@@ -332,7 +337,7 @@ describe("addXP", () => {
     });
 
     await t.run(async (ctx: MutationCtx) => {
-      const { addXP } = await import("./xpHelpers");
+      const { addXP } = await import("@convex/lib/xpHelpers");
       await addXP(ctx, userId, 200);
       await addXP(ctx, userId, 300);
     });
@@ -373,7 +378,7 @@ describe("hasReachedLevel", () => {
     });
 
     const result = await t.run(async (ctx: MutationCtx) => {
-      const { hasReachedLevel } = await import("./xpHelpers");
+      const { hasReachedLevel } = await import("@convex/lib/xpHelpers");
       return await hasReachedLevel(ctx, userId, 5);
     });
 
@@ -402,7 +407,7 @@ describe("hasReachedLevel", () => {
     });
 
     const result = await t.run(async (ctx: MutationCtx) => {
-      const { hasReachedLevel } = await import("./xpHelpers");
+      const { hasReachedLevel } = await import("@convex/lib/xpHelpers");
       return await hasReachedLevel(ctx, userId, 10);
     });
 
@@ -421,7 +426,7 @@ describe("hasReachedLevel", () => {
     });
 
     const result = await t.run(async (ctx: MutationCtx) => {
-      const { hasReachedLevel } = await import("./xpHelpers");
+      const { hasReachedLevel } = await import("@convex/lib/xpHelpers");
       return await hasReachedLevel(ctx, userId, 1);
     });
 

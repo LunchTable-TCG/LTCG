@@ -10,9 +10,9 @@
 
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import schema from "../../schema";
-import { modules } from "../../test.setup";
-import type { JsonAbility } from "./types";
+import schema from "@convex/schema";
+import { modules } from "@convex/test.setup";
+import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
 
 describe("Basic Effect Execution", () => {
   describe("Volcanic Eruption - Destroy Effect", () => {
@@ -136,7 +136,7 @@ describe("Basic Effect Execution", () => {
 
       // Execute destroy effect using internal executor
       const result = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -248,7 +248,7 @@ describe("Basic Effect Execution", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -370,7 +370,7 @@ describe("Basic Effect Execution", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -500,7 +500,7 @@ describe("Basic Effect Execution", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -629,7 +629,7 @@ describe("Basic Effect Execution", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -760,7 +760,7 @@ describe("Basic Effect Execution", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -879,7 +879,7 @@ describe("Basic Effect Execution", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 

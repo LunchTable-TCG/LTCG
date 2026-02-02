@@ -7,11 +7,11 @@
 
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import { api } from "../../_generated/api";
-import type { Id } from "../../_generated/dataModel";
-import schema from "../../schema";
-import { modules } from "../../test.setup";
-import type { JsonAbility } from "./types";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import schema from "@convex/schema";
+import { modules } from "@convex/test.setup";
+import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast
@@ -108,7 +108,7 @@ describe("executeEffect - Main Dispatcher", () => {
 
     // Execute effect using internal function
     const result = await t.run(async (ctx) => {
-      const { executeEffect } = await import("./executor");
+      const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
       const gameState = await ctx.db.get(gameStateId);
       if (!gameState) throw new Error("Game state not found");
 
@@ -212,7 +212,7 @@ describe("executeEffect - Main Dispatcher", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { executeEffect } = await import("./executor");
+      const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
       const gameState = await ctx.db.get(gameStateId);
       if (!gameState) throw new Error("Game state not found");
 
@@ -352,7 +352,7 @@ describe("executeEffect - Main Dispatcher", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { executeEffect } = await import("./executor");
+      const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
       const gameState = await ctx.db.get(gameStateId);
       if (!gameState) throw new Error("Game state not found");
 
@@ -459,7 +459,7 @@ describe("executeEffect - Main Dispatcher", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { executeEffect } = await import("./executor");
+      const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
       const gameState = await ctx.db.get(gameStateId);
       if (!gameState) throw new Error("Game state not found");
 
@@ -550,7 +550,7 @@ describe("executeEffect - Main Dispatcher", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { executeEffect } = await import("./executor");
+      const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
       const gameState = await ctx.db.get(gameStateId);
       if (!gameState) throw new Error("Game state not found");
 
@@ -678,7 +678,7 @@ describe("executeMultiPartAbility", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { executeMultiPartAbility } = await import("./executor");
+      const { executeMultiPartAbility } = await import("@convex/gameplay/effectSystem/executor");
       const gameState = await ctx.db.get(gameStateId);
       if (!gameState) throw new Error("Game state not found");
 
@@ -793,7 +793,7 @@ describe("executeMultiPartAbility", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { executeMultiPartAbility } = await import("./executor");
+      const { executeMultiPartAbility } = await import("@convex/gameplay/effectSystem/executor");
       const gameState = await ctx.db.get(gameStateId);
       if (!gameState) throw new Error("Game state not found");
 
@@ -899,7 +899,7 @@ describe("executeMultiPartAbility", () => {
     });
 
     const result = await t.run(async (ctx) => {
-      const { executeMultiPartAbility } = await import("./executor");
+      const { executeMultiPartAbility } = await import("@convex/gameplay/effectSystem/executor");
       const gameState = await ctx.db.get(gameStateId);
       if (!gameState) throw new Error("Game state not found");
 

@@ -10,9 +10,9 @@
 
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import schema from "../../schema";
-import { modules } from "../../test.setup";
-import type { JsonAbility } from "./types";
+import schema from "@convex/schema";
+import { modules } from "@convex/test.setup";
+import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
 
 describe("Targeting System", () => {
   describe("Valid Targeting", () => {
@@ -124,7 +124,7 @@ describe("Targeting System", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -269,7 +269,7 @@ describe("Targeting System", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -421,7 +421,7 @@ describe("Targeting System", () => {
 
       // Test with 2 targets (correct)
       const resultCorrect = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -550,7 +550,7 @@ describe("Targeting System", () => {
 
       // Test with only 1 target (incorrect - needs 2)
       const resultWrong = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -697,7 +697,7 @@ describe("Targeting System", () => {
 
       // Try to target board monster (wrong zone)
       const resultWrongZone = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 
@@ -720,7 +720,7 @@ describe("Targeting System", () => {
 
       // Try with correct zone (graveyard)
       const resultCorrectZone = await t.run(async (ctx) => {
-        const { executeEffect } = await import("./executor");
+        const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
         const gameState = await ctx.db.get(gameStateId);
         if (!gameState) throw new Error("Game state not found");
 

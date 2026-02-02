@@ -5,14 +5,19 @@
  * Covers happy paths, insufficient funds, invalid products, and edge cases.
  */
 
-import { createTestInstance } from "@convex-test-utils/setup";
+import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import { api } from "../_generated/api";
-import type { MutationCtx } from "../_generated/server";
+import { api } from "@convex/_generated/api";
+import schema from "@convex/schema";
+import { modules } from "@convex/test.setup";
+import type { MutationCtx } from "@convex/_generated/server";
 
 // Type helper to avoid TS2589/TS7053 deep instantiation errors
 // biome-ignore lint/suspicious/noExplicitAny: Required for TS2589 workaround
 const economyShop: any = (api as any)["economy/shop"];
+
+// Helper to create test instance
+const createTestInstance = () => convexTest(schema, modules);
 
 describe("purchasePack", () => {
   it("should purchase pack with gold successfully", async () => {

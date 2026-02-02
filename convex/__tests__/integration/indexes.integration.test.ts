@@ -15,8 +15,13 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createTestInstance } from "../../convex_test_utils/setup";
-import type { Id } from "../../convex/_generated/dataModel";
+import { convexTest } from "convex-test";
+import schema from "@convex/schema";
+import { modules } from "@convex/test.setup";
+import type { Id } from "@convex/_generated/dataModel";
+
+// Helper to create test instance
+const createTestInstance = () => convexTest(schema, modules);
 
 describe("Index Performance Tests", () => {
   describe("Leaderboard Query Performance", () => {

@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Doc, Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 import {
   _matchesCondition,
   _matchesLegacyCondition,
@@ -14,15 +14,15 @@ import {
   evaluateFieldCount,
   evaluateGraveyardContains,
   evaluateJsonCondition,
-} from "./continuousEffects";
+} from "@convex/gameplay/effectSystem/continuousEffects";
 import type {
   CardOnBoard,
   ConditionContext,
   FieldCountCondition,
   GraveyardCondition,
   JsonCondition,
-} from "./jsonEffectSchema";
-import { convertLegacyCondition } from "./jsonEffectSchema";
+} from "@convex/gameplay/effectSystem/jsonEffectSchema";
+import { convertLegacyCondition } from "@convex/gameplay/effectSystem/jsonEffectSchema";
 
 // ============================================================================
 // TEST FIXTURES

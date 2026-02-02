@@ -5,16 +5,21 @@
  * Covers happy paths, validation errors, and edge cases.
  */
 
-import { createTestInstance } from "@convex-test-utils/setup";
+import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import { api } from "../_generated/api";
-import type { MutationCtx } from "../_generated/server";
+import { api } from "@convex/_generated/api";
+import schema from "@convex/schema";
+import { modules } from "@convex/test.setup";
+import type { MutationCtx } from "@convex/_generated/server";
 
 // Type helper to avoid TS2589 deep instantiation errors with Convex API
 // @ts-ignore - Suppress TS2589 for api cast
 // biome-ignore lint/suspicious/noExplicitAny: Required for TS2589 workaround
 const apiAny = api as any;
 const coreDecks = apiAny["core/decks"];
+
+// Helper to create test instance
+const createTestInstance = () => convexTest(schema, modules);
 
 describe("createDeck", () => {
   it("should create empty deck successfully", async () => {
