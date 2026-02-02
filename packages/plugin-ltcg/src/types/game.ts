@@ -4,7 +4,8 @@
  * Types related to game logic, not directly tied to API structure.
  */
 
-// Generic ID type matching Convex
+// Re-export Id type from Convex for compatibility
+// Note: This should match the Id type from @convex/_generated/dataModel
 export type Id<T extends string = string> = string & { __tableName: T };
 
 // ============================================================================
@@ -21,7 +22,11 @@ export type GameStatus = 'waiting' | 'active' | 'completed';
 // Card Types
 // ============================================================================
 
-export type CardType = 'monster' | 'spell' | 'trap';
+/**
+ * Card types matching Convex schema
+ * Note: Use 'creature' not 'monster' to match database schema
+ */
+export type CardType = 'creature' | 'spell' | 'trap' | 'equipment';
 
 export type MonsterPosition = 'attack' | 'defense' | 'facedown';
 
@@ -121,7 +126,7 @@ export interface Card {
 }
 
 export interface MonsterCard extends Card {
-  type: 'monster';
+  type: 'creature';
   level: number;
   atk: number;
   def: number;

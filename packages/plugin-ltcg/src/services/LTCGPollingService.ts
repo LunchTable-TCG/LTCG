@@ -18,10 +18,17 @@ import {
   type WebhookEventType,
 } from '../webhooks/gameEventHandler';
 import { TurnOrchestrator } from './TurnOrchestrator';
+import type { MatchmakingStatus, MatchmakingEvent } from '../frontend/types/panel';
 
 export interface PollingConfig {
   /** Polling interval in milliseconds (default: 1500ms) */
   intervalMs?: number;
+  /** Discovery interval in milliseconds for checking pending games (default: 5000ms) */
+  discoveryIntervalMs?: number;
+  /** Matchmaking interval in milliseconds for auto-joining lobbies (default: 10000ms) */
+  matchmakingIntervalMs?: number;
+  /** Enable auto-matchmaking (default: false) */
+  autoMatchmaking?: boolean;
   /** Enable debug logging */
   debug?: boolean;
 }
@@ -41,11 +48,26 @@ export class LTCGPollingService extends Service {
   private runtime: IAgentRuntime;
   private client: LTCGApiClient | null = null;
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
+  private discoveryInterval: ReturnType<typeof setInterval> | null = null;
+  private matchmakingInterval: ReturnType<typeof setInterval> | null = null;
   private currentGameId: string | null = null;
   private lastSnapshot: GameStateSnapshot | null = null;
   private intervalMs: number;
+  private discoveryIntervalMs: number;
+  private matchmakingIntervalMs: number;
+  private autoMatchmaking: boolean;
   private debug: boolean;
   private isPolling = false;
+
+  // Matchmaking event tracking
+  private matchmakingEvents: MatchmakingEvent[] = [];
+  private matchmakingStats = {
+    lobbiesJoined: 0,
+    gamesStarted: 0,
+    lastScanAt: 0,
+  };
+  private readonly maxEventHistory = 50;
+  private cachedDeckId: string | null = null;
 
   capabilityDescription = 'Provides real-time game updates via HTTP polling for local development';
 
@@ -53,12 +75,19 @@ export class LTCGPollingService extends Service {
     super(runtime);
     this.runtime = runtime;
     this.intervalMs = config?.intervalMs ?? 1500;
+    this.discoveryIntervalMs = config?.discoveryIntervalMs ?? 5000;
+    this.matchmakingIntervalMs = config?.matchmakingIntervalMs ?? 10000;
+    this.autoMatchmaking = config?.autoMatchmaking ?? false;
     this.debug = config?.debug ?? false;
   }
 
   static async start(runtime: IAgentRuntime): Promise<LTCGPollingService> {
     const callbackUrl = runtime.getSetting('LTCG_CALLBACK_URL');
     const debugMode = runtime.getSetting('LTCG_DEBUG_MODE') === 'true';
+    // LTCG_AUTO_MATCHMAKING is already transformed to boolean by config schema
+    const autoMatchmaking = runtime.getSetting('LTCG_AUTO_MATCHMAKING') === 'true';
+
+    logger.debug({ autoMatchmakingSetting: runtime.getSetting('LTCG_AUTO_MATCHMAKING'), parsed: autoMatchmaking }, 'Matchmaking config');
 
     // Only start polling if no webhook URL is configured
     if (callbackUrl) {
@@ -71,6 +100,9 @@ export class LTCGPollingService extends Service {
 
     const service = new LTCGPollingService(runtime, {
       intervalMs: 1500,
+      discoveryIntervalMs: 5000,
+      matchmakingIntervalMs: 10000,
+      autoMatchmaking,
       debug: debugMode,
     });
 
@@ -85,6 +117,14 @@ export class LTCGPollingService extends Service {
         debug: debugMode,
       });
       logger.info('Polling service initialized with API client');
+
+      // Start auto-discovery loop
+      service.startDiscovery();
+
+      // Start auto-matchmaking if enabled
+      if (autoMatchmaking) {
+        service.startMatchmaking();
+      }
     } else {
       logger.warn('API credentials not configured - polling will not fetch game state');
     }
@@ -103,6 +143,8 @@ export class LTCGPollingService extends Service {
 
   async stop(): Promise<void> {
     this.stopPolling();
+    this.stopDiscovery();
+    this.stopMatchmaking();
     this.client = null;
     logger.info('Polling service stopped');
   }
@@ -178,9 +220,267 @@ export class LTCGPollingService extends Service {
     return this.currentGameId;
   }
 
+  /**
+   * Check if auto-matchmaking is enabled
+   */
+  isMatchmakingEnabled(): boolean {
+    return this.autoMatchmaking;
+  }
+
+  /**
+   * Get the API client instance
+   */
+  getClient(): LTCGApiClient | null {
+    return this.client;
+  }
+
+  /**
+   * Get current matchmaking status and recent events
+   */
+  getMatchmakingStatus(): MatchmakingStatus {
+    const status: 'idle' | 'scanning' | 'joining' | 'in_game' = this.currentGameId
+      ? 'in_game'
+      : this.autoMatchmaking
+      ? 'scanning'
+      : 'idle';
+
+    return {
+      enabled: this.autoMatchmaking,
+      status,
+      lobbiesScanned: this.matchmakingStats.lastScanAt > 0 ? 1 : 0,
+      recentJoins: this.matchmakingEvents.slice(-10),
+      stats: {
+        lobbiesJoined: this.matchmakingStats.lobbiesJoined,
+        gamesStarted: this.matchmakingStats.gamesStarted,
+        lastScanAt: this.matchmakingStats.lastScanAt,
+      },
+      nextScanIn: this.matchmakingInterval
+        ? this.matchmakingIntervalMs
+        : 0,
+    };
+  }
+
+  /**
+   * Get deck ID for auto-matchmaking
+   */
+  private async getDeckId(): Promise<string | null> {
+    if (this.cachedDeckId) {
+      return this.cachedDeckId;
+    }
+
+    if (!this.client) {
+      return null;
+    }
+
+    try {
+      // Try to get preferred deck ID from settings
+      const preferredDeckId = this.runtime.getSetting('LTCG_PREFERRED_DECK_ID') as string;
+      if (preferredDeckId) {
+        this.cachedDeckId = preferredDeckId;
+        return preferredDeckId;
+      }
+
+      // Fall back to first available deck
+      const decks = await this.client.getDecks();
+      if (decks.length > 0) {
+        this.cachedDeckId = decks[0].deckId;
+        return this.cachedDeckId;
+      }
+
+      logger.warn('No decks available for auto-matchmaking');
+      return null;
+    } catch (error) {
+      logger.error({ error }, 'Failed to get deck ID');
+      return null;
+    }
+  }
+
+  /**
+   * Start auto-discovery of pending games
+   */
+  startDiscovery(): void {
+    if (!this.client) {
+      logger.warn('Cannot start discovery - API client not initialized');
+      return;
+    }
+
+    if (this.discoveryInterval) {
+      logger.debug('Discovery already running');
+      return;
+    }
+
+    logger.info({ discoveryIntervalMs: this.discoveryIntervalMs }, 'Starting game discovery');
+
+    // Start discovery loop
+    this.discoveryInterval = setInterval(() => {
+      this.checkForPendingGames().catch((error) => {
+        logger.error({ error }, 'Discovery error');
+      });
+    }, this.discoveryIntervalMs);
+
+    // Do an immediate check
+    this.checkForPendingGames().catch((error) => {
+      logger.error({ error }, 'Initial discovery error');
+    });
+  }
+
+  /**
+   * Stop auto-discovery
+   */
+  stopDiscovery(): void {
+    if (this.discoveryInterval) {
+      clearInterval(this.discoveryInterval);
+      this.discoveryInterval = null;
+      logger.debug('Discovery stopped');
+    }
+  }
+
+  /**
+   * Start auto-matchmaking to join available lobbies
+   */
+  startMatchmaking(): void {
+    if (!this.client) {
+      logger.warn('Cannot start matchmaking - API client not initialized');
+      return;
+    }
+
+    if (this.matchmakingInterval) {
+      logger.debug('Matchmaking already running');
+      return;
+    }
+
+    if (!this.autoMatchmaking) {
+      logger.debug('Auto-matchmaking is disabled');
+      return;
+    }
+
+    logger.info({ matchmakingIntervalMs: this.matchmakingIntervalMs }, '🎯 Starting auto-matchmaking');
+
+    // Start matchmaking loop
+    this.matchmakingInterval = setInterval(() => {
+      this.checkForAvailableLobbies().catch((error) => {
+        logger.error({ error }, 'Matchmaking error');
+      });
+    }, this.matchmakingIntervalMs);
+
+    // Do an immediate check
+    this.checkForAvailableLobbies().catch((error) => {
+      logger.error({ error }, 'Initial matchmaking check error');
+    });
+  }
+
+  /**
+   * Stop auto-matchmaking
+   */
+  stopMatchmaking(): void {
+    if (this.matchmakingInterval) {
+      clearInterval(this.matchmakingInterval);
+      this.matchmakingInterval = null;
+      logger.debug('Matchmaking stopped');
+    }
+  }
+
   // ============================================================================
   // Private Methods
   // ============================================================================
+
+  /**
+   * Check for pending games that need the agent's turn
+   */
+  private async checkForPendingGames(): Promise<void> {
+    if (!this.client) {
+      logger.warn('Cannot check pending games - API client not initialized');
+      return;
+    }
+
+    try {
+      const pendingGames = await this.client.getPendingTurns();
+
+      logger.debug({ count: pendingGames.length }, 'Checked for pending games');
+
+      for (const game of pendingGames) {
+        // Only start polling if we're not already polling this game
+        if (this.currentGameId !== game.gameId) {
+          logger.info({ gameId: game.gameId, turnNumber: game.turnNumber }, 'Auto-detected game requiring turn');
+          this.startPollingGame(game.gameId);
+          // Only poll one game at a time
+          break;
+        }
+      }
+    } catch (error) {
+      logger.warn({ error }, 'Failed to check pending games');
+    }
+  }
+
+  /**
+   * Check for available lobbies and auto-join
+   */
+  private async checkForAvailableLobbies(): Promise<void> {
+    if (!this.client) {
+      logger.warn('Cannot check lobbies - API client not initialized');
+      return;
+    }
+
+    // Don't join new lobbies if already in a game
+    if (this.currentGameId) {
+      logger.debug('Already in a game, skipping matchmaking');
+      return;
+    }
+
+    try {
+      // Get available lobbies (all modes - casual and ranked)
+      const lobbies = await this.client.getLobbies('all');
+
+      // Update last scan timestamp
+      this.matchmakingStats.lastScanAt = Date.now();
+
+      logger.debug({ count: lobbies.length }, 'Checked for available lobbies');
+
+      if (lobbies.length > 0) {
+        // Join the first available lobby
+        const lobby = lobbies[0];
+        logger.info({ lobbyId: lobby.lobbyId, host: lobby.hostPlayerName }, '🎯 Auto-joining available lobby');
+
+        try {
+          // Get deck ID for joining
+          const deckId = await this.getDeckId();
+          if (!deckId) {
+            logger.warn('No deck available for auto-matchmaking');
+            return;
+          }
+
+          const joinResult = await this.client.joinLobby({ lobbyId: lobby.lobbyId, deckId });
+          logger.info({
+            gameId: joinResult.gameId,
+            opponent: lobby.hostPlayerName
+          }, '✅ Successfully joined lobby - game starting!');
+
+          // Record the join event
+          this.matchmakingEvents.push({
+            timestamp: Date.now(),
+            lobbyId: lobby.lobbyId,
+            hostUsername: lobby.hostPlayerName,
+            gameId: joinResult.gameId,
+          });
+
+          // Update stats
+          this.matchmakingStats.lobbiesJoined++;
+          this.matchmakingStats.gamesStarted++;
+
+          // Trim event history
+          if (this.matchmakingEvents.length > this.maxEventHistory) {
+            this.matchmakingEvents.shift();
+          }
+
+          // The discovery loop will detect when it's our turn
+        } catch (joinError) {
+          logger.warn({ error: joinError, lobbyId: lobby.lobbyId }, 'Failed to join lobby');
+        }
+      }
+    } catch (error) {
+      logger.warn({ error }, 'Failed to check available lobbies');
+    }
+  }
 
   /**
    * Poll game state and detect changes
@@ -197,6 +497,8 @@ export class LTCGPollingService extends Service {
       // Detect changes and emit events
       const events = this.detectChanges(this.lastSnapshot, newSnapshot, gameState);
 
+      logger.debug({ gameId: this.currentGameId, eventCount: events.length }, 'Polled game state');
+
       for (const event of events) {
         await this.emitEvent(event, gameState);
       }
@@ -209,10 +511,7 @@ export class LTCGPollingService extends Service {
         this.stopPolling();
       }
     } catch (error) {
-      // Don't log every error to avoid spam, just debug
-      if (this.debug) {
-        logger.debug({ error }, 'Poll failed');
-      }
+      logger.warn({ error, gameId: this.currentGameId }, 'Poll failed');
     }
   }
 

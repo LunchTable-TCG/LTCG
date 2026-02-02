@@ -1,4 +1,5 @@
 import { type Character } from '@elizaos/core';
+import ltcgPlugin from './plugin';
 
 /**
  * Represents the default character (Eliza) with her specific attributes and behaviors.
@@ -14,6 +15,9 @@ export const character: Character = {
   plugins: [
     // Core plugins first
     '@elizaos/plugin-sql',
+
+    // LTCG Game Plugin - enables card game playing (local plugin object)
+    ltcgPlugin,
 
     // Text-only plugins (no embedding support)
     ...(process.env.ANTHROPIC_API_KEY?.trim() ? ['@elizaos/plugin-anthropic'] : []),

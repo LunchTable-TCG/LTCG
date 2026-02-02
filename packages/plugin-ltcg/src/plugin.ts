@@ -38,8 +38,11 @@ import { ltcgActions } from './actions';
 import { ltcgProviders } from './providers';
 import { ltcgEvaluators } from './evaluators';
 import { webhookRoutes } from './webhooks';
+import { panelRoutes } from './api/routes';
 import { LTCGPollingService } from './services/LTCGPollingService';
 import { TurnOrchestrator } from './services/TurnOrchestrator';
+import { StateAggregator } from './services/StateAggregator';
+import { panels } from './frontend';
 
 /**
  * Define the configuration schema for the LTCG plugin
@@ -93,7 +96,7 @@ const configSchema = z.object({
     .optional(),
 });
 
-const plugin: Plugin = {
+const plugin: Plugin & { panels?: any } = {
   name: 'ltcg',
   description: 'LTCG card game plugin - enables AI agents to play the Legendary Trading Card Game with full gameplay capabilities, real-time updates, and customizable personalities',
   // Set lowest priority so real models take precedence
@@ -160,6 +163,8 @@ const plugin: Plugin = {
     },
     // Webhook routes for real-time game events
     ...webhookRoutes,
+    // Panel API routes for UI dashboards
+    ...panelRoutes,
   ],
   events: {
     MESSAGE_RECEIVED: [
@@ -194,10 +199,13 @@ const plugin: Plugin = {
   // Services for autonomous gameplay:
   // - TurnOrchestrator: Makes LLM-driven gameplay decisions
   // - LTCGPollingService: Polls for updates when no webhook URL is configured
-  services: [TurnOrchestrator, LTCGPollingService],
+  // - StateAggregator: Aggregates service state for panel APIs
+  services: [TurnOrchestrator, LTCGPollingService, StateAggregator],
   actions: ltcgActions,
   providers: ltcgProviders,
   evaluators: ltcgEvaluators,
+  // UI panels for agent monitoring and analytics
+  panels,
 };
 
 export default plugin;

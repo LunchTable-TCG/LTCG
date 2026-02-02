@@ -24,6 +24,7 @@ import type {
   MonsterCard,
   SpellTrapCard,
 } from '../types/api';
+import type { Decision } from '../frontend/types/panel';
 
 // Action types the orchestrator can choose
 export type OrchestratorAction =
@@ -63,6 +64,10 @@ export class TurnOrchestrator extends Service {
   private isExecutingTurn = false;
   private currentGameId: string | null = null;
   private maxActionsPerTurn = 20; // Safety limit
+
+  // Decision history tracking for panels
+  private decisionHistory: Map<string, Decision[]> = new Map();
+  private readonly maxHistoryPerGame = 100;
 
   capabilityDescription = 'Orchestrates autonomous turn-by-turn gameplay decisions';
 
@@ -155,6 +160,14 @@ export class TurnOrchestrator extends Service {
     } catch (error) {
       logger.error({ error, gameId }, 'Error during chain response');
     }
+  }
+
+  /**
+   * Get decision history for a game (for panel display)
+   */
+  public getDecisionHistory(gameId: string, limit: number = 20): Decision[] {
+    const history = this.decisionHistory.get(gameId) ?? [];
+    return history.slice(-limit);
   }
 
   // ============================================================================
@@ -564,37 +577,94 @@ Choose wisely!`;
   ): Promise<boolean> {
     if (!this.client) return false;
 
+    const startTime = Date.now();
+    let success = false;
+
     try {
       switch (decision.action) {
         case 'SUMMON_MONSTER':
-          return await this.executeSummon(gameId, decision, context);
+          success = await this.executeSummon(gameId, decision, context);
+          break;
 
         case 'SET_CARD':
-          return await this.executeSetCard(gameId, decision, context);
+          success = await this.executeSetCard(gameId, decision, context);
+          break;
 
         case 'ACTIVATE_SPELL':
-          return await this.executeActivateSpell(gameId, decision, context);
+          success = await this.executeActivateSpell(gameId, decision, context);
+          break;
 
         case 'ATTACK':
-          return await this.executeAttack(gameId, decision, context);
+          success = await this.executeAttack(gameId, decision, context);
+          break;
 
         case 'CHANGE_POSITION':
-          return await this.executeChangePosition(gameId, decision, context);
+          success = await this.executeChangePosition(gameId, decision, context);
+          break;
 
         case 'FLIP_SUMMON':
-          return await this.executeFlipSummon(gameId, decision, context);
+          success = await this.executeFlipSummon(gameId, decision, context);
+          break;
 
         case 'END_TURN':
-          return await this.executeEndTurn(gameId);
+          success = await this.executeEndTurn(gameId);
+          break;
 
         default:
           logger.warn({ action: decision.action }, 'Unhandled action type');
-          return false;
+          success = false;
       }
+
+      return success;
     } catch (error) {
       logger.error({ error, action: decision.action }, 'Action execution failed');
       return false;
+    } finally {
+      // Record decision for panel display
+      const endTime = Date.now();
+      this.recordDecision(gameId, decision, context, success, startTime, endTime);
     }
+  }
+
+  /**
+   * Record a decision for history tracking
+   */
+  private recordDecision(
+    gameId: string,
+    decision: ActionDecision,
+    context: TurnContext,
+    success: boolean,
+    startTime: number,
+    endTime: number
+  ): void {
+    const decisionRecord: Decision = {
+      id: `${gameId}-${Date.now()}`,
+      timestamp: startTime,
+      turnNumber: context.turnNumber,
+      phase: context.phase,
+      action: decision.action,
+      reasoning: decision.reasoning,
+      parameters: decision.parameters ?? {},
+      result: success ? 'success' : 'failed',
+      executionTimeMs: endTime - startTime,
+    };
+
+    if (!this.decisionHistory.has(gameId)) {
+      this.decisionHistory.set(gameId, []);
+    }
+
+    const history = this.decisionHistory.get(gameId)!;
+    history.push(decisionRecord);
+
+    // Trim to max history
+    if (history.length > this.maxHistoryPerGame) {
+      history.shift();
+    }
+
+    logger.debug(
+      { action: decision.action, success, executionTime: endTime - startTime },
+      'Recorded decision'
+    );
   }
 
   /**
