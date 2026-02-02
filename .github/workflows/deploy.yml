@@ -3,109 +3,36 @@ name: Deploy to Production
 on:
   push:
     branches: [main]
-  workflow_dispatch: # Allow manual deployment
+  workflow_dispatch: # Allow manual trigger
 
-# Prevent concurrent deployments
+# Prevent concurrent runs
 concurrency:
   group: production-deployment
   cancel-in-progress: false
 
 jobs:
-  pre-deploy-tests:
+  validate:
     name: Pre-Deploy Validation
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.5
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Run unit tests
-        run: bun run test:unit
-
-      - name: Build web app
-        run: bun run build:web
-        env:
-          CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEPLOYMENT }}
-          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
-
-  deploy-convex:
-    name: Deploy Convex Backend
-    runs-on: ubuntu-latest
-    needs: [pre-deploy-tests]
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.5
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Deploy to Convex
-        run: bunx convex deploy --cmd 'bun run build:web'
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-
-  deploy-web:
-    name: Deploy Web to Vercel
-    runs-on: ubuntu-latest
-    needs: [deploy-convex]
     timeout-minutes: 15
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-          working-directory: apps/web
+          bun-version: 1.3.5
 
-  post-deploy-health-check:
-    name: Health Check
-    runs-on: ubuntu-latest
-    needs: [deploy-web]
-    timeout-minutes: 5
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
 
-    steps:
-      - name: Wait for deployment
-        run: sleep 30
+      - name: Type check
+        run: bun run type-check
 
-      - name: Health check endpoint
-        run: |
-          echo "Checking production health..."
-          # Add your production URL health check here
-          # curl -f https://your-production-url.com/api/health || exit 1
+      - name: Run unit tests
+        run: bun run test:unit
 
-      - name: Notify deployment success
-        run: echo "✅ Deployment completed successfully"
-
-  deployment-rollback:
-    name: Rollback on Failure
-    runs-on: ubuntu-latest
-    needs: [deploy-convex, deploy-web, post-deploy-health-check]
-    if: failure()
-
-    steps:
-      - name: Rollback notification
-        run: |
-          echo "❌ Deployment failed - manual rollback may be required"
-          echo "Check GitHub Actions logs for details"
+      - name: Validation complete
+        run: echo "✅ All validations passed - Vercel will handle deployment"
