@@ -10,7 +10,7 @@
 
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
+import { getCurrentUser, requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 
 /**
@@ -79,7 +79,10 @@ export const getUserWallet = query({
     v.null()
   ),
   handler: async (ctx) => {
-    const auth = await requireAuthQuery(ctx);
+    const auth = await getCurrentUser(ctx);
+    if (!auth) {
+      return null;
+    }
 
     const user = await ctx.db.get(auth.userId);
     if (!user) {

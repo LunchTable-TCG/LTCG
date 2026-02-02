@@ -2,6 +2,7 @@
 
 import { apiAny } from "@/lib/convexHelpers";
 import { usePrivy } from "@privy-io/react-auth";
+import { useWallets } from "@privy-io/react-auth/solana";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -11,16 +12,30 @@ interface AuthGuardProps {
   children: ReactNode;
   /** If true, redirects to login when not authenticated. Default: true */
   requireAuth?: boolean;
-  /** If true, requires username to be set. Default: true */
-  requireUsername?: boolean;
+  /** If true, requires complete onboarding (username + deck). Default: true */
+  requireOnboarding?: boolean;
 }
 
 type AuthState =
   | "loading" // Privy or Convex still initializing
   | "unauthenticated" // Not logged in
   | "syncing" // Convex verified, creating/fetching user
-  | "needs_username" // User exists but no username
+  | "needs_onboarding" // User exists but missing username or starter deck
   | "authenticated"; // Fully ready
+
+/**
+ * Check if a wallet is a Privy embedded wallet
+ */
+function isPrivyEmbeddedWallet(wallet: { standardWallet: { name?: string; isPrivyWallet?: boolean } }) {
+  const standardWallet = wallet.standardWallet;
+  if ("isPrivyWallet" in standardWallet && standardWallet.isPrivyWallet) {
+    return true;
+  }
+  if (standardWallet.name?.toLowerCase().includes("privy")) {
+    return true;
+  }
+  return false;
+}
 
 /**
  * Central authentication state machine component.
@@ -29,21 +44,25 @@ type AuthState =
  * State flow:
  * 1. loading - Waiting for Privy/Convex to initialize
  * 2. unauthenticated - User not logged in
- * 3. syncing - JWT verified, creating user in DB
- * 4. needs_username - User exists but needs to set username
+ * 3. syncing - JWT verified, creating user in DB + auto-syncing wallet
+ * 4. needs_onboarding - User exists but needs username or starter deck
  * 5. authenticated - Fully ready, render children
  */
 export function AuthGuard({
   children,
   requireAuth = true,
-  requireUsername = true,
+  requireOnboarding = true,
 }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
 
   // Auth providers state
-  const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
+  const { ready: privyReady, authenticated: privyAuthenticated, user: privyUser } = usePrivy();
   const { isAuthenticated: convexAuthenticated, isLoading: convexLoading } = useConvexAuth();
+  const { wallets, ready: walletsReady } = useWallets();
+
+  // Find embedded wallet for auto-sync
+  const embeddedWallet = wallets.find((w) => isPrivyEmbeddedWallet(w));
 
   // User data - only query when Convex is authenticated
   const currentUser = useQuery(apiAny.core.users.currentUser, convexAuthenticated ? {} : "skip");
@@ -59,27 +78,35 @@ export function AuthGuard({
     privyAuthenticated,
     convexLoading,
     convexAuthenticated,
+    walletsReady,
     currentUser,
     syncCompleted: syncCompleted.current,
   });
 
-  // Handle user sync when needed - auto-create user in DB
+  // Handle user sync when needed - auto-create user in DB with wallet
   useEffect(() => {
     async function syncUser() {
       // Only sync if:
       // 1. Convex is authenticated (JWT verified)
-      // 2. User query returned null (no user in DB)
-      // 3. Not already syncing
-      // 4. Not already completed sync this session
+      // 2. Wallets are ready (to capture embedded wallet)
+      // 3. User query returned null (no user in DB)
+      // 4. Not already syncing
+      // 5. Not already completed sync this session
       if (
         convexAuthenticated &&
+        walletsReady &&
         currentUser === null &&
         !syncInProgress.current &&
         !syncCompleted.current
       ) {
         syncInProgress.current = true;
         try {
-          await createOrGetUser({});
+          // Auto-sync wallet during user creation
+          await createOrGetUser({
+            email: privyUser?.email?.address,
+            walletAddress: embeddedWallet?.address,
+            walletType: embeddedWallet ? "privy_embedded" : undefined,
+          });
           syncCompleted.current = true;
         } catch (error) {
           console.error("[AuthGuard] Failed to sync user:", error);
@@ -91,7 +118,7 @@ export function AuthGuard({
     }
 
     syncUser();
-  }, [convexAuthenticated, currentUser, createOrGetUser]);
+  }, [convexAuthenticated, walletsReady, currentUser, createOrGetUser, embeddedWallet, privyUser]);
 
   // Handle redirects based on state
   useEffect(() => {
@@ -99,10 +126,10 @@ export function AuthGuard({
       router.replace(`/login?returnTo=${encodeURIComponent(pathname)}`);
     }
 
-    if (authState === "needs_username" && requireUsername) {
-      router.replace("/setup-username");
+    if (authState === "needs_onboarding" && requireOnboarding) {
+      router.replace("/onboarding");
     }
-  }, [authState, requireAuth, requireUsername, router, pathname]);
+  }, [authState, requireAuth, requireOnboarding, router, pathname]);
 
   // Render based on state
   if (authState === "loading" || authState === "syncing") {
@@ -113,7 +140,7 @@ export function AuthGuard({
     return <AuthLoadingScreen message="Redirecting to login..." />;
   }
 
-  if (authState === "needs_username" && requireUsername) {
+  if (authState === "needs_onboarding" && requireOnboarding) {
     return <AuthLoadingScreen message="Completing setup..." />;
   }
 
@@ -125,6 +152,7 @@ function deriveAuthState(params: {
   privyAuthenticated: boolean;
   convexLoading: boolean;
   convexAuthenticated: boolean;
+  walletsReady: boolean;
   currentUser: unknown;
   syncCompleted: boolean;
 }): AuthState {
@@ -133,6 +161,7 @@ function deriveAuthState(params: {
     privyAuthenticated,
     convexLoading,
     convexAuthenticated,
+    walletsReady,
     currentUser,
     syncCompleted,
   } = params;
@@ -147,8 +176,8 @@ function deriveAuthState(params: {
     return "unauthenticated";
   }
 
-  // Stage 3: Privy authenticated, waiting for Convex
-  if (!convexAuthenticated) {
+  // Stage 3: Privy authenticated, waiting for Convex or wallets
+  if (!convexAuthenticated || !walletsReady) {
     return "loading";
   }
 
@@ -162,14 +191,12 @@ function deriveAuthState(params: {
     return "syncing";
   }
 
-  // Stage 6: User exists but no username
-  if (
-    currentUser &&
-    typeof currentUser === "object" &&
-    "username" in currentUser &&
-    !currentUser.username
-  ) {
-    return "needs_username";
+  // Stage 6: User exists but missing username OR starter deck
+  if (currentUser && typeof currentUser === "object") {
+    const user = currentUser as { username?: string; activeDeckId?: string };
+    if (!user.username || !user.activeDeckId) {
+      return "needs_onboarding";
+    }
   }
 
   // Stage 7: Fully authenticated

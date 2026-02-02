@@ -33,6 +33,39 @@ export type Archetype =
 export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type CardType = "creature" | "spell" | "trap" | "equipment";
 
+// Industry-standard TCG types
+export type Attribute =
+  | "fire"
+  | "water"
+  | "earth"
+  | "wind"
+  | "light"
+  | "dark"
+  | "divine"
+  | "neutral";
+
+export type MonsterType =
+  | "dragon"
+  | "spellcaster"
+  | "warrior"
+  | "beast"
+  | "fiend"
+  | "zombie"
+  | "machine"
+  | "aqua"
+  | "pyro"
+  | "divine_beast";
+
+export type SpellType =
+  | "normal"
+  | "quick_play"
+  | "continuous"
+  | "field"
+  | "equip"
+  | "ritual";
+
+export type TrapType = "normal" | "continuous" | "counter";
+
 // =============================================================================
 // User & Session Types
 // =============================================================================

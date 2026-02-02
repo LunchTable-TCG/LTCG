@@ -190,6 +190,8 @@ export const normalSummon = mutation({
       defense: card.defense || 0,
       hasAttacked: false,
       isFaceDown: false, // Normal summon is face-up
+      hasChangedPosition: false,
+      turnSummoned: gameState.turnNumber,
       ...protectionFlags,
     };
 
@@ -466,6 +468,8 @@ export const setMonster = mutation({
       defense: card.defense || 0,
       hasAttacked: false,
       isFaceDown: true, // Set monsters are face-down
+      hasChangedPosition: false,
+      turnSummoned: gameState.turnNumber,
     };
 
     const newBoard = [...board, newBoardCard];
@@ -787,6 +791,8 @@ export const normalSummonInternal = internalMutation({
       defense: card.defense || 0,
       hasAttacked: false,
       isFaceDown: false,
+      hasChangedPosition: false,
+      turnSummoned: gameState.turnNumber ?? 0,
       ...protectionFlags,
     };
 

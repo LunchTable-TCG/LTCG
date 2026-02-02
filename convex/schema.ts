@@ -485,6 +485,9 @@ export default defineSchema({
         cannotBeDestroyedByBattle: v.optional(v.boolean()),
         cannotBeDestroyedByEffects: v.optional(v.boolean()),
         cannotBeTargeted: v.optional(v.boolean()),
+        // Position change tracking
+        hasChangedPosition: v.optional(v.boolean()), // Reset each turn
+        turnSummoned: v.optional(v.number()), // Turn number when summoned
       })
     ),
     opponentBoard: v.array(
@@ -499,6 +502,9 @@ export default defineSchema({
         cannotBeDestroyedByBattle: v.optional(v.boolean()),
         cannotBeDestroyedByEffects: v.optional(v.boolean()),
         cannotBeTargeted: v.optional(v.boolean()),
+        // Position change tracking
+        hasChangedPosition: v.optional(v.boolean()), // Reset each turn
+        turnSummoned: v.optional(v.number()), // Turn number when summoned
       })
     ),
 
@@ -835,6 +841,53 @@ export default defineSchema({
     attack: v.optional(v.number()),
     defense: v.optional(v.number()),
     cost: v.number(),
+
+    // Industry-standard TCG fields
+    level: v.optional(v.number()), // Monster level (1-12), determines tribute requirements
+    attribute: v.optional(
+      v.union(
+        v.literal("fire"),
+        v.literal("water"),
+        v.literal("earth"),
+        v.literal("wind"),
+        v.literal("light"),
+        v.literal("dark"),
+        v.literal("divine"),
+        v.literal("neutral")
+      )
+    ),
+    monsterType: v.optional(
+      v.union(
+        v.literal("dragon"),
+        v.literal("spellcaster"),
+        v.literal("warrior"),
+        v.literal("beast"),
+        v.literal("fiend"),
+        v.literal("zombie"),
+        v.literal("machine"),
+        v.literal("aqua"),
+        v.literal("pyro"),
+        v.literal("divine_beast")
+      )
+    ),
+    spellType: v.optional(
+      v.union(
+        v.literal("normal"),
+        v.literal("quick_play"),
+        v.literal("continuous"),
+        v.literal("field"),
+        v.literal("equip"),
+        v.literal("ritual")
+      )
+    ),
+    trapType: v.optional(
+      v.union(
+        v.literal("normal"),
+        v.literal("continuous"),
+        v.literal("counter")
+      )
+    ),
+
     ability: v.optional(jsonAbilityValidator), // JSON ability format
     flavorText: v.optional(v.string()),
     imageUrl: v.optional(v.string()),

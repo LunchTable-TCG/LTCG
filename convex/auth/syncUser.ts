@@ -1,14 +1,18 @@
 import { v } from "convex/values";
-import { mutation } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 
 /**
  * Create or get a user based on their Privy ID.
  * Called automatically by AuthGuard when a new user authenticates.
+ * Now also accepts wallet info for auto-connection during onboarding.
  */
 export const createOrGetUser = mutation({
   args: {
     email: v.optional(v.string()),
     walletAddress: v.optional(v.string()),
+    walletType: v.optional(
+      v.union(v.literal("privy_embedded"), v.literal("external"))
+    ),
   },
   async handler(ctx, args) {
     const identity = await ctx.auth.getUserIdentity();
@@ -25,18 +29,33 @@ export const createOrGetUser = mutation({
       .first();
 
     if (existingUser) {
+      // If user exists but wallet not yet synced, update it
+      if (args.walletAddress && !existingUser.walletAddress) {
+        await ctx.db.patch(existingUser._id, {
+          walletAddress: args.walletAddress,
+          walletType: args.walletType,
+          walletConnectedAt: Date.now(),
+        });
+      }
+
       return {
         userId: existingUser._id,
         isNewUser: false,
         hasUsername: !!existingUser.username,
+        hasStarterDeck: !!existingUser.activeDeckId,
+        hasWallet: !!(args.walletAddress || existingUser.walletAddress),
       };
     }
 
-    // Create new user with game defaults
+    // Create new user with game defaults + wallet if provided
     const userId = await ctx.db.insert("users", {
       privyId,
       email: args.email,
       createdAt: Date.now(),
+      // Auto-connect wallet if provided
+      walletAddress: args.walletAddress,
+      walletType: args.walletType,
+      walletConnectedAt: args.walletAddress ? Date.now() : undefined,
       // Game defaults
       gold: 500,
       xp: 0,
@@ -62,6 +81,47 @@ export const createOrGetUser = mutation({
       userId,
       isNewUser: true,
       hasUsername: false,
+      hasStarterDeck: false,
+      hasWallet: !!args.walletAddress,
+    };
+  },
+});
+
+/**
+ * Get the onboarding status for the current user.
+ * Used by the onboarding page to determine which steps are complete.
+ */
+export const getOnboardingStatus = query({
+  args: {},
+  returns: v.union(
+    v.null(),
+    v.object({
+      hasUsername: v.boolean(),
+      hasStarterDeck: v.boolean(),
+      hasWallet: v.boolean(),
+    })
+  ),
+  async handler(ctx) {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+
+    const privyId = identity.subject;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("privyId", (q) => q.eq("privyId", privyId))
+      .first();
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      hasUsername: !!user.username,
+      hasStarterDeck: !!user.activeDeckId,
+      hasWallet: !!user.walletAddress,
     };
   },
 });

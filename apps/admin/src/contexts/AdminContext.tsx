@@ -75,7 +75,11 @@ interface AdminProviderProps {
 export function AdminProvider({ children }: AdminProviderProps) {
   // Use convexHelpers to avoid TS2589 type instantiation errors
   const currentUser = useConvexQuery(api.core.users.currentUser);
-  const adminRoleData = useConvexQuery(api.admin.admin.getMyAdminRole) as AdminRoleData | undefined;
+  // Only query admin role if user is authenticated (skip query if not)
+  const adminRoleData = useConvexQuery(
+    api.admin.admin.getMyAdminRole,
+    currentUser ? {} : "skip"
+  ) as AdminRoleData | undefined;
 
   // Player ID is the same as user ID
   const playerId: Id<"users"> | null = currentUser?._id ?? null;

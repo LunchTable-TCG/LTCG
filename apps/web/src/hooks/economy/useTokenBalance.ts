@@ -72,14 +72,15 @@ interface UseTokenBalanceReturn {
  * @throws When user is not authenticated
  */
 export function useTokenBalance(): UseTokenBalanceReturn {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Query cached balance from Convex
+  // Only query when explicitly authenticated (not during initial auth check) to avoid "Authentication required" errors
   // Returns: { balance, lastVerifiedAt, isStale } | null
   const cachedBalance = useConvexQuery(
     apiAny.economy.tokenBalance.getTokenBalance,
-    isAuthenticated ? {} : "skip"
+    isAuthenticated === true && !authLoading ? {} : "skip"
   ) as { balance: number; lastVerifiedAt: number; isStale: boolean } | null | undefined;
 
   // Mutation to request balance refresh

@@ -19,7 +19,7 @@ import {
   query,
 } from "../_generated/server";
 import { TOKEN } from "../lib/constants";
-import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
+import { getCurrentUser, requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { internalAny } from "../lib/internalHelpers";
 import { checkRateLimitWrapper } from "../lib/rateLimit";
@@ -47,10 +47,13 @@ export const getTokenBalance = query({
     v.null()
   ),
   handler: async (ctx) => {
-    const { userId } = await requireAuthQuery(ctx);
+    const auth = await getCurrentUser(ctx);
+    if (!auth) {
+      return null;
+    }
 
     // Look up user's wallet address
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get(auth.userId);
     if (!user?.walletAddress) {
       return null;
     }
@@ -58,7 +61,7 @@ export const getTokenBalance = query({
     // Query cached balance
     const cached = await ctx.db
       .query("tokenBalanceCache")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user", (q) => q.eq("userId", auth.userId))
       .first();
 
     if (!cached) {

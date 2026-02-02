@@ -10,6 +10,7 @@
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { getTributeCount, canChangePosition } from "../lib/cardPropertyHelpers";
 
 export interface ValidationResult {
   valid: boolean;
@@ -88,16 +89,9 @@ export async function validateNormalSummon(
     };
   }
 
-  // 5. Validate tribute requirements based on cost (higher cost = higher level)
-  const cost = card.cost || 0;
+  // 5. Validate tribute requirements based on level (uses new helper with fallback to cost)
   const tributesProvided = tributeCardIds?.length || 0;
-
-  let requiredTributes = 0;
-  if (cost >= 7) {
-    requiredTributes = 2;
-  } else if (cost >= 5) {
-    requiredTributes = 1;
-  }
+  const requiredTributes = getTributeCount(card);
 
   if (tributesProvided < requiredTributes) {
     const cardName = card.name || "This monster";
@@ -325,10 +319,10 @@ export async function validatePositionChange(
   }
 
   // 2. Check if card is face-up
-  if (boardCard.position < 0) {
+  if (boardCard.isFaceDown) {
     return {
       valid: false,
-      error: "Cannot change position of face-down monster",
+      error: "Cannot change position of face-down monster. Use Flip Summon instead.",
     };
   }
 
@@ -345,8 +339,23 @@ export async function validatePositionChange(
     };
   }
 
-  // 4. Check if card was summoned this turn
-  // Note: Would need tracking for this - deferred to future implementation
+  // 4. Check if card can change position this turn (summoned this turn or already changed)
+  const currentTurn = gameState.turnNumber;
+  if (!canChangePosition(boardCard, currentTurn)) {
+    // Determine the specific reason
+    if (boardCard.turnSummoned === currentTurn) {
+      return {
+        valid: false,
+        error: "Cannot change position of a monster the same turn it was summoned.",
+      };
+    }
+    if (boardCard.hasChangedPosition) {
+      return {
+        valid: false,
+        error: "This monster has already changed position this turn.",
+      };
+    }
+  }
 
   return { valid: true };
 }

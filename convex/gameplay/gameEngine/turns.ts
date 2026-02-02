@@ -103,15 +103,17 @@ export const endTurn = mutation({
     const playerBoard = isHost ? gameState.hostBoard : gameState.opponentBoard;
     const opponentBoard = isHost ? gameState.opponentBoard : gameState.hostBoard;
 
-    // Reset hasAttacked for all monsters
+    // Reset hasAttacked and hasChangedPosition for all monsters
     const resetPlayerBoard = playerBoard.map((card) => ({
       ...card,
       hasAttacked: false,
+      hasChangedPosition: false,
     }));
 
     const resetOpponentBoard = opponentBoard.map((card) => ({
       ...card,
       hasAttacked: false,
+      hasChangedPosition: false,
     }));
 
     // 9. Record turn_end event
@@ -325,11 +327,13 @@ export const endTurnInternal = internalMutation({
     const resetPlayerBoard = playerBoard.map((card) => ({
       ...card,
       hasAttacked: false,
+      hasChangedPosition: false,
     }));
 
     const resetOpponentBoard = opponentBoard.map((card) => ({
       ...card,
       hasAttacked: false,
+      hasChangedPosition: false,
     }));
 
     // 9. Record turn_end event

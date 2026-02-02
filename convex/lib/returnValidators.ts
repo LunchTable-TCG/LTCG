@@ -125,6 +125,10 @@ export const fullUserValidator = v.union(
     warningCount: v.optional(v.number()),
     // HD Wallet tracking
     nextWalletIndex: v.optional(v.number()),
+    // Wallet fields
+    walletAddress: v.optional(v.string()),
+    walletConnectedAt: v.optional(v.number()),
+    walletType: v.optional(v.string()),
   })
 );
 

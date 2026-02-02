@@ -97,9 +97,10 @@ export function useGameWallet(): UseGameWalletReturn {
   const [error, setError] = useState<string | null>(null);
 
   // Convex queries and mutations - use apiAny to avoid TS2589 deep instantiation errors
+  // Only query when explicitly authenticated (not during initial auth check) to avoid "Authentication required" errors
   const savedWallet = useConvexQuery(
     apiAny.wallet.userWallet.getUserWallet,
-    isAuthenticated ? {} : "skip"
+    isAuthenticated === true && !authLoading ? {} : "skip"
   ) as
     | { walletAddress: string; walletType: WalletType; walletConnectedAt: number }
     | null
@@ -143,7 +144,8 @@ export function useGameWallet(): UseGameWalletReturn {
    * Creates the wallet if it doesn't exist, then saves to Convex.
    */
   const connectEmbeddedWallet = useCallback(async () => {
-    if (!isAuthenticated) {
+    // Wait for auth to be fully ready (not just authenticated, but also not loading)
+    if (!isAuthenticated || authLoading) {
       setError("Must be authenticated to connect wallet");
       return;
     }
@@ -176,14 +178,15 @@ export function useGameWallet(): UseGameWalletReturn {
     } finally {
       setIsConnecting(false);
     }
-  }, [isAuthenticated, embeddedWallet, createWallet, saveWalletMutation]);
+  }, [isAuthenticated, authLoading, embeddedWallet, createWallet, saveWalletMutation]);
 
   /**
    * Connect an external Solana wallet (Phantom, Solflare, etc.).
    * Opens Privy's wallet connection modal, then saves to Convex.
    */
   const connectExternalWallet = useCallback(async () => {
-    if (!isAuthenticated) {
+    // Wait for auth to be fully ready (not just authenticated, but also not loading)
+    if (!isAuthenticated || authLoading) {
       setError("Must be authenticated to connect wallet");
       return;
     }
@@ -220,14 +223,15 @@ export function useGameWallet(): UseGameWalletReturn {
     } finally {
       setIsConnecting(false);
     }
-  }, [isAuthenticated, connectWallet, externalWallet, wallets, saveWalletMutation]);
+  }, [isAuthenticated, authLoading, connectWallet, externalWallet, wallets, saveWalletMutation]);
 
   /**
    * Disconnect the current wallet from the game account.
    * This only removes the database link - the wallet stays linked in Privy.
    */
   const disconnectWalletAction = useCallback(async () => {
-    if (!isAuthenticated) {
+    // Wait for auth to be fully ready (not just authenticated, but also not loading)
+    if (!isAuthenticated || authLoading) {
       setError("Must be authenticated to disconnect wallet");
       return;
     }
@@ -249,7 +253,7 @@ export function useGameWallet(): UseGameWalletReturn {
     } finally {
       setIsConnecting(false);
     }
-  }, [isAuthenticated, savedWallet, disconnectWalletMutation]);
+  }, [isAuthenticated, authLoading, savedWallet, disconnectWalletMutation]);
 
   return {
     walletAddress,

@@ -277,14 +277,14 @@ export function GameLobby() {
           {!myActiveLobby && !isSearching && (
             <div className="flex items-center gap-0">
               {/* Mode Selector */}
-              <div className="flex rounded-l-lg overflow-hidden border border-r-0 border-[#3d2b1f] bg-black/30 h-12">
+              <div className="flex rounded-l-lg overflow-hidden border border-r-0 border-[#3d2b1f] bg-black/40 h-10">
                 <button
                   type="button"
                   onClick={() => setQuickMatchMode("casual")}
                   className={cn(
-                    "px-3 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5",
+                    "px-3 text-[11px] font-bold uppercase tracking-widest transition-all flex items-center gap-1.5",
                     quickMatchMode === "casual"
-                      ? "bg-linear-to-r from-green-600 to-green-500 text-white"
+                      ? "bg-linear-to-r from-green-600 to-green-500 text-[#fef9e6]"
                       : "text-[#a89f94] hover:text-[#e8e0d5] hover:bg-white/5"
                   )}
                   title="Casual - No rank changes"
@@ -296,7 +296,7 @@ export function GameLobby() {
                   type="button"
                   onClick={() => setQuickMatchMode("ranked")}
                   className={cn(
-                    "px-3 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5",
+                    "px-3 text-[11px] font-bold uppercase tracking-widest transition-all flex items-center gap-1.5",
                     quickMatchMode === "ranked"
                       ? "bg-linear-to-r from-amber-600 to-yellow-500 text-[#1a1614]"
                       : "text-[#a89f94] hover:text-[#e8e0d5] hover:bg-white/5"
@@ -311,7 +311,7 @@ export function GameLobby() {
               <button
                 type="button"
                 onClick={handleQuickMatch}
-                className="h-12 px-5 rounded-r-lg font-bold uppercase tracking-wide text-sm flex items-center gap-2 transition-all bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg hover:shadow-xl"
+                className="h-10 px-4 rounded-r-lg tcg-button-primary text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-shadow"
               >
                 <Sparkles className="w-4 h-4" />
                 Quick Match

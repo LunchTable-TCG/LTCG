@@ -8,7 +8,6 @@
  * @module
  */
 
-import type * as __mocks___ratelimiter from "../__mocks__/ratelimiter.js";
 import type * as __tests___fixtures_decks from "../__tests__/fixtures/decks.js";
 import type * as __tests___fixtures_users from "../__tests__/fixtures/users.js";
 import type * as __tests___helpers_index from "../__tests__/helpers/index.js";
@@ -124,6 +123,7 @@ import type * as infrastructure_shardedCounters from "../infrastructure/shardedC
 import type * as leaderboards from "../leaderboards.js";
 import type * as lib_abilityHelpers from "../lib/abilityHelpers.js";
 import type * as lib_adminAudit from "../lib/adminAudit.js";
+import type * as lib_cardPropertyHelpers from "../lib/cardPropertyHelpers.js";
 import type * as lib_constants from "../lib/constants.js";
 import type * as lib_convexAuth from "../lib/convexAuth.js";
 import type * as lib_debug from "../lib/debug.js";
@@ -192,6 +192,7 @@ import type * as testing_seedTestDeck from "../testing/seedTestDeck.js";
 import type * as testing_seedTestUser from "../testing/seedTestUser.js";
 import type * as wallet_createAgentWallet from "../wallet/createAgentWallet.js";
 import type * as wallet_index from "../wallet/index.js";
+import type * as wallet_tokenTransfer from "../wallet/tokenTransfer.js";
 import type * as wallet_updateAgentWallet from "../wallet/updateAgentWallet.js";
 import type * as wallet_userWallet from "../wallet/userWallet.js";
 import type * as welcomeEmails from "../welcomeEmails.js";
@@ -203,7 +204,6 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "__mocks__/ratelimiter": typeof __mocks___ratelimiter;
   "__tests__/fixtures/decks": typeof __tests___fixtures_decks;
   "__tests__/fixtures/users": typeof __tests___fixtures_users;
   "__tests__/helpers/index": typeof __tests___helpers_index;
@@ -319,6 +319,7 @@ declare const fullApi: ApiFromModules<{
   leaderboards: typeof leaderboards;
   "lib/abilityHelpers": typeof lib_abilityHelpers;
   "lib/adminAudit": typeof lib_adminAudit;
+  "lib/cardPropertyHelpers": typeof lib_cardPropertyHelpers;
   "lib/constants": typeof lib_constants;
   "lib/convexAuth": typeof lib_convexAuth;
   "lib/debug": typeof lib_debug;
@@ -387,6 +388,7 @@ declare const fullApi: ApiFromModules<{
   "testing/seedTestUser": typeof testing_seedTestUser;
   "wallet/createAgentWallet": typeof wallet_createAgentWallet;
   "wallet/index": typeof wallet_index;
+  "wallet/tokenTransfer": typeof wallet_tokenTransfer;
   "wallet/updateAgentWallet": typeof wallet_updateAgentWallet;
   "wallet/userWallet": typeof wallet_userWallet;
   welcomeEmails: typeof welcomeEmails;

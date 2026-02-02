@@ -80,11 +80,12 @@ export const changePosition = mutation({
     const newPositionName = newPosition === 1 ? "attack" : "defense";
     const oldPositionName = currentPosition === 1 ? "attack" : "defense";
 
-    // 7. Update position (maintain face-up status)
+    // 7. Update position (maintain face-up status, mark as changed)
     const newBoard = [...board];
     newBoard[cardIndex] = {
       ...boardCard,
       position: newPosition,
+      hasChangedPosition: true, // Cannot change position again this turn
     };
 
     await ctx.db.patch(gameState._id, {

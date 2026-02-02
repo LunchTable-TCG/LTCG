@@ -241,6 +241,46 @@ export const cardArchetypeValidator = v.union(
 export type CardArchetypeInfer = Infer<typeof cardArchetypeValidator>;
 
 /**
+ * Monster type validator (industry-standard TCG types)
+ */
+export const monsterTypeValidator = v.union(
+  v.literal("dragon"),
+  v.literal("spellcaster"),
+  v.literal("warrior"),
+  v.literal("beast"),
+  v.literal("fiend"),
+  v.literal("zombie"),
+  v.literal("machine"),
+  v.literal("aqua"),
+  v.literal("pyro"),
+  v.literal("divine_beast")
+);
+export type MonsterTypeInfer = Infer<typeof monsterTypeValidator>;
+
+/**
+ * Spell type validator
+ */
+export const spellTypeValidator = v.union(
+  v.literal("normal"),
+  v.literal("quick_play"),
+  v.literal("continuous"),
+  v.literal("field"),
+  v.literal("equip"),
+  v.literal("ritual")
+);
+export type SpellTypeInfer = Infer<typeof spellTypeValidator>;
+
+/**
+ * Trap type validator
+ */
+export const trapTypeValidator = v.union(
+  v.literal("normal"),
+  v.literal("continuous"),
+  v.literal("counter")
+);
+export type TrapTypeInfer = Infer<typeof trapTypeValidator>;
+
+/**
  * Position validator
  */
 export const positionValidator = v.union(
@@ -353,6 +393,9 @@ export const jsonConditionValidator = v.object({
   cardType: v.optional(
     v.union(v.literal("creature"), v.literal("spell"), v.literal("trap"), v.literal("equipment"))
   ),
+  monsterType: v.optional(v.union(monsterTypeValidator, v.array(monsterTypeValidator))),
+  spellType: v.optional(v.union(spellTypeValidator, v.array(spellTypeValidator))),
+  trapType: v.optional(v.union(trapTypeValidator, v.array(trapTypeValidator))),
   level: v.optional(numericOrRangeValidator),
   attack: v.optional(numericOrRangeValidator),
   defense: v.optional(numericOrRangeValidator),
@@ -428,6 +471,9 @@ export const jsonTargetValidator = v.object({
   type: v.optional(targetTypeValidator),
   archetype: v.optional(v.union(v.string(), v.array(v.string()))),
   attribute: v.optional(v.union(cardAttributeValidator, v.array(cardAttributeValidator))),
+  monsterType: v.optional(v.union(monsterTypeValidator, v.array(monsterTypeValidator))),
+  spellType: v.optional(v.union(spellTypeValidator, v.array(spellTypeValidator))),
+  trapType: v.optional(v.union(trapTypeValidator, v.array(trapTypeValidator))),
   position: v.optional(v.union(positionValidator, v.literal("facedown"))),
   level: v.optional(numericOrRangeValidator),
   attack: v.optional(numericOrRangeValidator),
@@ -795,6 +841,9 @@ export const validators = {
   duration: durationTypeValidator,
   attribute: cardAttributeValidator,
   archetype: cardArchetypeValidator,
+  monsterType: monsterTypeValidator,
+  spellType: spellTypeValidator,
+  trapType: trapTypeValidator,
   position: positionValidator,
   phase: phaseValidator,
   comparison: comparisonOperatorValidator,
