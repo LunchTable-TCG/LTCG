@@ -5,7 +5,7 @@ const footerLinks = {
   game: {
     title: "Battle",
     links: [
-      { href: "/cards", label: "Card Codex" },
+      { href: "/binder", label: "Card Codex" },
       { href: "/news", label: "Chronicles" },
     ],
   },
@@ -13,7 +13,9 @@ const footerLinks = {
     title: "Guild",
     links: [
       { href: "/social", label: "Guild Hall" },
-      { href: "https://discord.gg/lunchtable", label: "Discord", external: true },
+      { href: "https://discord.gg/hgjCJJZh", label: "Discord", external: true },
+      { href: "https://x.com/LunchTableTCG", label: "X", external: true },
+      { href: "https://github.com/LunchTable-TCG/LTCG", label: "GitHub", external: true },
     ],
   },
   legal: {
