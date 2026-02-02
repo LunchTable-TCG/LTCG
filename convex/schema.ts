@@ -966,22 +966,36 @@ export default defineSchema({
   // File Storage: Metadata for uploaded files (images, documents, etc.)
   fileMetadata: defineTable({
     userId: v.id("users"),
-    storageId: v.string(), // Reference to Convex storage
+    storageId: v.string(), // Reference to Convex storage or Vercel Blob pathname
     fileName: v.string(),
     contentType: v.string(),
     size: v.number(),
     category: v.union(
+      // User uploads
       v.literal("profile_picture"),
       v.literal("card_image"),
       v.literal("document"),
-      v.literal("other")
+      v.literal("other"),
+      // Admin-managed assets (Vercel Blob)
+      v.literal("background"),
+      v.literal("texture"),
+      v.literal("ui_element"),
+      v.literal("shop_asset"),
+      v.literal("story_asset"),
+      v.literal("logo")
     ),
+    // Vercel Blob fields (optional for backward compatibility)
+    blobUrl: v.optional(v.string()), // Full Vercel Blob URL
+    blobPathname: v.optional(v.string()), // Path within blob storage (e.g., "assets/backgrounds/hero.jpg")
+    description: v.optional(v.string()), // Admin notes/description
     uploadedAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_user_category", ["userId", "category"])
     .index("by_uploaded_at", ["uploadedAt"])
-    .index("by_storage_id", ["storageId"]),
+    .index("by_storage_id", ["storageId"])
+    .index("by_category", ["category"])
+    .index("by_blob_pathname", ["blobPathname"]),
 
   // ============================================================================
   // LEADERBOARDS & MATCH HISTORY
