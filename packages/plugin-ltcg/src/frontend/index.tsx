@@ -3,8 +3,25 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import React from 'react';
 import type { UUID } from '@elizaos/core';
+import { MatchmakingPanel } from './panels/MatchmakingPanel';
+import { GameDashboard } from './panels/GameDashboard';
+import { DecisionStream } from './panels/DecisionStream';
+import { MetricsPanel } from './panels/MetricsPanel';
+import { ErrorBoundary } from './components';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Reduce refetches on window focus for better performance
+      refetchOnWindowFocus: false,
+      // Retry failed requests with exponential backoff
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // Enable request deduplication
+      structuralSharing: true,
+    },
+  },
+});
 
 // Define the interface for the ELIZA_CONFIG
 interface ElizaConfig {
@@ -46,12 +63,12 @@ function ExampleRoute() {
 }
 
 /**
- * Example provider component
+ * Example provider component - renders the Matchmaking Panel for development
  */
 function ExampleProvider({ agentId }: { agentId: UUID }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <div>Hello {agentId}</div>
+      <MatchmakingPanel agentId={agentId} />
     </QueryClientProvider>
   );
 }
@@ -72,26 +89,54 @@ export interface AgentPanel {
   shortLabel?: string; // Optional short label for mobile
 }
 
-interface PanelProps {
-  agentId: string;
+/**
+ * Wrap panels with ErrorBoundary for production resilience
+ */
+function withErrorBoundary(Component: React.ComponentType<any>) {
+  return function WrappedPanel(props: any) {
+    return (
+      <ErrorBoundary>
+        <Component {...props} />
+      </ErrorBoundary>
+    );
+  };
 }
 
 /**
- * Example panel component for the plugin system
+ * Export the panel configuration for integration with the agent UI
  */
-const PanelComponent: React.FC<PanelProps> = ({ agentId }) => {
-  return <div>Helllo {agentId}!</div>;
-};
-
-// Export the panel configuration for integration with the agent UI
 export const panels: AgentPanel[] = [
   {
-    name: 'Example',
-    path: 'example',
-    component: PanelComponent,
-    icon: 'Book',
+    name: 'Matchmaking',
+    path: 'ltcg-matchmaking',
+    component: withErrorBoundary(MatchmakingPanel),
+    icon: 'Target',
     public: false,
-    shortLabel: 'Example',
+    shortLabel: 'Match',
+  },
+  {
+    name: 'Game',
+    path: 'ltcg-game',
+    component: withErrorBoundary(GameDashboard),
+    icon: 'Gamepad2',
+    public: false,
+    shortLabel: 'Game',
+  },
+  {
+    name: 'Decisions',
+    path: 'ltcg-decisions',
+    component: withErrorBoundary(DecisionStream),
+    icon: 'Brain',
+    public: false,
+    shortLabel: 'AI',
+  },
+  {
+    name: 'Metrics',
+    path: 'ltcg-metrics',
+    component: withErrorBoundary(MetricsPanel),
+    icon: 'BarChart3',
+    public: false,
+    shortLabel: 'Stats',
   },
 ];
 
