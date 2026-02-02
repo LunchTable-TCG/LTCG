@@ -13,7 +13,8 @@
     "baseUrl": ".",
     "types": ["vite/client", "node"],
     "paths": {
-      "@convex-test-utils/*": ["../convex_test_utils/*"]
+      "@convex-test-utils/*": ["../convex_test_utils/*"],
+      "@data/*": ["../data/*"]
     },
 
     /* Strict Type-Checking Options */
