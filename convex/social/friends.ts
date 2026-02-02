@@ -142,7 +142,7 @@ export const sendFriendRequest = mutation({
           requesterUsername: sender.username || sender.name || "Player",
         },
         senderId: userId,
-        senderUsername: sender.username || sender.name,
+        senderUsername: sender.username || sender.name || "Player",
       });
     }
 

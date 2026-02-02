@@ -100,19 +100,20 @@ export const sendChallenge = mutation({
     });
 
     // Send inbox notification to challenged player
+    const senderName = user.username || "Player";
     await ctx.scheduler.runAfter(0, internal.social.inbox.createInboxMessage, {
       userId: opponent._id,
       type: "challenge" as const,
       title: "Game Challenge!",
-      message: `${user.username} has challenged you to a ${args.mode} match!`,
+      message: `${senderName} has challenged you to a ${args.mode} match!`,
       data: {
         challengerId: user.userId,
-        challengerUsername: user.username,
+        challengerUsername: senderName,
         lobbyId,
         mode: args.mode,
       },
       senderId: user.userId,
-      senderUsername: user.username,
+      senderUsername: senderName,
       // Challenge expires in 24 hours
       expiresAt: now + 24 * 60 * 60 * 1000,
     });
