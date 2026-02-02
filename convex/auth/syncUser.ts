@@ -29,13 +29,23 @@ export const createOrGetUser = mutation({
       .first();
 
     if (existingUser) {
-      // If user exists but wallet not yet synced, update it
+      // Sync any missing data (email, wallet) for existing users
+      const updates: Record<string, unknown> = {};
+
+      // Backfill email if not stored but now available
+      if (args.email && !existingUser.email) {
+        updates["email"] = args.email;
+      }
+
+      // Sync wallet if not yet connected
       if (args.walletAddress && !existingUser.walletAddress) {
-        await ctx.db.patch(existingUser._id, {
-          walletAddress: args.walletAddress,
-          walletType: args.walletType,
-          walletConnectedAt: Date.now(),
-        });
+        updates["walletAddress"] = args.walletAddress;
+        updates["walletType"] = args.walletType;
+        updates["walletConnectedAt"] = Date.now();
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await ctx.db.patch(existingUser._id, updates);
       }
 
       return {
