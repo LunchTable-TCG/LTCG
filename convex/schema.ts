@@ -256,6 +256,27 @@ export default defineSchema({
     .index("by_prefix_active", ["keyPrefix", "isActive"])
     .index("by_user", ["userId"]),
 
+  // Agent decision history for analytics and debugging
+  agentDecisions: defineTable({
+    agentId: v.id("agents"),
+    gameId: v.string(), // Game lobby ID
+    turnNumber: v.number(),
+    phase: v.string(),
+    action: v.string(), // Action type (SUMMON_MONSTER, ATTACK, etc.)
+    reasoning: v.string(), // LLM's reasoning for the decision
+    parameters: v.optional(v.any()), // Action parameters (card IDs, targets, etc.)
+    // REASON: v.any() used because parameters vary by action type and may include
+    // dynamic fields like cardId, targetId, position, etc. Runtime validation
+    // happens in the TurnOrchestrator before storing.
+    executionTimeMs: v.optional(v.number()), // How long the decision took
+    result: v.optional(v.string()), // Success, failure, or error message
+    createdAt: v.number(),
+  })
+    .index("by_agent", ["agentId"])
+    .index("by_game", ["gameId"])
+    .index("by_agent_game", ["agentId", "gameId"])
+    .index("by_created", ["createdAt"]),
+
   // Reference data for the 4 starter decks
   starterDeckDefinitions: defineTable({
     name: v.string(),

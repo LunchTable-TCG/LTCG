@@ -627,7 +627,7 @@ Choose wisely!`;
   }
 
   /**
-   * Record a decision for history tracking
+   * Record a decision for history tracking (in-memory + persistent)
    */
   private recordDecision(
     gameId: string,
@@ -637,6 +637,9 @@ Choose wisely!`;
     startTime: number,
     endTime: number
   ): void {
+    const executionTimeMs = endTime - startTime;
+    const result = success ? 'success' : 'failed';
+
     const decisionRecord: Decision = {
       id: `${gameId}-${Date.now()}`,
       timestamp: startTime,
@@ -645,10 +648,11 @@ Choose wisely!`;
       action: decision.action,
       reasoning: decision.reasoning,
       parameters: decision.parameters ?? {},
-      result: success ? 'success' : 'failed',
-      executionTimeMs: endTime - startTime,
+      result,
+      executionTimeMs,
     };
 
+    // Store in memory for immediate access by panels
     if (!this.decisionHistory.has(gameId)) {
       this.decisionHistory.set(gameId, []);
     }
@@ -656,15 +660,55 @@ Choose wisely!`;
     const history = this.decisionHistory.get(gameId)!;
     history.push(decisionRecord);
 
-    // Trim to max history
+    // Trim in-memory history to max
     if (history.length > this.maxHistoryPerGame) {
       history.shift();
     }
 
+    // Persist to Convex asynchronously (fire-and-forget)
+    this.persistDecision({
+      gameId,
+      turnNumber: context.turnNumber,
+      phase: context.phase,
+      action: decision.action,
+      reasoning: decision.reasoning,
+      parameters: decision.parameters,
+      executionTimeMs,
+      result,
+    }).catch((error) => {
+      logger.warn({ error }, 'Failed to persist decision to Convex');
+    });
+
     logger.debug(
-      { action: decision.action, success, executionTime: endTime - startTime },
+      { action: decision.action, success, executionTime: executionTimeMs },
       'Recorded decision'
     );
+  }
+
+  /**
+   * Persist a decision to Convex for long-term storage
+   */
+  private async persistDecision(decision: {
+    gameId: string;
+    turnNumber: number;
+    phase: string;
+    action: string;
+    reasoning: string;
+    parameters?: Record<string, unknown>;
+    executionTimeMs: number;
+    result: string;
+  }): Promise<void> {
+    if (!this.client) {
+      return;
+    }
+
+    try {
+      // Use the LTCGApiClient to save the decision
+      await this.client.saveDecision(decision);
+    } catch (error) {
+      // Log but don't throw - persistence is best-effort
+      logger.debug({ error }, 'Decision persistence failed (non-critical)');
+    }
   }
 
   /**

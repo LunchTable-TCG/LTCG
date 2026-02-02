@@ -32,6 +32,9 @@ import * as decks from "./http/decks";
 // Global Chat
 import * as chat from "./http/chat";
 
+// Decision History
+import * as decisions from "./http/decisions";
+
 const http = httpRouter();
 
 // ============================================================================
@@ -359,6 +362,31 @@ http.route({
   path: "/api/agents/chat/online-users",
   method: "GET",
   handler: chat.onlineUsers,
+});
+
+// ============================================================================
+// Decision History Endpoints
+// ============================================================================
+
+// POST /api/agents/decisions - Save a decision
+http.route({
+  path: "/api/agents/decisions",
+  method: "POST",
+  handler: decisions.saveDecision,
+});
+
+// GET /api/agents/decisions - Get decisions (optionally filtered by gameId)
+http.route({
+  path: "/api/agents/decisions",
+  method: "GET",
+  handler: decisions.getDecisions,
+});
+
+// GET /api/agents/decisions/stats - Get decision statistics
+http.route({
+  path: "/api/agents/decisions/stats",
+  method: "GET",
+  handler: decisions.getDecisionStats,
 });
 
 export default http;

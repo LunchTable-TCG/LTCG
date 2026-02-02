@@ -897,4 +897,92 @@ export class LTCGApiClient {
       body: JSON.stringify({ gameId }),
     });
   }
+
+  // ============================================================================
+  // Decision History Methods
+  // ============================================================================
+
+  /**
+   * Save a decision to persistent storage
+   * POST /api/agents/decisions
+   */
+  async saveDecision(decision: {
+    gameId: string;
+    turnNumber: number;
+    phase: string;
+    action: string;
+    reasoning: string;
+    parameters?: Record<string, unknown>;
+    executionTimeMs?: number;
+    result?: string;
+  }): Promise<{ success: boolean; decisionId: string }> {
+    return this.request<{ success: boolean; decisionId: string }>(
+      '/api/agents/decisions',
+      {
+        method: 'POST',
+        body: JSON.stringify(decision),
+      }
+    );
+  }
+
+  /**
+   * Get decisions, optionally filtered by game
+   * GET /api/agents/decisions?gameId=xxx&limit=50
+   */
+  async getDecisions(options?: {
+    gameId?: string;
+    limit?: number;
+  }): Promise<{ decisions: Array<{
+    _id: string;
+    agentId: string;
+    gameId: string;
+    turnNumber: number;
+    phase: string;
+    action: string;
+    reasoning: string;
+    parameters?: Record<string, unknown>;
+    executionTimeMs?: number;
+    result?: string;
+    createdAt: number;
+  }> }> {
+    const params = new URLSearchParams();
+    if (options?.gameId) params.set('gameId', options.gameId);
+    if (options?.limit) params.set('limit', options.limit.toString());
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<{ decisions: Array<{
+      _id: string;
+      agentId: string;
+      gameId: string;
+      turnNumber: number;
+      phase: string;
+      action: string;
+      reasoning: string;
+      parameters?: Record<string, unknown>;
+      executionTimeMs?: number;
+      result?: string;
+      createdAt: number;
+    }> }>(`/api/agents/decisions${query}`, { method: 'GET' });
+  }
+
+  /**
+   * Get decision statistics for this agent
+   * GET /api/agents/decisions/stats
+   */
+  async getDecisionStats(): Promise<{
+    totalDecisions: number;
+    actionCounts: Record<string, number>;
+    avgExecutionTimeMs: number;
+    successRate: number;
+    successCount: number;
+    failureCount: number;
+  }> {
+    return this.request<{
+      totalDecisions: number;
+      actionCounts: Record<string, number>;
+      avgExecutionTimeMs: number;
+      successRate: number;
+      successCount: number;
+      failureCount: number;
+    }>('/api/agents/decisions/stats', { method: 'GET' });
+  }
 }
