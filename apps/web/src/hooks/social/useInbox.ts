@@ -2,7 +2,7 @@
 
 import { handleHookError } from "@/lib/errorHandling";
 import { api } from "@convex/_generated/api";
-import type { Id, Doc } from "@convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";

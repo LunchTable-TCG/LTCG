@@ -60,30 +60,30 @@ export function InboxDropdown({ className }: InboxDropdownProps) {
 
   // Close dropdown when clicking outside
   useEffect(() => {
+    if (!isOpen) return;
+
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
 
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
   // Close on escape key
   useEffect(() => {
+    if (!isOpen) return;
+
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setIsOpen(false);
       }
     }
 
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      return () => document.removeEventListener("keydown", handleEscape);
-    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen]);
 
   const recentMessages = messages?.slice(0, 5) ?? [];
@@ -166,7 +166,6 @@ export function InboxDropdown({ className }: InboxDropdownProps) {
                     message={message}
                     onMarkAsRead={markAsRead}
                     onClaimReward={claimReward}
-                    onClose={() => setIsOpen(false)}
                   />
                 ))}
               </div>
@@ -195,10 +194,9 @@ interface InboxMessageItemProps {
   message: InboxMessage;
   onMarkAsRead: (id: Id<"userInbox">) => Promise<void>;
   onClaimReward: (id: Id<"userInbox">) => Promise<unknown>;
-  onClose: () => void;
 }
 
-function InboxMessageItem({ message, onMarkAsRead, onClaimReward, onClose }: InboxMessageItemProps) {
+function InboxMessageItem({ message, onMarkAsRead, onClaimReward }: InboxMessageItemProps) {
   const [isClaiming, setIsClaiming] = useState(false);
   const Icon = messageIcons[message.type];
   const colorClass = messageColors[message.type];

@@ -90,7 +90,7 @@ function InboxContent() {
     activeFilter === "all" ? messages : getMessagesByType(activeFilter);
 
   // Filter options with counts
-  const filterOptions: Array<{ key: InboxMessageType | "all"; count: number }> = [
+  const allFilterOptions: Array<{ key: InboxMessageType | "all"; count: number }> = [
     { key: "all", count: messages?.length ?? 0 },
     { key: "reward", count: getMessagesByType("reward").length },
     { key: "announcement", count: getMessagesByType("announcement").length },
@@ -98,7 +98,8 @@ function InboxContent() {
     { key: "friend_request", count: getMessagesByType("friend_request").length },
     { key: "system", count: getMessagesByType("system").length },
     { key: "achievement", count: getMessagesByType("achievement").length },
-  ].filter((opt) => opt.key === "all" || opt.count > 0);
+  ];
+  const filterOptions = allFilterOptions.filter((opt) => opt.key === "all" || opt.count > 0);
 
   return (
     <div className="min-h-screen bg-[#0d0a09] pt-24 pb-12">
