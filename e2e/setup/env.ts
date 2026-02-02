@@ -53,9 +53,9 @@ const REQUIRED_ENV_VARS = ["NEXT_PUBLIC_PRIVY_APP_ID"] as const;
 
 /**
  * Optional environment variables with their purposes.
- * @internal Documentation only - not used in code
+ * Exported for documentation purposes.
  */
-const _OPTIONAL_ENV_VARS = {
+export const OPTIONAL_ENV_VARS = {
   CONVEX_URL: "Convex backend URL (default: http://127.0.0.1:3210)",
   BASE_URL: "Application base URL (default: http://localhost:3000)",
   TEST_NETWORK_TIMEOUT: "Network timeout in ms (default: 30000)",
