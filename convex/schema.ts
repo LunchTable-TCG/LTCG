@@ -1618,6 +1618,37 @@ export default defineSchema({
     .index("by_achievement", ["achievementId"]),
 
   // ============================================================================
+  // NEWS & ANNOUNCEMENTS SYSTEM
+  // ============================================================================
+
+  // News articles managed by admins
+  newsArticles: defineTable({
+    title: v.string(),
+    slug: v.string(), // URL-friendly identifier
+    excerpt: v.string(), // Short summary for listing
+    content: v.string(), // Full article content (markdown supported)
+    category: v.union(
+      v.literal("update"), // Game updates
+      v.literal("event"), // Events and tournaments
+      v.literal("patch"), // Patch notes
+      v.literal("announcement"), // General announcements
+      v.literal("maintenance") // Maintenance notices
+    ),
+    imageUrl: v.optional(v.string()), // Featured image
+    authorId: v.id("users"), // Admin who created it
+    isPublished: v.boolean(),
+    isPinned: v.boolean(), // Show at top of list
+    publishedAt: v.optional(v.number()), // When it was published
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_published", ["isPublished", "publishedAt"])
+    .index("by_category", ["category", "isPublished"])
+    .index("by_pinned", ["isPinned", "isPublished"])
+    .index("by_author", ["authorId"]),
+
+  // ============================================================================
   // SOCIAL SYSTEM - Friends
   // ============================================================================
 

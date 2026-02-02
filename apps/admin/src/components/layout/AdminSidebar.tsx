@@ -60,11 +60,17 @@ const navigation: NavGroup[] = [
     ],
   },
   {
+    title: "Content",
+    items: [
+      { title: "News", href: "/news", icon: "📰", permission: "config.edit" },
+      { title: "Assets", href: "/assets", icon: "🖼️", permission: "config.edit" },
+    ],
+  },
+  {
     title: "Management",
     items: [
       { title: "Admins", href: "/admins", icon: "👑", permission: "admin.manage" },
       { title: "API Keys", href: "/api-keys", icon: "🔑", permission: "player.view" },
-      { title: "Assets", href: "/assets", icon: "🖼️", permission: "config.edit" },
       { title: "Batch Operations", href: "/batch", icon: "📦", permission: "batch.operations" },
       { title: "Maintenance", href: "/maintenance", icon: "🔧", permission: "admin.manage" },
     ],

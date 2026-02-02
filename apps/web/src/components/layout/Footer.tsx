@@ -5,7 +5,7 @@ const footerLinks = {
   game: {
     title: "Battle",
     links: [
-      { href: "/binder", label: "Card Codex" },
+      { href: "/cards", label: "Card Codex" },
       { href: "/news", label: "Chronicles" },
     ],
   },
