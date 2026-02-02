@@ -100,9 +100,12 @@ export default function AuditLogPage() {
   const [targetType, setTargetType] = useState<TargetType | "all">("all");
   const [limit, setLimit] = useState(100);
 
-  const logs = useConvexQuery(apiAny.admin.admin.getAuditLog, {
+  const logsData = useConvexQuery(apiAny.admin.admin.getAuditLog, {
     limit,
-  }) as AuditLogEntry[] | undefined;
+  });
+
+  // Ensure logs is always an array (handle errors/non-array responses)
+  const logs: AuditLogEntry[] | undefined = Array.isArray(logsData) ? logsData : undefined;
 
   const columns: ColumnDef<AuditLogEntry>[] = [
     {

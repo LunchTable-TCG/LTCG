@@ -108,29 +108,27 @@ export default function PlayersPage() {
   const router = useRouter();
   const [playerTypeFilter, setPlayerTypeFilter] = useState<"all" | "human" | "ai">("all");
 
-  // Fetch player leaderboard
-  const leaderboardData = useConvexQuery(apiAny.social.leaderboards.getLeaderboard, {
-    type: "ranked",
-    segment: "all",
-    limit: 100,
+  // Fetch players using admin listPlayers (doesn't rely on aggregates)
+  const playersData = useConvexQuery(apiAny.admin.admin.listPlayers, {
+    limit: 200,
   });
 
   // Transform data for table (handle case where data isn't an array)
-  const tableData: PlayerListItem[] | undefined = Array.isArray(leaderboardData)
-    ? leaderboardData.map((entry: any) => ({
-        _id: entry.userId,
-        playerId: entry.userId,
-        name: entry.username || "Unknown",
-        type: (entry.isAiAgent ? "ai" : "human") as PlayerType,
-        eloRating: entry.rating,
-        rank: entry.rank,
-        gamesPlayed: entry.wins + entry.losses,
-        gamesWon: entry.wins,
-        winRate: entry.winRate,
+  const tableData: PlayerListItem[] | undefined = Array.isArray(playersData)
+    ? playersData.map((player: any) => ({
+        _id: player.playerId,
+        playerId: player.playerId,
+        name: player.name || "Unknown",
+        type: player.type as PlayerType,
+        eloRating: player.eloRating || 1000,
+        rank: player.rank,
+        gamesPlayed: 0, // Not available in listPlayers
+        gamesWon: 0, // Not available in listPlayers
+        winRate: 0, // Not available in listPlayers
       }))
     : undefined;
 
-  const isLoading = leaderboardData === undefined;
+  const isLoading = playersData === undefined;
 
   return (
     <PageWrapper title="Players" description="Manage and moderate player accounts">
