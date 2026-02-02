@@ -67,9 +67,9 @@
     "node_modules",
     "apps",
     "packages",
+    "convex",
     "**/*.test.ts",
     "**/*.test.tsx",
-    "**/__tests__/**",
-    "convex/**/*.test.ts"
+    "**/__tests__/**"
   ]
 }

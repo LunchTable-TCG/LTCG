@@ -142,8 +142,9 @@ export const createSystemUser = internalMutation({
  * Run this once during database initialization
  */
 // Extract references to avoid TS2589 "Type instantiation is excessively deep"
-const seedQuestsRef = internal.progression.quests.seedQuests;
-const seedAchievementsRef = internal.progression.achievements.seedAchievements;
+// Use type assertion to avoid deep type instantiation
+const seedQuestsRef = internal.progression.quests.seedQuests as any;
+const seedAchievementsRef = internal.progression.achievements.seedAchievements as any;
 
 export const initializeProgressionSystem = internalMutation({
   args: {},
