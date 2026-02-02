@@ -35,12 +35,16 @@ export class TestDataFactory {
     const privyDid = `did:privy:test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const displayName = opts.displayName ?? `TestPlayer_${Date.now()}`;
 
-    const userId = await this.client.mutation(internal.testing.seedTestUser.seedTestUser, {
-      privyDid,
-      displayName,
-      gold: opts.gold,
-      gems: opts.gems,
-    });
+    // Type assertion needed for internal function references in test context
+    const userId = await this.client.mutation(
+      internal.testing.seedTestUser.seedTestUser as any,
+      {
+        privyDid,
+        displayName,
+        gold: opts.gold,
+        gems: opts.gems,
+      }
+    ) as Id<"users">;
 
     this.createdUsers.push(userId);
     return { userId, privyDid, displayName };
