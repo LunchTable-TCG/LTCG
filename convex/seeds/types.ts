@@ -14,7 +14,12 @@ export type Archetype =
   | "nature_spirits"
   | "storm_elementals"
   | "shadow_assassins"
-  | "celestial_guardians";
+  | "celestial_guardians"
+  | "undead_legion"
+  | "divine_knights"
+  | "arcane_mages"
+  | "mechanical_constructs"
+  | "neutral";
 export type DeckArchetype = "fire" | "water" | "earth" | "wind" | "neutral";
 
 // JSON ability type alias for seed data
