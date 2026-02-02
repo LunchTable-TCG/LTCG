@@ -10,9 +10,8 @@
 import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
-import { useQuery } from "convex/react";
 import Link from "next/link";
 
 // =============================================================================
@@ -75,11 +74,11 @@ const ANALYTICS_CATEGORIES: CategoryLink[] = [
 
 export default function AnalyticsPage() {
   // Fetch system stats
-  const stats = useQuery(api.admin.admin.getSystemStats);
-  const suspiciousReport = useQuery(api.admin.admin.getSuspiciousActivityReport, {
+  const stats = useConvexQuery(apiAny.admin.admin.getSystemStats);
+  const suspiciousReport = useConvexQuery(apiAny.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
-  const marketplaceStats = useQuery(api.admin.analytics.getMarketplaceStats, {
+  const marketplaceStats = useConvexQuery(apiAny.admin.analytics.getMarketplaceStats, {
     periodType: "all_time",
   });
 

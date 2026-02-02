@@ -10,9 +10,8 @@
 import { ChartCard, LeaderboardGrid, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, BarChart, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
-import { useQuery } from "convex/react";
 import Link from "next/link";
 
 // =============================================================================
@@ -39,10 +38,10 @@ interface DailyStat {
 
 export default function PlayerAnalyticsPage() {
   // Fetch real data from Convex
-  const stats = useQuery(api.admin.admin.getSystemStats);
-  const dailyStats = useQuery(api.admin.analytics.getDailyActiveStats, { days: 14 });
-  const retention = useQuery(api.admin.analytics.getRetentionOverview);
-  const topEngaged = useQuery(api.admin.analytics.getTopEngagedPlayers, {
+  const stats = useConvexQuery(apiAny.admin.admin.getSystemStats);
+  const dailyStats = useConvexQuery(apiAny.admin.analytics.getDailyActiveStats, { days: 14 });
+  const retention = useConvexQuery(apiAny.admin.analytics.getRetentionOverview);
+  const topEngaged = useConvexQuery(apiAny.admin.analytics.getTopEngagedPlayers, {
     days: 7,
     limit: 10,
   });

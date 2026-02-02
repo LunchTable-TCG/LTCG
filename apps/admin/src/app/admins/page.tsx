@@ -30,10 +30,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
 import type { AdminRoleData, ColumnDef } from "@/types";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
-import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -85,7 +84,7 @@ function GrantRoleDialog() {
   const [expiresInDays, setExpiresInDays] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const grantRole = useMutation(api.admin.admin.grantAdminRole);
+  const grantRole = useConvexMutation(apiAny.admin.admin.grantAdminRole);
 
   const handleSubmit = async () => {
     if (!userId.trim()) {
@@ -197,7 +196,7 @@ function RevokeRoleDialog({ admin, onClose }: { admin: AdminRoleData; onClose: (
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const revokeRole = useMutation(api.admin.admin.revokeAdminRole);
+  const revokeRole = useConvexMutation(apiAny.admin.admin.revokeAdminRole);
 
   const handleRevoke = async () => {
     setIsSubmitting(true);
@@ -261,7 +260,7 @@ export default function AdminManagementPage() {
   const { role: myRole } = useAdmin();
   const [selectedAdmin, setSelectedAdmin] = useState<AdminRoleData | null>(null);
 
-  const admins = useQuery(api.admin.admin.listAdmins, {}) as AdminRoleData[] | undefined;
+  const admins = useConvexQuery(apiAny.admin.admin.listAdmins, {}) as AdminRoleData[] | undefined;
 
   const columns: ColumnDef<AdminRoleData>[] = [
     {

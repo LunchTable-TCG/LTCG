@@ -13,9 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AbnormalRatingChange, ColumnDef, SuspiciousMatchup } from "@/types";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { Card, Flex, Text, Title } from "@tremor/react";
-import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 
 // =============================================================================
@@ -183,7 +182,7 @@ export default function SuspiciousActivityPage() {
   const router = useRouter();
 
   // Fetch suspicious activity data
-  const report = useQuery(api.admin.admin.getSuspiciousActivityReport, {
+  const report = useConvexQuery(apiAny.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
 

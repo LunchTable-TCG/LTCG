@@ -89,7 +89,7 @@ export function DataTable<T extends object>({
 
   // Filter and sort data
   const processedData = useMemo(() => {
-    if (!data) return [];
+    if (!data || !Array.isArray(data)) return [];
 
     let result = [...data];
 

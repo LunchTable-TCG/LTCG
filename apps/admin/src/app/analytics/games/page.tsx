@@ -10,7 +10,7 @@
 import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
   Badge,
@@ -22,7 +22,6 @@ import {
   Text,
   Title,
 } from "@tremor/react";
-import { useQuery } from "convex/react";
 import Link from "next/link";
 
 // =============================================================================
@@ -77,11 +76,11 @@ function getHealthBadge(score: number) {
 
 export default function GameAnalyticsPage() {
   // Fetch real data from Convex
-  const stats = useQuery(api.admin.admin.getSystemStats);
-  const matchmakingHealth = useQuery(api.admin.analytics.getMatchmakingHealth);
-  const matchmakingStats = useQuery(api.admin.analytics.getMatchmakingStatsDetailed, { days: 14 });
-  const skillDist = useQuery(api.admin.analytics.getSkillDistribution, { ratingType: "elo" });
-  const dailyStats = useQuery(api.admin.analytics.getDailyActiveStats, { days: 14 });
+  const stats = useConvexQuery(apiAny.admin.admin.getSystemStats);
+  const matchmakingHealth = useConvexQuery(apiAny.admin.analytics.getMatchmakingHealth);
+  const matchmakingStats = useConvexQuery(apiAny.admin.analytics.getMatchmakingStatsDetailed, { days: 14 });
+  const skillDist = useConvexQuery(apiAny.admin.analytics.getSkillDistribution, { ratingType: "elo" });
+  const dailyStats = useConvexQuery(apiAny.admin.analytics.getDailyActiveStats, { days: 14 });
 
   const isLoading = stats === undefined;
 

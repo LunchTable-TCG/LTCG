@@ -10,7 +10,7 @@
 import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
   Badge,
@@ -22,7 +22,6 @@ import {
   Text,
   Title,
 } from "@tremor/react";
-import { useQuery } from "convex/react";
 import Link from "next/link";
 
 // =============================================================================
@@ -77,10 +76,10 @@ function getInflationBadge(trend: string | undefined) {
 
 export default function EconomyAnalyticsPage() {
   // Fetch real data from Convex
-  const snapshot = useQuery(api.admin.analytics.getCurrentEconomySnapshot);
-  const metrics = useQuery(api.admin.analytics.getEconomyMetrics, { days: 14 });
-  const wealth = useQuery(api.admin.analytics.getWealthDistribution);
-  const marketplaceStats = useQuery(api.admin.analytics.getMarketplaceStats, {
+  const snapshot = useConvexQuery(apiAny.admin.analytics.getCurrentEconomySnapshot);
+  const metrics = useConvexQuery(apiAny.admin.analytics.getEconomyMetrics, { days: 14 });
+  const wealth = useConvexQuery(apiAny.admin.analytics.getWealthDistribution);
+  const marketplaceStats = useConvexQuery(apiAny.admin.analytics.getMarketplaceStats, {
     periodType: "all_time",
   });
 

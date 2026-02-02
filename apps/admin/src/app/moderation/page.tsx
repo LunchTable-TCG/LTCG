@@ -14,9 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { BannedPlayer, ColumnDef } from "@/types";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { Card, Text, Title } from "@tremor/react";
-import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -84,8 +83,8 @@ export default function ModerationPage() {
   const router = useRouter();
 
   // Fetch moderation data
-  const bannedPlayers = useQuery(api.admin.moderation.listBannedPlayers, {});
-  const suspiciousReport = useQuery(api.admin.admin.getSuspiciousActivityReport, {
+  const bannedPlayers = useConvexQuery(apiAny.admin.moderation.listBannedPlayers, {});
+  const suspiciousReport = useConvexQuery(apiAny.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
 

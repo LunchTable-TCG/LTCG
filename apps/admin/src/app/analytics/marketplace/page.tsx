@@ -11,9 +11,8 @@ import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
-import { useQuery } from "convex/react";
 import Link from "next/link";
 
 // =============================================================================
@@ -30,10 +29,10 @@ interface EconomyMetric {
 
 export default function MarketplaceAnalyticsPage() {
   // Fetch real marketplace stats
-  const marketplaceStats = useQuery(api.admin.analytics.getMarketplaceStats, {
+  const marketplaceStats = useConvexQuery(apiAny.admin.analytics.getMarketplaceStats, {
     periodType: "all_time",
   });
-  const economyMetrics = useQuery(api.admin.analytics.getEconomyMetrics, { days: 7 });
+  const economyMetrics = useConvexQuery(apiAny.admin.analytics.getEconomyMetrics, { days: 7 });
 
   const isLoading = marketplaceStats === undefined;
 

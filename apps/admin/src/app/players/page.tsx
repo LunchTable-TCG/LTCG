@@ -18,8 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ColumnDef, PlayerType } from "@/types";
-import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -110,24 +109,26 @@ export default function PlayersPage() {
   const [playerTypeFilter, setPlayerTypeFilter] = useState<"all" | "human" | "ai">("all");
 
   // Fetch player leaderboard
-  const leaderboardData = useQuery(api.social.leaderboards.getLeaderboard, {
+  const leaderboardData = useConvexQuery(apiAny.social.leaderboards.getLeaderboard, {
     type: "ranked",
     segment: "all",
     limit: 100,
   });
 
-  // Transform data for table
-  const tableData: PlayerListItem[] | undefined = leaderboardData?.map((entry: any) => ({
-    _id: entry.userId,
-    playerId: entry.userId,
-    name: entry.username || "Unknown",
-    type: (entry.isAiAgent ? "ai" : "human") as PlayerType,
-    eloRating: entry.rating,
-    rank: entry.rank,
-    gamesPlayed: entry.wins + entry.losses,
-    gamesWon: entry.wins,
-    winRate: entry.winRate,
-  }));
+  // Transform data for table (handle case where data isn't an array)
+  const tableData: PlayerListItem[] | undefined = Array.isArray(leaderboardData)
+    ? leaderboardData.map((entry: any) => ({
+        _id: entry.userId,
+        playerId: entry.userId,
+        name: entry.username || "Unknown",
+        type: (entry.isAiAgent ? "ai" : "human") as PlayerType,
+        eloRating: entry.rating,
+        rank: entry.rank,
+        gamesPlayed: entry.wins + entry.losses,
+        gamesWon: entry.wins,
+        winRate: entry.winRate,
+      }))
+    : undefined;
 
   const isLoading = leaderboardData === undefined;
 

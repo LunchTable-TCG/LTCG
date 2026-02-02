@@ -16,9 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ColumnDef } from "@/types";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Card, Text, Title } from "@tremor/react";
-import { useQuery } from "convex/react";
 import { useState } from "react";
 
 // =============================================================================
@@ -101,7 +100,7 @@ export default function AuditLogPage() {
   const [targetType, setTargetType] = useState<TargetType | "all">("all");
   const [limit, setLimit] = useState(100);
 
-  const logs = useQuery(api.admin.admin.getAuditLog, {
+  const logs = useConvexQuery(apiAny.admin.admin.getAuditLog, {
     limit,
   }) as AuditLogEntry[] | undefined;
 
