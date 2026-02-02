@@ -91,16 +91,8 @@ export async function validateApiKeyInternal(
   try {
     // Extract prefix for fast database lookup (first 12 chars including "ltcg_")
     const keyPrefixToFind = `${apiKey.substring(0, 12)}...`;
-    console.log("[API_KEY_DEBUG] Looking for prefix:", keyPrefixToFind);
 
-    // DEBUG: Get all keys to see what's in the database
-    const allKeys = await ctx.db.query("apiKeys").collect();
-    console.log("[API_KEY_DEBUG] Total keys in DB:", allKeys.length);
-    for (const k of allKeys.slice(0, 5)) {
-      console.log("[API_KEY_DEBUG] DB key:", k.keyPrefix, "isActive:", k.isActive);
-    }
-
-    // Query keys matching this prefix - try filter first to debug
+    // Query keys matching this prefix
     const matchingKeys = await ctx.db
       .query("apiKeys")
       .filter((q: any) =>
@@ -111,12 +103,8 @@ export async function validateApiKeyInternal(
       )
       .collect();
 
-    console.log("[API_KEY_DEBUG] Found matching keys:", matchingKeys.length);
-
     for (const keyRecord of matchingKeys) {
-      console.log("[API_KEY_DEBUG] Comparing against stored prefix:", keyRecord.keyPrefix);
       const isValid = verifyApiKey(apiKey, keyRecord.keyHash);
-      console.log("[API_KEY_DEBUG] bcrypt compareSync result:", isValid);
       if (isValid) {
         // Note: lastUsedAt update removed - queries are read-only in Convex
         // This can be tracked separately via a mutation if needed
