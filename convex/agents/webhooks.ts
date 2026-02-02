@@ -6,8 +6,8 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
 import { action, internalMutation, internalQuery, mutation } from "../_generated/server";
+import { internalAny } from "../lib/internalHelpers";
 
 /**
  * Webhook event types
@@ -150,7 +150,7 @@ export const sendWebhook = action({
   handler: async (ctx, args): Promise<WebhookResult> => {
     // Get agent webhook config
     const config: WebhookConfig | null = await ctx.runQuery(
-      internal.agents.webhooks.getAgentWebhookConfig,
+      internalAny.agents.webhooks.getAgentWebhookConfig,
       { agentId: args.agentId }
     );
 
@@ -196,14 +196,14 @@ export const sendWebhook = action({
 
       if (response.ok) {
         // Record success
-        await ctx.runMutation(internal.agents.webhooks.recordWebhookSuccess, {
+        await ctx.runMutation(internalAny.agents.webhooks.recordWebhookSuccess, {
           agentId: args.agentId,
         });
         console.log(`[Webhook] Sent ${args.eventType} to agent ${args.agentId}`);
         return { sent: true, status: response.status };
       } else {
         // Record failure
-        await ctx.runMutation(internal.agents.webhooks.recordWebhookFailure, {
+        await ctx.runMutation(internalAny.agents.webhooks.recordWebhookFailure, {
           agentId: args.agentId,
         });
         console.log(`[Webhook] Failed to send to agent ${args.agentId}: ${response.status}`);
@@ -211,7 +211,7 @@ export const sendWebhook = action({
       }
     } catch (error) {
       // Record failure
-      await ctx.runMutation(internal.agents.webhooks.recordWebhookFailure, {
+      await ctx.runMutation(internalAny.agents.webhooks.recordWebhookFailure, {
         agentId: args.agentId,
       });
       console.error(`[Webhook] Error sending to agent ${args.agentId}:`, error);

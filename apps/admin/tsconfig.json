@@ -47,6 +47,9 @@
       "@convex-test-utils/*": [
         "../../convex_test_utils/*"
       ],
+      "@data/*": [
+        "../../data/*"
+      ],
       "@/*": [
         "./src/*"
       ]

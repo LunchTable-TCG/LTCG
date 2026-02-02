@@ -40,7 +40,7 @@ import type {
 // =============================================================================
 
 // biome-ignore lint/suspicious/noExplicitAny: Required to break TS2589 deep type instantiation
-// @ts-expect-error TS2589: Type instantiation is excessively deep - intentional to break type chain
+// @ts-ignore TS2589: Type instantiation may be excessively deep in some configs
 const apiAny: any = api;
 // biome-ignore lint/suspicious/noExplicitAny: Required to break TS2589 deep type instantiation
 const internalAny: any = internal;
