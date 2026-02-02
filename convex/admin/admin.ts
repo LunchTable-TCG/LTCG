@@ -800,3 +800,88 @@ async function calculatePlayerRankAndPercentile(
 
   return { rank, percentile };
 }
+
+/**
+ * Get player inventory for admin view
+ * Returns all cards owned by a player with quantities and card details
+ */
+export const getPlayerInventory = query({
+  args: {
+    playerId: v.id("users"),
+  },
+  handler: async (ctx, { playerId }) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "moderator");
+
+    const player = await ctx.db.get(playerId);
+    if (!player) return null;
+
+    // Get all player cards
+    const playerCards = await ctx.db
+      .query("playerCards")
+      .withIndex("by_user", (q) => q.eq("userId", playerId))
+      .collect();
+
+    // Batch fetch card definitions
+    const cardDefIds = playerCards.map((pc) => pc.cardDefinitionId);
+    const cardDefs = await Promise.all(cardDefIds.map((id) => ctx.db.get(id)));
+    const cardDefMap = new Map(
+      cardDefs.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
+    );
+
+    // Join with card definitions
+    const inventory = playerCards
+      .map((pc) => {
+        const cardDef = cardDefMap.get(pc.cardDefinitionId);
+        if (!cardDef) return null;
+
+        return {
+          playerCardId: pc._id,
+          cardDefinitionId: pc.cardDefinitionId,
+          name: cardDef.name,
+          rarity: cardDef.rarity,
+          archetype: cardDef.archetype,
+          cardType: cardDef.cardType,
+          attack: cardDef.attack,
+          defense: cardDef.defense,
+          cost: cardDef.cost,
+          quantity: pc.quantity,
+          isFavorite: pc.isFavorite,
+          acquiredAt: pc.acquiredAt,
+          imageUrl: cardDef.imageUrl,
+        };
+      })
+      .filter((c) => c !== null);
+
+    // Sort by rarity (legendary first) then by name
+    const rarityOrder = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
+    inventory.sort((a, b) => {
+      const rarityDiff =
+        (rarityOrder[a.rarity as keyof typeof rarityOrder] ?? 5) -
+        (rarityOrder[b.rarity as keyof typeof rarityOrder] ?? 5);
+      if (rarityDiff !== 0) return rarityDiff;
+      return a.name.localeCompare(b.name);
+    });
+
+    // Calculate summary stats
+    const totalCards = inventory.reduce((sum, c) => sum + c.quantity, 0);
+    const uniqueCards = inventory.length;
+    const byRarity = {
+      legendary: inventory.filter((c) => c.rarity === "legendary").reduce((s, c) => s + c.quantity, 0),
+      epic: inventory.filter((c) => c.rarity === "epic").reduce((s, c) => s + c.quantity, 0),
+      rare: inventory.filter((c) => c.rarity === "rare").reduce((s, c) => s + c.quantity, 0),
+      uncommon: inventory.filter((c) => c.rarity === "uncommon").reduce((s, c) => s + c.quantity, 0),
+      common: inventory.filter((c) => c.rarity === "common").reduce((s, c) => s + c.quantity, 0),
+    };
+
+    return {
+      playerId,
+      playerName: player.username || "Unknown",
+      gold: player.gold || 0,
+      totalCards,
+      uniqueCards,
+      byRarity,
+      cards: inventory,
+    };
+  },
+});

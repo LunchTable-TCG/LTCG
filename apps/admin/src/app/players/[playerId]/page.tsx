@@ -68,6 +68,8 @@ export default function PlayerDetailPage() {
     userId: playerId,
     days: 30,
   });
+  // Fetch player inventory
+  const inventory = useQuery(apiAny.admin.admin.getPlayerInventory, { playerId });
 
   // Transform engagement data to match expected format
   const engagement = engagementData
@@ -304,6 +306,7 @@ export default function PlayerDetailPage() {
       <Tabs defaultValue="overview" className="mt-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="engagement">Engagement</TabsTrigger>
           <TabsTrigger value="games">Games</TabsTrigger>
           <TabsTrigger value="moderation">Moderation History</TabsTrigger>
@@ -357,6 +360,171 @@ export default function PlayerDetailPage() {
               )}
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Inventory Tab */}
+        <TabsContent value="inventory" className="mt-4">
+          <div className="grid gap-6 lg:grid-cols-4">
+            {/* Summary Cards */}
+            <Card>
+              <div className="p-4 text-center">
+                <Text className="text-3xl font-bold text-amber-500">
+                  {inventory?.gold?.toLocaleString() ?? "..."}
+                </Text>
+                <Text className="text-sm text-muted-foreground">Gold</Text>
+              </div>
+            </Card>
+            <Card>
+              <div className="p-4 text-center">
+                <Text className="text-3xl font-bold text-blue-500">
+                  {inventory?.totalCards ?? "..."}
+                </Text>
+                <Text className="text-sm text-muted-foreground">Total Cards</Text>
+              </div>
+            </Card>
+            <Card>
+              <div className="p-4 text-center">
+                <Text className="text-3xl font-bold text-emerald-500">
+                  {inventory?.uniqueCards ?? "..."}
+                </Text>
+                <Text className="text-sm text-muted-foreground">Unique Cards</Text>
+              </div>
+            </Card>
+            <Card>
+              <div className="p-4 text-center">
+                <Text className="text-3xl font-bold text-violet-500">
+                  {inventory?.byRarity?.legendary ?? "..."}
+                </Text>
+                <Text className="text-sm text-muted-foreground">Legendary</Text>
+              </div>
+            </Card>
+          </div>
+
+          {/* Rarity Breakdown */}
+          {inventory && (
+            <Card className="mt-6">
+              <Title>Card Rarity Breakdown</Title>
+              <div className="mt-4 flex gap-4 flex-wrap">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <span className="text-amber-500 font-medium">{inventory.byRarity.legendary}</span>
+                  <span className="text-sm text-muted-foreground">Legendary</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                  <span className="text-purple-500 font-medium">{inventory.byRarity.epic}</span>
+                  <span className="text-sm text-muted-foreground">Epic</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                  <span className="text-blue-500 font-medium">{inventory.byRarity.rare}</span>
+                  <span className="text-sm text-muted-foreground">Rare</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                  <span className="text-emerald-500 font-medium">{inventory.byRarity.uncommon}</span>
+                  <span className="text-sm text-muted-foreground">Uncommon</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-500/10 border border-gray-500/30">
+                  <span className="text-gray-400 font-medium">{inventory.byRarity.common}</span>
+                  <span className="text-sm text-muted-foreground">Common</span>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Card List */}
+          <Card className="mt-6">
+            <Flex justifyContent="between" alignItems="center">
+              <Title>Card Collection</Title>
+              <RoleGuard permission="batch.operations">
+                <Button variant="outline" size="sm" asChild>
+                  <a href={`/batch?playerId=${playerId}`}>Grant Cards/Gold</a>
+                </Button>
+              </RoleGuard>
+            </Flex>
+            <div className="mt-4">
+              {inventory === undefined ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : inventory === null ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  Player not found
+                </div>
+              ) : inventory.cards.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  This player has no cards in their collection
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 px-3">Card Name</th>
+                        <th className="text-left py-2 px-3">Rarity</th>
+                        <th className="text-left py-2 px-3">Type</th>
+                        <th className="text-center py-2 px-3">Cost</th>
+                        <th className="text-center py-2 px-3">ATK</th>
+                        <th className="text-center py-2 px-3">DEF</th>
+                        <th className="text-center py-2 px-3">Qty</th>
+                        <th className="text-left py-2 px-3">Acquired</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inventory.cards.map((card: {
+                        playerCardId: string;
+                        cardDefinitionId: string;
+                        name: string;
+                        rarity: string;
+                        archetype: string;
+                        cardType: string;
+                        attack: number | null;
+                        defense: number | null;
+                        cost: number;
+                        quantity: number;
+                        isFavorite: boolean;
+                        acquiredAt: number;
+                        imageUrl?: string;
+                      }) => (
+                        <tr key={card.playerCardId} className="border-b hover:bg-muted/30">
+                          <td className="py-2 px-3">
+                            <div className="flex items-center gap-2">
+                              {card.isFavorite && <span title="Favorite">⭐</span>}
+                              <span className="font-medium">{card.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3">
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                card.rarity === "legendary"
+                                  ? "bg-amber-500/20 text-amber-500"
+                                  : card.rarity === "epic"
+                                    ? "bg-purple-500/20 text-purple-500"
+                                    : card.rarity === "rare"
+                                      ? "bg-blue-500/20 text-blue-500"
+                                      : card.rarity === "uncommon"
+                                        ? "bg-emerald-500/20 text-emerald-500"
+                                        : "bg-gray-500/20 text-gray-400"
+                              }`}
+                            >
+                              {card.rarity}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-muted-foreground">{card.cardType}</td>
+                          <td className="py-2 px-3 text-center">{card.cost}</td>
+                          <td className="py-2 px-3 text-center">{card.attack ?? "-"}</td>
+                          <td className="py-2 px-3 text-center">{card.defense ?? "-"}</td>
+                          <td className="py-2 px-3 text-center font-medium">{card.quantity}</td>
+                          <td className="py-2 px-3 text-muted-foreground text-xs">
+                            {new Date(card.acquiredAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </Card>
         </TabsContent>
 
         {/* Engagement Tab */}

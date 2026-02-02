@@ -20,9 +20,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api } from "@convex/_generated/api";
+import { useConvexMutation } from "@/lib/convexHelpers";
 import { Card, Text, Title } from "@tremor/react";
-import { useMutation } from "convex/react";
 import { Loader2, Megaphone, Send, Users, Wrench } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -132,7 +131,7 @@ function AnnouncementForm() {
   const [playerIds, setPlayerIds] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const sendAnnouncement = useMutation(api.admin.batchAdmin.sendAnnouncement);
+  const sendAnnouncement = useConvexMutation("admin.batchAdmin.sendAnnouncement");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,9 +153,8 @@ function AnnouncementForm() {
 
     setIsLoading(true);
     try {
-      // @ts-expect-error - playerIds type mismatch with convex Id type
       const result = await sendAnnouncement({
-        playerIds: ids,
+        playerIds: ids as any,
         title: title.trim(),
         message: message.trim(),
         priority,
@@ -282,7 +280,7 @@ function BroadcastForm() {
   const [activeInDays, setActiveInDays] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const broadcastAnnouncement = useMutation(api.admin.batchAdmin.broadcastAnnouncement);
+  const broadcastAnnouncement = useConvexMutation("admin.batchAdmin.broadcastAnnouncement");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -443,7 +441,7 @@ function SystemMessageForm() {
   const [playerIds, setPlayerIds] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const sendSystemMessage = useMutation(api.admin.batchAdmin.sendSystemMessage);
+  const sendSystemMessage = useConvexMutation("admin.batchAdmin.sendSystemMessage");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -465,9 +463,8 @@ function SystemMessageForm() {
 
     setIsLoading(true);
     try {
-      // @ts-expect-error - playerIds type mismatch with convex Id type
       const result = await sendSystemMessage({
-        playerIds: ids,
+        playerIds: ids as any,
         title: title.trim(),
         message: message.trim(),
         category,
