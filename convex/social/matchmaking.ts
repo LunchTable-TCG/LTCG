@@ -11,6 +11,9 @@
 
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
+
+// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
+const internalAny = internal as any;
 import type { Doc, Id } from "../_generated/dataModel";
 import {
   internalAction,
@@ -298,8 +301,7 @@ async function processQueue(
       if (ratingDiff <= ratingWindow) {
         // Match found! Create game
         try {
-          // @ts-ignore - TS2589: Type instantiation too deep with internal references
-          await ctx.runMutation(internal.social.matchmaking.createMatchedGame, {
+          await ctx.runMutation(internalAny.social.matchmaking.createMatchedGame, {
             player1Id: player1.userId,
             player2Id: player2.userId,
             mode,

@@ -193,7 +193,10 @@ export type ExtractTableName<T> = T extends Id<infer U> ? U : never;
  * ```
  */
 export type UnionIds<T extends readonly string[]> = {
-  // @ts-ignore - T[K] is constrained to string but TypeScript can't verify it's a table name
+  // Note: @ts-ignore is unavoidable here. TypeScript cannot verify that T[K] (a string literal)
+  // corresponds to a valid Convex table name at compile time. The Id<> generic expects a
+  // specific table name from the schema, but generic string constraints don't satisfy this.
+  // @ts-ignore - TS2589: T[K] is a string literal but TypeScript cannot verify it's a valid table name
   [K in keyof T]: T[K] extends string ? Id<T[K]> : never;
 }[number];
 
@@ -205,7 +208,8 @@ export type UnionIds<T extends readonly string[]> = {
  * // Id<"userDecks"> | undefined
  * ```
  */
-// @ts-ignore - T is constrained to string but TypeScript can't verify it's a table name
+// Note: @ts-ignore is unavoidable - see UnionIds comment for explanation
+// @ts-ignore - TS2589: Generic string T cannot be verified as valid table name
 export type OptionalId<T extends string> = Optional<Id<T>>;
 
 /**
@@ -216,7 +220,8 @@ export type OptionalId<T extends string> = Optional<Id<T>>;
  * // Id<"userDecks"> | null
  * ```
  */
-// @ts-ignore - T is constrained to string but TypeScript can't verify it's a table name
+// Note: @ts-ignore is unavoidable - see UnionIds comment for explanation
+// @ts-ignore - TS2589: Generic string T cannot be verified as valid table name
 export type NullableId<T extends string> = Nullable<Id<T>>;
 
 /**
@@ -227,7 +232,8 @@ export type NullableId<T extends string> = Nullable<Id<T>>;
  * // Id<"userDecks"> | null | undefined
  * ```
  */
-// @ts-ignore - T is constrained to string but TypeScript can't verify it's a table name
+// Note: @ts-ignore is unavoidable - see UnionIds comment for explanation
+// @ts-ignore - TS2589: Generic string T cannot be verified as valid table name
 export type MaybeId<T extends string> = Maybe<Id<T>>;
 
 // =============================================================================

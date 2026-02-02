@@ -6,7 +6,6 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
@@ -14,6 +13,7 @@ import { rankedLeaderboardHumans } from "../infrastructure/aggregates";
 import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { auditLogAction } from "../lib/internalHelpers";
 import {
   type UserRole,
   canManageRole,
@@ -39,8 +39,7 @@ async function scheduleAuditLog(
     ipAddress?: string;
   }
 ) {
-  // @ts-ignore - TS2589: Type instantiation is excessively deep with internal.lib references
-  await ctx.scheduler.runAfter(0, internal.lib.adminAudit.logAdminAction, params);
+  await ctx.scheduler.runAfter(0, auditLogAction, params);
 }
 
 // =============================================================================

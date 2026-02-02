@@ -1,5 +1,8 @@
 import { v } from "convex/values";
 import { internal } from "../../_generated/api";
+
+// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
+const internalAny = internal as any;
 import type { Id } from "../../_generated/dataModel";
 import { internalAction, internalMutation } from "../../_generated/server";
 import type { MutationCtx } from "../../_generated/server";
@@ -51,16 +54,14 @@ export const cleanupStaleGames = internalAction({
     const TIMEOUT_MS = 120000; // 2 minutes (120 seconds)
 
     // Get all active games
-    // @ts-ignore - Type depth issue with Convex generated types
-    const activeLobbies = await ctx.runQuery(internal.games.getActiveLobbiesForCleanup);
+    const activeLobbies = await ctx.runQuery(internalAny.games.getActiveLobbiesForCleanup);
 
     for (const lobby of activeLobbies) {
       // Check if last move was more than 2 minutes ago
       if (lobby.lastMoveAt && now - lobby.lastMoveAt > TIMEOUT_MS) {
         // Forfeit the game for the player whose turn it is
         if (lobby.currentTurnPlayerId) {
-          // @ts-ignore - Type depth issue with Convex generated types
-          await ctx.runMutation(internal.games.forfeitGame, {
+          await ctx.runMutation(internalAny.games.forfeitGame, {
             lobbyId: lobby._id,
             forfeitingPlayerId: lobby.currentTurnPlayerId,
           });
@@ -70,13 +71,11 @@ export const cleanupStaleGames = internalAction({
 
     // Also cleanup waiting lobbies that have been waiting for too long (30 minutes)
     const WAITING_TIMEOUT_MS = 1800000; // 30 minutes
-    // @ts-ignore - Type depth issue with Convex generated types
-    const waitingLobbies = await ctx.runQuery(internal.games.getWaitingLobbiesForCleanup);
+    const waitingLobbies = await ctx.runQuery(internalAny.games.getWaitingLobbiesForCleanup);
 
     for (const lobby of waitingLobbies) {
       if (now - lobby.createdAt > WAITING_TIMEOUT_MS) {
-        // @ts-ignore - Type depth issue with Convex generated types
-        await ctx.runMutation(internal.games.cancelStaleWaitingLobby, {
+        await ctx.runMutation(internalAny.games.cancelStaleWaitingLobby, {
           lobbyId: lobby._id,
         });
       }

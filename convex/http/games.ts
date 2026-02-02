@@ -5,9 +5,12 @@
  * Game action mutations are in separate files for better organization.
  */
 
-// Import at runtime only (not for type checking) to avoid TS2589
-const api: any = require("../_generated/api").api;
-const internal: any = require("../_generated/api").internal;
+// Module-scope typed helpers to avoid TS2589 "Type instantiation is excessively deep"
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { api: apiAny, internal: internalAny } = require("../_generated/api") as {
+  api: any;
+  internal: any;
+};
 import {
   authHttpAction,
 } from "./middleware/auth";
@@ -22,11 +25,11 @@ import {
 
 // Query mapping to avoid dynamic code generation (not allowed in Convex runtime)
 const queryMap: Record<string, any> = {
-  "gameplay.games.queries.getActiveLobby": api.gameplay.games.queries.getActiveLobby,
-  "gameplay.games.queries.getGameStateForPlayer": api.gameplay.games.queries.getGameStateForPlayer,
-  "gameplay.gameEvents.getGameEvents": api.gameplay.gameEvents.getGameEvents,
+  "gameplay.games.queries.getActiveLobby": apiAny.gameplay.games.queries.getActiveLobby,
+  "gameplay.games.queries.getGameStateForPlayer": apiAny.gameplay.games.queries.getGameStateForPlayer,
+  "gameplay.gameEvents.getGameEvents": apiAny.gameplay.gameEvents.getGameEvents,
   // Internal queries for API key auth
-  "gameplay.games.queries.getGameStateForPlayerInternal": internal.gameplay.games.queries.getGameStateForPlayerInternal,
+  "gameplay.games.queries.getGameStateForPlayerInternal": internalAny.gameplay.games.queries.getGameStateForPlayerInternal,
 };
 
 // Helper to run queries using the mapping
@@ -438,7 +441,7 @@ export const summonMonster = authHttpAction(async (ctx, request, auth) => {
 
     // Execute summon via internal mutation that accepts gameId string
     const result: any = await ctx.runMutation(
-      internal.gameplay.gameEngine.summons.normalSummonInternal,
+      internalAny.gameplay.gameEngine.summons.normalSummonInternal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -518,7 +521,7 @@ export const setCard = authHttpAction(async (ctx, request, _auth) => {
 
     // Execute set via game engine
     const result: any = await ctx.runMutation(
-      (api as any).gameplay.gameEngine.summons.setMonster,
+      apiAny.gameplay.gameEngine.summons.setMonster,
       {
         lobbyId: body.gameId as any,
         cardId: body.cardId as any,
@@ -602,7 +605,7 @@ export const flipSummonMonster = authHttpAction(async (ctx, request, _auth) => {
 
     // Execute flip summon via game engine
     const result: any = await ctx.runMutation(
-      (api as any).gameplay.gameEngine.summons.flipSummon,
+      apiAny.gameplay.gameEngine.summons.flipSummon,
       {
         lobbyId: body.gameId as any,
         cardId: body.cardId as any,
@@ -670,7 +673,7 @@ export const changeMonsterPosition = authHttpAction(async (ctx, request, _auth) 
 
     // Execute position change via game engine
     const result: any = await ctx.runMutation(
-      (api as any).gameplay.gameEngine.positions.changePosition,
+      apiAny.gameplay.gameEngine.positions.changePosition,
       {
         lobbyId: body.gameId as any,
         cardId: body.cardId as any,
@@ -743,7 +746,7 @@ export const setSpellTrapCard = authHttpAction(async (ctx, request, _auth) => {
 
     // Execute set via game engine
     const result: any = await ctx.runMutation(
-      (api as any).gameplay.gameEngine.spellsTraps.setSpellTrap,
+      apiAny.gameplay.gameEngine.spellsTraps.setSpellTrap,
       {
         lobbyId: body.gameId as any,
         cardId: body.cardId as any,
@@ -813,7 +816,7 @@ export const activateSpellCard = authHttpAction(async (ctx, request, _auth) => {
 
     // Execute spell activation via game engine
     const result: any = await ctx.runMutation(
-      (api as any).gameplay.gameEngine.spellsTraps.activateSpell,
+      apiAny.gameplay.gameEngine.spellsTraps.activateSpell,
       {
         lobbyId: body.gameId as any,
         cardId: body.cardId as any,
@@ -895,7 +898,7 @@ export const activateTrapCard = authHttpAction(async (ctx, request, _auth) => {
 
     // Execute trap activation via game engine
     const result: any = await ctx.runMutation(
-      (api as any).gameplay.gameEngine.spellsTraps.activateTrap,
+      apiAny.gameplay.gameEngine.spellsTraps.activateTrap,
       {
         lobbyId: body.gameId as any,
         cardId: body.cardId as any,
@@ -983,7 +986,7 @@ export const chainResponse = authHttpAction(async (ctx, request, _auth) => {
     if (body.pass) {
       // Pass priority - decline to respond to chain
       const result: any = await ctx.runMutation(
-        (api as any).gameplay.chainResolver.passPriority,
+        apiAny.gameplay.chainResolver.passPriority,
         {
           lobbyId: body.gameId as any,
         }
@@ -1072,7 +1075,7 @@ export const attackMonster = authHttpAction(async (ctx, request, auth) => {
 
     // Execute attack via internal mutation
     const result: any = await ctx.runMutation(
-      internal.gameplay.combatSystem.declareAttackInternal,
+      internalAny.gameplay.combatSystem.declareAttackInternal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -1183,7 +1186,7 @@ export const enterBattlePhase = authHttpAction(async (ctx, request, auth) => {
 
     // Update phase to battle
     await ctx.runMutation(
-      internal.gameplay.gameEngine.phases.advanceToBattlePhaseInternal,
+      internalAny.gameplay.gameEngine.phases.advanceToBattlePhaseInternal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -1254,7 +1257,7 @@ export const enterMain2 = authHttpAction(async (ctx, request, auth) => {
 
     // Update phase to main2
     await ctx.runMutation(
-      internal.gameplay.gameEngine.phases.advanceToMainPhase2Internal,
+      internalAny.gameplay.gameEngine.phases.advanceToMainPhase2Internal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -1303,7 +1306,7 @@ export const endPlayerTurn = authHttpAction(async (ctx, request, auth) => {
 
     // Execute end turn via internal mutation that accepts gameId string
     const result: any = await ctx.runMutation(
-      internal.gameplay.gameEngine.turns.endTurnInternal,
+      internalAny.gameplay.gameEngine.turns.endTurnInternal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -1367,7 +1370,7 @@ export const surrenderGame = authHttpAction(async (ctx, request, _auth) => {
 
     // Execute surrender via game lifecycle
     await ctx.runMutation(
-      (api as any).gameplay.games.lifecycle.surrenderGame,
+      apiAny.gameplay.games.lifecycle.surrenderGame,
       {
         lobbyId: body.gameId as any,
       }

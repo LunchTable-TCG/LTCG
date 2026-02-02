@@ -7,9 +7,12 @@ import type { FunctionReturnType } from "convex/server";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 // Extract return types from Convex queries to avoid type depth issues
-// @ts-ignore - TS2589: Type instantiation too deep
+// Note: @ts-ignore is required here because FunctionReturnType<typeof api.X>
+// triggers TS2589 during type extraction. The apiAny helper doesn't help here
+// since we need the actual type for type inference, not runtime usage.
+// @ts-ignore - TS2589: FunctionReturnType requires full api type which exceeds depth limit
 type CurrentUserReturn = FunctionReturnType<typeof api.core.users.currentUser>;
-// @ts-ignore - TS2589: Type instantiation too deep
+// @ts-ignore - TS2589: FunctionReturnType requires full api type which exceeds depth limit
 type UserInfoReturn = FunctionReturnType<typeof api.core.users.getUser>;
 
 /**

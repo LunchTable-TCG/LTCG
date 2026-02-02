@@ -1,4 +1,7 @@
 import { internal } from "../_generated/api";
+
+// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
+const internalAny = internal as any;
 import type { Doc, Id } from "../_generated/dataModel";
 // XP and Level System Helpers
 import type { MutationCtx, QueryCtx } from "../_generated/server";
@@ -235,8 +238,7 @@ export async function addXP(
   if (leveledUp) {
     // Create level up notification (wrapped to prevent test errors)
     await safeSchedule(ctx, async () => {
-      // @ts-ignore - TS2589: Type instantiation is excessively deep with internal references
-      await ctx.scheduler.runAfter(0, internal.progression.notifications.createLevelUpNotification, {
+      await ctx.scheduler.runAfter(0, internalAny.progression.notifications.createLevelUpNotification, {
         userId,
         newLevel,
         oldLevel,
@@ -270,10 +272,9 @@ export async function addXP(
 
           // Create badge notification (wrapped to prevent test errors)
           await safeSchedule(ctx, async () => {
-            // @ts-ignore - TS2589: Type instantiation is excessively deep with internal references
             await ctx.scheduler.runAfter(
               0,
-              internal.progression.notifications.createBadgeNotification,
+              internalAny.progression.notifications.createBadgeNotification,
               {
                 userId,
                 badgeName: milestone.displayName,

@@ -1,9 +1,8 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { getCardEffectsArray, type JsonAbility } from "@/lib/cardHelpers";
-import { useMutation, useQuery } from "convex/react";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { useCallback, useMemo } from "react";
 
 // =============================================================================
@@ -332,38 +331,33 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   // ==========================================================================
 
   // First, get lobby details to check if game is active
-  // @ts-ignore - Deep type instantiation limit workaround
-  const lobbyDetails = useQuery(api.gameplay.games.queries.getLobbyDetails, {
+  const lobbyDetails = useConvexQuery(apiAny.gameplay.games.queries.getLobbyDetails, {
     lobbyId,
-  }) as unknown as LobbyDetails | undefined;
+  }) as LobbyDetails | undefined;
 
   // Only query game state if lobby is active (not "waiting")
   // Skip the query if status is completed, forfeited, or cancelled to avoid errors
   const shouldQueryGameState =
     lobbyDetails?.status === "active" || lobbyDetails?.status === "waiting";
 
-  // @ts-ignore - Deep type instantiation limit workaround
-  const gameState = useQuery(
-    api.gameplay.games.queries.getGameStateForPlayer,
+  const gameState = useConvexQuery(
+    apiAny.gameplay.games.queries.getGameStateForPlayer,
     shouldQueryGameState ? { lobbyId } : "skip"
-  ) as unknown as GameState | undefined | null;
+  ) as GameState | undefined | null;
 
-  // @ts-ignore - Deep type instantiation limit workaround
-  const availableActions = useQuery(
-    api.gameplay.games.queries.getAvailableActions,
+  const availableActions = useConvexQuery(
+    apiAny.gameplay.games.queries.getAvailableActions,
     lobbyDetails?.status === "active" ? { lobbyId } : "skip"
-  ) as unknown as AvailableActions | undefined;
+  ) as AvailableActions | undefined;
 
   // Chain system query
-  // @ts-ignore - Deep type instantiation limit workaround
-  const chainState = useQuery(
-    api.gameplay.chainResolver.getCurrentChain,
+  const chainState = useConvexQuery(
+    apiAny.gameplay.chainResolver.getCurrentChain,
     lobbyDetails?.status === "active" ? { lobbyId } : "skip"
-  ) as unknown as ChainState | undefined | null;
+  ) as ChainState | undefined | null;
 
   // Current user query for player name
-  // @ts-ignore - Deep type instantiation limit workaround
-  const currentUser = useQuery(api.core.users.currentUser) as unknown as
+  const currentUser = useConvexQuery(apiAny.core.users.currentUser, {}) as
     | CurrentUser
     | undefined
     | null;
@@ -372,45 +366,19 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   // Mutations - using actual game engine APIs
   // ==========================================================================
 
-  // Mutations without optimistic updates (type assertions to avoid depth limit)
-  const normalSummonMutation = useMutation(
-    api.gameplay.gameEngine.summons.normalSummon
-  ) as ReturnType<typeof useMutation>;
-
-  const setMonsterMutation = useMutation(api.gameplay.gameEngine.summons.setMonster) as ReturnType<
-    typeof useMutation
-  >;
-
-  const setSpellTrapMutation = useMutation(
-    api.gameplay.gameEngine.spellsTraps.setSpellTrap
-  ) as ReturnType<typeof useMutation>;
-  const activateSpellMutation = useMutation(
-    api.gameplay.gameEngine.spellsTraps.activateSpell
-  ) as ReturnType<typeof useMutation>;
-  const activateTrapMutation = useMutation(
-    api.gameplay.gameEngine.spellsTraps.activateTrap
-  ) as ReturnType<typeof useMutation>;
+  // Mutations using convexHelpers to avoid TS2589
+  const normalSummonMutation = useConvexMutation(apiAny.gameplay.gameEngine.summons.normalSummon);
+  const setMonsterMutation = useConvexMutation(apiAny.gameplay.gameEngine.summons.setMonster);
+  const setSpellTrapMutation = useConvexMutation(apiAny.gameplay.gameEngine.spellsTraps.setSpellTrap);
+  const activateSpellMutation = useConvexMutation(apiAny.gameplay.gameEngine.spellsTraps.activateSpell);
+  const activateTrapMutation = useConvexMutation(apiAny.gameplay.gameEngine.spellsTraps.activateTrap);
 
   // Chain system mutations
-  const passPriorityMutation = useMutation(api.gameplay.chainResolver.passPriority) as ReturnType<
-    typeof useMutation
-  >;
-
-  const advancePhaseMutation = useMutation(api.gameplay.phaseManager.advancePhase) as ReturnType<
-    typeof useMutation
-  >;
-
-  const endTurnMutation = useMutation(api.gameplay.gameEngine.turns.endTurn) as ReturnType<
-    typeof useMutation
-  >;
-
-  const surrenderGameMutation = useMutation(
-    api.gameplay.games.lifecycle.surrenderGame
-  ) as ReturnType<typeof useMutation>;
-
-  const declareAttackMutation = useMutation(api.gameplay.combatSystem.declareAttack) as ReturnType<
-    typeof useMutation
-  >;
+  const passPriorityMutation = useConvexMutation(apiAny.gameplay.chainResolver.passPriority);
+  const advancePhaseMutation = useConvexMutation(apiAny.gameplay.phaseManager.advancePhase);
+  const endTurnMutation = useConvexMutation(apiAny.gameplay.gameEngine.turns.endTurn);
+  const surrenderGameMutation = useConvexMutation(apiAny.gameplay.games.lifecycle.surrenderGame);
+  const declareAttackMutation = useConvexMutation(apiAny.gameplay.combatSystem.declareAttack);
 
   // ==========================================================================
   // Actions
@@ -480,9 +448,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
     }
   }, [advancePhaseMutation, lobbyId]);
 
-  const executeAITurnMutation = useMutation(api.gameplay.ai.aiTurn.executeAITurn) as ReturnType<
-    typeof useMutation
-  >;
+  const executeAITurnMutation = useConvexMutation(apiAny.gameplay.ai.aiTurn.executeAITurn);
 
   const endTurn = useCallback(async () => {
     try {
