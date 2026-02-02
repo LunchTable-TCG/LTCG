@@ -21,6 +21,7 @@ import type * as admin_batchAdmin from "../admin/batchAdmin.js";
 import type * as admin_cleanupAuth from "../admin/cleanupAuth.js";
 import type * as admin_moderation from "../admin/moderation.js";
 import type * as admin_mutations from "../admin/mutations.js";
+import type * as admin_news from "../admin/news.js";
 import type * as admin_roles from "../admin/roles.js";
 import type * as admin_shopSetup from "../admin/shopSetup.js";
 import type * as agents from "../agents.js";
@@ -220,6 +221,7 @@ declare const fullApi: ApiFromModules<{
   "admin/cleanupAuth": typeof admin_cleanupAuth;
   "admin/moderation": typeof admin_moderation;
   "admin/mutations": typeof admin_mutations;
+  "admin/news": typeof admin_news;
   "admin/roles": typeof admin_roles;
   "admin/shopSetup": typeof admin_shopSetup;
   agents: typeof agents;

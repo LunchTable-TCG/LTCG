@@ -2,10 +2,9 @@
 
 import { useGameLobby } from "@/hooks/game/useGameLobby";
 import { cn } from "@/lib/utils";
-import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { Check, Loader2, Swords, Trophy, X } from "lucide-react";
+import { Check, Loader2, Swords, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -65,7 +64,6 @@ export function IncomingChallengeNotification() {
 
   const rankColor = RANK_COLORS[incomingChallenge.hostRank] || "text-[#e8e0d5]";
   const modeLabel = incomingChallenge.mode === "ranked" ? "Ranked" : "Casual";
-  const modeColor = incomingChallenge.mode === "ranked" ? "text-amber-400" : "text-green-400";
 
   return (
     <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-300">

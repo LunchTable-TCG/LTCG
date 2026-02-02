@@ -1,9 +1,9 @@
 "use client";
 
 import { handleHookError } from "@/lib/errorHandling";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { toast } from "sonner";
 
 interface CreateLobbyResult {
@@ -26,10 +26,15 @@ interface IncomingChallenge {
   createdAt: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type WaitingLobbiesResult = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LobbyResult = any;
+
 interface UseGameLobbyReturn {
-  waitingLobbies: ReturnType<typeof useQuery<typeof api.games.listWaitingLobbies>> | undefined;
-  myLobby: ReturnType<typeof useQuery<typeof api.games.getActiveLobby>> | undefined;
-  privateLobby: ReturnType<typeof useQuery<typeof api.games.getMyPrivateLobby>> | undefined;
+  waitingLobbies: WaitingLobbiesResult | undefined;
+  myLobby: LobbyResult | undefined;
+  privateLobby: LobbyResult | undefined;
   incomingChallenge: IncomingChallenge | null | undefined;
   isLoading: boolean;
   hasActiveLobby: boolean;
@@ -97,20 +102,21 @@ interface UseGameLobbyReturn {
  */
 export function useGameLobby(): UseGameLobbyReturn {
   // No auth check needed - this hook should only be used inside <Authenticated>
-  const waitingLobbies = useQuery(api.games.listWaitingLobbies, {});
-  const myLobby = useQuery(api.games.getActiveLobby, {});
-  const privateLobby = useQuery(api.games.getMyPrivateLobby, {});
-  const incomingChallenge = useQuery(api.games.getIncomingChallenge, {}) as
+  // Using apiAny and useConvexQuery to avoid TS2589 "Type instantiation excessively deep" errors
+  const waitingLobbies = useConvexQuery(apiAny.games.listWaitingLobbies, {});
+  const myLobby = useConvexQuery(apiAny.games.getActiveLobby, {});
+  const privateLobby = useConvexQuery(apiAny.games.getMyPrivateLobby, {});
+  const incomingChallenge = useConvexQuery(apiAny.games.getIncomingChallenge, {}) as
     | IncomingChallenge
     | null
     | undefined;
 
-  // Mutations
-  const createMutation = useMutation(api.games.createLobby);
-  const joinMutation = useMutation(api.games.joinLobby);
-  const joinByCodeMutation = useMutation(api.games.joinLobbyByCode);
-  const cancelMutation = useMutation(api.games.cancelLobby);
-  const leaveMutation = useMutation(api.games.leaveLobby);
+  // Mutations - using apiAny to avoid deep type instantiation
+  const createMutation = useMutation(apiAny.games.createLobby);
+  const joinMutation = useMutation(apiAny.games.joinLobby);
+  const joinByCodeMutation = useMutation(apiAny.games.joinLobbyByCode);
+  const cancelMutation = useMutation(apiAny.games.cancelLobby);
+  const leaveMutation = useMutation(apiAny.games.leaveLobby);
 
   // Actions
   const createLobby = async (
@@ -185,7 +191,7 @@ export function useGameLobby(): UseGameLobbyReturn {
     }
   };
 
-  const declineChallenge = async (lobbyId: Id<"gameLobbies">) => {
+  const declineChallenge = async (_lobbyId: Id<"gameLobbies">) => {
     try {
       await leaveMutation({});
       toast.success("Challenge declined");

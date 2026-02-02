@@ -30,6 +30,17 @@ type GameStatus = "waiting" | "active";
 type TabType = "join" | "watch";
 type GameMode = "all" | "casual" | "ranked";
 
+// Type for lobby data from Convex query
+interface WaitingLobbyData {
+  id: string;
+  hostUsername: string;
+  hostRank: string;
+  deckArchetype: string;
+  mode: string;
+  createdAt: number;
+  isPrivate: boolean;
+}
+
 interface GameLobbyEntry {
   id: string;
   hostName: string;
@@ -116,9 +127,9 @@ export function GameLobby() {
   // Convert API data to component format
   // Filter out the user's own lobby from the waiting games list
   const waitingGames: GameLobbyEntry[] =
-    lobbiesData
-      ?.filter((lobby) => lobby.id !== myActiveLobby?._id)
-      .map((lobby) => ({
+    (lobbiesData as WaitingLobbyData[] | undefined)
+      ?.filter((lobby: WaitingLobbyData) => lobby.id !== myActiveLobby?._id)
+      .map((lobby: WaitingLobbyData) => ({
         id: lobby.id,
         hostName: lobby.hostUsername,
         hostRank: lobby.hostRank,

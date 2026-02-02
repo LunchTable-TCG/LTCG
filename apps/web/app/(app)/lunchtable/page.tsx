@@ -5,7 +5,7 @@ import { AuthLoading, Authenticated, useMutation, useQuery } from "convex/react"
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { GameLobby, GlobalChat, WelcomeGuideDialog } from "./components";
+import { GameLobby, GlobalChat, IncomingChallengeNotification, WelcomeGuideDialog } from "./components";
 
 export default function LunchtablePage() {
   return (
@@ -111,6 +111,9 @@ function LunchtableContent() {
         onComplete={handleWelcomeComplete}
         username={currentUser.username || "Traveler"}
       />
+
+      {/* Incoming Challenge Notification */}
+      <IncomingChallengeNotification />
 
       {/* Stars at the top */}
       <div className="absolute inset-x-0 top-0 h-[40%] z-0 pointer-events-none">
