@@ -108,8 +108,8 @@ web_modules/
 *.tsbuildinfo
 next-env.d.ts
 
-# Auto-generated types
-apps/web/src/types/generated.ts
+# Auto-generated files (keep this for actual generated files)
+# Note: apps/web/src/types/generated.ts is manually maintained, not auto-generated
 
 # OS
 .DS_Store
