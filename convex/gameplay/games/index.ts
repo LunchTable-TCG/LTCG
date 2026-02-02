@@ -10,6 +10,7 @@
 export {
   listWaitingLobbies,
   getActiveLobby,
+  getIncomingChallenge,
   getLobbyDetails,
   getMyPrivateLobby,
   listActiveGames,

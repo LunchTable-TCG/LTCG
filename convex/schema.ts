@@ -389,6 +389,7 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_mode_status", ["mode", "status"])
     .index("by_host", ["hostId"])
+    .index("by_opponent", ["opponentId"])
     .index("by_created", ["createdAt"])
     .index("by_join_code", ["joinCode"])
     .index("by_last_move", ["lastMoveAt"]),

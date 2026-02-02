@@ -83,9 +83,12 @@ export const listWaitingLobbies = query({
 });
 
 /**
- * Get user's active lobby (as host)
+ * Get user's active lobby (as host or opponent)
  *
- * Retrieves the authenticated user's current lobby where they are the host.
+ * Retrieves the authenticated user's current lobby where they are either:
+ * - The host (created the lobby)
+ * - The opponent (was challenged or joined)
+ *
  * Returns null if user has no active lobby.
  *
  * @returns The user's active lobby or null
@@ -99,13 +102,56 @@ export const getActiveLobby = query({
     const userId = args.userId ?? (await requireAuthQuery(ctx)).userId;
 
     // Find user's lobby where they are the host
-    const lobby = await ctx.db
+    const hostLobby = await ctx.db
       .query("gameLobbies")
       .withIndex("by_host", (q) => q.eq("hostId", userId))
       .filter((q) => q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")))
       .first();
 
-    return lobby;
+    if (hostLobby) return hostLobby;
+
+    // Also check if user is the opponent (was challenged or joined a lobby)
+    const opponentLobby = await ctx.db
+      .query("gameLobbies")
+      .withIndex("by_opponent", (q) => q.eq("opponentId", userId))
+      .filter((q) => q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")))
+      .first();
+
+    return opponentLobby;
+  },
+});
+
+/**
+ * Get incoming challenge for the current user
+ *
+ * Retrieves any pending challenge where the user is the opponentId
+ * and the lobby is still waiting (not yet joined/active).
+ *
+ * @returns The incoming challenge lobby or null
+ */
+export const getIncomingChallenge = query({
+  args: {},
+  handler: async (ctx) => {
+    const { userId } = await requireAuthQuery(ctx);
+
+    // Find lobbies where user is pre-assigned as opponent and status is waiting
+    const challenge = await ctx.db
+      .query("gameLobbies")
+      .withIndex("by_opponent", (q) => q.eq("opponentId", userId))
+      .filter((q) => q.eq(q.field("status"), "waiting"))
+      .first();
+
+    if (!challenge) return null;
+
+    // Return challenge with host info for display
+    return {
+      _id: challenge._id,
+      hostId: challenge.hostId,
+      hostUsername: challenge.hostUsername,
+      hostRank: challenge.hostRank,
+      mode: challenge.mode,
+      createdAt: challenge.createdAt,
+    };
   },
 });
 

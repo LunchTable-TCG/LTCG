@@ -17,10 +17,20 @@ interface JoinLobbyResult {
   opponentUsername: string;
 }
 
+interface IncomingChallenge {
+  _id: Id<"gameLobbies">;
+  hostId: Id<"users">;
+  hostUsername: string;
+  hostRank: string;
+  mode: "casual" | "ranked";
+  createdAt: number;
+}
+
 interface UseGameLobbyReturn {
   waitingLobbies: ReturnType<typeof useQuery<typeof api.games.listWaitingLobbies>> | undefined;
   myLobby: ReturnType<typeof useQuery<typeof api.games.getActiveLobby>> | undefined;
   privateLobby: ReturnType<typeof useQuery<typeof api.games.getMyPrivateLobby>> | undefined;
+  incomingChallenge: IncomingChallenge | null | undefined;
   isLoading: boolean;
   hasActiveLobby: boolean;
   createLobby: (
@@ -32,6 +42,7 @@ interface UseGameLobbyReturn {
   joinByCode: (joinCode: string) => Promise<JoinLobbyResult>;
   cancelLobby: () => Promise<void>;
   leaveLobby: () => Promise<void>;
+  declineChallenge: (lobbyId: Id<"gameLobbies">) => Promise<void>;
 }
 
 /**
@@ -89,6 +100,10 @@ export function useGameLobby(): UseGameLobbyReturn {
   const waitingLobbies = useQuery(api.games.listWaitingLobbies, {});
   const myLobby = useQuery(api.games.getActiveLobby, {});
   const privateLobby = useQuery(api.games.getMyPrivateLobby, {});
+  const incomingChallenge = useQuery(api.games.getIncomingChallenge, {}) as
+    | IncomingChallenge
+    | null
+    | undefined;
 
   // Mutations
   const createMutation = useMutation(api.games.createLobby);
@@ -170,11 +185,23 @@ export function useGameLobby(): UseGameLobbyReturn {
     }
   };
 
+  const declineChallenge = async (lobbyId: Id<"gameLobbies">) => {
+    try {
+      await leaveMutation({});
+      toast.success("Challenge declined");
+    } catch (error) {
+      const message = handleHookError(error, "Failed to decline challenge");
+      toast.error(message);
+      throw error;
+    }
+  };
+
   return {
     // Data
     waitingLobbies,
     myLobby,
     privateLobby,
+    incomingChallenge,
     isLoading: waitingLobbies === undefined,
     hasActiveLobby: !!myLobby,
 
@@ -184,5 +211,6 @@ export function useGameLobby(): UseGameLobbyReturn {
     joinByCode,
     cancelLobby,
     leaveLobby,
+    declineChallenge,
   };
 }
