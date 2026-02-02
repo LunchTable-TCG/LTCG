@@ -25,6 +25,9 @@ const maintenanceBypassRoutes = ["/maintenance", "/api", "/_next", "/favicon.ico
 
 /**
  * Feature flags from Edge Config
+ * Note: This is intentionally duplicated from @/lib/edge-config because
+ * Edge middleware runs in a separate runtime and can't import from lib/.
+ * Keep in sync with the FeatureFlags interface in edge-config.ts.
  */
 interface FeatureFlags {
   maintenanceMode?: boolean;

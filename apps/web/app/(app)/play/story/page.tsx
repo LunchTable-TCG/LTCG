@@ -2,12 +2,12 @@
 
 import { StoryChapterCard } from "@/components/story/StoryChapterCard";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { useFeatureFlag } from "@/hooks/useFeatureFlags";
 import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
-import { api } from "@convex/_generated/api";
-import { useMutation, useQuery } from "convex/react";
+import { apiAny, useConvexQuery, useConvexMutation } from "@/lib/convexHelpers";
 import { motion } from "framer-motion";
-import { BookOpen, ChevronLeft, Loader2, Shield, Star, Trophy } from "lucide-react";
+import { BookOpen, ChevronLeft, Lock, Loader2, Shield, Star, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
@@ -82,19 +82,22 @@ const CHAPTER_INFO = [
 export default function StoryModePage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
+
+  // Feature flag check
+  const { enabled: storyModeEnabled, isLoading: flagsLoading } = useFeatureFlag("storyModeEnabled");
 
   // Fetch real data
-  const allChapters = useQuery(
-    api.progression.story.getAvailableChapters,
+  const allChapters = useConvexQuery(
+    apiAny.progression.story.getAvailableChapters,
     isAuthenticated ? {} : "skip"
   );
-  const playerProgress = useQuery(
-    api.progression.story.getPlayerProgress,
+  const playerProgress = useConvexQuery(
+    apiAny.progression.story.getPlayerProgress,
     isAuthenticated ? {} : "skip"
   );
 
-  const initializeStoryProgress = useMutation(api.progression.story.initializeStoryProgress);
+  const initializeStoryProgress = useConvexMutation(apiAny.progression.story.initializeStoryProgress);
 
   // Initialize progress on first access
   useEffect(() => {
@@ -172,12 +175,37 @@ export default function StoryModePage() {
 
   const badges = 3; // Placeholder for now
 
-  if (!currentUser) {
+  // Loading state
+  if (!currentUser || flagsLoading) {
     return (
       <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-[#d4af37]" />
           <p className="text-[#a89f94]">Loading story mode...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Feature flag gate - show disabled state if story mode is turned off
+  if (!storyModeEnabled) {
+    return (
+      <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 rounded-2xl bg-purple-500/20 mx-auto mb-6 flex items-center justify-center border border-purple-500/30">
+            <Lock className="w-10 h-10 text-purple-400" />
+          </div>
+          <h1 className="text-3xl font-bold text-[#e8e0d5] mb-4">Story Mode Unavailable</h1>
+          <p className="text-[#a89f94] mb-8">
+            Story mode is currently disabled. Check back later for epic adventures and legendary battles!
+          </p>
+          <Link
+            href="/lunchtable"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 rounded-xl text-purple-200 font-medium transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Return to Hub
+          </Link>
         </div>
       </div>
     );

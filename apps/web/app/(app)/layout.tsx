@@ -1,4 +1,5 @@
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 
 /**
  * Layout for all protected app routes.
@@ -8,5 +9,10 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
  * - Redirect to /setup-username if user has no username
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return <AuthGuard>{children}</AuthGuard>;
+  return (
+    <AuthGuard>
+      <AnnouncementBanner />
+      {children}
+    </AuthGuard>
+  );
 }
