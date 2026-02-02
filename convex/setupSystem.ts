@@ -141,14 +141,18 @@ export const createSystemUser = internalMutation({
  * Seeds quest and achievement definitions
  * Run this once during database initialization
  */
+// Extract references to avoid TS2589 "Type instantiation is excessively deep"
+const seedQuestsRef = internal.progression.quests.seedQuests;
+const seedAchievementsRef = internal.progression.achievements.seedAchievements;
+
 export const initializeProgressionSystem = internalMutation({
   args: {},
   handler: async (ctx) => {
     // Seed quest definitions
-    await ctx.scheduler.runAfter(0, internal.progression.quests.seedQuests);
+    await ctx.scheduler.runAfter(0, seedQuestsRef);
 
     // Seed achievement definitions
-    await ctx.scheduler.runAfter(0, internal.progression.achievements.seedAchievements);
+    await ctx.scheduler.runAfter(0, seedAchievementsRef);
 
     return {
       success: true,
