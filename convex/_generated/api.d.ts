@@ -184,6 +184,7 @@ import type * as shop from "../shop.js";
 import type * as social_challenges from "../social/challenges.js";
 import type * as social_friends from "../social/friends.js";
 import type * as social_globalChat from "../social/globalChat.js";
+import type * as social_inbox from "../social/inbox.js";
 import type * as social_index from "../social/index.js";
 import type * as social_leaderboards from "../social/leaderboards.js";
 import type * as social_matchmaking from "../social/matchmaking.js";
@@ -384,6 +385,7 @@ declare const fullApi: ApiFromModules<{
   "social/challenges": typeof social_challenges;
   "social/friends": typeof social_friends;
   "social/globalChat": typeof social_globalChat;
+  "social/inbox": typeof social_inbox;
   "social/index": typeof social_index;
   "social/leaderboards": typeof social_leaderboards;
   "social/matchmaking": typeof social_matchmaking;

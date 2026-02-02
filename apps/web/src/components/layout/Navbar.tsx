@@ -1,6 +1,7 @@
 "use client";
 
 import { LogoutConfirmDialog } from "@/components/dialogs/LogoutConfirmDialog";
+import { InboxDropdown } from "@/components/inbox/InboxDropdown";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet";
@@ -156,6 +157,8 @@ export function Navbar() {
                   </Button>
 
                   <WalletButton expandable className="hidden sm:flex" />
+
+                  <InboxDropdown className="hidden sm:block" />
 
                   <Link href="/profile" className="group">
                     <div className="relative">

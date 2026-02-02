@@ -63,6 +63,7 @@ const navigation: NavGroup[] = [
     title: "Content",
     items: [
       { title: "News", href: "/news", icon: "📰", permission: "config.edit" },
+      { title: "Broadcast", href: "/broadcast", icon: "📢", permission: "batch.operations" },
       { title: "Assets", href: "/assets", icon: "🖼️", permission: "config.edit" },
     ],
   },
