@@ -1,18 +1,23 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Check, Gamepad2, Trophy, X } from "lucide-react";
+import { Check, Eye, EyeOff, Gamepad2, Trophy, X } from "lucide-react";
 import { useState } from "react";
 
 interface CreateGameModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { mode: "casual" | "ranked"; isPrivate?: boolean }) => void;
+  onSubmit: (data: {
+    mode: "casual" | "ranked";
+    isPrivate?: boolean;
+    allowSpectators?: boolean;
+  }) => void;
 }
 
 export function CreateGameModal({ isOpen, onClose, onSubmit }: CreateGameModalProps) {
   const [mode, setMode] = useState<"casual" | "ranked">("casual");
   const [isPrivate, setIsPrivate] = useState(false);
+  const [allowSpectators, setAllowSpectators] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
@@ -21,16 +26,18 @@ export function CreateGameModal({ isOpen, onClose, onSubmit }: CreateGameModalPr
     setIsSubmitting(true);
     // Simulate brief delay
     setTimeout(() => {
-      onSubmit({ mode, isPrivate });
+      onSubmit({ mode, isPrivate, allowSpectators });
       setIsSubmitting(false);
       setMode("casual");
       setIsPrivate(false);
+      setAllowSpectators(true);
     }, 300);
   };
 
   const handleClose = () => {
     setMode("casual");
     setIsPrivate(false);
+    setAllowSpectators(true);
     onClose();
   };
 
@@ -222,6 +229,57 @@ export function CreateGameModal({ isOpen, onClose, onSubmit }: CreateGameModalPr
               </p>
             </div>
           )}
+
+          {/* Spectator Toggle */}
+          <button
+            type="button"
+            onClick={() => setAllowSpectators(!allowSpectators)}
+            className={cn(
+              "w-full p-4 rounded-xl border-2 transition-all text-left",
+              allowSpectators
+                ? "bg-cyan-500/10 border-cyan-500/50 ring-2 ring-cyan-500/20"
+                : "bg-black/20 border-[#3d2b1f] hover:border-cyan-500/30"
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  {allowSpectators ? (
+                    <Eye className="w-4 h-4 text-cyan-500" />
+                  ) : (
+                    <EyeOff className="w-4 h-4 text-[#a89f94]" />
+                  )}
+                  <span
+                    className={cn(
+                      "font-black uppercase tracking-wide text-sm",
+                      allowSpectators ? "text-cyan-400" : "text-[#e8e0d5]"
+                    )}
+                  >
+                    Allow Spectators
+                  </span>
+                  {allowSpectators && <Check className="w-4 h-4 text-cyan-500" />}
+                </div>
+                <p className="text-xs text-[#a89f94] mt-0.5">
+                  {allowSpectators
+                    ? "Others can watch your game live"
+                    : "Game will be private, no spectators allowed"}
+                </p>
+              </div>
+              <div
+                className={cn(
+                  "w-12 h-7 rounded-full transition-colors relative",
+                  allowSpectators ? "bg-cyan-500" : "bg-[#3d2b1f]"
+                )}
+              >
+                <div
+                  className={cn(
+                    "absolute top-1 w-5 h-5 rounded-full bg-white transition-transform",
+                    allowSpectators ? "right-1" : "left-1"
+                  )}
+                />
+              </div>
+            </div>
+          </button>
         </div>
 
         {/* Footer */}

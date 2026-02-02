@@ -15,7 +15,7 @@ export function getErrorMessage(error: unknown): string {
   }
 
   if (error && typeof error === "object" && "message" in error) {
-    return String((error as Record<string, unknown>).message);
+    return String((error as Record<string, unknown>)["message"]);
   }
 
   return "An unexpected error occurred";
@@ -37,7 +37,7 @@ export function isConvexError(error: unknown): error is { message: string; code?
     error !== null &&
     typeof error === "object" &&
     "message" in error &&
-    typeof (error as Record<string, unknown>).message === "string"
+    typeof (error as Record<string, unknown>)["message"] === "string"
   );
 }
 

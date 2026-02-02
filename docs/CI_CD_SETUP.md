@@ -241,7 +241,7 @@ bun run test:unit
 bun run build:web
 
 # Check for TypeScript errors
-bun run generate:types
+bunx convex typecheck
 ```
 
 ### Deploy Workflow Fails

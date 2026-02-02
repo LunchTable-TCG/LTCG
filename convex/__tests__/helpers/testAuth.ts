@@ -20,7 +20,7 @@
 import {
   createDeterministicPrivyIdentity,
   createPrivyIdentity,
-} from "../../../tests/helpers/mockPrivyJwt";
+} from "./mockPrivyJwt";
 import type { MutationCtx } from "../../_generated/server";
 
 // Type for the test instance - using any to avoid complex convex-test generic type issues

@@ -72,9 +72,6 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Generate types
-        run: bun run generate:types
-
       - name: Type check
         run: bun run type-check || echo "Type check not configured"
 
@@ -95,9 +92,6 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
-      - name: Generate types
-        run: bun run generate:types
 
       - name: Build web app
         run: bun run build:web

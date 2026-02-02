@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
-import { Text } from "@tremor/react";
+import { Badge, Text } from "@tremor/react";
+import { AlertCircle, CheckCircle2, Eye, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PlayerSelector } from "./PlayerSelector";
@@ -38,6 +39,132 @@ interface BatchOperationResponse {
 }
 
 // =============================================================================
+// Preview Panel Component
+// =============================================================================
+
+interface PreviewPanelProps {
+  isLoading: boolean;
+  summary?: {
+    totalPlayers: number;
+    validPlayers: number;
+    invalidPlayers: number;
+    [key: string]: unknown;
+  };
+  details?: Array<{
+    username?: string;
+    email?: string;
+    valid: boolean;
+    error?: string;
+    [key: string]: unknown;
+  }>;
+  onClose: () => void;
+  onConfirm: () => void;
+  renderSummaryExtra?: () => React.ReactNode;
+  renderDetailItem?: (item: unknown, index: number) => React.ReactNode;
+}
+
+function PreviewPanel({
+  isLoading,
+  summary,
+  details,
+  onClose,
+  onConfirm,
+  renderSummaryExtra,
+  renderDetailItem,
+}: PreviewPanelProps) {
+  if (isLoading) {
+    return (
+      <div className="p-4 bg-blue-500/10 border border-blue-500/50 rounded-lg animate-pulse">
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+          <Text className="text-blue-500 font-medium">Loading preview...</Text>
+        </div>
+      </div>
+    );
+  }
+
+  if (!summary) return null;
+
+  return (
+    <div className="space-y-4 p-4 bg-muted/50 border rounded-lg">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Eye className="w-4 h-4 text-blue-500" />
+          <Text className="font-medium">Operation Preview</Text>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          ✕
+        </Button>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="p-2 bg-background rounded border">
+          <Text className="text-xs text-muted-foreground">Total</Text>
+          <Text className="text-lg font-bold">{summary.totalPlayers}</Text>
+        </div>
+        <div className="p-2 bg-green-500/10 border border-green-500/30 rounded">
+          <Text className="text-xs text-green-600">Valid</Text>
+          <Text className="text-lg font-bold text-green-600">{summary.validPlayers}</Text>
+        </div>
+        <div className="p-2 bg-red-500/10 border border-red-500/30 rounded">
+          <Text className="text-xs text-red-600">Invalid</Text>
+          <Text className="text-lg font-bold text-red-600">{summary.invalidPlayers}</Text>
+        </div>
+      </div>
+
+      {/* Custom Summary Extra */}
+      {renderSummaryExtra?.()}
+
+      {/* Detail List */}
+      {details && details.length > 0 && (
+        <div className="max-h-48 overflow-y-auto space-y-1">
+          <Text className="text-xs text-muted-foreground mb-2">Player Details:</Text>
+          {details.map((item, index) => (
+            <div
+              key={index}
+              className={`flex items-center justify-between p-2 rounded text-sm ${
+                item.valid ? "bg-green-500/5" : "bg-red-500/5"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {item.valid ? (
+                  <CheckCircle2 className="w-3 h-3 text-green-500" />
+                ) : (
+                  <AlertCircle className="w-3 h-3 text-red-500" />
+                )}
+                <span>{item.username || item.email || "Unknown"}</span>
+              </div>
+              {renderDetailItem ? (
+                renderDetailItem(item, index)
+              ) : item.error ? (
+                <Badge color="red" size="xs">
+                  {item.error}
+                </Badge>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex gap-2 pt-2 border-t">
+        <Button variant="outline" onClick={onClose} className="flex-1">
+          Cancel
+        </Button>
+        <Button
+          onClick={onConfirm}
+          disabled={summary.validPlayers === 0}
+          className="flex-1"
+        >
+          Confirm & Execute
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Grant Gold Form
 // =============================================================================
 
@@ -46,10 +173,19 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewArgs, setPreviewArgs] = useState<{
+    playerIds: Id<"users">[];
+    amount: number;
+  } | null>(null);
 
   const batchGrantGold = useConvexMutation(apiAny.admin.batchAdmin.batchGrantGold);
+  const previewData = useConvexQuery(
+    apiAny.admin.batchAdmin.previewBatchGrantGold,
+    previewArgs ?? "skip"
+  );
 
-  const handleSubmit = async () => {
+  const handlePreview = () => {
     if (selectedPlayers.length === 0) {
       toast.error("Please select at least one player");
       return;
@@ -58,6 +194,14 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
       toast.error("Please enter a valid amount");
       return;
     }
+    setPreviewArgs({
+      playerIds: selectedPlayers,
+      amount: Number.parseInt(amount, 10),
+    });
+    setShowPreview(true);
+  };
+
+  const handleSubmit = async () => {
     if (!reason.trim()) {
       toast.error("Please provide a reason");
       return;
@@ -76,12 +220,19 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
       setSelectedPlayers([]);
       setAmount("");
       setReason("");
+      setShowPreview(false);
+      setPreviewArgs(null);
       onSuccess?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Operation failed");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const closePreview = () => {
+    setShowPreview(false);
+    setPreviewArgs(null);
   };
 
   return (
@@ -117,16 +268,58 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
         </div>
       </div>
 
-      <Button
-        type="button"
-        onClick={handleSubmit}
-        disabled={isSubmitting || selectedPlayers.length === 0}
-        className="w-full"
-      >
-        {isSubmitting
-          ? "Processing..."
-          : `Grant ${amount || "0"} Gold to ${selectedPlayers.length} Players`}
-      </Button>
+      {/* Preview Panel */}
+      {showPreview && (
+        <PreviewPanel
+          isLoading={previewData === undefined}
+          summary={previewData?.summary}
+          details={previewData?.preview}
+          onClose={closePreview}
+          onConfirm={handleSubmit}
+          renderSummaryExtra={() => (
+            <div className="p-2 bg-yellow-500/10 border border-yellow-500/30 rounded">
+              <Text className="text-xs text-yellow-600">Total Gold to Grant</Text>
+              <Text className="text-lg font-bold text-yellow-600">
+                {previewData?.summary?.totalGoldToGrant?.toLocaleString() ?? 0}
+              </Text>
+            </div>
+          )}
+          renderDetailItem={(item) => {
+            const preview = item as { currentGold: number; newGold: number };
+            return (
+              <Text className="text-xs text-muted-foreground">
+                {preview.currentGold?.toLocaleString()} → {preview.newGold?.toLocaleString()}
+              </Text>
+            );
+          }}
+        />
+      )}
+
+      {/* Action Buttons */}
+      {!showPreview && (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handlePreview}
+            disabled={isSubmitting || selectedPlayers.length === 0 || !amount}
+            className="flex-1"
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Preview
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting || selectedPlayers.length === 0 || !amount || !reason.trim()}
+            className="flex-1"
+          >
+            {isSubmitting
+              ? "Processing..."
+              : `Grant ${amount || "0"} Gold to ${selectedPlayers.length} Players`}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -233,14 +426,25 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
   const [selectedPlayers, setSelectedPlayers] = useState<Id<"users">[]>([]);
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewArgs, setPreviewArgs] = useState<{ playerIds: Id<"users">[] } | null>(null);
 
   const batchResetRatings = useConvexMutation(apiAny.admin.batchAdmin.batchResetRatings);
+  const previewData = useConvexQuery(
+    apiAny.admin.batchAdmin.previewBatchResetRatings,
+    previewArgs ?? "skip"
+  );
 
-  const handleSubmit = async () => {
+  const handlePreview = () => {
     if (selectedPlayers.length === 0) {
       toast.error("Please select at least one player");
       return;
     }
+    setPreviewArgs({ playerIds: selectedPlayers });
+    setShowPreview(true);
+  };
+
+  const handleSubmit = async () => {
     if (!reason.trim()) {
       toast.error("Please provide a reason");
       return;
@@ -255,6 +459,8 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
       toast.success(`Reset ratings for ${result.results.filter((r) => r.success).length} players`);
       setSelectedPlayers([]);
       setReason("");
+      setShowPreview(false);
+      setPreviewArgs(null);
       onSuccess?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Operation failed");
@@ -263,12 +469,17 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
     }
   };
 
+  const closePreview = () => {
+    setShowPreview(false);
+    setPreviewArgs(null);
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <Label className="text-base font-medium">Select Players</Label>
         <Text className="text-sm text-muted-foreground mb-4">
-          Choose which players will have their ratings reset to 1200
+          Choose which players will have their ratings reset to 1000
         </Text>
         <PlayerSelector selectedIds={selectedPlayers} onSelectionChange={setSelectedPlayers} />
       </div>
@@ -284,23 +495,85 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
         />
       </div>
 
+      {/* Preview Panel */}
+      {showPreview && (
+        <PreviewPanel
+          isLoading={previewData === undefined}
+          summary={previewData?.summary}
+          details={previewData?.preview}
+          onClose={closePreview}
+          onConfirm={handleSubmit}
+          renderSummaryExtra={() => (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2 bg-red-500/10 border border-red-500/30 rounded">
+                <Text className="text-xs text-red-600">Losing Rating</Text>
+                <Text className="text-lg font-bold text-red-600">
+                  {previewData?.summary?.playersLosingRating ?? 0}
+                </Text>
+              </div>
+              <div className="p-2 bg-green-500/10 border border-green-500/30 rounded">
+                <Text className="text-xs text-green-600">Gaining Rating</Text>
+                <Text className="text-lg font-bold text-green-600">
+                  {previewData?.summary?.playersGainingRating ?? 0}
+                </Text>
+              </div>
+            </div>
+          )}
+          renderDetailItem={(item) => {
+            const preview = item as {
+              currentRankedElo: number;
+              rankedChange: number;
+            };
+            return (
+              <div className="flex items-center gap-2">
+                <Text className="text-xs text-muted-foreground">
+                  {preview.currentRankedElo} → 1000
+                </Text>
+                <Badge
+                  color={preview.rankedChange > 0 ? "green" : preview.rankedChange < 0 ? "red" : "gray"}
+                  size="xs"
+                >
+                  {preview.rankedChange > 0 ? "+" : ""}
+                  {preview.rankedChange}
+                </Badge>
+              </div>
+            );
+          }}
+        />
+      )}
+
       <div className="p-4 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
         <Text className="text-yellow-500 font-medium">⚠️ Warning</Text>
         <Text className="text-sm text-muted-foreground">
-          This will reset all selected players&apos; ELO ratings to 1200. This action cannot be
+          This will reset all selected players&apos; ELO ratings to 1000. This action cannot be
           undone.
         </Text>
       </div>
 
-      <Button
-        type="button"
-        onClick={handleSubmit}
-        disabled={isSubmitting || selectedPlayers.length === 0}
-        variant="destructive"
-        className="w-full"
-      >
-        {isSubmitting ? "Processing..." : `Reset Ratings for ${selectedPlayers.length} Players`}
-      </Button>
+      {/* Action Buttons */}
+      {!showPreview && (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handlePreview}
+            disabled={isSubmitting || selectedPlayers.length === 0}
+            className="flex-1"
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Preview Impact
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting || selectedPlayers.length === 0 || !reason.trim()}
+            variant="destructive"
+            className="flex-1"
+          >
+            {isSubmitting ? "Processing..." : `Reset Ratings for ${selectedPlayers.length} Players`}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -315,10 +588,20 @@ export function GrantPacksForm({ onSuccess }: BatchOperationFormProps) {
   const [quantity, setQuantity] = useState("1");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewArgs, setPreviewArgs] = useState<{
+    playerIds: Id<"users">[];
+    packType: string;
+    quantity: number;
+  } | null>(null);
 
   const batchGrantPacks = useConvexMutation(apiAny.admin.batchAdmin.batchGrantPacks);
+  const previewData = useConvexQuery(
+    apiAny.admin.batchAdmin.previewBatchGrantPacks,
+    previewArgs ?? "skip"
+  );
 
-  const handleSubmit = async () => {
+  const handlePreview = () => {
     if (selectedPlayers.length === 0) {
       toast.error("Please select at least one player");
       return;
@@ -331,6 +614,15 @@ export function GrantPacksForm({ onSuccess }: BatchOperationFormProps) {
       toast.error("Please enter a valid quantity");
       return;
     }
+    setPreviewArgs({
+      playerIds: selectedPlayers,
+      packType: packDefinitionId.trim(),
+      quantity: Number.parseInt(quantity, 10),
+    });
+    setShowPreview(true);
+  };
+
+  const handleSubmit = async () => {
     if (!reason.trim()) {
       toast.error("Please provide a reason");
       return;
@@ -351,12 +643,19 @@ export function GrantPacksForm({ onSuccess }: BatchOperationFormProps) {
       setPackDefinitionId("");
       setQuantity("1");
       setReason("");
+      setShowPreview(false);
+      setPreviewArgs(null);
       onSuccess?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Operation failed");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const closePreview = () => {
+    setShowPreview(false);
+    setPreviewArgs(null);
   };
 
   return (
@@ -401,16 +700,64 @@ export function GrantPacksForm({ onSuccess }: BatchOperationFormProps) {
         </div>
       </div>
 
-      <Button
-        type="button"
-        onClick={handleSubmit}
-        disabled={isSubmitting || selectedPlayers.length === 0}
-        className="w-full"
-      >
-        {isSubmitting
-          ? "Processing..."
-          : `Grant ${quantity} Packs to ${selectedPlayers.length} Players`}
-      </Button>
+      {/* Preview Panel */}
+      {showPreview && (
+        <PreviewPanel
+          isLoading={previewData === undefined}
+          summary={previewData?.summary}
+          details={previewData?.preview}
+          onClose={closePreview}
+          onConfirm={handleSubmit}
+          renderSummaryExtra={() => (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2 bg-purple-500/10 border border-purple-500/30 rounded">
+                <Text className="text-xs text-purple-600">Total Packs</Text>
+                <Text className="text-lg font-bold text-purple-600">
+                  {previewData?.summary?.totalPacksToGrant ?? 0}
+                </Text>
+              </div>
+              <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded">
+                <Text className="text-xs text-blue-600">Est. Total Cards</Text>
+                <Text className="text-lg font-bold text-blue-600">
+                  {previewData?.summary?.estimatedTotalCards ?? 0}
+                </Text>
+              </div>
+            </div>
+          )}
+        />
+      )}
+
+      {/* Action Buttons */}
+      {!showPreview && (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handlePreview}
+            disabled={isSubmitting || selectedPlayers.length === 0 || !packDefinitionId.trim() || !quantity}
+            className="flex-1"
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Preview
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={
+              isSubmitting ||
+              selectedPlayers.length === 0 ||
+              !packDefinitionId.trim() ||
+              !quantity ||
+              !reason.trim()
+            }
+            className="flex-1"
+          >
+            {isSubmitting
+              ? "Processing..."
+              : `Grant ${quantity} Packs to ${selectedPlayers.length} Players`}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -714,8 +1061,17 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
   const [cardGrants, setCardGrants] = useState<CardGrant[]>([{ cardId: "", quantity: 1 }]);
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewArgs, setPreviewArgs] = useState<{
+    playerIds: Id<"users">[];
+    cardIds: Id<"cardDefinitions">[];
+  } | null>(null);
 
   const batchGrantCards = useConvexMutation(apiAny.admin.batchAdmin.batchGrantCards);
+  const previewData = useConvexQuery(
+    apiAny.admin.batchAdmin.previewBatchGrantCards,
+    previewArgs ?? "skip"
+  );
 
   const addCardGrant = () => {
     setCardGrants([...cardGrants, { cardId: "", quantity: 1 }]);
@@ -731,7 +1087,7 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
     setCardGrants(updated);
   };
 
-  const handleSubmit = async () => {
+  const handlePreview = () => {
     if (selectedPlayers.length === 0) {
       toast.error("Please select at least one player");
       return;
@@ -741,10 +1097,19 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
       toast.error("Please add at least one valid card grant");
       return;
     }
+    setPreviewArgs({
+      playerIds: selectedPlayers,
+      cardIds: validGrants.map((g) => g.cardId.trim() as Id<"cardDefinitions">),
+    });
+    setShowPreview(true);
+  };
+
+  const handleSubmit = async () => {
     if (!reason.trim()) {
       toast.error("Please provide a reason");
       return;
     }
+    const validGrants = cardGrants.filter((g) => g.cardId.trim() && g.quantity > 0);
 
     setIsSubmitting(true);
     try {
@@ -757,6 +1122,8 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
       setSelectedPlayers([]);
       setCardGrants([{ cardId: "", quantity: 1 }]);
       setReason("");
+      setShowPreview(false);
+      setPreviewArgs(null);
       onSuccess?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Operation failed");
@@ -764,6 +1131,13 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
       setIsSubmitting(false);
     }
   };
+
+  const closePreview = () => {
+    setShowPreview(false);
+    setPreviewArgs(null);
+  };
+
+  const validGrants = cardGrants.filter((g) => g.cardId.trim() && g.quantity > 0);
 
   return (
     <div className="space-y-6">
@@ -829,14 +1203,77 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
         />
       </div>
 
-      <Button
-        type="button"
-        onClick={handleSubmit}
-        disabled={isSubmitting || selectedPlayers.length === 0}
-        className="w-full"
-      >
-        {isSubmitting ? "Processing..." : `Grant Cards to ${selectedPlayers.length} Players`}
-      </Button>
+      {/* Preview Panel */}
+      {showPreview && (
+        <PreviewPanel
+          isLoading={previewData === undefined}
+          summary={previewData?.summary}
+          details={previewData?.playerPreview}
+          onClose={closePreview}
+          onConfirm={handleSubmit}
+          renderSummaryExtra={() => (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded">
+                  <Text className="text-xs text-blue-600">Cards Per Player</Text>
+                  <Text className="text-lg font-bold text-blue-600">
+                    {previewData?.summary?.cardsPerPlayer ?? 0}
+                  </Text>
+                </div>
+                <div className="p-2 bg-purple-500/10 border border-purple-500/30 rounded">
+                  <Text className="text-xs text-purple-600">Total Cards</Text>
+                  <Text className="text-lg font-bold text-purple-600">
+                    {previewData?.summary?.totalCardsToGrant ?? 0}
+                  </Text>
+                </div>
+              </div>
+              {previewData?.cardPreview && (
+                <div className="p-2 bg-muted rounded">
+                  <Text className="text-xs text-muted-foreground mb-1">Cards to grant:</Text>
+                  <div className="flex flex-wrap gap-1">
+                    {previewData.cardPreview
+                      .filter((c: { valid: boolean }) => c.valid)
+                      .map((card: { name: string; rarity: string }, idx: number) => (
+                        <Badge key={idx} size="xs" color="blue">
+                          {card.name} ({card.rarity})
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        />
+      )}
+
+      {/* Action Buttons */}
+      {!showPreview && (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handlePreview}
+            disabled={isSubmitting || selectedPlayers.length === 0 || validGrants.length === 0}
+            className="flex-1"
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Preview
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={
+              isSubmitting ||
+              selectedPlayers.length === 0 ||
+              validGrants.length === 0 ||
+              !reason.trim()
+            }
+            className="flex-1"
+          >
+            {isSubmitting ? "Processing..." : `Grant Cards to ${selectedPlayers.length} Players`}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

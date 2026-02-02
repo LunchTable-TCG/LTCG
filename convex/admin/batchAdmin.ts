@@ -7,9 +7,9 @@
 
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { mutation } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
-import { requireAuthMutation } from "../lib/convexAuth";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import {
   addCardsToInventory,
@@ -772,6 +772,386 @@ export const batchGrantCards = mutation({
       success: failureCount === 0,
       message: `Granted ${cardIds.length} card(s) to ${successCount} players (${totalCardsGranted} total). ${failureCount} failed.`,
       results,
+    };
+  },
+});
+
+// =============================================================================
+// Preview/Dry-Run Queries
+// =============================================================================
+
+/**
+ * Preview batch gold grant operation
+ * Shows what would happen before executing the grant.
+ * Requires admin role or higher.
+ */
+export const previewBatchGrantGold = query({
+  args: {
+    playerIds: v.array(v.id("users")),
+    amount: v.number(),
+  },
+  handler: async (ctx, { playerIds, amount }) => {
+    const { userId: adminId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, adminId, "admin");
+
+    const preview: Array<{
+      playerId: Id<"users">;
+      username: string | undefined;
+      email: string | undefined;
+      currentGold: number;
+      newGold: number;
+      valid: boolean;
+      error?: string;
+    }> = [];
+
+    for (const playerId of playerIds) {
+      const player = await ctx.db.get(playerId);
+      if (!player) {
+        preview.push({
+          playerId,
+          username: undefined,
+          email: undefined,
+          currentGold: 0,
+          newGold: 0,
+          valid: false,
+          error: "Player not found",
+        });
+        continue;
+      }
+
+      const currentGold = player.gold || 0;
+      preview.push({
+        playerId,
+        username: player.username,
+        email: player.email,
+        currentGold,
+        newGold: currentGold + amount,
+        valid: true,
+      });
+    }
+
+    const validCount = preview.filter((p) => p.valid).length;
+    const invalidCount = preview.filter((p) => !p.valid).length;
+    const totalGoldToGrant = validCount * amount;
+
+    return {
+      operation: "batchGrantGold",
+      summary: {
+        totalPlayers: playerIds.length,
+        validPlayers: validCount,
+        invalidPlayers: invalidCount,
+        amountPerPlayer: amount,
+        totalGoldToGrant,
+      },
+      preview,
+    };
+  },
+});
+
+/**
+ * Preview batch rating reset operation
+ * Shows what would happen before executing the reset.
+ * Requires admin role or higher.
+ */
+export const previewBatchResetRatings = query({
+  args: {
+    playerIds: v.array(v.id("users")),
+  },
+  handler: async (ctx, { playerIds }) => {
+    const { userId: adminId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, adminId, "admin");
+
+    const defaultRankedElo = 1000;
+    const defaultCasualRating = 1000;
+
+    const preview: Array<{
+      playerId: Id<"users">;
+      username: string | undefined;
+      email: string | undefined;
+      currentRankedElo: number;
+      currentCasualRating: number;
+      newRankedElo: number;
+      newCasualRating: number;
+      rankedChange: number;
+      casualChange: number;
+      valid: boolean;
+      error?: string;
+    }> = [];
+
+    for (const playerId of playerIds) {
+      const player = await ctx.db.get(playerId);
+      if (!player) {
+        preview.push({
+          playerId,
+          username: undefined,
+          email: undefined,
+          currentRankedElo: 0,
+          currentCasualRating: 0,
+          newRankedElo: defaultRankedElo,
+          newCasualRating: defaultCasualRating,
+          rankedChange: 0,
+          casualChange: 0,
+          valid: false,
+          error: "Player not found",
+        });
+        continue;
+      }
+
+      const currentRankedElo = player.rankedElo || defaultRankedElo;
+      const currentCasualRating = player.casualRating || defaultCasualRating;
+
+      preview.push({
+        playerId,
+        username: player.username,
+        email: player.email,
+        currentRankedElo,
+        currentCasualRating,
+        newRankedElo: defaultRankedElo,
+        newCasualRating: defaultCasualRating,
+        rankedChange: defaultRankedElo - currentRankedElo,
+        casualChange: defaultCasualRating - currentCasualRating,
+        valid: true,
+      });
+    }
+
+    const validCount = preview.filter((p) => p.valid).length;
+    const invalidCount = preview.filter((p) => !p.valid).length;
+    const playersLosingRating = preview.filter(
+      (p) => p.valid && (p.currentRankedElo > defaultRankedElo || p.currentCasualRating > defaultCasualRating)
+    ).length;
+    const playersGainingRating = preview.filter(
+      (p) => p.valid && (p.currentRankedElo < defaultRankedElo || p.currentCasualRating < defaultCasualRating)
+    ).length;
+
+    return {
+      operation: "batchResetRatings",
+      summary: {
+        totalPlayers: playerIds.length,
+        validPlayers: validCount,
+        invalidPlayers: invalidCount,
+        playersLosingRating,
+        playersGainingRating,
+        targetRankedElo: defaultRankedElo,
+        targetCasualRating: defaultCasualRating,
+      },
+      preview,
+    };
+  },
+});
+
+/**
+ * Preview batch pack grant operation
+ * Shows what would happen before executing the grant.
+ * Requires admin role or higher.
+ */
+export const previewBatchGrantPacks = query({
+  args: {
+    playerIds: v.array(v.id("users")),
+    packType: v.string(),
+    quantity: v.number(),
+  },
+  handler: async (ctx, { playerIds, packType, quantity }) => {
+    const { userId: adminId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, adminId, "admin");
+
+    // Validate quantity
+    if (quantity <= 0 || quantity > 100) {
+      throw createError(ErrorCode.VALIDATION_RANGE, {
+        field: "quantity",
+        min: 1,
+        max: 100,
+        value: quantity,
+      });
+    }
+
+    // Get pack product configuration
+    const packProduct = await ctx.db
+      .query("shopProducts")
+      .withIndex("by_product_id", (q) => q.eq("productId", packType))
+      .first();
+
+    if (!packProduct) {
+      throw createError(ErrorCode.NOT_FOUND_PRODUCT, {
+        productId: packType,
+      });
+    }
+
+    if (packProduct.productType !== "pack" || !packProduct.packConfig) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: `Product "${packType}" is not a valid pack type`,
+      });
+    }
+
+    const preview: Array<{
+      playerId: Id<"users">;
+      username: string | undefined;
+      email: string | undefined;
+      valid: boolean;
+      error?: string;
+    }> = [];
+
+    for (const playerId of playerIds) {
+      const player = await ctx.db.get(playerId);
+      if (!player) {
+        preview.push({
+          playerId,
+          username: undefined,
+          email: undefined,
+          valid: false,
+          error: "Player not found",
+        });
+        continue;
+      }
+
+      preview.push({
+        playerId,
+        username: player.username,
+        email: player.email,
+        valid: true,
+      });
+    }
+
+    const validCount = preview.filter((p) => p.valid).length;
+    const invalidCount = preview.filter((p) => !p.valid).length;
+    const totalPacksToGrant = validCount * quantity;
+    const cardsPerPack = packProduct.packConfig.cardCount;
+    const estimatedTotalCards = totalPacksToGrant * cardsPerPack;
+
+    return {
+      operation: "batchGrantPacks",
+      summary: {
+        totalPlayers: playerIds.length,
+        validPlayers: validCount,
+        invalidPlayers: invalidCount,
+        packType,
+        packName: packProduct.name,
+        quantityPerPlayer: quantity,
+        totalPacksToGrant,
+        cardsPerPack,
+        estimatedTotalCards,
+        guaranteedRarity: packProduct.packConfig.guaranteedRarity,
+      },
+      preview,
+    };
+  },
+});
+
+/**
+ * Preview batch card grant operation
+ * Shows what would happen before executing the grant.
+ * Requires admin role or higher.
+ */
+export const previewBatchGrantCards = query({
+  args: {
+    playerIds: v.array(v.id("users")),
+    cardIds: v.array(v.id("cardDefinitions")),
+  },
+  handler: async (ctx, { playerIds, cardIds }) => {
+    const { userId: adminId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, adminId, "admin");
+
+    // Validate inputs
+    if (playerIds.length === 0) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "No players specified",
+      });
+    }
+    if (cardIds.length === 0) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "No cards specified",
+      });
+    }
+
+    // Pre-validate all cards exist
+    const cardDefinitions: Array<{
+      cardId: Id<"cardDefinitions">;
+      name: string;
+      rarity: string;
+      valid: boolean;
+      error?: string;
+    }> = [];
+
+    for (const cardId of cardIds) {
+      const cardDef = await ctx.db.get(cardId);
+      if (!cardDef) {
+        cardDefinitions.push({
+          cardId,
+          name: "Unknown",
+          rarity: "unknown",
+          valid: false,
+          error: "Card definition not found",
+        });
+      } else {
+        cardDefinitions.push({
+          cardId,
+          name: cardDef.name,
+          rarity: cardDef.rarity,
+          valid: true,
+        });
+      }
+    }
+
+    const playerPreview: Array<{
+      playerId: Id<"users">;
+      username: string | undefined;
+      email: string | undefined;
+      valid: boolean;
+      error?: string;
+    }> = [];
+
+    for (const playerId of playerIds) {
+      const player = await ctx.db.get(playerId);
+      if (!player) {
+        playerPreview.push({
+          playerId,
+          username: undefined,
+          email: undefined,
+          valid: false,
+          error: "Player not found",
+        });
+        continue;
+      }
+
+      playerPreview.push({
+        playerId,
+        username: player.username,
+        email: player.email,
+        valid: true,
+      });
+    }
+
+    const validPlayers = playerPreview.filter((p) => p.valid).length;
+    const invalidPlayers = playerPreview.filter((p) => !p.valid).length;
+    const validCards = cardDefinitions.filter((c) => c.valid).length;
+    const invalidCards = cardDefinitions.filter((c) => !c.valid).length;
+    const totalCardsToGrant = validPlayers * validCards;
+
+    // Group cards by rarity for summary
+    const cardsByRarity = cardDefinitions
+      .filter((c) => c.valid)
+      .reduce(
+        (acc, card) => {
+          acc[card.rarity] = (acc[card.rarity] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
+
+    return {
+      operation: "batchGrantCards",
+      summary: {
+        totalPlayers: playerIds.length,
+        validPlayers,
+        invalidPlayers,
+        totalCards: cardIds.length,
+        validCards,
+        invalidCards,
+        cardsPerPlayer: validCards,
+        totalCardsToGrant,
+        cardsByRarity,
+      },
+      cardPreview: cardDefinitions,
+      playerPreview,
     };
   },
 });

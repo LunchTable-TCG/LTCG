@@ -15,11 +15,11 @@ export {
   type AuthenticatedUser,
 } from "./testAuth";
 
-// Re-export from shared helpers
+// Mock Privy JWT helpers
 export {
   createPrivyIdentity,
   createDeterministicPrivyIdentity,
   createMockPrivyToken,
   verifyMockPrivyToken,
   type MockPrivyTokenOptions,
-} from "../../../tests/helpers/mockPrivyJwt";
+} from "./mockPrivyJwt";

@@ -22,28 +22,28 @@
  */
 export const TEST_ENV = {
   /** Convex backend URL */
-  CONVEX_URL: process.env.CONVEX_URL || "http://127.0.0.1:3210",
+  CONVEX_URL: process.env["CONVEX_URL"] || "http://127.0.0.1:3210",
 
   /** Base URL for the web application */
-  BASE_URL: process.env.BASE_URL || "http://localhost:3000",
+  BASE_URL: process.env["BASE_URL"] || "http://localhost:3000",
 
   /** Privy application ID */
-  PRIVY_APP_ID: process.env.NEXT_PUBLIC_PRIVY_APP_ID || "cml0fnzn501t7lc0buoz8kt74",
+  PRIVY_APP_ID: process.env["NEXT_PUBLIC_PRIVY_APP_ID"] || "cml0fnzn501t7lc0buoz8kt74",
 
   /** Whether tests are running in test mode */
   TEST_MODE: true,
 
   /** Timeout for network operations (ms) */
-  NETWORK_TIMEOUT: Number.parseInt(process.env.TEST_NETWORK_TIMEOUT || "30000", 10),
+  NETWORK_TIMEOUT: Number.parseInt(process.env["TEST_NETWORK_TIMEOUT"] || "30000", 10),
 
   /** Timeout for page loads (ms) */
-  PAGE_LOAD_TIMEOUT: Number.parseInt(process.env.TEST_PAGE_LOAD_TIMEOUT || "60000", 10),
+  PAGE_LOAD_TIMEOUT: Number.parseInt(process.env["TEST_PAGE_LOAD_TIMEOUT"] || "60000", 10),
 
   /** Whether to run tests in headless mode */
-  HEADLESS: process.env.CI === "true" || process.env.HEADLESS === "true",
+  HEADLESS: process.env["CI"] === "true" || process.env["HEADLESS"] === "true",
 
   /** Whether running in CI environment */
-  IS_CI: process.env.CI === "true",
+  IS_CI: process.env["CI"] === "true",
 } as const;
 
 /**

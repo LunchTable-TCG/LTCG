@@ -166,7 +166,7 @@ export async function handleGameWebhook(
   logger.info({ eventType, gameId, data }, "Processing game webhook");
 
   // Store game ID in state for actions to use
-  state.values.LTCG_CURRENT_GAME_ID = gameId;
+  state.values["LTCG_CURRENT_GAME_ID"] = gameId;
 
   try {
     switch (eventType) {
@@ -229,9 +229,9 @@ async function handleTurnStarted(
   const gameState = await client.getGameState(gameId);
 
   // Store in state for providers
-  state.values.LTCG_GAME_STATE = gameState;
-  state.values.LTCG_CURRENT_PHASE = data.phase;
-  state.values.LTCG_TURN_NUMBER = data.turnNumber;
+  state.values["LTCG_GAME_STATE"] = gameState;
+  state.values["LTCG_CURRENT_PHASE"] = data.phase;
+  state.values["LTCG_TURN_NUMBER"] = data.turnNumber;
 
   // Emit event that will trigger action selection
   // The action system will pick the appropriate move based on game state
@@ -260,8 +260,8 @@ async function handleChainWaiting(
   );
 
   // Store chain state for chain response action
-  state.values.LTCG_CHAIN_WAITING = true;
-  state.values.LTCG_CHAIN_TIMEOUT = chainState?.timeoutMs;
+  state.values["LTCG_CHAIN_WAITING"] = true;
+  state.values["LTCG_CHAIN_TIMEOUT"] = chainState?.timeoutMs;
 
   return {
     processed: true,
@@ -286,7 +286,7 @@ async function handleOpponentAction(
   );
 
   // Store for react action
-  state.values.LTCG_LAST_OPPONENT_ACTION = oppAction;
+  state.values["LTCG_LAST_OPPONENT_ACTION"] = oppAction;
 
   return {
     processed: true,
@@ -306,8 +306,8 @@ async function handleGameStarted(
   logger.info({ gameId }, "Game has started");
 
   // Store game ID
-  state.values.LTCG_CURRENT_GAME_ID = gameId;
-  state.values.LTCG_GAME_ACTIVE = true;
+  state.values["LTCG_CURRENT_GAME_ID"] = gameId;
+  state.values["LTCG_GAME_ACTIVE"] = true;
 
   return {
     processed: true,
@@ -329,9 +329,9 @@ async function handleGameEnded(
   logger.info({ gameId, winner: result?.winner, reason: result?.reason }, "Game has ended");
 
   // Clear game state
-  state.values.LTCG_CURRENT_GAME_ID = undefined;
-  state.values.LTCG_GAME_ACTIVE = false;
-  state.values.LTCG_GAME_RESULT = result;
+  state.values["LTCG_CURRENT_GAME_ID"] = undefined;
+  state.values["LTCG_GAME_ACTIVE"] = false;
+  state.values["LTCG_GAME_RESULT"] = result;
 
   return {
     processed: true,
@@ -350,7 +350,7 @@ async function handlePhaseChanged(
 ): Promise<WebhookHandlerResult> {
   logger.info({ gameId, phase: data.phase }, "Phase changed");
 
-  state.values.LTCG_CURRENT_PHASE = data.phase;
+  state.values["LTCG_CURRENT_PHASE"] = data.phase;
 
   return {
     processed: true,

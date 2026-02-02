@@ -59,6 +59,13 @@ crons.daily(
   internal.progression.notifications.cleanupOldNotifications
 );
 
+// Cleanup expired admin roles every hour
+crons.interval(
+  "cleanup-expired-admin-roles",
+  { hours: 1 },
+  internalAny.admin.roles.autoCleanupExpiredRoles
+);
+
 // Send welcome emails to new users every hour
 crons.interval(
   "send-welcome-emails",

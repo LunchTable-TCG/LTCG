@@ -142,9 +142,15 @@ export function GameLobby() {
       spectatorCount: game.spectatorCount,
     })) || [];
 
-  const handleCreateGame = async (data: { mode: "casual" | "ranked"; isPrivate?: boolean }) => {
+  const handleCreateGame = async (data: {
+    mode: "casual" | "ranked";
+    isPrivate?: boolean;
+    allowSpectators?: boolean;
+  }) => {
     try {
-      const result = await createLobby(data.mode, data.isPrivate || false);
+      const result = await createLobby(data.mode, data.isPrivate || false, {
+        allowSpectators: data.allowSpectators,
+      });
       setIsCreateModalOpen(false);
 
       // Redirect to game page immediately after creating

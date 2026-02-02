@@ -31,9 +31,6 @@ jobs:
       - name: Run unit tests
         run: bun run test:unit
 
-      - name: Generate types
-        run: bun run generate:types
-
       - name: Build web app
         run: bun run build:web
         env:

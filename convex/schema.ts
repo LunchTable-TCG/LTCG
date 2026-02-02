@@ -137,9 +137,15 @@ export default defineSchema({
     grantedBy: v.id("users"), // Required: who granted this role
     grantedAt: v.number(),
     isActive: v.boolean(),
+    // Temporal role management
+    expiresAt: v.optional(v.number()), // When role expires (null = permanent)
+    grantNote: v.optional(v.string()), // Reason/note for granting
+    revokedAt: v.optional(v.number()), // When role was revoked
+    revokedBy: v.optional(v.id("users")), // Who revoked the role
   })
     .index("by_user", ["userId"])
-    .index("by_role", ["role", "isActive"]),
+    .index("by_role", ["role", "isActive"])
+    .index("by_expiration", ["isActive", "expiresAt"]),
 
   // Admin audit logs for tracking all admin operations
   adminAuditLogs: defineTable({

@@ -11,6 +11,7 @@
 import type * as __tests___fixtures_decks from "../__tests__/fixtures/decks.js";
 import type * as __tests___fixtures_users from "../__tests__/fixtures/users.js";
 import type * as __tests___helpers_index from "../__tests__/helpers/index.js";
+import type * as __tests___helpers_mockPrivyJwt from "../__tests__/helpers/mockPrivyJwt.js";
 import type * as __tests___helpers_testAuth from "../__tests__/helpers/testAuth.js";
 import type * as admin_admin from "../admin/admin.js";
 import type * as admin_analytics from "../admin/analytics.js";
@@ -208,6 +209,7 @@ declare const fullApi: ApiFromModules<{
   "__tests__/fixtures/decks": typeof __tests___fixtures_decks;
   "__tests__/fixtures/users": typeof __tests___fixtures_users;
   "__tests__/helpers/index": typeof __tests___helpers_index;
+  "__tests__/helpers/mockPrivyJwt": typeof __tests___helpers_mockPrivyJwt;
   "__tests__/helpers/testAuth": typeof __tests___helpers_testAuth;
   "admin/admin": typeof admin_admin;
   "admin/analytics": typeof admin_analytics;

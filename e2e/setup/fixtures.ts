@@ -28,6 +28,40 @@ export { expect };
 // FIXTURE TYPES
 // =============================================================================
 
+/**
+ * Game Helper provides high-level methods for game interactions
+ */
+export interface GameHelper {
+  waitForPhase(phase: "main1" | "main2" | "battle" | "end"): Promise<void>;
+  summonCreature(cardIndex: number): Promise<void>;
+  attack(attackerIndex: number, targetIndex: number): Promise<void>;
+  endTurn(): Promise<void>;
+  getHandCount(): Promise<number>;
+  getFieldMonsters(): Promise<number>;
+}
+
+/**
+ * Shop Helper provides high-level methods for shop interactions
+ */
+export interface ShopHelper {
+  navigate(): Promise<void>;
+  getGold(): Promise<number>;
+  buyPack(): Promise<void>;
+  hasPack(packName: string): Promise<boolean>;
+  hasPackResults(): Promise<boolean>;
+}
+
+/**
+ * Deck Helper provides high-level methods for deck management
+ */
+export interface DeckHelper {
+  navigate(): Promise<void>;
+  createDeck(name: string): Promise<void>;
+  addCard(cardName: string): Promise<void>;
+  saveDeck(): Promise<void>;
+  getDeckCount(): Promise<number>;
+}
+
 type TestFixtures = {
   // Data factory with auto-cleanup
   factory: TestDataFactory;
@@ -50,6 +84,11 @@ type TestFixtures = {
   lobbyPage: LobbyPage;
   socialPage: SocialPage;
   storyPage: StoryPage;
+
+  // Helper fixtures for tests
+  gameHelper: GameHelper;
+  shopHelper: ShopHelper;
+  deckHelper: DeckHelper;
 };
 
 // =============================================================================
@@ -122,6 +161,88 @@ export const test = base.extend<TestFixtures>({
 
   storyPage: async ({ authenticatedPage }, use) => {
     await use(new StoryPage(authenticatedPage));
+  },
+
+  // Helper fixtures that wrap page objects with high-level methods
+  gameHelper: async ({ gamePage }, use) => {
+    const helper: GameHelper = {
+      async waitForPhase(phase) {
+        await gamePage.page.waitForSelector(`[data-testid="phase-${phase}"], [data-phase="${phase}"]`, {
+          timeout: 10000,
+        });
+      },
+      async summonCreature(cardIndex) {
+        await gamePage.page.click(`[data-testid="hand-card-${cardIndex}"]`);
+        await gamePage.page.click('[data-testid="summon-button"]');
+      },
+      async attack(attackerIndex, targetIndex) {
+        await gamePage.page.click(`[data-testid="field-monster-${attackerIndex}"]`);
+        await gamePage.page.click(`[data-testid="target-${targetIndex}"]`);
+      },
+      async endTurn() {
+        await gamePage.page.click('[data-testid="end-turn-button"]');
+      },
+      async getHandCount() {
+        const cards = await gamePage.page.locator('[data-testid^="hand-card-"]').count();
+        return cards;
+      },
+      async getFieldMonsters() {
+        const monsters = await gamePage.page.locator('[data-testid^="field-monster-"]').count();
+        return monsters;
+      },
+    };
+    await use(helper);
+  },
+
+  shopHelper: async ({ shopPage }, use) => {
+    const helper: ShopHelper = {
+      async navigate() {
+        await shopPage.navigate();
+      },
+      async getGold() {
+        const goldElement = shopPage.page.locator('[data-testid="player-gold"]');
+        const text = await goldElement.textContent();
+        return Number.parseInt(text?.replace(/\D/g, "") || "0", 10);
+      },
+      async buyPack() {
+        await shopPage.page.click('[data-testid="buy-pack-button"]');
+        await shopPage.page.waitForSelector('[data-testid="pack-opened"]', { timeout: 5000 }).catch(() => {});
+      },
+      async hasPack(packName) {
+        const pack = shopPage.page.locator(`[data-testid="pack-${packName}"]`);
+        return await pack.isVisible();
+      },
+      async hasPackResults() {
+        const results = shopPage.page.locator('[data-testid="pack-results"], [data-testid="pack-opened"]');
+        return await results.isVisible({ timeout: 1000 }).catch(() => false);
+      },
+    };
+    await use(helper);
+  },
+
+  deckHelper: async ({ deckPage }, use) => {
+    const helper: DeckHelper = {
+      async navigate() {
+        await deckPage.navigate();
+      },
+      async createDeck(name) {
+        await deckPage.page.click('[data-testid="create-deck-button"]');
+        await deckPage.page.fill('[data-testid="deck-name-input"]', name);
+        await deckPage.page.click('[data-testid="confirm-create-deck"]');
+      },
+      async addCard(cardName) {
+        const card = deckPage.page.locator(`[data-testid="card-${cardName}"]`);
+        await card.click();
+      },
+      async saveDeck() {
+        await deckPage.page.click('[data-testid="save-deck-button"]');
+      },
+      async getDeckCount() {
+        const cards = await deckPage.page.locator('[data-testid^="deck-card-"]').count();
+        return cards;
+      },
+    };
+    await use(helper);
   },
 });
 

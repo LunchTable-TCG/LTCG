@@ -219,6 +219,9 @@ export const createLobby = mutation({
   args: {
     mode: v.union(v.literal("casual"), v.literal("ranked")),
     isPrivate: v.optional(v.boolean()),
+    // Spectator settings
+    allowSpectators: v.optional(v.boolean()), // default: true
+    maxSpectators: v.optional(v.number()), // default: 100
   },
   handler: async (ctx, args) => {
     const opId = `createLobby_${Date.now()}`;
@@ -265,6 +268,11 @@ export const createLobby = mutation({
         joinCode,
         maxRatingDiff,
         createdAt: Date.now(),
+
+        // Spectator settings (defaults: allow spectators, max 100)
+        allowSpectators: args.allowSpectators ?? true,
+        maxSpectators: args.maxSpectators ?? 100,
+        spectatorCount: 0,
       });
 
       logger.info("Lobby created successfully", { ...traceCtx, lobbyId, rank, rating });

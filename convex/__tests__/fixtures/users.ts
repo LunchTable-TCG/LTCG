@@ -9,7 +9,7 @@
 import {
   createDeterministicPrivyIdentity,
   createPrivyIdentity,
-} from "../../../tests/helpers/mockPrivyJwt";
+} from "../helpers/mockPrivyJwt";
 
 export interface TestUserData {
   email: string;

@@ -27,7 +27,7 @@ export function PrivyAuthProvider({ children }: { children: ReactNode }) {
   useSuppressPrivyHydrationWarnings();
   return (
     <PrivyProvider
-      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || ""}
+      appId={process.env["NEXT_PUBLIC_PRIVY_APP_ID"] || ""}
       config={{
         // Login configuration - email only as requested
         loginMethods: ["email"],

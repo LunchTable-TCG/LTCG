@@ -23,7 +23,7 @@ import { defineConfig, devices } from '@playwright/test';
  * - Debug mode: `bunx playwright test --debug`
  */
 
-const isCI = !!process.env.CI;
+const isCI = !!process.env["CI"];
 
 export default defineConfig({
   testDir: './e2e',
@@ -40,7 +40,7 @@ export default defineConfig({
   globalTeardown: "./e2e/setup/global-teardown.ts",
 
   use: {
-    baseURL: process.env.BASE_URL || "http://localhost:3000",
+    baseURL: process.env["BASE_URL"] || "http://localhost:3000",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",

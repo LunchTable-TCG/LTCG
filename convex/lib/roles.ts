@@ -112,7 +112,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
 
 /**
  * Get user's role from database
- * Returns "user" if no admin role is found
+ * Returns "user" if no admin role is found or if role has expired
  */
 export async function getUserRole(ctx: SharedCtx, userId: Id<"users">): Promise<UserRole> {
   const adminRole = await ctx.db
@@ -122,6 +122,11 @@ export async function getUserRole(ctx: SharedCtx, userId: Id<"users">): Promise<
     .first();
 
   if (!adminRole) {
+    return "user";
+  }
+
+  // Check if role has expired
+  if (adminRole.expiresAt && adminRole.expiresAt < Date.now()) {
     return "user";
   }
 
@@ -137,6 +142,47 @@ export async function getUserRole(ctx: SharedCtx, userId: Id<"users">): Promise<
   }
 
   return "user";
+}
+
+/**
+ * Get user's admin role record with full details (for admin UI)
+ * Returns null if no active role found
+ */
+export async function getAdminRoleDetails(
+  ctx: SharedCtx,
+  userId: Id<"users">
+): Promise<{
+  role: UserRole;
+  grantedBy: Id<"users">;
+  grantedAt: number;
+  expiresAt?: number;
+  grantNote?: string;
+  isExpired: boolean;
+  timeRemaining?: number;
+} | null> {
+  const adminRole = await ctx.db
+    .query("adminRoles")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .filter((q) => q.eq(q.field("isActive"), true))
+    .first();
+
+  if (!adminRole) {
+    return null;
+  }
+
+  const now = Date.now();
+  const isExpired = adminRole.expiresAt ? adminRole.expiresAt < now : false;
+  const timeRemaining = adminRole.expiresAt ? adminRole.expiresAt - now : undefined;
+
+  return {
+    role: adminRole.role as UserRole,
+    grantedBy: adminRole.grantedBy,
+    grantedAt: adminRole.grantedAt,
+    expiresAt: adminRole.expiresAt,
+    grantNote: adminRole.grantNote,
+    isExpired,
+    timeRemaining: timeRemaining && timeRemaining > 0 ? timeRemaining : undefined,
+  };
 }
 
 /**

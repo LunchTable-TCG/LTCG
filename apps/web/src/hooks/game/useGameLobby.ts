@@ -23,7 +23,11 @@ interface UseGameLobbyReturn {
   privateLobby: ReturnType<typeof useQuery<typeof api.games.getMyPrivateLobby>> | undefined;
   isLoading: boolean;
   hasActiveLobby: boolean;
-  createLobby: (mode: "casual" | "ranked", isPrivate?: boolean) => Promise<CreateLobbyResult>;
+  createLobby: (
+    mode: "casual" | "ranked",
+    isPrivate?: boolean,
+    spectatorOptions?: { allowSpectators?: boolean; maxSpectators?: number }
+  ) => Promise<CreateLobbyResult>;
   joinLobby: (lobbyId: Id<"gameLobbies">, joinCode?: string) => Promise<JoinLobbyResult>;
   joinByCode: (joinCode: string) => Promise<JoinLobbyResult>;
   cancelLobby: () => Promise<void>;
@@ -94,9 +98,18 @@ export function useGameLobby(): UseGameLobbyReturn {
   const leaveMutation = useMutation(api.games.leaveLobby);
 
   // Actions
-  const createLobby = async (mode: "casual" | "ranked", isPrivate = false) => {
+  const createLobby = async (
+    mode: "casual" | "ranked",
+    isPrivate = false,
+    spectatorOptions?: { allowSpectators?: boolean; maxSpectators?: number }
+  ) => {
     try {
-      const result = await createMutation({ mode, isPrivate });
+      const result = await createMutation({
+        mode,
+        isPrivate,
+        allowSpectators: spectatorOptions?.allowSpectators,
+        maxSpectators: spectatorOptions?.maxSpectators,
+      });
       const modeText = mode === "casual" ? "Casual" : "Ranked";
       if (isPrivate && result.joinCode) {
         toast.success(`${modeText} lobby created! Share code: ${result.joinCode}`);
