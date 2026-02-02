@@ -346,7 +346,7 @@
     "rarity": "common",
     "cardType": "spell",
     "archetype": "storm_elementals",
-    "cost": 0,
+    "cost": 3,
     "flavorText": "It rides the lightning across endless skies.",
     "imageUrl": "/assets/cards/Gale_Blast.png"
   },
@@ -355,77 +355,77 @@
     "rarity": "common",
     "cardType": "spell",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 2
   },
   {
     "name": "Wind Recovery",
     "rarity": "common",
     "cardType": "spell",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 2
   },
   {
     "name": "Sudden Gust",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Evasive Maneuver",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Lightning Dash",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Endless Storm",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 4
   },
   {
     "name": "Rider's Momentum",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 4
   },
   {
     "name": "Storm's Eye",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 4
   },
   {
     "name": "Thunder Revenge",
     "rarity": "common",
     "cardType": "trap",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 2
   },
   {
     "name": "Cyclone Zone",
     "rarity": "uncommon",
     "cardType": "trap",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Storm Barrier",
     "rarity": "uncommon",
     "cardType": "trap",
     "archetype": "storm_elementals",
-    "cost": 0,
+    "cost": 3,
     "effects": [
       {
         "name": "Storm Barrier",
@@ -439,6 +439,6 @@
     "rarity": "epic",
     "cardType": "trap",
     "archetype": "storm_elementals",
-    "cost": 0
+    "cost": 5
   }
 ]

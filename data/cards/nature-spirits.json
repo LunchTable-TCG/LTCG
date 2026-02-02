@@ -326,14 +326,14 @@
     "rarity": "common",
     "cardType": "spell",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Armored Aura",
     "rarity": "common",
     "cardType": "spell",
     "archetype": "nature_spirits",
-    "cost": 0,
+    "cost": 2,
     "effects": [
       {
         "name": "Armored Aura",
@@ -348,63 +348,63 @@
     "rarity": "common",
     "cardType": "spell",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 2
   },
   {
     "name": "Defensive Formation",
     "rarity": "common",
     "cardType": "spell",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 2
   },
   {
     "name": "Quick Reinforcement",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Iron Wall",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Counter Assault",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Eternal Fortification",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 4
   },
   {
     "name": "Legion's Arsenal",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 4
   },
   {
     "name": "Iron Fortress",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 4
   },
   {
     "name": "Armored Surprise",
     "rarity": "common",
     "cardType": "trap",
     "archetype": "nature_spirits",
-    "cost": 0,
+    "cost": 2,
     "flavorText": "The ground trembles beneath its iron steps.",
     "imageUrl": "/assets/cards/Armored_Surprise.png"
   },
@@ -413,14 +413,14 @@
     "rarity": "common",
     "cardType": "trap",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 2
   },
   {
     "name": "Fortified Field",
     "rarity": "uncommon",
     "cardType": "trap",
     "archetype": "nature_spirits",
-    "cost": 0,
+    "cost": 3,
     "flavorText": "The ground trembles beneath its iron steps.",
     "imageUrl": "/assets/cards/Fortified_Field.png"
   },
@@ -429,13 +429,13 @@
     "rarity": "uncommon",
     "cardType": "trap",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Impenetrable Wall",
     "rarity": "epic",
     "cardType": "trap",
     "archetype": "nature_spirits",
-    "cost": 0
+    "cost": 5
   }
 ]

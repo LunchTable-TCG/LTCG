@@ -505,7 +505,7 @@
     "rarity": "common",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 3,
     "effects": [
       {
         "name": "Dragon's Fury",
@@ -520,7 +520,7 @@
     "rarity": "common",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 3,
     "effects": [
       {
         "name": "Volcanic Eruption",
@@ -535,7 +535,7 @@
     "rarity": "common",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 2,
     "effects": [
       {
         "name": "Infernal Recovery",
@@ -550,7 +550,7 @@
     "rarity": "common",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 2,
     "effects": [
       {
         "name": "Fire Breathing",
@@ -565,7 +565,7 @@
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 3,
     "effects": [
       {
         "name": "Sudden Ignition",
@@ -580,7 +580,7 @@
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 3,
     "effects": [
       {
         "name": "Infernal Barrier",
@@ -595,7 +595,7 @@
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 3,
     "effects": [
       {
         "name": "Scorching Wind",
@@ -610,7 +610,7 @@
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 4,
     "effects": [
       {
         "name": "Infernal Furnace",
@@ -625,7 +625,7 @@
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 4,
     "effects": [
       {
         "name": "Dragon's Hoard",
@@ -640,7 +640,7 @@
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 4,
     "effects": [
       {
         "name": "Volcanic Lair",
@@ -655,7 +655,7 @@
     "rarity": "common",
     "cardType": "trap",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 2,
     "effects": [
       {
         "name": "Flame Trap",
@@ -670,7 +670,7 @@
     "rarity": "common",
     "cardType": "trap",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 2,
     "effects": [
       {
         "name": "Burning Revenge",
@@ -685,7 +685,7 @@
     "rarity": "uncommon",
     "cardType": "trap",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 3,
     "effects": [
       {
         "name": "Ring of Fire",
@@ -700,7 +700,7 @@
     "rarity": "uncommon",
     "cardType": "trap",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 3,
     "effects": [
       {
         "name": "Infernal Presence",
@@ -715,7 +715,7 @@
     "rarity": "epic",
     "cardType": "trap",
     "archetype": "infernal_dragons",
-    "cost": 0,
+    "cost": 5,
     "effects": [
       {
         "name": "Dragon's Wrath",

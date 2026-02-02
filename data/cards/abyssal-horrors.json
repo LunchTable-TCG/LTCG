@@ -337,14 +337,14 @@
     "rarity": "common",
     "cardType": "spell",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Glacial Blessing",
     "rarity": "common",
     "cardType": "spell",
     "archetype": "abyssal_horrors",
-    "cost": 0,
+    "cost": 2,
     "effects": [
       {
         "name": "Glacial Blessing",
@@ -358,63 +358,63 @@
     "rarity": "common",
     "cardType": "spell",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 2
   },
   {
     "name": "Frozen Touch",
     "rarity": "common",
     "cardType": "spell",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 2
   },
   {
     "name": "Sudden Freeze",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Abyssal Shield",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Riptide Counter",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Endless Depths",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 4
   },
   {
     "name": "Frozen Prison",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 4
   },
   {
     "name": "Abyssal Trench",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 4
   },
   {
     "name": "Frozen Ambush",
     "rarity": "common",
     "cardType": "trap",
     "archetype": "abyssal_horrors",
-    "cost": 0,
+    "cost": 2,
     "flavorText": "Currents bow before its terrible might.",
     "imageUrl": "/assets/cards/Frozen_Ambush.png"
   },
@@ -423,27 +423,27 @@
     "rarity": "common",
     "cardType": "trap",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 2
   },
   {
     "name": "Icy Presence",
     "rarity": "uncommon",
     "cardType": "trap",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Abyssal Barrier",
     "rarity": "uncommon",
     "cardType": "trap",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 3
   },
   {
     "name": "Depth Rejection",
     "rarity": "epic",
     "cardType": "trap",
     "archetype": "abyssal_horrors",
-    "cost": 0
+    "cost": 5
   }
 ]
