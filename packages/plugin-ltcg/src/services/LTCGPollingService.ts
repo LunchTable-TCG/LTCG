@@ -17,7 +17,7 @@ import {
   type GameWebhookPayload,
   type WebhookEventType,
 } from '../webhooks/gameEventHandler';
-import { TurnOrchestrator } from './TurnOrchestrator';
+import { SERVICE_TYPES, type ITurnOrchestrator } from './types';
 import type { MatchmakingStatus, MatchmakingEvent } from '../frontend/types/panel';
 
 export interface PollingConfig {
@@ -70,7 +70,7 @@ const DEFAULT_ERROR_RECOVERY: ErrorRecoveryConfig = {
 };
 
 export class LTCGPollingService extends Service {
-  static serviceType = 'ltcg-polling';
+  static serviceType = SERVICE_TYPES.POLLING;
 
   private runtime: IAgentRuntime;
   private client: LTCGApiClient | null = null;
@@ -743,6 +743,7 @@ export class LTCGPollingService extends Service {
 
   /**
    * Trigger the TurnOrchestrator for autonomous gameplay
+   * Uses lazy service lookup to avoid circular dependencies
    */
   private async triggerOrchestrator(
     event: { type: WebhookEventType; data: GameWebhookPayload['data'] },
@@ -750,8 +751,8 @@ export class LTCGPollingService extends Service {
   ): Promise<void> {
     if (!this.currentGameId) return;
 
-    // Get the orchestrator service
-    const orchestrator = this.runtime.getService(TurnOrchestrator.serviceType) as TurnOrchestrator;
+    // Get the orchestrator service via runtime lookup (avoids circular import)
+    const orchestrator = this.runtime.getService(SERVICE_TYPES.ORCHESTRATOR) as ITurnOrchestrator | null;
     if (!orchestrator) {
       if (this.debug) {
         logger.debug('TurnOrchestrator not available, skipping autonomous action');

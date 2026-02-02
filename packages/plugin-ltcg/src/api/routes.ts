@@ -7,12 +7,13 @@
 
 import type { RouteRequest, RouteResponse } from '@elizaos/core';
 import { logger } from '@elizaos/core';
-import type { StateAggregator } from '../services/StateAggregator';
+import { SERVICE_TYPES, type IStateAggregator } from '../services/types';
 
 /**
  * Helper to get StateAggregator service from runtime
+ * Uses SERVICE_TYPES constant to avoid hardcoded strings
  */
-function getAggregator(req: RouteRequest): StateAggregator | null {
+function getAggregator(req: RouteRequest): IStateAggregator | null {
   try {
     const runtime = (req as any).runtime;
     if (!runtime) {
@@ -20,7 +21,7 @@ function getAggregator(req: RouteRequest): StateAggregator | null {
       return null;
     }
 
-    const aggregator = runtime.getService('ltcg-state-aggregator') as StateAggregator;
+    const aggregator = runtime.getService(SERVICE_TYPES.STATE_AGGREGATOR) as IStateAggregator;
     if (!aggregator) {
       logger.warn('StateAggregator service not found');
       return null;

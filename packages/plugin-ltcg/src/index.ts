@@ -55,6 +55,18 @@ export * from './webhooks';
 // Services - Real-time updates and autonomous gameplay
 export { LTCGPollingService } from './services/LTCGPollingService';
 export { TurnOrchestrator } from './services/TurnOrchestrator';
+export { StateAggregator } from './services/StateAggregator';
+
+// Service types and interfaces (for dependency injection)
+export {
+  SERVICE_TYPES,
+  type IPollingService,
+  type ITurnOrchestrator,
+  type IStateAggregator,
+  type OrchestratorEvent,
+  type TurnStartedEvent,
+  type ChainWaitingEvent,
+} from './services/types';
 
 // Clients - API connections
 export { LTCGApiClient } from './client/LTCGApiClient';

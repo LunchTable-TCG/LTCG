@@ -25,6 +25,7 @@ import type {
   SpellTrapCard,
 } from '../types/api';
 import type { Decision } from '../frontend/types/panel';
+import { SERVICE_TYPES } from './types';
 
 // Action types the orchestrator can choose
 export type OrchestratorAction =
@@ -57,7 +58,7 @@ interface TurnContext {
 }
 
 export class TurnOrchestrator extends Service {
-  static serviceType = 'ltcg-turn-orchestrator';
+  static serviceType = SERVICE_TYPES.ORCHESTRATOR;
 
   private runtime: IAgentRuntime;
   private client: LTCGApiClient | null = null;

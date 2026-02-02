@@ -8,9 +8,11 @@
 
 import { Service, type IAgentRuntime, logger } from '@elizaos/core';
 import { ConvexHttpClient } from 'convex/browser';
-import type { LTCGPollingService } from './LTCGPollingService';
-import type { TurnOrchestrator } from './TurnOrchestrator';
-import type { LTCGApiClient } from '../client/LTCGApiClient';
+import {
+  SERVICE_TYPES,
+  type IPollingService,
+  type ITurnOrchestrator,
+} from './types';
 import type {
   AgentStatus,
   MatchmakingStatus,
@@ -26,12 +28,11 @@ interface CachedGameState {
 }
 
 export class StateAggregator extends Service {
-  static serviceType = 'ltcg-state-aggregator';
+  static serviceType = SERVICE_TYPES.STATE_AGGREGATOR;
 
   private runtime: IAgentRuntime | null = null;
-  private pollingService: LTCGPollingService | null = null;
-  private orchestrator: TurnOrchestrator | null = null;
-  private apiClient: LTCGApiClient | null = null;
+  private pollingService: IPollingService | null = null;
+  private orchestrator: ITurnOrchestrator | null = null;
   private convexClient: ConvexHttpClient | null = null;
 
   // Cache layers
@@ -58,11 +59,12 @@ export class StateAggregator extends Service {
 
   /**
    * Lazy-load polling service reference
+   * Uses SERVICE_TYPES constant to avoid hardcoded strings
    */
-  private getPollingService(): LTCGPollingService | null {
+  private getPollingService(): IPollingService | null {
     if (!this.pollingService && this.runtime) {
       try {
-        this.pollingService = this.runtime.getService('ltcg-polling') as LTCGPollingService;
+        this.pollingService = this.runtime.getService(SERVICE_TYPES.POLLING) as IPollingService;
       } catch (error) {
         // Service not available yet
       }
@@ -72,11 +74,12 @@ export class StateAggregator extends Service {
 
   /**
    * Lazy-load orchestrator service reference
+   * Uses SERVICE_TYPES constant to avoid hardcoded strings
    */
-  private getOrchestrator(): TurnOrchestrator | null {
+  private getOrchestrator(): ITurnOrchestrator | null {
     if (!this.orchestrator && this.runtime) {
       try {
-        this.orchestrator = this.runtime.getService('ltcg-turn-orchestrator') as TurnOrchestrator;
+        this.orchestrator = this.runtime.getService(SERVICE_TYPES.ORCHESTRATOR) as ITurnOrchestrator;
       } catch (error) {
         // Service not available yet
       }
