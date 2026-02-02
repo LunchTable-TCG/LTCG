@@ -3,7 +3,7 @@
  *
  * This module defines types for in-game card representations across different zones:
  * - Hand: Cards held by the player
- * - Board: Monster cards on the field
+ * - Board: Creature cards on the field
  * - Backrow: Spell/Trap cards set on the field
  * - Graveyard: Discarded cards
  */
@@ -14,10 +14,11 @@ import type { JsonAbility } from "../lib/cardHelpers";
 /**
  * Card representation in the player's hand.
  *
- * Valid card types:
- * - `"monster"` - Creature card that can attack/defend
+ * Valid card types (matching Convex schema):
+ * - `"creature"` - Creature card that can attack/defend
  * - `"spell"` - Instant effect card
  * - `"trap"` - Reactive card set face-down
+ * - `"equipment"` - Equipment card that enhances creatures
  *
  * @example
  * ```typescript
@@ -25,7 +26,7 @@ import type { JsonAbility } from "../lib/cardHelpers";
  *   _id: "jc8s9d0..." as Id<"cardDefinitions">,
  *   name: "Dark Magician",
  *   imageUrl: "/cards/dark-magician.png",
- *   cardType: "monster",
+ *   cardType: "creature",
  *   attack: 2500,
  *   defense: 2100,
  *   level: 7,
@@ -53,13 +54,13 @@ export interface HandCard {
   name: string;
   /** URL to card artwork (optional) */
   imageUrl?: string;
-  /** Type of card */
-  cardType: "monster" | "spell" | "trap";
-  /** Attack points (monster cards only) */
+  /** Type of card (matches Convex schema) */
+  cardType: "creature" | "spell" | "trap" | "equipment";
+  /** Attack points (creature cards only) */
   attack?: number;
-  /** Defense points (monster cards only) */
+  /** Defense points (creature cards only) */
   defense?: number;
-  /** Level/rank of the card (monster cards only) */
+  /** Level/rank of the card (creature cards only) */
   level?: number;
   /** Rarity tier (common, rare, legendary, etc.) */
   rarity: string;
@@ -86,7 +87,7 @@ export interface HandCard {
  *   _id: "jc8s9d0..." as Id<"cardDefinitions">,
  *   name: "Blue-Eyes White Dragon",
  *   imageUrl: "/cards/blue-eyes.png",
- *   cardType: "monster",
+ *   cardType: "creature",
  *   attack: 3000,
  *   defense: 2500,
  *   level: 8,
@@ -118,13 +119,13 @@ export interface BoardCard {
   name: string;
   /** URL to card artwork (optional) */
   imageUrl?: string;
-  /** Type of card */
-  cardType: "monster" | "spell" | "trap";
-  /** Attack points (monster cards only) */
+  /** Type of card (matches Convex schema) */
+  cardType: "creature" | "spell" | "trap" | "equipment";
+  /** Attack points (creature cards only) */
   attack?: number;
-  /** Defense points (monster cards only) */
+  /** Defense points (creature cards only) */
   defense?: number;
-  /** Level/rank of the card (monster cards only) */
+  /** Level/rank of the card (creature cards only) */
   level?: number;
   /** Rarity tier */
   rarity: string;
@@ -174,7 +175,7 @@ export interface BoardCard {
  * };
  * ```
  *
- * @see BoardCard - For monster cards on the field
+ * @see BoardCard - For creature cards on the field
  */
 export interface BackrowCard {
   /** Unique card definition ID */

@@ -1,11 +1,10 @@
 "use client";
 
 import { GameBoard } from "@/components/game/GameBoard";
-import { SpectatorGameView } from "@/components/lunchtable/components/SpectatorGameView";
+import { SpectatorGameView } from "../../lunchtable/components/SpectatorGameView";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
-import { useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useEffect } from "react";
@@ -22,16 +21,16 @@ export default function GamePage({ params }: GamePageProps) {
   const router = useRouter();
 
   const { isAuthenticated } = useAuth();
-  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
 
   // Get lobby details to check if user is a player
-  const lobby = useQuery(api.gameplay.games.queries.getLobbyDetails, {
+  const lobby = useConvexQuery(apiAny.gameplay.games.queries.getLobbyDetails, {
     lobbyId: lobbyId as Id<"gameLobbies">,
   });
 
   // Get game state to check if game exists
-  const gameState = useQuery(
-    api.gameplay.games.queries.getGameStateForPlayer,
+  const gameState = useConvexQuery(
+    apiAny.gameplay.games.queries.getGameStateForPlayer,
     lobby ? { lobbyId: lobbyId as Id<"gameLobbies"> } : "skip"
   );
 

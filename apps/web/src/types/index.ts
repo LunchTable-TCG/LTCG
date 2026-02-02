@@ -16,13 +16,19 @@ export type {
   MutationHookReturn,
   ActionResult,
   PaginationState,
-  GameMode,
+  LobbyMode,
+  DatabaseGameMode,
+  LeaderboardType,
+  GameMode, // @deprecated - use specific types
   PlayerStatus,
   SortOption,
 } from "./common";
 
 export {
-  isGameMode,
+  isLobbyMode,
+  isDatabaseGameMode,
+  isLeaderboardType,
+  isGameMode, // @deprecated - use specific type guards
   isPlayerStatus,
   isSortOption,
 } from "./common";

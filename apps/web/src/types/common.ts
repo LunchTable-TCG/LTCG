@@ -141,22 +141,66 @@ export interface PaginationState {
 // =============================================================================
 
 /**
- * Available game modes in LTCG.
+ * Lobby matchmaking modes.
  *
  * Valid values:
  * - `"ranked"` - Competitive matches that affect player rating
  * - `"casual"` - Non-ranked matches for practice
- * - `"story"` - Single-player story mode battles
+ * - `"all"` - Filter to show all lobby types
  *
  * @example
  * ```typescript
- * const mode: GameMode = "ranked";
- * if (mode === "ranked") {
- *   // Show rating changes
+ * const mode: LobbyMode = "ranked";
+ * const lobbies = await getLobbies(mode);
+ * ```
+ */
+export type LobbyMode = "ranked" | "casual" | "all";
+
+/**
+ * Database game mode field (indicates PvP vs Story).
+ *
+ * Valid values:
+ * - `"pvp"` - Player vs Player match
+ * - `"story"` - Single-player story mode battle
+ *
+ * Note: This is different from lobby mode. A game can be:
+ * - mode: "casual", gameMode: "pvp" (casual PvP)
+ * - mode: "ranked", gameMode: "pvp" (ranked PvP)
+ * - gameMode: "story" (story battle, no lobby mode)
+ *
+ * @example
+ * ```typescript
+ * const gameMode: DatabaseGameMode = "pvp";
+ * if (gameMode === "story") {
+ *   // Load AI opponent
  * }
  * ```
  */
-export type GameMode = "ranked" | "casual" | "story";
+export type DatabaseGameMode = "pvp" | "story";
+
+/**
+ * Leaderboard type filter (for ranking tables).
+ *
+ * Valid values:
+ * - `"ranked"` - Ranked competitive match leaderboard
+ * - `"casual"` - Casual match leaderboard
+ * - `"story"` - Story mode battle leaderboard
+ *
+ * Note: This matches Convex gameModeValidator and is used for leaderboard filtering.
+ *
+ * @example
+ * ```typescript
+ * const type: LeaderboardType = "ranked";
+ * const rankings = await getLeaderboard(type);
+ * ```
+ */
+export type LeaderboardType = "ranked" | "casual" | "story";
+
+/**
+ * @deprecated Use LeaderboardType for leaderboards, LobbyMode for lobby filtering, or DatabaseGameMode for game records.
+ * Kept for backward compatibility - currently aliases LeaderboardType.
+ */
+export type GameMode = LeaderboardType;
 
 /**
  * Player online status indicators.
@@ -220,22 +264,68 @@ export type SortOption =
 // =============================================================================
 
 /**
- * Type guard to check if a string is a valid GameMode.
+ * Type guard to check if a string is a valid LobbyMode.
  *
  * @param value - The string to check
- * @returns True if the value is a valid GameMode
+ * @returns True if the value is a valid LobbyMode
  *
  * @example
  * ```typescript
  * const userInput = "ranked";
- * if (isGameMode(userInput)) {
- *   // TypeScript knows userInput is GameMode here
- *   startGame(userInput);
+ * if (isLobbyMode(userInput)) {
+ *   // TypeScript knows userInput is LobbyMode here
+ *   const lobbies = await getLobbies(userInput);
  * }
  * ```
  */
-export function isGameMode(value: string): value is GameMode {
+export function isLobbyMode(value: string): value is LobbyMode {
+  return ["ranked", "casual", "all"].includes(value);
+}
+
+/**
+ * Type guard to check if a string is a valid DatabaseGameMode.
+ *
+ * @param value - The string to check
+ * @returns True if the value is a valid DatabaseGameMode
+ *
+ * @example
+ * ```typescript
+ * const mode = "pvp";
+ * if (isDatabaseGameMode(mode)) {
+ *   // TypeScript knows mode is DatabaseGameMode here
+ *   loadGameByMode(mode);
+ * }
+ * ```
+ */
+export function isDatabaseGameMode(value: string): value is DatabaseGameMode {
+  return ["pvp", "story"].includes(value);
+}
+
+/**
+ * Type guard to check if a string is a valid LeaderboardType.
+ *
+ * @param value - The string to check
+ * @returns True if the value is a valid LeaderboardType
+ *
+ * @example
+ * ```typescript
+ * const type = "ranked";
+ * if (isLeaderboardType(type)) {
+ *   // TypeScript knows type is LeaderboardType here
+ *   const rankings = await getLeaderboard(type);
+ * }
+ * ```
+ */
+export function isLeaderboardType(value: string): value is LeaderboardType {
   return ["ranked", "casual", "story"].includes(value);
+}
+
+/**
+ * @deprecated Use isLeaderboardType, isLobbyMode, or isDatabaseGameMode instead
+ * Type guard for backward compatibility (checks LeaderboardType)
+ */
+export function isGameMode(value: string): value is GameMode {
+  return isLeaderboardType(value);
 }
 
 /**
