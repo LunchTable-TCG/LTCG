@@ -459,7 +459,7 @@ export function GameLobby() {
       {/* Game List */}
       <div
         data-testid="lobby-players"
-        className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-[#3d2b1f] scrollbar-track-transparent"
+        className="flex-1 overflow-y-auto space-y-3 pr-2 tcg-scrollbar-thin"
       >
         {activeTab === "join" ? (
           waitingGames.length > 0 ? (

@@ -104,7 +104,7 @@ function LunchtableContent() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-black">
+    <div className="h-screen relative overflow-hidden bg-black">
       {/* Welcome Guide Dialog for first-time users */}
       <WelcomeGuideDialog
         isOpen={showWelcomeGuide}
@@ -167,11 +167,11 @@ function LunchtableContent() {
       <div className="absolute inset-0 bg-vignette z-1" />
 
       {/* Content - pt-24 accounts for fixed navbar */}
-      <div className="relative z-10 min-h-screen flex flex-col p-6 pt-24">
+      <div className="relative z-10 h-full flex flex-col p-6 pt-24 overflow-hidden">
         {/* Main Content Grid */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 min-h-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 min-h-0 overflow-hidden">
           {/* Center - Game Lobby */}
-          <div className="relative p-6 rounded-2xl tcg-chat-leather overflow-hidden shadow-2xl border border-[#3d2b1f] flex flex-col min-h-[600px]">
+          <div className="relative p-6 rounded-2xl tcg-chat-leather overflow-hidden shadow-2xl border border-[#3d2b1f] flex flex-col">
             <div className="ornament-corner ornament-corner-tl" />
             <div className="ornament-corner ornament-corner-tr" />
             <div className="ornament-corner ornament-corner-bl" />
@@ -180,13 +180,13 @@ function LunchtableContent() {
           </div>
 
           {/* Right - Global Chat */}
-          <div className="hidden lg:flex min-h-[600px]">
+          <div className="hidden lg:flex overflow-hidden">
             <GlobalChat />
           </div>
         </div>
 
         {/* Mobile Chat Toggle - Shows on smaller screens */}
-        <div className="lg:hidden mt-6">
+        <div className="lg:hidden mt-6 flex-1 min-h-0 overflow-hidden">
           <GlobalChat />
         </div>
       </div>

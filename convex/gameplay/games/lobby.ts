@@ -655,7 +655,7 @@ export const leaveLobby = mutation({
 
     // Find user's lobby (as host or opponent)
     // Query by hostId and opponentId separately using indexes for efficiency
-    const [hostLobby, opponentLobbies] = await Promise.all([
+    const [hostLobby, opponentLobby] = await Promise.all([
       ctx.db
         .query("gameLobbies")
         .withIndex("by_host", (q) => q.eq("hostId", userId))
@@ -663,16 +663,12 @@ export const leaveLobby = mutation({
         .first(),
       ctx.db
         .query("gameLobbies")
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("opponentId"), userId),
-            q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active"))
-          )
-        )
-        .collect(),
+        .withIndex("by_opponent", (q) => q.eq("opponentId", userId))
+        .filter((q) => q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")))
+        .first(),
     ]);
 
-    const lobby = hostLobby || opponentLobbies[0];
+    const lobby = hostLobby || opponentLobby;
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
         reason: "No active lobby to leave",

@@ -149,6 +149,8 @@ export function GlobalChat() {
 
   const isInitialMount = useRef(true);
   const isAgentInitialMount = useRef(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const prevScrollHeightRef = useRef<number>(0);
 
   // Auto-scroll to bottom when NEW messages arrive (not on initial load)
   const scrollToBottom = useCallback(() => {
@@ -158,6 +160,8 @@ export function GlobalChat() {
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
+      // Scroll to bottom on initial mount
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
       return;
     }
     scrollToBottom();
@@ -175,6 +179,30 @@ export function GlobalChat() {
     }
     scrollAgentToBottom();
   }, [agentMessages.length, scrollAgentToBottom]);
+
+  // Infinite scroll - load more when scrolling near the top
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container || !canLoadMore || isLoadingMore) return;
+
+    // Load more when scrolled within 100px of the top
+    if (container.scrollTop < 100) {
+      setIsLoadingMore(true);
+      prevScrollHeightRef.current = container.scrollHeight;
+
+      loadMore();
+
+      // After loading, maintain scroll position
+      requestAnimationFrame(() => {
+        if (container) {
+          const newScrollHeight = container.scrollHeight;
+          const scrollDiff = newScrollHeight - prevScrollHeightRef.current;
+          container.scrollTop = scrollDiff;
+        }
+        setIsLoadingMore(false);
+      });
+    }
+  }, [canLoadMore, isLoadingMore, loadMore]);
 
   // Close user menu on Escape
   useEffect(() => {
@@ -402,18 +430,25 @@ export function GlobalChat() {
       {chatMode === "global" && (
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-[#3d2b1f] scrollbar-track-transparent"
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 space-y-3 tcg-scrollbar"
         >
-          {/* Load More Button */}
-          {canLoadMore && (
+          {/* Loading indicator at top when fetching more */}
+          {isLoadingMore && (
+            <div className="flex justify-center py-3">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30">
+                <Loader2 className="w-4 h-4 text-[#d4af37] animate-spin" />
+                <span className="text-xs font-medium text-[#d4af37]">Loading older messages...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Scroll to top indicator */}
+          {canLoadMore && !isLoadingMore && (
             <div className="flex justify-center pb-3">
-              <button
-                type="button"
-                onClick={loadMore}
-                className="px-4 py-2 text-xs font-medium text-[#d4af37] bg-[#d4af37]/10 hover:bg-[#d4af37]/20 border border-[#d4af37]/30 rounded-lg transition-all duration-200"
-              >
-                Load Older Messages
-              </button>
+              <div className="px-4 py-2 text-[10px] font-medium text-[#a89f94]/60 uppercase tracking-widest">
+                Scroll up for older messages
+              </div>
             </div>
           )}
 
@@ -498,7 +533,7 @@ export function GlobalChat() {
 
       {/* Messages - Agent Chat */}
       {chatMode === "agent" && (
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-[#3d2b1f] scrollbar-track-transparent">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 tcg-scrollbar">
           {agentMessages.map((msg) => (
             <div
               key={msg.id}
@@ -676,7 +711,7 @@ export function GlobalChat() {
             </div>
 
             {/* Users List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2 max-h-[calc(100vh-220px)] scrollbar-thin scrollbar-thumb-[#3d2b1f] scrollbar-track-transparent">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 max-h-[calc(100vh-220px)] tcg-scrollbar-thin">
               {onlineUsers.map((user) => (
                 <div
                   key={user.id}

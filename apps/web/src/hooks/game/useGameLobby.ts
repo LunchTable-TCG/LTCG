@@ -6,6 +6,10 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
 interface CreateLobbyResult {
   lobbyId: Id<"gameLobbies">;
   joinCode?: string;
@@ -17,24 +21,51 @@ interface JoinLobbyResult {
   opponentUsername: string;
 }
 
+/** Lobby info returned from listWaitingLobbies query */
+interface WaitingLobbyInfo {
+  id: Id<"gameLobbies">;
+  hostUsername: string;
+  hostRank: string;
+  hostRating: number;
+  deckArchetype: string;
+  mode: string;
+  createdAt: number;
+  isPrivate: boolean;
+}
+
+/** Full lobby document (from getActiveLobby, getMyPrivateLobby) */
+interface LobbyDocument {
+  _id: Id<"gameLobbies">;
+  _creationTime: number;
+  hostId: Id<"users">;
+  hostUsername: string;
+  hostRank: string;
+  hostRating: number;
+  deckArchetype: string;
+  mode: string;
+  status: string;
+  isPrivate: boolean;
+  joinCode?: string;
+  opponentId?: Id<"users">;
+  opponentUsername?: string;
+  opponentRank?: string;
+  createdAt: number;
+}
+
+/** Incoming challenge notification from getIncomingChallenge query */
 interface IncomingChallenge {
   _id: Id<"gameLobbies">;
   hostId: Id<"users">;
   hostUsername: string;
   hostRank: string;
-  mode: "casual" | "ranked";
+  mode: string;
   createdAt: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type WaitingLobbiesResult = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type LobbyResult = any;
-
 interface UseGameLobbyReturn {
-  waitingLobbies: WaitingLobbiesResult | undefined;
-  myLobby: LobbyResult | undefined;
-  privateLobby: LobbyResult | undefined;
+  waitingLobbies: WaitingLobbyInfo[] | undefined;
+  myLobby: LobbyDocument | null | undefined;
+  privateLobby: LobbyDocument | null | undefined;
   incomingChallenge: IncomingChallenge | null | undefined;
   isLoading: boolean;
   hasActiveLobby: boolean;
@@ -47,7 +78,7 @@ interface UseGameLobbyReturn {
   joinByCode: (joinCode: string) => Promise<JoinLobbyResult>;
   cancelLobby: () => Promise<void>;
   leaveLobby: () => Promise<void>;
-  declineChallenge: (lobbyId: Id<"gameLobbies">) => Promise<void>;
+  declineChallenge: () => Promise<void>;
 }
 
 /**
@@ -103,9 +134,18 @@ interface UseGameLobbyReturn {
 export function useGameLobby(): UseGameLobbyReturn {
   // No auth check needed - this hook should only be used inside <Authenticated>
   // Using apiAny and useConvexQuery to avoid TS2589 "Type instantiation excessively deep" errors
-  const waitingLobbies = useConvexQuery(apiAny.games.listWaitingLobbies, {});
-  const myLobby = useConvexQuery(apiAny.games.getActiveLobby, {});
-  const privateLobby = useConvexQuery(apiAny.games.getMyPrivateLobby, {});
+  // Type assertions provide proper typing while avoiding deep type instantiation
+  const waitingLobbies = useConvexQuery(apiAny.games.listWaitingLobbies, {}) as
+    | WaitingLobbyInfo[]
+    | undefined;
+  const myLobby = useConvexQuery(apiAny.games.getActiveLobby, {}) as
+    | LobbyDocument
+    | null
+    | undefined;
+  const privateLobby = useConvexQuery(apiAny.games.getMyPrivateLobby, {}) as
+    | LobbyDocument
+    | null
+    | undefined;
   const incomingChallenge = useConvexQuery(apiAny.games.getIncomingChallenge, {}) as
     | IncomingChallenge
     | null
@@ -191,7 +231,7 @@ export function useGameLobby(): UseGameLobbyReturn {
     }
   };
 
-  const declineChallenge = async (_lobbyId: Id<"gameLobbies">) => {
+  const declineChallenge = async () => {
     try {
       await leaveMutation({});
       toast.success("Challenge declined");

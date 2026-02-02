@@ -821,3 +821,116 @@
 .hide-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
+
+/* ============================================================================
+   TCG THEMED SCROLLBAR
+   A custom scrollbar that matches the trading card game aesthetic with
+   gold accents, leather textures, and ornate styling.
+   ============================================================================ */
+
+/* TCG Scrollbar Container */
+.tcg-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #8b6914 #1a1311;
+}
+
+.tcg-scrollbar::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.tcg-scrollbar::-webkit-scrollbar-track {
+  background: linear-gradient(
+    90deg,
+    #0d0a08 0%,
+    #1a1311 50%,
+    #0d0a08 100%
+  );
+  border-left: 1px solid rgba(139, 69, 19, 0.3);
+  border-right: 1px solid rgba(139, 69, 19, 0.3);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.tcg-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #d4af37 0%,
+    #8b6914 30%,
+    #5c4a1f 70%,
+    #3d2b1f 100%
+  );
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.tcg-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    #e8c84a 0%,
+    #a87d1a 30%,
+    #6d5a2a 70%,
+    #4d3b2f 100%
+  );
+  border-color: rgba(212, 175, 55, 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 0 8px rgba(212, 175, 55, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.tcg-scrollbar::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(
+    180deg,
+    #c9a030 0%,
+    #7a6012 30%,
+    #4c3a18 70%,
+    #2d1b0f 100%
+  );
+}
+
+/* TCG Scrollbar corner (where horizontal and vertical meet) */
+.tcg-scrollbar::-webkit-scrollbar-corner {
+  background: #1a1311;
+  border: 1px solid rgba(139, 69, 19, 0.3);
+}
+
+/* Thin variant for smaller containers */
+.tcg-scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #8b6914 transparent;
+}
+
+.tcg-scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.tcg-scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tcg-scrollbar-thin::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #a08030 0%,
+    #6b5020 50%,
+    #4a3515 100%
+  );
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 4px;
+}
+
+.tcg-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    #c9a030 0%,
+    #8b6914 50%,
+    #5c4a1f 100%
+  );
+  border-color: rgba(212, 175, 55, 0.5);
+}
