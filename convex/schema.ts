@@ -1442,6 +1442,56 @@ export default defineSchema({
     .index("by_user_read", ["userId", "isRead"])
     .index("by_created", ["createdAt"]),
 
+  // ============================================================================
+  // USER INBOX - Unified inbox for rewards, announcements, challenges, messages
+  // ============================================================================
+
+  userInbox: defineTable({
+    userId: v.id("users"),
+    type: v.union(
+      v.literal("reward"), // Admin-granted rewards (gold, cards, packs)
+      v.literal("announcement"), // System/admin announcements
+      v.literal("challenge"), // Game challenge invitations
+      v.literal("friend_request"), // Friend request notifications
+      v.literal("system"), // System messages (maintenance, updates)
+      v.literal("achievement") // Achievement unlocks (synced from playerNotifications)
+    ),
+    title: v.string(),
+    message: v.string(),
+    /**
+     * v.any() USAGE: Inbox message data payload
+     *
+     * REASON: Different message types have different data structures
+     * EXPECTED TYPES by message type:
+     * - reward: { rewardType: "gold"|"cards"|"packs", gold?: number, cardIds?: string[], packCount?: number, claimed: boolean }
+     * - announcement: { priority?: "normal"|"important"|"urgent", actionUrl?: string }
+     * - challenge: { challengerId: Id<"users">, challengerUsername: string, lobbyId: Id<"gameLobbies">, mode: string }
+     * - friend_request: { requesterId: Id<"users">, requesterUsername: string }
+     * - system: { category?: string, actionUrl?: string }
+     * - achievement: { achievementId: string, achievementName: string }
+     */
+    data: v.optional(v.any()),
+    // Sender info (for admin messages, challenges, friend requests)
+    senderId: v.optional(v.id("users")),
+    senderUsername: v.optional(v.string()),
+    // Status tracking
+    isRead: v.boolean(),
+    readAt: v.optional(v.number()),
+    // For rewards that need explicit claiming
+    claimedAt: v.optional(v.number()),
+    // Optional expiration (e.g., time-limited rewards, challenges)
+    expiresAt: v.optional(v.number()),
+    // Soft delete
+    deletedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_unread", ["userId", "isRead"])
+    .index("by_user_type", ["userId", "type"])
+    .index("by_user_deleted", ["userId", "deletedAt"])
+    .index("by_created", ["createdAt"])
+    .index("by_expires", ["expiresAt"]),
+
   // Chapter definitions (reference data)
   storyChapters: defineTable({
     actNumber: v.number(),

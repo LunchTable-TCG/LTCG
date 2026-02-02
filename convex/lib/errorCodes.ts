@@ -38,6 +38,12 @@ export const ErrorCode = {
   NOT_FOUND_LOBBY: "NOT_FOUND_4005",
   NOT_FOUND_CARD: "NOT_FOUND_4006",
   NOT_FOUND_STORAGE_FILE: "NOT_FOUND_4007",
+  NOT_FOUND_INBOX_MESSAGE: "NOT_FOUND_4008",
+
+  // Inbox/Reward Errors (5xxx - State Validation)
+  REWARD_ALREADY_CLAIMED: "REWARD_5020",
+  REWARD_EXPIRED: "REWARD_5021",
+  INVALID_OPERATION: "INVALID_5022",
 
   // Validation Errors (5xxx)
   VALIDATION_INVALID_INPUT: "VALIDATION_5001",
@@ -188,6 +194,12 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   NOT_FOUND_4005: "Game lobby not found",
   NOT_FOUND_4006: "Card not found",
   NOT_FOUND_4007: "Storage file not found",
+  NOT_FOUND_4008: "Inbox message not found",
+
+  // Inbox/Reward
+  REWARD_5020: "This reward has already been claimed",
+  REWARD_5021: "This reward has expired",
+  INVALID_5022: "Invalid operation",
 
   // Validation
   VALIDATION_5001: "Invalid input provided",

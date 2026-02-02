@@ -6,6 +6,7 @@
  */
 
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
@@ -20,6 +21,32 @@ import {
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
 import type { PackConfig, Rarity } from "../lib/types";
+
+// Helper to send inbox notification for rewards
+async function sendRewardNotification(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  adminId: Id<"users">,
+  adminUsername: string | undefined,
+  title: string,
+  message: string,
+  rewardData: {
+    rewardType: "gold" | "cards" | "packs";
+    gold?: number;
+    cardIds?: string[];
+    packCount?: number;
+  }
+) {
+  await ctx.scheduler.runAfter(0, internal.social.inbox.createInboxMessage, {
+    userId,
+    type: "reward",
+    title,
+    message,
+    data: { ...rewardData, claimed: true }, // Already claimed since rewards are granted directly
+    senderId: adminId,
+    senderUsername: adminUsername || "Admin",
+  });
+}
 
 /**
  * Open a pack for a player without charging currency (admin grant)
