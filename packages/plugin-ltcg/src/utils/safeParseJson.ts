@@ -50,7 +50,7 @@ export function extractJsonFromLlmResponse<T>(response: string, fallback: T): T 
 
   // Try to extract JSON from markdown code blocks
   const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) {
+  if (codeBlockMatch?.[1]) {
     try {
       return JSON.parse(codeBlockMatch[1].trim());
     } catch {
@@ -60,7 +60,7 @@ export function extractJsonFromLlmResponse<T>(response: string, fallback: T): T 
 
   // Try to find JSON object/array in response
   const jsonMatch = response.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-  if (jsonMatch) {
+  if (jsonMatch?.[1]) {
     try {
       return JSON.parse(jsonMatch[1]);
     } catch {

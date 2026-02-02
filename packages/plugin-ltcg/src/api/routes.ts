@@ -130,9 +130,10 @@ export async function handleGameState(req: RouteRequest, res: RouteResponse) {
  */
 export async function handleDecisionHistory(req: RouteRequest, res: RouteResponse) {
   try {
-    const agentId = req.query?.agentId as string | undefined;
-    const gameId = req.query?.gameId as string | undefined;
-    const limitStr = req.query?.limit as string | undefined;
+    const query = req.query;
+    const agentId = query?.['agentId'] as string | undefined;
+    const gameId = query?.['gameId'] as string | undefined;
+    const limitStr = query?.['limit'] as string | undefined;
     const limit = limitStr ? Number.parseInt(limitStr, 10) : 20;
 
     if (!agentId || !gameId) {
@@ -163,7 +164,8 @@ export async function handleDecisionHistory(req: RouteRequest, res: RouteRespons
  */
 export async function handleMetrics(req: RouteRequest, res: RouteResponse) {
   try {
-    const agentId = req.query?.agentId as string | undefined;
+    const query = req.query;
+    const agentId = query?.['agentId'] as string | undefined;
 
     if (!agentId) {
       return sendError(res, 400, "Missing agentId parameter");

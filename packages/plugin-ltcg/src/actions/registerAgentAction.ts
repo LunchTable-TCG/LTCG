@@ -77,7 +77,7 @@ export const registerAgentAction: Action = {
         const messageText = message.content.text || "";
         const nameMatch = messageText.match(/name[:\s]+([a-zA-Z0-9_\-\s]+)/i);
         if (nameMatch) {
-          agentName = nameMatch[1].trim();
+          agentName = nameMatch[1]?.trim();
         } else {
           // Generate from system
           agentName = `Agent_${Date.now().toString(36).slice(-6).toUpperCase()}`;
@@ -160,6 +160,10 @@ Respond with JSON: { "deckIndex": <index> }`;
       // Fallback to first deck if still not selected
       if (!selectedDeck) {
         selectedDeck = starterDecks[0];
+      }
+
+      if (!selectedDeck) {
+        throw new Error("Failed to select a starter deck");
       }
 
       // Register agent

@@ -64,7 +64,7 @@ export const emotionalStateEvaluator: Evaluator = {
 
       // Get game state and board analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         logger.debug("No game state available for emotional evaluation");
@@ -78,7 +78,7 @@ export const emotionalStateEvaluator: Evaluator = {
       const emotionalState = analyzeEmotionalState(gameState, boardAnalysis, state);
 
       // Store emotional state in State object for other actions to use
-      state.values.LTCG_EMOTIONAL_STATE = emotionalState.state;
+      (state.values as any)['LTCG_EMOTIONAL_STATE'] = emotionalState.state;
 
       // Get the intended action from message or state
       const intendedAction = (message.content as any)?.action || (state as any)?.currentAction;

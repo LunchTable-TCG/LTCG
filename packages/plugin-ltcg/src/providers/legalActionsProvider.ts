@@ -128,7 +128,7 @@ function formatAction(action: AvailableAction): string {
   // Format parameters if available
   if (action.parameters) {
     if (action.type === "summon") {
-      const cards = action.parameters.availableCards as any[];
+      const cards = action.parameters['availableCards'] as any[];
       if (cards && cards.length > 0) {
         text += `  * Available cards:\n`;
         cards.forEach((card: any) => {
@@ -142,13 +142,13 @@ function formatAction(action: AvailableAction): string {
         });
       }
 
-      if (action.parameters.normalSummonUsed === true) {
+      if (action.parameters['normalSummonUsed'] === true) {
         text += `  * Note: Normal summon already used this turn\n`;
-      } else if (action.parameters.normalSummonUsed === false) {
+      } else if (action.parameters['normalSummonUsed'] === false) {
         text += `  * Note: Normal summon available\n`;
       }
     } else if (action.type === "set") {
-      const cards = action.parameters.availableCards as any[];
+      const cards = action.parameters['availableCards'] as any[];
       if (cards && cards.length > 0) {
         text += `  * Can set:\n`;
         cards.forEach((card: any) => {
@@ -156,7 +156,7 @@ function formatAction(action: AvailableAction): string {
         });
       }
     } else if (action.type === "activate_spell" || action.type === "activate_trap") {
-      const cards = action.parameters.availableCards as any[];
+      const cards = action.parameters['availableCards'] as any[];
       if (cards && cards.length > 0) {
         text += `  * Can activate:\n`;
         cards.forEach((card: any) => {
@@ -164,7 +164,7 @@ function formatAction(action: AvailableAction): string {
         });
       }
     } else if (action.type === "attack") {
-      const attackers = action.parameters.attackers as any[];
+      const attackers = action.parameters['attackers'] as any[];
       if (attackers && attackers.length > 0) {
         text += `  * Attackers:\n`;
         attackers.forEach((attacker: any) => {
@@ -172,11 +172,11 @@ function formatAction(action: AvailableAction): string {
         });
       }
 
-      if (action.parameters.canDirectAttack) {
+      if (action.parameters['canDirectAttack']) {
         text += `  * Direct attack available\n`;
       }
     } else if (action.type === "change_position") {
-      const monsters = action.parameters.monsters as any[];
+      const monsters = action.parameters['monsters'] as any[];
       if (monsters && monsters.length > 0) {
         text += `  * Can change position:\n`;
         monsters.forEach((monster: any) => {
@@ -184,7 +184,7 @@ function formatAction(action: AvailableAction): string {
         });
       }
 
-      if (action.parameters.alreadyChanged) {
+      if (action.parameters['alreadyChanged']) {
         text += `  * Note: Some monsters already changed position this turn\n`;
       }
     }
@@ -203,7 +203,7 @@ function groupActionsByType(actions: AvailableAction[]): Record<string, Availabl
     if (!grouped[action.type]) {
       grouped[action.type] = [];
     }
-    grouped[action.type].push(action);
+    grouped[action.type]?.push(action);
   });
 
   return grouped;

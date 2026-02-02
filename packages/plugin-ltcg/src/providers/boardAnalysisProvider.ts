@@ -19,7 +19,7 @@ export const boardAnalysisProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get game ID from state first, then message content
-      const gameId = state.values?.LTCG_CURRENT_GAME_ID || (message.content as any)?.gameId;
+      const gameId = state.values?.['LTCG_CURRENT_GAME_ID'] || (message.content as any)?.gameId;
 
       if (!gameId) {
         return {

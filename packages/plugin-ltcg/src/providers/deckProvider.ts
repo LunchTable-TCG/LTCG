@@ -53,6 +53,10 @@ export const deckProvider: Provider = {
         ? decks.find((d) => d.deckId === preferredDeckId) || decks[0]
         : decks[0];
 
+      if (!currentDeck) {
+        throw new Error("No decks available");
+      }
+
       // Analyze deck composition
       const monsters = currentDeck.cards.filter((c) => c.type === "creature");
       const spells = currentDeck.cards.filter((c) => c.type === "spell");

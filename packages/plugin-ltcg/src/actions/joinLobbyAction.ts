@@ -90,7 +90,7 @@ export const joinLobbyAction: Action = {
       const joinCodeMatch = messageText.match(/(?:code|join)[:\s]*([A-Z0-9]{6})/i);
 
       if (joinCodeMatch) {
-        joinCode = joinCodeMatch[1].toUpperCase();
+        joinCode = joinCodeMatch[1]?.toUpperCase();
         logger.debug(`Extracted join code: ${joinCode}`);
       } else if (lobbyIdMatch) {
         lobbyId = lobbyIdMatch[1];
@@ -110,7 +110,7 @@ export const joinLobbyAction: Action = {
         if (decks.length === 0) {
           throw new Error("No decks available. Please create a deck first.");
         }
-        deckId = decks[0].deckId;
+        deckId = decks[0]?.deckId;
         logger.debug(`Using first available deck: ${deckId}`);
       }
 

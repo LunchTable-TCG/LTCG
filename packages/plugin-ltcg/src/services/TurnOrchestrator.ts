@@ -740,7 +740,7 @@ Choose wisely!`;
     // Use handIndex from decision parameters, or fall back to first monster
     let handIndex = decision.parameters?.handIndex as number | undefined;
     if (handIndex === undefined) {
-      handIndex = monsters[0].handIndex ?? 0;
+      handIndex = monsters[0]?.handIndex ?? 0;
     }
 
     const position = (decision.parameters?.position as "attack" | "defense") ?? "attack";
@@ -778,7 +778,7 @@ Choose wisely!`;
       // Prefer setting spells/traps over monsters
       const spellTraps = hand.filter((c: CardInHand) => c.type !== "creature");
       const toSet = spellTraps[0] ?? hand[0];
-      handIndex = toSet.handIndex;
+      handIndex = toSet?.handIndex;
     }
 
     const card = hand.find((c: CardInHand) => c.handIndex === handIndex);
@@ -830,7 +830,7 @@ Choose wisely!`;
 
     let handIndex = decision.parameters?.handIndex as number | undefined;
     if (handIndex === undefined) {
-      handIndex = spells[0].handIndex;
+      handIndex = spells[0]?.handIndex;
     }
 
     try {
@@ -866,7 +866,7 @@ Choose wisely!`;
     // Use attackerBoardIndex from decision or pick first available attacker
     let attackerBoardIndex = decision.parameters?.attackerBoardIndex as number | undefined;
     if (attackerBoardIndex === undefined) {
-      attackerBoardIndex = attackers[0].boardIndex;
+      attackerBoardIndex = attackers[0]?.boardIndex;
     }
 
     const attacker = myMonsters.find((m: MonsterCard) => m.boardIndex === attackerBoardIndex);
@@ -923,7 +923,7 @@ Choose wisely!`;
 
     let boardIndex = decision.parameters?.boardIndex as number | undefined;
     if (boardIndex === undefined) {
-      boardIndex = changeable[0].boardIndex;
+      boardIndex = changeable[0]?.boardIndex;
     }
 
     const monster = myMonsters.find((m: MonsterCard) => m.boardIndex === boardIndex);
@@ -959,7 +959,7 @@ Choose wisely!`;
 
     let boardIndex = decision.parameters?.boardIndex as number | undefined;
     if (boardIndex === undefined) {
-      boardIndex = faceDown[0].boardIndex;
+      boardIndex = faceDown[0]?.boardIndex;
     }
 
     const monster = myMonsters.find((m: MonsterCard) => m.boardIndex === boardIndex);

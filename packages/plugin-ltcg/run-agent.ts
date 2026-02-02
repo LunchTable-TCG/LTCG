@@ -38,7 +38,7 @@ async function runStoryModeGame() {
     let decks = await client.getDecks();
     console.log(`   Found ${decks.length} decks`);
     if (decks.length > 0) {
-      console.log(`   First deck: ${decks[0].name} (${decks[0].cardCount || 0} cards)`);
+      console.log(`   First deck: ${decks[0]?.name} (${decks[0]?.cardCount || 0} cards)`);
     } else {
       console.log('   ⚠ No decks found. Selecting starter deck...');
       // Select a starter deck
@@ -207,7 +207,7 @@ async function runStoryModeGame() {
               try {
                 // Check if opponent has monsters - if not, direct attack
                 const targetId = battleState.opponentBoard && battleState.opponentBoard.length > 0
-                  ? battleState.opponentBoard[0]._id // Attack first opponent monster
+                  ? battleState.opponentBoard[0]?._id // Attack first opponent monster
                   : undefined; // Direct attack
 
                 await client.attack({

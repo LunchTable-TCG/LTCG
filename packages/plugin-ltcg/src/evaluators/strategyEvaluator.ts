@@ -64,7 +64,7 @@ export const strategyEvaluator: Evaluator = {
 
       // Get game state and analysis
       const gameStateResult = await gameStateProvider.get(runtime, message, state);
-      const gameState = gameStateResult.data?.gameState as GameStateResponse;
+      const gameState = gameStateResult.data?.['gameState'] as GameStateResponse;
 
       if (!gameState) {
         logger.debug("No game state available for strategy evaluation");

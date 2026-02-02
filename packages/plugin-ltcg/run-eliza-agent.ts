@@ -258,7 +258,7 @@ What is your next action? Consider the rules carefully.`;
             );
             if (attacker) {
               const targetId = state.opponentBoard?.length > 0
-                ? state.opponentBoard[0]._id
+                ? state.opponentBoard[0]?._id
                 : undefined;
               console.log(`   Attacking with: ${attacker.name}`);
               await client.attack({

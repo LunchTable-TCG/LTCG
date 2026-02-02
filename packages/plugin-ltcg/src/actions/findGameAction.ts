@@ -96,7 +96,7 @@ export const findGameAction: Action = {
         if (decks.length === 0) {
           throw new Error("No decks available. Please create a deck first.");
         }
-        deckId = decks[0].deckId;
+        deckId = decks[0]?.deckId;
         logger.debug(`Using first available deck: ${deckId}`);
       }
 

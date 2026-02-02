@@ -442,7 +442,7 @@ export class LTCGPollingService extends Service {
       // Fall back to first available deck
       const decks = await this.client.getDecks();
       if (decks.length > 0) {
-        this.cachedDeckId = decks[0].deckId;
+        this.cachedDeckId = decks[0]?.deckId ?? null;
         return this.cachedDeckId;
       }
 
@@ -731,6 +731,10 @@ export class LTCGPollingService extends Service {
     if (lobbies.length > 0) {
       // Join the first available lobby
       const lobby = lobbies[0];
+      if (!lobby) {
+        return;
+      }
+
       logger.info(
         { lobbyId: lobby.lobbyId, host: lobby.hostPlayerName },
         "🎯 Auto-joining available lobby"

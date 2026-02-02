@@ -90,7 +90,7 @@ export const createLobbyAction: Action = {
         }
 
         if (decks.length === 1) {
-          deckId = decks[0].deckId;
+          deckId = decks[0]?.deckId;
         } else {
           const deckOptions = decks
             .map(
@@ -111,7 +111,7 @@ Respond with JSON: { "deckIndex": <index> }`;
           });
 
           const parsed = extractJsonFromLlmResponse(decision, { deckIndex: 0 });
-          deckId = decks[parsed.deckIndex].deckId;
+          deckId = decks[parsed.deckIndex]?.deckId;
         }
       }
 

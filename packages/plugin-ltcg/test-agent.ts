@@ -5,7 +5,6 @@
  */
 
 import ltcgPlugin from './src/plugin';
-import { LTCGRealtimeService } from './src/services/LTCGRealtimeService';
 import { LTCGApiClient } from './src/client/LTCGApiClient';
 import { LTCG_PRODUCTION_CONFIG } from './src/constants';
 
@@ -16,7 +15,7 @@ async function testPlugin() {
     // Test 1: Plugin imports
     console.log('✅ Test 1: Plugin Structure');
     console.log(`   Name: ${ltcgPlugin.name}`);
-    console.log(`   Description: ${ltcgPlugin.description.substring(0, 60)}...`);
+    console.log(`   Description: ${ltcgPlugin.description ? ltcgPlugin.description.substring(0, 60) + '...' : 'N/A'}`);
     console.log(`   Priority: ${ltcgPlugin.priority}`);
 
     // Test 2: Components
@@ -83,7 +82,7 @@ async function testPlugin() {
     // Test 8: API Client
     console.log('\n✅ Test 8: API Client');
     try {
-      const client = new LTCGApiClient({
+      const _client = new LTCGApiClient({
         apiKey: 'ltcg_test_123',
         baseUrl: 'https://test.example.com',
       });
