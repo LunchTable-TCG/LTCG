@@ -7,8 +7,7 @@
  * Reusable, typesafe context for RBAC.
  */
 
-import { useConvexQuery } from "@/lib/convexHelpers";
-import { api } from "@convex/_generated/api";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { type ReactNode, createContext, useContext, useMemo } from "react";
 import type { AdminRole } from "../types";
@@ -74,10 +73,10 @@ interface AdminProviderProps {
 
 export function AdminProvider({ children }: AdminProviderProps) {
   // Use convexHelpers to avoid TS2589 type instantiation errors
-  const currentUser = useConvexQuery(api.core.users.currentUser);
+  const currentUser = useConvexQuery(apiAny.core.users.currentUser);
   // Only query admin role if user is authenticated (skip query if not)
   const adminRoleData = useConvexQuery(
-    api.admin.admin.getMyAdminRole,
+    apiAny.admin.admin.getMyAdminRole,
     currentUser ? {} : "skip"
   ) as AdminRoleData | undefined;
 
@@ -86,11 +85,15 @@ export function AdminProvider({ children }: AdminProviderProps) {
 
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo<AdminContextValue>(() => {
-    // Loading if any query is still undefined
-    const isLoading = currentUser === undefined || adminRoleData === undefined;
-    // Authenticated if we have a user
+    // Loading states:
+    // - currentUser === undefined: still loading user data
+    // - currentUser exists AND adminRoleData === undefined: still loading admin role
+    // NOT loading when currentUser is null (user not found/not authenticated)
+    const isLoading =
+      currentUser === undefined || (currentUser !== null && adminRoleData === undefined);
+    // Authenticated if we have a user (not null, not undefined)
     const isAuthenticated = currentUser !== null && currentUser !== undefined;
-    // Admin if we have an admin role
+    // Admin if we have an admin role (not null, not undefined)
     const isAdmin = adminRoleData !== null && adminRoleData !== undefined;
     const role: AdminRole | null = adminRoleData?.role ?? null;
 
