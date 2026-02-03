@@ -18,21 +18,22 @@ interface StoryStageNodeProps {
   className?: string;
 }
 
-const DIFFICULTY_CONFIG: Record<
-  string,
-  {
-    color: string;
-    borderColor: string;
-    glowColor: string;
-    icon: React.ElementType;
-  }
-> = {
-  easy: {
-    color: "text-green-400",
-    borderColor: "border-green-500/50",
-    glowColor: "group-hover:shadow-[0_0_20px_rgba(34,197,94,0.4)]",
-    icon: Shield,
-  },
+interface DifficultyConfig {
+  color: string;
+  borderColor: string;
+  glowColor: string;
+  icon: React.ElementType;
+}
+
+const DEFAULT_CONFIG: DifficultyConfig = {
+  color: "text-green-400",
+  borderColor: "border-green-500/50",
+  glowColor: "group-hover:shadow-[0_0_20px_rgba(34,197,94,0.4)]",
+  icon: Shield,
+};
+
+const DIFFICULTY_CONFIG: Record<string, DifficultyConfig> = {
+  easy: DEFAULT_CONFIG,
   medium: {
     color: "text-yellow-400",
     borderColor: "border-yellow-500/50",
@@ -54,8 +55,7 @@ const DIFFICULTY_CONFIG: Record<
 };
 
 export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProps) {
-  const difficultyKey = stage.aiDifficulty as keyof typeof DIFFICULTY_CONFIG;
-  const config = DIFFICULTY_CONFIG[difficultyKey] || DIFFICULTY_CONFIG["easy"];
+  const config = DIFFICULTY_CONFIG[stage.aiDifficulty] ?? DEFAULT_CONFIG;
   const isLocked = stage.status === "locked";
   const isCompleted = stage.status === "completed" || stage.status === "starred";
   const isStarred = stage.status === "starred";
@@ -71,7 +71,7 @@ export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProp
       data-testid="story-stage"
       whileHover={!isLocked ? { scale: 1.1, y: -5 } : {}}
       whileTap={!isLocked ? { scale: 0.95 } : {}}
-      onClick={onClick}
+      onClick={!isLocked ? onClick : undefined}
       className={cn(
         "relative group flex flex-col items-center justify-center z-10",
         isLocked && "opacity-50 cursor-not-allowed grayscale",

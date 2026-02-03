@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import {
   Sheet,
@@ -129,20 +129,15 @@ export function FeedbackDetailSheet({
   const updateFeedback = useConvexMutation(apiAny.feedback.feedback.update);
   const updateStatus = useConvexMutation(apiAny.feedback.feedback.updateStatus);
 
-  // Initialize local state when feedback loads
-  const initializeState = () => {
+  // Initialize local state when feedback loads or changes
+  useEffect(() => {
     if (feedback) {
       setPriority(feedback.priority);
       setStatus(feedback.status);
       setAdminNotes(feedback.adminNotes || "");
       setHasChanges(false);
     }
-  };
-
-  // Reset state when feedback changes
-  if (feedback && !hasChanges && (priority !== feedback.priority || status !== feedback.status)) {
-    initializeState();
-  }
+  }, [feedback?._id, feedback?.priority, feedback?.status, feedback?.adminNotes]);
 
   const handlePriorityChange = (value: string) => {
     setPriority(value);

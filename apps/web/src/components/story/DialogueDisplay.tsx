@@ -71,6 +71,7 @@ export function DialogueDisplay({
 
       return () => clearTimeout(timeout);
     }
+    return undefined;
   }, [isTyping, autoAdvanceDelay, isLastLine, onComplete]);
 
   const handleAdvance = useCallback(() => {

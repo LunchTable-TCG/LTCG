@@ -9,10 +9,9 @@ import { StoryStageNode } from "@/components/story/StoryStageNode";
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
-import { api } from "@convex/_generated/api";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Clock, Gift, Loader2, Lock, Play, Star } from "lucide-react";
 import Image from "next/image";
@@ -57,9 +56,9 @@ export default function ChapterPage({ params }: ChapterPageProps) {
   const [actNumber, chapterNumber] = chapterId.split("-").map(Number);
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
   const chapterDetails = useConvexQuery(
-    api.progression.story.getChapterDetails,
+    apiAny.progression.story.getChapterDetails,
     isAuthenticated && actNumber && chapterNumber ? { actNumber, chapterNumber } : "skip"
   );
 
@@ -75,8 +74,66 @@ export default function ChapterPage({ params }: ChapterPageProps) {
     status: "locked" | "available" | "completed" | "starred";
   } | null>(null);
 
+  // Selected difficulty for the battle
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyId>("normal");
+
+  // Fetch difficulty requirements and retry limits
+  const difficultyRequirements = useConvexQuery(
+    apiAny.progression.storyBattle.getDifficultyRequirements,
+    isAuthenticated ? {} : "skip"
+  );
+  const retryLimits = useConvexQuery(
+    apiAny.progression.story.getRetryLimits,
+    isAuthenticated ? {} : "skip"
+  );
+  const playerXPInfo = useConvexQuery(
+    apiAny.progression.story.getPlayerXPInfo,
+    isAuthenticated ? {} : "skip"
+  );
+
+  // Build difficulty levels array for the DifficultySelector
+  const difficulties: DifficultyLevel[] = useMemo(() => {
+    if (!difficultyRequirements) return [];
+
+    return [
+      {
+        id: "normal" as DifficultyId,
+        label: "Normal",
+        requiredLevel: difficultyRequirements.normal.requiredLevel,
+        unlocked: difficultyRequirements.normal.unlocked,
+        rewards: "1x rewards",
+        attemptsRemaining: -1, // Unlimited
+        maxAttempts: -1,
+      },
+      {
+        id: "hard" as DifficultyId,
+        label: "Hard",
+        requiredLevel: difficultyRequirements.hard.requiredLevel,
+        unlocked: difficultyRequirements.hard.unlocked,
+        rewards: "2x rewards",
+        attemptsRemaining: retryLimits?.hard.remaining ?? 3,
+        maxAttempts: retryLimits?.hard.max ?? 3,
+        resetsIn: retryLimits?.hard.resetsAt
+          ? formatTimeUntilReset(retryLimits.hard.resetsAt)
+          : undefined,
+      },
+      {
+        id: "legendary" as DifficultyId,
+        label: "Legendary",
+        requiredLevel: difficultyRequirements.legendary.requiredLevel,
+        unlocked: difficultyRequirements.legendary.unlocked,
+        rewards: "3x rewards",
+        attemptsRemaining: retryLimits?.legendary.remaining ?? 1,
+        maxAttempts: retryLimits?.legendary.max ?? 1,
+        resetsIn: retryLimits?.legendary.resetsAt
+          ? formatTimeUntilReset(retryLimits.legendary.resetsAt)
+          : undefined,
+      },
+    ];
+  }, [difficultyRequirements, retryLimits]);
+
   const initializeStageProgress = useConvexMutation(
-    api.progression.storyStages.initializeChapterStageProgress
+    apiAny.progression.storyStages.initializeChapterStageProgress
   );
 
   // Initialize stage progress when chapter loads
@@ -280,9 +337,9 @@ export default function ChapterPage({ params }: ChapterPageProps) {
                 )}
               </div>
 
-              {/* Status Badge */}
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-sm text-[#a89f94]">Difficulty</span>
+              {/* AI Difficulty Badge (stage base difficulty) */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-[#a89f94]">Stage AI</span>
                 <span
                   className={cn(
                     "px-3 py-1 rounded-full text-xs font-bold uppercase",
@@ -299,6 +356,65 @@ export default function ChapterPage({ params }: ChapterPageProps) {
                   {selectedStage.aiDifficulty}
                 </span>
               </div>
+
+              {/* Difficulty Selector */}
+              {difficulties.length > 0 && (
+                <div className="mb-6">
+                  <DifficultySelector
+                    difficulties={difficulties}
+                    selected={selectedDifficulty}
+                    onSelect={setSelectedDifficulty}
+                    playerLevel={playerXPInfo?.currentLevel ?? 1}
+                  />
+                </div>
+              )}
+
+              {/* Retry Limits Info */}
+              {selectedDifficulty !== "normal" && retryLimits && (
+                <div className="mb-6 p-3 rounded-lg bg-[#1a1510] border border-[#3d2b1f]/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#a89f94]" />
+                      <span className="text-sm text-[#a89f94]">Attempts</span>
+                    </div>
+                    <div className="text-sm">
+                      {selectedDifficulty === "hard" ? (
+                        <span
+                          className={cn(
+                            "font-medium",
+                            retryLimits.hard.remaining > 0
+                              ? "text-orange-400"
+                              : "text-red-400"
+                          )}
+                        >
+                          {retryLimits.hard.remaining}/{retryLimits.hard.max} remaining
+                        </span>
+                      ) : (
+                        <span
+                          className={cn(
+                            "font-medium",
+                            retryLimits.legendary.remaining > 0
+                              ? "text-purple-400"
+                              : "text-red-400"
+                          )}
+                        >
+                          {retryLimits.legendary.remaining}/{retryLimits.legendary.max} remaining
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {((selectedDifficulty === "hard" && retryLimits.hard.remaining === 0) ||
+                    (selectedDifficulty === "legendary" &&
+                      retryLimits.legendary.remaining === 0)) && (
+                    <div className="mt-2 text-xs text-[#a89f94]/70 text-center">
+                      Resets in{" "}
+                      {selectedDifficulty === "hard"
+                        ? formatTimeUntilReset(retryLimits.hard.resetsAt)
+                        : formatTimeUntilReset(retryLimits.legendary.resetsAt)}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Action Button */}
               <button
@@ -317,7 +433,27 @@ export default function ChapterPage({ params }: ChapterPageProps) {
                     return;
                   }
 
-                  const battleUrl = `/play/story/${chapterId}/battle/${selectedStage.stageNumber}`;
+                  // Check if difficulty is unlocked
+                  const selectedDiffData = difficulties.find(
+                    (d) => d.id === selectedDifficulty
+                  );
+                  if (!selectedDiffData?.unlocked) {
+                    toast.error(
+                      `Reach level ${selectedDiffData?.requiredLevel} to unlock ${selectedDifficulty} mode`
+                    );
+                    return;
+                  }
+
+                  // Check if attempts are available
+                  const attemptsRemaining = selectedDiffData.attemptsRemaining ?? -1;
+                  if (attemptsRemaining !== -1 && attemptsRemaining <= 0) {
+                    toast.error(
+                      `No attempts remaining for ${selectedDifficulty} mode. Resets in ${selectedDiffData.resetsIn}`
+                    );
+                    return;
+                  }
+
+                  const battleUrl = `/play/story/${chapterId}/battle/${selectedStage.stageNumber}?difficulty=${selectedDifficulty}`;
                   console.log("Navigating to battle:", battleUrl);
                   router.push(battleUrl);
                 }}

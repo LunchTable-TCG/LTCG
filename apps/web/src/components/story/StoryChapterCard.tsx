@@ -3,6 +3,7 @@
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
+import { getArchetypeTheme } from "@/lib/archetypeThemes";
 import { motion } from "framer-motion";
 import { Lock, Star, Trophy } from "lucide-react";
 import Image from "next/image";
@@ -32,6 +33,9 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
   const chapterDescription = chapter.description;
   const totalStages = chapter.totalStages;
   const completedStages = chapter.completedStages;
+
+  // Get archetype-specific theme for visual styling
+  const archetypeTheme = getArchetypeTheme(chapter.archetype);
 
   return (
     <motion.button
@@ -80,8 +84,14 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
           {/* Chapter Info */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-purple-300">
-                Chapter {chapter.order}
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm",
+                  archetypeTheme.borderColor
+                )}
+              >
+                <span>{archetypeTheme.icon}</span>
+                <span>Chapter {chapter.order}</span>
               </span>
               {isUnlocked && (
                 <div
@@ -107,17 +117,17 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
               <div className="mt-4" data-testid="chapter-progress">
                 <div className="flex justify-between text-xs mb-1.5">
                   <span className="text-gray-400">Progress</span>
-                  <span className="text-purple-300" data-testid="completion-percentage">
+                  <span className="text-white/80" data-testid="completion-percentage">
                     {Math.round((completedStages / totalStages) * 100)}%
                   </span>
                 </div>
                 <div className="h-1.5 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
                   <div
                     className={cn(
-                      "h-full rounded-full transition-all duration-500",
+                      "h-full rounded-full transition-all duration-500 bg-gradient-to-r",
                       isCompleted
-                        ? "bg-linear-to-r from-yellow-500 to-amber-300"
-                        : "bg-linear-to-r from-purple-500 to-indigo-400"
+                        ? "from-yellow-500 to-amber-300"
+                        : archetypeTheme.gradient
                     )}
                     style={{ width: `${(completedStages / totalStages) * 100}%` }}
                   />
