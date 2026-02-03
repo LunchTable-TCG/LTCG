@@ -2,7 +2,7 @@
  * Agent Management API Endpoints
  *
  * Handles agent registration, authentication, and rate limit status.
- * Used by ElizaOS agents and other external clients.
+ * Used by elizaOS agents and other external clients.
  */
 
 // Workaround for TS2589 (excessively deep type instantiation)

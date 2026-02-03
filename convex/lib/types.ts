@@ -14,10 +14,16 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 // =============================================================================
 
 export type Archetype =
+  // Primary archetypes (from card CSV)
   | "infernal_dragons"
+  | "abyssal_depths"
+  | "iron_legion"
+  | "necro_empire"
+  // Legacy archetypes (for backwards compatibility)
   | "abyssal_horrors"
   | "nature_spirits"
   | "storm_elementals"
+  // Future/placeholder archetypes
   | "shadow_assassins"
   | "celestial_guardians"
   | "undead_legion"

@@ -9,6 +9,11 @@ import { z } from "zod";
 
 // Import raw JSON data
 import infernalDragonsRaw from "./infernal-dragons.json";
+import abyssalDepthsRaw from "./abyssal-depths.json";
+import ironLegionRaw from "./iron-legion.json";
+import necroEmpireRaw from "./necro-empire.json";
+
+// Legacy imports for backwards compatibility
 import abyssalHorrorsRaw from "./abyssal-horrors.json";
 import natureSpiritsRaw from "./nature-spirits.json";
 import stormElementalsRaw from "./storm-elementals.json";
@@ -33,10 +38,16 @@ export const CardTypeSchema = z.enum([
 ]);
 
 export const ArchetypeSchema = z.enum([
+  // Primary archetypes (from card CSV)
   "infernal_dragons",
+  "abyssal_depths",
+  "iron_legion",
+  "necro_empire",
+  // Legacy archetypes (for backwards compatibility)
   "abyssal_horrors",
   "nature_spirits",
   "storm_elementals",
+  // Future/placeholder archetypes
   "shadow_assassins",
   "celestial_guardians",
   "undead_legion",
@@ -93,20 +104,33 @@ export type Card = z.infer<typeof CardSchema>;
 
 // Parse and validate all card data at module load time
 // This ensures any schema violations are caught early
+
+// Primary card sets (from master CSV)
 export const INFERNAL_DRAGONS_CARDS = CardArraySchema.parse(infernalDragonsRaw);
+export const ABYSSAL_DEPTHS_CARDS = CardArraySchema.parse(abyssalDepthsRaw);
+export const IRON_LEGION_CARDS = CardArraySchema.parse(ironLegionRaw);
+export const NECRO_EMPIRE_CARDS = CardArraySchema.parse(necroEmpireRaw);
+
+// Legacy card sets (for backwards compatibility)
 export const ABYSSAL_HORRORS_CARDS = CardArraySchema.parse(abyssalHorrorsRaw);
 export const NATURE_SPIRITS_CARDS = CardArraySchema.parse(natureSpiritsRaw);
 export const STORM_ELEMENTALS_CARDS = CardArraySchema.parse(stormElementalsRaw);
 
 /**
  * All cards from all archetypes combined
+ * Uses primary card sets (not legacy)
  */
 export const ALL_CARDS: Card[] = [
   ...INFERNAL_DRAGONS_CARDS,
-  ...ABYSSAL_HORRORS_CARDS,
-  ...NATURE_SPIRITS_CARDS,
-  ...STORM_ELEMENTALS_CARDS,
+  ...ABYSSAL_DEPTHS_CARDS,
+  ...IRON_LEGION_CARDS,
+  ...NECRO_EMPIRE_CARDS,
 ];
+
+/**
+ * Total card count
+ */
+export const TOTAL_CARDS = ALL_CARDS.length;
 
 // ============================================================================
 // Helper Functions
@@ -177,9 +201,9 @@ export function getCardStats() {
     total: ALL_CARDS.length,
     byArchetype: {
       infernal_dragons: INFERNAL_DRAGONS_CARDS.length,
-      abyssal_horrors: ABYSSAL_HORRORS_CARDS.length,
-      nature_spirits: NATURE_SPIRITS_CARDS.length,
-      storm_elementals: STORM_ELEMENTALS_CARDS.length,
+      abyssal_depths: ABYSSAL_DEPTHS_CARDS.length,
+      iron_legion: IRON_LEGION_CARDS.length,
+      necro_empire: NECRO_EMPIRE_CARDS.length,
     },
     byRarity: {
       common: getCardsByRarity("common").length,

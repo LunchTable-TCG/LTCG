@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the LTCG ElizaOS Plugin will be documented in this file.
+All notable changes to the LTCG elizaOS Plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Initial Release
 
-The first production-ready release of the LTCG ElizaOS Plugin, enabling AI agents to play the Legendary Trading Card Game with full gameplay capabilities and personality-driven interactions.
+The first production-ready release of the LTCG elizaOS Plugin, enabling AI agents to play the Legendary Trading Card Game with full gameplay capabilities and personality-driven interactions.
 
 #### Added
 
@@ -120,7 +120,7 @@ All settings with defaults:
 #### Technical Details
 
 **Dependencies**
-- ElizaOS Core 1.7.0+
+- elizaOS Core 1.7.0+
 - Convex 1.31.6+
 - Zod 4.1.13+
 - TypeScript 5.9.3+
@@ -190,4 +190,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on:
 
 ---
 
-Built with [ElizaOS](https://elizaos.ai) - The open-source framework for AI agents.
+Built with [elizaOS](https://elizaos.ai) - The open-source framework for AI agents.

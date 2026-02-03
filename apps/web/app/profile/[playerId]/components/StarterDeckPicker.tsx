@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Check, Flame, Shield, Waves, Zap } from "lucide-react";
+import { Check, Flame, Shield, Skull, Waves, Zap } from "lucide-react";
 
 interface StarterDeck {
   name: string;
@@ -56,6 +56,13 @@ const DECK_CONFIG: Record<
     iconColor: "text-yellow-500",
     selectedBg: "bg-yellow-500/20",
   },
+  NECRO_EMPIRE: {
+    icon: Skull,
+    gradient: "from-purple-600/20 to-violet-800/20",
+    border: "border-purple-500/30 hover:border-purple-500/60",
+    iconColor: "text-purple-500",
+    selectedBg: "bg-purple-500/20",
+  },
 };
 
 export function StarterDeckPicker({ decks, selectedDeck, onSelect }: StarterDeckPickerProps) {
@@ -70,7 +77,7 @@ export function StarterDeckPicker({ decks, selectedDeck, onSelect }: StarterDeck
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {decks.map((deck) => {
           const defaultConfig = {
             icon: Shield,

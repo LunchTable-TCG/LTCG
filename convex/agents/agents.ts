@@ -14,6 +14,7 @@ import {
   ABYSSAL_DEPTHS_CARDS,
   INFERNAL_DRAGONS_CARDS,
   IRON_LEGION_CARDS,
+  NECRO_EMPIRE_CARDS,
   STORM_RIDERS_CARDS,
 } from "../seeds/starterCards";
 import { STARTER_DECKS, type StarterDeckCode, VALID_DECK_CODES } from "../seeds/starterDecks";
@@ -431,6 +432,7 @@ export const registerAgentInternal = internalMutation({
       ABYSSAL_DEPTHS: ABYSSAL_DEPTHS_CARDS,
       IRON_LEGION: IRON_LEGION_CARDS,
       STORM_RIDERS: STORM_RIDERS_CARDS,
+      NECRO_EMPIRE: NECRO_EMPIRE_CARDS,
     };
 
     const cardList = cardListMap[args.starterDeckCode];
@@ -619,6 +621,7 @@ export const selectStarterDeckInternal = internalMutation({
       ABYSSAL_DEPTHS: ABYSSAL_DEPTHS_CARDS,
       IRON_LEGION: IRON_LEGION_CARDS,
       STORM_RIDERS: STORM_RIDERS_CARDS,
+      NECRO_EMPIRE: NECRO_EMPIRE_CARDS,
     };
 
     const cardList = cardListMap[args.starterDeckCode];

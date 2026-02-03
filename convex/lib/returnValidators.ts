@@ -575,6 +575,7 @@ export const deckWithCountValidator = v.object({
       v.literal("water"),
       v.literal("earth"),
       v.literal("wind"),
+      v.literal("dark"),
       v.literal("neutral")
     )
   ),
@@ -633,6 +634,7 @@ export const deckWithCardsValidator = v.object({
       v.literal("water"),
       v.literal("earth"),
       v.literal("wind"),
+      v.literal("dark"),
       v.literal("neutral")
     )
   ),

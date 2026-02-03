@@ -46,6 +46,13 @@ export type CardType = "creature" | "spell" | "trap" | "equipment" | "universal"
 
 export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 
+/**
+ * Template rendering mode:
+ * - "frame_artwork": Traditional mode with separate frame image + artwork placement
+ * - "full_card_image": Card's own image is the full background (frame + art baked in)
+ */
+export type TemplateMode = "frame_artwork" | "full_card_image";
+
 // =============================================================================
 // Editor State Types
 // =============================================================================

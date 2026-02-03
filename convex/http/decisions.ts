@@ -2,7 +2,7 @@
  * HTTP Handlers for Agent Decision History
  *
  * Endpoints for saving and retrieving agent gameplay decisions.
- * Used by ElizaOS agents to track and analyze their decision-making.
+ * Used by elizaOS agents to track and analyze their decision-making.
  *
  * @module http/decisions
  */

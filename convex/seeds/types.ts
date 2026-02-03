@@ -10,17 +10,27 @@ export type CardRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type CardType = "creature" | "spell" | "trap" | "equipment";
 export type Archetype =
   | "infernal_dragons"
+  | "abyssal_depths"
+  | "iron_legion"
+  | "necro_empire"
+  // Legacy archetypes (kept for backwards compatibility)
   | "abyssal_horrors"
   | "nature_spirits"
   | "storm_elementals"
+  // Future archetypes
   | "shadow_assassins"
   | "celestial_guardians"
   | "undead_legion"
   | "divine_knights"
   | "arcane_mages"
   | "mechanical_constructs"
-  | "neutral";
-export type DeckArchetype = "fire" | "water" | "earth" | "wind" | "neutral";
+  | "neutral"
+  // Old element-based archetypes (deprecated but still in schema)
+  | "fire"
+  | "water"
+  | "earth"
+  | "wind";
+export type DeckArchetype = "fire" | "water" | "earth" | "wind" | "dark" | "neutral";
 
 // JSON ability type alias for seed data
 export type JsonAbility = JsonAbilityInfer;

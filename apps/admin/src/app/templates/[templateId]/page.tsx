@@ -70,9 +70,22 @@ import {
 
 import { apiAny } from "@/lib/convexHelpers";
 import { TemplateEditor } from "@/components/templates/TemplateEditor";
-import type { Rarity } from "@/components/templates/types";
+import type { Rarity, TemplateMode } from "@/components/templates/types";
 
 const api = apiAny;
+
+const TEMPLATE_MODES: { value: TemplateMode; label: string; description: string }[] = [
+  {
+    value: "frame_artwork",
+    label: "Frame + Artwork",
+    description: "Separate frame image with artwork placed in bounds",
+  },
+  {
+    value: "full_card_image",
+    label: "Full Card Image",
+    description: "Card's image is the complete background (frame + art baked in)",
+  },
+];
 
 const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 
@@ -285,9 +298,31 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-2">
+                    <Label>Template Mode</Label>
+                    <Select
+                      value={template.mode || "frame_artwork"}
+                      onValueChange={(v) => handleUpdateSettings({ mode: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TEMPLATE_MODES.map((mode) => (
+                          <SelectItem key={mode.value} value={mode.value}>
+                            {mode.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {TEMPLATE_MODES.find((m) => m.value === (template.mode || "frame_artwork"))?.description}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Frame Images */}
+                {/* Frame Images - only for frame_artwork mode */}
+                {(template.mode || "frame_artwork") === "frame_artwork" && (
                 <div className="space-y-4">
                   <Label className="text-sm font-medium">Frame Images by Rarity</Label>
                   <p className="text-xs text-muted-foreground">
@@ -323,8 +358,10 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
                     />
                   </div>
                 </div>
+                )}
 
-                {/* Artwork Bounds */}
+                {/* Artwork Bounds - only for frame_artwork mode */}
+                {(template.mode || "frame_artwork") === "frame_artwork" && (
                 <div className="space-y-4">
                   <Label className="text-sm font-medium">Artwork Area</Label>
                   <div className="grid grid-cols-2 gap-3">
@@ -390,6 +427,21 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
                     </div>
                   </div>
                 </div>
+                )}
+
+                {/* Full Card Image Mode Info */}
+                {(template.mode || "frame_artwork") === "full_card_image" && (
+                <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+                  <Label className="text-sm font-medium">Full Card Image Mode</Label>
+                  <p className="text-xs text-muted-foreground">
+                    In this mode, each card's <code className="bg-muted px-1 rounded">imageUrl</code> is used as the complete card background.
+                    The template only defines text overlay positions.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Use this mode when your card images already have the frame and artwork combined (e.g., pre-rendered card art).
+                  </p>
+                </div>
+                )}
 
                 {/* Default Styles */}
                 <div className="space-y-4">

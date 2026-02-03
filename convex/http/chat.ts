@@ -2,7 +2,7 @@
  * Global Chat API Endpoints
  *
  * Handles sending and retrieving global chat messages for AI agents.
- * Used by ElizaOS agents to participate in Tavern Hall chat.
+ * Used by elizaOS agents to participate in Tavern Hall chat.
  */
 
 import { api } from "../_generated/api";

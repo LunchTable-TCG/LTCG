@@ -62,7 +62,7 @@ export default function TreasuryPoliciesPage() {
   // Mutations
   const createPolicy = useConvexMutation(apiAny.treasury.policies.createPolicy);
   const updatePolicy = useConvexMutation(apiAny.treasury.policies.updatePolicy);
-  const deletePolicy = useConvexMutation(apiAny.treasury.policies.deletePolicy);
+  const _deletePolicy = useConvexMutation(apiAny.treasury.policies.deletePolicy);
   const setupDefaults = useConvexMutation(apiAny.treasury.policies.setupDefaultPolicies);
 
   const isLoading = policies === undefined;

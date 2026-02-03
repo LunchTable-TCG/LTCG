@@ -42,10 +42,16 @@ const RARITY_COLORS: Record<Rarity, string> = {
 };
 
 const ARCHETYPES = [
+  // Primary archetypes
   { value: "infernal_dragons", label: "Infernal Dragons" },
+  { value: "abyssal_depths", label: "Abyssal Depths" },
+  { value: "iron_legion", label: "Iron Legion" },
+  { value: "necro_empire", label: "Necro Empire" },
+  // Legacy archetypes
   { value: "abyssal_horrors", label: "Abyssal Horrors" },
   { value: "nature_spirits", label: "Nature Spirits" },
   { value: "storm_elementals", label: "Storm Elementals" },
+  // Future archetypes
   { value: "shadow_assassins", label: "Shadow Assassins" },
   { value: "celestial_guardians", label: "Celestial Guardians" },
   { value: "undead_legion", label: "Undead Legion" },

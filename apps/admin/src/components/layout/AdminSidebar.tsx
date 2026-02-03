@@ -89,6 +89,7 @@ const navigation: NavGroup[] = [
       { title: "Assets", href: "/assets", icon: "🖼️", permission: "config.edit" },
       { title: "Cards", href: "/cards", icon: "🃏", permission: "config.edit" },
       { title: "Templates", href: "/templates", icon: "📐", permission: "config.edit" },
+      { title: "Batch Render", href: "/cards/batch-render", icon: "🖨️", permission: "config.edit" },
       { title: "Shop", href: "/shop", icon: "🛒", permission: "config.edit" },
       { title: "Promo Codes", href: "/promo-codes", icon: "🎁", permission: "config.edit" },
       { title: "Quests", href: "/quests", icon: "🎯", permission: "config.edit" },

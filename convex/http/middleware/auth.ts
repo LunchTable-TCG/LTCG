@@ -2,7 +2,7 @@
  * API Key Authentication Middleware for LTCG HTTP API
  *
  * Extracts and validates API keys from Authorization header.
- * Used by ElizaOS agents and other external clients.
+ * Used by elizaOS agents and other external clients.
  */
 
 import { internal } from "../../_generated/api";

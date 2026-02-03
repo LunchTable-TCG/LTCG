@@ -162,10 +162,16 @@ export type CardAttribute =
  * Card archetype values (matches schema)
  */
 export type CardArchetype =
+  // Primary archetypes (from card CSV)
   | "infernal_dragons"
+  | "abyssal_depths"
+  | "iron_legion"
+  | "necro_empire"
+  // Legacy archetypes (for backwards compatibility)
   | "abyssal_horrors"
   | "nature_spirits"
   | "storm_elementals"
+  // Future/placeholder archetypes
   | "shadow_assassins"
   | "celestial_guardians"
   | "undead_legion"
@@ -173,6 +179,7 @@ export type CardArchetype =
   | "arcane_mages"
   | "mechanical_constructs"
   | "neutral"
+  // Old archetypes (deprecated)
   | "fire"
   | "water"
   | "earth"

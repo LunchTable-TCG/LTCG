@@ -79,7 +79,7 @@ export const getRecentGameEvents = query({
 });
 
 /**
- * Subscribe to game events (optimized for ElizaOS agents)
+ * Subscribe to game events (optimized for elizaOS agents)
  *
  * Returns new events since lastSeenTimestamp, enabling agents to:
  * - Monitor game state changes in real-time
@@ -119,7 +119,7 @@ export const subscribeToGameEvents = query({
     // Apply limit (get last N events)
     filtered = filtered.slice(-limit);
 
-    // Map to ElizaOS-friendly format
+    // Map to elizaOS-friendly format
     return filtered.map((event) => ({
       eventId: event._id,
       lobbyId: event.lobbyId,
@@ -197,7 +197,7 @@ export const getGameEventStats = query({
  * Helper function to record a game event without mutation overhead
  *
  * Used by game engine to record events directly without ctx.runMutation latency.
- * Events are immediately visible to spectators and ElizaOS agents via Convex reactivity.
+ * Events are immediately visible to spectators and elizaOS agents via Convex reactivity.
  * All gameplay actions should record appropriate events for audit trail and replay systems.
  *
  * @internal

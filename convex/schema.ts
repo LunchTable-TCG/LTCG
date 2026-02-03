@@ -890,10 +890,16 @@ export default defineSchema({
       v.literal("legendary")
     ),
     archetype: v.union(
+      // Primary archetypes (from card CSV)
       v.literal("infernal_dragons"),
+      v.literal("abyssal_depths"),
+      v.literal("iron_legion"),
+      v.literal("necro_empire"),
+      // Legacy archetypes (for backwards compatibility)
       v.literal("abyssal_horrors"),
       v.literal("nature_spirits"),
       v.literal("storm_elementals"),
+      // Future/placeholder archetypes
       v.literal("shadow_assassins"),
       v.literal("celestial_guardians"),
       v.literal("undead_legion"),
@@ -992,6 +998,12 @@ export default defineSchema({
       v.literal("equipment"),
       v.literal("universal") // applies to all types
     ),
+    // Template mode:
+    // - "frame_artwork": Traditional mode with separate frame image + artwork placement
+    // - "full_card_image": Card's own image is the full background (frame + art baked in)
+    mode: v.optional(
+      v.union(v.literal("frame_artwork"), v.literal("full_card_image"))
+    ), // defaults to "frame_artwork" for backwards compatibility
     // Canvas dimensions (standard TCG: 750x1050)
     width: v.number(),
     height: v.number(),
@@ -1123,6 +1135,7 @@ export default defineSchema({
         v.literal("water"),
         v.literal("earth"),
         v.literal("wind"),
+        v.literal("dark"),
         v.literal("neutral")
       )
     ),
@@ -1305,11 +1318,16 @@ export default defineSchema({
         ),
         archetype: v.optional(
           v.union(
-            // New archetypes
+            // Primary archetypes (from card CSV)
             v.literal("infernal_dragons"),
+            v.literal("abyssal_depths"),
+            v.literal("iron_legion"),
+            v.literal("necro_empire"),
+            // Legacy archetypes (for backwards compatibility)
             v.literal("abyssal_horrors"),
             v.literal("nature_spirits"),
             v.literal("storm_elementals"),
+            // Future/placeholder archetypes
             v.literal("shadow_assassins"),
             v.literal("celestial_guardians"),
             v.literal("undead_legion"),

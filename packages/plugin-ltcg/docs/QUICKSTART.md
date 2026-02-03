@@ -6,14 +6,14 @@ Get your AI agent playing LTCG in 5 minutes.
 
 Before you begin, ensure you have:
 
-- **ElizaOS 1.7.0+** installed
+- **elizaOS 1.7.0+** installed
 - **Bun** package manager (`curl -fsSL https://bun.sh/install | bash`)
-- **Node.js 18+** (for ElizaOS)
+- **Node.js 18+** (for elizaOS)
 - An **OpenAI API key** or other LLM provider key
 
 ## Step 1: Install the Plugin
 
-Add the LTCG plugin to your ElizaOS project:
+Add the LTCG plugin to your elizaOS project:
 
 ```bash
 cd your-elizaos-project

@@ -404,3 +404,132 @@ export const getStats = query({
     return stats;
   },
 });
+
+/**
+ * Get detailed feedback analytics for the admin dashboard
+ *
+ * Returns trends, resolution times, and top reporters.
+ * Requires moderator role or higher.
+ */
+export const getAnalytics = query({
+  args: {
+    days: v.optional(v.number()),
+  },
+  handler: async (ctx, { days = 30 }) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "moderator");
+
+    const now = Date.now();
+    const startTime = now - days * 24 * 60 * 60 * 1000;
+
+    // Get all feedback
+    const allFeedback = await ctx.db.query("feedback").collect();
+    const recentFeedback = allFeedback.filter((f) => f.createdAt >= startTime);
+
+    // Daily submission trend (last N days)
+    const dailyTrend: Record<string, { bugs: number; features: number; total: number }> = {};
+    for (let i = 0; i < Math.min(days, 14); i++) {
+      const date = new Date(now - i * 24 * 60 * 60 * 1000);
+      const dateKey = date.toISOString().split("T")[0] ?? "";
+      if (dateKey) {
+        dailyTrend[dateKey] = { bugs: 0, features: 0, total: 0 };
+      }
+    }
+
+    for (const item of recentFeedback) {
+      const dateKey = new Date(item.createdAt).toISOString().split("T")[0] ?? "";
+      const trendEntry = dailyTrend[dateKey];
+      if (trendEntry) {
+        trendEntry.total++;
+        if (item.type === "bug") {
+          trendEntry.bugs++;
+        } else {
+          trendEntry.features++;
+        }
+      }
+    }
+
+    // Convert to array sorted by date
+    const trendData = Object.entries(dailyTrend)
+      .map(([date, counts]) => ({ date, ...counts }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Resolution time analytics
+    const resolvedFeedback = allFeedback.filter((f) => f.resolvedAt);
+    let totalResolutionTime = 0;
+    let resolvedCount = 0;
+    let fastestResolution = Infinity;
+    let slowestResolution = 0;
+
+    for (const item of resolvedFeedback) {
+      const resolutionTime = (item.resolvedAt as number) - item.createdAt;
+      totalResolutionTime += resolutionTime;
+      resolvedCount++;
+      fastestResolution = Math.min(fastestResolution, resolutionTime);
+      slowestResolution = Math.max(slowestResolution, resolutionTime);
+    }
+
+    const avgResolutionMs = resolvedCount > 0 ? totalResolutionTime / resolvedCount : 0;
+
+    // Top reporters (users who submitted the most feedback)
+    const reporterCounts: Record<string, { username: string; count: number; bugs: number; features: number }> = {};
+    for (const item of allFeedback) {
+      const userIdStr = item.userId as string;
+      if (!reporterCounts[userIdStr]) {
+        reporterCounts[userIdStr] = { username: item.username, count: 0, bugs: 0, features: 0 };
+      }
+      const reporter = reporterCounts[userIdStr];
+      if (reporter) {
+        reporter.count++;
+        if (item.type === "bug") {
+          reporter.bugs++;
+        } else {
+          reporter.features++;
+        }
+      }
+    }
+
+    const topReporters = Object.entries(reporterCounts)
+      .map(([userId, data]) => ({ userId, ...data }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    // Media attachment stats
+    const withScreenshot = allFeedback.filter((f) => f.screenshotUrl).length;
+    const withRecording = allFeedback.filter((f) => f.recordingUrl).length;
+
+    // Recent activity
+    const last24h = allFeedback.filter((f) => f.createdAt >= now - 24 * 60 * 60 * 1000).length;
+    const last7d = allFeedback.filter((f) => f.createdAt >= now - 7 * 24 * 60 * 60 * 1000).length;
+
+    return {
+      summary: {
+        total: allFeedback.length,
+        bugs: allFeedback.filter((f) => f.type === "bug").length,
+        features: allFeedback.filter((f) => f.type === "feature").length,
+        open: allFeedback.filter((f) => !["resolved", "closed"].includes(f.status)).length,
+        resolved: allFeedback.filter((f) => f.status === "resolved").length,
+        last24h,
+        last7d,
+      },
+      resolution: {
+        avgTimeMs: avgResolutionMs,
+        avgTimeHours: Math.round(avgResolutionMs / (1000 * 60 * 60) * 10) / 10,
+        fastestMs: fastestResolution === Infinity ? 0 : fastestResolution,
+        slowestMs: slowestResolution,
+        resolutionRate: allFeedback.length > 0
+          ? Math.round((resolvedCount / allFeedback.length) * 100)
+          : 0,
+      },
+      trend: trendData,
+      topReporters,
+      attachments: {
+        withScreenshot,
+        withRecording,
+        screenshotRate: allFeedback.length > 0
+          ? Math.round((withScreenshot / allFeedback.length) * 100)
+          : 0,
+      },
+    };
+  },
+});

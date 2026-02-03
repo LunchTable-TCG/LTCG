@@ -10,7 +10,7 @@ export const STARTER_DECKS: readonly StarterDeckDefinition[] = [
     archetype: "fire" satisfies DeckArchetype,
     description: "Harness the fury of fire dragons. Aggressive beatdown with burn damage.",
     playstyle: "Aggro",
-    cardCount: 45,
+    cardCount: 51,
   },
   {
     name: "Abyssal Depths Starter",
@@ -18,7 +18,7 @@ export const STARTER_DECKS: readonly StarterDeckDefinition[] = [
     archetype: "water" satisfies DeckArchetype,
     description: "Control the tides of battle. Bounce and freeze your opponent's threats.",
     playstyle: "Control",
-    cardCount: 45,
+    cardCount: 104,
   },
   {
     name: "Iron Legion Starter",
@@ -26,7 +26,7 @@ export const STARTER_DECKS: readonly StarterDeckDefinition[] = [
     archetype: "earth" satisfies DeckArchetype,
     description: "Build an unbreakable defense. High DEF monsters that protect each other.",
     playstyle: "Midrange",
-    cardCount: 45,
+    cardCount: 65,
   },
   {
     name: "Storm Riders Starter",
@@ -34,7 +34,15 @@ export const STARTER_DECKS: readonly StarterDeckDefinition[] = [
     archetype: "wind" satisfies DeckArchetype,
     description: "Strike fast and draw cards. Direct attacks and tempo plays.",
     playstyle: "Tempo",
-    cardCount: 45,
+    cardCount: 43,
+  },
+  {
+    name: "Necro Empire Starter",
+    deckCode: "NECRO_EMPIRE",
+    archetype: "dark" satisfies DeckArchetype,
+    description: "Command the undead legions. Revive fallen monsters and drain your opponent's life.",
+    playstyle: "Grind",
+    cardCount: 34,
   },
 ] as const;
 

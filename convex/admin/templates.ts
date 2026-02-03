@@ -224,6 +224,7 @@ export const createTemplate = mutation({
     name: v.string(),
     description: v.optional(v.string()),
     cardType: cardTypeValidator,
+    mode: v.optional(v.union(v.literal("frame_artwork"), v.literal("full_card_image"))),
     width: v.optional(v.number()),
     height: v.optional(v.number()),
     defaultFontFamily: v.optional(v.string()),
@@ -241,6 +242,7 @@ export const createTemplate = mutation({
       name: args.name,
       description: args.description,
       cardType: args.cardType,
+      mode: args.mode ?? "frame_artwork",
       width: args.width ?? 750,
       height: args.height ?? 1050,
       frameImages: {
@@ -287,6 +289,7 @@ export const updateTemplate = mutation({
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     cardType: v.optional(cardTypeValidator),
+    mode: v.optional(v.union(v.literal("frame_artwork"), v.literal("full_card_image"))),
     width: v.optional(v.number()),
     height: v.optional(v.number()),
     frameImages: v.optional(

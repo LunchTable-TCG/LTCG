@@ -1,6 +1,6 @@
 # LTCG Plugin API Reference
 
-Complete technical reference for the LTCG ElizaOS plugin.
+Complete technical reference for the LTCG elizaOS plugin.
 
 ## Table of Contents
 

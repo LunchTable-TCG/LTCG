@@ -1,27 +1,27 @@
-# ElizaOS Agent Project Development Guide for Claude
+# elizaOS Agent Project Development Guide for Claude
 
-> **Optimized for Claude LLM** - Complete reference for building ElizaOS agent projects
+> **Optimized for Claude LLM** - Complete reference for building elizaOS agent projects
 
 ## 📋 Project Overview
 
 | Property            | Value                         |
 | ------------------- | ----------------------------- |
-| **Project Type**    | ElizaOS Agent Project         |
+| **Project Type**    | elizaOS Agent Project         |
 | **Package Manager** | `bun` (REQUIRED)              |
-| **Runtime**         | ElizaOS with plugin ecosystem |
+| **Runtime**         | elizaOS with plugin ecosystem |
 | **Configuration**   | Character-based agent setup   |
 | **Architecture**    | Plugin composition pattern    |
 
 ## 🏗️ Project Architecture
 
-ElizaOS projects are **character-driven agent systems** that compose functionality through plugins:
+elizaOS projects are **character-driven agent systems** that compose functionality through plugins:
 
 ```
 📦 Your Agent Project
 ├── 🤖 Character Definition (personality, behavior)
 ├── 🔌 Plugin Ecosystem (functionality)
 ├── 🌍 Environment Config (APIs, secrets)
-└── 🚀 Runtime Orchestration (ElizaOS)
+└── 🚀 Runtime Orchestration (elizaOS)
 ```
 
 ## 📁 Project Structure
@@ -687,7 +687,7 @@ Monitor your agent's performance and user interactions to guide improvements.
 
 ### 3. **Contribute Back**
 
-Share useful patterns and plugins with the ElizaOS community.
+Share useful patterns and plugins with the elizaOS community.
 
 ### 4. **Scale Thoughtfully**
 
@@ -695,4 +695,4 @@ Plan for growth with proper infrastructure and monitoring.
 
 ---
 
-**🎉 Ready to build your ElizaOS agent!** Start with `elizaos start --dev` and let your agent evolve with your needs.
+**🎉 Ready to build your elizaOS agent!** Start with `elizaos start --dev` and let your agent evolve with your needs.

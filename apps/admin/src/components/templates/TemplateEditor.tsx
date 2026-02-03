@@ -22,6 +22,7 @@ const KonvaCanvas = dynamic(
 );
 import { LayersPanel } from "./LayersPanel";
 import { PropertiesPanel } from "./PropertiesPanel";
+import { AssetPickerButton } from "./asset-picker";
 import {
   SAMPLE_CARD_DATA,
   DEFAULT_ZOOM,
@@ -53,6 +54,7 @@ import {
   Eye,
   Download,
   Magnet,
+  Image as ImageLucide,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -76,6 +78,14 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
   const [previewRarity, setPreviewRarity] = useState<Rarity>("legendary");
   const [previewData] = useState(SAMPLE_CARD_DATA);
   const [snapEnabled, setSnapEnabled] = useState(true);
+  // For full_card_image mode: URL of a sample card image to preview
+  const [previewCardImageUrl, setPreviewCardImageUrl] = useState<string>(
+    // Default to a sample card from cards-raw for preview
+    "/assets/cards-raw/infernal-dragons/102.png"
+  );
+
+  // Determine template mode
+  const templateMode = template.mode ?? "frame_artwork";
 
   // Local blocks state for optimistic updates
   const [blocks, setBlocks] = useState<CardTemplateBlock[]>(template.blocks);
@@ -334,14 +344,17 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
             <Grid3X3 className="h-4 w-4 mr-1" />
             Grid
           </Button>
-          <Button
-            size="sm"
-            variant={showArtworkBounds ? "default" : "outline"}
-            onClick={() => setShowArtworkBounds(!showArtworkBounds)}
-          >
-            <ImageIcon className="h-4 w-4 mr-1" />
-            Artwork
-          </Button>
+          {/* Artwork bounds toggle - only in frame_artwork mode */}
+          {templateMode === "frame_artwork" && (
+            <Button
+              size="sm"
+              variant={showArtworkBounds ? "default" : "outline"}
+              onClick={() => setShowArtworkBounds(!showArtworkBounds)}
+            >
+              <ImageIcon className="h-4 w-4 mr-1" />
+              Artwork
+            </Button>
+          )}
           <Button
             size="sm"
             variant={snapEnabled ? "default" : "outline"}
@@ -353,25 +366,43 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Preview rarity selector */}
-          <div className="flex items-center gap-2">
-            <Eye className="h-4 w-4 text-muted-foreground" />
-            <Select
-              value={previewRarity}
-              onValueChange={(v) => setPreviewRarity(v as Rarity)}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="common">Common</SelectItem>
-                <SelectItem value="uncommon">Uncommon</SelectItem>
-                <SelectItem value="rare">Rare</SelectItem>
-                <SelectItem value="epic">Epic</SelectItem>
-                <SelectItem value="legendary">Legendary</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Preview rarity selector - only shown in frame_artwork mode */}
+          {templateMode === "frame_artwork" && (
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={previewRarity}
+                onValueChange={(v) => setPreviewRarity(v as Rarity)}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="common">Common</SelectItem>
+                  <SelectItem value="uncommon">Uncommon</SelectItem>
+                  <SelectItem value="rare">Rare</SelectItem>
+                  <SelectItem value="epic">Epic</SelectItem>
+                  <SelectItem value="legendary">Legendary</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Preview card image selector - only shown in full_card_image mode */}
+          {templateMode === "full_card_image" && (
+            <div className="flex items-center gap-2">
+              <ImageLucide className="h-4 w-4 text-muted-foreground" />
+              <AssetPickerButton
+                value={previewCardImageUrl}
+                onChange={(url) => setPreviewCardImageUrl(url ?? "/assets/cards-raw/infernal-dragons/102.png")}
+                dialogTitle="Select Preview Card Image"
+                allowedCategories={["card_image"]}
+                placeholder="Select card image"
+                showPreview={true}
+                variant="outline"
+              />
+            </div>
+          )}
 
           <div className="w-px h-6 bg-border mx-2" />
 
@@ -421,9 +452,10 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
             selectedBlockId={selectedBlockId}
             zoom={zoom}
             showGrid={showGrid}
-            showArtworkBounds={showArtworkBounds}
+            showArtworkBounds={showArtworkBounds && templateMode === "frame_artwork"}
             previewRarity={previewRarity}
             previewArtworkUrl={previewData.imageUrl}
+            previewCardImageUrl={templateMode === "full_card_image" ? previewCardImageUrl : undefined}
             onSelectBlock={handleSelectBlock}
             onBlockMove={handleBlockMove}
             onBlockTransform={handleBlockTransform}

@@ -1,23 +1,10 @@
 [
   {
-    "name": "Ember Wyrmling",
-    "rarity": "common",
-    "cardType": "creature",
+    "name": "Ring of Fire",
+    "rarity": "uncommon",
+    "cardType": "trap",
     "archetype": "infernal_dragons",
-    "cost": 3,
-    "attack": 1200,
-    "defense": 800,
-    "flavorText": "A young dragon whose flames burn with limitless potential."
-  },
-  {
-    "name": "Infernal Hatchling",
-    "rarity": "common",
-    "cardType": "creature",
-    "archetype": "infernal_dragons",
-    "cost": 2,
-    "attack": 800,
-    "defense": 600,
-    "flavorText": "Born from volcanic ash, it seeks its first flame."
+    "cost": 1
   },
   {
     "name": "Scorched Serpent",
@@ -26,8 +13,50 @@
     "archetype": "infernal_dragons",
     "cost": 4,
     "attack": 1400,
-    "defense": 1000,
-    "flavorText": "Its scales glow red from the eternal fire within."
+    "defense": 1000
+  },
+  {
+    "name": "Kindled Basilisk",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "infernal_dragons",
+    "cost": 4,
+    "attack": 1500,
+    "defense": 1100
+  },
+  {
+    "name": "Infernal God Dragon",
+    "rarity": "legendary",
+    "cardType": "creature",
+    "archetype": "infernal_dragons",
+    "cost": 10,
+    "attack": 4000,
+    "defense": 3500,
+    "effects": [
+      {
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
+      }
+    ]
+  },
+  {
+    "name": "Ember Wyrmling",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "infernal_dragons",
+    "cost": 3,
+    "attack": 1200,
+    "defense": 800
+  },
+  {
+    "name": "Infernal Hatchling",
+    "rarity": "common",
+    "cardType": "creature",
+    "archetype": "infernal_dragons",
+    "cost": 2,
+    "attack": 800,
+    "defense": 600
   },
   {
     "name": "Flame Whelp",
@@ -36,8 +65,7 @@
     "archetype": "infernal_dragons",
     "cost": 1,
     "attack": 600,
-    "defense": 400,
-    "flavorText": "The smallest spark can ignite the greatest inferno."
+    "defense": 400
   },
   {
     "name": "Blazing Drake",
@@ -46,8 +74,7 @@
     "archetype": "infernal_dragons",
     "cost": 4,
     "attack": 1600,
-    "defense": 1200,
-    "flavorText": "Its wings leave trails of fire across the sky."
+    "defense": 1200
   },
   {
     "name": "Cinder Wyrm",
@@ -59,12 +86,11 @@
     "defense": 700,
     "effects": [
       {
-        "name": "Smoldering Scales",
-        "description": "This card gains 200 ATK during your Battle Phase.",
-        "effectType": "continuous"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "The heat it radiates can melt steel."
+    ]
   },
   {
     "name": "Magma Hatchling",
@@ -76,12 +102,11 @@
     "defense": 500,
     "effects": [
       {
-        "name": "Molten Birth",
-        "description": "When this card is destroyed: Inflict 300 damage to your opponent.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "Even in death, its flames persist."
+    ]
   },
   {
     "name": "Infernal Scout",
@@ -93,12 +118,11 @@
     "defense": 600,
     "effects": [
       {
-        "name": "Searing Speed",
-        "description": "This card can attack directly if your opponent controls no monsters in Attack Position.",
-        "effectType": "continuous"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "It finds prey even in the darkest depths."
+    ]
   },
   {
     "name": "Pyroclast Wyvern",
@@ -110,12 +134,11 @@
     "defense": 900,
     "effects": [
       {
-        "name": "Volcanic Breath",
-        "description": "Once per turn: Inflict 200 damage to your opponent.",
-        "effectType": "ignition"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "Its breath carries the fury of erupting volcanoes."
+    ]
   },
   {
     "name": "Smoldering Newt",
@@ -127,12 +150,11 @@
     "defense": 300,
     "effects": [
       {
-        "name": "Fire Trail",
-        "description": "When this card inflicts battle damage: Draw 1 card, then discard 1 card.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "Small but dangerously hot."
+    ]
   },
   {
     "name": "Ashen Dragonet",
@@ -141,18 +163,7 @@
     "archetype": "infernal_dragons",
     "cost": 2,
     "attack": 800,
-    "defense": 800,
-    "flavorText": "Covered in the ash of fallen foes."
-  },
-  {
-    "name": "Kindled Basilisk",
-    "rarity": "common",
-    "cardType": "creature",
-    "archetype": "infernal_dragons",
-    "cost": 4,
-    "attack": 1500,
-    "defense": 1100,
-    "flavorText": "Its gaze burns as hotly as its flames."
+    "defense": 800
   },
   {
     "name": "Infernal Vanguard",
@@ -164,12 +175,11 @@
     "defense": 1000,
     "effects": [
       {
-        "name": "Piercing Flame",
-        "description": "This card inflicts piercing battle damage.",
-        "effectType": "continuous"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "The first to charge, the last to fall."
+    ]
   },
   {
     "name": "Blazetail Guardian",
@@ -181,12 +191,11 @@
     "defense": 1400,
     "effects": [
       {
-        "name": "Burning Shield",
-        "description": "When this card is attacked: Inflict 400 damage to your opponent after damage calculation.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "Its tail whip leaves burning scars."
+    ]
   },
   {
     "name": "Crimson Firebreather",
@@ -198,12 +207,11 @@
     "defense": 800,
     "effects": [
       {
-        "name": "Infernal Blast",
-        "description": "Once per turn: Destroy 1 Spell/Trap your opponent controls.",
-        "effectType": "ignition"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "Nothing survives its crimson breath."
+    ]
   },
   {
     "name": "Volcanic Striker",
@@ -215,12 +223,11 @@
     "defense": 900,
     "effects": [
       {
-        "name": "Eruption Strike",
-        "description": "When this card destroys a monster by battle: Inflict 500 damage to your opponent.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "Each strike brings volcanic devastation."
+    ]
   },
   {
     "name": "Flame Herald",
@@ -232,12 +239,11 @@
     "defense": 1000,
     "effects": [
       {
-        "name": "Call of Fire",
-        "description": "When Summoned: Add 1 'Infernal' Spell from your deck to your hand.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "It announces the arrival of the inferno."
+    ]
   },
   {
     "name": "Magma Carrier",
@@ -249,12 +255,11 @@
     "defense": 1400,
     "effects": [
       {
-        "name": "Molten Delivery",
-        "description": "All 'Infernal Dragons' monsters you control gain 300 ATK.",
-        "effectType": "continuous"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "It carries the heart of the volcano within."
+    ]
   },
   {
     "name": "Pyre Sentinel",
@@ -266,12 +271,11 @@
     "defense": 1500,
     "effects": [
       {
-        "name": "Flame Watch",
-        "description": "Once per turn, when an 'Infernal Dragons' monster you control would be destroyed: You can destroy this card instead.",
-        "effectType": "quick"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "It guards the flame with its life."
+    ]
   },
   {
     "name": "Infernal Charger",
@@ -283,12 +287,11 @@
     "defense": 600,
     "effects": [
       {
-        "name": "Reckless Charge",
-        "description": "This card can attack twice per Battle Phase, but is destroyed at the end of the Battle Phase.",
-        "effectType": "continuous"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "It lives only for the thrill of battle."
+    ]
   },
   {
     "name": "Infernal Warlord",
@@ -300,17 +303,11 @@
     "defense": 1800,
     "effects": [
       {
-        "name": "Commanding Flame",
-        "description": "All 'Infernal Dragons' monsters you control gain 400 ATK.",
-        "effectType": "continuous"
-      },
-      {
-        "name": "Warlord's Strike",
-        "description": "This card inflicts piercing battle damage.",
-        "effectType": "continuous"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "Under its command, all dragons burn brighter."
+    ]
   },
   {
     "name": "Volcanic Dragon",
@@ -322,12 +319,11 @@
     "defense": 2000,
     "effects": [
       {
-        "name": "Eruption",
-        "description": "When Summoned: Destroy all Spell/Trap cards your opponent controls.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "Born from the deepest magma chambers."
+    ]
   },
   {
     "name": "Infernal Ravager",
@@ -339,12 +335,11 @@
     "defense": 1600,
     "effects": [
       {
-        "name": "Ravaging Flames",
-        "description": "When this card destroys a monster by battle: Destroy 1 card your opponent controls.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "It leaves nothing but ashes in its wake."
+    ]
   },
   {
     "name": "Pyromancer Drake",
@@ -356,12 +351,11 @@
     "defense": 1200,
     "effects": [
       {
-        "name": "Spell Ignition",
-        "description": "Once per turn: You can discard 1 'Infernal' Spell; inflict 1000 damage to your opponent.",
-        "effectType": "ignition"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "It channels magic into pure destructive fire."
+    ]
   },
   {
     "name": "Hellfire Wyrm",
@@ -373,12 +367,11 @@
     "defense": 1400,
     "effects": [
       {
-        "name": "Hellfire Aura",
-        "description": "During each End Phase: Inflict 300 damage to your opponent for each 'Infernal Dragons' monster you control.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "The fires of the underworld obey its call."
+    ]
   },
   {
     "name": "Infernal Tyrant",
@@ -390,17 +383,11 @@
     "defense": 2200,
     "effects": [
       {
-        "name": "Tyrannical Flames",
-        "description": "Cannot be destroyed by battle.",
-        "effectType": "continuous"
-      },
-      {
-        "name": "Infernal Decree",
-        "description": "Once per turn: Destroy 1 monster your opponent controls with ATK less than this card's ATK.",
-        "effectType": "ignition"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "All lesser dragons kneel before its might."
+    ]
   },
   {
     "name": "Volcanic Behemoth",
@@ -412,17 +399,11 @@
     "defense": 2400,
     "effects": [
       {
-        "name": "Magma Body",
-        "description": "This card inflicts piercing battle damage.",
-        "effectType": "continuous"
-      },
-      {
-        "name": "Volcanic Devastation",
-        "description": "When this card destroys a monster by battle: Inflict damage equal to that monster's original ATK.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "A walking catastrophe that reshapes the land."
+    ]
   },
   {
     "name": "Infernal Phoenix",
@@ -434,17 +415,11 @@
     "defense": 2000,
     "effects": [
       {
-        "name": "Rebirth from Ashes",
-        "description": "Once per turn, if this card would be destroyed: It is not destroyed.",
-        "effectType": "continuous"
-      },
-      {
-        "name": "Phoenix Flame",
-        "description": "When this card is Summoned: Inflict 800 damage to your opponent.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "Death cannot contain its eternal flame."
+    ]
   },
   {
     "name": "Infernal Overlord Vyraxis",
@@ -456,22 +431,11 @@
     "defense": 2500,
     "effects": [
       {
-        "name": "Infernal Dominion",
-        "description": "Once per turn: Destroy all monsters with ATK lower than this card's ATK.",
-        "effectType": "ignition"
-      },
-      {
-        "name": "Burning Aura",
-        "description": "All 'Infernal Dragons' monsters you control gain 500 ATK.",
-        "effectType": "continuous"
-      },
-      {
-        "name": "Phoenix Rebirth",
-        "description": "If this card is destroyed: Special Summon 1 'Infernal Dragons' monster from your GY.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
       }
-    ],
-    "flavorText": "The supreme ruler of all dragonkind."
+    ]
   },
   {
     "name": "Apocalypse Dragon",
@@ -483,246 +447,188 @@
     "defense": 3000,
     "effects": [
       {
-        "name": "World's End",
-        "description": "When Summoned: Destroy all other cards on the field.",
+        "name": "Effect",
+        "description": "This card has a special effect.",
         "effectType": "triggered"
-      },
-      {
-        "name": "Apocalyptic Flame",
-        "description": "This card inflicts piercing battle damage. When this card inflicts battle damage: Inflict 1000 additional damage.",
-        "effectType": "continuous"
-      },
-      {
-        "name": "Undying Flame",
-        "description": "Cannot be targeted by opponent's card effects.",
-        "effectType": "continuous"
       }
-    ],
-    "flavorText": "Its awakening heralds the end of all things."
+    ]
   },
   {
     "name": "Dragon's Fury",
     "rarity": "common",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 3,
-    "effects": [
-      {
-        "name": "Dragon's Fury",
-        "description": "Target 1 'Infernal Dragons' monster you control; it gains 500 ATK until end of turn.",
-        "effectType": "activated"
-      }
-    ],
-    "flavorText": "Channel the rage of a thousand dragons."
+    "cost": 1
   },
   {
     "name": "Volcanic Eruption",
     "rarity": "common",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 3,
-    "effects": [
-      {
-        "name": "Volcanic Eruption",
-        "description": "Inflict 500 damage to your opponent.",
-        "effectType": "activated"
-      }
-    ],
-    "flavorText": "The mountain's wrath unleashed."
+    "cost": 1
   },
   {
     "name": "Infernal Recovery",
     "rarity": "common",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 2,
-    "effects": [
-      {
-        "name": "Infernal Recovery",
-        "description": "Add 1 'Infernal Dragons' monster with 1500 or less ATK from your GY to your hand.",
-        "effectType": "activated"
-      }
-    ],
-    "flavorText": "Even in death, the flame persists."
+    "cost": 1
   },
   {
     "name": "Fire Breathing",
     "rarity": "common",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 2,
-    "effects": [
-      {
-        "name": "Fire Breathing",
-        "description": "Target 1 'Infernal Dragons' monster you control; it can attack directly this turn, but its ATK is halved.",
-        "effectType": "activated"
-      }
-    ],
-    "flavorText": "Strike past their defenses."
+    "cost": 1
   },
   {
     "name": "Sudden Ignition",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 3,
-    "effects": [
-      {
-        "name": "Sudden Ignition",
-        "description": "Target 1 'Infernal Dragons' monster you control; it gains 800 ATK until end of turn. (Quick Spell)",
-        "effectType": "quick"
-      }
-    ],
-    "flavorText": "The flame burns brightest in battle."
+    "cost": 1
   },
   {
     "name": "Infernal Barrier",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 3,
-    "effects": [
-      {
-        "name": "Infernal Barrier",
-        "description": "Negate 1 attack targeting an 'Infernal Dragons' monster you control. (Quick Spell)",
-        "effectType": "quick"
-      }
-    ],
-    "flavorText": "A wall of flames protects the dragons."
+    "cost": 1
   },
   {
     "name": "Scorching Wind",
     "rarity": "uncommon",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 3,
-    "effects": [
-      {
-        "name": "Scorching Wind",
-        "description": "Target 1 monster your opponent controls; it loses 600 ATK until end of turn. (Quick Spell)",
-        "effectType": "quick"
-      }
-    ],
-    "flavorText": "The wind carries burning embers."
+    "cost": 1
   },
   {
     "name": "Infernal Furnace",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 4,
-    "effects": [
-      {
-        "name": "Infernal Furnace",
-        "description": "Once per turn: Inflict 200 damage to your opponent for each 'Infernal Dragons' monster you control. (Continuous Spell)",
-        "effectType": "continuous"
-      }
-    ],
-    "flavorText": "The furnace of destruction never cools."
+    "cost": 1
   },
   {
     "name": "Dragon's Hoard",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 4,
-    "effects": [
-      {
-        "name": "Dragon's Hoard",
-        "description": "Once per turn, when an 'Infernal Dragons' monster inflicts battle damage: Draw 1 card. (Continuous Spell)",
-        "effectType": "continuous"
-      }
-    ],
-    "flavorText": "Victory brings wealth beyond measure."
+    "cost": 1
   },
   {
     "name": "Volcanic Lair",
     "rarity": "rare",
     "cardType": "spell",
     "archetype": "infernal_dragons",
-    "cost": 4,
-    "effects": [
-      {
-        "name": "Volcanic Lair",
-        "description": "All 'Infernal Dragons' monsters gain 300 ATK. Once per turn: You can Normal Summon 1 additional 'Infernal Dragons' monster. (Field Spell)",
-        "effectType": "continuous"
-      }
-    ],
-    "flavorText": "Within the volcano, dragons reign supreme."
+    "cost": 1
   },
   {
     "name": "Flame Trap",
     "rarity": "common",
     "cardType": "trap",
     "archetype": "infernal_dragons",
-    "cost": 2,
-    "effects": [
-      {
-        "name": "Flame Trap",
-        "description": "When your opponent's monster declares an attack: Inflict 500 damage to your opponent.",
-        "effectType": "triggered"
-      }
-    ],
-    "flavorText": "Step into the fire."
+    "cost": 1
   },
   {
     "name": "Burning Revenge",
     "rarity": "common",
     "cardType": "trap",
     "archetype": "infernal_dragons",
-    "cost": 2,
-    "effects": [
-      {
-        "name": "Burning Revenge",
-        "description": "When an 'Infernal Dragons' monster you control is destroyed: Inflict 800 damage to your opponent.",
-        "effectType": "triggered"
-      }
-    ],
-    "flavorText": "Even in death, they strike back."
-  },
-  {
-    "name": "Ring of Fire",
-    "rarity": "uncommon",
-    "cardType": "trap",
-    "archetype": "infernal_dragons",
-    "cost": 3,
-    "effects": [
-      {
-        "name": "Ring of Fire",
-        "description": "Your opponent takes 200 damage each time they Normal Summon a monster. (Continuous Trap)",
-        "effectType": "continuous"
-      }
-    ],
-    "flavorText": "The flames encircle all who enter."
+    "cost": 1
   },
   {
     "name": "Infernal Presence",
     "rarity": "uncommon",
     "cardType": "trap",
     "archetype": "infernal_dragons",
-    "cost": 3,
-    "effects": [
-      {
-        "name": "Infernal Presence",
-        "description": "'Infernal Dragons' monsters you control cannot be targeted by Spell effects. (Continuous Trap)",
-        "effectType": "continuous"
-      }
-    ],
-    "flavorText": "The flames shield their own."
+    "cost": 1
   },
   {
     "name": "Dragon's Wrath",
     "rarity": "epic",
     "cardType": "trap",
     "archetype": "infernal_dragons",
+    "cost": 1
+  },
+  {
+    "name": "Infernal Vanguard Dragon",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "infernal_dragons",
     "cost": 5,
+    "attack": 2200,
+    "defense": 1600,
     "effects": [
       {
-        "name": "Dragon's Wrath",
-        "description": "When your opponent activates a card effect: Negate that effect, and if you control an 'Infernal Dragons' monster, destroy that card. (Counter Trap)",
-        "effectType": "counter"
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
       }
-    ],
-    "flavorText": "Defy the dragons at your peril."
+    ]
+  },
+  {
+    "name": "Blazing Guardian Dragon",
+    "rarity": "rare",
+    "cardType": "creature",
+    "archetype": "infernal_dragons",
+    "cost": 5,
+    "attack": 1800,
+    "defense": 2000,
+    "effects": [
+      {
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
+      }
+    ]
+  },
+  {
+    "name": "Infernal Tyrant Dragon",
+    "rarity": "legendary",
+    "cardType": "creature",
+    "archetype": "infernal_dragons",
+    "cost": 9,
+    "attack": 3200,
+    "defense": 2600,
+    "effects": [
+      {
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
+      }
+    ]
+  },
+  {
+    "name": "Pyroclast Wyrm Lord",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "infernal_dragons",
+    "cost": 7,
+    "attack": 2600,
+    "defense": 1800,
+    "effects": [
+      {
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
+      }
+    ]
+  },
+  {
+    "name": "Infernal Berserker Dragon",
+    "rarity": "epic",
+    "cardType": "creature",
+    "archetype": "infernal_dragons",
+    "cost": 6,
+    "attack": 2800,
+    "defense": 1400,
+    "effects": [
+      {
+        "name": "Effect",
+        "description": "This card has a special effect.",
+        "effectType": "triggered"
+      }
+    ]
   }
 ]

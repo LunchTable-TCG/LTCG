@@ -11,7 +11,7 @@ import { useRef, useCallback } from "react";
 import { Stage, Layer, Line } from "react-konva";
 import type Konva from "konva";
 import type { Id } from "@convex/_generated/dataModel";
-import type { CardTemplateBlock, Rarity } from "../types";
+import type { CardTemplateBlock, Rarity, TemplateMode } from "../types";
 import { CANVAS_WIDTH, CANVAS_HEIGHT, isImageBlockType } from "../types";
 import { BackgroundLayer } from "./layers/BackgroundLayer";
 import { ArtworkLayer } from "./layers/ArtworkLayer";
@@ -25,6 +25,7 @@ interface KonvaCanvasProps {
   template: {
     width: number;
     height: number;
+    mode?: TemplateMode;
     frameImages: {
       common?: string;
       uncommon?: string;
@@ -52,8 +53,10 @@ interface KonvaCanvasProps {
   showArtworkBounds: boolean;
   /** Current rarity for preview */
   previewRarity: Rarity;
-  /** Preview artwork URL */
+  /** Preview artwork URL (used in frame_artwork mode) */
   previewArtworkUrl?: string;
+  /** Full card image URL (used in full_card_image mode) */
+  previewCardImageUrl?: string;
   /** Callback when a block is selected */
   onSelectBlock: (id: Id<"cardTemplateBlocks"> | null) => void;
   /** Callback when a block position changes */
@@ -85,11 +88,14 @@ export function KonvaCanvas({
   showArtworkBounds,
   previewRarity,
   previewArtworkUrl,
+  previewCardImageUrl,
   onSelectBlock,
   onBlockMove,
   onBlockTransform,
   stageRef: externalStageRef,
 }: KonvaCanvasProps) {
+  // Determine rendering mode (default to frame_artwork for backwards compatibility)
+  const mode = template.mode ?? "frame_artwork";
   const internalStageRef = useRef<Konva.Stage>(null);
   const stageRef = externalStageRef ?? internalStageRef;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -212,19 +218,23 @@ export function KonvaCanvas({
           backgroundColor: "#121212",
         }}
       >
-        {/* Layer 1: Background (frame image) */}
+        {/* Layer 1: Background (frame image or full card image) */}
         <BackgroundLayer
+          mode={mode}
           frameImages={template.frameImages}
           defaultFrameUrl={template.defaultFrameImageUrl}
+          cardImageUrl={previewCardImageUrl}
           previewRarity={previewRarity}
         />
 
-        {/* Layer 2: Artwork */}
-        <ArtworkLayer
-          artworkBounds={template.artworkBounds}
-          artworkUrl={previewArtworkUrl}
-          showBounds={showArtworkBounds}
-        />
+        {/* Layer 2: Artwork (only in frame_artwork mode) */}
+        {mode === "frame_artwork" && (
+          <ArtworkLayer
+            artworkBounds={template.artworkBounds}
+            artworkUrl={previewArtworkUrl}
+            showBounds={showArtworkBounds}
+          />
+        )}
 
         {/* Grid overlay */}
         {renderGrid()}

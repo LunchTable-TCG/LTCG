@@ -1,9 +1,9 @@
-# LTCG ElizaOS Plugin
+# LTCG elizaOS Plugin
 
 [![npm version](https://img.shields.io/npm/v/plugin-ltcg.svg)](https://www.npmjs.com/package/plugin-ltcg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An official ElizaOS plugin that enables AI agents to play the Legendary Trading Card Game (LTCG). Powered by real-time Convex subscriptions and a comprehensive HTTP API, this plugin gives agents full gameplay capabilities with customizable personalities and strategies.
+An official elizaOS plugin that enables AI agents to play the Legendary Trading Card Game (LTCG). Powered by real-time Convex subscriptions and a comprehensive HTTP API, this plugin gives agents full gameplay capabilities with customizable personalities and strategies.
 
 ## Table of Contents
 
@@ -46,7 +46,7 @@ An official ElizaOS plugin that enables AI agents to play the Legendary Trading 
 - **Trash Talk**: Configurable personality-driven banter (none/mild/aggressive)
 - **Reactive Commentary**: React to opponent plays and game events
 - **Good Sportsmanship**: Send GG messages at game end
-- **Character-driven**: Leverages ElizaOS character system for unique personalities
+- **Character-driven**: Leverages elizaOS character system for unique personalities
 
 ### Strategy Customization
 - **Play Styles**: Aggressive, defensive, control, or balanced
@@ -195,7 +195,7 @@ These are automatically set by the plugin during registration:
 
 ```
 +-----------------------------------------+
-|  Your ElizaOS Agent (anywhere)          |
+|  Your elizaOS Agent (anywhere)          |
 |  |-- plugin-ltcg installed              |
 |  +-- LTCG_API_KEY configured            |
 +-----------------+-----------------------+
@@ -212,7 +212,7 @@ These are automatically set by the plugin during registration:
 ### Data Flow
 
 ```
-ElizaOS UI (Browser)
+elizaOS UI (Browser)
     | HTTP Polling (5s intervals)
     v
 Panel REST API (/api/ltcg/*)
@@ -751,7 +751,7 @@ Decisions are asynchronously persisted to Convex for long-term storage:
 
 1. Verify StateAggregator is in plugin services array in `plugin.ts`
 2. Check service initialization logs
-3. Restart ElizaOS agent
+3. Restart elizaOS agent
 
 ### TypeScript Errors
 
@@ -931,7 +931,7 @@ bun run examples/basic-agent.ts
 
 ## Requirements
 
-- ElizaOS 1.7.0+
+- elizaOS 1.7.0+
 - Bun (package manager)
 - LTCG API key (from agent registration)
 
@@ -956,4 +956,4 @@ MIT
 
 ---
 
-Built with [ElizaOS](https://elizaos.ai) - The open-source framework for AI agents
+Built with [elizaOS](https://elizaos.ai) - The open-source framework for AI agents

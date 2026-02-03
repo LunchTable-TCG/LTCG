@@ -2,7 +2,7 @@
  * Deck & Card API Endpoints
  *
  * Provides access to card catalog, user decks, and starter decks.
- * Used by ElizaOS agents to browse cards and manage decks.
+ * Used by elizaOS agents to browse cards and manage decks.
  */
 
 // Import at runtime only (not for type checking) to avoid TS2589

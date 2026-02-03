@@ -3,7 +3,7 @@
 import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Flame, Loader2, Shield, Sparkles, Waves, Zap } from "lucide-react";
+import { ArrowRight, Check, Flame, Loader2, Shield, Skull, Sparkles, Waves, Zap } from "lucide-react";
 import { useState } from "react";
 
 interface StarterDeckStepProps {
@@ -42,7 +42,15 @@ const STARTER_DECKS = [
     archetype: "wind",
     description: "Strike fast and draw cards. Direct attacks and tempo plays.",
     playstyle: "Tempo",
-    cardCount: 45,
+    cardCount: 43,
+  },
+  {
+    name: "Necro Empire",
+    deckCode: "NECRO_EMPIRE",
+    archetype: "dark",
+    description: "Command the undead legions. Revive fallen monsters and drain life.",
+    playstyle: "Grind",
+    cardCount: 34,
   },
 ] as const;
 
@@ -83,6 +91,13 @@ const DECK_CONFIG: Record<
     border: "border-yellow-500/30 hover:border-yellow-500/60",
     iconColor: "text-yellow-500",
     selectedBg: "bg-yellow-500/20",
+  },
+  NECRO_EMPIRE: {
+    icon: Skull,
+    gradient: "from-purple-600/20 to-violet-800/20",
+    border: "border-purple-500/30 hover:border-purple-500/60",
+    iconColor: "text-purple-500",
+    selectedBg: "bg-purple-500/20",
   },
 };
 
@@ -147,7 +162,7 @@ export function StarterDeckStep({ onComplete }: StarterDeckStepProps) {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6"
       >
         {STARTER_DECKS.map((deck, index) => {
           const defaultConfig = {

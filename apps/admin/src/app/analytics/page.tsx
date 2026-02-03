@@ -66,6 +66,20 @@ const ANALYTICS_CATEGORIES: CategoryLink[] = [
     description: "Trading volume and price trends",
     metrics: ["Volume", "Listings", "Prices"],
   },
+  {
+    title: "Alpha Feedback",
+    href: "/analytics/feedback",
+    icon: "📝",
+    description: "Bug reports and feature requests",
+    metrics: ["Bug Reports", "Features", "Resolution"],
+  },
+  {
+    title: "User Behavior",
+    href: "/analytics/behavior",
+    icon: "🎬",
+    description: "Session recordings, heatmaps, and drop-off",
+    metrics: ["Sessions", "Errors", "Funnels"],
+  },
 ];
 
 // =============================================================================

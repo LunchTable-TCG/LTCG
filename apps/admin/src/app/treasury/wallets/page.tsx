@@ -110,7 +110,7 @@ export default function TreasuryWalletsPage() {
 
   // Fetch wallets
   const wallets = useConvexQuery(apiAny.treasury.wallets.listWallets, {});
-  const policies = useConvexQuery(apiAny.treasury.policies.listPolicies, {});
+  const _policies = useConvexQuery(apiAny.treasury.policies.listPolicies, {});
 
   // Mutations
   const createWallet = useConvexMutation(apiAny.treasury.wallets.createWallet);

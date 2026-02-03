@@ -2,7 +2,7 @@
  * Matchmaking API Endpoints
  *
  * Handles lobby creation, joining, leaving, and browsing available games.
- * Used by ElizaOS agents to find and join games.
+ * Used by elizaOS agents to find and join games.
  */
 
 // Import at runtime only (not for type checking) to avoid TS2589

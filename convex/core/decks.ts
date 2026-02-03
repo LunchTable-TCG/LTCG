@@ -15,6 +15,7 @@ import {
   ABYSSAL_DEPTHS_CARDS,
   INFERNAL_DRAGONS_CARDS,
   IRON_LEGION_CARDS,
+  NECRO_EMPIRE_CARDS,
   STORM_RIDERS_CARDS,
 } from "../seeds/starterCards";
 import { STARTER_DECKS } from "../seeds/starterDecks";
@@ -872,7 +873,7 @@ export const setActiveDeck = mutation({
  * Gives user all 45 cards from the chosen starter deck and creates a complete deck.
  * Can only be claimed once per user. Auto-seeds card definitions if needed.
  *
- * @param deckCode - Code for the starter deck ("INFERNAL_DRAGONS" or "ABYSSAL_DEPTHS")
+ * @param deckCode - Code for the starter deck ("INFERNAL_DRAGONS", "ABYSSAL_DEPTHS", "IRON_LEGION", or "STORM_RIDERS")
  * @returns Success status with deck ID, name, cards received, and deck size
  * @throws VALIDATION_INVALID_INPUT if user already has decks or invalid deck code
  */
@@ -880,8 +881,10 @@ export const selectStarterDeck = mutation({
   args: {
     deckCode: v.union(
       v.literal("INFERNAL_DRAGONS"),
-      v.literal("ABYSSAL_DEPTHS")
-      // IRON_LEGION and STORM_RIDERS not yet available (need card definitions)
+      v.literal("ABYSSAL_DEPTHS"),
+      v.literal("IRON_LEGION"),
+      v.literal("STORM_RIDERS"),
+      v.literal("NECRO_EMPIRE")
     ),
   },
   returns: v.object({
@@ -920,6 +923,7 @@ export const selectStarterDeck = mutation({
       ABYSSAL_DEPTHS: ABYSSAL_DEPTHS_CARDS,
       IRON_LEGION: IRON_LEGION_CARDS,
       STORM_RIDERS: STORM_RIDERS_CARDS,
+      NECRO_EMPIRE: NECRO_EMPIRE_CARDS,
     };
 
     const cardList = cardListMap[args.deckCode];

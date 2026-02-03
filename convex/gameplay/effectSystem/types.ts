@@ -80,10 +80,16 @@ export interface NumericRange {
  * Archetype identifiers matching the schema
  */
 export type ArchetypeId =
+  // Primary archetypes (from card CSV)
   | "infernal_dragons"
+  | "abyssal_depths"
+  | "iron_legion"
+  | "necro_empire"
+  // Legacy archetypes (for backwards compatibility)
   | "abyssal_horrors"
   | "nature_spirits"
   | "storm_elementals"
+  // Future/placeholder archetypes
   | "shadow_assassins"
   | "celestial_guardians"
   | "undead_legion"
@@ -91,7 +97,7 @@ export type ArchetypeId =
   | "arcane_mages"
   | "mechanical_constructs"
   | "neutral"
-  // Legacy archetypes for backwards compatibility
+  // Old archetypes (deprecated)
   | "fire"
   | "water"
   | "earth"

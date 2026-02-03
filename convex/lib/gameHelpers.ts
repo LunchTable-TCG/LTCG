@@ -2,7 +2,7 @@
  * Game Helper Functions
  *
  * Core gameplay utilities for card manipulation, damage, and zone transitions.
- * All functions record appropriate game events for spectators and ElizaOS agents.
+ * All functions record appropriate game events for spectators and elizaOS agents.
  */
 
 import type { Doc, Id } from "../_generated/dataModel";

@@ -650,7 +650,7 @@ This helps identify exactly where issues occur.
 ### Check Logs
 
 ```bash
-# ElizaOS logs
+# elizaOS logs
 tail -f ~/.eliza/logs/latest.log
 
 # Or if using PM2
@@ -679,7 +679,7 @@ When reporting issues, include:
    - What you expected
 
 4. **Environment**:
-   - ElizaOS version: `elizaos --version`
+   - elizaOS version: `elizaos --version`
    - Plugin version: Check `package.json`
    - Node version: `node --version`
    - OS: `uname -a`
@@ -703,7 +703,7 @@ Run through this checklist when troubleshooting:
 - [ ] Agent was restarted after config changes
 - [ ] Network connection is stable
 - [ ] Debug mode is enabled for detailed logs
-- [ ] ElizaOS and plugin are up to date
+- [ ] elizaOS and plugin are up to date
 - [ ] No typos in configuration keys
 - [ ] File paths are correct (absolute, not relative)
 
