@@ -27,7 +27,7 @@ export type GamePhase = z.infer<typeof GamePhaseSchema>;
 /**
  * Card types in the game
  */
-export const CardTypeSchema = z.enum(["creature", "spell", "trap"]);
+export const CardTypeSchema = z.enum(["creature", "agent", "spell", "trap"]);
 export type CardType = z.infer<typeof CardTypeSchema>;
 
 // =============================================================================
@@ -146,7 +146,7 @@ export interface HandCard {
 export interface FieldMonster {
   _id: string;
   name: string;
-  cardType: "creature";
+  cardType: "creature" | "agent";
   attack: number;
   defense: number;
   position: 1 | 2; // 1 = attack, 2 = defense

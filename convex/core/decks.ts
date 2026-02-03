@@ -28,6 +28,7 @@ const MIN_DECK_SIZE = 30;
 const MAX_DECK_SIZE = 60; // Standard TCG limit
 const MAX_COPIES_PER_CARD = 3;
 const MAX_LEGENDARY_COPIES = 1;
+const MAX_AGENT_CARDS_PER_DECK = 3;
 
 // ============================================================================
 // QUERIES
@@ -326,7 +327,7 @@ export const getDeckStats = query({
       rarityCounts[cardDef.rarity] = (rarityCounts[cardDef.rarity] || 0) + quantity;
       totalCost += cardDef.cost * quantity;
 
-      if (cardDef.cardType === "creature") creatureCount += quantity;
+      if (cardDef.cardType === "creature" || cardDef.cardType === "agent") creatureCount += quantity;
       else if (cardDef.cardType === "spell") spellCount += quantity;
       else if (cardDef.cardType === "trap") trapCount += quantity;
       else if (cardDef.cardType === "equipment") equipmentCount += quantity;
@@ -392,6 +393,7 @@ export const validateDeck = query({
     // Check total card count
     let totalCards = 0;
     const cardCounts = new Map<string, { quantity: number; rarity: string; name: string }>();
+    let agentCount = 0;
 
     for (const dc of deckCards) {
       const cardDef = cardDefMap.get(dc.cardDefinitionId);
@@ -401,6 +403,7 @@ export const validateDeck = query({
       }
 
       totalCards += dc.quantity;
+      if (cardDef.cardType === "agent") agentCount += dc.quantity;
       cardCounts.set(dc.cardDefinitionId, {
         quantity: dc.quantity,
         rarity: cardDef.rarity,
@@ -421,6 +424,10 @@ export const validateDeck = query({
     }
     if (totalCards > MAX_DECK_SIZE) {
       errors.push(`Deck cannot exceed ${MAX_DECK_SIZE} cards. Currently has ${totalCards}.`);
+    }
+
+    if (agentCount > MAX_AGENT_CARDS_PER_DECK) {
+      errors.push(`Agent cards are limited to ${MAX_AGENT_CARDS_PER_DECK} per deck.`);
     }
 
     return {
@@ -543,6 +550,7 @@ export const saveDeck = mutation({
     );
 
     // Check card copy limits
+    let agentCount = 0;
     for (const card of args.cards) {
       const cardDef = cardDefMap.get(card.cardDefinitionId);
       if (!cardDef || !cardDef.isActive) {
@@ -562,6 +570,14 @@ export const saveDeck = mutation({
           reason: `${cardDef.name}: Limited to ${MAX_COPIES_PER_CARD} copies per deck`,
         });
       }
+
+      if (cardDef.cardType === "agent") agentCount += card.quantity;
+    }
+
+    if (agentCount > MAX_AGENT_CARDS_PER_DECK) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: `Agent cards are limited to ${MAX_AGENT_CARDS_PER_DECK} per deck.`,
+      });
     }
 
     // Delete existing deck cards
@@ -831,6 +847,7 @@ export const setActiveDeck = mutation({
     );
 
     // Validate all cards in deck
+    let agentCount = 0;
     for (const dc of deckCards) {
       const cardDef = cardDefMap.get(dc.cardDefinitionId);
       if (!cardDef || !cardDef.isActive) {
@@ -850,6 +867,14 @@ export const setActiveDeck = mutation({
           reason: `${cardDef.name}: Limited to ${MAX_COPIES_PER_CARD} copies per deck`,
         });
       }
+
+      if (cardDef.cardType === "agent") agentCount += dc.quantity;
+    }
+
+    if (agentCount > MAX_AGENT_CARDS_PER_DECK) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: `Agent cards are limited to ${MAX_AGENT_CARDS_PER_DECK} per deck.`,
+      });
     }
 
     // Get user record

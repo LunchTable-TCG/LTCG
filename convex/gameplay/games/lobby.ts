@@ -203,6 +203,22 @@ async function validateUserCanCreateGameInternal(
   };
 }
 
+async function assertDeckHasNoAgentsInRanked(ctx: MutationCtx, deckId: Id<"userDecks">) {
+  const deckCards = await ctx.db
+    .query("deckCards")
+    .withIndex("by_deck", (q) => q.eq("deckId", deckId))
+    .collect();
+
+  const cardDefs = await Promise.all(deckCards.map((dc) => ctx.db.get(dc.cardDefinitionId)));
+  const hasAgent = cardDefs.some((c) => c?.cardType === "agent");
+
+  if (hasAgent) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: "Agent cards are not legal in Ranked.",
+    });
+  }
+}
+
 // ============================================================================
 // LOBBY MUTATIONS
 // ============================================================================
@@ -234,7 +250,11 @@ export const createLobby = mutation({
     try {
       // Validate user can create game
       logger.debug("Validating user can create game");
-      const { userId, username, deckArchetype } = await validateUserCanCreateGame(ctx);
+      const { userId, username, deckId, deckArchetype } = await validateUserCanCreateGame(ctx);
+
+      if (args.mode === "ranked") {
+        await assertDeckHasNoAgentsInRanked(ctx, deckId);
+      }
 
       const traceCtx = createTraceContext("createLobby", { userId, username, mode: args.mode });
       logMatchmaking("lobby_create_start", userId, traceCtx);
@@ -355,7 +375,11 @@ export const joinLobby = mutation({
 
       // Now do full validation
       logger.debug("Validating user can join game", traceCtx);
-      const { username } = await validateUserCanCreateGame(ctx);
+      const { username, deckId } = await validateUserCanCreateGame(ctx);
+
+      if (lobby.mode === "ranked") {
+        await assertDeckHasNoAgentsInRanked(ctx, deckId);
+      }
 
       // Validate join code for private lobbies
       if (lobby.isPrivate) {
@@ -522,8 +546,13 @@ export const joinLobbyByCode = mutation({
     const {
       userId,
       username,
+      deckId,
       deckArchetype: _deckArchetype,
     } = await validateUserCanCreateGame(ctx);
+
+    if (lobby.mode === "ranked") {
+      await assertDeckHasNoAgentsInRanked(ctx, deckId);
+    }
 
     // Check user is not the host
     if (lobby.hostId === userId) {
@@ -741,7 +770,15 @@ export const createLobbyInternal = internalMutation({
 
       // Validate user can create game (without auth check)
       logger.debug("Validating user can create game");
-      const { deckArchetype } = await validateUserCanCreateGameInternal(ctx, args.userId, username);
+      const { deckId, deckArchetype } = await validateUserCanCreateGameInternal(
+        ctx,
+        args.userId,
+        username
+      );
+
+      if (args.mode === "ranked") {
+        await assertDeckHasNoAgentsInRanked(ctx, deckId);
+      }
 
       const traceCtx = createTraceContext("createLobbyInternal", {
         userId: args.userId,
@@ -874,7 +911,11 @@ export const joinLobbyInternal = internalMutation({
 
       // Now do full validation
       logger.debug("Validating user can join game", traceCtx);
-      await validateUserCanCreateGameInternal(ctx, args.userId, username);
+      const { deckId } = await validateUserCanCreateGameInternal(ctx, args.userId, username);
+
+      if (lobby.mode === "ranked") {
+        await assertDeckHasNoAgentsInRanked(ctx, deckId);
+      }
 
       // Validate join code for private lobbies
       if (lobby.isPrivate) {

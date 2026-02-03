@@ -53,7 +53,7 @@ export async function executeSearch(
     if (targetType === "any") {
       typeMatch = true;
     } else if (targetType === "monster") {
-      typeMatch = card.cardType === "creature"; // "creature" in schema = "monster" in game
+      typeMatch = card.cardType === "creature" || card.cardType === "agent";
     } else if (targetType === "spell") {
       typeMatch = card.cardType === "spell";
     } else if (targetType === "trap") {
@@ -102,7 +102,7 @@ export async function executeSearch(
           cardType: card.cardType,
           imageUrl: card.imageUrl,
           monsterStats:
-            card.cardType === "creature"
+            card.cardType === "creature" || card.cardType === "agent"
               ? {
                   attack: card.attack || 0,
                   defense: card.defense || 0,

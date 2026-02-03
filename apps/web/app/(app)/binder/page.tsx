@@ -45,7 +45,12 @@ import {
   getAbilityDisplayText,
 } from "./components";
 import type { BinderTab, DeckCard, ViewMode } from "./types";
-import { DECK_MIN_SIZE, MAX_COPIES_PER_CARD, MAX_LEGENDARY_COPIES } from "./types";
+import {
+  DECK_MIN_SIZE,
+  MAX_AGENT_CARDS_PER_DECK,
+  MAX_COPIES_PER_CARD,
+  MAX_LEGENDARY_COPIES,
+} from "./types";
 
 const RARITY_ORDER: Record<Rarity, number> = {
   legendary: 5,
@@ -291,10 +296,15 @@ function BinderContent() {
   };
 
   const canAddCardToDeck = (card: CardData) => {
+    const agentCount = currentDeckCards.reduce(
+      (sum, dc) => sum + (dc.card.cardType === "agent" ? dc.count : 0),
+      0
+    );
     const currentCount = getCardCountInDeck(card.id);
     const maxCopies = card.rarity === "legendary" ? MAX_LEGENDARY_COPIES : MAX_COPIES_PER_CARD;
     if (currentCount >= maxCopies) return false;
     if (currentCount >= card.owned) return false;
+    if (card.cardType === "agent" && agentCount >= MAX_AGENT_CARDS_PER_DECK) return false;
     return true;
   };
 

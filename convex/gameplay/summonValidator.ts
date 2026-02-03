@@ -81,11 +81,19 @@ export async function validateNormalSummon(
     };
   }
 
-  if (card.cardType !== "creature") {
+  if (card.cardType !== "creature" && card.cardType !== "agent") {
     return {
       valid: false,
       error:
         "Only monster cards can be Normal Summoned. Use 'Set' or 'Activate' for Spell/Trap cards.",
+    };
+  }
+
+  // Agents behave like monsters on the board and must have stats.
+  if (card.attack === undefined || card.defense === undefined) {
+    return {
+      valid: false,
+      error: "This monster is missing ATK/DEF stats and cannot be summoned.",
     };
   }
 
@@ -181,7 +189,7 @@ export async function validateSpecialSummon(
     };
   }
 
-  if (card.cardType !== "creature") {
+  if (card.cardType !== "creature" && card.cardType !== "agent") {
     return {
       valid: false,
       error: "Card is not a creature card",
@@ -277,6 +285,14 @@ export async function validateSetMonster(
   cardId: Id<"cardDefinitions">,
   tributeCardIds?: Id<"cardDefinitions">[]
 ): Promise<ValidationResult> {
+  const card = await ctx.db.get(cardId);
+  if (card?.cardType === "agent") {
+    return {
+      valid: false,
+      error: "Agent cards cannot be Set. Agents are always online once summoned.",
+    };
+  }
+
   // Setting a monster uses the same validation as Normal Summon
   // (both count as the 1 Normal Summon per turn)
   return validateNormalSummon(ctx, gameState, playerId, cardId, tributeCardIds);

@@ -17,6 +17,7 @@ export type EffectType =
   | "destroy" // Destroy target card(s)
   | "damage" // Deal X damage to player
   | "gainLP" // Gain X LP
+  | "randomChoice" // Deterministic RNG: pick 1 effect from choices and execute it
   | "modifyATK" // Modify ATK
   | "modifyDEF" // Modify DEF
   | "summon" // Special summon
@@ -41,6 +42,8 @@ export type TriggerCondition =
   | "on_battle_start" // At the start of the Battle Phase
   | "on_draw" // During draw phase
   | "on_end" // During end phase
+  | "on_turn_start" // At the start of the turn (turn transition hook)
+  | "on_turn_end" // At the end of the turn (turn transition hook)
   | "manual"; // Manual activation (spells/traps)
 
 // ============================================================================
@@ -257,6 +260,7 @@ export interface JsonEffect {
   // Multi-effect support
   then?: JsonEffect; // Execute this effect after (chained)
   or?: JsonEffect; // Alternative effect (player choice)
+  choices?: JsonEffect[]; // For randomChoice effects
 
   // Metadata
   effectId?: string; // Unique identifier for this effect
@@ -278,6 +282,8 @@ export interface ParsedEffect {
   type: EffectType;
   trigger: TriggerCondition;
   value?: number; // Numeric value (e.g., "Draw 2" -> value: 2)
+  targetOwner?: TargetOwner; // Explicit owner targeting (used for non-targeted effects like damage/mill/discard)
+  choices?: JsonEffect[]; // For randomChoice effects (preserved, not flattened)
   targetCount?: number; // Number of targets required
   targetType?: "monster" | "spell" | "trap" | "any";
   targetLocation?: "board" | "hand" | "graveyard" | "deck" | "banished";

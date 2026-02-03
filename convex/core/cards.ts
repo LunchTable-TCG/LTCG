@@ -362,9 +362,32 @@ export const createCardDefinition = internalMutation({
     ),
     cardType: v.union(
       v.literal("creature"),
+      v.literal("agent"),
       v.literal("spell"),
       v.literal("trap"),
       v.literal("equipment")
+    ),
+    agentProfile: v.optional(
+      v.object({
+        slug: v.string(),
+        displayName: v.string(),
+        origin: v.union(
+          v.literal("elizaos"),
+          v.literal("community"),
+          v.literal("parody"),
+          v.literal("unknown")
+        ),
+        lore: v.string(),
+        voiceLines: v.array(v.string()),
+        links: v.optional(
+          v.array(
+            v.object({
+              label: v.string(),
+              url: v.string(),
+            })
+          )
+        ),
+      })
     ),
     attack: v.optional(v.number()),
     defense: v.optional(v.number()),

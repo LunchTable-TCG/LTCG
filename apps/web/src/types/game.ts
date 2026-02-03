@@ -16,6 +16,7 @@ import type { JsonAbility } from "../lib/cardHelpers";
  *
  * Valid card types (matching Convex schema):
  * - `"creature"` - Creature card that can attack/defend
+ * - `"agent"` - Agent card that occupies the monster zone and runs autonomous agendas
  * - `"spell"` - Instant effect card
  * - `"trap"` - Reactive card set face-down
  * - `"equipment"` - Equipment card that enhances creatures
@@ -55,7 +56,7 @@ export interface HandCard {
   /** URL to card artwork (optional) */
   imageUrl?: string;
   /** Type of card (matches Convex schema) */
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "creature" | "agent" | "spell" | "trap" | "equipment";
   /** Attack points (creature cards only) */
   attack?: number;
   /** Defense points (creature cards only) */
@@ -120,7 +121,7 @@ export interface BoardCard {
   /** URL to card artwork (optional) */
   imageUrl?: string;
   /** Type of card (matches Convex schema) */
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "creature" | "agent" | "spell" | "trap" | "equipment";
   /** Attack points (creature cards only) */
   attack?: number;
   /** Defense points (creature cards only) */

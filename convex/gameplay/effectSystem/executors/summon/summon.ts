@@ -23,8 +23,11 @@ export async function executeSpecialSummon(
   }
 
   // Validate it's a monster
-  if (card.cardType !== "creature") {
+  if (card.cardType !== "creature" && card.cardType !== "agent") {
     return { success: false, message: "Can only summon monsters" };
+  }
+  if (card.attack === undefined || card.defense === undefined) {
+    return { success: false, message: "Monster is missing ATK/DEF stats" };
   }
 
   // Remove from source location

@@ -58,7 +58,13 @@ export const getTokenListings = query({
     limit: v.optional(v.number()),
     cursor: v.optional(v.string()),
     cardType: v.optional(
-      v.union(v.literal("creature"), v.literal("spell"), v.literal("trap"), v.literal("equipment"))
+      v.union(
+        v.literal("creature"),
+        v.literal("agent"),
+        v.literal("spell"),
+        v.literal("trap"),
+        v.literal("equipment")
+      )
     ),
     rarity: v.optional(
       v.union(

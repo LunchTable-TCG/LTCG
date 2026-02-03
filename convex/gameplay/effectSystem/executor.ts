@@ -10,8 +10,9 @@ import type { MutationCtx } from "../../_generated/server";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { logCardEffect, logger, performance } from "../../lib/debug";
 import { executeCost, validateCost } from "./costValidator";
+import { parseJsonEffect } from "./jsonParser";
 import { checkCanActivateOPT, markEffectUsed } from "./optTracker";
-import type { EffectResult, ParsedAbility, ParsedEffect } from "./types";
+import type { EffectResult, JsonEffect, ParsedAbility, ParsedEffect, TargetOwner } from "./types";
 
 import { checkStateBasedActions } from "../gameEngine/stateBasedActions";
 // Import all effect executors (organized by category)
@@ -35,6 +36,29 @@ import { executeNegate } from "./executors/utility/negate";
  * Prevents infinite loops while allowing reasonable trigger chains
  */
 const MAX_TRIGGER_DEPTH = 10;
+
+function fnv1a32(input: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+function resolvePlayerTargets(
+  targetOwner: TargetOwner | undefined,
+  playerId: Id<"users">,
+  opponentId: Id<"users">,
+  defaultTarget: "self" | "opponent"
+): Id<"users">[] {
+  const owner = targetOwner ?? defaultTarget;
+  if (owner === "both") return [playerId, opponentId];
+  if (owner === "self" || owner === "controller") return [playerId];
+  if (owner === "opponent") return [opponentId];
+  // Unknown/unsupported values (e.g., "any") fall back to old defaults.
+  return defaultTarget === "self" ? [playerId] : [opponentId];
+}
 
 /**
  * Execute a parsed effect
@@ -264,6 +288,37 @@ export async function executeEffect(
   let result: EffectResult;
 
   switch (effect.type) {
+    case "randomChoice": {
+      const choices = effect.choices;
+      if (!Array.isArray(choices) || choices.length === 0) {
+        result = { success: false, message: "randomChoice has no choices" };
+        break;
+      }
+
+      const seed = `${gameState.gameId}|${gameState.turnNumber}|${cardId}|${effectIndex}|${triggerDepth}`;
+      const choiceIndex = fnv1a32(seed) % choices.length;
+      const choice = choices[choiceIndex] as JsonEffect | undefined;
+      if (!choice) {
+        result = { success: false, message: "randomChoice selected an invalid choice" };
+        break;
+      }
+
+      const parsedChoice = parseJsonEffect(choice);
+      // Execute the chosen effect recursively (counts against trigger depth).
+      result = await executeEffect(
+        ctx,
+        gameState,
+        lobbyId,
+        parsedChoice,
+        playerId,
+        cardId,
+        targets,
+        effectIndex,
+        triggerDepth + 1
+      );
+      break;
+    }
+
     case "draw": {
       // Edge case: Validate draw value is positive
       const drawValue = effect.value || 1;
@@ -414,7 +469,17 @@ export async function executeEffect(
       if (damageValue < 0 || Number.isNaN(damageValue)) {
         result = { success: false, message: "Invalid damage value" };
       } else {
-        result = await executeDamage(ctx, gameState, lobbyId, opponentId, damageValue);
+        const targetPlayers = resolvePlayerTargets(effect.targetOwner, playerId, opponentId, "opponent");
+        const messages: string[] = [];
+        let allSucceeded = true;
+
+        for (const targetPlayerId of targetPlayers) {
+          const r = await executeDamage(ctx, gameState, lobbyId, targetPlayerId, damageValue);
+          messages.push(r.message);
+          if (!r.success) allSucceeded = false;
+        }
+
+        result = { success: allSucceeded, message: messages.join("; ") };
       }
       break;
     }
@@ -601,7 +666,17 @@ export async function executeEffect(
       if (millValue <= 0 || Number.isNaN(millValue)) {
         result = { success: false, message: "Invalid mill count" };
       } else {
-        result = await executeMill(ctx, gameState, opponentId, millValue);
+        const targetPlayers = resolvePlayerTargets(effect.targetOwner, playerId, opponentId, "opponent");
+        const messages: string[] = [];
+        let allSucceeded = true;
+
+        for (const targetPlayerId of targetPlayers) {
+          const r = await executeMill(ctx, gameState, targetPlayerId, millValue);
+          messages.push(r.message);
+          if (!r.success) allSucceeded = false;
+        }
+
+        result = { success: allSucceeded, message: messages.join("; ") };
       }
       break;
     }
@@ -612,8 +687,18 @@ export async function executeEffect(
       if (discardValue <= 0 || Number.isNaN(discardValue)) {
         result = { success: false, message: "Invalid discard count" };
       } else {
-        // Discard effects can target specific cards or be random
-        result = await executeDiscard(ctx, gameState, playerId, discardValue, targets);
+        const targetPlayers = resolvePlayerTargets(effect.targetOwner, playerId, opponentId, "self");
+        const messages: string[] = [];
+        let allSucceeded = true;
+
+        for (const targetPlayerId of targetPlayers) {
+          // Discard effects can target specific cards or be random
+          const r = await executeDiscard(ctx, gameState, targetPlayerId, discardValue, targets);
+          messages.push(r.message);
+          if (!r.success) allSucceeded = false;
+        }
+
+        result = { success: allSucceeded, message: messages.join("; ") };
       }
       break;
     }

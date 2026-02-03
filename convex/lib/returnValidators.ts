@@ -542,6 +542,7 @@ export const cardWithOwnershipValidator = v.object({
   ),
   cardType: v.union(
     v.literal("creature"),
+    v.literal("agent"),
     v.literal("spell"),
     v.literal("trap"),
     v.literal("equipment")
@@ -605,6 +606,7 @@ export const deckCardEntryValidator = v.object({
   ),
   cardType: v.union(
     v.literal("creature"),
+    v.literal("agent"),
     v.literal("spell"),
     v.literal("trap"),
     v.literal("equipment")

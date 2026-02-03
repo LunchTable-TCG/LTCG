@@ -22,7 +22,7 @@ import type { CardSeed } from "./types";
  * Convert a Card from JSON to CardSeed format for seeding
  */
 function toCardSeed(card: Card): CardSeed {
-  if (card.cardType === "creature") {
+  if (card.cardType === "creature" || card.cardType === "agent") {
     return {
       name: card.name,
       rarity: card.rarity,

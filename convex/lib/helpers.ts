@@ -144,7 +144,7 @@ export async function getRandomCard(
     .filter((q) => q.eq(q.field("isActive"), true))
     .filter((q) => q.eq(q.field("rarity"), rarity));
 
-  if (archetype && archetype !== "neutral") {
+  if (archetype) {
     const allCards = await query.collect();
     const archetypeCards = allCards.filter((card) => card.archetype === archetype);
 

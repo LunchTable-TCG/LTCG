@@ -25,7 +25,7 @@ type PlaystyleType = "aggressive" | "defensive" | "control" | "balanced" | "unkn
  */
 interface CardPlayRecord {
   cardName: string;
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "creature" | "agent" | "spell" | "trap" | "equipment";
   turnPlayed: number;
   phase: string;
   wasEffective: boolean;
