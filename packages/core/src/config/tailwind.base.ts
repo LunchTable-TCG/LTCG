@@ -14,8 +14,8 @@
  *
  * export default createTailwindPreset({
  *   content: [
- *     "./src/**/*.{ts,tsx}",
- *     "./app/**/*.{ts,tsx}",
+ *     "./src/**\/*.{ts,tsx}",
+ *     "./app/**\/*.{ts,tsx}",
  *   ],
  * });
  * ```
@@ -27,7 +27,7 @@
  *
  * export default {
  *   ...createTailwindPreset({
- *     content: ["./src/**/*.{ts,tsx}"],
+ *     content: ["./src/**\/*.{ts,tsx}"],
  *   }),
  *   theme: {
  *     extend: {
@@ -163,8 +163,8 @@ export const tailwindBaseConfig: Partial<Config> = {
  *
  * export default createTailwindPreset({
  *   content: [
- *     "./app/**/*.{ts,tsx}",
- *     "./components/**/*.{ts,tsx}",
+ *     "./app/**\/*.{ts,tsx}",
+ *     "./components/**\/*.{ts,tsx}",
  *   ],
  * });
  * ```
@@ -176,7 +176,7 @@ export const tailwindBaseConfig: Partial<Config> = {
  * export default createTailwindPreset({
  *   content: [
  *     "./index.html",
- *     "./src/**/*.{ts,tsx}",
+ *     "./src/**\/*.{ts,tsx}",
  *   ],
  * });
  * ```
@@ -186,7 +186,7 @@ export const tailwindBaseConfig: Partial<Config> = {
  * import { createTailwindPreset } from "@ltcg/core/config";
  *
  * const config = createTailwindPreset({
- *   content: ["./src/**/*.{ts,tsx}"],
+ *   content: ["./src/**\/*.{ts,tsx}"],
  * });
  *
  * // Extend with custom configuration
