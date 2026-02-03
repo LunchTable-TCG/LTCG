@@ -91,8 +91,9 @@ export const listTemplates = query({
       blockCount: v.number(),
     })
   ),
-  handler: requireAuthQuery(async (ctx, args) => {
-    await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "admin");
 
     let templates = await ctx.db.query("cardTemplates").collect();
 
@@ -123,7 +124,7 @@ export const listTemplates = query({
     );
 
     return templatesWithCounts.sort((a, b) => b.updatedAt - a.updatedAt);
-  }),
+  },
 });
 
 /**
@@ -131,8 +132,9 @@ export const listTemplates = query({
  */
 export const getTemplate = query({
   args: { templateId: v.id("cardTemplates") },
-  handler: requireAuthQuery(async (ctx, args) => {
-    await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "admin");
 
     const template = await ctx.db.get(args.templateId);
     if (!template) {
@@ -151,7 +153,7 @@ export const getTemplate = query({
       ...template,
       blocks,
     };
-  }),
+  },
 });
 
 /**
@@ -159,8 +161,9 @@ export const getTemplate = query({
  */
 export const getDefaultTemplate = query({
   args: { cardType: cardTypeValidator },
-  handler: requireAuthQuery(async (ctx, args) => {
-    await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "admin");
 
     // Try to find a default template for this card type
     let template = await ctx.db
@@ -195,7 +198,7 @@ export const getDefaultTemplate = query({
       ...template,
       blocks,
     };
-  }),
+  },
 });
 
 // =============================================================================
@@ -217,8 +220,9 @@ export const createTemplate = mutation({
     defaultFontColor: v.optional(v.string()),
   },
   returns: v.id("cardTemplates"),
-  handler: requireAuthMutation(async (ctx, args) => {
-    const { userId } = await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
 
     const now = Date.now();
 
@@ -261,7 +265,7 @@ export const createTemplate = mutation({
     });
 
     return templateId;
-  }),
+  },
 });
 
 /**
@@ -298,8 +302,9 @@ export const updateTemplate = mutation({
     defaultFontColor: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
-  handler: requireAuthMutation(async (ctx, args) => {
-    const { userId } = await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
 
     const template = await ctx.db.get(args.templateId);
     if (!template) {
@@ -323,7 +328,7 @@ export const updateTemplate = mutation({
       resourceId: templateId,
       details: { updates: Object.keys(filteredUpdates) },
     });
-  }),
+  },
 });
 
 /**
@@ -333,8 +338,9 @@ export const setDefaultTemplate = mutation({
   args: {
     templateId: v.id("cardTemplates"),
   },
-  handler: requireAuthMutation(async (ctx, args) => {
-    const { userId } = await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
 
     const template = await ctx.db.get(args.templateId);
     if (!template) {
@@ -366,7 +372,7 @@ export const setDefaultTemplate = mutation({
       resourceId: args.templateId,
       details: { cardType: template.cardType },
     });
-  }),
+  },
 });
 
 /**
@@ -378,8 +384,9 @@ export const duplicateTemplate = mutation({
     newName: v.string(),
   },
   returns: v.id("cardTemplates"),
-  handler: requireAuthMutation(async (ctx, args) => {
-    const { userId } = await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
 
     const template = await ctx.db.get(args.templateId);
     if (!template) {
@@ -449,7 +456,7 @@ export const duplicateTemplate = mutation({
     });
 
     return newTemplateId;
-  }),
+  },
 });
 
 /**
@@ -457,8 +464,9 @@ export const duplicateTemplate = mutation({
  */
 export const deleteTemplate = mutation({
   args: { templateId: v.id("cardTemplates") },
-  handler: requireAuthMutation(async (ctx, args) => {
-    const { userId } = await requireRole(ctx, "super_admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "superadmin");
 
     const template = await ctx.db.get(args.templateId);
     if (!template) {
@@ -497,7 +505,7 @@ export const deleteTemplate = mutation({
       resourceId: args.templateId,
       details: { name: template.name },
     });
-  }),
+  },
 });
 
 // =============================================================================
@@ -525,8 +533,9 @@ export const addBlock = mutation({
     color: v.optional(v.string()),
   },
   returns: v.id("cardTemplateBlocks"),
-  handler: requireAuthMutation(async (ctx, args) => {
-    const { userId } = await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
 
     const template = await ctx.db.get(args.templateId);
     if (!template) {
@@ -580,7 +589,7 @@ export const addBlock = mutation({
     });
 
     return blockId;
-  }),
+  },
 });
 
 /**
@@ -618,8 +627,9 @@ export const updateBlock = mutation({
     ),
     zIndex: v.optional(v.number()),
   },
-  handler: requireAuthMutation(async (ctx, args) => {
-    const { userId } = await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
 
     const block = await ctx.db.get(args.blockId);
     if (!block) {
@@ -643,7 +653,7 @@ export const updateBlock = mutation({
       resourceId: blockId,
       details: { updates: Object.keys(filteredUpdates) },
     });
-  }),
+  },
 });
 
 /**
@@ -651,8 +661,9 @@ export const updateBlock = mutation({
  */
 export const deleteBlock = mutation({
   args: { blockId: v.id("cardTemplateBlocks") },
-  handler: requireAuthMutation(async (ctx, args) => {
-    const { userId } = await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
 
     const block = await ctx.db.get(args.blockId);
     if (!block) {
@@ -671,7 +682,7 @@ export const deleteBlock = mutation({
       resourceId: args.blockId,
       details: { templateId: block.templateId, blockType: block.blockType },
     });
-  }),
+  },
 });
 
 /**
@@ -682,8 +693,9 @@ export const reorderBlocks = mutation({
     templateId: v.id("cardTemplates"),
     blockIds: v.array(v.id("cardTemplateBlocks")),
   },
-  handler: requireAuthMutation(async (ctx, args) => {
-    const { userId } = await requireRole(ctx, "admin");
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
 
     const template = await ctx.db.get(args.templateId);
     if (!template) {
@@ -705,7 +717,7 @@ export const reorderBlocks = mutation({
       resourceId: args.templateId,
       details: { blockCount: args.blockIds.length },
     });
-  }),
+  },
 });
 
 // =============================================================================
@@ -717,8 +729,9 @@ export const reorderBlocks = mutation({
  */
 export const getTemplateStats = query({
   args: {},
-  handler: requireAuthQuery(async (ctx) => {
-    await requireRole(ctx, "admin");
+  handler: async (ctx) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "admin");
 
     const templates = await ctx.db.query("cardTemplates").collect();
     const blocks = await ctx.db.query("cardTemplateBlocks").collect();
@@ -744,5 +757,5 @@ export const getTemplateStats = query({
       totalBlocks: blocks.length,
       byType,
     };
-  }),
+  },
 });
