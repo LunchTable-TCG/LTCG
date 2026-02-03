@@ -93,15 +93,20 @@ export async function cleanupLingeringEffects(
  * @param currentTurn - Current turn number
  * @returns true if the effect should be removed
  */
-function isEffectExpired(effect: LingeringEffect, currentPhase: string, currentTurn: number): boolean {
+function isEffectExpired(
+  effect: LingeringEffect,
+  currentPhase: string,
+  currentTurn: number
+): boolean {
   const { duration } = effect;
 
   switch (duration.type) {
-    case "until_end_phase":
+    case "until_end_phase": {
       // Effect expires when we exit the specified phase
       // If no specific phase is set, expire at end phase
       const targetPhase = duration.endPhase || "end";
       return currentPhase === targetPhase;
+    }
 
     case "until_turn_end":
       // Effect expires at the end of the turn it was applied
@@ -120,7 +125,10 @@ function isEffectExpired(effect: LingeringEffect, currentPhase: string, currentT
       if (duration.endTurn !== undefined && currentTurn >= duration.endTurn) {
         if (duration.endPhase) {
           // Expire at specific phase of specific turn
-          return currentTurn > duration.endTurn || (currentTurn === duration.endTurn && currentPhase === duration.endPhase);
+          return (
+            currentTurn > duration.endTurn ||
+            (currentTurn === duration.endTurn && currentPhase === duration.endPhase)
+          );
         }
         // Expire at start of specific turn
         return currentTurn >= duration.endTurn;

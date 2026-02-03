@@ -171,18 +171,17 @@ export const listConfigs = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let configs = await (async () => {
+    const configs = await (async () => {
       if (args.category) {
         return await ctx.db
           .query("systemConfig")
           .withIndex("by_category", (q) => q.eq("category", args.category!))
           .collect();
-      } else {
-        return await ctx.db.query("systemConfig").collect();
       }
+      return await ctx.db.query("systemConfig").collect();
     })();
 
-    type Config = typeof configs[number];
+    type Config = (typeof configs)[number];
 
     // Sort by category then key
     configs.sort((a: Config, b: Config) => {
@@ -198,7 +197,8 @@ export const listConfigs = query({
         const updatedByUser = await ctx.db.get(config.updatedBy);
         return {
           ...config,
-          updatedByUsername: (updatedByUser as any)?.username ?? (updatedByUser as any)?.email ?? "Unknown",
+          updatedByUsername:
+            (updatedByUser as any)?.username ?? (updatedByUser as any)?.email ?? "Unknown",
         };
       })
     );

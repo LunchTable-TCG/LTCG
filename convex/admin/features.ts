@@ -34,18 +34,17 @@ export const listFeatureFlags = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let flags = await (async () => {
+    const flags = await (async () => {
       if (args.category) {
         return await ctx.db
           .query("featureFlags")
           .withIndex("by_category", (q) => q.eq("category", args.category!))
           .collect();
-      } else {
-        return await ctx.db.query("featureFlags").collect();
       }
+      return await ctx.db.query("featureFlags").collect();
     })();
 
-    type Flag = typeof flags[number];
+    type Flag = (typeof flags)[number];
 
     // Sort by category then name
     flags.sort((a: Flag, b: Flag) => {

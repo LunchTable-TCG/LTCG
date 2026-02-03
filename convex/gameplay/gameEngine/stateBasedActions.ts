@@ -611,7 +611,9 @@ async function destroyMonsterBySBA(
     // Remove equip spells from spell/trap zones and send to graveyard
     for (const playerId of [gameState.hostId, gameState.opponentId]) {
       const isHostZone = playerId === gameState.hostId;
-      const spellTrapZone = isHostZone ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
+      const spellTrapZone = isHostZone
+        ? gameState.hostSpellTrapZone
+        : gameState.opponentSpellTrapZone;
       const zoneGraveyard = isHostZone ? gameState.hostGraveyard : gameState.opponentGraveyard;
 
       const equipsInZone = spellTrapZone.filter((st) => equippedIds.includes(st.cardId));
@@ -806,7 +808,11 @@ async function checkOrphanedEquipSpells(
   gameId: string,
   turnNumber: number
 ): Promise<{ changed: boolean; actions: string[]; destroyedCards: Id<"cardDefinitions">[] }> {
-  const result = { changed: false, actions: [] as string[], destroyedCards: [] as Id<"cardDefinitions">[] };
+  const result = {
+    changed: false,
+    actions: [] as string[],
+    destroyedCards: [] as Id<"cardDefinitions">[],
+  };
 
   // Check all equip spells in both players' spell/trap zones
   const checkZone = async (
@@ -837,7 +843,8 @@ async function checkOrphanedEquipSpells(
     // Destroy orphaned equip spells
     if (orphanedEquips.length > 0) {
       const newZone = zone.filter((st) => !orphanedEquips.includes(st.cardId));
-      const graveyard = playerId === gameState.hostId ? gameState.hostGraveyard : gameState.opponentGraveyard;
+      const graveyard =
+        playerId === gameState.hostId ? gameState.hostGraveyard : gameState.opponentGraveyard;
       const newGraveyard = [...graveyard, ...orphanedEquips];
 
       await ctx.db.patch(gameState._id, {
@@ -862,8 +869,12 @@ async function checkOrphanedEquipSpells(
         const currentOpponentBoard = currentState.opponentBoard;
 
         // Find monster and remove equip from its equippedCards
-        const hostMonsterIdx = currentHostBoard.findIndex((m) => m.cardId === equipSpell.equippedTo);
-        const opponentMonsterIdx = currentOpponentBoard.findIndex((m) => m.cardId === equipSpell.equippedTo);
+        const hostMonsterIdx = currentHostBoard.findIndex(
+          (m) => m.cardId === equipSpell.equippedTo
+        );
+        const opponentMonsterIdx = currentOpponentBoard.findIndex(
+          (m) => m.cardId === equipSpell.equippedTo
+        );
 
         if (hostMonsterIdx !== -1) {
           const monster = currentHostBoard[hostMonsterIdx];

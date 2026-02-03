@@ -543,7 +543,10 @@ export async function resolveChainHelper(
     if (card?.cardType === "spell" || card?.cardType === "trap") {
       // Check if spell/trap should remain on field
       const remainsOnField =
-        (card.cardType === "spell" && (card.spellType === "continuous" || card.spellType === "field" || card.spellType === "equip")) ||
+        (card.cardType === "spell" &&
+          (card.spellType === "continuous" ||
+            card.spellType === "field" ||
+            card.spellType === "equip")) ||
         (card.cardType === "trap" && card.trapType === "continuous");
 
       if (remainsOnField) {
@@ -557,7 +560,9 @@ export async function resolveChainHelper(
           if (currentState && chainLink.targets && chainLink.targets.length > 0) {
             const equipTarget = chainLink.targets[0];
             const isHost = chainLink.playerId === currentState.hostId;
-            const spellTrapZone = isHost ? currentState.hostSpellTrapZone : currentState.opponentSpellTrapZone;
+            const spellTrapZone = isHost
+              ? currentState.hostSpellTrapZone
+              : currentState.opponentSpellTrapZone;
 
             // Add equip spell to spell/trap zone
             const newSpellTrapZone = [

@@ -64,23 +64,18 @@ export const listAssets = query({
     const limit = args.limit ?? 20;
 
     // Get assets based on filters
-    let allAssets = await (async () => {
+    const allAssets = await (async () => {
       if (args.category) {
         return await ctx.db
           .query("fileMetadata")
           .withIndex("by_category", (q) => q.eq("category", args.category!))
           .order("desc")
           .collect();
-      } else {
-        return await ctx.db
-          .query("fileMetadata")
-          .withIndex("by_uploaded_at")
-          .order("desc")
-          .collect();
       }
+      return await ctx.db.query("fileMetadata").withIndex("by_uploaded_at").order("desc").collect();
     })();
 
-    type Asset = typeof allAssets[number];
+    type Asset = (typeof allAssets)[number];
 
     // Apply search filter if provided
     let filteredAssets = allAssets;

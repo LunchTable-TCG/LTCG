@@ -13,8 +13,8 @@ import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { validateGameActive } from "../../lib/gameValidation";
 import { type ChainEffect, addToChainHelper } from "../chainResolver";
-import { checkCanActivateOPT, markEffectUsed } from "../effectSystem/optTracker";
 import { executeCost, validateCost } from "../effectSystem/costValidator";
+import { checkCanActivateOPT, markEffectUsed } from "../effectSystem/optTracker";
 import { recordEventHelper } from "../gameEvents";
 import { scanFieldForTriggers } from "../triggerSystem";
 

@@ -143,10 +143,7 @@ export function useConvexPresence(options: UseConvexPresenceOptions): UseConvexP
   const disconnectMutation = useMutation(api.presence.disconnect);
 
   // Query presence list using room token
-  const presenceList = useQuery(
-    api.presence.list,
-    roomToken ? { roomToken } : "skip"
-  );
+  const presenceList = useQuery(api.presence.list, roomToken ? { roomToken } : "skip");
 
   // Generate session ID on first render
   useEffect(() => {

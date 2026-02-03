@@ -70,17 +70,18 @@ export const listProducts = query({
         if (args.includeInactive) {
           const inactive = await ctx.db
             .query("shopProducts")
-            .withIndex("by_type", (q) => q.eq("productType", args.productType!).eq("isActive", false))
+            .withIndex("by_type", (q) =>
+              q.eq("productType", args.productType!).eq("isActive", false)
+            )
             .collect();
           return [...active, ...inactive];
         }
         return active;
-      } else {
-        return await ctx.db.query("shopProducts").collect();
       }
+      return await ctx.db.query("shopProducts").collect();
     })();
 
-    type Product = typeof products[number];
+    type Product = (typeof products)[number];
 
     // Filter by active status
     if (!args.includeInactive) {

@@ -109,28 +109,29 @@ export const listCards = query({
     const offset = args.offset ?? 0;
 
     // Build query based on filters
-    let cards = await (async () => {
+    const cards = await (async () => {
       if (args.rarity) {
         return await ctx.db
           .query("cardDefinitions")
           .withIndex("by_rarity", (q) => q.eq("rarity", args.rarity!))
           .collect();
-      } else if (args.archetype) {
+      }
+      if (args.archetype) {
         return await ctx.db
           .query("cardDefinitions")
           .withIndex("by_archetype", (q) => q.eq("archetype", args.archetype!))
           .collect();
-      } else if (args.cardType) {
+      }
+      if (args.cardType) {
         return await ctx.db
           .query("cardDefinitions")
           .withIndex("by_type", (q) => q.eq("cardType", args.cardType!))
           .collect();
-      } else {
-        return await ctx.db.query("cardDefinitions").collect();
       }
+      return await ctx.db.query("cardDefinitions").collect();
     })();
 
-    type Card = typeof cards[number];
+    type Card = (typeof cards)[number];
 
     // Apply additional filters
     let filtered = cards;

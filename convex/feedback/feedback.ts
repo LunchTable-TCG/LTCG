@@ -173,13 +173,12 @@ export const listByStatus = query({
             .withIndex("by_type_status", (q) => q.eq("type", type).eq("status", status))
             .order("desc")
             .take(limit);
-        } else {
-          return await ctx.db
-            .query("feedback")
-            .withIndex("by_status", (q) => q.eq("status", status))
-            .order("desc")
-            .take(limit);
         }
+        return await ctx.db
+          .query("feedback")
+          .withIndex("by_status", (q) => q.eq("status", status))
+          .order("desc")
+          .take(limit);
       })();
       result[status] = items.map((item) => ({
         _id: item._id,

@@ -52,23 +52,25 @@ export const listListings = query({
           .withIndex("by_status", (q) => q.eq("status", args.status!))
           .order("desc")
           .collect();
-      } else if (args.sellerId) {
+      }
+      if (args.sellerId) {
         return await ctx.db
           .query("marketplaceListings")
           .withIndex("by_seller", (q) => q.eq("sellerId", args.sellerId!))
           .order("desc")
           .collect();
-      } else {
-        return await ctx.db.query("marketplaceListings").order("desc").collect();
       }
+      return await ctx.db.query("marketplaceListings").order("desc").collect();
     })();
 
-    type Listing = typeof listings[number];
+    type Listing = (typeof listings)[number];
 
     // Apply search filter
     if (args.search) {
       const searchLower = args.search.toLowerCase();
-      listings = listings.filter((l: Listing) => l.sellerUsername.toLowerCase().includes(searchLower));
+      listings = listings.filter((l: Listing) =>
+        l.sellerUsername.toLowerCase().includes(searchLower)
+      );
     }
 
     // Apply price filters

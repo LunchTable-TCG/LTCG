@@ -63,7 +63,7 @@ export const listAchievements = query({
       return await ctx.db.query("achievementDefinitions").collect();
     })();
 
-    type Achievement = typeof achievements[number];
+    type Achievement = (typeof achievements)[number];
 
     // Filter by active status
     if (!args.includeInactive) {

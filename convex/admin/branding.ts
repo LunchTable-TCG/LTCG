@@ -56,25 +56,25 @@ export const listFolders = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let folders = await (async () => {
+    const folders = await (async () => {
       if (args.parentId !== undefined) {
         // Get children of a specific folder (including null for root)
         return await ctx.db
           .query("brandingFolders")
           .withIndex("by_parent", (q) => q.eq("parentId", args.parentId))
           .collect();
-      } else if (args.section) {
+      }
+      if (args.section) {
         const section = args.section;
         return await ctx.db
           .query("brandingFolders")
           .withIndex("by_section", (q) => q.eq("section", section))
           .collect();
-      } else {
-        return await ctx.db.query("brandingFolders").collect();
       }
+      return await ctx.db.query("brandingFolders").collect();
     })();
 
-    type Folder = typeof folders[number];
+    type Folder = (typeof folders)[number];
 
     // Sort by sortOrder
     return folders.sort((a: Folder, b: Folder) => a.sortOrder - b.sortOrder);

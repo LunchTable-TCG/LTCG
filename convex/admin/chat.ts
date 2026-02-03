@@ -40,12 +40,11 @@ export const listMessages = query({
           .withIndex("by_user", (q) => q.eq("userId", args.userId!))
           .order("desc")
           .collect();
-      } else {
-        return await ctx.db.query("globalChatMessages").order("desc").collect();
       }
+      return await ctx.db.query("globalChatMessages").order("desc").collect();
     })();
 
-    type Message = typeof messages[number];
+    type Message = (typeof messages)[number];
 
     // Filter by time
     if (args.since) {

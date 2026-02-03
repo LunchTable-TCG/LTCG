@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import { internalMutation, mutation } from "../../_generated/server";
 import type { MutationCtx } from "../../_generated/server";
+import { completedGamesCounter } from "../../infrastructure/shardedCounters";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { shuffleArray } from "../../lib/deterministicRandom";
 import { ErrorCode, createError } from "../../lib/errorCodes";
@@ -522,6 +523,9 @@ export const completeGame = internalMutation({
       turnNumber: args.finalTurnNumber,
       winnerId: args.winnerId,
     });
+
+    // Increment completed games counter
+    await completedGamesCounter.add(ctx, "global", 1);
 
     // Update both players' presence to online
     const hostUser = await ctx.db.get(lobby.hostId);

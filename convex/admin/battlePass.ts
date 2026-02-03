@@ -92,18 +92,17 @@ export const listBattlePassSeasons = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let battlePasses = await (async () => {
+    const battlePasses = await (async () => {
       if (args.status) {
         return await ctx.db
           .query("battlePassSeasons")
           .withIndex("by_status", (q) => q.eq("status", args.status!))
           .collect();
-      } else {
-        return await ctx.db.query("battlePassSeasons").collect();
       }
+      return await ctx.db.query("battlePassSeasons").collect();
     })();
 
-    type BattlePass = typeof battlePasses[number];
+    type BattlePass = (typeof battlePasses)[number];
 
     // Sort by creation date descending
     battlePasses.sort((a: BattlePass, b: BattlePass) => b.createdAt - a.createdAt);

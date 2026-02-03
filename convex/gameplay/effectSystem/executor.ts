@@ -26,11 +26,11 @@ import { executeDamage } from "./executors/combat/damage";
 import { executeGainLP } from "./executors/combat/gainLP";
 import { executeModifyATK } from "./executors/combat/modifyATK";
 import { executeModifyDEF } from "./executors/combat/modifyDEF";
-import { executeDestroy } from "./executors/summon/destroy";
-import { executeSpecialSummon } from "./executors/summon/summon";
-import { executeGenerateToken } from "./executors/summon/generateToken";
-import { executeNegate } from "./executors/utility/negate";
 import { executeNegateActivation } from "./executors/control/negateActivation";
+import { executeDestroy } from "./executors/summon/destroy";
+import { executeGenerateToken } from "./executors/summon/generateToken";
+import { executeSpecialSummon } from "./executors/summon/summon";
+import { executeNegate } from "./executors/utility/negate";
 import { addLingeringEffect } from "./lingeringEffects";
 
 /**

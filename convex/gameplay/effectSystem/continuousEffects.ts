@@ -187,8 +187,7 @@ export async function getActiveContinuousEffects(
           effects.push({
             cardName: backrowCardDef.name,
             effect: backrowCardDef.ability?.name || "Continuous effect",
-            source:
-              backrowCardDef.cardType === "spell" ? "continuous_spell" : "continuous_trap",
+            source: backrowCardDef.cardType === "spell" ? "continuous_spell" : "continuous_trap",
           });
         }
       }

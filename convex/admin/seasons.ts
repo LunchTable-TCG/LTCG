@@ -106,18 +106,17 @@ export const listSeasons = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let seasons = await (async () => {
+    const seasons = await (async () => {
       if (args.status) {
         return await ctx.db
           .query("seasons")
           .withIndex("by_status", (q) => q.eq("status", args.status!))
           .collect();
-      } else {
-        return await ctx.db.query("seasons").collect();
       }
+      return await ctx.db.query("seasons").collect();
     })();
 
-    type Season = typeof seasons[number];
+    type Season = (typeof seasons)[number];
 
     // Sort by number descending (newest first)
     seasons.sort((a: Season, b: Season) => b.number - a.number);

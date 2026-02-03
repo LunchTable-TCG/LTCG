@@ -39,9 +39,18 @@ export async function executeDestroy(
 
   // Check spell/trap zones
   const onHostSpellTrapZone = gameState.hostSpellTrapZone.some((st) => st.cardId === targetCardId);
-  const onOpponentSpellTrapZone = gameState.opponentSpellTrapZone.some((st) => st.cardId === targetCardId);
+  const onOpponentSpellTrapZone = gameState.opponentSpellTrapZone.some(
+    (st) => st.cardId === targetCardId
+  );
 
-  if (!onHostBoard && !onOpponentBoard && !onHostFieldSpell && !onOpponentFieldSpell && !onHostSpellTrapZone && !onOpponentSpellTrapZone) {
+  if (
+    !onHostBoard &&
+    !onOpponentBoard &&
+    !onHostFieldSpell &&
+    !onOpponentFieldSpell &&
+    !onHostSpellTrapZone &&
+    !onOpponentSpellTrapZone
+  ) {
     return { success: false, message: "Target not found on field" };
   }
 
@@ -135,15 +144,25 @@ export async function executeDestroy(
       // Remove from host spell/trap zone
       const hostEquips = hostSpellTrapZone.filter((st) => equippedIds.includes(st.cardId));
       if (hostEquips.length > 0) {
-        updates["hostSpellTrapZone"] = hostSpellTrapZone.filter((st) => !equippedIds.includes(st.cardId));
-        updates["hostGraveyard"] = [...gameState.hostGraveyard, ...hostEquips.map((st) => st.cardId)];
+        updates["hostSpellTrapZone"] = hostSpellTrapZone.filter(
+          (st) => !equippedIds.includes(st.cardId)
+        );
+        updates["hostGraveyard"] = [
+          ...gameState.hostGraveyard,
+          ...hostEquips.map((st) => st.cardId),
+        ];
       }
 
       // Remove from opponent spell/trap zone
       const opponentEquips = opponentSpellTrapZone.filter((st) => equippedIds.includes(st.cardId));
       if (opponentEquips.length > 0) {
-        updates["opponentSpellTrapZone"] = opponentSpellTrapZone.filter((st) => !equippedIds.includes(st.cardId));
-        updates["opponentGraveyard"] = [...gameState.opponentGraveyard, ...opponentEquips.map((st) => st.cardId)];
+        updates["opponentSpellTrapZone"] = opponentSpellTrapZone.filter(
+          (st) => !equippedIds.includes(st.cardId)
+        );
+        updates["opponentGraveyard"] = [
+          ...gameState.opponentGraveyard,
+          ...opponentEquips.map((st) => st.cardId),
+        ];
       }
     }
     updates["hostBoard"] = hostBoard.filter((bc) => bc.cardId !== targetCardId);
@@ -159,15 +178,25 @@ export async function executeDestroy(
       // Remove from host spell/trap zone
       const hostEquips = hostSpellTrapZone.filter((st) => equippedIds.includes(st.cardId));
       if (hostEquips.length > 0) {
-        updates["hostSpellTrapZone"] = hostSpellTrapZone.filter((st) => !equippedIds.includes(st.cardId));
-        updates["hostGraveyard"] = [...gameState.hostGraveyard, ...hostEquips.map((st) => st.cardId)];
+        updates["hostSpellTrapZone"] = hostSpellTrapZone.filter(
+          (st) => !equippedIds.includes(st.cardId)
+        );
+        updates["hostGraveyard"] = [
+          ...gameState.hostGraveyard,
+          ...hostEquips.map((st) => st.cardId),
+        ];
       }
 
       // Remove from opponent spell/trap zone
       const opponentEquips = opponentSpellTrapZone.filter((st) => equippedIds.includes(st.cardId));
       if (opponentEquips.length > 0) {
-        updates["opponentSpellTrapZone"] = opponentSpellTrapZone.filter((st) => !equippedIds.includes(st.cardId));
-        updates["opponentGraveyard"] = [...gameState.opponentGraveyard, ...opponentEquips.map((st) => st.cardId)];
+        updates["opponentSpellTrapZone"] = opponentSpellTrapZone.filter(
+          (st) => !equippedIds.includes(st.cardId)
+        );
+        updates["opponentGraveyard"] = [
+          ...gameState.opponentGraveyard,
+          ...opponentEquips.map((st) => st.cardId),
+        ];
       }
     }
     updates["opponentBoard"] = opponentBoard.filter((bc) => bc.cardId !== targetCardId);
@@ -207,7 +236,9 @@ export async function executeDestroy(
         }
       }
     }
-    updates["hostSpellTrapZone"] = gameState.hostSpellTrapZone.filter((st) => st.cardId !== targetCardId);
+    updates["hostSpellTrapZone"] = gameState.hostSpellTrapZone.filter(
+      (st) => st.cardId !== targetCardId
+    );
   } else if (onOpponentSpellTrapZone) {
     // If destroying an equip spell, remove it from the monster's equippedCards array
     const equipSpell = gameState.opponentSpellTrapZone.find((st) => st.cardId === targetCardId);
@@ -240,7 +271,9 @@ export async function executeDestroy(
         }
       }
     }
-    updates["opponentSpellTrapZone"] = gameState.opponentSpellTrapZone.filter((st) => st.cardId !== targetCardId);
+    updates["opponentSpellTrapZone"] = gameState.opponentSpellTrapZone.filter(
+      (st) => st.cardId !== targetCardId
+    );
   }
 
   await ctx.db.patch(gameState._id, updates);

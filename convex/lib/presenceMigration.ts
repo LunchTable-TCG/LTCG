@@ -1,5 +1,5 @@
-import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { presence } from "../presence";
 import type { UserStatus } from "./types";
 
@@ -134,18 +134,11 @@ export async function dualWritePresence(
       const sessionId = data.sessionId || `legacy-${data.userId}`;
       const interval = data.interval || 30000; // Default 30s heartbeat
 
-      const tokens = await presence.heartbeat(
-        ctx,
-        roomId,
-        data.userId,
-        sessionId,
-        interval,
-        {
-          username: data.username,
-          status: data.status,
-          lastActiveAt: Date.now(),
-        }
-      );
+      const tokens = await presence.heartbeat(ctx, roomId, data.userId, sessionId, interval, {
+        username: data.username,
+        status: data.status,
+        lastActiveAt: Date.now(),
+      });
 
       result.newSystemTokens = {
         roomToken: tokens.roomToken,
@@ -219,10 +212,7 @@ export interface PresenceUserData {
  * @param roomId - Optional room ID (only used for new system)
  * @returns List of online users
  */
-export async function readPresence(
-  ctx: QueryCtx,
-  roomId?: string
-): Promise<PresenceUserData[]> {
+export async function readPresence(ctx: QueryCtx, roomId?: string): Promise<PresenceUserData[]> {
   if (FEATURE_FLAGS.USE_NEW_PRESENCE && roomId) {
     // Read from new system
     try {
@@ -314,8 +304,7 @@ export async function comparePresenceSystems(
   const onlyInNew = Array.from(newSystemUserIds).filter((id) => !oldSystemUserIds.has(id));
 
   const difference = Math.abs(oldSystemUserIds.size - newSystemUserIds.size);
-  const percentageDiff =
-    oldSystemUserIds.size > 0 ? (difference / oldSystemUserIds.size) * 100 : 0;
+  const percentageDiff = oldSystemUserIds.size > 0 ? (difference / oldSystemUserIds.size) * 100 : 0;
 
   return {
     oldSystemCount: oldSystemUserIds.size,

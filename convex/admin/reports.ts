@@ -47,12 +47,11 @@ export const listReports = query({
           .withIndex("by_status", (q) => q.eq("status", args.status!))
           .order("desc")
           .collect();
-      } else {
-        return await ctx.db.query("userReports").order("desc").collect();
       }
+      return await ctx.db.query("userReports").order("desc").collect();
     })();
 
-    type Report = typeof reports[number];
+    type Report = (typeof reports)[number];
 
     // Apply search filter
     if (args.search) {

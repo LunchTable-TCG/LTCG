@@ -241,7 +241,11 @@ export const activateSpell = mutation({
     const spellType = card.spellType || "normal"; // Default to normal if not specified
     const isQuickPlay =
       spellType === "quick_play" ||
-      (card.ability && (card.ability.trigger === "quick" || card.ability.trigger === "on_opponent_summon" || card.ability.trigger === "on_opponent_attacks" || card.ability.trigger === "on_opponent_activates"));
+      (card.ability &&
+        (card.ability.trigger === "quick" ||
+          card.ability.trigger === "on_opponent_summon" ||
+          card.ability.trigger === "on_opponent_attacks" ||
+          card.ability.trigger === "on_opponent_activates"));
     const isFieldSpell = spellType === "field";
     const isEquipSpell = spellType === "equip";
 
@@ -296,7 +300,13 @@ export const activateSpell = mutation({
     }
 
     // Normal Spells can only be activated during Main Phase
-    if (!isQuickPlay && !isFieldSpell && !isEquipSpell && currentPhase !== "main1" && currentPhase !== "main2") {
+    if (
+      !isQuickPlay &&
+      !isFieldSpell &&
+      !isEquipSpell &&
+      currentPhase !== "main1" &&
+      currentPhase !== "main2"
+    ) {
       throw createError(ErrorCode.GAME_INVALID_PHASE, {
         reason: "Normal Spells can only be activated during Main Phase",
       });
@@ -465,9 +475,7 @@ export const activateSpell = mutation({
         if (isContinuous) {
           // Flip face-up and mark as activated
           const newSpellTrapZone = spellTrapZone.map((st) =>
-            st.cardId === args.cardId
-              ? { ...st, isFaceDown: false, isActivated: true }
-              : st
+            st.cardId === args.cardId ? { ...st, isFaceDown: false, isActivated: true } : st
           );
 
           await ctx.db.patch(gameState._id, {
@@ -530,32 +538,31 @@ export const activateSpell = mutation({
         priorityPassed: false,
         fieldSpellActivated: true,
       };
-    } else {
-      // Normal/Quick-Play spells: Add to chain system
-      const spellSpeed = getSpellSpeed(card);
-      const effect = getChainEffect(card);
-
-      // Add to chain
-      const chainResult = await addToChainHelper(ctx, {
-        lobbyId: args.lobbyId,
-        cardId: args.cardId,
-        playerId: user.userId,
-        playerUsername: user.username,
-        spellSpeed,
-        effect,
-        targets: args.targets,
-      });
-
-      // 11. Return success with chain status
-      return {
-        success: true,
-        spellName: card.name,
-        chainStarted: true,
-        chainLinkNumber: chainResult.chainLinkNumber,
-        currentChainLength: chainResult.currentChainLength,
-        priorityPassed: true, // Priority is now with opponent
-      };
     }
+    // Normal/Quick-Play spells: Add to chain system
+    const spellSpeed = getSpellSpeed(card);
+    const effect = getChainEffect(card);
+
+    // Add to chain
+    const chainResult = await addToChainHelper(ctx, {
+      lobbyId: args.lobbyId,
+      cardId: args.cardId,
+      playerId: user.userId,
+      playerUsername: user.username,
+      spellSpeed,
+      effect,
+      targets: args.targets,
+    });
+
+    // 11. Return success with chain status
+    return {
+      success: true,
+      spellName: card.name,
+      chainStarted: true,
+      chainLinkNumber: chainResult.chainLinkNumber,
+      currentChainLength: chainResult.currentChainLength,
+      priorityPassed: true, // Priority is now with opponent
+    };
   },
 });
 

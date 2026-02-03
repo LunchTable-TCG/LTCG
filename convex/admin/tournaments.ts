@@ -41,18 +41,17 @@ export const listTournaments = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let tournaments = await (async () => {
+    const tournaments = await (async () => {
       if (args.status) {
         return await ctx.db
           .query("tournaments")
           .withIndex("by_status", (q) => q.eq("status", args.status!))
           .collect();
-      } else {
-        return await ctx.db.query("tournaments").collect();
       }
+      return await ctx.db.query("tournaments").collect();
     })();
 
-    type Tournament = typeof tournaments[number];
+    type Tournament = (typeof tournaments)[number];
 
     // Sort by creation date descending (newest first)
     tournaments.sort((a: Tournament, b: Tournament) => b.createdAt - a.createdAt);

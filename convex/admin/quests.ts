@@ -43,12 +43,11 @@ export const listQuests = query({
           .query("questDefinitions")
           .withIndex("by_type", (q) => q.eq("questType", args.questType!))
           .collect();
-      } else {
-        return await ctx.db.query("questDefinitions").collect();
       }
+      return await ctx.db.query("questDefinitions").collect();
     })();
 
-    type Quest = typeof quests[number];
+    type Quest = (typeof quests)[number];
 
     // Filter by active status
     if (!args.includeInactive) {
