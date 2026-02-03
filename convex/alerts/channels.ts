@@ -6,13 +6,12 @@
 
 import { v } from "convex/values";
 import { internalAction, internalMutation, mutation, query } from "../_generated/server";
-import { internal } from "../_generated/api";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
-
-// Cast internal to any at module level to avoid TS2589 deep type issues
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const internalAny = internal as any;
 import { scheduleAuditLog } from "../lib/internalHelpers";
+
+// Import internal separately to avoid TS2589 deep type instantiation
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports
+const internal: any = require("../_generated/api").internal;
 import { requireRole } from "../lib/roles";
 
 // Validators
@@ -238,7 +237,7 @@ export const test = mutation({
     }
 
     // Schedule the test notification
-    await ctx.scheduler.runAfter(0, internalAny.alerts.channels.sendTestNotificationAction, {
+    await ctx.scheduler.runAfter(0, internal.alerts.channels.sendTestNotificationAction, {
       channelId: args.channelId,
       channelType: channel.type,
       webhookUrl: channel.config.webhookUrl,
