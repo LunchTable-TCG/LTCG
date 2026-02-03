@@ -1,5 +1,4 @@
 import { AuthGuard } from "@/components/auth/AuthGuard";
-import { HelpModeProvider, HelpModeToggle } from "@/components/help";
 import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 
 /**
@@ -12,11 +11,8 @@ import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
-      <HelpModeProvider>
-        <AnnouncementBanner />
-        {children}
-        <HelpModeToggle />
-      </HelpModeProvider>
+      <AnnouncementBanner />
+      {children}
     </AuthGuard>
   );
 }

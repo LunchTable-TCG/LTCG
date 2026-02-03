@@ -63,14 +63,14 @@ export function LogoutConfirmDialog({ isOpen, onClose, onConfirm }: LogoutConfir
             variant="outline"
             onClick={onClose}
             disabled={isLoading}
-            className="btn-fantasy-secondary rounded-lg w-full sm:w-auto"
+            className="w-full sm:w-auto border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5]"
           >
             Stay Here
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={isLoading}
-            className="btn-fantasy-danger rounded-lg w-full sm:w-auto"
+            className="w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white"
           >
             {isLoading ? (
               <>

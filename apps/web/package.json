@@ -6,13 +6,7 @@
     "dev": "next dev --port 3333 --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "remotion:studio": "remotion studio remotion/index.ts",
-    "remotion:render": "remotion render remotion/index.ts",
-    "remotion:render:trailer": "remotion render remotion/index.ts GameTrailer --output=public/videos/game-trailer.mp4",
-    "remotion:render:cards": "remotion render remotion/index.ts CardShowcase --output=public/videos/card-showcase.mp4",
-    "remotion:render:archetype": "remotion render remotion/index.ts ArchetypeReveal --output=public/videos/archetype-reveal.mp4",
-    "remotion:render:epic": "remotion render remotion/index.ts EpicGameTrailer --output=public/videos/epic-trailer.mp4"
+    "lint": "next lint"
   },
   "dependencies": {
     "@elizaos/core": "^1.7.2",
@@ -21,9 +15,6 @@
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-progress": "^1.1.8",
-    "@remotion/cli": "^4.0.417",
-    "@remotion/player": "^4.0.417",
-    "@remotion/transitions": "^4.0.417",
     "@solana-program/memo": "^0.10.0",
     "@solana/wallet-adapter-base": "^0.9.27",
     "@solana/wallet-adapter-react": "^0.15.39",
@@ -41,7 +32,6 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.7.0",
-    "remotion": "^4.0.417",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tw-animate-css": "1.4.0",

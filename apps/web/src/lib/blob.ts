@@ -37,7 +37,6 @@ const ASSET_PATH_MAP: Record<string, string> = {
   "/assets/backgrounds/quests-bg.png": "backgrounds/quests-bg.png",
   "/assets/backgrounds/decks-bg.png": "backgrounds/decks-bg.png",
   "/assets/backgrounds/collection-bg.png": "backgrounds/collection-bg.png",
-  "/assets/backgrounds/arena_grimoire.png": "backgrounds/arena_grimoire.png",
   "/assets/dashboard-bg.jpg": "dashboard-bg.jpg",
 
   // Textures
@@ -50,21 +49,7 @@ const ASSET_PATH_MAP: Record<string, string> = {
   "/assets/ui/fantasy_panel_bg.png": "ui/fantasy_panel_bg.png",
   "/assets/ui/fantasy_wood_btn.png": "ui/fantasy_wood_btn.png",
   "/assets/ui/button-bg.png": "ui/button-bg.png",
-  "/assets/ui/corner_ornament.png": "ui/corner_ornament.png",
-  "/assets/ui/panel_grimoire.png": "ui/panel_grimoire.png",
-  "/assets/ui/buttons_fantasy.png": "ui/buttons_fantasy.png",
-  "/assets/ui/header_banner.png": "ui/header_banner.png",
   "/assets/card-bg.svg": "card-bg.svg",
-
-  // Props
-  "/assets/props/mana_crystal.png": "props/mana_crystal.png",
-  "/assets/props/ancient_key.png": "props/ancient_key.png",
-  "/assets/props/scroll.png": "props/scroll.png",
-
-  // Card backs
-  "/assets/cards/back_starter.png": "cards/back_starter.png",
-  "/assets/cards/back_premium.png": "cards/back_premium.png",
-  "/assets/cards/back_fire.png": "cards/back_fire.png",
 
   // Shop
   "/assets/shop/pack.png": "shop/pack.png",

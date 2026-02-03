@@ -1,6 +1,5 @@
 "use client";
 
-import { Tooltip } from "@/components/help";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ChevronRight, Scroll, Sparkles, Swords } from "lucide-react";
@@ -97,40 +96,36 @@ export function PhaseBar({
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-lg border">
         {/* Turn indicator */}
-        <Tooltip id="turn_indicator">
-          <div className="flex items-center gap-1 pr-2 border-r">
-            <span className="text-[8px] sm:text-[10px] text-muted-foreground">Turn</span>
-            <span className="text-[10px] sm:text-xs font-bold" data-testid="turn-number">
-              {turnNumber}
-            </span>
-          </div>
-        </Tooltip>
+        <div className="flex items-center gap-1 pr-2 border-r">
+          <span className="text-[8px] sm:text-[10px] text-muted-foreground">Turn</span>
+          <span className="text-[10px] sm:text-xs font-bold" data-testid="turn-number">
+            {turnNumber}
+          </span>
+        </div>
 
         {/* Phase indicators */}
-        <Tooltip id="phase_indicator">
-          <div className="flex items-center gap-1">
-            {PHASES.map((phase, index) => {
-              const isActive = phase.id === displayPhase;
-              const isPast = index < currentPhaseIndex;
+        <div className="flex items-center gap-1">
+          {PHASES.map((phase, index) => {
+            const isActive = phase.id === displayPhase;
+            const isPast = index < currentPhaseIndex;
 
-              return (
-                <div
-                  key={phase.id}
-                  className={cn(
-                    "px-2 sm:px-3 py-1 rounded text-[9px] sm:text-[11px] font-semibold transition-all duration-200 whitespace-nowrap",
-                    isActive &&
-                      "bg-linear-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/30 scale-105",
-                    isPast && "text-muted-foreground/70 bg-muted/30",
-                    !isActive && !isPast && "text-muted-foreground/40 bg-muted/10"
-                  )}
-                >
-                  <span className="hidden sm:inline">{phase.label}</span>
-                  <span className="sm:hidden">{phase.shortLabel}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Tooltip>
+            return (
+              <div
+                key={phase.id}
+                className={cn(
+                  "px-2 sm:px-3 py-1 rounded text-[9px] sm:text-[11px] font-semibold transition-all duration-200 whitespace-nowrap",
+                  isActive &&
+                    "bg-linear-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/30 scale-105",
+                  isPast && "text-muted-foreground/70 bg-muted/30",
+                  !isActive && !isPast && "text-muted-foreground/40 bg-muted/10"
+                )}
+              >
+                <span className="hidden sm:inline">{phase.label}</span>
+                <span className="sm:hidden">{phase.shortLabel}</span>
+              </div>
+            );
+          })}
+        </div>
 
         {/* Advance button */}
         {isPlayerTurn && canAdvancePhase && (

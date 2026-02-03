@@ -171,7 +171,11 @@ function LunchtableContent() {
         {/* Main Content Grid */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 min-h-0 overflow-hidden">
           {/* Center - Game Lobby */}
-          <div className="panel-ornate rounded-2xl p-6 flex flex-col">
+          <div className="relative p-6 rounded-2xl tcg-chat-leather overflow-hidden shadow-2xl border border-[#3d2b1f] flex flex-col">
+            <div className="ornament-corner ornament-corner-tl" />
+            <div className="ornament-corner ornament-corner-tr" />
+            <div className="ornament-corner ornament-corner-bl" />
+            <div className="ornament-corner ornament-corner-br" />
             <GameLobby />
           </div>
 

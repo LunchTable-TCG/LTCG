@@ -32,7 +32,9 @@ export default function SignupPage() {
         </Link>
       </div>
 
-      <div className="panel-ornate rounded-2xl p-8 shadow-2xl">
+      <div className="relative p-8 rounded-2xl tcg-chat-leather shadow-2xl overflow-hidden">
+        <div className="ornament-corner ornament-corner-tl" />
+        <div className="ornament-corner ornament-corner-tr" />
         <Suspense fallback={<AuthFormFallback />}>
           <AuthForm mode="signUp" />
         </Suspense>

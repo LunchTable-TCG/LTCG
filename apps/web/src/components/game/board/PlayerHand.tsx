@@ -1,6 +1,5 @@
 "use client";
 
-import { Tooltip } from "@/components/help";
 import type { Id } from "@convex/_generated/dataModel";
 import type { CardInZone } from "../hooks/useGameBoard";
 import { HandCard, OpponentHandCard } from "./cards/HandCard";
@@ -39,22 +38,20 @@ export function PlayerHand({
   }
 
   return (
-    <Tooltip id="hand">
-      <div className="relative py-10 px-2 sm:py-16 sm:px-6 overflow-visible">
-        <div className="flex items-end justify-center pb-4 pt-4">
-          {cards.map((card, index) => (
-            <HandCard
-              key={card.instanceId}
-              card={card}
-              index={index}
-              totalCards={cards.length}
-              isPlayable={playableCards?.has(card.instanceId) ?? false}
-              isSelected={selectedCard === card.instanceId}
-              onClick={() => onCardClick?.(card)}
-            />
-          ))}
-        </div>
+    <div className="relative py-10 px-2 sm:py-16 sm:px-6 overflow-visible">
+      <div className="flex items-end justify-center pb-4 pt-4">
+        {cards.map((card, index) => (
+          <HandCard
+            key={card.instanceId}
+            card={card}
+            index={index}
+            totalCards={cards.length}
+            isPlayable={playableCards?.has(card.instanceId) ?? false}
+            isSelected={selectedCard === card.instanceId}
+            onClick={() => onCardClick?.(card)}
+          />
+        ))}
       </div>
-    </Tooltip>
+    </div>
   );
 }

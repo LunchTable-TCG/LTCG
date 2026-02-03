@@ -156,7 +156,7 @@ export function Navbar() {
                 <>
                   <Button
                     asChild
-                    className="hidden sm:flex btn-fantasy-blue rounded-lg"
+                    className="hidden sm:flex tcg-button-primary rounded-lg px-4 py-2 text-sm"
                   >
                     <Link href="/lunchtable">
                       <Swords className="w-3.5 h-3.5 mr-1.5" />
@@ -190,7 +190,7 @@ export function Navbar() {
                   >
                     <Link href="/login">Enter</Link>
                   </Button>
-                  <Button asChild className="btn-fantasy-primary rounded-lg">
+                  <Button asChild className="tcg-button-primary rounded-lg px-5 py-5">
                     <Link href="/signup">
                       <Crown className="w-4 h-4 mr-2" />
                       Join
@@ -377,7 +377,7 @@ export function Navbar() {
 
           {!isAuthenticated && (
             <div className="p-4 border-t border-border space-y-2">
-              <Button asChild className="w-full btn-fantasy-primary rounded-lg">
+              <Button asChild className="w-full tcg-button-primary rounded-lg py-6">
                 <Link href="/signup" onClick={() => setIsOpen(false)}>
                   <Crown className="w-4 h-4 mr-2" />
                   Begin Your Journey

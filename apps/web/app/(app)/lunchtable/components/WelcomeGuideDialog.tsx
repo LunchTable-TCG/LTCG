@@ -112,7 +112,11 @@ export function WelcomeGuideDialog({
       </div>
 
       {/* Modal */}
-      <div className="panel-ornate rounded-2xl w-full max-w-2xl mx-4 shadow-2xl shadow-[#d4af37]/10 overflow-hidden animate-in zoom-in-95 fade-in duration-300">
+      <div className="relative w-full max-w-2xl mx-4 tcg-chat-leather rounded-2xl border border-[#d4af37]/30 shadow-2xl shadow-[#d4af37]/10 overflow-hidden animate-in zoom-in-95 fade-in duration-300">
+        <div className="ornament-corner ornament-corner-tl" />
+        <div className="ornament-corner ornament-corner-tr" />
+        <div className="ornament-corner ornament-corner-bl" />
+        <div className="ornament-corner ornament-corner-br" />
 
         {/* Progress indicator */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#3d2b1f]">
@@ -169,7 +173,7 @@ export function WelcomeGuideDialog({
             <button
               type="button"
               onClick={() => setStep("deck")}
-              className="btn-fantasy-primary rounded-xl mx-auto"
+              className="tcg-button-primary px-8 py-4 font-black uppercase tracking-wide text-sm flex items-center gap-2 mx-auto"
             >
               Choose Your Deck
               <ChevronRight className="w-5 h-5" />
@@ -300,7 +304,7 @@ export function WelcomeGuideDialog({
               <button
                 type="button"
                 onClick={() => setStep("welcome")}
-                className="btn-fantasy-secondary rounded-lg"
+                className="px-4 py-2 rounded-lg border border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5] hover:border-[#d4af37]/50 font-bold uppercase tracking-wide text-sm transition-all"
               >
                 Back
               </button>
@@ -310,10 +314,10 @@ export function WelcomeGuideDialog({
                 onClick={handleComplete}
                 disabled={!selectedDeck}
                 className={cn(
-                  "rounded-xl flex items-center gap-2",
+                  "px-8 py-3 rounded-xl font-black uppercase tracking-wide text-sm flex items-center gap-2 transition-all",
                   selectedDeck
-                    ? "btn-fantasy-primary"
-                    : "bg-[#3d2b1f]/50 text-[#a89f94]/50 cursor-not-allowed border border-[#3d2b1f] px-6 py-3"
+                    ? "tcg-button-primary"
+                    : "bg-[#3d2b1f]/50 text-[#a89f94]/50 cursor-not-allowed border border-[#3d2b1f]"
                 )}
               >
                 <Sparkles className="w-4 h-4" />

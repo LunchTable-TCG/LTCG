@@ -534,7 +534,7 @@ export default function ShopPage() {
                   setListingCurrencyType(currencyFilter);
                   setActiveTab("myListings");
                 }}
-                className="btn-fantasy-primary rounded-lg"
+                className="tcg-button-primary"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 List Card
@@ -642,7 +642,7 @@ export default function ShopPage() {
                 <p className="text-[#a89f94] mb-6">
                   You don't have any cards listed on the marketplace yet
                 </p>
-                <Button onClick={() => setActiveTab("marketplace")} className="btn-fantasy-primary rounded-lg">
+                <Button onClick={() => setActiveTab("marketplace")} className="tcg-button-primary">
                   Browse Marketplace
                 </Button>
               </div>

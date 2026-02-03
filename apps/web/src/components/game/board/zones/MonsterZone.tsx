@@ -1,6 +1,5 @@
 "use client";
 
-import { Tooltip } from "@/components/help";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import type { CardInZone } from "../../hooks/useGameBoard";
@@ -42,11 +41,10 @@ export function MonsterZone({
       )}
     >
       {/* Support Zone (4 slots) */}
-      <Tooltip id="creature_zone">
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[8px] sm:text-[10px] font-medium uppercase tracking-wider text-slate-500">
-            Support
-          </span>
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="text-[8px] sm:text-[10px] font-medium uppercase tracking-wider text-slate-500">
+          Support
+        </span>
         <div className="flex gap-0.5">
           {supportSlots.map((card, index) => {
             const key = `support-slot-${index}`;
@@ -74,7 +72,6 @@ export function MonsterZone({
           })}
         </div>
       </div>
-      </Tooltip>
 
       {/* Frontline (1 slot, larger) */}
       <div className="flex flex-col items-center gap-0.5">

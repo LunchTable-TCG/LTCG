@@ -124,10 +124,12 @@ export function AuthForm({ mode }: AuthFormProps) {
           setError(null);
           login();
         }}
-        className="btn-fantasy-primary w-full rounded-xl group"
+        className="group relative w-full py-4 rounded-xl overflow-hidden bg-linear-to-r from-[#8b4513] via-[#d4af37] to-[#8b4513] hover:from-[#a0522d] hover:via-[#f9e29f] hover:to-[#a0522d] transition-all duration-300 shadow-lg hover:shadow-gold"
       >
-        {isSignUp ? "Create Account" : "Enter the Hall"}
-        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        <span className="relative flex items-center justify-center gap-2 text-lg font-black uppercase tracking-widest text-white">
+          {isSignUp ? "Create Account" : "Enter the Hall"}
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        </span>
       </motion.button>
 
       {/* Terms */}

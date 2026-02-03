@@ -56,8 +56,12 @@ export function CreateGameModal({ isOpen, onClose, onSubmit }: CreateGameModalPr
       {/* Modal */}
       <div
         data-testid="create-game-modal"
-        className="panel-ornate rounded-2xl w-full max-w-md mx-4 shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
+        className="relative w-full max-w-md mx-4 tcg-chat-leather rounded-2xl border border-[#3d2b1f] shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
       >
+        <div className="ornament-corner ornament-corner-tl" />
+        <div className="ornament-corner ornament-corner-tr" />
+        <div className="ornament-corner ornament-corner-bl" />
+        <div className="ornament-corner ornament-corner-br" />
 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#3d2b1f]">
@@ -284,7 +288,7 @@ export function CreateGameModal({ isOpen, onClose, onSubmit }: CreateGameModalPr
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="btn-fantasy-secondary rounded-lg disabled:opacity-50"
+            className="px-4 py-2.5 rounded-lg border border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5] hover:border-[#d4af37]/50 font-bold uppercase tracking-wide text-sm transition-all disabled:opacity-50"
           >
             Cancel
           </button>
@@ -293,8 +297,10 @@ export function CreateGameModal({ isOpen, onClose, onSubmit }: CreateGameModalPr
             onClick={handleSubmit}
             disabled={isSubmitting}
             className={cn(
-              "rounded-lg flex items-center gap-2",
-              mode === "casual" ? "btn-fantasy-success" : "btn-fantasy-primary",
+              "px-6 py-2.5 rounded-lg font-bold uppercase tracking-wide text-sm flex items-center gap-2 transition-all",
+              mode === "casual"
+                ? "bg-linear-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white"
+                : "bg-linear-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-[#1a1614]",
               isSubmitting && "opacity-50 cursor-not-allowed"
             )}
           >

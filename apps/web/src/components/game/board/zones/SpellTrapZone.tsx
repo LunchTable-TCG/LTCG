@@ -1,6 +1,5 @@
 "use client";
 
-import { Tooltip } from "@/components/help";
 import type { Id } from "@convex/_generated/dataModel";
 import type { CardInZone } from "../../hooks/useGameBoard";
 import { BoardCard, EmptySlot } from "../cards/BoardCard";
@@ -26,13 +25,12 @@ export function SpellTrapZone({
   const slots = Array.from({ length: 5 }, (_, i) => cards[i] ?? null);
 
   return (
-    <Tooltip id="spell_trap_zone">
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[8px] sm:text-[10px] font-medium uppercase tracking-wider text-slate-500">
-          Backrow
-        </span>
-        <div className="flex items-center gap-0.5">
-          {slots.map((card, index) => {
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[8px] sm:text-[10px] font-medium uppercase tracking-wider text-slate-500">
+        Backrow
+      </span>
+      <div className="flex items-center gap-0.5">
+        {slots.map((card, index) => {
           const key = `backrow-slot-${index}`;
           return card ? (
             <BoardCard
@@ -53,8 +51,7 @@ export function SpellTrapZone({
             />
           );
         })}
-        </div>
       </div>
-    </Tooltip>
+    </div>
   );
 }

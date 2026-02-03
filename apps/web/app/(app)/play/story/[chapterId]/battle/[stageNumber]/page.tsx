@@ -1,7 +1,6 @@
 "use client";
 
 import { GameBoard } from "@/components/game/GameBoard";
-import { TutorialManager } from "@/components/game/TutorialManager";
 import {
   DialogueDisplay,
   type DialogueLine,
@@ -15,7 +14,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Crown, Loader2, Shield, Swords } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { use, useEffect, useState, useCallback, useMemo } from "react";
+import { use, useEffect, useState, useCallback } from "react";
 
 type DialoguePhase = "pre" | "battle" | "post" | "complete";
 type StoryDifficulty = "normal" | "hard" | "legendary";
@@ -349,30 +348,6 @@ export default function BattlePage({ params }: BattlePageProps) {
   const difficultyConfig = DIFFICULTY_DISPLAY[difficulty];
   const DifficultyIcon = difficultyConfig.icon;
 
-  // Check if this is the tutorial stage (Chapter 1, Stage 1)
-  const isTutorialStage = chapterId === "chapter1" && stageNumber === "1";
-
-  // Transform game state for tutorial manager
-  const tutorialGameState = useMemo(() => {
-    if (!gameState) return null;
-    return {
-      currentPhase: gameState.currentPhase || "main1",
-      isPlayerTurn: gameState.isPlayerTurn ?? false,
-      turnNumber: gameState.turnNumber || 1,
-      myLifePoints: gameState.myLifePoints ?? 8000,
-      opponentLifePoints: gameState.opponentLifePoints ?? 8000,
-      myHand: (gameState.myHand || []).map((card: { cardType?: string }) => ({
-        cardType: card.cardType,
-      })),
-      myField: [
-        ...(gameState.myFrontline ? [{ cardType: gameState.myFrontline.cardType }] : []),
-        ...(gameState.mySupport || []).map((card: { cardType?: string }) => ({
-          cardType: card.cardType,
-        })),
-      ],
-    };
-  }, [gameState]);
-
   return (
     <>
       <div className="min-h-screen bg-[#0d0a09] relative">
@@ -393,14 +368,6 @@ export default function BattlePage({ params }: BattlePageProps) {
         </div>
 
         <GameBoard lobbyId={lobbyId} gameMode="story" />
-
-        {/* Tutorial Manager - only for Ch1 S1 */}
-        {isTutorialStage && dialoguePhase === "battle" && (
-          <TutorialManager
-            enabled={isTutorialStage}
-            gameState={tutorialGameState}
-          />
-        )}
       </div>
 
       {/* Battle Completion Dialog */}

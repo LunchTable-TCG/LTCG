@@ -1,6 +1,5 @@
 "use client";
 
-import { Tooltip } from "@/components/help";
 import { cn } from "@/lib/utils";
 import { Heart } from "lucide-react";
 
@@ -68,25 +67,23 @@ export function LifePointsBar({
       </div>
 
       {/* Life points display */}
-      <Tooltip id="life_points">
-        <div className="flex items-center gap-1 flex-1">
-          <Heart
-            className={cn("h-3 w-3 shrink-0", percentage <= 25 ? "text-red-500" : "text-pink-500")}
+      <div className="flex items-center gap-1 flex-1">
+        <Heart
+          className={cn("h-3 w-3 shrink-0", percentage <= 25 ? "text-red-500" : "text-pink-500")}
+        />
+        <div className="flex-1 h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden min-w-[30px]">
+          <div
+            className={cn("h-full transition-all duration-500", getHealthColor())}
+            style={{ width: `${percentage}%` }}
           />
-          <div className="flex-1 h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden min-w-[30px]">
-            <div
-              className={cn("h-full transition-all duration-500", getHealthColor())}
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-          <span
-            data-testid={isOpponent ? "opponent-lp" : "player-lp"}
-            className="text-[9px] sm:text-xs font-mono font-medium min-w-[35px] sm:min-w-[50px] text-right"
-          >
-            {lifePoints.toLocaleString()}
-          </span>
         </div>
-      </Tooltip>
+        <span
+          data-testid={isOpponent ? "opponent-lp" : "player-lp"}
+          className="text-[9px] sm:text-xs font-mono font-medium min-w-[35px] sm:min-w-[50px] text-right"
+        >
+          {lifePoints.toLocaleString()}
+        </span>
+      </div>
     </div>
   );
 }
