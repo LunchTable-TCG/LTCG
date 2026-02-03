@@ -6,6 +6,7 @@ import { PrivyAuthProvider } from "@/components/PrivyAuthProvider";
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
 import { NotificationToast } from "@/components/notifications/NotificationToast";
 import { Toaster } from "@/components/ui/toaster";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -71,6 +72,7 @@ export default function RootLayout({
             <NotificationToast />
             <LayoutWrapper>{children}</LayoutWrapper>
             <Toaster />
+            <FeedbackWidget />
           </ConvexClientProvider>
         </PrivyAuthProvider>
       </body>

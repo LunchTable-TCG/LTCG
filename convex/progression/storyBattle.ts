@@ -5,26 +5,419 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
-import { internalMutation, internalQuery, mutation } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
 import { initializeGameStateHelper } from "../gameplay/games/lifecycle";
-import { requireAuthMutation } from "../lib/convexAuth";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { DIFFICULTY_UNLOCK_LEVELS } from "../lib/storyConstants";
+import { getPlayerXP } from "../lib/xpHelpers";
 import { STORY_CHAPTERS } from "../seeds/storyChapters";
+
+// Difficulty type for story mode unlock gates
+type StoryDifficulty = "normal" | "hard" | "legendary";
+
+/**
+ * Check if a player has access to a difficulty level
+ *
+ * Validates player level against difficulty unlock requirements.
+ * Normal mode is always available (level 1+), Hard requires level 5+,
+ * and Legendary requires level 15+.
+ *
+ * @param ctx - Query or mutation context
+ * @param userId - User ID to check access for
+ * @param difficulty - Difficulty level to check
+ * @returns Object with allowed status, required level, and current level
+ */
+async function checkDifficultyAccess(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+  difficulty: StoryDifficulty
+) {
+  const requiredLevel = DIFFICULTY_UNLOCK_LEVELS[difficulty];
+  const playerXP = await getPlayerXP(ctx, userId);
+  const currentLevel = playerXP?.currentLevel ?? 1;
+
+  return {
+    allowed: currentLevel >= requiredLevel,
+    requiredLevel,
+    currentLevel,
+  };
+}
+
+// ============================================================================
+// CHAPTER UNLOCK VALIDATION
+// ============================================================================
+
+/**
+ * Result of checking if a chapter is unlocked for a player
+ */
+export interface ChapterUnlockResult {
+  unlocked: boolean;
+  reason?: string;
+  requirements: {
+    /** Previous chapter completion required */
+    prevChapter?: {
+      required: boolean;
+      completed: boolean;
+      chapterTitle?: string;
+      actNumber?: number;
+      chapterNumber?: number;
+    };
+    /** Minimum player level required */
+    level?: {
+      required: number;
+      current: number;
+      met: boolean;
+    };
+  };
+}
+
+/**
+ * Check if a chapter is unlocked for a player
+ *
+ * Validates all unlock conditions for a chapter:
+ * - First chapter (Act 1, Chapter 1) is always unlocked
+ * - Checks unlockCondition.type for "chapter_complete" or "player_level"
+ * - Falls back to legacy unlockRequirements field
+ * - Checks if previous chapter is completed (any stage cleared)
+ * - Checks if player meets minimum level requirement
+ *
+ * @param ctx - Query or mutation context
+ * @param userId - User ID to check unlock status for
+ * @param chapter - Chapter document to check
+ * @returns Unlock result with status, reason, and detailed requirements
+ */
+export async function checkChapterUnlocked(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+  chapter: Doc<"storyChapters">
+): Promise<ChapterUnlockResult> {
+  const requirements: ChapterUnlockResult["requirements"] = {};
+
+  // First chapter (Act 1, Chapter 1) is always unlocked
+  if (chapter.actNumber === 1 && chapter.chapterNumber === 1) {
+    return {
+      unlocked: true,
+      requirements,
+    };
+  }
+
+  // Get player's current level
+  const playerXP = await getPlayerXP(ctx, userId);
+  const currentLevel = playerXP?.currentLevel ?? 1;
+
+  // Check unlock condition from schema (new format)
+  const unlockCondition = chapter.unlockCondition;
+
+  // Check legacy unlock requirements (fallback)
+  const legacyRequirements = chapter.unlockRequirements;
+
+  // Determine what unlock conditions apply
+  let requiresPrevChapter = false;
+  let requiredChapterId: Id<"storyChapters"> | undefined;
+  let requiredLevel: number | undefined;
+
+  // New format: unlockCondition
+  if (unlockCondition) {
+    if (unlockCondition.type === "chapter_complete" && unlockCondition.requiredChapterId) {
+      requiresPrevChapter = true;
+      requiredChapterId = unlockCondition.requiredChapterId;
+    }
+    if (unlockCondition.type === "player_level" && unlockCondition.requiredLevel) {
+      requiredLevel = unlockCondition.requiredLevel;
+    }
+    // "none" type means no requirements
+  }
+
+  // Legacy format: unlockRequirements (if new format not present)
+  if (!unlockCondition && legacyRequirements) {
+    if (legacyRequirements.previousChapter) {
+      requiresPrevChapter = true;
+      // For legacy format, we need to find the previous chapter
+    }
+    if (legacyRequirements.minimumLevel) {
+      requiredLevel = legacyRequirements.minimumLevel;
+    }
+  }
+
+  // Default behavior: if no unlock conditions specified but not first chapter,
+  // require previous chapter to be completed
+  if (!unlockCondition && !legacyRequirements && chapter.chapterNumber && chapter.chapterNumber > 1) {
+    requiresPrevChapter = true;
+  }
+
+  // Check previous chapter requirement
+  if (requiresPrevChapter) {
+    let prevChapterCompleted = false;
+    let prevChapterTitle: string | undefined;
+    let prevActNumber: number | undefined;
+    let prevChapterNumber: number | undefined;
+
+    if (requiredChapterId) {
+      // Specific chapter ID required
+      const requiredChapter = await ctx.db.get(requiredChapterId);
+      if (requiredChapter) {
+        prevChapterTitle = requiredChapter.title;
+        prevActNumber = requiredChapter.actNumber;
+        prevChapterNumber = requiredChapter.chapterNumber;
+
+        // Check if any stage in that chapter is completed
+        const stageProgress = await ctx.db
+          .query("storyStageProgress")
+          .withIndex("by_user_chapter", (q) =>
+            q.eq("userId", userId).eq("chapterId", requiredChapterId!)
+          )
+          .filter((q) =>
+            q.or(
+              q.eq(q.field("status"), "completed"),
+              q.eq(q.field("status"), "starred")
+            )
+          )
+          .first();
+
+        prevChapterCompleted = !!stageProgress;
+      }
+    } else {
+      // Find the previous chapter in sequence (same act, previous chapter number)
+      const prevChapter = await ctx.db
+        .query("storyChapters")
+        .withIndex("by_act_chapter", (q) =>
+          q
+            .eq("actNumber", chapter.actNumber)
+            .eq("chapterNumber", (chapter.chapterNumber ?? 1) - 1)
+        )
+        .first();
+
+      // If no previous chapter in same act, check last chapter of previous act
+      let actualPrevChapter = prevChapter;
+      if (!prevChapter && chapter.actNumber && chapter.actNumber > 1) {
+        // Get all chapters from previous act and find the highest chapter number
+        const prevActChapters = await ctx.db
+          .query("storyChapters")
+          .withIndex("by_act_chapter", (q) =>
+            q.eq("actNumber", (chapter.actNumber ?? 1) - 1)
+          )
+          .collect();
+
+        if (prevActChapters.length > 0) {
+          actualPrevChapter = prevActChapters.reduce((max, ch) =>
+            (ch.chapterNumber ?? 0) > (max.chapterNumber ?? 0) ? ch : max
+          );
+        }
+      }
+
+      if (actualPrevChapter) {
+        prevChapterTitle = actualPrevChapter.title;
+        prevActNumber = actualPrevChapter.actNumber;
+        prevChapterNumber = actualPrevChapter.chapterNumber;
+
+        // Check if any stage in that chapter is completed
+        const stageProgress = await ctx.db
+          .query("storyStageProgress")
+          .withIndex("by_user_chapter", (q) =>
+            q.eq("userId", userId).eq("chapterId", actualPrevChapter!._id)
+          )
+          .filter((q) =>
+            q.or(
+              q.eq(q.field("status"), "completed"),
+              q.eq(q.field("status"), "starred")
+            )
+          )
+          .first();
+
+        prevChapterCompleted = !!stageProgress;
+      } else {
+        // No previous chapter found, consider it met
+        prevChapterCompleted = true;
+      }
+    }
+
+    requirements.prevChapter = {
+      required: true,
+      completed: prevChapterCompleted,
+      chapterTitle: prevChapterTitle,
+      actNumber: prevActNumber,
+      chapterNumber: prevChapterNumber,
+    };
+
+    if (!prevChapterCompleted) {
+      const chapterRef = prevChapterTitle
+        ? `"${prevChapterTitle}"`
+        : prevActNumber && prevChapterNumber
+          ? `Chapter ${prevActNumber}-${prevChapterNumber}`
+          : "the previous chapter";
+
+      return {
+        unlocked: false,
+        reason: `Complete ${chapterRef} first`,
+        requirements,
+      };
+    }
+  }
+
+  // Check level requirement
+  if (requiredLevel && requiredLevel > 1) {
+    requirements.level = {
+      required: requiredLevel,
+      current: currentLevel,
+      met: currentLevel >= requiredLevel,
+    };
+
+    if (currentLevel < requiredLevel) {
+      return {
+        unlocked: false,
+        reason: `Requires level ${requiredLevel} (current: ${currentLevel})`,
+        requirements,
+      };
+    }
+  }
+
+  return {
+    unlocked: true,
+    requirements,
+  };
+}
+
+/**
+ * Get difficulty requirements and unlock status for a player
+ *
+ * Returns the level requirements for each difficulty mode and whether
+ * the authenticated player has unlocked each one based on their current level.
+ */
+export const getDifficultyRequirements = query({
+  args: {},
+  returns: v.object({
+    normal: v.object({
+      requiredLevel: v.number(),
+      unlocked: v.boolean(),
+    }),
+    hard: v.object({
+      requiredLevel: v.number(),
+      unlocked: v.boolean(),
+    }),
+    legendary: v.object({
+      requiredLevel: v.number(),
+      unlocked: v.boolean(),
+    }),
+  }),
+  handler: async (ctx) => {
+    const { userId } = await requireAuthQuery(ctx);
+    const playerXP = await getPlayerXP(ctx, userId);
+    const playerLevel = playerXP?.currentLevel ?? 1;
+
+    return {
+      normal: {
+        requiredLevel: DIFFICULTY_UNLOCK_LEVELS.normal,
+        unlocked: playerLevel >= DIFFICULTY_UNLOCK_LEVELS.normal,
+      },
+      hard: {
+        requiredLevel: DIFFICULTY_UNLOCK_LEVELS.hard,
+        unlocked: playerLevel >= DIFFICULTY_UNLOCK_LEVELS.hard,
+      },
+      legendary: {
+        requiredLevel: DIFFICULTY_UNLOCK_LEVELS.legendary,
+        unlocked: playerLevel >= DIFFICULTY_UNLOCK_LEVELS.legendary,
+      },
+    };
+  },
+});
+
+/**
+ * Check if a specific chapter is unlocked for the current player
+ *
+ * Returns detailed unlock status including:
+ * - Whether the chapter is unlocked
+ * - Reason if locked (e.g., "Complete Chapter 1-1 first" or "Requires level 5")
+ * - Detailed requirements with progress info
+ *
+ * @param chapterId - Chapter identifier (e.g., "1-1", "1-2")
+ * @returns Unlock status with detailed requirements
+ */
+export const getChapterUnlockStatus = query({
+  args: {
+    chapterId: v.string(), // e.g., "1-1", "1-2", etc.
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthQuery(ctx);
+
+    // Parse chapter ID (e.g., "1-1" -> act 1, chapter 1)
+    const [actNum, chapNum] = args.chapterId.split("-").map(Number);
+
+    if (!actNum || !chapNum || actNum < 1 || chapNum < 1 || chapNum > 10) {
+      return {
+        unlocked: false,
+        reason: "Invalid chapter ID format",
+        requirements: {},
+      };
+    }
+
+    // Get chapter from database
+    const chapter = await ctx.db
+      .query("storyChapters")
+      .withIndex("by_act_chapter", (q) => q.eq("actNumber", actNum).eq("chapterNumber", chapNum))
+      .first();
+
+    if (!chapter) {
+      return {
+        unlocked: false,
+        reason: "Chapter not found",
+        requirements: {},
+      };
+    }
+
+    // Check unlock status
+    return await checkChapterUnlocked(ctx, userId, chapter);
+  },
+});
 
 /**
  * Initialize a story mode battle
  *
  * Creates a game lobby and game state for a single-player story battle
  * against an AI opponent using the chapter's designated deck.
+ *
+ * @param chapterId - Chapter identifier (e.g., "1-1", "1-2")
+ * @param stageNumber - Stage number within chapter (1-10), defaults to 1
+ * @param difficulty - Difficulty mode: "normal" (level 1+), "hard" (level 5+), or "legendary" (level 15+)
  */
 export const initializeStoryBattle = mutation({
   args: {
     chapterId: v.string(), // e.g., "1-1", "1-2", etc.
     stageNumber: v.optional(v.number()), // 1-10, defaults to 1 if not provided
+    difficulty: v.optional(
+      v.union(v.literal("normal"), v.literal("hard"), v.literal("legendary"))
+    ), // defaults to "normal"
   },
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
+    const difficulty = args.difficulty ?? "normal";
+
+    // Check difficulty access
+    const access = await checkDifficultyAccess(ctx, userId, difficulty);
+    if (!access.allowed) {
+      throw createError(ErrorCode.AUTHZ_INSUFFICIENT_PERMISSIONS, {
+        reason: `Requires level ${access.requiredLevel} to play on ${difficulty} mode`,
+        requiredLevel: access.requiredLevel,
+        currentLevel: access.currentLevel,
+      });
+    }
+
+    // Check retry limits
+    const { checkRetryLimit, formatTimeUntilReset } = await import("../lib/storyHelpers");
+    const retryLimit = await checkRetryLimit(ctx, userId, difficulty);
+
+    if (!retryLimit.allowed) {
+      const timeUntilReset = formatTimeUntilReset(retryLimit.timeUntilReset);
+      const difficultyName = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+      throw createError(ErrorCode.RATE_LIMIT_EXCEEDED, {
+        reason: `You've used all ${retryLimit.maxAttempts} attempts for ${difficultyName} mode. Resets in ${timeUntilReset}`,
+        limit: retryLimit.maxAttempts,
+        attemptsUsed: retryLimit.attemptsUsed,
+        resetsAt: retryLimit.resetsAt,
+      });
+    }
 
     // Parse chapter ID (e.g., "1-1" -> act 1, chapter 1)
     const [actNum, chapNum] = args.chapterId.split("-").map(Number);
@@ -44,6 +437,15 @@ export const initializeStoryBattle = mutation({
     if (!chapter) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
         reason: "Chapter not found",
+      });
+    }
+
+    // Check if chapter is unlocked for this player
+    const unlockResult = await checkChapterUnlocked(ctx, userId, chapter);
+    if (!unlockResult.unlocked) {
+      throw createError(ErrorCode.AUTHZ_INSUFFICIENT_PERMISSIONS, {
+        reason: unlockResult.reason ?? "Chapter is locked",
+        requirements: unlockResult.requirements,
       });
     }
 
@@ -112,6 +514,8 @@ export const initializeStoryBattle = mutation({
       allowSpectators: false,
       spectatorCount: 0,
       maxSpectators: 0,
+      // Story mode tracking
+      stageId: stage._id,
     });
 
     // Initialize game state with AI opponent
@@ -240,6 +644,9 @@ async function getOrCreateAIUser(ctx: any): Promise<Id<"users">> {
 
 /**
  * Get list of chapters for story mode (internal query for API key auth)
+ *
+ * Returns all chapters with progress, unlock status, and detailed requirements
+ * for locked chapters (why they're locked and what's needed to unlock).
  */
 export const getChaptersInternal = internalQuery({
   args: { userId: v.id("users") },
@@ -278,6 +685,9 @@ export const getChaptersInternal = internalQuery({
         ).length;
         const totalStars = stageProgress.reduce((sum, s) => sum + s.starsEarned, 0);
 
+        // Check unlock status with detailed requirements
+        const unlockResult = await checkChapterUnlocked(ctx, args.userId, chapter);
+
         return {
           _id: chapter._id,
           actNumber: chapter.actNumber,
@@ -290,8 +700,9 @@ export const getChaptersInternal = internalQuery({
           totalStages: stages.length,
           totalStars,
           maxStars: stages.length * 3,
-          isUnlocked:
-            (chapter.actNumber === 1 && chapter.chapterNumber === 1) || completedStages > 0,
+          isUnlocked: unlockResult.unlocked,
+          lockReason: unlockResult.reason,
+          unlockRequirements: unlockResult.requirements,
         };
       })
     );
@@ -357,12 +768,20 @@ export const getChapterStagesInternal = internalQuery({
 /**
  * Initialize a story battle (internal mutation for API key auth)
  * For agents that want to instantly play against AI without matchmaking
+ *
+ * @param userId - User ID to start battle for
+ * @param chapterId - Chapter identifier (e.g., "1-1", "1-2")
+ * @param stageNumber - Stage number within chapter (1-10), defaults to 1
+ * @param difficulty - Difficulty mode: "normal" (level 1+), "hard" (level 5+), or "legendary" (level 15+)
  */
 export const initializeStoryBattleInternal = internalMutation({
   args: {
     userId: v.id("users"),
     chapterId: v.string(), // e.g., "1-1", "1-2", etc.
     stageNumber: v.optional(v.number()), // 1-10, defaults to 1 if not provided
+    difficulty: v.optional(
+      v.union(v.literal("normal"), v.literal("hard"), v.literal("legendary"))
+    ), // defaults to "normal"
   },
   handler: async (ctx, args) => {
     // Get user
@@ -370,6 +789,33 @@ export const initializeStoryBattleInternal = internalMutation({
     if (!user) {
       throw createError(ErrorCode.NOT_FOUND_USER, {
         reason: "User not found",
+      });
+    }
+
+    const difficulty = args.difficulty ?? "normal";
+
+    // Check difficulty access
+    const access = await checkDifficultyAccess(ctx, args.userId, difficulty);
+    if (!access.allowed) {
+      throw createError(ErrorCode.AUTHZ_INSUFFICIENT_PERMISSIONS, {
+        reason: `Requires level ${access.requiredLevel} to play on ${difficulty} mode`,
+        requiredLevel: access.requiredLevel,
+        currentLevel: access.currentLevel,
+      });
+    }
+
+    // Check retry limits
+    const { checkRetryLimit, formatTimeUntilReset } = await import("../lib/storyHelpers");
+    const retryLimit = await checkRetryLimit(ctx, args.userId, difficulty);
+
+    if (!retryLimit.allowed) {
+      const timeUntilReset = formatTimeUntilReset(retryLimit.timeUntilReset);
+      const difficultyName = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+      throw createError(ErrorCode.RATE_LIMIT_EXCEEDED, {
+        reason: `You've used all ${retryLimit.maxAttempts} attempts for ${difficultyName} mode. Resets in ${timeUntilReset}`,
+        limit: retryLimit.maxAttempts,
+        attemptsUsed: retryLimit.attemptsUsed,
+        resetsAt: retryLimit.resetsAt,
       });
     }
 
@@ -391,6 +837,15 @@ export const initializeStoryBattleInternal = internalMutation({
     if (!chapter) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
         reason: "Chapter not found",
+      });
+    }
+
+    // Check if chapter is unlocked for this player
+    const unlockResult = await checkChapterUnlocked(ctx, args.userId, chapter);
+    if (!unlockResult.unlocked) {
+      throw createError(ErrorCode.AUTHZ_INSUFFICIENT_PERMISSIONS, {
+        reason: unlockResult.reason ?? "Chapter is locked",
+        requirements: unlockResult.requirements,
       });
     }
 
@@ -481,6 +936,8 @@ export const initializeStoryBattleInternal = internalMutation({
       allowSpectators: false,
       spectatorCount: 0,
       maxSpectators: 0,
+      // Story mode tracking
+      stageId: stage._id,
     });
 
     // Initialize game state with AI opponent (sets turn state)
@@ -688,6 +1145,8 @@ export const quickPlayStoryInternal = internalMutation({
       allowSpectators: false,
       spectatorCount: 0,
       maxSpectators: 0,
+      // Story mode tracking
+      stageId: stage._id,
     });
 
     // Initialize game state with AI opponent (sets turn state)

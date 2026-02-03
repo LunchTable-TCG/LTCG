@@ -12,12 +12,12 @@ import { type CardResult, type Rarity, addCardsToInventory, getRandomCard } from
 import { checkRateLimitWrapper } from "../lib/rateLimit";
 import {
   DIFFICULTY_UNLOCK_LEVELS,
-  RETRY_LIMITS,
   REWARD_MULTIPLIERS,
   STAR_BONUS,
   XP_PER_LEVEL,
 } from "../lib/storyConstants";
 import { addXP, getPlayerXP } from "../lib/xpHelpers";
+import { checkChapterUnlocked } from "./storyBattle";
 import { STORY_CHAPTERS } from "../seeds/storyChapters";
 
 // Card reward configuration
@@ -181,35 +181,43 @@ export const getAvailableChapters = query({
       stagesByChapter.set(stage.chapterId, existing);
     }
 
-    // Map chapters with progress using efficient lookups
-    const chaptersWithProgress = allChapters.map((chapter) => {
-      const progress = progressMap.get(`${chapter.actNumber}-${chapter.chapterNumber}`);
+    // Map chapters with progress using efficient lookups (async for unlock check)
+    const chaptersWithProgress = await Promise.all(
+      allChapters.map(async (chapter) => {
+        const progress = progressMap.get(`${chapter.actNumber}-${chapter.chapterNumber}`);
 
-      // Get stages for this chapter using Map
-      const chapterStages = stagesByChapter.get(chapter._id) || [];
+        // Get stages for this chapter using Map
+        const chapterStages = stagesByChapter.get(chapter._id) || [];
 
-      // Count completed stages using Map lookup
-      const stagesCompleted = chapterStages.filter((stage) => {
-        const stageProgress = stageProgressMap.get(stage._id);
-        return stageProgress?.status === "completed";
-      }).length;
+        // Count completed stages using Map lookup
+        const stagesCompleted = chapterStages.filter((stage) => {
+          const stageProgress = stageProgressMap.get(stage._id);
+          return stageProgress?.status === "completed" || stageProgress?.status === "starred";
+        }).length;
 
-      const starsEarned = progress?.starsEarned || 0;
+        const starsEarned = progress?.starsEarned || 0;
 
-      // Chapter 1 is unlocked by default if no progress exists
-      let status = progress?.status || "locked";
-      if (!progress && chapter.actNumber === 1 && chapter.chapterNumber === 1) {
-        status = "available";
-      }
+        // Check unlock status with proper validation
+        const unlockResult = await checkChapterUnlocked(ctx, userId, chapter);
 
-      return {
-        ...chapter,
-        status,
-        stagesCompleted,
-        totalStages: chapterStages.length,
-        starsEarned,
-      };
-    });
+        // Chapter 1 is unlocked by default if no progress exists
+        let status = progress?.status || "locked";
+        if (unlockResult.unlocked && status === "locked") {
+          status = "available";
+        }
+
+        return {
+          ...chapter,
+          status,
+          stagesCompleted,
+          totalStages: chapterStages.length,
+          starsEarned,
+          isUnlocked: unlockResult.unlocked,
+          lockReason: unlockResult.reason,
+          unlockRequirements: unlockResult.requirements,
+        };
+      })
+    );
 
     return chaptersWithProgress;
   },
@@ -332,6 +340,41 @@ export const getBattleHistory = query({
   },
 });
 
+/**
+ * Get retry limits for all difficulty modes
+ *
+ * Returns the current status of retry limits for hard and legendary modes.
+ * Used by frontend to display remaining attempts and reset times.
+ *
+ * @returns Object with retry limit info for hard and legendary difficulties:
+ *   - hard: { used, max, resetsAt, remaining, allowed }
+ *   - legendary: { used, max, resetsAt, remaining, allowed }
+ */
+export const getRetryLimits = query({
+  args: {},
+  returns: v.object({
+    hard: v.object({
+      used: v.number(),
+      max: v.number(),
+      resetsAt: v.number(),
+      remaining: v.number(),
+      allowed: v.boolean(),
+    }),
+    legendary: v.object({
+      used: v.number(),
+      max: v.number(),
+      resetsAt: v.number(),
+      remaining: v.number(),
+      allowed: v.boolean(),
+    }),
+  }),
+  handler: async (ctx) => {
+    const { userId } = await requireAuthQuery(ctx);
+    const { getAllRetryLimits } = await import("../lib/storyHelpers");
+    return getAllRetryLimits(ctx, userId);
+  },
+});
+
 // ============================================================================
 // MUTATIONS
 // ============================================================================
@@ -407,51 +450,19 @@ export const startChapter = mutation({
       });
     }
 
-    // Check retry limits
-    if (args.difficulty === "hard") {
-      const today = new Date().setHours(0, 0, 0, 0);
-      const attemptsToday = await ctx.db
-        .query("storyBattleAttempts")
-        .withIndex("by_user_chapter", (q) =>
-          q
-            .eq("userId", userId)
-            .eq("actNumber", args.actNumber)
-            .eq("chapterNumber", args.chapterNumber)
-        )
-        .filter((q) =>
-          q.and(q.eq(q.field("difficulty"), "hard"), q.gte(q.field("attemptedAt"), today))
-        )
-        .collect();
+    // Check retry limits using helper
+    const { checkRetryLimit, formatTimeUntilReset } = await import("../lib/storyHelpers");
+    const retryLimit = await checkRetryLimit(ctx, userId, args.difficulty);
 
-      if (attemptsToday.length >= RETRY_LIMITS.hard) {
-        throw createError(ErrorCode.RATE_LIMIT_EXCEEDED, {
-          reason: "Daily retry limit reached for Hard mode",
-          limit: RETRY_LIMITS.hard,
-        });
-      }
-    }
-
-    if (args.difficulty === "legendary") {
-      const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      const attemptsThisWeek = await ctx.db
-        .query("storyBattleAttempts")
-        .withIndex("by_user_chapter", (q) =>
-          q
-            .eq("userId", userId)
-            .eq("actNumber", args.actNumber)
-            .eq("chapterNumber", args.chapterNumber)
-        )
-        .filter((q) =>
-          q.and(q.eq(q.field("difficulty"), "legendary"), q.gte(q.field("attemptedAt"), weekAgo))
-        )
-        .collect();
-
-      if (attemptsThisWeek.length >= RETRY_LIMITS.legendary) {
-        throw createError(ErrorCode.RATE_LIMIT_EXCEEDED, {
-          reason: "Weekly retry limit reached for Legendary mode",
-          limit: RETRY_LIMITS.legendary,
-        });
-      }
+    if (!retryLimit.allowed) {
+      const timeUntilReset = formatTimeUntilReset(retryLimit.timeUntilReset);
+      const difficultyName = args.difficulty.charAt(0).toUpperCase() + args.difficulty.slice(1);
+      throw createError(ErrorCode.RATE_LIMIT_EXCEEDED, {
+        reason: `You've used all ${retryLimit.maxAttempts} attempts for ${difficultyName} mode. Resets in ${timeUntilReset}`,
+        limit: retryLimit.maxAttempts,
+        attemptsUsed: retryLimit.attemptsUsed,
+        resetsAt: retryLimit.resetsAt,
+      });
     }
 
     // Create battle attempt record

@@ -15,12 +15,18 @@
  */
 
 import type { Doc, Id } from "../../_generated/dataModel";
+// Workaround for TS2589 (excessively deep type instantiation)
+// biome-ignore lint/style/noNamespaceImport: Required for Convex internal API type workaround
+import * as generatedApi from "../../_generated/api";
 import type { MutationCtx } from "../../_generated/server";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { logger } from "../../lib/debug";
 import { moveCard } from "../../lib/gameHelpers";
 import { executeEffect } from "../effectSystem/index";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
+
+// biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
+const internalAny = (generatedApi as any).internal;
 
 /** Result from a single SBA check cycle */
 export interface SBACheckResult {
@@ -254,6 +260,9 @@ async function checkLPWinCondition(
   gameId: string,
   turnNumber: number
 ): Promise<{ gameEnded: boolean; winnerId?: Id<"users">; action: string }> {
+  // Get lobby to check game mode
+  const lobby = await ctx.db.get(lobbyId);
+
   // Check host LP
   if (gameState.hostLifePoints <= 0) {
     const winner = await ctx.db.get(gameState.opponentId);
@@ -274,6 +283,21 @@ async function checkLPWinCondition(
       status: "completed",
       winnerId: gameState.opponentId,
     });
+
+    // Handle story mode completion (host lost)
+    if (lobby?.mode === "story" && lobby.stageId) {
+      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+        userId: gameState.hostId,
+        stageId: lobby.stageId,
+        won: false,
+        finalLP: 0,
+      });
+      logger.info("Story stage completed (loss)", {
+        lobbyId,
+        stageId: lobby.stageId,
+        userId: gameState.hostId,
+      });
+    }
 
     logger.info("Game ended by SBA: Host LP reached 0", {
       lobbyId,
@@ -307,6 +331,22 @@ async function checkLPWinCondition(
       status: "completed",
       winnerId: gameState.hostId,
     });
+
+    // Handle story mode completion (host won)
+    if (lobby?.mode === "story" && lobby.stageId) {
+      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+        userId: gameState.hostId,
+        stageId: lobby.stageId,
+        won: true,
+        finalLP: gameState.hostLifePoints,
+      });
+      logger.info("Story stage completed (win)", {
+        lobbyId,
+        stageId: lobby.stageId,
+        userId: gameState.hostId,
+        finalLP: gameState.hostLifePoints,
+      });
+    }
 
     logger.info("Game ended by SBA: Opponent LP reached 0", {
       lobbyId,
@@ -374,6 +414,23 @@ export async function checkDeckOutCondition(
       status: "completed",
       winnerId,
     });
+
+    // Handle story mode completion (deck out)
+    if (lobby.mode === "story" && lobby.stageId) {
+      const hostWon = winnerId === gameState.hostId;
+      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+        userId: gameState.hostId,
+        stageId: lobby.stageId,
+        won: hostWon,
+        finalLP: hostWon ? gameState.hostLifePoints : 0,
+      });
+      logger.info("Story stage completed (deck out)", {
+        lobbyId,
+        stageId: lobby.stageId,
+        userId: gameState.hostId,
+        won: hostWon,
+      });
+    }
 
     logger.info("Game ended by SBA: Deck out", {
       lobbyId,

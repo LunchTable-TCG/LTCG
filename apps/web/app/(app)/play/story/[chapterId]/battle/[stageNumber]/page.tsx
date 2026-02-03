@@ -1,6 +1,10 @@
 "use client";
 
 import { GameBoard } from "@/components/game/GameBoard";
+import {
+  DialogueDisplay,
+  type DialogueLine,
+} from "@/components/story/DialogueDisplay";
 import { StoryBattleCompleteDialog } from "@/components/story/StoryBattleCompleteDialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
@@ -9,7 +13,9 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useCallback } from "react";
+
+type DialoguePhase = "pre" | "battle" | "post" | "complete";
 
 interface BattlePageProps {
   params: Promise<{
@@ -34,20 +40,35 @@ export default function BattlePage({ params }: BattlePageProps) {
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [completionResult, setCompletionResult] = useState<any>(null);
 
+  // Dialogue state
+  const [dialoguePhase, setDialoguePhase] = useState<DialoguePhase>("pre");
+  const [battleOutcome, setBattleOutcome] = useState<{
+    won: boolean;
+    finalLP: number;
+  } | null>(null);
+
   const initializeStoryBattle = useMutation(api.progression.storyBattle.initializeStoryBattle);
   const completeStage = useMutation(api.progression.storyStages.completeStage);
 
   // Get game state to watch for end
   const gameState = useQuery(
     api.gameplay.games.queries.getGameStateForPlayer,
-    lobbyId ? { lobbyId } : "skip"
+    lobbyId && dialoguePhase === "battle" ? { lobbyId } : "skip"
   );
 
-  // Get stage information
+  // Get stage information (includes dialogue)
   const stageInfo = useQuery(api.progression.storyQueries.getStageByChapterAndNumber, {
     chapterId,
     stageNumber: Number.parseInt(stageNumber),
   });
+
+  // Extract dialogue from stage info
+  const preMatchDialogue: DialogueLine[] | undefined = stageInfo?.preMatchDialogue;
+  const postMatchWinDialogue: DialogueLine[] | undefined = stageInfo?.postMatchWinDialogue;
+  const postMatchLoseDialogue: DialogueLine[] | undefined = stageInfo?.postMatchLoseDialogue;
+
+  // Determine if we should skip pre-dialogue
+  const hasPreDialogue = preMatchDialogue && preMatchDialogue.length > 0;
 
   // Initialize story battle on mount
   useEffect(() => {
@@ -82,6 +103,46 @@ export default function BattlePage({ params }: BattlePageProps) {
       mounted = false;
     };
   }, [chapterId, initializeStoryBattle]);
+
+  // Once stage info loads, determine initial dialogue phase
+  useEffect(() => {
+    if (!isInitializing && stageInfo !== undefined) {
+      // If there's pre-match dialogue, show it; otherwise go straight to battle
+      if (hasPreDialogue) {
+        setDialoguePhase("pre");
+      } else {
+        setDialoguePhase("battle");
+      }
+    }
+  }, [isInitializing, stageInfo, hasPreDialogue]);
+
+  // Handle pre-dialogue completion
+  const handlePreDialogueComplete = useCallback(() => {
+    setDialoguePhase("battle");
+  }, []);
+
+  // Handle post-dialogue completion
+  const handlePostDialogueComplete = useCallback(() => {
+    if (battleOutcome && stageId) {
+      // Now complete the stage and show rewards
+      completeStage({
+        stageId,
+        won: battleOutcome.won,
+        finalLP: battleOutcome.finalLP,
+      })
+        .then((result) => {
+          setCompletionResult(result);
+          setDialoguePhase("complete");
+          setShowCompletionDialog(true);
+        })
+        .catch((error) => {
+          console.error("Failed to complete stage:", error);
+          // Still show completion dialog on error
+          setDialoguePhase("complete");
+          setShowCompletionDialog(true);
+        });
+    }
+  }, [battleOutcome, stageId, completeStage]);
 
   // Set stageId once stage info is loaded
   useEffect(() => {

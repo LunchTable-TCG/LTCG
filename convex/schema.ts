@@ -413,6 +413,9 @@ export default defineSchema({
     createdAt: v.number(),
     startedAt: v.optional(v.number()),
 
+    // Story mode fields
+    stageId: v.optional(v.id("storyStages")), // Story stage being played (for completion tracking)
+
     // Spectator system
     spectatorCount: v.optional(v.number()), // default: 0
     allowSpectators: v.optional(v.boolean()), // default: true
@@ -1004,10 +1007,11 @@ export default defineSchema({
     .index("by_default", ["isDefault", "cardType"])
     .index("by_active", ["isActive"]),
 
-  // Text blocks within a template
+  // Blocks within a template (text, image, icon elements)
   cardTemplateBlocks: defineTable({
     templateId: v.id("cardTemplates"),
     blockType: v.union(
+      // Text blocks
       v.literal("name"),
       v.literal("level"),
       v.literal("attribute"),
@@ -1018,7 +1022,10 @@ export default defineSchema({
       v.literal("monsterType"),
       v.literal("effect"),
       v.literal("flavorText"),
-      v.literal("custom")
+      v.literal("custom"),
+      // Image blocks (NEW)
+      v.literal("image"),
+      v.literal("icon")
     ),
     label: v.string(), // Display label in editor
     // For custom blocks, what field or static text to display
@@ -1028,7 +1035,7 @@ export default defineSchema({
     y: v.number(),
     width: v.number(),
     height: v.number(),
-    // Typography
+    // Typography (for text blocks)
     fontFamily: v.string(),
     fontSize: v.number(),
     fontWeight: v.union(v.literal("normal"), v.literal("bold")),
@@ -1041,6 +1048,20 @@ export default defineSchema({
     borderWidth: v.optional(v.number()),
     borderRadius: v.optional(v.number()),
     padding: v.optional(v.number()),
+    // Image block properties (NEW)
+    imageUrl: v.optional(v.string()), // URL to image (Vercel Blob or external)
+    imageStorageId: v.optional(v.string()), // Reference to asset storage
+    imageFit: v.optional(
+      v.union(
+        v.literal("fill"),
+        v.literal("contain"),
+        v.literal("cover"),
+        v.literal("none")
+      )
+    ),
+    // Transform properties (NEW)
+    opacity: v.optional(v.number()), // 0-1
+    rotation: v.optional(v.number()), // degrees
     // Visibility rules - which card types should show this block
     showForCardTypes: v.optional(
       v.array(
@@ -1554,7 +1575,8 @@ export default defineSchema({
   })
     .index("by_user_time", ["userId", "attemptedAt"])
     .index("by_progress", ["progressId", "attemptedAt"])
-    .index("by_user_chapter", ["userId", "actNumber", "chapterNumber"]),
+    .index("by_user_chapter", ["userId", "actNumber", "chapterNumber"])
+    .index("by_user_difficulty_time", ["userId", "difficulty", "attemptedAt"]),
 
   // Player XP and level system
   playerXP: defineTable({
@@ -2467,4 +2489,56 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_completed", ["userId", "completedAt"])
     .index("by_tournament", ["tournamentId"]),
+
+  // ============================================================================
+  // FEEDBACK SYSTEM - Bug reports and feature requests from players
+  // ============================================================================
+
+  feedback: defineTable({
+    // Submitter
+    userId: v.id("users"),
+    username: v.string(),
+
+    // Content
+    type: v.union(v.literal("bug"), v.literal("feature")),
+    title: v.string(),
+    description: v.string(),
+    screenshotUrl: v.optional(v.string()),
+    recordingUrl: v.optional(v.string()),
+
+    // Context (auto-captured)
+    pageUrl: v.string(),
+    userAgent: v.string(),
+    viewport: v.object({ width: v.number(), height: v.number() }),
+
+    // Kanban state
+    status: v.union(
+      v.literal("new"),
+      v.literal("triaged"),
+      v.literal("in_progress"),
+      v.literal("resolved"),
+      v.literal("closed")
+    ),
+    priority: v.optional(
+      v.union(
+        v.literal("low"),
+        v.literal("medium"),
+        v.literal("high"),
+        v.literal("critical")
+      )
+    ),
+
+    // Admin fields
+    assignedTo: v.optional(v.id("users")),
+    adminNotes: v.optional(v.string()),
+    resolvedAt: v.optional(v.number()),
+    resolvedBy: v.optional(v.id("users")),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_type", ["type", "createdAt"])
+    .index("by_status", ["status", "createdAt"])
+    .index("by_type_status", ["type", "status", "createdAt"])
+    .index("by_user", ["userId", "createdAt"]),
 });

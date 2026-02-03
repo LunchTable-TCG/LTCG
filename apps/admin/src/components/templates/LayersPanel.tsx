@@ -10,10 +10,11 @@ import { useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
-  GripVertical,
   Plus,
   Trash2,
   Type,
+  Image,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -37,19 +38,21 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   BLOCK_CONFIGS,
+  type BlockId,
   type BlockType,
   type CardTemplateBlock,
   type CardType,
+  isImageBlockType,
 } from "./types";
 
 interface LayersPanelProps {
   blocks: CardTemplateBlock[];
-  selectedBlockId: string | null;
+  selectedBlockId: BlockId | null;
   templateCardType: CardType;
-  onSelectBlock: (blockId: string | null) => void;
+  onSelectBlock: (blockId: BlockId | null) => void;
   onAddBlock: (blockType: BlockType, label: string) => void;
-  onDeleteBlock: (blockId: string) => void;
-  onReorderBlocks: (blockIds: string[]) => void;
+  onDeleteBlock: (blockId: BlockId) => void;
+  onReorderBlocks: (blockIds: BlockId[]) => void;
 }
 
 export function LayersPanel({
@@ -73,10 +76,23 @@ export function LayersPanel({
       templateCardType === "universal"
   );
 
-  // Check if block type already exists (except custom which can have multiple)
+  // Check if block type already exists (except custom, image, icon which can have multiple)
+  const multipleAllowedTypes = new Set(["custom", "image", "icon"]);
   const existingBlockTypes = new Set(
-    blocks.filter((b) => b.blockType !== "custom").map((b) => b.blockType)
+    blocks.filter((b) => !multipleAllowedTypes.has(b.blockType)).map((b) => b.blockType)
   );
+
+  // Get icon for block type
+  const getBlockIcon = (blockType: string) => {
+    if (isImageBlockType(blockType as BlockType)) {
+      return blockType === "icon" ? (
+        <Sparkles className="h-4 w-4 text-amber-500" />
+      ) : (
+        <Image className="h-4 w-4 text-blue-500" />
+      );
+    }
+    return <Type className="h-4 w-4 text-muted-foreground" />;
+  };
 
   const handleAddBlock = () => {
     const config = BLOCK_CONFIGS[newBlockType];
@@ -137,8 +153,8 @@ export function LayersPanel({
                 )}
                 onClick={() => onSelectBlock(block._id)}
               >
-                {/* Drag handle */}
-                <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+                {/* Block type icon */}
+                {getBlockIcon(block.blockType)}
 
                 {/* Block info */}
                 <div className="flex-1 min-w-0">
@@ -196,9 +212,9 @@ export function LayersPanel({
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Text Block</DialogTitle>
+            <DialogTitle>Add Block</DialogTitle>
             <DialogDescription>
-              Choose a block type to add to your template.
+              Choose a text or image block type to add to your template.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -217,7 +233,7 @@ export function LayersPanel({
                 <SelectContent>
                   {availableBlockTypes.map(([type, config]) => {
                     const isDisabled =
-                      type !== "custom" && existingBlockTypes.has(type as BlockType);
+                      !multipleAllowedTypes.has(type) && existingBlockTypes.has(type as BlockType);
                     return (
                       <SelectItem key={type} value={type} disabled={isDisabled}>
                         <div className="flex items-center gap-2">

@@ -28,7 +28,19 @@ export type BlockType =
   | "monsterType"
   | "effect"
   | "flavorText"
-  | "custom";
+  | "custom"
+  // Image block types
+  | "image"
+  | "icon";
+
+/** Block types that render text content */
+export type TextBlockType = Exclude<BlockType, "image" | "icon">;
+
+/** Block types that render images */
+export type ImageBlockType = "image" | "icon";
+
+/** Image fit options for image blocks */
+export type ImageFit = "fill" | "contain" | "cover" | "none";
 
 export type CardType = "creature" | "spell" | "trap" | "equipment" | "universal";
 
@@ -71,6 +83,10 @@ export interface BlockConfig {
   defaultTextAlign: "left" | "center" | "right";
   /** Which card types this block applies to (null = all) */
   applicableTypes: CardType[] | null;
+  /** Whether this is an image block type */
+  isImageBlock?: boolean;
+  /** Default image fit for image blocks */
+  defaultImageFit?: ImageFit;
 }
 
 export const BLOCK_CONFIGS: Record<BlockType, BlockConfig> = {
@@ -195,6 +211,33 @@ export const BLOCK_CONFIGS: Record<BlockType, BlockConfig> = {
     defaultTextAlign: "left",
     applicableTypes: null,
   },
+  // Image block types
+  image: {
+    type: "image",
+    label: "Image",
+    description: "Custom image element",
+    defaultWidth: 30,
+    defaultHeight: 30,
+    defaultFontSize: 14,
+    defaultFontWeight: "normal",
+    defaultTextAlign: "center",
+    applicableTypes: null,
+    isImageBlock: true,
+    defaultImageFit: "contain",
+  },
+  icon: {
+    type: "icon",
+    label: "Icon",
+    description: "Small icon or symbol",
+    defaultWidth: 8,
+    defaultHeight: 8,
+    defaultFontSize: 14,
+    defaultFontWeight: "normal",
+    defaultTextAlign: "center",
+    applicableTypes: null,
+    isImageBlock: true,
+    defaultImageFit: "contain",
+  },
 };
 
 // =============================================================================
@@ -276,3 +319,162 @@ export const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: s
   epic: { bg: "bg-purple-500/20", text: "text-purple-400", border: "border-purple-500/50" },
   legendary: { bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/50" },
 };
+
+// =============================================================================
+// Konva Canvas Types
+// =============================================================================
+
+/** Layer types in the Konva canvas (bottom to top) */
+export type LayerType = "background" | "artwork" | "content" | "overlay" | "selection";
+
+/** Canvas export format */
+export type ExportFormat = "png" | "jpeg";
+
+/** Canvas export options */
+export interface ExportOptions {
+  format: ExportFormat;
+  quality?: number; // 0-1 for JPEG
+  pixelRatio?: number; // For high-DPI exports
+  width?: number; // Override width
+  height?: number; // Override height
+}
+
+/** Snap guide for alignment */
+export interface SnapGuide {
+  orientation: "horizontal" | "vertical";
+  position: number;
+  type: "center" | "edge";
+}
+
+/** Selection state for multi-select */
+export interface SelectionState {
+  selectedIds: Id<"cardTemplateBlocks">[];
+  selectionRect: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null;
+}
+
+/** Drag state for tracking movement */
+export interface DragState {
+  isDragging: boolean;
+  startPosition: { x: number; y: number } | null;
+  currentPosition: { x: number; y: number } | null;
+}
+
+/** Helper to check if block type is an image type */
+export function isImageBlockType(type: BlockType): type is ImageBlockType {
+  return type === "image" || type === "icon";
+}
+
+/** Helper to check if block type is a text type */
+export function isTextBlockType(type: BlockType): type is TextBlockType {
+  return !isImageBlockType(type);
+}
+
+// =============================================================================
+// Block ID Type Alias (for consistent usage)
+// =============================================================================
+
+/** Block ID type alias for easier use */
+export type BlockId = Id<"cardTemplateBlocks">;
+
+/** Template ID type alias for easier use */
+export type TemplateId = Id<"cardTemplates">;
+
+// =============================================================================
+// Transform Types (unified for all draggable elements)
+// =============================================================================
+
+/** Position update from drag operations */
+export interface BlockPosition {
+  x: number;
+  y: number;
+}
+
+/** Transform attributes from resize/rotate operations */
+export interface BlockTransformAttrs {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation?: number;
+}
+
+// =============================================================================
+// Asset Picker Types
+// =============================================================================
+
+/** Asset categories available in the system */
+export const ASSET_CATEGORIES = [
+  "all",
+  "profile_picture",
+  "card_image",
+  "document",
+  "other",
+  "background",
+  "texture",
+  "ui_element",
+  "shop_asset",
+  "story_asset",
+  "logo",
+] as const;
+
+export type AssetCategory = (typeof ASSET_CATEGORIES)[number];
+
+/** Type guard to check if a string is a valid asset category */
+export function isValidAssetCategory(value: string): value is AssetCategory {
+  return ASSET_CATEGORIES.includes(value as AssetCategory);
+}
+
+/** Asset object shape from the API */
+export interface Asset {
+  _id: string;
+  fileName: string;
+  blobUrl: string;
+  category: string;
+  contentType: string;
+  size: number;
+  description?: string;
+}
+
+/** Selected asset passed from picker */
+export interface SelectedAsset {
+  url: string;
+  id: string;
+  name: string;
+}
+
+// =============================================================================
+// Canvas MIME Types
+// =============================================================================
+
+/** MIME types for canvas export */
+export type CanvasMimeType = "image/png" | "image/jpeg";
+
+/** Get MIME type for export format */
+export function getCanvasMimeType(format: ExportFormat): CanvasMimeType {
+  return format === "jpeg" ? "image/jpeg" : "image/png";
+}
+
+// =============================================================================
+// Bounds/Rectangle Types
+// =============================================================================
+
+/** Rectangle bounds in percentage */
+export interface PercentBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Rectangle bounds in pixels */
+export interface PixelBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}

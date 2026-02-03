@@ -28,9 +28,17 @@ import {
   Move,
   Palette,
   Type,
+  Image,
+  RotateCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FONT_FAMILIES, type CardTemplateBlock } from "./types";
+import {
+  FONT_FAMILIES,
+  type CardTemplateBlock,
+  type ImageFit,
+  isImageBlockType,
+} from "./types";
+import { AssetPickerButton } from "./asset-picker";
 
 interface PropertiesPanelProps {
   block: CardTemplateBlock | null;
@@ -150,7 +158,100 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
 
           <Separator />
 
-          {/* Typography */}
+          {/* Image Properties (for image blocks only) */}
+          {isImageBlockType(block.blockType) && (
+            <>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <Image className="h-3 w-3" />
+                  Image
+                </div>
+
+                {/* Image Source */}
+                <div className="space-y-2">
+                  <Label className="text-xs">Image Source</Label>
+                  <AssetPickerButton
+                    value={block.imageUrl}
+                    onChange={(url) => onChange({ imageUrl: url })}
+                    dialogTitle="Select Image"
+                    allowedCategories={["ui_element", "texture", "background", "logo", "other"]}
+                    showPreview
+                    variant="outline"
+                  />
+                </div>
+
+                {/* Image Fit */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Image Fit</Label>
+                  <Select
+                    value={block.imageFit ?? "contain"}
+                    onValueChange={(v) => onChange({ imageFit: v as ImageFit })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fill">Fill (stretch)</SelectItem>
+                      <SelectItem value="contain">Contain (fit inside)</SelectItem>
+                      <SelectItem value="cover">Cover (may crop)</SelectItem>
+                      <SelectItem value="none">None (original size)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Opacity */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Opacity</Label>
+                  <div className="flex items-center gap-2">
+                    <Slider
+                      value={[(block.opacity ?? 1) * 100]}
+                      onValueChange={([v]) => v !== undefined && onChange({ opacity: v / 100 })}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground w-10 text-right">
+                      {Math.round((block.opacity ?? 1) * 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Rotation */}
+                <div className="space-y-1">
+                  <Label className="text-xs flex items-center gap-1">
+                    <RotateCw className="h-3 w-3" />
+                    Rotation
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Slider
+                      value={[block.rotation ?? 0]}
+                      onValueChange={([v]) => v !== undefined && onChange({ rotation: v })}
+                      min={-180}
+                      max={180}
+                      step={1}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      min={-360}
+                      max={360}
+                      value={block.rotation ?? 0}
+                      onChange={(e) =>
+                        onChange({ rotation: parseInt(e.target.value) || 0 })
+                      }
+                      className="w-16"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+            </>
+          )}
+
+          {/* Typography (for text blocks only) */}
+          {!isImageBlockType(block.blockType) && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <Type className="h-3 w-3" />
@@ -183,7 +284,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
               <div className="flex items-center gap-2">
                 <Slider
                   value={[block.fontSize]}
-                  onValueChange={([v]) => onChange({ fontSize: v })}
+                  onValueChange={([v]) => v !== undefined && onChange({ fontSize: v })}
                   min={8}
                   max={48}
                   step={1}
@@ -259,6 +360,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
               </div>
             </div>
           </div>
+          )}
 
           <Separator />
 
@@ -269,24 +371,26 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
               Colors
             </div>
 
-            {/* Text Color */}
-            <div className="space-y-1">
-              <Label className="text-xs">Text Color</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="color"
-                  value={block.color}
-                  onChange={(e) => onChange({ color: e.target.value })}
-                  className="w-12 h-9 p-1 cursor-pointer"
-                />
-                <Input
-                  value={block.color}
-                  onChange={(e) => onChange({ color: e.target.value })}
-                  placeholder="#FFFFFF"
-                  className="flex-1"
-                />
+            {/* Text Color (for text blocks only) */}
+            {!isImageBlockType(block.blockType) && (
+              <div className="space-y-1">
+                <Label className="text-xs">Text Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={block.color}
+                    onChange={(e) => onChange({ color: e.target.value })}
+                    className="w-12 h-9 p-1 cursor-pointer"
+                  />
+                  <Input
+                    value={block.color}
+                    onChange={(e) => onChange({ color: e.target.value })}
+                    placeholder="#FFFFFF"
+                    className="flex-1"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Background Color */}
             <div className="space-y-1">
@@ -378,7 +482,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
             </Label>
             <Slider
               value={[block.padding || 0]}
-              onValueChange={([v]) => onChange({ padding: v || undefined })}
+              onValueChange={([v]) => v !== undefined && onChange({ padding: v || undefined })}
               min={0}
               max={20}
               step={1}

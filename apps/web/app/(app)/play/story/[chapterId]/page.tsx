@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  DifficultySelector,
+  type DifficultyId,
+  type DifficultyLevel,
+} from "@/components/story/DifficultySelector";
 import { StoryStageNode } from "@/components/story/StoryStageNode";
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -9,11 +14,38 @@ import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
 import { api } from "@convex/_generated/api";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Gift, Loader2, Lock, Play, Star } from "lucide-react";
+import { ChevronLeft, Clock, Gift, Loader2, Lock, Play, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+
+/**
+ * Format milliseconds until reset into a human-readable string
+ */
+function formatTimeUntilReset(resetsAt: number) {
+  const now = Date.now();
+  const milliseconds = Math.max(0, resetsAt - now);
+
+  if (milliseconds <= 0) return "now";
+
+  const seconds = Math.floor(milliseconds / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    return days === 1 ? "1 day" : `${days} days`;
+  }
+  if (hours > 0) {
+    return hours === 1 ? "1 hour" : `${hours} hours`;
+  }
+  if (minutes > 0) {
+    return minutes === 1 ? "1 minute" : `${minutes} minutes`;
+  }
+  return "less than a minute";
+}
 
 interface ChapterPageProps {
   params: Promise<{ chapterId: string }>;
@@ -96,38 +128,6 @@ export default function ChapterPage({ params }: ChapterPageProps) {
   const chapter = chapterDetails;
   const stages = chapter.stages || [];
   const assetName = chapter.archetype || "infernal_dragons";
-
-  // Check if chapter is locked
-  if (false) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <div className="absolute inset-0 z-0">
-          <Image
-            src={getAssetUrl(`/assets/story/${assetName}.png`)}
-            alt="Chapter Background"
-            fill
-            className="object-cover opacity-30 blur-sm"
-          />
-          <div className="absolute inset-0 bg-black/60" />
-        </div>
-
-        <FantasyFrame className="relative z-10 w-full max-w-md p-8 text-center bg-black/80 backdrop-blur-md">
-          <Lock className="w-16 h-16 mx-auto mb-4 text-gray-500" />
-          <h1 className="text-2xl font-bold mb-2 text-white">Chapter Locked</h1>
-          <p className="text-[#a89f94] mb-6">
-            Complete the previous chapter or reach the required level to unlock.
-          </p>
-          <Link
-            href="/play/story"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#3d2b1f] text-[#e8e0d5] hover:bg-[#3d2b1f]/30 transition-all"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back to Chapters
-          </Link>
-        </FantasyFrame>
-      </div>
-    );
-  }
 
   const completedStages = stages.filter(
     (s: { status?: string }) => s.status === "starred" || s.status === "completed"
@@ -219,7 +219,17 @@ export default function ChapterPage({ params }: ChapterPageProps) {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <StoryStageNode stage={stageData} onClick={() => setSelectedStage(stageData)} />
+                    <StoryStageNode
+                      stage={stageData}
+                      onClick={() => {
+                        // Check if stage is locked based on progress status
+                        if (stageData.status === "locked") {
+                          toast.error("Complete the previous stage first!");
+                          return;
+                        }
+                        setSelectedStage(stageData);
+                      }}
+                    />
                   </motion.div>
                 );
               })}

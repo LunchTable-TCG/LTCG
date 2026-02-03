@@ -24,6 +24,7 @@ const cardTypeValidator = v.union(
 );
 
 const blockTypeValidator = v.union(
+  // Text blocks
   v.literal("name"),
   v.literal("level"),
   v.literal("attribute"),
@@ -34,7 +35,17 @@ const blockTypeValidator = v.union(
   v.literal("monsterType"),
   v.literal("effect"),
   v.literal("flavorText"),
-  v.literal("custom")
+  v.literal("custom"),
+  // Image blocks
+  v.literal("image"),
+  v.literal("icon")
+);
+
+const imageFitValidator = v.union(
+  v.literal("fill"),
+  v.literal("contain"),
+  v.literal("cover"),
+  v.literal("none")
 );
 
 const fontWeightValidator = v.union(v.literal("normal"), v.literal("bold"));
@@ -439,6 +450,12 @@ export const duplicateTemplate = mutation({
         borderWidth: block.borderWidth,
         borderRadius: block.borderRadius,
         padding: block.padding,
+        // Image block properties
+        imageUrl: block.imageUrl,
+        imageStorageId: block.imageStorageId,
+        imageFit: block.imageFit,
+        opacity: block.opacity,
+        rotation: block.rotation,
         showForCardTypes: block.showForCardTypes,
         zIndex: block.zIndex,
       });
@@ -508,7 +525,7 @@ export const deleteTemplate = mutation({
 // =============================================================================
 
 /**
- * Add a text block to a template
+ * Add a block to a template (text or image)
  */
 export const addBlock = mutation({
   args: {
@@ -526,6 +543,12 @@ export const addBlock = mutation({
     fontStyle: v.optional(fontStyleValidator),
     textAlign: v.optional(textAlignValidator),
     color: v.optional(v.string()),
+    // Image block properties
+    imageUrl: v.optional(v.string()),
+    imageStorageId: v.optional(v.string()),
+    imageFit: v.optional(imageFitValidator),
+    opacity: v.optional(v.number()),
+    rotation: v.optional(v.number()),
   },
   returns: v.id("cardTemplateBlocks"),
   handler: async (ctx, args) => {
@@ -548,6 +571,13 @@ export const addBlock = mutation({
       0
     );
 
+    // Determine if this is an image block
+    const isImageBlock = args.blockType === "image" || args.blockType === "icon";
+
+    // Default dimensions differ for image blocks
+    const defaultWidth = isImageBlock ? (args.blockType === "icon" ? 8 : 30) : 80;
+    const defaultHeight = isImageBlock ? (args.blockType === "icon" ? 8 : 30) : 10;
+
     const blockId = await ctx.db.insert("cardTemplateBlocks", {
       templateId: args.templateId,
       blockType: args.blockType,
@@ -555,8 +585,8 @@ export const addBlock = mutation({
       customContent: args.customContent,
       x: args.x ?? 10,
       y: args.y ?? 10,
-      width: args.width ?? 80,
-      height: args.height ?? 10,
+      width: args.width ?? defaultWidth,
+      height: args.height ?? defaultHeight,
       fontFamily: args.fontFamily ?? template.defaultFontFamily,
       fontSize: args.fontSize ?? template.defaultFontSize,
       fontWeight: args.fontWeight ?? "normal",
@@ -568,6 +598,12 @@ export const addBlock = mutation({
       borderWidth: undefined,
       borderRadius: undefined,
       padding: undefined,
+      // Image block properties
+      imageUrl: args.imageUrl,
+      imageStorageId: args.imageStorageId,
+      imageFit: args.imageFit ?? (isImageBlock ? "contain" : undefined),
+      opacity: args.opacity,
+      rotation: args.rotation,
       showForCardTypes: undefined,
       zIndex: maxZIndex + 1,
     });
@@ -587,7 +623,7 @@ export const addBlock = mutation({
 });
 
 /**
- * Update a block's properties
+ * Update a block's properties (text or image)
  */
 export const updateBlock = mutation({
   args: {
@@ -609,6 +645,12 @@ export const updateBlock = mutation({
     borderWidth: v.optional(v.number()),
     borderRadius: v.optional(v.number()),
     padding: v.optional(v.number()),
+    // Image block properties
+    imageUrl: v.optional(v.string()),
+    imageStorageId: v.optional(v.string()),
+    imageFit: v.optional(imageFitValidator),
+    opacity: v.optional(v.number()),
+    rotation: v.optional(v.number()),
     showForCardTypes: v.optional(
       v.array(
         v.union(

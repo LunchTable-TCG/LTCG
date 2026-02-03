@@ -12,73 +12,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 
-// Mock chapter metadata (UI names and descriptions)
-const CHAPTER_INFO = [
-  {
-    chapterNumber: 1,
-    name: "Infernal Dragons",
-    description:
-      "Face the fury of the Fire Dragon Legion. Master aggressive strategies and burn damage mechanics.",
-    archetype: "infernal_dragons",
-  },
-  {
-    chapterNumber: 2,
-    name: "Abyssal Horrors",
-    description:
-      "Descend into the deep. Learn control tactics and master the art of freezing your opponents.",
-    archetype: "abyssal_horrors",
-  },
-  {
-    chapterNumber: 3,
-    name: "Nature Spirits",
-    description: "Connect with the wild. Harness growth mechanics and healing abilities.",
-    archetype: "nature_spirits",
-  },
-  {
-    chapterNumber: 4,
-    name: "Storm Elementals",
-    description: "Command the tempest. Unleash lightning and wind-based combos.",
-    archetype: "storm_elementals",
-  },
-  {
-    chapterNumber: 5,
-    name: "Shadow Assassins",
-    description: "Strike from the darkness. Master stealth and quick elimination tactics.",
-    archetype: "shadow_assassins",
-  },
-  {
-    chapterNumber: 6,
-    name: "Celestial Guardians",
-    description:
-      "Ascend to the heavens. Discover defensive formations and divine protection spells.",
-    archetype: "celestial_guardians",
-  },
-  {
-    chapterNumber: 7,
-    name: "Undead Legion",
-    description: "Raise the fallen. Learn resurrection mechanics and army building.",
-    archetype: "undead_legion",
-  },
-  {
-    chapterNumber: 8,
-    name: "Divine Knights",
-    description: "The final trial. Face the legendary Divine Knights in the ultimate challenge.",
-    archetype: "divine_knights",
-  },
-  {
-    chapterNumber: 9,
-    name: "Arcane Mages",
-    description: "Wield pure magic. Master spell combinations and mana management.",
-    archetype: "arcane_mages",
-  },
-  {
-    chapterNumber: 10,
-    name: "Mechanical Constructs",
-    description: "Build the future. Combine units and create powerful mechanical synergies.",
-    archetype: "mechanical_constructs",
-  },
-];
-
 export default function StoryModePage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
@@ -107,7 +40,7 @@ export default function StoryModePage() {
     }
   }, [isAuthenticated, playerProgress, initializeStoryProgress]);
 
-  // Transform real data to match UI format
+  // Transform chapter data from database to UI format
   const chapters = useMemo(() => {
     if (!allChapters) return [];
 
@@ -115,26 +48,35 @@ export default function StoryModePage() {
       (chapter: {
         actNumber: number;
         chapterNumber: number;
-        description?: string;
+        title: string;
+        description: string;
         archetype?: string;
-        requiredLevel?: number;
         status?: string;
         stagesCompleted?: number;
+        totalStages?: number;
         starsEarned?: number;
+        isUnlocked?: boolean;
+        unlockRequirements?: {
+          minimumLevel?: number;
+        };
       }) => {
-        const info = CHAPTER_INFO[chapter.chapterNumber - 1];
         const chapterId = `${chapter.actNumber}-${chapter.chapterNumber}`;
+
+        // Derive required level from unlock requirements or use default progression
+        const requiredLevel =
+          chapter.unlockRequirements?.minimumLevel || (chapter.chapterNumber - 1) * 5 + 1;
 
         return {
           chapterId,
-          name: info?.name || `Chapter ${chapter.chapterNumber}`,
-          description: info?.description || chapter.description || "",
-          archetype: info?.archetype || chapter.archetype || "mixed",
+          // Use database title and description directly
+          name: chapter.title || `Chapter ${chapter.chapterNumber}`,
+          description: chapter.description || "",
+          archetype: chapter.archetype || "mixed",
           order: chapter.chapterNumber,
-          requiredLevel: chapter.requiredLevel || (chapter.chapterNumber - 1) * 5 + 1,
-          isUnlocked: chapter.status !== "locked",
+          requiredLevel,
+          isUnlocked: chapter.isUnlocked ?? chapter.status !== "locked",
           completedStages: chapter.stagesCompleted || 0,
-          totalStages: 10,
+          totalStages: chapter.totalStages || 10,
           starredStages: chapter.starsEarned || 0,
           isCompleted: chapter.status === "completed",
         };
@@ -143,35 +85,40 @@ export default function StoryModePage() {
   }, [allChapters]);
 
   const stats = useMemo(() => {
+    // Use actual chapter count from database
+    const totalChapters = allChapters?.length || 0;
+    // Each chapter has 10 stages
+    const totalStages = totalChapters * 10;
+
     if (!playerProgress) {
       return {
         completedChapters: 0,
-        totalChapters: 10,
+        totalChapters,
         completedStages: 0,
-        totalStages: 100,
+        totalStages,
         starredStages: 0,
       };
     }
 
-    // Calculate total stages from progress
-    let totalStages = 0;
+    // Calculate completed stages from progress
+    let completedStages = 0;
     if (playerProgress.progressByAct) {
       Object.values(playerProgress.progressByAct).forEach((chapters: unknown) => {
         if (!Array.isArray(chapters)) return;
         chapters.forEach((ch: { timesCompleted?: number }) => {
-          totalStages += ch.timesCompleted || 0;
+          completedStages += ch.timesCompleted || 0;
         });
       });
     }
 
     return {
       completedChapters: playerProgress.totalChaptersCompleted || 0,
-      totalChapters: 10,
-      completedStages: totalStages,
-      totalStages: 100,
+      totalChapters,
+      completedStages,
+      totalStages,
       starredStages: playerProgress.totalStarsEarned || 0,
     };
-  }, [playerProgress]);
+  }, [playerProgress, allChapters]);
 
   const badges = 3; // Placeholder for now
 

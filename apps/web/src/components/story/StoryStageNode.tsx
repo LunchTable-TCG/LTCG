@@ -56,9 +56,6 @@ const DIFFICULTY_CONFIG: Record<
 export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProps) {
   const difficultyKey = stage.aiDifficulty as keyof typeof DIFFICULTY_CONFIG;
   const config = DIFFICULTY_CONFIG[difficultyKey] || DIFFICULTY_CONFIG["easy"];
-
-  // Defensive check - config will always be defined due to fallback above
-  if (!config) return null;
   const isLocked = stage.status === "locked";
   const isCompleted = stage.status === "completed" || stage.status === "starred";
   const isStarred = stage.status === "starred";
@@ -74,7 +71,7 @@ export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProp
       data-testid="story-stage"
       whileHover={!isLocked ? { scale: 1.1, y: -5 } : {}}
       whileTap={!isLocked ? { scale: 0.95 } : {}}
-      onClick={!isLocked ? onClick : undefined}
+      onClick={onClick}
       className={cn(
         "relative group flex flex-col items-center justify-center z-10",
         isLocked && "opacity-50 cursor-not-allowed grayscale",

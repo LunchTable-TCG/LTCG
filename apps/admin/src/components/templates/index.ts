@@ -4,11 +4,25 @@
  * Export all template-related components for easy importing.
  */
 
-export { CanvasPreview, getBlockContent } from "./CanvasPreview";
+// Main editor
+export { TemplateEditor } from "./TemplateEditor";
+export { TemplateCard } from "./TemplateCard";
+
+// Panels
 export { LayersPanel } from "./LayersPanel";
 export { PropertiesPanel } from "./PropertiesPanel";
-export { TemplateCard } from "./TemplateCard";
-export { TemplateEditor } from "./TemplateEditor";
+
+// Konva Canvas components
+export { KonvaCanvas } from "./canvas/KonvaCanvas";
+export * from "./canvas/layers";
+export * from "./canvas/elements";
+export * from "./canvas/hooks";
+
+// Asset picker
+export * from "./asset-picker";
+
+// Legacy DOM components (kept for backwards compatibility)
+export { CanvasPreview, getBlockContent } from "./CanvasPreview";
 export { TextBlockLayer } from "./TextBlockLayer";
 
 // Types
