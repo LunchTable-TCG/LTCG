@@ -257,11 +257,10 @@ export const createTemplate = mutation({
     });
 
     await scheduleAuditLog(ctx, {
-      userId,
+      adminId: userId,
       action: "card_template.create",
-      resourceType: "cardTemplate",
-      resourceId: templateId,
-      details: { name: args.name, cardType: args.cardType },
+      metadata: { templateId, name: args.name, cardType: args.cardType },
+      success: true,
     });
 
     return templateId;
@@ -322,11 +321,10 @@ export const updateTemplate = mutation({
     });
 
     await scheduleAuditLog(ctx, {
-      userId,
+      adminId: userId,
       action: "card_template.update",
-      resourceType: "cardTemplate",
-      resourceId: templateId,
-      details: { updates: Object.keys(filteredUpdates) },
+      metadata: { templateId, updates: Object.keys(filteredUpdates) },
+      success: true,
     });
   },
 });
@@ -366,11 +364,10 @@ export const setDefaultTemplate = mutation({
     });
 
     await scheduleAuditLog(ctx, {
-      userId,
+      adminId: userId,
       action: "card_template.set_default",
-      resourceType: "cardTemplate",
-      resourceId: args.templateId,
-      details: { cardType: template.cardType },
+      metadata: { templateId: args.templateId, cardType: template.cardType },
+      success: true,
     });
   },
 });
@@ -448,11 +445,10 @@ export const duplicateTemplate = mutation({
     }
 
     await scheduleAuditLog(ctx, {
-      userId,
+      adminId: userId,
       action: "card_template.duplicate",
-      resourceType: "cardTemplate",
-      resourceId: newTemplateId,
-      details: { sourceTemplateId: args.templateId, newName: args.newName },
+      metadata: { sourceTemplateId: args.templateId, newTemplateId, newName: args.newName },
+      success: true,
     });
 
     return newTemplateId;
@@ -499,11 +495,10 @@ export const deleteTemplate = mutation({
     await ctx.db.delete(args.templateId);
 
     await scheduleAuditLog(ctx, {
-      userId,
+      adminId: userId,
       action: "card_template.delete",
-      resourceType: "cardTemplate",
-      resourceId: args.templateId,
-      details: { name: template.name },
+      metadata: { templateId: args.templateId, name: template.name },
+      success: true,
     });
   },
 });
@@ -581,11 +576,10 @@ export const addBlock = mutation({
     await ctx.db.patch(args.templateId, { updatedAt: Date.now() });
 
     await scheduleAuditLog(ctx, {
-      userId,
+      adminId: userId,
       action: "card_template_block.create",
-      resourceType: "cardTemplateBlock",
-      resourceId: blockId,
-      details: { templateId: args.templateId, blockType: args.blockType },
+      metadata: { templateId: args.templateId, blockId, blockType: args.blockType },
+      success: true,
     });
 
     return blockId;
@@ -647,11 +641,10 @@ export const updateBlock = mutation({
     await ctx.db.patch(block.templateId, { updatedAt: Date.now() });
 
     await scheduleAuditLog(ctx, {
-      userId,
+      adminId: userId,
       action: "card_template_block.update",
-      resourceType: "cardTemplateBlock",
-      resourceId: blockId,
-      details: { updates: Object.keys(filteredUpdates) },
+      metadata: { blockId, updates: Object.keys(filteredUpdates) },
+      success: true,
     });
   },
 });
@@ -676,11 +669,10 @@ export const deleteBlock = mutation({
     await ctx.db.patch(block.templateId, { updatedAt: Date.now() });
 
     await scheduleAuditLog(ctx, {
-      userId,
+      adminId: userId,
       action: "card_template_block.delete",
-      resourceType: "cardTemplateBlock",
-      resourceId: args.blockId,
-      details: { templateId: block.templateId, blockType: block.blockType },
+      metadata: { blockId: args.blockId, templateId: block.templateId, blockType: block.blockType },
+      success: true,
     });
   },
 });
@@ -704,18 +696,20 @@ export const reorderBlocks = mutation({
 
     // Update z-index based on array order
     for (let i = 0; i < args.blockIds.length; i++) {
-      await ctx.db.patch(args.blockIds[i], { zIndex: i });
+      const blockId = args.blockIds[i];
+      if (blockId) {
+        await ctx.db.patch(blockId, { zIndex: i });
+      }
     }
 
     // Update template timestamp
     await ctx.db.patch(args.templateId, { updatedAt: Date.now() });
 
     await scheduleAuditLog(ctx, {
-      userId,
+      adminId: userId,
       action: "card_template_blocks.reorder",
-      resourceType: "cardTemplate",
-      resourceId: args.templateId,
-      details: { blockCount: args.blockIds.length },
+      metadata: { templateId: args.templateId, blockCount: args.blockIds.length },
+      success: true,
     });
   },
 });

@@ -38,6 +38,7 @@ import type * as admin_seasons from "../admin/seasons.js";
 import type * as admin_shop from "../admin/shop.js";
 import type * as admin_shopSetup from "../admin/shopSetup.js";
 import type * as admin_story from "../admin/story.js";
+import type * as admin_templates from "../admin/templates.js";
 import type * as admin_tournaments from "../admin/tournaments.js";
 import type * as agents_agents from "../agents/agents.js";
 import type * as agents_decisions from "../agents/decisions.js";
@@ -264,6 +265,7 @@ declare const fullApi: ApiFromModules<{
   "admin/shop": typeof admin_shop;
   "admin/shopSetup": typeof admin_shopSetup;
   "admin/story": typeof admin_story;
+  "admin/templates": typeof admin_templates;
   "admin/tournaments": typeof admin_tournaments;
   "agents/agents": typeof agents_agents;
   "agents/decisions": typeof agents_decisions;

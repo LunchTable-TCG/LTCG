@@ -1,7 +1,7 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 // Suppress Privy SDK hydration warnings (their modal has <div> inside <p>)
 function useSuppressPrivyHydrationWarnings() {
@@ -24,14 +24,27 @@ function useSuppressPrivyHydrationWarnings() {
 }
 
 export function PrivyAuthProvider({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
   useSuppressPrivyHydrationWarnings();
 
-  // ZAuth-inspired emerald/teal accent color
-  const accentColor = "#34d399"; // emerald-400
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Avoid hydration mismatch by not rendering Privy until client-side
+  if (!mounted) {
+    return <>{children}</>;
+  }
+
+  const appId = process.env["NEXT_PUBLIC_PRIVY_APP_ID"];
+  if (!appId) {
+    console.error("NEXT_PUBLIC_PRIVY_APP_ID is not set");
+    return <>{children}</>;
+  }
 
   return (
     <PrivyProvider
-      appId={process.env["NEXT_PUBLIC_PRIVY_APP_ID"] || ""}
+      appId={appId}
       config={{
         // Login configuration - email only for admin
         loginMethods: ["email"],
@@ -47,7 +60,7 @@ export function PrivyAuthProvider({ children }: { children: ReactNode }) {
         // Appearance - dark theme for admin dashboard
         appearance: {
           theme: "dark",
-          accentColor,
+          accentColor: "#6366f1", // Indigo - original working color
         },
       }}
     >

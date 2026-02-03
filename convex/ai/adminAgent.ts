@@ -10,7 +10,6 @@
 
 import { Agent, createTool, type ToolCtx } from "@convex-dev/agent";
 import { openai } from "@ai-sdk/openai";
-import type { LanguageModel, EmbeddingModel } from "ai";
 import { z } from "zod";
 import { components, api } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -342,9 +341,8 @@ const listAdmins = createTool({
 
 export const adminAgent = new Agent(components.agent, {
   name: "Admin Assistant",
-  // Cast to satisfy type system - v3 models are compatible at runtime
-  languageModel: openai.chat("gpt-4o-mini") as unknown as LanguageModel,
-  textEmbeddingModel: openai.embedding("text-embedding-3-small") as unknown as EmbeddingModel,
+  languageModel: openai.chat("gpt-4o-mini"),
+  textEmbeddingModel: openai.embedding("text-embedding-3-small"),
 
   instructions: `You are the LTCG Admin Assistant, helping game administrators manage the trading card game platform.
 

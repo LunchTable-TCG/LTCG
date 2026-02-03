@@ -65,6 +65,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.35",
+    "@ai-sdk/gateway": "^3.0.32",
     "@ai-sdk/openai": "^3.0.25",
     "@convex-dev/agent": "^0.3.2",
     "@convex-dev/aggregate": "^0.2.1",
@@ -73,6 +74,7 @@
     "@convex-dev/sharded-counter": "^0.2.0",
     "@convex-dev/workpool": "^0.3.1",
     "@flags-sdk/hypertune": "^0.3.2",
+    "@openrouter/ai-sdk-provider": "^2.1.1",
     "@oslojs/crypto": "^1.0.1",
     "@privy-io/node": "^0.8.0",
     "@radix-ui/react-dialog": "^1.1.15",
