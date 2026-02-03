@@ -90,9 +90,11 @@ export const loadAllCards = internalMutation({
         // Check if card exists
         const existing = cardsByName.get(rawCard.name);
         if (existing) {
+          // biome-ignore lint/suspicious/noExplicitAny: Dynamic card schema from external source
           await ctx.db.patch(existing._id, card as any);
           updated++;
         } else {
+          // biome-ignore lint/suspicious/noExplicitAny: Dynamic card schema from external source
           await ctx.db.insert("cardDefinitions", card as any);
           created++;
         }

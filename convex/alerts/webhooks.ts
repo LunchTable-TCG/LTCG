@@ -161,11 +161,11 @@ export const update = mutation({
     }
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
-    if (args.webhookUrl !== undefined) updates.webhookUrl = args.webhookUrl;
-    if (args.webhookId !== undefined) updates.webhookId = args.webhookId;
-    if (args.webhookSecret !== undefined) updates.webhookSecret = args.webhookSecret;
-    if (args.tokenMint !== undefined) updates.tokenMint = args.tokenMint;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
+    if (args.webhookUrl !== undefined) updates["webhookUrl"] = args.webhookUrl;
+    if (args.webhookId !== undefined) updates["webhookId"] = args.webhookId;
+    if (args.webhookSecret !== undefined) updates["webhookSecret"] = args.webhookSecret;
+    if (args.tokenMint !== undefined) updates["tokenMint"] = args.tokenMint;
+    if (args.isActive !== undefined) updates["isActive"] = args.isActive;
 
     await ctx.db.patch(args.configId, updates);
 

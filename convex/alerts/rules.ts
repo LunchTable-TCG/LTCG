@@ -157,12 +157,12 @@ export const update = mutation({
     }
 
     const updates: Record<string, unknown> = {};
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.conditions !== undefined) updates.conditions = args.conditions;
-    if (args.severity !== undefined) updates.severity = args.severity;
-    if (args.cooldownMinutes !== undefined) updates.cooldownMinutes = args.cooldownMinutes;
-    if (args.isEnabled !== undefined) updates.isEnabled = args.isEnabled;
+    if (args.name !== undefined) updates["name"] = args.name;
+    if (args.description !== undefined) updates["description"] = args.description;
+    if (args.conditions !== undefined) updates["conditions"] = args.conditions;
+    if (args.severity !== undefined) updates["severity"] = args.severity;
+    if (args.cooldownMinutes !== undefined) updates["cooldownMinutes"] = args.cooldownMinutes;
+    if (args.isEnabled !== undefined) updates["isEnabled"] = args.isEnabled;
 
     await ctx.db.patch(args.ruleId, updates);
 

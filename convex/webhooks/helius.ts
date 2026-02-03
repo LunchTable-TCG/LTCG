@@ -330,7 +330,7 @@ export const handleWebhook = httpAction(async (ctx, request) => {
 
     // Verify signature if secret is configured
     const signature = request.headers.get("x-helius-signature");
-    const webhookSecret = process.env.HELIUS_WEBHOOK_SECRET;
+    const webhookSecret = process.env["HELIUS_WEBHOOK_SECRET"];
 
     const isValid = await verifyHeliusSignature(rawBody, signature, webhookSecret);
     if (!isValid) {

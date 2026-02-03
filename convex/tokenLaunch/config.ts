@@ -194,16 +194,16 @@ export const updateStatus = mutation({
       updatedAt: Date.now(),
     };
 
-    if (args.mintAddress) updates.mintAddress = args.mintAddress;
-    if (args.bondingCurveAddress) updates.bondingCurveAddress = args.bondingCurveAddress;
-    if (args.pumpfunUrl) updates.pumpfunUrl = args.pumpfunUrl;
+    if (args.mintAddress) updates["mintAddress"] = args.mintAddress;
+    if (args.bondingCurveAddress) updates["bondingCurveAddress"] = args.bondingCurveAddress;
+    if (args.pumpfunUrl) updates["pumpfunUrl"] = args.pumpfunUrl;
 
     if (args.status === "launched" && !config.launchedAt) {
-      updates.launchedAt = Date.now();
+      updates["launchedAt"] = Date.now();
     }
 
     if (args.status === "graduated" && !config.graduatedAt) {
-      updates.graduatedAt = Date.now();
+      updates["graduatedAt"] = Date.now();
     }
 
     await ctx.db.patch(config._id, updates);

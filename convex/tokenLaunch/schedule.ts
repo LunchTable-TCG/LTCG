@@ -223,8 +223,8 @@ export const updateStatus = mutation({
       updatedAt: Date.now(),
     };
 
-    if (args.abortReason) updates.abortReason = args.abortReason;
-    if (args.launchTxSignature) updates.launchTxSignature = args.launchTxSignature;
+    if (args.abortReason) updates["abortReason"] = args.abortReason;
+    if (args.launchTxSignature) updates["launchTxSignature"] = args.launchTxSignature;
 
     await ctx.db.patch(schedule._id, updates);
 

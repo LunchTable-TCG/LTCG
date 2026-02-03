@@ -53,8 +53,8 @@ export const createWalletForUserAgent = internalAction({
     privyUserId: v.string(), // User's Privy DID (did:privy:xxx)
   },
   handler: async (ctx, args): Promise<WalletCreationResult> => {
-    const appId = process.env.PRIVY_APP_ID;
-    const appSecret = process.env.PRIVY_APP_SECRET;
+    const appId = process.env["PRIVY_APP_ID"];
+    const appSecret = process.env["PRIVY_APP_SECRET"];
 
     if (!appId || !appSecret) {
       console.error("Missing Privy credentials for wallet creation");
@@ -148,8 +148,8 @@ export const createSolanaWallet = internalAction({
     ownerUserId: v.string(), // The internal user ID (agent:xxx or system:xxx)
   },
   handler: async (ctx, args): Promise<WalletCreationResult> => {
-    const appId = process.env.PRIVY_APP_ID;
-    const appSecret = process.env.PRIVY_APP_SECRET;
+    const appId = process.env["PRIVY_APP_ID"];
+    const appSecret = process.env["PRIVY_APP_SECRET"];
 
     if (!appId || !appSecret) {
       console.error("Missing Privy credentials for wallet creation");

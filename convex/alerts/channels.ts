@@ -171,9 +171,9 @@ export const update = mutation({
     }
 
     const updates: Record<string, unknown> = {};
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.config !== undefined) updates.config = args.config;
-    if (args.isEnabled !== undefined) updates.isEnabled = args.isEnabled;
+    if (args.name !== undefined) updates["name"] = args.name;
+    if (args.config !== undefined) updates["config"] = args.config;
+    if (args.isEnabled !== undefined) updates["isEnabled"] = args.isEnabled;
 
     await ctx.db.patch(args.channelId, updates);
 
@@ -418,7 +418,7 @@ export const sendExternalNotificationAction = internalAction({
       critical: { slack: "#d9534f", discord: 0xd9534f },
     };
 
-    const color = severityColors[args.severity] ?? severityColors.info!;
+    const color = severityColors[args.severity] ?? severityColors["info"]!;
 
     try {
       if (args.channelType === "slack") {

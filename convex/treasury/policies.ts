@@ -157,10 +157,10 @@ export const updatePolicy = mutation({
       updatedAt: Date.now(),
     };
 
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.rules !== undefined) updates.rules = args.rules;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
+    if (args.name !== undefined) updates["name"] = args.name;
+    if (args.description !== undefined) updates["description"] = args.description;
+    if (args.rules !== undefined) updates["rules"] = args.rules;
+    if (args.isActive !== undefined) updates["isActive"] = args.isActive;
 
     await ctx.db.patch(args.policyId, updates);
 

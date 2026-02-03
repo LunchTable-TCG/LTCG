@@ -35,9 +35,9 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
  * - "meta-llama/llama-3.3-70b-instruct"
  */
 export const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env["OPENROUTER_API_KEY"],
   headers: {
-    "HTTP-Referer": process.env.APP_URL || "https://ltcg.app",
+    "HTTP-Referer": process.env["APP_URL"] || "https://ltcg.app",
     "X-Title": "LTCG Admin",
   },
 });
@@ -53,7 +53,7 @@ export const openrouter = createOpenRouter({
  * - "google/gemini-2.0-flash"
  */
 export const gateway = createGateway({
-  apiKey: process.env.AI_GATEWAY_API_KEY || process.env.OPENAI_API_KEY,
+  apiKey: process.env["AI_GATEWAY_API_KEY"] || process.env["OPENAI_API_KEY"],
 });
 
 // =============================================================================
@@ -128,15 +128,15 @@ type EmbeddingTier = keyof typeof EMBEDDING_MODELS;
  */
 export function getPreferredProvider(): Provider {
   // Check OpenRouter first (most models, best fallback support)
-  if (process.env.OPENROUTER_API_KEY) {
+  if (process.env["OPENROUTER_API_KEY"]) {
     return "openrouter";
   }
   // Then Vercel AI Gateway
-  if (process.env.AI_GATEWAY_API_KEY) {
+  if (process.env["AI_GATEWAY_API_KEY"]) {
     return "gateway";
   }
   // Finally direct OpenAI
-  if (process.env.OPENAI_API_KEY) {
+  if (process.env["OPENAI_API_KEY"]) {
     return "openai";
   }
   // Default to openrouter (will fail gracefully if no key)
@@ -188,7 +188,7 @@ export function getEmbeddingModel(
   const modelConfig = EMBEDDING_MODELS[tier];
 
   // Prefer OpenAI for embeddings (most reliable)
-  if (provider === "openrouter" && process.env.OPENROUTER_API_KEY) {
+  if (provider === "openrouter" && process.env["OPENROUTER_API_KEY"]) {
     return openrouter.embedding(modelConfig.openrouter);
   }
 
@@ -310,9 +310,9 @@ export function getOpenRouterWithFallbacks(primary: string, _fallbacks: string[]
  */
 export function getProviderStatus() {
   return {
-    openrouter: !!process.env.OPENROUTER_API_KEY,
-    gateway: !!process.env.AI_GATEWAY_API_KEY,
-    openai: !!process.env.OPENAI_API_KEY,
+    openrouter: !!process.env["OPENROUTER_API_KEY"],
+    gateway: !!process.env["AI_GATEWAY_API_KEY"],
+    openai: !!process.env["OPENAI_API_KEY"],
     preferred: getPreferredProvider(),
   };
 }
