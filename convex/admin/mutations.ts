@@ -564,7 +564,8 @@ export const seedProgressionSystem = mutation({
 
     return {
       success: true,
-      message: "Progression system seeding scheduled. Quests and achievements will be populated shortly.",
+      message:
+        "Progression system seeding scheduled. Quests and achievements will be populated shortly.",
     };
   },
 });
@@ -608,7 +609,8 @@ export const devSeedProgressionSystem = mutation({
 
     return {
       success: true,
-      message: "Progression system seeding scheduled. Quests and achievements will be populated shortly.",
+      message:
+        "Progression system seeding scheduled. Quests and achievements will be populated shortly.",
       alreadySeeded: false,
     };
   },

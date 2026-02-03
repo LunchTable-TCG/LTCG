@@ -9,10 +9,10 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
+import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
-import { adjustPlayerCurrencyHelper } from "../economy/economy";
 
 // =============================================================================
 // Types & Validators
@@ -24,11 +24,7 @@ const seasonStatusValidator = v.union(
   v.literal("ended")
 );
 
-const rankResetTypeValidator = v.union(
-  v.literal("full"),
-  v.literal("soft"),
-  v.literal("none")
-);
+const rankResetTypeValidator = v.union(v.literal("full"), v.literal("soft"), v.literal("none"));
 
 const rewardTierValidator = v.object({
   tier: v.string(),
@@ -51,7 +47,14 @@ const DEFAULT_REWARDS = [
   { tier: "Platinum", minElo: 1500, goldReward: 3500, gemsReward: 200 },
   { tier: "Diamond", minElo: 1700, goldReward: 5000, gemsReward: 350 },
   { tier: "Master", minElo: 1900, goldReward: 7500, gemsReward: 500, cardPackReward: 3 },
-  { tier: "Legend", minElo: 2100, goldReward: 10000, gemsReward: 750, cardPackReward: 5, titleReward: "Legend" },
+  {
+    tier: "Legend",
+    minElo: 2100,
+    goldReward: 10000,
+    gemsReward: 750,
+    cardPackReward: 5,
+    titleReward: "Legend",
+  },
 ];
 
 // =============================================================================
@@ -283,10 +286,7 @@ export const getSeasonLeaderboard = query({
     }
 
     // For active/upcoming seasons, get live rankings
-    const users = await ctx.db
-      .query("users")
-      .withIndex("rankedElo")
-      .collect();
+    const users = await ctx.db.query("users").withIndex("rankedElo").collect();
 
     // Filter to users with ranked games and sort by ELO
     const rankedUsers = users
@@ -301,7 +301,10 @@ export const getSeasonLeaderboard = query({
         const wins = u.rankedWins ?? 0;
         const losses = u.rankedLosses ?? 0;
         const gamesPlayed = wins + losses;
-        const tierInfo = getTierForElo(elo, season.rewards.length > 0 ? season.rewards : DEFAULT_REWARDS);
+        const tierInfo = getTierForElo(
+          elo,
+          season.rewards.length > 0 ? season.rewards : DEFAULT_REWARDS
+        );
         return {
           rank: offset + index + 1,
           userId: u._id,
@@ -340,17 +343,17 @@ export const previewSeasonRewards = query({
     const rewards = season.rewards.length > 0 ? season.rewards : DEFAULT_REWARDS;
 
     // Get all users with ranked games
-    const users = await ctx.db
-      .query("users")
-      .withIndex("rankedElo")
-      .collect();
+    const users = await ctx.db.query("users").withIndex("rankedElo").collect();
 
     const rankedUsers = users
       .filter((u) => (u.rankedWins ?? 0) + (u.rankedLosses ?? 0) > 0)
       .sort((a, b) => (b.rankedElo ?? DEFAULT_ELO) - (a.rankedElo ?? DEFAULT_ELO));
 
     // Calculate rewards per tier
-    const tierStats: Record<string, { count: number; totalGold: number; totalGems: number; totalPacks: number }> = {};
+    const tierStats: Record<
+      string,
+      { count: number; totalGold: number; totalGems: number; totalPacks: number }
+    > = {};
     let totalGold = 0;
     let totalGems = 0;
     let totalPacks = 0;
@@ -430,7 +433,11 @@ export const createSeason = mutation({
 
     // Validate soft reset percentage if applicable
     if (args.rankResetType === "soft") {
-      if (args.softResetPercentage === undefined || args.softResetPercentage < 0 || args.softResetPercentage > 100) {
+      if (
+        args.softResetPercentage === undefined ||
+        args.softResetPercentage < 0 ||
+        args.softResetPercentage > 100
+      ) {
         throw new Error("Soft reset percentage must be between 0 and 100");
       }
     }
@@ -501,7 +508,8 @@ export const updateSeason = mutation({
     if (args.name !== undefined) updates["name"] = args.name;
     if (args.description !== undefined) updates["description"] = args.description;
     if (args.rankResetType !== undefined) updates["rankResetType"] = args.rankResetType;
-    if (args.softResetPercentage !== undefined) updates["softResetPercentage"] = args.softResetPercentage;
+    if (args.softResetPercentage !== undefined)
+      updates["softResetPercentage"] = args.softResetPercentage;
     if (args.rewards !== undefined) updates["rewards"] = args.rewards;
 
     // Validate dates if either is being updated
@@ -690,7 +698,13 @@ export const distributeSeasonRewards = mutation({
       throw new Error("Can only distribute rewards for ended seasons");
     }
 
-    const distributed = await distributeAllRewards(ctx, args.seasonId, season.rewards, adminId, args.userIds);
+    const distributed = await distributeAllRewards(
+      ctx,
+      args.seasonId,
+      season.rewards,
+      adminId,
+      args.userIds
+    );
 
     await scheduleAuditLog(ctx, {
       adminId,
@@ -764,10 +778,7 @@ async function createSeasonSnapshots(
   if (!season) return 0;
 
   // Get all users with ranked games
-  const users = await ctx.db
-    .query("users")
-    .withIndex("rankedElo")
-    .collect();
+  const users = await ctx.db.query("users").withIndex("rankedElo").collect();
 
   const rankedUsers = users
     .filter((u) => (u.rankedWins ?? 0) + (u.rankedLosses ?? 0) > 0)

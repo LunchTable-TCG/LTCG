@@ -419,7 +419,8 @@ export const batchGrantPacks = mutation({
             adminId,
             adminUsername,
             "Card Packs Opened!",
-            reason || `You received ${quantity} ${packType} pack(s) containing ${totalCardsGranted} cards!`,
+            reason ||
+              `You received ${quantity} ${packType} pack(s) containing ${totalCardsGranted} cards!`,
             { rewardType: "packs", packCount: quantity }
           );
         }
@@ -912,21 +913,21 @@ export const sendAnnouncement = mutation({
     const adminUsername = admin?.username;
 
     // Calculate expiration if provided
-    const expiresAt = expiresInDays
-      ? Date.now() + expiresInDays * 24 * 60 * 60 * 1000
-      : undefined;
+    const expiresAt = expiresInDays ? Date.now() + expiresInDays * 24 * 60 * 60 * 1000 : undefined;
 
     // Send to all players
-    await ctx.scheduler.runAfter(0, internal.social.inbox.createBroadcastMessages, {
+    const broadcastArgs = {
       userIds: playerIds,
-      type: "announcement",
+      type: "announcement" as const,
       title,
       message,
       data: { priority },
       senderId: adminId,
       senderUsername: adminUsername || "Admin",
       expiresAt,
-    });
+    };
+    // @ts-ignore TS2589 - Non-deterministic type depth error (only occurs in full monorepo type check, not in isolated convex check)
+    await ctx.scheduler.runAfter(0, internal.social.inbox.createBroadcastMessages, broadcastArgs);
 
     // Log action
     await scheduleAuditLog(ctx, {
@@ -975,7 +976,7 @@ export const broadcastAnnouncement = mutation({
     const adminUsername = admin?.username;
 
     // Get all users with optional filters
-    let usersQuery = ctx.db.query("users");
+    const usersQuery = ctx.db.query("users");
 
     // Collect users (with limit for safety)
     const allUsers = await usersQuery.take(10000);
@@ -1004,21 +1005,20 @@ export const broadcastAnnouncement = mutation({
     const userIds = filteredUsers.map((u) => u._id);
 
     // Calculate expiration if provided
-    const expiresAt = expiresInDays
-      ? now + expiresInDays * 24 * 60 * 60 * 1000
-      : undefined;
+    const expiresAt = expiresInDays ? now + expiresInDays * 24 * 60 * 60 * 1000 : undefined;
 
     // Send to all filtered users
-    await ctx.scheduler.runAfter(0, internal.social.inbox.createBroadcastMessages, {
+    const broadcastArgs = {
       userIds,
-      type: "announcement",
+      type: "announcement" as const,
       title,
       message,
       data: { priority },
       senderId: adminId,
       senderUsername: adminUsername || "Admin",
       expiresAt,
-    });
+    };
+    await ctx.scheduler.runAfter(0, internal.social.inbox.createBroadcastMessages, broadcastArgs);
 
     // Log action
     await scheduleAuditLog(ctx, {
@@ -1066,15 +1066,16 @@ export const sendSystemMessage = mutation({
     const adminUsername = admin?.username;
 
     // Send to all players
-    await ctx.scheduler.runAfter(0, internal.social.inbox.createBroadcastMessages, {
+    const systemMessageArgs = {
       userIds: playerIds,
-      type: "system",
+      type: "system" as const,
       title,
       message,
       data: { category },
       senderId: adminId,
       senderUsername: adminUsername || "System",
-    });
+    };
+    await ctx.scheduler.runAfter(0, internal.social.inbox.createBroadcastMessages, systemMessageArgs);
 
     // Log action
     await scheduleAuditLog(ctx, {
@@ -1238,10 +1239,14 @@ export const previewBatchResetRatings = query({
     const validCount = preview.filter((p) => p.valid).length;
     const invalidCount = preview.filter((p) => !p.valid).length;
     const playersLosingRating = preview.filter(
-      (p) => p.valid && (p.currentRankedElo > defaultRankedElo || p.currentCasualRating > defaultCasualRating)
+      (p) =>
+        p.valid &&
+        (p.currentRankedElo > defaultRankedElo || p.currentCasualRating > defaultCasualRating)
     ).length;
     const playersGainingRating = preview.filter(
-      (p) => p.valid && (p.currentRankedElo < defaultRankedElo || p.currentCasualRating < defaultCasualRating)
+      (p) =>
+        p.valid &&
+        (p.currentRankedElo < defaultRankedElo || p.currentCasualRating < defaultCasualRating)
     ).length;
 
     return {

@@ -320,7 +320,12 @@ export const setupDefaults = mutation({
       { category: "team", item: "Team briefed on launch plan", isRequired: true, order: 0 },
       { category: "team", item: "Emergency contacts documented", isRequired: true, order: 1 },
       { category: "team", item: "Launch roles assigned", isRequired: true, order: 2 },
-      { category: "team", item: "Post-launch monitoring schedule set", isRequired: false, order: 3 },
+      {
+        category: "team",
+        item: "Post-launch monitoring schedule set",
+        isRequired: false,
+        order: 3,
+      },
     ];
 
     let count = 0;

@@ -41,10 +41,7 @@ export const listMessages = query({
         .order("desc")
         .collect();
     } else {
-      messages = await ctx.db
-        .query("globalChatMessages")
-        .order("desc")
-        .collect();
+      messages = await ctx.db.query("globalChatMessages").order("desc").collect();
     }
 
     // Filter by time

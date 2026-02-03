@@ -314,14 +314,10 @@ export const updateConfig = mutation({
         throw new Error(`Config "${args.key}" requires a number value`);
       }
       if (config.minValue !== undefined && args.value < config.minValue) {
-        throw new Error(
-          `Config "${args.key}" value must be at least ${config.minValue}`
-        );
+        throw new Error(`Config "${args.key}" value must be at least ${config.minValue}`);
       }
       if (config.maxValue !== undefined && args.value > config.maxValue) {
-        throw new Error(
-          `Config "${args.key}" value must be at most ${config.maxValue}`
-        );
+        throw new Error(`Config "${args.key}" value must be at most ${config.maxValue}`);
       }
     } else if (config.valueType === "boolean") {
       if (typeof args.value !== "boolean") {
@@ -411,16 +407,10 @@ export const bulkUpdateConfigs = mutation({
         if (typeof update.value !== "number") {
           isValid = false;
           errorMessage = "Requires number value";
-        } else if (
-          config.minValue !== undefined &&
-          update.value < config.minValue
-        ) {
+        } else if (config.minValue !== undefined && update.value < config.minValue) {
           isValid = false;
           errorMessage = `Must be at least ${config.minValue}`;
-        } else if (
-          config.maxValue !== undefined &&
-          update.value > config.maxValue
-        ) {
+        } else if (config.maxValue !== undefined && update.value > config.maxValue) {
           isValid = false;
           errorMessage = `Must be at most ${config.maxValue}`;
         }

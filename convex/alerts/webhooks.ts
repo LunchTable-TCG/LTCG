@@ -11,11 +11,7 @@ import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
 
 // Validators
-const providerValidator = v.union(
-  v.literal("helius"),
-  v.literal("shyft"),
-  v.literal("bitquery")
-);
+const providerValidator = v.union(v.literal("helius"), v.literal("shyft"), v.literal("bitquery"));
 
 // =============================================================================
 // Queries
@@ -80,10 +76,11 @@ export const getStats = query({
         shyft: webhooks.filter((w) => w.provider === "shyft").length,
         bitquery: webhooks.filter((w) => w.provider === "bitquery").length,
       },
-      lastActivity: webhooks
-        .map((w) => w.lastEventAt)
-        .filter(Boolean)
-        .sort((a, b) => (b ?? 0) - (a ?? 0))[0] ?? null,
+      lastActivity:
+        webhooks
+          .map((w) => w.lastEventAt)
+          .filter(Boolean)
+          .sort((a, b) => (b ?? 0) - (a ?? 0))[0] ?? null,
       totalErrors: webhooks.reduce((sum, w) => sum + (w.errorCount ?? 0), 0),
     };
   },

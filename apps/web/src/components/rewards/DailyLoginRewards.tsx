@@ -152,9 +152,25 @@ export function DailyLoginRewards({
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="p-4 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/30"
+            className={cn(
+              "p-4 rounded-xl border relative overflow-hidden",
+              todayReward.type === "special"
+                ? "bg-[#d4af37]/10 border-[#d4af37]/30"
+                : "bg-[#d4af37]/10 border-[#d4af37]/30"
+            )}
           >
-            <div className="flex items-center justify-between">
+            {/* Gold Metal Texture for Special Rewards */}
+            {todayReward.type === "special" && (
+              <div
+                className="absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage: "url(/assets/textures/gold-metal.png)",
+                  backgroundSize: "512px 512px",
+                  backgroundRepeat: "repeat",
+                }}
+              />
+            )}
+            <div className="flex items-center justify-between relative z-10">
               <div className="flex items-center gap-3">
                 <div
                   className={cn(

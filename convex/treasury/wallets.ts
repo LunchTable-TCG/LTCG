@@ -6,8 +6,8 @@
  */
 
 import { v } from "convex/values";
-import { internalAction, internalMutation, mutation, query } from "../_generated/server";
 import { internal } from "../_generated/api";
+import { internalAction, internalMutation, mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
@@ -485,7 +485,8 @@ export const createPrivyWallet = internalAction({
       console.log(`Treasury wallet created: ${wallet.address}`);
       return { success: true, address: wallet.address };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error creating Privy wallet";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error creating Privy wallet";
       console.error("Failed to create Privy wallet:", error);
       await ctx.runMutation(internal.treasury.wallets.updateWalletFailed, {
         walletDbId: args.walletDbId,
@@ -533,7 +534,9 @@ export const syncWalletBalance = internalAction({
         tokenBalance,
       });
 
-      console.log(`Synced balance for ${args.address}: ${solBalance} lamports, ${tokenBalance} tokens`);
+      console.log(
+        `Synced balance for ${args.address}: ${solBalance} lamports, ${tokenBalance} tokens`
+      );
     } catch (error) {
       console.error("Failed to sync wallet balance:", error);
     }

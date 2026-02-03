@@ -19,17 +19,12 @@
 
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
-import {
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "../_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
-import { requireAuthMutation, requireAuthQuery, requireAdminMutation } from "../lib/convexAuth";
-import { getRankFromRating } from "../lib/helpers";
+import { requireAdminMutation, requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { getRankFromRating } from "../lib/helpers";
 import {
   tournamentBracketValidator,
   tournamentCheckInResponseValidator,
@@ -443,9 +438,10 @@ export const registerForTournament = mutation({
     return {
       success: true,
       participantId,
-      message: tournament.entryFee > 0
-        ? `Registered! ${tournament.entryFee} gold deducted.`
-        : "Registered successfully!",
+      message:
+        tournament.entryFee > 0
+          ? `Registered! ${tournament.entryFee} gold deducted.`
+          : "Registered successfully!",
     };
   },
 });
@@ -745,7 +741,13 @@ export const startTournament = internalMutation({
     }
 
     // Create all matches for the bracket
-    await createBracketMatches(ctx, tournamentId, bracketSize, seededParticipants, bracketPositions);
+    await createBracketMatches(
+      ctx,
+      tournamentId,
+      bracketSize,
+      seededParticipants,
+      bracketPositions
+    );
 
     // Update tournament
     await ctx.db.patch(tournamentId, {
@@ -848,10 +850,7 @@ export const getTimedOutMatches = internalQuery({
     const readyMatches = await ctx.db
       .query("tournamentMatches")
       .filter((q) =>
-        q.and(
-          q.eq(q.field("status"), "ready"),
-          q.lt(q.field("createdAt"), now - timeout)
-        )
+        q.and(q.eq(q.field("status"), "ready"), q.lt(q.field("createdAt"), now - timeout))
       )
       .collect();
 

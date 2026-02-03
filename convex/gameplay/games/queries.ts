@@ -353,9 +353,7 @@ export const getGameSpectatorView = query({
         (idStr) => allCardIds.find((id) => id.toString() === idStr)!
       );
       const cards = await Promise.all(uniqueCardIds.map((id) => ctx.db.get(id)));
-      const cardMap = new Map(
-        cards.filter(Boolean).map((card) => [card!._id.toString(), card!])
-      );
+      const cardMap = new Map(cards.filter(Boolean).map((card) => [card!._id.toString(), card!]));
 
       // Helper to get card from pre-fetched map
       const getCard = (cardId: Id<"cardDefinitions">) => cardMap.get(cardId.toString());

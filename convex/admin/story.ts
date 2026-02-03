@@ -54,10 +54,7 @@ export const listChapters = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let chapters = await ctx.db
-      .query("storyChapters")
-      .withIndex("by_number")
-      .collect();
+    let chapters = await ctx.db.query("storyChapters").withIndex("by_number").collect();
 
     // Filter by status
     if (!args.includeUnpublished) {

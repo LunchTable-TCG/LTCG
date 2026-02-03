@@ -16,10 +16,10 @@ import {
   STAR_BONUS,
   XP_PER_LEVEL,
 } from "../lib/storyConstants";
-import { getAllRetryLimits, checkRetryLimit, formatTimeUntilReset } from "../lib/storyHelpers";
+import { checkRetryLimit, formatTimeUntilReset, getAllRetryLimits } from "../lib/storyHelpers";
 import { addXP, getPlayerXP } from "../lib/xpHelpers";
-import { checkChapterUnlocked } from "./storyBattle";
 import { STORY_CHAPTERS } from "../seeds/storyChapters";
+import { checkChapterUnlocked } from "./storyBattle";
 
 // Card reward configuration
 type CardRewardConfig = {

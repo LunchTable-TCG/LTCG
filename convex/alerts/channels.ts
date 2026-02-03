@@ -23,11 +23,7 @@ const channelTypeValidator = v.union(
   v.literal("email")
 );
 
-const severityValidator = v.union(
-  v.literal("info"),
-  v.literal("warning"),
-  v.literal("critical")
-);
+const severityValidator = v.union(v.literal("info"), v.literal("warning"), v.literal("critical"));
 
 // =============================================================================
 // Queries
@@ -382,14 +378,18 @@ export const sendToChannels = internalMutation({
     for (const channel of channelsToNotify) {
       if (channel.type === "slack" || channel.type === "discord") {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await ctx.scheduler.runAfter(0, (internal as any).alerts.channels.sendExternalNotificationAction, {
-          channelType: channel.type,
-          webhookUrl: channel.config.webhookUrl!,
-          title: args.title,
-          message: args.message,
-          severity: args.severity,
-          data: args.data,
-        });
+        await ctx.scheduler.runAfter(
+          0,
+          (internal as any).alerts.channels.sendExternalNotificationAction,
+          {
+            channelType: channel.type,
+            webhookUrl: channel.config.webhookUrl!,
+            title: args.title,
+            message: args.message,
+            severity: args.severity,
+            data: args.data,
+          }
+        );
       }
     }
 

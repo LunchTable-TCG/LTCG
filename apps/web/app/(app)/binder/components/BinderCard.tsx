@@ -2,7 +2,9 @@
 
 import { type JsonAbility, getAbilityDisplayText } from "@/lib/cardHelpers";
 import { cn } from "@/lib/utils";
+import { getArchetypeIcon } from "@/lib/archetypeIcons";
 import { Flame, Heart, Shield, Star, Waves, Zap } from "lucide-react";
+import Image from "next/image";
 import { useRef, useState } from "react";
 
 export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
@@ -101,8 +103,6 @@ export function BinderCard({
   const [isHovering, setIsHovering] = useState(false);
 
   const rarity = RARITY_CONFIG[card.rarity];
-  const element = ELEMENT_CONFIG[card.element] || ELEMENT_CONFIG.neutral;
-  const ElementIcon = element.icon;
 
   console.log("🃏 Rendering BinderCard:", card.name, "imageUrl:", card.imageUrl);
 
@@ -192,15 +192,16 @@ export function BinderCard({
             }}
           />
 
-          {/* Element badge */}
-          <div
-            className={cn(
-              "absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center",
-              element.bg,
-              "border border-white/10"
-            )}
-          >
-            <ElementIcon className={cn("w-3.5 h-3.5", element.color)} />
+          {/* Archetype Icon Badge */}
+          <div className="absolute top-2 right-2 w-7 h-7 rounded-lg overflow-hidden border border-white/20 bg-black/40 backdrop-blur-sm">
+            <Image
+              src={getArchetypeIcon(card.element)}
+              alt={`${card.element} archetype`}
+              width={28}
+              height={28}
+              className="object-cover"
+              unoptimized
+            />
           </div>
 
           {/* Card Name */}

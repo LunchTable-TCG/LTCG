@@ -39,16 +39,22 @@ const ASSET_PATH_MAP: Record<string, string> = {
   "/assets/backgrounds/collection-bg.png": "backgrounds/collection-bg.png",
   "/assets/dashboard-bg.jpg": "dashboard-bg.jpg",
 
-  // Textures
-  "/assets/textures/parchment.png": "textures/parchment.png",
-  "/assets/textures/leather.png": "textures/leather.png",
+  // Textures - upgraded to seamless 1024px brand versions
+  "/assets/textures/parchment.png": "brand/textures/parchment-seamless-1024.png",
+  "/assets/textures/leather.png": "brand/textures/leather-seamless-1024.png",
+  "/assets/textures/arcane-stone.png": "brand/textures/arcane-stone-seamless-1024.png",
+  "/assets/textures/gold-metal.png": "brand/textures/gold-metal-seamless-1024.png",
   "/assets/parchment-frame.png": "parchment-frame.png",
 
-  // UI Elements
+  // UI Elements - using high-quality alpha PNG versions from brand directory
   "/assets/ui/fantasy_gold_metal.png": "ui/fantasy_gold_metal.png",
-  "/assets/ui/fantasy_panel_bg.png": "ui/fantasy_panel_bg.png",
-  "/assets/ui/fantasy_wood_btn.png": "ui/fantasy_wood_btn.png",
-  "/assets/ui/button-bg.png": "ui/button-bg.png",
+  "/assets/ui/fantasy_panel_bg.png": "brand/ui/fantasy_panel_bg.alpha.png",
+  "/assets/ui/fantasy_wood_btn.png": "brand/ui/fantasy_wood_btn.alpha.png",
+  "/assets/ui/button-bg.png": "brand/ui/button-bg.alpha.png",
+  "/assets/ui/buttons_fantasy.png": "brand/ui/buttons_fantasy.alpha.png",
+  "/assets/ui/corner_ornament.png": "brand/ui/corner_ornament.alpha.png",
+  "/assets/ui/header_banner.png": "brand/ui/header_banner.alpha.png",
+  "/assets/ui/panel_grimoire.png": "brand/ui/panel_grimoire.alpha.png",
   "/assets/card-bg.svg": "card-bg.svg",
 
   // Shop
@@ -69,6 +75,17 @@ const ASSET_PATH_MAP: Record<string, string> = {
   "/assets/story/celestial_guardians.png": "story/celestial_guardians.png",
   "/assets/story/abyssal_horrors.png": "story/abyssal_horrors.png",
   "/assets/story/infernal_dragons.png": "story/infernal_dragons.png",
+
+  // Social media assets (for external marketing use)
+  "/brand/social/og-1200x630.png": "brand/social/og-1200x630.png",
+  "/brand/social/reels-1080x1920.png": "brand/social/reels-1080x1920.png",
+  "/brand/social/square-1024.png": "brand/social/square-1024.png",
+
+  // Hero backgrounds
+  "/brand/backgrounds/ltcg-hero-1536x1024.branded.png":
+    "brand/backgrounds/ltcg-hero-1536x1024.branded.png",
+  "/brand/backgrounds/ltcg-vertical-1024x1536.png":
+    "brand/backgrounds/ltcg-vertical-1024x1536.png",
 };
 
 // =============================================================================

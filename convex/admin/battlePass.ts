@@ -113,7 +113,7 @@ export const listBattlePassSeasons = query({
     // Enrich with season info
     const enriched = await Promise.all(
       paginated.map(async (bp) => {
-        const season = await ctx.db.get(bp.seasonId) as Doc<"seasons"> | null;
+        const season = (await ctx.db.get(bp.seasonId)) as Doc<"seasons"> | null;
         const tierCount = await ctx.db
           .query("battlePassTiers")
           .withIndex("by_battlepass", (q) => q.eq("battlePassId", bp._id))
@@ -170,10 +170,7 @@ export const getBattlePass = query({
     const premiumCount = allProgress.filter((p) => p.isPremium).length;
     const avgTier =
       allProgress.length > 0
-        ? Math.round(
-            allProgress.reduce((sum, p) => sum + p.currentTier, 0) /
-              allProgress.length
-          )
+        ? Math.round(allProgress.reduce((sum, p) => sum + p.currentTier, 0) / allProgress.length)
         : 0;
 
     // Get creator info
@@ -190,9 +187,7 @@ export const getBattlePass = query({
         freeToPlayPlayers: allProgress.length - premiumCount,
         averageTier: avgTier,
         premiumConversionRate:
-          allProgress.length > 0
-            ? Math.round((premiumCount / allProgress.length) * 100)
-            : 0,
+          allProgress.length > 0 ? Math.round((premiumCount / allProgress.length) * 100) : 0,
       },
       creatorUsername: creator?.username ?? "Unknown",
     };
@@ -244,10 +239,7 @@ export const getBattlePassStats = query({
       const premiumCount = progress.filter((p) => p.isPremium).length;
       const avgTier =
         progress.length > 0
-          ? Math.round(
-              progress.reduce((sum, p) => sum + p.currentTier, 0) /
-                progress.length
-            )
+          ? Math.round(progress.reduce((sum, p) => sum + p.currentTier, 0) / progress.length)
           : 0;
 
       // Tier distribution
@@ -273,8 +265,7 @@ export const getBattlePassStats = query({
     return {
       totalBattlePasses: battlePasses.length,
       activeBattlePass: activeStats,
-      upcomingCount: battlePasses.filter((bp) => bp.status === "upcoming")
-        .length,
+      upcomingCount: battlePasses.filter((bp) => bp.status === "upcoming").length,
       endedCount: battlePasses.filter((bp) => bp.status === "ended").length,
     };
   },
@@ -464,9 +455,7 @@ export const defineBattlePassTier = mutation({
     }
 
     if (args.tier < 1 || args.tier > battlePass.totalTiers) {
-      throw new Error(
-        `Tier must be between 1 and ${battlePass.totalTiers}`
-      );
+      throw new Error(`Tier must be between 1 and ${battlePass.totalTiers}`);
     }
 
     // Check if tier already exists
@@ -622,9 +611,7 @@ export const activateBattlePass = mutation({
       .first();
 
     if (activeBP) {
-      throw new Error(
-        `Another battle pass is already active: "${activeBP.name}". End it first.`
-      );
+      throw new Error(`Another battle pass is already active: "${activeBP.name}". End it first.`);
     }
 
     // Verify tiers exist

@@ -93,8 +93,7 @@ export const getSummary = query({
       currentUserApproval: userApproval ?? null,
       // Require at least 2 approvals or 50% of admins, whichever is higher
       requiredApprovals: Math.max(2, Math.ceil(totalAdmins / 2)),
-      hasEnoughApprovals:
-        approved.length >= Math.max(2, Math.ceil(totalAdmins / 2)),
+      hasEnoughApprovals: approved.length >= Math.max(2, Math.ceil(totalAdmins / 2)),
     };
   },
 });

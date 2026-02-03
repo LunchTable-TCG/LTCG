@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { ArchetypeIcon } from "@/components/ui/ArchetypeIcon";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -410,8 +411,9 @@ export function CardInspectorModal({
 
                 {/* Archetype */}
                 {card.archetype && (
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium">Archetype:</span>{" "}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-medium">Archetype:</span>
+                    <ArchetypeIcon archetype={card.archetype} size="sm" />
                     <span className="text-primary">{card.archetype}</span>
                   </div>
                 )}

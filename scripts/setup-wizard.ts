@@ -70,7 +70,7 @@ async function main() {
 
   console.log("\nChecking Convex CLI...");
   try {
-    const { stdout } = await execAsync("npx convex --version");
+    const { stdout: _stdout } = await execAsync("npx convex --version");
     console.log(`✅ Convex CLI detected`);
   } catch {
     console.log("❌ Convex CLI not found. Installing...");

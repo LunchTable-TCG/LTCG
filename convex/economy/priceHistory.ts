@@ -226,9 +226,7 @@ export const getMarketOverview = query({
       tokenVolumeToday,
       averageListingPrice:
         activeListings.length > 0
-          ? Math.round(
-              activeListings.reduce((sum, l) => sum + l.price, 0) / activeListings.length
-            )
+          ? Math.round(activeListings.reduce((sum, l) => sum + l.price, 0) / activeListings.length)
           : 0,
     };
   },

@@ -18,8 +18,8 @@
  */
 
 import { v } from "convex/values";
-import type { Doc } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
+import type { Doc } from "../_generated/dataModel";
 import {
   internalAction,
   internalMutation,
@@ -667,19 +667,20 @@ export const getUserPendingPurchases = query({
       .take(10);
 
     // Batch fetch listings - filter out undefined listingIds (non-marketplace purchases)
-    const listingIds = [...new Set(
-      pending
-        .filter((p): p is typeof p & { listingId: NonNullable<typeof p.listingId> } =>
-          p.listingId !== undefined
-        )
-        .map((p) => p.listingId)
-    )];
+    const listingIds = [
+      ...new Set(
+        pending
+          .filter(
+            (p): p is typeof p & { listingId: NonNullable<typeof p.listingId> } =>
+              p.listingId !== undefined
+          )
+          .map((p) => p.listingId)
+      ),
+    ];
     const listingPromises = listingIds.map((id) => ctx.db.get(id));
     const listings = await Promise.all(listingPromises);
     const listingMap = new Map(
-      listings
-        .filter((l): l is Doc<"marketplaceListings"> => l !== null)
-        .map((l) => [l._id, l])
+      listings.filter((l): l is Doc<"marketplaceListings"> => l !== null).map((l) => [l._id, l])
     );
 
     return pending.map((p) => {
@@ -740,7 +741,7 @@ export const completeTokenPurchase = internalMutation({
       return { success: false, error: "Not a marketplace purchase" };
     }
 
-    const listing = await ctx.db.get(pending.listingId) as Doc<"marketplaceListings"> | null;
+    const listing = (await ctx.db.get(pending.listingId)) as Doc<"marketplaceListings"> | null;
     if (!listing) {
       console.error(`[completeTokenPurchase] Listing not found: ${pending.listingId}`);
       return { success: false, error: "Listing not found" };

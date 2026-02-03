@@ -12,11 +12,7 @@ import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
 
 // Product type validators matching schema
-const productTypeValidator = v.union(
-  v.literal("pack"),
-  v.literal("box"),
-  v.literal("currency")
-);
+const productTypeValidator = v.union(v.literal("pack"), v.literal("box"), v.literal("currency"));
 
 const rarityValidator = v.union(
   v.literal("common"),
@@ -67,18 +63,14 @@ export const listProducts = query({
     if (args.productType) {
       products = await ctx.db
         .query("shopProducts")
-        .withIndex("by_type", (q) =>
-          q.eq("productType", args.productType!).eq("isActive", true)
-        )
+        .withIndex("by_type", (q) => q.eq("productType", args.productType!).eq("isActive", true))
         .collect();
 
       // If we want inactive too, we need a separate query
       if (args.includeInactive) {
         const inactive = await ctx.db
           .query("shopProducts")
-          .withIndex("by_type", (q) =>
-            q.eq("productType", args.productType!).eq("isActive", false)
-          )
+          .withIndex("by_type", (q) => q.eq("productType", args.productType!).eq("isActive", false))
           .collect();
         products = [...products, ...inactive];
       }
@@ -146,15 +138,9 @@ export const getShopStats = query({
     };
 
     // Count by pricing
-    const goldOnly = activeProducts.filter(
-      (p) => p.goldPrice && !p.gemPrice
-    ).length;
-    const gemOnly = activeProducts.filter(
-      (p) => p.gemPrice && !p.goldPrice
-    ).length;
-    const bothPricing = activeProducts.filter(
-      (p) => p.goldPrice && p.gemPrice
-    ).length;
+    const goldOnly = activeProducts.filter((p) => p.goldPrice && !p.gemPrice).length;
+    const gemOnly = activeProducts.filter((p) => p.gemPrice && !p.goldPrice).length;
+    const bothPricing = activeProducts.filter((p) => p.goldPrice && p.gemPrice).length;
 
     return {
       totalProducts: products.length,

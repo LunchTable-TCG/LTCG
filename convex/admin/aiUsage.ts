@@ -15,7 +15,11 @@ import { requireRole } from "../lib/roles";
 // =============================================================================
 
 const providerValidator = v.union(v.literal("openrouter"), v.literal("vercel"));
-const modelTypeValidator = v.union(v.literal("language"), v.literal("embedding"), v.literal("image"));
+const modelTypeValidator = v.union(
+  v.literal("language"),
+  v.literal("embedding"),
+  v.literal("image")
+);
 
 // =============================================================================
 // Internal Mutations (for recording usage from other functions)
@@ -167,7 +171,7 @@ export const getUsageSummary = query({
       },
     };
 
-    let totalLatencySum = { openrouter: 0, vercel: 0 };
+    const totalLatencySum = { openrouter: 0, vercel: 0 };
 
     for (const stat of dailyStats) {
       const p = byProvider[stat.provider];
@@ -243,7 +247,10 @@ export const getRecentUsage = query({
     let query = ctx.db.query("aiUsage").withIndex("by_created").order("desc");
 
     if (provider) {
-      query = ctx.db.query("aiUsage").withIndex("by_provider", (q) => q.eq("provider", provider)).order("desc");
+      query = ctx.db
+        .query("aiUsage")
+        .withIndex("by_provider", (q) => q.eq("provider", provider))
+        .order("desc");
     }
 
     const records = await query.take(limit);
@@ -267,7 +274,9 @@ export const getTopModels = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split("T")[0]!;
+    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0]!;
 
     const dailyStats = await ctx.db
       .query("aiUsageDailyStats")
@@ -337,10 +346,11 @@ export const getUsageByFeature = query({
         existing.cost += record.estimatedCost;
         if (record.success) {
           existing.successRate =
-            ((existing.successRate * (existing.requests - 1)) / existing.requests) +
-            (100 / existing.requests);
+            (existing.successRate * (existing.requests - 1)) / existing.requests +
+            100 / existing.requests;
         } else {
-          existing.successRate = (existing.successRate * (existing.requests - 1)) / existing.requests;
+          existing.successRate =
+            (existing.successRate * (existing.requests - 1)) / existing.requests;
         }
       } else {
         featureMap.set(record.feature, {

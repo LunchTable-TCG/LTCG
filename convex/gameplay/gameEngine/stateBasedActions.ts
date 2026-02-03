@@ -14,10 +14,10 @@
  * 6. Hand size limit: At end of turn, discard down to 6 cards
  */
 
-import type { Doc, Id } from "../../_generated/dataModel";
 // Workaround for TS2589 (excessively deep type instantiation)
 // biome-ignore lint/style/noNamespaceImport: Required for Convex internal API type workaround
 import * as generatedApi from "../../_generated/api";
+import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { logger } from "../../lib/debug";

@@ -5,8 +5,8 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 import { internalMutation, mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
@@ -150,10 +150,7 @@ async function checkAndAwardBadges(
           .filter((q) =>
             q.and(
               q.eq(q.field("chapterId"), ch._id),
-              q.or(
-                q.eq(q.field("status"), "completed"),
-                q.eq(q.field("status"), "starred")
-              )
+              q.or(q.eq(q.field("status"), "completed"), q.eq(q.field("status"), "starred"))
             )
           )
           .first();
@@ -363,9 +360,10 @@ export const completeStage = mutation({
     // First clear bonus
     if (!progress.firstClearClaimed && stage.firstClearBonus) {
       // Handle both object and number formats (legacy data)
-      const bonus = typeof stage.firstClearBonus === "number"
-        ? stage.firstClearBonus
-        : (stage.firstClearBonus.gold ?? 0);
+      const bonus =
+        typeof stage.firstClearBonus === "number"
+          ? stage.firstClearBonus
+          : (stage.firstClearBonus.gold ?? 0);
       goldReward += bonus;
     }
 
@@ -552,9 +550,10 @@ export const completeStageInternal = internalMutation({
     // First clear bonus
     if (!progress.firstClearClaimed && stage.firstClearBonus) {
       // Handle both object and number formats (legacy data)
-      const bonus = typeof stage.firstClearBonus === "number"
-        ? stage.firstClearBonus
-        : (stage.firstClearBonus.gold ?? 0);
+      const bonus =
+        typeof stage.firstClearBonus === "number"
+          ? stage.firstClearBonus
+          : (stage.firstClearBonus.gold ?? 0);
       goldReward += bonus;
     }
 

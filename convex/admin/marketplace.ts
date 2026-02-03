@@ -59,18 +59,13 @@ export const listListings = query({
         .order("desc")
         .collect();
     } else {
-      listings = await ctx.db
-        .query("marketplaceListings")
-        .order("desc")
-        .collect();
+      listings = await ctx.db.query("marketplaceListings").order("desc").collect();
     }
 
     // Apply search filter
     if (args.search) {
       const searchLower = args.search.toLowerCase();
-      listings = listings.filter(
-        (l) => l.sellerUsername.toLowerCase().includes(searchLower)
-      );
+      listings = listings.filter((l) => l.sellerUsername.toLowerCase().includes(searchLower));
     }
 
     // Apply price filters
@@ -174,15 +169,17 @@ export const getListing = query({
       sellerOtherListings: sellerOtherListings.length,
       priceStats: {
         activeListings: activePrices.length,
-        avgActivePrice: activePrices.length > 0
-          ? Math.round(activePrices.reduce((a, b) => a + b, 0) / activePrices.length)
-          : 0,
+        avgActivePrice:
+          activePrices.length > 0
+            ? Math.round(activePrices.reduce((a, b) => a + b, 0) / activePrices.length)
+            : 0,
         minActivePrice: activePrices.length > 0 ? Math.min(...activePrices) : 0,
         maxActivePrice: activePrices.length > 0 ? Math.max(...activePrices) : 0,
         recentSales: soldPrices.length,
-        avgSalePrice: soldPrices.length > 0
-          ? Math.round(soldPrices.reduce((a, b) => a + b, 0) / soldPrices.length)
-          : 0,
+        avgSalePrice:
+          soldPrices.length > 0
+            ? Math.round(soldPrices.reduce((a, b) => a + b, 0) / soldPrices.length)
+            : 0,
       },
     };
   },

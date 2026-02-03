@@ -200,9 +200,7 @@ export const deletePolicy = mutation({
     const usingPolicy = wallets.filter((w) => w.policyId === policy.privyPolicyId);
 
     if (usingPolicy.length > 0) {
-      throw new Error(
-        `Cannot delete policy: ${usingPolicy.length} wallet(s) are using it`
-      );
+      throw new Error(`Cannot delete policy: ${usingPolicy.length} wallet(s) are using it`);
     }
 
     // Soft delete

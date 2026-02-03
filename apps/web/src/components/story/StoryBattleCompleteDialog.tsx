@@ -148,26 +148,37 @@ export function StoryBattleCompleteDialog({
 
             {/* New Badges */}
             {newBadges && newBadges.length > 0 && (
-              <FantasyFrame className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Gift className="w-5 h-5 text-blue-400" />
-                  <div className="text-lg font-bold text-[#e8e0d5]">New Badges Earned!</div>
-                </div>
-                <div className="space-y-2">
-                  {newBadges.map((badge) => (
-                    <motion.div
-                      key={badge.badgeId}
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      className="flex items-center gap-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/30"
-                    >
-                      <Trophy className="w-5 h-5 text-blue-400" />
-                      <div>
-                        <div className="text-sm font-bold text-[#e8e0d5]">{badge.displayName}</div>
-                        <div className="text-xs text-[#a89f94]">{badge.description}</div>
-                      </div>
-                    </motion.div>
-                  ))}
+              <FantasyFrame variant="gold" className="p-4 relative overflow-hidden">
+                {/* Gold Metal Texture Background */}
+                <div
+                  className="absolute inset-0 opacity-20"
+                  style={{
+                    backgroundImage: "url(/assets/textures/gold-metal.png)",
+                    backgroundSize: "512px 512px",
+                    backgroundRepeat: "repeat",
+                  }}
+                />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Trophy className="w-5 h-5 text-[#d4af37]" />
+                    <div className="text-lg font-bold text-[#e8e0d5]">New Badges Earned!</div>
+                  </div>
+                  <div className="space-y-2">
+                    {newBadges.map((badge) => (
+                      <motion.div
+                        key={badge.badgeId}
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        className="flex items-center gap-3 p-2 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30 backdrop-blur-sm"
+                      >
+                        <Trophy className="w-5 h-5 text-[#d4af37]" />
+                        <div>
+                          <div className="text-sm font-bold text-[#e8e0d5]">{badge.displayName}</div>
+                          <div className="text-xs text-[#a89f94]">{badge.description}</div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
               </FantasyFrame>
             )}

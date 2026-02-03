@@ -6,8 +6,8 @@
  */
 
 import { v } from "convex/values";
-import type { Doc, Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
 import {
   internalAction,
   internalMutation,
@@ -62,10 +62,7 @@ interface BattlePassReward {
  * @param amount - Amount in human-readable format
  * @returns Unsigned transaction result
  */
-async function buildTreasuryTransferTransaction(
-  buyerWallet: string,
-  amount: number
-) {
+async function buildTreasuryTransferTransaction(buyerWallet: string, amount: number) {
   if (!TOKEN.TREASURY_WALLET) {
     throw new Error(
       "Treasury wallet not configured. Set LTCG_TREASURY_WALLET environment variable."
@@ -99,9 +96,7 @@ async function getOrCreateBattlePassProgress(
 ): Promise<Doc<"battlePassProgress">> {
   const existing = await ctx.db
     .query("battlePassProgress")
-    .withIndex("by_user_battlepass", (q) =>
-      q.eq("userId", userId).eq("battlePassId", battlePassId)
-    )
+    .withIndex("by_user_battlepass", (q) => q.eq("userId", userId).eq("battlePassId", battlePassId))
     .first();
 
   if (existing) return existing;
@@ -137,9 +132,7 @@ async function getBattlePassProgress(
 ) {
   return await ctx.db
     .query("battlePassProgress")
-    .withIndex("by_user_battlepass", (q) =>
-      q.eq("userId", userId).eq("battlePassId", battlePassId)
-    )
+    .withIndex("by_user_battlepass", (q) => q.eq("userId", userId).eq("battlePassId", battlePassId))
     .first();
 }
 
@@ -525,8 +518,7 @@ export const claimBattlePassReward = mutation({
     }
 
     // Grant the reward
-    const reward =
-      args.track === "free" ? tierDef.freeReward! : tierDef.premiumReward!;
+    const reward = args.track === "free" ? tierDef.freeReward! : tierDef.premiumReward!;
     await grantReward(ctx, userId, reward, args.tier, args.track === "premium");
 
     // Mark as claimed
@@ -680,10 +672,7 @@ export const initiatePremiumPassTokenPurchase = mutation({
       .filter((q) =>
         q.and(
           q.eq(q.field("buyerId"), userId),
-          q.or(
-            q.eq(q.field("status"), "awaiting_signature"),
-            q.eq(q.field("status"), "submitted")
-          )
+          q.or(q.eq(q.field("status"), "awaiting_signature"), q.eq(q.field("status"), "submitted"))
         )
       )
       .first();
@@ -712,10 +701,7 @@ export const initiatePremiumPassTokenPurchase = mutation({
     const tokenPrice = battlePass.tokenPrice;
     const humanReadablePrice = fromRawAmount(BigInt(tokenPrice));
 
-    const txResult = await buildTreasuryTransferTransaction(
-      user.walletAddress,
-      humanReadablePrice
-    );
+    const txResult = await buildTreasuryTransferTransaction(user.walletAddress, humanReadablePrice);
 
     const now = Date.now();
     const expiresAt = now + TOKEN.PURCHASE_EXPIRY_MS;
@@ -839,9 +825,7 @@ export const pollPremiumPassConfirmation = internalAction({
 
     // Check if already in terminal state
     if (pending.status !== "submitted") {
-      console.log(
-        `[pollPremiumPassConfirmation] Already in terminal state: ${pending.status}`
-      );
+      console.log(`[pollPremiumPassConfirmation] Already in terminal state: ${pending.status}`);
       return;
     }
 
@@ -849,16 +833,11 @@ export const pollPremiumPassConfirmation = internalAction({
     const now = Date.now();
     const timeoutMs = TOKEN.CONFIRMATION_TIMEOUT_MS;
     if (now - pending.createdAt > timeoutMs) {
-      console.log(
-        `[pollPremiumPassConfirmation] Timeout exceeded for ${pendingPurchaseId}`
-      );
-      await ctx.runMutation(
-        internalAny.progression.battlePass.failPremiumPassPurchase,
-        {
-          pendingPurchaseId,
-          reason: "Transaction confirmation timeout",
-        }
-      );
+      console.log(`[pollPremiumPassConfirmation] Timeout exceeded for ${pendingPurchaseId}`);
+      await ctx.runMutation(internalAny.progression.battlePass.failPremiumPassPurchase, {
+        pendingPurchaseId,
+        reason: "Transaction confirmation timeout",
+      });
       return;
     }
 
@@ -873,13 +852,10 @@ export const pollPremiumPassConfirmation = internalAction({
           { pendingPurchaseId, pollAttempt: pollAttempt + 1 }
         );
       } else {
-        await ctx.runMutation(
-          internalAny.progression.battlePass.failPremiumPassPurchase,
-          {
-            pendingPurchaseId,
-            reason: "No transaction signature provided",
-          }
-        );
+        await ctx.runMutation(internalAny.progression.battlePass.failPremiumPassPurchase, {
+          pendingPurchaseId,
+          reason: "No transaction signature provided",
+        });
       }
       return;
     }
@@ -911,36 +887,22 @@ export const pollPremiumPassConfirmation = internalAction({
 
       // Check if transaction errored
       if (status.err) {
-        console.error(
-          "[pollPremiumPassConfirmation] Transaction failed:",
-          status.err
-        );
-        await ctx.runMutation(
-          internalAny.progression.battlePass.failPremiumPassPurchase,
-          {
-            pendingPurchaseId,
-            reason: `Transaction failed: ${JSON.stringify(status.err)}`,
-          }
-        );
+        console.error("[pollPremiumPassConfirmation] Transaction failed:", status.err);
+        await ctx.runMutation(internalAny.progression.battlePass.failPremiumPassPurchase, {
+          pendingPurchaseId,
+          reason: `Transaction failed: ${JSON.stringify(status.err)}`,
+        });
         return;
       }
 
       // Check confirmation status
       const confirmationStatus = status.confirmationStatus;
-      if (
-        confirmationStatus === "confirmed" ||
-        confirmationStatus === "finalized"
-      ) {
-        console.log(
-          `[pollPremiumPassConfirmation] Transaction confirmed: ${signature}`
-        );
-        await ctx.runMutation(
-          internalAny.progression.battlePass.completePremiumPassPurchase,
-          {
-            pendingPurchaseId,
-            transactionSignature: signature,
-          }
-        );
+      if (confirmationStatus === "confirmed" || confirmationStatus === "finalized") {
+        console.log(`[pollPremiumPassConfirmation] Transaction confirmed: ${signature}`);
+        await ctx.runMutation(internalAny.progression.battlePass.completePremiumPassPurchase, {
+          pendingPurchaseId,
+          transactionSignature: signature,
+        });
         return;
       }
 
@@ -954,10 +916,7 @@ export const pollPremiumPassConfirmation = internalAction({
         { pendingPurchaseId, pollAttempt: pollAttempt + 1 }
       );
     } catch (error) {
-      console.error(
-        "[pollPremiumPassConfirmation] Error polling transaction:",
-        error
-      );
+      console.error("[pollPremiumPassConfirmation] Error polling transaction:", error);
 
       // On network error, retry a few times before failing
       if (pollAttempt < 10) {
@@ -967,13 +926,10 @@ export const pollPremiumPassConfirmation = internalAction({
           { pendingPurchaseId, pollAttempt: pollAttempt + 1 }
         );
       } else {
-        await ctx.runMutation(
-          internalAny.progression.battlePass.failPremiumPassPurchase,
-          {
-            pendingPurchaseId,
-            reason: `RPC error: ${error instanceof Error ? error.message : String(error)}`,
-          }
-        );
+        await ctx.runMutation(internalAny.progression.battlePass.failPremiumPassPurchase, {
+          pendingPurchaseId,
+          reason: `RPC error: ${error instanceof Error ? error.message : String(error)}`,
+        });
       }
     }
   },
@@ -1018,17 +974,13 @@ export const completePremiumPassPurchase = internalMutation({
 
     // Validate status
     if (pending.status !== "submitted") {
-      console.error(
-        `[completePremiumPassPurchase] Invalid status: ${pending.status}`
-      );
+      console.error(`[completePremiumPassPurchase] Invalid status: ${pending.status}`);
       return { success: false, error: `Invalid status: ${pending.status}` };
     }
 
     const battlePass = await ctx.db.get(pending.battlePassId);
     if (!battlePass) {
-      console.error(
-        `[completePremiumPassPurchase] Battle pass not found: ${pending.battlePassId}`
-      );
+      console.error(`[completePremiumPassPurchase] Battle pass not found: ${pending.battlePassId}`);
       return { success: false, error: "Battle pass not found" };
     }
 
@@ -1049,14 +1001,11 @@ export const completePremiumPassPurchase = internalMutation({
 
     // Check if already premium (shouldn't happen but safety check)
     if (progress.isPremium) {
-      console.warn(
-        `[completePremiumPassPurchase] User already has premium: ${pending.buyerId}`
-      );
+      console.warn(`[completePremiumPassPurchase] User already has premium: ${pending.buyerId}`);
       // Still mark as confirmed to avoid retry
       await ctx.db.patch(args.pendingPurchaseId, {
         status: "confirmed",
-        transactionSignature:
-          args.transactionSignature ?? pending.transactionSignature,
+        transactionSignature: args.transactionSignature ?? pending.transactionSignature,
       });
       return { success: true };
     }
@@ -1091,13 +1040,9 @@ export const completePremiumPassPurchase = internalMutation({
     });
 
     // 4. Schedule balance refresh
-    await ctx.scheduler.runAfter(
-      0,
-      internalAny.economy.tokenBalance.refreshTokenBalance,
-      {
-        userId: pending.buyerId,
-      }
-    );
+    await ctx.scheduler.runAfter(0, internalAny.economy.tokenBalance.refreshTokenBalance, {
+      userId: pending.buyerId,
+    });
 
     console.log(
       `[completePremiumPassPurchase] Successfully completed purchase ${args.pendingPurchaseId}`
@@ -1124,13 +1069,8 @@ export const failPremiumPassPurchase = internalMutation({
     }
 
     // Only fail if not already in terminal state
-    if (
-      pending.status !== "submitted" &&
-      pending.status !== "awaiting_signature"
-    ) {
-      console.warn(
-        `[failPremiumPassPurchase] Already in terminal state: ${pending.status}`
-      );
+    if (pending.status !== "submitted" && pending.status !== "awaiting_signature") {
+      console.warn(`[failPremiumPassPurchase] Already in terminal state: ${pending.status}`);
       return { success: false };
     }
 
@@ -1282,10 +1222,7 @@ export const claimAllAvailableRewards = mutation({
       if (tier.tier > progress.currentTier) continue;
 
       // Claim free reward if available
-      if (
-        tier.freeReward &&
-        !progress.claimedFreeTiers.includes(tier.tier)
-      ) {
+      if (tier.freeReward && !progress.claimedFreeTiers.includes(tier.tier)) {
         await grantReward(ctx, userId, tier.freeReward, tier.tier, false);
         newClaimedFreeTiers.push(tier.tier);
         claimedFree++;
@@ -1342,19 +1279,11 @@ export const addBattlePassXP = internalMutation({
     }
 
     // Get or create user progress
-    const progress = await getOrCreateBattlePassProgress(
-      ctx,
-      args.userId,
-      battlePass._id
-    );
+    const progress = await getOrCreateBattlePassProgress(ctx, args.userId, battlePass._id);
 
     const oldTier = progress.currentTier;
     const newXP = progress.currentXP + args.xpAmount;
-    const newTier = calculateTierFromXP(
-      newXP,
-      battlePass.xpPerTier,
-      battlePass.totalTiers
-    );
+    const newTier = calculateTierFromXP(newXP, battlePass.xpPerTier, battlePass.totalTiers);
 
     // Update progress
     await ctx.db.patch(progress._id, {

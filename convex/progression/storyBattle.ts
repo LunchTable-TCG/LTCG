@@ -144,7 +144,12 @@ export async function checkChapterUnlocked(
 
   // Default behavior: if no unlock conditions specified but not first chapter,
   // require previous chapter to be completed
-  if (!unlockCondition && !legacyRequirements && chapter.chapterNumber && chapter.chapterNumber > 1) {
+  if (
+    !unlockCondition &&
+    !legacyRequirements &&
+    chapter.chapterNumber &&
+    chapter.chapterNumber > 1
+  ) {
     requiresPrevChapter = true;
   }
 
@@ -170,10 +175,7 @@ export async function checkChapterUnlocked(
             q.eq("userId", userId).eq("chapterId", requiredChapterId!)
           )
           .filter((q) =>
-            q.or(
-              q.eq(q.field("status"), "completed"),
-              q.eq(q.field("status"), "starred")
-            )
+            q.or(q.eq(q.field("status"), "completed"), q.eq(q.field("status"), "starred"))
           )
           .first();
 
@@ -184,9 +186,7 @@ export async function checkChapterUnlocked(
       const prevChapter = await ctx.db
         .query("storyChapters")
         .withIndex("by_act_chapter", (q) =>
-          q
-            .eq("actNumber", chapter.actNumber)
-            .eq("chapterNumber", (chapter.chapterNumber ?? 1) - 1)
+          q.eq("actNumber", chapter.actNumber).eq("chapterNumber", (chapter.chapterNumber ?? 1) - 1)
         )
         .first();
 
@@ -196,9 +196,7 @@ export async function checkChapterUnlocked(
         // Get all chapters from previous act and find the highest chapter number
         const prevActChapters = await ctx.db
           .query("storyChapters")
-          .withIndex("by_act_chapter", (q) =>
-            q.eq("actNumber", (chapter.actNumber ?? 1) - 1)
-          )
+          .withIndex("by_act_chapter", (q) => q.eq("actNumber", (chapter.actNumber ?? 1) - 1))
           .collect();
 
         if (prevActChapters.length > 0) {
@@ -220,10 +218,7 @@ export async function checkChapterUnlocked(
             q.eq("userId", userId).eq("chapterId", actualPrevChapter!._id)
           )
           .filter((q) =>
-            q.or(
-              q.eq(q.field("status"), "completed"),
-              q.eq(q.field("status"), "starred")
-            )
+            q.or(q.eq(q.field("status"), "completed"), q.eq(q.field("status"), "starred"))
           )
           .first();
 
@@ -386,9 +381,7 @@ export const initializeStoryBattle = mutation({
   args: {
     chapterId: v.string(), // e.g., "1-1", "1-2", etc.
     stageNumber: v.optional(v.number()), // 1-10, defaults to 1 if not provided
-    difficulty: v.optional(
-      v.union(v.literal("normal"), v.literal("hard"), v.literal("legendary"))
-    ), // defaults to "normal"
+    difficulty: v.optional(v.union(v.literal("normal"), v.literal("hard"), v.literal("legendary"))), // defaults to "normal"
   },
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
@@ -453,9 +446,7 @@ export const initializeStoryBattle = mutation({
     const stageNumber = args.stageNumber || 1;
     const stage = await ctx.db
       .query("storyStages")
-      .withIndex("by_chapter", (q) =>
-        q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber)
-      )
+      .withIndex("by_chapter", (q) => q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber))
       .first();
 
     if (!stage) {
@@ -779,9 +770,7 @@ export const initializeStoryBattleInternal = internalMutation({
     userId: v.id("users"),
     chapterId: v.string(), // e.g., "1-1", "1-2", etc.
     stageNumber: v.optional(v.number()), // 1-10, defaults to 1 if not provided
-    difficulty: v.optional(
-      v.union(v.literal("normal"), v.literal("hard"), v.literal("legendary"))
-    ), // defaults to "normal"
+    difficulty: v.optional(v.union(v.literal("normal"), v.literal("hard"), v.literal("legendary"))), // defaults to "normal"
   },
   handler: async (ctx, args) => {
     // Get user
@@ -853,9 +842,7 @@ export const initializeStoryBattleInternal = internalMutation({
     const stageNumber = args.stageNumber || 1;
     const stage = await ctx.db
       .query("storyStages")
-      .withIndex("by_chapter", (q) =>
-        q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber)
-      )
+      .withIndex("by_chapter", (q) => q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber))
       .first();
 
     if (!stage) {

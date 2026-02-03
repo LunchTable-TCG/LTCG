@@ -93,9 +93,7 @@ export const listAssets = query({
     // Apply cursor-based pagination
     let startIndex = 0;
     if (args.cursor) {
-      const cursorIndex = filteredAssets.findIndex(
-        (a) => a._id === args.cursor
-      );
+      const cursorIndex = filteredAssets.findIndex((a) => a._id === args.cursor);
       if (cursorIndex !== -1) {
         startIndex = cursorIndex + 1;
       }
@@ -103,9 +101,7 @@ export const listAssets = query({
 
     const paginatedAssets = filteredAssets.slice(startIndex, startIndex + limit);
     const hasMore = startIndex + limit < filteredAssets.length;
-    const nextCursor = hasMore
-      ? paginatedAssets[paginatedAssets.length - 1]?._id
-      : null;
+    const nextCursor = hasMore ? paginatedAssets[paginatedAssets.length - 1]?._id : null;
 
     return {
       assets: paginatedAssets,
@@ -153,14 +149,14 @@ export const getAssetStats = query({
     let totalSize = 0;
 
     for (const asset of allAssets) {
-      categoryCountsObj[asset.category] =
-        (categoryCountsObj[asset.category] || 0) + 1;
+      categoryCountsObj[asset.category] = (categoryCountsObj[asset.category] || 0) + 1;
       totalSize += asset.size;
     }
 
-    const categoryCounts = Object.entries(categoryCountsObj).map(
-      ([category, count]) => ({ category, count })
-    );
+    const categoryCounts = Object.entries(categoryCountsObj).map(([category, count]) => ({
+      category,
+      count,
+    }));
 
     return {
       totalAssets: allAssets.length,
@@ -327,11 +323,24 @@ export const syncBlobAssets = mutation({
 
       if (pathLower.startsWith("backgrounds/") || pathLower.includes("-bg.")) {
         category = "background";
-      } else if (pathLower.startsWith("textures/") || pathLower.includes("parchment") || pathLower.includes("leather")) {
+      } else if (
+        pathLower.startsWith("textures/") ||
+        pathLower.includes("parchment") ||
+        pathLower.includes("leather")
+      ) {
         category = "texture";
-      } else if (pathLower.startsWith("ui/") || pathLower.includes("button") || pathLower.includes("panel") || pathLower.includes("frame")) {
+      } else if (
+        pathLower.startsWith("ui/") ||
+        pathLower.includes("button") ||
+        pathLower.includes("panel") ||
+        pathLower.includes("frame")
+      ) {
         category = "ui_element";
-      } else if (pathLower.startsWith("shop/") || pathLower.includes("pack") || pathLower.includes("box")) {
+      } else if (
+        pathLower.startsWith("shop/") ||
+        pathLower.includes("pack") ||
+        pathLower.includes("box")
+      ) {
         category = "shop_asset";
       } else if (pathLower.startsWith("story/")) {
         category = "story_asset";

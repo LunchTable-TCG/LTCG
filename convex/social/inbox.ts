@@ -1,8 +1,8 @@
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import { internalMutation, mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import type { Id } from "../_generated/dataModel";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -57,9 +57,7 @@ export const getInboxMessages = query({
         .withIndex("by_user_unread", (q) => q.eq("userId", userId).eq("isRead", false));
     } else {
       // All messages for user
-      messagesQuery = ctx.db
-        .query("userInbox")
-        .withIndex("by_user", (q) => q.eq("userId", userId));
+      messagesQuery = ctx.db.query("userInbox").withIndex("by_user", (q) => q.eq("userId", userId));
     }
 
     const messages = await messagesQuery
@@ -363,12 +361,7 @@ export const cleanupOldMessages = internalMutation({
     const expiredMessages = await ctx.db
       .query("userInbox")
       .withIndex("by_expires")
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("expiresAt"), undefined),
-          q.lt(q.field("expiresAt"), now)
-        )
-      )
+      .filter((q) => q.and(q.neq(q.field("expiresAt"), undefined), q.lt(q.field("expiresAt"), now)))
       .take(100);
 
     // Find old deleted messages (permanently delete after 30 days)
@@ -376,10 +369,7 @@ export const cleanupOldMessages = internalMutation({
       .query("userInbox")
       .withIndex("by_created")
       .filter((q) =>
-        q.and(
-          q.neq(q.field("deletedAt"), undefined),
-          q.lt(q.field("deletedAt"), thirtyDaysAgo)
-        )
+        q.and(q.neq(q.field("deletedAt"), undefined), q.lt(q.field("deletedAt"), thirtyDaysAgo))
       )
       .take(100);
 

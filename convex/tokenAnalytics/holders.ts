@@ -20,7 +20,9 @@ export const getAll = query({
   args: {
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
-    sortBy: v.optional(v.union(v.literal("balance"), v.literal("firstBuy"), v.literal("lastActivity"))),
+    sortBy: v.optional(
+      v.union(v.literal("balance"), v.literal("firstBuy"), v.literal("lastActivity"))
+    ),
     sortOrder: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
   },
   handler: async (ctx, args) => {
@@ -131,15 +133,27 @@ export const getDistribution = query({
     // Calculate distribution buckets
     const buckets = [
       { label: "Whales (>1%)", min: totalSupplyHeld * 0.01, count: 0, totalBalance: 0 },
-      { label: "Large (0.1-1%)", min: totalSupplyHeld * 0.001, max: totalSupplyHeld * 0.01, count: 0, totalBalance: 0 },
-      { label: "Medium (0.01-0.1%)", min: totalSupplyHeld * 0.0001, max: totalSupplyHeld * 0.001, count: 0, totalBalance: 0 },
+      {
+        label: "Large (0.1-1%)",
+        min: totalSupplyHeld * 0.001,
+        max: totalSupplyHeld * 0.01,
+        count: 0,
+        totalBalance: 0,
+      },
+      {
+        label: "Medium (0.01-0.1%)",
+        min: totalSupplyHeld * 0.0001,
+        max: totalSupplyHeld * 0.001,
+        count: 0,
+        totalBalance: 0,
+      },
       { label: "Small (<0.01%)", max: totalSupplyHeld * 0.0001, count: 0, totalBalance: 0 },
     ];
 
     for (const holder of holders) {
       for (const bucket of buckets) {
         const min = bucket.min ?? 0;
-        const max = bucket.max ?? Infinity;
+        const max = bucket.max ?? Number.POSITIVE_INFINITY;
         if (holder.balance >= min && holder.balance < max) {
           bucket.count++;
           bucket.totalBalance += holder.balance;

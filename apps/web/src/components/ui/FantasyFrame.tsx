@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import type React from "react";
 
 interface FantasyFrameProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "obsidian" | "gold" | "ethereal";
+  variant?: "obsidian" | "gold" | "ethereal" | "arcane";
   gemAccents?: boolean;
   noPadding?: boolean;
 }
@@ -40,6 +40,18 @@ export function FantasyFrame({
 
       {/* Main Content Areas */}
       <div className="relative h-full w-full rounded-[11px] overflow-hidden bg-zinc-950/90 shadow-inner shadow-black/80 m-[1px]">
+        {/* Arcane Stone Texture Background (for arcane variant) */}
+        {variant === "arcane" && (
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage: "url(/assets/textures/arcane-stone.png)",
+              backgroundSize: "512px 512px",
+              backgroundRepeat: "repeat",
+            }}
+          />
+        )}
+
         {/* Inner Vignette for depth */}
         <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.8)] pointer-events-none" />
 

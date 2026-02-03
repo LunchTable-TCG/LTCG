@@ -12,11 +12,7 @@ import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
 
 // Reward type validator matching schema
-const rewardTypeValidator = v.union(
-  v.literal("gold"),
-  v.literal("gems"),
-  v.literal("pack")
-);
+const rewardTypeValidator = v.union(v.literal("gold"), v.literal("gems"), v.literal("pack"));
 
 // =============================================================================
 // Queries
@@ -332,9 +328,7 @@ export const deletePromoCode = mutation({
       .first();
 
     if (hasRedemptions) {
-      throw new Error(
-        "Cannot delete promo code with redemption history. Deactivate it instead."
-      );
+      throw new Error("Cannot delete promo code with redemption history. Deactivate it instead.");
     }
 
     await ctx.db.delete(promoCodeId);

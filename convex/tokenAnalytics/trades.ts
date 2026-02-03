@@ -99,7 +99,9 @@ export const getWhaleTrades = query({
  */
 export const getStats = query({
   args: {
-    period: v.optional(v.union(v.literal("1h"), v.literal("24h"), v.literal("7d"), v.literal("all"))),
+    period: v.optional(
+      v.union(v.literal("1h"), v.literal("24h"), v.literal("7d"), v.literal("all"))
+    ),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
@@ -109,7 +111,7 @@ export const getStats = query({
       "1h": 60 * 60 * 1000,
       "24h": 24 * 60 * 60 * 1000,
       "7d": 7 * 24 * 60 * 60 * 1000,
-      all: Infinity,
+      all: Number.POSITIVE_INFINITY,
     };
 
     const since = args.period === "all" ? 0 : Date.now() - periodMs[args.period ?? "24h"];
@@ -129,9 +131,10 @@ export const getStats = query({
       buyVolumeTokens: buys.reduce((sum, t) => sum + t.tokenAmount, 0),
       sellVolumeTokens: sells.reduce((sum, t) => sum + t.tokenAmount, 0),
       uniqueTraders: new Set(filtered.map((t) => t.traderAddress)).size,
-      avgTradeSize: filtered.length > 0
-        ? filtered.reduce((sum, t) => sum + t.solAmount, 0) / filtered.length
-        : 0,
+      avgTradeSize:
+        filtered.length > 0
+          ? filtered.reduce((sum, t) => sum + t.solAmount, 0) / filtered.length
+          : 0,
       largestBuy: Math.max(...buys.map((t) => t.solAmount), 0),
       largestSell: Math.max(...sells.map((t) => t.solAmount), 0),
       whaleTradeCount: filtered.filter((t) => t.isWhale).length,
@@ -168,7 +171,10 @@ export const getVolumeChart = query({
     const trades = await ctx.db.query("tokenTrades").withIndex("by_timestamp").collect();
     const filtered = trades.filter((t) => t.timestamp >= since);
 
-    const buckets = new Map<number, { buys: number; sells: number; buyVolume: number; sellVolume: number }>();
+    const buckets = new Map<
+      number,
+      { buys: number; sells: number; buyVolume: number; sellVolume: number }
+    >();
 
     for (const trade of filtered) {
       const bucket = Math.floor(trade.timestamp / interval) * interval;

@@ -499,9 +499,7 @@ export const cleanupExpiredRoles = mutation({
     const expiredRoles = await ctx.db
       .query("adminRoles")
       .withIndex("by_expiration", (q) => q.eq("isActive", true))
-      .filter((q) =>
-        q.and(q.neq(q.field("expiresAt"), undefined), q.lt(q.field("expiresAt"), now))
-      )
+      .filter((q) => q.and(q.neq(q.field("expiresAt"), undefined), q.lt(q.field("expiresAt"), now)))
       .collect();
 
     // Deactivate expired roles
@@ -605,9 +603,7 @@ export const autoCleanupExpiredRoles = internalMutation({
     const expiredRoles = await ctx.db
       .query("adminRoles")
       .withIndex("by_expiration", (q) => q.eq("isActive", true))
-      .filter((q) =>
-        q.and(q.neq(q.field("expiresAt"), undefined), q.lt(q.field("expiresAt"), now))
-      )
+      .filter((q) => q.and(q.neq(q.field("expiresAt"), undefined), q.lt(q.field("expiresAt"), now)))
       .collect();
 
     if (expiredRoles.length === 0) {

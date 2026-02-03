@@ -89,9 +89,7 @@ export const getFeatureFlag = query({
     // Get target user details if any
     let targetUsers: Array<{ _id: string; username: string }> = [];
     if (flag.targetUserIds && flag.targetUserIds.length > 0) {
-      const users = await Promise.all(
-        flag.targetUserIds.map((id) => ctx.db.get(id))
-      );
+      const users = await Promise.all(flag.targetUserIds.map((id) => ctx.db.get(id)));
       targetUsers = users
         .filter((u) => u !== null)
         .map((u) => ({
@@ -122,7 +120,8 @@ export const getFeatureFlagStats = query({
     const enabledFlags = flags.filter((f) => f.enabled);
     const disabledFlags = flags.filter((f) => !f.enabled);
     const gradualRolloutFlags = flags.filter(
-      (f) => f.rolloutPercentage !== undefined && f.rolloutPercentage > 0 && f.rolloutPercentage < 100
+      (f) =>
+        f.rolloutPercentage !== undefined && f.rolloutPercentage > 0 && f.rolloutPercentage < 100
     );
 
     // Count by category
@@ -215,7 +214,11 @@ export const createFeatureFlag = mutation({
       success: true,
     });
 
-    return { featureFlagId, name: normalizedName, message: `Created feature flag "${normalizedName}"` };
+    return {
+      featureFlagId,
+      name: normalizedName,
+      message: `Created feature flag "${normalizedName}"`,
+    };
   },
 });
 
@@ -430,7 +433,7 @@ export const checkFeatureFlag = query({
       let hash = 0;
       for (let i = 0; i < hashInput.length; i++) {
         const char = hashInput.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
+        hash = (hash << 5) - hash + char;
         hash = hash & hash; // Convert to 32bit integer
       }
       // Convert to percentage (0-100)
@@ -508,7 +511,7 @@ export const checkFeatureFlags = query({
         let hash = 0;
         for (let i = 0; i < hashInput.length; i++) {
           const char = hashInput.charCodeAt(i);
-          hash = ((hash << 5) - hash) + char;
+          hash = (hash << 5) - hash + char;
           hash = hash & hash;
         }
         const userPercentile = Math.abs(hash % 100);

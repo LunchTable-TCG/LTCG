@@ -114,9 +114,7 @@ export const getReport = query({
 
     return {
       ...report,
-      reporter: reporter
-        ? { _id: reporter._id, username: reporter.username }
-        : null,
+      reporter: reporter ? { _id: reporter._id, username: reporter.username } : null,
       reported: reported
         ? {
             _id: reported._id,
@@ -124,9 +122,7 @@ export const getReport = query({
             accountStatus: reported.accountStatus,
           }
         : null,
-      reviewer: reviewer
-        ? { _id: reviewer._id, username: reviewer.username }
-        : null,
+      reviewer: reviewer ? { _id: reviewer._id, username: reviewer.username } : null,
       otherReportsCount: otherReports.length,
       otherReports,
       moderationHistory,
@@ -161,15 +157,11 @@ export const getReportStats = query({
     const reportsThisWeek = reports.filter((r) => r.createdAt > oneWeekAgo).length;
 
     // Average resolution time (for resolved reports)
-    const resolvedReports = reports.filter(
-      (r) => r.status === "resolved" && r.reviewedAt
-    );
+    const resolvedReports = reports.filter((r) => r.status === "resolved" && r.reviewedAt);
     const avgResolutionTime =
       resolvedReports.length > 0
-        ? resolvedReports.reduce(
-            (sum, r) => sum + (r.reviewedAt! - r.createdAt),
-            0
-          ) / resolvedReports.length
+        ? resolvedReports.reduce((sum, r) => sum + (r.reviewedAt! - r.createdAt), 0) /
+          resolvedReports.length
         : 0;
 
     return {

@@ -46,9 +46,7 @@ export const getPublishedNews = query({
     if (args.category) {
       articles = await ctx.db
         .query("newsArticles")
-        .withIndex("by_category", (q) =>
-          q.eq("category", args.category!).eq("isPublished", true)
-        )
+        .withIndex("by_category", (q) => q.eq("category", args.category!).eq("isPublished", true))
         .order("desc")
         .take(limit);
     } else {
@@ -109,10 +107,7 @@ export const listArticles = query({
 
     const limit = args.limit ?? 50;
 
-    let articles = await ctx.db
-      .query("newsArticles")
-      .order("desc")
-      .take(limit);
+    let articles = await ctx.db.query("newsArticles").order("desc").take(limit);
 
     // Filter by published status if requested
     if (!args.includeUnpublished) {

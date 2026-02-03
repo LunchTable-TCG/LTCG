@@ -23,11 +23,7 @@ const triggerTypeValidator = v.union(
   v.literal("graduation")
 );
 
-const severityValidator = v.union(
-  v.literal("info"),
-  v.literal("warning"),
-  v.literal("critical")
-);
+const severityValidator = v.union(v.literal("info"), v.literal("warning"), v.literal("critical"));
 
 const conditionsValidator = v.object({
   threshold: v.optional(v.number()),

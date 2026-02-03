@@ -12,11 +12,8 @@ import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { scheduleAuditLog } from "../lib/internalHelpers";
+import { tournamentPrizePoolValidator, tournamentStatusValidator } from "../lib/returnValidators";
 import { requireRole } from "../lib/roles";
-import {
-  tournamentPrizePoolValidator,
-  tournamentStatusValidator,
-} from "../lib/returnValidators";
 
 // =============================================================================
 // Types & Validators
@@ -74,15 +71,11 @@ export const listTournaments = query({
             .query("tournamentParticipants")
             .withIndex("by_tournament", (q) => q.eq("tournamentId", t._id))
             .collect();
-          totalPrizeDistributed = participants.reduce(
-            (sum, p) => sum + (p.prizeAwarded || 0),
-            0
-          );
+          totalPrizeDistributed = participants.reduce((sum, p) => sum + (p.prizeAwarded || 0), 0);
         }
 
         // Calculate potential total prize
-        const potentialPrize =
-          t.prizePool.first + t.prizePool.second + t.prizePool.thirdFourth * 2;
+        const potentialPrize = t.prizePool.first + t.prizePool.second + t.prizePool.thirdFourth * 2;
 
         return {
           _id: t._id,
@@ -162,17 +155,25 @@ export const getTournament = query({
     const stats = {
       registeredCount: participants.filter((p) => p.status !== "refunded").length,
       checkedInCount: participants.filter(
-        (p) => p.status === "checked_in" || p.status === "active" || p.status === "eliminated" || p.status === "winner"
+        (p) =>
+          p.status === "checked_in" ||
+          p.status === "active" ||
+          p.status === "eliminated" ||
+          p.status === "winner"
       ).length,
       activeCount: participants.filter((p) => p.status === "active").length,
       eliminatedCount: participants.filter((p) => p.status === "eliminated").length,
       forfeitCount: participants.filter((p) => p.status === "forfeit").length,
       refundedCount: participants.filter((p) => p.status === "refunded").length,
-      totalMatchesPlayed: matches.filter((m) => m.status === "completed" || m.status === "forfeit").length,
+      totalMatchesPlayed: matches.filter((m) => m.status === "completed" || m.status === "forfeit")
+        .length,
       pendingMatches: matches.filter((m) => m.status === "pending" || m.status === "ready").length,
       activeMatches: matches.filter((m) => m.status === "active").length,
       totalPrizeDistributed: participants.reduce((sum, p) => sum + (p.prizeAwarded || 0), 0),
-      potentialPrize: tournament.prizePool.first + tournament.prizePool.second + tournament.prizePool.thirdFourth * 2,
+      potentialPrize:
+        tournament.prizePool.first +
+        tournament.prizePool.second +
+        tournament.prizePool.thirdFourth * 2,
       totalEntryFees: tournament.entryFee * tournament.registeredCount,
     };
 
@@ -404,7 +405,8 @@ export const createTournament = mutation({
 
     if (checkInEndsAt - checkInStartsAt < MIN_CHECKIN_DURATION_MS) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Check-in period must be at least 15 minutes. Increase time between registration end and scheduled start.",
+        reason:
+          "Check-in period must be at least 15 minutes. Increase time between registration end and scheduled start.",
       });
     }
 
@@ -566,7 +568,8 @@ export const updateTournament = mutation({
     const MIN_CHECKIN_DURATION_MS = 15 * 60 * 1000;
     const BRACKET_GENERATION_BUFFER_MS = 1 * 60 * 1000;
 
-    const newRegistrationStartsAt = args.updates.registrationStartsAt ?? tournament.registrationStartsAt;
+    const newRegistrationStartsAt =
+      args.updates.registrationStartsAt ?? tournament.registrationStartsAt;
     const newRegistrationEndsAt = args.updates.registrationEndsAt ?? tournament.registrationEndsAt;
     const newScheduledStartAt = args.updates.scheduledStartAt ?? tournament.scheduledStartAt;
 
@@ -787,7 +790,8 @@ export const grantTournamentEntry = mutation({
 
     const now = Date.now();
     const username = user.username || user.name || "Unknown";
-    const rating = tournament.mode === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
+    const rating =
+      tournament.mode === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
 
     // Create participant record (no entry fee charged)
     const participantId = await ctx.db.insert("tournamentParticipants", {
@@ -885,21 +889,18 @@ export const removeParticipant = mutation({
     }
 
     // If tournament is active and player is in a match, handle forfeit
-    if (tournament.status === "active" && (participant.status === "active" || participant.status === "checked_in")) {
+    if (
+      tournament.status === "active" &&
+      (participant.status === "active" || participant.status === "checked_in")
+    ) {
       // Find any active/ready matches this player is in
       const matches = await ctx.db
         .query("tournamentMatches")
         .withIndex("by_tournament", (q) => q.eq("tournamentId", args.tournamentId))
         .filter((q) =>
           q.and(
-            q.or(
-              q.eq(q.field("player1Id"), args.userId),
-              q.eq(q.field("player2Id"), args.userId)
-            ),
-            q.or(
-              q.eq(q.field("status"), "active"),
-              q.eq(q.field("status"), "ready")
-            )
+            q.or(q.eq(q.field("player1Id"), args.userId), q.eq(q.field("player2Id"), args.userId)),
+            q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "ready"))
           )
         )
         .collect();
@@ -1108,22 +1109,15 @@ export const disqualifyParticipant = mutation({
       .withIndex("by_tournament", (q) => q.eq("tournamentId", args.tournamentId))
       .filter((q) =>
         q.and(
-          q.or(
-            q.eq(q.field("player1Id"), args.userId),
-            q.eq(q.field("player2Id"), args.userId)
-          ),
-          q.or(
-            q.eq(q.field("status"), "active"),
-            q.eq(q.field("status"), "ready")
-          )
+          q.or(q.eq(q.field("player1Id"), args.userId), q.eq(q.field("player2Id"), args.userId)),
+          q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "ready"))
         )
       )
       .first();
 
     if (activeMatch) {
-      const winnerId = activeMatch.player1Id === args.userId
-        ? activeMatch.player2Id
-        : activeMatch.player1Id;
+      const winnerId =
+        activeMatch.player1Id === args.userId ? activeMatch.player2Id : activeMatch.player1Id;
 
       if (winnerId) {
         const winner = await ctx.db.get(winnerId);

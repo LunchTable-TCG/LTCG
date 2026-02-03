@@ -50,11 +50,7 @@ const imageFitValidator = v.union(
 
 const fontWeightValidator = v.union(v.literal("normal"), v.literal("bold"));
 const fontStyleValidator = v.union(v.literal("normal"), v.literal("italic"));
-const textAlignValidator = v.union(
-  v.literal("left"),
-  v.literal("center"),
-  v.literal("right")
-);
+const textAlignValidator = v.union(v.literal("left"), v.literal("center"), v.literal("right"));
 
 // =============================================================================
 // Template Queries
@@ -179,18 +175,14 @@ export const getDefaultTemplate = query({
     // Try to find a default template for this card type
     let template = await ctx.db
       .query("cardTemplates")
-      .withIndex("by_default", (q) =>
-        q.eq("isDefault", true).eq("cardType", args.cardType)
-      )
+      .withIndex("by_default", (q) => q.eq("isDefault", true).eq("cardType", args.cardType))
       .first();
 
     // Fall back to universal template
     if (!template) {
       template = await ctx.db
         .query("cardTemplates")
-        .withIndex("by_default", (q) =>
-          q.eq("isDefault", true).eq("cardType", "universal")
-        )
+        .withIndex("by_default", (q) => q.eq("isDefault", true).eq("cardType", "universal"))
         .first();
     }
 
@@ -362,9 +354,7 @@ export const setDefaultTemplate = mutation({
     // Unset any existing default for this card type
     const existingDefaults = await ctx.db
       .query("cardTemplates")
-      .withIndex("by_default", (q) =>
-        q.eq("isDefault", true).eq("cardType", template.cardType)
-      )
+      .withIndex("by_default", (q) => q.eq("isDefault", true).eq("cardType", template.cardType))
       .collect();
 
     for (const existing of existingDefaults) {
@@ -569,10 +559,7 @@ export const addBlock = mutation({
       .withIndex("by_template", (q) => q.eq("templateId", args.templateId))
       .collect();
 
-    const maxZIndex = existingBlocks.reduce(
-      (max, b) => Math.max(max, b.zIndex),
-      0
-    );
+    const maxZIndex = existingBlocks.reduce((max, b) => Math.max(max, b.zIndex), 0);
 
     // Determine if this is an image block
     const isImageBlock = args.blockType === "image" || args.blockType === "icon";

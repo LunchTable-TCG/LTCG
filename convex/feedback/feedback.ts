@@ -171,9 +171,7 @@ export const listByStatus = query({
       if (type) {
         feedbackQuery = ctx.db
           .query("feedback")
-          .withIndex("by_type_status", (q) =>
-            q.eq("type", type).eq("status", status)
-          )
+          .withIndex("by_type_status", (q) => q.eq("type", type).eq("status", status))
           .order("desc")
           .take(limit);
       } else {
@@ -458,7 +456,7 @@ export const getAnalytics = query({
     const resolvedFeedback = allFeedback.filter((f) => f.resolvedAt);
     let totalResolutionTime = 0;
     let resolvedCount = 0;
-    let fastestResolution = Infinity;
+    let fastestResolution = Number.POSITIVE_INFINITY;
     let slowestResolution = 0;
 
     for (const item of resolvedFeedback) {
@@ -472,7 +470,10 @@ export const getAnalytics = query({
     const avgResolutionMs = resolvedCount > 0 ? totalResolutionTime / resolvedCount : 0;
 
     // Top reporters (users who submitted the most feedback)
-    const reporterCounts: Record<string, { username: string; count: number; bugs: number; features: number }> = {};
+    const reporterCounts: Record<
+      string,
+      { username: string; count: number; bugs: number; features: number }
+    > = {};
     for (const item of allFeedback) {
       const userIdStr = item.userId as string;
       if (!reporterCounts[userIdStr]) {
@@ -514,21 +515,19 @@ export const getAnalytics = query({
       },
       resolution: {
         avgTimeMs: avgResolutionMs,
-        avgTimeHours: Math.round(avgResolutionMs / (1000 * 60 * 60) * 10) / 10,
-        fastestMs: fastestResolution === Infinity ? 0 : fastestResolution,
+        avgTimeHours: Math.round((avgResolutionMs / (1000 * 60 * 60)) * 10) / 10,
+        fastestMs: fastestResolution === Number.POSITIVE_INFINITY ? 0 : fastestResolution,
         slowestMs: slowestResolution,
-        resolutionRate: allFeedback.length > 0
-          ? Math.round((resolvedCount / allFeedback.length) * 100)
-          : 0,
+        resolutionRate:
+          allFeedback.length > 0 ? Math.round((resolvedCount / allFeedback.length) * 100) : 0,
       },
       trend: trendData,
       topReporters,
       attachments: {
         withScreenshot,
         withRecording,
-        screenshotRate: allFeedback.length > 0
-          ? Math.round((withScreenshot / allFeedback.length) * 100)
-          : 0,
+        screenshotRate:
+          allFeedback.length > 0 ? Math.round((withScreenshot / allFeedback.length) * 100) : 0,
       },
     };
   },

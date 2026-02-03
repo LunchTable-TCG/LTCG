@@ -789,9 +789,7 @@ export const searchBrandingAssets = query({
 
     // Filter by usage context if provided
     if (args.usageContext && args.usageContext.length > 0) {
-      assets = assets.filter((a) =>
-        args.usageContext!.some((ctx) => a.usageContext.includes(ctx))
-      );
+      assets = assets.filter((a) => args.usageContext!.some((ctx) => a.usageContext.includes(ctx)));
     }
 
     // Simple text search in name, tags, and aiDescription

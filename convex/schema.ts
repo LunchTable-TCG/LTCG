@@ -953,11 +953,7 @@ export default defineSchema({
       )
     ),
     trapType: v.optional(
-      v.union(
-        v.literal("normal"),
-        v.literal("continuous"),
-        v.literal("counter")
-      )
+      v.union(v.literal("normal"), v.literal("continuous"), v.literal("counter"))
     ),
 
     ability: v.optional(jsonAbilityValidator), // JSON ability format
@@ -992,9 +988,7 @@ export default defineSchema({
     // Template mode:
     // - "frame_artwork": Traditional mode with separate frame image + artwork placement
     // - "full_card_image": Card's own image is the full background (frame + art baked in)
-    mode: v.optional(
-      v.union(v.literal("frame_artwork"), v.literal("full_card_image"))
-    ), // defaults to "frame_artwork" for backwards compatibility
+    mode: v.optional(v.union(v.literal("frame_artwork"), v.literal("full_card_image"))), // defaults to "frame_artwork" for backwards compatibility
     // Canvas dimensions (standard TCG: 750x1050)
     width: v.number(),
     height: v.number(),
@@ -1075,12 +1069,7 @@ export default defineSchema({
     imageUrl: v.optional(v.string()), // URL to image (Vercel Blob or external)
     imageStorageId: v.optional(v.string()), // Reference to asset storage
     imageFit: v.optional(
-      v.union(
-        v.literal("fill"),
-        v.literal("contain"),
-        v.literal("cover"),
-        v.literal("none")
-      )
+      v.union(v.literal("fill"), v.literal("contain"), v.literal("cover"), v.literal("none"))
     ),
     // Transform properties (NEW)
     opacity: v.optional(v.number()), // 0-1
@@ -1508,9 +1497,7 @@ export default defineSchema({
     buyerId: v.id("users"),
     listingId: v.optional(v.id("marketplaceListings")), // Optional for non-marketplace purchases
     battlePassId: v.optional(v.id("battlePassSeasons")), // For battle pass premium purchases
-    purchaseType: v.optional(
-      v.union(v.literal("marketplace"), v.literal("battle_pass"))
-    ), // Type of purchase
+    purchaseType: v.optional(v.union(v.literal("marketplace"), v.literal("battle_pass"))), // Type of purchase
     amount: v.number(),
     buyerWallet: v.string(),
     sellerWallet: v.string(), // Treasury wallet for battle pass purchases
@@ -1760,11 +1747,7 @@ export default defineSchema({
     ),
     unlockCondition: v.optional(
       v.object({
-        type: v.union(
-          v.literal("chapter_complete"),
-          v.literal("player_level"),
-          v.literal("none")
-        ),
+        type: v.union(v.literal("chapter_complete"), v.literal("player_level"), v.literal("none")),
         requiredChapterId: v.optional(v.id("storyChapters")),
         requiredLevel: v.optional(v.number()),
       })
@@ -1801,21 +1784,11 @@ export default defineSchema({
     opponentDeckId: v.optional(v.id("decks")), // Pre-built AI deck
     opponentDeckArchetype: v.optional(v.string()), // Or generate from archetype
     difficulty: v.optional(
-      v.union(
-        v.literal("easy"),
-        v.literal("medium"),
-        v.literal("hard"),
-        v.literal("boss")
-      )
+      v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"), v.literal("boss"))
     ), // Optional for old data
     // Legacy field name for difficulty (code uses both)
     aiDifficulty: v.optional(
-      v.union(
-        v.literal("easy"),
-        v.literal("medium"),
-        v.literal("hard"),
-        v.literal("boss")
-      )
+      v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"), v.literal("boss"))
     ),
 
     // Dialogue/narrative
@@ -2550,12 +2523,7 @@ export default defineSchema({
       v.literal("closed")
     ),
     priority: v.optional(
-      v.union(
-        v.literal("low"),
-        v.literal("medium"),
-        v.literal("high"),
-        v.literal("critical")
-      )
+      v.union(v.literal("low"), v.literal("medium"), v.literal("high"), v.literal("critical"))
     ),
 
     // Admin fields
@@ -2689,11 +2657,7 @@ export default defineSchema({
     tokenBalance: v.optional(v.number()), // Cached LTCG balance (raw units)
     lastSyncedAt: v.optional(v.number()), // Last balance sync timestamp
     policyId: v.optional(v.string()), // Privy policy ID
-    status: v.union(
-      v.literal("active"),
-      v.literal("frozen"),
-      v.literal("archived")
-    ),
+    status: v.union(v.literal("active"), v.literal("frozen"), v.literal("archived")),
     // Wallet creation status tracking
     creationStatus: v.optional(
       v.union(
@@ -2763,8 +2727,7 @@ export default defineSchema({
     createdBy: v.id("users"),
     createdAt: v.number(),
     updatedAt: v.number(),
-  })
-    .index("by_active", ["isActive"]),
+  }).index("by_active", ["isActive"]),
 
   // ============================================================================
   // TOKEN LAUNCH MANAGEMENT
@@ -2832,8 +2795,7 @@ export default defineSchema({
     approved: v.boolean(),
     comments: v.optional(v.string()),
     approvedAt: v.number(),
-  })
-    .index("by_admin", ["adminId"]),
+  }).index("by_admin", ["adminId"]),
 
   // Launch schedule
   launchSchedule: defineTable({
@@ -2851,8 +2813,7 @@ export default defineSchema({
     launchTxSignature: v.optional(v.string()),
     abortReason: v.optional(v.string()),
     updatedAt: v.number(),
-  })
-    .index("by_status", ["status"]),
+  }).index("by_status", ["status"]),
 
   // ============================================================================
   // TOKEN ANALYTICS (Post-Launch)
@@ -2870,8 +2831,7 @@ export default defineSchema({
     liquidity: v.number(),
     bondingCurveProgress: v.number(), // 0-100%
     graduationEta: v.optional(v.number()), // Estimated graduation timestamp
-  })
-    .index("by_timestamp", ["timestamp"]),
+  }).index("by_timestamp", ["timestamp"]),
 
   // Holder snapshots
   tokenHolders: defineTable({
@@ -2924,8 +2884,7 @@ export default defineSchema({
     closePrice: v.number(),
     newHolders: v.number(),
     lostHolders: v.number(),
-  })
-    .index("by_period", ["period", "periodStart"]),
+  }).index("by_period", ["period", "periodStart"]),
 
   // ============================================================================
   // ALERTING SYSTEM
@@ -2949,9 +2908,7 @@ export default defineSchema({
     ),
     conditions: v.object({
       threshold: v.optional(v.number()),
-      direction: v.optional(
-        v.union(v.literal("above"), v.literal("below"), v.literal("change"))
-      ),
+      direction: v.optional(v.union(v.literal("above"), v.literal("below"), v.literal("change"))),
       timeframeMinutes: v.optional(v.number()),
       percentChange: v.optional(v.number()),
     }),
@@ -2982,11 +2939,7 @@ export default defineSchema({
     config: v.object({
       webhookUrl: v.optional(v.string()), // Slack/Discord webhook
       email: v.optional(v.string()),
-      minSeverity: v.union(
-        v.literal("info"),
-        v.literal("warning"),
-        v.literal("critical")
-      ),
+      minSeverity: v.union(v.literal("info"), v.literal("warning"), v.literal("critical")),
     }),
     createdBy: v.id("users"),
     createdAt: v.number(),
@@ -3016,11 +2969,7 @@ export default defineSchema({
     alertHistoryId: v.optional(v.id("alertHistory")),
     title: v.string(),
     message: v.string(),
-    type: v.union(
-      v.literal("alert"),
-      v.literal("system"),
-      v.literal("action_required")
-    ),
+    type: v.union(v.literal("alert"), v.literal("system"), v.literal("action_required")),
     isRead: v.boolean(),
     createdAt: v.number(),
   })
@@ -3030,11 +2979,7 @@ export default defineSchema({
 
   // Webhook configuration for external services (Helius, etc.)
   webhookConfig: defineTable({
-    provider: v.union(
-      v.literal("helius"),
-      v.literal("shyft"),
-      v.literal("bitquery")
-    ),
+    provider: v.union(v.literal("helius"), v.literal("shyft"), v.literal("bitquery")),
     webhookId: v.optional(v.string()), // Provider's webhook ID
     webhookUrl: v.string(), // Our endpoint URL
     webhookSecret: v.optional(v.string()), // For signature verification

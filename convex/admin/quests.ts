@@ -18,11 +18,7 @@ const questTypeValidator = v.union(
   v.literal("achievement")
 );
 
-const gameModeValidator = v.union(
-  v.literal("ranked"),
-  v.literal("casual"),
-  v.literal("story")
-);
+const gameModeValidator = v.union(v.literal("ranked"), v.literal("casual"), v.literal("story"));
 
 // =============================================================================
 // Queries
@@ -249,8 +245,7 @@ export const updateQuest = mutation({
 
     if (args.name !== undefined) updates["name"] = args.name;
     if (args.description !== undefined) updates["description"] = args.description;
-    if (args.requirementType !== undefined)
-      updates["requirementType"] = args.requirementType;
+    if (args.requirementType !== undefined) updates["requirementType"] = args.requirementType;
     if (args.targetValue !== undefined) updates["targetValue"] = args.targetValue;
     if (args.isActive !== undefined) updates["isActive"] = args.isActive;
 
@@ -365,9 +360,7 @@ export const deleteQuest = mutation({
       .first();
 
     if (activeUserQuests) {
-      throw new Error(
-        "Cannot delete quest with active player progress. Deactivate it instead."
-      );
+      throw new Error("Cannot delete quest with active player progress. Deactivate it instead.");
     }
 
     await ctx.db.delete(questDbId);
