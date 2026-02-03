@@ -6,13 +6,17 @@
  * - Content generation (news, promo codes)
  * - Analytics and metrics explanation
  * - Admin action execution with confirmation
+ *
+ * Uses the centralized provider configuration for model selection:
+ * - Primary: OpenRouter (400+ models with fallbacks)
+ * - Fallback: Vercel AI Gateway or direct OpenAI
  */
 
 import { Agent, createTool, type ToolCtx } from "@convex-dev/agent";
-import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { components, api } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+import { getAdminAgentModel, getStandardEmbeddingModel } from "./providers";
 
 // Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
 // biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround
@@ -341,8 +345,10 @@ const listAdmins = createTool({
 
 export const adminAgent = new Agent(components.agent, {
   name: "Admin Assistant",
-  languageModel: openai.chat("gpt-4o-mini"),
-  textEmbeddingModel: openai.embedding("text-embedding-3-small"),
+  // Uses OpenRouter/Gateway/OpenAI based on available API keys
+  // Default: Claude 3.5 Sonnet via OpenRouter for best quality
+  languageModel: getAdminAgentModel(),
+  textEmbeddingModel: getStandardEmbeddingModel(),
 
   instructions: `You are the LTCG Admin Assistant, helping game administrators manage the trading card game platform.
 

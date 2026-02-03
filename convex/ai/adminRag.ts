@@ -7,11 +7,13 @@
  * - Moderation guidelines
  * - FAQ and troubleshooting guides
  * - Historical incident reports
+ *
+ * Uses centralized provider configuration for embedding models.
  */
 
 import { RAG } from "@convex-dev/rag";
-import { openai } from "@ai-sdk/openai";
 import { components } from "../_generated/api";
+import { getStandardEmbeddingModel } from "./providers";
 
 // =============================================================================
 // Filter Types
@@ -47,9 +49,11 @@ export type AdminDocType =
  *
  * Configured with filters for document category and type to enable
  * targeted searches within specific document sets.
+ *
+ * Uses OpenAI text-embedding-3-small (1536 dimensions) via centralized config.
  */
 export const adminRag = new RAG(components.rag, {
-  textEmbeddingModel: openai.embedding("text-embedding-3-small"),
+  textEmbeddingModel: getStandardEmbeddingModel(),
   embeddingDimension: 1536,
   filterNames: ["category", "docType"],
 });

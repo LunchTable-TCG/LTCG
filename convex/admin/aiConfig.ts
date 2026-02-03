@@ -568,7 +568,8 @@ export const testProviderConnection = action({
       openrouter: !!process.env["OPENROUTER_API_KEY"],
       anthropic: !!process.env["ANTHROPIC_API_KEY"],
       openai: !!process.env["OPENAI_API_KEY"],
-      vercel: !!process.env["VERCEL_AI_GATEWAY_KEY"] || !!process.env["OPENAI_API_KEY"], // Vercel uses OpenAI key
+      // Vercel AI Gateway uses AI_GATEWAY_API_KEY or falls back to OPENAI_API_KEY
+      vercel: !!process.env["AI_GATEWAY_API_KEY"] || !!process.env["OPENAI_API_KEY"],
     };
 
     // If no specific provider requested, just return status
@@ -672,10 +673,17 @@ export const testProviderConnection = action({
         }
 
         case "vercel": {
-          // Vercel AI Gateway typically uses OpenAI API, test that
+          // Vercel AI Gateway - test via the gateway endpoint or fallback to OpenAI
           const startTime = Date.now();
-          const apiKey = process.env["VERCEL_AI_GATEWAY_KEY"] || process.env["OPENAI_API_KEY"];
-          const response = await fetch("https://api.openai.com/v1/models", {
+          const apiKey = process.env["AI_GATEWAY_API_KEY"] || process.env["OPENAI_API_KEY"];
+
+          // If we have AI_GATEWAY_API_KEY, test the gateway endpoint
+          // Otherwise fall back to testing OpenAI directly
+          const endpoint = process.env["AI_GATEWAY_API_KEY"]
+            ? "https://ai-gateway.vercel.sh/v3/ai/models"
+            : "https://api.openai.com/v1/models";
+
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${apiKey}`,
             },
@@ -686,7 +694,7 @@ export const testProviderConnection = action({
             testResult = {
               success: false,
               latencyMs,
-              error: `Vercel/OpenAI API returned ${response.status}`,
+              error: `Vercel AI Gateway returned ${response.status}`,
             };
           } else {
             testResult = { success: true, latencyMs };

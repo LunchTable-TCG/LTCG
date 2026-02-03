@@ -2,7 +2,7 @@
  * AI Module Index
  *
  * Exports all AI-related functionality including the Admin Agent,
- * RAG configuration, and API endpoints.
+ * RAG configuration, model providers, and API endpoints.
  */
 
 // Agent definition
@@ -18,6 +18,29 @@ export {
   type AdminDocCategory,
   type AdminDocType,
 } from "./adminRag";
+
+// Model providers (OpenRouter, Vercel AI Gateway, OpenAI)
+export {
+  // Provider instances
+  openrouter,
+  gateway,
+  // Model getters
+  getLanguageModel,
+  getEmbeddingModel,
+  getAdminAgentModel,
+  getFastModel,
+  getPowerfulModel,
+  getReasoningModel,
+  getStandardEmbeddingModel,
+  // OpenRouter-specific
+  getOpenRouterWithFallbacks,
+  OPENROUTER_MODELS,
+  // Configuration
+  LANGUAGE_MODELS,
+  EMBEDDING_MODELS,
+  getProviderStatus,
+  getPreferredProvider,
+} from "./providers";
 
 // API endpoints are exported directly from their files
 // (Convex requires direct exports for query/mutation/action functions)

@@ -302,23 +302,64 @@ export const sendMessage = mutation({
  * Called periodically to keep user in the "online" list.
  * Should be called every 30 seconds from the frontend.
  *
+ * OPTIMIZATION: Pass presenceId from previous call to skip query and avoid OCC conflicts.
+ * First call returns the presenceId, subsequent calls should pass it back.
+ *
  * @param status - User status: "online", "in_game", or "idle" (default: "online")
- * @returns null
+ * @param presenceId - Optional: ID from previous call to skip query (reduces write conflicts)
+ * @returns presenceId for use in subsequent calls
  */
 export const updatePresence = mutation({
   args: {
     status: v.optional(v.union(v.literal("online"), v.literal("in_game"), v.literal("idle"))),
+    presenceId: v.optional(v.id("userPresence")),
   },
-  returns: v.null(),
+  returns: v.id("userPresence"),
   handler: async (ctx, args) => {
     // Validate authentication
     const { userId, username } = await requireAuthMutation(ctx);
 
     const status = args.status ?? "online";
+    const now = Date.now();
 
-    await updatePresenceInternal(ctx, userId, username, status);
+    // Fast path: if presenceId provided, skip query and patch directly
+    if (args.presenceId) {
+      // Verify the document still exists and belongs to this user
+      const existing = await ctx.db.get(args.presenceId);
+      if (existing && existing.userId === userId) {
+        await ctx.db.patch(args.presenceId, {
+          username,
+          lastActiveAt: now,
+          status,
+        });
+        return args.presenceId;
+      }
+      // Document was deleted or doesn't belong to user, fall through to create new
+    }
 
-    return null;
+    // Slow path: query for existing or create new
+    const existingPresence = await ctx.db
+      .query("userPresence")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (existingPresence) {
+      await ctx.db.patch(existingPresence._id, {
+        username,
+        lastActiveAt: now,
+        status,
+      });
+      return existingPresence._id;
+    }
+
+    // Create new record
+    const newPresenceId = await ctx.db.insert("userPresence", {
+      userId,
+      username,
+      lastActiveAt: now,
+      status,
+    });
+    return newPresenceId;
   },
 });
 

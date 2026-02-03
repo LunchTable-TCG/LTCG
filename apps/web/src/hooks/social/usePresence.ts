@@ -2,7 +2,9 @@
 
 import { logError } from "@/lib/errorHandling";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
+import { useRef } from "react";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UsePresenceReturn {
@@ -53,14 +55,23 @@ export function usePresence(): UsePresenceReturn {
 
   const updateMutation = useMutation(api.globalChat.updatePresence);
 
+  // Cache presence ID to avoid OCC conflicts on repeated heartbeats
+  const presenceIdRef = useRef<Id<"userPresence"> | null>(null);
+
   return {
     onlineUsers,
     onlineCount: onlineUsers?.length || 0,
     updatePresence: async () => {
       if (!isAuthenticated) return;
       try {
-        await updateMutation({});
+        // Pass cached presenceId to skip query and avoid write conflicts
+        const newPresenceId = await updateMutation({
+          presenceId: presenceIdRef.current ?? undefined,
+        });
+        presenceIdRef.current = newPresenceId;
       } catch (error) {
+        // Clear cached ID on error so next attempt does full lookup
+        presenceIdRef.current = null;
         logError("Presence update", error);
       }
     },

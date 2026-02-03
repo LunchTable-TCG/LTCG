@@ -2,8 +2,9 @@
 
 import { handleHookError, logError } from "@/lib/errorHandling";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
@@ -77,6 +78,9 @@ export function useGlobalChat(): UseGlobalChatReturn {
   const sendMessageMutation = useMutation(api.globalChat.sendMessage);
   const updatePresenceMutation = useMutation(api.globalChat.updatePresence);
 
+  // Cache presence ID to avoid OCC conflicts on repeated heartbeats
+  const presenceIdRef = useRef<Id<"userPresence"> | null>(null);
+
   // Actions
   const sendMessage = async (message: string) => {
     if (!isAuthenticated) throw new Error("Not authenticated");
@@ -94,9 +98,16 @@ export function useGlobalChat(): UseGlobalChatReturn {
   const updatePresence = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
-      await updatePresenceMutation({});
+      // Pass cached presenceId to skip query and avoid write conflicts
+      const newPresenceId = await updatePresenceMutation({
+        presenceId: presenceIdRef.current ?? undefined,
+      });
+      // Cache the ID for next heartbeat
+      presenceIdRef.current = newPresenceId;
     } catch (error) {
       // Silent fail for presence updates
+      // Clear cached ID on error so next attempt does full lookup
+      presenceIdRef.current = null;
       logError("Presence update", error);
     }
   }, [isAuthenticated, updatePresenceMutation]);

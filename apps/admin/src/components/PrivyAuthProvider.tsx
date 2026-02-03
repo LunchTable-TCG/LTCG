@@ -27,11 +27,13 @@ export function PrivyAuthProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   useSuppressPrivyHydrationWarnings();
 
+  // Only render PrivyProvider on client side to avoid SSG/SSR issues
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Avoid hydration mismatch by not rendering Privy until client-side
+  // During SSR/SSG, render children without Privy wrapper
+  // This prevents the "invalid Privy app ID" error during static generation
   if (!mounted) {
     return <>{children}</>;
   }
@@ -60,7 +62,7 @@ export function PrivyAuthProvider({ children }: { children: ReactNode }) {
         // Appearance - dark theme for admin dashboard
         appearance: {
           theme: "dark",
-          accentColor: "#6366f1", // Indigo - original working color
+          accentColor: "#6366f1", // Indigo for admin branding
         },
       }}
     >
