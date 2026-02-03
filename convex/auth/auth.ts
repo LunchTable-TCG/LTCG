@@ -7,8 +7,8 @@
  * User data is stored in Convex users table with privyId as the key.
  */
 
-import { query } from "./_generated/server";
-import { fullUserValidator } from "./lib/returnValidators";
+import { query } from "../_generated/server";
+import { fullUserValidator } from "../lib/returnValidators";
 
 /**
  * Get the currently logged in user's full profile

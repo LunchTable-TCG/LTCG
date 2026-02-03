@@ -1,8 +1,9 @@
 import { cronJobs } from "convex/server";
-import { internal } from "../_generated/api";
-
-// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-// for newly added modules that haven't been regenerated yet
+// Workaround for TS2589 (excessively deep type instantiation)
+// biome-ignore lint/style/noNamespaceImport: Required for Convex internal API type workaround
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
+const internal = (generatedApi as any).internal;
 // biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround
 const internalAny = internal as any;
 
@@ -70,7 +71,7 @@ crons.interval(
 crons.interval(
   "send-welcome-emails",
   { hours: 1 },
-  internal.welcomeEmails.sendWelcomeEmailsToNewUsers
+  internal.infrastructure.welcomeEmails.sendWelcomeEmailsToNewUsers
 );
 
 // ============================================================================

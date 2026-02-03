@@ -173,12 +173,16 @@ export const completeStage = mutation({
     if (args.finalLP >= 7500) starsEarned = 3; // 93.75%+ LP (nearly perfect)
 
     // Calculate rewards
-    let goldReward = stage.rewardGold ?? stage.firstClearGold;
+    let goldReward = stage.rewardGold ?? stage.firstClearGold ?? 0;
     let xpReward = stage.rewardXp ?? 0;
 
     // First clear bonus
     if (!progress.firstClearClaimed && stage.firstClearBonus) {
-      goldReward += stage.firstClearBonus.gold ?? 0;
+      // Handle both object and number formats (legacy data)
+      const bonus = typeof stage.firstClearBonus === "number"
+        ? stage.firstClearBonus
+        : (stage.firstClearBonus.gold ?? 0);
+      goldReward += bonus;
     }
 
     // Star bonus (20% per star)
@@ -305,12 +309,16 @@ export const completeStageInternal = internalMutation({
     if (args.finalLP >= 7500) starsEarned = 3; // 93.75%+ LP (nearly perfect)
 
     // Calculate rewards
-    let goldReward = stage.rewardGold ?? stage.firstClearGold;
+    let goldReward = stage.rewardGold ?? stage.firstClearGold ?? 0;
     let xpReward = stage.rewardXp ?? 0;
 
     // First clear bonus
     if (!progress.firstClearClaimed && stage.firstClearBonus) {
-      goldReward += stage.firstClearBonus.gold ?? 0;
+      // Handle both object and number formats (legacy data)
+      const bonus = typeof stage.firstClearBonus === "number"
+        ? stage.firstClearBonus
+        : (stage.firstClearBonus.gold ?? 0);
+      goldReward += bonus;
     }
 
     // Star bonus (20% per star)

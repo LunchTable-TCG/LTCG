@@ -1,8 +1,8 @@
-import { internal } from "./_generated/api";
-import { internalMutation } from "./_generated/server";
+import { internal } from "../_generated/api";
+import { internalMutation } from "../_generated/server";
 
 // Email action references - extracted to module level for consistency
-const emailActions = internal.emailActions;
+const emailActions = internal.infrastructure.emailActions;
 
 // Helper to avoid TypeScript "Type instantiation is excessively deep" errors
 // biome-ignore lint/suspicious/noExplicitAny: Convex scheduler type workaround for TS2589

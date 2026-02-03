@@ -1,12 +1,17 @@
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+
+// Workaround for TS2589 (excessively deep type instantiation)
+// biome-ignore lint/style/noNamespaceImport: Required for Convex internal API type workaround
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
+const internal = (generatedApi as any).internal;
 import { mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 
 // Email action references - extracted to module level for consistency
-const emailActions = internal.emailActions;
+const emailActions = internal.infrastructure.emailActions;
 
 // Helper to avoid TypeScript "Type instantiation is excessively deep" errors
 // biome-ignore lint/suspicious/noExplicitAny: Convex scheduler type workaround for TS2589

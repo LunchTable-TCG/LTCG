@@ -9,6 +9,38 @@ import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { del, list } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
+// CORS helper - dynamically set origin based on request
+function getCorsHeaders(request?: Request) {
+  const origin = request?.headers.get("origin") || "";
+  const allowedOrigins = [
+    "https://ltcg-admin.vercel.app",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    process.env["ADMIN_APP_URL"],
+  ].filter(Boolean);
+
+  // Check if origin is allowed
+  const isAllowed = allowedOrigins.includes(origin);
+
+  return {
+    "Access-Control-Allow-Origin": isAllowed ? origin : allowedOrigins[0] || "",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
+
+// Note: Use getCorsHeaders(request) in each handler for dynamic origin matching
+
+/**
+ * OPTIONS /api/admin/upload
+ *
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS(request: Request): Promise<NextResponse> {
+  return NextResponse.json({}, { headers: getCorsHeaders(request) });
+}
+
 // Allowed content types for admin uploads
 const ALLOWED_CONTENT_TYPES = [
   // Images
@@ -35,6 +67,7 @@ const ALLOWED_CONTENT_TYPES = [
  * 2. Upload completion callback (type: "blob.upload-completed")
  */
 export async function POST(request: Request): Promise<NextResponse> {
+  const headers = getCorsHeaders(request);
   const body = (await request.json()) as HandleUploadBody;
 
   try {
@@ -80,12 +113,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       },
     });
 
-    return NextResponse.json(jsonResponse);
+    return NextResponse.json(jsonResponse, { headers });
   } catch (error) {
     console.error("Admin upload error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Upload failed" },
-      { status: 400 }
+      { status: 400, headers }
     );
   }
 }
@@ -102,7 +135,8 @@ export async function POST(request: Request): Promise<NextResponse> {
  * Lists all files in Vercel Blob storage.
  * Used for syncing blob assets to Convex metadata.
  */
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
+  const headers = getCorsHeaders(request);
   try {
     const allBlobs: Array<{
       url: string;
@@ -128,12 +162,12 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({
       blobs: allBlobs,
       count: allBlobs.length,
-    });
+    }, { headers });
   } catch (error) {
     console.error("List blobs error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to list blobs" },
-      { status: 500 }
+      { status: 500, headers }
     );
   }
 }
@@ -145,13 +179,14 @@ export async function GET(): Promise<NextResponse> {
  * Called before removing metadata from Convex.
  */
 export async function DELETE(request: Request): Promise<NextResponse> {
+  const headers = getCorsHeaders(request);
   try {
     const { url } = await request.json();
 
     if (!url || typeof url !== "string") {
       return NextResponse.json(
         { error: "Missing or invalid blob URL" },
-        { status: 400 }
+        { status: 400, headers }
       );
     }
 
@@ -160,18 +195,18 @@ export async function DELETE(request: Request): Promise<NextResponse> {
     if (blobBaseUrl && !url.startsWith(blobBaseUrl)) {
       return NextResponse.json(
         { error: "Invalid blob URL" },
-        { status: 400 }
+        { status: 400, headers }
       );
     }
 
     await del(url);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers });
   } catch (error) {
     console.error("Admin delete error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Delete failed" },
-      { status: 500 }
+      { status: 500, headers }
     );
   }
 }

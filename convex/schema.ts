@@ -1547,7 +1547,7 @@ export default defineSchema({
 
   // Chapter definitions (reference data)
   storyChapters: defineTable({
-    number: v.number(), // Legacy - chapter number within act
+    number: v.optional(v.number()), // Legacy - chapter number within act (optional for old data)
     actNumber: v.optional(v.number()), // Act 1, 2, 3...
     chapterNumber: v.optional(v.number()), // Chapter within act
     title: v.string(),
@@ -1558,10 +1558,17 @@ export default defineSchema({
     aiOpponentDeckCode: v.optional(v.string()), // AI deck code
     aiDifficulty: v.optional(
       v.union(
+        // String literal format (used by storyStages)
         v.literal("easy"),
         v.literal("medium"),
         v.literal("hard"),
-        v.literal("boss")
+        v.literal("boss"),
+        // Object format (used by storyChapters seeds - difficulty values per mode)
+        v.object({
+          normal: v.number(),
+          hard: v.number(),
+          legendary: v.number(),
+        })
       )
     ),
     battleCount: v.optional(v.number()), // Number of battles in chapter
@@ -1584,9 +1591,18 @@ export default defineSchema({
         requiredLevel: v.optional(v.number()),
       })
     ),
-    status: v.union(v.literal("draft"), v.literal("published")),
+    // Legacy fields from seed data
+    loreText: v.optional(v.string()),
+    unlockRequirements: v.optional(
+      v.object({
+        previousChapter: v.optional(v.boolean()),
+        minimumLevel: v.optional(v.number()),
+      })
+    ),
+    isActive: v.optional(v.boolean()),
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"))), // Optional for old data
     createdAt: v.number(),
-    updatedAt: v.number(),
+    updatedAt: v.optional(v.number()), // Optional for old data
   })
     .index("by_number", ["number"])
     .index("by_status", ["status"])
@@ -1599,19 +1615,21 @@ export default defineSchema({
 
     // Legacy name field (code expects this)
     name: v.optional(v.string()),
-    title: v.string(),
+    title: v.optional(v.string()), // Optional for old data
     description: v.string(),
 
     // Opponent configuration
-    opponentName: v.string(),
+    opponentName: v.optional(v.string()), // Optional for old data
     opponentDeckId: v.optional(v.id("decks")), // Pre-built AI deck
     opponentDeckArchetype: v.optional(v.string()), // Or generate from archetype
-    difficulty: v.union(
-      v.literal("easy"),
-      v.literal("medium"),
-      v.literal("hard"),
-      v.literal("boss")
-    ),
+    difficulty: v.optional(
+      v.union(
+        v.literal("easy"),
+        v.literal("medium"),
+        v.literal("hard"),
+        v.literal("boss")
+      )
+    ), // Optional for old data
     // Legacy field name for difficulty (code uses both)
     aiDifficulty: v.optional(
       v.union(
@@ -1653,21 +1671,26 @@ export default defineSchema({
     rewardGold: v.optional(v.number()),
     rewardXp: v.optional(v.number()),
     firstClearBonus: v.optional(
-      v.object({
-        gold: v.optional(v.number()),
-        xp: v.optional(v.number()),
-        gems: v.optional(v.number()),
-      })
+      v.union(
+        // Object format (new)
+        v.object({
+          gold: v.optional(v.number()),
+          xp: v.optional(v.number()),
+          gems: v.optional(v.number()),
+        }),
+        // Number format (legacy data)
+        v.number()
+      )
     ),
     // New reward fields
-    firstClearGold: v.number(),
-    repeatGold: v.number(),
+    firstClearGold: v.optional(v.number()), // Optional for old data
+    repeatGold: v.optional(v.number()), // Optional for old data
     firstClearGems: v.optional(v.number()),
     cardRewardId: v.optional(v.id("cardDefinitions")), // Guaranteed card on first clear
 
-    status: v.union(v.literal("draft"), v.literal("published")),
-    createdAt: v.number(),
-    updatedAt: v.number(),
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"))), // Optional for old data
+    createdAt: v.optional(v.number()), // Optional for old data
+    updatedAt: v.optional(v.number()), // Optional for old data
   })
     .index("by_chapter", ["chapterId", "stageNumber"])
     .index("by_status", ["status"]),

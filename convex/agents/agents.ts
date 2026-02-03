@@ -1,22 +1,22 @@
 import bcrypt from "bcryptjs";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
-import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "./lib/convexAuth";
-import { ErrorCode, createError } from "./lib/errorCodes";
+import type { Id } from "../_generated/dataModel";
+import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
+import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
+import { ErrorCode, createError } from "../lib/errorCodes";
 
 // Helper to get internal API without triggering TS2589
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 function getInternalApi() {
-  return require("./_generated/api").internal;
+  return require("../_generated/api").internal;
 }
 import {
   ABYSSAL_DEPTHS_CARDS,
   INFERNAL_DRAGONS_CARDS,
   IRON_LEGION_CARDS,
   STORM_RIDERS_CARDS,
-} from "./seeds/starterCards";
-import { STARTER_DECKS, type StarterDeckCode, VALID_DECK_CODES } from "./seeds/starterDecks";
+} from "../seeds/starterCards";
+import { STARTER_DECKS, type StarterDeckCode, VALID_DECK_CODES } from "../seeds/starterDecks";
 
 const MAX_AGENTS_PER_USER = 3;
 

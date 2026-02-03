@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalAction } from "./_generated/server";
+import { internalAction } from "../_generated/server";
 
 /**
  * Transactional Email Actions using Resend API

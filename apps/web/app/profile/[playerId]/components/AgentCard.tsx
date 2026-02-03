@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { sanitizeText, sanitizeURL } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
-import { useMutation } from "convex/react";
+import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
 import {
   AlertTriangle,
   Bot,
@@ -25,7 +25,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
-import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 interface Agent {
@@ -73,9 +72,9 @@ export function AgentCard({ agent, onDeleted }: AgentCardProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const regenerateApiKey = useMutation(api.agents.regenerateApiKey);
-  const deleteAgent = useMutation(api.agents.deleteAgent);
-  const retryWalletCreation = useMutation(api.agents.retryWalletCreation);
+  const regenerateApiKey = useConvexMutation(apiAny.agents.agents.regenerateApiKey);
+  const deleteAgent = useConvexMutation(apiAny.agents.agents.deleteAgent);
+  const retryWalletCreation = useConvexMutation(apiAny.agents.agents.retryWalletCreation);
   const [isRetryingWallet, setIsRetryingWallet] = useState(false);
 
   const DeckIcon = DECK_ICONS[agent.starterDeckCode] || Shield;

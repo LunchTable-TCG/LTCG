@@ -5,7 +5,11 @@
  * Used by ElizaOS agents and other external clients.
  */
 
-import { internal } from "../_generated/api";
+// Workaround for TS2589 (excessively deep type instantiation)
+// biome-ignore lint/style/noNamespaceImport: Required for Convex internal API type workaround
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
+const internal = (generatedApi as any).internal;
 import { httpAction } from "../_generated/server";
 import { authHttpAction } from "./middleware/auth";
 import { DEFAULT_RATE_LIMITS, getRateLimitStatus } from "./middleware/rateLimit";
@@ -59,7 +63,7 @@ export const register = httpAction(async (ctx, request) => {
 
     // Call internal registerAgent mutation (no auth required)
     // Note: registerAgentInternal returns { agentId, apiKey, keyPrefix, internalAgentId }
-    const result = await ctx.runMutation(internal.agents.registerAgentInternal, {
+    const result = await ctx.runMutation(internal.agents.agents.registerAgentInternal, {
       name: body.name,
       profilePictureUrl: undefined, // Optional
       socialLink: undefined, // Optional
@@ -139,7 +143,7 @@ export const me = authHttpAction(async (ctx, request, auth) => {
 
   try {
     // Get full agent profile using internal query
-    const agent = await ctx.runQuery(internal.agents.getAgentByIdInternal, {
+    const agent = await ctx.runQuery(internal.agents.agents.getAgentByIdInternal, {
       agentId: auth.agentId,
     });
 

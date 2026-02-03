@@ -2,10 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { useQuery } from "convex/react";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { Bot, Loader2, Plus } from "lucide-react";
 import { useState } from "react";
-import { api } from "../../../../convex/_generated/api";
 import { AgentCard } from "./AgentCard";
 import { RegisterAgentModal } from "./RegisterAgentModal";
 
@@ -15,7 +14,7 @@ export function AgentManagement() {
   const { isAuthenticated } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const agents = useQuery(api.agents.getUserAgents, isAuthenticated ? {} : "skip");
+  const agents = useConvexQuery(apiAny.agents.agents.getUserAgents, isAuthenticated ? {} : "skip");
 
   const isLoading = agents === undefined;
   const agentCount = agents?.length || 0;
@@ -65,7 +64,7 @@ export function AgentManagement() {
       {/* Agent List */}
       {agents && agents.length > 0 ? (
         <div className="space-y-4">
-          {agents.map((agent) => (
+          {agents.map((agent: any) => (
             <AgentCard key={agent._id} agent={agent} onDeleted={handleAgentDeleted} />
           ))}
         </div>
