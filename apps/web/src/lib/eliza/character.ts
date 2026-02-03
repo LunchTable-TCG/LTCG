@@ -28,7 +28,6 @@ Communication style:
 - Keep responses focused and helpful (2-4 sentences typically)
 - If you don't know something specific about the game, be honest about it`,
 
-  modelProvider: "openrouter",
   settings: {
     model: "anthropic/claude-3.5-sonnet",
   },

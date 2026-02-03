@@ -482,7 +482,7 @@ export const startChapter = mutation({
         description: chapter.description,
         storyText: chapter.storyText,
         aiOpponentDeckCode: chapter.aiOpponentDeckCode,
-        aiDifficulty: chapter.aiDifficulty[args.difficulty],
+        aiDifficulty: chapter.aiDifficulty ?? "medium",
         battleCount: chapter.battleCount,
         archetypeImageUrl: chapter.archetypeImageUrl,
       },
@@ -550,8 +550,10 @@ export const completeChapter = mutation({
       const starBonusGold = 1 + starsEarned * STAR_BONUS.gold;
       const starBonusXP = 1 + starsEarned * STAR_BONUS.xp;
 
-      goldReward = Math.floor(chapter.baseRewards.gold * difficultyMultiplier * starBonusGold);
-      xpReward = Math.floor(chapter.baseRewards.xp * difficultyMultiplier * starBonusXP);
+      const baseGold = chapter.baseRewards?.gold ?? 100;
+      const baseXp = chapter.baseRewards?.xp ?? 50;
+      goldReward = Math.floor(baseGold * difficultyMultiplier * starBonusGold);
+      xpReward = Math.floor(baseXp * difficultyMultiplier * starBonusXP);
     }
 
     // Update attempt record
@@ -562,7 +564,7 @@ export const completeChapter = mutation({
       rewardsEarned: {
         gold: goldReward,
         xp: xpReward,
-        cards: chapter.baseRewards.guaranteedCards,
+        cards: [],
       },
     });
 
@@ -738,7 +740,7 @@ export const completeChapter = mutation({
           .filter((q) => q.eq(q.field("userId"), userId))
           .first();
 
-        if (!existingArchetypeBadge) {
+        if (!existingArchetypeBadge && archetype) {
           await ctx.db.insert("playerBadges", {
             userId,
             badgeId: archetypeBadgeId,
@@ -807,7 +809,7 @@ export const completeChapter = mutation({
       rewards: {
         gold: goldReward,
         xp: xpReward,
-        cards: chapter.baseRewards.guaranteedCards || [],
+        cards: [],
       },
       starsEarned,
       levelUp: leveledUp ? { newLevel, oldLevel: newLevel - (leveledUp ? 1 : 0) } : null,

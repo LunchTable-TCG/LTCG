@@ -163,7 +163,7 @@ export default function BattlePage({ params }: BattlePageProps) {
             router.push(`/play/story/${chapterId}`);
           }}
           result={completionResult}
-          chapterName={stageInfo?.name}
+          chapterName={stageInfo?.title}
         />
       )}
     </>

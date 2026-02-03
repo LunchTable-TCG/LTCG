@@ -231,22 +231,22 @@ export const updatePromoCode = mutation({
     // Build update object
     const updates: Record<string, unknown> = {};
 
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.rewardAmount !== undefined) updates.rewardAmount = args.rewardAmount;
-    if (args.rewardPackId !== undefined) updates.rewardPackId = args.rewardPackId;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
+    if (args.description !== undefined) updates["description"] = args.description;
+    if (args.rewardAmount !== undefined) updates["rewardAmount"] = args.rewardAmount;
+    if (args.rewardPackId !== undefined) updates["rewardPackId"] = args.rewardPackId;
+    if (args.isActive !== undefined) updates["isActive"] = args.isActive;
 
     // Handle clearing optional fields
     if (args.clearMaxRedemptions) {
-      updates.maxRedemptions = undefined;
+      updates["maxRedemptions"] = undefined;
     } else if (args.maxRedemptions !== undefined) {
-      updates.maxRedemptions = args.maxRedemptions;
+      updates["maxRedemptions"] = args.maxRedemptions;
     }
 
     if (args.clearExpiresAt) {
-      updates.expiresAt = undefined;
+      updates["expiresAt"] = undefined;
     } else if (args.expiresAt !== undefined) {
-      updates.expiresAt = args.expiresAt;
+      updates["expiresAt"] = args.expiresAt;
     }
 
     if (Object.keys(updates).length === 0) {

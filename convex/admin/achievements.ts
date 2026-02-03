@@ -288,27 +288,27 @@ export const updateAchievement = mutation({
     // Build update object
     const updates: Record<string, unknown> = {};
 
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.category !== undefined) updates.category = args.category;
-    if (args.rarity !== undefined) updates.rarity = args.rarity;
-    if (args.icon !== undefined) updates.icon = args.icon;
+    if (args.name !== undefined) updates["name"] = args.name;
+    if (args.description !== undefined) updates["description"] = args.description;
+    if (args.category !== undefined) updates["category"] = args.category;
+    if (args.rarity !== undefined) updates["rarity"] = args.rarity;
+    if (args.icon !== undefined) updates["icon"] = args.icon;
     if (args.requirementType !== undefined)
-      updates.requirementType = args.requirementType;
-    if (args.targetValue !== undefined) updates.targetValue = args.targetValue;
-    if (args.isSecret !== undefined) updates.isSecret = args.isSecret;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
+      updates["requirementType"] = args.requirementType;
+    if (args.targetValue !== undefined) updates["targetValue"] = args.targetValue;
+    if (args.isSecret !== undefined) updates["isSecret"] = args.isSecret;
+    if (args.isActive !== undefined) updates["isActive"] = args.isActive;
 
     // Handle rewards
     if (args.clearRewards) {
-      updates.rewards = undefined;
+      updates["rewards"] = undefined;
     } else if (
       args.rewardGold !== undefined ||
       args.rewardXp !== undefined ||
       args.rewardGems !== undefined ||
       args.rewardBadge !== undefined
     ) {
-      updates.rewards = {
+      updates["rewards"] = {
         gold: args.rewardGold ?? achievement.rewards?.gold,
         xp: args.rewardXp ?? achievement.rewards?.xp,
         gems: args.rewardGems ?? achievement.rewards?.gems,

@@ -103,6 +103,10 @@ export default defineSchema({
     suspensionReason: v.optional(v.string()),
     suspendedBy: v.optional(v.id("users")),
     warningCount: v.optional(v.number()), // default: 0
+    accountStatus: v.optional(
+      v.union(v.literal("active"), v.literal("suspended"), v.literal("banned"))
+    ), // default: "active"
+    mutedUntil: v.optional(v.number()), // Chat mute expiry timestamp
 
     // HD Wallet tracking (non-custodial)
     // User's master wallet is at index 0, agent wallets start at index 1
@@ -120,6 +124,8 @@ export default defineSchema({
     .index("username", ["username"])
     .index("isBanned", ["isBanned"])
     .index("isSuspended", ["isSuspended"])
+    .index("mutedUntil", ["mutedUntil"])
+    .index("accountStatus", ["accountStatus"])
     // Leaderboard indexes
     .index("rankedElo", ["rankedElo"])
     .index("casualRating", ["casualRating"])
@@ -179,6 +185,28 @@ export default defineSchema({
     .index("by_timestamp", ["timestamp"])
     .index("by_success", ["success", "timestamp"])
     .index("by_target_user", ["targetUserId", "timestamp"]),
+
+  // Moderation actions (chat moderation, user warnings, etc.)
+  moderationActions: defineTable({
+    userId: v.id("users"),
+    adminId: v.id("users"),
+    actionType: v.union(
+      v.literal("mute"),
+      v.literal("unmute"),
+      v.literal("warn"),
+      v.literal("suspend"),
+      v.literal("unsuspend"),
+      v.literal("ban"),
+      v.literal("unban")
+    ),
+    reason: v.optional(v.string()),
+    duration: v.optional(v.number()), // Duration in ms (for mute/suspend)
+    expiresAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId", "createdAt"])
+    .index("by_admin", ["adminId", "createdAt"])
+    .index("by_type", ["actionType", "createdAt"]),
 
   // User preferences/settings
   userPreferences: defineTable({
@@ -1076,6 +1104,7 @@ export default defineSchema({
       v.literal("sale"),
       v.literal("gift"),
       v.literal("refund"),
+      v.literal("admin_refund"),
       v.literal("conversion"),
       v.literal("marketplace_fee"),
       v.literal("auction_bid"),
@@ -1210,7 +1239,8 @@ export default defineSchema({
       v.literal("active"),
       v.literal("sold"),
       v.literal("cancelled"),
-      v.literal("expired")
+      v.literal("expired"),
+      v.literal("suspended")
     ),
     soldTo: v.optional(v.id("users")),
     soldFor: v.optional(v.number()),
@@ -1231,6 +1261,25 @@ export default defineSchema({
 
   // Auction bid history
   auctionBids: defineTable({
+    listingId: v.id("marketplaceListings"),
+    bidderId: v.id("users"),
+    bidderUsername: v.string(),
+    bidAmount: v.number(),
+    bidStatus: v.union(
+      v.literal("active"),
+      v.literal("outbid"),
+      v.literal("won"),
+      v.literal("refunded"),
+      v.literal("cancelled")
+    ),
+    refundedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_listing", ["listingId", "createdAt"])
+    .index("by_bidder", ["bidderId", "bidStatus"]),
+
+  // Marketplace bids (admin view of auction bids)
+  marketplaceBids: defineTable({
     listingId: v.id("marketplaceListings"),
     bidderId: v.id("users"),
     bidderUsername: v.string(),
@@ -1498,10 +1547,32 @@ export default defineSchema({
 
   // Chapter definitions (reference data)
   storyChapters: defineTable({
-    number: v.number(), // Chapter 1, 2, 3...
+    number: v.number(), // Legacy - chapter number within act
+    actNumber: v.optional(v.number()), // Act 1, 2, 3...
+    chapterNumber: v.optional(v.number()), // Chapter within act
     title: v.string(),
     description: v.string(),
     imageUrl: v.optional(v.string()),
+    archetype: v.optional(v.string()), // Chapter archetype (fire, water, etc.)
+    storyText: v.optional(v.string()), // Narrative text
+    aiOpponentDeckCode: v.optional(v.string()), // AI deck code
+    aiDifficulty: v.optional(
+      v.union(
+        v.literal("easy"),
+        v.literal("medium"),
+        v.literal("hard"),
+        v.literal("boss")
+      )
+    ),
+    battleCount: v.optional(v.number()), // Number of battles in chapter
+    archetypeImageUrl: v.optional(v.string()), // Chapter archetype image
+    baseRewards: v.optional(
+      v.object({
+        gold: v.number(),
+        xp: v.number(),
+        gems: v.optional(v.number()),
+      })
+    ),
     unlockCondition: v.optional(
       v.object({
         type: v.union(
@@ -1518,13 +1589,16 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_number", ["number"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_act_chapter", ["actNumber", "chapterNumber"]),
 
   // Stage definitions within chapters
   storyStages: defineTable({
     chapterId: v.id("storyChapters"),
     stageNumber: v.number(), // Stage 1, 2, 3 within chapter
 
+    // Legacy name field (code expects this)
+    name: v.optional(v.string()),
     title: v.string(),
     description: v.string(),
 
@@ -1537,6 +1611,15 @@ export default defineSchema({
       v.literal("medium"),
       v.literal("hard"),
       v.literal("boss")
+    ),
+    // Legacy field name for difficulty (code uses both)
+    aiDifficulty: v.optional(
+      v.union(
+        v.literal("easy"),
+        v.literal("medium"),
+        v.literal("hard"),
+        v.literal("boss")
+      )
     ),
 
     // Dialogue/narrative
@@ -1566,7 +1649,17 @@ export default defineSchema({
       )
     ),
 
-    // Rewards
+    // Rewards (legacy fields that code expects)
+    rewardGold: v.optional(v.number()),
+    rewardXp: v.optional(v.number()),
+    firstClearBonus: v.optional(
+      v.object({
+        gold: v.optional(v.number()),
+        xp: v.optional(v.number()),
+        gems: v.optional(v.number()),
+      })
+    ),
+    // New reward fields
     firstClearGold: v.number(),
     repeatGold: v.number(),
     firstClearGems: v.optional(v.number()),
@@ -1577,6 +1670,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_chapter", ["chapterId", "stageNumber"])
+    .index("by_chapter_stage", ["chapterId", "stageNumber"])
     .index("by_status", ["status"]),
 
   // Stage progress tracking (per user, per stage)

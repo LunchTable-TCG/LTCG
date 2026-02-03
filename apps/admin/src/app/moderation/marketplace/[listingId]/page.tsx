@@ -56,7 +56,7 @@ export default function ListingDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { isAdmin } = useAdmin();
-  const listingId = params.listingId as string;
+  const listingId = params["listingId"] as string;
 
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");

@@ -259,28 +259,28 @@ export const updateFeatureFlag = mutation({
       updatedBy: adminId,
     };
 
-    if (args.displayName !== undefined) updates.displayName = args.displayName.trim();
-    if (args.description !== undefined) updates.description = args.description.trim();
-    if (args.enabled !== undefined) updates.enabled = args.enabled;
-    if (args.category !== undefined) updates.category = args.category;
+    if (args.displayName !== undefined) updates["displayName"] = args.displayName.trim();
+    if (args.description !== undefined) updates["description"] = args.description.trim();
+    if (args.enabled !== undefined) updates["enabled"] = args.enabled;
+    if (args.category !== undefined) updates["category"] = args.category;
 
     // Handle clearing optional fields
     if (args.clearRolloutPercentage) {
-      updates.rolloutPercentage = undefined;
+      updates["rolloutPercentage"] = undefined;
     } else if (args.rolloutPercentage !== undefined) {
-      updates.rolloutPercentage = args.rolloutPercentage;
+      updates["rolloutPercentage"] = args.rolloutPercentage;
     }
 
     if (args.clearTargetUserIds) {
-      updates.targetUserIds = undefined;
+      updates["targetUserIds"] = undefined;
     } else if (args.targetUserIds !== undefined) {
-      updates.targetUserIds = args.targetUserIds;
+      updates["targetUserIds"] = args.targetUserIds;
     }
 
     if (args.clearTargetRoles) {
-      updates.targetRoles = undefined;
+      updates["targetRoles"] = undefined;
     } else if (args.targetRoles !== undefined) {
-      updates.targetRoles = args.targetRoles;
+      updates["targetRoles"] = args.targetRoles;
     }
 
     await ctx.db.patch(args.featureFlagId, updates);

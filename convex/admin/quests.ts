@@ -247,12 +247,12 @@ export const updateQuest = mutation({
     // Build update object
     const updates: Record<string, unknown> = {};
 
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
+    if (args.name !== undefined) updates["name"] = args.name;
+    if (args.description !== undefined) updates["description"] = args.description;
     if (args.requirementType !== undefined)
-      updates.requirementType = args.requirementType;
-    if (args.targetValue !== undefined) updates.targetValue = args.targetValue;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
+      updates["requirementType"] = args.requirementType;
+    if (args.targetValue !== undefined) updates["targetValue"] = args.targetValue;
+    if (args.isActive !== undefined) updates["isActive"] = args.isActive;
 
     // Handle rewards
     if (
@@ -260,7 +260,7 @@ export const updateQuest = mutation({
       args.rewardXp !== undefined ||
       args.rewardGems !== undefined
     ) {
-      updates.rewards = {
+      updates["rewards"] = {
         gold: args.rewardGold ?? quest.rewards.gold,
         xp: args.rewardXp ?? quest.rewards.xp,
         gems: args.rewardGems ?? quest.rewards.gems,
@@ -269,13 +269,13 @@ export const updateQuest = mutation({
 
     // Handle filters
     if (args.clearFilters) {
-      updates.filters = undefined;
+      updates["filters"] = undefined;
     } else if (
       args.filterGameMode !== undefined ||
       args.filterArchetype !== undefined ||
       args.filterCardType !== undefined
     ) {
-      updates.filters = {
+      updates["filters"] = {
         gameMode: args.filterGameMode ?? quest.filters?.gameMode,
         archetype: args.filterArchetype ?? quest.filters?.archetype,
         cardType: args.filterCardType ?? quest.filters?.cardType,

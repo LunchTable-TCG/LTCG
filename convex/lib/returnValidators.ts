@@ -163,6 +163,7 @@ export const currencyTransactionValidator = v.object({
     v.literal("sale"),
     v.literal("gift"),
     v.literal("refund"),
+    v.literal("admin_refund"),
     v.literal("conversion"),
     v.literal("marketplace_fee"),
     v.literal("auction_bid"),

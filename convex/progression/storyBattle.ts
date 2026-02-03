@@ -82,7 +82,7 @@ export const initializeStoryBattle = mutation({
     }
 
     // Build AI deck from archetype cards
-    const aiDeck = await buildAIDeck(ctx, chapter.archetype);
+    const aiDeck = await buildAIDeck(ctx, chapter.archetype ?? "neutral");
 
     // Create or get AI user
     const aiUserId = await getOrCreateAIUser(ctx);
@@ -123,7 +123,7 @@ export const initializeStoryBattle = mutation({
       currentTurnPlayerId: userId,
       gameMode: "story",
       isAIOpponent: true,
-      aiDifficulty: stage.aiDifficulty, // Use stage's difficulty (easy, medium, hard, boss)
+      aiDifficulty: stage.aiDifficulty ?? stage.difficulty, // Use stage's difficulty (easy, medium, hard, boss)
       aiDeck,
     });
 
@@ -298,8 +298,8 @@ export const getChaptersInternal = internalQuery({
 
     // Sort by act and chapter number
     chaptersWithProgress.sort((a, b) => {
-      if (a.actNumber !== b.actNumber) return a.actNumber - b.actNumber;
-      return a.chapterNumber - b.chapterNumber;
+      if ((a.actNumber ?? 0) !== (b.actNumber ?? 0)) return (a.actNumber ?? 0) - (b.actNumber ?? 0);
+      return (a.chapterNumber ?? 0) - (b.chapterNumber ?? 0);
     });
 
     return chaptersWithProgress;
@@ -332,12 +332,12 @@ export const getChapterStagesInternal = internalQuery({
         return {
           _id: stage._id,
           stageNumber: stage.stageNumber,
-          name: stage.name,
+          name: stage.name ?? stage.title,
           description: stage.description,
-          aiDifficulty: stage.aiDifficulty,
-          rewardGold: stage.rewardGold,
-          rewardXp: stage.rewardXp,
-          firstClearBonus: stage.firstClearBonus,
+          aiDifficulty: stage.aiDifficulty ?? stage.difficulty,
+          rewardGold: stage.rewardGold ?? stage.firstClearGold,
+          rewardXp: stage.rewardXp ?? 0,
+          firstClearBonus: stage.firstClearBonus ?? null,
           status: progress?.status || "locked",
           starsEarned: progress?.starsEarned || 0,
           bestScore: progress?.bestScore,
@@ -451,7 +451,7 @@ export const initializeStoryBattleInternal = internalMutation({
     }
 
     // Build AI deck from archetype cards
-    const aiDeck = await buildAIDeck(ctx, chapter.archetype);
+    const aiDeck = await buildAIDeck(ctx, chapter.archetype ?? "neutral");
 
     // Create or get AI user
     const aiUserId = await getOrCreateAIUser(ctx);
@@ -492,7 +492,7 @@ export const initializeStoryBattleInternal = internalMutation({
       currentTurnPlayerId: args.userId,
       gameMode: "story",
       isAIOpponent: true,
-      aiDifficulty: stage.aiDifficulty,
+      aiDifficulty: stage.aiDifficulty ?? stage.difficulty,
       aiDeck,
     });
 
@@ -501,14 +501,14 @@ export const initializeStoryBattleInternal = internalMutation({
       lobbyId,
       stageId: stage._id,
       chapterTitle: chapter.title,
-      stageName: stage.name,
+      stageName: stage.name ?? stage.title,
       stageNumber: stage.stageNumber,
       aiOpponentName: `AI - ${chapter.title}`,
-      aiDifficulty: stage.aiDifficulty,
+      aiDifficulty: stage.aiDifficulty ?? stage.difficulty,
       rewards: {
-        gold: stage.rewardGold,
-        xp: stage.rewardXp,
-        firstClearBonus: stage.firstClearBonus,
+        gold: stage.rewardGold ?? stage.firstClearGold,
+        xp: stage.rewardXp ?? 0,
+        firstClearBonus: stage.firstClearBonus ?? null,
       },
     };
   },
@@ -622,7 +622,7 @@ export const quickPlayStoryInternal = internalMutation({
     if (stageToPlay && args.difficulty) {
       for (const progress of availableStages) {
         const stage = await ctx.db.get(progress.stageId);
-        if (stage && stage.aiDifficulty === args.difficulty) {
+        if (stage && stage.aiDifficulty ?? stage.difficulty === args.difficulty) {
           stageToPlay = progress;
           break;
         }
@@ -658,7 +658,7 @@ export const quickPlayStoryInternal = internalMutation({
     }
 
     // Build AI deck from archetype cards
-    const aiDeck = await buildAIDeck(ctx, chapter.archetype);
+    const aiDeck = await buildAIDeck(ctx, chapter.archetype ?? "neutral");
 
     // Create or get AI user
     const aiUserId = await getOrCreateAIUser(ctx);
@@ -699,7 +699,7 @@ export const quickPlayStoryInternal = internalMutation({
       currentTurnPlayerId: args.userId,
       gameMode: "story",
       isAIOpponent: true,
-      aiDifficulty: stage.aiDifficulty,
+      aiDifficulty: stage.aiDifficulty ?? stage.difficulty,
       aiDeck,
     });
 
@@ -708,14 +708,14 @@ export const quickPlayStoryInternal = internalMutation({
       lobbyId,
       stageId: stage._id,
       chapterTitle: chapter.title,
-      stageName: stage.name,
+      stageName: stage.name ?? stage.title,
       stageNumber: stage.stageNumber,
       aiOpponentName: `AI - ${chapter.title}`,
-      aiDifficulty: stage.aiDifficulty,
+      aiDifficulty: stage.aiDifficulty ?? stage.difficulty,
       rewards: {
-        gold: stage.rewardGold,
-        xp: stage.rewardXp,
-        firstClearBonus: stage.firstClearBonus,
+        gold: stage.rewardGold ?? stage.firstClearGold,
+        xp: stage.rewardXp ?? 0,
+        firstClearBonus: stage.firstClearBonus ?? null,
       },
     };
   },

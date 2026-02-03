@@ -15,6 +15,7 @@ import { requireRole } from "../lib/roles";
 // Types & Constants
 // =============================================================================
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const valueTypeValidator = v.union(
   v.literal("number"),
   v.literal("string"),

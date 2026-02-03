@@ -76,7 +76,7 @@ export async function sendToEliza(
 
     // Extract and return the response
     const responseText =
-      result.responseContent?.text ||
+      result.processing?.responseContent?.text ||
       "I'm having trouble responding right now. Please try again!";
 
     return responseText;
