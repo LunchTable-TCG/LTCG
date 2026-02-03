@@ -31,7 +31,7 @@ export const getStageByChapterAndNumber = query({
 
     const stage = await ctx.db
       .query("storyStages")
-      .withIndex("by_chapter_stage", (q) =>
+      .withIndex("by_chapter", (q) =>
         q.eq("chapterId", chapter._id).eq("stageNumber", args.stageNumber)
       )
       .first();

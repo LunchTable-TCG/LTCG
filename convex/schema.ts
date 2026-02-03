@@ -1670,7 +1670,6 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_chapter", ["chapterId", "stageNumber"])
-    .index("by_chapter_stage", ["chapterId", "stageNumber"])
     .index("by_status", ["status"]),
 
   // Stage progress tracking (per user, per stage)

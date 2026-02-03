@@ -215,7 +215,7 @@ export const completeStage = mutation({
     if (progress.timesCompleted === 0 && stage.stageNumber < 10) {
       const nextStage = await ctx.db
         .query("storyStages")
-        .withIndex("by_chapter_stage", (q) =>
+        .withIndex("by_chapter", (q) =>
           q.eq("chapterId", stage.chapterId).eq("stageNumber", stage.stageNumber + 1)
         )
         .first();
@@ -347,7 +347,7 @@ export const completeStageInternal = internalMutation({
     if (progress.timesCompleted === 0 && stage.stageNumber < 10) {
       const nextStage = await ctx.db
         .query("storyStages")
-        .withIndex("by_chapter_stage", (q) =>
+        .withIndex("by_chapter", (q) =>
           q.eq("chapterId", stage.chapterId).eq("stageNumber", stage.stageNumber + 1)
         )
         .first();

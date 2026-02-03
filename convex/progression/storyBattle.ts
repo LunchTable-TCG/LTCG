@@ -51,7 +51,7 @@ export const initializeStoryBattle = mutation({
     const stageNumber = args.stageNumber || 1;
     const stage = await ctx.db
       .query("storyStages")
-      .withIndex("by_chapter_stage", (q) =>
+      .withIndex("by_chapter", (q) =>
         q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber)
       )
       .first();
@@ -398,7 +398,7 @@ export const initializeStoryBattleInternal = internalMutation({
     const stageNumber = args.stageNumber || 1;
     const stage = await ctx.db
       .query("storyStages")
-      .withIndex("by_chapter_stage", (q) =>
+      .withIndex("by_chapter", (q) =>
         q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber)
       )
       .first();
