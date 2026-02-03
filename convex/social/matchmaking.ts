@@ -26,6 +26,7 @@ import type { ActionCtx, MutationCtx } from "../_generated/server";
 import { recordGameStartHelper } from "../gameplay/gameEvents";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { getRankFromRating } from "../lib/helpers";
 import { checkRateLimitWrapper } from "../lib/rateLimit";
 import {
   matchmakingStatusValidator,
@@ -187,6 +188,17 @@ export const joinQueue = mutation({
     const deckArchetype = deck.deckArchetype || "fire"; // Default to fire if not set
 
     const rating = mode === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
+
+    // CRITICAL: Re-check for existing entry right before insert to prevent race condition
+    // If another concurrent request inserted since our first check, OCC will catch it
+    const existingRecheck = await ctx.db
+      .query("matchmakingQueue")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (existingRecheck) {
+      throw createError(ErrorCode.MATCHMAKING_ALREADY_IN_QUEUE);
+    }
 
     // Add to queue
     await ctx.db.insert("matchmakingQueue", {
@@ -378,7 +390,7 @@ export const createMatchedGame = internalMutation({
     const lobbyId = await ctx.db.insert("gameLobbies", {
       hostId: player1Id,
       hostUsername: player1.username || player1.name || "Unknown",
-      hostRank: getRank(player1Rating),
+      hostRank: getRankFromRating(player1Rating),
       hostRating: player1Rating,
       deckArchetype: queue1.deckArchetype,
       mode,
@@ -386,7 +398,7 @@ export const createMatchedGame = internalMutation({
       isPrivate: false,
       opponentId: player2Id,
       opponentUsername: player2.username || player2.name || "Unknown",
-      opponentRank: getRank(player2Rating),
+      opponentRank: getRankFromRating(player2Rating),
       gameId,
       currentTurnPlayerId: goesFirst,
       turnStartedAt: now,
@@ -437,13 +449,17 @@ export const createMatchedGame = internalMutation({
 export const cleanupExpiredEntries = internalMutation({
   handler: async (ctx) => {
     const now = Date.now();
-    const entries = await ctx.db.query("matchmakingQueue").collect();
+    const cutoffTime = now - MATCHMAKING.QUEUE_TIMEOUT_MS;
 
-    for (const entry of entries) {
-      const waitTime = now - entry.joinedAt;
-      if (waitTime > MATCHMAKING.QUEUE_TIMEOUT_MS) {
-        await ctx.db.delete(entry._id);
-      }
+    // Use by_joinedAt index to efficiently find expired entries
+    // Query entries joined before cutoff time (oldest first)
+    const expiredEntries = await ctx.db
+      .query("matchmakingQueue")
+      .withIndex("by_joinedAt", (q) => q.lt("joinedAt", cutoffTime))
+      .take(100); // Limit per run to avoid long mutation times
+
+    for (const entry of expiredEntries) {
+      await ctx.db.delete(entry._id);
     }
   },
 });
@@ -451,19 +467,6 @@ export const cleanupExpiredEntries = internalMutation({
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-/**
- * Calculate rank tier from rating
- */
-function getRank(rating: number): string {
-  if (rating >= 2200) return "Legend";
-  if (rating >= 2000) return "Master";
-  if (rating >= 1800) return "Diamond";
-  if (rating >= 1600) return "Platinum";
-  if (rating >= 1400) return "Gold";
-  if (rating >= 1200) return "Silver";
-  return "Bronze";
-}
 
 /**
  * Update user presence status

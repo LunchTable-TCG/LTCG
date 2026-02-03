@@ -3,6 +3,7 @@ import { internal } from "../_generated/api";
 import { mutation } from "../_generated/server";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { getRankFromRating } from "../lib/helpers";
 
 /**
  * Challenge System
@@ -73,11 +74,11 @@ export const sendChallenge = mutation({
 
     // Calculate host rank
     const hostRankedElo = hostUser?.rankedElo ?? 1000;
-    const hostRank = calculateRankFromElo(hostRankedElo);
+    const hostRank = getRankFromRating(hostRankedElo);
 
     // Calculate opponent rank
     const opponentRankedElo = opponent?.rankedElo ?? 1000;
-    const opponentRank = calculateRankFromElo(opponentRankedElo);
+    const opponentRank = getRankFromRating(opponentRankedElo);
 
     // Create game lobby as a challenge
     const now = Date.now();
@@ -121,22 +122,3 @@ export const sendChallenge = mutation({
     return lobbyId;
   },
 });
-
-/**
- * Helper function to calculate rank from ELO
- */
-function calculateRankFromElo(elo: number): string {
-  if (elo < 1000) return "Bronze";
-  if (elo < 1400) return "Bronze";
-  if (elo < 1600) return "Silver";
-  if (elo < 2000) return "Silver";
-  if (elo < 2200) return "Gold";
-  if (elo < 2600) return "Gold";
-  if (elo < 2800) return "Platinum";
-  if (elo < 3200) return "Platinum";
-  if (elo < 3400) return "Diamond";
-  if (elo < 3800) return "Diamond";
-  if (elo < 4000) return "Master";
-  if (elo < 4400) return "Master";
-  return "Legend";
-}

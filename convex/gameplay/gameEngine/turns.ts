@@ -134,23 +134,23 @@ export const endTurn = mutation({
     const nextPlayerId = isHost ? gameState.opponentId : gameState.hostId;
     const nextTurnNumber = (gameState.turnNumber ?? 0) + 1;
 
-    // Update turn state in gameState (source of truth)
+    // ATOMIC: Combine all gameState updates into single patch to prevent race conditions
+    // This ensures turn transition and board reset happen atomically
     await ctx.db.patch(gameState._id, {
+      // Turn state updates
       currentTurnPlayerId: nextPlayerId,
       turnNumber: nextTurnNumber,
-    });
-
-    // Update lastMoveAt in lobby (for timeout tracking only)
-    await ctx.db.patch(args.lobbyId, {
-      lastMoveAt: Date.now(),
-    });
-
-    // 11. Reset normal summon flags and prepare for next turn
-    await ctx.db.patch(gameState._id, {
+      // Board resets - clear attack/position flags for next turn
       [isHost ? "hostBoard" : "opponentBoard"]: resetPlayerBoard,
       [isHost ? "opponentBoard" : "hostBoard"]: resetOpponentBoard,
+      // Reset normal summon flags
       hostNormalSummonedThisTurn: false,
       opponentNormalSummonedThisTurn: false,
+    });
+
+    // Update lastMoveAt in lobby (for timeout tracking only - separate document, safe)
+    await ctx.db.patch(args.lobbyId, {
+      lastMoveAt: Date.now(),
     });
 
     // 12. Record turn_start event for new turn

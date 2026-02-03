@@ -23,8 +23,8 @@ crons.interval(
   internal.leaderboards.refreshAllSnapshots
 );
 
-// Run matchmaking every 10 seconds
-crons.interval("matchmaking", { seconds: 10 }, internal.matchmaking.findMatches);
+// Run matchmaking every 30 seconds (reduced from 10s to lower compute cost)
+crons.interval("matchmaking", { seconds: 30 }, internal.matchmaking.findMatches);
 
 // Cleanup expired queue entries every minute
 crons.interval("cleanup-matchmaking", { seconds: 60 }, internal.matchmaking.cleanupExpiredEntries);

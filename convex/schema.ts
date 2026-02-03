@@ -424,7 +424,8 @@ export default defineSchema({
     .index("by_opponent", ["opponentId"])
     .index("by_created", ["createdAt"])
     .index("by_join_code", ["joinCode"])
-    .index("by_last_move", ["lastMoveAt"]),
+    .index("by_last_move", ["lastMoveAt"])
+    .index("by_status_lastMoveAt", ["status", "lastMoveAt"]),
 
   // Game event log for spectators and replay
   gameEvents: defineTable({
@@ -852,7 +853,8 @@ export default defineSchema({
     .index("by_rating", ["rating"])
     .index("by_user", ["userId"])
     .index("by_mode_rating", ["mode", "rating"]) // Optimize mode filtering + rating sort
-    .index("by_rating_joined", ["rating", "joinedAt"]), // For wait time analytics
+    .index("by_rating_joined", ["rating", "joinedAt"]) // For wait time analytics
+    .index("by_joinedAt", ["joinedAt"]), // For cleanup of expired entries
 
   // Master card definitions - all cards available in the game
   cardDefinitions: defineTable({
@@ -1998,7 +2000,8 @@ export default defineSchema({
     .index("by_friend_status", ["friendId", "status"])
     .index("by_user_friend", ["userId", "friendId"])
     .index("by_status", ["status"])
-    .index("by_created", ["createdAt"]),
+    .index("by_created", ["createdAt"])
+    .index("by_user_created", ["userId", "createdAt"]),
 
   // ============================================================================
   // SEASONS SYSTEM
@@ -2201,6 +2204,67 @@ export default defineSchema({
     .index("by_user_active", ["userId", "isActive"])
     .index("by_session", ["sessionId"]),
 
+  // AI Usage Tracking - tracks token usage and costs for AI providers
+  aiUsage: defineTable({
+    provider: v.union(v.literal("openrouter"), v.literal("vercel")),
+    modelId: v.string(), // e.g., "anthropic/claude-3.5-sonnet"
+    modelType: v.union(v.literal("language"), v.literal("embedding"), v.literal("image")),
+    // Token counts
+    inputTokens: v.number(),
+    outputTokens: v.number(),
+    totalTokens: v.number(),
+    // Cost in USD (calculated from pricing)
+    estimatedCost: v.number(),
+    // Request metadata
+    feature: v.string(), // "admin_assistant", "game_guide", "content_moderation", etc.
+    userId: v.optional(v.id("users")), // User who triggered the request (if applicable)
+    success: v.boolean(),
+    errorMessage: v.optional(v.string()),
+    latencyMs: v.number(),
+    // Timestamps
+    createdAt: v.number(),
+  })
+    .index("by_provider", ["provider", "createdAt"])
+    .index("by_model", ["modelId", "createdAt"])
+    .index("by_feature", ["feature", "createdAt"])
+    .index("by_created", ["createdAt"])
+    .index("by_type", ["modelType", "createdAt"]),
+
+  // AI Usage Daily Aggregates - pre-computed daily stats for faster analytics
+  aiUsageDailyStats: defineTable({
+    date: v.string(), // "2024-01-15" format
+    provider: v.union(v.literal("openrouter"), v.literal("vercel")),
+    // Aggregated counts
+    totalRequests: v.number(),
+    successfulRequests: v.number(),
+    failedRequests: v.number(),
+    // Token totals
+    totalInputTokens: v.number(),
+    totalOutputTokens: v.number(),
+    totalTokens: v.number(),
+    // Cost totals
+    totalCost: v.number(),
+    // Performance
+    avgLatencyMs: v.number(),
+    // Breakdown by model type
+    languageRequests: v.number(),
+    embeddingRequests: v.number(),
+    imageRequests: v.number(),
+    // Top models used (JSON array)
+    topModels: v.array(
+      v.object({
+        modelId: v.string(),
+        requests: v.number(),
+        tokens: v.number(),
+        cost: v.number(),
+      })
+    ),
+    // Updated timestamp
+    updatedAt: v.number(),
+  })
+    .index("by_date", ["date"])
+    .index("by_provider_date", ["provider", "date"]),
+
   // ============================================================================
   // FEATURE FLAGS SYSTEM
   // ============================================================================
@@ -2385,6 +2449,7 @@ export default defineSchema({
     .index("by_tournament_status", ["tournamentId", "status"])
     .index("by_player1", ["player1Id"])
     .index("by_player2", ["player2Id"])
+    .index("by_status_createdAt", ["status", "createdAt"])
     .index("by_lobby", ["lobbyId"]),
 
   // Tournament history for user stats

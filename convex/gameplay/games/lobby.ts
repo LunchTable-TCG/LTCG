@@ -5,6 +5,7 @@ import type { MutationCtx } from "../../_generated/server";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { createTraceContext, logMatchmaking, logger, performance } from "../../lib/debug";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { getRankFromRating } from "../../lib/helpers";
 import { checkRateLimitWrapper } from "../../lib/rateLimit";
 import { validateLobbyCapacity, validateLobbyStatus } from "../../lib/validation";
 import { recordGameStartHelper } from "../gameEvents";
@@ -19,32 +20,9 @@ const RATING_DEFAULTS = {
   RANKED_RATING_WINDOW: 200,
 } as const;
 
-const RANK_THRESHOLDS = {
-  Bronze: 0,
-  Silver: 1200,
-  Gold: 1400,
-  Platinum: 1600,
-  Diamond: 1800,
-  Master: 2000,
-  Legend: 2200,
-} as const;
-
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-/**
- * Calculate rank tier from rating
- */
-function getRank(rating: number): string {
-  if (rating >= RANK_THRESHOLDS.Legend) return "Legend";
-  if (rating >= RANK_THRESHOLDS.Master) return "Master";
-  if (rating >= RANK_THRESHOLDS.Diamond) return "Diamond";
-  if (rating >= RANK_THRESHOLDS.Platinum) return "Platinum";
-  if (rating >= RANK_THRESHOLDS.Gold) return "Gold";
-  if (rating >= RANK_THRESHOLDS.Silver) return "Silver";
-  return "Bronze";
-}
 
 /**
  * Generate random 6-character alphanumeric join code
@@ -247,7 +225,7 @@ export const createLobby = mutation({
 
       // Calculate rank
       const rating = RATING_DEFAULTS.DEFAULT_RATING;
-      const rank = getRank(rating);
+      const rank = getRankFromRating(rating);
 
       // Set max rating diff for ranked matches
       const maxRatingDiff =
@@ -400,7 +378,7 @@ export const joinLobby = mutation({
 
       // Calculate opponent rank
       const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
-      const opponentRank = getRank(opponentRating);
+      const opponentRank = getRankFromRating(opponentRating);
 
       // Generate game ID
       const gameId = crypto.randomUUID();
@@ -419,6 +397,17 @@ export const joinLobby = mutation({
         goesFirst,
         isHost: goesFirst === lobby.hostId,
       });
+
+      // CRITICAL: Re-check lobby hasn't been claimed by another player
+      // This prevents race condition where two players pass validation simultaneously
+      // Convex OCC will retry if concurrent writes, but we need this check for sequential writes
+      const lobbyRecheck = await ctx.db.get(args.lobbyId);
+      if (!lobbyRecheck || lobbyRecheck.status !== "waiting" || lobbyRecheck.opponentId) {
+        logger.warn("Lobby no longer available (claimed by another player)", traceCtx);
+        throw createError(ErrorCode.GAME_LOBBY_FULL, {
+          reason: "This lobby is no longer available",
+        });
+      }
 
       // Update lobby with opponent info and start game
       logger.dbOperation("patch", "gameLobbies", { ...traceCtx, gameId });
@@ -541,7 +530,7 @@ export const joinLobbyByCode = mutation({
 
     // Calculate opponent rank
     const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
-    const opponentRank = getRank(opponentRating);
+    const opponentRank = getRankFromRating(opponentRating);
 
     // Generate game ID
     const gameId = crypto.randomUUID();
@@ -758,7 +747,7 @@ export const createLobbyInternal = internalMutation({
 
       // Calculate rank
       const rating = RATING_DEFAULTS.DEFAULT_RATING;
-      const rank = getRank(rating);
+      const rank = getRankFromRating(rating);
 
       // Set max rating diff for ranked matches
       const maxRatingDiff =
@@ -919,7 +908,7 @@ export const joinLobbyInternal = internalMutation({
 
       // Calculate opponent rank
       const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
-      const opponentRank = getRank(opponentRating);
+      const opponentRank = getRankFromRating(opponentRating);
 
       // Generate game ID
       const gameId = crypto.randomUUID();
@@ -937,6 +926,16 @@ export const joinLobbyInternal = internalMutation({
         goesFirst,
         isHost: goesFirst === lobby.hostId,
       });
+
+      // CRITICAL: Re-check lobby hasn't been claimed by another player
+      // This prevents race condition where two players pass validation simultaneously
+      const lobbyRecheck = await ctx.db.get(args.lobbyId);
+      if (!lobbyRecheck || lobbyRecheck.status !== "waiting" || lobbyRecheck.opponentId) {
+        logger.warn("Lobby no longer available (claimed by another player)", traceCtx);
+        throw createError(ErrorCode.GAME_LOBBY_FULL, {
+          reason: "This lobby is no longer available",
+        });
+      }
 
       // Update lobby with opponent info and start game
       logger.dbOperation("patch", "gameLobbies", { ...traceCtx, gameId });
@@ -957,7 +956,7 @@ export const joinLobbyInternal = internalMutation({
 
       // Update both players' presence to in_game
       await updatePresenceInternal(ctx, args.userId, username, "in_game");
-      await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "in_game");
+      await updatePresenceInternal(ctx, lobbyRecheck.hostId, lobbyRecheck.hostUsername, "in_game");
       logger.debug("Updated player presence for both players", traceCtx);
 
       // Initialize game state for reconnection

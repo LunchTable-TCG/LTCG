@@ -128,6 +128,19 @@ export const ELO_SYSTEM = {
 } as const;
 
 /**
+ * Rank Thresholds - ELO boundaries for competitive tiers
+ */
+export const RANK_THRESHOLDS = {
+  Bronze: 0,
+  Silver: 1200,
+  Gold: 1400,
+  Platinum: 1600,
+  Diamond: 1800,
+  Master: 2000,
+  Legend: 2200,
+} as const;
+
+/**
  * Spectator System Configuration
  */
 export const SPECTATOR = {

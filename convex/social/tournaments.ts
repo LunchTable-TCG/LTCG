@@ -28,6 +28,7 @@ import {
 import type { MutationCtx } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthMutation, requireAuthQuery, requireAdminMutation } from "../lib/convexAuth";
+import { getRankFromRating } from "../lib/helpers";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import {
   tournamentBracketValidator,
@@ -1395,7 +1396,7 @@ async function createMatchGameLobby(ctx: MutationCtx, matchId: Id<"tournamentMat
   const lobbyId = await ctx.db.insert("gameLobbies", {
     hostId: match.player1Id,
     hostUsername: player1.username || player1.name || "Unknown",
-    hostRank: getRank(player1Rating),
+    hostRank: getRankFromRating(player1Rating),
     hostRating: player1Rating,
     deckArchetype: player1Deck?.deckArchetype || "fire",
     mode: tournament.mode,
@@ -1403,7 +1404,7 @@ async function createMatchGameLobby(ctx: MutationCtx, matchId: Id<"tournamentMat
     isPrivate: true, // Tournament matches are private
     opponentId: match.player2Id,
     opponentUsername: player2.username || player2.name || "Unknown",
-    opponentRank: getRank(player2Rating),
+    opponentRank: getRankFromRating(player2Rating),
     gameId,
     currentTurnPlayerId: goesFirst,
     turnStartedAt: now,
@@ -1460,16 +1461,6 @@ function getPlacementString(placement: number): string {
   if (placement === 3) return "3rd Place";
   if (placement === 4) return "4th Place";
   return `${placement}th Place`;
-}
-
-function getRank(rating: number): string {
-  if (rating >= 2200) return "Legend";
-  if (rating >= 2000) return "Master";
-  if (rating >= 1800) return "Diamond";
-  if (rating >= 1600) return "Platinum";
-  if (rating >= 1400) return "Gold";
-  if (rating >= 1200) return "Silver";
-  return "Bronze";
 }
 
 /**

@@ -228,3 +228,170 @@
     scrollbar-width: none;
   }
 }
+
+/* =============================================================================
+   PWA & Mobile Optimization
+   ============================================================================= */
+
+@layer base {
+  /* Safe areas for notched devices */
+  html {
+    /* iOS safe area insets */
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+
+  /* Prevent pull-to-refresh on PWA */
+  body {
+    overscroll-behavior-y: contain;
+  }
+
+  /* Smooth scrolling with momentum */
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent text selection on interactive elements */
+  button,
+  [role="button"],
+  .select-none {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Prevent zoom on input focus (iOS) */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  /* Hide tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  /* Safe area padding utilities */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .py-safe {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Touch-friendly sizing */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Mobile-optimized card */
+  .card-mobile {
+    @apply rounded-lg sm:rounded-xl;
+    @apply p-3 sm:p-4 md:p-6;
+  }
+
+  /* Responsive text */
+  .text-responsive-sm {
+    @apply text-xs sm:text-sm;
+  }
+  .text-responsive-base {
+    @apply text-sm sm:text-base;
+  }
+  .text-responsive-lg {
+    @apply text-base sm:text-lg md:text-xl;
+  }
+  .text-responsive-xl {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+
+  /* PWA standalone mode adjustments */
+  @media (display-mode: standalone) {
+    .pwa-hide {
+      display: none !important;
+    }
+  }
+
+  /* Mobile bottom navigation safe area */
+  .mb-nav-safe {
+    margin-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+  .pb-nav-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+}
+
+/* =============================================================================
+   Mobile-Specific Breakpoint Adjustments
+   ============================================================================= */
+
+@media (max-width: 640px) {
+  /* Smaller radius on mobile */
+  :root {
+    --radius: 0.5rem;
+  }
+
+  /* Tighter spacing on mobile */
+  .space-y-6 > * + * {
+    margin-top: 1rem;
+  }
+
+  /* Full-width cards on mobile */
+  .card {
+    @apply rounded-lg;
+  }
+
+  /* Adjust table font size */
+  table {
+    font-size: 0.75rem;
+  }
+
+  /* Stack buttons on mobile */
+  .button-group {
+    @apply flex-col w-full;
+  }
+
+  .button-group > button {
+    @apply w-full;
+  }
+}
+
+/* Landscape mode on mobile */
+@media (max-width: 896px) and (orientation: landscape) {
+  /* Reduce header height in landscape */
+  header {
+    @apply h-12;
+  }
+
+  /* More compact sidebar */
+  [data-sidebar] {
+    @apply text-sm;
+  }
+}

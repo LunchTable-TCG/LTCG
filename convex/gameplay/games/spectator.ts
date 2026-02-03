@@ -41,22 +41,25 @@ export const joinAsSpectator = mutation({
       });
     }
 
+    // Enforce max spectators - check immediately before increment
+    // Convex OCC will retry this mutation if concurrent writes conflict
+    const maxSpectators = lobby.maxSpectators || SPECTATOR.MAX_SPECTATORS_PER_GAME;
     const currentCount = lobby.spectatorCount || 0;
 
-    // Enforce max spectators
-    const maxSpectators = lobby.maxSpectators || SPECTATOR.MAX_SPECTATORS_PER_GAME;
     if (currentCount >= maxSpectators) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
         reason: "Game is at maximum spectator capacity",
       });
     }
 
-    // Increment count
+    // Atomic increment - Convex OCC handles concurrent modifications
+    // If another spectator joins simultaneously, one mutation will retry
+    const newCount = currentCount + 1;
     await ctx.db.patch(lobbyId, {
-      spectatorCount: currentCount + 1,
+      spectatorCount: newCount,
     });
 
-    return { success: true, spectatorCount: currentCount + 1 };
+    return { success: true, spectatorCount: newCount };
   },
 });
 
@@ -76,16 +79,16 @@ export const leaveAsSpectator = mutation({
 
     if (!lobby) {
       // Game already ended, no need to decrement
-      return { success: true };
+      return { success: true, spectatorCount: 0 };
     }
 
-    const currentCount = lobby.spectatorCount || 0;
-
-    // Decrement with floor of 0
+    // Atomic decrement with floor of 0
+    // Convex OCC handles concurrent modifications
+    const newCount = Math.max(0, (lobby.spectatorCount || 0) - 1);
     await ctx.db.patch(lobbyId, {
-      spectatorCount: Math.max(0, currentCount - 1),
+      spectatorCount: newCount,
     });
 
-    return { success: true, spectatorCount: Math.max(0, currentCount - 1) };
+    return { success: true, spectatorCount: newCount };
   },
 });

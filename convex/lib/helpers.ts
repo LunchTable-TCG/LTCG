@@ -7,7 +7,7 @@
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { ELO_SYSTEM, RARITY_WEIGHTS } from "./constants";
+import { ELO_SYSTEM, RANK_THRESHOLDS, RARITY_WEIGHTS } from "./constants";
 import { ErrorCode, createError } from "./errorCodes";
 import type { Archetype, CardDefinition, CardResult, PackConfig, Rarity } from "./types";
 
@@ -421,4 +421,28 @@ export function calculateWinRate(
 
   const total = wins + losses;
   return total === 0 ? 0 : Math.round((wins / total) * 100);
+}
+
+/**
+ * Get rank tier name from ELO rating
+ *
+ * Uses RANK_THRESHOLDS constant to determine competitive tier.
+ * Bronze (0-1199), Silver (1200-1399), Gold (1400-1599),
+ * Platinum (1600-1799), Diamond (1800-1999), Master (2000-2199), Legend (2200+)
+ *
+ * @param rating - ELO rating value
+ * @returns Rank tier name (e.g., "Gold", "Diamond", "Legend")
+ * @example
+ * getRankFromRating(1500) // "Gold"
+ * getRankFromRating(2200) // "Legend"
+ * getRankFromRating(800) // "Bronze"
+ */
+export function getRankFromRating(rating: number): string {
+  if (rating >= RANK_THRESHOLDS.Legend) return "Legend";
+  if (rating >= RANK_THRESHOLDS.Master) return "Master";
+  if (rating >= RANK_THRESHOLDS.Diamond) return "Diamond";
+  if (rating >= RANK_THRESHOLDS.Platinum) return "Platinum";
+  if (rating >= RANK_THRESHOLDS.Gold) return "Gold";
+  if (rating >= RANK_THRESHOLDS.Silver) return "Silver";
+  return "Bronze";
 }

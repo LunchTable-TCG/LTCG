@@ -16,6 +16,8 @@ import type * as __tests___helpers_testAuth from "../__tests__/helpers/testAuth.
 import type * as admin_achievements from "../admin/achievements.js";
 import type * as admin_admin from "../admin/admin.js";
 import type * as admin_aiConfig from "../admin/aiConfig.js";
+import type * as admin_aiProviders from "../admin/aiProviders.js";
+import type * as admin_aiUsage from "../admin/aiUsage.js";
 import type * as admin_analytics from "../admin/analytics.js";
 import type * as admin_apiKeys from "../admin/apiKeys.js";
 import type * as admin_assets from "../admin/assets.js";
@@ -48,6 +50,7 @@ import type * as ai_adminAgentApi from "../ai/adminAgentApi.js";
 import type * as ai_adminAgentAudit from "../ai/adminAgentAudit.js";
 import type * as ai_adminRag from "../ai/adminRag.js";
 import type * as ai_index from "../ai/index.js";
+import type * as ai_providers from "../ai/providers.js";
 import type * as auth_auth from "../auth/auth.js";
 import type * as auth_syncUser from "../auth/syncUser.js";
 import type * as cards from "../cards.js";
@@ -243,6 +246,8 @@ declare const fullApi: ApiFromModules<{
   "admin/achievements": typeof admin_achievements;
   "admin/admin": typeof admin_admin;
   "admin/aiConfig": typeof admin_aiConfig;
+  "admin/aiProviders": typeof admin_aiProviders;
+  "admin/aiUsage": typeof admin_aiUsage;
   "admin/analytics": typeof admin_analytics;
   "admin/apiKeys": typeof admin_apiKeys;
   "admin/assets": typeof admin_assets;
@@ -275,6 +280,7 @@ declare const fullApi: ApiFromModules<{
   "ai/adminAgentAudit": typeof ai_adminAgentAudit;
   "ai/adminRag": typeof ai_adminRag;
   "ai/index": typeof ai_index;
+  "ai/providers": typeof ai_providers;
   "auth/auth": typeof auth_auth;
   "auth/syncUser": typeof auth_syncUser;
   cards: typeof cards;

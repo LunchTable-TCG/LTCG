@@ -697,10 +697,11 @@ export const searchUsers = query({
     const { userId } = await requireAuthQuery(ctx);
     const limit = args.limit || 20;
 
-    // PERFORMANCE WARNING: This performs a table scan.
+    // PERFORMANCE WARNING: This performs a limited table scan.
     // Convex does not currently support text search or prefix indexes on string fields.
     // For large user bases (>10k users), consider using an external search service.
-    const allUsers = await ctx.db.query("users").collect();
+    // Limit scan to 500 users to prevent OOM - may miss matches in large databases.
+    const allUsers = await ctx.db.query("users").take(500);
 
     const matchingUsers = allUsers
       .filter(

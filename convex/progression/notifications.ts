@@ -134,16 +134,18 @@ export const markAllAsRead = mutation({
 
 /**
  * Delete old notifications (internal cleanup)
+ * Limits to 1000 per run to avoid mutation timeouts - cron will clean up rest over time
  */
 export const cleanupOldNotifications = internalMutation({
   args: {},
   handler: async (ctx) => {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
+    // Limit to 1000 per run to avoid timeouts with large datasets
     const oldNotifications = await ctx.db
       .query("playerNotifications")
       .filter((q) => q.lt(q.field("createdAt"), thirtyDaysAgo))
-      .collect();
+      .take(1000);
 
     for (const notification of oldNotifications) {
       await ctx.db.delete(notification._id);

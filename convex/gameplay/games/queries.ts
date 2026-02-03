@@ -332,15 +332,38 @@ export const getGameSpectatorView = query({
 
     let boardState = null;
     if (gameState) {
-      // Helper to get card data
-      const getCardData = async (cardId: Id<"cardDefinitions">) => {
-        return await ctx.db.get(cardId);
-      };
+      // Collect all unique card IDs from all zones (batch optimization)
+      const allCardIds: Id<"cardDefinitions">[] = [
+        ...gameState.hostBoard.map((bc) => bc.cardId),
+        ...gameState.hostSpellTrapZone.map((st) => st.cardId),
+        ...gameState.hostGraveyard,
+        ...gameState.opponentBoard.map((bc) => bc.cardId),
+        ...gameState.opponentSpellTrapZone.map((st) => st.cardId),
+        ...gameState.opponentGraveyard,
+      ];
+      if (gameState.hostFieldSpell) {
+        allCardIds.push(gameState.hostFieldSpell.cardId);
+      }
+      if (gameState.opponentFieldSpell) {
+        allCardIds.push(gameState.opponentFieldSpell.cardId);
+      }
 
-      // Fetch host board
-      const hostBoardData = await Promise.all(
-        gameState.hostBoard.map(async (bc) => {
-          const card = await getCardData(bc.cardId);
+      // Deduplicate and batch fetch all cards in parallel
+      const uniqueCardIds = [...new Set(allCardIds.map((id) => id.toString()))].map(
+        (idStr) => allCardIds.find((id) => id.toString() === idStr)!
+      );
+      const cards = await Promise.all(uniqueCardIds.map((id) => ctx.db.get(id)));
+      const cardMap = new Map(
+        cards.filter(Boolean).map((card) => [card!._id.toString(), card!])
+      );
+
+      // Helper to get card from pre-fetched map
+      const getCard = (cardId: Id<"cardDefinitions">) => cardMap.get(cardId.toString());
+
+      // Build host board data using pre-fetched cards
+      const hostBoardData = gameState.hostBoard
+        .map((bc) => {
+          const card = getCard(bc.cardId);
           if (!card) return null;
           return {
             ...card,
@@ -351,27 +374,27 @@ export const getGameSpectatorView = query({
             isFaceDown: bc.isFaceDown,
           };
         })
-      );
+        .filter(Boolean);
 
-      const hostSpellTrapData = await Promise.all(
-        gameState.hostSpellTrapZone.map(async (st) => {
-          const card = await getCardData(st.cardId);
+      const hostSpellTrapData = gameState.hostSpellTrapZone
+        .map((st) => {
+          const card = getCard(st.cardId);
           if (!card) return null;
           return {
             ...card,
             isFaceDown: st.isFaceDown,
           };
         })
-      );
+        .filter(Boolean);
 
-      const hostGraveyardData = await Promise.all(
-        gameState.hostGraveyard.map(async (cardId) => await getCardData(cardId))
-      );
+      const hostGraveyardData = gameState.hostGraveyard
+        .map((cardId) => getCard(cardId))
+        .filter((c) => c !== undefined);
 
-      // Fetch opponent board
-      const opponentBoardData = await Promise.all(
-        gameState.opponentBoard.map(async (bc) => {
-          const card = await getCardData(bc.cardId);
+      // Build opponent board data using pre-fetched cards
+      const opponentBoardData = gameState.opponentBoard
+        .map((bc) => {
+          const card = getCard(bc.cardId);
           if (!card) return null;
           return {
             ...card,
@@ -382,27 +405,27 @@ export const getGameSpectatorView = query({
             isFaceDown: bc.isFaceDown,
           };
         })
-      );
+        .filter(Boolean);
 
-      const opponentSpellTrapData = await Promise.all(
-        gameState.opponentSpellTrapZone.map(async (st) => {
-          const card = await getCardData(st.cardId);
+      const opponentSpellTrapData = gameState.opponentSpellTrapZone
+        .map((st) => {
+          const card = getCard(st.cardId);
           if (!card) return null;
           return {
             ...card,
             isFaceDown: st.isFaceDown,
           };
         })
-      );
+        .filter(Boolean);
 
-      const opponentGraveyardData = await Promise.all(
-        gameState.opponentGraveyard.map(async (cardId) => await getCardData(cardId))
-      );
+      const opponentGraveyardData = gameState.opponentGraveyard
+        .map((cardId) => getCard(cardId))
+        .filter((c) => c !== undefined);
 
-      // Fetch field spells
+      // Build field spells using pre-fetched cards
       let hostFieldSpell = null;
       if (gameState.hostFieldSpell) {
-        const card = await getCardData(gameState.hostFieldSpell.cardId);
+        const card = getCard(gameState.hostFieldSpell.cardId);
         if (card) {
           hostFieldSpell = {
             ...card,
@@ -413,7 +436,7 @@ export const getGameSpectatorView = query({
 
       let opponentFieldSpell = null;
       if (gameState.opponentFieldSpell) {
-        const card = await getCardData(gameState.opponentFieldSpell.cardId);
+        const card = getCard(gameState.opponentFieldSpell.cardId);
         if (card) {
           opponentFieldSpell = {
             ...card,
@@ -429,18 +452,18 @@ export const getGameSpectatorView = query({
         hostLifePoints: gameState.hostLifePoints,
         hostHandCount: gameState.hostHand.length,
         hostDeckCount: gameState.hostDeck.length,
-        hostBoard: hostBoardData.filter(Boolean),
-        hostSpellTrapZone: hostSpellTrapData.filter(Boolean),
-        hostGraveyard: hostGraveyardData.filter((c) => c !== null),
+        hostBoard: hostBoardData,
+        hostSpellTrapZone: hostSpellTrapData,
+        hostGraveyard: hostGraveyardData,
         hostFieldSpell,
 
         // Opponent state (public zones only)
         opponentLifePoints: gameState.opponentLifePoints,
         opponentHandCount: gameState.opponentHand.length,
         opponentDeckCount: gameState.opponentDeck.length,
-        opponentBoard: opponentBoardData.filter(Boolean),
-        opponentSpellTrapZone: opponentSpellTrapData.filter(Boolean),
-        opponentGraveyard: opponentGraveyardData.filter((c) => c !== null),
+        opponentBoard: opponentBoardData,
+        opponentSpellTrapZone: opponentSpellTrapData,
+        opponentGraveyard: opponentGraveyardData,
         opponentFieldSpell,
       };
     }

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
+import { ErrorCode, createError } from "../lib/errorCodes";
 
 /**
  * AI Chat System
@@ -193,10 +194,14 @@ export const sendUserMessage = mutation({
     // Validate message length
     const trimmedMessage = args.message.trim();
     if (trimmedMessage.length === 0) {
-      throw new Error("Message cannot be empty");
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Message cannot be empty",
+      });
     }
     if (trimmedMessage.length > MAX_MESSAGE_LENGTH) {
-      throw new Error(`Message too long (max ${MAX_MESSAGE_LENGTH} characters)`);
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: `Message too long (max ${MAX_MESSAGE_LENGTH} characters)`,
+      });
     }
 
     let sessionId = args.sessionId;
@@ -234,7 +239,9 @@ export const sendUserMessage = mutation({
       .first();
 
     if (!session || session.userId !== auth.userId) {
-      throw new Error("Session not found");
+      throw createError(ErrorCode.NOT_FOUND_GENERAL, {
+        entity: "AI chat session",
+      });
     }
 
     // Insert the user message
@@ -277,7 +284,10 @@ export const saveAgentResponse = mutation({
       .first();
 
     if (!session || session.userId !== args.userId) {
-      throw new Error("Session not found or unauthorized");
+      throw createError(ErrorCode.NOT_FOUND_GENERAL, {
+        entity: "AI chat session",
+        reason: "Session not found or unauthorized",
+      });
     }
 
     // Insert the agent message

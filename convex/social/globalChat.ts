@@ -7,6 +7,7 @@ import { type MutationCtx, internalMutation, mutation, query } from "../_generat
 import { CHAT } from "../lib/constants";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { getRankFromRating } from "../lib/helpers";
 import type { UserStatus } from "../lib/types";
 
 /**
@@ -64,29 +65,6 @@ const onlineUserValidator = v.object({
   rank: v.string(), // Rank tier (Bronze, Silver, Gold, etc.)
   rankedElo: v.number(), // ELO rating for ranked
 });
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-/**
- * Calculate rank tier from ELO rating
- */
-function calculateRankFromElo(elo: number): string {
-  if (elo < 1000) return "Bronze";
-  if (elo < 1400) return "Bronze";
-  if (elo < 1600) return "Silver";
-  if (elo < 2000) return "Silver";
-  if (elo < 2200) return "Gold";
-  if (elo < 2600) return "Gold";
-  if (elo < 2800) return "Platinum";
-  if (elo < 3200) return "Platinum";
-  if (elo < 3400) return "Diamond";
-  if (elo < 3800) return "Diamond";
-  if (elo < 4000) return "Master";
-  if (elo < 4400) return "Master";
-  return "Legend";
-}
 
 // =============================================================================
 // Queries
@@ -182,7 +160,7 @@ export const getOnlineUsers = query({
 
         // Get user's ranked ELO and calculate rank
         const rankedElo = user?.rankedElo ?? 1000;
-        const rank = calculateRankFromElo(rankedElo);
+        const rank = getRankFromRating(rankedElo);
 
         return {
           userId: p.userId,
