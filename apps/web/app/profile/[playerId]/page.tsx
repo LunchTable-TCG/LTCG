@@ -476,7 +476,7 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
                 AI Agents
               </h3>
               <p className="text-[#a89f94] text-xs font-medium italic mb-6 relative z-10">
-                Register ElizaOS agents to battle on your behalf. Maximum 3 agents per account.
+                Register elizaOS agents to battle on your behalf. Maximum 3 agents per account.
               </p>
               <AgentManagement />
             </div>

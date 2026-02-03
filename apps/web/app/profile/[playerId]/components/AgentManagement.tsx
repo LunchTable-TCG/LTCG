@@ -73,7 +73,7 @@ export function AgentManagement() {
           <Bot className="w-12 h-12 text-[#3d2b1f] mb-4" />
           <p className="text-[#a89f94] text-sm font-medium mb-1">No agents registered yet</p>
           <p className="text-[#a89f94]/60 text-xs mb-4">
-            Register an ElizaOS agent to compete on your behalf
+            Register an elizaOS agent to compete on your behalf
           </p>
           <Button
             onClick={() => setIsModalOpen(true)}

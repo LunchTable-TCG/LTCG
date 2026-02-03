@@ -117,12 +117,25 @@ export const getOverview = query({
     const totalSolBalance = wallets.reduce((sum, w) => sum + (w.balance || 0), 0);
     const totalTokenBalance = wallets.reduce((sum, w) => sum + (w.tokenBalance || 0), 0);
 
-    // Count by purpose
+    // Count wallets by purpose
     const byPurpose = {
       fee_collection: wallets.filter((w) => w.purpose === "fee_collection").length,
       distribution: wallets.filter((w) => w.purpose === "distribution").length,
       liquidity: wallets.filter((w) => w.purpose === "liquidity").length,
       reserves: wallets.filter((w) => w.purpose === "reserves").length,
+    };
+
+    // Get all transactions for type breakdown
+    const allTransactions = await ctx.db.query("treasuryTransactions").collect();
+
+    // Count transactions by type
+    const byType = {
+      fee_received: allTransactions.filter((t) => t.type === "fee_received").length,
+      distribution: allTransactions.filter((t) => t.type === "distribution").length,
+      liquidity_add: allTransactions.filter((t) => t.type === "liquidity_add").length,
+      liquidity_remove: allTransactions.filter((t) => t.type === "liquidity_remove").length,
+      transfer_internal: allTransactions.filter((t) => t.type === "transfer_internal").length,
+      transfer_external: allTransactions.filter((t) => t.type === "transfer_external").length,
     };
 
     // Get recent transactions
@@ -143,6 +156,7 @@ export const getOverview = query({
       totalSolBalance,
       totalTokenBalance,
       byPurpose,
+      byType,
       recentTransactions: recentTxs,
       pendingTransactions: pendingTxs.length,
     };

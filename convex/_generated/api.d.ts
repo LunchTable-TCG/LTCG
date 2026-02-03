@@ -52,6 +52,11 @@ import type * as ai_adminAgentAudit from "../ai/adminAgentAudit.js";
 import type * as ai_adminRag from "../ai/adminRag.js";
 import type * as ai_index from "../ai/index.js";
 import type * as ai_providers from "../ai/providers.js";
+import type * as alerts_channels from "../alerts/channels.js";
+import type * as alerts_history from "../alerts/history.js";
+import type * as alerts_notifications from "../alerts/notifications.js";
+import type * as alerts_rules from "../alerts/rules.js";
+import type * as alerts_webhooks from "../alerts/webhooks.js";
 import type * as auth_auth from "../auth/auth.js";
 import type * as auth_syncUser from "../auth/syncUser.js";
 import type * as cards from "../cards.js";
@@ -249,6 +254,7 @@ import type * as wallet_index from "../wallet/index.js";
 import type * as wallet_tokenTransfer from "../wallet/tokenTransfer.js";
 import type * as wallet_updateAgentWallet from "../wallet/updateAgentWallet.js";
 import type * as wallet_userWallet from "../wallet/userWallet.js";
+import type * as webhooks_helius from "../webhooks/helius.js";
 
 import type {
   ApiFromModules,
@@ -301,6 +307,11 @@ declare const fullApi: ApiFromModules<{
   "ai/adminRag": typeof ai_adminRag;
   "ai/index": typeof ai_index;
   "ai/providers": typeof ai_providers;
+  "alerts/channels": typeof alerts_channels;
+  "alerts/history": typeof alerts_history;
+  "alerts/notifications": typeof alerts_notifications;
+  "alerts/rules": typeof alerts_rules;
+  "alerts/webhooks": typeof alerts_webhooks;
   "auth/auth": typeof auth_auth;
   "auth/syncUser": typeof auth_syncUser;
   cards: typeof cards;
@@ -498,6 +509,7 @@ declare const fullApi: ApiFromModules<{
   "wallet/tokenTransfer": typeof wallet_tokenTransfer;
   "wallet/updateAgentWallet": typeof wallet_updateAgentWallet;
   "wallet/userWallet": typeof wallet_userWallet;
+  "webhooks/helius": typeof webhooks_helius;
 }>;
 
 /**

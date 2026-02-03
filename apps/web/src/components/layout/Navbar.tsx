@@ -17,6 +17,7 @@ import {
   LogOut,
   Map,
   Menu,
+  MessageSquare,
   Settings,
   Sparkles,
   Store,
@@ -24,6 +25,7 @@ import {
   Target,
   Trophy,
   User,
+  Users,
   Wallet,
   X,
 } from "lucide-react";
@@ -82,6 +84,8 @@ const gameLinks: GameLink[] = [
   { href: "/battle-pass", label: "Battle Pass", icon: Sparkles, description: "Season rewards" },
   { href: "/quests", label: "Quests", icon: Target, description: "Daily & weekly rewards" },
   { href: "/leaderboards", label: "Leaderboards", icon: Trophy, description: "Global rankings" },
+  { href: "/social", label: "Social", icon: MessageSquare, description: "Friends & community" },
+  { href: "/guilds", label: "Guilds", icon: Users, description: "Form alliances", comingSoon: true },
   { href: "/shop", label: "Shop", icon: Store, description: "Buy packs & trade cards" },
   { href: "/lunchmoney", label: "LunchMoney", icon: Wallet, description: "Economy dashboard" },
   { href: "/binder", label: "Binder", icon: BookOpen, description: "Your card collection" },
@@ -145,8 +149,11 @@ export function Navbar() {
                     />
                   </div>
                 </div>
-                <div className="hidden sm:block">
+                <div className="hidden sm:flex sm:items-center sm:gap-2">
                   <span className="text-xl font-bold gold-gradient">Lunchtable</span>
+                  <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full uppercase tracking-wider">
+                    Alpha
+                  </span>
                 </div>
               </Link>
             </div>
@@ -234,7 +241,12 @@ export function Navbar() {
                 />
               </div>
               <div>
-                <span className="text-xl font-bold gold-gradient">Lunchtable</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-bold gold-gradient">Lunchtable</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full uppercase tracking-wider">
+                    Alpha
+                  </span>
+                </div>
                 <span className="block text-[10px] text-primary/60 font-semibold tracking-widest uppercase">
                   Trading Card Game
                 </span>
