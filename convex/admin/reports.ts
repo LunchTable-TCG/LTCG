@@ -212,7 +212,7 @@ export const updateReportStatus = mutation({
     };
 
     if (args.notes !== undefined) {
-      updates.notes = args.notes;
+      updates["notes"] = args.notes;
     }
 
     await ctx.db.patch(args.reportId, updates);
@@ -295,28 +295,30 @@ export const resolveReportWithAction = mutation({
         });
 
         // Create moderation action record
-        await ctx.db.insert("moderationActions", {
-          moderatorId: adminId,
-          moderatorName: "", // Will be filled by trigger
-          userId: report.reportedUserId,
-          username: report.reportedUsername,
-          actionType:
-            args.action === "warn"
-              ? "warn"
-              : args.action === "mute"
-                ? "mute"
-                : args.action === "suspend"
-                  ? "suspend"
-                  : "ban",
-          reason: `Report resolved: ${report.reason}`,
-          duration:
-            args.action === "mute"
-              ? `${args.muteDurationHours ?? 24} hours`
+        const actionType =
+          args.action === "warn"
+            ? "warn"
+            : args.action === "mute"
+              ? "mute"
               : args.action === "suspend"
-                ? `${args.suspendDurationDays ?? 7} days`
-                : undefined,
-          notes: args.notes,
-          status: "active",
+                ? "suspend"
+                : "ban";
+
+        // Calculate duration in ms
+        const durationMs =
+          args.action === "mute"
+            ? (args.muteDurationHours ?? 24) * 60 * 60 * 1000
+            : args.action === "suspend"
+              ? (args.suspendDurationDays ?? 7) * 24 * 60 * 60 * 1000
+              : undefined;
+
+        await ctx.db.insert("moderationActions", {
+          adminId,
+          userId: report.reportedUserId,
+          actionType,
+          reason: `Report resolved: ${report.reason}`,
+          duration: durationMs,
+          expiresAt: durationMs ? Date.now() + durationMs : undefined,
           createdAt: Date.now(),
         });
       }

@@ -261,10 +261,10 @@ export const updateAsset = mutation({
     }> = {};
 
     if (args.category !== undefined) {
-      updates.category = args.category;
+      updates["category"] = args.category;
     }
     if (args.description !== undefined) {
-      updates.description = args.description;
+      updates["description"] = args.description;
     }
 
     if (Object.keys(updates).length > 0) {

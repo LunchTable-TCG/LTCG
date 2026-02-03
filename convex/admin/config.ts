@@ -15,14 +15,6 @@ import { requireRole } from "../lib/roles";
 // Types & Constants
 // =============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const valueTypeValidator = v.union(
-  v.literal("number"),
-  v.literal("string"),
-  v.literal("boolean"),
-  v.literal("json")
-);
-
 interface ConfigDefinition {
   key: string;
   value: number | string | boolean | object;
@@ -385,7 +377,7 @@ export const bulkUpdateConfigs = mutation({
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
-    if (args.updates.length === 0) {
+    if (args.updates["length"] === 0) {
       throw new Error("No updates provided");
     }
 

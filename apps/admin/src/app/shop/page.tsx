@@ -65,7 +65,7 @@ export default function ShopPage() {
 
   const toggleActive = useConvexMutation(apiAny.admin.shop.toggleProductActive);
 
-  const handleToggleActive = async (productDbId: string, productName: string) => {
+  const handleToggleActive = async (productDbId: string, _productName: string) => {
     try {
       const result = await toggleActive({ productDbId: productDbId as any });
       toast.success(result.message);
@@ -75,13 +75,6 @@ export default function ShopPage() {
   };
 
   const isLoading = productsResult === undefined;
-
-  const formatPrice = (gold?: number, gems?: number) => {
-    const parts = [];
-    if (gold) parts.push(`${gold.toLocaleString()} Gold`);
-    if (gems) parts.push(`${gems.toLocaleString()} Gems`);
-    return parts.length > 0 ? parts.join(" / ") : "Free";
-  };
 
   return (
     <PageWrapper

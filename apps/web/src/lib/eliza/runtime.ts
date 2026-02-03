@@ -30,7 +30,7 @@ export async function sendToEliza(
             ...lunchtableGuide,
             settings: {
               ...lunchtableGuide.settings,
-              OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+              OPENROUTER_API_KEY: process.env["OPENROUTER_API_KEY"] ?? "",
             },
           },
           plugins: [openrouterPlugin],

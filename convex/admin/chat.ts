@@ -345,15 +345,12 @@ export const muteUser = mutation({
 
     // Create moderation action record
     await ctx.db.insert("moderationActions", {
-      moderatorId: adminId,
-      moderatorName: "", // Will be filled by trigger or we could fetch it
+      adminId,
       userId: args.userId,
-      username: user.username,
       actionType: "mute",
       reason: args.reason ?? "Chat mute",
-      duration: `${args.durationMinutes} minutes`,
-      notes: undefined,
-      status: "active",
+      duration: args.durationMinutes * 60 * 1000, // Duration in ms
+      expiresAt: mutedUntil,
       createdAt: Date.now(),
     });
 

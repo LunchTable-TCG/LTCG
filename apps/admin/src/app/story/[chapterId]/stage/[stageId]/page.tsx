@@ -140,7 +140,9 @@ function DialogueEditor({
     if (newIndex < 0 || newIndex >= dialogue.length) return;
 
     const updated = [...dialogue];
-    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+    const temp = updated[index]!;
+    updated[index] = updated[newIndex]!;
+    updated[newIndex] = temp;
     onChange(updated);
   };
 
@@ -312,7 +314,6 @@ function DeleteStageDialog({
 
 export default function StageEditorPage() {
   const params = useParams();
-  const router = useRouter();
   const chapterId = params["chapterId"] as string;
   const stageId = params["stageId"] as string;
   const { hasPermission } = useAdmin();
@@ -395,30 +396,30 @@ export default function StageEditorPage() {
 
       // Optional fields
       if (opponentDeckArchetype) {
-        args.opponentDeckArchetype = opponentDeckArchetype;
+        args["opponentDeckArchetype"] = opponentDeckArchetype;
       } else {
-        args.clearOpponentDeckArchetype = true;
+        args["clearOpponentDeckArchetype"] = true;
       }
 
       if (firstClearGems) {
-        args.firstClearGems = parseInt(firstClearGems, 10);
+        args["firstClearGems"] = parseInt(firstClearGems, 10);
       }
 
       if (cardRewardId) {
-        args.cardRewardId = cardRewardId;
+        args["cardRewardId"] = cardRewardId;
       } else {
-        args.clearCardRewardId = true;
+        args["clearCardRewardId"] = true;
       }
 
       // Dialogue arrays
       if (preMatchDialogue.length > 0) {
-        args.preMatchDialogue = preMatchDialogue;
+        args["preMatchDialogue"] = preMatchDialogue;
       }
       if (postMatchWinDialogue.length > 0) {
-        args.postMatchWinDialogue = postMatchWinDialogue;
+        args["postMatchWinDialogue"] = postMatchWinDialogue;
       }
       if (postMatchLoseDialogue.length > 0) {
-        args.postMatchLoseDialogue = postMatchLoseDialogue;
+        args["postMatchLoseDialogue"] = postMatchLoseDialogue;
       }
 
       await updateStage(args);

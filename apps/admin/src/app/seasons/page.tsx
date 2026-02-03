@@ -509,7 +509,7 @@ export default function SeasonsPage() {
                           )}
                         </td>
                         <td className="py-3 px-3">
-                          <Badge color={statusConfig.color} size="sm">
+                          <Badge color={statusConfig.color}>
                             {statusConfig.label}
                           </Badge>
                         </td>

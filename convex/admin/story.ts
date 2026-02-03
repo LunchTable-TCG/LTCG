@@ -21,8 +21,6 @@ const unlockConditionTypeValidator = v.union(
   v.literal("none")
 );
 
-const statusValidator = v.union(v.literal("draft"), v.literal("published"));
-
 const difficultyValidator = v.union(
   v.literal("easy"),
   v.literal("medium"),
@@ -248,13 +246,14 @@ export const updateChapter = mutation({
 
     // Check for duplicate chapter number if changing
     if (args.number !== undefined && args.number !== chapter.number) {
+      const newNumber = args.number;
       const existing = await ctx.db
         .query("storyChapters")
-        .withIndex("by_number", (q) => q.eq("number", args.number))
+        .withIndex("by_number", (q) => q.eq("number", newNumber))
         .first();
 
       if (existing) {
-        throw new Error(`Chapter ${args.number} already exists`);
+        throw new Error(`Chapter ${newNumber} already exists`);
       }
     }
 
@@ -263,16 +262,16 @@ export const updateChapter = mutation({
       updatedAt: Date.now(),
     };
 
-    if (args.number !== undefined) updates.number = args.number;
-    if (args.title !== undefined) updates.title = args.title;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.imageUrl !== undefined) updates.imageUrl = args.imageUrl;
+    if (args.number !== undefined) updates["number"] = args.number;
+    if (args.title !== undefined) updates["title"] = args.title;
+    if (args.description !== undefined) updates["description"] = args.description;
+    if (args.imageUrl !== undefined) updates["imageUrl"] = args.imageUrl;
 
     // Handle unlock condition
     if (args.clearUnlockCondition) {
-      updates.unlockCondition = undefined;
+      updates["unlockCondition"] = undefined;
     } else if (args.unlockConditionType !== undefined) {
-      updates.unlockCondition = {
+      updates["unlockCondition"] = {
         type: args.unlockConditionType,
         requiredChapterId: args.requiredChapterId,
         requiredLevel: args.requiredLevel,
@@ -671,15 +670,16 @@ export const updateStage = mutation({
 
     // Check for duplicate stage number if changing
     if (args.stageNumber !== undefined && args.stageNumber !== stage.stageNumber) {
+      const newStageNumber = args.stageNumber;
       const existing = await ctx.db
         .query("storyStages")
         .withIndex("by_chapter", (q) =>
-          q.eq("chapterId", stage.chapterId).eq("stageNumber", args.stageNumber)
+          q.eq("chapterId", stage.chapterId).eq("stageNumber", newStageNumber)
         )
         .first();
 
       if (existing) {
-        throw new Error(`Stage ${args.stageNumber} already exists in this chapter`);
+        throw new Error(`Stage ${newStageNumber} already exists in this chapter`);
       }
     }
 
@@ -688,51 +688,51 @@ export const updateStage = mutation({
       updatedAt: Date.now(),
     };
 
-    if (args.stageNumber !== undefined) updates.stageNumber = args.stageNumber;
-    if (args.title !== undefined) updates.title = args.title;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.opponentName !== undefined) updates.opponentName = args.opponentName;
-    if (args.difficulty !== undefined) updates.difficulty = args.difficulty;
-    if (args.firstClearGold !== undefined) updates.firstClearGold = args.firstClearGold;
-    if (args.repeatGold !== undefined) updates.repeatGold = args.repeatGold;
-    if (args.firstClearGems !== undefined) updates.firstClearGems = args.firstClearGems;
+    if (args.stageNumber !== undefined) updates["stageNumber"] = args.stageNumber;
+    if (args.title !== undefined) updates["title"] = args.title;
+    if (args.description !== undefined) updates["description"] = args.description;
+    if (args.opponentName !== undefined) updates["opponentName"] = args.opponentName;
+    if (args.difficulty !== undefined) updates["difficulty"] = args.difficulty;
+    if (args.firstClearGold !== undefined) updates["firstClearGold"] = args.firstClearGold;
+    if (args.repeatGold !== undefined) updates["repeatGold"] = args.repeatGold;
+    if (args.firstClearGems !== undefined) updates["firstClearGems"] = args.firstClearGems;
 
     // Handle optional field clears
     if (args.clearOpponentDeckId) {
-      updates.opponentDeckId = undefined;
+      updates["opponentDeckId"] = undefined;
     } else if (args.opponentDeckId !== undefined) {
-      updates.opponentDeckId = args.opponentDeckId;
+      updates["opponentDeckId"] = args.opponentDeckId;
     }
 
     if (args.clearOpponentDeckArchetype) {
-      updates.opponentDeckArchetype = undefined;
+      updates["opponentDeckArchetype"] = undefined;
     } else if (args.opponentDeckArchetype !== undefined) {
-      updates.opponentDeckArchetype = args.opponentDeckArchetype;
+      updates["opponentDeckArchetype"] = args.opponentDeckArchetype;
     }
 
     if (args.clearCardRewardId) {
-      updates.cardRewardId = undefined;
+      updates["cardRewardId"] = undefined;
     } else if (args.cardRewardId !== undefined) {
-      updates.cardRewardId = args.cardRewardId;
+      updates["cardRewardId"] = args.cardRewardId;
     }
 
     // Handle dialogue updates/clears
     if (args.clearDialogue === "all") {
-      updates.preMatchDialogue = undefined;
-      updates.postMatchWinDialogue = undefined;
-      updates.postMatchLoseDialogue = undefined;
+      updates["preMatchDialogue"] = undefined;
+      updates["postMatchWinDialogue"] = undefined;
+      updates["postMatchLoseDialogue"] = undefined;
     } else if (args.clearDialogue === "preMatch") {
-      updates.preMatchDialogue = undefined;
+      updates["preMatchDialogue"] = undefined;
     } else if (args.clearDialogue === "postMatchWin") {
-      updates.postMatchWinDialogue = undefined;
+      updates["postMatchWinDialogue"] = undefined;
     } else if (args.clearDialogue === "postMatchLose") {
-      updates.postMatchLoseDialogue = undefined;
+      updates["postMatchLoseDialogue"] = undefined;
     } else {
-      if (args.preMatchDialogue !== undefined) updates.preMatchDialogue = args.preMatchDialogue;
+      if (args.preMatchDialogue !== undefined) updates["preMatchDialogue"] = args.preMatchDialogue;
       if (args.postMatchWinDialogue !== undefined)
-        updates.postMatchWinDialogue = args.postMatchWinDialogue;
+        updates["postMatchWinDialogue"] = args.postMatchWinDialogue;
       if (args.postMatchLoseDialogue !== undefined)
-        updates.postMatchLoseDialogue = args.postMatchLoseDialogue;
+        updates["postMatchLoseDialogue"] = args.postMatchLoseDialogue;
     }
 
     await ctx.db.patch(args.stageId, updates);

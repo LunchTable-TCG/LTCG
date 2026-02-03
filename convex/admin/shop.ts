@@ -327,23 +327,23 @@ export const updateProduct = mutation({
     // Build update object
     const updates: Record<string, unknown> = {};
 
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
-    if (args.sortOrder !== undefined) updates.sortOrder = args.sortOrder;
+    if (args.name !== undefined) updates["name"] = args.name;
+    if (args.description !== undefined) updates["description"] = args.description;
+    if (args.isActive !== undefined) updates["isActive"] = args.isActive;
+    if (args.sortOrder !== undefined) updates["sortOrder"] = args.sortOrder;
 
     // Handle gold price
     if (args.clearGoldPrice) {
-      updates.goldPrice = undefined;
+      updates["goldPrice"] = undefined;
     } else if (args.goldPrice !== undefined) {
-      updates.goldPrice = args.goldPrice;
+      updates["goldPrice"] = args.goldPrice;
     }
 
     // Handle gem price
     if (args.clearGemPrice) {
-      updates.gemPrice = undefined;
+      updates["gemPrice"] = undefined;
     } else if (args.gemPrice !== undefined) {
-      updates.gemPrice = args.gemPrice;
+      updates["gemPrice"] = args.gemPrice;
     }
 
     // Handle pack config updates
@@ -365,7 +365,7 @@ export const updateProduct = mutation({
         newConfig.archetype = args.packArchetype;
       }
 
-      updates.packConfig = newConfig;
+      updates["packConfig"] = newConfig;
     }
 
     // Handle box config updates
@@ -386,7 +386,7 @@ export const updateProduct = mutation({
         newConfig.bonusCards = args.boxBonusCards;
       }
 
-      updates.boxConfig = newConfig;
+      updates["boxConfig"] = newConfig;
     }
 
     // Handle currency config updates
@@ -404,7 +404,7 @@ export const updateProduct = mutation({
         newConfig.amount = args.currencyAmount;
       }
 
-      updates.currencyConfig = newConfig;
+      updates["currencyConfig"] = newConfig;
     }
 
     if (Object.keys(updates).length === 0) {

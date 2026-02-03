@@ -32,7 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import { Title, Text } from "@tremor/react";
+import { Text } from "@tremor/react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -138,8 +138,8 @@ function CreateStageDialog({
         repeatGold: parseInt(repeatGold, 10),
       };
 
-      if (opponentDeckArchetype) args.opponentDeckArchetype = opponentDeckArchetype;
-      if (firstClearGems) args.firstClearGems = parseInt(firstClearGems, 10);
+      if (opponentDeckArchetype) args["opponentDeckArchetype"] = opponentDeckArchetype;
+      if (firstClearGems) args["firstClearGems"] = parseInt(firstClearGems, 10);
 
       const result = await createStage(args);
       toast.success(result.message);
@@ -370,7 +370,6 @@ function DeleteChapterDialog({
 
 export default function ChapterDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const chapterId = params["chapterId"] as string;
   const { hasPermission } = useAdmin();
 
@@ -443,14 +442,14 @@ export default function ChapterDetailPage() {
       };
 
       if (unlockType === "none") {
-        args.clearUnlockCondition = true;
+        args["clearUnlockCondition"] = true;
       } else {
-        args.unlockConditionType = unlockType;
+        args["unlockConditionType"] = unlockType;
         if (unlockType === "chapter_complete" && requiredChapterId) {
-          args.requiredChapterId = requiredChapterId;
+          args["requiredChapterId"] = requiredChapterId;
         }
         if (unlockType === "player_level" && requiredLevel) {
-          args.requiredLevel = parseInt(requiredLevel, 10);
+          args["requiredLevel"] = parseInt(requiredLevel, 10);
         }
       }
 
@@ -493,7 +492,7 @@ export default function ChapterDetailPage() {
     const currentIndex = stages.findIndex((s) => s._id === stage._id);
     if (currentIndex <= 0) return;
 
-    const prevStage = stages[currentIndex - 1];
+    const prevStage = stages[currentIndex - 1]!;
     try {
       await reorderStages({
         stageId: stage._id as any,
@@ -509,7 +508,7 @@ export default function ChapterDetailPage() {
     const currentIndex = stages.findIndex((s) => s._id === stage._id);
     if (currentIndex >= stages.length - 1) return;
 
-    const nextStage = stages[currentIndex + 1];
+    const nextStage = stages[currentIndex + 1]!;
     try {
       await reorderStages({
         stageId: stage._id as any,

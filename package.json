@@ -4,7 +4,8 @@
   "private": true,
   "packageManager": "bun@1.3.5",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "dev": "concurrently -n convex,web,admin -c blue,magenta,cyan \"bun run dev:convex\" \"bun run dev:web\" \"bun run dev:admin\"",

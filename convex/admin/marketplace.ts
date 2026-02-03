@@ -284,7 +284,7 @@ async function detectPriceAnomalies(
 
   const anomalies = [];
 
-  for (const [cardId, cardListings] of byCard) {
+  for (const [_cardId, cardListings] of byCard) {
     if (cardListings.length < 2) continue; // Need at least 2 listings to compare
 
     const prices = cardListings.map((l) => l.price);
@@ -492,6 +492,7 @@ export const refundBid = mutation({
       userId: bid.bidderId,
       currencyType: "gold",
       amount: bid.bidAmount,
+      balanceAfter: (bidder.gold ?? 0) + bid.bidAmount,
       transactionType: "admin_refund",
       referenceId: args.bidId,
       description: `Admin refund: ${args.reason}`,

@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { internalMutation, mutation, query } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
@@ -61,7 +61,20 @@ const DEFAULT_REWARDS = [
 /**
  * Get tier for a given ELO rating
  */
-function getTierForElo(elo: number, rewards: typeof DEFAULT_REWARDS) {
+type RewardTier = {
+  tier: string;
+  minElo: number;
+  goldReward: number;
+  gemsReward: number;
+  cardPackReward?: number;
+  exclusiveCardId?: Id<"cardDefinitions">;
+  titleReward?: string;
+};
+
+const DEFAULT_TIER: RewardTier = { tier: "Unranked", minElo: 0, goldReward: 0, gemsReward: 0 };
+
+function getTierForElo(elo: number, rewards: RewardTier[]): RewardTier {
+  if (rewards.length === 0) return DEFAULT_TIER;
   // Sort by minElo descending to find highest matching tier
   const sortedRewards = [...rewards].sort((a, b) => b.minElo - a.minElo);
   for (const reward of sortedRewards) {
@@ -70,7 +83,7 @@ function getTierForElo(elo: number, rewards: typeof DEFAULT_REWARDS) {
     }
   }
   // Default to lowest tier
-  return rewards[0];
+  return rewards[0] ?? DEFAULT_TIER;
 }
 
 // =============================================================================
@@ -350,10 +363,11 @@ export const previewSeasonRewards = query({
         tierStats[tierInfo.tier] = { count: 0, totalGold: 0, totalGems: 0, totalPacks: 0 };
       }
 
-      tierStats[tierInfo.tier].count++;
-      tierStats[tierInfo.tier].totalGold += tierInfo.goldReward;
-      tierStats[tierInfo.tier].totalGems += tierInfo.gemsReward;
-      tierStats[tierInfo.tier].totalPacks += tierInfo.cardPackReward ?? 0;
+      const stats = tierStats[tierInfo.tier]!;
+      stats.count++;
+      stats.totalGold += tierInfo.goldReward;
+      stats.totalGems += tierInfo.gemsReward;
+      stats.totalPacks += tierInfo.cardPackReward ?? 0;
 
       totalGold += tierInfo.goldReward;
       totalGems += tierInfo.gemsReward;
@@ -484,11 +498,11 @@ export const updateSeason = mutation({
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
 
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.rankResetType !== undefined) updates.rankResetType = args.rankResetType;
-    if (args.softResetPercentage !== undefined) updates.softResetPercentage = args.softResetPercentage;
-    if (args.rewards !== undefined) updates.rewards = args.rewards;
+    if (args.name !== undefined) updates["name"] = args.name;
+    if (args.description !== undefined) updates["description"] = args.description;
+    if (args.rankResetType !== undefined) updates["rankResetType"] = args.rankResetType;
+    if (args.softResetPercentage !== undefined) updates["softResetPercentage"] = args.softResetPercentage;
+    if (args.rewards !== undefined) updates["rewards"] = args.rewards;
 
     // Validate dates if either is being updated
     const newStartDate = args.startDate ?? season.startDate;
@@ -496,8 +510,8 @@ export const updateSeason = mutation({
     if (newStartDate >= newEndDate) {
       throw new Error("End date must be after start date");
     }
-    if (args.startDate !== undefined) updates.startDate = args.startDate;
-    if (args.endDate !== undefined) updates.endDate = args.endDate;
+    if (args.startDate !== undefined) updates["startDate"] = args.startDate;
+    if (args.endDate !== undefined) updates["endDate"] = args.endDate;
 
     await ctx.db.patch(args.seasonId, updates);
 
@@ -744,7 +758,7 @@ export const deleteSeason = mutation({
 async function createSeasonSnapshots(
   ctx: MutationCtx,
   seasonId: Id<"seasons">,
-  rewards: typeof DEFAULT_REWARDS
+  rewards: RewardTier[]
 ) {
   const season = await ctx.db.get(seasonId);
   if (!season) return 0;
@@ -763,7 +777,7 @@ async function createSeasonSnapshots(
   let count = 0;
 
   for (let i = 0; i < rankedUsers.length; i++) {
-    const user = rankedUsers[i];
+    const user = rankedUsers[i]!;
     const elo = user.rankedElo ?? DEFAULT_ELO;
     const wins = user.rankedWins ?? 0;
     const losses = user.rankedLosses ?? 0;
@@ -795,8 +809,8 @@ async function createSeasonSnapshots(
 async function distributeAllRewards(
   ctx: MutationCtx,
   seasonId: Id<"seasons">,
-  rewards: typeof DEFAULT_REWARDS,
-  adminId: Id<"users">,
+  rewards: RewardTier[],
+  _adminId: Id<"users">,
   specificUserIds?: Id<"users">[]
 ) {
   const snapshots = await ctx.db

@@ -117,7 +117,7 @@ export function AdminShell({ children, title, breadcrumb }: AdminShellProps) {
 interface PageWrapperProps {
   children: ReactNode;
   /** Page title */
-  title: string;
+  title: ReactNode;
   /** Page description */
   description?: string;
   /** Actions to show in the header */

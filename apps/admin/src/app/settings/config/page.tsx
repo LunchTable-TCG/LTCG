@@ -92,13 +92,12 @@ function ConfigField({
   value,
   onChange,
   hasChanges,
-  onReset,
 }: {
   config: ConfigItem;
   value: number | string | boolean;
   onChange: (value: number | string | boolean) => void;
   hasChanges: boolean;
-  onReset: () => void;
+  onReset?: () => void;
 }) {
   const resetToDefault = useConvexMutation(apiAny.admin.config.resetToDefault);
   const [isResetting, setIsResetting] = useState(false);
@@ -251,7 +250,10 @@ function CategoryTab({
     // Reset local values to original
     const resetValues = { ...localValues };
     for (const config of categoryConfigs) {
-      resetValues[config.key] = originalValues[config.key];
+      const originalValue = originalValues[config.key];
+      if (originalValue !== undefined) {
+        resetValues[config.key] = originalValue;
+      }
     }
     setLocalValues(resetValues);
   };
@@ -316,12 +318,15 @@ function CategoryTab({
                   setLocalValues((prev) => ({ ...prev, [config.key]: value }))
                 }
                 hasChanges={localValues[config.key] !== originalValues[config.key]}
-                onReset={() =>
-                  setLocalValues((prev) => ({
-                    ...prev,
-                    [config.key]: originalValues[config.key],
-                  }))
-                }
+                onReset={() => {
+                  const originalValue = originalValues[config.key];
+                  if (originalValue !== undefined) {
+                    setLocalValues((prev) => ({
+                      ...prev,
+                      [config.key]: originalValue,
+                    }));
+                  }
+                }}
               />
             ))}
           </div>
@@ -361,7 +366,7 @@ function LoadingSkeleton() {
 // =============================================================================
 
 export default function SystemConfigPage() {
-  const { hasPermission } = useAdmin();
+  useAdmin(); // Auth check
   const [activeTab, setActiveTab] = useState<CategoryKey>("economy");
   const [localValues, setLocalValues] = useState<
     Record<string, number | string | boolean>
