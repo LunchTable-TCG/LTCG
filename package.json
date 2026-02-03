@@ -61,7 +61,20 @@
     "type-safety": "bun run scripts/type-safety-check.ts",
     "type-safety:ci": "bun run type-safety && bun run type-check",
     "convex": "convex",
-    "clean": "rm -rf node_modules apps/*/node_modules apps/*/.next apps/*/dist"
+    "clean": "rm -rf node_modules apps/*/node_modules apps/*/.next apps/*/dist",
+    "validate:env": "bun run scripts/validate-env.ts",
+    "setup:wizard": "bun run scripts/setup-wizard.ts",
+    "setup": "bun run validate:env && bun run setup:complete && echo '\n✅ Setup complete! Now run: bun run setup:superadmin --privyUserId YOUR_PRIVY_ID'",
+    "setup:complete": "convex run setup:setupComplete --prod",
+    "setup:quick": "convex run setup:setupQuick --prod",
+    "setup:superadmin": "convex run setup:setupSuperadmin --prod",
+    "setup:status": "convex run setup:checkSetupStatus",
+    "setup:reset": "convex run setup:resetAll --prod",
+    "seed:cards": "convex run scripts/seedStarterCards:seedStarterCards --prod",
+    "seed:story": "convex run scripts/seedStoryChapters:seedStoryChapters --prod",
+    "seed:configs": "convex run admin/config:seedDefaultConfigs --prod",
+    "migrate:admins": "convex run migrations/migrateAdminRoles:migrateAdminRoles --prod",
+    "migrate:treasury": "convex run treasury/wallets:migrateExistingWallets --prod"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.35",

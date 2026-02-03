@@ -215,6 +215,7 @@ import type * as seeds_starterDecks from "../seeds/starterDecks.js";
 import type * as seeds_storyChapters from "../seeds/storyChapters.js";
 import type * as seeds_storyStages from "../seeds/storyStages.js";
 import type * as seeds_types from "../seeds/types.js";
+import type * as setup from "../setup.js";
 import type * as setupSystem from "../setupSystem.js";
 import type * as shop from "../shop.js";
 import type * as social_aiChat from "../social/aiChat.js";
@@ -467,6 +468,7 @@ declare const fullApi: ApiFromModules<{
   "seeds/storyChapters": typeof seeds_storyChapters;
   "seeds/storyStages": typeof seeds_storyStages;
   "seeds/types": typeof seeds_types;
+  setup: typeof setup;
   setupSystem: typeof setupSystem;
   shop: typeof shop;
   "social/aiChat": typeof social_aiChat;
