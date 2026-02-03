@@ -2222,7 +2222,7 @@ export default defineSchema({
   // AI CHAT SYSTEM
   // ============================================================================
 
-  // AI Chat Messages - stores conversation history with ElizaOS agent
+  // AI Chat Messages - stores conversation history with elizaOS agent
   aiChatMessages: defineTable({
     userId: v.id("users"),
     sessionId: v.string(), // Groups messages into conversations
@@ -2660,4 +2660,369 @@ export default defineSchema({
     updatedAt: v.number(),
     updatedBy: v.id("users"),
   }).index("by_section", ["section"]),
+
+  // ============================================================================
+  // TREASURY MANAGEMENT (Privy Server Wallets)
+  // ============================================================================
+
+  // Treasury wallets managed via Privy Server Wallet API
+  treasuryWallets: defineTable({
+    privyWalletId: v.string(), // Privy wallet ID
+    address: v.string(), // Solana public address
+    name: v.string(), // Human-readable name ("Fee Collection", "Distribution", etc.)
+    purpose: v.union(
+      v.literal("fee_collection"), // Collects platform fees
+      v.literal("distribution"), // Distributes rewards/airdrops
+      v.literal("liquidity"), // LP/bonding curve reserves
+      v.literal("reserves") // General reserves
+    ),
+    balance: v.optional(v.number()), // Cached SOL balance (lamports)
+    tokenBalance: v.optional(v.number()), // Cached LTCG balance (raw units)
+    lastSyncedAt: v.optional(v.number()), // Last balance sync timestamp
+    policyId: v.optional(v.string()), // Privy policy ID
+    status: v.union(
+      v.literal("active"),
+      v.literal("frozen"),
+      v.literal("archived")
+    ),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_purpose", ["purpose"])
+    .index("by_address", ["address"])
+    .index("by_status", ["status"]),
+
+  // Treasury transaction history
+  treasuryTransactions: defineTable({
+    walletId: v.id("treasuryWallets"),
+    type: v.union(
+      v.literal("fee_received"), // Platform fees incoming
+      v.literal("distribution"), // Rewards/airdrops outgoing
+      v.literal("liquidity_add"), // Adding to LP
+      v.literal("liquidity_remove"), // Removing from LP
+      v.literal("transfer_internal"), // Between treasury wallets
+      v.literal("transfer_external") // External transfers
+    ),
+    amount: v.number(), // Amount in raw units
+    tokenMint: v.string(), // SOL or SPL token mint
+    signature: v.optional(v.string()), // Solana tx signature
+    status: v.union(
+      v.literal("pending"),
+      v.literal("submitted"),
+      v.literal("confirmed"),
+      v.literal("failed")
+    ),
+    metadata: v.optional(v.any()), // Source info (listing ID, user ID, etc.)
+    initiatedBy: v.optional(v.id("users")),
+    approvedBy: v.optional(v.array(v.id("users"))), // Multi-sig approvals
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    confirmedAt: v.optional(v.number()),
+  })
+    .index("by_wallet", ["walletId"])
+    .index("by_status", ["status"])
+    .index("by_type", ["type"])
+    .index("by_signature", ["signature"])
+    .index("by_created", ["createdAt"]),
+
+  // Treasury spending policies
+  treasuryPolicies: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    privyPolicyId: v.optional(v.string()), // Privy policy ID if synced
+    rules: v.object({
+      maxTransactionAmount: v.optional(v.number()), // Max single tx (raw units)
+      dailyLimit: v.optional(v.number()), // Daily spending limit
+      allowedRecipients: v.optional(v.array(v.string())), // Allowlisted addresses
+      requiresApproval: v.boolean(),
+      minApprovers: v.optional(v.number()), // For multi-sig
+    }),
+    isActive: v.boolean(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_active", ["isActive"]),
+
+  // ============================================================================
+  // TOKEN LAUNCH MANAGEMENT
+  // ============================================================================
+
+  // Token configuration (singleton-ish, one active config)
+  tokenConfig: defineTable({
+    name: v.string(), // "LunchTable"
+    symbol: v.string(), // "LTCG"
+    description: v.string(),
+    imageUrl: v.optional(v.string()),
+    // Social links (for pump.fun)
+    twitter: v.optional(v.string()),
+    telegram: v.optional(v.string()),
+    website: v.optional(v.string()),
+    discord: v.optional(v.string()),
+    // Token economics
+    initialSupply: v.optional(v.number()),
+    decimals: v.optional(v.number()), // Default 6 for Solana
+    targetMarketCap: v.optional(v.number()), // Graduation target ($90k default)
+    // Mint info (populated after launch)
+    mintAddress: v.optional(v.string()),
+    bondingCurveAddress: v.optional(v.string()),
+    pumpfunUrl: v.optional(v.string()),
+    // Lifecycle
+    launchedAt: v.optional(v.number()),
+    graduatedAt: v.optional(v.number()),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("ready"),
+      v.literal("launched"),
+      v.literal("graduated")
+    ),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_mint", ["mintAddress"]),
+
+  // Launch checklist items
+  launchChecklist: defineTable({
+    category: v.union(
+      v.literal("treasury"), // Treasury funded, wallets ready
+      v.literal("token"), // Config complete, image uploaded
+      v.literal("marketing"), // Socials ready, announcements scheduled
+      v.literal("technical"), // Webhooks configured, monitoring ready
+      v.literal("team") // Team briefed, roles assigned
+    ),
+    item: v.string(), // "Treasury wallet funded with 5 SOL"
+    description: v.optional(v.string()),
+    isRequired: v.boolean(),
+    isCompleted: v.boolean(),
+    completedBy: v.optional(v.id("users")),
+    completedAt: v.optional(v.number()),
+    evidence: v.optional(v.string()), // Screenshot URL, tx signature, etc.
+    order: v.number(), // Display order within category
+  })
+    .index("by_category", ["category"])
+    .index("by_completed", ["isCompleted"]),
+
+  // Multi-admin launch approvals
+  launchApprovals: defineTable({
+    adminId: v.id("users"),
+    approved: v.boolean(),
+    comments: v.optional(v.string()),
+    approvedAt: v.number(),
+  })
+    .index("by_admin", ["adminId"]),
+
+  // Launch schedule
+  launchSchedule: defineTable({
+    scheduledAt: v.optional(v.number()), // Target launch time
+    timezone: v.string(),
+    countdownEnabled: v.boolean(),
+    status: v.union(
+      v.literal("not_scheduled"),
+      v.literal("scheduled"),
+      v.literal("countdown"), // Within 24hrs
+      v.literal("go"), // All approvals, checklist complete
+      v.literal("launched"),
+      v.literal("aborted")
+    ),
+    launchTxSignature: v.optional(v.string()),
+    abortReason: v.optional(v.string()),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"]),
+
+  // ============================================================================
+  // TOKEN ANALYTICS (Post-Launch)
+  // ============================================================================
+
+  // Real-time token metrics (updated via webhooks)
+  tokenMetrics: defineTable({
+    timestamp: v.number(), // Bucketed by minute
+    price: v.number(), // Current price in SOL
+    priceUsd: v.number(), // USD equivalent
+    marketCap: v.number(),
+    volume24h: v.number(),
+    txCount24h: v.number(),
+    holderCount: v.number(),
+    liquidity: v.number(),
+    bondingCurveProgress: v.number(), // 0-100%
+    graduationEta: v.optional(v.number()), // Estimated graduation timestamp
+  })
+    .index("by_timestamp", ["timestamp"]),
+
+  // Holder snapshots
+  tokenHolders: defineTable({
+    address: v.string(),
+    balance: v.number(), // Raw token units
+    percentOwnership: v.number(), // 0-100
+    firstPurchaseAt: v.number(),
+    lastActivityAt: v.number(),
+    totalBought: v.number(),
+    totalSold: v.number(),
+    isPlatformWallet: v.boolean(), // Flag our treasury wallets
+    label: v.optional(v.string()), // "Team", "Whale #1", etc.
+  })
+    .index("by_balance", ["balance"])
+    .index("by_address", ["address"])
+    .index("by_platform", ["isPlatformWallet"]),
+
+  // Individual trades (from webhooks)
+  tokenTrades: defineTable({
+    signature: v.string(), // Solana tx signature
+    type: v.union(v.literal("buy"), v.literal("sell")),
+    traderAddress: v.string(),
+    tokenAmount: v.number(),
+    solAmount: v.number(),
+    pricePerToken: v.number(),
+    timestamp: v.number(),
+    isWhale: v.boolean(), // > 1% of supply
+    source: v.optional(v.string()), // "pump.fun", "raydium", etc.
+  })
+    .index("by_timestamp", ["timestamp"])
+    .index("by_trader", ["traderAddress"])
+    .index("by_type", ["type"])
+    .index("by_signature", ["signature"])
+    .index("by_whale", ["isWhale", "timestamp"]),
+
+  // Aggregated stats (hourly/daily rollups)
+  tokenStatsRollup: defineTable({
+    period: v.union(v.literal("hour"), v.literal("day")),
+    periodStart: v.number(), // Start timestamp of period
+    volume: v.number(),
+    buyVolume: v.number(),
+    sellVolume: v.number(),
+    txCount: v.number(),
+    buyCount: v.number(),
+    sellCount: v.number(),
+    uniqueTraders: v.number(),
+    highPrice: v.number(),
+    lowPrice: v.number(),
+    openPrice: v.number(),
+    closePrice: v.number(),
+    newHolders: v.number(),
+    lostHolders: v.number(),
+  })
+    .index("by_period", ["period", "periodStart"]),
+
+  // ============================================================================
+  // ALERTING SYSTEM
+  // ============================================================================
+
+  // Alert rule definitions
+  alertRules: defineTable({
+    name: v.string(), // "Whale Buy Alert"
+    description: v.optional(v.string()),
+    isEnabled: v.boolean(),
+    triggerType: v.union(
+      v.literal("price_change"), // % change in timeframe
+      v.literal("price_threshold"), // Above/below price
+      v.literal("volume_spike"), // Unusual volume
+      v.literal("whale_activity"), // Large holder movement
+      v.literal("holder_milestone"), // Holder count threshold
+      v.literal("bonding_progress"), // Graduation proximity
+      v.literal("treasury_balance"), // Low balance warning
+      v.literal("transaction_failed"), // Failed tx alert
+      v.literal("graduation") // Token graduated!
+    ),
+    conditions: v.object({
+      threshold: v.optional(v.number()),
+      direction: v.optional(
+        v.union(v.literal("above"), v.literal("below"), v.literal("change"))
+      ),
+      timeframeMinutes: v.optional(v.number()),
+      percentChange: v.optional(v.number()),
+    }),
+    severity: v.union(
+      v.literal("info"), // In-app only
+      v.literal("warning"), // In-app + push
+      v.literal("critical") // All channels
+    ),
+    cooldownMinutes: v.number(), // Prevent spam
+    lastTriggeredAt: v.optional(v.number()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_type", ["triggerType"])
+    .index("by_enabled", ["isEnabled"]),
+
+  // Notification channels
+  alertChannels: defineTable({
+    type: v.union(
+      v.literal("in_app"),
+      v.literal("push"),
+      v.literal("slack"),
+      v.literal("discord"),
+      v.literal("email")
+    ),
+    name: v.string(), // "Dev Team Slack"
+    isEnabled: v.boolean(),
+    config: v.object({
+      webhookUrl: v.optional(v.string()), // Slack/Discord webhook
+      email: v.optional(v.string()),
+      minSeverity: v.union(
+        v.literal("info"),
+        v.literal("warning"),
+        v.literal("critical")
+      ),
+    }),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_type", ["type"])
+    .index("by_enabled", ["isEnabled"]),
+
+  // Alert history
+  alertHistory: defineTable({
+    ruleId: v.id("alertRules"),
+    severity: v.string(),
+    title: v.string(),
+    message: v.string(),
+    data: v.optional(v.any()), // Contextual data (price, tx sig, etc.)
+    channelsNotified: v.array(v.string()),
+    acknowledgedBy: v.optional(v.id("users")),
+    acknowledgedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_rule", ["ruleId"])
+    .index("by_acknowledged", ["acknowledgedBy"])
+    .index("by_created", ["createdAt"]),
+
+  // In-app notifications for admins
+  adminNotifications: defineTable({
+    adminId: v.id("users"),
+    alertHistoryId: v.optional(v.id("alertHistory")),
+    title: v.string(),
+    message: v.string(),
+    type: v.union(
+      v.literal("alert"),
+      v.literal("system"),
+      v.literal("action_required")
+    ),
+    isRead: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_admin", ["adminId"])
+    .index("by_admin_read", ["adminId", "isRead"])
+    .index("by_created", ["createdAt"]),
+
+  // Webhook configuration for external services (Helius, etc.)
+  webhookConfig: defineTable({
+    provider: v.union(
+      v.literal("helius"),
+      v.literal("shyft"),
+      v.literal("bitquery")
+    ),
+    webhookId: v.optional(v.string()), // Provider's webhook ID
+    webhookUrl: v.string(), // Our endpoint URL
+    webhookSecret: v.optional(v.string()), // For signature verification
+    tokenMint: v.optional(v.string()), // Token being monitored
+    isActive: v.boolean(),
+    lastEventAt: v.optional(v.number()),
+    errorCount: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_provider", ["provider"])
+    .index("by_active", ["isActive"]),
 });

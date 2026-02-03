@@ -47,6 +47,24 @@ const navigation: NavGroup[] = [
     ],
   },
   {
+    title: "Token",
+    items: [
+      { title: "Launch Control", href: "/token", icon: "🚀", permission: "admin.manage" },
+      { title: "Configuration", href: "/token/config", icon: "⚙️", permission: "admin.manage" },
+      { title: "Analytics", href: "/analytics/token", icon: "📈", permission: "admin.manage" },
+      { title: "Alerts", href: "/alerts", icon: "🔔", permission: "admin.manage" },
+    ],
+  },
+  {
+    title: "Treasury",
+    items: [
+      { title: "Overview", href: "/treasury", icon: "🏦", permission: "admin.manage" },
+      { title: "Wallets", href: "/treasury/wallets", icon: "💳", permission: "admin.manage" },
+      { title: "Transactions", href: "/treasury/transactions", icon: "📋", permission: "admin.manage" },
+      { title: "Policies", href: "/treasury/policies", icon: "📜", permission: "admin.manage" },
+    ],
+  },
+  {
     title: "Players",
     items: [
       { title: "All Players", href: "/players", icon: "👥", permission: "player.view" },
