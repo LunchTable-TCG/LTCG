@@ -3094,4 +3094,25 @@ export default defineSchema({
   })
     .index("by_stripe_event", ["stripeEventId"])
     .index("by_processed", ["processed"]),
+
+  // ============================================================================
+  // AUDIT LOGGING
+  // ============================================================================
+
+  // Audit log for tracking critical data changes
+  auditLog: defineTable({
+    table: v.string(), // Name of the table that was modified
+    operation: v.union(v.literal("insert"), v.literal("patch"), v.literal("delete")),
+    documentId: v.string(), // ID of the document that was modified
+    userId: v.optional(v.id("users")), // User who made the change (if available)
+    timestamp: v.number(), // When the change occurred
+    changedFields: v.optional(v.array(v.string())), // For patch operations, which fields changed
+    oldValue: v.optional(v.any()), // Previous value (for patch/delete operations)
+    newValue: v.optional(v.any()), // New value (for insert/patch operations)
+  })
+    .index("by_table", ["table", "timestamp"])
+    .index("by_document", ["table", "documentId", "timestamp"])
+    .index("by_user", ["userId", "timestamp"])
+    .index("by_operation", ["operation", "timestamp"])
+    .index("by_timestamp", ["timestamp"]),
 });

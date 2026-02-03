@@ -86,6 +86,7 @@
     "@ai-sdk/anthropic": "^3.0.35",
     "@ai-sdk/gateway": "^3.0.32",
     "@ai-sdk/openai": "^3.0.25",
+    "@convex-dev/action-retrier": "^0.3.0",
     "@convex-dev/agent": "^0.3.2",
     "@convex-dev/aggregate": "^0.2.1",
     "@convex-dev/presence": "^0.3.0",

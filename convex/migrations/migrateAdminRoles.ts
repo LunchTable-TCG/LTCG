@@ -9,22 +9,17 @@
  * Run this migration after deploying the new schema.
  */
 
+import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
+import { migrationsPool } from "../infrastructure/workpools";
 
 export const migrateAdminRoles = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const migrationLog = {
-      totalRecords: 0,
-      updatedRecords: 0,
-      skippedRecords: 0,
-      errors: [] as string[],
-    };
-
     try {
       // Get all admin roles
       const adminRoles = await ctx.db.query("adminRoles").collect();
-      migrationLog.totalRecords = adminRoles.length;
 
       console.log(`[Migration] Found ${adminRoles.length} admin role records to process`);
 
@@ -38,40 +33,37 @@ export const migrateAdminRoles = internalMutation({
         );
       }
 
+      let enqueuedCount = 0;
+      let skippedCount = 0;
+
+      // Enqueue update jobs for roles that need migration
       for (const role of adminRoles) {
-        try {
-          const updates: {
-            grantedBy?: typeof systemGranterId;
-          } = {};
-
-          // Ensure grantedBy is set
-          if (!role.grantedBy && systemGranterId) {
-            updates.grantedBy = systemGranterId;
-          }
-
-          // Only update if there are changes
-          if (Object.keys(updates).length > 0) {
-            await ctx.db.patch(role._id, updates);
-            migrationLog.updatedRecords++;
-            console.log(
-              `[Migration] Updated role ${role._id} (user: ${role.userId}, role: ${role.role})`
-            );
-          } else {
-            migrationLog.skippedRecords++;
-          }
-        } catch (error) {
-          const errorMsg = `Failed to migrate role ${role._id}: ${error instanceof Error ? error.message : String(error)}`;
-          console.error(`[Migration] ${errorMsg}`);
-          migrationLog.errors.push(errorMsg);
+        // Only enqueue if grantedBy needs to be set
+        if (!role.grantedBy && systemGranterId) {
+          await migrationsPool.enqueueMutation(
+            ctx,
+            internal.migrations.migrateAdminRoles.updateAdminRole,
+            {
+              roleId: role._id,
+              systemGranterId,
+            }
+          );
+          enqueuedCount++;
+        } else {
+          skippedCount++;
         }
       }
 
-      console.log("[Migration] Admin role migration completed");
-      console.log("[Migration] Summary:", migrationLog);
+      console.log(
+        `[Migration] Enqueued ${enqueuedCount} admin role updates, ${skippedCount} skipped`
+      );
 
       return {
         success: true,
-        ...migrationLog,
+        totalRecords: adminRoles.length,
+        enqueued: enqueuedCount,
+        skipped: skippedCount,
+        message: `Enqueued ${enqueuedCount} admin role update jobs. Check workpool status for progress.`,
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -80,8 +72,45 @@ export const migrateAdminRoles = internalMutation({
       return {
         success: false,
         error: errorMsg,
-        ...migrationLog,
       };
+    }
+  },
+});
+
+/**
+ * Worker mutation: Update a single admin role's grantedBy field
+ */
+export const updateAdminRole = internalMutation({
+  args: {
+    roleId: v.id("adminRoles"),
+    systemGranterId: v.id("users"),
+  },
+  handler: async (ctx, { roleId, systemGranterId }) => {
+    try {
+      const role = await ctx.db.get(roleId);
+
+      if (!role) {
+        console.error(`[Migration Worker] Role not found: ${roleId}`);
+        return { success: false, error: "Role not found" };
+      }
+
+      // Double-check idempotency
+      if (role.grantedBy) {
+        console.log(`[Migration Worker] Role ${roleId} already has grantedBy, skipping`);
+        return { success: true, skipped: true };
+      }
+
+      await ctx.db.patch(roleId, {
+        grantedBy: systemGranterId,
+      });
+
+      console.log(
+        `[Migration Worker] Updated role ${roleId} (user: ${role.userId}, role: ${role.role})`
+      );
+      return { success: true, updated: true };
+    } catch (error) {
+      console.error(`[Migration Worker] Failed to update role ${roleId}:`, error);
+      return { success: false, error: String(error) };
     }
   },
 });

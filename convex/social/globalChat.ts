@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { components } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { type MutationCtx, internalMutation, mutation, query } from "../_generated/server";
+import { globalChatMessageCounter } from "../infrastructure/shardedCounters";
 import { CHAT } from "../lib/constants";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
@@ -204,6 +205,20 @@ export const getMessageCount = query({
   },
 });
 
+/**
+ * Get total message count across all time.
+ * Uses sharded counter for efficient counting.
+ *
+ * @returns Total number of messages ever sent in global chat
+ */
+export const getTotalMessageCount = query({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    return await globalChatMessageCounter.count(ctx, "global");
+  },
+});
+
 // =============================================================================
 // Mutations
 // =============================================================================
@@ -267,6 +282,9 @@ export const sendMessage = mutation({
       createdAt: now,
       isSystem: false,
     });
+
+    // Increment global message counter
+    await globalChatMessageCounter.add(ctx, "global", 1);
 
     // Update user presence (heartbeat) - non-critical, do after message insert
     await updatePresenceInternal(ctx, userId, username, "online");

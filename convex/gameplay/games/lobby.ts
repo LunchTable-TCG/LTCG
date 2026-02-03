@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import { internalMutation, mutation } from "../../_generated/server";
 import type { MutationCtx } from "../../_generated/server";
+import { totalGamesCounter } from "../../infrastructure/shardedCounters";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { createTraceContext, logMatchmaking, logger, performance } from "../../lib/debug";
 import { ErrorCode, createError } from "../../lib/errorCodes";
@@ -254,6 +255,9 @@ export const createLobby = mutation({
       });
 
       logger.info("Lobby created successfully", { ...traceCtx, lobbyId, rank, rating });
+
+      // Increment total games counter
+      await totalGamesCounter.add(ctx, "global", 1);
 
       // Update user presence to in_game
       await updatePresenceInternal(ctx, userId, username, "in_game");
@@ -771,6 +775,9 @@ export const createLobbyInternal = internalMutation({
       });
 
       logger.info("Lobby created successfully", { ...traceCtx, lobbyId, rank, rating });
+
+      // Increment total games counter
+      await totalGamesCounter.add(ctx, "global", 1);
 
       // Update user presence to in_game
       await updatePresenceInternal(ctx, args.userId, username, "in_game");

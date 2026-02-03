@@ -330,7 +330,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
  */
 export function createError(code: ErrorCode, details?: Record<string, unknown>): Error {
   // Use details.reason if provided, otherwise fall back to static message
-  const message = (details?.reason as string) || ErrorMessages[code];
+  const message = (details?.["reason"] as string) || ErrorMessages[code];
   const error = new Error(message) as Error & {
     code: ErrorCode;
     details?: Record<string, unknown>;

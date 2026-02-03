@@ -80,6 +80,7 @@ import type * as economy_tokenMarketplace from "../economy/tokenMarketplace.js";
 import type * as effectSystem from "../effectSystem.js";
 import type * as feedback_feedback from "../feedback/feedback.js";
 import type * as friends from "../friends.js";
+import type * as functions from "../functions.js";
 import type * as gameEngine from "../gameEngine.js";
 import type * as gameEvents from "../gameEvents.js";
 import type * as gameplay_ai_aiDifficulty from "../gameplay/ai/aiDifficulty.js";
@@ -115,6 +116,7 @@ import type * as gameplay_effectSystem_index from "../gameplay/effectSystem/inde
 import type * as gameplay_effectSystem_jsonEffectSchema from "../gameplay/effectSystem/jsonEffectSchema.js";
 import type * as gameplay_effectSystem_jsonEffectValidators from "../gameplay/effectSystem/jsonEffectValidators.js";
 import type * as gameplay_effectSystem_jsonParser from "../gameplay/effectSystem/jsonParser.js";
+import type * as gameplay_effectSystem_lingeringEffects from "../gameplay/effectSystem/lingeringEffects.js";
 import type * as gameplay_effectSystem_optTracker from "../gameplay/effectSystem/optTracker.js";
 import type * as gameplay_effectSystem_parser from "../gameplay/effectSystem/parser.js";
 import type * as gameplay_effectSystem_selectionHandler from "../gameplay/effectSystem/selectionHandler.js";
@@ -158,10 +160,13 @@ import type * as http_middleware_responses from "../http/middleware/responses.js
 import type * as http_story from "../http/story.js";
 import type * as http_types from "../http/types.js";
 import type * as infrastructure_aggregates from "../infrastructure/aggregates.js";
+import type * as infrastructure_auditLog from "../infrastructure/auditLog.js";
 import type * as infrastructure_crons from "../infrastructure/crons.js";
 import type * as infrastructure_emailActions from "../infrastructure/emailActions.js";
 import type * as infrastructure_shardedCounters from "../infrastructure/shardedCounters.js";
+import type * as infrastructure_triggers from "../infrastructure/triggers.js";
 import type * as infrastructure_welcomeEmails from "../infrastructure/welcomeEmails.js";
+import type * as infrastructure_workpools from "../infrastructure/workpools.js";
 import type * as leaderboards from "../leaderboards.js";
 import type * as lib_abilityHelpers from "../lib/abilityHelpers.js";
 import type * as lib_adminAudit from "../lib/adminAudit.js";
@@ -177,6 +182,7 @@ import type * as lib_gameHelpers from "../lib/gameHelpers.js";
 import type * as lib_gameValidation from "../lib/gameValidation.js";
 import type * as lib_helpers from "../lib/helpers.js";
 import type * as lib_internalHelpers from "../lib/internalHelpers.js";
+import type * as lib_presenceMigration from "../lib/presenceMigration.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_returnValidators from "../lib/returnValidators.js";
 import type * as lib_roles from "../lib/roles.js";
@@ -188,6 +194,7 @@ import type * as lib_solana_tokenTransfer from "../lib/solana/tokenTransfer.js";
 import type * as lib_spellSpeedHelper from "../lib/spellSpeedHelper.js";
 import type * as lib_storyConstants from "../lib/storyConstants.js";
 import type * as lib_storyHelpers from "../lib/storyHelpers.js";
+import type * as lib_stripe from "../lib/stripe.js";
 import type * as lib_types from "../lib/types.js";
 import type * as lib_validation from "../lib/validation.js";
 import type * as lib_validators from "../lib/validators.js";
@@ -200,6 +207,7 @@ import type * as migrations_manualAbilities from "../migrations/manualAbilities.
 import type * as migrations_migrateAdminRoles from "../migrations/migrateAdminRoles.js";
 import type * as migrations_updateArchetypes from "../migrations/updateArchetypes.js";
 import type * as migrations_updateShopProducts from "../migrations/updateShopProducts.js";
+import type * as presence from "../presence.js";
 import type * as progression_achievements from "../progression/achievements.js";
 import type * as progression_battlePass from "../progression/battlePass.js";
 import type * as progression_index from "../progression/index.js";
@@ -236,6 +244,10 @@ import type * as social_tournaments from "../social/tournaments.js";
 import type * as storage_cards from "../storage/cards.js";
 import type * as storage_images from "../storage/images.js";
 import type * as story from "../story.js";
+import type * as stripe_checkout from "../stripe/checkout.js";
+import type * as stripe_portal from "../stripe/portal.js";
+import type * as stripe_queries from "../stripe/queries.js";
+import type * as stripe_webhooks from "../stripe/webhooks.js";
 import type * as testing_cleanup from "../testing/cleanup.js";
 import type * as testing_seedTestDeck from "../testing/seedTestDeck.js";
 import type * as testing_seedTestUser from "../testing/seedTestUser.js";
@@ -337,6 +349,7 @@ declare const fullApi: ApiFromModules<{
   effectSystem: typeof effectSystem;
   "feedback/feedback": typeof feedback_feedback;
   friends: typeof friends;
+  functions: typeof functions;
   gameEngine: typeof gameEngine;
   gameEvents: typeof gameEvents;
   "gameplay/ai/aiDifficulty": typeof gameplay_ai_aiDifficulty;
@@ -372,6 +385,7 @@ declare const fullApi: ApiFromModules<{
   "gameplay/effectSystem/jsonEffectSchema": typeof gameplay_effectSystem_jsonEffectSchema;
   "gameplay/effectSystem/jsonEffectValidators": typeof gameplay_effectSystem_jsonEffectValidators;
   "gameplay/effectSystem/jsonParser": typeof gameplay_effectSystem_jsonParser;
+  "gameplay/effectSystem/lingeringEffects": typeof gameplay_effectSystem_lingeringEffects;
   "gameplay/effectSystem/optTracker": typeof gameplay_effectSystem_optTracker;
   "gameplay/effectSystem/parser": typeof gameplay_effectSystem_parser;
   "gameplay/effectSystem/selectionHandler": typeof gameplay_effectSystem_selectionHandler;
@@ -415,10 +429,13 @@ declare const fullApi: ApiFromModules<{
   "http/story": typeof http_story;
   "http/types": typeof http_types;
   "infrastructure/aggregates": typeof infrastructure_aggregates;
+  "infrastructure/auditLog": typeof infrastructure_auditLog;
   "infrastructure/crons": typeof infrastructure_crons;
   "infrastructure/emailActions": typeof infrastructure_emailActions;
   "infrastructure/shardedCounters": typeof infrastructure_shardedCounters;
+  "infrastructure/triggers": typeof infrastructure_triggers;
   "infrastructure/welcomeEmails": typeof infrastructure_welcomeEmails;
+  "infrastructure/workpools": typeof infrastructure_workpools;
   leaderboards: typeof leaderboards;
   "lib/abilityHelpers": typeof lib_abilityHelpers;
   "lib/adminAudit": typeof lib_adminAudit;
@@ -434,6 +451,7 @@ declare const fullApi: ApiFromModules<{
   "lib/gameValidation": typeof lib_gameValidation;
   "lib/helpers": typeof lib_helpers;
   "lib/internalHelpers": typeof lib_internalHelpers;
+  "lib/presenceMigration": typeof lib_presenceMigration;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/returnValidators": typeof lib_returnValidators;
   "lib/roles": typeof lib_roles;
@@ -445,6 +463,7 @@ declare const fullApi: ApiFromModules<{
   "lib/spellSpeedHelper": typeof lib_spellSpeedHelper;
   "lib/storyConstants": typeof lib_storyConstants;
   "lib/storyHelpers": typeof lib_storyHelpers;
+  "lib/stripe": typeof lib_stripe;
   "lib/types": typeof lib_types;
   "lib/validation": typeof lib_validation;
   "lib/validators": typeof lib_validators;
@@ -457,6 +476,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/migrateAdminRoles": typeof migrations_migrateAdminRoles;
   "migrations/updateArchetypes": typeof migrations_updateArchetypes;
   "migrations/updateShopProducts": typeof migrations_updateShopProducts;
+  presence: typeof presence;
   "progression/achievements": typeof progression_achievements;
   "progression/battlePass": typeof progression_battlePass;
   "progression/index": typeof progression_index;
@@ -493,6 +513,10 @@ declare const fullApi: ApiFromModules<{
   "storage/cards": typeof storage_cards;
   "storage/images": typeof storage_images;
   story: typeof story;
+  "stripe/checkout": typeof stripe_checkout;
+  "stripe/portal": typeof stripe_portal;
+  "stripe/queries": typeof stripe_queries;
+  "stripe/webhooks": typeof stripe_webhooks;
   "testing/cleanup": typeof testing_cleanup;
   "testing/seedTestDeck": typeof testing_seedTestDeck;
   "testing/seedTestUser": typeof testing_seedTestUser;
@@ -4067,6 +4091,166 @@ export declare const components: {
             startOrder: number;
           }>;
         }
+      >;
+    };
+  };
+  presence: {
+    public: {
+      disconnect: FunctionReference<
+        "mutation",
+        "internal",
+        { sessionToken: string },
+        null
+      >;
+      heartbeat: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          interval?: number;
+          roomId: string;
+          sessionId: string;
+          userId: string;
+        },
+        { roomToken: string; sessionToken: string }
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; roomToken: string },
+        Array<{
+          data?: any;
+          lastDisconnected: number;
+          online: boolean;
+          userId: string;
+        }>
+      >;
+      listRoom: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; onlineOnly?: boolean; roomId: string },
+        Array<{ lastDisconnected: number; online: boolean; userId: string }>
+      >;
+      listUser: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; onlineOnly?: boolean; userId: string },
+        Array<{ lastDisconnected: number; online: boolean; roomId: string }>
+      >;
+      removeRoom: FunctionReference<
+        "mutation",
+        "internal",
+        { roomId: string },
+        null
+      >;
+      removeRoomUser: FunctionReference<
+        "mutation",
+        "internal",
+        { roomId: string; userId: string },
+        null
+      >;
+      updateRoomUser: FunctionReference<
+        "mutation",
+        "internal",
+        { data?: any; roomId: string; userId: string },
+        null
+      >;
+    };
+  };
+  workpool: {
+    config: {
+      update: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          logLevel?: "DEBUG" | "TRACE" | "INFO" | "REPORT" | "WARN" | "ERROR";
+          maxParallelism?: number;
+        },
+        any
+      >;
+    };
+    lib: {
+      cancel: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          id: string;
+          logLevel?: "DEBUG" | "TRACE" | "INFO" | "REPORT" | "WARN" | "ERROR";
+        },
+        any
+      >;
+      cancelAll: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          before?: number;
+          limit?: number;
+          logLevel?: "DEBUG" | "TRACE" | "INFO" | "REPORT" | "WARN" | "ERROR";
+        },
+        any
+      >;
+      enqueue: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          config: {
+            logLevel?: "DEBUG" | "TRACE" | "INFO" | "REPORT" | "WARN" | "ERROR";
+            maxParallelism?: number;
+          };
+          fnArgs: any;
+          fnHandle: string;
+          fnName: string;
+          fnType: "action" | "mutation" | "query";
+          onComplete?: { context?: any; fnHandle: string };
+          retryBehavior?: {
+            base: number;
+            initialBackoffMs: number;
+            maxAttempts: number;
+          };
+          runAt: number;
+        },
+        string
+      >;
+      enqueueBatch: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          config: {
+            logLevel?: "DEBUG" | "TRACE" | "INFO" | "REPORT" | "WARN" | "ERROR";
+            maxParallelism?: number;
+          };
+          items: Array<{
+            fnArgs: any;
+            fnHandle: string;
+            fnName: string;
+            fnType: "action" | "mutation" | "query";
+            onComplete?: { context?: any; fnHandle: string };
+            retryBehavior?: {
+              base: number;
+              initialBackoffMs: number;
+              maxAttempts: number;
+            };
+            runAt: number;
+          }>;
+        },
+        Array<string>
+      >;
+      status: FunctionReference<
+        "query",
+        "internal",
+        { id: string },
+        | { previousAttempts: number; state: "pending" }
+        | { previousAttempts: number; state: "running" }
+        | { state: "finished" }
+      >;
+      statusBatch: FunctionReference<
+        "query",
+        "internal",
+        { ids: Array<string> },
+        Array<
+          | { previousAttempts: number; state: "pending" }
+          | { previousAttempts: number; state: "running" }
+          | { state: "finished" }
+        >
       >;
     };
   };

@@ -30,7 +30,7 @@ export const createBillingPortalSession = mutation({
     }
 
     // Get base URL from environment
-    const baseUrl = process.env.CONVEX_SITE_URL || "http://localhost:3000";
+    const baseUrl = process.env["CONVEX_SITE_URL"] || "http://localhost:3000";
 
     const session = await stripe.billingPortal.sessions.create({
       customer: stripeCustomer.stripeCustomerId,

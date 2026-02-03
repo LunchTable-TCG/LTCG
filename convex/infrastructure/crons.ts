@@ -74,6 +74,13 @@ crons.interval(
   internal.infrastructure.welcomeEmails.sendWelcomeEmailsToNewUsers
 );
 
+// Reset 24h transaction counter daily at midnight UTC
+crons.daily(
+  "reset-24h-tx-counter",
+  { hourUTC: 0, minuteUTC: 0 },
+  internal.webhooks.helius.reset24hTxCounter
+);
+
 // ============================================================================
 // TOKEN MARKETPLACE MAINTENANCE
 // ============================================================================

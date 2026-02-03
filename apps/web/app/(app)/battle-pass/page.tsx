@@ -222,10 +222,8 @@ export default function BattlePassPage() {
         isOpen={showPremiumModal}
         onClose={() => setShowPremiumModal(false)}
         premiumPrice={status.premiumPrice}
-        tokenPrice={status.tokenPrice}
         unlockedPremiumRewards={unlockedPremiumRewards}
         onPurchase={purchasePremium}
-        pendingPurchases={pendingPurchases}
       />
 
       {/* Reward Claim Modal */}

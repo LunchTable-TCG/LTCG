@@ -68,7 +68,7 @@ export const createCheckoutSession = mutation({
       args.planInterval === "month" ? STRIPE_PRICE_IDS.MONTHLY : STRIPE_PRICE_IDS.YEARLY;
 
     // Get base URL from environment
-    const baseUrl = process.env.CONVEX_SITE_URL || "http://localhost:3000";
+    const baseUrl = process.env["CONVEX_SITE_URL"] || "http://localhost:3000";
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({

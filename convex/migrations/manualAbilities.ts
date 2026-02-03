@@ -3,7 +3,10 @@
  * Each ability is carefully written based on the card's effect description
  */
 
+import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
+import { migrationsPool } from "../infrastructure/workpools";
 import type { JsonAbility } from "../gameplay/effectSystem/types";
 
 // Map of card name -> proper JSON ability
@@ -879,41 +882,80 @@ const MANUAL_ABILITIES: Record<string, JsonAbility> = {
 export const applyManualAbilities = internalMutation({
   args: {},
   handler: async (ctx) => {
-    let updated = 0;
-    let notFound = 0;
-    const errors: string[] = [];
+    console.log("Starting migration: applyManualAbilities");
 
+    let enqueuedCount = 0;
+    let notFoundCount = 0;
+
+    // Enqueue update jobs for each card
     for (const [cardName, ability] of Object.entries(MANUAL_ABILITIES)) {
-      try {
-        // Find card by name
-        const card = await ctx.db
-          .query("cardDefinitions")
-          .withIndex("by_name", (q) => q.eq("name", cardName))
-          .first();
+      // Find card by name
+      const card = await ctx.db
+        .query("cardDefinitions")
+        .withIndex("by_name", (q) => q.eq("name", cardName))
+        .first();
 
-        if (!card) {
-          notFound++;
-          errors.push(`Card not found: ${cardName}`);
-          continue;
-        }
-
-        // Update with proper ability
-        await ctx.db.patch(card._id, {
-          ability,
-        });
-
-        updated++;
-      } catch (error) {
-        errors.push(`${cardName}: ${error}`);
+      if (!card) {
+        notFoundCount++;
+        console.warn(`[Migration] Card not found: ${cardName}`);
+        continue;
       }
+
+      await migrationsPool.enqueueMutation(
+        ctx,
+        internal.migrations.manualAbilities.updateCardAbility,
+        {
+          cardId: card._id,
+          cardName,
+          ability,
+        }
+      );
+
+      enqueuedCount++;
     }
 
+    console.log(
+      `Migration jobs enqueued: ${enqueuedCount} cards to update, ${notFoundCount} cards not found`
+    );
+
     return {
+      success: true,
       total: Object.keys(MANUAL_ABILITIES).length,
-      updated,
-      notFound,
-      errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
-      message: `Applied ${updated} manual abilities. Not found: ${notFound}`,
+      enqueued: enqueuedCount,
+      notFound: notFoundCount,
+      message: `Enqueued ${enqueuedCount} ability update jobs. Check workpool status for progress.`,
     };
+  },
+});
+
+/**
+ * Worker mutation: Update a single card's ability
+ */
+export const updateCardAbility = internalMutation({
+  args: {
+    cardId: v.id("cardDefinitions"),
+    cardName: v.string(),
+    ability: v.any(),
+  },
+  handler: async (ctx, { cardId, cardName, ability }) => {
+    try {
+      const card = await ctx.db.get(cardId);
+
+      if (!card) {
+        console.error(`[Migration Worker] Card not found: ${cardId}`);
+        return { success: false, error: "Card not found" };
+      }
+
+      // Update with proper ability
+      await ctx.db.patch(cardId, {
+        ability,
+      });
+
+      console.log(`[Migration Worker] Updated ability for card: ${cardName}`);
+      return { success: true, updated: true };
+    } catch (error) {
+      console.error(`[Migration Worker] Failed to update card ${cardName}:`, error);
+      return { success: false, error: String(error) };
+    }
   },
 });

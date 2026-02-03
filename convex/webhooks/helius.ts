@@ -9,6 +9,7 @@ import { v } from "convex/values";
 import { internal as generatedInternal } from "../_generated/api";
 import { httpAction } from "../_generated/server";
 import { internalMutation, internalQuery } from "../_generated/server";
+import { tokenHolderCounter, tokenTx24hCounter } from "../infrastructure/shardedCounters";
 
 // biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround for new modules
 const internal = generatedInternal as any;
@@ -531,6 +532,7 @@ export const updateHolderFromTrade = internalMutation({
     const now = Date.now();
 
     if (existing) {
+      const oldBalance = existing.balance;
       const newBalance =
         args.type === "buy"
           ? existing.balance + args.tokenAmount
@@ -541,6 +543,15 @@ export const updateHolderFromTrade = internalMutation({
 
       const newTotalSold =
         args.type === "sell" ? existing.totalSold + args.tokenAmount : existing.totalSold;
+
+      // Track holder count changes when balance crosses zero threshold
+      if (oldBalance === 0 && newBalance > 0) {
+        // New holder (balance went from 0 to positive)
+        await tokenHolderCounter.add(ctx, "global", 1);
+      } else if (oldBalance > 0 && newBalance === 0) {
+        // Lost holder (balance went from positive to 0)
+        await tokenHolderCounter.add(ctx, "global", -1);
+      }
 
       // If balance goes to 0, we could delete the holder
       // But keeping for history is often better
@@ -562,7 +573,25 @@ export const updateHolderFromTrade = internalMutation({
         totalSold: 0,
         isPlatformWallet: false,
       });
+
+      // Increment holder count for new holder
+      await tokenHolderCounter.add(ctx, "global", 1);
     }
+
+    // Increment 24h transaction counter on each trade
+    await tokenTx24hCounter.add(ctx, "global", 1);
+  },
+});
+
+/**
+ * Reset 24h transaction counter
+ * Called daily by cron job
+ */
+export const reset24hTxCounter = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // @ts-expect-error - ShardedCounter component type definition incomplete
+    await tokenTx24hCounter.set(ctx, "global", 0);
   },
 });
 
