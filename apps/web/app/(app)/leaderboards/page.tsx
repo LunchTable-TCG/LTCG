@@ -55,9 +55,9 @@ export default function LeaderboardsPage() {
   ];
 
   const playerSegments: { id: PlayerSegment; label: string; icon: typeof Users }[] = [
-    { id: "all", label: "All Players", icon: Users },
-    { id: "humans", label: "Humans Only", icon: Users },
-    { id: "ai", label: "AI Agents", icon: Bot },
+    { id: "humans", label: "Humans", icon: Users },
+    { id: "ai", label: "Agents", icon: Bot },
+    { id: "all", label: "Global", icon: Users },
   ];
 
   if (profileLoading || !currentUser) {

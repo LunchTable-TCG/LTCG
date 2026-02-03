@@ -1,6 +1,7 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
+import { useTheme } from "next-themes";
 import { type ReactNode, useEffect, useState } from "react";
 
 // Suppress Privy SDK hydration warnings (their modal has <div> inside <p>)
@@ -25,6 +26,7 @@ function useSuppressPrivyHydrationWarnings() {
 
 export function PrivyAuthProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
+  const { resolvedTheme } = useTheme();
   useSuppressPrivyHydrationWarnings();
 
   // Only render PrivyProvider on client side to avoid SSG/SSR issues
@@ -44,6 +46,9 @@ export function PrivyAuthProvider({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
+  // ZAuth-inspired emerald/teal accent color
+  const accentColor = "#34d399"; // emerald-400
+
   return (
     <PrivyProvider
       appId={appId}
@@ -59,10 +64,10 @@ export function PrivyAuthProvider({ children }: { children: ReactNode }) {
             createOnLogin: "off",
           },
         },
-        // Appearance - dark theme for admin dashboard
+        // Appearance - dynamic theme matching app theme
         appearance: {
-          theme: "dark",
-          accentColor: "#6366f1", // Indigo for admin branding
+          theme: resolvedTheme === "light" ? "light" : "dark",
+          accentColor,
         },
       }}
     >

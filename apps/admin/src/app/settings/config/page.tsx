@@ -16,11 +16,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Text, Title } from "@tremor/react";
@@ -28,6 +37,7 @@ import {
   AlertCircleIcon,
   CheckCircleIcon,
   Loader2Icon,
+  PencilIcon,
   RefreshCwIcon,
   RotateCcwIcon,
   SaveIcon,
@@ -87,17 +97,240 @@ const CATEGORY_CONFIG: Record<
 // Components
 // =============================================================================
 
+/**
+ * Edit Config Dialog
+ *
+ * Modal dialog for editing a single config value.
+ * Handles different value types: string, number, boolean, JSON.
+ * Uses the updateConfig mutation for single-item updates.
+ */
+function EditConfigDialog({
+  config,
+  open,
+  onOpenChange,
+  onSuccess,
+}: {
+  config: ConfigItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: (key: string, newValue: number | string | boolean) => void;
+}) {
+  const updateConfig = useConvexMutation(apiAny.admin.config.updateConfig);
+  const [editValue, setEditValue] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Initialize edit value when dialog opens or config changes
+  useEffect(() => {
+    if (config && open) {
+      if (config.valueType === "json") {
+        setEditValue(JSON.stringify(config.value, null, 2));
+      } else {
+        setEditValue(String(config.value));
+      }
+      setError(null);
+    }
+  }, [config, open]);
+
+  const parseValue = (): { success: boolean; value?: number | string | boolean; error?: string } => {
+    if (!config) return { success: false, error: "No config selected" };
+
+    switch (config.valueType) {
+      case "number": {
+        const num = parseFloat(editValue);
+        if (isNaN(num)) {
+          return { success: false, error: "Please enter a valid number" };
+        }
+        if (config.minValue !== undefined && num < config.minValue) {
+          return { success: false, error: `Value must be at least ${config.minValue}` };
+        }
+        if (config.maxValue !== undefined && num > config.maxValue) {
+          return { success: false, error: `Value must be at most ${config.maxValue}` };
+        }
+        return { success: true, value: num };
+      }
+      case "boolean": {
+        const lower = editValue.toLowerCase().trim();
+        if (lower === "true" || lower === "1" || lower === "yes") {
+          return { success: true, value: true };
+        }
+        if (lower === "false" || lower === "0" || lower === "no") {
+          return { success: true, value: false };
+        }
+        return { success: false, error: "Please enter true or false" };
+      }
+      case "json": {
+        try {
+          const parsed = JSON.parse(editValue);
+          return { success: true, value: parsed };
+        } catch {
+          return { success: false, error: "Invalid JSON format" };
+        }
+      }
+      case "string":
+      default:
+        return { success: true, value: editValue };
+    }
+  };
+
+  const handleSave = async () => {
+    if (!config) return;
+
+    const result = parseValue();
+    if (!result.success) {
+      setError(result.error ?? "Invalid value");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const response = await updateConfig({
+        key: config.key,
+        value: result.value,
+      });
+      toast.success(response.message);
+      onSuccess(config.key, result.value as number | string | boolean);
+      onOpenChange(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to update config";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!config) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Configuration</DialogTitle>
+          <DialogDescription>
+            Update the value for <strong>{config.displayName}</strong>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {/* Config Info */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{config.valueType}</Badge>
+              <Badge variant="outline">{config.category}</Badge>
+            </div>
+            <Text className="text-sm text-muted-foreground">
+              {config.description}
+            </Text>
+            {(config.minValue !== undefined || config.maxValue !== undefined) && (
+              <Text className="text-xs text-muted-foreground">
+                {config.minValue !== undefined && `Min: ${config.minValue}`}
+                {config.minValue !== undefined && config.maxValue !== undefined && " | "}
+                {config.maxValue !== undefined && `Max: ${config.maxValue}`}
+              </Text>
+            )}
+          </div>
+
+          {/* Value Input */}
+          <div className="space-y-2">
+            <Label htmlFor="config-value">Value</Label>
+            {config.valueType === "boolean" ? (
+              <div className="flex items-center gap-4">
+                <Switch
+                  id="config-value"
+                  checked={editValue.toLowerCase() === "true"}
+                  onCheckedChange={(checked) => setEditValue(String(checked))}
+                />
+                <Text className="text-sm text-muted-foreground">
+                  {editValue.toLowerCase() === "true" ? "Enabled" : "Disabled"}
+                </Text>
+              </div>
+            ) : config.valueType === "json" ? (
+              <Textarea
+                id="config-value"
+                value={editValue}
+                onChange={(e) => {
+                  setEditValue(e.target.value);
+                  setError(null);
+                }}
+                className="font-mono text-sm min-h-[150px]"
+                placeholder="Enter valid JSON..."
+              />
+            ) : (
+              <Input
+                id="config-value"
+                type={config.valueType === "number" ? "number" : "text"}
+                value={editValue}
+                onChange={(e) => {
+                  setEditValue(e.target.value);
+                  setError(null);
+                }}
+                min={config.minValue}
+                max={config.maxValue}
+                placeholder={`Enter ${config.valueType} value...`}
+              />
+            )}
+          </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-destructive">
+              <AlertCircleIcon className="h-4 w-4" />
+              {error}
+            </div>
+          )}
+
+          {/* Current Value Reference */}
+          <div className="rounded-md bg-muted p-3">
+            <Text className="text-xs text-muted-foreground">
+              Current value:{" "}
+              <code className="font-mono">
+                {config.valueType === "json"
+                  ? JSON.stringify(config.value)
+                  : String(config.value)}
+              </code>
+            </Text>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <SaveIcon className="mr-2 h-4 w-4" />
+                Save Changes
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ConfigField({
   config,
   value,
   onChange,
   hasChanges,
+  onEditClick,
 }: {
   config: ConfigItem;
   value: number | string | boolean;
   onChange: (value: number | string | boolean) => void;
   hasChanges: boolean;
   onReset?: () => void;
+  onEditClick: () => void;
 }) {
   const resetToDefault = useConvexMutation(apiAny.admin.config.resetToDefault);
   const [isResetting, setIsResetting] = useState(false);
@@ -174,6 +407,14 @@ function ConfigField({
           <Button
             variant="ghost"
             size="sm"
+            onClick={onEditClick}
+            title="Edit in dialog"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleResetToDefault}
             disabled={isResetting}
             title="Reset to default"
@@ -196,6 +437,7 @@ function CategoryTab({
   localValues,
   setLocalValues,
   originalValues,
+  onEditConfig,
 }: {
   category: CategoryKey;
   configs: ConfigItem[];
@@ -204,6 +446,7 @@ function CategoryTab({
     React.SetStateAction<Record<string, number | string | boolean>>
   >;
   originalValues: Record<string, number | string | boolean>;
+  onEditConfig: (config: ConfigItem) => void;
 }) {
   const bulkUpdate = useConvexMutation(apiAny.admin.config.bulkUpdateConfigs);
   const [isSaving, setIsSaving] = useState(false);
@@ -327,6 +570,7 @@ function CategoryTab({
                     }));
                   }
                 }}
+                onEditClick={() => onEditConfig(config)}
               />
             ))}
           </div>
@@ -375,6 +619,10 @@ export default function SystemConfigPage() {
     Record<string, number | string | boolean>
   >({});
 
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingConfig, setEditingConfig] = useState<ConfigItem | null>(null);
+
   // Queries
   const configsResult = useConvexQuery(apiAny.admin.config.listConfigs, {});
   const statsResult = useConvexQuery(apiAny.admin.config.getConfigStats, {});
@@ -396,6 +644,18 @@ export default function SystemConfigPage() {
       setOriginalValues(values);
     }
   }, [configsResult?.configs]);
+
+  // Handle opening edit dialog for a config
+  const handleEditConfig = (config: ConfigItem) => {
+    setEditingConfig(config);
+    setEditDialogOpen(true);
+  };
+
+  // Handle successful edit from dialog - update local and original values
+  const handleEditSuccess = (key: string, newValue: number | string | boolean) => {
+    setLocalValues((prev) => ({ ...prev, [key]: newValue }));
+    setOriginalValues((prev) => ({ ...prev, [key]: newValue }));
+  };
 
   const handleInitializeDefaults = async () => {
     setIsInitializing(true);
@@ -560,11 +820,20 @@ export default function SystemConfigPage() {
                 localValues={localValues}
                 setLocalValues={setLocalValues}
                 originalValues={originalValues}
+                onEditConfig={handleEditConfig}
               />
             </TabsContent>
           ))}
         </Tabs>
       )}
+
+      {/* Edit Config Dialog */}
+      <EditConfigDialog
+        config={editingConfig}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={handleEditSuccess}
+      />
     </PageWrapper>
   );
 }

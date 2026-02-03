@@ -429,6 +429,76 @@ function WarnDialog({ playerId, playerName, open, onOpenChange, onComplete }: Ac
 }
 
 // =============================================================================
+// Add Note Dialog
+// =============================================================================
+
+function AddNoteDialog({
+  playerId,
+  playerName,
+  open,
+  onOpenChange,
+  onComplete,
+}: ActionDialogProps) {
+  const [note, setNote] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const addModerationNote = useMutation(api.admin.moderation.addModerationNote);
+
+  const handleSubmit = async () => {
+    if (!note.trim()) {
+      toast.error("Please provide a note");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await addModerationNote({ playerId: playerId as Id<"users">, note: note.trim() });
+      toast.success(`Note added to ${playerName}'s record`);
+      setNote("");
+      onOpenChange(false);
+      onComplete?.();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add note");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add Moderation Note</DialogTitle>
+          <DialogDescription>
+            Add a note to <strong>{playerName}</strong>&apos;s moderation history. Notes are visible
+            to all moderators and recorded in the audit log.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="mod-note">Note</Label>
+            <Textarea
+              id="mod-note"
+              placeholder="Enter your moderation note..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={4}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Adding..." : "Add Note"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =============================================================================
 // Main ModerationActions Component
 // =============================================================================
 
@@ -447,9 +517,24 @@ export function ModerationActions({
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [unsuspendOpen, setUnsuspendOpen] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
 
   return (
     <div className="flex flex-wrap gap-2">
+      {/* Add Note Button - Available to moderators+ */}
+      <RoleGuard permission="player.view">
+        <Button variant="outline" size="sm" onClick={() => setNoteOpen(true)}>
+          Add Note
+        </Button>
+        <AddNoteDialog
+          playerId={playerId}
+          playerName={playerName}
+          open={noteOpen}
+          onOpenChange={setNoteOpen}
+          onComplete={onActionComplete}
+        />
+      </RoleGuard>
+
       {/* Warn Button - Available to moderators+ */}
       <RoleGuard permission="player.warn">
         <Button
@@ -459,7 +544,7 @@ export function ModerationActions({
           onClick={() => setWarnOpen(true)}
           disabled={isBanned}
         >
-          ⚠️ Warn
+          Warn
         </Button>
         <WarnDialog
           playerId={playerId}
@@ -475,7 +560,7 @@ export function ModerationActions({
         {isSuspended ? (
           <>
             <Button variant="outline" size="sm" onClick={() => setUnsuspendOpen(true)}>
-              ▶️ Unsuspend
+              Unsuspend
             </Button>
             <UnsuspendDialog
               playerId={playerId}
@@ -494,7 +579,7 @@ export function ModerationActions({
               onClick={() => setSuspendOpen(true)}
               disabled={isBanned}
             >
-              ⏸️ Suspend
+              Suspend
             </Button>
             <SuspendDialog
               playerId={playerId}
@@ -512,7 +597,7 @@ export function ModerationActions({
         {isBanned ? (
           <>
             <Button variant="outline" size="sm" onClick={() => setUnbanOpen(true)}>
-              🔓 Unban
+              Unban
             </Button>
             <UnbanDialog
               playerId={playerId}
@@ -525,7 +610,7 @@ export function ModerationActions({
         ) : (
           <>
             <Button variant="destructive" size="sm" onClick={() => setBanOpen(true)}>
-              🚫 Ban
+              Ban
             </Button>
             <BanDialog
               playerId={playerId}

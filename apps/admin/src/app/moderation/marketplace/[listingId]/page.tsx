@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -31,9 +32,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { formatDistanceToNow, format } from "date-fns";
+import { DollarSign, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 type ListingStatus = "active" | "sold" | "cancelled" | "expired";
 
@@ -62,6 +65,17 @@ export default function ListingDetailPage() {
   const [suspendReason, setSuspendReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Refund bid dialog state
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [refundBidId, setRefundBidId] = useState<string | null>(null);
+  const [refundBidInfo, setRefundBidInfo] = useState<{ username: string; amount: number } | null>(null);
+  const [refundReason, setRefundReason] = useState("");
+
+  // Price cap dialog state
+  const [priceCapDialogOpen, setPriceCapDialogOpen] = useState(false);
+  const [priceCapAmount, setPriceCapAmount] = useState<string>("");
+  const [priceCapReason, setPriceCapReason] = useState("");
+
   const listing = useConvexQuery(
     apiAny.admin.marketplace.getListing,
     isAdmin ? { listingId } : "skip"
@@ -69,6 +83,8 @@ export default function ListingDetailPage() {
 
   const suspendListing = useConvexMutation(apiAny.admin.marketplace.suspendListing);
   const suspendSellerListings = useConvexMutation(apiAny.admin.marketplace.suspendSellerListings);
+  const refundBid = useConvexMutation(apiAny.admin.marketplace.refundBid);
+  const setPriceCap = useConvexMutation(apiAny.admin.marketplace.setPriceCap);
 
   const formatGold = (amount: number) => {
     return amount.toLocaleString();
@@ -83,10 +99,12 @@ export default function ListingDetailPage() {
         listingId,
         reason: suspendReason,
       });
+      toast.success("Listing suspended successfully");
       setSuspendDialogOpen(false);
       router.push("/moderation/marketplace");
     } catch (error) {
       console.error("Failed to suspend listing:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to suspend listing");
     } finally {
       setIsSubmitting(false);
     }
@@ -101,10 +119,68 @@ export default function ListingDetailPage() {
         sellerId: listing.seller._id,
         reason: suspendReason,
       });
+      toast.success("All seller listings suspended");
       setSuspendDialogOpen(false);
       router.push("/moderation/marketplace");
     } catch (error) {
       console.error("Failed to suspend seller listings:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to suspend seller listings");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRefundBid = async () => {
+    if (!refundBidId || !refundReason) return;
+
+    setIsSubmitting(true);
+    try {
+      const result = await refundBid({
+        bidId: refundBidId,
+        reason: refundReason,
+      });
+      toast.success(result.message || "Bid refunded successfully");
+      setRefundDialogOpen(false);
+      setRefundBidId(null);
+      setRefundBidInfo(null);
+      setRefundReason("");
+    } catch (error) {
+      console.error("Failed to refund bid:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to refund bid");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openRefundDialog = (bidId: string, username: string, amount: number) => {
+    setRefundBidId(bidId);
+    setRefundBidInfo({ username, amount });
+    setRefundDialogOpen(true);
+  };
+
+  const handleSetPriceCap = async () => {
+    if (!listing?.cardDefinitionId || !priceCapAmount || !priceCapReason) return;
+
+    const maxPrice = parseInt(priceCapAmount, 10);
+    if (isNaN(maxPrice) || maxPrice <= 0) {
+      toast.error("Please enter a valid price cap amount");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await setPriceCap({
+        cardDefinitionId: listing.cardDefinitionId,
+        maxPrice,
+        reason: priceCapReason,
+      });
+      toast.success(`Price cap of ${formatGold(maxPrice)} set for ${listing.card?.name || "this card"}`);
+      setPriceCapDialogOpen(false);
+      setPriceCapAmount("");
+      setPriceCapReason("");
+    } catch (error) {
+      console.error("Failed to set price cap:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to set price cap");
     } finally {
       setIsSubmitting(false);
     }
@@ -361,6 +437,7 @@ export default function ListingDetailPage() {
                       <TableHead>Amount</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Time</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -391,7 +468,9 @@ export default function ListingDetailPage() {
                                 ? "default"
                                 : bid.bidStatus === "won"
                                   ? "secondary"
-                                  : "outline"
+                                  : bid.bidStatus === "refunded"
+                                    ? "destructive"
+                                    : "outline"
                             }
                           >
                             {bid.bidStatus}
@@ -401,6 +480,18 @@ export default function ListingDetailPage() {
                           {formatDistanceToNow(new Date(bid.createdAt), {
                             addSuffix: true,
                           })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {bid.bidStatus !== "refunded" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openRefundDialog(bid._id, bid.bidderUsername, bid.bidAmount)}
+                            >
+                              <RefreshCw className="mr-1 h-3 w-3" />
+                              Refund
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -414,31 +505,46 @@ export default function ListingDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Actions */}
-          {listing.status === "active" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  onClick={() => setSuspendDialogOpen(true)}
-                >
-                  Suspend Listing
-                </Button>
-                {listing.seller && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {listing.status === "active" && (
+                <>
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     className="w-full"
                     onClick={() => setSuspendDialogOpen(true)}
                   >
-                    Suspend All Seller Listings
+                    Suspend Listing
                   </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                  {listing.seller && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setSuspendDialogOpen(true)}
+                    >
+                      Suspend All Seller Listings
+                    </Button>
+                  )}
+                </>
+              )}
+              {listing.card && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setPriceCapAmount(String(Math.round(listing.priceStats.avgActivePrice * 2)));
+                    setPriceCapDialogOpen(true);
+                  }}
+                >
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Set Price Cap
+                </Button>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Seller Info */}
           {listing.seller && (
@@ -513,7 +619,7 @@ export default function ListingDetailPage() {
               onClick={handleSuspend}
               disabled={!suspendReason || isSubmitting}
             >
-              Suspend This Listing
+              {isSubmitting ? "Suspending..." : "Suspend This Listing"}
             </Button>
             {listing.seller && (
               <Button
@@ -524,6 +630,146 @@ export default function ListingDetailPage() {
                 Suspend All ({listing.sellerOtherListings + 1})
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Refund Bid Dialog */}
+      <Dialog open={refundDialogOpen} onOpenChange={setRefundDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Refund Bid</DialogTitle>
+            <DialogDescription>
+              Refund this bid amount back to the bidder. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          {refundBidInfo && (
+            <div className="bg-muted rounded-lg p-4 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Bidder:</span>
+                <span className="font-medium">{refundBidInfo.username}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount:</span>
+                <span className="font-medium text-green-500">
+                  {formatGold(refundBidInfo.amount)} gold
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <Label>Reason for Refund</Label>
+              <Textarea
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                placeholder="Reason for refunding this bid (e.g., auction manipulation, technical error)..."
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRefundDialogOpen(false);
+                setRefundBidId(null);
+                setRefundBidInfo(null);
+                setRefundReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRefundBid}
+              disabled={!refundReason || isSubmitting}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              {isSubmitting ? "Processing..." : "Refund Bid"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Price Cap Dialog */}
+      <Dialog open={priceCapDialogOpen} onOpenChange={setPriceCapDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Price Cap</DialogTitle>
+            <DialogDescription>
+              Set a maximum price for {listing.card?.name || "this card"}.
+              Listings above this price may be flagged or prevented.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="bg-muted rounded-lg p-4 space-y-2 mb-4">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Card:</span>
+              <span className="font-medium">{listing.card?.name || "Unknown"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Current Avg Price:</span>
+              <span className="font-medium">
+                {formatGold(listing.priceStats.avgActivePrice)} gold
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">This Listing:</span>
+              <span className="font-medium text-yellow-500">
+                {formatGold(listing.price)} gold
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <Label>Maximum Price (Gold)</Label>
+              <Input
+                type="number"
+                value={priceCapAmount}
+                onChange={(e) => setPriceCapAmount(e.target.value)}
+                placeholder="Enter max price..."
+                className="mt-1"
+                min={1}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Suggested: {formatGold(Math.round(listing.priceStats.avgActivePrice * 2))} gold (2x average)
+              </p>
+            </div>
+
+            <div>
+              <Label>Reason</Label>
+              <Textarea
+                value={priceCapReason}
+                onChange={(e) => setPriceCapReason(e.target.value)}
+                placeholder="Reason for setting this price cap..."
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPriceCapDialogOpen(false);
+                setPriceCapAmount("");
+                setPriceCapReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSetPriceCap}
+              disabled={!priceCapAmount || !priceCapReason || isSubmitting}
+            >
+              {isSubmitting ? "Setting..." : "Set Price Cap"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

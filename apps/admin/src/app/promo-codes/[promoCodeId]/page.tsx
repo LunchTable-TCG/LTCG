@@ -440,7 +440,7 @@ export default function PromoCodeDetailPage() {
               )}
 
               {isExhausted && (
-                <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div className="p-3 bg-muted rounded-lg">
                   <Text className="font-medium">Maximum redemptions reached</Text>
                   <Text className="text-sm text-muted-foreground">
                     {promoCode.redemptionCount} / {promoCode.maxRedemptions} used

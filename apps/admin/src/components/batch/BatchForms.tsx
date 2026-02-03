@@ -6,6 +6,16 @@
  * Reusable forms for batch operations.
  */
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Text } from "@tremor/react";
-import { AlertCircle, CheckCircle2, Eye, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, Loader2, Play } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PlayerSelector } from "./PlayerSelector";
@@ -44,6 +54,7 @@ interface BatchOperationResponse {
 
 interface PreviewPanelProps {
   isLoading: boolean;
+  isExecuting: boolean;
   summary?: {
     totalPlayers: number;
     validPlayers: number;
@@ -58,20 +69,29 @@ interface PreviewPanelProps {
     [key: string]: unknown;
   }>;
   onClose: () => void;
-  onConfirm: () => void;
+  onExecute: () => void;
+  operationName: string;
+  operationDescription: string;
+  isDestructive?: boolean;
   renderSummaryExtra?: () => React.ReactNode;
   renderDetailItem?: (item: unknown, index: number) => React.ReactNode;
 }
 
 function PreviewPanel({
   isLoading,
+  isExecuting,
   summary,
   details,
   onClose,
-  onConfirm,
+  onExecute,
+  operationName,
+  operationDescription,
+  isDestructive = false,
   renderSummaryExtra,
   renderDetailItem,
 }: PreviewPanelProps) {
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
   if (isLoading) {
     return (
       <div className="p-4 bg-blue-500/10 border border-blue-500/50 rounded-lg animate-pulse">
@@ -85,82 +105,134 @@ function PreviewPanel({
 
   if (!summary) return null;
 
+  const handleExecuteClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirm = () => {
+    setShowConfirmDialog(false);
+    onExecute();
+  };
+
   return (
-    <div className="space-y-4 p-4 bg-muted/50 border rounded-lg">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Eye className="w-4 h-4 text-blue-500" />
-          <Text className="font-medium">Operation Preview</Text>
+    <>
+      <div className="space-y-4 p-4 bg-muted/50 border rounded-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Eye className="w-4 h-4 text-blue-500" />
+            <Text className="font-medium">Operation Preview</Text>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isExecuting}>
+            X
+          </Button>
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          ✕
-        </Button>
-      </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="p-2 bg-background rounded border">
-          <Text className="text-xs text-muted-foreground">Total</Text>
-          <Text className="text-lg font-bold">{summary.totalPlayers}</Text>
+        {/* Summary Stats */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2 bg-background rounded border">
+            <Text className="text-xs text-muted-foreground">Total</Text>
+            <Text className="text-lg font-bold">{summary.totalPlayers}</Text>
+          </div>
+          <div className="p-2 bg-green-500/10 border border-green-500/30 rounded">
+            <Text className="text-xs text-green-600">Valid</Text>
+            <Text className="text-lg font-bold text-green-600">{summary.validPlayers}</Text>
+          </div>
+          <div className="p-2 bg-red-500/10 border border-red-500/30 rounded">
+            <Text className="text-xs text-red-600">Invalid</Text>
+            <Text className="text-lg font-bold text-red-600">{summary.invalidPlayers}</Text>
+          </div>
         </div>
-        <div className="p-2 bg-green-500/10 border border-green-500/30 rounded">
-          <Text className="text-xs text-green-600">Valid</Text>
-          <Text className="text-lg font-bold text-green-600">{summary.validPlayers}</Text>
-        </div>
-        <div className="p-2 bg-red-500/10 border border-red-500/30 rounded">
-          <Text className="text-xs text-red-600">Invalid</Text>
-          <Text className="text-lg font-bold text-red-600">{summary.invalidPlayers}</Text>
-        </div>
-      </div>
 
-      {/* Custom Summary Extra */}
-      {renderSummaryExtra?.()}
+        {/* Custom Summary Extra */}
+        {renderSummaryExtra?.()}
 
-      {/* Detail List */}
-      {details && details.length > 0 && (
-        <div className="max-h-48 overflow-y-auto space-y-1">
-          <Text className="text-xs text-muted-foreground mb-2">Player Details:</Text>
-          {details.map((item, index) => (
-            <div
-              key={index}
-              className={`flex items-center justify-between p-2 rounded text-sm ${
-                item.valid ? "bg-green-500/5" : "bg-red-500/5"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                {item.valid ? (
-                  <CheckCircle2 className="w-3 h-3 text-green-500" />
-                ) : (
-                  <AlertCircle className="w-3 h-3 text-red-500" />
-                )}
-                <span>{item.username || item.email || "Unknown"}</span>
+        {/* Detail List */}
+        {details && details.length > 0 && (
+          <div className="max-h-48 overflow-y-auto space-y-1">
+            <Text className="text-xs text-muted-foreground mb-2">Player Details:</Text>
+            {details.map((item, index) => (
+              <div
+                key={index}
+                className={`flex items-center justify-between p-2 rounded text-sm ${
+                  item.valid ? "bg-green-500/5" : "bg-red-500/5"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {item.valid ? (
+                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-red-500" />
+                  )}
+                  <span>{item.username || item.email || "Unknown"}</span>
+                </div>
+                {renderDetailItem ? (
+                  renderDetailItem(item, index)
+                ) : item.error ? (
+                  <Badge color="red" size="xs">
+                    {item.error}
+                  </Badge>
+                ) : null}
               </div>
-              {renderDetailItem ? (
-                renderDetailItem(item, index)
-              ) : item.error ? (
-                <Badge color="red" size="xs">
-                  {item.error}
-                </Badge>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      {/* Action Buttons */}
-      <div className="flex gap-2 pt-2 border-t">
-        <Button variant="outline" onClick={onClose} className="flex-1">
-          Cancel
-        </Button>
-        <Button
-          onClick={onConfirm}
-          disabled={summary.validPlayers === 0}
-          className="flex-1"
-        >
-          Confirm & Execute
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2 border-t">
+          <Button variant="outline" onClick={onClose} className="flex-1" disabled={isExecuting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleExecuteClick}
+            disabled={summary.validPlayers === 0 || isExecuting}
+            variant={isDestructive ? "destructive" : "default"}
+            className="flex-1"
+          >
+            {isExecuting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Executing...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Execute Operation
+              </>
+            )}
+          </Button>
+        </div>
       </div>
-    </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm {operationName}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {operationDescription}
+              <br />
+              <br />
+              This will affect <strong>{summary.validPlayers}</strong> player(s).
+              {isDestructive && (
+                <>
+                  <br />
+                  <span className="text-red-500 font-medium">This action cannot be undone.</span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirm}
+              className={isDestructive ? "bg-red-600 hover:bg-red-700" : ""}
+            >
+              Yes, Execute
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -272,10 +344,13 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
       {showPreview && (
         <PreviewPanel
           isLoading={previewData === undefined}
+          isExecuting={isSubmitting}
           summary={previewData?.summary}
           details={previewData?.preview}
           onClose={closePreview}
-          onConfirm={handleSubmit}
+          onExecute={handleSubmit}
+          operationName="Grant Gold"
+          operationDescription={`You are about to grant ${Number(amount).toLocaleString()} gold to the selected players. Reason: "${reason.trim() || "No reason provided"}"`}
           renderSummaryExtra={() => (
             <div className="p-2 bg-yellow-500/10 border border-yellow-500/30 rounded">
               <Text className="text-xs text-yellow-600">Total Gold to Grant</Text>
@@ -288,7 +363,7 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
             const preview = item as { currentGold: number; newGold: number };
             return (
               <Text className="text-xs text-muted-foreground">
-                {preview.currentGold?.toLocaleString()} → {preview.newGold?.toLocaleString()}
+                {preview.currentGold?.toLocaleString()} -{">"} {preview.newGold?.toLocaleString()}
               </Text>
             );
           }}
@@ -308,16 +383,6 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
             <Eye className="w-4 h-4 mr-2" />
             Preview
           </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting || selectedPlayers.length === 0 || !amount || !reason.trim()}
-            className="flex-1"
-          >
-            {isSubmitting
-              ? "Processing..."
-              : `Grant ${amount || "0"} Gold to ${selectedPlayers.length} Players`}
-          </Button>
         </div>
       )}
     </div>
@@ -328,51 +393,28 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
 // Grant Premium Form
 // =============================================================================
 
-export function GrantPremiumForm({ onSuccess }: BatchOperationFormProps) {
+export function GrantPremiumForm({ onSuccess: _onSuccess }: BatchOperationFormProps) {
   const [selectedPlayers, setSelectedPlayers] = useState<Id<"users">[]>([]);
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const batchGrantPremium = useConvexMutation(apiAny.admin.batchAdmin.batchGrantPremium);
-
-  const handleSubmit = async () => {
-    if (selectedPlayers.length === 0) {
-      toast.error("Please select at least one player");
-      return;
-    }
-    if (!amount || Number.parseInt(amount, 10) <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
-    if (!reason.trim()) {
-      toast.error("Please provide a reason");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const result = (await batchGrantPremium({
-        playerIds: selectedPlayers,
-        durationDays: Number.parseInt(amount, 10),
-        reason: reason.trim(),
-      })) as BatchOperationResponse;
-      toast.success(
-        `Granted ${amount} premium to ${result.results.filter((r) => r.success).length} players`
-      );
-      setSelectedPlayers([]);
-      setAmount("");
-      setReason("");
-      onSuccess?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Operation failed");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
+      {/* Not Implemented Warning */}
+      <div className="p-4 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
+          <div>
+            <Text className="text-yellow-500 font-medium">Feature Not Yet Implemented</Text>
+            <Text className="text-sm text-muted-foreground">
+              The premium currency system is not yet available in the database schema.
+              This feature will be enabled once the isPremium and premiumExpiresAt fields
+              are added to the users table.
+            </Text>
+          </div>
+        </div>
+      </div>
+
       <div>
         <Label className="text-base font-medium">Select Players</Label>
         <Text className="text-sm text-muted-foreground mb-4">
@@ -391,6 +433,7 @@ export function GrantPremiumForm({ onSuccess }: BatchOperationFormProps) {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             min="1"
+            disabled
           />
         </div>
         <div className="space-y-2">
@@ -400,19 +443,17 @@ export function GrantPremiumForm({ onSuccess }: BatchOperationFormProps) {
             placeholder="e.g., Compensation"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
+            disabled
           />
         </div>
       </div>
 
       <Button
         type="button"
-        onClick={handleSubmit}
-        disabled={isSubmitting || selectedPlayers.length === 0}
+        disabled={true}
         className="w-full"
       >
-        {isSubmitting
-          ? "Processing..."
-          : `Grant ${amount || "0"} Premium to ${selectedPlayers.length} Players`}
+        Coming Soon - Grant Premium to {selectedPlayers.length} Players
       </Button>
     </div>
   );
@@ -499,10 +540,14 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
       {showPreview && (
         <PreviewPanel
           isLoading={previewData === undefined}
+          isExecuting={isSubmitting}
           summary={previewData?.summary}
           details={previewData?.preview}
           onClose={closePreview}
-          onConfirm={handleSubmit}
+          onExecute={handleSubmit}
+          operationName="Reset Ratings"
+          operationDescription={`You are about to reset ELO ratings to 1000 for the selected players. Reason: "${reason.trim() || "No reason provided"}"`}
+          isDestructive={true}
           renderSummaryExtra={() => (
             <div className="grid grid-cols-2 gap-2">
               <div className="p-2 bg-red-500/10 border border-red-500/30 rounded">
@@ -527,7 +572,7 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
             return (
               <div className="flex items-center gap-2">
                 <Text className="text-xs text-muted-foreground">
-                  {preview.currentRankedElo} → 1000
+                  {preview.currentRankedElo} -{">"} 1000
                 </Text>
                 <Badge
                   color={preview.rankedChange > 0 ? "green" : preview.rankedChange < 0 ? "red" : "gray"}
@@ -543,7 +588,7 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
       )}
 
       <div className="p-4 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
-        <Text className="text-yellow-500 font-medium">⚠️ Warning</Text>
+        <Text className="text-yellow-500 font-medium">Warning</Text>
         <Text className="text-sm text-muted-foreground">
           This will reset all selected players&apos; ELO ratings to 1000. This action cannot be
           undone.
@@ -562,15 +607,6 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
           >
             <Eye className="w-4 h-4 mr-2" />
             Preview Impact
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting || selectedPlayers.length === 0 || !reason.trim()}
-            variant="destructive"
-            className="flex-1"
-          >
-            {isSubmitting ? "Processing..." : `Reset Ratings for ${selectedPlayers.length} Players`}
           </Button>
         </div>
       )}
@@ -704,10 +740,13 @@ export function GrantPacksForm({ onSuccess }: BatchOperationFormProps) {
       {showPreview && (
         <PreviewPanel
           isLoading={previewData === undefined}
+          isExecuting={isSubmitting}
           summary={previewData?.summary}
           details={previewData?.preview}
           onClose={closePreview}
-          onConfirm={handleSubmit}
+          onExecute={handleSubmit}
+          operationName="Grant Packs"
+          operationDescription={`You are about to grant ${quantity} "${packDefinitionId}" pack(s) to the selected players. Reason: "${reason.trim() || "No reason provided"}"`}
           renderSummaryExtra={() => (
             <div className="grid grid-cols-2 gap-2">
               <div className="p-2 bg-purple-500/10 border border-purple-500/30 rounded">
@@ -740,22 +779,6 @@ export function GrantPacksForm({ onSuccess }: BatchOperationFormProps) {
             <Eye className="w-4 h-4 mr-2" />
             Preview
           </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={
-              isSubmitting ||
-              selectedPlayers.length === 0 ||
-              !packDefinitionId.trim() ||
-              !quantity ||
-              !reason.trim()
-            }
-            className="flex-1"
-          >
-            {isSubmitting
-              ? "Processing..."
-              : `Grant ${quantity} Packs to ${selectedPlayers.length} Players`}
-          </Button>
         </div>
       )}
     </div>
@@ -776,6 +799,7 @@ export function GrantCardsForm({ onSuccess }: BatchOperationFormProps) {
   const [cardGrants, setCardGrants] = useState<CardGrant[]>([{ cardId: "", quantity: 1 }]);
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const grantCards = useConvexMutation(apiAny.admin.batchAdmin.grantCardsToPlayer);
 
@@ -793,12 +817,13 @@ export function GrantCardsForm({ onSuccess }: BatchOperationFormProps) {
     setCardGrants(updated);
   };
 
-  const handleSubmit = async () => {
+  const validGrants = cardGrants.filter((g) => g.cardId.trim() && g.quantity > 0);
+
+  const handlePreviewClick = () => {
     if (!playerId.trim()) {
       toast.error("Please enter a player ID");
       return;
     }
-    const validGrants = cardGrants.filter((g) => g.cardId.trim() && g.quantity > 0);
     if (validGrants.length === 0) {
       toast.error("Please add at least one valid card grant");
       return;
@@ -807,15 +832,20 @@ export function GrantCardsForm({ onSuccess }: BatchOperationFormProps) {
       toast.error("Please provide a reason");
       return;
     }
+    setShowConfirmDialog(true);
+  };
 
+  const handleSubmit = async () => {
+    setShowConfirmDialog(false);
     setIsSubmitting(true);
     try {
-      await grantCards({
+      const result = await grantCards({
         playerId: playerId.trim() as Id<"users">,
         cardIds: validGrants.map((g) => g.cardId.trim()),
         reason: reason.trim(),
       });
-      toast.success("Granted cards to player successfully");
+      const typedResult = result as { success: boolean; message: string };
+      toast.success(typedResult.message || "Granted cards to player successfully");
       setPlayerId("");
       setCardGrants([{ cardId: "", quantity: 1 }]);
       setReason("");
@@ -893,14 +923,64 @@ export function GrantCardsForm({ onSuccess }: BatchOperationFormProps) {
         />
       </div>
 
+      {/* Summary Preview */}
+      {validGrants.length > 0 && playerId.trim() && (
+        <div className="p-4 bg-muted/50 border rounded-lg">
+          <Text className="font-medium mb-2">Operation Summary</Text>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <Text className="text-muted-foreground">Target Player:</Text>
+              <Text className="font-mono text-xs">{playerId.trim()}</Text>
+            </div>
+            <div>
+              <Text className="text-muted-foreground">Cards to Grant:</Text>
+              <Text>{validGrants.length} card(s)</Text>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Button
         type="button"
-        onClick={handleSubmit}
-        disabled={isSubmitting || !playerId.trim()}
+        onClick={handlePreviewClick}
+        disabled={isSubmitting || !playerId.trim() || validGrants.length === 0}
         className="w-full"
       >
-        {isSubmitting ? "Processing..." : "Grant Cards"}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          <>
+            <Play className="w-4 h-4 mr-2" />
+            Grant {validGrants.length} Card(s)
+          </>
+        )}
       </Button>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Card Grant</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to grant <strong>{validGrants.length}</strong> card(s) to player{" "}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{playerId.trim()}</code>.
+              <br />
+              <br />
+              <strong>Reason:</strong> {reason.trim() || "No reason provided"}
+              <br />
+              <br />
+              This action will be logged in the audit trail.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmit}>Yes, Grant Cards</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -914,6 +994,7 @@ export function RemoveCardsForm({ onSuccess }: BatchOperationFormProps) {
   const [cardRemovals, setCardRemovals] = useState<CardGrant[]>([{ cardId: "", quantity: 1 }]);
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const removeCards = useConvexMutation(apiAny.admin.batchAdmin.removeCardsFromPlayer);
 
@@ -931,12 +1012,13 @@ export function RemoveCardsForm({ onSuccess }: BatchOperationFormProps) {
     setCardRemovals(updated);
   };
 
-  const handleSubmit = async () => {
+  const validRemovals = cardRemovals.filter((r) => r.cardId.trim() && r.quantity > 0);
+
+  const handlePreviewClick = () => {
     if (!playerId.trim()) {
       toast.error("Please enter a player ID");
       return;
     }
-    const validRemovals = cardRemovals.filter((r) => r.cardId.trim() && r.quantity > 0);
     if (validRemovals.length === 0) {
       toast.error("Please add at least one valid card removal");
       return;
@@ -945,15 +1027,20 @@ export function RemoveCardsForm({ onSuccess }: BatchOperationFormProps) {
       toast.error("Please provide a reason");
       return;
     }
+    setShowConfirmDialog(true);
+  };
 
+  const handleSubmit = async () => {
+    setShowConfirmDialog(false);
     setIsSubmitting(true);
     try {
-      await removeCards({
+      const result = await removeCards({
         playerId: playerId.trim() as Id<"users">,
         cardIds: validRemovals.map((r) => r.cardId.trim()),
         reason: reason.trim(),
       });
-      toast.success("Removed cards from player successfully");
+      const typedResult = result as { success: boolean; message: string };
+      toast.success(typedResult.message || "Removed cards from player successfully");
       setPlayerId("");
       setCardRemovals([{ cardId: "", quantity: 1 }]);
       setReason("");
@@ -1032,22 +1119,86 @@ export function RemoveCardsForm({ onSuccess }: BatchOperationFormProps) {
         />
       </div>
 
+      {/* Summary Preview */}
+      {validRemovals.length > 0 && playerId.trim() && (
+        <div className="p-4 bg-red-500/5 border border-red-500/30 rounded-lg">
+          <Text className="font-medium mb-2 text-red-600">Removal Summary</Text>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <Text className="text-muted-foreground">Target Player:</Text>
+              <Text className="font-mono text-xs">{playerId.trim()}</Text>
+            </div>
+            <div>
+              <Text className="text-muted-foreground">Cards to Remove:</Text>
+              <Text className="text-red-600 font-medium">{validRemovals.length} card(s)</Text>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
-        <Text className="text-red-500 font-medium">⚠️ Warning</Text>
-        <Text className="text-sm text-muted-foreground">
-          This will permanently remove cards from the player&apos;s inventory.
-        </Text>
+        <div className="flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+          <div>
+            <Text className="text-red-500 font-medium">Warning - Destructive Action</Text>
+            <Text className="text-sm text-muted-foreground">
+              This will permanently remove cards from the player&apos;s inventory.
+              This action cannot be undone.
+            </Text>
+          </div>
+        </div>
       </div>
 
       <Button
         type="button"
-        onClick={handleSubmit}
-        disabled={isSubmitting || !playerId.trim()}
+        onClick={handlePreviewClick}
+        disabled={isSubmitting || !playerId.trim() || validRemovals.length === 0}
         variant="destructive"
         className="w-full"
       >
-        {isSubmitting ? "Processing..." : "Remove Cards"}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Removing...
+          </>
+        ) : (
+          <>
+            <Play className="w-4 h-4 mr-2" />
+            Remove {validRemovals.length} Card(s)
+          </>
+        )}
       </Button>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Card Removal</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to <strong className="text-red-600">permanently remove</strong>{" "}
+              <strong>{validRemovals.length}</strong> card(s) from player{" "}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{playerId.trim()}</code>.
+              <br />
+              <br />
+              <strong>Reason:</strong> {reason.trim() || "No reason provided"}
+              <br />
+              <br />
+              <span className="text-red-600 font-medium">
+                This action cannot be undone and will be logged in the audit trail.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSubmit}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Yes, Remove Cards
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -1207,10 +1358,13 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
       {showPreview && (
         <PreviewPanel
           isLoading={previewData === undefined}
+          isExecuting={isSubmitting}
           summary={previewData?.summary}
           details={previewData?.playerPreview}
           onClose={closePreview}
-          onConfirm={handleSubmit}
+          onExecute={handleSubmit}
+          operationName="Grant Cards"
+          operationDescription={`You are about to grant ${validGrants.length} card(s) to the selected players. Reason: "${reason.trim() || "No reason provided"}"`}
           renderSummaryExtra={() => (
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
@@ -1258,19 +1412,6 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
           >
             <Eye className="w-4 h-4 mr-2" />
             Preview
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={
-              isSubmitting ||
-              selectedPlayers.length === 0 ||
-              validGrants.length === 0 ||
-              !reason.trim()
-            }
-            className="flex-1"
-          >
-            {isSubmitting ? "Processing..." : `Grant Cards to ${selectedPlayers.length} Players`}
           </Button>
         </div>
       )}

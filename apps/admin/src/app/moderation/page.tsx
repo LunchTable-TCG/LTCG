@@ -13,7 +13,7 @@ import { ModerationActions, ModerationStatusBadge } from "@/components/players";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { BannedPlayer, ColumnDef } from "@/types";
+import type { BannedPlayer, ColumnDef, SuspendedPlayer } from "@/types";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { Card, Text, Title } from "@tremor/react";
 import Link from "next/link";
@@ -21,10 +21,31 @@ import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 
 // =============================================================================
+// Helper Functions
+// =============================================================================
+
+function formatTimeRemaining(suspendedUntil: number) {
+  const now = Date.now();
+  const remaining = suspendedUntil - now;
+  if (remaining <= 0) return "Expired";
+
+  const days = Math.floor(remaining / (24 * 60 * 60 * 1000));
+  const hours = Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+
+  if (days > 0) return `${days}d ${hours}h remaining`;
+  if (hours > 0) return `${hours}h remaining`;
+  return "< 1h remaining";
+}
+
+// =============================================================================
 // Types
 // =============================================================================
 
 interface BannedPlayerRow extends BannedPlayer {
+  _id: any; // Id type - players table
+}
+
+interface SuspendedPlayerRow extends SuspendedPlayer {
   _id: any; // Id type - players table
 }
 
@@ -75,6 +96,43 @@ const bannedColumns: ColumnDef<BannedPlayerRow>[] = [
   },
 ];
 
+const suspendedColumns: ColumnDef<SuspendedPlayerRow>[] = [
+  {
+    id: "playerName",
+    header: "Player",
+    accessorKey: "playerName",
+    sortable: true,
+    cell: (row) => <span className="font-medium">{row.playerName}</span>,
+  },
+  {
+    id: "suspensionReason",
+    header: "Reason",
+    accessorKey: "suspensionReason",
+    cell: (row) => (
+      <span className="text-muted-foreground text-sm line-clamp-1">
+        {row.suspensionReason || "No reason provided"}
+      </span>
+    ),
+  },
+  {
+    id: "suspendedUntil",
+    header: "Expires",
+    accessorKey: "suspendedUntil",
+    sortable: true,
+    cell: (row) =>
+      row.suspendedUntil ? (
+        <span className="text-sm">{formatTimeRemaining(row.suspendedUntil)}</span>
+      ) : (
+        <span className="text-muted-foreground">Unknown</span>
+      ),
+  },
+  {
+    id: "status",
+    header: "Status",
+    cell: () => <ModerationStatusBadge isSuspended={true} />,
+  },
+];
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -84,17 +142,27 @@ export default function ModerationPage() {
 
   // Fetch moderation data
   const bannedPlayers = useConvexQuery(apiAny.admin.moderation.listBannedPlayers, {});
+  const suspendedPlayers = useConvexQuery(apiAny.admin.moderation.listSuspendedPlayers, {});
   const suspiciousReport = useConvexQuery(apiAny.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
 
   const isLoading = bannedPlayers === undefined;
+  const isSuspendedLoading = suspendedPlayers === undefined;
 
   // Transform banned players for table
   const bannedTableData: BannedPlayerRow[] | undefined = bannedPlayers?.map((p: BannedPlayer) => ({
     ...p,
     _id: p.playerId,
   }));
+
+  // Transform suspended players for table
+  const suspendedTableData: SuspendedPlayerRow[] | undefined = suspendedPlayers?.map(
+    (p: SuspendedPlayer) => ({
+      ...p,
+      _id: p.playerId,
+    })
+  );
 
   /* eslint-disable react-hooks/purity */
   const stats = useMemo(() => {
@@ -110,7 +178,7 @@ export default function ModerationPage() {
   /* eslint-enable react-hooks/purity */
 
   const totalBanned = stats.total;
-  const recentBans = stats.recent;
+  const totalSuspended = suspendedPlayers?.length ?? 0;
   const suspiciousCount = suspiciousReport?.suspiciousMatchups ?? 0;
   const warningsThisWeek = suspiciousReport?.recentWarnings ?? 0;
 
@@ -136,10 +204,11 @@ export default function ModerationPage() {
           isLoading={isLoading}
         />
         <StatCard
-          title="Bans This Week"
-          value={recentBans}
-          icon={<span className="text-lg">📅</span>}
-          isLoading={isLoading}
+          title="Suspended Players"
+          value={totalSuspended}
+          icon={<span className="text-lg">⏸️</span>}
+          subtitle="Currently active"
+          isLoading={isSuspendedLoading}
         />
         <StatCard
           title="Suspicious Matchups"
@@ -194,6 +263,7 @@ export default function ModerationPage() {
       <Tabs defaultValue="banned" className="mt-6">
         <TabsList>
           <TabsTrigger value="banned">Banned Players ({totalBanned})</TabsTrigger>
+          <TabsTrigger value="suspended">Suspended Players ({totalSuspended})</TabsTrigger>
           <TabsTrigger value="quick-actions">Quick Actions</TabsTrigger>
         </TabsList>
 
@@ -216,6 +286,33 @@ export default function ModerationPage() {
                   playerId={row.playerId}
                   playerName={row.playerName}
                   isBanned={true}
+                  isSuspended={false}
+                />
+              )}
+            />
+          </Card>
+        </TabsContent>
+
+        {/* Suspended Players Tab */}
+        <TabsContent value="suspended" className="mt-4">
+          <Card>
+            <DataTable<SuspendedPlayerRow>
+              data={suspendedTableData}
+              columns={suspendedColumns}
+              rowKey="_id"
+              isLoading={isSuspendedLoading}
+              searchable
+              searchPlaceholder="Search suspended players..."
+              searchColumns={["playerName"]}
+              pageSize={15}
+              emptyMessage="No suspended players"
+              onRowClick={(row) => router.push(`/players/${row.playerId}`)}
+              rowActions={(row) => (
+                <ModerationActions
+                  playerId={row.playerId}
+                  playerName={row.playerName}
+                  isBanned={false}
+                  isSuspended={true}
                 />
               )}
             />

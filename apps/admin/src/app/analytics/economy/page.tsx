@@ -10,6 +10,7 @@
 import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
@@ -19,10 +20,12 @@ import {
   Card,
   DonutChart,
   Flex,
+  LineChart,
   Text,
   Title,
 } from "@tremor/react";
 import Link from "next/link";
+import { useState } from "react";
 
 // =============================================================================
 // Types
@@ -41,6 +44,16 @@ interface EconomyMetric {
   salesVolume: number;
   medianPlayerGold: number;
   top10PercentGold: number;
+}
+
+interface EconomyTrend {
+  date: string;
+  goldGenerated: number;
+  goldSpent: number;
+  netGoldChange: number;
+  packsOpened: number;
+  marketplaceSales: number;
+  marketplaceVolume: number;
 }
 
 // WealthDistributionItem type - now inferred from API response
@@ -75,12 +88,22 @@ function getInflationBadge(trend: string | undefined) {
 // =============================================================================
 
 export default function EconomyAnalyticsPage() {
+  // State for trend period selection
+  const [trendPeriod, setTrendPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [trendDays, setTrendDays] = useState(14);
+
   // Fetch real data from Convex
   const snapshot = useConvexQuery(apiAny.admin.analytics.getCurrentEconomySnapshot);
   const metrics = useConvexQuery(apiAny.admin.analytics.getEconomyMetrics, { days: 14 });
   const wealth = useConvexQuery(apiAny.admin.analytics.getWealthDistribution);
   const marketplaceStats = useConvexQuery(apiAny.admin.analytics.getMarketplaceStats, {
     periodType: "all_time",
+  });
+
+  // NEW: Economy trends data with configurable period
+  const economyTrends = useConvexQuery(apiAny.admin.analytics.getEconomyTrends, {
+    periodType: trendPeriod,
+    days: trendDays,
   });
 
   const isLoading = snapshot === undefined || metrics === undefined;
@@ -150,6 +173,35 @@ export default function EconomyAnalyticsPage() {
     { name: "Tournament Entry", value: Math.round((metrics?.[0]?.goldSpent ?? 0) * 0.12) },
     { name: "Card Upgrades", value: Math.round((metrics?.[0]?.goldSpent ?? 0) * 0.07) },
   ];
+
+  // Transform economy trends for chart
+  const economyTrendsData =
+    economyTrends?.map((t: EconomyTrend) => ({
+      date: new Date(t.date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      "Net Gold Change": t.netGoldChange,
+      "Gold Generated": t.goldGenerated,
+      "Gold Spent": t.goldSpent,
+      "Marketplace Volume": t.marketplaceVolume,
+    })) ?? [];
+
+  // Calculate trend statistics
+  const trendStats = economyTrends
+    ? {
+        totalGenerated: economyTrends.reduce((sum: number, t: EconomyTrend) => sum + t.goldGenerated, 0),
+        totalSpent: economyTrends.reduce((sum: number, t: EconomyTrend) => sum + t.goldSpent, 0),
+        totalNetChange: economyTrends.reduce((sum: number, t: EconomyTrend) => sum + t.netGoldChange, 0),
+        totalMarketplaceVolume: economyTrends.reduce(
+          (sum: number, t: EconomyTrend) => sum + t.marketplaceVolume,
+          0
+        ),
+        avgPacksOpened:
+          economyTrends.reduce((sum: number, t: EconomyTrend) => sum + t.packsOpened, 0) /
+          Math.max(economyTrends.length, 1),
+      }
+    : null;
 
   return (
     <PageWrapper
@@ -244,6 +296,119 @@ export default function EconomyAnalyticsPage() {
           />
         </MetricGrid>
       </div>
+
+      {/* Economy Trends - NEW SECTION */}
+      <Card className="mt-6">
+        <Flex justifyContent="between" alignItems="center">
+          <div>
+            <Title>Economy Trends</Title>
+            <Text className="text-muted-foreground">
+              Gold flow and marketplace activity over time
+            </Text>
+          </div>
+          <div className="flex gap-2">
+            <Select
+              value={trendPeriod}
+              onValueChange={(v) => setTrendPeriod(v as "daily" | "weekly" | "monthly")}
+            >
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={trendDays.toString()}
+              onValueChange={(v) => setTrendDays(parseInt(v))}
+            >
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="Days" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">7 days</SelectItem>
+                <SelectItem value="14">14 days</SelectItem>
+                <SelectItem value="30">30 days</SelectItem>
+                <SelectItem value="60">60 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </Flex>
+
+        {/* Trend Summary Stats */}
+        {trendStats && (
+          <div className="mt-4 grid grid-cols-5 gap-4">
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center">
+              <Text className="text-lg font-bold text-emerald-500">
+                +{formatCurrency(trendStats.totalGenerated)}
+              </Text>
+              <Text className="text-xs text-muted-foreground">Total Generated</Text>
+            </div>
+            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-center">
+              <Text className="text-lg font-bold text-rose-500">
+                -{formatCurrency(trendStats.totalSpent)}
+              </Text>
+              <Text className="text-xs text-muted-foreground">Total Spent</Text>
+            </div>
+            <div
+              className={`p-3 rounded-lg text-center ${
+                trendStats.totalNetChange >= 0
+                  ? "bg-blue-500/10 border border-blue-500/30"
+                  : "bg-amber-500/10 border border-amber-500/30"
+              }`}
+            >
+              <Text
+                className={`text-lg font-bold ${
+                  trendStats.totalNetChange >= 0 ? "text-blue-500" : "text-amber-500"
+                }`}
+              >
+                {trendStats.totalNetChange >= 0 ? "+" : ""}
+                {formatCurrency(trendStats.totalNetChange)}
+              </Text>
+              <Text className="text-xs text-muted-foreground">Net Change</Text>
+            </div>
+            <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/30 text-center">
+              <Text className="text-lg font-bold text-violet-500">
+                {formatCurrency(trendStats.totalMarketplaceVolume)}
+              </Text>
+              <Text className="text-xs text-muted-foreground">Market Volume</Text>
+            </div>
+            <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-center">
+              <Text className="text-lg font-bold text-cyan-500">
+                {Math.round(trendStats.avgPacksOpened)}
+              </Text>
+              <Text className="text-xs text-muted-foreground">Avg Packs/Period</Text>
+            </div>
+          </div>
+        )}
+
+        {/* Trend Chart */}
+        <div className="mt-4 h-72">
+          {economyTrends === undefined ? (
+            <div className="h-full flex items-center justify-center text-muted-foreground">
+              Loading trends...
+            </div>
+          ) : economyTrendsData.length > 0 ? (
+            <LineChart
+              className="h-full"
+              data={economyTrendsData}
+              index="date"
+              categories={["Net Gold Change", "Gold Generated", "Gold Spent"]}
+              colors={["blue", "emerald", "rose"]}
+              showAnimation
+              showLegend
+              valueFormatter={(v: number) => formatCurrency(v)}
+              curveType="monotone"
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-muted-foreground">
+              No trend data available for the selected period
+            </div>
+          )}
+        </div>
+      </Card>
 
       {/* Currency Flow */}
       <ChartCard

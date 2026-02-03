@@ -10,9 +10,11 @@
 import { ChartCard, LeaderboardGrid, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, BarChart, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
+import { useState } from "react";
 
 // =============================================================================
 // Types
@@ -37,6 +39,9 @@ interface DailyStat {
 // =============================================================================
 
 export default function PlayerAnalyticsPage() {
+  // State for skill distribution rating type
+  const [skillRatingType, setSkillRatingType] = useState<string>("ranked");
+
   // Fetch real data from Convex
   const stats = useConvexQuery(apiAny.admin.admin.getSystemStats);
   const dailyStats = useConvexQuery(apiAny.admin.analytics.getDailyActiveStats, { days: 14 });
@@ -44,6 +49,11 @@ export default function PlayerAnalyticsPage() {
   const topEngaged = useConvexQuery(apiAny.admin.analytics.getTopEngagedPlayers, {
     days: 7,
     limit: 10,
+  });
+
+  // NEW: Skill distribution data with configurable rating type
+  const skillDistribution = useConvexQuery(apiAny.admin.analytics.getSkillDistribution, {
+    ratingType: skillRatingType,
   });
 
   const isLoading = stats === undefined || dailyStats === undefined;
@@ -363,6 +373,129 @@ export default function PlayerAnalyticsPage() {
             </Text>
             <Text className="text-sm text-muted-foreground">New Today</Text>
             <Text className="text-xs text-muted-foreground mt-1">Recent signups</Text>
+          </div>
+        </div>
+      </Card>
+
+      {/* Skill Distribution - NEW SECTION */}
+      <Card className="mt-6">
+        <Flex justifyContent="between" alignItems="center">
+          <div>
+            <Title>Skill Distribution</Title>
+            <Text className="text-muted-foreground">
+              Player rating distribution across the ladder
+            </Text>
+          </div>
+          <Select
+            value={skillRatingType}
+            onValueChange={setSkillRatingType}
+          >
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Rating Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ranked">Ranked ELO</SelectItem>
+              <SelectItem value="casual">Casual Rating</SelectItem>
+            </SelectContent>
+          </Select>
+        </Flex>
+
+        {/* Summary Stats */}
+        {skillDistribution?.summary && (
+          <div className="mt-4 grid grid-cols-3 gap-4">
+            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-center">
+              <Text className="text-xl font-bold text-blue-500">
+                {skillDistribution.summary.totalPlayers.toLocaleString()}
+              </Text>
+              <Text className="text-xs text-muted-foreground">Rated Players</Text>
+            </div>
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center">
+              <Text className="text-xl font-bold text-emerald-500">
+                {skillDistribution.summary.average}
+              </Text>
+              <Text className="text-xs text-muted-foreground">Average Rating</Text>
+            </div>
+            <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/30 text-center">
+              <Text className="text-xl font-bold text-violet-500">
+                {skillDistribution.summary.median}
+              </Text>
+              <Text className="text-xs text-muted-foreground">Median Rating</Text>
+            </div>
+          </div>
+        )}
+
+        {/* Distribution Chart */}
+        {skillDistribution?.distribution && (
+          <BarChart
+            className="mt-4 h-56"
+            data={[
+              { range: "< 800", players: skillDistribution.distribution.under800 },
+              { range: "800-1000", players: skillDistribution.distribution.r800_1000 },
+              { range: "1000-1200", players: skillDistribution.distribution.r1000_1200 },
+              { range: "1200-1400", players: skillDistribution.distribution.r1200_1400 },
+              { range: "1400-1600", players: skillDistribution.distribution.r1400_1600 },
+              { range: "1600-1800", players: skillDistribution.distribution.r1600_1800 },
+              { range: "1800-2000", players: skillDistribution.distribution.r1800_2000 },
+              { range: "2000-2200", players: skillDistribution.distribution.r2000_2200 },
+              { range: "> 2200", players: skillDistribution.distribution.over2200 },
+            ]}
+            index="range"
+            categories={["players"]}
+            colors={["blue"]}
+            showAnimation
+            valueFormatter={(v: number) => `${v} players`}
+          />
+        )}
+
+        {/* Percentile Breakdown */}
+        {skillDistribution?.percentiles && (
+          <div className="mt-4 grid grid-cols-5 gap-2 text-center text-sm">
+            <div className="p-2 rounded-lg bg-muted/50">
+              <Text className="font-medium">25th</Text>
+              <Text className="text-muted-foreground">{skillDistribution.percentiles.p25}</Text>
+            </div>
+            <div className="p-2 rounded-lg bg-muted/50">
+              <Text className="font-medium">50th</Text>
+              <Text className="text-muted-foreground">{skillDistribution.percentiles.p50}</Text>
+            </div>
+            <div className="p-2 rounded-lg bg-muted/50">
+              <Text className="font-medium">75th</Text>
+              <Text className="text-muted-foreground">{skillDistribution.percentiles.p75}</Text>
+            </div>
+            <div className="p-2 rounded-lg bg-muted/50">
+              <Text className="font-medium">90th</Text>
+              <Text className="text-muted-foreground">{skillDistribution.percentiles.p90}</Text>
+            </div>
+            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <Text className="font-medium text-amber-500">99th</Text>
+              <Text className="text-amber-500">{skillDistribution.percentiles.p99}</Text>
+            </div>
+          </div>
+        )}
+
+        {/* Rank Tier Breakdown */}
+        <div className="mt-4 p-3 rounded-lg bg-muted/30">
+          <Text className="text-sm font-medium mb-2">Rank Tiers</Text>
+          <div className="flex gap-2 flex-wrap">
+            {skillDistribution?.distribution && (
+              <>
+                <Badge color="amber">
+                  Bronze: {skillDistribution.distribution.under800 + skillDistribution.distribution.r800_1000 + skillDistribution.distribution.r1000_1200 + (skillDistribution.distribution.r1200_1400 || 0)}
+                </Badge>
+                <Badge color="slate">
+                  Silver: {skillDistribution.distribution.r1400_1600 || 0}
+                </Badge>
+                <Badge color="yellow">
+                  Gold: {(skillDistribution.distribution.r1600_1800 || 0) + (skillDistribution.distribution.r1800_2000 || 0)}
+                </Badge>
+                <Badge color="cyan">
+                  Platinum: {skillDistribution.distribution.r2000_2200 || 0}
+                </Badge>
+                <Badge color="violet">
+                  Diamond: {skillDistribution.distribution.over2200 || 0}
+                </Badge>
+              </>
+            )}
           </div>
         </div>
       </Card>

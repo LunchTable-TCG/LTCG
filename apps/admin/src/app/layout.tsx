@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/ConvexProvider";
 import { PrivyAuthProvider } from "@/components/PrivyAuthProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { AdminShell } from "@/components/layout";
 import { Toaster } from "@/components/ui/sonner";
 import { AdminProvider } from "@/contexts/AdminContext";
@@ -30,14 +31,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <PrivyAuthProvider>
-          <ConvexClientProvider>
-            <AdminProvider>
-              <AdminShell>{children}</AdminShell>
-              <Toaster />
-            </AdminProvider>
-          </ConvexClientProvider>
-        </PrivyAuthProvider>
+        <ThemeProvider>
+          <PrivyAuthProvider>
+            <ConvexClientProvider>
+              <AdminProvider>
+                <AdminShell>{children}</AdminShell>
+                <Toaster />
+              </AdminProvider>
+            </ConvexClientProvider>
+          </PrivyAuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

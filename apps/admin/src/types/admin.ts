@@ -152,6 +152,13 @@ export type BannedPlayer = {
   bannedAt?: number;
 };
 
+export type SuspendedPlayer = {
+  playerId: Id<"users">;
+  playerName: string;
+  suspensionReason?: string;
+  suspendedUntil?: number;
+};
+
 // =============================================================================
 // Moderation Types
 // =============================================================================

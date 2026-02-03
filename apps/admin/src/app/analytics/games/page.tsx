@@ -10,6 +10,7 @@
 import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
@@ -23,6 +24,7 @@ import {
   Title,
 } from "@tremor/react";
 import Link from "next/link";
+import { useState } from "react";
 
 // =============================================================================
 // Types
@@ -63,6 +65,14 @@ function formatDuration(ms: number): string {
   return `${minutes}m`;
 }
 
+function formatDurationSeconds(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  if (remainingSeconds === 0) return `${minutes}m`;
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
 function getHealthBadge(score: number) {
   if (score >= 80) return <Badge color="emerald">Excellent</Badge>;
   if (score >= 60) return <Badge color="blue">Good</Badge>;
@@ -75,12 +85,23 @@ function getHealthBadge(score: number) {
 // =============================================================================
 
 export default function GameAnalyticsPage() {
+  // State for period selection
+  const [gameStatsPeriod, setGameStatsPeriod] = useState<"daily" | "weekly" | "monthly" | "all_time">("weekly");
+
   // Fetch real data from Convex
   const stats = useConvexQuery(apiAny.admin.admin.getSystemStats);
   const matchmakingHealth = useConvexQuery(apiAny.admin.analytics.getMatchmakingHealth);
   const matchmakingStats = useConvexQuery(apiAny.admin.analytics.getMatchmakingStatsDetailed, { days: 14 });
-  const skillDist = useConvexQuery(apiAny.admin.analytics.getSkillDistribution, { ratingType: "elo" });
+  const skillDist = useConvexQuery(apiAny.admin.analytics.getSkillDistribution, { ratingType: "ranked" });
   const dailyStats = useConvexQuery(apiAny.admin.analytics.getDailyActiveStats, { days: 14 });
+
+  // NEW: Game stats with configurable period
+  const gameStats = useConvexQuery(apiAny.admin.analytics.getGameStats, {
+    periodType: gameStatsPeriod,
+  });
+
+  // NEW: Simple matchmaking stats (queue time, success rate)
+  const simpleMatchmakingStats = useConvexQuery(apiAny.admin.analytics.getMatchmakingStats);
 
   const isLoading = stats === undefined;
 
@@ -206,6 +227,135 @@ export default function GameAnalyticsPage() {
           isLoading={isLoading}
         />
       </MetricGrid>
+
+      {/* Game Statistics - NEW SECTION */}
+      <Card className="mt-6">
+        <Flex justifyContent="between" alignItems="center">
+          <div>
+            <Title>Game Statistics</Title>
+            <Text className="text-muted-foreground">
+              Detailed game metrics including duration and turn counts
+            </Text>
+          </div>
+          <Select
+            value={gameStatsPeriod}
+            onValueChange={(v) => setGameStatsPeriod(v as "daily" | "weekly" | "monthly" | "all_time")}
+          >
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Today</SelectItem>
+              <SelectItem value="weekly">This Week</SelectItem>
+              <SelectItem value="monthly">This Month</SelectItem>
+              <SelectItem value="all_time">All Time</SelectItem>
+            </SelectContent>
+          </Select>
+        </Flex>
+        <div className="mt-4 grid gap-4 md:grid-cols-5">
+          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30 text-center">
+            <Text className="text-2xl font-bold text-blue-500">
+              {(gameStats?.totalGames ?? 0).toLocaleString()}
+            </Text>
+            <Text className="text-sm text-muted-foreground">Total Games</Text>
+          </div>
+          <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center">
+            <Text className="text-2xl font-bold text-emerald-500">
+              {(gameStats?.completedGames ?? 0).toLocaleString()}
+            </Text>
+            <Text className="text-sm text-muted-foreground">Completed</Text>
+          </div>
+          <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
+            <Text className="text-2xl font-bold text-amber-500">
+              {gameStats?.activeGames ?? 0}
+            </Text>
+            <Text className="text-sm text-muted-foreground">Active Now</Text>
+          </div>
+          <div className="p-4 rounded-lg bg-violet-500/10 border border-violet-500/30 text-center">
+            <Text className="text-2xl font-bold text-violet-500">
+              {formatDurationSeconds(gameStats?.averageGameDuration ?? 0)}
+            </Text>
+            <Text className="text-sm text-muted-foreground">Avg Duration</Text>
+          </div>
+          <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-center">
+            <Text className="text-2xl font-bold text-cyan-500">
+              {gameStats?.averageTurns ?? 0}
+            </Text>
+            <Text className="text-sm text-muted-foreground">Avg Turns</Text>
+          </div>
+        </div>
+        {gameStats && gameStats.totalGames > 0 && (
+          <div className="mt-4 p-3 rounded-lg bg-muted/30">
+            <Text className="text-sm text-muted-foreground">
+              <strong>Completion Rate:</strong>{" "}
+              {((gameStats.completedGames / gameStats.totalGames) * 100).toFixed(1)}% of games
+              complete successfully
+            </Text>
+          </div>
+        )}
+      </Card>
+
+      {/* Matchmaking Stats - NEW SECTION */}
+      <Card className="mt-6">
+        <Flex justifyContent="between" alignItems="center">
+          <div>
+            <Title>Queue Statistics</Title>
+            <Text className="text-muted-foreground">
+              Real-time matchmaking queue metrics
+            </Text>
+          </div>
+          <Badge
+            color={
+              (simpleMatchmakingStats?.matchSuccessRate ?? 0) >= 80
+                ? "emerald"
+                : (simpleMatchmakingStats?.matchSuccessRate ?? 0) >= 60
+                  ? "blue"
+                  : "amber"
+            }
+          >
+            {simpleMatchmakingStats?.matchSuccessRate ?? 0}% Success Rate
+          </Badge>
+        </Flex>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <div className="p-4 rounded-lg bg-muted/50 text-center">
+            <Text className="text-3xl font-bold">
+              {simpleMatchmakingStats?.playersInQueue ?? 0}
+            </Text>
+            <Text className="text-sm text-muted-foreground">Players in Queue</Text>
+            <Text className="text-xs text-muted-foreground mt-1">Currently waiting</Text>
+          </div>
+          <div className="p-4 rounded-lg bg-muted/50 text-center">
+            <Text className="text-3xl font-bold">
+              {formatDurationSeconds(simpleMatchmakingStats?.averageQueueTime ?? 0)}
+            </Text>
+            <Text className="text-sm text-muted-foreground">Avg Queue Time</Text>
+            <Text className="text-xs text-muted-foreground mt-1">Time to find match</Text>
+          </div>
+          <div
+            className={`p-4 rounded-lg text-center ${
+              (simpleMatchmakingStats?.matchSuccessRate ?? 0) >= 80
+                ? "bg-emerald-500/10 border border-emerald-500/30"
+                : (simpleMatchmakingStats?.matchSuccessRate ?? 0) >= 60
+                  ? "bg-blue-500/10 border border-blue-500/30"
+                  : "bg-amber-500/10 border border-amber-500/30"
+            }`}
+          >
+            <Text
+              className={`text-3xl font-bold ${
+                (simpleMatchmakingStats?.matchSuccessRate ?? 0) >= 80
+                  ? "text-emerald-500"
+                  : (simpleMatchmakingStats?.matchSuccessRate ?? 0) >= 60
+                    ? "text-blue-500"
+                    : "text-amber-500"
+              }`}
+            >
+              {simpleMatchmakingStats?.matchSuccessRate ?? 0}%
+            </Text>
+            <Text className="text-sm text-muted-foreground">Match Success Rate</Text>
+            <Text className="text-xs text-muted-foreground mt-1">Games completed (24h)</Text>
+          </div>
+        </div>
+      </Card>
 
       {/* Matchmaking Health */}
       <Card className="mt-6">
@@ -400,8 +550,15 @@ export default function GameAnalyticsPage() {
             <Text className="text-sm text-muted-foreground">Completion Rate</Text>
           </div>
           <div className="p-4 rounded-lg bg-muted/50 text-center">
-            <Text className="text-3xl font-bold">~14m</Text>
+            <Text className="text-3xl font-bold">
+              {gameStats?.averageGameDuration
+                ? formatDurationSeconds(gameStats.averageGameDuration)
+                : "~14m"}
+            </Text>
             <Text className="text-sm text-muted-foreground">Avg Duration</Text>
+            <Text className="text-xs text-muted-foreground">
+              ({gameStats?.averageTurns ?? "~"} turns avg)
+            </Text>
           </div>
           <div className="p-4 rounded-lg bg-muted/50 text-center">
             <Text className="text-3xl font-bold">{matchmakingStats?.[0]?.fairMatches ?? 0}</Text>

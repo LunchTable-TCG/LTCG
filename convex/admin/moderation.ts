@@ -533,6 +533,37 @@ export const listBannedPlayers = query({
 });
 
 /**
+ * List all currently suspended players
+ * Requires moderator role or higher
+ */
+export const listSuspendedPlayers = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, { limit = 100 }) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "moderator");
+
+    const suspendedPlayers = await ctx.db
+      .query("users")
+      .withIndex("isSuspended", (q) => q.eq("isSuspended", true))
+      .take(limit);
+
+    const now = Date.now();
+
+    // Filter to only include players whose suspension hasn't expired
+    return suspendedPlayers
+      .filter((player) => player.suspendedUntil && player.suspendedUntil > now)
+      .map((player) => ({
+        playerId: player._id,
+        playerName: player.username || player.email || "Unknown",
+        suspensionReason: player.suspensionReason || "No reason provided",
+        suspendedUntil: player.suspendedUntil || 0,
+      }));
+  },
+});
+
+/**
  * Add a moderation note to a player's record
  * Requires moderator role or higher
  */

@@ -1297,6 +1297,20 @@ export default defineSchema({
     .index("by_listing", ["listingId", "createdAt"])
     .index("by_bidder", ["bidderId", "bidStatus"]),
 
+  // Marketplace price caps (admin-set maximum prices for cards)
+  marketplacePriceCaps: defineTable({
+    cardDefinitionId: v.id("cardDefinitions"),
+    maxPrice: v.number(),
+    reason: v.string(),
+    setBy: v.id("users"),
+    setByUsername: v.string(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_card", ["cardDefinitionId"])
+    .index("by_active", ["isActive", "createdAt"]),
+
   // ============================================================================
   // TOKEN INTEGRATION
   // ============================================================================

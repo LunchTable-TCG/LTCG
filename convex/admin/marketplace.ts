@@ -410,7 +410,7 @@ export const suspendSellerListings = mutation({
 
 /**
  * Set a price cap for a specific card
- * (Creates or updates a moderation rule)
+ * Creates a new price cap or updates existing one
  */
 export const setPriceCap = mutation({
   args: {
@@ -427,8 +427,42 @@ export const setPriceCap = mutation({
       throw new Error("Card definition not found");
     }
 
-    // Note: In a real system, you'd store this in a moderation rules table
-    // For now, we'll just audit the action
+    const admin = await ctx.db.get(adminId);
+    if (!admin) {
+      throw new Error("Admin user not found");
+    }
+
+    // Check if a price cap already exists for this card
+    const existingCap = await ctx.db
+      .query("marketplacePriceCaps")
+      .withIndex("by_card", (q) => q.eq("cardDefinitionId", args.cardDefinitionId))
+      .first();
+
+    const now = Date.now();
+
+    if (existingCap) {
+      // Update existing price cap
+      await ctx.db.patch(existingCap._id, {
+        maxPrice: args.maxPrice,
+        reason: args.reason,
+        setBy: adminId,
+        setByUsername: admin.username ?? "Admin",
+        isActive: true,
+        updatedAt: now,
+      });
+    } else {
+      // Create new price cap
+      await ctx.db.insert("marketplacePriceCaps", {
+        cardDefinitionId: args.cardDefinitionId,
+        maxPrice: args.maxPrice,
+        reason: args.reason,
+        setBy: adminId,
+        setByUsername: admin.username ?? "Admin",
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
 
     await scheduleAuditLog(ctx, {
       adminId,
@@ -438,6 +472,7 @@ export const setPriceCap = mutation({
         cardName: cardDef.name,
         maxPrice: args.maxPrice,
         reason: args.reason,
+        wasUpdate: !!existingCap,
       },
       success: true,
     });
@@ -592,6 +627,124 @@ export const getSellerHistory = query({
       },
       recentListings: enhancedListings,
       recentBids: bids,
+    };
+  },
+});
+
+/**
+ * Get all active price caps
+ */
+export const getPriceCaps = query({
+  args: {},
+  handler: async (ctx) => {
+    const { userId: adminId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, adminId, "moderator");
+
+    const caps = await ctx.db
+      .query("marketplacePriceCaps")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .order("desc")
+      .collect();
+
+    // Enhance with card info
+    const enhancedCaps = await Promise.all(
+      caps.map(async (cap) => {
+        const cardDef = await ctx.db.get(cap.cardDefinitionId);
+        return {
+          ...cap,
+          cardName: cardDef?.name ?? "Unknown Card",
+          cardRarity: cardDef?.rarity ?? "unknown",
+        };
+      })
+    );
+
+    return enhancedCaps;
+  },
+});
+
+/**
+ * Remove a price cap
+ */
+export const removePriceCap = mutation({
+  args: {
+    priceCapId: v.id("marketplacePriceCaps"),
+  },
+  handler: async (ctx, args) => {
+    const { userId: adminId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, adminId, "admin");
+
+    const priceCap = await ctx.db.get(args.priceCapId);
+    if (!priceCap) {
+      throw new Error("Price cap not found");
+    }
+
+    const cardDef = await ctx.db.get(priceCap.cardDefinitionId);
+
+    // Soft delete by setting isActive to false
+    await ctx.db.patch(args.priceCapId, {
+      isActive: false,
+      updatedAt: Date.now(),
+    });
+
+    await scheduleAuditLog(ctx, {
+      adminId,
+      action: "remove_price_cap",
+      metadata: {
+        priceCapId: args.priceCapId,
+        cardDefinitionId: priceCap.cardDefinitionId,
+        cardName: cardDef?.name ?? "Unknown",
+        previousMaxPrice: priceCap.maxPrice,
+      },
+      success: true,
+    });
+
+    return {
+      success: true,
+      message: `Price cap removed for ${cardDef?.name ?? "Unknown"}`,
+    };
+  },
+});
+
+/**
+ * Unsuspend a listing (reactivate a suspended listing)
+ */
+export const unsuspendListing = mutation({
+  args: {
+    listingId: v.id("marketplaceListings"),
+  },
+  handler: async (ctx, args) => {
+    const { userId: adminId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, adminId, "moderator");
+
+    const listing = await ctx.db.get(args.listingId);
+    if (!listing) {
+      throw new Error("Listing not found");
+    }
+
+    if (listing.status !== "cancelled" && listing.status !== "suspended") {
+      throw new Error("Only cancelled or suspended listings can be unsuspended");
+    }
+
+    await ctx.db.patch(args.listingId, {
+      status: "active",
+      updatedAt: Date.now(),
+    });
+
+    await scheduleAuditLog(ctx, {
+      adminId,
+      action: "unsuspend_marketplace_listing",
+      metadata: {
+        listingId: args.listingId,
+        sellerId: listing.sellerId,
+        sellerUsername: listing.sellerUsername,
+        price: listing.price,
+      },
+      success: true,
+    });
+
+    return {
+      success: true,
+      message: "Listing reactivated",
     };
   },
 });

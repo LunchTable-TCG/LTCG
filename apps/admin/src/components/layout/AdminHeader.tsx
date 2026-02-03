@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAdmin } from "@/contexts/AdminContext";
 
 // =============================================================================
@@ -63,6 +64,9 @@ export function AdminHeader({ breadcrumb }: AdminHeaderProps) {
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* Theme Toggle */}
+      <ThemeToggle />
 
       {/* Role Badge */}
       {isAdmin && role && (
