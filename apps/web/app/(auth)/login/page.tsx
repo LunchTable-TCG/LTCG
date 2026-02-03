@@ -32,9 +32,7 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      <div className="relative p-8 rounded-2xl tcg-chat-leather shadow-2xl overflow-hidden">
-        <div className="ornament-corner ornament-corner-tl" />
-        <div className="ornament-corner ornament-corner-tr" />
+      <div className="panel-ornate rounded-2xl p-8 shadow-2xl">
         <Suspense fallback={<AuthFormFallback />}>
           <AuthForm mode="signIn" />
         </Suspense>

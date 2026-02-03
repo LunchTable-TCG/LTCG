@@ -1,7 +1,6 @@
 "use client";
 
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
-import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
 import { motion } from "framer-motion";
 import { BookOpen, Trophy, Calendar } from "lucide-react";
@@ -52,10 +51,10 @@ export default function GameModesSection() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Choose Your Path
+            Ways to <span className="gold-text">Play</span>
           </h2>
           <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Multiple ways to play, endless possibilities to master
+            From solo campaigns to competitive ranked battles, find your arena
           </p>
         </motion.div>
 

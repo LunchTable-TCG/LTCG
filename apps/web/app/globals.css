@@ -508,6 +508,335 @@
   .animate-warning-pulse {
     animation: warning-pulse 1s ease-in-out infinite;
   }
+
+  /* ==========================================================================
+     FANTASY UI KIT - Premium TCG Components
+     Uses the beautiful hand-crafted assets for an immersive experience
+     ========================================================================== */
+
+  /* Panel with ornate corner decorations */
+  .panel-ornate {
+    position: relative;
+    background: linear-gradient(180deg, #1a1510 0%, #0d0908 100%);
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    box-shadow:
+      inset 0 0 60px rgba(0, 0, 0, 0.8),
+      0 0 30px rgba(212, 175, 55, 0.15),
+      0 12px 40px rgba(0, 0, 0, 0.9);
+  }
+
+  .panel-ornate::before,
+  .panel-ornate::after,
+  .panel-ornate .corner-bl,
+  .panel-ornate .corner-br {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background-image: url('/assets/ui/corner_ornament.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .panel-ornate::before {
+    top: -4px;
+    left: -4px;
+  }
+
+  .panel-ornate::after {
+    top: -4px;
+    right: -4px;
+    transform: scaleX(-1);
+  }
+
+  .panel-ornate .corner-bl {
+    bottom: -4px;
+    left: -4px;
+    transform: scaleY(-1);
+  }
+
+  .panel-ornate .corner-br {
+    bottom: -4px;
+    right: -4px;
+    transform: scale(-1);
+  }
+
+  /* Grimoire panel - old book style */
+  .panel-grimoire {
+    background-image: url('/assets/ui/panel_grimoire.png');
+    background-size: cover;
+    background-position: center;
+    box-shadow:
+      0 0 0 2px rgba(212, 175, 55, 0.3),
+      0 8px 32px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Fantasy Buttons - Primary (Gold/Wood with dragons) */
+  .btn-fantasy-primary {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 32px;
+    background: linear-gradient(180deg, #5c4a3d 0%, #3d2b1f 50%, #2a1f17 100%);
+    border: 3px solid;
+    border-image: linear-gradient(180deg, #d4af37 0%, #8b6914 50%, #5c4033 100%) 1;
+    color: #f0d77a;
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(212, 175, 55, 0.3);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.3),
+      0 0 20px rgba(212, 175, 55, 0.3),
+      0 4px 12px rgba(0, 0, 0, 0.6);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-fantasy-primary:hover {
+    background: linear-gradient(180deg, #6d5a4d 0%, #4d3b2f 50%, #3a2f27 100%);
+    border-image: linear-gradient(180deg, #f0d77a 0%, #d4af37 50%, #8b6914 100%) 1;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 0 30px rgba(212, 175, 55, 0.5),
+      0 6px 16px rgba(0, 0, 0, 0.7);
+    transform: translateY(-2px);
+  }
+
+  .btn-fantasy-primary:active {
+    transform: translateY(1px);
+    box-shadow:
+      inset 0 4px 8px rgba(0, 0, 0, 0.6),
+      0 0 15px rgba(212, 175, 55, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Fantasy Buttons - Secondary (Silver/Blue) */
+  .btn-fantasy-secondary {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 28px;
+    background: linear-gradient(180deg, #4a5568 0%, #2d3748 50%, #1a202c 100%);
+    border: 2px solid;
+    border-image: linear-gradient(180deg, #a0aec0 0%, #718096 50%, #4a5568 100%) 1;
+    color: #e2e8f0;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 0 20px rgba(99, 179, 237, 0.1),
+      0 4px 12px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-fantasy-secondary:hover {
+    background: linear-gradient(180deg, #5a6578 0%, #3d4758 50%, #2a303c 100%);
+    border-image: linear-gradient(180deg, #bee3f8 0%, #90cdf4 50%, #63b3ed 100%) 1;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      inset 0 0 30px rgba(99, 179, 237, 0.2),
+      0 0 20px rgba(99, 179, 237, 0.3),
+      0 6px 16px rgba(0, 0, 0, 0.6);
+    transform: translateY(-1px);
+  }
+
+  /* Fantasy Buttons - Danger (Lava/Cracked) */
+  .btn-fantasy-danger {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 28px;
+    background: linear-gradient(180deg, #4a2020 0%, #2d1515 50%, #1a0a0a 100%);
+    border: 2px solid;
+    border-image: linear-gradient(180deg, #f56565 0%, #c53030 50%, #742a2a 100%) 1;
+    color: #feb2b2;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 10px rgba(245, 101, 101, 0.5), 0 2px 4px rgba(0, 0, 0, 0.8);
+    box-shadow:
+      inset 0 0 20px rgba(245, 101, 101, 0.15),
+      0 0 15px rgba(245, 101, 101, 0.2),
+      0 4px 12px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-fantasy-danger:hover {
+    background: linear-gradient(180deg, #5a2a2a 0%, #3d1f1f 50%, #2a1010 100%);
+    border-image: linear-gradient(180deg, #fc8181 0%, #f56565 50%, #e53e3e 100%) 1;
+    box-shadow:
+      inset 0 0 30px rgba(245, 101, 101, 0.25),
+      0 0 25px rgba(245, 101, 101, 0.4),
+      0 6px 16px rgba(0, 0, 0, 0.6);
+    transform: translateY(-1px);
+  }
+
+  /* Fantasy Buttons - Success (Green/Gold) */
+  .btn-fantasy-success {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 28px;
+    background: linear-gradient(180deg, #276749 0%, #1a4731 50%, #0d2818 100%);
+    border: 2px solid;
+    border-image: linear-gradient(180deg, #68d391 0%, #48bb78 50%, #38a169 100%) 1;
+    color: #c6f6d5;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    box-shadow:
+      inset 0 0 20px rgba(104, 211, 145, 0.15),
+      0 0 15px rgba(104, 211, 145, 0.2),
+      0 4px 12px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-fantasy-success:hover {
+    border-image: linear-gradient(180deg, #9ae6b4 0%, #68d391 50%, #48bb78 100%) 1;
+    box-shadow:
+      inset 0 0 30px rgba(104, 211, 145, 0.25),
+      0 0 25px rgba(104, 211, 145, 0.4),
+      0 6px 16px rgba(0, 0, 0, 0.6);
+    transform: translateY(-1px);
+  }
+
+  /* Blue Primary Button (PLAY, BATTLE style from UI kit) */
+  .btn-fantasy-blue {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 36px;
+    background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 40%, #1e40af 100%);
+    border: 3px solid;
+    border-image: linear-gradient(180deg, #d4af37 0%, #b8860b 50%, #8b6914 100%) 1;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.2),
+      0 0 30px rgba(37, 99, 235, 0.4),
+      0 0 15px rgba(212, 175, 55, 0.3),
+      0 6px 20px rgba(0, 0, 0, 0.7);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-fantasy-blue:hover {
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 40%, #1d4ed8 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      0 0 40px rgba(59, 130, 246, 0.6),
+      0 0 20px rgba(212, 175, 55, 0.5),
+      0 8px 24px rgba(0, 0, 0, 0.8);
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  .btn-fantasy-blue:active {
+    transform: translateY(1px) scale(0.98);
+    box-shadow:
+      inset 0 4px 8px rgba(0, 0, 0, 0.4),
+      0 0 20px rgba(37, 99, 235, 0.3),
+      0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Notification Toasts - Success */
+  .toast-fantasy-success {
+    background: linear-gradient(90deg, #1a4d2e 0%, #276749 100%);
+    border: 2px solid #48bb78;
+    border-left: 4px solid #d4af37;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(104, 211, 145, 0.2);
+  }
+
+  /* Notification Toasts - Error */
+  .toast-fantasy-error {
+    background: linear-gradient(90deg, #4a1515 0%, #742a2a 100%);
+    border: 2px solid #c53030;
+    border-left: 4px solid #f56565;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(245, 101, 101, 0.2);
+  }
+
+  /* Notification Toasts - Reward */
+  .toast-fantasy-reward {
+    position: relative;
+    background: linear-gradient(180deg, #2a2015 0%, #1a1510 100%);
+    border: 3px solid;
+    border-image: linear-gradient(180deg, #f0d77a 0%, #d4af37 50%, #8b6914 100%) 1;
+    box-shadow:
+      0 0 30px rgba(212, 175, 55, 0.3),
+      0 8px 32px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Gold coin icon styling */
+  .coin-gold {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #f0d77a 0%, #d4af37 50%, #8b6914 100%);
+    border-radius: 50%;
+    border: 2px solid #f0d77a;
+    font-weight: 800;
+    font-size: 12px;
+    color: #3d2b1f;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  /* Gem accent styling */
+  .gem-blue {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background: radial-gradient(circle at 30% 30%, #93c5fd 0%, #3b82f6 50%, #1e40af 100%);
+    border-radius: 2px;
+    transform: rotate(45deg);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.6), inset 0 0 4px rgba(255, 255, 255, 0.4);
+  }
+
+  .gem-gold {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background: radial-gradient(circle at 30% 30%, #fef3c7 0%, #d4af37 50%, #8b6914 100%);
+    border-radius: 2px;
+    transform: rotate(45deg);
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.6), inset 0 0 4px rgba(255, 255, 255, 0.4);
+  }
+
+  .gem-red {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background: radial-gradient(circle at 30% 30%, #fca5a5 0%, #ef4444 50%, #991b1b 100%);
+    border-radius: 2px;
+    transform: rotate(45deg);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6), inset 0 0 4px rgba(255, 255, 255, 0.4);
+  }
 }
 
 @keyframes torch {

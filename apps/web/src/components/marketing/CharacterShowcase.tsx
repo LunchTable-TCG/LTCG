@@ -2,88 +2,111 @@
 
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { getAssetUrl } from "@/lib/blob";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import Image from "next/image";
 
-interface Archetype {
+type Archetype = {
   id: string;
   name: string;
   tagline: string;
+  description: string;
   themeColor: string;
-}
+  glowColor: string;
+};
 
 const archetypes: Archetype[] = [
   {
     id: "infernal_dragons",
     name: "Infernal Dragons",
     tagline: "Masters of flame and fury",
-    themeColor: "#ef4444", // red
-  },
-  {
-    id: "abyssal_horrors",
-    name: "Abyssal Horrors",
-    tagline: "Terrors from the deep",
-    themeColor: "#8b5cf6", // purple
-  },
-  {
-    id: "nature_spirits",
-    name: "Nature Spirits",
-    tagline: "Guardians of the wild",
-    themeColor: "#22c55e", // green
-  },
-  {
-    id: "storm_elementals",
-    name: "Storm Elementals",
-    tagline: "Wielders of lightning",
-    themeColor: "#3b82f6", // blue
-  },
-  {
-    id: "shadow_assassins",
-    name: "Shadow Assassins",
-    tagline: "Dealers in darkness",
-    themeColor: "#6b7280", // gray
+    description: "Unleash devastating fire attacks and dominate with raw power. Burn through defenses with relentless aggression.",
+    themeColor: "#ef4444",
+    glowColor: "rgba(239, 68, 68, 0.5)",
   },
   {
     id: "celestial_guardians",
     name: "Celestial Guardians",
     tagline: "Protectors of light",
-    themeColor: "#fbbf24", // amber
+    description: "Shield your allies and outlast your enemies. Divine protection and healing keep your forces standing.",
+    themeColor: "#fbbf24",
+    glowColor: "rgba(251, 191, 36, 0.5)",
+  },
+  {
+    id: "abyssal_horrors",
+    name: "Abyssal Horrors",
+    tagline: "Terrors from the deep",
+    description: "Summon nightmares from the abyss. Control the board with fear and devastating area effects.",
+    themeColor: "#8b5cf6",
+    glowColor: "rgba(139, 92, 246, 0.5)",
+  },
+  {
+    id: "nature_spirits",
+    name: "Nature Spirits",
+    tagline: "Guardians of the wild",
+    description: "Grow your forces over time. Patient strategy rewards you with overwhelming numbers and regeneration.",
+    themeColor: "#22c55e",
+    glowColor: "rgba(34, 197, 94, 0.5)",
+  },
+  {
+    id: "storm_elementals",
+    name: "Storm Elementals",
+    tagline: "Wielders of lightning",
+    description: "Strike fast and unpredictably. Chain lightning through enemies and control the tempo of battle.",
+    themeColor: "#3b82f6",
+    glowColor: "rgba(59, 130, 246, 0.5)",
+  },
+  {
+    id: "shadow_assassins",
+    name: "Shadow Assassins",
+    tagline: "Dealers in darkness",
+    description: "Strike from the shadows. Eliminate key targets and vanish before the enemy can react.",
+    themeColor: "#64748b",
+    glowColor: "rgba(100, 116, 139, 0.5)",
   },
   {
     id: "undead_legion",
     name: "Undead Legion",
     tagline: "Army of the fallen",
-    themeColor: "#10b981", // emerald
+    description: "Death is just the beginning. Fallen units rise again, creating an endless tide of undead warriors.",
+    themeColor: "#10b981",
+    glowColor: "rgba(16, 185, 129, 0.5)",
   },
   {
     id: "divine_knights",
     name: "Divine Knights",
     tagline: "Champions of honor",
-    themeColor: "#f59e0b", // orange
+    description: "Lead with valor and inspire your troops. Powerful buffs and heroic charges break enemy lines.",
+    themeColor: "#f59e0b",
+    glowColor: "rgba(245, 158, 11, 0.5)",
   },
   {
     id: "arcane_mages",
     name: "Arcane Mages",
     tagline: "Scholars of mystery",
-    themeColor: "#a855f7", // purple
+    description: "Master forbidden knowledge. Manipulate spells and bend reality with arcane mastery.",
+    themeColor: "#ec4899",
+    glowColor: "rgba(236, 72, 153, 0.5)",
   },
   {
     id: "mechanical_constructs",
     name: "Mechanical Constructs",
     tagline: "Engines of war",
-    themeColor: "#64748b", // slate
+    description: "Build an army of machines. Upgrade and combine constructs into unstoppable war engines.",
+    themeColor: "#78716c",
+    glowColor: "rgba(120, 113, 108, 0.5)",
   },
 ];
 
-function ArchetypeCard({ archetype }: { archetype: Archetype }) {
+function ArchetypeCard({ archetype, isActive, onClick }: { archetype: Archetype; isActive: boolean; onClick: () => void }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [5, -5]), {
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [8, -8]), {
     stiffness: 300,
     damping: 30,
   });
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-5, 5]), {
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), {
     stiffness: 300,
     damping: 30,
   });
@@ -105,144 +128,177 @@ function ArchetypeCard({ archetype }: { archetype: Archetype }) {
   return (
     <motion.div
       ref={cardRef}
-      className="relative flex-shrink-0 w-72 group cursor-pointer"
-      initial={{ opacity: 0, y: 20 }}
+      className="relative flex-shrink-0 cursor-pointer"
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onClick={onClick}
       style={{
         rotateX,
         rotateY,
         transformStyle: "preserve-3d",
+        width: isActive ? 320 : 200,
+        transition: "width 0.3s ease",
       }}
     >
       <div
-        className="relative rounded-2xl overflow-hidden border border-neutral-800/50 bg-neutral-900/80 backdrop-blur-sm transition-all duration-300 group-hover:border-neutral-700"
+        className="relative rounded-2xl overflow-hidden transition-all duration-300"
         style={{
-          boxShadow: `0 0 30px -10px ${archetype.themeColor}40`,
+          boxShadow: isActive
+            ? `0 0 60px -10px ${archetype.glowColor}, 0 25px 50px -12px rgba(0, 0, 0, 0.5)`
+            : "0 10px 30px -10px rgba(0, 0, 0, 0.3)",
+          border: isActive ? `3px solid ${archetype.themeColor}` : "2px solid rgba(255,255,255,0.1)",
         }}
       >
-        {/* Glow effect */}
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-2xl"
-          style={{
-            background: `radial-gradient(circle at center, ${archetype.themeColor}30, transparent 70%)`,
-          }}
-        />
-
-        {/* Image container */}
-        <div className="relative aspect-[3/4] overflow-hidden">
-          <motion.img
-            src={getAssetUrl(`story/${archetype.id}.png`)}
+        {/* Image */}
+        <div className={`relative overflow-hidden ${isActive ? "aspect-[3/4]" : "aspect-[2/3]"}`}>
+          <Image
+            src={getAssetUrl(`/assets/story/${archetype.id}.png`)}
             alt={archetype.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+            sizes={isActive ? "320px" : "200px"}
           />
-
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
-          {/* Theme color accent */}
-          <div
-            className="absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            style={{ backgroundColor: archetype.themeColor }}
-          />
+          {/* Active indicator bar */}
+          {isActive && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="absolute top-0 left-0 right-0 h-1"
+              style={{ backgroundColor: archetype.themeColor }}
+            />
+          )}
         </div>
 
         {/* Content */}
-        <div className="relative p-6 space-y-2" style={{ transform: "translateZ(20px)" }}>
-          <h3 className="text-2xl font-bold text-neutral-100 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r transition-all duration-300"
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent">
+          <h3
+            className="font-bold text-white transition-all duration-300"
             style={{
-              backgroundImage: `linear-gradient(to right, ${archetype.themeColor}, #fbbf24)`,
+              fontSize: isActive ? "1.25rem" : "0.875rem",
+              color: isActive ? archetype.themeColor : "white",
             }}
           >
             {archetype.name}
           </h3>
-          <p className="text-neutral-400 group-hover:text-neutral-300 transition-colors duration-300">
-            {archetype.tagline}
-          </p>
+          {isActive && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-neutral-400 text-sm mt-1"
+            >
+              {archetype.tagline}
+            </motion.p>
+          )}
         </div>
-
-        {/* Decorative corner accents */}
-        <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 opacity-0 group-hover:opacity-50 transition-opacity duration-300"
-          style={{ borderColor: archetype.themeColor }}
-        />
-        <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 opacity-0 group-hover:opacity-50 transition-opacity duration-300"
-          style={{ borderColor: archetype.themeColor }}
-        />
       </div>
     </motion.div>
   );
 }
 
 export default function CharacterShowcase() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeArchetype = archetypes[activeIndex];
+
   return (
-    <section className="relative py-24 overflow-hidden bg-neutral-950">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900 via-neutral-950 to-black" />
-      <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.015] mix-blend-overlay" />
+    <section className="relative py-24 overflow-hidden bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950">
+      {/* Background glow based on active archetype */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        animate={{
+          background: `radial-gradient(ellipse at center, ${activeArchetype?.glowColor ?? 'transparent'}20 0%, transparent 60%)`,
+        }}
+        transition={{ duration: 0.5 }}
+      />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <motion.div
-          className="text-center mb-16 space-y-4"
+          className="text-center mb-12"
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <motion.div
-            className="inline-block"
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <h2 className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 mb-2">
-              Choose Your Path
-            </h2>
-            <div className="h-1 w-32 mx-auto bg-gradient-to-r from-transparent via-amber-500 to-transparent rounded-full" />
-          </motion.div>
-          <p className="text-xl text-neutral-400 max-w-2xl mx-auto">
-            Ten legendary archetypes await. Each path offers unique powers and strategies.
-            Which will you master?
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            Master Your <span className="gold-text">Archetype</span>
+          </h2>
+          <p className="text-lg text-neutral-400 max-w-2xl mx-auto">
+            Ten legendary paths to power. Each with unique strategies, abilities, and playstyles.
           </p>
         </motion.div>
 
-        {/* Scrolling carousel */}
-        <div className="relative">
-          {/* Fade gradients on edges */}
-          <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-neutral-950 to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-neutral-950 to-transparent z-10 pointer-events-none" />
+        {/* Active archetype description */}
+        <motion.div
+          key={activeArchetype?.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-10 max-w-2xl mx-auto"
+        >
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4"
+            style={{
+              backgroundColor: `${activeArchetype?.themeColor ?? '#fff'}20`,
+              border: `1px solid ${activeArchetype?.themeColor ?? '#fff'}50`,
+            }}
+          >
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: activeArchetype?.themeColor }}
+            />
+            <span
+              className="font-semibold"
+              style={{ color: activeArchetype?.themeColor }}
+            >
+              {activeArchetype?.name}
+            </span>
+          </div>
+          <p className="text-neutral-300 text-lg">
+            {activeArchetype?.description}
+          </p>
+        </motion.div>
 
-          {/* Scrollable container */}
-          <div className="overflow-x-auto scrollbar-hide pb-8">
-            <div className="flex gap-6 px-4 min-w-max">
-              {archetypes.map((archetype) => (
-                <ArchetypeCard key={archetype.id} archetype={archetype} />
+        {/* Carousel */}
+        <div className="relative">
+          {/* Fade edges */}
+          <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-neutral-950 to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-neutral-950 to-transparent z-10 pointer-events-none" />
+
+          {/* Scrollable cards */}
+          <div className="overflow-x-auto scrollbar-hide pb-4">
+            <div className="flex gap-4 px-8 justify-center items-end min-w-max">
+              {archetypes.map((archetype, index) => (
+                <ArchetypeCard
+                  key={archetype.id}
+                  archetype={archetype}
+                  isActive={index === activeIndex}
+                  onClick={() => setActiveIndex(index)}
+                />
               ))}
             </div>
           </div>
 
-          {/* Scroll hint */}
-          <motion.div
-            className="text-center mt-8 text-sm text-neutral-500"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.8 }}
-          >
-            <span className="inline-flex items-center gap-2">
-              <svg className="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
-              </svg>
-              Scroll to explore all archetypes
-              <svg className="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </span>
-          </motion.div>
+          {/* Navigation dots */}
+          <div className="flex justify-center gap-2 mt-6">
+            {archetypes.map((archetype, index) => (
+              <button
+                key={archetype.id}
+                type="button"
+                onClick={() => setActiveIndex(index)}
+                className="w-2 h-2 rounded-full transition-all duration-300"
+                style={{
+                  backgroundColor: index === activeIndex ? archetype.themeColor : "#525252",
+                  transform: index === activeIndex ? "scale(1.5)" : "scale(1)",
+                }}
+                aria-label={`Select ${archetype.name}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
 

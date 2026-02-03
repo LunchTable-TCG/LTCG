@@ -29,6 +29,7 @@ function StatCard({ icon, value, label, delay }: StatCardProps) {
       }, delay);
       return () => clearTimeout(timeout);
     }
+    return undefined;
   }, [isInView, value, delay, motionValue]);
 
   useEffect(() => {

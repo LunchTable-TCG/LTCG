@@ -158,7 +158,7 @@ export default function NewsletterSignup() {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className="relative px-8 py-4 bg-gradient-to-r from-amber-600 to-amber-500 text-neutral-950 font-bold rounded-lg overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/50 group"
+                className="btn-fantasy-primary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed group"
                 whileHover={{ scale: isLoading ? 1 : 1.05 }}
                 whileTap={{ scale: isLoading ? 1 : 0.95 }}
               >

@@ -117,6 +117,17 @@ export default defineSchema({
     walletAddress: v.optional(v.string()),
     walletType: v.optional(v.union(v.literal("privy_embedded"), v.literal("external"))),
     walletConnectedAt: v.optional(v.number()),
+
+    // Tutorial and Help system
+    tutorialProgress: v.optional(
+      v.object({
+        completed: v.boolean(), // Finished all 5 tutorial moments
+        lastMoment: v.number(), // 0-5, resume point
+        dismissCount: v.number(), // Times clicked "Exit Tutorial"
+        completedAt: v.optional(v.number()), // Timestamp when completed
+      })
+    ),
+    helpModeEnabled: v.optional(v.boolean()), // User's preference for help mode
   })
     .index("privyId", ["privyId"])
     .index("walletAddress", ["walletAddress"])
@@ -2551,4 +2562,102 @@ export default defineSchema({
     .index("by_status", ["status", "createdAt"])
     .index("by_type_status", ["type", "status", "createdAt"])
     .index("by_user", ["userId", "createdAt"]),
+
+  // ============================================================================
+  // BRANDING SYSTEM
+  // ============================================================================
+
+  // Branding folders - hierarchical organization of brand assets
+  brandingFolders: defineTable({
+    name: v.string(), // folder name
+    parentId: v.optional(v.id("brandingFolders")), // null for root sections
+    section: v.string(), // one of predefined sections
+    path: v.string(), // full path like "Brand Identity/Logos/Dark Mode"
+    description: v.optional(v.string()),
+    sortOrder: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.id("users"),
+  })
+    .index("by_parent", ["parentId"])
+    .index("by_section", ["section"])
+    .index("by_path", ["path"]),
+
+  // Branding assets - assets with rich metadata for AI consumption
+  brandingAssets: defineTable({
+    folderId: v.id("brandingFolders"),
+    fileMetadataId: v.id("fileMetadata"), // links to existing storage
+    name: v.string(), // display name
+    tags: v.array(v.string()), // quick filter tags
+    usageContext: v.array(v.string()), // ["newsletter", "social", "print", "website", "email", "merch"]
+    variants: v.optional(
+      v.object({
+        theme: v.optional(v.string()),
+        orientation: v.optional(v.string()),
+        size: v.optional(v.string()),
+        custom: v.optional(v.any()), // additional variant fields
+      })
+    ),
+    fileSpecs: v.optional(
+      v.object({
+        minWidth: v.optional(v.number()),
+        minHeight: v.optional(v.number()),
+        maxWidth: v.optional(v.number()),
+        maxHeight: v.optional(v.number()),
+        transparent: v.optional(v.boolean()),
+        format: v.optional(v.string()),
+        custom: v.optional(v.any()), // additional spec fields
+      })
+    ),
+    aiDescription: v.string(), // guidance for AI usage
+    sortOrder: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_folder", ["folderId"])
+    .index("by_file_metadata", ["fileMetadataId"])
+    .searchIndex("search_tags", {
+      searchField: "tags",
+    })
+    .searchIndex("search_ai_description", {
+      searchField: "aiDescription",
+      filterFields: ["folderId"],
+    }),
+
+  // Branding guidelines - structured specs and rich text for AI
+  brandingGuidelines: defineTable({
+    section: v.string(), // "global" or section name
+    structuredData: v.object({
+      colors: v.optional(
+        v.array(
+          v.object({
+            name: v.string(),
+            hex: v.string(),
+            usage: v.optional(v.string()),
+          })
+        )
+      ),
+      fonts: v.optional(
+        v.array(
+          v.object({
+            name: v.string(),
+            weights: v.array(v.number()),
+            usage: v.optional(v.string()),
+          })
+        )
+      ),
+      brandVoice: v.optional(
+        v.object({
+          tone: v.string(),
+          formality: v.number(), // 1-10 scale
+          keywords: v.optional(v.array(v.string())),
+          avoid: v.optional(v.array(v.string())),
+        })
+      ),
+      customFields: v.optional(v.any()),
+    }),
+    richTextContent: v.string(), // markdown guidelines
+    updatedAt: v.number(),
+    updatedBy: v.id("users"),
+  }).index("by_section", ["section"]),
 });

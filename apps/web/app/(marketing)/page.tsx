@@ -1,11 +1,19 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
 import { motion } from "framer-motion";
-import { ArrowRight, Flame, type LucideIcon, Play, Scroll, Sparkles, Trophy } from "lucide-react";
+import { ArrowRight, Play, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+
+// Marketing section components
+import LiveStats from "@/components/marketing/LiveStats";
+import GameModesSection from "@/components/marketing/GameModesSection";
+import ScreenshotsGallery from "@/components/marketing/ScreenshotsGallery";
+import CharacterShowcase from "@/components/marketing/CharacterShowcase";
+import PlatformSection from "@/components/marketing/PlatformSection";
+import NewsletterSignup from "@/components/marketing/NewsletterSignup";
+import FAQSection from "@/components/marketing/FAQSection";
 
 export default function Home() {
   return (
@@ -19,101 +27,166 @@ export default function Home() {
       <div className="absolute top-1/4 right-20 w-2 h-2 rounded-full bg-primary/40 blur-sm animate-torch-delayed" />
       <div className="absolute bottom-40 left-1/4 w-2 h-2 rounded-full bg-ember/50 blur-sm animate-torch" />
 
-      <main className="container mx-auto px-4 relative z-10 pt-8 pb-20">
-        {/* Hero Section */}
-        <section className="flex flex-col items-center text-center mb-24">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="mb-4 relative"
-          >
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl opacity-50" />
-            <Image
-              src={getAssetUrl("/assets/logo-main.png")}
-              alt="Lunchtable Chronicles"
-              width={600}
-              height={600}
-              className="w-[85vw] md:w-[600px] h-auto mx-auto drop-shadow-2xl animate-float-subtle relative z-10"
-              sizes="(max-width: 768px) 85vw, 600px"
-              priority
-            />
-          </motion.div>
+      <main className="relative z-10">
+        {/* Hero Section - Full viewport with characters */}
+        <section className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden">
+          {/* Background character silhouettes */}
+          <div className="absolute inset-0 flex items-end justify-between px-0 lg:px-12 pointer-events-none">
+            {/* Left character - Infernal Dragons */}
+            <motion.div
+              initial={{ opacity: 0, x: -100 }}
+              animate={{ opacity: 0.8, x: 0 }}
+              transition={{ duration: 1, delay: 0.3 }}
+              className="relative w-1/3 lg:w-1/4 h-[70vh] hidden md:block"
+            >
+              <Image
+                src={getAssetUrl("/assets/story/infernal_dragons.png")}
+                alt="Infernal Dragons"
+                fill
+                className="object-contain object-bottom drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]"
+                sizes="25vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+            </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="max-w-2xl text-lg md:text-xl text-foreground/80 mb-6 leading-relaxed drop-shadow-sm font-medium"
-          >
-            Enter a world of ancient spells and legendary artifacts. Build your deck, challenge
-            rivals, and etch your name into the{" "}
-            <span className="gold-text font-bold">Grimoire of Legends</span>.
-          </motion.p>
+            {/* Right character - Celestial Guardians */}
+            <motion.div
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 0.8, x: 0 }}
+              transition={{ duration: 1, delay: 0.3 }}
+              className="relative w-1/3 lg:w-1/4 h-[70vh] hidden md:block"
+            >
+              <Image
+                src={getAssetUrl("/assets/story/celestial_guardians.png")}
+                alt="Celestial Guardians"
+                fill
+                className="object-contain object-bottom drop-shadow-[0_0_30px_rgba(251,191,36,0.5)]"
+                sizes="25vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+            </motion.div>
+          </div>
 
+          {/* Center content */}
+          <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+            {/* Logo */}
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="mb-6 relative"
+            >
+              <div className="absolute inset-0 bg-primary/30 rounded-full blur-[100px] scale-150" />
+              <Image
+                src={getAssetUrl("/assets/logo-main.png")}
+                alt="Lunchtable Chronicles"
+                width={500}
+                height={500}
+                className="w-[70vw] md:w-[400px] lg:w-[500px] h-auto mx-auto drop-shadow-[0_0_50px_rgba(212,175,55,0.5)] relative z-10"
+                sizes="(max-width: 768px) 70vw, 500px"
+                priority
+              />
+            </motion.div>
+
+            {/* Tagline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 tracking-wide"
+            >
+              Command Legendary Powers.{" "}
+              <span className="gold-text">Forge Your Destiny.</span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="text-lg md:text-xl text-neutral-300 mb-8 max-w-2xl mx-auto"
+            >
+              Master 10 unique archetypes. Battle in ranked arenas.
+              Build the ultimate deck in this free-to-play strategic card game.
+            </motion.p>
+
+            {/* CTA Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8"
+            >
+              <Link href="/play">
+                <button
+                  type="button"
+                  className="btn-fantasy-blue group rounded-lg"
+                >
+                  <Play className="w-6 h-6 fill-current" />
+                  Play Free Now
+                  <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
+            </motion.div>
+
+            {/* Free to play badge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-emerald-500/20 border border-emerald-500/50">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span className="text-emerald-300 font-semibold text-sm">100% Free to Play • No Pay-to-Win</span>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Scroll indicator */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            className="mb-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2"
           >
-            <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-primary/20 via-emerald-500/20 to-primary/20 border-2 border-primary/50 shadow-[0_0_20px_rgba(212,175,55,0.3)] backdrop-blur-sm">
-              <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-              <span className="gold-text font-bold text-lg tracking-wide">FREE TO PLAY</span>
-              <Sparkles className="w-5 h-5 text-emerald-400 animate-pulse" />
+            <div className="flex flex-col items-center gap-2 text-neutral-500">
+              <span className="text-sm">Discover More</span>
+              <motion.div
+                animate={{ y: [0, 8, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </motion.div>
             </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="flex flex-col sm:flex-row items-center gap-4"
-          >
-            <Link href="/play">
-              <button
-                type="button"
-                className="tcg-button-primary px-8 py-4 rounded-lg text-lg flex items-center gap-3 group"
-              >
-                <Play className="w-5 h-5 fill-current" />
-                <span>Play Now</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </Link>
-
-            <Link href="/about">
-              <button
-                type="button"
-                className="tcg-button px-8 py-4 rounded-lg text-lg flex items-center gap-3"
-              >
-                <Scroll className="w-5 h-5" />
-                <span>Read the Lore</span>
-              </button>
-            </Link>
           </motion.div>
         </section>
 
-        {/* Features Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-32">
-          <FeatureCard
-            title="Strategic Combat"
-            description="Master the elements. Combine spells and artifacts to unleash devastating combos."
-            icon={Flame}
-            delay={0.2}
-          />
-          <FeatureCard
-            title="Ranked Leagues"
-            description="Climb the competitive ladder. Earn exclusive rewards and seasoning for your victories."
-            icon={Trophy}
-            delay={0.4}
-            featured
-          />
-          <FeatureCard
-            title="Living World"
-            description="A constantly evolving meta with new cards, events, and stories unfolding every season."
-            icon={Sparkles}
-            delay={0.6}
-          />
+        <div className="container mx-auto px-4 pb-20">
+
+        {/* Character Showcase - Show what makes the game unique FIRST */}
+        <section className="mb-20 -mx-4">
+          <CharacterShowcase />
+        </section>
+
+        {/* Screenshots Gallery - Visual proof of gameplay */}
+        <section className="mb-20">
+          <ScreenshotsGallery />
+        </section>
+
+        {/* Game Modes Section - What you can do */}
+        <section className="mb-20">
+          <GameModesSection />
+        </section>
+
+        {/* Live Stats - Social proof */}
+        <section className="mb-20">
+          <LiveStats />
+        </section>
+
+        {/* Platform Availability */}
+        <section className="mb-20">
+          <PlatformSection />
         </section>
 
         {/* Call to Action Frame */}
@@ -122,9 +195,9 @@ export default function Home() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="max-w-4xl mx-auto"
+          className="max-w-4xl mx-auto mb-20"
         >
-          <div className="tcg-frame-gold rounded-xl p-12 text-center relative overflow-hidden group">
+          <div className="panel-ornate rounded-xl p-12 text-center relative overflow-hidden group">
             <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-10 transition-opacity duration-700" />
 
             <div className="relative z-10">
@@ -137,64 +210,31 @@ export default function Home() {
               <Link href="/signup">
                 <button
                   type="button"
-                  className="tcg-button px-10 py-5 rounded-lg text-xl font-bold hover:scale-105 transition-transform"
+                  className="btn-fantasy-primary rounded-lg text-xl"
                 >
                   Create Account
                 </button>
               </Link>
             </div>
 
-            {/* Decorative corners for the CTA */}
-            <div className="ornament-corner ornament-corner-tl" />
-            <div className="ornament-corner ornament-corner-tr" />
-            <div className="ornament-corner ornament-corner-bl" />
-            <div className="ornament-corner ornament-corner-br" />
+            {/* Decorative corners using the beautiful ornament asset */}
+            <div className="corner-bl" />
+            <div className="corner-br" />
           </div>
         </motion.section>
+
+        {/* Newsletter Signup */}
+        <section className="mb-20">
+          <NewsletterSignup />
+        </section>
+
+        {/* FAQ Section */}
+        <section className="mb-20">
+          <FAQSection />
+        </section>
+        </div>
       </main>
     </div>
   );
 }
 
-function FeatureCard({
-  title,
-  description,
-  icon: Icon,
-  delay,
-  featured,
-}: {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  delay: number;
-  featured?: boolean;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay, duration: 0.5 }}
-      whileHover={{ y: -5 }}
-      className={cn("mode-card rounded-xl p-8 relative group", featured && "tcg-frame-gold")}
-    >
-      <div className="ornament-corner ornament-corner-tl opacity-50" />
-      <div className="ornament-corner ornament-corner-br opacity-50" />
-
-      <div className="mb-6 inline-flex p-4 rounded-full bg-secondary/50 ring-1 ring-border group-hover:ring-primary/50 transition-all shadow-inner">
-        <Icon
-          className={cn(
-            "w-8 h-8",
-            featured ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-          )}
-        />
-      </div>
-
-      <h3 className={cn("text-2xl font-bold mb-3", featured ? "gold-text" : "text-foreground")}>
-        {title}
-      </h3>
-
-      <p className="text-muted-foreground leading-relaxed">{description}</p>
-    </motion.div>
-  );
-}

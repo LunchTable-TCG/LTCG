@@ -1,5 +1,6 @@
 "use client";
 
+import { Tooltip } from "@/components/help";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
@@ -26,36 +27,40 @@ export function PileZone({
   return (
     <div className="flex flex-col gap-1">
       {/* Deck */}
-      <div className="flex flex-col items-center">
-        <DeckPile count={deckCount} />
-        <span className="text-[8px] sm:text-[10px] font-medium text-slate-500 mt-0.5">Deck</span>
-      </div>
+      <Tooltip id="deck">
+        <div className="flex flex-col items-center">
+          <DeckPile count={deckCount} />
+          <span className="text-[8px] sm:text-[10px] font-medium text-slate-500 mt-0.5">Deck</span>
+        </div>
+      </Tooltip>
 
       {/* Graveyard */}
-      <div className="flex flex-col items-center relative">
-        <GraveyardPile
-          count={graveyardCount}
-          topCard={graveyardCards[graveyardCards.length - 1]}
-          onClick={() => {
-            if (graveyardCount > 0) {
-              setShowGraveyard(!showGraveyard);
-              onGraveyardClick?.();
-            }
-          }}
-        />
-        <span className="text-[8px] sm:text-[10px] font-medium text-slate-500 mt-0.5">Grave</span>
+      <Tooltip id="graveyard">
+        <div className="flex flex-col items-center relative">
+          <GraveyardPile
+            count={graveyardCount}
+            topCard={graveyardCards[graveyardCards.length - 1]}
+            onClick={() => {
+              if (graveyardCount > 0) {
+                setShowGraveyard(!showGraveyard);
+                onGraveyardClick?.();
+              }
+            }}
+          />
+          <span className="text-[8px] sm:text-[10px] font-medium text-slate-500 mt-0.5">Grave</span>
 
-        {/* Graveyard Preview */}
-        <AnimatePresence>
-          {showGraveyard && graveyardCards.length > 0 && (
-            <GraveyardPreview
-              cards={graveyardCards}
-              onClose={() => setShowGraveyard(false)}
-              isOpponent={isOpponent}
-            />
-          )}
-        </AnimatePresence>
-      </div>
+          {/* Graveyard Preview */}
+          <AnimatePresence>
+            {showGraveyard && graveyardCards.length > 0 && (
+              <GraveyardPreview
+                cards={graveyardCards}
+                onClose={() => setShowGraveyard(false)}
+                isOpponent={isOpponent}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+      </Tooltip>
     </div>
   );
 }
