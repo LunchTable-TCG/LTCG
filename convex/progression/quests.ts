@@ -6,6 +6,7 @@ import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { shuffleArray } from "../lib/deterministicRandom";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { questClaimValidator, userQuestValidator } from "../lib/returnValidators";
+import { addXP } from "../lib/xpHelpers";
 
 // Type definitions matching schema
 type QuestType = "daily" | "weekly" | "achievement";
@@ -164,12 +165,10 @@ export const claimQuestReward = mutation({
       });
     }
 
-    // Award XP to user
-    const userRecord = await ctx.db.get(userId);
-    if (userRecord) {
-      await ctx.db.patch(userId, {
-        xp: (userRecord.xp || 0) + definition.rewards.xp,
-      });
+    // Award XP to user via xpHelpers (also grants battle pass XP)
+    if (definition.rewards.xp > 0) {
+      const questSource = `quest_${definition.questType}`;
+      await addXP(ctx, userId, definition.rewards.xp, { source: questSource });
     }
 
     // Mark quest as claimed

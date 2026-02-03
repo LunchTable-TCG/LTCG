@@ -603,8 +603,8 @@ export const completeChapter = mutation({
         referenceId: `story_${args.attemptId}`,
       });
 
-      // Award XP
-      const xpResult = await addXP(ctx, userId, xpReward);
+      // Award XP (also grants battle pass XP)
+      const xpResult = await addXP(ctx, userId, xpReward, { source: "story_complete" });
       leveledUp = xpResult.leveledUp;
       newLevel = xpResult.newLevel;
       newBadges.push(...xpResult.badgesAwarded);

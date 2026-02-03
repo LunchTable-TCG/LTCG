@@ -7,11 +7,13 @@
  * Handles loading state, authentication, and unauthorized access.
  */
 
+import { AdminAssistantChat } from "@/components/ai";
 import { AdminLoginForm } from "@/components/auth/AdminLoginForm";
 import { Card } from "@/components/ui/card";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdmin } from "@/contexts/AdminContext";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { AdminHeader } from "./AdminHeader";
 import { AdminSidebar } from "./AdminSidebar";
@@ -69,6 +71,10 @@ function UnauthorizedShell() {
 
 export function AdminShell({ children, title, breadcrumb }: AdminShellProps) {
   const { isLoading, isAuthenticated, isAdmin } = useAdmin();
+  const pathname = usePathname();
+
+  // Don't show floating chat on the dedicated AI assistant page
+  const showFloatingChat = pathname !== "/ai-assistant";
 
   // Show loading state
   if (isLoading) {
@@ -106,6 +112,8 @@ export function AdminShell({ children, title, breadcrumb }: AdminShellProps) {
         <AdminHeader breadcrumb={breadcrumbContent} />
         <main className="flex-1 overflow-auto p-4 sm:p-6">{children}</main>
       </SidebarInset>
+      {/* Floating AI Assistant Chat */}
+      {showFloatingChat && <AdminAssistantChat />}
     </SidebarProvider>
   );
 }

@@ -18,6 +18,7 @@
  */
 
 import { v } from "convex/values";
+import type { Doc } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import {
   internalAction,
@@ -665,16 +666,24 @@ export const getUserPendingPurchases = query({
       .order("desc")
       .take(10);
 
-    // Batch fetch listings
-    const listingIds = [...new Set(pending.map((p) => p.listingId))];
+    // Batch fetch listings - filter out undefined listingIds (non-marketplace purchases)
+    const listingIds = [...new Set(
+      pending
+        .filter((p): p is typeof p & { listingId: NonNullable<typeof p.listingId> } =>
+          p.listingId !== undefined
+        )
+        .map((p) => p.listingId)
+    )];
     const listingPromises = listingIds.map((id) => ctx.db.get(id));
     const listings = await Promise.all(listingPromises);
     const listingMap = new Map(
-      listings.filter((l): l is NonNullable<typeof l> => l !== null).map((l) => [l._id, l])
+      listings
+        .filter((l): l is Doc<"marketplaceListings"> => l !== null)
+        .map((l) => [l._id, l])
     );
 
     return pending.map((p) => {
-      const listing = listingMap.get(p.listingId);
+      const listing = p.listingId ? listingMap.get(p.listingId) : undefined;
       return {
         _id: p._id,
         listingId: p.listingId,
@@ -725,7 +734,13 @@ export const completeTokenPurchase = internalMutation({
       return { success: false, error: `Invalid status: ${pending.status}` };
     }
 
-    const listing = await ctx.db.get(pending.listingId);
+    // Validate this is a marketplace purchase (has listingId)
+    if (!pending.listingId) {
+      console.error(`[completeTokenPurchase] No listingId - not a marketplace purchase`);
+      return { success: false, error: "Not a marketplace purchase" };
+    }
+
+    const listing = await ctx.db.get(pending.listingId) as Doc<"marketplaceListings"> | null;
     if (!listing) {
       console.error(`[completeTokenPurchase] Listing not found: ${pending.listingId}`);
       return { success: false, error: "Listing not found" };

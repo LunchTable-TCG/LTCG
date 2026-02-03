@@ -945,11 +945,116 @@ export default defineSchema({
     thumbnailStorageId: v.optional(v.id("_storage")),
     isActive: v.boolean(),
     createdAt: v.number(),
+    templateId: v.optional(v.id("cardTemplates")), // Link to visual template
   })
     .index("by_rarity", ["rarity"])
     .index("by_archetype", ["archetype"])
     .index("by_type", ["cardType"])
     .index("by_name", ["name"]),
+
+  // =============================================================================
+  // Card Template Designer
+  // =============================================================================
+
+  // Card visual templates - defines layout for card rendering
+  cardTemplates: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    cardType: v.union(
+      v.literal("creature"),
+      v.literal("spell"),
+      v.literal("trap"),
+      v.literal("equipment"),
+      v.literal("universal") // applies to all types
+    ),
+    // Canvas dimensions (standard TCG: 750x1050)
+    width: v.number(),
+    height: v.number(),
+    // Frame images per rarity (different borders for each rarity)
+    frameImages: v.object({
+      common: v.optional(v.string()),
+      uncommon: v.optional(v.string()),
+      rare: v.optional(v.string()),
+      epic: v.optional(v.string()),
+      legendary: v.optional(v.string()),
+    }),
+    // Fallback frame if rarity-specific not set
+    defaultFrameImageUrl: v.optional(v.string()),
+    // Artwork area (where card art goes)
+    artworkBounds: v.object({
+      x: v.number(),
+      y: v.number(),
+      width: v.number(),
+      height: v.number(),
+    }),
+    // Default text styles
+    defaultFontFamily: v.string(),
+    defaultFontSize: v.number(),
+    defaultFontColor: v.string(),
+    // Metadata
+    isDefault: v.boolean(),
+    isActive: v.boolean(),
+    createdBy: v.optional(v.id("users")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_cardType", ["cardType"])
+    .index("by_default", ["isDefault", "cardType"])
+    .index("by_active", ["isActive"]),
+
+  // Text blocks within a template
+  cardTemplateBlocks: defineTable({
+    templateId: v.id("cardTemplates"),
+    blockType: v.union(
+      v.literal("name"),
+      v.literal("level"),
+      v.literal("attribute"),
+      v.literal("attack"),
+      v.literal("defense"),
+      v.literal("cost"),
+      v.literal("cardType"),
+      v.literal("monsterType"),
+      v.literal("effect"),
+      v.literal("flavorText"),
+      v.literal("custom")
+    ),
+    label: v.string(), // Display label in editor
+    // For custom blocks, what field or static text to display
+    customContent: v.optional(v.string()),
+    // Position (percentage-based 0-100 for responsiveness)
+    x: v.number(),
+    y: v.number(),
+    width: v.number(),
+    height: v.number(),
+    // Typography
+    fontFamily: v.string(),
+    fontSize: v.number(),
+    fontWeight: v.union(v.literal("normal"), v.literal("bold")),
+    fontStyle: v.union(v.literal("normal"), v.literal("italic")),
+    textAlign: v.union(v.literal("left"), v.literal("center"), v.literal("right")),
+    color: v.string(),
+    // Optional styling
+    backgroundColor: v.optional(v.string()),
+    borderColor: v.optional(v.string()),
+    borderWidth: v.optional(v.number()),
+    borderRadius: v.optional(v.number()),
+    padding: v.optional(v.number()),
+    // Visibility rules - which card types should show this block
+    showForCardTypes: v.optional(
+      v.array(
+        v.union(
+          v.literal("creature"),
+          v.literal("spell"),
+          v.literal("trap"),
+          v.literal("equipment")
+        )
+      )
+    ),
+    // Z-index for layering
+    zIndex: v.number(),
+  })
+    .index("by_template", ["templateId"])
+    .index("by_template_zIndex", ["templateId", "zIndex"]),
 
   // Player's card inventory - tracks owned cards and quantities
   playerCards: defineTable({
@@ -1332,7 +1437,8 @@ export default defineSchema({
     transactionType: v.union(
       v.literal("marketplace_purchase"),
       v.literal("marketplace_sale"),
-      v.literal("platform_fee")
+      v.literal("platform_fee"),
+      v.literal("battle_pass_purchase")
     ),
     amount: v.number(),
     signature: v.optional(v.string()),
@@ -1345,13 +1451,17 @@ export default defineSchema({
     .index("by_user_time", ["userId", "createdAt"])
     .index("by_signature", ["signature"]),
 
-  // Pending token purchases for marketplace
+  // Pending token purchases for marketplace and battle pass
   pendingTokenPurchases: defineTable({
     buyerId: v.id("users"),
-    listingId: v.id("marketplaceListings"),
+    listingId: v.optional(v.id("marketplaceListings")), // Optional for non-marketplace purchases
+    battlePassId: v.optional(v.id("battlePassSeasons")), // For battle pass premium purchases
+    purchaseType: v.optional(
+      v.union(v.literal("marketplace"), v.literal("battle_pass"))
+    ), // Type of purchase
     amount: v.number(),
     buyerWallet: v.string(),
-    sellerWallet: v.string(),
+    sellerWallet: v.string(), // Treasury wallet for battle pass purchases
     status: v.union(
       v.literal("awaiting_signature"),
       v.literal("submitted"),
@@ -1365,6 +1475,7 @@ export default defineSchema({
   })
     .index("by_buyer", ["buyerId"])
     .index("by_listing", ["listingId"])
+    .index("by_battle_pass", ["battlePassId"])
     .index("by_status", ["status"]),
 
   // ============================================================================
@@ -1946,6 +2057,97 @@ export default defineSchema({
     .index("by_user", ["userId"]),
 
   // ============================================================================
+  // BATTLE PASS SYSTEM
+  // ============================================================================
+
+  // Battle Pass Seasons - Links battle pass to competitive seasons
+  battlePassSeasons: defineTable({
+    seasonId: v.id("seasons"), // Links to existing season
+    name: v.string(), // "Season 1 Battle Pass"
+    description: v.optional(v.string()),
+    status: v.union(v.literal("upcoming"), v.literal("active"), v.literal("ended")),
+    totalTiers: v.number(), // Usually 50
+    xpPerTier: v.number(), // XP required per tier (e.g., 1000)
+    premiumPrice: v.number(), // Gems price for premium track
+    tokenPrice: v.optional(v.number()), // Token price for premium track (raw units, 6 decimals)
+    startDate: v.number(),
+    endDate: v.number(),
+    createdAt: v.number(),
+    createdBy: v.id("users"),
+    updatedAt: v.number(),
+  })
+    .index("by_season", ["seasonId"])
+    .index("by_status", ["status"]),
+
+  // Battle Pass Tier Definitions - Rewards for each tier
+  battlePassTiers: defineTable({
+    battlePassId: v.id("battlePassSeasons"),
+    tier: v.number(), // 1-50
+    // Free track reward (available to all)
+    freeReward: v.optional(
+      v.object({
+        type: v.union(
+          v.literal("gold"),
+          v.literal("gems"),
+          v.literal("xp"),
+          v.literal("card"),
+          v.literal("pack"),
+          v.literal("title"),
+          v.literal("avatar")
+        ),
+        amount: v.optional(v.number()), // For gold, gems, xp
+        cardId: v.optional(v.id("cardDefinitions")), // For card rewards
+        packProductId: v.optional(v.string()), // For pack rewards
+        titleName: v.optional(v.string()), // For title rewards
+        avatarUrl: v.optional(v.string()), // For avatar rewards
+      })
+    ),
+    // Premium track reward (premium pass holders only)
+    premiumReward: v.optional(
+      v.object({
+        type: v.union(
+          v.literal("gold"),
+          v.literal("gems"),
+          v.literal("xp"),
+          v.literal("card"),
+          v.literal("pack"),
+          v.literal("title"),
+          v.literal("avatar")
+        ),
+        amount: v.optional(v.number()),
+        cardId: v.optional(v.id("cardDefinitions")),
+        packProductId: v.optional(v.string()),
+        titleName: v.optional(v.string()),
+        avatarUrl: v.optional(v.string()),
+      })
+    ),
+    // Milestone tier flag (special tiers like 10, 25, 50)
+    isMilestone: v.boolean(),
+  })
+    .index("by_battlepass", ["battlePassId"])
+    .index("by_battlepass_tier", ["battlePassId", "tier"]),
+
+  // Battle Pass Progress - User progress per battle pass
+  battlePassProgress: defineTable({
+    userId: v.id("users"),
+    battlePassId: v.id("battlePassSeasons"),
+    currentXP: v.number(), // Total XP earned this season for battle pass
+    currentTier: v.number(), // Current unlocked tier (0-50)
+    isPremium: v.boolean(), // Has purchased premium pass
+    premiumPurchasedAt: v.optional(v.number()),
+    // Track which rewards have been claimed
+    claimedFreeTiers: v.array(v.number()), // [1, 2, 3, ...]
+    claimedPremiumTiers: v.array(v.number()), // [1, 2, 3, ...]
+    lastXPGainAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_battlepass", ["userId", "battlePassId"])
+    .index("by_battlepass", ["battlePassId"])
+    .index("by_tier", ["currentTier"]),
+
+  // ============================================================================
   // SYSTEM CONFIGURATION
   // ============================================================================
 
@@ -2019,4 +2221,185 @@ export default defineSchema({
   })
     .index("by_name", ["name"])
     .index("by_category", ["category"]),
+
+  // ============================================================================
+  // TOURNAMENT SYSTEM
+  // ============================================================================
+
+  // Tournament definitions and state
+  tournaments: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+
+    // Tournament configuration
+    format: v.literal("single_elimination"), // Future: "double_elimination", "swiss", "round_robin"
+    maxPlayers: v.union(v.literal(8), v.literal(16), v.literal(32)),
+    entryFee: v.number(), // Gold required to enter (0 for free)
+    mode: v.union(v.literal("ranked"), v.literal("casual")), // Game mode for matches
+
+    // Prize pool configuration (gold distribution)
+    prizePool: v.object({
+      first: v.number(), // 1st place
+      second: v.number(), // 2nd place
+      thirdFourth: v.number(), // 3rd-4th place (each)
+    }),
+
+    // Status lifecycle: registration → checkin → active → completed/cancelled
+    status: v.union(
+      v.literal("registration"), // Accepting registrations
+      v.literal("checkin"), // Registration closed, awaiting check-ins
+      v.literal("active"), // Tournament in progress
+      v.literal("completed"), // Tournament finished
+      v.literal("cancelled") // Tournament cancelled (refunds issued)
+    ),
+
+    // Timing
+    registrationStartsAt: v.number(), // When registration opens
+    registrationEndsAt: v.number(), // When registration closes (check-in starts)
+    checkInStartsAt: v.number(), // When check-in opens (usually same as registrationEndsAt)
+    checkInEndsAt: v.number(), // When check-in closes (tournament starts)
+    scheduledStartAt: v.number(), // When tournament is scheduled to start
+    actualStartedAt: v.optional(v.number()), // When tournament actually started
+    completedAt: v.optional(v.number()), // When tournament completed
+
+    // Stats
+    currentRound: v.number(), // Current round (1-indexed), 0 before start
+    totalRounds: v.optional(v.number()), // Calculated when bracket generated
+    registeredCount: v.number(), // Number of registered players
+    checkedInCount: v.number(), // Number of checked-in players
+
+    // Winner tracking
+    winnerId: v.optional(v.id("users")),
+    winnerUsername: v.optional(v.string()),
+    secondPlaceId: v.optional(v.id("users")),
+    secondPlaceUsername: v.optional(v.string()),
+
+    // Admin
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_scheduled_start", ["scheduledStartAt"])
+    .index("by_registration_start", ["registrationStartsAt"])
+    .index("by_created", ["createdAt"]),
+
+  // Tournament participants (registered players)
+  tournamentParticipants: defineTable({
+    tournamentId: v.id("tournaments"),
+    userId: v.id("users"),
+    username: v.string(),
+
+    // Registration info
+    registeredAt: v.number(),
+    seedRating: v.number(), // Rating at time of registration (for seeding)
+
+    // Status
+    status: v.union(
+      v.literal("registered"), // Registered but not checked in
+      v.literal("checked_in"), // Checked in, ready to play
+      v.literal("active"), // Currently in tournament
+      v.literal("eliminated"), // Lost a match
+      v.literal("winner"), // Won the tournament
+      v.literal("forfeit"), // Forfeited (no-show or manual)
+      v.literal("refunded") // Entry fee refunded (tournament cancelled)
+    ),
+
+    // Check-in tracking
+    checkedInAt: v.optional(v.number()),
+
+    // Tournament progress
+    currentRound: v.optional(v.number()), // Current/last round played
+    bracket: v.optional(v.number()), // Bracket position (1-based, assigned at start)
+    eliminatedInRound: v.optional(v.number()), // Round eliminated (null if still active)
+    finalPlacement: v.optional(v.number()), // Final placement (1st, 2nd, 3rd, 4th, etc.)
+
+    // Prize tracking
+    prizeAwarded: v.optional(v.number()), // Gold prize awarded
+    prizeAwardedAt: v.optional(v.number()),
+  })
+    .index("by_tournament", ["tournamentId"])
+    .index("by_user", ["userId"])
+    .index("by_tournament_user", ["tournamentId", "userId"])
+    .index("by_tournament_status", ["tournamentId", "status"])
+    .index("by_tournament_bracket", ["tournamentId", "bracket"]),
+
+  // Tournament matches (bracket matches)
+  tournamentMatches: defineTable({
+    tournamentId: v.id("tournaments"),
+    round: v.number(), // Round number (1 = first round, 2 = quarterfinals, etc.)
+    matchNumber: v.number(), // Match number within round (1-indexed)
+
+    // Bracket position info (for rendering)
+    bracketPosition: v.number(), // Overall position in bracket (for rendering)
+
+    // Players
+    player1Id: v.optional(v.id("users")), // null = TBD (waiting for previous match)
+    player1Username: v.optional(v.string()),
+    player1ParticipantId: v.optional(v.id("tournamentParticipants")),
+    player2Id: v.optional(v.id("users")),
+    player2Username: v.optional(v.string()),
+    player2ParticipantId: v.optional(v.id("tournamentParticipants")),
+
+    // Source matches (for TBD players)
+    player1SourceMatchId: v.optional(v.id("tournamentMatches")), // Winner of this match becomes player1
+    player2SourceMatchId: v.optional(v.id("tournamentMatches")), // Winner of this match becomes player2
+
+    // Match state
+    status: v.union(
+      v.literal("pending"), // Waiting for players (TBD)
+      v.literal("ready"), // Both players known, ready to start
+      v.literal("active"), // Game in progress
+      v.literal("completed"), // Match finished
+      v.literal("forfeit") // One player forfeited
+    ),
+
+    // Linked game
+    lobbyId: v.optional(v.id("gameLobbies")),
+    gameId: v.optional(v.string()),
+
+    // Result
+    winnerId: v.optional(v.id("users")),
+    winnerUsername: v.optional(v.string()),
+    loserId: v.optional(v.id("users")),
+    loserUsername: v.optional(v.string()),
+    winReason: v.optional(
+      v.union(
+        v.literal("game_win"), // Won the game
+        v.literal("opponent_forfeit"), // Opponent forfeited
+        v.literal("opponent_no_show"), // Opponent didn't show up
+        v.literal("bye") // No opponent (odd bracket)
+      )
+    ),
+
+    // Timestamps
+    scheduledAt: v.optional(v.number()), // Scheduled start time
+    startedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tournament", ["tournamentId"])
+    .index("by_tournament_round", ["tournamentId", "round"])
+    .index("by_tournament_status", ["tournamentId", "status"])
+    .index("by_player1", ["player1Id"])
+    .index("by_player2", ["player2Id"])
+    .index("by_lobby", ["lobbyId"]),
+
+  // Tournament history for user stats
+  tournamentHistory: defineTable({
+    userId: v.id("users"),
+    tournamentId: v.id("tournaments"),
+    tournamentName: v.string(),
+    maxPlayers: v.number(),
+    placement: v.number(), // Final placement (1st, 2nd, 3rd, etc.)
+    prizeWon: v.number(), // Gold won
+    matchesPlayed: v.number(),
+    matchesWon: v.number(),
+    completedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_completed", ["userId", "completedAt"])
+    .index("by_tournament", ["tournamentId"]),
 });

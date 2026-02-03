@@ -69,11 +69,14 @@ const navigation: NavGroup[] = [
       { title: "Broadcast", href: "/broadcast", icon: "📢", permission: "batch.operations" },
       { title: "Assets", href: "/assets", icon: "🖼️", permission: "config.edit" },
       { title: "Cards", href: "/cards", icon: "🃏", permission: "config.edit" },
+      { title: "Templates", href: "/templates", icon: "📐", permission: "config.edit" },
       { title: "Shop", href: "/shop", icon: "🛒", permission: "config.edit" },
       { title: "Promo Codes", href: "/promo-codes", icon: "🎁", permission: "config.edit" },
       { title: "Quests", href: "/quests", icon: "🎯", permission: "config.edit" },
       { title: "Story", href: "/story", icon: "📖", permission: "config.edit" },
       { title: "Seasons", href: "/seasons", icon: "🏆", permission: "config.edit" },
+      { title: "Tournaments", href: "/tournaments", icon: "🏁", permission: "player.view" },
+      { title: "Battle Pass", href: "/battle-pass", icon: "🎖️", permission: "config.edit" },
     ],
   },
   {
@@ -86,10 +89,17 @@ const navigation: NavGroup[] = [
     ],
   },
   {
+    title: "AI",
+    items: [
+      { title: "AI Assistant", href: "/ai-assistant", icon: "🧠", permission: "player.view" },
+    ],
+  },
+  {
     title: "Settings",
     items: [
       { title: "Feature Flags", href: "/settings/features", icon: "🚩", permission: "admin.manage" },
       { title: "Configuration", href: "/settings/config", icon: "⚙️", permission: "admin.manage" },
+      { title: "AI Providers", href: "/settings/ai", icon: "🤖", permission: "admin.manage" },
     ],
   },
   {

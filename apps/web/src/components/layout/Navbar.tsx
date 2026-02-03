@@ -10,6 +10,7 @@ import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
 import {
+  Award,
   BookOpen,
   ChevronRight,
   Crown,
@@ -17,6 +18,7 @@ import {
   Map,
   Menu,
   Settings,
+  Sparkles,
   Store,
   Swords,
   Target,
@@ -76,6 +78,8 @@ interface GameLink {
 const gameLinks: GameLink[] = [
   { href: "/lunchtable", label: "The Table", icon: Swords, description: "Enter the battlefield" },
   { href: "/play/story", label: "Story Mode", icon: Map, description: "Campaign adventure" },
+  { href: "/tournaments", label: "Tournaments", icon: Award, description: "Compete for prizes" },
+  { href: "/battle-pass", label: "Battle Pass", icon: Sparkles, description: "Season rewards" },
   { href: "/quests", label: "Quests", icon: Target, description: "Daily & weekly rewards" },
   { href: "/leaderboards", label: "Leaderboards", icon: Trophy, description: "Global rankings" },
   { href: "/shop", label: "Shop", icon: Store, description: "Buy packs & trade cards" },

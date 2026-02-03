@@ -31,6 +31,7 @@ export const ErrorCode = {
 
   // Resource Not Found Errors (4xxx)
   NOT_FOUND: "NOT_FOUND_4000", // Generic not found
+  NOT_FOUND_GENERAL: "NOT_FOUND_4000", // Alias for generic not found (with entity param)
   NOT_FOUND_USER: "NOT_FOUND_4001",
   NOT_FOUND_QUEST: "NOT_FOUND_4002",
   NOT_FOUND_ACHIEVEMENT: "NOT_FOUND_4003",

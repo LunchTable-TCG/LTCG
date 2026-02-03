@@ -199,8 +199,8 @@ export const completeStage = mutation({
       referenceId: `story_stage_${args.stageId}`,
     });
 
-    // Award XP
-    const xpResult = await addXP(ctx, userId, xpReward);
+    // Award XP (also grants battle pass XP)
+    const xpResult = await addXP(ctx, userId, xpReward, { source: "story_stage_complete" });
 
     // Update progress
     const newStars = Math.max(progress.starsEarned, starsEarned);
@@ -335,8 +335,8 @@ export const completeStageInternal = internalMutation({
       referenceId: `story_stage_${args.stageId}`,
     });
 
-    // Award XP
-    const xpResult = await addXP(ctx, args.userId, xpReward);
+    // Award XP (also grants battle pass XP)
+    const xpResult = await addXP(ctx, args.userId, xpReward, { source: "story_stage_complete" });
 
     // Update progress
     const newStars = Math.max(progress.starsEarned, starsEarned);

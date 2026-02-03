@@ -1,10 +1,10 @@
-import { internal } from "../_generated/api";
-
-// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-const internalAny = internal as any;
 import type { Doc, Id } from "../_generated/dataModel";
-// XP and Level System Helpers
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+// Workaround for TS2589 (excessively deep type instantiation)
+// biome-ignore lint/style/noNamespaceImport: Required for Convex internal API type workaround
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
+const internalAny = (generatedApi as any).internal;
 import { ErrorCode, createError } from "./errorCodes";
 import { LEVEL_MILESTONES, XP_PER_LEVEL } from "./storyConstants";
 
@@ -181,17 +181,26 @@ export async function getPlayerXP(
  * awards milestone badges, and creates notifications for level ups and badge unlocks.
  * Handles multiple level gains in a single call.
  *
+ * Also grants battle pass XP if an active battle pass exists.
+ *
  * @internal
  * @param ctx - Mutation context
  * @param userId - User ID to award XP to
  * @param xpAmount - Amount of XP to add (must be non-negative)
+ * @param options - Optional configuration
+ * @param options.source - Source of XP for battle pass tracking (default: "general")
+ * @param options.skipBattlePass - If true, skip granting battle pass XP
  * @returns Level up result with old level, new level, XP added, and badges awarded
  * @throws If xpAmount is negative
  */
 export async function addXP(
   ctx: MutationCtx,
   userId: Id<"users">,
-  xpAmount: number
+  xpAmount: number,
+  options?: {
+    source?: string;
+    skipBattlePass?: boolean;
+  }
 ): Promise<{
   newLevel: number;
   oldLevel: number;
@@ -204,6 +213,10 @@ export async function addXP(
     displayName: string;
     description: string;
   }>;
+  battlePass?: {
+    tiersGained: number;
+    newTier: number;
+  };
 }> {
   if (xpAmount < 0) {
     throw createError(ErrorCode.LIBRARY_INVALID_XP, { xpAmount });
@@ -288,6 +301,23 @@ export async function addXP(
     }
   }
 
+  // Grant battle pass XP if not skipped
+  let battlePassResult: { tiersGained: number; newTier: number } | undefined;
+  if (!options?.skipBattlePass && xpAmount > 0) {
+    // Schedule battle pass XP grant (wrapped to prevent test errors)
+    await safeSchedule(ctx, async () => {
+      await ctx.scheduler.runAfter(
+        0,
+        internalAny.progression.battlePass.addBattlePassXP,
+        {
+          userId,
+          xpAmount,
+          source: options?.source ?? "general",
+        }
+      );
+    });
+  }
+
   return {
     newLevel,
     oldLevel,
@@ -296,6 +326,7 @@ export async function addXP(
     leveledUp,
     levelsGained,
     badgesAwarded,
+    battlePass: battlePassResult,
   };
 }
 

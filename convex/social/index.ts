@@ -4,3 +4,5 @@ export * from "./globalChat";
 export * from "./inbox";
 export * from "./leaderboards";
 export * from "./matchmaking";
+export * from "./tournaments";
+export * from "./tournamentCron";

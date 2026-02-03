@@ -94,4 +94,25 @@ crons.interval(
   internalAny.economy.tokenMaintenance.refreshActiveBalances
 );
 
+// ============================================================================
+// TOURNAMENT SYSTEM MAINTENANCE
+// ============================================================================
+
+// Check for tournament phase transitions every minute
+// - Transition from registration to check-in when registrationEndsAt is reached
+// - Start tournaments when checkInEndsAt is reached
+crons.interval(
+  "tournament-phase-transitions",
+  { minutes: 1 },
+  internalAny.social.tournamentCron.processPhaseTransitions
+);
+
+// Check for no-show forfeits every minute
+// - Forfeit players who don't join their tournament match within timeout
+crons.interval(
+  "tournament-no-show-forfeits",
+  { minutes: 1 },
+  internalAny.social.tournamentCron.processNoShowForfeits
+);
+
 export default crons;

@@ -62,3 +62,32 @@ export async function requireAuthMutation(ctx: MutationCtx): Promise<Authenticat
   }
   return auth;
 }
+
+/**
+ * Require admin authentication in a mutation
+ * Throws an error if not authenticated or not an admin
+ */
+export async function requireAdminMutation(ctx: MutationCtx): Promise<AuthenticatedUser> {
+  const auth = await getCurrentUser(ctx);
+  if (!auth) {
+    throw createError(ErrorCode.AUTH_REQUIRED);
+  }
+
+  // Check if user has an active admin role
+  const adminRole = await ctx.db
+    .query("adminRoles")
+    .withIndex("by_user", (q) => q.eq("userId", auth.userId))
+    .filter((q) => q.eq(q.field("isActive"), true))
+    .first();
+
+  if (!adminRole) {
+    throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
+  }
+
+  // Check if role has expired
+  if (adminRole.expiresAt && adminRole.expiresAt < Date.now()) {
+    throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
+  }
+
+  return auth;
+}

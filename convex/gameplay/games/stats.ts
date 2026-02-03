@@ -66,7 +66,9 @@ export async function updatePlayerStatsAfterGame(
       : XP_SYSTEM.STORY_WIN_XP;
 
   // Update winner XP via playerXP system (maintains single source of truth)
-  await addXP(ctx, winnerId, xpReward);
+  // Also grants battle pass XP automatically
+  const xpSource = isRanked ? "game_win_ranked" : isCasual ? "game_win_casual" : "game_win_story";
+  await addXP(ctx, winnerId, xpReward, { source: xpSource });
 
   // Update winner stats
   await ctx.db.patch(winnerId, {

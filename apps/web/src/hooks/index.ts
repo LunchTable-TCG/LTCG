@@ -48,6 +48,22 @@ export { usePresence } from "./social/usePresence";
 export { useLeaderboard } from "./social/useLeaderboard";
 export { useProfile } from "./social/useProfile";
 export { useFriends, useSearchUsers } from "./social/useFriends";
+export { useTournaments, useTournament, useTournamentHistory } from "./social/useTournament";
+export type {
+  TournamentStatus,
+  TournamentMode,
+  ParticipantStatus,
+  MatchStatus,
+  TournamentPrizePool,
+  TournamentSummary,
+  TournamentDetails,
+  TournamentParticipant,
+  TournamentMatch,
+  TournamentRound,
+  TournamentBracket,
+  TournamentHistoryEntry,
+  UserTournamentStats,
+} from "./social/useTournament";
 
 // Story Hooks
 export { useStoryProgress } from "./story/useStoryProgress";
@@ -58,6 +74,7 @@ export { useBadges } from "./story/useBadges";
 export { useQuests } from "./progression/useQuests";
 export { useAchievements } from "./progression/useAchievements";
 export { useNotifications } from "./progression/useNotifications";
+export { useBattlePass } from "./progression/useBattlePass";
 
 // Wallet Hooks
 export { useGameWallet } from "./wallet/useGameWallet";

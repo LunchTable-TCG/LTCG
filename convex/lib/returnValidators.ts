@@ -998,3 +998,330 @@ export const battleHistoryEntryValidator = v.object({
   xpAwarded: v.optional(v.number()),
   completedAt: v.number(),
 });
+
+// ============================================================================
+// BATTLE PASS VALIDATORS
+// ============================================================================
+
+/**
+ * Battle pass reward type validator
+ */
+export const battlePassRewardTypeValidator = v.union(
+  v.literal("gold"),
+  v.literal("gems"),
+  v.literal("xp"),
+  v.literal("card"),
+  v.literal("pack"),
+  v.literal("title"),
+  v.literal("avatar")
+);
+
+/**
+ * Battle pass reward object validator
+ */
+export const battlePassRewardValidator = v.object({
+  type: battlePassRewardTypeValidator,
+  amount: v.optional(v.number()),
+  cardId: v.optional(v.id("cardDefinitions")),
+  packProductId: v.optional(v.string()),
+  titleName: v.optional(v.string()),
+  avatarUrl: v.optional(v.string()),
+});
+
+/**
+ * Battle pass status validator (getBattlePassStatus return type)
+ */
+export const battlePassStatusValidator = v.union(
+  v.null(),
+  v.object({
+    battlePassId: v.id("battlePassSeasons"),
+    seasonId: v.id("seasons"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    seasonName: v.optional(v.string()),
+    status: v.union(v.literal("upcoming"), v.literal("active"), v.literal("ended")),
+    totalTiers: v.number(),
+    xpPerTier: v.number(),
+    premiumPrice: v.number(),
+    tokenPrice: v.optional(v.number()),
+    startDate: v.number(),
+    endDate: v.number(),
+    // User progress
+    currentXP: v.number(),
+    currentTier: v.number(),
+    isPremium: v.boolean(),
+    claimedFreeTiers: v.array(v.number()),
+    claimedPremiumTiers: v.array(v.number()),
+    xpToNextTier: v.number(),
+    daysRemaining: v.number(),
+  })
+);
+
+/**
+ * Battle pass tier validator (getBattlePassTiers return type)
+ */
+export const battlePassTierValidator = v.object({
+  tier: v.number(),
+  freeReward: v.optional(battlePassRewardValidator),
+  premiumReward: v.optional(battlePassRewardValidator),
+  isMilestone: v.boolean(),
+  isUnlocked: v.boolean(),
+  freeRewardClaimed: v.boolean(),
+  premiumRewardClaimed: v.boolean(),
+  canClaimFree: v.boolean(),
+  canClaimPremium: v.boolean(),
+});
+
+/**
+ * Battle pass progress validator (getUserBattlePassProgress return type)
+ */
+export const battlePassProgressValidator = v.union(
+  v.null(),
+  v.object({
+    battlePassId: v.id("battlePassSeasons"),
+    currentXP: v.number(),
+    currentTier: v.number(),
+    isPremium: v.boolean(),
+    premiumPurchasedAt: v.optional(v.number()),
+    claimedFreeTiers: v.array(v.number()),
+    claimedPremiumTiers: v.array(v.number()),
+    lastXPGainAt: v.optional(v.number()),
+    xpPerTier: v.number(),
+    totalTiers: v.number(),
+    xpToNextTier: v.number(),
+    tierProgress: v.number(),
+  })
+);
+
+/**
+ * Claim battle pass reward response validator
+ */
+export const claimBattlePassRewardValidator = v.object({
+  success: v.boolean(),
+  tier: v.number(),
+  track: v.union(v.literal("free"), v.literal("premium")),
+  reward: v.object({
+    type: battlePassRewardTypeValidator,
+    amount: v.optional(v.number()),
+  }),
+});
+
+// ============================================================================
+// TOURNAMENT VALIDATORS
+// ============================================================================
+
+/**
+ * Tournament status union validator
+ */
+export const tournamentStatusValidator = v.union(
+  v.literal("registration"),
+  v.literal("checkin"),
+  v.literal("active"),
+  v.literal("completed"),
+  v.literal("cancelled")
+);
+
+/**
+ * Tournament participant status union validator
+ */
+export const tournamentParticipantStatusValidator = v.union(
+  v.literal("registered"),
+  v.literal("checked_in"),
+  v.literal("active"),
+  v.literal("eliminated"),
+  v.literal("winner"),
+  v.literal("forfeit"),
+  v.literal("refunded")
+);
+
+/**
+ * Tournament match status union validator
+ */
+export const tournamentMatchStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("ready"),
+  v.literal("active"),
+  v.literal("completed"),
+  v.literal("forfeit")
+);
+
+/**
+ * Tournament prize pool validator
+ */
+export const tournamentPrizePoolValidator = v.object({
+  first: v.number(),
+  second: v.number(),
+  thirdFourth: v.number(),
+});
+
+/**
+ * Tournament summary validator (for list views)
+ */
+export const tournamentSummaryValidator = v.object({
+  _id: v.id("tournaments"),
+  name: v.string(),
+  description: v.optional(v.string()),
+  format: v.literal("single_elimination"),
+  maxPlayers: v.union(v.literal(8), v.literal(16), v.literal(32)),
+  entryFee: v.number(),
+  mode: v.union(v.literal("ranked"), v.literal("casual")),
+  prizePool: tournamentPrizePoolValidator,
+  status: tournamentStatusValidator,
+  registrationStartsAt: v.number(),
+  registrationEndsAt: v.number(),
+  scheduledStartAt: v.number(),
+  registeredCount: v.number(),
+  checkedInCount: v.number(),
+  currentRound: v.number(),
+  totalRounds: v.optional(v.number()),
+  winnerId: v.optional(v.id("users")),
+  winnerUsername: v.optional(v.string()),
+});
+
+/**
+ * Tournament details validator (full tournament info)
+ */
+export const tournamentDetailsValidator = v.object({
+  _id: v.id("tournaments"),
+  name: v.string(),
+  description: v.optional(v.string()),
+  format: v.literal("single_elimination"),
+  maxPlayers: v.union(v.literal(8), v.literal(16), v.literal(32)),
+  entryFee: v.number(),
+  mode: v.union(v.literal("ranked"), v.literal("casual")),
+  prizePool: tournamentPrizePoolValidator,
+  status: tournamentStatusValidator,
+  registrationStartsAt: v.number(),
+  registrationEndsAt: v.number(),
+  checkInStartsAt: v.number(),
+  checkInEndsAt: v.number(),
+  scheduledStartAt: v.number(),
+  actualStartedAt: v.optional(v.number()),
+  completedAt: v.optional(v.number()),
+  currentRound: v.number(),
+  totalRounds: v.optional(v.number()),
+  registeredCount: v.number(),
+  checkedInCount: v.number(),
+  winnerId: v.optional(v.id("users")),
+  winnerUsername: v.optional(v.string()),
+  secondPlaceId: v.optional(v.id("users")),
+  secondPlaceUsername: v.optional(v.string()),
+  createdAt: v.number(),
+  // User-specific fields
+  isRegistered: v.boolean(),
+  isCheckedIn: v.boolean(),
+  userParticipantId: v.optional(v.id("tournamentParticipants")),
+  userStatus: v.optional(tournamentParticipantStatusValidator),
+});
+
+/**
+ * Tournament participant validator
+ */
+export const tournamentParticipantValidator = v.object({
+  _id: v.id("tournamentParticipants"),
+  tournamentId: v.id("tournaments"),
+  userId: v.id("users"),
+  username: v.string(),
+  registeredAt: v.number(),
+  seedRating: v.number(),
+  status: tournamentParticipantStatusValidator,
+  checkedInAt: v.optional(v.number()),
+  currentRound: v.optional(v.number()),
+  bracket: v.optional(v.number()),
+  eliminatedInRound: v.optional(v.number()),
+  finalPlacement: v.optional(v.number()),
+  prizeAwarded: v.optional(v.number()),
+});
+
+/**
+ * Tournament match validator
+ */
+export const tournamentMatchValidator = v.object({
+  _id: v.id("tournamentMatches"),
+  tournamentId: v.id("tournaments"),
+  round: v.number(),
+  matchNumber: v.number(),
+  bracketPosition: v.number(),
+  player1Id: v.optional(v.id("users")),
+  player1Username: v.optional(v.string()),
+  player2Id: v.optional(v.id("users")),
+  player2Username: v.optional(v.string()),
+  status: tournamentMatchStatusValidator,
+  lobbyId: v.optional(v.id("gameLobbies")),
+  gameId: v.optional(v.string()),
+  winnerId: v.optional(v.id("users")),
+  winnerUsername: v.optional(v.string()),
+  loserId: v.optional(v.id("users")),
+  loserUsername: v.optional(v.string()),
+  winReason: v.optional(
+    v.union(
+      v.literal("game_win"),
+      v.literal("opponent_forfeit"),
+      v.literal("opponent_no_show"),
+      v.literal("bye")
+    )
+  ),
+  scheduledAt: v.optional(v.number()),
+  startedAt: v.optional(v.number()),
+  completedAt: v.optional(v.number()),
+});
+
+/**
+ * Tournament bracket response validator
+ */
+export const tournamentBracketValidator = v.object({
+  tournament: tournamentSummaryValidator,
+  rounds: v.array(
+    v.object({
+      roundNumber: v.number(),
+      roundName: v.string(), // "Round 1", "Quarterfinals", "Semifinals", "Finals"
+      matches: v.array(tournamentMatchValidator),
+    })
+  ),
+  participants: v.array(tournamentParticipantValidator),
+});
+
+/**
+ * Tournament history entry validator (user's tournament history)
+ */
+export const tournamentHistoryEntryValidator = v.object({
+  _id: v.id("tournamentHistory"),
+  tournamentId: v.id("tournaments"),
+  tournamentName: v.string(),
+  maxPlayers: v.number(),
+  placement: v.number(),
+  prizeWon: v.number(),
+  matchesPlayed: v.number(),
+  matchesWon: v.number(),
+  completedAt: v.number(),
+});
+
+/**
+ * Tournament registration response validator
+ */
+export const tournamentRegistrationResponseValidator = v.object({
+  success: v.boolean(),
+  participantId: v.id("tournamentParticipants"),
+  message: v.string(),
+});
+
+/**
+ * Tournament check-in response validator
+ */
+export const tournamentCheckInResponseValidator = v.object({
+  success: v.boolean(),
+  message: v.string(),
+});
+
+/**
+ * User tournament stats validator
+ */
+export const userTournamentStatsValidator = v.object({
+  tournamentsPlayed: v.number(),
+  tournamentsWon: v.number(),
+  totalPrizeWon: v.number(),
+  totalMatchesPlayed: v.number(),
+  totalMatchesWon: v.number(),
+  bestPlacement: v.optional(v.number()),
+  winRate: v.number(),
+});
