@@ -2695,11 +2695,13 @@ export default defineSchema({
       v.literal("archived")
     ),
     // Wallet creation status tracking
-    creationStatus: v.union(
-      v.literal("pending"), // Scheduled, not started
-      v.literal("creating"), // Privy API call in progress
-      v.literal("active"), // Successfully created
-      v.literal("failed") // Creation failed
+    creationStatus: v.optional(
+      v.union(
+        v.literal("pending"), // Scheduled, not started
+        v.literal("creating"), // Privy API call in progress
+        v.literal("active"), // Successfully created
+        v.literal("failed") // Creation failed
+      )
     ),
     creationErrorMessage: v.optional(v.string()), // Error details if creation failed
     creationAttempts: v.optional(v.number()), // Number of creation attempts
