@@ -189,6 +189,8 @@ export const createWallet = mutation({
       purpose: args.purpose,
       policyId: args.policyId,
       status: "active",
+      creationStatus: "pending",
+      creationAttempts: 0,
       createdBy: userId,
       createdAt: Date.now(),
     });
@@ -282,9 +284,91 @@ export const syncBalance = mutation({
   },
 });
 
+/**
+ * Retry failed wallet creation
+ */
+export const retryWalletCreation = mutation({
+  args: {
+    walletId: v.id("treasuryWallets"),
+  },
+  handler: async (ctx, { walletId }) => {
+    const { userId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, userId, "admin");
+
+    const wallet = await ctx.db.get(walletId);
+    if (!wallet) {
+      throw new Error("Wallet not found");
+    }
+
+    if (wallet.creationStatus !== "failed") {
+      throw new Error("Can only retry failed wallet creation");
+    }
+
+    // Reset status to pending and clear error
+    await ctx.db.patch(walletId, {
+      creationStatus: "pending",
+      creationErrorMessage: undefined,
+    });
+
+    // Schedule new creation attempt
+    await ctx.scheduler.runAfter(0, internal.treasury.wallets.createPrivyWallet, {
+      walletDbId: walletId,
+      policyId: wallet.policyId,
+    });
+
+    // Audit log
+    await scheduleAuditLog(ctx, {
+      adminId: userId,
+      action: "treasury.wallet.retry",
+      metadata: {
+        walletId,
+        previousAttempts: wallet.creationAttempts ?? 0,
+      },
+      success: true,
+    });
+
+    return { success: true, message: "Wallet creation retry scheduled" };
+  },
+});
+
 // =============================================================================
 // Internal Mutations (called by actions)
 // =============================================================================
+
+/**
+ * Mark wallet as creating (called when action starts)
+ */
+export const updateWalletCreating = internalMutation({
+  args: {
+    walletDbId: v.id("treasuryWallets"),
+  },
+  handler: async (ctx, args) => {
+    const wallet = await ctx.db.get(args.walletDbId);
+    if (!wallet) return;
+
+    await ctx.db.patch(args.walletDbId, {
+      creationStatus: "creating",
+      creationAttempts: (wallet.creationAttempts ?? 0) + 1,
+      lastAttemptAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mark wallet creation as failed
+ */
+export const updateWalletFailed = internalMutation({
+  args: {
+    walletDbId: v.id("treasuryWallets"),
+    errorMessage: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.walletDbId, {
+      creationStatus: "failed",
+      creationErrorMessage: args.errorMessage,
+    });
+  },
+});
 
 /**
  * Update wallet with Privy data after creation
@@ -299,6 +383,8 @@ export const updateWithPrivyData = internalMutation({
     await ctx.db.patch(args.walletDbId, {
       privyWalletId: args.privyWalletId,
       address: args.address,
+      creationStatus: "active",
+      creationErrorMessage: undefined,
     });
   },
 });
@@ -334,12 +420,22 @@ export const createPrivyWallet = internalAction({
     policyId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Mark wallet as creating
+    await ctx.runMutation(internal.treasury.wallets.updateWalletCreating, {
+      walletDbId: args.walletDbId,
+    });
+
     const PRIVY_APP_ID = process.env["PRIVY_APP_ID"];
     const PRIVY_APP_SECRET = process.env["PRIVY_APP_SECRET"];
 
     if (!PRIVY_APP_ID || !PRIVY_APP_SECRET) {
-      console.error("Privy credentials not configured");
-      return;
+      const errorMessage = "Privy credentials not configured";
+      console.error(errorMessage);
+      await ctx.runMutation(internal.treasury.wallets.updateWalletFailed, {
+        walletDbId: args.walletDbId,
+        errorMessage,
+      });
+      return { success: false, error: errorMessage };
     }
 
     try {
@@ -358,9 +454,14 @@ export const createPrivyWallet = internalAction({
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        console.error("Privy wallet creation failed:", error);
-        return;
+        const errorText = await response.text();
+        const errorMessage = `Privy API error (${response.status}): ${errorText}`;
+        console.error(errorMessage);
+        await ctx.runMutation(internal.treasury.wallets.updateWalletFailed, {
+          walletDbId: args.walletDbId,
+          errorMessage,
+        });
+        return { success: false, error: errorMessage };
       }
 
       const wallet = await response.json();
@@ -373,8 +474,15 @@ export const createPrivyWallet = internalAction({
       });
 
       console.log(`Treasury wallet created: ${wallet.address}`);
+      return { success: true, address: wallet.address };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error creating Privy wallet";
       console.error("Failed to create Privy wallet:", error);
+      await ctx.runMutation(internal.treasury.wallets.updateWalletFailed, {
+        walletDbId: args.walletDbId,
+        errorMessage,
+      });
+      return { success: false, error: errorMessage };
     }
   },
 });
@@ -420,5 +528,36 @@ export const syncWalletBalance = internalAction({
     } catch (error) {
       console.error("Failed to sync wallet balance:", error);
     }
+  },
+});
+
+// =============================================================================
+// Migration
+// =============================================================================
+
+/**
+ * One-time migration to add creationStatus to existing wallets
+ */
+export const migrateExistingWallets = internalMutation({
+  handler: async (ctx) => {
+    const wallets = await ctx.db.query("treasuryWallets").collect();
+    let migrated = 0;
+
+    for (const wallet of wallets) {
+      if (wallet.creationStatus) continue; // Already migrated
+
+      await ctx.db.patch(wallet._id, {
+        creationStatus: wallet.address ? "active" : "failed",
+        creationErrorMessage: wallet.address
+          ? undefined
+          : "Legacy wallet - address not populated during creation",
+        creationAttempts: 0,
+        lastAttemptAt: wallet.createdAt,
+      });
+      migrated++;
+    }
+
+    console.log(`Migrated ${migrated} treasury wallets`);
+    return { migrated };
   },
 });

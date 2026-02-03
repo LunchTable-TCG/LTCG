@@ -2694,12 +2694,23 @@ export default defineSchema({
       v.literal("frozen"),
       v.literal("archived")
     ),
+    // Wallet creation status tracking
+    creationStatus: v.union(
+      v.literal("pending"), // Scheduled, not started
+      v.literal("creating"), // Privy API call in progress
+      v.literal("active"), // Successfully created
+      v.literal("failed") // Creation failed
+    ),
+    creationErrorMessage: v.optional(v.string()), // Error details if creation failed
+    creationAttempts: v.optional(v.number()), // Number of creation attempts
+    lastAttemptAt: v.optional(v.number()), // Timestamp of last creation attempt
     createdBy: v.id("users"),
     createdAt: v.number(),
   })
     .index("by_purpose", ["purpose"])
     .index("by_address", ["address"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_creation_status", ["creationStatus"]),
 
   // Treasury transaction history
   treasuryTransactions: defineTable({

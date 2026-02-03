@@ -93,6 +93,29 @@ function getStatusBadge(status: string) {
   }
 }
 
+function getCreationStatusBadge(creationStatus: string) {
+  switch (creationStatus) {
+    case "pending":
+      return <Badge color="slate">Pending</Badge>;
+    case "creating":
+      return <Badge color="blue">Creating</Badge>;
+    case "active":
+      return <Badge color="emerald">Created</Badge>;
+    case "failed":
+      return <Badge color="red">Failed</Badge>;
+    default:
+      return <Badge>{creationStatus}</Badge>;
+  }
+}
+
+function getErrorTypeLabel(errorMessage?: string) {
+  if (!errorMessage) return "Unknown error";
+  if (errorMessage.includes("credentials not configured")) return "⚙️ Configuration Error";
+  if (errorMessage.includes("Privy API error")) return "🔌 API Error";
+  if (errorMessage.includes("Legacy wallet")) return "🕐 Legacy Wallet";
+  return "❌ Creation Error";
+}
+
 function truncateAddress(address: string) {
   if (!address) return "Pending...";
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -116,6 +139,7 @@ export default function TreasuryWalletsPage() {
   const createWallet = useConvexMutation(apiAny.treasury.wallets.createWallet);
   const syncBalance = useConvexMutation(apiAny.treasury.wallets.syncBalance);
   const updateWallet = useConvexMutation(apiAny.treasury.wallets.updateWallet);
+  const retryWalletCreation = useConvexMutation(apiAny.treasury.wallets.retryWalletCreation);
 
   const isLoading = wallets === undefined;
 
@@ -148,6 +172,15 @@ export default function TreasuryWalletsPage() {
       toast.success("Balance sync initiated");
     } catch (error) {
       toast.error(`Failed to sync balance: ${error}`);
+    }
+  }
+
+  async function handleRetryCreation(walletId: string) {
+    try {
+      await retryWalletCreation({ walletId });
+      toast.success("Wallet creation retry initiated");
+    } catch (error) {
+      toast.error(`Failed to retry: ${error}`);
     }
   }
 
@@ -255,83 +288,146 @@ export default function TreasuryWalletsPage() {
                       <CardDescription>{getPurposeLabel(wallet.purpose)}</CardDescription>
                     </div>
                   </div>
-                  {getStatusBadge(wallet.status)}
+                  <div className="flex gap-2">
+                    {getCreationStatusBadge(wallet.creationStatus)}
+                    {wallet.creationStatus === "active" && getStatusBadge(wallet.status)}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Address */}
-                <div className="space-y-1">
-                  <Text className="text-xs text-muted-foreground">Address</Text>
-                  <div className="flex items-center gap-2">
-                    <code className="rounded bg-muted px-2 py-1 text-sm">
-                      {truncateAddress(wallet.address)}
-                    </code>
-                    {wallet.address && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(wallet.address);
-                          toast.success("Address copied");
-                        }}
-                      >
-                        📋
-                      </Button>
+                {/* Creation Status Section */}
+                {wallet.creationStatus !== "active" && (
+                  <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+                    {wallet.creationStatus === "pending" && (
+                      <div className="flex items-center gap-2">
+                        <span>⏳</span>
+                        <Text>Wallet creation scheduled...</Text>
+                      </div>
+                    )}
+                    {wallet.creationStatus === "creating" && (
+                      <div className="flex items-center gap-2">
+                        <span>⚙️</span>
+                        <Text>Creating wallet via Privy API...</Text>
+                      </div>
+                    )}
+                    {wallet.creationStatus === "failed" && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span>{getErrorTypeLabel(wallet.creationErrorMessage)}</span>
+                        </div>
+                        <Text className="text-sm text-muted-foreground">
+                          {wallet.creationErrorMessage}
+                        </Text>
+                        {wallet.creationAttempts !== undefined && (
+                          <Text className="text-xs text-muted-foreground">
+                            Attempts: {wallet.creationAttempts}
+                          </Text>
+                        )}
+                      </div>
                     )}
                   </div>
-                </div>
+                )}
 
-                {/* Balances */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Text className="text-xs text-muted-foreground">SOL Balance</Text>
-                    <Title className="text-xl">{formatLamports(wallet.balance || 0)}</Title>
-                  </div>
-                  <div className="space-y-1">
-                    <Text className="text-xs text-muted-foreground">LTCG Balance</Text>
-                    <Title className="text-xl">{formatTokens(wallet.tokenBalance || 0)}</Title>
-                  </div>
-                </div>
+                {/* Only show address and balances for active wallets */}
+                {wallet.creationStatus === "active" && (
+                  <>
+                    {/* Address */}
+                    <div className="space-y-1">
+                      <Text className="text-xs text-muted-foreground">Address</Text>
+                      <div className="flex items-center gap-2">
+                        <code className="rounded bg-muted px-2 py-1 text-sm">
+                          {truncateAddress(wallet.address)}
+                        </code>
+                        {wallet.address && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(wallet.address);
+                              toast.success("Address copied");
+                            }}
+                          >
+                            📋
+                          </Button>
+                        )}
+                      </div>
+                    </div>
 
-                {/* Last Synced */}
-                {wallet.lastSyncedAt && (
-                  <div className="text-xs text-muted-foreground">
-                    Last synced: {new Date(wallet.lastSyncedAt).toLocaleString()}
-                  </div>
+                    {/* Balances */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Text className="text-xs text-muted-foreground">SOL Balance</Text>
+                        <Title className="text-xl">{formatLamports(wallet.balance || 0)}</Title>
+                      </div>
+                      <div className="space-y-1">
+                        <Text className="text-xs text-muted-foreground">LTCG Balance</Text>
+                        <Title className="text-xl">{formatTokens(wallet.tokenBalance || 0)}</Title>
+                      </div>
+                    </div>
+
+                    {/* Last Synced */}
+                    {wallet.lastSyncedAt && (
+                      <div className="text-xs text-muted-foreground">
+                        Last synced: {new Date(wallet.lastSyncedAt).toLocaleString()}
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleSyncBalance(wallet._id)}
-                    disabled={!wallet.address}
-                  >
-                    🔄 Sync
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleFreezeWallet(wallet._id, wallet.status)}
-                  >
-                    {wallet.status === "active" ? "🔒 Freeze" : "🔓 Unfreeze"}
-                  </Button>
-                  {wallet.address && (
+                  {wallet.creationStatus === "active" ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleSyncBalance(wallet._id)}
+                        disabled={!wallet.address}
+                      >
+                        🔄 Sync
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleFreezeWallet(wallet._id, wallet.status)}
+                      >
+                        {wallet.status === "active" ? "🔒 Freeze" : "🔓 Unfreeze"}
+                      </Button>
+                      {wallet.address && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                        >
+                          <a
+                            href={`https://solscan.io/account/${wallet.address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            🔗
+                          </a>
+                        </Button>
+                      )}
+                    </>
+                  ) : wallet.creationStatus === "failed" ? (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleRetryCreation(wallet._id)}
+                    >
+                      🔄 Retry Creation
+                    </Button>
+                  ) : (
                     <Button
                       variant="outline"
                       size="sm"
-                      asChild
+                      className="flex-1"
+                      disabled
                     >
-                      <a
-                        href={`https://solscan.io/account/${wallet.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        🔗
-                      </a>
+                      Creating...
                     </Button>
                   )}
                 </div>
