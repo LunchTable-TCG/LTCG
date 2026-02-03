@@ -41,18 +41,21 @@ export const listTournaments = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let tournaments;
-    if (args.status) {
-      tournaments = await ctx.db
-        .query("tournaments")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
-        .collect();
-    } else {
-      tournaments = await ctx.db.query("tournaments").collect();
-    }
+    let tournaments = await (async () => {
+      if (args.status) {
+        return await ctx.db
+          .query("tournaments")
+          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .collect();
+      } else {
+        return await ctx.db.query("tournaments").collect();
+      }
+    })();
+
+    type Tournament = typeof tournaments[number];
 
     // Sort by creation date descending (newest first)
-    tournaments.sort((a, b) => b.createdAt - a.createdAt);
+    tournaments.sort((a: Tournament, b: Tournament) => b.createdAt - a.createdAt);
 
     // Apply pagination
     const limit = args.limit ?? 50;
@@ -61,7 +64,7 @@ export const listTournaments = query({
 
     // Enrich with additional data
     const enriched = await Promise.all(
-      paginated.map(async (t) => {
+      paginated.map(async (t: Tournament) => {
         const creator = await ctx.db.get(t.createdBy);
 
         // Calculate total prize distributed (for completed tournaments)
@@ -106,7 +109,7 @@ export const listTournaments = query({
           createdAt: t.createdAt,
           updatedAt: t.updatedAt,
           // Enriched fields
-          creatorUsername: creator?.username || "Unknown",
+          creatorUsername: (creator as any)?.username || "Unknown",
           potentialPrize,
           totalPrizeDistributed,
         };

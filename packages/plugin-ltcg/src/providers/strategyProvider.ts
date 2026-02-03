@@ -19,6 +19,7 @@ export const strategyProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get game ID from state first, then message content
+      // biome-ignore lint/suspicious/noExplicitAny: Flexible message content access
       const gameId = state.values?.LTCG_CURRENT_GAME_ID || (message.content as any)?.gameId;
 
       if (!gameId) {
@@ -115,9 +116,11 @@ function analyzeStrategy(gameState: GameStateResponse): StrategyAnalysis {
   const myMonsters = gameState.myBoard || [];
   const opponentMonsters = gameState.opponentBoard || [];
   // Note: Spell/trap zones not returned separately in current API
+  // biome-ignore lint/suspicious/noExplicitAny: Backrow structure varies by game state
   const opponentBackrow: any[] = [];
 
   // Helper to get attack value from BoardCard
+  // biome-ignore lint/suspicious/noExplicitAny: BoardCard structure varies by game state
   const getAtk = (card: any) => card.currentAttack ?? card.attack ?? 0;
 
   // Evaluate game state
@@ -222,6 +225,7 @@ function analyzeStrategy(gameState: GameStateResponse): StrategyAnalysis {
  * Note: BoardCard uses hasAttacked, position, isFaceDown instead of canAttack
  */
 function calculateCanWinThisTurn(
+  // biome-ignore lint/suspicious/noExplicitAny: BoardCard structure varies during game
   myMonsters: any[],
   opponentLP: number,
   opponentMonsterCount: number
@@ -229,6 +233,7 @@ function calculateCanWinThisTurn(
   if (opponentMonsterCount > 0) return false;
 
   // Helper to get attack value
+  // biome-ignore lint/suspicious/noExplicitAny: BoardCard structure varies during game
   const getAtk = (card: any) => card.currentAttack ?? card.attack ?? 0;
 
   // Can attack if: not already attacked, in attack position (1), not face-down

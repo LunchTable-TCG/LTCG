@@ -19,8 +19,8 @@ import type { Id } from "../_generated/dataModel";
 import { getAdminAgentModel, getStandardEmbeddingModel } from "./providers";
 
 // Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround
 // @ts-ignore - Suppress TS2589 for api cast
+// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround to avoid TS2589
 const apiAny = api as any;
 
 // =============================================================================

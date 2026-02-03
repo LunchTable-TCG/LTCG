@@ -215,7 +215,7 @@ export async function checkChapterUnlocked(
         const stageProgress = await ctx.db
           .query("storyStageProgress")
           .withIndex("by_user_chapter", (q) =>
-            q.eq("userId", userId).eq("chapterId", actualPrevChapter!._id)
+            q.eq("userId", userId).eq("chapterId", actualPrevChapter?._id)
           )
           .filter((q) =>
             q.or(q.eq(q.field("status"), "completed"), q.eq(q.field("status"), "starred"))

@@ -40,7 +40,8 @@ export const getAll = query({
       const field = args.sortBy ?? "balance";
       const order = args.sortOrder ?? "desc";
 
-      let aVal: number, bVal: number;
+      let aVal: number;
+      let bVal: number;
       if (field === "balance") {
         aVal = a.balance;
         bVal = b.balance;
@@ -258,18 +259,17 @@ export const upsert = internalMutation({
         lastActivityAt: now,
       });
       return existing._id;
-    } else {
-      return await ctx.db.insert("tokenHolders", {
-        address: args.address,
-        balance: args.balance,
-        percentOwnership: args.percentOwnership ?? 0,
-        firstPurchaseAt: now,
-        lastActivityAt: now,
-        totalBought: args.balance,
-        totalSold: 0,
-        isPlatformWallet: false,
-      });
     }
+    return await ctx.db.insert("tokenHolders", {
+      address: args.address,
+      balance: args.balance,
+      percentOwnership: args.percentOwnership ?? 0,
+      firstPurchaseAt: now,
+      lastActivityAt: now,
+      totalBought: args.balance,
+      totalSold: 0,
+      isPlatformWallet: false,
+    });
   },
 });
 

@@ -97,14 +97,14 @@ function CreateChapterDialog({
         description,
       };
 
-      if (imageUrl) args["imageUrl"] = imageUrl;
+      if (imageUrl) args.imageUrl = imageUrl;
       if (unlockType !== "none") {
-        args["unlockConditionType"] = unlockType;
+        args.unlockConditionType = unlockType;
         if (unlockType === "chapter_complete" && requiredChapterId) {
-          args["requiredChapterId"] = requiredChapterId;
+          args.requiredChapterId = requiredChapterId;
         }
         if (unlockType === "player_level" && requiredLevel) {
-          args["requiredLevel"] = Number.parseInt(requiredLevel, 10);
+          args.requiredLevel = Number.parseInt(requiredLevel, 10);
         }
       }
 

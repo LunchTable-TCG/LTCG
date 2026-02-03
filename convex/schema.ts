@@ -555,6 +555,18 @@ export default defineSchema({
         turnSummoned: v.optional(v.number()), // Turn number when summoned
         // Equip spell tracking
         equippedCards: v.optional(v.array(v.id("cardDefinitions"))), // IDs of equip spells attached to this monster
+        // Token flags
+        isToken: v.optional(v.boolean()), // True if this is a generated token
+        tokenData: v.optional(
+          v.object({
+            name: v.string(),
+            atk: v.number(),
+            def: v.number(),
+            level: v.optional(v.number()),
+            attribute: v.optional(v.string()),
+            type: v.optional(v.string()),
+          })
+        ),
       })
     ),
     opponentBoard: v.array(
@@ -574,6 +586,18 @@ export default defineSchema({
         turnSummoned: v.optional(v.number()), // Turn number when summoned
         // Equip spell tracking
         equippedCards: v.optional(v.array(v.id("cardDefinitions"))), // IDs of equip spells attached to this monster
+        // Token flags
+        isToken: v.optional(v.boolean()), // True if this is a generated token
+        tokenData: v.optional(
+          v.object({
+            name: v.string(),
+            atk: v.number(),
+            def: v.number(),
+            level: v.optional(v.number()),
+            attribute: v.optional(v.string()),
+            type: v.optional(v.string()),
+          })
+        ),
       })
     ),
 

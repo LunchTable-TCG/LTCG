@@ -147,27 +147,26 @@ export const upsertConfig = mutation({
       });
 
       return existing._id;
-    } else {
-      // Create new
-      const configId = await ctx.db.insert("tokenConfig", {
-        ...args,
-        decimals: args.decimals ?? 6,
-        targetMarketCap: args.targetMarketCap ?? 90000, // $90k default
-        status: "draft",
-        createdBy: userId,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-
-      await scheduleAuditLog(ctx, {
-        adminId: userId,
-        action: "token.config.create",
-        metadata: { configId, name: args.name, symbol: args.symbol },
-        success: true,
-      });
-
-      return configId;
     }
+    // Create new
+    const configId = await ctx.db.insert("tokenConfig", {
+      ...args,
+      decimals: args.decimals ?? 6,
+      targetMarketCap: args.targetMarketCap ?? 90000, // $90k default
+      status: "draft",
+      createdBy: userId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await scheduleAuditLog(ctx, {
+      adminId: userId,
+      action: "token.config.create",
+      metadata: { configId, name: args.name, symbol: args.symbol },
+      success: true,
+    });
+
+    return configId;
   },
 });
 
@@ -195,16 +194,16 @@ export const updateStatus = mutation({
       updatedAt: Date.now(),
     };
 
-    if (args.mintAddress) updates["mintAddress"] = args.mintAddress;
-    if (args.bondingCurveAddress) updates["bondingCurveAddress"] = args.bondingCurveAddress;
-    if (args.pumpfunUrl) updates["pumpfunUrl"] = args.pumpfunUrl;
+    if (args.mintAddress) updates.mintAddress = args.mintAddress;
+    if (args.bondingCurveAddress) updates.bondingCurveAddress = args.bondingCurveAddress;
+    if (args.pumpfunUrl) updates.pumpfunUrl = args.pumpfunUrl;
 
     if (args.status === "launched" && !config.launchedAt) {
-      updates["launchedAt"] = Date.now();
+      updates.launchedAt = Date.now();
     }
 
     if (args.status === "graduated" && !config.graduatedAt) {
-      updates["graduatedAt"] = Date.now();
+      updates.graduatedAt = Date.now();
     }
 
     await ctx.db.patch(config._id, updates);

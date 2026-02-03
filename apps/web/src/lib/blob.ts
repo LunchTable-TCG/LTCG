@@ -16,7 +16,7 @@ import { type PutBlobResult, del, list, put } from "@vercel/blob";
  * Base URL for blob assets - set after initial upload
  * Format: https://<store-id>.public.blob.vercel-storage.com
  */
-const BLOB_BASE_URL = process.env["NEXT_PUBLIC_BLOB_BASE_URL"] || "";
+const BLOB_BASE_URL = process.env.NEXT_PUBLIC_BLOB_BASE_URL || "";
 
 /**
  * Asset path mappings from old public paths to blob paths

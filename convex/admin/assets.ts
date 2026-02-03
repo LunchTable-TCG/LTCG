@@ -64,27 +64,30 @@ export const listAssets = query({
     const limit = args.limit ?? 20;
 
     // Get assets based on filters
-    let allAssets;
-    if (args.category) {
-      allAssets = await ctx.db
-        .query("fileMetadata")
-        .withIndex("by_category", (q) => q.eq("category", args.category!))
-        .order("desc")
-        .collect();
-    } else {
-      allAssets = await ctx.db
-        .query("fileMetadata")
-        .withIndex("by_uploaded_at")
-        .order("desc")
-        .collect();
-    }
+    let allAssets = await (async () => {
+      if (args.category) {
+        return await ctx.db
+          .query("fileMetadata")
+          .withIndex("by_category", (q) => q.eq("category", args.category!))
+          .order("desc")
+          .collect();
+      } else {
+        return await ctx.db
+          .query("fileMetadata")
+          .withIndex("by_uploaded_at")
+          .order("desc")
+          .collect();
+      }
+    })();
+
+    type Asset = typeof allAssets[number];
 
     // Apply search filter if provided
     let filteredAssets = allAssets;
     if (args.search) {
       const searchLower = args.search.toLowerCase();
       filteredAssets = allAssets.filter(
-        (asset) =>
+        (asset: Asset) =>
           asset.fileName.toLowerCase().includes(searchLower) ||
           asset.description?.toLowerCase().includes(searchLower)
       );
@@ -257,10 +260,10 @@ export const updateAsset = mutation({
     }> = {};
 
     if (args.category !== undefined) {
-      updates["category"] = args.category;
+      updates.category = args.category;
     }
     if (args.description !== undefined) {
-      updates["description"] = args.description;
+      updates.description = args.description;
     }
 
     if (Object.keys(updates).length > 0) {

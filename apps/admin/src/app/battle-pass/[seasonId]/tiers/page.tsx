@@ -268,7 +268,7 @@ function TierRow({ tier, onUpdate, isEditable }: TierRowProps) {
 
 export default function BattlePassTiersPage() {
   const params = useParams();
-  const battlePassId = params["seasonId"] as string;
+  const battlePassId = params.seasonId as string;
 
   const [tiers, setTiers] = useState<TierConfig[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -360,25 +360,25 @@ export default function BattlePassTiersPage() {
             freeReward: { type: "gold", amount },
             isDirty: true,
           };
-        } else if (bulkAction === "gems") {
+        }
+        if (bulkAction === "gems") {
           return {
             ...tier,
             premiumReward: { type: "gems", amount: tier.isMilestone ? amount * 2 : amount },
             isDirty: true,
           };
-        } else {
-          // defaults
-          const isMilestone = MILESTONE_TIERS.includes(tier.tier) || tier.tier === 50;
-          return {
-            ...tier,
-            freeReward: { type: "gold", amount: isMilestone ? 500 : 100 },
-            premiumReward: isMilestone
-              ? { type: "gems", amount: tier.tier === 50 ? 100 : 50 }
-              : { type: "gold", amount: 200 },
-            isMilestone,
-            isDirty: true,
-          };
         }
+        // defaults
+        const isMilestone = MILESTONE_TIERS.includes(tier.tier) || tier.tier === 50;
+        return {
+          ...tier,
+          freeReward: { type: "gold", amount: isMilestone ? 500 : 100 },
+          premiumReward: isMilestone
+            ? { type: "gems", amount: tier.tier === 50 ? 100 : 50 }
+            : { type: "gold", amount: 200 },
+          isMilestone,
+          isDirty: true,
+        };
       })
     );
 

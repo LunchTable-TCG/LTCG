@@ -109,40 +109,43 @@ export const listCards = query({
     const offset = args.offset ?? 0;
 
     // Build query based on filters
-    let cards;
-    if (args.rarity) {
-      cards = await ctx.db
-        .query("cardDefinitions")
-        .withIndex("by_rarity", (q) => q.eq("rarity", args.rarity!))
-        .collect();
-    } else if (args.archetype) {
-      cards = await ctx.db
-        .query("cardDefinitions")
-        .withIndex("by_archetype", (q) => q.eq("archetype", args.archetype!))
-        .collect();
-    } else if (args.cardType) {
-      cards = await ctx.db
-        .query("cardDefinitions")
-        .withIndex("by_type", (q) => q.eq("cardType", args.cardType!))
-        .collect();
-    } else {
-      cards = await ctx.db.query("cardDefinitions").collect();
-    }
+    let cards = await (async () => {
+      if (args.rarity) {
+        return await ctx.db
+          .query("cardDefinitions")
+          .withIndex("by_rarity", (q) => q.eq("rarity", args.rarity!))
+          .collect();
+      } else if (args.archetype) {
+        return await ctx.db
+          .query("cardDefinitions")
+          .withIndex("by_archetype", (q) => q.eq("archetype", args.archetype!))
+          .collect();
+      } else if (args.cardType) {
+        return await ctx.db
+          .query("cardDefinitions")
+          .withIndex("by_type", (q) => q.eq("cardType", args.cardType!))
+          .collect();
+      } else {
+        return await ctx.db.query("cardDefinitions").collect();
+      }
+    })();
+
+    type Card = typeof cards[number];
 
     // Apply additional filters
     let filtered = cards;
 
     if (!args.includeInactive) {
-      filtered = filtered.filter((c) => c.isActive);
+      filtered = filtered.filter((c: Card) => c.isActive);
     }
 
     if (args.search) {
       const searchLower = args.search.toLowerCase();
-      filtered = filtered.filter((c) => c.name.toLowerCase().includes(searchLower));
+      filtered = filtered.filter((c: Card) => c.name.toLowerCase().includes(searchLower));
     }
 
     // Sort by name
-    filtered.sort((a, b) => a.name.localeCompare(b.name));
+    filtered.sort((a: Card, b: Card) => a.name.localeCompare(b.name));
 
     // Paginate
     const totalCount = filtered.length;

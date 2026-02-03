@@ -497,7 +497,7 @@ export default function SeasonDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { hasPermission } = useAdmin();
-  const seasonId = params["seasonId"] as string;
+  const seasonId = params.seasonId as string;
 
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);

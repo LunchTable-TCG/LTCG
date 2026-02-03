@@ -114,7 +114,7 @@ export function TournamentBracket({ bracket, currentUserId }: TournamentBracketP
           {bracket.rounds.map((round, roundIndex) => {
             // Calculate vertical spacing based on round
             const matchHeight = 180; // Approximate height of MatchCard
-            const spacing = Math.pow(2, roundIndex) * 20; // Increase spacing per round
+            const spacing = 2 ** roundIndex * 20; // Increase spacing per round
 
             return (
               <div

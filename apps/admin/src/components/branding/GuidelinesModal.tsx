@@ -81,7 +81,7 @@ export function GuidelinesModal({ isOpen, onClose, guidelines, onSave }: Guideli
       });
       setHasChanges(false);
       toast.success("Guidelines saved");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to save guidelines");
     } finally {
       setIsSaving(false);
@@ -256,7 +256,7 @@ export function GuidelinesModal({ isOpen, onClose, guidelines, onSave }: Guideli
                                 weights: e.target.value
                                   .split(",")
                                   .map((w) => Number.parseInt(w.trim()))
-                                  .filter((w) => !isNaN(w)),
+                                  .filter((w) => !Number.isNaN(w)),
                               })
                             }
                             className="w-32 text-xs"

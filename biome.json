@@ -49,6 +49,14 @@
       "complexity": {
         "noForEach": "off",
         "useLiteralKeys": "error"
+      },
+      "performance": {
+        "noAccumulatingSpread": "warn",
+        "noDelete": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn",
+        "noDangerouslySetInnerHtmlWithChildren": "error"
       }
     }
   },

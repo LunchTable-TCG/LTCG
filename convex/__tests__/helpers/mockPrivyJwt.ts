@@ -141,7 +141,10 @@ export function verifyMockPrivyToken(
     const parts = token.split(".");
     if (parts.length !== 3) return null;
 
-    const payload = JSON.parse(atob(parts[1]!));
+    const payloadPart = parts[1];
+    if (!payloadPart) return null;
+
+    const payload = JSON.parse(atob(payloadPart));
 
     // Check expiration
     if (payload.exp < Math.floor(Date.now() / 1000)) {

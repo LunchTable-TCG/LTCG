@@ -45,45 +45,48 @@ export const listListings = query({
     const limit = args.limit ?? 50;
     const offset = args.offset ?? 0;
 
-    let listings;
-    if (args.status) {
-      listings = await ctx.db
-        .query("marketplaceListings")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
-        .order("desc")
-        .collect();
-    } else if (args.sellerId) {
-      listings = await ctx.db
-        .query("marketplaceListings")
-        .withIndex("by_seller", (q) => q.eq("sellerId", args.sellerId!))
-        .order("desc")
-        .collect();
-    } else {
-      listings = await ctx.db.query("marketplaceListings").order("desc").collect();
-    }
+    let listings = await (async () => {
+      if (args.status) {
+        return await ctx.db
+          .query("marketplaceListings")
+          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .order("desc")
+          .collect();
+      } else if (args.sellerId) {
+        return await ctx.db
+          .query("marketplaceListings")
+          .withIndex("by_seller", (q) => q.eq("sellerId", args.sellerId!))
+          .order("desc")
+          .collect();
+      } else {
+        return await ctx.db.query("marketplaceListings").order("desc").collect();
+      }
+    })();
+
+    type Listing = typeof listings[number];
 
     // Apply search filter
     if (args.search) {
       const searchLower = args.search.toLowerCase();
-      listings = listings.filter((l) => l.sellerUsername.toLowerCase().includes(searchLower));
+      listings = listings.filter((l: Listing) => l.sellerUsername.toLowerCase().includes(searchLower));
     }
 
     // Apply price filters
     if (args.priceMin !== undefined) {
-      listings = listings.filter((l) => l.price >= args.priceMin!);
+      listings = listings.filter((l: Listing) => l.price >= args.priceMin!);
     }
     if (args.priceMax !== undefined) {
-      listings = listings.filter((l) => l.price <= args.priceMax!);
+      listings = listings.filter((l: Listing) => l.price <= args.priceMax!);
     }
 
     // Enhance with card info
     const enhancedListings = await Promise.all(
-      listings.map(async (listing) => {
+      listings.map(async (listing: Listing) => {
         const cardDef = await ctx.db.get(listing.cardDefinitionId);
         return {
           ...listing,
-          cardName: cardDef?.name ?? "Unknown Card",
-          cardRarity: cardDef?.rarity ?? "unknown",
+          cardName: (cardDef as any)?.name ?? "Unknown Card",
+          cardRarity: (cardDef as any)?.rarity ?? "unknown",
         };
       })
     );
@@ -261,9 +264,12 @@ export const getPriceAnomalies = query({
  * Helper function to detect price anomalies
  */
 async function detectPriceAnomalies(
+  // biome-ignore lint/suspicious/noExplicitAny: Internal helper function with flexible context
   ctx: { db: any },
   listings: Array<{
+    // biome-ignore lint/suspicious/noExplicitAny: Flexible ID type for internal processing
     _id: any;
+    // biome-ignore lint/suspicious/noExplicitAny: Flexible ID type for internal processing
     cardDefinitionId: any;
     price: number;
     sellerUsername: string;
@@ -276,7 +282,7 @@ async function detectPriceAnomalies(
     if (!byCard.has(cardId)) {
       byCard.set(cardId, []);
     }
-    byCard.get(cardId)!.push(listing);
+    byCard.get(cardId)?.push(listing);
   }
 
   const anomalies = [];

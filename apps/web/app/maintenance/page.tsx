@@ -14,7 +14,7 @@ export default function MaintenancePage() {
   // Animate the dots for visual feedback
   useEffect(() => {
     const interval = setInterval(() => {
-      setDots((prev) => (prev.length >= 3 ? "." : prev + "."));
+      setDots((prev) => (prev.length >= 3 ? "." : `${prev}.`));
     }, 500);
     return () => clearInterval(interval);
   }, []);
@@ -60,8 +60,8 @@ export default function MaintenancePage() {
         <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
           <div className="flex items-center justify-center gap-2 text-amber-400">
             <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500" />
             </span>
             <span className="font-medium">Working on it{dots}</span>
           </div>

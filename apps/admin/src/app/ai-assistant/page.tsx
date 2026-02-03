@@ -81,7 +81,7 @@ export default function AIAssistantPage() {
       setSelectedThreadId(result.threadId);
       await loadThreads();
       toast.success("New conversation started");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to create new thread");
     } finally {
       setIsCreatingThread(false);
@@ -101,7 +101,7 @@ export default function AIAssistantPage() {
         setSelectedThreadId(remaining[0]?.threadId ?? null);
       }
       toast.success("Conversation deleted");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to delete conversation");
     } finally {
       setIsDeletingThread(null);

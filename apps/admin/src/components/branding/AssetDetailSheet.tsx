@@ -81,7 +81,7 @@ export function AssetDetailSheet({
       await onSave(updates);
       setHasChanges(false);
       toast.success("Asset updated");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to save changes");
     } finally {
       setIsSaving(false);
@@ -96,7 +96,7 @@ export function AssetDetailSheet({
       await onDelete();
       toast.success("Asset deleted");
       onClose();
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to delete asset");
     } finally {
       setIsDeleting(false);

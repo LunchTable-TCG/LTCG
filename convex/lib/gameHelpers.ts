@@ -501,6 +501,7 @@ export function getModifiedStats(
   let atkBonus = 0;
   let defBonus = 0;
 
+  // Apply temporary modifiers
   for (const mod of modifiers) {
     if (mod.cardId === cardId) {
       atkBonus += mod.atkBonus;
@@ -508,10 +509,62 @@ export function getModifiedStats(
     }
   }
 
+  // Apply lingering effects
+  const lingeringEffects = gameState.lingeringEffects || [];
+  for (const effect of lingeringEffects) {
+    // Check if effect applies to this card
+    const appliesToCard = shouldLingeringEffectApplyToCard(effect, cardId);
+
+    if (appliesToCard) {
+      if (effect.effectType === "modifyATK" && typeof effect.value === "number") {
+        atkBonus += effect.value;
+      } else if (effect.effectType === "modifyDEF" && typeof effect.value === "number") {
+        defBonus += effect.value;
+      }
+    }
+  }
+
+  // Note: Equip spell stat bonuses are applied through the temporaryModifiers system
+  // When an equip spell resolves, it creates a temporary modifier for the equipped monster
+  // The equippedTo/equippedCards fields track the relationship for SBA and destruction rules
+
   return {
     attack: baseAtk + atkBonus,
     defense: baseDef + defBonus,
   };
+}
+
+/**
+ * Check if a lingering effect should apply to a specific card
+ */
+function shouldLingeringEffectApplyToCard(
+  effect: {
+    effectType: string;
+    value: any;
+    conditions?: any;
+  },
+  cardId: Id<"cardDefinitions">
+): boolean {
+  if (!effect.conditions) return true;
+
+  const conditions = effect.conditions as {
+    targetCardId?: Id<"cardDefinitions">;
+    targetAll?: boolean;
+    targetSelf?: boolean;
+  };
+
+  // Specific card target
+  if (conditions.targetCardId) {
+    return conditions.targetCardId === cardId;
+  }
+
+  // All matching cards (additional filtering could be added)
+  if (conditions.targetAll) {
+    return true;
+  }
+
+  // Default: apply to all
+  return true;
 }
 
 /**

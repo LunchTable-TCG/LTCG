@@ -7,6 +7,7 @@
 import { v } from "convex/values";
 import { internalMutation } from "../../_generated/server";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { cleanupLingeringEffects } from "../effectSystem/lingeringEffects";
 import { recordEventHelper } from "../gameEvents";
 
 /**
@@ -57,12 +58,15 @@ export const advanceToBattlePhaseInternal = internalMutation({
     const user = await ctx.db.get(args.userId);
     const username = user?.username ?? user?.name ?? "Unknown";
 
-    // 6. Update phase to battle
+    // 6. Clean up lingering effects that expire when leaving main1
+    await cleanupLingeringEffects(ctx, gameState, "main1", gameState.turnNumber ?? 0);
+
+    // 7. Update phase to battle
     await ctx.db.patch(gameState._id, {
       currentPhase: "battle",
     });
 
-    // 7. Record phase change event
+    // 8. Record phase change event
     await recordEventHelper(ctx, {
       lobbyId: gameState.lobbyId,
       gameId: args.gameId,
@@ -131,12 +135,15 @@ export const advanceToMainPhase2Internal = internalMutation({
     const user = await ctx.db.get(args.userId);
     const username = user?.username ?? user?.name ?? "Unknown";
 
-    // 6. Update phase to main2
+    // 6. Clean up lingering effects that expire when leaving battle phase
+    await cleanupLingeringEffects(ctx, gameState, "battle", gameState.turnNumber ?? 0);
+
+    // 7. Update phase to main2
     await ctx.db.patch(gameState._id, {
       currentPhase: "main2",
     });
 
-    // 7. Record phase change event
+    // 8. Record phase change event
     await recordEventHelper(ctx, {
       lobbyId: gameState.lobbyId,
       gameId: args.gameId,

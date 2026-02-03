@@ -62,7 +62,7 @@ export default function ListingDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { isAdmin } = useAdmin();
-  const listingId = params["listingId"] as string;
+  const listingId = params.listingId as string;
 
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
@@ -167,7 +167,7 @@ export default function ListingDetailPage() {
     if (!listing?.cardDefinitionId || !priceCapAmount || !priceCapReason) return;
 
     const maxPrice = Number.parseInt(priceCapAmount, 10);
-    if (isNaN(maxPrice) || maxPrice <= 0) {
+    if (Number.isNaN(maxPrice) || maxPrice <= 0) {
       toast.error("Please enter a valid price cap amount");
       return;
     }

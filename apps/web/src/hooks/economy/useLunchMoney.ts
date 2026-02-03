@@ -121,7 +121,7 @@ export function useLunchMoney(): UseLunchMoneyReturn {
     try {
       await refreshBalanceMutation({});
       toast.success("Token balance refreshed");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to refresh balance");
     }
   };
@@ -130,7 +130,7 @@ export function useLunchMoney(): UseLunchMoneyReturn {
     try {
       await cancelGoldListingMutation({ listingId });
       toast.success("Listing cancelled");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to cancel listing");
     }
   };
@@ -139,7 +139,7 @@ export function useLunchMoney(): UseLunchMoneyReturn {
     try {
       await cancelTokenListingMutation({ listingId });
       toast.success("Token listing cancelled");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to cancel listing");
     }
   };

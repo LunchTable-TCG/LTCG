@@ -295,7 +295,7 @@ export default function MarketplaceModerationPage() {
     if (!selectedCardId || !priceCapAmount || !priceCapReason) return;
 
     const maxPrice = Number.parseInt(priceCapAmount, 10);
-    if (isNaN(maxPrice) || maxPrice <= 0) {
+    if (Number.isNaN(maxPrice) || maxPrice <= 0) {
       toast.error("Please enter a valid price cap amount");
       return;
     }

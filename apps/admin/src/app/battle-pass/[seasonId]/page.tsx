@@ -65,7 +65,7 @@ const STATUS_CONFIG: Record<
 export default function BattlePassDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const battlePassId = params["seasonId"] as string;
+  const battlePassId = params.seasonId as string;
 
   // Form state
   const [name, setName] = useState("");

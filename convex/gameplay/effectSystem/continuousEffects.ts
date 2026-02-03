@@ -86,7 +86,7 @@ export async function calculateContinuousModifiers(
     }
   }
 
-  // Check continuous traps (only affect owner's side unless specified)
+  // Check continuous spells/traps (only affect owner's side unless specified)
   const backrow = isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
 
   // Batch fetch all face-up backrow cards
@@ -98,7 +98,12 @@ export async function calculateContinuousModifiers(
 
   for (const backrowCard of faceUpBackrowCards) {
     const backrowCardDef = backrowCardMap.get(backrowCard.cardId);
-    if (backrowCardDef?.cardType === "trap") {
+    // Check both continuous spells and continuous traps
+    if (
+      backrowCardDef &&
+      ((backrowCardDef.cardType === "spell" && backrowCardDef.spellType === "continuous") ||
+        (backrowCardDef.cardType === "trap" && backrowCardDef.trapType === "continuous"))
+    ) {
       const parsedAbility = getCardAbility(backrowCardDef);
       if (parsedAbility) {
         for (const effect of parsedAbility.effects) {
@@ -132,13 +137,13 @@ export async function getActiveContinuousEffects(
   Array<{
     cardName: string;
     effect: string;
-    source: "field_spell" | "continuous_trap";
+    source: "field_spell" | "continuous_spell" | "continuous_trap";
   }>
 > {
   const effects: Array<{
     cardName: string;
     effect: string;
-    source: "field_spell" | "continuous_trap";
+    source: "field_spell" | "continuous_spell" | "continuous_trap";
   }> = [];
 
   // Check field spell
@@ -158,7 +163,7 @@ export async function getActiveContinuousEffects(
     }
   }
 
-  // Check continuous traps
+  // Check continuous spells/traps
   const backrow = isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
 
   // Batch fetch all face-up backrow cards
@@ -170,7 +175,11 @@ export async function getActiveContinuousEffects(
 
   for (const backrowCard of faceUpBackrowCards) {
     const backrowCardDef = backrowCardMap.get(backrowCard.cardId);
-    if (backrowCardDef?.cardType === "trap") {
+    if (
+      backrowCardDef &&
+      ((backrowCardDef.cardType === "spell" && backrowCardDef.spellType === "continuous") ||
+        (backrowCardDef.cardType === "trap" && backrowCardDef.trapType === "continuous"))
+    ) {
       const parsedAbility = getCardAbility(backrowCardDef);
       if (parsedAbility) {
         const hasContinuousEffect = parsedAbility.effects.some((effect) => effect.continuous);
@@ -178,7 +187,8 @@ export async function getActiveContinuousEffects(
           effects.push({
             cardName: backrowCardDef.name,
             effect: backrowCardDef.ability?.name || "Continuous effect",
-            source: "continuous_trap",
+            source:
+              backrowCardDef.cardType === "spell" ? "continuous_spell" : "continuous_trap",
           });
         }
       }

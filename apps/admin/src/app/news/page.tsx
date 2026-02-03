@@ -195,7 +195,7 @@ export default function NewsPage() {
       try {
         const result = await togglePublished({ articleId: article._id });
         toast.success(result.isPublished ? "Article published" : "Article unpublished");
-      } catch (error) {
+      } catch (_error) {
         toast.error("Failed to toggle publish status");
       }
     },
@@ -207,7 +207,7 @@ export default function NewsPage() {
       try {
         const result = await togglePinned({ articleId: article._id });
         toast.success(result.isPinned ? "Article pinned" : "Article unpinned");
-      } catch (error) {
+      } catch (_error) {
         toast.error("Failed to toggle pin status");
       }
     },
@@ -220,7 +220,7 @@ export default function NewsPage() {
       await deleteArticle({ articleId: deleteConfirmArticle._id });
       toast.success("Article deleted");
       setDeleteConfirmArticle(null);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to delete article");
     }
   }, [deleteConfirmArticle, deleteArticle]);

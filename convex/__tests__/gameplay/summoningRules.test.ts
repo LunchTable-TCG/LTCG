@@ -17,16 +17,7 @@ import { modules } from "@convex/test.setup";
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 
-// Helper types
-type GamePhase =
-  | "draw"
-  | "standby"
-  | "main1"
-  | "battle_start"
-  | "battle"
-  | "battle_end"
-  | "main2"
-  | "end";
+// Helper types - GamePhase type removed as it's not used in this file
 
 interface BoardCard {
   cardId: Id<"cardDefinitions">;

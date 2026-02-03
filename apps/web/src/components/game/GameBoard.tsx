@@ -163,7 +163,7 @@ export function GameBoard({
 
   // Effect Feedback System
   const effectFeedback = useEffectFeedback();
-  const [effectQueue, setEffectQueue] = useState<QueuedEffect[]>([]);
+  const [effectQueue, _setEffectQueue] = useState<QueuedEffect[]>([]);
 
   // Cost Payment State
   const [costPayment, setCostPayment] = useState<{
@@ -252,7 +252,7 @@ export function GameBoard({
         const description = event.description || "Effect activated";
 
         // Use enhanced toast with categorization
-        const category = categorizeEffect(description);
+        categorizeEffect(description);
         showEffectActivated(cardName || "Card Effect", description);
       }
     );
@@ -668,7 +668,7 @@ export function GameBoard({
             cardName: costCheck.cardName || selectedCard.name,
             costType: costCheck.costType as "discard" | "pay_lp" | "tribute" | "banish",
             costValue: costCheck.costValue || 1,
-            availableCards: (costCheck.availableTargets || []).map((target) => ({
+            availableCards: (costCheck.availableTargets || []).map((target: any) => ({
               cardId: target.cardId,
               name: target.name,
               cardType: target.cardType,
@@ -724,7 +724,7 @@ export function GameBoard({
             try {
               await completeSearchEffect({
                 lobbyId,
-                sourceCardId: selectedBackrowCard.cardId,
+                sourceCardId: selectedCard.cardId,
                 selectedCardId: selectedIds[0]!,
               });
               toast.success("Card added to hand!");
@@ -1207,7 +1207,7 @@ export function GameBoard({
         )}
 
         {/* Chain Display Widget */}
-        {chainResponses && chainResponses.chain && chainResponses.chain.length > 0 && (
+        {chainResponses?.chain && chainResponses.chain.length > 0 && (
           <ChainDisplayWidget
             chain={chainResponses.chain.map((c: any) => ({
               chainPosition: c.chainLink || 1,
@@ -1223,7 +1223,7 @@ export function GameBoard({
         )}
 
         {/* Priority Indicator */}
-        {chainResponses && chainResponses.priorityPlayer && (
+        {chainResponses?.priorityPlayer && (
           <PriorityIndicator
             isOpen={true}
             windowType="open"

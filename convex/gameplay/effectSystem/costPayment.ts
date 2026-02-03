@@ -190,7 +190,7 @@ export const payCost = mutation({
       } else {
         parsedAbility = card.ability as { effects: ParsedEffect[] };
       }
-    } catch (error) {
+    } catch (_error) {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: "Failed to parse card ability",
       });

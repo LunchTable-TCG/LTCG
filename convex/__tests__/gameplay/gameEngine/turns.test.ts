@@ -430,7 +430,7 @@ describe("Draw Phase Execution", () => {
 
   it("should skip draw on first turn for host", async () => {
     const t = createTestInstance();
-    const { hostId, lobbyId } = await createGameSetup(t);
+    const { lobbyId } = await createGameSetup(t);
 
     const lobby = await t.run(async (ctx) => {
       return await ctx.db.get(lobbyId);
@@ -450,7 +450,7 @@ describe("Draw Phase Execution", () => {
 describe("Deck-Out Detection", () => {
   it("should detect deck-out condition when player has empty deck", async () => {
     const t = createTestInstance();
-    const { hostId, opponentId, gameStateId } = await createGameSetup(t);
+    const { opponentId, gameStateId } = await createGameSetup(t);
 
     // Set opponent deck to empty
     await t.run(async (ctx) => {
@@ -564,9 +564,11 @@ describe("Hand Size Limit", () => {
 
     // Hand has 8 cards, but limit is 6
     expect(gameState?.hostHand.length).toBe(8);
-    const needsDiscard = gameState?.hostHand.length! > 6;
+    if (!gameState) throw new Error("Expected gameState to exist");
+
+    const needsDiscard = gameState.hostHand.length > 6;
     expect(needsDiscard).toBe(true);
-    const discardCount = gameState?.hostHand.length! - 6;
+    const discardCount = gameState.hostHand.length - 6;
     expect(discardCount).toBe(2);
   });
 });

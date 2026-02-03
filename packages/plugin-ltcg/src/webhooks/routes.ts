@@ -52,7 +52,7 @@ export const webhookRoutes = [
         }
 
         // 4. Verify HMAC signature (if secret configured)
-        const webhookSecret = process.env["LTCG_WEBHOOK_SECRET"];
+        const webhookSecret = process.env.LTCG_WEBHOOK_SECRET;
         if (webhookSecret) {
           if (!payload.signature) {
             logger.warn({ gameId: payload.gameId }, "Missing webhook signature");

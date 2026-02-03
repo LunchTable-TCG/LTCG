@@ -12,6 +12,25 @@ import type { MutationCtx } from "../../_generated/server";
 // CORE EFFECT TYPES
 // ============================================================================
 
+/**
+ * Lingering effect that persists for a duration
+ */
+export interface LingeringEffect {
+  effectType: string; // Type of lingering effect (modifyATK, preventActivation, etc.)
+  value: any; // Effect value (number for stat mods, object for complex effects)
+  sourceCardId?: Id<"cardDefinitions">; // Card that created this effect
+  sourceCardName?: string; // Name of source card for display
+  appliedBy: Id<"users">; // Player who applied the effect
+  appliedTurn: number; // Turn number when applied
+  duration: {
+    type: "until_end_phase" | "until_turn_end" | "until_next_turn" | "permanent" | "custom";
+    endTurn?: number; // Specific turn number when effect expires
+    endPhase?: string; // Specific phase when effect expires
+  };
+  affectsPlayer?: "host" | "opponent" | "both"; // Which player(s) are affected
+  conditions?: any; // Optional conditions for effect application
+}
+
 export type EffectType =
   | "draw" // Draw X cards
   | "destroy" // Destroy target card(s)
@@ -24,11 +43,13 @@ export type EffectType =
   | "toGraveyard" // Send card to GY
   | "banish" // Banish card
   | "search" // Search deck
-  | "negate" // Negate activation/effect
+  | "negate" // Negate activation/effect (effect negation)
+  | "negateActivation" // Negate activation and optionally destroy
   | "directAttack" // Allows direct attack under condition (passive, checked in combatSystem)
   | "mill" // Send cards from top of deck to GY
   | "discard" // Discard cards from hand to GY
-  | "multipleAttack"; // Allow multiple attacks per turn (passive)
+  | "multipleAttack" // Allow multiple attacks per turn (passive)
+  | "generateToken"; // Generate monster token(s) on field
 
 export type TriggerCondition =
   | "on_summon" // When this card is summoned
@@ -39,8 +60,31 @@ export type TriggerCondition =
   | "on_battle_destroy" // When this card destroys a monster by battle
   | "on_battle_attacked" // When this card is attacked
   | "on_battle_start" // At the start of the Battle Phase
+  | "on_attack" // When this card declares an attack
+  | "on_enter_battle_phase" // When Battle Phase begins
   | "on_draw" // During draw phase
   | "on_end" // During end phase
+  | "on_opponent_attacks" // When opponent declares an attack
+  | "on_opponent_activates" // When opponent activates a card
+  | "on_standby" // During standby phase
+  | "on_main1_start" // At start of Main Phase 1
+  | "on_main2_start" // At start of Main Phase 2
+  | "on_battle_end" // At end of Battle Phase
+  | "on_turn_start" // At start of turn
+  | "on_turn_end" // At end of turn
+  | "on_opponent_turn_start" // At start of opponent's turn
+  | "on_opponent_turn_end" // At end of opponent's turn
+  | "on_chain_start" // When a chain starts
+  | "on_chain_link" // When added to chain
+  | "on_chain_resolve" // When chain resolves
+  | "on_spell_activated" // When a spell is activated
+  | "on_trap_activated" // When a trap is activated
+  | "on_effect_activated" // When an effect is activated
+  | "on_damage_calculation" // During damage calculation
+  | "quick" // Quick effect (can be activated during opponent's turn)
+  | "continuous" // Continuous effect (always active)
+  | "while_in_gy" // While in graveyard
+  | "while_banished" // While banished
   | "manual"; // Manual activation (spells/traps)
 
 /**
@@ -228,7 +272,15 @@ export interface JsonEffect {
 
   // Effect values
   value?: number; // Primary numeric value (damage, LP, draw count, etc.)
-  duration?: EffectDuration; // How long the effect lasts
+  duration?: EffectDuration; // How long the effect lasts (legacy field)
+
+  // Lingering effect support - more detailed duration tracking
+  lingeringDuration?: {
+    type: "until_end_phase" | "until_turn_end" | "until_next_turn" | "permanent" | "custom";
+    endTurn?: number; // Specific turn number when effect expires
+    endPhase?: string; // Specific phase when effect expires
+  };
+  lingering?: boolean; // Flag that this effect creates a lingering modifier
 
   // Targeting
   target?: JsonTarget; // For effects that target specific cards
@@ -269,6 +321,22 @@ export interface JsonEffect {
   // Negation specifics
   negateType?: "activation" | "effect" | "both";
   negateAndDestroy?: boolean;
+
+  // Activation negation specifics (for negateActivation effect type)
+  negateTargetType?: "spell" | "trap" | "monster" | "any";
+  destroyAfterNegation?: boolean;
+
+  // Token generation specifics (for generateToken effect type)
+  tokenData?: {
+    name: string;
+    atk: number;
+    def: number;
+    level?: number;
+    attribute?: string;
+    type?: string;
+    count?: number; // How many tokens to generate
+    position?: "attack" | "defense"; // Battle position
+  };
 
   // Multi-effect support
   then?: JsonEffect; // Execute this effect after (chained)
@@ -320,6 +388,13 @@ export interface ParsedEffect {
   // Activation condition for triggered effects (game-state requirements)
   // Evaluated before the effect can execute (LP thresholds, board counts, etc.)
   activationCondition?: JsonCondition;
+  // Duration support for lingering effects
+  duration?: {
+    type: "until_end_phase" | "until_turn_end" | "until_next_turn" | "permanent" | "custom";
+    endTurn?: number; // Specific turn number when effect expires
+    endPhase?: string; // Specific phase when effect expires
+  };
+  lingering?: boolean; // Flag that this effect creates a lingering modifier
 }
 
 // Multi-part ability support

@@ -123,7 +123,7 @@ export default function BrandingPage() {
     try {
       const result = await initializeBranding({});
       toast.success(result.message);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to initialize branding system");
     } finally {
       setIsInitializing(false);

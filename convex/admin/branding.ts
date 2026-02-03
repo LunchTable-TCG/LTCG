@@ -56,26 +56,28 @@ export const listFolders = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let folders;
+    let folders = await (async () => {
+      if (args.parentId !== undefined) {
+        // Get children of a specific folder (including null for root)
+        return await ctx.db
+          .query("brandingFolders")
+          .withIndex("by_parent", (q) => q.eq("parentId", args.parentId))
+          .collect();
+      } else if (args.section) {
+        const section = args.section;
+        return await ctx.db
+          .query("brandingFolders")
+          .withIndex("by_section", (q) => q.eq("section", section))
+          .collect();
+      } else {
+        return await ctx.db.query("brandingFolders").collect();
+      }
+    })();
 
-    if (args.parentId !== undefined) {
-      // Get children of a specific folder (including null for root)
-      folders = await ctx.db
-        .query("brandingFolders")
-        .withIndex("by_parent", (q) => q.eq("parentId", args.parentId))
-        .collect();
-    } else if (args.section) {
-      const section = args.section;
-      folders = await ctx.db
-        .query("brandingFolders")
-        .withIndex("by_section", (q) => q.eq("section", section))
-        .collect();
-    } else {
-      folders = await ctx.db.query("brandingFolders").collect();
-    }
+    type Folder = typeof folders[number];
 
     // Sort by sortOrder
-    return folders.sort((a, b) => a.sortOrder - b.sortOrder);
+    return folders.sort((a: Folder, b: Folder) => a.sortOrder - b.sortOrder);
   },
 });
 
@@ -270,7 +272,7 @@ export const updateFolder = mutation({
       // Update all descendant paths
       const allFolders = await ctx.db.query("brandingFolders").collect();
       for (const f of allFolders) {
-        if (f.path.startsWith(oldPath + "/")) {
+        if (f.path.startsWith(`${oldPath}/`)) {
           await ctx.db.patch(f._id, {
             path: f.path.replace(oldPath, newPath),
             updatedAt: Date.now(),
@@ -332,7 +334,7 @@ export const moveFolder = mutation({
     // Update all descendant paths
     const allFolders = await ctx.db.query("brandingFolders").collect();
     for (const f of allFolders) {
-      if (f.path.startsWith(oldPath + "/")) {
+      if (f.path.startsWith(`${oldPath}/`)) {
         await ctx.db.patch(f._id, {
           path: f.path.replace(oldPath, newPath),
           updatedAt: Date.now(),
@@ -710,21 +712,20 @@ export const updateGuidelines = mutation({
       }
       await ctx.db.patch(existing._id, updates);
       return { guidelinesId: existing._id };
-    } else {
-      const guidelinesId = await ctx.db.insert("brandingGuidelines", {
-        section: args.section,
-        structuredData: args.structuredData ?? {
-          colors: [],
-          fonts: [],
-          brandVoice: undefined,
-          customFields: undefined,
-        },
-        richTextContent: args.richTextContent ?? "",
-        updatedAt: now,
-        updatedBy: userId,
-      });
-      return { guidelinesId };
     }
+    const guidelinesId = await ctx.db.insert("brandingGuidelines", {
+      section: args.section,
+      structuredData: args.structuredData ?? {
+        colors: [],
+        fonts: [],
+        brandVoice: undefined,
+        customFields: undefined,
+      },
+      richTextContent: args.richTextContent ?? "",
+      updatedAt: now,
+      updatedBy: userId,
+    });
+    return { guidelinesId };
   },
 });
 
@@ -789,7 +790,7 @@ export const searchBrandingAssets = query({
 
     // Filter by usage context if provided
     if (args.usageContext && args.usageContext.length > 0) {
-      assets = assets.filter((a) => args.usageContext!.some((ctx) => a.usageContext.includes(ctx)));
+      assets = assets.filter((a) => args.usageContext?.some((ctx) => a.usageContext.includes(ctx)));
     }
 
     // Simple text search in name, tags, and aiDescription

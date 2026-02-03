@@ -28,7 +28,10 @@ import { executeModifyATK } from "./executors/combat/modifyATK";
 import { executeModifyDEF } from "./executors/combat/modifyDEF";
 import { executeDestroy } from "./executors/summon/destroy";
 import { executeSpecialSummon } from "./executors/summon/summon";
+import { executeGenerateToken } from "./executors/summon/generateToken";
 import { executeNegate } from "./executors/utility/negate";
+import { executeNegateActivation } from "./executors/control/negateActivation";
+import { addLingeringEffect } from "./lingeringEffects";
 
 /**
  * Maximum depth for recursive effect triggers (e.g., on_destroy chains)
@@ -449,7 +452,30 @@ export async function executeEffect(
           if (Number.isNaN(atkModifier)) {
             result = { success: false, message: "Invalid ATK modifier value" };
           } else {
-            result = await executeModifyATK(ctx, gameState, target, atkModifier, isHost);
+            // Check if this is a lingering effect
+            if (effect.duration || effect.lingering) {
+              // Create lingering effect instead of immediate modification
+              const sourceCard = await ctx.db.get(cardId);
+              await addLingeringEffect(ctx, gameState, {
+                effectType: "modifyATK",
+                value: atkModifier,
+                sourceCardId: cardId,
+                sourceCardName: sourceCard?.name,
+                appliedBy: playerId,
+                appliedTurn: gameState.turnNumber,
+                duration: effect.duration || { type: "until_turn_end" },
+                conditions: {
+                  targetCardId: target,
+                },
+              });
+              result = {
+                success: true,
+                message: `${sourceCard?.name || "Effect"} will modify ATK by ${atkModifier} ${effect.duration ? `(${effect.duration.type})` : ""}`,
+              };
+            } else {
+              // Immediate modification
+              result = await executeModifyATK(ctx, gameState, target, atkModifier, isHost);
+            }
           }
         }
       }
@@ -474,7 +500,30 @@ export async function executeEffect(
           if (Number.isNaN(defModifier)) {
             result = { success: false, message: "Invalid DEF modifier value" };
           } else {
-            result = await executeModifyDEF(ctx, gameState, target, defModifier, isHost);
+            // Check if this is a lingering effect
+            if (effect.duration || effect.lingering) {
+              // Create lingering effect instead of immediate modification
+              const sourceCard = await ctx.db.get(cardId);
+              await addLingeringEffect(ctx, gameState, {
+                effectType: "modifyDEF",
+                value: defModifier,
+                sourceCardId: cardId,
+                sourceCardName: sourceCard?.name,
+                appliedBy: playerId,
+                appliedTurn: gameState.turnNumber,
+                duration: effect.duration || { type: "until_turn_end" },
+                conditions: {
+                  targetCardId: target,
+                },
+              });
+              result = {
+                success: true,
+                message: `${sourceCard?.name || "Effect"} will modify DEF by ${defModifier} ${effect.duration ? `(${effect.duration.type})` : ""}`,
+              };
+            } else {
+              // Immediate modification
+              result = await executeModifyDEF(ctx, gameState, target, defModifier, isHost);
+            }
           }
         }
       }
@@ -540,6 +589,24 @@ export async function executeEffect(
           result = await executeNegate(ctx, gameState, target, effect);
         }
       }
+      break;
+
+    case "negateActivation":
+      // Activation negation - negates activation and optionally destroys
+      // Target is optional (defaults to most recent chain link)
+      result = await executeNegateActivation(
+        ctx,
+        gameState,
+        lobbyId,
+        effect,
+        playerId,
+        targets?.[0]
+      );
+      break;
+
+    case "generateToken":
+      // Generate token monsters on the field
+      result = await executeGenerateToken(ctx, gameState, lobbyId, effect, playerId, cardId);
       break;
 
     case "toGraveyard":

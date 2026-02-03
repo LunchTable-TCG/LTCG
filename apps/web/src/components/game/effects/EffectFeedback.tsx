@@ -45,7 +45,7 @@ function FloatingNumbers({ numbers }: { numbers: FloatingNumberProps[] }) {
   );
 }
 
-function FloatingNumber({ value, type, position, id }: FloatingNumberProps) {
+function FloatingNumber({ value, type, position }: FloatingNumberProps) {
   const isPositive = value > 0;
   const displayValue = Math.abs(value);
 
@@ -116,7 +116,7 @@ function AnimationOverlay({ animations }: { animations: EffectAnimation[] }) {
   );
 }
 
-function CardAnimationEffect({ id, cardId, type, color, duration = 1000 }: EffectAnimation) {
+function CardAnimationEffect({ cardId, type, color, duration = 1000 }: EffectAnimation) {
   const [element, setElement] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -257,7 +257,7 @@ export function useEffectFeedback() {
     addAnimation(cardId, "shake", "red", 500);
   };
 
-  const showHeal = (playerId: string, amount: number, element: HTMLElement) => {
+  const showHeal = (_playerId: string, amount: number, element: HTMLElement) => {
     const rect = element.getBoundingClientRect();
     const position = {
       x: rect.left + rect.width / 2,

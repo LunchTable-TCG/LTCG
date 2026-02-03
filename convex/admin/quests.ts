@@ -37,26 +37,29 @@ export const listQuests = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let quests;
-    if (args.questType) {
-      quests = await ctx.db
-        .query("questDefinitions")
-        .withIndex("by_type", (q) => q.eq("questType", args.questType!))
-        .collect();
-    } else {
-      quests = await ctx.db.query("questDefinitions").collect();
-    }
+    let quests = await (async () => {
+      if (args.questType) {
+        return await ctx.db
+          .query("questDefinitions")
+          .withIndex("by_type", (q) => q.eq("questType", args.questType!))
+          .collect();
+      } else {
+        return await ctx.db.query("questDefinitions").collect();
+      }
+    })();
+
+    type Quest = typeof quests[number];
 
     // Filter by active status
     if (!args.includeInactive) {
-      quests = quests.filter((q) => q.isActive);
+      quests = quests.filter((q: Quest) => q.isActive);
     }
 
     // Apply search filter
     if (args.search) {
       const searchLower = args.search.toLowerCase();
       quests = quests.filter(
-        (q) =>
+        (q: Quest) =>
           q.name.toLowerCase().includes(searchLower) ||
           q.questId.toLowerCase().includes(searchLower) ||
           q.description.toLowerCase().includes(searchLower)
@@ -64,9 +67,9 @@ export const listQuests = query({
     }
 
     // Sort by type, then name
-    quests.sort((a, b) => {
-      const typeOrder = { daily: 0, weekly: 1, achievement: 2 };
-      const typeCompare = typeOrder[a.questType] - typeOrder[b.questType];
+    quests.sort((a: Quest, b: Quest) => {
+      const typeOrder: Record<string, number> = { daily: 0, weekly: 1, achievement: 2 };
+      const typeCompare = (typeOrder[a.questType] ?? 0) - (typeOrder[b.questType] ?? 0);
       if (typeCompare !== 0) return typeCompare;
       return a.name.localeCompare(b.name);
     });

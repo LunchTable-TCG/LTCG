@@ -73,18 +73,18 @@ export const loadAllCards = internalMutation({
 
         // Handle creature stats
         if (rawCard.cardType === "creature") {
-          card["attack"] = rawCard.attack;
-          card["defense"] = rawCard.defense;
+          card.attack = rawCard.attack;
+          card.defense = rawCard.defense;
         }
 
         // Handle flavor text
         if (rawCard.flavorText) {
-          card["flavorText"] = rawCard.flavorText;
+          card.flavorText = rawCard.flavorText;
         }
 
         // Handle image URL
         if (rawCard.imageUrl) {
-          card["imageUrl"] = rawCard.imageUrl;
+          card.imageUrl = rawCard.imageUrl;
         }
 
         // Check if card exists

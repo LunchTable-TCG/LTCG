@@ -651,7 +651,7 @@ function GlossarySection() {
     if (!acc[category]) {
       acc[category] = [];
     }
-    acc[category]!.push(term);
+    acc[category]?.push(term);
     return acc;
   }, {});
 

@@ -101,6 +101,7 @@ export async function validateApiKeyInternal(
     // Query keys matching this prefix
     const matchingKeys = await ctx.db
       .query("apiKeys")
+      // biome-ignore lint/suspicious/noExplicitAny: Convex filter builder requires flexible query type
       .filter((q: any) =>
         q.and(q.eq(q.field("keyPrefix"), keyPrefixToFind), q.eq(q.field("isActive"), true))
       )

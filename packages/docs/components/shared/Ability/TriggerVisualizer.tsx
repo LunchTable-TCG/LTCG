@@ -27,11 +27,11 @@ export function TriggerVisualizer({
   const [highlighted, setHighlighted] = useState(false);
 
   useEffect(() => {
-    if (isActive) {
-      setHighlighted(true);
-      const timer = setTimeout(() => setHighlighted(false), 1000);
-      return () => clearTimeout(timer);
-    }
+    if (!isActive) return;
+
+    setHighlighted(true);
+    const timer = setTimeout(() => setHighlighted(false), 1000);
+    return () => clearTimeout(timer);
   }, [isActive]);
 
   const triggerIcons: Record<string, string> = {

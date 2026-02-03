@@ -29,6 +29,9 @@ export function PhaseIndicator({
 
   const getPhaseColorClasses = (phase: BattlePhase, isActive: boolean) => {
     const config = phaseConfig[phase];
+    const defaultClasses = 'bg-gray-500 text-white';
+    if (!config) return defaultClasses;
+
     const colorMap: Record<string, { active: string; inactive: string }> = {
       blue: {
         active: 'bg-blue-600 text-white border-blue-700',
@@ -52,7 +55,10 @@ export function PhaseIndicator({
       }
     };
 
-    return isActive ? colorMap[config.color].active : colorMap[config.color].inactive;
+    const colorClasses = colorMap[config.color];
+    if (!colorClasses) return defaultClasses;
+
+    return isActive ? colorClasses.active : colorClasses.inactive;
   };
 
   if (compact) {

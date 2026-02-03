@@ -30,7 +30,7 @@ export interface LogContext {
 const IS_BROWSER = typeof window !== "undefined";
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
 const LOG_LEVEL: LogLevel =
-  (process.env["NEXT_PUBLIC_LOG_LEVEL"] as LogLevel) || (IS_DEVELOPMENT ? "debug" : "warn");
+  (process.env.NEXT_PUBLIC_LOG_LEVEL as LogLevel) || (IS_DEVELOPMENT ? "debug" : "warn");
 
 // Enable verbose logging via localStorage
 const VERBOSE_LOGGING =

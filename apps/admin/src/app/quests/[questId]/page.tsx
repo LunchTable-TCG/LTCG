@@ -78,7 +78,7 @@ const GAME_MODES = [
 export default function QuestEditorPage() {
   const params = useParams();
   const router = useRouter();
-  const questDbId = params["questId"] as string;
+  const questDbId = params.questId as string;
   const isNew = questDbId === "new";
 
   // Form state

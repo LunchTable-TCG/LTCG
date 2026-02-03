@@ -17,8 +17,10 @@ import { getSpellSpeed } from "../../lib/spellSpeedHelper";
 import { type ChainEffect, addToChainHelper } from "../chainResolver";
 import { executeCost, validateCost } from "../effectSystem/costValidator";
 import { executeSearch } from "../effectSystem/executors/cardMovement/search";
+import { isActionPrevented } from "../effectSystem/lingeringEffects";
 import type { ParsedEffect } from "../effectSystem/types";
 import { recordEventHelper } from "../gameEvents";
+import { scanFieldForTriggers } from "../triggerSystem";
 
 /**
  * Get the effect to use for chain resolution.
@@ -226,12 +228,87 @@ export const activateSpell = mutation({
       });
     }
 
-    // 7. Validate phase (Main Phases only for Normal Spells)
-    const currentPhase = gameState.currentPhase;
-    if (currentPhase !== "main1" && currentPhase !== "main2") {
-      throw createError(ErrorCode.GAME_INVALID_PHASE, {
-        reason: "Can only activate Normal Spells during Main Phase",
+    // 6.5. Check if spell activation is prevented by lingering effects
+    const preventionCheck = isActionPrevented(gameState, "activate_spell", user.userId);
+    if (preventionCheck.prevented) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: preventionCheck.reason || "Cannot activate spell cards",
       });
+    }
+
+    // 7. Validate phase - depends on spell type
+    const currentPhase = gameState.currentPhase;
+    const spellType = card.spellType || "normal"; // Default to normal if not specified
+    const isQuickPlay =
+      spellType === "quick_play" ||
+      (card.ability && (card.ability.trigger === "quick" || card.ability.trigger === "on_opponent_summon" || card.ability.trigger === "on_opponent_attacks" || card.ability.trigger === "on_opponent_activates"));
+    const isFieldSpell = spellType === "field";
+    const isEquipSpell = spellType === "equip";
+
+    // Equip Spells require a target monster
+    if (isEquipSpell) {
+      if (!args.targets || args.targets.length === 0) {
+        throw createError(ErrorCode.GAME_INVALID_MOVE, {
+          reason: "Equip Spells require a target monster",
+        });
+      }
+
+      // Validate target is a monster on the field and face-up
+      const targetCardId = args.targets[0];
+      const hostBoard = gameState.hostBoard;
+      const opponentBoard = gameState.opponentBoard;
+      const allMonsters = [...hostBoard, ...opponentBoard];
+      const targetMonster = allMonsters.find((m) => m.cardId === targetCardId);
+
+      if (!targetMonster) {
+        throw createError(ErrorCode.GAME_INVALID_MOVE, {
+          reason: "Target must be a monster on the field",
+        });
+      }
+
+      if (targetMonster.isFaceDown) {
+        throw createError(ErrorCode.GAME_INVALID_MOVE, {
+          reason: "Cannot equip to face-down monsters",
+        });
+      }
+
+      // Equip Spells can only be activated during Main Phase on your turn
+      if (gameState.currentTurnPlayerId !== user.userId) {
+        throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
+      }
+      if (currentPhase !== "main1" && currentPhase !== "main2") {
+        throw createError(ErrorCode.GAME_INVALID_PHASE, {
+          reason: "Equip Spells can only be activated during Main Phase",
+        });
+      }
+    }
+
+    // Field Spells can only be activated during Main Phase on your turn
+    if (isFieldSpell) {
+      if (gameState.currentTurnPlayerId !== user.userId) {
+        throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
+      }
+      if (currentPhase !== "main1" && currentPhase !== "main2") {
+        throw createError(ErrorCode.GAME_INVALID_PHASE, {
+          reason: "Field Spells can only be activated during Main Phase",
+        });
+      }
+    }
+
+    // Normal Spells can only be activated during Main Phase
+    if (!isQuickPlay && !isFieldSpell && !isEquipSpell && currentPhase !== "main1" && currentPhase !== "main2") {
+      throw createError(ErrorCode.GAME_INVALID_PHASE, {
+        reason: "Normal Spells can only be activated during Main Phase",
+      });
+    }
+
+    // Quick-Play Spells from hand can be activated during your turn, any phase
+    // Quick-Play Spells set on field can be activated during either player's turn
+    if (inHand && isQuickPlay) {
+      // From hand - can activate during your turn
+      if (gameState.currentTurnPlayerId !== user.userId) {
+        throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
+      }
     }
 
     // 7.5. Check and execute cost payment
@@ -300,18 +377,111 @@ export const activateSpell = mutation({
       }
     }
 
-    // 8. Remove card from hand or spell/trap zone
-    if (inHand) {
-      const newHand = hand.filter((c) => c !== args.cardId);
+    // 8. Handle field spell placement or remove card from hand/zone
+    if (isFieldSpell) {
+      // Field spell replacement rule: If player already has a field spell, send old one to graveyard
+      const currentFieldSpell = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
+      const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
+
+      if (currentFieldSpell) {
+        // Send old field spell to graveyard
+        const newGraveyard = [...graveyard, currentFieldSpell.cardId];
+        await ctx.db.patch(gameState._id, {
+          [isHost ? "hostGraveyard" : "opponentGraveyard"]: newGraveyard,
+        });
+
+        // Record field spell replacement event
+        const oldFieldCard = await ctx.db.get(currentFieldSpell.cardId);
+        if (oldFieldCard) {
+          await recordEventHelper(ctx, {
+            lobbyId: args.lobbyId,
+            gameId: lobby.gameId ?? "",
+            turnNumber: gameState.turnNumber ?? 0,
+            eventType: "card_destroyed",
+            playerId: user.userId,
+            playerUsername: user.username,
+            description: `${oldFieldCard.name} was sent to the Graveyard (replaced by new Field Spell)`,
+            metadata: {
+              cardId: currentFieldSpell.cardId,
+              cardName: oldFieldCard.name,
+              reason: "field_spell_replacement",
+            },
+          });
+        }
+      }
+
+      // Remove card from hand or spell/trap zone
+      if (inHand) {
+        const newHand = hand.filter((c) => c !== args.cardId);
+        await ctx.db.patch(gameState._id, {
+          [isHost ? "hostHand" : "opponentHand"]: newHand,
+        });
+      } else {
+        const newSpellTrapZone = spellTrapZone.filter((st) => st.cardId !== args.cardId);
+        await ctx.db.patch(gameState._id, {
+          [isHost ? "hostSpellTrapZone" : "opponentSpellTrapZone"]: newSpellTrapZone,
+        });
+      }
+
+      // Place new field spell in field spell zone
       await ctx.db.patch(gameState._id, {
-        [isHost ? "hostHand" : "opponentHand"]: newHand,
+        [isHost ? "hostFieldSpell" : "opponentFieldSpell"]: {
+          cardId: args.cardId,
+          isActive: true,
+        },
       });
     } else {
-      // Remove from spell/trap zone
-      const newSpellTrapZone = spellTrapZone.filter((st) => st.cardId !== args.cardId);
-      await ctx.db.patch(gameState._id, {
-        [isHost ? "hostSpellTrapZone" : "opponentSpellTrapZone"]: newSpellTrapZone,
-      });
+      // Continuous/Normal/Quick-Play/Equip spells
+      const isContinuous = spellType === "continuous";
+
+      if (inHand) {
+        const newHand = hand.filter((c) => c !== args.cardId);
+
+        if (isContinuous) {
+          // Place continuous spell on field (face-up in spell/trap zone)
+          const newSpellTrapZone = [
+            ...spellTrapZone,
+            {
+              cardId: args.cardId,
+              isFaceDown: false,
+              isActivated: true,
+              turnSet: gameState.turnNumber || 1,
+            },
+          ];
+
+          await ctx.db.patch(gameState._id, {
+            [isHost ? "hostHand" : "opponentHand"]: newHand,
+            [isHost ? "hostSpellTrapZone" : "opponentSpellTrapZone"]: newSpellTrapZone,
+          });
+        } else {
+          // Normal/Quick-Play/Equip spells: just remove from hand
+          // Equip spells will be placed on field after chain resolution
+          await ctx.db.patch(gameState._id, {
+            [isHost ? "hostHand" : "opponentHand"]: newHand,
+          });
+        }
+      } else {
+        // Card was already set in spell/trap zone
+        if (isContinuous) {
+          // Flip face-up and mark as activated
+          const newSpellTrapZone = spellTrapZone.map((st) =>
+            st.cardId === args.cardId
+              ? { ...st, isFaceDown: false, isActivated: true }
+              : st
+          );
+
+          await ctx.db.patch(gameState._id, {
+            [isHost ? "hostSpellTrapZone" : "opponentSpellTrapZone"]: newSpellTrapZone,
+          });
+        } else {
+          // Normal/Quick-Play/Equip spells: remove from spell/trap zone
+          // Equip spells will be placed on field after chain resolution
+          const newSpellTrapZone = spellTrapZone.filter((st) => st.cardId !== args.cardId);
+          await ctx.db.patch(gameState._id, {
+            [isHost ? "hostSpellTrapZone" : "opponentSpellTrapZone"]: newSpellTrapZone,
+          });
+        }
+      }
     }
 
     // 9. Record spell_activated event
@@ -330,30 +500,62 @@ export const activateSpell = mutation({
       },
     });
 
-    // 10. Add to chain system (instead of executing immediately)
-    const spellSpeed = getSpellSpeed(card);
-    const effect = getChainEffect(card);
+    // 9b. Execute on_spell_activated triggers
+    // Any card on field that has this trigger should activate
+    const refreshedStateForSpellTrigger = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
 
-    // Add to chain
-    const chainResult = await addToChainHelper(ctx, {
-      lobbyId: args.lobbyId,
-      cardId: args.cardId,
-      playerId: user.userId,
-      playerUsername: user.username,
-      spellSpeed,
-      effect,
-      targets: args.targets,
-    });
+    if (refreshedStateForSpellTrigger) {
+      await scanFieldForTriggers(
+        ctx,
+        args.lobbyId,
+        refreshedStateForSpellTrigger,
+        "on_spell_activated",
+        refreshedStateForSpellTrigger.turnNumber || 1
+      );
+    }
 
-    // 11. Return success with chain status
-    return {
-      success: true,
-      spellName: card.name,
-      chainStarted: true,
-      chainLinkNumber: chainResult.chainLinkNumber,
-      currentChainLength: chainResult.currentChainLength,
-      priorityPassed: true, // Priority is now with opponent
-    };
+    // 10. Handle chain system
+    if (isFieldSpell) {
+      // Field spells don't go on chain - they activate immediately as continuous effects
+      // No chain resolution needed, the continuous effect system handles their effects
+      return {
+        success: true,
+        spellName: card.name,
+        chainStarted: false,
+        chainLinkNumber: 0,
+        currentChainLength: 0,
+        priorityPassed: false,
+        fieldSpellActivated: true,
+      };
+    } else {
+      // Normal/Quick-Play spells: Add to chain system
+      const spellSpeed = getSpellSpeed(card);
+      const effect = getChainEffect(card);
+
+      // Add to chain
+      const chainResult = await addToChainHelper(ctx, {
+        lobbyId: args.lobbyId,
+        cardId: args.cardId,
+        playerId: user.userId,
+        playerUsername: user.username,
+        spellSpeed,
+        effect,
+        targets: args.targets,
+      });
+
+      // 11. Return success with chain status
+      return {
+        success: true,
+        spellName: card.name,
+        chainStarted: true,
+        chainLinkNumber: chainResult.chainLinkNumber,
+        currentChainLength: chainResult.currentChainLength,
+        priorityPassed: true, // Priority is now with opponent
+      };
+    }
   },
 });
 
@@ -506,6 +708,14 @@ export const activateTrap = mutation({
       });
     }
 
+    // 5.5. Check if trap activation is prevented by lingering effects
+    const preventionCheck = isActionPrevented(gameState, "activate_trap", user.userId);
+    if (preventionCheck.prevented) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: preventionCheck.reason || "Cannot activate trap cards",
+      });
+    }
+
     // 6. Validate trap was set for at least 1 turn
     const currentTurn = gameState.turnNumber || 1;
     const turnWasSet = trapInZone.turnSet || currentTurn;
@@ -608,6 +818,23 @@ export const activateTrap = mutation({
         targets: args.targets,
       },
     });
+
+    // 8b. Execute on_trap_activated triggers
+    // Any card on field that has this trigger should activate
+    const refreshedStateForTrapTrigger = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (refreshedStateForTrapTrigger) {
+      await scanFieldForTriggers(
+        ctx,
+        args.lobbyId,
+        refreshedStateForTrapTrigger,
+        "on_trap_activated",
+        refreshedStateForTrapTrigger.turnNumber || 1
+      );
+    }
 
     // 9. Add to chain system (instead of executing immediately)
     const trapSpeed = getSpellSpeed(card);

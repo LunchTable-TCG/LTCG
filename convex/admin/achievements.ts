@@ -47,31 +47,34 @@ export const listAchievements = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let achievements;
-    if (args.category) {
-      achievements = await ctx.db
-        .query("achievementDefinitions")
-        .withIndex("by_category", (q) => q.eq("category", args.category!))
-        .collect();
-    } else if (args.rarity) {
-      achievements = await ctx.db
-        .query("achievementDefinitions")
-        .withIndex("by_rarity", (q) => q.eq("rarity", args.rarity!))
-        .collect();
-    } else {
-      achievements = await ctx.db.query("achievementDefinitions").collect();
-    }
+    let achievements = await (async () => {
+      if (args.category) {
+        return await ctx.db
+          .query("achievementDefinitions")
+          .withIndex("by_category", (q) => q.eq("category", args.category!))
+          .collect();
+      }
+      if (args.rarity) {
+        return await ctx.db
+          .query("achievementDefinitions")
+          .withIndex("by_rarity", (q) => q.eq("rarity", args.rarity!))
+          .collect();
+      }
+      return await ctx.db.query("achievementDefinitions").collect();
+    })();
+
+    type Achievement = typeof achievements[number];
 
     // Filter by active status
     if (!args.includeInactive) {
-      achievements = achievements.filter((a) => a.isActive);
+      achievements = achievements.filter((a: Achievement) => a.isActive);
     }
 
     // Apply search filter
     if (args.search) {
       const searchLower = args.search.toLowerCase();
       achievements = achievements.filter(
-        (a) =>
+        (a: Achievement) =>
           a.name.toLowerCase().includes(searchLower) ||
           a.achievementId.toLowerCase().includes(searchLower) ||
           a.description.toLowerCase().includes(searchLower)
@@ -79,11 +82,11 @@ export const listAchievements = query({
     }
 
     // Sort by category, then rarity, then name
-    const rarityOrder = { common: 0, rare: 1, epic: 2, legendary: 3 };
-    achievements.sort((a, b) => {
+    const rarityOrder: Record<string, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
+    achievements.sort((a: Achievement, b: Achievement) => {
       const catCompare = a.category.localeCompare(b.category);
       if (catCompare !== 0) return catCompare;
-      const rarCompare = rarityOrder[a.rarity] - rarityOrder[b.rarity];
+      const rarCompare = rarityOrder[a.rarity]! - rarityOrder[b.rarity]!;
       if (rarCompare !== 0) return rarCompare;
       return a.name.localeCompare(b.name);
     });

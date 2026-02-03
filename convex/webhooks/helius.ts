@@ -197,18 +197,18 @@ function parseSwapTransaction(tx: HeliusTransaction, tokenMint: string): ParsedS
   let tokenAmount: number;
   let solAmount: number;
 
-  if (hasNativeInput && tokenOutput) {
+  if (hasNativeInput && tokenOutput && swap.nativeInput?.account) {
     // User sent SOL, received token = BUY
     type = "buy";
-    traderAddress = swap.nativeInput!.account;
-    solAmount = Number(swap.nativeInput!.amount) / 1e9; // lamports to SOL
-    tokenAmount = Number(tokenOutput.rawTokenAmount.tokenAmount) / Math.pow(10, TOKEN_DECIMALS);
+    traderAddress = swap.nativeInput.account;
+    solAmount = Number(swap.nativeInput?.amount) / 1e9; // lamports to SOL
+    tokenAmount = Number(tokenOutput.rawTokenAmount.tokenAmount) / 10 ** TOKEN_DECIMALS;
   } else if (tokenInput && hasNativeOutput) {
     // User sent token, received SOL = SELL
     type = "sell";
     traderAddress = tokenInput.userAccount;
-    solAmount = Number(swap.nativeOutput!.amount) / 1e9;
-    tokenAmount = Number(tokenInput.rawTokenAmount.tokenAmount) / Math.pow(10, TOKEN_DECIMALS);
+    solAmount = Number(swap.nativeOutput?.amount) / 1e9;
+    tokenAmount = Number(tokenInput.rawTokenAmount.tokenAmount) / 10 ** TOKEN_DECIMALS;
   } else {
     // Can't determine swap direction
     return null;
@@ -330,7 +330,7 @@ export const handleWebhook = httpAction(async (ctx, request) => {
 
     // Verify signature if secret is configured
     const signature = request.headers.get("x-helius-signature");
-    const webhookSecret = process.env["HELIUS_WEBHOOK_SECRET"];
+    const webhookSecret = process.env.HELIUS_WEBHOOK_SECRET;
 
     const isValid = await verifyHeliusSignature(rawBody, signature, webhookSecret);
     if (!isValid) {

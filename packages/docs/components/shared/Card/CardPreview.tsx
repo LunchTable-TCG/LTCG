@@ -6,8 +6,7 @@
 'use client';
 
 import { useState } from 'react';
-import { getCardData, type Card } from '../../../lib/cardData';
-import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
+import { getCardData } from '../../../lib/cardData';
 
 interface CardPreviewProps {
   cardId: string;
@@ -20,11 +19,11 @@ interface CardPreviewProps {
 
 export function CardPreview({
   cardId,
-  variant = 'normal',
+  variant: _variant = 'normal',
   showStats = true,
   interactive = true,
   size = 'md',
-  context = 'docs'
+  context: _context = 'docs'
 }: CardPreviewProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const card = getCardData(cardId);
@@ -55,13 +54,11 @@ export function CardPreview({
           onClick={() => interactive && setIsFlipped(!isFlipped)}
         >
           {card.imageUrl ? (
-            <ImageZoom>
-              <img
-                src={card.imageUrl}
-                alt={card.name}
-                className="w-full h-full object-cover rounded"
-              />
-            </ImageZoom>
+            <img
+              src={card.imageUrl}
+              alt={card.name}
+              className="w-full h-full object-cover rounded"
+            />
           ) : (
             <div className="text-center p-4">
               <div className={`text-4xl mb-2 ${getElementEmoji(card.element)}`}>
@@ -156,5 +153,5 @@ function getRarityColor(rarity: string): string {
     epic: 'bg-purple-200 text-purple-800',
     legendary: 'bg-orange-200 text-orange-800'
   };
-  return colors[rarity] || colors.common;
+  return colors[rarity] ?? 'bg-gray-300 text-gray-800';
 }

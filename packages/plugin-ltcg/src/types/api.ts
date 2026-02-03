@@ -157,7 +157,11 @@ export interface CardInHand {
   archetype?: string;
   /** Card effect description */
   description?: string;
-  /** Card abilities/effects */
+  /**
+   * Card abilities/effects - flexible structure for various effect types.
+   * Uses any for maximum flexibility when interfacing with card engine.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: Flexible structure for various card abilities
   abilities?: Record<string, any>[];
   /** Position in hand (0-indexed) */
   handIndex?: number;
@@ -251,6 +255,11 @@ export interface AvailableAction {
     | "end_turn"
     | "chain_response";
   description: string;
+  /**
+   * Action parameters - flexible structure for various action types.
+   * Uses any for maximum flexibility when interfacing with game engine.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: Flexible parameters for various action types
   parameters?: Record<string, any>;
 }
 
@@ -394,6 +403,11 @@ export interface CardDefinition {
   attribute?: string;
   race?: string;
   description: string;
+  /**
+   * Card abilities - flexible structure for various effect types.
+   * Uses any for maximum flexibility when defining card mechanics.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: Flexible structure for card mechanics
   abilities: Record<string, any>[];
 }
 
@@ -423,6 +437,11 @@ export interface GameEvent {
   playerId: string;
   description: string;
   timestamp: number;
+  /**
+   * Event metadata - flexible structure for various event data.
+   * Uses any for maximum flexibility when storing event details.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata for various event types
   metadata?: Record<string, any>;
 }
 
@@ -430,6 +449,11 @@ export interface GameEvent {
 // Generic API Response Wrappers
 // ============================================================================
 
+/**
+ * Generic API success response wrapper.
+ * Uses any as default type parameter for maximum flexibility.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Generic response type with flexible data type
 export interface ApiSuccessResponse<T = any> {
   success: true;
   data: T;
@@ -441,6 +465,11 @@ export interface ApiErrorResponse {
   error: {
     code: string;
     message: string;
+    /**
+     * Error details - flexible structure for various error data.
+     * Uses any for maximum flexibility when returning error context.
+     */
+    // biome-ignore lint/suspicious/noExplicitAny: Flexible error details for various error types
     details?: Record<string, any>;
   };
   timestamp: number;

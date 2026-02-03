@@ -92,18 +92,21 @@ export const listBattlePassSeasons = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let battlePasses: Awaited<ReturnType<(typeof ctx.db.query<"battlePassSeasons">)["collect"]>>;
-    if (args.status) {
-      battlePasses = await ctx.db
-        .query("battlePassSeasons")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
-        .collect();
-    } else {
-      battlePasses = await ctx.db.query("battlePassSeasons").collect();
-    }
+    let battlePasses = await (async () => {
+      if (args.status) {
+        return await ctx.db
+          .query("battlePassSeasons")
+          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .collect();
+      } else {
+        return await ctx.db.query("battlePassSeasons").collect();
+      }
+    })();
+
+    type BattlePass = typeof battlePasses[number];
 
     // Sort by creation date descending
-    battlePasses.sort((a, b) => b.createdAt - a.createdAt);
+    battlePasses.sort((a: BattlePass, b: BattlePass) => b.createdAt - a.createdAt);
 
     // Apply pagination
     const limit = args.limit ?? 50;
@@ -112,7 +115,7 @@ export const listBattlePassSeasons = query({
 
     // Enrich with season info
     const enriched = await Promise.all(
-      paginated.map(async (bp) => {
+      paginated.map(async (bp: BattlePass) => {
         const season = (await ctx.db.get(bp.seasonId)) as Doc<"seasons"> | null;
         const tierCount = await ctx.db
           .query("battlePassTiers")
@@ -407,11 +410,11 @@ export const updateBattlePassSeason = mutation({
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
 
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.xpPerTier !== undefined) updates.xpPerTier = args.xpPerTier;
-    if (args.startDate !== undefined) updates.startDate = args.startDate;
-    if (args.endDate !== undefined) updates.endDate = args.endDate;
+    if (args.name !== undefined) updates["name"] = args.name;
+    if (args.description !== undefined) updates["description"] = args.description;
+    if (args.xpPerTier !== undefined) updates["xpPerTier"] = args.xpPerTier;
+    if (args.startDate !== undefined) updates["startDate"] = args.startDate;
+    if (args.endDate !== undefined) updates["endDate"] = args.endDate;
 
     await ctx.db.patch(args.battlePassId, updates);
 

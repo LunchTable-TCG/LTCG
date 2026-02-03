@@ -70,7 +70,7 @@ const REWARD_TYPE_CONFIG: Record<
 export default function PromoCodeDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const promoCodeId = params["promoCodeId"] as string;
+  const promoCodeId = params.promoCodeId as string;
 
   // Form state
   const [description, setDescription] = useState("");

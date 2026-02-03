@@ -23,6 +23,7 @@ import { checkStateBasedActions } from "./gameEngine/stateBasedActions";
 import { recordEventHelper } from "./gameEvents";
 import { checkReplayCondition } from "./replaySystem";
 import { resetPriorityAfterChainLink } from "./responseWindow";
+import { scanFieldForTriggers } from "./triggerSystem";
 
 /**
  * Type for chain effect - JSON ability only (text parsing has been removed)
@@ -42,6 +43,7 @@ interface ChainLink {
   effect: ChainEffect;
   targets?: Id<"cardDefinitions">[];
   negated?: boolean;
+  isNegated?: boolean; // If true, this activation was negated (alias for negated)
 }
 
 /**
@@ -241,7 +243,29 @@ export async function addToChainHelper(
     },
   });
 
-  // 9. Return chain state
+  // 9. Execute chain triggers
+  // Fire on_chain_start if this is the first link
+  if (currentChain.length === 0) {
+    // First chain link - fire on_chain_start triggers on all field cards
+    await scanFieldForTriggers(
+      ctx,
+      args.lobbyId,
+      gameState,
+      "on_chain_start",
+      gameState.turnNumber || 1
+    );
+  }
+
+  // Fire on_chain_link triggers - card was added to chain
+  await scanFieldForTriggers(
+    ctx,
+    args.lobbyId,
+    gameState,
+    "on_chain_link",
+    gameState.turnNumber || 1
+  );
+
+  // 10. Return chain state
   return {
     success: true,
     chainLinkNumber: updatedChain.length,
@@ -401,8 +425,8 @@ export async function resolveChainHelper(
 
     const card = await ctx.db.get(chainLink.cardId);
 
-    // Skip negated effects
-    if (chainLink.negated) {
+    // Skip negated effects (check both negated and isNegated flags)
+    if (chainLink.negated || chainLink.isNegated) {
       await recordEventHelper(ctx, {
         lobbyId: args.lobbyId,
         gameId: lobby.gameId,
@@ -419,6 +443,7 @@ export async function resolveChainHelper(
       });
 
       // Move negated spell/trap to graveyard
+      // Exception: Remove continuous spells/traps from field if negated
       if (card?.cardType === "spell" || card?.cardType === "trap") {
         const currentState = await ctx.db
           .query("gameStates")
@@ -428,6 +453,24 @@ export async function resolveChainHelper(
         if (currentState) {
           const isHost = chainLink.playerId === currentState.hostId;
           const graveyard = isHost ? currentState.hostGraveyard : currentState.opponentGraveyard;
+
+          // Check if this is a continuous spell/trap
+          const isContinuous =
+            (card.cardType === "spell" && card.spellType === "continuous") ||
+            (card.cardType === "trap" && card.trapType === "continuous");
+
+          if (isContinuous) {
+            // Remove from spell/trap zone if it was placed there
+            const spellTrapZone = isHost
+              ? currentState.hostSpellTrapZone
+              : currentState.opponentSpellTrapZone;
+            const newSpellTrapZone = spellTrapZone.filter((st) => st.cardId !== chainLink.cardId);
+            await ctx.db.patch(currentState._id, {
+              [isHost ? "hostSpellTrapZone" : "opponentSpellTrapZone"]: newSpellTrapZone,
+            });
+          }
+
+          // All negated spells/traps go to graveyard
           await ctx.db.patch(currentState._id, {
             [isHost ? "hostGraveyard" : "opponentGraveyard"]: [...graveyard, chainLink.cardId],
           });
@@ -496,19 +539,90 @@ export async function resolveChainHelper(
     }
 
     // Move spell/trap card to graveyard after effect resolves
+    // Exception: Continuous/Field/Equip spells remain on field
     if (card?.cardType === "spell" || card?.cardType === "trap") {
-      const currentState = await ctx.db
-        .query("gameStates")
-        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-        .first();
+      // Check if spell/trap should remain on field
+      const remainsOnField =
+        (card.cardType === "spell" && (card.spellType === "continuous" || card.spellType === "field" || card.spellType === "equip")) ||
+        (card.cardType === "trap" && card.trapType === "continuous");
 
-      if (currentState) {
-        const isHost = chainLink.playerId === currentState.hostId;
-        const graveyard = isHost ? currentState.hostGraveyard : currentState.opponentGraveyard;
-        await ctx.db.patch(currentState._id, {
-          [isHost ? "hostGraveyard" : "opponentGraveyard"]: [...graveyard, chainLink.cardId],
-        });
+      if (remainsOnField) {
+        // For equip spells, place them on the field with equippedTo relationship
+        if (card.cardType === "spell" && card.spellType === "equip") {
+          const currentState = await ctx.db
+            .query("gameStates")
+            .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+            .first();
+
+          if (currentState && chainLink.targets && chainLink.targets.length > 0) {
+            const equipTarget = chainLink.targets[0];
+            const isHost = chainLink.playerId === currentState.hostId;
+            const spellTrapZone = isHost ? currentState.hostSpellTrapZone : currentState.opponentSpellTrapZone;
+
+            // Add equip spell to spell/trap zone
+            const newSpellTrapZone = [
+              ...spellTrapZone,
+              {
+                cardId: chainLink.cardId,
+                isFaceDown: false,
+                isActivated: true,
+                turnSet: currentState.turnNumber || 1,
+                equippedTo: equipTarget,
+              },
+            ];
+
+            await ctx.db.patch(currentState._id, {
+              [isHost ? "hostSpellTrapZone" : "opponentSpellTrapZone"]: newSpellTrapZone,
+            });
+
+            // Update target monster's equippedCards array
+            const hostBoard = currentState.hostBoard;
+            const opponentBoard = currentState.opponentBoard;
+
+            const hostMonsterIdx = hostBoard.findIndex((m) => m.cardId === equipTarget);
+            const opponentMonsterIdx = opponentBoard.findIndex((m) => m.cardId === equipTarget);
+
+            if (hostMonsterIdx !== -1 && hostBoard[hostMonsterIdx]) {
+              const monster = hostBoard[hostMonsterIdx];
+              const updatedMonster = {
+                ...monster,
+                equippedCards: [...(monster.equippedCards || []), chainLink.cardId],
+              };
+              const updatedBoard = [...hostBoard];
+              updatedBoard[hostMonsterIdx] = updatedMonster;
+              await ctx.db.patch(currentState._id, {
+                hostBoard: updatedBoard,
+              });
+            } else if (opponentMonsterIdx !== -1 && opponentBoard[opponentMonsterIdx]) {
+              const monster = opponentBoard[opponentMonsterIdx];
+              const updatedMonster = {
+                ...monster,
+                equippedCards: [...(monster.equippedCards || []), chainLink.cardId],
+              };
+              const updatedBoard = [...opponentBoard];
+              updatedBoard[opponentMonsterIdx] = updatedMonster;
+              await ctx.db.patch(currentState._id, {
+                opponentBoard: updatedBoard,
+              });
+            }
+          }
+        }
+        // Continuous spells/field spells/continuous traps are already on field, nothing to do
+      } else {
+        const currentState = await ctx.db
+          .query("gameStates")
+          .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+          .first();
+
+        if (currentState) {
+          const isHost = chainLink.playerId === currentState.hostId;
+          const graveyard = isHost ? currentState.hostGraveyard : currentState.opponentGraveyard;
+          await ctx.db.patch(currentState._id, {
+            [isHost ? "hostGraveyard" : "opponentGraveyard"]: [...graveyard, chainLink.cardId],
+          });
+        }
       }
+      // If continuous, it's already on the field from activateSpell/activateTrap
     }
   }
 
@@ -545,6 +659,15 @@ export async function resolveChainHelper(
       chainLength: currentChain.length,
     },
   });
+
+  // 7b. Execute on_chain_resolve triggers
+  await scanFieldForTriggers(
+    ctx,
+    args.lobbyId,
+    gameState,
+    "on_chain_resolve",
+    gameState.turnNumber || 1
+  );
 
   // 8. Run state-based action checks after chain resolution
   const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {

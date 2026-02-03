@@ -121,7 +121,7 @@ export function AssetDetailSheet({
         description: description !== (asset.description || "") ? description : undefined,
       });
       toast.success("Asset updated");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update asset");
     } finally {
       setIsUpdating(false);
@@ -137,7 +137,7 @@ export function AssetDetailSheet({
       setShowDeleteDialog(false);
       onOpenChange(false);
       toast.success("Asset deleted");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to delete asset");
     } finally {
       setIsDeleting(false);

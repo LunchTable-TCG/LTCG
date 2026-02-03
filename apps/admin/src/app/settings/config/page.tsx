@@ -133,7 +133,7 @@ function EditConfigDialog({
     switch (config.valueType) {
       case "number": {
         const num = Number.parseFloat(editValue);
-        if (isNaN(num)) {
+        if (Number.isNaN(num)) {
           return { success: false, error: "Please enter a valid number" };
         }
         if (config.minValue !== undefined && num < config.minValue) {
@@ -162,7 +162,6 @@ function EditConfigDialog({
           return { success: false, error: "Invalid JSON format" };
         }
       }
-      case "string":
       default:
         return { success: true, value: editValue };
     }

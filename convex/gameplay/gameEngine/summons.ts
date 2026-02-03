@@ -16,6 +16,7 @@ import { moveCard } from "../../lib/gameHelpers";
 import { validateGameActive } from "../../lib/gameValidation";
 import { validateMonsterZone } from "../../lib/validation";
 import { executeEffect } from "../effectSystem";
+import { isActionPrevented } from "../effectSystem/lingeringEffects";
 import { recordEventHelper } from "../gameEvents";
 import { validateFlipSummon, validateNormalSummon, validateSetMonster } from "../summonValidator";
 
@@ -80,6 +81,14 @@ export const normalSummon = mutation({
     // 4. Validate it's the current player's turn
     if (gameState.currentTurnPlayerId !== user.userId) {
       throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
+    }
+
+    // 4.5. Check if summon is prevented by lingering effects
+    const preventionCheck = isActionPrevented(gameState, "summon_monster", user.userId);
+    if (preventionCheck.prevented) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: preventionCheck.reason || "Cannot summon monsters",
+      });
     }
 
     // 5. Validate summon
@@ -389,6 +398,14 @@ export const setMonster = mutation({
     // 4. Validate it's the current player's turn
     if (gameState.currentTurnPlayerId !== user.userId) {
       throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
+    }
+
+    // 4.5. Check if set is prevented by lingering effects
+    const preventionCheck = isActionPrevented(gameState, "summon_monster", user.userId);
+    if (preventionCheck.prevented) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: preventionCheck.reason || "Cannot set monsters",
+      });
     }
 
     // 5. Validate set (uses same validation as normal summon)

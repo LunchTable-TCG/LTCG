@@ -50,7 +50,10 @@ export const recordUsage = internalMutation({
     });
 
     // Update daily aggregates
-    const today = new Date().toISOString().split("T")[0]!;
+    const todayParts = new Date().toISOString().split("T");
+    const today = todayParts[0];
+    if (!today) throw new Error("Failed to get date string");
+
     const existing = await ctx.db
       .query("aiUsageDailyStats")
       .withIndex("by_provider_date", (q) => q.eq("provider", args.provider).eq("date", today))
@@ -66,11 +69,12 @@ export const recordUsage = internalMutation({
       const topModels = [...existing.topModels];
       const modelIndex = topModels.findIndex((m) => m.modelId === args.modelId);
       if (modelIndex >= 0) {
+        const existing = topModels[modelIndex]!;
         topModels[modelIndex] = {
           modelId: args.modelId,
-          requests: topModels[modelIndex]!.requests + 1,
-          tokens: topModels[modelIndex]!.tokens + args.inputTokens + args.outputTokens,
-          cost: topModels[modelIndex]!.cost + args.estimatedCost,
+          requests: existing.requests + 1,
+          tokens: existing.tokens + args.inputTokens + args.outputTokens,
+          cost: existing.cost + args.estimatedCost,
         };
       } else if (topModels.length < 10) {
         topModels.push({

@@ -7,6 +7,7 @@
 
 import { v } from "convex/values";
 import { action, mutation, query } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
@@ -245,7 +246,7 @@ export const fetchOpenRouterModels = action({
     category: v.optional(v.string()),
   },
   handler: async (_ctx, args) => {
-    const apiKey = process.env["OPENROUTER_API_KEY"];
+    const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       return {
         success: false,
@@ -390,7 +391,7 @@ export const testProviderConnection = action({
 
     try {
       if (provider === "openrouter") {
-        const apiKey = process.env["OPENROUTER_API_KEY"];
+        const apiKey = process.env.OPENROUTER_API_KEY;
         if (!apiKey) {
           return { success: false, error: "API key not configured", latencyMs: 0 };
         }
@@ -415,26 +416,25 @@ export const testProviderConnection = action({
           latencyMs,
           modelCount: data.data?.length || 0,
         };
-      } else {
-        // Vercel AI Gateway - public endpoint
-        const response = await fetch("https://ai-gateway.vercel.sh/v1/models");
-        const latencyMs = Date.now() - startTime;
+      }
+      // Vercel AI Gateway - public endpoint
+      const response = await fetch("https://ai-gateway.vercel.sh/v1/models");
+      const latencyMs = Date.now() - startTime;
 
-        if (!response.ok) {
-          return {
-            success: false,
-            error: `HTTP ${response.status}`,
-            latencyMs,
-          };
-        }
-
-        const data = await response.json();
+      if (!response.ok) {
         return {
-          success: true,
+          success: false,
+          error: `HTTP ${response.status}`,
           latencyMs,
-          modelCount: data.data?.length || 0,
         };
       }
+
+      const data = await response.json();
+      return {
+        success: true,
+        latencyMs,
+        modelCount: data.data?.length || 0,
+      };
     } catch (error) {
       return {
         success: false,
@@ -455,8 +455,8 @@ export const fetchAllModels = action({
   handler: async (ctx, args) => {
     // Fetch from both providers in parallel
     const [openrouterResult, vercelResult] = await Promise.all([
-      ctx.runAction("admin/aiProviders:fetchOpenRouterModels" as any, {}),
-      ctx.runAction("admin/aiProviders:fetchVercelModels" as any, {}),
+      ctx.runAction(internal.admin.aiProviders.fetchOpenRouterModels, {}),
+      ctx.runAction(internal.admin.aiProviders.fetchVercelModels, {}),
     ]);
 
     let allModels: NormalizedModel[] = [];

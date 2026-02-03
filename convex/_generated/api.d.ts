@@ -88,6 +88,7 @@ import type * as gameplay_ai_aiTurn from "../gameplay/ai/aiTurn.js";
 import type * as gameplay_chainResolver from "../gameplay/chainResolver.js";
 import type * as gameplay_combatSystem from "../gameplay/combatSystem.js";
 import type * as gameplay_effectSystem_continuousEffects from "../gameplay/effectSystem/continuousEffects.js";
+import type * as gameplay_effectSystem_costPayment from "../gameplay/effectSystem/costPayment.js";
 import type * as gameplay_effectSystem_costValidator from "../gameplay/effectSystem/costValidator.js";
 import type * as gameplay_effectSystem_effectLibrary from "../gameplay/effectSystem/effectLibrary.js";
 import type * as gameplay_effectSystem_exampleCards from "../gameplay/effectSystem/exampleCards.js";
@@ -104,8 +105,10 @@ import type * as gameplay_effectSystem_executors_combat_damage from "../gameplay
 import type * as gameplay_effectSystem_executors_combat_gainLP from "../gameplay/effectSystem/executors/combat/gainLP.js";
 import type * as gameplay_effectSystem_executors_combat_modifyATK from "../gameplay/effectSystem/executors/combat/modifyATK.js";
 import type * as gameplay_effectSystem_executors_combat_modifyDEF from "../gameplay/effectSystem/executors/combat/modifyDEF.js";
+import type * as gameplay_effectSystem_executors_control_negateActivation from "../gameplay/effectSystem/executors/control/negateActivation.js";
 import type * as gameplay_effectSystem_executors_index from "../gameplay/effectSystem/executors/index.js";
 import type * as gameplay_effectSystem_executors_summon_destroy from "../gameplay/effectSystem/executors/summon/destroy.js";
+import type * as gameplay_effectSystem_executors_summon_generateToken from "../gameplay/effectSystem/executors/summon/generateToken.js";
 import type * as gameplay_effectSystem_executors_summon_summon from "../gameplay/effectSystem/executors/summon/summon.js";
 import type * as gameplay_effectSystem_executors_utility_negate from "../gameplay/effectSystem/executors/utility/negate.js";
 import type * as gameplay_effectSystem_index from "../gameplay/effectSystem/index.js";
@@ -117,6 +120,7 @@ import type * as gameplay_effectSystem_parser from "../gameplay/effectSystem/par
 import type * as gameplay_effectSystem_selectionHandler from "../gameplay/effectSystem/selectionHandler.js";
 import type * as gameplay_effectSystem_types from "../gameplay/effectSystem/types.js";
 import type * as gameplay_gameEngine_index from "../gameplay/gameEngine/index.js";
+import type * as gameplay_gameEngine_monsterEffects from "../gameplay/gameEngine/monsterEffects.js";
 import type * as gameplay_gameEngine_phases from "../gameplay/gameEngine/phases.js";
 import type * as gameplay_gameEngine_positions from "../gameplay/gameEngine/positions.js";
 import type * as gameplay_gameEngine_selectionEffects from "../gameplay/gameEngine/selectionEffects.js";
@@ -341,6 +345,7 @@ declare const fullApi: ApiFromModules<{
   "gameplay/chainResolver": typeof gameplay_chainResolver;
   "gameplay/combatSystem": typeof gameplay_combatSystem;
   "gameplay/effectSystem/continuousEffects": typeof gameplay_effectSystem_continuousEffects;
+  "gameplay/effectSystem/costPayment": typeof gameplay_effectSystem_costPayment;
   "gameplay/effectSystem/costValidator": typeof gameplay_effectSystem_costValidator;
   "gameplay/effectSystem/effectLibrary": typeof gameplay_effectSystem_effectLibrary;
   "gameplay/effectSystem/exampleCards": typeof gameplay_effectSystem_exampleCards;
@@ -357,8 +362,10 @@ declare const fullApi: ApiFromModules<{
   "gameplay/effectSystem/executors/combat/gainLP": typeof gameplay_effectSystem_executors_combat_gainLP;
   "gameplay/effectSystem/executors/combat/modifyATK": typeof gameplay_effectSystem_executors_combat_modifyATK;
   "gameplay/effectSystem/executors/combat/modifyDEF": typeof gameplay_effectSystem_executors_combat_modifyDEF;
+  "gameplay/effectSystem/executors/control/negateActivation": typeof gameplay_effectSystem_executors_control_negateActivation;
   "gameplay/effectSystem/executors/index": typeof gameplay_effectSystem_executors_index;
   "gameplay/effectSystem/executors/summon/destroy": typeof gameplay_effectSystem_executors_summon_destroy;
+  "gameplay/effectSystem/executors/summon/generateToken": typeof gameplay_effectSystem_executors_summon_generateToken;
   "gameplay/effectSystem/executors/summon/summon": typeof gameplay_effectSystem_executors_summon_summon;
   "gameplay/effectSystem/executors/utility/negate": typeof gameplay_effectSystem_executors_utility_negate;
   "gameplay/effectSystem/index": typeof gameplay_effectSystem_index;
@@ -370,6 +377,7 @@ declare const fullApi: ApiFromModules<{
   "gameplay/effectSystem/selectionHandler": typeof gameplay_effectSystem_selectionHandler;
   "gameplay/effectSystem/types": typeof gameplay_effectSystem_types;
   "gameplay/gameEngine/index": typeof gameplay_gameEngine_index;
+  "gameplay/gameEngine/monsterEffects": typeof gameplay_gameEngine_monsterEffects;
   "gameplay/gameEngine/phases": typeof gameplay_gameEngine_phases;
   "gameplay/gameEngine/positions": typeof gameplay_gameEngine_positions;
   "gameplay/gameEngine/selectionEffects": typeof gameplay_gameEngine_selectionEffects;

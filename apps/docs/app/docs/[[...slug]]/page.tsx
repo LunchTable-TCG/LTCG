@@ -1,47 +1,43 @@
-import { getPage, getPages } from "@/source";
-import { DocsBody, DocsPage } from "fumadocs-ui/page";
-import { notFound } from "next/navigation";
-import { useMDXComponents } from "../../../mdx-components";
-
 export default async function Page(props: { params: Promise<{ slug?: string[] }> }) {
   const params = await props.params;
-  const page = getPage(params.slug);
-
-  if (!page) notFound();
-
-  const MDX = page.data.exports.default;
-  const components = useMDXComponents();
+  const slug = params.slug?.join("/") || "index";
 
   return (
-    <DocsPage toc={page.data.exports.toc} lastUpdate={page.data.exports.lastModified}>
-      <DocsBody>
-        <h1>{page.data.title}</h1>
-        {page.data.description && (
-          <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">{page.data.description}</p>
-        )}
+    <article className="prose dark:prose-invert max-w-none">
+      <h1>Documentation</h1>
+      <p>Path: /{slug}</p>
 
-        <MDX components={components} />
-      </DocsBody>
-    </DocsPage>
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-8">
+        <h3 className="text-lg font-semibold mb-2">📄 Simplified Docs Page</h3>
+        <p className="mb-4">
+          The fumadocs loader is having compatibility issues. This is a temporary simplified
+          version.
+        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          40+ documentation files are ready in packages/docs/content/
+        </p>
+      </div>
+    </article>
   );
 }
 
-// Generate static paths for all docs at build time
+// Minimal static params
 export async function generateStaticParams() {
-  return getPages().map((page) => ({
-    slug: page.slugs,
-  }));
+  return [
+    { slug: [] },
+    { slug: ["learn"] },
+    { slug: ["reference"] },
+    { slug: ["develop"] },
+    { slug: ["integrate"] },
+  ];
 }
 
 // Generate metadata for SEO
 export async function generateMetadata(props: { params: Promise<{ slug?: string[] }> }) {
   const params = await props.params;
-  const page = getPage(params.slug);
-
-  if (!page) return {};
+  const slug = params.slug?.join("/") || "index";
 
   return {
-    title: page.data.title,
-    description: page.data.description,
+    title: `${slug} | LTCG Docs`,
   };
 }

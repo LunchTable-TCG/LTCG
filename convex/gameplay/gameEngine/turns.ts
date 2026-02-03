@@ -14,6 +14,7 @@ import { ErrorCode, createError } from "../../lib/errorCodes";
 import { clearTemporaryModifiers, drawCards } from "../../lib/gameHelpers";
 import { validateGameActive } from "../../lib/gameValidation";
 import { executeEffect } from "../effectSystem/index";
+import { cleanupLingeringEffects } from "../effectSystem/lingeringEffects";
 import { resetOPTEffects } from "../effectSystem/optTracker";
 import { recordEventHelper } from "../gameEvents";
 import { checkDeckOutCondition, checkStateBasedActions } from "./stateBasedActions";
@@ -100,9 +101,8 @@ export const endTurn = mutation({
         if (!cardAbility) continue;
 
         for (const parsedEffect of cardAbility.effects) {
-          // Check for both "on_turn_end" and "on_end_phase" triggers
-          if (parsedEffect.trigger !== "on_turn_end" && parsedEffect.trigger !== "on_end_phase")
-            continue;
+          // Check for "on_turn_end" trigger
+          if (parsedEffect.trigger !== "on_turn_end") continue;
 
           const refreshedState = await ctx.db
             .query("gameStates")
@@ -161,6 +161,9 @@ export const endTurn = mutation({
 
     // 7.5. Clear temporary modifiers (ATK/DEF bonuses "until end of turn")
     await clearTemporaryModifiers(ctx, gameState, "end");
+
+    // 7.5.1. Clean up lingering effects that expire at end phase
+    await cleanupLingeringEffects(ctx, gameState, "end", gameState.turnNumber);
 
     // 7.6. OPT/HOPT tracking now resets at turn START for the turn player
     // (This is more accurate to Yu-Gi-Oh rules where "once per turn" means once during your turn)

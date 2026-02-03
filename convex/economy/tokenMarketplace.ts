@@ -737,7 +737,7 @@ export const completeTokenPurchase = internalMutation({
 
     // Validate this is a marketplace purchase (has listingId)
     if (!pending.listingId) {
-      console.error(`[completeTokenPurchase] No listingId - not a marketplace purchase`);
+      console.error("[completeTokenPurchase] No listingId - not a marketplace purchase");
       return { success: false, error: "Not a marketplace purchase" };
     }
 
@@ -1068,7 +1068,7 @@ export const getTokenTransactionHistory = query({
       .order("desc");
 
     // Apply cursor if provided
-    let transactions;
+    let transactions: Awaited<ReturnType<typeof transactionsQuery.take>>;
     if (args.cursor) {
       const cursorTimestamp = Number.parseInt(args.cursor, 10);
       transactions = await transactionsQuery

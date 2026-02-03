@@ -10,6 +10,7 @@
 
 import { v } from "convex/values";
 import { action, internalMutation, mutation, query } from "../_generated/server";
+import type { ActionCtx } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
@@ -745,7 +746,7 @@ export const clearAPIKey = mutation({
  * Internal helper - not exposed to clients
  */
 async function getEffectiveAPIKey(
-  ctx: { runQuery: (query: any, args: any) => Promise<any> },
+  ctx: ActionCtx,
   provider: "openrouter" | "anthropic" | "openai" | "vercel"
 ): Promise<string | undefined> {
   // Check database first

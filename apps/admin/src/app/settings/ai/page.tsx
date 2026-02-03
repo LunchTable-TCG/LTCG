@@ -405,7 +405,7 @@ function ModelTypeIcon({ type }: { type: "language" | "embedding" | "image" }) {
 function formatPrice(price: string | undefined) {
   if (!price) return "N/A";
   const num = Number.parseFloat(price);
-  if (isNaN(num)) return price;
+  if (Number.isNaN(num)) return price;
   if (num === 0) return "Free";
   if (num < 0.000001) return `$${(num * 1000000).toFixed(4)}/1M`;
   if (num < 0.001) return `$${(num * 1000).toFixed(4)}/1K`;
@@ -697,7 +697,7 @@ export default function AIProvidersPage() {
         if (result.errors?.vercel) errors.push(`Vercel: ${result.errors.vercel}`);
         if (errors.length > 0) {
           setModelsError(errors.join("; "));
-          toast.error("Some providers failed: " + errors.join("; "));
+          toast.error(`Some providers failed: ${errors.join("; ")}`);
         }
         // Still set whatever models we got
         if (result.models?.length > 0) {
@@ -707,7 +707,7 @@ export default function AIProvidersPage() {
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Unknown error";
       setModelsError(msg);
-      toast.error("Failed to fetch models: " + msg);
+      toast.error(`Failed to fetch models: ${msg}`);
     } finally {
       setIsLoadingModels(false);
     }

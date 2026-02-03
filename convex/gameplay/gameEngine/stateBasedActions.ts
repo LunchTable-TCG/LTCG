@@ -232,6 +232,33 @@ async function runSBACycle(
     result.actionsTaken.push(...fieldSpellCheck.actions);
   }
 
+  // 3b. Check for orphaned equip spells (target monster is gone)
+  const equipSpellCheck = await checkOrphanedEquipSpells(
+    ctx,
+    gameState,
+    lobbyId,
+    lobby.gameId,
+    turnNumber
+  );
+  if (equipSpellCheck.changed) {
+    result.changed = true;
+    result.destroyedCards.push(...equipSpellCheck.destroyedCards);
+    result.actionsTaken.push(...equipSpellCheck.actions);
+  }
+
+  // 3c. Check for tokens sent to non-field zones (tokens must be removed)
+  const tokenCheck = await checkTokenZoneViolations(
+    ctx,
+    gameState,
+    lobbyId,
+    lobby.gameId,
+    turnNumber
+  );
+  if (tokenCheck.changed) {
+    result.changed = true;
+    result.actionsTaken.push(...tokenCheck.actions);
+  }
+
   // 4. Check hand size limit (only at end of turn)
   if (!skipHandLimit) {
     const handLimitCheck = await checkHandSizeLimit(
@@ -577,6 +604,50 @@ async function destroyMonsterBySBA(
     },
   });
 
+  // Destroy equipped spells first (before removing monster from board)
+  if (cardOnBoard.equippedCards && cardOnBoard.equippedCards.length > 0) {
+    const equippedIds = cardOnBoard.equippedCards;
+
+    // Remove equip spells from spell/trap zones and send to graveyard
+    for (const playerId of [gameState.hostId, gameState.opponentId]) {
+      const isHostZone = playerId === gameState.hostId;
+      const spellTrapZone = isHostZone ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
+      const zoneGraveyard = isHostZone ? gameState.hostGraveyard : gameState.opponentGraveyard;
+
+      const equipsInZone = spellTrapZone.filter((st) => equippedIds.includes(st.cardId));
+      if (equipsInZone.length > 0) {
+        const newSpellTrapZone = spellTrapZone.filter((st) => !equippedIds.includes(st.cardId));
+        const equipCardIds = equipsInZone.map((st) => st.cardId);
+        const newGraveyard = [...zoneGraveyard, ...equipCardIds];
+
+        await ctx.db.patch(gameState._id, {
+          [isHostZone ? "hostSpellTrapZone" : "opponentSpellTrapZone"]: newSpellTrapZone,
+          [isHostZone ? "hostGraveyard" : "opponentGraveyard"]: newGraveyard,
+        });
+
+        // Record destruction events for equip spells
+        const equipOwner = await ctx.db.get(playerId);
+        for (const equipId of equipCardIds) {
+          const equipCard = await ctx.db.get(equipId);
+          await recordEventHelper(ctx, {
+            lobbyId,
+            gameId,
+            turnNumber,
+            eventType: "card_destroyed",
+            playerId,
+            playerUsername: equipOwner?.username || "Unknown",
+            description: `${equipCard?.name || "Equip Spell"} destroyed (equipped monster destroyed)`,
+            metadata: {
+              cardId: equipId,
+              cardName: equipCard?.name,
+              reason: "equipped_monster_destroyed",
+            },
+          });
+        }
+      }
+    }
+  }
+
   // Remove from board
   const newBoard = board.filter((bc) => bc.cardId !== cardId);
   await ctx.db.patch(gameState._id, {
@@ -647,24 +718,210 @@ async function destroyMonsterBySBA(
 /**
  * Check field spell replacement rule
  *
- * Only one field spell per player. If a player somehow has multiple,
- * destroy all but the most recently placed one.
+ * Only one field spell per player. While the schema enforces this
+ * (hostFieldSpell/opponentFieldSpell are single objects), we validate
+ * to detect any inconsistencies from manual database operations.
  */
 async function checkFieldSpellReplacement(
-  _ctx: MutationCtx,
-  _gameState: Doc<"gameStates">,
-  _lobbyId: Id<"gameLobbies">,
-  _gameId: string,
-  _turnNumber: number
+  ctx: MutationCtx,
+  gameState: Doc<"gameStates">,
+  lobbyId: Id<"gameLobbies">,
+  gameId: string,
+  turnNumber: number
 ): Promise<{ changed: boolean; actions: string[] }> {
-  // Note: Field spell replacement is handled in the spell activation logic
-  // when a new field spell is played. The schema only allows one field spell
-  // per player (hostFieldSpell/opponentFieldSpell are single objects, not arrays).
-  //
-  // This check is here for completeness but typically won't find issues.
-  // The actual replacement logic is in spellsTraps.ts
+  const result = { changed: false, actions: [] as string[] };
 
-  return { changed: false, actions: [] };
+  // Validate host field spell
+  if (gameState.hostFieldSpell) {
+    const fieldCard = await ctx.db.get(gameState.hostFieldSpell.cardId);
+    // If field spell card no longer exists or is not a spell, remove it
+    if (!fieldCard || fieldCard.cardType !== "spell" || fieldCard.spellType !== "field") {
+      await ctx.db.patch(gameState._id, {
+        hostFieldSpell: undefined,
+      });
+
+      const host = await ctx.db.get(gameState.hostId);
+      await recordEventHelper(ctx, {
+        lobbyId,
+        gameId,
+        turnNumber,
+        eventType: "card_destroyed",
+        playerId: gameState.hostId,
+        playerUsername: host?.username || "Unknown",
+        description: "Invalid field spell removed by SBA",
+        metadata: {
+          cardId: gameState.hostFieldSpell.cardId,
+          reason: "invalid_field_spell",
+        },
+      });
+
+      result.changed = true;
+      result.actions.push("Host invalid field spell removed");
+    }
+  }
+
+  // Validate opponent field spell
+  if (gameState.opponentFieldSpell) {
+    const fieldCard = await ctx.db.get(gameState.opponentFieldSpell.cardId);
+    // If field spell card no longer exists or is not a spell, remove it
+    if (!fieldCard || fieldCard.cardType !== "spell" || fieldCard.spellType !== "field") {
+      await ctx.db.patch(gameState._id, {
+        opponentFieldSpell: undefined,
+      });
+
+      const opponent = await ctx.db.get(gameState.opponentId);
+      await recordEventHelper(ctx, {
+        lobbyId,
+        gameId,
+        turnNumber,
+        eventType: "card_destroyed",
+        playerId: gameState.opponentId,
+        playerUsername: opponent?.username || "Unknown",
+        description: "Invalid field spell removed by SBA",
+        metadata: {
+          cardId: gameState.opponentFieldSpell.cardId,
+          reason: "invalid_field_spell",
+        },
+      });
+
+      result.changed = true;
+      result.actions.push("Opponent invalid field spell removed");
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Check for orphaned equip spells
+ *
+ * Equip spells must have a valid target monster on the field.
+ * If the equipped monster is destroyed, removed from field, or flipped face-down,
+ * the equip spell is destroyed.
+ */
+async function checkOrphanedEquipSpells(
+  ctx: MutationCtx,
+  gameState: Doc<"gameStates">,
+  lobbyId: Id<"gameLobbies">,
+  gameId: string,
+  turnNumber: number
+): Promise<{ changed: boolean; actions: string[]; destroyedCards: Id<"cardDefinitions">[] }> {
+  const result = { changed: false, actions: [] as string[], destroyedCards: [] as Id<"cardDefinitions">[] };
+
+  // Check all equip spells in both players' spell/trap zones
+  const checkZone = async (
+    zone: typeof gameState.hostSpellTrapZone,
+    playerId: Id<"users">,
+    zoneKey: "hostSpellTrapZone" | "opponentSpellTrapZone"
+  ) => {
+    const orphanedEquips: Id<"cardDefinitions">[] = [];
+
+    for (const spellTrap of zone) {
+      if (!spellTrap.equippedTo) continue; // Not an equip spell
+
+      const card = await ctx.db.get(spellTrap.cardId);
+      if (!card || card.cardType !== "spell" || card.spellType !== "equip") continue;
+
+      // Check if target monster still exists on field and is face-up
+      const hostBoard = gameState.hostBoard;
+      const opponentBoard = gameState.opponentBoard;
+      const allMonsters = [...hostBoard, ...opponentBoard];
+      const targetMonster = allMonsters.find((m) => m.cardId === spellTrap.equippedTo);
+
+      if (!targetMonster || targetMonster.isFaceDown) {
+        // Target is invalid - mark equip spell for destruction
+        orphanedEquips.push(spellTrap.cardId);
+      }
+    }
+
+    // Destroy orphaned equip spells
+    if (orphanedEquips.length > 0) {
+      const newZone = zone.filter((st) => !orphanedEquips.includes(st.cardId));
+      const graveyard = playerId === gameState.hostId ? gameState.hostGraveyard : gameState.opponentGraveyard;
+      const newGraveyard = [...graveyard, ...orphanedEquips];
+
+      await ctx.db.patch(gameState._id, {
+        [zoneKey]: newZone,
+        [playerId === gameState.hostId ? "hostGraveyard" : "opponentGraveyard"]: newGraveyard,
+      });
+
+      // Remove equip spells from monsters' equippedCards arrays
+      for (const equipId of orphanedEquips) {
+        const equipSpell = zone.find((st) => st.cardId === equipId);
+        if (!equipSpell?.equippedTo) continue;
+
+        // Refresh game state to get current boards
+        const currentState = await ctx.db
+          .query("gameStates")
+          .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+          .first();
+
+        if (!currentState) continue;
+
+        const currentHostBoard = currentState.hostBoard;
+        const currentOpponentBoard = currentState.opponentBoard;
+
+        // Find monster and remove equip from its equippedCards
+        const hostMonsterIdx = currentHostBoard.findIndex((m) => m.cardId === equipSpell.equippedTo);
+        const opponentMonsterIdx = currentOpponentBoard.findIndex((m) => m.cardId === equipSpell.equippedTo);
+
+        if (hostMonsterIdx !== -1) {
+          const monster = currentHostBoard[hostMonsterIdx];
+          if (!monster) continue;
+          const updatedMonster = {
+            ...monster,
+            equippedCards: (monster.equippedCards || []).filter((id) => id !== equipId),
+          };
+          const updatedBoard = [...currentHostBoard];
+          updatedBoard[hostMonsterIdx] = updatedMonster;
+          await ctx.db.patch(currentState._id, {
+            hostBoard: updatedBoard,
+          });
+        } else if (opponentMonsterIdx !== -1) {
+          const monster = currentOpponentBoard[opponentMonsterIdx];
+          if (!monster) continue;
+          const updatedMonster = {
+            ...monster,
+            equippedCards: (monster.equippedCards || []).filter((id) => id !== equipId),
+          };
+          const updatedBoard = [...currentOpponentBoard];
+          updatedBoard[opponentMonsterIdx] = updatedMonster;
+          await ctx.db.patch(currentState._id, {
+            opponentBoard: updatedBoard,
+          });
+        }
+      }
+
+      // Record events for destroyed equip spells
+      const player = await ctx.db.get(playerId);
+      for (const equipId of orphanedEquips) {
+        const equipCard = await ctx.db.get(equipId);
+        await recordEventHelper(ctx, {
+          lobbyId,
+          gameId,
+          turnNumber,
+          eventType: "card_destroyed",
+          playerId,
+          playerUsername: player?.username || "Unknown",
+          description: `${equipCard?.name || "Equip Spell"} destroyed by SBA (target invalid)`,
+          metadata: {
+            cardId: equipId,
+            cardName: equipCard?.name,
+            reason: "orphaned_equip_spell",
+          },
+        });
+      }
+
+      result.changed = true;
+      result.destroyedCards.push(...orphanedEquips);
+      result.actions.push(`${orphanedEquips.length} orphaned equip spell(s) destroyed`);
+    }
+  };
+
+  await checkZone(gameState.hostSpellTrapZone, gameState.hostId, "hostSpellTrapZone");
+  await checkZone(gameState.opponentSpellTrapZone, gameState.opponentId, "opponentSpellTrapZone");
+
+  return result;
 }
 
 /**
@@ -778,6 +1035,90 @@ async function checkHandSizeLimit(
     result.changed = true;
     result.actions.push(`Opponent discarded ${excessCount} cards (hand limit)`);
   }
+
+  return result;
+}
+
+/**
+ * Check for tokens in non-field zones
+ *
+ * Tokens can only exist on the field. If a token would be sent to any other
+ * zone (hand, deck, graveyard, banished), it is removed from the game instead.
+ */
+async function checkTokenZoneViolations(
+  ctx: MutationCtx,
+  gameState: Doc<"gameStates">,
+  lobbyId: Id<"gameLobbies">,
+  gameId: string,
+  turnNumber: number
+): Promise<{ changed: boolean; actions: string[] }> {
+  const result = { changed: false, actions: [] as string[] };
+
+  // Check all zones for tokens (except board)
+  const checkZone = async (
+    zone: Id<"cardDefinitions">[],
+    zoneName: string,
+    playerId: Id<"users">,
+    zoneKey: string
+  ) => {
+    // Tokens have fake IDs in the format: cardId_token_timestamp_index
+    const tokensInZone = zone.filter((cardId) => {
+      const idStr = cardId as string;
+      return idStr.includes("_token_");
+    });
+
+    if (tokensInZone.length > 0) {
+      // Remove tokens from this zone
+      const newZone = zone.filter((cardId) => {
+        const idStr = cardId as string;
+        return !idStr.includes("_token_");
+      });
+
+      await ctx.db.patch(gameState._id, {
+        [zoneKey]: newZone,
+      });
+
+      const player = await ctx.db.get(playerId);
+      await recordEventHelper(ctx, {
+        lobbyId,
+        gameId,
+        turnNumber,
+        eventType: "card_destroyed",
+        playerId,
+        playerUsername: player?.username || "Unknown",
+        description: `${tokensInZone.length} token(s) removed from ${zoneName} (tokens cannot exist off field)`,
+        metadata: {
+          tokenIds: tokensInZone,
+          reason: "token_zone_violation",
+          zoneName,
+        },
+      });
+
+      result.changed = true;
+      result.actions.push(`${tokensInZone.length} token(s) removed from ${zoneName}`);
+
+      logger.info("Tokens removed from non-field zone", {
+        zoneName,
+        playerId,
+        tokenCount: tokensInZone.length,
+      });
+    }
+  };
+
+  // Check all zones for both players
+  await checkZone(gameState.hostHand, "hand", gameState.hostId, "hostHand");
+  await checkZone(gameState.opponentHand, "hand", gameState.opponentId, "opponentHand");
+  await checkZone(gameState.hostDeck, "deck", gameState.hostId, "hostDeck");
+  await checkZone(gameState.opponentDeck, "deck", gameState.opponentId, "opponentDeck");
+  await checkZone(gameState.hostGraveyard, "graveyard", gameState.hostId, "hostGraveyard");
+  await checkZone(
+    gameState.opponentGraveyard,
+    "graveyard",
+    gameState.opponentId,
+    "opponentGraveyard"
+  );
+  await checkZone(gameState.hostBanished, "banished", gameState.hostId, "hostBanished");
+  await checkZone(gameState.opponentBanished, "banished", gameState.opponentId, "opponentBanished");
 
   return result;
 }

@@ -40,22 +40,25 @@ export const listReports = query({
     const limit = args.limit ?? 50;
     const offset = args.offset ?? 0;
 
-    let reports;
-    if (args.status) {
-      reports = await ctx.db
-        .query("userReports")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
-        .order("desc")
-        .collect();
-    } else {
-      reports = await ctx.db.query("userReports").order("desc").collect();
-    }
+    let reports = await (async () => {
+      if (args.status) {
+        return await ctx.db
+          .query("userReports")
+          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .order("desc")
+          .collect();
+      } else {
+        return await ctx.db.query("userReports").order("desc").collect();
+      }
+    })();
+
+    type Report = typeof reports[number];
 
     // Apply search filter
     if (args.search) {
       const searchLower = args.search.toLowerCase();
       reports = reports.filter(
-        (r) =>
+        (r: Report) =>
           r.reporterUsername.toLowerCase().includes(searchLower) ||
           r.reportedUsername.toLowerCase().includes(searchLower) ||
           r.reason.toLowerCase().includes(searchLower)

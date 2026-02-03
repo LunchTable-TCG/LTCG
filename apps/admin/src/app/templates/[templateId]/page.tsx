@@ -114,7 +114,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
         ...updates,
       });
       toast.success("Template updated");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update template");
     }
   };
@@ -123,7 +123,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
     try {
       await setDefaultTemplate({ templateId: templateId as any });
       toast.success("Set as default template");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to set default");
     }
   };
@@ -142,7 +142,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
       toast.success("Template duplicated");
       setShowDuplicateDialog(false);
       router.push(`/templates/${newId}`);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to duplicate template");
     }
   };
@@ -178,7 +178,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
       link.click();
 
       toast.success("Template exported");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to export template");
     }
   };

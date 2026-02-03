@@ -220,6 +220,7 @@ export const CARD_TROOPER: JsonAbility = buildAbility(
       trigger: "on_summon",
       value: 3,
       targetOwner: "self",
+      // biome-ignore lint/suspicious/noThenProperty: Effect chaining pattern using 'then' property
       then: EFFECT_TEMPLATES.boostATK(1500, "turn"),
     },
     EFFECT_TEMPLATES.draw(1, "on_destroy"),

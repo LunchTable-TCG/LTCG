@@ -109,6 +109,18 @@ export function requiresTributes(card: Doc<"cardDefinitions">): boolean {
 // =============================================================================
 
 /**
+ * Token data for generated token monsters
+ */
+export interface TokenData {
+  name: string;
+  atk: number;
+  def: number;
+  level?: number;
+  attribute?: string;
+  type?: string;
+}
+
+/**
  * Board card instance type (from game state)
  */
 interface BoardCard {
@@ -123,6 +135,9 @@ interface BoardCard {
   cannotBeTargeted?: boolean;
   hasChangedPosition?: boolean;
   turnSummoned?: number;
+  equippedCards?: Doc<"cardDefinitions">["_id"][];
+  isToken?: boolean;
+  tokenData?: TokenData;
 }
 
 /**
@@ -211,4 +226,24 @@ export function resetTurnFlags(boardCard: BoardCard): BoardCard {
     hasAttacked: false,
     hasChangedPosition: false,
   };
+}
+
+/**
+ * Check if a board card is a token
+ *
+ * @param boardCard - Board card instance
+ * @returns True if the card is a token
+ */
+export function isToken(boardCard: BoardCard): boolean {
+  return boardCard.isToken === true;
+}
+
+/**
+ * Get token data from a board card
+ *
+ * @param boardCard - Board card instance
+ * @returns Token data if the card is a token, null otherwise
+ */
+export function getTokenData(boardCard: BoardCard): TokenData | null {
+  return boardCard.isToken && boardCard.tokenData ? boardCard.tokenData : null;
 }

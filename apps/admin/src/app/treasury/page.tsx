@@ -97,7 +97,7 @@ export default function TreasuryOverviewPage() {
     wallets?.map((w: any) => ({
       name: `${getPurposeIcon(w.purpose)} ${w.name}`,
       value: w.balance || 0,
-      href: `/treasury/wallets`,
+      href: "/treasury/wallets",
     })) ?? [];
 
   // Transaction type breakdown

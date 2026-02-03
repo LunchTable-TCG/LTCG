@@ -171,18 +171,21 @@ export const listConfigs = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let configs;
-    if (args.category) {
-      configs = await ctx.db
-        .query("systemConfig")
-        .withIndex("by_category", (q) => q.eq("category", args.category!))
-        .collect();
-    } else {
-      configs = await ctx.db.query("systemConfig").collect();
-    }
+    let configs = await (async () => {
+      if (args.category) {
+        return await ctx.db
+          .query("systemConfig")
+          .withIndex("by_category", (q) => q.eq("category", args.category!))
+          .collect();
+      } else {
+        return await ctx.db.query("systemConfig").collect();
+      }
+    })();
+
+    type Config = typeof configs[number];
 
     // Sort by category then key
-    configs.sort((a, b) => {
+    configs.sort((a: Config, b: Config) => {
       if (a.category !== b.category) {
         return a.category.localeCompare(b.category);
       }
@@ -191,11 +194,11 @@ export const listConfigs = query({
 
     // Enrich with updatedBy user info
     const enrichedConfigs = await Promise.all(
-      configs.map(async (config) => {
+      configs.map(async (config: Config) => {
         const updatedByUser = await ctx.db.get(config.updatedBy);
         return {
           ...config,
-          updatedByUsername: updatedByUser?.username ?? updatedByUser?.email ?? "Unknown",
+          updatedByUsername: (updatedByUser as any)?.username ?? (updatedByUser as any)?.email ?? "Unknown",
         };
       })
     );
@@ -373,7 +376,7 @@ export const bulkUpdateConfigs = mutation({
     const { userId: adminId } = await requireAuthMutation(ctx);
     await requireRole(ctx, adminId, "admin");
 
-    if (args.updates["length"] === 0) {
+    if (args.updates.length === 0) {
       throw new Error("No updates provided");
     }
 

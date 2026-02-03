@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowUp,
   Ban,
@@ -235,12 +236,25 @@ export function categorizeEffect(effectDescription: string): EffectCategory {
   if (desc.includes("summon")) return "summon";
   if (desc.includes("destroy")) return "destroy";
   if (desc.includes("damage") || desc.includes("lose")) return "damage";
-  if (desc.includes("heal") || desc.includes("gain") && desc.includes("lp")) return "heal";
+  if (desc.includes("heal") || (desc.includes("gain") && desc.includes("lp"))) return "heal";
   if (desc.includes("draw")) return "draw";
-  if (desc.includes("search") || desc.includes("add") && desc.includes("hand")) return "search";
-  if (desc.includes("increase") || desc.includes("gain") && (desc.includes("atk") || desc.includes("def"))) return "boost";
-  if (desc.includes("decrease") || desc.includes("lose") && (desc.includes("atk") || desc.includes("def"))) return "debuff";
-  if (desc.includes("cannot be destroyed") || desc.includes("cannot be targeted") || desc.includes("protect")) return "protect";
+  if (desc.includes("search") || (desc.includes("add") && desc.includes("hand"))) return "search";
+  if (
+    desc.includes("increase") ||
+    (desc.includes("gain") && (desc.includes("atk") || desc.includes("def")))
+  )
+    return "boost";
+  if (
+    desc.includes("decrease") ||
+    (desc.includes("lose") && (desc.includes("atk") || desc.includes("def")))
+  )
+    return "debuff";
+  if (
+    desc.includes("cannot be destroyed") ||
+    desc.includes("cannot be targeted") ||
+    desc.includes("protect")
+  )
+    return "protect";
   if (desc.includes("target")) return "target";
   if (desc.includes("negate")) return "negate";
   if (desc.includes("attack") || desc.includes("battle")) return "battle";

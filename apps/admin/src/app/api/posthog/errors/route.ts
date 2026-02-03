@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       summary: {
         totalErrors: events.results.length,
         uniquePages: Object.keys(errorsByPage).length,
-        period: `Last 7 days`,
+        period: "Last 7 days",
       },
       byPage: pageErrors,
       byType: typeErrors,

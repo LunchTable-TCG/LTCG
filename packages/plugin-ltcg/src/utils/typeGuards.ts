@@ -84,10 +84,10 @@ export function isMonsterCard(card: unknown): card is MonsterCard {
   if (typeof card !== "object" || card === null) return false;
   const c = card as Record<string, unknown>;
   return (
-    typeof c["boardIndex"] === "number" &&
-    typeof c["cardId"] === "string" &&
-    typeof c["name"] === "string" &&
-    (c["position"] === "attack" || c["position"] === "defense" || c["position"] === "facedown")
+    typeof c.boardIndex === "number" &&
+    typeof c.cardId === "string" &&
+    typeof c.name === "string" &&
+    (c.position === "attack" || c.position === "defense" || c.position === "facedown")
   );
 }
 
@@ -113,12 +113,9 @@ export function isGraveyardCard(card: unknown): card is CardInGraveyard {
   if (typeof card !== "object" || card === null) return false;
   const c = card as Record<string, unknown>;
   return (
-    typeof c["cardId"] === "string" &&
-    typeof c["name"] === "string" &&
-    (c["type"] === "creature" ||
-      c["type"] === "spell" ||
-      c["type"] === "trap" ||
-      c["type"] === "equipment")
+    typeof c.cardId === "string" &&
+    typeof c.name === "string" &&
+    (c.type === "creature" || c.type === "spell" || c.type === "trap" || c.type === "equipment")
   );
 }
 
@@ -134,7 +131,7 @@ export function isApiSuccessResponse<T>(
 ): response is ApiSuccessResponse<T> {
   if (typeof response !== "object" || response === null) return false;
   const r = response as Record<string, unknown>;
-  return r["success"] === true && "data" in r;
+  return r.success === true && "data" in r;
 }
 
 /**
@@ -145,7 +142,7 @@ export function isApiErrorResponse(
 ): response is ApiErrorResponse {
   if (typeof response !== "object" || response === null) return false;
   const r = response as Record<string, unknown>;
-  return r["success"] === false && "error" in r && typeof r["error"] === "object";
+  return r.success === false && "error" in r && typeof r.error === "object";
 }
 
 // ============================================================================

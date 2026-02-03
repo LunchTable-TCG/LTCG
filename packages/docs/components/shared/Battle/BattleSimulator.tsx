@@ -86,6 +86,10 @@ export function BattleSimulator({
 
   const currentTurnData = scenario.turns[currentTurn];
 
+  if (!currentTurnData) {
+    return <div>Error: Invalid turn data</div>;
+  }
+
   return (
     <div className="battle-simulator border rounded-lg overflow-hidden shadow-lg my-6">
       {/* Header */}
@@ -146,7 +150,7 @@ export function BattleSimulator({
 
           {/* Turn Counter */}
           <div className="text-sm font-semibold text-gray-700">
-            Turn {currentTurnData.number} of {scenario.turns[scenario.turns.length - 1].number}
+            Turn {currentTurnData.number} of {scenario.turns[scenario.turns.length - 1]?.number ?? 0}
             <span className="ml-2 text-gray-500">
               (Step {currentTurn + 1}/{scenario.turns.length})
             </span>

@@ -138,8 +138,8 @@ function CreateStageDialog({
         repeatGold: Number.parseInt(repeatGold, 10),
       };
 
-      if (opponentDeckArchetype) args["opponentDeckArchetype"] = opponentDeckArchetype;
-      if (firstClearGems) args["firstClearGems"] = Number.parseInt(firstClearGems, 10);
+      if (opponentDeckArchetype) args.opponentDeckArchetype = opponentDeckArchetype;
+      if (firstClearGems) args.firstClearGems = Number.parseInt(firstClearGems, 10);
 
       const result = await createStage(args);
       toast.success(result.message);
@@ -368,7 +368,7 @@ function DeleteChapterDialog({
 
 export default function ChapterDetailPage() {
   const params = useParams();
-  const chapterId = params["chapterId"] as string;
+  const chapterId = params.chapterId as string;
   const { hasPermission } = useAdmin();
 
   // Form state
@@ -440,14 +440,14 @@ export default function ChapterDetailPage() {
       };
 
       if (unlockType === "none") {
-        args["clearUnlockCondition"] = true;
+        args.clearUnlockCondition = true;
       } else {
-        args["unlockConditionType"] = unlockType;
+        args.unlockConditionType = unlockType;
         if (unlockType === "chapter_complete" && requiredChapterId) {
-          args["requiredChapterId"] = requiredChapterId;
+          args.requiredChapterId = requiredChapterId;
         }
         if (unlockType === "player_level" && requiredLevel) {
-          args["requiredLevel"] = Number.parseInt(requiredLevel, 10);
+          args.requiredLevel = Number.parseInt(requiredLevel, 10);
         }
       }
 

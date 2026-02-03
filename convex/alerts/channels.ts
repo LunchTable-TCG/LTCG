@@ -11,6 +11,7 @@ import { scheduleAuditLog } from "../lib/internalHelpers";
 
 // Import internal separately to avoid TS2589 deep type instantiation
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports
+// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround to avoid TS2589
 const internal: any = require("../_generated/api").internal;
 import { requireRole } from "../lib/roles";
 
@@ -170,9 +171,9 @@ export const update = mutation({
     }
 
     const updates: Record<string, unknown> = {};
-    if (args.name !== undefined) updates["name"] = args.name;
-    if (args.config !== undefined) updates["config"] = args.config;
-    if (args.isEnabled !== undefined) updates["isEnabled"] = args.isEnabled;
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.config !== undefined) updates.config = args.config;
+    if (args.isEnabled !== undefined) updates.isEnabled = args.isEnabled;
 
     await ctx.db.patch(args.channelId, updates);
 
@@ -380,6 +381,7 @@ export const sendToChannels = internalMutation({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await ctx.scheduler.runAfter(
           0,
+          // biome-ignore lint/suspicious/noExplicitAny: Scheduler requires flexible internal API access
           (internal as any).alerts.channels.sendExternalNotificationAction,
           {
             channelType: channel.type,
@@ -416,7 +418,7 @@ export const sendExternalNotificationAction = internalAction({
       critical: { slack: "#d9534f", discord: 0xd9534f },
     };
 
-    const color = severityColors[args.severity] ?? severityColors["info"]!;
+    const color = severityColors[args.severity] ?? severityColors.info!;
 
     try {
       if (args.channelType === "slack") {

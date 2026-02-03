@@ -227,6 +227,11 @@ export interface GameAction {
   description: string;
   isLegal: boolean;
   reason?: string; // If not legal
+  /**
+   * Action parameters - flexible structure for various action types.
+   * Uses any for maximum flexibility when representing game actions.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: Flexible parameters for various action types
   parameters?: Record<string, any>;
 }
 

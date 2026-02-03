@@ -143,7 +143,7 @@ export function PremiumUpgradeModal({
       await onPurchase();
       toast.success("Premium pass purchased!");
       onClose();
-    } catch (err) {
+    } catch (_err) {
       toast.error("Purchase failed. Please try again.");
     }
   };
@@ -176,9 +176,8 @@ export function PremiumUpgradeModal({
         default:
           return renderConfirmStep();
       }
-    } else {
-      return renderConfirmStep();
     }
+    return renderConfirmStep();
   };
 
   const renderConfirmStep = () => (

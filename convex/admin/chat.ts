@@ -33,27 +33,30 @@ export const listMessages = query({
     const limit = args.limit ?? 100;
     const offset = args.offset ?? 0;
 
-    let messages;
-    if (args.userId) {
-      messages = await ctx.db
-        .query("globalChatMessages")
-        .withIndex("by_user", (q) => q.eq("userId", args.userId!))
-        .order("desc")
-        .collect();
-    } else {
-      messages = await ctx.db.query("globalChatMessages").order("desc").collect();
-    }
+    let messages = await (async () => {
+      if (args.userId) {
+        return await ctx.db
+          .query("globalChatMessages")
+          .withIndex("by_user", (q) => q.eq("userId", args.userId!))
+          .order("desc")
+          .collect();
+      } else {
+        return await ctx.db.query("globalChatMessages").order("desc").collect();
+      }
+    })();
+
+    type Message = typeof messages[number];
 
     // Filter by time
     if (args.since) {
-      messages = messages.filter((m) => m.createdAt >= args.since!);
+      messages = messages.filter((m: Message) => m.createdAt >= args.since!);
     }
 
     // Filter by search term
     if (args.search) {
       const searchLower = args.search.toLowerCase();
       messages = messages.filter(
-        (m) =>
+        (m: Message) =>
           m.message.toLowerCase().includes(searchLower) ||
           m.username.toLowerCase().includes(searchLower)
       );

@@ -34,18 +34,21 @@ export const listFeatureFlags = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let flags;
-    if (args.category) {
-      flags = await ctx.db
-        .query("featureFlags")
-        .withIndex("by_category", (q) => q.eq("category", args.category!))
-        .collect();
-    } else {
-      flags = await ctx.db.query("featureFlags").collect();
-    }
+    let flags = await (async () => {
+      if (args.category) {
+        return await ctx.db
+          .query("featureFlags")
+          .withIndex("by_category", (q) => q.eq("category", args.category!))
+          .collect();
+      } else {
+        return await ctx.db.query("featureFlags").collect();
+      }
+    })();
+
+    type Flag = typeof flags[number];
 
     // Sort by category then name
-    flags.sort((a, b) => {
+    flags.sort((a: Flag, b: Flag) => {
       if (a.category !== b.category) {
         return a.category.localeCompare(b.category);
       }
@@ -54,11 +57,11 @@ export const listFeatureFlags = query({
 
     // Get updater usernames
     const flagsWithUpdater = await Promise.all(
-      flags.map(async (flag) => {
+      flags.map(async (flag: Flag) => {
         const updater = await ctx.db.get(flag.updatedBy);
         return {
           ...flag,
-          updatedByUsername: updater?.username || updater?.name || "Unknown",
+          updatedByUsername: (updater as any)?.username || (updater as any)?.name || "Unknown",
         };
       })
     );
@@ -93,8 +96,8 @@ export const getFeatureFlag = query({
       targetUsers = users
         .filter((u) => u !== null)
         .map((u) => ({
-          _id: u!._id,
-          username: u!.username || u!.name || "Unknown",
+          _id: u?._id,
+          username: u?.username || u?.name || "Unknown",
         }));
     }
 
@@ -495,7 +498,7 @@ export const checkFeatureFlags = query({
       let isEnabled = false;
       let reason = "not_in_target";
 
-      if (flag.targetUserIds && flag.targetUserIds.includes(args.userId)) {
+      if (flag.targetUserIds?.includes(args.userId)) {
         isEnabled = true;
         reason = "user_targeted";
       } else if (flag.targetRoles && flag.targetRoles.length > 0) {

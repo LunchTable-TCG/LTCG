@@ -24,6 +24,7 @@ export { executeDiscard } from "./cardMovement/discard";
 // Summon executors
 export { executeSpecialSummon } from "./summon/summon";
 export { executeDestroy } from "./summon/destroy";
+export { executeGenerateToken } from "./summon/generateToken";
 
 // Utility executors
 export { executeNegate } from "./utility/negate";

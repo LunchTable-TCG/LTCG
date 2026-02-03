@@ -187,7 +187,7 @@ function GrantEntryDialog({
 
 export default function TournamentDetailPage() {
   const params = useParams();
-  const tournamentId = params["tournamentId"] as string;
+  const tournamentId = params.tournamentId as string;
 
   // Form state
   const [name, setName] = useState("");

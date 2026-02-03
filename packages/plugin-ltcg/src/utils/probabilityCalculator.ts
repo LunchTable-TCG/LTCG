@@ -67,10 +67,10 @@ function logCombination(n: number, k: number): number {
   if (k === 0 || k === n) return 0;
 
   // Optimize by using smaller k
-  if (k > n - k) k = n - k;
+  const optimizedK = k > n - k ? n - k : k;
 
   let result = 0;
-  for (let i = 0; i < k; i++) {
+  for (let i = 0; i < optimizedK; i++) {
     result += Math.log(n - i) - Math.log(i + 1);
   }
   return result;

@@ -60,18 +60,17 @@ export function SelectionRect({ rect, guides, zoom }: SelectionRectProps) {
               dash={guide.type === "center" ? [8 / zoom, 4 / zoom] : undefined}
             />
           );
-        } else {
-          const y = toPixels(guide.position, "height");
-          return (
-            <Line
-              key={`h-${index}`}
-              points={[0, y, CANVAS_WIDTH, y]}
-              stroke={guide.type === "center" ? "#f59e0b" : "#3b82f6"}
-              strokeWidth={1 / zoom}
-              dash={guide.type === "center" ? [8 / zoom, 4 / zoom] : undefined}
-            />
-          );
         }
+        const y = toPixels(guide.position, "height");
+        return (
+          <Line
+            key={`h-${index}`}
+            points={[0, y, CANVAS_WIDTH, y]}
+            stroke={guide.type === "center" ? "#f59e0b" : "#3b82f6"}
+            strokeWidth={1 / zoom}
+            dash={guide.type === "center" ? [8 / zoom, 4 / zoom] : undefined}
+          />
+        );
       })}
     </>
   );

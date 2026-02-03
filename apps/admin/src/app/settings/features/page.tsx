@@ -685,7 +685,7 @@ export default function FeatureFlagsPage() {
       if (!groupedFlags[flag.category]) {
         groupedFlags[flag.category] = [];
       }
-      groupedFlags[flag.category]!.push(flag as FeatureFlag);
+      groupedFlags[flag.category]?.push(flag as FeatureFlag);
     }
   }
 

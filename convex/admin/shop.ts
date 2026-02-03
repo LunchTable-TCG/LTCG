@@ -59,42 +59,46 @@ export const listProducts = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let products;
-    if (args.productType) {
-      products = await ctx.db
-        .query("shopProducts")
-        .withIndex("by_type", (q) => q.eq("productType", args.productType!).eq("isActive", true))
-        .collect();
-
-      // If we want inactive too, we need a separate query
-      if (args.includeInactive) {
-        const inactive = await ctx.db
+    let products = await (async () => {
+      if (args.productType) {
+        const active = await ctx.db
           .query("shopProducts")
-          .withIndex("by_type", (q) => q.eq("productType", args.productType!).eq("isActive", false))
+          .withIndex("by_type", (q) => q.eq("productType", args.productType!).eq("isActive", true))
           .collect();
-        products = [...products, ...inactive];
+
+        // If we want inactive too, we need a separate query
+        if (args.includeInactive) {
+          const inactive = await ctx.db
+            .query("shopProducts")
+            .withIndex("by_type", (q) => q.eq("productType", args.productType!).eq("isActive", false))
+            .collect();
+          return [...active, ...inactive];
+        }
+        return active;
+      } else {
+        return await ctx.db.query("shopProducts").collect();
       }
-    } else {
-      products = await ctx.db.query("shopProducts").collect();
-    }
+    })();
+
+    type Product = typeof products[number];
 
     // Filter by active status
     if (!args.includeInactive) {
-      products = products.filter((p) => p.isActive);
+      products = products.filter((p: Product) => p.isActive);
     }
 
     // Apply search filter
     if (args.search) {
       const searchLower = args.search.toLowerCase();
       products = products.filter(
-        (p) =>
+        (p: Product) =>
           p.name.toLowerCase().includes(searchLower) ||
           p.productId.toLowerCase().includes(searchLower)
       );
     }
 
     // Sort by sortOrder
-    products.sort((a, b) => a.sortOrder - b.sortOrder);
+    products.sort((a: Product, b: Product) => a.sortOrder - b.sortOrder);
 
     return {
       products,

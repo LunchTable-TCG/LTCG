@@ -38,7 +38,7 @@ export function PrivyAuthProvider({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  const appId = process.env["NEXT_PUBLIC_PRIVY_APP_ID"];
+  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
   if (!appId) {
     console.error("NEXT_PUBLIC_PRIVY_APP_ID is not set");
     return <>{children}</>;

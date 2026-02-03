@@ -718,7 +718,7 @@ export const startTournament = internalMutation({
 
     // Generate bracket
     const totalRounds = calculateTotalRounds(checkedInParticipants.length);
-    const bracketSize = Math.pow(2, totalRounds); // Next power of 2
+    const bracketSize = 2 ** totalRounds; // Next power of 2
 
     // Sort by rating for seeding (higher rating = better seed)
     const seededParticipants = [...checkedInParticipants].sort(
@@ -1261,7 +1261,7 @@ async function createBracketMatches(
   const matchesByRound: Map<number, Id<"tournamentMatches">[]> = new Map();
 
   for (let round = 1; round <= totalRounds; round++) {
-    const matchesInRound = bracketSize / Math.pow(2, round);
+    const matchesInRound = bracketSize / 2 ** round;
     const roundMatches: Id<"tournamentMatches">[] = [];
 
     for (let matchNum = 1; matchNum <= matchesInRound; matchNum++) {
@@ -1441,7 +1441,7 @@ function calculatePlacement(eliminatedInRound: number, totalRounds: number): num
   if (roundsFromFinal === 1) return 3; // Lost semi-final (3rd or 4th)
 
   // For earlier rounds, calculate based on bracket size
-  return Math.pow(2, roundsFromFinal) + 1;
+  return 2 ** roundsFromFinal + 1;
 }
 
 function getRoundName(round: number, totalRounds: number): string {

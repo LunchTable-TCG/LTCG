@@ -106,7 +106,7 @@ export default function TemplatesPage() {
       setNewName("");
       setNewDescription("");
       setNewCardType("creature");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to create template");
     }
   };
@@ -126,7 +126,7 @@ export default function TemplatesPage() {
       setShowDuplicateDialog(false);
       setDuplicateName("");
       setSelectedTemplateId(null);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to duplicate template");
     }
   };
@@ -148,7 +148,7 @@ export default function TemplatesPage() {
     try {
       await setDefaultTemplate({ templateId: templateId as any });
       toast.success("Set as default template");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to set default");
     }
   };

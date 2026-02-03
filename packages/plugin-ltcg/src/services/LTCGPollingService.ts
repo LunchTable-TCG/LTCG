@@ -850,6 +850,7 @@ export class LTCGPollingService extends Service {
       turnNumber: state.turnNumber ?? 0,
       phase: state.phase ?? "",
       currentTurn: state.currentTurn ?? "",
+      // biome-ignore lint/suspicious/noExplicitAny: Extended state property access
       isChainWaiting: (state as any).chainState?.isWaiting ?? false,
       status: state.status ?? "unknown",
     };
@@ -891,6 +892,7 @@ export class LTCGPollingService extends Service {
         data: {
           gameResult: {
             winner: agentWon ? "agent" : "opponent",
+            // biome-ignore lint/suspicious/noExplicitAny: Extended state property access
             reason: (fullState as any).endReason ?? "unknown",
           },
         },
@@ -934,6 +936,7 @@ export class LTCGPollingService extends Service {
         data: {
           chainState: {
             isWaiting: true,
+            // biome-ignore lint/suspicious/noExplicitAny: Extended state property access
             timeoutMs: (fullState as any).chainState?.timeoutMs ?? 30000,
           },
         },
@@ -957,6 +960,7 @@ export class LTCGPollingService extends Service {
    */
   private didAgentWin(state: GameStateResponse): boolean {
     // Check extended state for winner info
+    // biome-ignore lint/suspicious/noExplicitAny: Extended state property access
     const extState = state as any;
     if (extState.winner) {
       const agentPlayerId = state.hostPlayer?.playerId;
@@ -993,6 +997,7 @@ export class LTCGPollingService extends Service {
     };
 
     try {
+      // biome-ignore lint/suspicious/noExplicitAny: Webhook handler expects flexible state type
       await handleGameWebhook(payload, this.runtime, state as any);
     } catch (error) {
       logger.error({ error, eventType: event.type }, "Error handling polled event");

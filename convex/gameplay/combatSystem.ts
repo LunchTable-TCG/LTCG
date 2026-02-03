@@ -30,6 +30,7 @@ import {
 } from "../lib/gameHelpers";
 import { validateGameActive } from "../lib/gameValidation";
 import { executeEffect } from "./effectSystem/index";
+import { isActionPrevented } from "./effectSystem/lingeringEffects";
 import { checkStateBasedActions } from "./gameEngine/stateBasedActions";
 import { recordEventHelper } from "./gameEvents";
 import { clearPendingReplay, getOpponentMonsterCount } from "./replaySystem";
@@ -107,6 +108,14 @@ export const declareAttack = mutation({
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: "Can only attack during Battle Phase",
         currentPhase,
+      });
+    }
+
+    // 5.5. Check if attack is prevented by lingering effects
+    const preventionCheck = isActionPrevented(gameState, "declare_attack", user.userId);
+    if (preventionCheck.prevented) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: preventionCheck.reason || "Cannot declare attacks",
       });
     }
 
@@ -293,12 +302,12 @@ export const declareAttack = mutation({
       };
     }
 
-    // 10. Check for "on_attack" trigger effects on attacker
+    // 10. Check for "on_battle_start" trigger effects on attacker
     {
       const attackerAbility = getCardAbility(attackerCard);
       if (attackerAbility) {
         for (const parsedEffect of attackerAbility.effects) {
-          if (parsedEffect.trigger !== "on_attack") continue;
+          if (parsedEffect.trigger !== "on_battle_start") continue;
 
           const refreshedState = await ctx.db
             .query("gameStates")
@@ -332,7 +341,7 @@ export const declareAttack = mutation({
                 playerId: user.userId,
                 playerUsername: user.username,
                 description: `${attackerCard.name} attack effect: ${effectResult.message}`,
-                metadata: { cardId: args.attackerCardId, trigger: "on_attack" },
+                metadata: { cardId: args.attackerCardId, trigger: "on_battle_start" },
               });
             }
           }
@@ -503,6 +512,14 @@ export const declareAttackWithResponse = mutation({
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: "Can only attack during Battle Phase",
         currentPhase,
+      });
+    }
+
+    // 5.5. Check if attack is prevented by lingering effects
+    const preventionCheck = isActionPrevented(gameState, "declare_attack", user.userId);
+    if (preventionCheck.prevented) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: preventionCheck.reason || "Cannot declare attacks",
       });
     }
 
@@ -1687,6 +1704,7 @@ export const declareAttackInternal = internalMutation({
 
     const attackerAtk = attackerBoardCard.attack;
     let attackType: "direct" | "monster" = "direct";
+    // biome-ignore lint/suspicious/noExplicitAny: Board card structure varies during combat
     let targetBoardCard: any = null;
     let targetCard: Doc<"cardDefinitions"> | null = null;
     let damage = 0;
@@ -1720,6 +1738,7 @@ export const declareAttackInternal = internalMutation({
           damage = attackerAtk - targetValue;
           destroyed.push(targetCard?.name || "Monster");
           // Remove target from board
+          // biome-ignore lint/suspicious/noExplicitAny: Filter callback with unused element parameter
           const newOpponentBoard = opponentBoard.filter((_: any, i: number) => i !== targetIndex);
           await ctx.db.patch(gameState._id, {
             [isHost ? "opponentBoard" : "hostBoard"]: newOpponentBoard,
@@ -1730,6 +1749,7 @@ export const declareAttackInternal = internalMutation({
           damage = targetValue - attackerAtk;
           destroyed.push(attackerCard.name);
           // Remove attacker from board
+          // biome-ignore lint/suspicious/noExplicitAny: Filter callback with unused element parameter
           const newMyBoard = myBoard.filter((_: any, i: number) => i !== attackerIndex);
           await ctx.db.patch(gameState._id, {
             [isHost ? "hostBoard" : "opponentBoard"]: newMyBoard,
@@ -1739,7 +1759,9 @@ export const declareAttackInternal = internalMutation({
         } else {
           // Tie - both destroyed
           destroyed.push(attackerCard.name, targetCard?.name || "Monster");
+          // biome-ignore lint/suspicious/noExplicitAny: Filter callback with unused element parameter
           const newMyBoard = myBoard.filter((_: any, i: number) => i !== attackerIndex);
+          // biome-ignore lint/suspicious/noExplicitAny: Filter callback with unused element parameter
           const newOpponentBoard = opponentBoard.filter((_: any, i: number) => i !== targetIndex);
           await ctx.db.patch(gameState._id, {
             [isHost ? "hostBoard" : "opponentBoard"]: newMyBoard,
@@ -1750,6 +1772,7 @@ export const declareAttackInternal = internalMutation({
         // Attack vs Defense
         if (attackerAtk > targetValue) {
           destroyed.push(targetCard?.name || "Monster");
+          // biome-ignore lint/suspicious/noExplicitAny: Filter callback with unused element parameter
           const newOpponentBoard = opponentBoard.filter((_: any, i: number) => i !== targetIndex);
           await ctx.db.patch(gameState._id, {
             [isHost ? "opponentBoard" : "hostBoard"]: newOpponentBoard,

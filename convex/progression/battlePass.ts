@@ -229,7 +229,7 @@ async function grantReward(
         await ctx.db.insert("userInbox", {
           userId,
           type: "reward",
-          title: `Battle Pass Pack Reward`,
+          title: "Battle Pass Pack Reward",
           message: `You earned ${reward.amount} pack(s) from Battle Pass Tier ${tier}!`,
           data: {
             rewardType: "packs",
@@ -266,7 +266,7 @@ async function grantReward(
           badgeType: "milestone",
           badgeId: `battlepass_avatar_tier_${tier}`,
           displayName: `Battle Pass Avatar (Tier ${tier})`,
-          description: `Exclusive avatar from Battle Pass`,
+          description: "Exclusive avatar from Battle Pass",
           iconUrl: reward.avatarUrl,
           earnedAt: Date.now(),
         });
@@ -382,8 +382,7 @@ export const getBattlePassTiers = query({
         !progress.claimedFreeTiers.includes(tier.tier) &&
         tier.freeReward !== undefined,
       canClaimPremium:
-        progress !== null &&
-        progress.isPremium &&
+        !!progress?.isPremium &&
         progress.currentTier >= tier.tier &&
         !progress.claimedPremiumTiers.includes(tier.tier) &&
         tier.premiumReward !== undefined,

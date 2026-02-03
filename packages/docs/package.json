@@ -5,9 +5,14 @@
   "type": "module",
   "exports": {
     "./components/*": "./components/*/index.ts",
-    "./lib/*": "./lib/*.ts"
+    "./lib/*": "./lib/*.ts",
+    "./.source": {
+      "types": "./.source/index.d.ts",
+      "default": "./.source/index.mjs"
+    }
   },
   "scripts": {
+    "build": "fumadocs-mdx",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

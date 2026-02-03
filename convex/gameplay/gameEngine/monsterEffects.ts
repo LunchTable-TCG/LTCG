@@ -13,8 +13,10 @@ import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { validateGameActive } from "../../lib/gameValidation";
 import { type ChainEffect, addToChainHelper } from "../chainResolver";
-import { checkOPTRestriction } from "../effectSystem/optTracker";
+import { checkCanActivateOPT, markEffectUsed } from "../effectSystem/optTracker";
+import { executeCost, validateCost } from "../effectSystem/costValidator";
 import { recordEventHelper } from "../gameEvents";
+import { scanFieldForTriggers } from "../triggerSystem";
 
 /**
  * Get the effect to use for chain resolution.
@@ -51,6 +53,7 @@ export const activateMonsterEffect = mutation({
     cardId: v.id("cardDefinitions"),
     effectIndex: v.optional(v.number()),
     targets: v.optional(v.array(v.id("cardDefinitions"))),
+    costTargets: v.optional(v.array(v.id("cardDefinitions"))),
   },
   handler: async (ctx, args) => {
     // 1. Validate session
@@ -99,7 +102,7 @@ export const activateMonsterEffect = mutation({
       throw createError(ErrorCode.GAME_CARD_NOT_FOUND);
     }
 
-    if (card.cardType !== "creature" && card.cardType !== "monster") {
+    if (card.cardType !== "creature") {
       throw createError(ErrorCode.GAME_INVALID_CARD_TYPE, {
         reason: "Card is not a monster card",
       });
@@ -161,24 +164,59 @@ export const activateMonsterEffect = mutation({
       // Full implementation would check chain state and priority windows
     }
 
-    // 12. Check OPT/HOPT restrictions
-    if (effect.isOPT || effect.isHOPT) {
-      const canActivate = await checkOPTRestriction(
-        ctx,
-        gameState,
-        args.cardId,
-        card.name,
-        effect.isHOPT ?? false
-      );
+    // 12. Check and execute cost payment
+    if (effect.cost) {
+      // Validate cost can be paid
+      const validation = await validateCost(ctx, gameState, user.userId, effect, args.costTargets);
 
-      if (!canActivate.canActivate) {
-        throw createError(ErrorCode.GAME_EFFECT_OPT_USED, {
-          reason: canActivate.reason ?? "Effect already used this turn",
+      if (!validation.canPay) {
+        throw createError(ErrorCode.GAME_INVALID_MOVE, {
+          reason: validation.reason || "Cannot pay activation cost",
+        });
+      }
+
+      // If cost requires selection but no targets provided, return error
+      if (validation.requiresSelection && (!args.costTargets || args.costTargets.length === 0)) {
+        throw createError(ErrorCode.GAME_INVALID_MOVE, {
+          reason: "Cost payment requires card selection",
+          requiresSelection: true,
+          availableTargets: validation.availableTargets,
+          selectionPrompt: validation.selectionPrompt,
+        });
+      }
+
+      // Execute cost payment
+      const costResult = await executeCost(ctx, gameState, user.userId, effect, args.costTargets);
+
+      if (!costResult.success) {
+        throw createError(ErrorCode.GAME_INVALID_MOVE, {
+          reason: costResult.message,
         });
       }
     }
 
-    // 13. Record monster_effect_activated event
+    // 13. Check OPT/HOPT restrictions
+    if (effect.isOPT || effect.isHOPT) {
+      const isHOPT = effect.isHOPT ?? false;
+      const optCheck = checkCanActivateOPT(
+        gameState,
+        args.cardId,
+        effectIndex,
+        user.userId,
+        isHOPT
+      );
+
+      if (!optCheck.canActivate) {
+        throw createError(ErrorCode.GAME_INVALID_MOVE, {
+          reason: optCheck.reason ?? "Effect already used this turn",
+        });
+      }
+
+      // Mark effect as used
+      await markEffectUsed(ctx, gameState, args.cardId, effectIndex, user.userId, isHOPT);
+    }
+
+    // 14. Record monster_effect_activated event
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
       gameId: lobby.gameId ?? "",
@@ -196,15 +234,32 @@ export const activateMonsterEffect = mutation({
       },
     });
 
-    // 14. Determine spell speed
+    // 14b. Execute on_effect_activated triggers
+    // Any card on field that has this trigger should activate
+    const refreshedStateForEffectTrigger = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (refreshedStateForEffectTrigger) {
+      await scanFieldForTriggers(
+        ctx,
+        args.lobbyId,
+        refreshedStateForEffectTrigger,
+        "on_effect_activated",
+        refreshedStateForEffectTrigger.turnNumber || 1
+      );
+    }
+
+    // 15. Determine spell speed
     // Ignition effects are Spell Speed 1
     // Quick effects are Spell Speed 2
     const spellSpeed = activationType === "quick" ? 2 : 1;
 
-    // 15. Get effect for chain
+    // 16. Get effect for chain
     const chainEffect = getChainEffect(card);
 
-    // 16. Add to chain system
+    // 17. Add to chain system
     const chainResult = await addToChainHelper(ctx, {
       lobbyId: args.lobbyId,
       cardId: args.cardId,
@@ -213,10 +268,9 @@ export const activateMonsterEffect = mutation({
       spellSpeed,
       effect: chainEffect,
       targets: args.targets,
-      effectIndex,
     });
 
-    // 17. Return success with chain status
+    // 18. Return success with chain status
     return {
       success: true,
       effectName: `${card.name}'s Effect`,

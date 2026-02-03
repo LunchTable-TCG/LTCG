@@ -12,7 +12,7 @@
  */
 
 import type { Doc, Id } from "../../_generated/dataModel";
-import type { MutationCtx } from "../../_generated/server";
+import type { MutationCtx, QueryCtx } from "../../_generated/server";
 import { logger } from "../../lib/debug";
 import type { ParsedEffect } from "./types";
 
@@ -49,7 +49,7 @@ export interface CostExecutionResult {
  * and if selection is needed (e.g., which cards to tribute)
  */
 export async function validateCost(
-  ctx: MutationCtx,
+  ctx: QueryCtx | MutationCtx,
   gameState: Doc<"gameStates">,
   playerId: Id<"users">,
   effect: ParsedEffect,

@@ -130,7 +130,7 @@ export default function AuditLogPage() {
       header: "Admin",
       cell: (log: AuditLogEntry) => (
         <div className="text-sm">
-          {log.adminUsername || String(log.adminId).slice(0, 12) + "..."}
+          {log.adminUsername || `${String(log.adminId).slice(0, 12)}...`}
         </div>
       ),
     },

@@ -265,7 +265,7 @@ export default function AlertHistoryPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="w-12" />
                     <TableHead>Severity</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Rule</TableHead>

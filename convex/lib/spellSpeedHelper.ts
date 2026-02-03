@@ -71,13 +71,20 @@ export function getSpellSpeed(card: Doc<"cardDefinitions">): 1 | 2 | 3 {
   // Traps
   if (cardType === "trap") {
     // Counter Trap: Spell Speed 3
-    // Detect by ability having negate effect type or explicit spellSpeed 3
+    // Detect by trapType field or ability having negateActivation effect type
+    if (card.trapType === "counter") {
+      return 3;
+    }
+
     if (ability) {
-      const hasNegateEffect = ability.effects?.some(
+      const hasNegateActivationEffect = ability.effects?.some(
         (effect: { type?: string; effectType?: string }) =>
-          effect.type === "negate" || effect.effectType === "negate"
+          effect.type === "negateActivation" ||
+          effect.effectType === "negateActivation" ||
+          effect.type === "negate" ||
+          effect.effectType === "negate"
       );
-      if (hasNegateEffect) {
+      if (hasNegateActivationEffect) {
         return 3;
       }
     }

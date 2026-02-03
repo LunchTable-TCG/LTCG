@@ -44,7 +44,7 @@ describe("createDeck", () => {
     const t = createTestInstance();
 
     // Create test user first
-    const { userId, privyId } = await createTestUser(t, "deck@test.com", "deckbuilder");
+    const { privyId } = await createTestUser(t, "deck@test.com", "deckbuilder");
 
     // Set up authenticated context with the privyId
     const asUser = t.withIdentity({ subject: privyId });
@@ -70,7 +70,7 @@ describe("createDeck", () => {
   it("should reject empty deck name", async () => {
     const t = createTestInstance();
 
-    const { userId, privyId } = await createTestUser(t, "empty@test.com", "emptyname");
+    const { privyId } = await createTestUser(t, "empty@test.com", "emptyname");
 
     const asUser = t.withIdentity({ subject: privyId });
 
@@ -84,7 +84,7 @@ describe("createDeck", () => {
   it("should reject deck name over 50 characters", async () => {
     const t = createTestInstance();
 
-    const { userId, privyId } = await createTestUser(t, "long@test.com", "longname");
+    const { privyId } = await createTestUser(t, "long@test.com", "longname");
 
     const asUser = t.withIdentity({ subject: privyId });
 

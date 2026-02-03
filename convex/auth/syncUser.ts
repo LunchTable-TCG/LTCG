@@ -32,14 +32,14 @@ export const createOrGetUser = mutation({
 
       // Backfill email if not stored but now available
       if (args.email && !existingUser.email) {
-        updates["email"] = args.email;
+        updates.email = args.email;
       }
 
       // Sync wallet if not yet connected
       if (args.walletAddress && !existingUser.walletAddress) {
-        updates["walletAddress"] = args.walletAddress;
-        updates["walletType"] = args.walletType;
-        updates["walletConnectedAt"] = Date.now();
+        updates.walletAddress = args.walletAddress;
+        updates.walletType = args.walletType;
+        updates.walletConnectedAt = Date.now();
       }
 
       if (Object.keys(updates).length > 0) {

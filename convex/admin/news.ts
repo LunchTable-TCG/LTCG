@@ -42,24 +42,27 @@ export const getPublishedNews = query({
   handler: async (ctx, args) => {
     const limit = args.limit ?? 20;
 
-    let articles;
-    if (args.category) {
-      articles = await ctx.db
-        .query("newsArticles")
-        .withIndex("by_category", (q) => q.eq("category", args.category!).eq("isPublished", true))
-        .order("desc")
-        .take(limit);
-    } else {
-      articles = await ctx.db
-        .query("newsArticles")
-        .withIndex("by_published", (q) => q.eq("isPublished", true))
-        .order("desc")
-        .take(limit);
-    }
+    let articles = await (async () => {
+      if (args.category) {
+        return await ctx.db
+          .query("newsArticles")
+          .withIndex("by_category", (q) => q.eq("category", args.category!).eq("isPublished", true))
+          .order("desc")
+          .take(limit);
+      } else {
+        return await ctx.db
+          .query("newsArticles")
+          .withIndex("by_published", (q) => q.eq("isPublished", true))
+          .order("desc")
+          .take(limit);
+      }
+    })();
+
+    type Article = typeof articles[number];
 
     // Sort pinned articles to the top
-    const pinned = articles.filter((a) => a.isPinned);
-    const unpinned = articles.filter((a) => !a.isPinned);
+    const pinned = articles.filter((a: Article) => a.isPinned);
+    const unpinned = articles.filter((a: Article) => !a.isPinned);
 
     return [...pinned, ...unpinned];
   },

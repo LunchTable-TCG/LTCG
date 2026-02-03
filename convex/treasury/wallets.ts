@@ -237,9 +237,9 @@ export const updateWallet = mutation({
     }
 
     const updates: Record<string, unknown> = {};
-    if (args.name !== undefined) updates["name"] = args.name;
-    if (args.policyId !== undefined) updates["policyId"] = args.policyId;
-    if (args.status !== undefined) updates["status"] = args.status;
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.policyId !== undefined) updates.policyId = args.policyId;
+    if (args.status !== undefined) updates.status = args.status;
 
     await ctx.db.patch(args.walletId, updates);
 
@@ -434,8 +434,8 @@ export const createPrivyWallet = internalAction({
       walletDbId: args.walletDbId,
     });
 
-    const PRIVY_APP_ID = process.env["PRIVY_APP_ID"];
-    const PRIVY_APP_SECRET = process.env["PRIVY_APP_SECRET"];
+    const PRIVY_APP_ID = process.env.PRIVY_APP_ID;
+    const PRIVY_APP_SECRET = process.env.PRIVY_APP_SECRET;
 
     if (!PRIVY_APP_ID || !PRIVY_APP_SECRET) {
       const errorMessage = "Privy credentials not configured";

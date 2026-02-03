@@ -44,6 +44,7 @@ export const legalActionsProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, _state: State): Promise<ProviderResult> {
     try {
       // Get game ID from message content
+      // biome-ignore lint/suspicious/noExplicitAny: Flexible message content access
       const gameId = (message.content as any)?.gameId;
 
       if (!gameId) {
@@ -167,6 +168,7 @@ function enhanceActionsWithStrategy(
     switch (action.type) {
       case "attack": {
         // Calculate attack opportunities and battle outcomes
+        // biome-ignore lint/suspicious/noExplicitAny: Action parameters structure varies by action type
         const attackers = (action.parameters?.attackers as any[]) || [];
         const canDirectAttack = action.parameters?.canDirectAttack as boolean;
 
@@ -214,6 +216,7 @@ function enhanceActionsWithStrategy(
       }
 
       case "summon": {
+        // biome-ignore lint/suspicious/noExplicitAny: Action parameters structure varies by action type
         const cards = (action.parameters?.availableCards as any[]) || [];
         const strongestCard = cards.reduce(
           (strongest, card) => ((card.atk || 0) > (strongest?.atk || 0) ? card : strongest),
@@ -233,6 +236,7 @@ function enhanceActionsWithStrategy(
       }
 
       case "activate_spell": {
+        // biome-ignore lint/suspicious/noExplicitAny: Action parameters structure varies by action type
         const cards = (action.parameters?.availableCards as any[]) || [];
         // Check if any spells are board wipes or removal
         const hasRemoval = cards.some(
@@ -445,9 +449,11 @@ function formatEnhancedAction(action: EnhancedAction): string {
   // Original parameters
   if (action.parameters) {
     if (action.type === "summon") {
+      // biome-ignore lint/suspicious/noExplicitAny: Action parameters structure varies by action type
       const cards = action.parameters.availableCards as any[];
       if (cards && cards.length > 0) {
         lines.push("   Cards:");
+        // biome-ignore lint/suspicious/noExplicitAny: Card structure varies by context
         cards.forEach((card: any) => {
           const tributeText =
             card.level > 6 ? " (2 tributes)" : card.level >= 5 ? " (1 tribute)" : "";
@@ -457,9 +463,11 @@ function formatEnhancedAction(action: EnhancedAction): string {
         });
       }
     } else if (action.type === "attack") {
+      // biome-ignore lint/suspicious/noExplicitAny: Action parameters structure varies by action type
       const attackers = action.parameters.attackers as any[];
       if (attackers && attackers.length > 0) {
         lines.push("   Attackers:");
+        // biome-ignore lint/suspicious/noExplicitAny: Attacker structure varies by context
         attackers.forEach((attacker: any) => {
           lines.push(
             `     - ${attacker.name} (${attacker.atk} ATK) [boardIndex: ${attacker.boardIndex}]`
@@ -470,9 +478,11 @@ function formatEnhancedAction(action: EnhancedAction): string {
         lines.push("   ✅ Direct attack available (no targetBoardIndex needed)");
       }
     } else if (action.type === "activate_spell" || action.type === "activate_trap") {
+      // biome-ignore lint/suspicious/noExplicitAny: Action parameters structure varies by action type
       const cards = action.parameters.availableCards as any[];
       if (cards && cards.length > 0) {
         lines.push("   Cards:");
+        // biome-ignore lint/suspicious/noExplicitAny: Card structure varies by context
         cards.forEach((card: any) => {
           lines.push(
             `     - ${card.name} [handIndex: ${card.handIndex ?? "N/A"}, boardIndex: ${card.boardIndex ?? "N/A"}]`

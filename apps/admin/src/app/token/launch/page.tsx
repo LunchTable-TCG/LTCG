@@ -305,7 +305,7 @@ export default function TokenLaunchPage() {
     try {
       await completeItem({ itemId: id as any, evidence });
       toast.success("Item marked as complete");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to complete item");
     }
   }
@@ -314,7 +314,7 @@ export default function TokenLaunchPage() {
     try {
       await uncompleteItem({ itemId: id as any });
       toast.success("Item marked as incomplete");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update item");
     }
   }
@@ -323,7 +323,7 @@ export default function TokenLaunchPage() {
     try {
       const result = await setupDefaults({});
       toast.success(result.message);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to setup defaults");
     }
   }
@@ -333,7 +333,7 @@ export default function TokenLaunchPage() {
       await approve({ comments: approvalComment || undefined });
       setApprovalComment("");
       toast.success("Launch approved");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to approve launch");
     }
   }
@@ -343,7 +343,7 @@ export default function TokenLaunchPage() {
     try {
       await revoke({});
       toast.success("Approval revoked");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to revoke approval");
     }
   }
@@ -362,7 +362,7 @@ export default function TokenLaunchPage() {
     try {
       await clearSchedule({});
       toast.success("Schedule cleared");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to clear schedule");
     }
   }

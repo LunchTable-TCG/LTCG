@@ -371,15 +371,15 @@ export const updateStatus = mutation({
     };
 
     if (args.signature) {
-      updates["signature"] = args.signature;
+      updates.signature = args.signature;
     }
 
     if (args.errorMessage) {
-      updates["errorMessage"] = args.errorMessage;
+      updates.errorMessage = args.errorMessage;
     }
 
     if (args.status === "confirmed") {
-      updates["confirmedAt"] = Date.now();
+      updates.confirmedAt = Date.now();
     }
 
     await ctx.db.patch(args.transactionId, updates);

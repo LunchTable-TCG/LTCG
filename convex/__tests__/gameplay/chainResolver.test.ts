@@ -1104,12 +1104,15 @@ describe("Chain link limits and loop protection", () => {
     });
 
     // Try to add 13th card - should fail
+    const thirteenthCard = cardIds[12];
+    if (!thirteenthCard) throw new Error("Expected 13th card in test setup");
+
     await expect(
       t.run(async (ctx) => {
         const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
         return await addToChainHelper(ctx, {
           lobbyId,
-          cardId: cardIds[12]!, // 13th card
+          cardId: thirteenthCard,
           playerId: userId,
           playerUsername: "chainlimit",
           spellSpeed: 2,
@@ -1405,11 +1408,14 @@ describe("Chain link limits and loop protection", () => {
     });
 
     // Add 12th card - should succeed (exactly at limit)
+    const twelfthCard = cardIds[11];
+    if (!twelfthCard) throw new Error("Expected 12th card in test setup");
+
     const result = await t.run(async (ctx) => {
       const { addToChainHelper } = await import("@convex/gameplay/chainResolver");
       return await addToChainHelper(ctx, {
         lobbyId,
-        cardId: cardIds[11]!, // 12th card
+        cardId: twelfthCard,
         playerId: userId,
         playerUsername: "maxchain",
         spellSpeed: 2,

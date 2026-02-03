@@ -1,21 +1,20 @@
 "use client";
 
-import { handleHookError, logError } from "@/lib/errorHandling";
+import { handleHookError } from "@/lib/errorHandling";
 import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { useCallback, useEffect, useRef } from "react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
+import { useConvexPresence } from "./useConvexPresence";
 
 interface UseGlobalChatReturn {
   messages: ReturnType<
     typeof usePaginatedQuery<typeof api.globalChat.getPaginatedMessages>
   >["results"];
-  onlineUsers: ReturnType<typeof useQuery<typeof api.globalChat.getOnlineUsers>> | undefined;
+  onlineUsers: ReturnType<typeof useConvexPresence>["users"];
+  onlineCount: number;
   isLoading: boolean;
   sendMessage: (message: string) => Promise<void>;
-  updatePresence: () => Promise<void>;
   canLoadMore: boolean;
   loadMore: () => void;
 }
@@ -24,22 +23,25 @@ interface UseGlobalChatReturn {
  * Global chat messaging system with automatic presence tracking.
  *
  * Provides a real-time global chat room with message pagination and online
- * user tracking. Automatically maintains user presence with a 30-second heartbeat.
- * Uses infinite scroll pagination for message history.
+ * user tracking using @convex-dev/presence. Automatically maintains user
+ * presence with a 30-second heartbeat. Uses infinite scroll pagination for
+ * message history.
  *
  * Features:
  * - Send messages to global chat
  * - View paginated message history (initially 50 messages)
  * - Load more messages on scroll (25 at a time)
- * - Track online users with automatic presence updates
+ * - Track online users with @convex-dev/presence
  * - Automatic presence heartbeat every 30 seconds
- * - Silent presence update failures (non-disruptive)
+ * - Browser tab visibility handling (pauses when hidden)
+ * - Graceful disconnect on unmount
  *
  * @example
  * ```typescript
  * const {
  *   messages,
  *   onlineUsers,
+ *   onlineCount,
  *   isLoading,
  *   canLoadMore,
  *   sendMessage,
@@ -55,7 +57,10 @@ interface UseGlobalChatReturn {
  * }
  *
  * // Display online users
- * console.log(`${onlineUsers?.length} users online`);
+ * console.log(`${onlineCount} users online`);
+ * onlineUsers.forEach(user => {
+ *   console.log(`${user.username} is ${user.status}`);
+ * });
  * ```
  *
  * @returns {UseGlobalChatReturn} Chat interface
@@ -72,14 +77,15 @@ export function useGlobalChat(): UseGlobalChatReturn {
     loadMore,
   } = usePaginatedQuery(api.globalChat.getPaginatedMessages, {}, { initialNumItems: 50 });
 
-  const onlineUsers = useQuery(api.globalChat.getOnlineUsers, {});
+  // Use new presence system with automatic heartbeat
+  const { users: onlineUsers, userCount: onlineCount } = useConvexPresence({
+    roomId: "global_chat",
+    status: "online",
+    enabled: isAuthenticated,
+  });
 
   // Mutations
   const sendMessageMutation = useMutation(api.globalChat.sendMessage);
-  const updatePresenceMutation = useMutation(api.globalChat.updatePresence);
-
-  // Cache presence ID to avoid OCC conflicts on repeated heartbeats
-  const presenceIdRef = useRef<Id<"userPresence"> | null>(null);
 
   // Actions
   const sendMessage = async (message: string) => {
@@ -95,39 +101,12 @@ export function useGlobalChat(): UseGlobalChatReturn {
     }
   };
 
-  const updatePresence = useCallback(async () => {
-    if (!isAuthenticated) return;
-    try {
-      // Pass cached presenceId to skip query and avoid write conflicts
-      const newPresenceId = await updatePresenceMutation({
-        presenceId: presenceIdRef.current ?? undefined,
-      });
-      // Cache the ID for next heartbeat
-      presenceIdRef.current = newPresenceId;
-    } catch (error) {
-      // Silent fail for presence updates
-      // Clear cached ID on error so next attempt does full lookup
-      presenceIdRef.current = null;
-      logError("Presence update", error);
-    }
-  }, [isAuthenticated, updatePresenceMutation]);
-
-  // Heartbeat every 30 seconds
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    updatePresence(); // Initial update
-    const interval = setInterval(updatePresence, 30000);
-
-    return () => clearInterval(interval);
-  }, [isAuthenticated, updatePresence]);
-
   return {
     messages,
     onlineUsers,
+    onlineCount,
     isLoading: messages === undefined,
     sendMessage,
-    updatePresence,
     // Pagination controls
     canLoadMore: paginationStatus === "CanLoadMore",
     loadMore: () => loadMore(25), // Load 25 more messages at a time
