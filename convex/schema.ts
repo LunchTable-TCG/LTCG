@@ -239,6 +239,10 @@ export default defineSchema({
     walletAddress: v.optional(v.string()), // Solana public address (non-custodial)
     walletChainType: v.optional(v.string()), // 'solana'
     walletCreatedAt: v.optional(v.number()), // Wallet creation timestamp
+    walletStatus: v.optional(
+      v.union(v.literal("pending"), v.literal("created"), v.literal("failed"))
+    ), // Wallet creation status
+    walletErrorMessage: v.optional(v.string()), // Error message if wallet creation failed
 
     // Webhook callback configuration for real-time notifications
     callbackUrl: v.optional(v.string()), // Agent's public URL for receiving webhooks

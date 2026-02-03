@@ -14,11 +14,13 @@ import {
   Flame,
   Gamepad2,
   Key,
+  Loader2,
   RefreshCw,
   Shield,
   Target,
   Trash2,
   Trophy,
+  Wallet,
   Waves,
   Zap,
 } from "lucide-react";
@@ -39,6 +41,9 @@ interface Agent {
   };
   createdAt: number;
   keyPrefix: string | null;
+  walletAddress?: string;
+  walletStatus?: "pending" | "created" | "failed";
+  walletErrorMessage?: string;
 }
 
 interface AgentCardProps {
@@ -70,6 +75,8 @@ export function AgentCard({ agent, onDeleted }: AgentCardProps) {
 
   const regenerateApiKey = useMutation(api.agents.regenerateApiKey);
   const deleteAgent = useMutation(api.agents.deleteAgent);
+  const retryWalletCreation = useMutation(api.agents.retryWalletCreation);
+  const [isRetryingWallet, setIsRetryingWallet] = useState(false);
 
   const DeckIcon = DECK_ICONS[agent.starterDeckCode] || Shield;
   const deckColor = DECK_COLORS[agent.starterDeckCode] || "text-slate-400";
@@ -108,6 +115,18 @@ export function AgentCard({ agent, onDeleted }: AgentCardProps) {
       await navigator.clipboard.writeText(newApiKey);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleRetryWallet = async () => {
+    if (!isAuthenticated) return;
+    setIsRetryingWallet(true);
+    try {
+      await retryWalletCreation({ agentId: agent._id });
+    } catch (err) {
+      console.error("Failed to retry wallet creation:", err);
+    } finally {
+      setIsRetryingWallet(false);
     }
   };
 
@@ -188,6 +207,51 @@ export function AgentCard({ agent, onDeleted }: AgentCardProps) {
           <p className="text-[8px] text-[#a89f94] uppercase tracking-widest">Score</p>
         </div>
       </div>
+
+      {/* Wallet Status Section */}
+      {agent.walletStatus === "pending" && (
+        <div className="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+            <span className="text-blue-400 text-xs font-medium">Creating wallet...</span>
+          </div>
+        </div>
+      )}
+
+      {agent.walletStatus === "failed" && (
+        <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-500" />
+              <span className="text-red-400 text-xs font-bold uppercase tracking-wide">
+                Wallet Creation Failed
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRetryWallet}
+              disabled={isRetryingWallet}
+              className="h-7 px-2 text-xs border-red-500/30 text-red-400 hover:bg-red-500/20"
+            >
+              <RefreshCw className={cn("w-3 h-3 mr-1", isRetryingWallet && "animate-spin")} />
+              Retry
+            </Button>
+          </div>
+          {agent.walletErrorMessage && (
+            <p className="text-[10px] text-red-300/70">{agent.walletErrorMessage}</p>
+          )}
+        </div>
+      )}
+
+      {agent.walletStatus === "created" && agent.walletAddress && (
+        <div className="mb-4 flex items-center gap-2 text-xs text-[#a89f94]">
+          <Wallet className="w-4 h-4 text-emerald-500" />
+          <span className="font-mono">
+            {agent.walletAddress.slice(0, 4)}...{agent.walletAddress.slice(-4)}
+          </span>
+        </div>
+      )}
 
       {/* API Key Section */}
       {newApiKey ? (

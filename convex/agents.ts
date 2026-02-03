@@ -1,10 +1,15 @@
 import bcrypt from "bcryptjs";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "./lib/convexAuth";
 import { ErrorCode, createError } from "./lib/errorCodes";
+
+// Helper to get internal API without triggering TS2589
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+function getInternalApi() {
+  return require("./_generated/api").internal;
+}
 import {
   ABYSSAL_DEPTHS_CARDS,
   INFERNAL_DRAGONS_CARDS,
@@ -389,6 +394,8 @@ export const registerAgentInternal = internalMutation({
       },
       createdAt: Date.now(),
       isActive: true,
+      // Wallet creation status (wallet is created asynchronously)
+      walletStatus: "pending",
       // Webhook configuration
       callbackUrl: args.callbackUrl,
       webhookEnabled: !!args.callbackUrl,
@@ -834,6 +841,8 @@ export const registerAgent = mutation({
       },
       createdAt: Date.now(),
       isActive: true,
+      // Wallet creation status (wallet is created asynchronously)
+      walletStatus: "pending",
     });
 
     // 7. Generate and store API key
@@ -853,7 +862,8 @@ export const registerAgent = mutation({
     // 8. Schedule HD wallet creation for the agent
     // Wallet is derived from user's HD tree at next available index
     // This is non-blocking - wallet will be created asynchronously
-    await ctx.scheduler.runAfter(0, internal.wallet.createAgentWallet.createWalletForUserAgent, {
+    const internalApi = getInternalApi();
+    await ctx.scheduler.runAfter(0, internalApi.wallet.createAgentWallet.createWalletForUserAgent, {
       agentId,
       userId,
       privyUserId: privyId,
@@ -1050,16 +1060,61 @@ export const deleteAgent = mutation({
   },
 });
 
-// TEMPORARY DEBUG - Remove after debugging
-export const debugApiKeys = query({
-  args: {},
-  handler: async (ctx) => {
-    const keys = await ctx.db.query("apiKeys").take(10);
-    return keys.map((k) => ({
-      prefix: k.keyPrefix,
-      isActive: k.isActive,
-      hasHash: !!k.keyHash,
-      hashLength: k.keyHash?.length,
-    }));
+/**
+ * Retry wallet creation for an agent after a failed attempt
+ */
+export const retryWalletCreation = mutation({
+  args: {
+    agentId: v.id("agents"),
+  },
+  handler: async (ctx, { agentId }) => {
+    const { userId, privyId } = await requireAuthMutation(ctx);
+
+    // Get the agent and verify ownership
+    const agent = await ctx.db.get(agentId);
+    if (!agent) {
+      throw createError(ErrorCode.AGENT_NOT_FOUND, { agentId });
+    }
+
+    if (agent.userId !== userId) {
+      throw createError(ErrorCode.AGENT_UNAUTHORIZED, { agentId });
+    }
+
+    // Only allow retry if wallet creation failed
+    if (agent.walletStatus === "created") {
+      throw new Error("Wallet already created successfully");
+    }
+
+    if (agent.walletStatus === "pending") {
+      throw new Error("Wallet creation is already in progress");
+    }
+
+    // Reset status and reschedule wallet creation
+    await ctx.db.patch(agentId, {
+      walletStatus: "pending",
+      walletErrorMessage: undefined,
+    });
+
+    // Schedule wallet creation (using user's Privy ID to derive HD wallet)
+    const internalApi = getInternalApi();
+    if (privyId) {
+      await ctx.scheduler.runAfter(
+        0,
+        internalApi.wallet.createAgentWallet.createWalletForUserAgent,
+        {
+          agentId,
+          userId,
+          privyUserId: privyId,
+        }
+      );
+    } else {
+      // Fallback to API-style wallet creation if no Privy ID
+      await ctx.scheduler.runAfter(0, internalApi.wallet.createAgentWallet.createSolanaWallet, {
+        agentId,
+        ownerUserId: `user:${userId}`,
+      });
+    }
+
+    return { success: true, message: "Wallet creation retried" };
   },
 });

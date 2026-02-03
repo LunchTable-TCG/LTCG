@@ -6,7 +6,7 @@ import { requireAuthMutation } from "../../lib/convexAuth";
 import { shuffleArray } from "../../lib/deterministicRandom";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
-import { updatePlayerStatsAfterGame } from "./stats";
+import { updateAgentStatsAfterGame, updatePlayerStatsAfterGame } from "./stats";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -320,6 +320,23 @@ export const surrenderGame = mutation({
     if (lobby.opponentId) {
       const gameMode = lobby.mode as "ranked" | "casual";
       await updatePlayerStatsAfterGame(ctx, winnerId, userId, gameMode);
+
+      // Check if players are agents and update agent stats
+      const winnerAgent = await ctx.db
+        .query("agents")
+        .withIndex("by_user", (q) => q.eq("userId", winnerId))
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .first();
+
+      const loserAgent = await ctx.db
+        .query("agents")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .first();
+
+      if (winnerAgent || loserAgent) {
+        await updateAgentStatsAfterGame(ctx, winnerAgent, loserAgent);
+      }
     }
 
     // Clean up game state (no longer needed after game ends)
@@ -451,6 +468,23 @@ export const forfeitGame = internalMutation({
     if (lobby.opponentId) {
       const gameMode = lobby.mode as "ranked" | "casual";
       await updatePlayerStatsAfterGame(ctx, winnerId, args.forfeitingPlayerId, gameMode);
+
+      // Check if players are agents and update agent stats
+      const winnerAgent = await ctx.db
+        .query("agents")
+        .withIndex("by_user", (q) => q.eq("userId", winnerId))
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .first();
+
+      const loserAgent = await ctx.db
+        .query("agents")
+        .withIndex("by_user", (q) => q.eq("userId", args.forfeitingPlayerId))
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .first();
+
+      if (winnerAgent || loserAgent) {
+        await updateAgentStatsAfterGame(ctx, winnerAgent, loserAgent);
+      }
     }
 
     // Clean up game state (no longer needed after game ends)
@@ -507,6 +541,23 @@ export const completeGame = internalMutation({
       const loserId = args.winnerId === lobby.hostId ? lobby.opponentId : lobby.hostId;
       const gameMode = lobby.mode as "ranked" | "casual";
       await updatePlayerStatsAfterGame(ctx, args.winnerId, loserId, gameMode);
+
+      // Check if players are agents and update agent stats
+      const winnerAgent = await ctx.db
+        .query("agents")
+        .withIndex("by_user", (q) => q.eq("userId", args.winnerId))
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .first();
+
+      const loserAgent = await ctx.db
+        .query("agents")
+        .withIndex("by_user", (q) => q.eq("userId", loserId))
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .first();
+
+      if (winnerAgent || loserAgent) {
+        await updateAgentStatsAfterGame(ctx, winnerAgent, loserAgent);
+      }
 
       // Record game end event for spectators
       if (lobby.gameId) {

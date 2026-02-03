@@ -122,9 +122,17 @@ export const createWalletForUserAgent = internalAction({
       };
     } catch (error) {
       console.error("Failed to create HD wallet for user agent:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+      // Update agent with failed status
+      await ctx.runMutation(getInternalApi().wallet.updateAgentWallet.updateWalletFailed, {
+        agentId: args.agentId,
+        errorMessage,
+      });
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       };
     }
   },
@@ -208,9 +216,17 @@ export const createSolanaWallet = internalAction({
       };
     } catch (error) {
       console.error("Failed to create HD wallet:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+      // Update agent with failed status
+      await ctx.runMutation(getInternalApi().wallet.updateAgentWallet.updateWalletFailed, {
+        agentId: args.agentId,
+        errorMessage,
+      });
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       };
     }
   },

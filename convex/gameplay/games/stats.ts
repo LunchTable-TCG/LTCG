@@ -1,5 +1,5 @@
 import { internal } from "../../_generated/api";
-import type { Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { ELO_SYSTEM, XP_SYSTEM } from "../../lib/constants";
 import { ErrorCode, createError } from "../../lib/errorCodes";
@@ -171,4 +171,36 @@ export async function updatePlayerStatsAfterGame(
     userId: loserId,
     event: playGameEvent,
   });
+}
+
+/**
+ * Update agent stats after game completion
+ * Called when winner or loser is an agent (AI bot)
+ */
+export async function updateAgentStatsAfterGame(
+  ctx: MutationCtx,
+  winnerAgent: Doc<"agents"> | null,
+  loserAgent: Doc<"agents"> | null
+) {
+  // Update winner agent stats
+  if (winnerAgent) {
+    await ctx.db.patch(winnerAgent._id, {
+      stats: {
+        gamesPlayed: winnerAgent.stats.gamesPlayed + 1,
+        gamesWon: winnerAgent.stats.gamesWon + 1,
+        totalScore: winnerAgent.stats.totalScore + 1, // +1 for win
+      },
+    });
+  }
+
+  // Update loser agent stats
+  if (loserAgent) {
+    await ctx.db.patch(loserAgent._id, {
+      stats: {
+        gamesPlayed: loserAgent.stats.gamesPlayed + 1,
+        gamesWon: loserAgent.stats.gamesWon,
+        totalScore: loserAgent.stats.totalScore, // no change for loss
+      },
+    });
+  }
 }

@@ -51,6 +51,9 @@ const navigation: NavGroup[] = [
     items: [
       { title: "All Players", href: "/players", icon: "👥", permission: "player.view" },
       { title: "Moderation", href: "/moderation", icon: "🛡️", permission: "player.view" },
+      { title: "Reports", href: "/moderation/reports", icon: "📋", permission: "player.view" },
+      { title: "Chat", href: "/moderation/chat", icon: "💬", permission: "player.view" },
+      { title: "Marketplace", href: "/moderation/marketplace", icon: "🏪", permission: "player.view" },
       {
         title: "Suspicious Activity",
         href: "/moderation/suspicious",

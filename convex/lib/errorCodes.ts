@@ -126,6 +126,7 @@ export const ErrorCode = {
   AGENT_INVALID_SOCIAL_URL: "AGENT_10007",
   AGENT_NOT_FOUND: "AGENT_10008",
   AGENT_DELETED: "AGENT_10009",
+  AGENT_UNAUTHORIZED: "AGENT_10010",
 
   // Library/System Errors (11xxx)
   LIBRARY_EMPTY_DECK: "LIBRARY_11001",
@@ -282,6 +283,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   AGENT_10007: "Invalid social link URL",
   AGENT_10008: "Agent not found",
   AGENT_10009: "Agent has been deleted",
+  AGENT_10010: "You are not authorized to access this agent",
 
   // Library/System
   LIBRARY_11001: "Cannot draw card: deck is empty",

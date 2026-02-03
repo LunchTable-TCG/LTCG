@@ -31,8 +31,28 @@ export const updateWallet = internalMutation({
       walletAddress: args.walletAddress,
       walletChainType: args.walletChainType,
       walletCreatedAt: Date.now(),
+      walletStatus: "created" as const,
+      walletErrorMessage: undefined,
       ...(args.walletIndex !== undefined && { walletIndex: args.walletIndex }),
       ...(args.privyUserId !== undefined && { privyUserId: args.privyUserId }),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Update agent wallet status when creation fails
+ */
+export const updateWalletFailed = internalMutation({
+  args: {
+    agentId: v.id("agents"),
+    errorMessage: v.string(),
+  },
+  async handler(ctx, args) {
+    await ctx.db.patch(args.agentId, {
+      walletStatus: "failed" as const,
+      walletErrorMessage: args.errorMessage,
     });
 
     return { success: true };
