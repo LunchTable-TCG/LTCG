@@ -10,10 +10,16 @@
 import { useState, useCallback, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
+import dynamic from "next/dynamic";
 import type { Stage } from "konva/lib/Stage";
 
-import { KonvaCanvas } from "./canvas/KonvaCanvas";
 import { useCanvasExport } from "./canvas/hooks/useCanvasExport";
+
+// Dynamic import with SSR disabled to avoid canvas module issues
+const KonvaCanvas = dynamic(
+  () => import("./canvas/KonvaCanvas").then((mod) => mod.KonvaCanvas),
+  { ssr: false, loading: () => <div className="flex-1 flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading canvas...</div></div> }
+);
 import { LayersPanel } from "./LayersPanel";
 import { PropertiesPanel } from "./PropertiesPanel";
 import {
