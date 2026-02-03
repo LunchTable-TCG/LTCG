@@ -64,19 +64,19 @@ export function useAIChat(): UseAIChatReturn {
   const userId = currentUser?._id;
 
   // Get active session
-  const activeSession = useConvexQuery("social.aiChat.getActiveSession", {});
+  const activeSession = useConvexQuery(apiAny.social.aiChat.getActiveSession, {});
   const sessionId = activeSession?.sessionId ?? null;
 
   // Get messages for current session
   const messagesData = useConvexQuery(
-    "social.aiChat.getSessionMessages",
+    apiAny.social.aiChat.getSessionMessages,
     sessionId ? { sessionId } : "skip"
   );
 
   // Mutations
-  const sendUserMessageMutation = useConvexMutation("social.aiChat.sendUserMessage");
-  const createSessionMutation = useConvexMutation("social.aiChat.createSession");
-  const endSessionMutation = useConvexMutation("social.aiChat.endSession");
+  const sendUserMessageMutation = useConvexMutation(apiAny.social.aiChat.sendUserMessage);
+  const createSessionMutation = useConvexMutation(apiAny.social.aiChat.createSession);
+  const endSessionMutation = useConvexMutation(apiAny.social.aiChat.endSession);
 
   /**
    * Send a message to the AI agent.
