@@ -1,0 +1,2 @@
+echo "🔍 Running pre-commit checks..."
+bun lint-staged

@@ -1,0 +1,2 @@
+echo "📝 Validating commit message..."
+bunx --no -- commitlint --edit $1

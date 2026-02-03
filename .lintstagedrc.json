@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/lintstagedrc.schema.json",
+  "*.{ts,tsx,js,jsx,cjs,mjs}": [
+    "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
+  ],
+  "*.{json,jsonc}": [
+    "biome format --write --no-errors-on-unmatched --files-ignore-unknown=true"
+  ],
+  "*.{md,mdx,yml,yaml}": [
+    "biome format --write --no-errors-on-unmatched --files-ignore-unknown=true"
+  ],
+  "package.json": [
+    "biome format --write --no-errors-on-unmatched --files-ignore-unknown=true"
+  ]
+}
