@@ -34,12 +34,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Text, Title } from "@tremor/react";
-import { useAction } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import {
   AlertCircleIcon,
   BarChart3Icon,
   CheckCircleIcon,
-  DollarSignIcon,
+  EyeIcon,
+  EyeOffIcon,
   ExternalLinkIcon,
   FilterIcon,
   ImageIcon,
@@ -51,6 +52,7 @@ import {
   SearchIcon,
   SettingsIcon,
   TrendingUpIcon,
+  Trash2Icon,
   WifiIcon,
   WifiOffIcon,
   ZapIcon,
@@ -610,6 +612,11 @@ export default function AIProvidersPage() {
   const initializeDefaults = useConvexMutation(apiAny.admin.aiConfig.initializeAIDefaults);
   const testProvider = useAction(apiAny.admin.aiConfig.testProviderConnection);
 
+  // API Key management
+  const apiKeyStatus = useConvexQuery(apiAny.admin.aiConfig.getAPIKeyStatus, {});
+  const setAPIKeyMutation = useMutation(apiAny.admin.aiConfig.setAPIKey);
+  const clearAPIKeyMutation = useMutation(apiAny.admin.aiConfig.clearAPIKey);
+
   // Model fetching actions
   const fetchAllModels = useAction(apiAny.admin.aiProviders.fetchAllModels);
 
@@ -636,6 +643,22 @@ export default function AIProvidersPage() {
   const [providerFilter, setProviderFilter] = useState<"all" | "openrouter" | "vercel">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "language" | "embedding" | "image">("all");
   const [modelSearchQuery, setModelSearchQuery] = useState("");
+
+  // API Key management state
+  const [apiKeyInputs, setApiKeyInputs] = useState<Record<ProviderKey, string>>({
+    openrouter: "",
+    anthropic: "",
+    openai: "",
+    vercel: "",
+  });
+  const [apiKeyVisibility, setApiKeyVisibility] = useState<Record<ProviderKey, boolean>>({
+    openrouter: false,
+    anthropic: false,
+    openai: false,
+    vercel: false,
+  });
+  const [savingApiKey, setSavingApiKey] = useState<ProviderKey | null>(null);
+  const [clearingApiKey, setClearingApiKey] = useState<ProviderKey | null>(null);
 
   // Fetch provider status on mount
   const fetchProviderStatus = useCallback(async () => {
@@ -791,6 +814,54 @@ export default function AIProvidersPage() {
     } finally {
       setIsInitializing(false);
     }
+  };
+
+  // Save API key for a provider
+  const handleSaveApiKey = async (provider: ProviderKey) => {
+    const apiKey = apiKeyInputs[provider];
+    if (!apiKey.trim()) {
+      toast.error("Please enter an API key");
+      return;
+    }
+
+    setSavingApiKey(provider);
+    try {
+      const result = await setAPIKeyMutation({ provider, apiKey: apiKey.trim() });
+      toast.success(result.message);
+      // Clear the input after successful save
+      setApiKeyInputs((prev) => ({ ...prev, [provider]: "" }));
+      // Refresh provider status
+      fetchProviderStatus();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save API key");
+    } finally {
+      setSavingApiKey(null);
+    }
+  };
+
+  // Clear API key for a provider
+  const handleClearApiKey = async (provider: ProviderKey) => {
+    setClearingApiKey(provider);
+    try {
+      const result = await clearAPIKeyMutation({ provider });
+      toast.success(result.message);
+      // Refresh provider status
+      fetchProviderStatus();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to clear API key");
+    } finally {
+      setClearingApiKey(null);
+    }
+  };
+
+  // Toggle API key visibility
+  const toggleApiKeyVisibility = (provider: ProviderKey) => {
+    setApiKeyVisibility((prev) => ({ ...prev, [provider]: !prev[provider] }));
+  };
+
+  // Update API key input
+  const updateApiKeyInput = (provider: ProviderKey, value: string) => {
+    setApiKeyInputs((prev) => ({ ...prev, [provider]: value }));
   };
 
   const isLoading = configsResult === undefined;
@@ -1005,180 +1076,455 @@ export default function AIProvidersPage() {
 
             {/* API Keys Tab */}
             <TabsContent value="apikeys">
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* OpenRouter API Key */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 font-bold text-blue-600">
-                          OR
+              <div className="space-y-6">
+                {/* API Key Input Cards */}
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* OpenRouter API Key */}
+                  <Card className={apiKeyStatus?.openrouter?.isSet ? "border-green-500/50" : ""}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
+                            apiKeyStatus?.openrouter?.isSet
+                              ? "bg-green-500/10 text-green-600"
+                              : "bg-blue-500/10 text-blue-600"
+                          }`}>
+                            OR
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">OpenRouter</CardTitle>
+                            <CardDescription>Access 400+ AI models</CardDescription>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-base">OpenRouter API Key</CardTitle>
-                          <CardDescription>Access 400+ AI models</CardDescription>
-                        </div>
+                        <Badge variant={apiKeyStatus?.openrouter?.isSet ? "default" : "secondary"}>
+                          {apiKeyStatus?.openrouter?.isSet
+                            ? `Saved (${apiKeyStatus.openrouter.source})`
+                            : providerStatus?.openrouter
+                            ? "Via Env Var"
+                            : "Not Set"}
+                        </Badge>
                       </div>
-                      <Badge variant={providerStatus?.openrouter ? "default" : "secondary"}>
-                        {providerStatus?.openrouter ? "Configured" : "Not Set"}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Text className="text-sm text-muted-foreground">
-                      OpenRouter provides unified access to Claude, GPT-4, Llama, Gemini, and 400+ other models
-                      through a single API with automatic fallback and competitive pricing.
-                    </Text>
-                    <div className="flex flex-col gap-2">
-                      <a
-                        href="https://openrouter.ai/keys"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                      >
-                        <KeyIcon className="h-4 w-4" />
-                        Generate API Key
-                        <ExternalLinkIcon className="h-3 w-3" />
-                      </a>
-                      <a
-                        href="https://openrouter.ai/activity"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                      >
-                        <BarChart3Icon className="h-4 w-4" />
-                        View Usage & Billing
-                        <ExternalLinkIcon className="h-3 w-3" />
-                      </a>
-                      <a
-                        href="https://openrouter.ai/credits"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                      >
-                        <DollarSignIcon className="h-4 w-4" />
-                        Add Credits
-                        <ExternalLinkIcon className="h-3 w-3" />
-                      </a>
-                      <a
-                        href="https://openrouter.ai/docs"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:underline"
-                      >
-                        Documentation
-                        <ExternalLinkIcon className="h-3 w-3" />
-                      </a>
-                    </div>
-                    <div className="rounded-md bg-amber-500/10 p-3 text-sm text-amber-600">
-                      <strong>Note:</strong> Set the <code className="font-mono">OPENROUTER_API_KEY</code> environment
-                      variable in your Convex deployment settings.
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {apiKeyStatus?.openrouter?.isSet && (
+                        <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-sm font-mono">
+                          <KeyIcon className="h-4 w-4 text-muted-foreground" />
+                          <span className="flex-1 truncate">{apiKeyStatus.openrouter.maskedKey}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleClearApiKey("openrouter")}
+                            disabled={clearingApiKey === "openrouter"}
+                          >
+                            {clearingApiKey === "openrouter" ? (
+                              <Loader2Icon className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2Icon className="h-4 w-4 text-red-500" />
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            type={apiKeyVisibility.openrouter ? "text" : "password"}
+                            placeholder="sk-or-v1-..."
+                            value={apiKeyInputs.openrouter}
+                            onChange={(e) => updateApiKeyInput("openrouter", e.target.value)}
+                            className="pr-10 font-mono text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3"
+                            onClick={() => toggleApiKeyVisibility("openrouter")}
+                          >
+                            {apiKeyVisibility.openrouter ? (
+                              <EyeOffIcon className="h-4 w-4" />
+                            ) : (
+                              <EyeIcon className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <Button
+                          onClick={() => handleSaveApiKey("openrouter")}
+                          disabled={!apiKeyInputs.openrouter.trim() || savingApiKey === "openrouter"}
+                        >
+                          {savingApiKey === "openrouter" ? (
+                            <Loader2Icon className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <SaveIcon className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <div className="flex gap-2 text-xs">
+                        <a
+                          href="https://openrouter.ai/keys"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                        >
+                          Get API Key <ExternalLinkIcon className="h-3 w-3" />
+                        </a>
+                        <span className="text-muted-foreground">•</span>
+                        <a
+                          href="https://openrouter.ai/activity"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-muted-foreground hover:underline"
+                        >
+                          Usage
+                        </a>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                {/* Vercel AI Gateway API Key */}
+                  {/* Anthropic API Key */}
+                  <Card className={apiKeyStatus?.anthropic?.isSet ? "border-green-500/50" : ""}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
+                            apiKeyStatus?.anthropic?.isSet
+                              ? "bg-green-500/10 text-green-600"
+                              : "bg-orange-500/10 text-orange-600"
+                          }`}>
+                            A
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">Anthropic</CardTitle>
+                            <CardDescription>Direct Claude access</CardDescription>
+                          </div>
+                        </div>
+                        <Badge variant={apiKeyStatus?.anthropic?.isSet ? "default" : "secondary"}>
+                          {apiKeyStatus?.anthropic?.isSet
+                            ? `Saved (${apiKeyStatus.anthropic.source})`
+                            : providerStatus?.anthropic
+                            ? "Via Env Var"
+                            : "Not Set"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {apiKeyStatus?.anthropic?.isSet && (
+                        <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-sm font-mono">
+                          <KeyIcon className="h-4 w-4 text-muted-foreground" />
+                          <span className="flex-1 truncate">{apiKeyStatus.anthropic.maskedKey}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleClearApiKey("anthropic")}
+                            disabled={clearingApiKey === "anthropic"}
+                          >
+                            {clearingApiKey === "anthropic" ? (
+                              <Loader2Icon className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2Icon className="h-4 w-4 text-red-500" />
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            type={apiKeyVisibility.anthropic ? "text" : "password"}
+                            placeholder="sk-ant-..."
+                            value={apiKeyInputs.anthropic}
+                            onChange={(e) => updateApiKeyInput("anthropic", e.target.value)}
+                            className="pr-10 font-mono text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3"
+                            onClick={() => toggleApiKeyVisibility("anthropic")}
+                          >
+                            {apiKeyVisibility.anthropic ? (
+                              <EyeOffIcon className="h-4 w-4" />
+                            ) : (
+                              <EyeIcon className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <Button
+                          onClick={() => handleSaveApiKey("anthropic")}
+                          disabled={!apiKeyInputs.anthropic.trim() || savingApiKey === "anthropic"}
+                        >
+                          {savingApiKey === "anthropic" ? (
+                            <Loader2Icon className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <SaveIcon className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <div className="flex gap-2 text-xs">
+                        <a
+                          href="https://console.anthropic.com/settings/keys"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-orange-600 hover:underline"
+                        >
+                          Get API Key <ExternalLinkIcon className="h-3 w-3" />
+                        </a>
+                        <span className="text-muted-foreground">•</span>
+                        <a
+                          href="https://console.anthropic.com/dashboard"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-muted-foreground hover:underline"
+                        >
+                          Dashboard
+                        </a>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* OpenAI API Key */}
+                  <Card className={apiKeyStatus?.openai?.isSet ? "border-green-500/50" : ""}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
+                            apiKeyStatus?.openai?.isSet
+                              ? "bg-green-500/10 text-green-600"
+                              : "bg-emerald-500/10 text-emerald-600"
+                          }`}>
+                            OA
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">OpenAI</CardTitle>
+                            <CardDescription>GPT & embeddings</CardDescription>
+                          </div>
+                        </div>
+                        <Badge variant={apiKeyStatus?.openai?.isSet ? "default" : "secondary"}>
+                          {apiKeyStatus?.openai?.isSet
+                            ? `Saved (${apiKeyStatus.openai.source})`
+                            : providerStatus?.openai
+                            ? "Via Env Var"
+                            : "Not Set"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {apiKeyStatus?.openai?.isSet && (
+                        <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-sm font-mono">
+                          <KeyIcon className="h-4 w-4 text-muted-foreground" />
+                          <span className="flex-1 truncate">{apiKeyStatus.openai.maskedKey}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleClearApiKey("openai")}
+                            disabled={clearingApiKey === "openai"}
+                          >
+                            {clearingApiKey === "openai" ? (
+                              <Loader2Icon className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2Icon className="h-4 w-4 text-red-500" />
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            type={apiKeyVisibility.openai ? "text" : "password"}
+                            placeholder="sk-..."
+                            value={apiKeyInputs.openai}
+                            onChange={(e) => updateApiKeyInput("openai", e.target.value)}
+                            className="pr-10 font-mono text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3"
+                            onClick={() => toggleApiKeyVisibility("openai")}
+                          >
+                            {apiKeyVisibility.openai ? (
+                              <EyeOffIcon className="h-4 w-4" />
+                            ) : (
+                              <EyeIcon className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <Button
+                          onClick={() => handleSaveApiKey("openai")}
+                          disabled={!apiKeyInputs.openai.trim() || savingApiKey === "openai"}
+                        >
+                          {savingApiKey === "openai" ? (
+                            <Loader2Icon className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <SaveIcon className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <div className="flex gap-2 text-xs">
+                        <a
+                          href="https://platform.openai.com/api-keys"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-emerald-600 hover:underline"
+                        >
+                          Get API Key <ExternalLinkIcon className="h-3 w-3" />
+                        </a>
+                        <span className="text-muted-foreground">•</span>
+                        <a
+                          href="https://platform.openai.com/usage"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-muted-foreground hover:underline"
+                        >
+                          Usage
+                        </a>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Vercel AI Gateway API Key */}
+                  <Card className={apiKeyStatus?.vercel?.isSet ? "border-green-500/50" : ""}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
+                            apiKeyStatus?.vercel?.isSet
+                              ? "bg-green-500/10 text-green-600"
+                              : "bg-purple-500/10 text-purple-600"
+                          }`}>
+                            V
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">Vercel AI Gateway</CardTitle>
+                            <CardDescription>Low-latency AI proxy</CardDescription>
+                          </div>
+                        </div>
+                        <Badge variant={apiKeyStatus?.vercel?.isSet ? "default" : "secondary"}>
+                          {apiKeyStatus?.vercel?.isSet
+                            ? `Saved (${apiKeyStatus.vercel.source})`
+                            : providerStatus?.vercel
+                            ? "Via Env Var"
+                            : "Not Set"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {apiKeyStatus?.vercel?.isSet && (
+                        <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-sm font-mono">
+                          <KeyIcon className="h-4 w-4 text-muted-foreground" />
+                          <span className="flex-1 truncate">{apiKeyStatus.vercel.maskedKey}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleClearApiKey("vercel")}
+                            disabled={clearingApiKey === "vercel"}
+                          >
+                            {clearingApiKey === "vercel" ? (
+                              <Loader2Icon className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2Icon className="h-4 w-4 text-red-500" />
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            type={apiKeyVisibility.vercel ? "text" : "password"}
+                            placeholder="Enter API key..."
+                            value={apiKeyInputs.vercel}
+                            onChange={(e) => updateApiKeyInput("vercel", e.target.value)}
+                            className="pr-10 font-mono text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3"
+                            onClick={() => toggleApiKeyVisibility("vercel")}
+                          >
+                            {apiKeyVisibility.vercel ? (
+                              <EyeOffIcon className="h-4 w-4" />
+                            ) : (
+                              <EyeIcon className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <Button
+                          onClick={() => handleSaveApiKey("vercel")}
+                          disabled={!apiKeyInputs.vercel.trim() || savingApiKey === "vercel"}
+                        >
+                          {savingApiKey === "vercel" ? (
+                            <Loader2Icon className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <SaveIcon className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <div className="flex gap-2 text-xs">
+                        <a
+                          href="https://vercel.com/account/tokens"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-purple-600 hover:underline"
+                        >
+                          Get API Token <ExternalLinkIcon className="h-3 w-3" />
+                        </a>
+                        <span className="text-muted-foreground">•</span>
+                        <a
+                          href="https://vercel.com/docs/ai-gateway"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-muted-foreground hover:underline"
+                        >
+                          Docs
+                        </a>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Info Card */}
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 font-bold text-purple-600">
-                          V
-                        </div>
-                        <div>
-                          <CardTitle className="text-base">Vercel AI Gateway</CardTitle>
-                          <CardDescription>Low-latency AI proxy</CardDescription>
-                        </div>
-                      </div>
-                      <Badge variant={providerStatus?.vercel ? "default" : "secondary"}>
-                        {providerStatus?.vercel ? "Configured" : "Not Set"}
-                      </Badge>
-                    </div>
+                    <CardTitle className="flex items-center gap-2">
+                      <KeyIcon className="h-5 w-5" />
+                      API Key Storage
+                    </CardTitle>
+                    <CardDescription>How API keys are stored and used</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Text className="text-sm text-muted-foreground">
-                      Vercel AI Gateway provides edge-optimized access to AI models with built-in observability,
-                      caching, and Zero Data Retention (ZDR) mode for privacy-sensitive applications.
-                    </Text>
-                    <div className="flex flex-col gap-2">
-                      <a
-                        href="https://vercel.com/account/tokens"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-purple-600 hover:underline"
-                      >
-                        <KeyIcon className="h-4 w-4" />
-                        Generate API Token
-                        <ExternalLinkIcon className="h-3 w-3" />
-                      </a>
-                      <a
-                        href="https://vercel.com/dashboard"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-purple-600 hover:underline"
-                      >
-                        <BarChart3Icon className="h-4 w-4" />
-                        View Dashboard
-                        <ExternalLinkIcon className="h-3 w-3" />
-                      </a>
-                      <a
-                        href="https://vercel.com/docs/ai-gateway"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:underline"
-                      >
-                        Documentation
-                        <ExternalLinkIcon className="h-3 w-3" />
-                      </a>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="rounded-md border p-4">
+                        <h4 className="font-medium mb-2 text-green-600">Database Storage (Recommended)</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• Keys entered above are stored securely in Convex</li>
+                          <li>• Takes priority over environment variables</li>
+                          <li>• Can be updated without redeployment</li>
+                          <li>• Displayed with masked values for security</li>
+                        </ul>
+                      </div>
+                      <div className="rounded-md border p-4">
+                        <h4 className="font-medium mb-2 text-amber-600">Environment Variables (Fallback)</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• Set in Convex Dashboard → Settings → Environment Variables</li>
+                          <li>• Used when database key is not set</li>
+                          <li>• Requires redeployment to change</li>
+                          <li>
+                            • Variables: <code className="text-xs">OPENROUTER_API_KEY</code>,{" "}
+                            <code className="text-xs">ANTHROPIC_API_KEY</code>, etc.
+                          </li>
+                        </ul>
+                      </div>
                     </div>
-                    <div className="rounded-md bg-amber-500/10 p-3 text-sm text-amber-600">
-                      <strong>Note:</strong> Set the <code className="font-mono">VERCEL_API_TOKEN</code> environment
-                      variable in your Convex deployment settings.
+                    <div className="rounded-md bg-blue-500/10 p-3 text-sm text-blue-600">
+                      <strong>Security Note:</strong> API keys stored in the database are never returned to the
+                      client in full. Only masked versions are displayed. The full keys are only accessed
+                      server-side when making API calls.
                     </div>
                   </CardContent>
                 </Card>
               </div>
-
-              {/* Quick Setup Guide */}
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle>Quick Setup Guide</CardTitle>
-                  <CardDescription>How to configure your AI provider API keys</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ol className="list-decimal list-inside space-y-3 text-sm">
-                    <li>
-                      <strong>Generate API keys</strong> from the provider dashboards above
-                    </li>
-                    <li>
-                      <strong>Add to Convex</strong>: Go to your{" "}
-                      <a
-                        href="https://dashboard.convex.dev"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Convex Dashboard
-                      </a>{" "}
-                      → Settings → Environment Variables
-                    </li>
-                    <li>
-                      <strong>Set the variables</strong>:
-                      <ul className="list-disc list-inside ml-4 mt-1 text-muted-foreground">
-                        <li>
-                          <code className="font-mono text-xs">OPENROUTER_API_KEY</code> - Your OpenRouter key
-                        </li>
-                        <li>
-                          <code className="font-mono text-xs">VERCEL_API_TOKEN</code> - Your Vercel token
-                        </li>
-                      </ul>
-                    </li>
-                    <li>
-                      <strong>Test connections</strong> using the &quot;Test&quot; buttons on the provider cards above
-                    </li>
-                  </ol>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             {/* Usage & Analytics Tab */}

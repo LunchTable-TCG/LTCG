@@ -3,7 +3,7 @@
  *
  * CRUD operations for managing AI provider settings (OpenRouter, Vercel AI Gateway, Anthropic, OpenAI).
  * Config values stored in systemConfig table with category "ai".
- * API keys remain in environment variables (not stored in database).
+ * API keys can be stored in database (with masked display) or environment variables.
  *
  * Requires admin role or higher for mutations.
  */
@@ -24,7 +24,7 @@ interface AIConfigDefinition {
   category: "ai";
   displayName: string;
   description: string;
-  valueType: "number" | "string" | "boolean" | "json";
+  valueType: "number" | "string" | "boolean" | "json" | "secret";
   minValue?: number;
   maxValue?: number;
 }
@@ -134,6 +134,40 @@ const AI_DEFAULT_CONFIGS: AIConfigDefinition[] = [
     displayName: "Game Guide Chat",
     description: "Enable Lunchtable Guide in web app",
     valueType: "boolean",
+  },
+
+  // API Keys (stored encrypted, displayed masked)
+  {
+    key: "ai.apikey.openrouter",
+    value: "",
+    category: "ai",
+    displayName: "OpenRouter API Key",
+    description: "API key for OpenRouter (overrides env var)",
+    valueType: "secret",
+  },
+  {
+    key: "ai.apikey.anthropic",
+    value: "",
+    category: "ai",
+    displayName: "Anthropic API Key",
+    description: "API key for Anthropic Claude (overrides env var)",
+    valueType: "secret",
+  },
+  {
+    key: "ai.apikey.openai",
+    value: "",
+    category: "ai",
+    displayName: "OpenAI API Key",
+    description: "API key for OpenAI (overrides env var)",
+    valueType: "secret",
+  },
+  {
+    key: "ai.apikey.vercel",
+    value: "",
+    category: "ai",
+    displayName: "Vercel AI Gateway Key",
+    description: "API key for Vercel AI Gateway (overrides env var)",
+    valueType: "secret",
   },
 ];
 
@@ -544,8 +578,202 @@ export const initializeAIDefaults = mutation({
 });
 
 // =============================================================================
+// API Key Management
+// =============================================================================
+
+/**
+ * Set an API key for a provider
+ * Keys are stored in the database and override environment variables
+ */
+export const setAPIKey = mutation({
+  args: {
+    provider: v.union(
+      v.literal("openrouter"),
+      v.literal("anthropic"),
+      v.literal("openai"),
+      v.literal("vercel")
+    ),
+    apiKey: v.string(),
+  },
+  handler: async (ctx, { provider, apiKey }) => {
+    const { userId: adminId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, adminId, "admin");
+
+    const key = `ai.apikey.${provider}`;
+    const trimmedKey = apiKey.trim();
+
+    // Find existing config or create new one
+    const existing = await ctx.db
+      .query("systemConfig")
+      .withIndex("by_key", (q) => q.eq("key", key))
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        value: trimmedKey,
+        updatedAt: Date.now(),
+        updatedBy: adminId,
+      });
+    } else {
+      await ctx.db.insert("systemConfig", {
+        key,
+        value: trimmedKey,
+        category: "ai",
+        displayName: `${provider.charAt(0).toUpperCase() + provider.slice(1)} API Key`,
+        description: `API key for ${provider}`,
+        valueType: "secret",
+        updatedAt: Date.now(),
+        updatedBy: adminId,
+      });
+    }
+
+    // Audit log (don't log the actual key value)
+    await scheduleAuditLog(ctx, {
+      adminId,
+      action: "set_ai_api_key",
+      metadata: {
+        provider,
+        keySet: trimmedKey.length > 0,
+        keyLength: trimmedKey.length,
+      },
+      success: true,
+    });
+
+    return {
+      success: true,
+      message: trimmedKey.length > 0
+        ? `${provider} API key has been set`
+        : `${provider} API key has been cleared`,
+    };
+  },
+});
+
+/**
+ * Get API key status for all providers (masked values, not actual keys)
+ */
+export const getAPIKeyStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const { userId } = await requireAuthQuery(ctx);
+    await requireRole(ctx, userId, "moderator");
+
+    const providers = ["openrouter", "anthropic", "openai", "vercel"] as const;
+    const status: Record<string, { isSet: boolean; maskedKey: string; source: "database" | "env" | "none" }> = {};
+
+    for (const provider of providers) {
+      const key = `ai.apikey.${provider}`;
+      const config = await ctx.db
+        .query("systemConfig")
+        .withIndex("by_key", (q) => q.eq("key", key))
+        .unique();
+
+      const dbKey = config?.value as string | undefined;
+      const hasDbKey = !!dbKey && dbKey.length > 0;
+
+      if (hasDbKey) {
+        // Mask the key: show first 4 and last 4 chars
+        const masked = dbKey.length > 12
+          ? `${dbKey.slice(0, 4)}${"*".repeat(Math.min(dbKey.length - 8, 20))}${dbKey.slice(-4)}`
+          : "*".repeat(dbKey.length);
+        status[provider] = { isSet: true, maskedKey: masked, source: "database" };
+      } else {
+        // Note: We can't check env vars in queries, will be checked in action
+        status[provider] = { isSet: false, maskedKey: "", source: "none" };
+      }
+    }
+
+    return status;
+  },
+});
+
+/**
+ * Clear an API key for a provider
+ */
+export const clearAPIKey = mutation({
+  args: {
+    provider: v.union(
+      v.literal("openrouter"),
+      v.literal("anthropic"),
+      v.literal("openai"),
+      v.literal("vercel")
+    ),
+  },
+  handler: async (ctx, { provider }) => {
+    const { userId: adminId } = await requireAuthMutation(ctx);
+    await requireRole(ctx, adminId, "admin");
+
+    const key = `ai.apikey.${provider}`;
+
+    const existing = await ctx.db
+      .query("systemConfig")
+      .withIndex("by_key", (q) => q.eq("key", key))
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        value: "",
+        updatedAt: Date.now(),
+        updatedBy: adminId,
+      });
+    }
+
+    await scheduleAuditLog(ctx, {
+      adminId,
+      action: "clear_ai_api_key",
+      metadata: { provider },
+      success: true,
+    });
+
+    return {
+      success: true,
+      message: `${provider} API key has been cleared (will fall back to environment variable if set)`,
+    };
+  },
+});
+
+// =============================================================================
 // Actions
 // =============================================================================
+
+/**
+ * Get the effective API key for a provider (checks DB first, then env var)
+ * Internal helper - not exposed to clients
+ */
+async function getEffectiveAPIKey(
+  ctx: { runQuery: (query: any, args: any) => Promise<any> },
+  provider: "openrouter" | "anthropic" | "openai" | "vercel"
+): Promise<string | undefined> {
+  // Check database first
+  const key = `ai.apikey.${provider}`;
+  const dbValue = await ctx.runQuery(
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("../_generated/api").api.admin.aiConfig.getAIConfigValue,
+    { key }
+  );
+
+  if (dbValue && typeof dbValue === "string" && dbValue.length > 0) {
+    return dbValue;
+  }
+
+  // Fall back to environment variable
+  const envVarMap: Record<typeof provider, string> = {
+    openrouter: "OPENROUTER_API_KEY",
+    anthropic: "ANTHROPIC_API_KEY",
+    openai: "OPENAI_API_KEY",
+    vercel: "AI_GATEWAY_API_KEY",
+  };
+
+  const envVarName = envVarMap[provider];
+  const envKey = process.env[envVarName];
+  if (envKey) return envKey;
+
+  // For Vercel, also check OPENAI_API_KEY as fallback
+  if (provider === "vercel" && process.env["OPENAI_API_KEY"]) {
+    return process.env["OPENAI_API_KEY"];
+  }
+
+  return undefined;
+}
 
 /**
  * Test if an API key works by making a minimal request
@@ -562,14 +790,19 @@ export const testProviderConnection = action({
       )
     ),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
+    // Get effective API keys (DB first, then env var)
+    const openrouterKey = await getEffectiveAPIKey(ctx, "openrouter");
+    const anthropicKey = await getEffectiveAPIKey(ctx, "anthropic");
+    const openaiKey = await getEffectiveAPIKey(ctx, "openai");
+    const vercelKey = await getEffectiveAPIKey(ctx, "vercel");
+
     // Check which providers have API keys configured (presence only, not values)
     const providerStatus = {
-      openrouter: !!process.env["OPENROUTER_API_KEY"],
-      anthropic: !!process.env["ANTHROPIC_API_KEY"],
-      openai: !!process.env["OPENAI_API_KEY"],
-      // Vercel AI Gateway uses AI_GATEWAY_API_KEY or falls back to OPENAI_API_KEY
-      vercel: !!process.env["AI_GATEWAY_API_KEY"] || !!process.env["OPENAI_API_KEY"],
+      openrouter: !!openrouterKey,
+      anthropic: !!anthropicKey,
+      openai: !!openaiKey,
+      vercel: !!vercelKey,
     };
 
     // If no specific provider requested, just return status
@@ -583,9 +816,15 @@ export const testProviderConnection = action({
 
     // Test specific provider connection
     const provider = args.provider;
-    const hasKey = providerStatus[provider];
+    const keyMap = {
+      openrouter: openrouterKey,
+      anthropic: anthropicKey,
+      openai: openaiKey,
+      vercel: vercelKey,
+    };
+    const apiKey = keyMap[provider];
 
-    if (!hasKey) {
+    if (!apiKey) {
       return {
         success: false,
         providerStatus,
@@ -602,7 +841,7 @@ export const testProviderConnection = action({
           const startTime = Date.now();
           const response = await fetch("https://openrouter.ai/api/v1/models", {
             headers: {
-              Authorization: `Bearer ${process.env["OPENROUTER_API_KEY"]}`,
+              Authorization: `Bearer ${apiKey}`,
             },
           });
           const latencyMs = Date.now() - startTime;
@@ -626,7 +865,7 @@ export const testProviderConnection = action({
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "x-api-key": process.env["ANTHROPIC_API_KEY"]!,
+              "x-api-key": apiKey,
               "anthropic-version": "2023-06-01",
             },
             body: JSON.stringify({
@@ -655,7 +894,7 @@ export const testProviderConnection = action({
           const startTime = Date.now();
           const response = await fetch("https://api.openai.com/v1/models", {
             headers: {
-              Authorization: `Bearer ${process.env["OPENAI_API_KEY"]}`,
+              Authorization: `Bearer ${apiKey}`,
             },
           });
           const latencyMs = Date.now() - startTime;
@@ -675,11 +914,16 @@ export const testProviderConnection = action({
         case "vercel": {
           // Vercel AI Gateway - test via the gateway endpoint or fallback to OpenAI
           const startTime = Date.now();
-          const apiKey = process.env["AI_GATEWAY_API_KEY"] || process.env["OPENAI_API_KEY"];
 
-          // If we have AI_GATEWAY_API_KEY, test the gateway endpoint
+          // If we have AI_GATEWAY_API_KEY in DB or env, test the gateway endpoint
           // Otherwise fall back to testing OpenAI directly
-          const endpoint = process.env["AI_GATEWAY_API_KEY"]
+          const hasGatewayKey = !!(await ctx.runQuery(
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            require("../_generated/api").api.admin.aiConfig.getAIConfigValue,
+            { key: "ai.apikey.vercel" }
+          )) || !!process.env["AI_GATEWAY_API_KEY"];
+
+          const endpoint = hasGatewayKey
             ? "https://ai-gateway.vercel.sh/v3/ai/models"
             : "https://api.openai.com/v1/models";
 

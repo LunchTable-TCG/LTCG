@@ -379,6 +379,15 @@ export default defineSchema({
     .index("by_reported_user", ["reportedUserId"])
     .index("by_reporter", ["reporterId"]),
 
+  // Newsletter signups for marketing
+  newsletterSignups: defineTable({
+    email: v.string(),
+    signupDate: v.number(),
+    source: v.string(), // e.g., "landing_page", "footer", "popup"
+  })
+    .index("by_email", ["email"])
+    .index("by_signup_date", ["signupDate"]),
+
   // User presence tracking (for online users list)
   userPresence: defineTable({
     userId: v.id("users"),
@@ -2187,7 +2196,8 @@ export default defineSchema({
       v.literal("number"),
       v.literal("string"),
       v.literal("boolean"),
-      v.literal("json")
+      v.literal("json"),
+      v.literal("secret")
     ),
     minValue: v.optional(v.number()),
     maxValue: v.optional(v.number()),
