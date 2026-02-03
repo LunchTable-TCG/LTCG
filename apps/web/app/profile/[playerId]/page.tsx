@@ -11,8 +11,10 @@ import {
   Calendar,
   Clock,
   Gamepad2,
+  Lock,
   Medal,
   Percent,
+  Settings,
   Shield,
   Star,
   Swords,
@@ -72,6 +74,8 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
   const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
   const profileUser = useQuery(api.core.users.getUser, { userId: playerId });
   const userStats = useQuery(api.core.users.getUserStats, { userId: playerId });
+  const profilePrivacy = useQuery(api.progression.matchHistory.getProfilePrivacy, { userId: playerId });
+  const matchHistory = useQuery(api.progression.matchHistory.getPublicMatchHistory, { userId: playerId, limit: 5 });
 
   const isOwnProfile = currentUser?._id === playerId;
 
@@ -117,6 +121,26 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
             This player profile does not exist or has been deleted.
           </p>
           <Button asChild>
+            <Link href="/social">Back to Social</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if profile is private
+  if (profilePrivacy && !profilePrivacy.isPublic && !profilePrivacy.isOwnProfile) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-background via-purple-950/20 to-background pt-24">
+        <div className="container mx-auto px-4 py-8 text-center">
+          <div className="w-20 h-20 rounded-full bg-[#3d2b1f] flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-[#a89f94]" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-[#e8e0d5]">Private Profile</h2>
+          <p className="text-[#a89f94] mb-6 max-w-md mx-auto">
+            This player has set their profile to private. Only they can view their profile information.
+          </p>
+          <Button asChild variant="outline" className="border-[#3d2b1f] text-[#a89f94]">
             <Link href="/social">Back to Social</Link>
           </Button>
         </div>
@@ -190,6 +214,21 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
                   </Badge>
                 )}
               </div>
+
+              {/* Bio */}
+              {profileUser.bio ? (
+                <p className="text-[#a89f94] text-sm mb-3 max-w-lg text-center md:text-left">
+                  {profileUser.bio}
+                </p>
+              ) : isOwnProfile ? (
+                <p className="text-[#a89f94]/50 text-sm mb-3 max-w-lg text-center md:text-left italic flex items-center gap-2">
+                  No bio yet.{" "}
+                  <Link href="/settings" className="text-[#d4af37] hover:underline inline-flex items-center gap-1">
+                    <Settings className="w-3 h-3" />
+                    Add one in settings
+                  </Link>
+                </p>
+              ) : null}
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
@@ -331,10 +370,71 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
               <TrendingUp className="w-6 h-6 text-[#d4af37]" />
               Recent Chronicles
             </h3>
-            <div className="relative z-10 flex flex-col items-center justify-center h-32 border-2 border-dashed border-[#3d2b1f] rounded-xl bg-black/20">
-              <p className="text-[#a89f94] text-xs font-black uppercase tracking-widest italic opacity-50">
-                Match history is being inscribed...
-              </p>
+            <div className="relative z-10">
+              {matchHistory === undefined ? (
+                <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-[#3d2b1f] rounded-xl bg-black/20">
+                  <p className="text-[#a89f94] text-xs font-medium animate-pulse">Loading...</p>
+                </div>
+              ) : matchHistory === null ? (
+                <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-[#3d2b1f] rounded-xl bg-black/20">
+                  <Lock className="w-6 h-6 text-[#a89f94] mb-2" />
+                  <p className="text-[#a89f94] text-xs font-medium">Match history is private</p>
+                </div>
+              ) : matchHistory.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-[#3d2b1f] rounded-xl bg-black/20">
+                  <Swords className="w-6 h-6 text-[#a89f94] mb-2" />
+                  <p className="text-[#a89f94] text-xs font-medium">No matches played yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {matchHistory.map((match) => (
+                    <div
+                      key={match.id}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border",
+                        match.result === "victory"
+                          ? "bg-green-500/10 border-green-500/30"
+                          : "bg-red-500/10 border-red-500/30"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center",
+                            match.result === "victory" ? "bg-green-500/20" : "bg-red-500/20"
+                          )}
+                        >
+                          {match.result === "victory" ? (
+                            <Trophy className="w-4 h-4 text-green-400" />
+                          ) : (
+                            <Swords className="w-4 h-4 text-red-400" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-[#e8e0d5]">
+                            vs {match.opponent.username}
+                          </p>
+                          <p className="text-xs text-[#a89f94] capitalize">{match.mode}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p
+                          className={cn(
+                            "text-sm font-bold",
+                            match.ratingChange >= 0 ? "text-green-400" : "text-red-400"
+                          )}
+                        >
+                          {match.ratingChange >= 0 ? "+" : ""}
+                          {match.ratingChange}
+                        </p>
+                        <p className="text-xs text-[#a89f94]">
+                          {formatRelativeTime(match.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

@@ -5,3 +5,4 @@ export * from "./marketplace";
 export * from "./tokenBalance";
 export * from "./tokenMarketplace";
 export * from "./tokenMaintenance";
+export * from "./priceHistory";

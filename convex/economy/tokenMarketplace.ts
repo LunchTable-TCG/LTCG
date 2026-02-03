@@ -1024,3 +1024,67 @@ export const getPendingPurchase = internalQuery({
     return ctx.db.get(args.pendingPurchaseId);
   },
 });
+
+// ============================================================================
+// TOKEN TRANSACTION HISTORY
+// ============================================================================
+
+/**
+ * Get token transaction history for the current user
+ *
+ * @param limit - Maximum results to return (default: 20)
+ * @param cursor - Pagination cursor for loading more
+ * @returns Paginated token transactions
+ */
+export const getTokenTransactionHistory = query({
+  args: {
+    limit: v.optional(v.number()),
+    cursor: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthQuery(ctx);
+    const limit = Math.min(args.limit ?? 20, 100);
+
+    // Query token transactions for this user
+    const transactionsQuery = ctx.db
+      .query("tokenTransactions")
+      .withIndex("by_user_time", (q) => q.eq("userId", userId))
+      .order("desc");
+
+    // Apply cursor if provided
+    let transactions;
+    if (args.cursor) {
+      const cursorTimestamp = Number.parseInt(args.cursor, 10);
+      transactions = await transactionsQuery
+        .filter((q) => q.lt(q.field("createdAt"), cursorTimestamp))
+        .take(limit + 1);
+    } else {
+      transactions = await transactionsQuery.take(limit + 1);
+    }
+
+    // Check if there are more results
+    const hasMore = transactions.length > limit;
+    if (hasMore) {
+      transactions = transactions.slice(0, limit);
+    }
+
+    // Get next cursor
+    const lastTx = transactions[transactions.length - 1];
+    const nextCursor = hasMore && lastTx ? lastTx.createdAt.toString() : undefined;
+
+    return {
+      transactions: transactions.map((tx) => ({
+        _id: tx._id,
+        transactionType: tx.transactionType,
+        amount: tx.amount,
+        signature: tx.signature,
+        status: tx.status,
+        description: tx.description,
+        createdAt: tx.createdAt,
+        confirmedAt: tx.confirmedAt,
+      })),
+      nextCursor,
+      hasMore,
+    };
+  },
+});

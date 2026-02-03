@@ -21,6 +21,7 @@ import {
   Swords,
   Target,
   User,
+  Wallet,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -76,6 +77,7 @@ const gameLinks: GameLink[] = [
   { href: "/play/story", label: "Story Mode", icon: Map, description: "Campaign adventure" },
   { href: "/quests", label: "Quests", icon: Target, description: "Daily & weekly rewards" },
   { href: "/shop", label: "Shop", icon: Store, description: "Buy packs & trade cards" },
+  { href: "/lunchmoney", label: "LunchMoney", icon: Wallet, description: "Economy dashboard" },
   { href: "/binder", label: "Binder", icon: BookOpen, description: "Your card collection" },
   { href: "/profile", label: "Profile", icon: User, description: "View your stats" },
   { href: "/settings", label: "Settings", icon: Settings, description: "Manage preferences" },

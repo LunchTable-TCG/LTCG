@@ -205,6 +205,31 @@ export const updateUsername = mutation({
 });
 
 /**
+ * Update user bio
+ * Allows users to set a short bio (max 200 characters)
+ */
+export const updateBio = mutation({
+  args: {
+    bio: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+
+    // Validate bio length
+    const bio = args.bio.trim();
+    if (bio.length > 200) {
+      throw new Error("Bio must be 200 characters or less");
+    }
+
+    // Update user bio
+    await ctx.db.patch(userId, { bio });
+
+    return null;
+  },
+});
+
+/**
  * Change password
  * Allows authenticated users to change their password by providing current and new passwords
  */

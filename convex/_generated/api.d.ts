@@ -41,6 +41,7 @@ import type * as economy from "../economy.js";
 import type * as economy_economy from "../economy/economy.js";
 import type * as economy_index from "../economy/index.js";
 import type * as economy_marketplace from "../economy/marketplace.js";
+import type * as economy_priceHistory from "../economy/priceHistory.js";
 import type * as economy_shop from "../economy/shop.js";
 import type * as economy_tokenBalance from "../economy/tokenBalance.js";
 import type * as economy_tokenMaintenance from "../economy/tokenMaintenance.js";
@@ -242,6 +243,7 @@ declare const fullApi: ApiFromModules<{
   "economy/economy": typeof economy_economy;
   "economy/index": typeof economy_index;
   "economy/marketplace": typeof economy_marketplace;
+  "economy/priceHistory": typeof economy_priceHistory;
   "economy/shop": typeof economy_shop;
   "economy/tokenBalance": typeof economy_tokenBalance;
   "economy/tokenMaintenance": typeof economy_tokenMaintenance;

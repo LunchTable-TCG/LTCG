@@ -350,8 +350,8 @@ export default function AdminManagementPage() {
       actions={<GrantRoleDialog />}
     >
       {/* Role Overview */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
-        {(["super_admin", "admin", "moderator", "support"] as AdminRoleType[]).map((role) => (
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
+        {(["superadmin", "admin", "moderator"] as AdminRoleType[]).map((role) => (
           <Card key={role}>
             <div className="flex items-center justify-between">
               <div>
@@ -369,8 +369,8 @@ export default function AdminManagementPage() {
       {/* Role Descriptions */}
       <Card className="mb-6">
         <Title>Role Permissions</Title>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          {(["super_admin", "admin", "moderator", "support"] as AdminRoleType[]).map((role) => (
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          {(["superadmin", "admin", "moderator"] as AdminRoleType[]).map((role) => (
             <div key={role} className="p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-2 mb-1">
                 <RoleBadge role={role} />

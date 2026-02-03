@@ -65,6 +65,9 @@ const navigation: NavGroup[] = [
       { title: "News", href: "/news", icon: "📰", permission: "config.edit" },
       { title: "Broadcast", href: "/broadcast", icon: "📢", permission: "batch.operations" },
       { title: "Assets", href: "/assets", icon: "🖼️", permission: "config.edit" },
+      { title: "Cards", href: "/cards", icon: "🃏", permission: "config.edit" },
+      { title: "Shop", href: "/shop", icon: "🛒", permission: "config.edit" },
+      { title: "Promo Codes", href: "/promo-codes", icon: "🎁", permission: "config.edit" },
     ],
   },
   {

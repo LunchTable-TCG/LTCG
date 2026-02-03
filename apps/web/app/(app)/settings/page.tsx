@@ -2,20 +2,25 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { WalletConnect } from "@/components/wallet";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { useGameWallet, useTokenBalance } from "@/hooks";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import {
+  AlertTriangle,
   Bell,
   Check,
   ChevronRight,
+  Copy,
+  ExternalLink,
   Eye,
   EyeOff,
   Gamepad2,
   Loader2,
-  Lock,
   Mail,
   Palette,
+  RefreshCw,
   Save,
   Settings,
   Shield,
@@ -23,11 +28,13 @@ import {
   User,
   Volume2,
   VolumeX,
+  Wallet,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-type SettingsTab = "account" | "notifications" | "display" | "game" | "privacy";
+type SettingsTab = "account" | "wallet" | "notifications" | "display" | "game" | "privacy";
 
 interface ToggleProps {
   enabled: boolean;
@@ -67,23 +74,23 @@ export default function SettingsPage() {
 
   const updatePreferences = useConvexMutation(apiAny.core.userPreferences.updatePreferences);
   const updateUsername = useConvexMutation(apiAny.core.userPreferences.updateUsername);
-  const changePassword = useConvexMutation(apiAny.core.userPreferences.changePassword);
+  const updateBio = useConvexMutation(apiAny.core.userPreferences.updateBio);
   const deleteAccount = useConvexMutation(apiAny.core.userPreferences.deleteAccount);
+
+  // Wallet hooks
+  const { walletAddress, walletType, isConnected, disconnectWallet, isLoading: walletLoading } = useGameWallet();
+  const { balance: tokenBalance, isStale, refresh: refreshBalance, isRefreshing, lastVerifiedAt } = useTokenBalance();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showWalletConnect, setShowWalletConnect] = useState(false);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
   // Account settings
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-
-  // Password change
-  const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [bio, setBio] = useState("");
 
   // Account deletion
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -148,9 +155,10 @@ export default function SettingsPage() {
       JSON.stringify(display) !== JSON.stringify(preferences.display) ||
       JSON.stringify(game) !== JSON.stringify(preferences.game) ||
       JSON.stringify(privacy) !== JSON.stringify(preferences.privacy) ||
-      username !== (currentUser?.username || "");
+      username !== (currentUser?.username || "") ||
+      bio !== (currentUser?.bio || "");
     setIsDirty(hasChanges);
-  }, [notifications, display, game, privacy, username, preferences, currentUser?.username]);
+  }, [notifications, display, game, privacy, username, bio, preferences, currentUser?.username, currentUser?.bio]);
 
   // Warn user before leaving with unsaved changes
   useEffect(() => {
@@ -170,6 +178,7 @@ export default function SettingsPage() {
     if (currentUser) {
       setUsername(currentUser.username || "");
       setEmail(currentUser.email || "");
+      setBio(currentUser.bio || "");
     }
   }, [currentUser]);
 
@@ -184,6 +193,11 @@ export default function SettingsPage() {
           setIsSaving(false);
           return;
         }
+      }
+
+      // Save bio if changed
+      if (bio !== (currentUser?.bio || "")) {
+        await updateBio({ bio });
       }
 
       // Save preferences
@@ -205,46 +219,21 @@ export default function SettingsPage() {
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!currentPassword || !newPassword) {
-      toast.error("Please fill in all password fields");
-      return;
-    }
-
-    if (newPassword !== confirmNewPassword) {
-      toast.error("New passwords do not match");
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters");
-      return;
-    }
-
-    setIsChangingPassword(true);
+  const handleDisconnectWallet = async () => {
     try {
-      const result = await changePassword({
-        currentPassword,
-        newPassword,
-      });
-
-      if (result.success) {
-        toast.success("Password changed successfully. Please log in again.");
-        setShowPasswordChange(false);
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmNewPassword("");
-        // User will be logged out automatically due to session invalidation
-      } else {
-        toast.error(result.error || "Failed to change password");
-      }
+      await disconnectWallet();
+      setShowDisconnectConfirm(false);
+      toast.success("Wallet disconnected");
     } catch (error) {
-      toast.error("Failed to change password");
-      console.error("Password change error:", error);
-    } finally {
-      setIsChangingPassword(false);
+      toast.error("Failed to disconnect wallet");
+      console.error("Wallet disconnect error:", error);
+    }
+  };
+
+  const copyWalletAddress = () => {
+    if (walletAddress) {
+      navigator.clipboard.writeText(walletAddress);
+      toast.success("Wallet address copied");
     }
   };
 
@@ -276,6 +265,7 @@ export default function SettingsPage() {
 
   const tabs: { id: SettingsTab; label: string; icon: typeof Settings }[] = [
     { id: "account", label: "Account", icon: User },
+    { id: "wallet", label: "Wallet", icon: Wallet },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "display", label: "Display", icon: Palette },
     { id: "game", label: "Game", icon: Gamepad2 },
@@ -410,178 +400,38 @@ export default function SettingsPage() {
                           id="settings-email"
                           type="email"
                           value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10 bg-black/40 border-[#3d2b1f] text-[#e8e0d5]"
+                          readOnly
+                          className="pl-10 bg-black/40 border-[#3d2b1f] text-[#a89f94] cursor-not-allowed"
                           placeholder="your@email.com"
                         />
                       </div>
+                      <p className="text-xs text-[#a89f94]/60 mt-1">
+                        Email is managed by your authentication provider
+                      </p>
                     </div>
 
-                    <div className="pt-4 border-t border-[#3d2b1f]">
-                      <h3 className="text-lg font-semibold text-[#e8e0d5] mb-4">Security</h3>
-
-                      {!showPasswordChange ? (
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5]"
-                          onClick={() => setShowPasswordChange(true)}
-                        >
-                          <Lock className="w-4 h-4 mr-2" />
-                          Change Password
-                        </Button>
-                      ) : (
-                        <form
-                          onSubmit={handleChangePassword}
-                          className="space-y-4"
-                          aria-label="Change password form"
-                        >
-                          <div>
-                            <label
-                              htmlFor="current-password"
-                              className="block text-sm font-medium text-[#a89f94] mb-2"
-                            >
-                              Current Password
-                            </label>
-                            <Input
-                              id="current-password"
-                              type="password"
-                              value={currentPassword}
-                              onChange={(e) => setCurrentPassword(e.target.value)}
-                              className="bg-black/40 border-[#3d2b1f] text-[#e8e0d5]"
-                              placeholder="Enter current password"
-                              disabled={isChangingPassword}
-                              aria-required="true"
-                            />
-                          </div>
-
-                          <div>
-                            <label
-                              htmlFor="new-password"
-                              className="block text-sm font-medium text-[#a89f94] mb-2"
-                            >
-                              New Password
-                            </label>
-                            <Input
-                              id="new-password"
-                              type="password"
-                              value={newPassword}
-                              onChange={(e) => setNewPassword(e.target.value)}
-                              className={cn(
-                                "bg-black/40 text-[#e8e0d5]",
-                                newPassword.length > 0 && newPassword.length < 8
-                                  ? "border-yellow-500/50"
-                                  : newPassword.length >= 8
-                                    ? "border-green-500/50"
-                                    : "border-[#3d2b1f]"
-                              )}
-                              placeholder="Enter new password (min 8 characters)"
-                              disabled={isChangingPassword}
-                              aria-required="true"
-                              aria-describedby="password-requirements"
-                            />
-                            {/* Password requirements indicator */}
-                            <div id="password-requirements" className="mt-2 space-y-1">
-                              <p
-                                className={cn(
-                                  "text-xs flex items-center gap-1.5",
-                                  newPassword.length >= 8 ? "text-green-400" : "text-[#a89f94]"
-                                )}
-                              >
-                                {newPassword.length >= 8 ? (
-                                  <Check className="w-3 h-3" />
-                                ) : (
-                                  <span className="w-3 h-3 rounded-full border border-current inline-block" />
-                                )}
-                                At least 8 characters{" "}
-                                {newPassword.length > 0 && `(${newPassword.length}/8)`}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label
-                              htmlFor="confirm-new-password"
-                              className="block text-sm font-medium text-[#a89f94] mb-2"
-                            >
-                              Confirm New Password
-                            </label>
-                            <Input
-                              id="confirm-new-password"
-                              type="password"
-                              value={confirmNewPassword}
-                              onChange={(e) => setConfirmNewPassword(e.target.value)}
-                              className={cn(
-                                "bg-black/40 text-[#e8e0d5]",
-                                confirmNewPassword.length > 0 && confirmNewPassword !== newPassword
-                                  ? "border-red-500/50"
-                                  : confirmNewPassword.length > 0 &&
-                                      confirmNewPassword === newPassword
-                                    ? "border-green-500/50"
-                                    : "border-[#3d2b1f]"
-                              )}
-                              placeholder="Confirm new password"
-                              disabled={isChangingPassword}
-                              aria-required="true"
-                              aria-describedby="password-match"
-                            />
-                            {/* Password match indicator */}
-                            {confirmNewPassword.length > 0 && (
-                              <p
-                                id="password-match"
-                                className={cn(
-                                  "text-xs mt-2 flex items-center gap-1.5",
-                                  confirmNewPassword === newPassword
-                                    ? "text-green-400"
-                                    : "text-red-400"
-                                )}
-                              >
-                                {confirmNewPassword === newPassword ? (
-                                  <>
-                                    <Check className="w-3 h-3" />
-                                    Passwords match
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="w-3 h-3 rounded-full bg-red-400 inline-block" />
-                                    Passwords do not match
-                                  </>
-                                )}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Button
-                              type="submit"
-                              className="flex-1 bg-[#d4af37] hover:bg-[#c49d2e] text-black"
-                              disabled={isChangingPassword}
-                            >
-                              {isChangingPassword ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                  Changing...
-                                </>
-                              ) : (
-                                "Change Password"
-                              )}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                setShowPasswordChange(false);
-                                setCurrentPassword("");
-                                setNewPassword("");
-                                setConfirmNewPassword("");
-                              }}
-                              disabled={isChangingPassword}
-                              className="border-[#3d2b1f] text-[#a89f94]"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </form>
-                      )}
+                    <div>
+                      <label
+                        htmlFor="settings-bio"
+                        className="block text-sm font-medium text-[#a89f94] mb-2"
+                      >
+                        Bio
+                      </label>
+                      <textarea
+                        id="settings-bio"
+                        value={bio}
+                        onChange={(e) => {
+                          if (e.target.value.length <= 200) {
+                            setBio(e.target.value);
+                          }
+                        }}
+                        className="w-full px-3 py-2 bg-black/40 border border-[#3d2b1f] rounded-md text-[#e8e0d5] placeholder:text-[#a89f94]/50 focus:outline-none focus:ring-2 focus:ring-[#d4af37]/50 resize-none"
+                        placeholder="Tell others about yourself..."
+                        rows={3}
+                      />
+                      <p className="text-xs text-[#a89f94]/60 mt-1 text-right">
+                        {bio.length}/200 characters
+                      </p>
                     </div>
 
                     <div className="pt-4 border-t border-[#3d2b1f]">
@@ -669,6 +519,166 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
+
+              {/* Wallet Settings */}
+              {activeTab === "wallet" && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-[#e8e0d5] mb-4">Wallet & Security</h2>
+                    <p className="text-[#a89f94] text-sm mb-6">
+                      Manage your connected wallet and token balance
+                    </p>
+                  </div>
+
+                  {isConnected && walletAddress ? (
+                    <div className="space-y-6">
+                      {/* Connected Wallet Card */}
+                      <div className="p-4 rounded-lg bg-black/20 border border-[#d4af37]/30">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-[#d4af37]/20 flex items-center justify-center">
+                            <Shield className="w-5 h-5 text-[#d4af37]" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-[#e8e0d5]">
+                              {walletType === "privy_embedded" ? "Game Wallet (Privy)" : "External Wallet"}
+                            </p>
+                            <p className="text-xs text-[#a89f94]">Connected</p>
+                          </div>
+                          <div className="ml-auto flex items-center gap-2">
+                            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                            <span className="text-xs text-green-400">Active</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 p-3 bg-black/40 rounded-lg">
+                          <code className="flex-1 text-sm text-[#a89f94] font-mono">
+                            {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={copyWalletAddress}
+                            className="text-[#a89f94] hover:text-[#e8e0d5]"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Token Balance */}
+                      <div className="p-4 rounded-lg bg-black/20 border border-[#3d2b1f]">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="font-medium text-[#e8e0d5]">Token Balance</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={refreshBalance}
+                            disabled={isRefreshing}
+                            className="text-[#a89f94] hover:text-[#e8e0d5]"
+                          >
+                            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+                          </Button>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold text-[#d4af37]">
+                            {tokenBalance !== null ? tokenBalance.toLocaleString() : "---"}
+                          </span>
+                          <span className="text-sm text-[#a89f94]">LTCG</span>
+                        </div>
+                        {isStale && (
+                          <p className="text-xs text-yellow-400/70 mt-2 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" />
+                            Balance may be outdated
+                          </p>
+                        )}
+                        {lastVerifiedAt && (
+                          <p className="text-xs text-[#a89f94]/60 mt-1">
+                            Last updated: {new Date(lastVerifiedAt).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Transaction History Link */}
+                      <Link
+                        href="/lunchmoney?tab=transactions"
+                        className="flex items-center justify-between p-4 rounded-lg bg-black/20 border border-[#3d2b1f] hover:border-[#d4af37]/50 transition-colors group"
+                      >
+                        <div>
+                          <p className="font-medium text-[#e8e0d5]">Transaction History</p>
+                          <p className="text-sm text-[#a89f94]">View all token transactions</p>
+                        </div>
+                        <ExternalLink className="w-5 h-5 text-[#a89f94] group-hover:text-[#d4af37] transition-colors" />
+                      </Link>
+
+                      {/* Disconnect Button */}
+                      <div className="pt-4 border-t border-[#3d2b1f]">
+                        {!showDisconnectConfirm ? (
+                          <Button
+                            variant="outline"
+                            className="w-full justify-center border-red-500/30 text-red-400 hover:bg-red-500/10"
+                            onClick={() => setShowDisconnectConfirm(true)}
+                          >
+                            Disconnect Wallet
+                          </Button>
+                        ) : (
+                          <div className="space-y-3">
+                            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                              <p className="text-sm text-red-400">
+                                Are you sure you want to disconnect your wallet? You won&apos;t be
+                                able to trade tokens until you reconnect.
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={handleDisconnectWallet}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                disabled={walletLoading}
+                              >
+                                {walletLoading ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  "Disconnect"
+                                )}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => setShowDisconnectConfirm(false)}
+                                className="border-[#3d2b1f] text-[#a89f94]"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 rounded-full bg-[#3d2b1f] flex items-center justify-center mx-auto mb-4">
+                        <Wallet className="w-8 h-8 text-[#a89f94]" />
+                      </div>
+                      <h3 className="text-lg font-medium text-[#e8e0d5] mb-2">No Wallet Connected</h3>
+                      <p className="text-[#a89f94] text-sm mb-6 max-w-sm mx-auto">
+                        Connect a wallet to trade cards for LTCG tokens and access the token
+                        marketplace.
+                      </p>
+                      <Button
+                        onClick={() => setShowWalletConnect(true)}
+                        className="bg-[#d4af37] hover:bg-[#c49d2e] text-black"
+                      >
+                        <Wallet className="w-4 h-4 mr-2" />
+                        Connect Wallet
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Wallet Connect Dialog */}
+              <WalletConnect
+                open={showWalletConnect}
+                onOpenChange={setShowWalletConnect}
+              />
 
               {/* Notification Settings */}
               {activeTab === "notifications" && (
