@@ -40,8 +40,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
+import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { cn } from "@/lib/utils";
 import type { ColumnDef } from "@/types";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
@@ -56,7 +57,6 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 // =============================================================================
@@ -234,8 +234,8 @@ function ExpiringRoleActions({ role }: { role: ExpiringRole }) {
   const [isExtending, setIsExtending] = useState(false);
   const [isMakingPermanent, setIsMakingPermanent] = useState(false);
 
-  const extendRole = useConvexMutation(apiAny.admin.roles.extendRole);
-  const makeRolePermanent = useConvexMutation(apiAny.admin.roles.makeRolePermanent);
+  const extendRole = useTypedMutation(typedApi.admin.roles.extendRole);
+  const makeRolePermanent = useTypedMutation(typedApi.admin.roles.makeRolePermanent);
 
   const handleQuickExtend = async () => {
     setIsExtending(true);
@@ -330,9 +330,7 @@ function ExpiringRolesAlert({ expiringRoles }: { expiringRoles: ExpiringRole[] }
                     {role.expiresAt && ` (${new Date(role.expiresAt).toLocaleDateString()})`}
                   </span>
                   {role.grantNote && (
-                    <span className="text-xs text-muted-foreground">
-                      Note: {role.grantNote}
-                    </span>
+                    <span className="text-xs text-muted-foreground">Note: {role.grantNote}</span>
                   )}
                 </div>
                 <ExpiringRoleActions role={role} />
@@ -356,7 +354,7 @@ function UserSearchCombobox({
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch player list for search
-  const players = useConvexQuery(apiAny.admin.admin.listPlayers, { limit: 200 }) as
+  const players = useTypedQuery(typedApi.admin.admin.listPlayers, { limit: 200 }) as
     | PlayerOption[]
     | undefined;
 
@@ -368,8 +366,7 @@ function UserSearchCombobox({
     const query = searchQuery.toLowerCase();
     return players.filter(
       (p) =>
-        p.name.toLowerCase().includes(query) ||
-        String(p.playerId).toLowerCase().includes(query)
+        p.name.toLowerCase().includes(query) || String(p.playerId).toLowerCase().includes(query)
     );
   }, [players, searchQuery]);
 
@@ -425,7 +422,8 @@ function UserSearchCombobox({
                   <div className="flex flex-col">
                     <span className="font-medium">{player.name}</span>
                     <span className="text-xs text-muted-foreground">
-                      {String(player.playerId).slice(0, 16)}... | {player.type === "human" ? "Human" : "AI"} | ELO: {player.eloRating}
+                      {String(player.playerId).slice(0, 16)}... |{" "}
+                      {player.type === "human" ? "Human" : "AI"} | ELO: {player.eloRating}
                     </span>
                   </div>
                 </CommandItem>
@@ -449,7 +447,7 @@ function GrantRoleDialog() {
   const [expiresInDays, setExpiresInDays] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const grantRole = useConvexMutation(apiAny.admin.roles.grantRole);
+  const grantRole = useTypedMutation(typedApi.admin.roles.grantRole);
 
   const handleSelectUser = (userId: Id<"users"> | null, displayName: string) => {
     setSelectedUserId(userId);
@@ -498,10 +496,13 @@ function GrantRoleDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      setOpen(isOpen);
-      if (!isOpen) resetForm();
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) resetForm();
+      }}
+    >
       <DialogTrigger asChild>
         <Button>
           <UserPlus className="h-4 w-4 mr-2" />
@@ -537,10 +538,7 @@ function GrantRoleDialog() {
                 onChange={(e) => setManualUserId(e.target.value)}
               />
             ) : (
-              <UserSearchCombobox
-                selectedUserId={selectedUserId}
-                onSelectUser={handleSelectUser}
-              />
+              <UserSearchCombobox selectedUserId={selectedUserId} onSelectUser={handleSelectUser} />
             )}
           </div>
 
@@ -558,9 +556,7 @@ function GrantRoleDialog() {
                       {getRoleIcon(r)}
                       <div>
                         <div>{ROLE_LABELS[r]}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {ROLE_DESCRIPTIONS[r]}
-                        </div>
+                        <div className="text-xs text-muted-foreground">{ROLE_DESCRIPTIONS[r]}</div>
                       </div>
                     </div>
                   </SelectItem>
@@ -628,7 +624,7 @@ function RevokeRoleDialog({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const revokeRole = useConvexMutation(apiAny.admin.roles.revokeRole);
+  const revokeRole = useTypedMutation(typedApi.admin.roles.revokeRole);
 
   const handleRevoke = async () => {
     setIsSubmitting(true);
@@ -657,9 +653,7 @@ function RevokeRoleDialog({
 
       <div className="py-4 space-y-4">
         <div className="p-3 bg-muted rounded-lg">
-          <Text className="font-medium">
-            {admin.username || admin.email || "Unknown User"}
-          </Text>
+          <Text className="font-medium">{admin.username || admin.email || "Unknown User"}</Text>
           <Text className="text-sm font-mono text-muted-foreground">
             {String(admin.userId).slice(0, 20)}...
           </Text>
@@ -700,7 +694,7 @@ function ExtendRoleDialog({
   const [extendDays, setExtendDays] = useState("30");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const extendRole = useConvexMutation(apiAny.admin.roles.extendRole);
+  const extendRole = useTypedMutation(typedApi.admin.roles.extendRole);
 
   const handleExtend = async () => {
     if (!extendDays || Number(extendDays) <= 0) {
@@ -729,16 +723,13 @@ function ExtendRoleDialog({
       <DialogHeader>
         <DialogTitle>Extend Role Expiration</DialogTitle>
         <DialogDescription>
-          Extend the {ROLE_LABELS[admin.role as AdminRoleType] || admin.role} role for this
-          user.
+          Extend the {ROLE_LABELS[admin.role as AdminRoleType] || admin.role} role for this user.
         </DialogDescription>
       </DialogHeader>
 
       <div className="py-4 space-y-4">
         <div className="p-3 bg-muted rounded-lg">
-          <Text className="font-medium">
-            {admin.username || admin.email || "Unknown User"}
-          </Text>
+          <Text className="font-medium">{admin.username || admin.email || "Unknown User"}</Text>
           <div className="mt-2 flex gap-2">
             <RoleBadge role={admin.role} />
             <ExpirationBadge admin={admin} />
@@ -761,9 +752,7 @@ function ExtendRoleDialog({
           {extendDays && Number(extendDays) > 0 && (
             <Text className="text-xs text-muted-foreground">
               New expiration:{" "}
-              {new Date(
-                Date.now() + Number(extendDays) * 24 * 60 * 60 * 1000
-              ).toLocaleString()}
+              {new Date(Date.now() + Number(extendDays) * 24 * 60 * 60 * 1000).toLocaleString()}
             </Text>
           )}
         </div>
@@ -791,7 +780,7 @@ function MakePermanentDialog({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const makeRolePermanent = useConvexMutation(apiAny.admin.roles.makeRolePermanent);
+  const makeRolePermanent = useTypedMutation(typedApi.admin.roles.makeRolePermanent);
 
   const handleMakePermanent = async () => {
     setIsSubmitting(true);
@@ -819,9 +808,7 @@ function MakePermanentDialog({
 
       <div className="py-4 space-y-4">
         <div className="p-3 bg-muted rounded-lg">
-          <Text className="font-medium">
-            {admin.username || admin.email || "Unknown User"}
-          </Text>
+          <Text className="font-medium">{admin.username || admin.email || "Unknown User"}</Text>
           <div className="mt-2 flex gap-2">
             <RoleBadge role={admin.role} />
             <ExpirationBadge admin={admin} />
@@ -837,8 +824,8 @@ function MakePermanentDialog({
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Confirmation Required</AlertTitle>
           <AlertDescription>
-            This action will remove the expiration date. The user will have this role
-            indefinitely until manually revoked.
+            This action will remove the expiration date. The user will have this role indefinitely
+            until manually revoked.
           </AlertDescription>
         </Alert>
       </div>
@@ -856,9 +843,7 @@ function MakePermanentDialog({
 }
 
 function AdminActions({ admin, myRole }: { admin: AdminListItem; myRole: string | null }) {
-  const [actionDialog, setActionDialog] = useState<
-    "revoke" | "extend" | "permanent" | null
-  >(null);
+  const [actionDialog, setActionDialog] = useState<"revoke" | "extend" | "permanent" | null>(null);
 
   // Check if current user can manage this admin
   const myRoleIndex = myRole ? ROLE_HIERARCHY.indexOf(myRole as AdminRoleType) : -1;
@@ -942,7 +927,7 @@ function RoleHierarchyCard() {
 
 function CleanupExpiredButton() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const cleanupExpiredRoles = useConvexMutation(apiAny.admin.roles.cleanupExpiredRoles);
+  const cleanupExpiredRoles = useTypedMutation(typedApi.admin.roles.cleanupExpiredRoles);
 
   const handleCleanup = async () => {
     setIsSubmitting(true);
@@ -971,13 +956,13 @@ export default function AdminManagementPage() {
   const { role: myRole, adminRole } = useAdmin();
 
   // Fetch all admins using the new API
-  const admins = useConvexQuery(apiAny.admin.roles.listAdminsByRole, {}) as
+  const admins = useTypedQuery(typedApi.admin.roles.listAdminsByRole, {}) as
     | AdminListItem[]
     | undefined;
 
   // Fetch expiring roles (only for admins and superadmins)
-  const expiringRoles = useConvexQuery(
-    apiAny.admin.roles.getExpiringRoles,
+  const expiringRoles = useTypedQuery(
+    typedApi.admin.roles.getExpiringRoles,
     adminRole?.isFullAdmin ? { withinDays: 7 } : "skip"
   ) as ExpiringRole[] | undefined;
 
@@ -987,9 +972,7 @@ export default function AdminManagementPage() {
       header: "User",
       cell: (admin: AdminListItem) => (
         <div>
-          <div className="font-medium">
-            {admin.username || admin.email || "Unknown User"}
-          </div>
+          <div className="font-medium">{admin.username || admin.email || "Unknown User"}</div>
           <div className="text-xs font-mono text-muted-foreground">
             {String(admin.userId).slice(0, 16)}...
           </div>

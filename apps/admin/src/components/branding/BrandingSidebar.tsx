@@ -43,7 +43,8 @@ function TreeItem({
     "text-red-500",
     "text-indigo-500",
   ];
-  const iconColor = depth === 0 ? sectionColors[sectionIndex] || "text-primary" : "text-muted-foreground";
+  const iconColor =
+    depth === 0 ? sectionColors[sectionIndex] || "text-primary" : "text-muted-foreground";
 
   return (
     <div>

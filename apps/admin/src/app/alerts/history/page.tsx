@@ -78,19 +78,13 @@ export default function AlertHistoryPage() {
   const limit = 20;
 
   // Fetch alerts and rules
-  const { alerts, total } = useConvexQuery(
-    apiAny.alerts.history.getRecent,
-    {
-      severity: severityFilter !== "all" ? severityFilter : undefined,
-      ruleId: ruleFilter !== "all" ? ruleFilter : undefined,
-      acknowledged:
-        acknowledgedFilter === "all"
-          ? undefined
-          : acknowledgedFilter === "acknowledged",
-      limit,
-      offset: page * limit,
-    }
-  ) ?? { alerts: [], total: 0 };
+  const { alerts, total } = useConvexQuery(apiAny.alerts.history.getRecent, {
+    severity: severityFilter !== "all" ? severityFilter : undefined,
+    ruleId: ruleFilter !== "all" ? ruleFilter : undefined,
+    acknowledged: acknowledgedFilter === "all" ? undefined : acknowledgedFilter === "acknowledged",
+    limit,
+    offset: page * limit,
+  }) ?? { alerts: [], total: 0 };
 
   const rules = useConvexQuery(apiAny.alerts.rules.getAll);
   const stats = useConvexQuery(apiAny.alerts.history.getStats);
@@ -190,9 +184,7 @@ export default function AlertHistoryPage() {
             <CardDescription>Pending</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">
-              {stats?.unacknowledged ?? 0}
-            </div>
+            <div className="text-2xl font-bold text-blue-500">{stats?.unacknowledged ?? 0}</div>
           </CardContent>
         </Card>
       </div>
@@ -284,10 +276,7 @@ export default function AlertHistoryPage() {
                 </TableHeader>
                 <TableBody>
                   {alerts.map((alert: any) => (
-                    <TableRow
-                      key={alert._id}
-                      className={!alert.acknowledged ? "bg-muted/30" : ""}
-                    >
+                    <TableRow key={alert._id} className={!alert.acknowledged ? "bg-muted/30" : ""}>
                       <TableCell>
                         <span className="text-lg">{getSeverityIcon(alert.severity)}</span>
                       </TableCell>
@@ -303,9 +292,7 @@ export default function AlertHistoryPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {alert.ruleName}
-                        </span>
+                        <span className="text-sm text-muted-foreground">{alert.ruleName}</span>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDateTime(alert.triggeredAt)}
@@ -381,8 +368,8 @@ export default function AlertHistoryPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            This page shows all alerts that have been triggered by your alert rules.
-            Acknowledge alerts to mark them as reviewed.
+            This page shows all alerts that have been triggered by your alert rules. Acknowledge
+            alerts to mark them as reviewed.
           </p>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             <li>
@@ -391,12 +378,8 @@ export default function AlertHistoryPage() {
             <li>
               • <strong>Acknowledged</strong>: Alerts that have been marked as seen/handled
             </li>
-            <li>
-              • Use filters to find specific alerts by severity, rule, or status
-            </li>
-            <li>
-              • Acknowledging an alert doesn't resolve the underlying issue
-            </li>
+            <li>• Use filters to find specific alerts by severity, rule, or status</li>
+            <li>• Acknowledging an alert doesn't resolve the underlying issue</li>
           </ul>
         </CardContent>
       </Card>

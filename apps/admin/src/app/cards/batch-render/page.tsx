@@ -7,22 +7,23 @@
  * Shows card data status and enables exporting rendered cards.
  */
 
-import { useState, useMemo, useCallback } from "react";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
-  Image as ImageIcon,
-  CheckCircle,
-  XCircle,
   AlertTriangle,
-  Loader2,
+  CheckCircle,
   FileDown,
+  Image as ImageIcon,
+  Loader2,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -30,14 +31,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 
 // Import card data directly from the data package
 import {
+  ABYSSAL_DEPTHS_CARDS,
   ALL_CARDS,
   INFERNAL_DRAGONS_CARDS,
-  ABYSSAL_DEPTHS_CARDS,
   IRON_LEGION_CARDS,
   NECRO_EMPIRE_CARDS,
   STORM_ELEMENTALS_CARDS,
@@ -201,9 +201,7 @@ export default function BatchRenderPage() {
       // Simulate render delay
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      setRenderJobs((prev) =>
-        prev.map((j, idx) => (idx === i ? { ...j, status: "complete" } : j))
-      );
+      setRenderJobs((prev) => prev.map((j, idx) => (idx === i ? { ...j, status: "complete" } : j)));
 
       setRenderProgress(Math.round(((i + 1) / jobs.length) * 100));
     }

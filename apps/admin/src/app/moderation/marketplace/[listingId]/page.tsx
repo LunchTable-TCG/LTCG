@@ -31,7 +31,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import { formatDistanceToNow, format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { DollarSign, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -40,7 +40,10 @@ import { toast } from "sonner";
 
 type ListingStatus = "active" | "sold" | "cancelled" | "expired";
 
-const STATUS_BADGES: Record<ListingStatus, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+const STATUS_BADGES: Record<
+  ListingStatus,
+  { variant: "default" | "secondary" | "destructive" | "outline"; label: string }
+> = {
   active: { variant: "default", label: "Active" },
   sold: { variant: "secondary", label: "Sold" },
   cancelled: { variant: "destructive", label: "Cancelled" },
@@ -68,7 +71,9 @@ export default function ListingDetailPage() {
   // Refund bid dialog state
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const [refundBidId, setRefundBidId] = useState<string | null>(null);
-  const [refundBidInfo, setRefundBidInfo] = useState<{ username: string; amount: number } | null>(null);
+  const [refundBidInfo, setRefundBidInfo] = useState<{ username: string; amount: number } | null>(
+    null
+  );
   const [refundReason, setRefundReason] = useState("");
 
   // Price cap dialog state
@@ -161,7 +166,7 @@ export default function ListingDetailPage() {
   const handleSetPriceCap = async () => {
     if (!listing?.cardDefinitionId || !priceCapAmount || !priceCapReason) return;
 
-    const maxPrice = parseInt(priceCapAmount, 10);
+    const maxPrice = Number.parseInt(priceCapAmount, 10);
     if (isNaN(maxPrice) || maxPrice <= 0) {
       toast.error("Please enter a valid price cap amount");
       return;
@@ -174,7 +179,9 @@ export default function ListingDetailPage() {
         maxPrice,
         reason: priceCapReason,
       });
-      toast.success(`Price cap of ${formatGold(maxPrice)} set for ${listing.card?.name || "this card"}`);
+      toast.success(
+        `Price cap of ${formatGold(maxPrice)} set for ${listing.card?.name || "this card"}`
+      );
       setPriceCapDialogOpen(false);
       setPriceCapAmount("");
       setPriceCapReason("");
@@ -202,9 +209,10 @@ export default function ListingDetailPage() {
     );
   }
 
-  const priceDeviation = listing.priceStats.avgActivePrice > 0
-    ? Math.round((listing.price / listing.priceStats.avgActivePrice) * 100) / 100
-    : 0;
+  const priceDeviation =
+    listing.priceStats.avgActivePrice > 0
+      ? Math.round((listing.price / listing.priceStats.avgActivePrice) * 100) / 100
+      : 0;
 
   const isAnomalous = priceDeviation >= 3;
 
@@ -227,7 +235,10 @@ export default function ListingDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={STATUS_BADGES[listing.status as ListingStatus].variant} className="text-lg px-4 py-1">
+          <Badge
+            variant={STATUS_BADGES[listing.status as ListingStatus].variant}
+            className="text-lg px-4 py-1"
+          >
             {STATUS_BADGES[listing.status as ListingStatus].label}
           </Badge>
           {isAnomalous && (
@@ -274,9 +285,7 @@ export default function ListingDetailPage() {
                   {listing.seller && (
                     <Badge
                       variant={
-                        listing.seller.accountStatus === "active"
-                          ? "default"
-                          : "destructive"
+                        listing.seller.accountStatus === "active" ? "default" : "destructive"
                       }
                       className="mt-1"
                     >
@@ -299,9 +308,7 @@ export default function ListingDetailPage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Price</Label>
-                  <p className="font-medium text-lg">
-                    {formatGold(listing.price)} gold
-                  </p>
+                  <p className="font-medium text-lg">{formatGold(listing.price)} gold</p>
                 </div>
               </div>
 
@@ -317,16 +324,12 @@ export default function ListingDetailPage() {
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Highest Bidder</Label>
-                      <p className="font-medium">
-                        {listing.highestBidderUsername ?? "N/A"}
-                      </p>
+                      <p className="font-medium">{listing.highestBidderUsername ?? "N/A"}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Ends At</Label>
                       <p className="font-medium">
-                        {listing.endsAt
-                          ? format(new Date(listing.endsAt), "PPpp")
-                          : "N/A"}
+                        {listing.endsAt ? format(new Date(listing.endsAt), "PPpp") : "N/A"}
                       </p>
                     </div>
                   </div>
@@ -346,9 +349,7 @@ export default function ListingDetailPage() {
                     <div>
                       <Label className="text-muted-foreground">Sold At</Label>
                       <p className="font-medium">
-                        {listing.soldAt
-                          ? format(new Date(listing.soldAt), "PPpp")
-                          : "N/A"}
+                        {listing.soldAt ? format(new Date(listing.soldAt), "PPpp") : "N/A"}
                       </p>
                     </div>
                   </div>
@@ -359,9 +360,7 @@ export default function ListingDetailPage() {
 
               <div>
                 <Label className="text-muted-foreground">Listed</Label>
-                <p className="font-medium">
-                  {format(new Date(listing._creationTime), "PPpp")}
-                </p>
+                <p className="font-medium">{format(new Date(listing._creationTime), "PPpp")}</p>
                 <p className="text-sm text-muted-foreground">
                   {formatDistanceToNow(new Date(listing._creationTime), { addSuffix: true })}
                 </p>
@@ -394,7 +393,8 @@ export default function ListingDetailPage() {
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">Price Range</p>
                   <p className="text-xl font-bold">
-                    {formatGold(listing.priceStats.minActivePrice)} - {formatGold(listing.priceStats.maxActivePrice)}
+                    {formatGold(listing.priceStats.minActivePrice)} -{" "}
+                    {formatGold(listing.priceStats.maxActivePrice)}
                   </p>
                 </div>
                 <div className="p-4 bg-muted rounded-lg">
@@ -413,7 +413,8 @@ export default function ListingDetailPage() {
                 <div className="p-4 border rounded-lg">
                   <p className="text-sm text-muted-foreground mb-1">Recent Sales</p>
                   <p className="text-xl font-medium">
-                    {listing.priceStats.recentSales} at avg {formatGold(listing.priceStats.avgSalePrice)}
+                    {listing.priceStats.recentSales} at avg{" "}
+                    {formatGold(listing.priceStats.avgSalePrice)}
                   </p>
                 </div>
               </div>
@@ -425,9 +426,7 @@ export default function ListingDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Bid History</CardTitle>
-                <CardDescription>
-                  {listing.bids.length} bids on this listing
-                </CardDescription>
+                <CardDescription>{listing.bids.length} bids on this listing</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -441,60 +440,64 @@ export default function ListingDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {listing.bids.map((bid: {
-                      _id: string;
-                      bidderId: string;
-                      bidderUsername: string;
-                      bidAmount: number;
-                      bidStatus: string;
-                      createdAt: number;
-                    }) => (
-                      <TableRow key={bid._id}>
-                        <TableCell>
-                          <Link
-                            href={`/players/${bid.bidderId}`}
-                            className="text-primary hover:underline"
-                          >
-                            {bid.bidderUsername}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {formatGold(bid.bidAmount)} gold
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              bid.bidStatus === "active"
-                                ? "default"
-                                : bid.bidStatus === "won"
-                                  ? "secondary"
-                                  : bid.bidStatus === "refunded"
-                                    ? "destructive"
-                                    : "outline"
-                            }
-                          >
-                            {bid.bidStatus}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDistanceToNow(new Date(bid.createdAt), {
-                            addSuffix: true,
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {bid.bidStatus !== "refunded" && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => openRefundDialog(bid._id, bid.bidderUsername, bid.bidAmount)}
+                    {listing.bids.map(
+                      (bid: {
+                        _id: string;
+                        bidderId: string;
+                        bidderUsername: string;
+                        bidAmount: number;
+                        bidStatus: string;
+                        createdAt: number;
+                      }) => (
+                        <TableRow key={bid._id}>
+                          <TableCell>
+                            <Link
+                              href={`/players/${bid.bidderId}`}
+                              className="text-primary hover:underline"
                             >
-                              <RefreshCw className="mr-1 h-3 w-3" />
-                              Refund
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                              {bid.bidderUsername}
+                            </Link>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {formatGold(bid.bidAmount)} gold
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                bid.bidStatus === "active"
+                                  ? "default"
+                                  : bid.bidStatus === "won"
+                                    ? "secondary"
+                                    : bid.bidStatus === "refunded"
+                                      ? "destructive"
+                                      : "outline"
+                              }
+                            >
+                              {bid.bidStatus}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDistanceToNow(new Date(bid.createdAt), {
+                              addSuffix: true,
+                            })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {bid.bidStatus !== "refunded" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  openRefundDialog(bid._id, bid.bidderUsername, bid.bidAmount)
+                                }
+                              >
+                                <RefreshCw className="mr-1 h-3 w-3" />
+                                Refund
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -562,9 +565,7 @@ export default function ListingDetailPage() {
                   <p>
                     <Badge
                       variant={
-                        listing.seller.accountStatus === "active"
-                          ? "default"
-                          : "destructive"
+                        listing.seller.accountStatus === "active" ? "default" : "destructive"
                       }
                     >
                       {listing.seller.accountStatus}
@@ -577,9 +578,7 @@ export default function ListingDetailPage() {
                 </div>
                 <Separator />
                 <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link href={`/players/${listing.seller._id}`}>
-                    View Seller Profile
-                  </Link>
+                  <Link href={`/players/${listing.seller._id}`}>View Seller Profile</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -684,10 +683,7 @@ export default function ListingDetailPage() {
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleRefundBid}
-              disabled={!refundReason || isSubmitting}
-            >
+            <Button onClick={handleRefundBid} disabled={!refundReason || isSubmitting}>
               <RefreshCw className="mr-2 h-4 w-4" />
               {isSubmitting ? "Processing..." : "Refund Bid"}
             </Button>
@@ -701,8 +697,8 @@ export default function ListingDetailPage() {
           <DialogHeader>
             <DialogTitle>Set Price Cap</DialogTitle>
             <DialogDescription>
-              Set a maximum price for {listing.card?.name || "this card"}.
-              Listings above this price may be flagged or prevented.
+              Set a maximum price for {listing.card?.name || "this card"}. Listings above this price
+              may be flagged or prevented.
             </DialogDescription>
           </DialogHeader>
 
@@ -719,9 +715,7 @@ export default function ListingDetailPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">This Listing:</span>
-              <span className="font-medium text-yellow-500">
-                {formatGold(listing.price)} gold
-              </span>
+              <span className="font-medium text-yellow-500">{formatGold(listing.price)} gold</span>
             </div>
           </div>
 
@@ -737,7 +731,8 @@ export default function ListingDetailPage() {
                 min={1}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Suggested: {formatGold(Math.round(listing.priceStats.avgActivePrice * 2))} gold (2x average)
+                Suggested: {formatGold(Math.round(listing.priceStats.avgActivePrice * 2))} gold (2x
+                average)
               </p>
             </div>
 

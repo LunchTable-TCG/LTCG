@@ -840,57 +840,29 @@
 }
 
 .tcg-scrollbar::-webkit-scrollbar-track {
-  background: linear-gradient(
-    90deg,
-    #0d0a08 0%,
-    #1a1311 50%,
-    #0d0a08 100%
-  );
+  background: linear-gradient(90deg, #0d0a08 0%, #1a1311 50%, #0d0a08 100%);
   border-left: 1px solid rgba(139, 69, 19, 0.3);
   border-right: 1px solid rgba(139, 69, 19, 0.3);
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
 }
 
 .tcg-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    #d4af37 0%,
-    #8b6914 30%,
-    #5c4a1f 70%,
-    #3d2b1f 100%
-  );
+  background: linear-gradient(180deg, #d4af37 0%, #8b6914 30%, #5c4a1f 70%, #3d2b1f 100%);
   border: 1px solid rgba(212, 175, 55, 0.4);
   border-radius: 6px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
-    0 2px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.3), 0 2px 4px
+    rgba(0, 0, 0, 0.4);
 }
 
 .tcg-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    #e8c84a 0%,
-    #a87d1a 30%,
-    #6d5a2a 70%,
-    #4d3b2f 100%
-  );
+  background: linear-gradient(180deg, #e8c84a 0%, #a87d1a 30%, #6d5a2a 70%, #4d3b2f 100%);
   border-color: rgba(212, 175, 55, 0.7);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
-    0 0 8px rgba(212, 175, 55, 0.3),
-    0 2px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.3), 0 0 8px
+    rgba(212, 175, 55, 0.3), 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .tcg-scrollbar::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(
-    180deg,
-    #c9a030 0%,
-    #7a6012 30%,
-    #4c3a18 70%,
-    #2d1b0f 100%
-  );
+  background: linear-gradient(180deg, #c9a030 0%, #7a6012 30%, #4c3a18 70%, #2d1b0f 100%);
 }
 
 /* TCG Scrollbar corner (where horizontal and vertical meet) */
@@ -915,22 +887,113 @@
 }
 
 .tcg-scrollbar-thin::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    #a08030 0%,
-    #6b5020 50%,
-    #4a3515 100%
-  );
+  background: linear-gradient(180deg, #a08030 0%, #6b5020 50%, #4a3515 100%);
   border: 1px solid rgba(212, 175, 55, 0.3);
   border-radius: 4px;
 }
 
 .tcg-scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    #c9a030 0%,
-    #8b6914 50%,
-    #5c4a1f 100%
-  );
+  background: linear-gradient(180deg, #c9a030 0%, #8b6914 50%, #5c4a1f 100%);
   border-color: rgba(212, 175, 55, 0.5);
+}
+
+/* ============================================================================
+   EFFECT FEEDBACK ANIMATIONS
+   Animations for visual feedback during card effect resolution
+   ============================================================================ */
+
+@keyframes stat-boost {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.8);
+  }
+}
+
+@keyframes card-glow {
+  0% {
+    opacity: 0;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 20px 5px currentColor;
+  }
+  100% {
+    opacity: 0;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+}
+
+@keyframes card-flash {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  25%,
+  75% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes card-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes effect-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+.animate-stat-boost {
+  animation: stat-boost 0.8s ease-out;
+}
+
+.animate-card-glow {
+  animation: card-glow 1s ease-in-out;
+}
+
+.animate-card-flash {
+  animation: card-flash 0.6s ease-in-out;
+}
+
+.animate-card-shake {
+  animation: card-shake 0.5s ease-in-out;
+}
+
+.animate-effect-pulse {
+  animation: effect-pulse 2s ease-in-out infinite;
 }

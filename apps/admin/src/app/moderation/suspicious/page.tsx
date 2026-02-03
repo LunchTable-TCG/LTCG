@@ -12,8 +12,8 @@ import { PageWrapper } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { AbnormalRatingChange, ColumnDef, SuspiciousMatchup } from "@/types";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import type { AbnormalRatingChange, ColumnDef, SuspiciousMatchup } from "@/types";
 import { Card, Flex, Text, Title } from "@tremor/react";
 import { useRouter } from "next/navigation";
 

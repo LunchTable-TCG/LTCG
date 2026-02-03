@@ -6,9 +6,9 @@
  * Renders the card artwork preview area with optional clipping.
  */
 
-import { Layer, Group, Rect, Image, Text } from "react-konva";
+import { Group, Image, Layer, Rect, Text } from "react-konva";
 import useImage from "use-image";
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../../types";
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../../types";
 
 interface ArtworkBounds {
   x: number;
@@ -32,11 +32,7 @@ function toPixels(percent: number, dimension: "width" | "height") {
   return (percent / 100) * base;
 }
 
-export function ArtworkLayer({
-  artworkBounds,
-  artworkUrl,
-  showBounds,
-}: ArtworkLayerProps) {
+export function ArtworkLayer({ artworkBounds, artworkUrl, showBounds }: ArtworkLayerProps) {
   // Load artwork image
   const [artworkImage, status] = useImage(artworkUrl ?? "", "anonymous");
 
@@ -57,13 +53,7 @@ export function ArtworkLayer({
         {/* Artwork placeholder */}
         {(!artworkImage || status === "loading") && (
           <>
-            <Rect
-              x={x}
-              y={y}
-              width={width}
-              height={height}
-              fill="#2a2a4a"
-            />
+            <Rect x={x} y={y} width={width} height={height} fill="#2a2a4a" />
             <Text
               x={x}
               y={y + height / 2 - 10}
@@ -80,13 +70,7 @@ export function ArtworkLayer({
 
         {/* Artwork image */}
         {artworkImage && status === "loaded" && (
-          <Image
-            image={artworkImage}
-            x={x}
-            y={y}
-            width={width}
-            height={height}
-          />
+          <Image image={artworkImage} x={x} y={y} width={width} height={height} />
         )}
       </Group>
 

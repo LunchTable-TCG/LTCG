@@ -119,10 +119,7 @@ export function useInbox(): UseInboxReturn {
     isAuthenticated ? { limit: 100 } : "skip"
   ) as InboxMessage[] | undefined;
 
-  const unreadCountQuery = useQuery(
-    api.social.inbox.getUnreadCount,
-    isAuthenticated ? {} : "skip"
-  );
+  const unreadCountQuery = useQuery(api.social.inbox.getUnreadCount, isAuthenticated ? {} : "skip");
 
   // Mutations
   const markAsReadMutation = useMutation(api.social.inbox.markAsRead);

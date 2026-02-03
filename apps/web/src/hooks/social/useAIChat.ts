@@ -1,12 +1,11 @@
 "use client";
 
+import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { handleHookError, logError } from "@/lib/errorHandling";
-import { useConvexMutation, useConvexQuery, apiAny } from "@/lib/convexHelpers";
-import { useQuery } from "convex/react";
+import { usePrivy } from "@privy-io/react-auth";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
-import { usePrivy } from "@privy-io/react-auth";
 
 interface AIMessage {
   _id: string;
@@ -60,23 +59,23 @@ export function useAIChat(): UseAIChatReturn {
   const [isAgentTyping, setIsAgentTyping] = useState(false);
 
   // Get the current user from Convex for the userId
-  const currentUser = useQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useTypedQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
   const userId = currentUser?._id;
 
   // Get active session
-  const activeSession = useConvexQuery(apiAny.social.aiChat.getActiveSession, {});
+  const activeSession = useTypedQuery(typedApi.social.aiChat.getActiveSession, {});
   const sessionId = activeSession?.sessionId ?? null;
 
   // Get messages for current session
-  const messagesData = useConvexQuery(
-    apiAny.social.aiChat.getSessionMessages,
+  const messagesData = useTypedQuery(
+    typedApi.social.aiChat.getSessionMessages,
     sessionId ? { sessionId } : "skip"
   );
 
   // Mutations
-  const sendUserMessageMutation = useConvexMutation(apiAny.social.aiChat.sendUserMessage);
-  const createSessionMutation = useConvexMutation(apiAny.social.aiChat.createSession);
-  const endSessionMutation = useConvexMutation(apiAny.social.aiChat.endSession);
+  const sendUserMessageMutation = useTypedMutation(typedApi.social.aiChat.sendUserMessage);
+  const createSessionMutation = useTypedMutation(typedApi.social.aiChat.createSession);
+  const endSessionMutation = useTypedMutation(typedApi.social.aiChat.endSession);
 
   /**
    * Send a message to the AI agent.
@@ -173,12 +172,14 @@ export function useAIChat(): UseAIChatReturn {
   }, [isAuthenticated, sessionId, endSessionMutation]);
 
   // Transform messages to expected format
-  const messages: AIMessage[] = (messagesData ?? []).map((m: { _id: string; role: "user" | "agent"; message: string; createdAt: number }) => ({
-    _id: m._id,
-    role: m.role,
-    message: m.message,
-    createdAt: m.createdAt,
-  }));
+  const messages: AIMessage[] = (messagesData ?? []).map(
+    (m: { _id: string; role: "user" | "agent"; message: string; createdAt: number }) => ({
+      _id: m._id,
+      role: m.role,
+      message: m.message,
+      createdAt: m.createdAt,
+    })
+  );
 
   return {
     messages,

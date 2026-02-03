@@ -9,26 +9,26 @@ import {
   GAME_CONSTANTS,
   GAME_ZONES,
   GLOSSARY,
+  type GlossaryTerm,
   TURN_PHASES,
   searchGlossary,
-  type GlossaryTerm,
 } from "@/lib/game-rules";
 import { cn } from "@/lib/utils";
 import {
   BookOpenIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  FlameIcon,
-  DropletIcon,
-  MountainIcon,
-  WindIcon,
   CircleIcon,
+  DropletIcon,
+  FlameIcon,
+  MountainIcon,
+  PlayIcon,
   SearchIcon,
-  SwordsIcon,
   ShieldIcon,
   SparklesIcon,
+  SwordsIcon,
+  WindIcon,
   ZapIcon,
-  PlayIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -50,8 +50,10 @@ function QuickStartSection() {
         <h3 className="font-semibold text-lg text-white mb-1">Your Goal</h3>
         <p className="text-slate-300">
           Reduce your opponent's <strong className="text-amber-400">Life Points (LP)</strong> from{" "}
-          <strong className="text-amber-400">{GAME_CONSTANTS.STARTING_LIFE_POINTS.toLocaleString()}</strong> to{" "}
-          <strong className="text-red-400">0</strong> to win the game.
+          <strong className="text-amber-400">
+            {GAME_CONSTANTS.STARTING_LIFE_POINTS.toLocaleString()}
+          </strong>{" "}
+          to <strong className="text-red-400">0</strong> to win the game.
         </p>
       </div>
 
@@ -265,8 +267,8 @@ function SummoningContent() {
       <div className="bg-slate-800/30 rounded-lg p-4">
         <h4 className="font-semibold text-amber-400 mb-2">Flip Summon</h4>
         <p className="text-slate-300">
-          If you have a face-down creature in Defense Position, you can Flip Summon it to
-          face-up Attack Position during your Main Phase. This triggers any "Flip Effects" the creature has.
+          If you have a face-down creature in Defense Position, you can Flip Summon it to face-up
+          Attack Position during your Main Phase. This triggers any "Flip Effects" the creature has.
         </p>
       </div>
     </div>
@@ -277,8 +279,8 @@ function CombatContent() {
   return (
     <div className="space-y-4">
       <p className="text-slate-300">
-        During your Battle Phase, each creature in Attack Position can attack once.
-        The outcome depends on the positions and stats of the creatures involved.
+        During your Battle Phase, each creature in Attack Position can attack once. The outcome
+        depends on the positions and stats of the creatures involved.
       </p>
 
       <div className="grid gap-3">
@@ -427,19 +429,11 @@ function CoreRulesSection() {
         <TurnPhasesContent />
       </ExpandableSection>
 
-      <ExpandableSection
-        id="summoning"
-        title="Summoning"
-        icon={<ZapIcon className="h-5 w-5" />}
-      >
+      <ExpandableSection id="summoning" title="Summoning" icon={<ZapIcon className="h-5 w-5" />}>
         <SummoningContent />
       </ExpandableSection>
 
-      <ExpandableSection
-        id="combat"
-        title="Combat"
-        icon={<SwordsIcon className="h-5 w-5" />}
-      >
+      <ExpandableSection id="combat" title="Combat" icon={<SwordsIcon className="h-5 w-5" />}>
         <CombatContent />
       </ExpandableSection>
 
@@ -481,8 +475,9 @@ function AdvancedRulesSection() {
       >
         <div className="space-y-4">
           <p className="text-slate-300">
-            When multiple effects activate in response to each other, they form a "chain."
-            Chains resolve in <strong className="text-amber-400">reverse order</strong> (last-in, first-out).
+            When multiple effects activate in response to each other, they form a "chain." Chains
+            resolve in <strong className="text-amber-400">reverse order</strong> (last-in,
+            first-out).
           </p>
           <div className="bg-slate-800/30 rounded-lg p-4">
             <h5 className="font-medium text-amber-400 mb-2">Example:</h5>
@@ -555,15 +550,15 @@ function AdvancedRulesSection() {
           <div className="bg-slate-800/30 rounded-lg p-4">
             <h5 className="font-medium text-amber-400 mb-2">Trigger Effects</h5>
             <p className="text-sm text-slate-300">
-              Activate automatically when their condition is met (e.g., "When this card is destroyed").
-              Multiple triggers of the same timing form a chain.
+              Activate automatically when their condition is met (e.g., "When this card is
+              destroyed"). Multiple triggers of the same timing form a chain.
             </p>
           </div>
           <div className="bg-slate-800/30 rounded-lg p-4">
             <h5 className="font-medium text-amber-400 mb-2">Continuous Effects</h5>
             <p className="text-sm text-slate-300">
-              Always active while the card is face-up on the field. Don't use the chain.
-              Examples: ATK/DEF boosts, restrictions.
+              Always active while the card is face-up on the field. Don't use the chain. Examples:
+              ATK/DEF boosts, restrictions.
             </p>
           </div>
           <div className="bg-slate-800/30 rounded-lg p-4">
@@ -626,9 +621,7 @@ function ElementsSection() {
               ))}
             </div>
             {element.starterDeck && (
-              <p className="text-xs text-amber-400 mt-2">
-                Starter Deck: {element.starterDeck}
-              </p>
+              <p className="text-xs text-amber-400 mt-2">Starter Deck: {element.starterDeck}</p>
             )}
           </div>
         ))}
@@ -653,17 +646,14 @@ function GlossarySection() {
     }
   }, [searchQuery]);
 
-  const groupedTerms = filteredTerms.reduce<Record<string, GlossaryTerm[]>>(
-    (acc, term) => {
-      const category = term.category;
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category]!.push(term);
-      return acc;
-    },
-    {}
-  );
+  const groupedTerms = filteredTerms.reduce<Record<string, GlossaryTerm[]>>((acc, term) => {
+    const category = term.category;
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category]!.push(term);
+    return acc;
+  }, {});
 
   const categoryLabels: Record<string, string> = {
     stats: "Stats",
@@ -732,9 +722,7 @@ function GlossarySection() {
       </div>
 
       {filteredTerms.length === 0 && (
-        <p className="text-center text-slate-400 py-8">
-          No terms found matching "{searchQuery}"
-        </p>
+        <p className="text-center text-slate-400 py-8">No terms found matching "{searchQuery}"</p>
       )}
     </section>
   );
@@ -793,9 +781,7 @@ export default function HowToPlayPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">How to Play</h1>
-          <p className="text-slate-400">
-            Learn the rules of LunchTable Card Game
-          </p>
+          <p className="text-slate-400">Learn the rules of LunchTable Card Game</p>
         </div>
 
         {/* Main content with sidebar */}

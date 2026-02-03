@@ -10,7 +10,7 @@
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import { getTributeCount, canChangePosition } from "../lib/cardPropertyHelpers";
+import { canChangePosition, getTributeCount } from "../lib/cardPropertyHelpers";
 
 export interface ValidationResult {
   valid: boolean;

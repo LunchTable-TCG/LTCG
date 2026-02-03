@@ -755,7 +755,11 @@ async function executePhaseTriggeredEffects(
     // Check each effect in the ability for matching trigger
     for (const parsedEffect of parsedAbility.effects) {
       // Check if this effect triggers during this phase
-      if (parsedEffect.trigger !== triggerCondition) continue;
+      // Support both standard trigger names and aliases
+      const matchesTrigger =
+        parsedEffect.trigger === triggerCondition ||
+        (phase === "battle_start" && parsedEffect.trigger === "on_enter_battle_phase");
+      if (!matchesTrigger) continue;
       // Get refreshed game state
       const refreshedState = await ctx.db
         .query("gameStates")

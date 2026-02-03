@@ -241,12 +241,8 @@ export default function TreasuryWalletsPage() {
                       <SelectItem value="distribution">
                         🎁 Distribution - Rewards & airdrops
                       </SelectItem>
-                      <SelectItem value="liquidity">
-                        💧 Liquidity - LP & bonding curve
-                      </SelectItem>
-                      <SelectItem value="reserves">
-                        🏦 Reserves - General reserves
-                      </SelectItem>
+                      <SelectItem value="liquidity">💧 Liquidity - LP & bonding curve</SelectItem>
+                      <SelectItem value="reserves">🏦 Reserves - General reserves</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -408,11 +404,7 @@ export default function TreasuryWalletsPage() {
                         {wallet.status === "active" ? "🔒 Freeze" : "🔓 Unfreeze"}
                       </Button>
                       {wallet.address && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          asChild
-                        >
+                        <Button variant="outline" size="sm" asChild>
                           <a
                             href={`https://solscan.io/account/${wallet.address}`}
                             target="_blank"
@@ -433,12 +425,7 @@ export default function TreasuryWalletsPage() {
                       🔄 Retry Creation
                     </Button>
                   ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      disabled
-                    >
+                    <Button variant="outline" size="sm" className="flex-1" disabled>
                       Creating...
                     </Button>
                   )}
@@ -472,7 +459,8 @@ export default function TreasuryWalletsPage() {
           </Text>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             <li>
-              • <strong>Fee Collection</strong>: Receives platform fees from marketplace transactions
+              • <strong>Fee Collection</strong>: Receives platform fees from marketplace
+              transactions
             </li>
             <li>
               • <strong>Distribution</strong>: Sends rewards, airdrops, and promotional funds

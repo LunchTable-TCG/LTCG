@@ -84,9 +84,7 @@ function CreateBattlePassDialog({ open, onOpenChange }: CreateBattlePassDialogPr
     apiAny.admin.battlePass.getAvailableSeasonsForBattlePass,
     {}
   );
-  const createBattlePass = useConvexMutation(
-    apiAny.admin.battlePass.createBattlePassSeason
-  );
+  const createBattlePass = useConvexMutation(apiAny.admin.battlePass.createBattlePassSeason);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,9 +99,9 @@ function CreateBattlePassDialog({ open, onOpenChange }: CreateBattlePassDialogPr
         seasonId: seasonId as any,
         name,
         description: description || undefined,
-        totalTiers: parseInt(totalTiers, 10),
-        xpPerTier: parseInt(xpPerTier, 10),
-        premiumPrice: parseInt(premiumPrice, 10),
+        totalTiers: Number.parseInt(totalTiers, 10),
+        xpPerTier: Number.parseInt(xpPerTier, 10),
+        premiumPrice: Number.parseInt(premiumPrice, 10),
         useDefaultRewards,
       });
 
@@ -300,12 +298,7 @@ function BattlePassActions({ battlePass }: BattlePassActionsProps) {
       <div className="flex gap-2">
         {battlePass.status === "upcoming" && (
           <RoleGuard permission="config.edit">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={handleActivate}
-              disabled={isActivating}
-            >
+            <Button size="sm" variant="default" onClick={handleActivate} disabled={isActivating}>
               <PlayIcon className="h-3 w-3 mr-1" />
               {isActivating ? "Activating..." : "Activate"}
             </Button>
@@ -344,23 +337,15 @@ function BattlePassActions({ battlePass }: BattlePassActionsProps) {
           <DialogHeader>
             <DialogTitle>End Battle Pass "{battlePass.name}"?</DialogTitle>
             <DialogDescription>
-              This will end the battle pass and prevent players from earning more progress.
-              Players will keep their current progress and claimed rewards.
+              This will end the battle pass and prevent players from earning more progress. Players
+              will keep their current progress and claimed rewards.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowEndConfirm(false)}
-              disabled={isEnding}
-            >
+            <Button variant="outline" onClick={() => setShowEndConfirm(false)} disabled={isEnding}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleEnd}
-              disabled={isEnding}
-            >
+            <Button variant="destructive" onClick={handleEnd} disabled={isEnding}>
               {isEnding ? "Ending..." : "End Battle Pass"}
             </Button>
           </DialogFooter>
@@ -387,10 +372,7 @@ export default function BattlePassPage() {
   const isLoading = battlePassResult === undefined;
 
   return (
-    <PageWrapper
-      title="Battle Pass"
-      description="Manage battle pass seasons and rewards"
-    >
+    <PageWrapper title="Battle Pass" description="Manage battle pass seasons and rewards">
       <div className="space-y-6">
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
@@ -457,7 +439,9 @@ export default function BattlePassPage() {
                 </div>
               </div>
               <Button asChild>
-                <Link href={`/battle-pass/${battlePassResult?.battlePasses.find((bp: any) => bp.status === "active")?._id}`}>
+                <Link
+                  href={`/battle-pass/${battlePassResult?.battlePasses.find((bp: any) => bp.status === "active")?._id}`}
+                >
                   Manage Active
                 </Link>
               </Button>
@@ -554,9 +538,7 @@ export default function BattlePassPage() {
                           </div>
                         </td>
                         <td className="py-3 px-3">
-                          <Badge color={statusConfig.color}>
-                            {statusConfig.label}
-                          </Badge>
+                          <Badge color={statusConfig.color}>{statusConfig.label}</Badge>
                         </td>
                         <td className="py-3 px-3 text-center">
                           <div className="flex items-center justify-center gap-1">
@@ -570,12 +552,8 @@ export default function BattlePassPage() {
                             {bp.premiumPrice?.toLocaleString() ?? 0}
                           </div>
                         </td>
-                        <td className="py-3 px-3 text-center text-muted-foreground">
-                          -
-                        </td>
-                        <td className="py-3 px-3 text-center text-muted-foreground">
-                          -
-                        </td>
+                        <td className="py-3 px-3 text-center text-muted-foreground">-</td>
+                        <td className="py-3 px-3 text-center text-muted-foreground">-</td>
                         <td className="py-3 px-3 text-right">
                           <BattlePassActions battlePass={bp} />
                         </td>

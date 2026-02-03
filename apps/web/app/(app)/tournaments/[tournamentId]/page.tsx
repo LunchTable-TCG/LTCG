@@ -141,15 +141,11 @@ export default function TournamentDetailPage() {
   const StatusIcon = statusConfig.icon;
 
   const totalPrize =
-    tournament.prizePool.first +
-    tournament.prizePool.second +
-    tournament.prizePool.thirdFourth * 2;
+    tournament.prizePool.first + tournament.prizePool.second + tournament.prizePool.thirdFourth * 2;
 
   const canRegister = tournament.status === "registration" && !tournament.isRegistered;
   const canCheckIn =
-    tournament.status === "checkin" &&
-    tournament.isRegistered &&
-    !tournament.isCheckedIn;
+    tournament.status === "checkin" && tournament.isRegistered && !tournament.isCheckedIn;
 
   // Find user's current match if they're in the tournament
   const userCurrentMatch = bracket?.rounds
@@ -351,7 +347,9 @@ export default function TournamentDetailPage() {
             <div className="text-center p-4 rounded-lg bg-amber-600/10 border border-amber-600/20">
               <Medal className="w-8 h-8 text-amber-500 mx-auto mb-2" />
               <p className="text-xs text-[#a89f94] uppercase tracking-wider mb-1">3rd-4th Place</p>
-              <p className="text-2xl font-black text-amber-500">{tournament.prizePool.thirdFourth}</p>
+              <p className="text-2xl font-black text-amber-500">
+                {tournament.prizePool.thirdFourth}
+              </p>
               <p className="text-xs text-amber-500/60">Gold each</p>
             </div>
           </div>
@@ -372,7 +370,8 @@ export default function TournamentDetailPage() {
             </div>
             {tournament.secondPlaceUsername && (
               <p className="text-center text-sm text-[#a89f94] mt-3">
-                Runner-up: <span className="text-gray-300 font-bold">{tournament.secondPlaceUsername}</span>
+                Runner-up:{" "}
+                <span className="text-gray-300 font-bold">{tournament.secondPlaceUsername}</span>
               </p>
             )}
           </div>
@@ -483,9 +482,7 @@ export default function TournamentDetailPage() {
                               <span className="text-xs ml-2">(You)</span>
                             )}
                           </p>
-                          <p className="text-xs text-[#a89f94]">
-                            Rating: {participant.seedRating}
-                          </p>
+                          <p className="text-xs text-[#a89f94]">Rating: {participant.seedRating}</p>
                         </div>
                       </div>
 
@@ -512,7 +509,8 @@ export default function TournamentDetailPage() {
                             "px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider",
                             participant.status === "winner"
                               ? "bg-[#d4af37]/20 text-[#d4af37]"
-                              : participant.status === "checked_in" || participant.status === "active"
+                              : participant.status === "checked_in" ||
+                                  participant.status === "active"
                                 ? "bg-green-500/20 text-green-400"
                                 : participant.status === "eliminated"
                                   ? "bg-red-500/20 text-red-400"

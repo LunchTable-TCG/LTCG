@@ -34,7 +34,10 @@ import { useState } from "react";
 
 type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed";
 
-const STATUS_BADGES: Record<ReportStatus, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+const STATUS_BADGES: Record<
+  ReportStatus,
+  { variant: "default" | "secondary" | "destructive" | "outline"; label: string }
+> = {
   pending: { variant: "destructive", label: "Pending" },
   reviewed: { variant: "secondary", label: "Reviewed" },
   resolved: { variant: "default", label: "Resolved" },
@@ -60,10 +63,7 @@ export default function ReportsPage() {
       : "skip"
   );
 
-  const stats = useConvexQuery(
-    apiAny.admin.reports.getReportStats,
-    isAdmin ? {} : "skip"
-  );
+  const stats = useConvexQuery(apiAny.admin.reports.getReportStats, isAdmin ? {} : "skip");
 
   const bulkUpdateStatus = useConvexMutation(apiAny.admin.reports.bulkUpdateReportStatus);
 
@@ -112,9 +112,7 @@ export default function ReportsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">User Reports</h1>
-        <p className="text-muted-foreground">
-          Review and resolve player reports
-        </p>
+        <p className="text-muted-foreground">Review and resolve player reports</p>
       </div>
 
       {/* Stats Overview */}
@@ -129,17 +127,13 @@ export default function ReportsPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Pending</CardDescription>
-              <CardTitle className="text-2xl text-red-500">
-                {stats.byStatus.pending}
-              </CardTitle>
+              <CardTitle className="text-2xl text-red-500">{stats.byStatus.pending}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Reviewed</CardDescription>
-              <CardTitle className="text-2xl text-yellow-500">
-                {stats.byStatus.reviewed}
-              </CardTitle>
+              <CardTitle className="text-2xl text-yellow-500">{stats.byStatus.reviewed}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
@@ -151,9 +145,7 @@ export default function ReportsPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Avg Resolution</CardDescription>
-              <CardTitle className="text-2xl">
-                {stats.avgResolutionTimeHours}h
-              </CardTitle>
+              <CardTitle className="text-2xl">{stats.avgResolutionTimeHours}h</CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -192,18 +184,10 @@ export default function ReportsPage() {
                 <span className="text-sm text-muted-foreground">
                   {selectedReports.size} selected
                 </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleBulkAction("reviewed")}
-                >
+                <Button size="sm" variant="outline" onClick={() => handleBulkAction("reviewed")}>
                   Mark Reviewed
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleBulkAction("dismissed")}
-                >
+                <Button size="sm" variant="outline" onClick={() => handleBulkAction("dismissed")}>
                   Dismiss
                 </Button>
               </div>
@@ -219,9 +203,7 @@ export default function ReportsPage() {
             <div className="flex flex-col items-center justify-center h-32 gap-2">
               <p className="text-muted-foreground">No reports found</p>
               {statusFilter === "pending" && (
-                <p className="text-sm text-muted-foreground">
-                  🎉 No pending reports to review
-                </p>
+                <p className="text-sm text-muted-foreground">🎉 No pending reports to review</p>
               )}
             </div>
           ) : (
@@ -247,55 +229,49 @@ export default function ReportsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reportsData.reports.map((report: {
-                    _id: string;
-                    reporterUsername: string;
-                    reportedUsername: string;
-                    reason: string;
-                    status: ReportStatus;
-                    createdAt: number;
-                  }) => (
-                    <TableRow key={report._id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedReports.has(report._id)}
-                          onCheckedChange={(checked) =>
-                            handleSelectReport(report._id, checked as boolean)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {report.reporterUsername}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {report.reportedUsername}
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {report.reason}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={STATUS_BADGES[report.status].variant}>
-                          {STATUS_BADGES[report.status].label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDistanceToNow(new Date(report.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            router.push(`/moderation/reports/${report._id}`)
-                          }
-                        >
-                          Review
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {reportsData.reports.map(
+                    (report: {
+                      _id: string;
+                      reporterUsername: string;
+                      reportedUsername: string;
+                      reason: string;
+                      status: ReportStatus;
+                      createdAt: number;
+                    }) => (
+                      <TableRow key={report._id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedReports.has(report._id)}
+                            onCheckedChange={(checked) =>
+                              handleSelectReport(report._id, checked as boolean)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{report.reporterUsername}</TableCell>
+                        <TableCell className="font-medium">{report.reportedUsername}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{report.reason}</TableCell>
+                        <TableCell>
+                          <Badge variant={STATUS_BADGES[report.status].variant}>
+                            {STATUS_BADGES[report.status].label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDistanceToNow(new Date(report.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => router.push(`/moderation/reports/${report._id}`)}
+                          >
+                            Review
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  )}
                 </TableBody>
               </Table>
 

@@ -4,9 +4,9 @@
  * Provides functionality to export the Konva canvas to various formats.
  */
 
-import { useCallback, useRef } from "react";
 import type { Stage } from "konva/lib/Stage";
-import type { ExportOptions, ExportFormat, CanvasMimeType } from "../../types";
+import { useCallback, useRef } from "react";
+import type { CanvasMimeType, ExportFormat, ExportOptions } from "../../types";
 import { getCanvasMimeType } from "../../types";
 
 interface UseCanvasExportResult {
@@ -102,9 +102,7 @@ export function useCanvasExport(): UseCanvasExportResult {
 
       const opts = { ...DEFAULT_OPTIONS, ...options };
       const extension = opts.format === "jpeg" ? "jpg" : "png";
-      const finalFilename = filename.includes(".")
-        ? filename
-        : `${filename}.${extension}`;
+      const finalFilename = filename.includes(".") ? filename : `${filename}.${extension}`;
 
       const link = document.createElement("a");
       link.download = finalFilename;

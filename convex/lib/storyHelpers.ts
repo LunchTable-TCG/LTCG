@@ -3,8 +3,8 @@
 
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { RETRY_LIMITS } from "./storyConstants";
 import type { Difficulty } from "../schema";
+import { RETRY_LIMITS } from "./storyConstants";
 
 /**
  * Time constants for retry limit windows
@@ -87,9 +87,7 @@ export async function checkRetryLimit(
     const startOfToday = getStartOfDay();
     const attempts = await ctx.db
       .query("storyBattleAttempts")
-      .withIndex("by_user_difficulty_time", (q) =>
-        q.eq("userId", userId).eq("difficulty", "hard")
-      )
+      .withIndex("by_user_difficulty_time", (q) => q.eq("userId", userId).eq("difficulty", "hard"))
       .filter((q) => q.gte(q.field("attemptedAt"), startOfToday))
       .collect();
 
@@ -152,10 +150,7 @@ export async function checkRetryLimit(
  * @param userId - User ID to check
  * @returns Object with retry limit info for each difficulty
  */
-export async function getAllRetryLimits(
-  ctx: QueryCtx | MutationCtx,
-  userId: Id<"users">
-) {
+export async function getAllRetryLimits(ctx: QueryCtx | MutationCtx, userId: Id<"users">) {
   const [hard, legendary] = await Promise.all([
     checkRetryLimit(ctx, userId, "hard"),
     checkRetryLimit(ctx, userId, "legendary"),

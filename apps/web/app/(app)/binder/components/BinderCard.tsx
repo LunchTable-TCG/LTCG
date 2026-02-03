@@ -1,8 +1,8 @@
 "use client";
 
+import { getArchetypeIcon } from "@/lib/archetypeIcons";
 import { type JsonAbility, getAbilityDisplayText } from "@/lib/cardHelpers";
 import { cn } from "@/lib/utils";
-import { getArchetypeIcon } from "@/lib/archetypeIcons";
 import { Flame, Heart, Shield, Star, Waves, Zap } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState } from "react";
@@ -249,6 +249,8 @@ export function BinderCard({
   }
 
   // List variant - horizontal row
+  const element = ELEMENT_CONFIG[card.element] || ELEMENT_CONFIG.neutral;
+
   return (
     <button
       type="button"

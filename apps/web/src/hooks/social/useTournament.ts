@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { useAuth } from "../auth/useConvexAuthHook";
 
@@ -159,10 +159,10 @@ interface UseTournamentsReturn {
  * ```
  */
 export function useTournaments(): UseTournamentsReturn {
-  const tournaments = useConvexQuery(apiAny.social.tournaments.getActiveTournaments, {});
+  const tournaments = useTypedQuery(typedApi.social.tournaments.getActiveTournaments, {});
 
   return {
-    tournaments: (tournaments as TournamentSummary[] | undefined) || [],
+    tournaments: tournaments || [],
     isLoading: tournaments === undefined,
   };
 }
@@ -175,7 +175,11 @@ interface UseTournamentReturn {
   tournament: TournamentDetails | null;
   bracket: TournamentBracket | null;
   isLoading: boolean;
-  register: () => Promise<{ success: boolean; participantId: Id<"tournamentParticipants">; message: string }>;
+  register: () => Promise<{
+    success: boolean;
+    participantId: Id<"tournamentParticipants">;
+    message: string;
+  }>;
   checkIn: () => Promise<{ success: boolean; message: string }>;
   isRegistering: boolean;
   isCheckingIn: boolean;
@@ -203,19 +207,19 @@ export function useTournament(tournamentId: Id<"tournaments"> | undefined): UseT
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const tournament = useConvexQuery(
-    apiAny.social.tournaments.getTournamentDetails,
+  const tournament = useTypedQuery(
+    typedApi.social.tournaments.getTournamentDetails,
     tournamentId ? { tournamentId } : "skip"
   );
 
-  const bracket = useConvexQuery(
-    apiAny.social.tournaments.getTournamentBracket,
+  const bracket = useTypedQuery(
+    typedApi.social.tournaments.getTournamentBracket,
     tournamentId ? { tournamentId } : "skip"
   );
 
   // Mutations
-  const registerMutation = useConvexMutation(apiAny.social.tournaments.registerForTournament);
-  const checkInMutation = useConvexMutation(apiAny.social.tournaments.checkInToTournament);
+  const registerMutation = useTypedMutation(typedApi.social.tournaments.registerForTournament);
+  const checkInMutation = useTypedMutation(typedApi.social.tournaments.checkInToTournament);
 
   // Action handlers
   const register = async () => {
@@ -233,8 +237,8 @@ export function useTournament(tournamentId: Id<"tournaments"> | undefined): UseT
   };
 
   return {
-    tournament: (tournament as TournamentDetails | undefined) || null,
-    bracket: (bracket as TournamentBracket | undefined) || null,
+    tournament: tournament || null,
+    bracket: bracket || null,
     isLoading: tournament === undefined,
     register,
     checkIn,
@@ -274,19 +278,19 @@ interface UseTournamentHistoryReturn {
 export function useTournamentHistory(limit = 20): UseTournamentHistoryReturn {
   const { isAuthenticated } = useAuth();
 
-  const history = useConvexQuery(
-    apiAny.social.tournaments.getUserTournamentHistory,
+  const history = useTypedQuery(
+    typedApi.social.tournaments.getUserTournamentHistory,
     isAuthenticated ? { limit } : "skip"
   );
 
-  const stats = useConvexQuery(
-    apiAny.social.tournaments.getUserTournamentStats,
+  const stats = useTypedQuery(
+    typedApi.social.tournaments.getUserTournamentStats,
     isAuthenticated ? {} : "skip"
   );
 
   return {
-    history: (history as TournamentHistoryEntry[] | undefined) || [],
-    stats: (stats as UserTournamentStats | undefined) || null,
+    history: history || [],
+    stats: stats || null,
     isLoading: history === undefined || stats === undefined,
   };
 }

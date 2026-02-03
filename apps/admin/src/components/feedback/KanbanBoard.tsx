@@ -1,18 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import {
-  Bug,
-  Lightbulb,
-  User,
-  Clock,
-  Image,
-  Video,
-  GripVertical,
-} from "lucide-react";
+import { Bug, Clock, GripVertical, Image, Lightbulb, User, Video } from "lucide-react";
+import { useState } from "react";
 
 // =============================================================================
 // Types
@@ -121,9 +113,7 @@ function KanbanCard({ item, onClick, onDragStart }: KanbanCardProps) {
       </div>
 
       {/* Title */}
-      <h4 className="font-medium text-sm text-foreground line-clamp-2 mb-2">
-        {item.title}
-      </h4>
+      <h4 className="font-medium text-sm text-foreground line-clamp-2 mb-2">{item.title}</h4>
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -200,9 +190,7 @@ function KanbanColumn({
       {/* Column Content */}
       <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-320px)]">
         {items.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            No items
-          </div>
+          <div className="text-center py-8 text-muted-foreground text-sm">No items</div>
         ) : (
           items.map((item) => (
             <KanbanCard
@@ -296,15 +284,9 @@ export function KanbanBoard({ type, onSelectItem }: KanbanBoardProps) {
   }
 
   return (
-    <div
-      className="flex gap-4 overflow-x-auto pb-4"
-      onDragLeave={handleDragLeave}
-    >
+    <div className="flex gap-4 overflow-x-auto pb-4" onDragLeave={handleDragLeave}>
       {COLUMNS.map((column) => (
-        <div
-          key={column.id}
-          onDragEnter={() => handleDragEnter(column.id)}
-        >
+        <div key={column.id} onDragEnter={() => handleDragEnter(column.id)}>
           <KanbanColumn
             column={column}
             items={feedbackByStatus[column.id] || []}

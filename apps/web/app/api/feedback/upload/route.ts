@@ -5,7 +5,7 @@
  * Uses handleUpload to generate secure upload tokens and process completion callbacks.
  */
 
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { type HandleUploadBody, handleUpload } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 
 // Allowed content types for feedback uploads

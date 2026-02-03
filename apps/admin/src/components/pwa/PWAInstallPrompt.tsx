@@ -42,7 +42,7 @@ export function PWAInstallPrompt() {
 
     // Check if user previously dismissed (use localStorage for persistence across sessions)
     const dismissed = localStorage.getItem("pwa-install-dismissed");
-    const dismissedAt = dismissed ? parseInt(dismissed, 10) : 0;
+    const dismissedAt = dismissed ? Number.parseInt(dismissed, 10) : 0;
     const daysSinceDismissed = (Date.now() - dismissedAt) / (1000 * 60 * 60 * 24);
 
     // Show again after 7 days
@@ -124,7 +124,9 @@ export function PWAInstallPrompt() {
             </div>
             <div>
               <p className="font-semibold text-green-600 dark:text-green-400">App Installed!</p>
-              <p className="text-xs text-muted-foreground">You can now access LTCG Admin from your home screen.</p>
+              <p className="text-xs text-muted-foreground">
+                You can now access LTCG Admin from your home screen.
+              </p>
             </div>
           </div>
         </Card>
@@ -190,12 +192,7 @@ export function PWAInstallPrompt() {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDismiss}
-                className="w-full h-10"
-              >
+              <Button variant="outline" size="sm" onClick={handleDismiss} className="w-full h-10">
                 Got it, maybe later
               </Button>
             </div>

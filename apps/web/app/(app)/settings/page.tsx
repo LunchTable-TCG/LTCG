@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WalletConnect } from "@/components/wallet";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { useGameWallet, useTokenBalance } from "@/hooks";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import {
@@ -78,8 +78,20 @@ export default function SettingsPage() {
   const deleteAccount = useConvexMutation(apiAny.core.userPreferences.deleteAccount);
 
   // Wallet hooks
-  const { walletAddress, walletType, isConnected, disconnectWallet, isLoading: walletLoading } = useGameWallet();
-  const { balance: tokenBalance, isStale, refresh: refreshBalance, isRefreshing, lastVerifiedAt } = useTokenBalance();
+  const {
+    walletAddress,
+    walletType,
+    isConnected,
+    disconnectWallet,
+    isLoading: walletLoading,
+  } = useGameWallet();
+  const {
+    balance: tokenBalance,
+    isStale,
+    refresh: refreshBalance,
+    isRefreshing,
+    lastVerifiedAt,
+  } = useTokenBalance();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [isSaving, setIsSaving] = useState(false);
@@ -158,7 +170,17 @@ export default function SettingsPage() {
       username !== (currentUser?.username || "") ||
       bio !== (currentUser?.bio || "");
     setIsDirty(hasChanges);
-  }, [notifications, display, game, privacy, username, bio, preferences, currentUser?.username, currentUser?.bio]);
+  }, [
+    notifications,
+    display,
+    game,
+    privacy,
+    username,
+    bio,
+    preferences,
+    currentUser?.username,
+    currentUser?.bio,
+  ]);
 
   // Warn user before leaving with unsaved changes
   useEffect(() => {
@@ -540,7 +562,9 @@ export default function SettingsPage() {
                           </div>
                           <div>
                             <p className="font-medium text-[#e8e0d5]">
-                              {walletType === "privy_embedded" ? "Game Wallet (Privy)" : "External Wallet"}
+                              {walletType === "privy_embedded"
+                                ? "Game Wallet (Privy)"
+                                : "External Wallet"}
                             </p>
                             <p className="text-xs text-[#a89f94]">Connected</p>
                           </div>
@@ -657,7 +681,9 @@ export default function SettingsPage() {
                       <div className="w-16 h-16 rounded-full bg-[#3d2b1f] flex items-center justify-center mx-auto mb-4">
                         <Wallet className="w-8 h-8 text-[#a89f94]" />
                       </div>
-                      <h3 className="text-lg font-medium text-[#e8e0d5] mb-2">No Wallet Connected</h3>
+                      <h3 className="text-lg font-medium text-[#e8e0d5] mb-2">
+                        No Wallet Connected
+                      </h3>
                       <p className="text-[#a89f94] text-sm mb-6 max-w-sm mx-auto">
                         Connect a wallet to trade cards for LTCG tokens and access the token
                         marketplace.
@@ -675,10 +701,7 @@ export default function SettingsPage() {
               )}
 
               {/* Wallet Connect Dialog */}
-              <WalletConnect
-                open={showWalletConnect}
-                onOpenChange={setShowWalletConnect}
-              />
+              <WalletConnect open={showWalletConnect} onOpenChange={setShowWalletConnect} />
 
               {/* Notification Settings */}
               {activeTab === "notifications" && (

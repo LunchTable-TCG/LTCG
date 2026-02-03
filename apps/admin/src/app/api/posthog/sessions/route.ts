@@ -5,7 +5,7 @@
  */
 
 import { posthogApi } from "@/lib/posthog";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const limit = Number.parseInt(searchParams.get("limit") || "20");
+    const offset = Number.parseInt(searchParams.get("offset") || "0");
     const dateFrom = searchParams.get("date_from") || undefined;
     const dateTo = searchParams.get("date_to") || undefined;
     const hasErrors = searchParams.get("has_errors") === "true";

@@ -90,7 +90,7 @@
   --destructive: oklch(0.577 0.245 27.325);
 
   /* Borders and inputs */
-  --border: oklch(0.90 0.005 285);
+  --border: oklch(0.9 0.005 285);
   --input: oklch(0.92 0.005 285);
   --ring: oklch(0.696 0.17 162.48);
 
@@ -108,7 +108,7 @@
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.93 0.04 165);
   --sidebar-accent-foreground: oklch(0.25 0.05 165);
-  --sidebar-border: oklch(0.90 0.005 285);
+  --sidebar-border: oklch(0.9 0.005 285);
   --sidebar-ring: oklch(0.696 0.17 162.48);
 }
 

@@ -1,25 +1,18 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { componentLogger, logger, perf, useDebugLifecycle } from "@/lib/debug";
+import { categorizeEffect, showEffectActivated } from "@/lib/effectToasts";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
-import {
-  Flag,
-  Heart,
-  Loader2,
-  Skull,
-  Sparkles,
-  Swords,
-  Trophy,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { Flag, Loader2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { GameResultScreen } from "./GameResultScreen";
+import { TutorialManager } from "./TutorialManager";
 import { LifePointsBar } from "./board/LifePointsBar";
 import { OpponentBoard } from "./board/OpponentBoard";
 import { PlayerBoard } from "./board/PlayerBoard";
@@ -27,15 +20,20 @@ import { PlayerHand } from "./board/PlayerHand";
 import { ActionButtons } from "./controls/ActionButtons";
 import { PhaseBar } from "./controls/PhaseBar";
 import { type GamePhase, PhaseSkipButtons } from "./controls/PhaseSkipButtons";
+import { PriorityIndicator } from "./controls/PriorityIndicator";
 import { TimeoutDisplay } from "./controls/TimeoutDisplay";
 import { ActivateCardModal } from "./dialogs/ActivateCardModal";
 import { AttackModal } from "./dialogs/AttackModal";
 import { CardInspectorModal } from "./dialogs/CardInspectorModal";
 import { CardSelectionModal } from "./dialogs/CardSelectionModal";
+import { ChainDisplayWidget } from "./dialogs/ChainDisplayWidget";
+import { CostPaymentModal } from "./dialogs/CostPaymentModal";
 import { ForfeitDialog } from "./dialogs/ForfeitDialog";
 import { OptionalTriggerPrompt } from "./dialogs/OptionalTriggerPrompt";
 import { ResponsePrompt } from "./dialogs/ResponsePrompt";
 import { SummonModal } from "./dialogs/SummonModal";
+import { EffectFeedback, useEffectFeedback } from "./effects/EffectFeedback";
+import { EffectQueueWidget, type QueuedEffect } from "./effects/EffectQueueWidget";
 import { type CardInZone, useGameBoard } from "./hooks/useGameBoard";
 
 interface GameBoardProps {
@@ -80,17 +78,17 @@ export function GameBoard({
   useDebugLifecycle("GameBoard", { lobbyId, gameMode });
 
   // Get player ID from auth if not provided (story mode)
-  const authUser = useConvexQuery(apiAny.core.users.currentUser, {});
+  const authUser = useTypedQuery(typedApi.core.users.currentUser, {});
   const playerId = providedPlayerId || (authUser?._id as Id<"users"> | undefined);
 
   log.debug("GameBoard rendered", { lobbyId, playerId, gameMode });
 
   // First check lobby status - MUST be called before any conditional returns
-  const lobbyDetails = useConvexQuery(apiAny.gameplay.games.queries.getLobbyDetails, { lobbyId });
+  const lobbyDetails = useTypedQuery(typedApi.gameplay.games.queries.getLobbyDetails, { lobbyId });
 
-  // Selection effect mutations - use apiAny to avoid TS2589
+  // Selection effect mutations
   const completeSearchEffectMutation = useMutation(
-    apiAny.gameplay.gameEngine.spellsTraps.completeSearchEffect
+    typedApi.gameplay.gameEngine.spellsTraps.completeSearchEffect
   );
   const completeSearchEffect = useCallback(
     async (args: {
@@ -133,6 +131,7 @@ export function GameBoard({
     activateSpell,
     activateFieldSpell,
     activateTrap,
+    activateMonsterEffect,
     respondToChain,
   } = useGameBoard(lobbyId, playerId ?? ("" as Id<"users">));
 
@@ -162,19 +161,36 @@ export function GameBoard({
     callback: (cardIds: Id<"cardDefinitions">[]) => void;
   } | null>(null);
 
-  // AI Turn Automation (Story Mode) - use apiAny to avoid TS2589
-  const executeAITurnMutation = useMutation(apiAny.gameplay.ai.aiTurn.executeAITurn);
-  const gameState = useConvexQuery(
-    apiAny.gameplay.games.queries.getGameStateForPlayer,
+  // Effect Feedback System
+  const effectFeedback = useEffectFeedback();
+  const [effectQueue, setEffectQueue] = useState<QueuedEffect[]>([]);
+
+  // Cost Payment State
+  const [costPayment, setCostPayment] = useState<{
+    cardId: Id<"cardDefinitions">;
+    cardName: string;
+    costType: "discard" | "pay_lp" | "tribute" | "banish";
+    costValue: number;
+    availableCards: CardInZone[];
+    effectIndex?: number;
+    callback: (costTargets?: Id<"cardDefinitions">[]) => void;
+  } | null>(null);
+
+  // AI Turn Automation (Story Mode) - use useMutation directly for this mutation
+  const executeAITurnMutation = useMutation(typedApi.gameplay.ai.aiTurn.executeAITurn);
+  const gameState = useTypedQuery(
+    typedApi.gameplay.games.queries.getGameStateForPlayer,
     lobbyId ? { lobbyId } : "skip"
   );
 
   // New feature queries
-  const pendingOptionalTriggers = useConvexQuery(
-    apiAny.gameplay.games.queries.getPendingOptionalTriggers,
+  const pendingOptionalTriggers = useTypedQuery(
+    typedApi.gameplay.games.queries.getPendingOptionalTriggers,
     { lobbyId }
   );
-  const timeoutStatus = useConvexQuery(apiAny.gameplay.games.queries.getTimeoutStatus, { lobbyId });
+  const timeoutStatus = useTypedQuery(typedApi.gameplay.games.queries.getTimeoutStatus, {
+    lobbyId,
+  });
 
   useEffect(() => {
     if (gameMode !== "story") return;
@@ -209,8 +225,8 @@ export function GameBoard({
         limit: 10,
       }
     : "skip";
-  const gameEvents = useConvexQuery(
-    apiAny.gameplay.gameEvents.subscribeToGameEvents,
+  const gameEvents = useTypedQuery(
+    typedApi.gameplay.gameEvents.subscribeToGameEvents,
     gameEventsArgs
   );
 
@@ -232,31 +248,12 @@ export function GameBoard({
         // Don't show notifications for manual activations (handled by other toasts)
         if (event.metadata?.trigger === "manual") return;
 
-        // Get trigger type for icon selection
-        const trigger = event.metadata?.trigger as string | undefined;
         const cardName = event.metadata?.cardName as string | undefined;
+        const description = event.description || "Effect activated";
 
-        // Select icon based on trigger type
-        let icon: React.ReactNode;
-        if (trigger?.includes("summon")) {
-          icon = <Sparkles className="h-4 w-4" />;
-        } else if (trigger?.includes("battle") || trigger?.includes("attack")) {
-          icon = <Swords className="h-4 w-4" />;
-        } else if (trigger?.includes("destroy")) {
-          icon = <Skull className="h-4 w-4" />;
-        } else if (trigger?.includes("draw") || trigger?.includes("end")) {
-          icon = <Heart className="h-4 w-4" />;
-        } else {
-          icon = <Sparkles className="h-4 w-4" />;
-        }
-
-        // Show toast notification
-        toast(cardName || "Card Effect", {
-          description: event.description,
-          icon,
-          duration: 3000,
-          className: "border-l-4 border-l-purple-500",
-        });
+        // Use enhanced toast with categorization
+        const category = categorizeEffect(description);
+        showEffectActivated(cardName || "Card Effect", description);
       }
     );
   }, [gameEvents]);
@@ -395,17 +392,36 @@ export function GameBoard({
 
   const handleFieldCardClick = useCallback(
     (card: CardInZone) => {
+      // Check if this is a battle phase attack
       if (isBattlePhase && isPlayerTurn && attackableAttackers.has(card.instanceId)) {
         setSelectedFieldCard(card);
         setShowAttackModal(true);
         return;
       }
 
+      // Check if this is selecting an attack target
       if (isBattlePhase && selectedFieldCard && targetableCards.has(card.instanceId)) {
         handleDeclareAttack(card.instanceId);
         return;
       }
 
+      // Check if this is your own monster with activatable effects
+      const isPlayerCard =
+        player?.frontline?.instanceId === card.instanceId ||
+        player?.support?.some((c) => c.instanceId === card.instanceId);
+      const isMonster = card.cardType === "monster" || card.cardType === "creature";
+      const hasManualEffects = card.effects?.some(
+        (e) => e.activationType === "ignition" || e.activationType === "quick"
+      );
+
+      if (isPlayerCard && isMonster && hasManualEffects && !card.isFaceDown && isPlayerTurn) {
+        // Show activation modal for monster with manual effects
+        setSelectedFieldCard(card);
+        setShowActivateModal(true);
+        return;
+      }
+
+      // Default: Show card inspector for face-up cards
       if (!card.isFaceDown) {
         setInspectedCard(card);
         const isOpponentCard =
@@ -422,6 +438,7 @@ export function GameBoard({
     [
       isBattlePhase,
       isPlayerTurn,
+      player,
       opponent,
       attackableAttackers,
       selectedFieldCard,
@@ -621,22 +638,67 @@ export function GameBoard({
     setShowActivateModal(true);
   }, []);
 
-  const handleActivateCard = useCallback(
-    async (effectIndex?: number) => {
-      if (!selectedBackrowCard) return;
+  // Cost payment query
+  const getPendingCostMutation = useMutation(
+    typedApi.gameplay.effectSystem.costPayment.getPendingCostRequirement
+  );
 
-      const isField = selectedBackrowCard.cardType === "field";
-      const isSpell =
-        selectedBackrowCard.cardType === "spell" || selectedBackrowCard.cardType === "equipment";
-      const isTrap = selectedBackrowCard.cardType === "trap";
+  const handleActivateCard = useCallback(
+    async (effectIndex?: number, costTargets?: Id<"cardDefinitions">[]) => {
+      const selectedCard = selectedBackrowCard || selectedFieldCard;
+      if (!selectedCard) return;
+
+      const isField = selectedCard.cardType === "field";
+      const isSpell = selectedCard.cardType === "spell" || selectedCard.cardType === "equipment";
+      const isTrap = selectedCard.cardType === "trap";
+      const isMonster = selectedCard.cardType === "monster" || selectedCard.cardType === "creature";
+
+      // Check for cost requirement first
+      try {
+        const costCheck = await getPendingCostMutation({
+          lobbyId,
+          cardId: selectedCard.cardId,
+          effectIndex,
+        });
+
+        if (costCheck.hasCost && costCheck.canPay && costCheck.requiresSelection && !costTargets) {
+          // Show cost payment modal
+          setCostPayment({
+            cardId: selectedCard.cardId,
+            cardName: costCheck.cardName || selectedCard.name,
+            costType: costCheck.costType as "discard" | "pay_lp" | "tribute" | "banish",
+            costValue: costCheck.costValue || 1,
+            availableCards: (costCheck.availableTargets || []).map((target) => ({
+              cardId: target.cardId,
+              name: target.name,
+              cardType: target.cardType,
+              imageUrl: target.imageUrl,
+              monsterStats: target.monsterStats,
+              instanceId: target.cardId,
+            })),
+            effectIndex,
+            callback: async (selectedCostTargets) => {
+              // Recursively call with cost targets
+              await handleActivateCard(effectIndex, selectedCostTargets);
+              setCostPayment(null);
+            },
+          });
+          return;
+        }
+      } catch (error) {
+        // Cost check failed, continue with activation attempt
+        console.error("Cost check error:", error);
+      }
 
       let result: ActivationResult | undefined;
       if (isField) {
-        result = await activateFieldSpell(selectedBackrowCard.instanceId, effectIndex);
+        result = await activateFieldSpell(selectedCard.instanceId, effectIndex);
       } else if (isSpell) {
-        result = await activateSpell(selectedBackrowCard.instanceId, effectIndex);
+        result = await activateSpell(selectedCard.instanceId, effectIndex);
       } else if (isTrap) {
-        result = await activateTrap(selectedBackrowCard.instanceId, effectIndex);
+        result = await activateTrap(selectedCard.instanceId, effectIndex);
+      } else if (isMonster) {
+        result = await activateMonsterEffect(selectedCard.instanceId, effectIndex);
       } else {
         return; // Not a valid card type
       }
@@ -674,17 +736,26 @@ export function GameBoard({
           },
         });
       } else if (result?.success) {
+        toast.success(`${selectedCard.name} activated!`);
         setSelectedBackrowCard(null);
+        setSelectedFieldCard(null);
         setShowActivateModal(false);
+      } else if (result?.error) {
+        toast.error("Activation Failed", {
+          description: result.error,
+        });
       }
     },
     [
       selectedBackrowCard,
+      selectedFieldCard,
       activateSpell,
       activateFieldSpell,
       activateTrap,
+      activateMonsterEffect,
       lobbyId,
       completeSearchEffect,
+      getPendingCostMutation,
     ]
   );
 
@@ -778,29 +849,40 @@ export function GameBoard({
   if (gameEnded) {
     const isWinner = winner === "player";
     const returnLink = gameMode === "story" ? "/play/story" : "/lunchtable";
-    const returnText = gameMode === "story" ? "Return to Story" : "Return to Table";
+
+    const playerFieldCount =
+      (player?.support?.length ?? 0) + (player?.backrow?.length ?? 0) + (player?.frontline ? 1 : 0);
+    const playerDamageReceived = player?.maxLifePoints
+      ? player.maxLifePoints - (player?.lifePoints ?? 0)
+      : 0;
+    const opponentDamageReceived = opponent?.maxLifePoints
+      ? opponent.maxLifePoints - (opponent?.lifePoints ?? 0)
+      : 0;
 
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#0d0a09]">
-        <div className="flex flex-col items-center gap-3 text-center p-6 rounded-xl border bg-background">
-          {isWinner ? (
-            <>
-              <Trophy className="h-12 w-12 text-yellow-500" />
-              <h2 className="text-xl font-bold text-green-500">Victory!</h2>
-              <p className="text-sm text-muted-foreground">Congratulations, you won the game!</p>
-            </>
-          ) : (
-            <>
-              <XCircle className="h-12 w-12 text-red-500" />
-              <h2 className="text-xl font-bold text-red-500">Defeat</h2>
-              <p className="text-sm text-muted-foreground">Better luck next time!</p>
-            </>
-          )}
-          <Button asChild className="mt-3" size="sm">
-            <Link href={returnLink}>{returnText}</Link>
-          </Button>
-        </div>
-      </div>
+      <GameResultScreen
+        result={isWinner ? "victory" : "defeat"}
+        playerName={player?.playerName ?? "Player"}
+        opponentName={opponent?.playerName ?? "Opponent"}
+        stats={{
+          damageDealt: opponentDamageReceived,
+          damageReceived: playerDamageReceived,
+          cardsPlayed: playerFieldCount,
+          creaturesDestroyed: 0,
+          spellsCast: 0,
+          turnsPlayed: phase?.turnNumber ?? 0,
+          matchDuration: 0,
+        }}
+        rewards={{
+          gold: isWinner ? 100 : 25,
+          xp: isWinner ? 50 : 10,
+        }}
+        gameMode={gameMode === "story" ? "story" : "casual"}
+        isOpen={true}
+        onReturnToMenu={() => {
+          router.push(returnLink);
+        }}
+      />
     );
   }
 
@@ -1040,16 +1122,19 @@ export function GameBoard({
 
         <ActivateCardModal
           isOpen={showActivateModal}
-          card={selectedBackrowCard}
+          card={selectedBackrowCard || selectedFieldCard}
           canActivate={
             selectedBackrowCard
               ? activatableBackrowCards.has(selectedBackrowCard.instanceId)
-              : false
+              : selectedFieldCard
+                ? isPlayerTurn && isMainPhase
+                : false
           }
           onActivate={handleActivateCard}
           onClose={() => {
             setShowActivateModal(false);
             setSelectedBackrowCard(null);
+            setSelectedFieldCard(null);
           }}
         />
 
@@ -1090,6 +1175,25 @@ export function GameBoard({
           onCancel={() => setCardSelection(null)}
         />
 
+        {/* Cost Payment Modal */}
+        {costPayment && (
+          <CostPaymentModal
+            isOpen={true}
+            costType={costPayment.costType}
+            costValue={costPayment.costValue}
+            currentLP={player?.lifePoints}
+            availableCards={costPayment.availableCards}
+            sourceCardName={costPayment.cardName}
+            onConfirm={(selectedCardIds) => {
+              costPayment.callback(selectedCardIds);
+              setCostPayment(null);
+            }}
+            onCancel={() => {
+              setCostPayment(null);
+            }}
+          />
+        )}
+
         {/* Optional Trigger Prompt */}
         {playerId && pendingOptionalTriggers && pendingOptionalTriggers.length > 0 && (
           <OptionalTriggerPrompt
@@ -1098,6 +1202,64 @@ export function GameBoard({
             currentPlayerId={playerId}
             onClose={() => {
               // Component manages its own state - closing handled internally
+            }}
+          />
+        )}
+
+        {/* Chain Display Widget */}
+        {chainResponses && chainResponses.chain && chainResponses.chain.length > 0 && (
+          <ChainDisplayWidget
+            chain={chainResponses.chain.map((c: any) => ({
+              chainPosition: c.chainLink || 1,
+              cardId: c.cardId,
+              cardName: c.cardName || "Unknown Card",
+              effectName: typeof c.effect === "string" ? c.effect : "Effect",
+              spellSpeed: (c.spellSpeed || 1) as 1 | 2 | 3,
+              playerId: c.playerId,
+            }))}
+            currentPlayerId={playerId}
+            isResolving={false}
+          />
+        )}
+
+        {/* Priority Indicator */}
+        {chainResponses && chainResponses.priorityPlayer && (
+          <PriorityIndicator
+            isOpen={true}
+            windowType="open"
+            hasPriority={chainResponses.canRespond}
+            isChainOpen={chainResponses.chain && chainResponses.chain.length > 0}
+            onPass={async () => {
+              await respondToChain("pass");
+            }}
+          />
+        )}
+
+        {/* Effect Feedback System */}
+        <EffectFeedback
+          floatingNumbers={effectFeedback.floatingNumbers}
+          animations={effectFeedback.animations}
+        />
+
+        {/* Effect Queue Widget */}
+        {effectQueue.length > 0 && <EffectQueueWidget effects={effectQueue} isResolving={false} />}
+
+        {/* Tutorial Manager (Story Mode Only) */}
+        {gameMode === "story" && player && opponent && phase && (
+          <TutorialManager
+            enabled={true}
+            gameState={{
+              currentPhase: currentPhase,
+              isPlayerTurn,
+              turnNumber: phase.turnNumber,
+              myLifePoints: player.lifePoints,
+              opponentLifePoints: opponent.lifePoints,
+              myHand: player.hand || [],
+              myField: [
+                ...(player.support || []),
+                ...(player.backrow || []),
+                ...(player.frontline ? [player.frontline] : []),
+              ],
             }}
           />
         )}

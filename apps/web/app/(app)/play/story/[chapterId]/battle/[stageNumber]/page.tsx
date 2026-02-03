@@ -1,10 +1,7 @@
 "use client";
 
 import { GameBoard } from "@/components/game/GameBoard";
-import {
-  DialogueDisplay,
-  type DialogueLine,
-} from "@/components/story/DialogueDisplay";
+import { DialogueDisplay, type DialogueLine } from "@/components/story/DialogueDisplay";
 import { StoryBattleCompleteDialog } from "@/components/story/StoryBattleCompleteDialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
@@ -14,7 +11,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Crown, Loader2, Shield, Swords } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { use, useEffect, useState, useCallback } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 
 type DialoguePhase = "pre" | "battle" | "post" | "complete";
 type StoryDifficulty = "normal" | "hard" | "legendary";
@@ -60,9 +57,7 @@ export default function BattlePage({ params }: BattlePageProps) {
   // Get difficulty from URL params, default to "normal"
   const difficultyParam = searchParams.get("difficulty");
   const difficulty: StoryDifficulty =
-    difficultyParam === "hard" || difficultyParam === "legendary"
-      ? difficultyParam
-      : "normal";
+    difficultyParam === "hard" || difficultyParam === "legendary" ? difficultyParam : "normal";
 
   const { isAuthenticated } = useAuth();
   const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");

@@ -10,7 +10,7 @@
 import { MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Badge, Card, Flex, Text, Title, AreaChart, BarChart } from "@tremor/react";
+import { AreaChart, Badge, BarChart, Card, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -137,8 +137,8 @@ export default function BehaviorAnalyticsPage() {
             <Flex alignItems="center" className="gap-2">
               <span className="text-blue-500">ℹ️</span>
               <Text className="text-sm text-blue-500">
-                Note: The web app is already tracking data to PostHog. This setup is only needed
-                to view the data in the admin panel.
+                Note: The web app is already tracking data to PostHog. This setup is only needed to
+                view the data in the admin panel.
               </Text>
             </Flex>
           </div>
@@ -155,13 +155,12 @@ export default function BehaviorAnalyticsPage() {
     );
   }
 
-  const sessionsWithErrors = sessions?.sessions.filter((s) => s.console_error_count > 0).length || 0;
+  const sessionsWithErrors =
+    sessions?.sessions.filter((s) => s.console_error_count > 0).length || 0;
   const totalClicks = sessions?.sessions.reduce((sum, s) => sum + s.click_count, 0) || 0;
   const avgSessionDuration =
     sessions?.sessions.reduce((sum, s) => sum + s.recording_duration, 0) || 0;
-  const avgDuration = sessions?.sessions.length
-    ? avgSessionDuration / sessions.sessions.length
-    : 0;
+  const avgDuration = sessions?.sessions.length ? avgSessionDuration / sessions.sessions.length : 0;
 
   return (
     <PageWrapper
@@ -232,9 +231,7 @@ export default function BehaviorAnalyticsPage() {
             <Text className="text-muted-foreground mb-4">
               Watch real user sessions to understand behavior, find bugs, and improve UX.
             </Text>
-            <Badge color="blue">
-              {sessions?.count ?? 0} recordings available
-            </Badge>
+            <Badge color="blue">{sessions?.count ?? 0} recordings available</Badge>
           </Card>
         </Link>
 
@@ -276,7 +273,11 @@ export default function BehaviorAnalyticsPage() {
           <AreaChart
             className="mt-4 h-48"
             data={errors.byDay.map((d) => ({
-              date: new Date(d.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+              date: new Date(d.date).toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              }),
               Errors: d.count,
             }))}
             index="date"
@@ -344,9 +345,7 @@ export default function BehaviorAnalyticsPage() {
                 className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">
-                    {session.console_error_count > 0 ? "⚠️" : "▶️"}
-                  </span>
+                  <span className="text-lg">{session.console_error_count > 0 ? "⚠️" : "▶️"}</span>
                   <div>
                     <Text className="font-medium text-sm">
                       {(session.person?.properties?.["username"] as string) ||
@@ -405,13 +404,15 @@ export default function BehaviorAnalyticsPage() {
         </Text>
         <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
           <li>
-            • <strong>Session Recordings</strong>: Watch replays of user sessions to understand behavior
+            • <strong>Session Recordings</strong>: Watch replays of user sessions to understand
+            behavior
           </li>
           <li>
             • <strong>Error Heatmap</strong>: Identify which pages have the most errors
           </li>
           <li>
-            • <strong>Drop-off Analysis</strong>: Track conversion funnels and identify abandonment points
+            • <strong>Drop-off Analysis</strong>: Track conversion funnels and identify abandonment
+            points
           </li>
           <li>
             • <strong>Click Tracking</strong>: See where users click most frequently

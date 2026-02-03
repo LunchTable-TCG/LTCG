@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { getTutorialMoment } from "@/lib/game-rules";
+import { cn } from "@/lib/utils";
 import { ChevronRightIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -111,10 +111,7 @@ export function TutorialOverlay({
           // Position panel based on highlight element or center
           ...(highlightRect
             ? {
-                top: Math.min(
-                  highlightRect.bottom + 20,
-                  window.innerHeight - 200
-                ),
+                top: Math.min(highlightRect.bottom + 20, window.innerHeight - 200),
                 left: Math.max(
                   20,
                   Math.min(
@@ -141,20 +138,14 @@ export function TutorialOverlay({
               )}
             />
           ))}
-          <span className="text-xs text-slate-400 ml-2">
-            {momentId}/5
-          </span>
+          <span className="text-xs text-slate-400 ml-2">{momentId}/5</span>
         </div>
 
         {/* Title */}
-        <h3 className="text-xl font-bold text-amber-400 mb-2">
-          {moment.title}
-        </h3>
+        <h3 className="text-xl font-bold text-amber-400 mb-2">{moment.title}</h3>
 
         {/* Message */}
-        <p className="text-slate-300 leading-relaxed mb-6">
-          {moment.message}
-        </p>
+        <p className="text-slate-300 leading-relaxed mb-6">{moment.message}</p>
 
         {/* Actions */}
         <div className="flex items-center justify-between">
@@ -217,19 +208,13 @@ export function TutorialResumePrompt({
       className={cn(
         "fixed bottom-20 left-1/2 -translate-x-1/2 z-50",
         "transition-all duration-300",
-        isVisible
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-4"
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       )}
     >
       <div className="bg-slate-800 border border-amber-500/50 rounded-xl shadow-xl shadow-amber-500/10 p-4 max-w-sm">
         <p className="text-slate-200 text-sm mb-3">
           You have an unfinished tutorial.{" "}
-          {lastMoment > 0 && (
-            <span className="text-amber-400">
-              ({lastMoment}/5 completed)
-            </span>
-          )}
+          {lastMoment > 0 && <span className="text-amber-400">({lastMoment}/5 completed)</span>}
         </p>
 
         <div className="flex items-center gap-2">

@@ -1,0 +1,139 @@
+---
+title: Environment Configuration
+description: Complete guide to configuring environment variables
+lastUpdated: '2026-02-03'
+---
+
+# Environment Configuration
+
+Guide to setting up environment variables for LTCG.
+
+## Quick Start
+
+Copy the example file and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+See [.env.example](https://github.com/your-org/ltcg/blob/main/.env.example) for the complete template.
+
+## Required Variables
+
+### Convex
+
+Backend database and serverless functions:
+
+```env
+CONVEX_DEPLOYMENT=       # Your Convex deployment name (e.g., dev:your-deployment)
+NEXT_PUBLIC_CONVEX_URL=  # Your Convex URL (e.g., https://your-deployment.convex.cloud)
+```
+
+**Setup:**
+1. Create account at [convex.dev](https://www.convex.dev)
+2. Create new project
+3. Copy deployment URL and name
+
+### Privy Authentication
+
+User authentication and wallet management:
+
+```env
+NEXT_PUBLIC_PRIVY_APP_ID=  # Privy app ID (public)
+PRIVY_APP_ID=              # Privy app ID (server-side)
+PRIVY_APP_SECRET=          # Privy app secret (server-side only)
+```
+
+**Setup:**
+1. Create account at [privy.io](https://www.privy.io)
+2. Create new app
+3. Copy app ID and secret from dashboard
+4. Configure allowed domains in Privy dashboard
+
+## Optional Variables
+
+### Solana Integration
+
+For treasury and wallet features:
+
+```env
+NEXT_PUBLIC_SOLANA_RPC=    # Solana RPC endpoint
+NEXT_PUBLIC_SOLANA_NETWORK= # mainnet-beta | devnet | testnet
+```
+
+**Recommended RPC Providers:**
+- [Helius](https://helius.xyz)
+- [QuickNode](https://quicknode.com)
+- [Alchemy](https://alchemy.com)
+
+### Token Configuration
+
+LTCG token settings:
+
+```env
+NEXT_PUBLIC_LTCG_TOKEN_MINT=      # Token mint address
+NEXT_PUBLIC_LTCG_TOKEN_DECIMALS=6 # Token decimals
+```
+
+## Validation
+
+Validate your environment configuration:
+
+```bash
+bun run validate:env
+```
+
+This checks:
+- All required variables are set
+- URLs are properly formatted
+- Credentials are valid (basic checks)
+
+## Environment-Specific Setup
+
+### Development
+
+Use `.env.local` for local development:
+- Convex dev deployment
+- Privy test app
+- Solana devnet
+
+### Production
+
+Configure in Vercel/hosting dashboard:
+- Convex production deployment
+- Privy production app
+- Solana mainnet-beta
+- Production token addresses
+
+## Security Best Practices
+
+1. **Never commit** `.env.local` to git
+2. **Use separate** Privy apps for dev/prod
+3. **Rotate secrets** regularly
+4. **Limit access** to production environment variables
+5. **Use Vercel's** encrypted environment variables for production
+
+## Troubleshooting
+
+### "Missing required environment variable"
+
+Check that all required variables are set in `.env.local`:
+```bash
+bun run validate:env
+```
+
+### "Invalid Convex URL"
+
+Ensure the URL starts with `https://` and ends with `.convex.cloud`
+
+### "Privy authentication failed"
+
+1. Verify app ID and secret match Privy dashboard
+2. Check allowed domains include `localhost:3000` (dev) or your production domain
+3. Ensure both `PRIVY_APP_ID` and `PRIVY_APP_SECRET` are set
+
+## References
+
+- [Convex Documentation](https://docs.convex.dev)
+- [Privy Documentation](https://docs.privy.io)
+- [Solana RPC Providers](https://solana.com/rpc)

@@ -9,13 +9,7 @@
 import { PageWrapper } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -84,14 +78,12 @@ interface RewardTier {
   titleReward?: string;
 }
 
-const STATUS_CONFIG: Record<
-  SeasonStatus,
-  { label: string; color: "yellow" | "emerald" | "gray" }
-> = {
-  upcoming: { label: "Upcoming", color: "yellow" },
-  active: { label: "Active", color: "emerald" },
-  ended: { label: "Ended", color: "gray" },
-};
+const STATUS_CONFIG: Record<SeasonStatus, { label: string; color: "yellow" | "emerald" | "gray" }> =
+  {
+    upcoming: { label: "Upcoming", color: "yellow" },
+    active: { label: "Active", color: "emerald" },
+    ended: { label: "Ended", color: "gray" },
+  };
 
 const TIER_COLORS: Record<string, string> = {
   Bronze: "text-orange-600",
@@ -153,7 +145,7 @@ function EditSeasonDialog({ open, onOpenChange, season }: EditSeasonDialogProps)
         endDate: new Date(endDate).getTime(),
         rankResetType,
         softResetPercentage:
-          rankResetType === "soft" ? parseInt(softResetPercentage, 10) : undefined,
+          rankResetType === "soft" ? Number.parseInt(softResetPercentage, 10) : undefined,
       });
 
       toast.success(result.message);
@@ -179,12 +171,7 @@ function EditSeasonDialog({ open, onOpenChange, season }: EditSeasonDialogProps)
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label htmlFor="name">Season Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
 
             <div>
@@ -336,12 +323,8 @@ function RewardsPreview({ seasonId }: RewardsPreviewProps) {
             <TableRow key={tier.tier}>
               <TableCell className={TIER_COLORS[tier.tier] || ""}>{tier.tier}</TableCell>
               <TableCell className="text-right">{tier.playerCount}</TableCell>
-              <TableCell className="text-right">
-                {tier.totalGold.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {tier.totalGems.toLocaleString()}
-              </TableCell>
+              <TableCell className="text-right">{tier.totalGold.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{tier.totalGems.toLocaleString()}</TableCell>
               <TableCell className="text-right">{tier.totalPacks}</TableCell>
             </TableRow>
           ))}
@@ -420,16 +403,11 @@ function Leaderboard({ seasonId, isEnded }: LeaderboardProps) {
                 )}
               </TableCell>
               <TableCell>
-                <Link
-                  href={`/players/${player.userId}`}
-                  className="hover:underline text-primary"
-                >
+                <Link href={`/players/${player.userId}`} className="hover:underline text-primary">
                   {player.username}
                 </Link>
               </TableCell>
-              <TableCell className={TIER_COLORS[player.tier] || ""}>
-                {player.tier}
-              </TableCell>
+              <TableCell className={TIER_COLORS[player.tier] || ""}>{player.tier}</TableCell>
               <TableCell className="text-right font-mono">{player.elo}</TableCell>
               <TableCell className="text-right text-muted-foreground">
                 {player.wins}/{player.losses}
@@ -467,7 +445,11 @@ interface RewardsConfigProps {
   seasonId: string;
 }
 
-function RewardsConfig({ rewards, isEditable: _isEditable, seasonId: _seasonId }: RewardsConfigProps) {
+function RewardsConfig({
+  rewards,
+  isEditable: _isEditable,
+  seasonId: _seasonId,
+}: RewardsConfigProps) {
   return (
     <Table>
       <TableHeader>
@@ -496,9 +478,7 @@ function RewardsConfig({ rewards, isEditable: _isEditable, seasonId: _seasonId }
               {reward.tier}
             </TableCell>
             <TableCell className="text-right font-mono">{reward.minElo}</TableCell>
-            <TableCell className="text-right">
-              {reward.goldReward.toLocaleString()}
-            </TableCell>
+            <TableCell className="text-right">{reward.goldReward.toLocaleString()}</TableCell>
             <TableCell className="text-right">{reward.gemsReward}</TableCell>
             <TableCell className="text-right">{reward.cardPackReward || "-"}</TableCell>
             <TableCell>{reward.titleReward || "-"}</TableCell>
@@ -531,9 +511,7 @@ export default function SeasonDetailPage() {
 
   const startSeason = useConvexMutation(apiAny.admin.seasons.startSeason);
   const endSeason = useConvexMutation(apiAny.admin.seasons.endSeason);
-  const distributeRewards = useConvexMutation(
-    apiAny.admin.seasons.distributeSeasonRewards
-  );
+  const distributeRewards = useConvexMutation(apiAny.admin.seasons.distributeSeasonRewards);
   const deleteSeason = useConvexMutation(apiAny.admin.seasons.deleteSeason);
 
   const handleStart = async () => {
@@ -570,20 +548,14 @@ export default function SeasonDetailPage() {
       const result = await distributeRewards({ seasonId: seasonId as any });
       toast.success(result.message);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to distribute rewards"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to distribute rewards");
     } finally {
       setIsDistributing(false);
     }
   };
 
   const handleDelete = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this season? This action cannot be undone."
-      )
-    ) {
+    if (!confirm("Are you sure you want to delete this season? This action cannot be undone.")) {
       return;
     }
     try {
@@ -616,7 +588,9 @@ export default function SeasonDetailPage() {
           <Link href="/seasons" className="text-muted-foreground hover:text-foreground">
             <ArrowLeftIcon className="h-5 w-5" />
           </Link>
-          <span>Season {season.number}: {season.name}</span>
+          <span>
+            Season {season.number}: {season.name}
+          </span>
           <Badge color={statusConfig.color}>{statusConfig.label}</Badge>
         </div>
       }
@@ -670,17 +644,16 @@ export default function SeasonDetailPage() {
               </>
             )}
 
-            {season.status === "ended" &&
-              season.snapshotStats?.pendingRewards > 0 && (
-                <RoleGuard permission="config.edit">
-                  <Button onClick={handleDistributeRewards} disabled={isDistributing}>
-                    <GiftIcon className="h-4 w-4 mr-2" />
-                    {isDistributing
-                      ? "Distributing..."
-                      : `Distribute Rewards (${season.snapshotStats.pendingRewards} pending)`}
-                  </Button>
-                </RoleGuard>
-              )}
+            {season.status === "ended" && season.snapshotStats?.pendingRewards > 0 && (
+              <RoleGuard permission="config.edit">
+                <Button onClick={handleDistributeRewards} disabled={isDistributing}>
+                  <GiftIcon className="h-4 w-4 mr-2" />
+                  {isDistributing
+                    ? "Distributing..."
+                    : `Distribute Rewards (${season.snapshotStats.pendingRewards} pending)`}
+                </Button>
+              </RoleGuard>
+            )}
 
             {season.status === "upcoming" && hasPermission("admin.manage") && (
               <Button variant="ghost" size="sm" onClick={handleDelete}>
@@ -696,9 +669,7 @@ export default function SeasonDetailPage() {
             <Card>
               <CardContent className="pt-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold">
-                    {season.snapshotStats.totalPlayers}
-                  </div>
+                  <div className="text-2xl font-bold">{season.snapshotStats.totalPlayers}</div>
                   <div className="text-sm text-muted-foreground">Total Players</div>
                 </div>
               </CardContent>
@@ -810,11 +781,7 @@ export default function SeasonDetailPage() {
       </div>
 
       {/* Edit Dialog */}
-      <EditSeasonDialog
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
-        season={season}
-      />
+      <EditSeasonDialog open={showEditDialog} onOpenChange={setShowEditDialog} season={season} />
 
       {/* End Season Confirmation Dialog */}
       <Dialog open={showEndConfirm} onOpenChange={setShowEndConfirm}>
@@ -822,23 +789,15 @@ export default function SeasonDetailPage() {
           <DialogHeader>
             <DialogTitle>End Season "{season.name}"?</DialogTitle>
             <DialogDescription>
-              This will create snapshots of all player rankings and optionally distribute
-              rewards immediately. This action cannot be undone.
+              This will create snapshots of all player rankings and optionally distribute rewards
+              immediately. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowEndConfirm(false)}
-              disabled={isEnding}
-            >
+            <Button variant="outline" onClick={() => setShowEndConfirm(false)} disabled={isEnding}>
               Cancel
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => handleEnd(false)}
-              disabled={isEnding}
-            >
+            <Button variant="secondary" onClick={() => handleEnd(false)} disabled={isEnding}>
               End (No Rewards)
             </Button>
             <Button variant="default" onClick={() => handleEnd(true)} disabled={isEnding}>

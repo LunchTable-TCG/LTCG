@@ -123,12 +123,12 @@ function CreateTournamentDialog({ open, onOpenChange }: CreateTournamentDialogPr
         description: description.trim() || undefined,
         format,
         maxPlayers,
-        entryFee: parseInt(entryFee, 10),
+        entryFee: Number.parseInt(entryFee, 10),
         mode,
         prizePool: {
-          first: parseInt(prizeFirst, 10),
-          second: parseInt(prizeSecond, 10),
-          thirdFourth: parseInt(prizeThirdFourth, 10),
+          first: Number.parseInt(prizeFirst, 10),
+          second: Number.parseInt(prizeSecond, 10),
+          thirdFourth: Number.parseInt(prizeThirdFourth, 10),
         },
         registrationStartsAt: new Date(registrationStartsAt).getTime(),
         registrationEndsAt: new Date(registrationEndsAt).getTime(),
@@ -197,10 +197,7 @@ function CreateTournamentDialog({ open, onOpenChange }: CreateTournamentDialogPr
 
             <div>
               <Label htmlFor="format">Format</Label>
-              <Select
-                value={format}
-                onValueChange={(v) => setFormat(v as TournamentFormat)}
-              >
+              <Select value={format} onValueChange={(v) => setFormat(v as TournamentFormat)}>
                 <SelectTrigger id="format">
                   <SelectValue />
                 </SelectTrigger>
@@ -212,10 +209,7 @@ function CreateTournamentDialog({ open, onOpenChange }: CreateTournamentDialogPr
 
             <div>
               <Label htmlFor="mode">Mode</Label>
-              <Select
-                value={mode}
-                onValueChange={(v) => setMode(v as TournamentMode)}
-              >
+              <Select value={mode} onValueChange={(v) => setMode(v as TournamentMode)}>
                 <SelectTrigger id="mode">
                   <SelectValue />
                 </SelectTrigger>
@@ -230,7 +224,7 @@ function CreateTournamentDialog({ open, onOpenChange }: CreateTournamentDialogPr
               <Label htmlFor="maxPlayers">Max Players</Label>
               <Select
                 value={maxPlayers.toString()}
-                onValueChange={(v) => setMaxPlayers(parseInt(v) as 8 | 16 | 32)}
+                onValueChange={(v) => setMaxPlayers(Number.parseInt(v) as 8 | 16 | 32)}
               >
                 <SelectTrigger id="maxPlayers">
                   <SelectValue />
@@ -302,7 +296,11 @@ function CreateTournamentDialog({ open, onOpenChange }: CreateTournamentDialogPr
                 </div>
               </div>
               <Text className="text-xs text-muted-foreground mt-1">
-                Total: {parseInt(prizeFirst || "0") + parseInt(prizeSecond || "0") + parseInt(prizeThirdFourth || "0") * 2} gold
+                Total:{" "}
+                {Number.parseInt(prizeFirst || "0") +
+                  Number.parseInt(prizeSecond || "0") +
+                  Number.parseInt(prizeThirdFourth || "0") * 2}{" "}
+                gold
               </Text>
             </div>
 
@@ -437,8 +435,8 @@ function TournamentActions({ tournament }: TournamentActionsProps) {
           <DialogHeader>
             <DialogTitle>Cancel Tournament "{tournament.name}"?</DialogTitle>
             <DialogDescription>
-              This will cancel the tournament and refund entry fees to all participants.
-              This action cannot be undone.
+              This will cancel the tournament and refund entry fees to all participants. This action
+              cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -463,11 +461,7 @@ function TournamentActions({ tournament }: TournamentActionsProps) {
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleCancel}
-              disabled={isCancelling}
-            >
+            <Button variant="destructive" onClick={handleCancel} disabled={isCancelling}>
               {isCancelling ? "Cancelling..." : "Cancel Tournament"}
             </Button>
           </DialogFooter>
@@ -496,10 +490,7 @@ export default function TournamentsPage() {
   const isLoading = tournamentsResult === undefined;
 
   return (
-    <PageWrapper
-      title="Tournaments"
-      description="Manage tournaments and competitive events"
-    >
+    <PageWrapper title="Tournaments" description="Manage tournaments and competitive events">
       <div className="space-y-6">
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
@@ -625,14 +616,16 @@ export default function TournamentsPage() {
                         </td>
                         <td className="py-3 px-3">
                           <div className="text-xs">
-                            <div className="font-medium">{FORMAT_LABELS[tournament.format as TournamentFormat]}</div>
-                            <div className="text-muted-foreground">{MODE_LABELS[tournament.mode as TournamentMode]}</div>
+                            <div className="font-medium">
+                              {FORMAT_LABELS[tournament.format as TournamentFormat]}
+                            </div>
+                            <div className="text-muted-foreground">
+                              {MODE_LABELS[tournament.mode as TournamentMode]}
+                            </div>
                           </div>
                         </td>
                         <td className="py-3 px-3">
-                          <Badge color={statusConfig.color}>
-                            {statusConfig.label}
-                          </Badge>
+                          <Badge color={statusConfig.color}>{statusConfig.label}</Badge>
                         </td>
                         <td className="py-3 px-3 text-center">
                           <div className="flex items-center justify-center gap-1">
@@ -656,11 +649,12 @@ export default function TournamentsPage() {
                           <div className="flex items-center gap-1 text-xs">
                             <CalendarIcon className="h-3 w-3 text-muted-foreground" />
                             <div>
-                              <div className="font-medium">
-                                {startDate.toLocaleDateString()}
-                              </div>
+                              <div className="font-medium">{startDate.toLocaleDateString()}</div>
                               <div className="text-muted-foreground">
-                                {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {startDate.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
                               </div>
                             </div>
                           </div>

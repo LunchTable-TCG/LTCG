@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { getAnnouncement } from "@/lib/edge-config";
+import { NextResponse } from "next/server";
 
 /**
  * GET /api/announcement

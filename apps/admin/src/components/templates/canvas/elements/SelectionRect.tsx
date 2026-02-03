@@ -6,9 +6,9 @@
  * Renders a selection rectangle for multi-select and alignment guides.
  */
 
-import { Rect, Line } from "react-konva";
+import { Line, Rect } from "react-konva";
 import type { SnapGuide } from "../../types";
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../../types";
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../../types";
 
 interface SelectionRectProps {
   /** Selection rectangle bounds (null if not active) */

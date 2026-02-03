@@ -6,7 +6,7 @@
  * performance and CDN distribution.
  */
 
-import { put, del, list, type PutBlobResult } from "@vercel/blob";
+import { type PutBlobResult, del, list, put } from "@vercel/blob";
 
 // =============================================================================
 // Constants
@@ -84,8 +84,7 @@ const ASSET_PATH_MAP: Record<string, string> = {
   // Hero backgrounds
   "/brand/backgrounds/ltcg-hero-1536x1024.branded.png":
     "brand/backgrounds/ltcg-hero-1536x1024.branded.png",
-  "/brand/backgrounds/ltcg-vertical-1024x1536.png":
-    "brand/backgrounds/ltcg-vertical-1024x1536.png",
+  "/brand/backgrounds/ltcg-vertical-1024x1536.png": "brand/backgrounds/ltcg-vertical-1024x1536.png",
 };
 
 // =============================================================================

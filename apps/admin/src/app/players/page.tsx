@@ -17,8 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ColumnDef, PlayerType } from "@/types";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import type { ColumnDef, PlayerType } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 

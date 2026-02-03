@@ -1,0 +1,7 @@
+/**
+ * @ltcg/core/types - Shared TypeScript types
+ *
+ * Provides type-safe wrappers for Convex functions and shared interfaces.
+ */
+
+export * from "./convex";

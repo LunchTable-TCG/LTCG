@@ -1,7 +1,7 @@
 "use client";
 
-import { getTutorialMoment, type TutorialMoment } from "@/lib/game-rules";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { type TutorialMoment, getTutorialMoment } from "@/lib/game-rules";
 import { useMutation } from "convex/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -42,10 +42,7 @@ export function useTutorial({ enabled, gameState }: UseTutorialOptions): UseTuto
   const [triggeredMoments, setTriggeredMoments] = useState<Set<number>>(new Set());
 
   // Get tutorial status from database
-  const tutorialStatus = useConvexQuery(
-    apiAny.tutorial.getTutorialStatus,
-    enabled ? {} : "skip"
-  );
+  const tutorialStatus = useConvexQuery(apiAny.tutorial.getTutorialStatus, enabled ? {} : "skip");
 
   // Mutations
   const updateProgress = useMutation(apiAny.tutorial.updateTutorialProgress);
@@ -95,27 +92,37 @@ export function useTutorial({ enabled, gameState }: UseTutorialOptions): UseTuto
       switch (moment.trigger) {
         case "turn_start":
           // Moment 1: Show on first turn, draw phase
-          return gameState.turnNumber === 1 &&
-                 gameState.isPlayerTurn &&
-                 (gameState.currentPhase === "draw" || gameState.currentPhase === "standby" || gameState.currentPhase === "main1");
+          return (
+            gameState.turnNumber === 1 &&
+            gameState.isPlayerTurn &&
+            (gameState.currentPhase === "draw" ||
+              gameState.currentPhase === "standby" ||
+              gameState.currentPhase === "main1")
+          );
 
         case "creature_in_hand":
           // Moment 2: Has creature in hand during main phase
-          return gameState.currentPhase === "main1" &&
-                 gameState.isPlayerTurn &&
-                 gameState.myHand.some(c => c.cardType === "creature" || c.cardType === "monster");
+          return (
+            gameState.currentPhase === "main1" &&
+            gameState.isPlayerTurn &&
+            gameState.myHand.some((c) => c.cardType === "creature" || c.cardType === "monster")
+          );
 
         case "creature_on_field":
           // Moment 3: Has creature on field during battle phase
-          return (gameState.currentPhase === "battle" || gameState.currentPhase === "battle_start") &&
-                 gameState.isPlayerTurn &&
-                 gameState.myField.some(c => c.cardType === "creature" || c.cardType === "monster");
+          return (
+            (gameState.currentPhase === "battle" || gameState.currentPhase === "battle_start") &&
+            gameState.isPlayerTurn &&
+            gameState.myField.some((c) => c.cardType === "creature" || c.cardType === "monster")
+          );
 
         case "spell_in_hand":
           // Moment 4: Has spell in hand during main phase
-          return (gameState.currentPhase === "main1" || gameState.currentPhase === "main2") &&
-                 gameState.isPlayerTurn &&
-                 gameState.myHand.some(c => c.cardType === "spell");
+          return (
+            (gameState.currentPhase === "main1" || gameState.currentPhase === "main2") &&
+            gameState.isPlayerTurn &&
+            gameState.myHand.some((c) => c.cardType === "spell")
+          );
 
         case "opponent_lp_zero":
           // Moment 5: Victory!
@@ -130,11 +137,18 @@ export function useTutorial({ enabled, gameState }: UseTutorialOptions): UseTuto
     for (let i = 1; i <= 5; i++) {
       if (checkMoment(i)) {
         setActiveMomentId(i);
-        setTriggeredMoments(prev => new Set(prev).add(i));
+        setTriggeredMoments((prev) => new Set(prev).add(i));
         break;
       }
     }
-  }, [shouldShowTutorial, hasInitialized, gameState, activeMomentId, tutorialStatus, triggeredMoments]);
+  }, [
+    shouldShowTutorial,
+    hasInitialized,
+    gameState,
+    activeMomentId,
+    tutorialStatus,
+    triggeredMoments,
+  ]);
 
   // Get current moment data
   const currentMoment = useMemo(() => {

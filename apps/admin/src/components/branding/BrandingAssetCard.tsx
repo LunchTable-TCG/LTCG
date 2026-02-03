@@ -1,9 +1,9 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { FileIcon, ImageIcon, Music2Icon, VideoIcon, FileTextIcon } from "lucide-react";
+import { FileIcon, FileTextIcon, ImageIcon, Music2Icon, VideoIcon } from "lucide-react";
 import type { BrandingAssetCardProps } from "./types";
 
 function getFileIcon(contentType?: string) {
@@ -62,9 +62,7 @@ export function BrandingAssetCard({ asset, onClick, onContextMenu }: BrandingAss
       {/* Info */}
       <div className="p-3">
         <p className="font-medium text-sm truncate">{asset.name}</p>
-        <p className="text-xs text-muted-foreground truncate">
-          {asset.fileMetadata?.fileName}
-        </p>
+        <p className="text-xs text-muted-foreground truncate">{asset.fileMetadata?.fileName}</p>
       </div>
     </Card>
   );

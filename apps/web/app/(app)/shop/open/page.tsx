@@ -3,9 +3,9 @@
 import { ListingDialog } from "@/components/marketplace/ListingDialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { getAssetUrl } from "@/lib/blob";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
-import { getAssetUrl } from "@/lib/blob";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -324,7 +324,11 @@ function PackOpeningContent() {
                 <div className="absolute inset-0 bg-[#d4af37]/20 rounded-2xl blur-xl" />
                 <div className="relative w-64 h-80 rounded-2xl flex items-center justify-center">
                   <Image
-                    src={openingType === "box" ? getAssetUrl("/assets/shop/box.png") : getAssetUrl("/assets/shop/pack.png")}
+                    src={
+                      openingType === "box"
+                        ? getAssetUrl("/assets/shop/box.png")
+                        : getAssetUrl("/assets/shop/pack.png")
+                    }
                     alt={openingType === "box" ? "Booster Box" : "Booster Pack"}
                     width={256}
                     height={320}

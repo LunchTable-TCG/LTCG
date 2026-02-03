@@ -1,5 +1,6 @@
 "use client";
 
+import { QuestRewardModal } from "@/components/quests/QuestRewardModal";
 import { Progress } from "@/components/ui/progress";
 import { useAchievements, useProfile, useQuests } from "@/hooks";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,11 @@ export default function QuestsPage() {
   } = useAchievements();
 
   const [activeTab, setActiveTab] = useState<"quests" | "achievements">("quests");
+  const [rewardModalOpen, setRewardModalOpen] = useState(false);
+  const [selectedQuestReward, setSelectedQuestReward] = useState<{
+    name: string;
+    rewards: { gold?: number; xp?: number; items?: Array<{ name: string; quantity: number }> };
+  } | null>(null);
 
   if (isLoading || !profile) {
     return (
@@ -430,6 +436,23 @@ export default function QuestsPage() {
           </div>
         )}
       </div>
+
+      {/* Quest Reward Modal */}
+      {selectedQuestReward && (
+        <QuestRewardModal
+          isOpen={rewardModalOpen}
+          onClose={() => {
+            setRewardModalOpen(false);
+            setSelectedQuestReward(null);
+          }}
+          questName={selectedQuestReward.name}
+          rewards={selectedQuestReward.rewards}
+          onClaim={async () => {
+            // Claim reward logic would go here
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }}
+        />
+      )}
     </div>
   );
 }

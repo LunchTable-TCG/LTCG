@@ -6,11 +6,14 @@
  */
 
 import { v } from "convex/values";
+import type { Id } from "../../_generated/dataModel";
 import { internalMutation, mutation } from "../../_generated/server";
+import { getCardAbility } from "../../lib/abilityHelpers";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { clearTemporaryModifiers, drawCards } from "../../lib/gameHelpers";
 import { validateGameActive } from "../../lib/gameValidation";
+import { executeEffect } from "../effectSystem/index";
 import { resetOPTEffects } from "../effectSystem/optTracker";
 import { recordEventHelper } from "../gameEvents";
 import { checkDeckOutCondition, checkStateBasedActions } from "./stateBasedActions";
@@ -72,7 +75,71 @@ export const endTurn = mutation({
 
     const isHost = user.userId === gameState.hostId;
 
-    // 6. Trigger end-of-turn effects (future implementation)
+    // 6. Trigger end-of-turn effects
+    // Check all cards on the field for "on_turn_end" or "on_end_phase" triggers
+    {
+      const playerBoard = isHost ? gameState.hostBoard : gameState.opponentBoard;
+      const opponentBoard = isHost ? gameState.opponentBoard : gameState.hostBoard;
+      const opponentId = isHost ? gameState.opponentId : gameState.hostId;
+
+      interface BoardCardWithOwner {
+        cardId: Id<"cardDefinitions">;
+        ownerId: Id<"users">;
+      }
+
+      const allBoards: BoardCardWithOwner[] = [
+        ...playerBoard.map((bc) => ({ cardId: bc.cardId, ownerId: user.userId })),
+        ...opponentBoard.map((bc) => ({ cardId: bc.cardId, ownerId: opponentId })),
+      ];
+
+      for (const boardCard of allBoards) {
+        const card = await ctx.db.get(boardCard.cardId);
+        if (!card) continue;
+
+        const cardAbility = getCardAbility(card);
+        if (!cardAbility) continue;
+
+        for (const parsedEffect of cardAbility.effects) {
+          // Check for both "on_turn_end" and "on_end_phase" triggers
+          if (parsedEffect.trigger !== "on_turn_end" && parsedEffect.trigger !== "on_end_phase")
+            continue;
+
+          const refreshedState = await ctx.db
+            .query("gameStates")
+            .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+            .first();
+
+          if (!refreshedState) continue;
+
+          const effectResult = await executeEffect(
+            ctx,
+            refreshedState,
+            args.lobbyId,
+            parsedEffect,
+            boardCard.ownerId,
+            boardCard.cardId,
+            []
+          );
+
+          if (effectResult.success && gameState.gameId && gameState.turnNumber !== undefined) {
+            const owner = await ctx.db.get(boardCard.ownerId);
+            await recordEventHelper(ctx, {
+              lobbyId: args.lobbyId,
+              gameId: gameState.gameId,
+              turnNumber: gameState.turnNumber,
+              eventType: "effect_activated",
+              playerId: boardCard.ownerId,
+              playerUsername: owner?.username || "Unknown",
+              description: `${card.name} end phase effect: ${effectResult.message}`,
+              metadata: {
+                cardId: boardCard.cardId,
+                trigger: parsedEffect.trigger,
+              },
+            });
+          }
+        }
+      }
+    }
 
     // 7. Enforce hand size limit via state-based actions (6 cards max)
     // SBA will handle discarding excess cards
@@ -214,6 +281,11 @@ export const endTurn = mutation({
           };
         }
       }
+
+      // Check for "on_draw" trigger effects after drawing
+      // Note: This is handled automatically by phaseManager's executePhaseTriggeredEffects
+      // But for endTurn flow, we need to explicitly handle it here if needed
+      // Currently this is already handled in phaseManager during the draw phase
     } else {
       console.log(`Turn ${nextTurnNumber}: Skipping draw for first player's first turn`);
     }

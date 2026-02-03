@@ -204,28 +204,23 @@ export default function ShopProductEditorPage() {
           name: name.trim(),
           description: description.trim(),
           productType,
-          goldPrice: goldPrice ? parseInt(goldPrice) : undefined,
-          gemPrice: gemPrice ? parseInt(gemPrice) : undefined,
-          packCardCount: productType === "pack" ? parseInt(packCardCount) : undefined,
+          goldPrice: goldPrice ? Number.parseInt(goldPrice) : undefined,
+          gemPrice: gemPrice ? Number.parseInt(gemPrice) : undefined,
+          packCardCount: productType === "pack" ? Number.parseInt(packCardCount) : undefined,
           packGuaranteedRarity:
             productType === "pack" && packGuaranteedRarity !== "none"
               ? (packGuaranteedRarity as Rarity)
               : undefined,
           packArchetype:
-            productType === "pack" && packArchetype !== "none"
-              ? packArchetype
-              : undefined,
+            productType === "pack" && packArchetype !== "none" ? packArchetype : undefined,
           boxPackProductId: productType === "box" ? boxPackProductId : undefined,
-          boxPackCount: productType === "box" ? parseInt(boxPackCount) : undefined,
+          boxPackCount: productType === "box" ? Number.parseInt(boxPackCount) : undefined,
           boxBonusCards:
-            productType === "box" && boxBonusCards
-              ? parseInt(boxBonusCards)
-              : undefined,
+            productType === "box" && boxBonusCards ? Number.parseInt(boxBonusCards) : undefined,
           currencyType: productType === "currency" ? currencyType : undefined,
-          currencyAmount:
-            productType === "currency" ? parseInt(currencyAmount) : undefined,
+          currencyAmount: productType === "currency" ? Number.parseInt(currencyAmount) : undefined,
           isActive,
-          sortOrder: sortOrder ? parseInt(sortOrder) : undefined,
+          sortOrder: sortOrder ? Number.parseInt(sortOrder) : undefined,
         });
         toast.success(result.message);
         router.push(`/shop/${result.productDbId}`);
@@ -234,32 +229,27 @@ export default function ShopProductEditorPage() {
           productDbId: productDbId as any,
           name: name.trim(),
           description: description.trim(),
-          goldPrice: goldPrice ? parseInt(goldPrice) : undefined,
-          gemPrice: gemPrice ? parseInt(gemPrice) : undefined,
+          goldPrice: goldPrice ? Number.parseInt(goldPrice) : undefined,
+          gemPrice: gemPrice ? Number.parseInt(gemPrice) : undefined,
           clearGoldPrice: !goldPrice,
           clearGemPrice: !gemPrice,
-          packCardCount: productType === "pack" ? parseInt(packCardCount) : undefined,
+          packCardCount: productType === "pack" ? Number.parseInt(packCardCount) : undefined,
           packGuaranteedRarity:
             productType === "pack" && packGuaranteedRarity !== "none"
               ? (packGuaranteedRarity as Rarity)
               : undefined,
           clearGuaranteedRarity: productType === "pack" && packGuaranteedRarity === "none",
           packArchetype:
-            productType === "pack" && packArchetype !== "none"
-              ? packArchetype
-              : undefined,
+            productType === "pack" && packArchetype !== "none" ? packArchetype : undefined,
           clearArchetype: productType === "pack" && packArchetype === "none",
           boxPackProductId: productType === "box" ? boxPackProductId : undefined,
-          boxPackCount: productType === "box" ? parseInt(boxPackCount) : undefined,
+          boxPackCount: productType === "box" ? Number.parseInt(boxPackCount) : undefined,
           boxBonusCards:
-            productType === "box" && boxBonusCards
-              ? parseInt(boxBonusCards)
-              : undefined,
+            productType === "box" && boxBonusCards ? Number.parseInt(boxBonusCards) : undefined,
           currencyType: productType === "currency" ? currencyType : undefined,
-          currencyAmount:
-            productType === "currency" ? parseInt(currencyAmount) : undefined,
+          currencyAmount: productType === "currency" ? Number.parseInt(currencyAmount) : undefined,
           isActive,
-          sortOrder: sortOrder ? parseInt(sortOrder) : undefined,
+          sortOrder: sortOrder ? Number.parseInt(sortOrder) : undefined,
         });
         toast.success(result.message);
       }
@@ -337,7 +327,9 @@ export default function ShopProductEditorPage() {
   return (
     <PageWrapper
       title={isNew ? "New Product" : `Edit: ${existingProduct?.name}`}
-      description={isNew ? "Create a new shop product" : `Product ID: ${existingProduct?.productId}`}
+      description={
+        isNew ? "Create a new shop product" : `Product ID: ${existingProduct?.productId}`
+      }
       actions={
         <div className="flex gap-2">
           <Button variant="outline" asChild>
@@ -388,9 +380,7 @@ export default function ShopProductEditorPage() {
                   </div>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDuplicate}>
-                      Create Copy
-                    </AlertDialogAction>
+                    <AlertDialogAction onClick={handleDuplicate}>Create Copy</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
@@ -406,8 +396,8 @@ export default function ShopProductEditorPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Product</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to permanently delete "{existingProduct?.name}"?
-                        This action cannot be undone.
+                        Are you sure you want to permanently delete "{existingProduct?.name}"? This
+                        action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -501,9 +491,7 @@ export default function ShopProductEditorPage() {
                       <SelectItem key={t.value} value={t.value}>
                         <div>
                           <div>{t.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {t.description}
-                          </div>
+                          <div className="text-xs text-muted-foreground">{t.description}</div>
                         </div>
                       </SelectItem>
                     ))}
@@ -519,9 +507,7 @@ export default function ShopProductEditorPage() {
                   onChange={(e) => setSortOrder(e.target.value)}
                   placeholder="1"
                 />
-                <Text className="text-xs text-muted-foreground">
-                  Lower numbers appear first
-                </Text>
+                <Text className="text-xs text-muted-foreground">Lower numbers appear first</Text>
               </div>
             </div>
           </Card>
@@ -748,11 +734,7 @@ export default function ShopProductEditorPage() {
                 </div>
                 <Badge
                   color={
-                    productType === "pack"
-                      ? "blue"
-                      : productType === "box"
-                        ? "violet"
-                        : "amber"
+                    productType === "pack" ? "blue" : productType === "box" ? "violet" : "amber"
                   }
                   size="sm"
                 >
@@ -769,7 +751,7 @@ export default function ShopProductEditorPage() {
                   <div className="flex items-center gap-1 text-amber-600">
                     <CoinsIcon className="h-4 w-4" />
                     <span className="font-medium">
-                      {parseInt(goldPrice).toLocaleString()}
+                      {Number.parseInt(goldPrice).toLocaleString()}
                     </span>
                   </div>
                 )}
@@ -777,7 +759,7 @@ export default function ShopProductEditorPage() {
                   <div className="flex items-center gap-1 text-violet-600">
                     <GemIcon className="h-4 w-4" />
                     <span className="font-medium">
-                      {parseInt(gemPrice).toLocaleString()}
+                      {Number.parseInt(gemPrice).toLocaleString()}
                     </span>
                   </div>
                 )}
@@ -805,7 +787,7 @@ export default function ShopProductEditorPage() {
                 )}
                 {productType === "currency" && (
                   <div>
-                    {parseInt(currencyAmount || "0").toLocaleString()} {currencyType}
+                    {Number.parseInt(currencyAmount || "0").toLocaleString()} {currencyType}
                   </div>
                 )}
               </div>

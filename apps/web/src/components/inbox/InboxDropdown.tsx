@@ -1,6 +1,6 @@
 "use client";
 
-import { useInbox, type InboxMessage, type InboxMessageType } from "@/hooks/social/useInbox";
+import { type InboxMessage, type InboxMessageType, useInbox } from "@/hooks/social/useInbox";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import {
@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Icon mapping for message types
 const messageIcons: Record<InboxMessageType, typeof Bell> = {

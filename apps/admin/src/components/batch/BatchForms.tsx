@@ -407,9 +407,9 @@ export function GrantPremiumForm({ onSuccess: _onSuccess }: BatchOperationFormPr
           <div>
             <Text className="text-yellow-500 font-medium">Feature Not Yet Implemented</Text>
             <Text className="text-sm text-muted-foreground">
-              The premium currency system is not yet available in the database schema.
-              This feature will be enabled once the isPremium and premiumExpiresAt fields
-              are added to the users table.
+              The premium currency system is not yet available in the database schema. This feature
+              will be enabled once the isPremium and premiumExpiresAt fields are added to the users
+              table.
             </Text>
           </div>
         </div>
@@ -448,11 +448,7 @@ export function GrantPremiumForm({ onSuccess: _onSuccess }: BatchOperationFormPr
         </div>
       </div>
 
-      <Button
-        type="button"
-        disabled={true}
-        className="w-full"
-      >
+      <Button type="button" disabled={true} className="w-full">
         Coming Soon - Grant Premium to {selectedPlayers.length} Players
       </Button>
     </div>
@@ -575,7 +571,9 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
                   {preview.currentRankedElo} -{">"} 1000
                 </Text>
                 <Badge
-                  color={preview.rankedChange > 0 ? "green" : preview.rankedChange < 0 ? "red" : "gray"}
+                  color={
+                    preview.rankedChange > 0 ? "green" : preview.rankedChange < 0 ? "red" : "gray"
+                  }
                   size="xs"
                 >
                   {preview.rankedChange > 0 ? "+" : ""}
@@ -773,7 +771,9 @@ export function GrantPacksForm({ onSuccess }: BatchOperationFormProps) {
             type="button"
             variant="outline"
             onClick={handlePreview}
-            disabled={isSubmitting || selectedPlayers.length === 0 || !packDefinitionId.trim() || !quantity}
+            disabled={
+              isSubmitting || selectedPlayers.length === 0 || !packDefinitionId.trim() || !quantity
+            }
             className="flex-1"
           >
             <Eye className="w-4 h-4 mr-2" />
@@ -1142,8 +1142,8 @@ export function RemoveCardsForm({ onSuccess }: BatchOperationFormProps) {
           <div>
             <Text className="text-red-500 font-medium">Warning - Destructive Action</Text>
             <Text className="text-sm text-muted-foreground">
-              This will permanently remove cards from the player&apos;s inventory.
-              This action cannot be undone.
+              This will permanently remove cards from the player&apos;s inventory. This action
+              cannot be undone.
             </Text>
           </div>
         </div>
@@ -1190,10 +1190,7 @@ export function RemoveCardsForm({ onSuccess }: BatchOperationFormProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleSubmit}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={handleSubmit} className="bg-red-600 hover:bg-red-700">
               Yes, Remove Cards
             </AlertDialogAction>
           </AlertDialogFooter>

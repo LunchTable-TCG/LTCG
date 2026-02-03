@@ -1,0 +1,205 @@
+---
+title: Real-Time Query Performance
+description: Optimizing Convex queries for real-time data in LTCG
+lastUpdated: '2026-02-03'
+---
+
+# Real-Time Query Performance
+
+Best practices for optimizing Convex queries in LTCG.
+
+## Query Optimization Strategies
+
+### Use Indexes Efficiently
+
+Ensure your queries use Convex indexes:
+
+```typescript
+// Define index in schema
+export default defineSchema({
+  users: defineTable({
+    name: v.string(),
+    createdAt: v.number(),
+  }).index("by_creation", ["createdAt"]),
+});
+
+// Query using index
+const recentUsers = await ctx.db
+  .query("users")
+  .withIndex("by_creation")
+  .filter((q) => q.gte(q.field("createdAt"), yesterday))
+  .collect();
+```
+
+### Filter Early, Aggregate Late
+
+Apply filters before collecting results:
+
+```typescript
+// Good - filter before collect
+const activeGames = await ctx.db
+  .query("gameLobbies")
+  .filter((q) => q.eq(q.field("status"), "active"))
+  .collect();
+
+// Avoid - collecting all then filtering
+const allGames = await ctx.db.query("gameLobbies").collect();
+const activeGames = allGames.filter(g => g.status === "active");
+```
+
+### Single Query for Multiple Stats
+
+Combine related queries to avoid waterfalls:
+
+```typescript
+export const getPublicStats = query({
+  args: {},
+  returns: v.object({
+    totalPlayers: v.number(),
+    gamesPlayedToday: v.number(),
+    totalGamesPlayed: v.number(),
+    activePlayersNow: v.number(),
+  }),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const todayStart = new Date().setHours(0, 0, 0, 0);
+    const fifteenMinutesAgo = now - 15 * 60 * 1000;
+
+    // Run all queries in parallel
+    const [totalPlayers, allGames, activePresence] = await Promise.all([
+      ctx.db.query("users").collect(),
+      ctx.db.query("gameLobbies").collect(),
+      ctx.db
+        .query("userPresence")
+        .filter((q) => q.gte(q.field("lastActiveAt"), fifteenMinutesAgo))
+        .collect(),
+    ]);
+
+    return {
+      totalPlayers: totalPlayers.length,
+      gamesPlayedToday: allGames.filter(g => g._creationTime >= todayStart).length,
+      totalGamesPlayed: allGames.length,
+      activePlayersNow: activePresence.length,
+    };
+  },
+});
+```
+
+## Real-Time Update Patterns
+
+### Reactive Query Updates
+
+Convex queries auto-update when data changes:
+
+```typescript
+// Component automatically re-renders when data changes
+const stats = useConvexQuery(apiAny.marketing.stats.getPublicStats);
+
+// No manual polling required
+```
+
+### Optimistic Updates
+
+For immediate UI feedback:
+
+```typescript
+const updateCard = useConvexMutation(apiAny.cards.update);
+
+async function handleUpdate(cardId: string, data: CardData) {
+  // Optimistically update UI
+  setLocalCard({ ...localCard, ...data });
+
+  try {
+    await updateCard({ cardId, data });
+  } catch (error) {
+    // Revert on error
+    setLocalCard(originalCard);
+  }
+}
+```
+
+## Performance Monitoring
+
+### Measure Query Performance
+
+Use Convex dashboard to monitor:
+- Query execution time
+- Number of documents scanned
+- Cache hit rate
+
+### Client-Side Optimization
+
+Avoid re-renders during animations:
+
+```typescript
+// Good - motion value doesn't trigger re-renders
+const spring = useSpring(0);
+spring.set(newValue);
+
+// Avoid - state update triggers re-render
+const [count, setCount] = useState(0);
+setCount(newValue);
+```
+
+## Data Sources
+
+### Tables Queried for Stats
+
+1. **users** - Total player count
+2. **gameLobbies** - Game counts (all-time and today)
+3. **userPresence** - Active players (lastActiveAt field)
+
+### Filters Applied
+
+- **Today's games**: `_creationTime >= todayStart` (midnight UTC)
+- **Active players**: `lastActiveAt >= fifteenMinutesAgo` (now - 15 mins)
+
+## Scaling Considerations
+
+### For High-Traffic Scenarios
+
+- **Index optimization**: Ensure all filtered fields are indexed
+- **Caching layer**: Consider adding Redis for expensive aggregations
+- **Sharded counters**: For high-write counters, use distributed counting
+- **Pagination**: Limit result sets for historical data
+
+### Future Enhancements
+
+- Hourly/weekly game trends
+- Peak concurrent players
+- Top archetype statistics
+- Regional player distribution
+- Real-time game spectator counts
+
+## Common Pitfalls
+
+### Avoid N+1 Queries
+
+```typescript
+// Bad - N+1 queries
+const users = await ctx.db.query("users").collect();
+for (const user of users) {
+  const games = await ctx.db
+    .query("games")
+    .filter((q) => q.eq(q.field("userId"), user._id))
+    .collect();
+}
+
+// Good - single query with join
+const allGames = await ctx.db.query("games").collect();
+const gamesByUser = groupBy(allGames, g => g.userId);
+```
+
+### Avoid Over-Fetching
+
+Only query fields you need:
+
+```typescript
+// Consider adding projection if supported
+// For now, filter client-side after minimal query
+```
+
+## References
+
+- [Convex Query Optimization](https://docs.convex.dev/optimization/query-optimization)
+- [Real-Time Best Practices](https://docs.convex.dev/best-practices)

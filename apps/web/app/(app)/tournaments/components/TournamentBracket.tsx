@@ -13,9 +13,7 @@ interface TournamentBracketProps {
 }
 
 export function TournamentBracket({ bracket, currentUserId }: TournamentBracketProps) {
-  const [activeRound, setActiveRound] = useState(
-    Math.max(bracket.tournament.currentRound || 1, 1)
-  );
+  const [activeRound, setActiveRound] = useState(Math.max(bracket.tournament.currentRound || 1, 1));
 
   const totalRounds = bracket.rounds.length;
   const currentRound = bracket.rounds.find((r) => r.roundNumber === activeRound);
@@ -101,7 +99,9 @@ export function TournamentBracket({ bracket, currentUserId }: TournamentBracketP
               >
                 {round.roundName}
               </h3>
-              <p className="text-xs text-[#a89f94]/60">{round.matches.length} match{round.matches.length !== 1 ? "es" : ""}</p>
+              <p className="text-xs text-[#a89f94]/60">
+                {round.matches.length} match{round.matches.length !== 1 ? "es" : ""}
+              </p>
               {round.roundNumber === bracket.tournament.currentRound && (
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 w-2 h-2 rounded-full bg-[#d4af37] animate-pulse" />
               )}

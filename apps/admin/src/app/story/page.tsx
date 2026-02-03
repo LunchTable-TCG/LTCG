@@ -32,12 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Card, Text, Title } from "@tremor/react";
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  BookOpenIcon,
-  PlusIcon,
-} from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, BookOpenIcon, PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -97,7 +92,7 @@ function CreateChapterDialog({
 
     try {
       const args: Record<string, unknown> = {
-        number: parseInt(number, 10),
+        number: Number.parseInt(number, 10),
         title,
         description,
       };
@@ -109,7 +104,7 @@ function CreateChapterDialog({
           args["requiredChapterId"] = requiredChapterId;
         }
         if (unlockType === "player_level" && requiredLevel) {
-          args["requiredLevel"] = parseInt(requiredLevel, 10);
+          args["requiredLevel"] = Number.parseInt(requiredLevel, 10);
         }
       }
 
@@ -135,9 +130,7 @@ function CreateChapterDialog({
   };
 
   // Suggest next chapter number
-  const suggestedNumber = chapters.length > 0
-    ? Math.max(...chapters.map(c => c.number)) + 1
-    : 1;
+  const suggestedNumber = chapters.length > 0 ? Math.max(...chapters.map((c) => c.number)) + 1 : 1;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -362,9 +355,7 @@ export default function StoryPage() {
         </Card>
         <Card>
           <div className="text-center">
-            <Text className="text-2xl font-bold text-blue-500">
-              {stats?.totalStages ?? "..."}
-            </Text>
+            <Text className="text-2xl font-bold text-blue-500">{stats?.totalStages ?? "..."}</Text>
             <Text className="text-sm text-muted-foreground">Total Stages</Text>
           </div>
         </Card>
@@ -464,11 +455,7 @@ export default function StoryPage() {
                     <Link href={`/story/${chapter._id}`}>Edit</Link>
                   </Button>
                   <RoleGuard permission="config.edit">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleTogglePublish(chapter)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => handleTogglePublish(chapter)}>
                       {chapter.status === "published" ? "Unpublish" : "Publish"}
                     </Button>
                   </RoleGuard>

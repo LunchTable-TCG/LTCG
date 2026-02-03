@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { handleHookError } from "@/lib/errorHandling";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -78,13 +78,13 @@ export function useTokenBalance(): UseTokenBalanceReturn {
   // Query cached balance from Convex
   // Only query when explicitly authenticated (not during initial auth check) to avoid "Authentication required" errors
   // Returns: { balance, lastVerifiedAt, isStale } | null
-  const cachedBalance = useConvexQuery(
-    apiAny.economy.tokenBalance.getTokenBalance,
+  const cachedBalance = useTypedQuery(
+    typedApi.economy.tokenBalance.getTokenBalance,
     isAuthenticated === true && !authLoading ? {} : "skip"
-  ) as { balance: number; lastVerifiedAt: number; isStale: boolean } | null | undefined;
+  );
 
   // Mutation to request balance refresh
-  const requestRefresh = useConvexMutation(apiAny.economy.tokenBalance.requestBalanceRefresh);
+  const requestRefresh = useTypedMutation(typedApi.economy.tokenBalance.requestBalanceRefresh);
 
   // The API returns balance in raw units - convert to human-readable
   const rawBalance = cachedBalance?.balance ?? null;

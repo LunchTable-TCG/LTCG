@@ -102,7 +102,9 @@ class PostHogClient {
 
   private async fetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     if (!this.apiKey || !this.projectId) {
-      throw new Error("PostHog API not configured. Set POSTHOG_PRIVATE_API_KEY and POSTHOG_PROJECT_ID.");
+      throw new Error(
+        "PostHog API not configured. Set POSTHOG_PRIVATE_API_KEY and POSTHOG_PROJECT_ID."
+      );
     }
 
     const url = `${this.host}/api/projects/${this.projectId}${endpoint}`;
@@ -146,7 +148,10 @@ class PostHogClient {
 
     // Filter for sessions with errors
     if (filters.has_console_error) {
-      params.set("console_logs", JSON.stringify([{ key: "level", value: ["error"], operator: "exact" }]));
+      params.set(
+        "console_logs",
+        JSON.stringify([{ key: "level", value: ["error"], operator: "exact" }])
+      );
     }
 
     const queryString = params.toString();

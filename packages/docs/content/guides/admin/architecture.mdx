@@ -1,0 +1,107 @@
+---
+title: Admin System Architecture
+description: Overview of the LTCG admin system architecture and components
+lastUpdated: '2026-02-03'
+---
+
+# Admin System Architecture
+
+Understanding the architecture of the LTCG admin system.
+
+## System Diagram
+
+```
+┌─────────────────────────────────────────┐
+│         Admin Dashboard (Next.js)        │
+│  - User Management                       │
+│  - Content Management                    │
+│  - Economy Controls                      │
+│  - Treasury Operations                   │
+└──────────────┬──────────────────────────┘
+               │
+               │ Convex Client
+               ↓
+┌─────────────────────────────────────────┐
+│         Convex Backend                   │
+│  ┌────────────────────────────────────┐ │
+│  │  Authentication (Privy)            │ │
+│  │  - Role-based access control       │ │
+│  │  - Session management              │ │
+│  └────────────────────────────────────┘ │
+│  ┌────────────────────────────────────┐ │
+│  │  Core Systems                      │ │
+│  │  - User management                 │ │
+│  │  - Card catalog                    │ │
+│  │  - Economy system                  │ │
+│  │  - Progression (quests/achieve)    │ │
+│  └────────────────────────────────────┘ │
+│  ┌────────────────────────────────────┐ │
+│  │  Treasury Management               │ │
+│  │  - Wallet creation (Privy)         │ │
+│  │  - Balance tracking                │ │
+│  │  - Policy management               │ │
+│  └────────────────────────────────────┘ │
+│  ┌────────────────────────────────────┐ │
+│  │  Monitoring & Alerts               │ │
+│  │  - System health                   │ │
+│  │  - Alert rules                     │ │
+│  │  - Notification channels           │ │
+│  └────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+```
+
+## Component Relationships
+
+### Admin Dashboard
+- Built with Next.js 15 and React 19
+- Connects to Convex backend via real-time queries
+- Uses Privy for authentication
+- Role-based UI rendering
+
+### Convex Backend
+- Serverless functions for all operations
+- Real-time database with reactive queries
+- Built-in authentication integration
+- Scheduled functions for background tasks
+
+### Authentication Layer
+- Privy handles user authentication
+- Role-based access control enforced in Convex
+- Session management and token validation
+- Wallet connection support (Solana)
+
+### Core Systems
+- User management and profiles
+- Card catalog and game content
+- Economy system (currency, marketplace)
+- Progression system (quests, achievements)
+
+### Treasury Management
+- Embedded wallet creation via Privy
+- Balance tracking and transaction history
+- Policy enforcement for withdrawals
+- Multi-signature support
+
+### Monitoring & Alerts
+- System health metrics
+- Alert rule engine
+- Multiple notification channels
+- Audit logging
+
+## Data Flow
+
+1. **User Action** → Admin clicks button in dashboard
+2. **Client Request** → Convex mutation called with parameters
+3. **Authentication** → Privy session validated, role checked
+4. **Authorization** → Permission verified for requested action
+5. **Execution** → Convex function performs operation
+6. **Real-time Update** → All connected clients receive update
+7. **UI Refresh** → Dashboard reactively updates
+
+## Security Layers
+
+1. **Network:** HTTPS only, Vercel edge network
+2. **Authentication:** Privy session tokens
+3. **Authorization:** Role-based access control in Convex
+4. **Data:** Convex database permissions
+5. **Audit:** All admin actions logged

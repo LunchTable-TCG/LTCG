@@ -14,7 +14,7 @@
  */
 
 import "server-only";
-import { getFeatureFlags, type FeatureFlags } from "./edge-config";
+import { type FeatureFlags, getFeatureFlags } from "./edge-config";
 
 // =============================================================================
 // Feature Flag Types

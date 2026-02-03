@@ -27,12 +27,18 @@ export default function FeedbackAnalyticsPage() {
 
   // Transform trend data for charts
   const trendData =
-    analytics?.trend?.map((day: { date: string; bugs: number; features: number; total: number }) => ({
-      date: new Date(day.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
-      "Bug Reports": day.bugs,
-      "Feature Requests": day.features,
-      Total: day.total,
-    })) ?? [];
+    analytics?.trend?.map(
+      (day: { date: string; bugs: number; features: number; total: number }) => ({
+        date: new Date(day.date).toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        }),
+        "Bug Reports": day.bugs,
+        "Feature Requests": day.features,
+        Total: day.total,
+      })
+    ) ?? [];
 
   // Type distribution for donut chart
   const typeDistribution = [
@@ -101,7 +107,11 @@ export default function FeedbackAnalyticsPage() {
           title="Bug Reports"
           value={analytics?.summary?.bugs ?? 0}
           icon={<span className="text-lg">🐛</span>}
-          delta={analytics?.summary?.total ? `${Math.round((analytics.summary.bugs / analytics.summary.total) * 100)}%` : undefined}
+          delta={
+            analytics?.summary?.total
+              ? `${Math.round((analytics.summary.bugs / analytics.summary.total) * 100)}%`
+              : undefined
+          }
           deltaType="unchanged"
           isLoading={isLoading}
         />
@@ -264,25 +274,32 @@ export default function FeedbackAnalyticsPage() {
 
           <div className="mt-4 space-y-2">
             {analytics?.topReporters && analytics.topReporters.length > 0 ? (
-              analytics.topReporters.slice(0, 5).map((reporter: { username: string; count: number; bugs: number; features: number }, idx: number) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-amber-500/20 text-amber-500 text-xs font-bold">
-                      {idx + 1}
-                    </span>
-                    <div>
-                      <Text className="font-medium">{reporter.username}</Text>
-                      <Text className="text-xs text-muted-foreground">
-                        {reporter.bugs} bugs • {reporter.features} features
-                      </Text>
+              analytics.topReporters
+                .slice(0, 5)
+                .map(
+                  (
+                    reporter: { username: string; count: number; bugs: number; features: number },
+                    idx: number
+                  ) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 flex items-center justify-center rounded-full bg-amber-500/20 text-amber-500 text-xs font-bold">
+                          {idx + 1}
+                        </span>
+                        <div>
+                          <Text className="font-medium">{reporter.username}</Text>
+                          <Text className="text-xs text-muted-foreground">
+                            {reporter.bugs} bugs • {reporter.features} features
+                          </Text>
+                        </div>
+                      </div>
+                      <Badge color="blue">{reporter.count} total</Badge>
                     </div>
-                  </div>
-                  <Badge color="blue">{reporter.count} total</Badge>
-                </div>
-              ))
+                  )
+                )
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Text>No feedback submitted yet.</Text>
@@ -296,7 +313,9 @@ export default function FeedbackAnalyticsPage() {
       {/* Attachment Stats */}
       <Card className="mt-6">
         <Title>Attachment Statistics</Title>
-        <Text className="text-muted-foreground">Screenshots and recordings included with feedback</Text>
+        <Text className="text-muted-foreground">
+          Screenshots and recordings included with feedback
+        </Text>
 
         <div className="mt-4 grid grid-cols-3 gap-4">
           <div className="p-4 rounded-lg bg-violet-500/10 border border-violet-500/30 text-center">
@@ -316,7 +335,8 @@ export default function FeedbackAnalyticsPage() {
           </div>
           <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center">
             <Text className="text-3xl font-bold text-emerald-500">
-              {(analytics?.attachments?.withScreenshot ?? 0) + (analytics?.attachments?.withRecording ?? 0)}
+              {(analytics?.attachments?.withScreenshot ?? 0) +
+                (analytics?.attachments?.withRecording ?? 0)}
             </Text>
             <Text className="text-sm text-muted-foreground">Total Attachments</Text>
           </div>
@@ -330,7 +350,8 @@ export default function FeedbackAnalyticsPage() {
           <Title className="ml-2">About Alpha Feedback</Title>
         </Flex>
         <Text className="text-muted-foreground mt-2">
-          This dashboard tracks bug reports and feature requests from alpha testers. Key metrics include:
+          This dashboard tracks bug reports and feature requests from alpha testers. Key metrics
+          include:
         </Text>
         <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
           <li>
@@ -353,7 +374,8 @@ export default function FeedbackAnalyticsPage() {
           <Flex alignItems="center" className="gap-2">
             <span className="text-amber-500">💡</span>
             <Text className="text-sm text-amber-500">
-              Tip: Use the Feedback Management page to triage and respond to feedback in a kanban-style board.
+              Tip: Use the Feedback Management page to triage and respond to feedback in a
+              kanban-style board.
             </Text>
           </Flex>
         </div>

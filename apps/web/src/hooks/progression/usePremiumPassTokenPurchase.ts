@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useTypedMutation } from "@/lib/convexTypedHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { useSignAndSendTransaction } from "@privy-io/react-auth/solana";
 import { useCallback, useState } from "react";
@@ -79,14 +79,14 @@ export function usePremiumPassTokenPurchase(): UsePremiumPassTokenPurchaseReturn
   const { signAndSendTransaction } = useSignAndSendTransaction();
 
   // Convex mutations
-  const initiatePurchaseMutation = useConvexMutation(
-    apiAny.progression.battlePass.initiatePremiumPassTokenPurchase
+  const initiatePurchaseMutation = useTypedMutation(
+    typedApi.progression.battlePass.initiatePremiumPassTokenPurchase
   );
-  const submitSignedTransaction = useConvexMutation(
-    apiAny.progression.battlePass.submitPremiumPassTransaction
+  const submitSignedTransaction = useTypedMutation(
+    typedApi.progression.battlePass.submitPremiumPassTransaction
   );
-  const cancelPurchaseMutation = useConvexMutation(
-    apiAny.progression.battlePass.cancelPremiumPassPurchase
+  const cancelPurchaseMutation = useTypedMutation(
+    typedApi.progression.battlePass.cancelPremiumPassPurchase
   );
 
   /**

@@ -1,8 +1,8 @@
-import type { Doc, Id } from "../_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "../_generated/server";
 // Workaround for TS2589 (excessively deep type instantiation)
 // biome-ignore lint/style/noNamespaceImport: Required for Convex internal API type workaround
 import * as generatedApi from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 // biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
 const internalAny = (generatedApi as any).internal;
 import { ErrorCode, createError } from "./errorCodes";
@@ -306,15 +306,11 @@ export async function addXP(
   if (!options?.skipBattlePass && xpAmount > 0) {
     // Schedule battle pass XP grant (wrapped to prevent test errors)
     await safeSchedule(ctx, async () => {
-      await ctx.scheduler.runAfter(
-        0,
-        internalAny.progression.battlePass.addBattlePassXP,
-        {
-          userId,
-          xpAmount,
-          source: options?.source ?? "general",
-        }
-      );
+      await ctx.scheduler.runAfter(0, internalAny.progression.battlePass.addBattlePassXP, {
+        userId,
+        xpAmount,
+        source: options?.source ?? "general",
+      });
     });
   }
 

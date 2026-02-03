@@ -641,9 +641,10 @@ export const setAPIKey = mutation({
 
     return {
       success: true,
-      message: trimmedKey.length > 0
-        ? `${provider} API key has been set`
-        : `${provider} API key has been cleared`,
+      message:
+        trimmedKey.length > 0
+          ? `${provider} API key has been set`
+          : `${provider} API key has been cleared`,
     };
   },
 });
@@ -658,7 +659,10 @@ export const getAPIKeyStatus = query({
     await requireRole(ctx, userId, "moderator");
 
     const providers = ["openrouter", "anthropic", "openai", "vercel"] as const;
-    const status: Record<string, { isSet: boolean; maskedKey: string; source: "database" | "env" | "none" }> = {};
+    const status: Record<
+      string,
+      { isSet: boolean; maskedKey: string; source: "database" | "env" | "none" }
+    > = {};
 
     for (const provider of providers) {
       const key = `ai.apikey.${provider}`;
@@ -672,9 +676,10 @@ export const getAPIKeyStatus = query({
 
       if (hasDbKey) {
         // Mask the key: show first 4 and last 4 chars
-        const masked = dbKey.length > 12
-          ? `${dbKey.slice(0, 4)}${"*".repeat(Math.min(dbKey.length - 8, 20))}${dbKey.slice(-4)}`
-          : "*".repeat(dbKey.length);
+        const masked =
+          dbKey.length > 12
+            ? `${dbKey.slice(0, 4)}${"*".repeat(Math.min(dbKey.length - 8, 20))}${dbKey.slice(-4)}`
+            : "*".repeat(dbKey.length);
         status[provider] = { isSet: true, maskedKey: masked, source: "database" };
       } else {
         // Note: We can't check env vars in queries, will be checked in action
@@ -917,11 +922,12 @@ export const testProviderConnection = action({
 
           // If we have AI_GATEWAY_API_KEY in DB or env, test the gateway endpoint
           // Otherwise fall back to testing OpenAI directly
-          const hasGatewayKey = !!(await ctx.runQuery(
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            require("../_generated/api").api.admin.aiConfig.getAIConfigValue,
-            { key: "ai.apikey.vercel" }
-          )) || !!process.env["AI_GATEWAY_API_KEY"];
+          const hasGatewayKey =
+            !!(await ctx.runQuery(
+              // eslint-disable-next-line @typescript-eslint/no-require-imports
+              require("../_generated/api").api.admin.aiConfig.getAIConfigValue,
+              { key: "ai.apikey.vercel" }
+            )) || !!process.env["AI_GATEWAY_API_KEY"];
 
           const endpoint = hasGatewayKey
             ? "https://ai-gateway.vercel.sh/v3/ai/models"

@@ -26,7 +26,9 @@ type AuthState =
 /**
  * Check if a wallet is a Privy embedded wallet
  */
-function isPrivyEmbeddedWallet(wallet: { standardWallet: { name?: string; isPrivyWallet?: boolean } }) {
+function isPrivyEmbeddedWallet(wallet: {
+  standardWallet: { name?: string; isPrivyWallet?: boolean };
+}) {
   const standardWallet = wallet.standardWallet;
   if ("isPrivyWallet" in standardWallet && standardWallet.isPrivyWallet) {
     return true;

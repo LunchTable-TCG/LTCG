@@ -7,11 +7,11 @@
  * Uses @dnd-kit for drag functionality.
  */
 
+import { cn } from "@/lib/utils";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { cn } from "@/lib/utils";
 import { getBlockContent } from "./CanvasPreview";
-import type { CardTemplateBlock, CardPreviewData } from "./types";
+import type { CardPreviewData, CardTemplateBlock } from "./types";
 
 interface TextBlockLayerProps {
   block: CardTemplateBlock;

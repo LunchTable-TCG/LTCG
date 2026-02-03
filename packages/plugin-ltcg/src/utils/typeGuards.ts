@@ -115,7 +115,10 @@ export function isGraveyardCard(card: unknown): card is CardInGraveyard {
   return (
     typeof c["cardId"] === "string" &&
     typeof c["name"] === "string" &&
-    (c["type"] === "creature" || c["type"] === "spell" || c["type"] === "trap" || c["type"] === "equipment")
+    (c["type"] === "creature" ||
+      c["type"] === "spell" ||
+      c["type"] === "trap" ||
+      c["type"] === "equipment")
   );
 }
 

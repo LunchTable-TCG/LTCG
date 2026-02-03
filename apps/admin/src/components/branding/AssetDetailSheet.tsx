@@ -76,8 +76,7 @@ export function AssetDetailSheet({
       if (JSON.stringify(tags) !== JSON.stringify(asset.tags)) updates.tags = tags;
       if (JSON.stringify(usageContext) !== JSON.stringify(asset.usageContext))
         updates.usageContext = usageContext;
-      if (aiDescription !== asset.aiDescription)
-        updates.aiDescription = aiDescription;
+      if (aiDescription !== asset.aiDescription) updates.aiDescription = aiDescription;
 
       await onSave(updates);
       setHasChanges(false);
@@ -160,9 +159,7 @@ export function AssetDetailSheet({
               </Badge>
             )}
           </SheetTitle>
-          <SheetDescription>
-            Edit asset metadata and AI guidelines
-          </SheetDescription>
+          <SheetDescription>Edit asset metadata and AI guidelines</SheetDescription>
         </SheetHeader>
 
         <div className="space-y-6 py-6">
@@ -175,18 +172,10 @@ export function AssetDetailSheet({
                 className="w-full max-h-64 object-contain"
               />
             ) : isVideo && asset.fileMetadata?.blobUrl ? (
-              <video
-                src={asset.fileMetadata.blobUrl}
-                controls
-                className="w-full max-h-64"
-              />
+              <video src={asset.fileMetadata.blobUrl} controls className="w-full max-h-64" />
             ) : isAudio && asset.fileMetadata?.blobUrl ? (
               <div className="p-8">
-                <audio
-                  src={asset.fileMetadata.blobUrl}
-                  controls
-                  className="w-full"
-                />
+                <audio src={asset.fileMetadata.blobUrl} controls className="w-full" />
               </div>
             ) : (
               <div className="p-8 flex flex-col items-center justify-center">
@@ -281,10 +270,7 @@ export function AssetDetailSheet({
             <Label>Usage Context</Label>
             <div className="grid grid-cols-2 gap-2">
               {USAGE_CONTEXTS.map((ctx) => (
-                <label
-                  key={ctx.value}
-                  className="flex items-center gap-2 text-sm cursor-pointer"
-                >
+                <label key={ctx.value} className="flex items-center gap-2 text-sm cursor-pointer">
                   <Checkbox
                     checked={usageContext.includes(ctx.value)}
                     onCheckedChange={() => handleToggleContext(ctx.value)}
@@ -308,18 +294,14 @@ export function AssetDetailSheet({
               rows={4}
             />
             <p className="text-xs text-muted-foreground">
-              This description helps AI understand when and how to use this asset
-              in generated content.
+              This description helps AI understand when and how to use this asset in generated
+              content.
             </p>
           </div>
 
           {/* Save/Delete */}
           <div className="flex gap-2 pt-4 border-t">
-            <Button
-              onClick={handleSave}
-              disabled={!hasChanges || isSaving}
-              className="flex-1"
-            >
+            <Button onClick={handleSave} disabled={!hasChanges || isSaving} className="flex-1">
               {isSaving ? (
                 <>
                   <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
@@ -329,11 +311,7 @@ export function AssetDetailSheet({
                 "Save Changes"
               )}
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
               {isDeleting ? (
                 <Loader2Icon className="h-4 w-4 animate-spin" />
               ) : (

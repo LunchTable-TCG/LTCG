@@ -67,9 +67,7 @@ export function TierTrack({ tiers, currentTier, isPremium, onClaimReward }: Tier
           <span className="text-sm font-bold text-violet-400 uppercase tracking-wide">
             Premium Track
           </span>
-          {!isPremium && (
-            <span className="text-xs text-[#a89f94] ml-2">(Upgrade to unlock)</span>
-          )}
+          {!isPremium && <span className="text-xs text-[#a89f94] ml-2">(Upgrade to unlock)</span>}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-[#d4af37] uppercase tracking-wide">
@@ -136,7 +134,9 @@ export function TierTrack({ tiers, currentTier, isPremium, onClaimReward }: Tier
                         "shadow-lg shadow-[#d4af37]/30",
                       ],
                       isPastTier && "bg-[#d4af37]/20 text-[#d4af37] border-2 border-[#d4af37]",
-                      !isPastTier && !isCurrentTier && "bg-[#1a1614] text-[#a89f94] border-2 border-[#3d2b1f]"
+                      !isPastTier &&
+                        !isCurrentTier &&
+                        "bg-[#1a1614] text-[#a89f94] border-2 border-[#3d2b1f]"
                     )}
                   >
                     {tier.tier}

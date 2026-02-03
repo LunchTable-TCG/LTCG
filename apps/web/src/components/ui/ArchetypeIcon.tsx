@@ -1,6 +1,6 @@
 "use client";
 
-import { getArchetypeIcon, formatArchetypeName } from "@/lib/archetypeIcons";
+import { formatArchetypeName, getArchetypeIcon } from "@/lib/archetypeIcons";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -61,9 +61,7 @@ export function ArchetypeIcon({
           unoptimized // Brand assets don't need Next.js optimization
         />
       </div>
-      {showLabel && (
-        <span className="text-sm font-medium text-foreground/90">{displayName}</span>
-      )}
+      {showLabel && <span className="text-sm font-medium text-foreground/90">{displayName}</span>}
     </div>
   );
 }

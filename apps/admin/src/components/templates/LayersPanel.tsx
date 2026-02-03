@@ -6,18 +6,7 @@
  * Left sidebar showing list of text blocks with reorder and visibility controls.
  */
 
-import { useState } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  Plus,
-  Trash2,
-  Type,
-  Image,
-  Sparkles,
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -33,9 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { ChevronDown, ChevronUp, Image, Plus, Sparkles, Trash2, Type } from "lucide-react";
+import { useState } from "react";
 import {
   BLOCK_CONFIGS,
   type BlockId,
@@ -159,9 +151,7 @@ export function LayersPanel({
                 {/* Block info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{block.label}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {block.blockType}
-                  </p>
+                  <p className="text-xs text-muted-foreground capitalize">{block.blockType}</p>
                 </div>
 
                 {/* Actions */}
@@ -239,9 +229,7 @@ export function LayersPanel({
                         <div className="flex items-center gap-2">
                           <span>{config.label}</span>
                           {isDisabled && (
-                            <span className="text-xs text-muted-foreground">
-                              (already added)
-                            </span>
+                            <span className="text-xs text-muted-foreground">(already added)</span>
                           )}
                         </div>
                       </SelectItem>

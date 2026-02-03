@@ -153,10 +153,7 @@ export const getAchievementStats = query({
     const userAchievements = await ctx.db.query("userAchievements").collect();
     const totalUnlocks = userAchievements.filter((ua) => ua.isUnlocked).length;
     const unlocksToday = userAchievements.filter(
-      (ua) =>
-        ua.isUnlocked &&
-        ua.unlockedAt &&
-        ua.unlockedAt > Date.now() - 24 * 60 * 60 * 1000
+      (ua) => ua.isUnlocked && ua.unlockedAt && ua.unlockedAt > Date.now() - 24 * 60 * 60 * 1000
     ).length;
 
     // Count secret achievements
@@ -293,8 +290,7 @@ export const updateAchievement = mutation({
     if (args.category !== undefined) updates["category"] = args.category;
     if (args.rarity !== undefined) updates["rarity"] = args.rarity;
     if (args.icon !== undefined) updates["icon"] = args.icon;
-    if (args.requirementType !== undefined)
-      updates["requirementType"] = args.requirementType;
+    if (args.requirementType !== undefined) updates["requirementType"] = args.requirementType;
     if (args.targetValue !== undefined) updates["targetValue"] = args.targetValue;
     if (args.isSecret !== undefined) updates["isSecret"] = args.isSecret;
     if (args.isActive !== undefined) updates["isActive"] = args.isActive;
@@ -395,15 +391,11 @@ export const deleteAchievement = mutation({
     // Check for user achievements
     const userAchievements = await ctx.db
       .query("userAchievements")
-      .withIndex("by_achievement", (q) =>
-        q.eq("achievementId", achievement.achievementId)
-      )
+      .withIndex("by_achievement", (q) => q.eq("achievementId", achievement.achievementId))
       .first();
 
     if (userAchievements) {
-      throw new Error(
-        "Cannot delete achievement with player progress. Deactivate it instead."
-      );
+      throw new Error("Cannot delete achievement with player progress. Deactivate it instead.");
     }
 
     await ctx.db.delete(achievementDbId);

@@ -29,10 +29,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Card, Flex, Text, Title } from "@tremor/react";
-import { useQuery } from "convex/react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -55,21 +54,21 @@ export default function PlayerDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Fetch player data
-  const profile = useQuery(apiAny.admin.admin.getPlayerProfile, { playerId });
-  const moderationStatus = useQuery(apiAny.admin.moderation.getPlayerModerationStatus, {
+  const profile = useTypedQuery(typedApi.admin.admin.getPlayerProfile, { playerId });
+  const moderationStatus = useTypedQuery(typedApi.admin.moderation.getPlayerModerationStatus, {
     playerId,
   });
-  const moderationHistory = useQuery(apiAny.admin.moderation.getModerationHistory, {
+  const moderationHistory = useTypedQuery(typedApi.admin.moderation.getModerationHistory, {
     playerId,
     limit: 20,
   });
   // Fetch player engagement data
-  const engagementData = useQuery(apiAny.admin.analytics.getPlayerEngagement, {
+  const engagementData = useTypedQuery(typedApi.admin.analytics.getPlayerEngagement, {
     userId: playerId,
     days: 30,
   });
   // Fetch player inventory
-  const inventory = useQuery(apiAny.admin.admin.getPlayerInventory, { playerId });
+  const inventory = useTypedQuery(typedApi.admin.admin.getPlayerInventory, { playerId });
 
   // Transform engagement data to match expected format
   const engagement = engagementData
@@ -92,8 +91,8 @@ export default function PlayerDetailPage() {
     : undefined;
 
   // Mutations
-  const updateUsernameMutation = useConvexMutation(apiAny.core.users.adminUpdateUsername);
-  const addModerationNote = useConvexMutation(apiAny.admin.moderation.addModerationNote);
+  const updateUsernameMutation = useTypedMutation(typedApi.core.users.adminUpdateUsername);
+  const addModerationNote = useTypedMutation(typedApi.admin.moderation.addModerationNote);
 
   const updatePlayerName = async (newName: string) => {
     await updateUsernameMutation({ userId: playerId, newUsername: newName });
@@ -418,7 +417,9 @@ export default function PlayerDetailPage() {
                   <span className="text-sm text-muted-foreground">Rare</span>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                  <span className="text-emerald-500 font-medium">{inventory.byRarity.uncommon}</span>
+                  <span className="text-emerald-500 font-medium">
+                    {inventory.byRarity.uncommon}
+                  </span>
                   <span className="text-sm text-muted-foreground">Uncommon</span>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-500/10 border border-gray-500/30">
@@ -447,9 +448,7 @@ export default function PlayerDetailPage() {
                   <Skeleton className="h-12 w-full" />
                 </div>
               ) : inventory === null ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  Player not found
-                </div>
+                <div className="py-8 text-center text-muted-foreground">Player not found</div>
               ) : inventory.cards.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   This player has no cards in their collection
@@ -470,55 +469,57 @@ export default function PlayerDetailPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {inventory.cards.map((card: {
-                        playerCardId: string;
-                        cardDefinitionId: string;
-                        name: string;
-                        rarity: string;
-                        archetype: string;
-                        cardType: string;
-                        attack: number | null;
-                        defense: number | null;
-                        cost: number;
-                        quantity: number;
-                        isFavorite: boolean;
-                        acquiredAt: number;
-                        imageUrl?: string;
-                      }) => (
-                        <tr key={card.playerCardId} className="border-b hover:bg-muted/30">
-                          <td className="py-2 px-3">
-                            <div className="flex items-center gap-2">
-                              {card.isFavorite && <span title="Favorite">⭐</span>}
-                              <span className="font-medium">{card.name}</span>
-                            </div>
-                          </td>
-                          <td className="py-2 px-3">
-                            <span
-                              className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                card.rarity === "legendary"
-                                  ? "bg-amber-500/20 text-amber-500"
-                                  : card.rarity === "epic"
-                                    ? "bg-purple-500/20 text-purple-500"
-                                    : card.rarity === "rare"
-                                      ? "bg-blue-500/20 text-blue-500"
-                                      : card.rarity === "uncommon"
-                                        ? "bg-emerald-500/20 text-emerald-500"
-                                        : "bg-gray-500/20 text-gray-400"
-                              }`}
-                            >
-                              {card.rarity}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3 text-muted-foreground">{card.cardType}</td>
-                          <td className="py-2 px-3 text-center">{card.cost}</td>
-                          <td className="py-2 px-3 text-center">{card.attack ?? "-"}</td>
-                          <td className="py-2 px-3 text-center">{card.defense ?? "-"}</td>
-                          <td className="py-2 px-3 text-center font-medium">{card.quantity}</td>
-                          <td className="py-2 px-3 text-muted-foreground text-xs">
-                            {new Date(card.acquiredAt).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
+                      {inventory.cards.map(
+                        (card: {
+                          playerCardId: string;
+                          cardDefinitionId: string;
+                          name: string;
+                          rarity: string;
+                          archetype: string;
+                          cardType: string;
+                          attack: number | null;
+                          defense: number | null;
+                          cost: number;
+                          quantity: number;
+                          isFavorite: boolean;
+                          acquiredAt: number;
+                          imageUrl?: string;
+                        }) => (
+                          <tr key={card.playerCardId} className="border-b hover:bg-muted/30">
+                            <td className="py-2 px-3">
+                              <div className="flex items-center gap-2">
+                                {card.isFavorite && <span title="Favorite">⭐</span>}
+                                <span className="font-medium">{card.name}</span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-3">
+                              <span
+                                className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                  card.rarity === "legendary"
+                                    ? "bg-amber-500/20 text-amber-500"
+                                    : card.rarity === "epic"
+                                      ? "bg-purple-500/20 text-purple-500"
+                                      : card.rarity === "rare"
+                                        ? "bg-blue-500/20 text-blue-500"
+                                        : card.rarity === "uncommon"
+                                          ? "bg-emerald-500/20 text-emerald-500"
+                                          : "bg-gray-500/20 text-gray-400"
+                                }`}
+                              >
+                                {card.rarity}
+                              </span>
+                            </td>
+                            <td className="py-2 px-3 text-muted-foreground">{card.cardType}</td>
+                            <td className="py-2 px-3 text-center">{card.cost}</td>
+                            <td className="py-2 px-3 text-center">{card.attack ?? "-"}</td>
+                            <td className="py-2 px-3 text-center">{card.defense ?? "-"}</td>
+                            <td className="py-2 px-3 text-center font-medium">{card.quantity}</td>
+                            <td className="py-2 px-3 text-muted-foreground text-xs">
+                              {new Date(card.acquiredAt).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        )
+                      )}
                     </tbody>
                   </table>
                 </div>

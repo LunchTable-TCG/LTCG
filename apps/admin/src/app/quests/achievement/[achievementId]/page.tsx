@@ -33,13 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Card, Text, Title } from "@tremor/react";
-import {
-  ArrowLeftIcon,
-  CopyIcon,
-  Loader2Icon,
-  SaveIcon,
-  TrashIcon,
-} from "lucide-react";
+import { ArrowLeftIcon, CopyIcon, Loader2Icon, SaveIcon, TrashIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -49,7 +43,14 @@ import { toast } from "sonner";
 // Types & Constants
 // =============================================================================
 
-type AchievementCategory = "wins" | "games_played" | "collection" | "social" | "story" | "ranked" | "special";
+type AchievementCategory =
+  | "wins"
+  | "games_played"
+  | "collection"
+  | "social"
+  | "story"
+  | "ranked"
+  | "special";
 type Rarity = "common" | "rare" | "epic" | "legendary";
 
 const CATEGORIES = [
@@ -174,10 +175,10 @@ export default function AchievementEditorPage() {
           rarity,
           icon,
           requirementType,
-          targetValue: parseInt(targetValue),
-          rewardGold: rewardGold ? parseInt(rewardGold) : undefined,
-          rewardXp: rewardXp ? parseInt(rewardXp) : undefined,
-          rewardGems: rewardGems ? parseInt(rewardGems) : undefined,
+          targetValue: Number.parseInt(targetValue),
+          rewardGold: rewardGold ? Number.parseInt(rewardGold) : undefined,
+          rewardXp: rewardXp ? Number.parseInt(rewardXp) : undefined,
+          rewardGems: rewardGems ? Number.parseInt(rewardGems) : undefined,
           rewardBadge: rewardBadge || undefined,
           isSecret,
           isActive,
@@ -193,10 +194,10 @@ export default function AchievementEditorPage() {
           rarity,
           icon,
           requirementType,
-          targetValue: parseInt(targetValue),
-          rewardGold: rewardGold ? parseInt(rewardGold) : undefined,
-          rewardXp: rewardXp ? parseInt(rewardXp) : undefined,
-          rewardGems: rewardGems ? parseInt(rewardGems) : undefined,
+          targetValue: Number.parseInt(targetValue),
+          rewardGold: rewardGold ? Number.parseInt(rewardGold) : undefined,
+          rewardXp: rewardXp ? Number.parseInt(rewardXp) : undefined,
+          rewardGems: rewardGems ? Number.parseInt(rewardGems) : undefined,
           rewardBadge: rewardBadge || undefined,
           clearRewards: !rewardGold && !rewardXp && !rewardGems && !rewardBadge,
           isSecret,
@@ -274,7 +275,9 @@ export default function AchievementEditorPage() {
   return (
     <PageWrapper
       title={isNew ? "New Achievement" : `Edit: ${existingAchievement?.name}`}
-      description={isNew ? "Create a new achievement" : `Achievement ID: ${existingAchievement?.achievementId}`}
+      description={
+        isNew ? "Create a new achievement" : `Achievement ID: ${existingAchievement?.achievementId}`
+      }
       actions={
         <div className="flex gap-2">
           <Button variant="outline" asChild>
@@ -406,7 +409,10 @@ export default function AchievementEditorPage() {
               </div>
               <div className="space-y-2">
                 <Label>Category *</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v as AchievementCategory)}>
+                <Select
+                  value={category}
+                  onValueChange={(v) => setCategory(v as AchievementCategory)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -572,12 +578,10 @@ export default function AchievementEditorPage() {
                 {description || "No description"}
               </Text>
               <div className="mt-3 pt-3 border-t text-sm text-muted-foreground">
-                {REQUIREMENT_TYPES.find((r) => r.value === requirementType)?.label || "Requirement"}:{" "}
-                {targetValue}
+                {REQUIREMENT_TYPES.find((r) => r.value === requirementType)?.label || "Requirement"}
+                : {targetValue}
               </div>
-              {isSecret && (
-                <div className="mt-2 text-sm text-amber-600">🔒 Secret Achievement</div>
-              )}
+              {isSecret && <div className="mt-2 text-sm text-amber-600">🔒 Secret Achievement</div>}
             </div>
           </Card>
 

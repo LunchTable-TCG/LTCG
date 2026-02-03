@@ -2,8 +2,8 @@
 
 import { useGameLobby } from "@/hooks/game/useGameLobby";
 import { cn } from "@/lib/utils";
-import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { useMutation } from "convex/react";
 import { Check, Loader2, Swords, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -98,9 +98,7 @@ export function IncomingChallengeNotification() {
               </span>
             </div>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-[#e8e0d5] font-bold">
-                {incomingChallenge.hostUsername}
-              </span>
+              <span className="text-[#e8e0d5] font-bold">{incomingChallenge.hostUsername}</span>
               <span className={cn("text-sm font-semibold", rankColor)}>
                 ({incomingChallenge.hostRank})
               </span>

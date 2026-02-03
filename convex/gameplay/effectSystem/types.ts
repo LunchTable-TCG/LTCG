@@ -43,6 +43,15 @@ export type TriggerCondition =
   | "on_end" // During end phase
   | "manual"; // Manual activation (spells/traps)
 
+/**
+ * Activation type determines how/when an effect can be activated
+ */
+export type ActivationType =
+  | "trigger" // Automatic trigger when conditions are met (mandatory/optional)
+  | "ignition" // Can only activate manually during Main Phase with priority
+  | "quick" // Can activate manually any time with priority (Quick Effects)
+  | "continuous"; // Passive effect, always active while on field
+
 // ============================================================================
 // JSON EFFECT SYSTEM - Type-safe effect definitions
 // ============================================================================
@@ -215,6 +224,7 @@ export interface JsonEffect {
   // Effect identification
   type: EffectType;
   trigger: TriggerCondition;
+  activationType?: ActivationType; // How the effect is activated (trigger/ignition/quick/continuous)
 
   // Effect values
   value?: number; // Primary numeric value (damage, LP, draw count, etc.)
@@ -283,6 +293,7 @@ export interface JsonAbility {
 export interface ParsedEffect {
   type: EffectType;
   trigger: TriggerCondition;
+  activationType?: ActivationType; // How the effect is activated
   value?: number; // Numeric value (e.g., "Draw 2" -> value: 2)
   targetCount?: number; // Number of targets required
   targetType?: "monster" | "spell" | "trap" | "any";

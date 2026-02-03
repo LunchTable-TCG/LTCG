@@ -7,9 +7,6 @@
  * and manage brand guidelines.
  */
 
-import { PageWrapper } from "@/components/layout";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   AssetDetailSheet,
   BrandingBreadcrumb,
@@ -25,6 +22,9 @@ import type {
   EnrichedBrandingAsset,
   FolderTreeNode,
 } from "@/components/branding/types";
+import { PageWrapper } from "@/components/layout";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
@@ -200,10 +200,7 @@ export default function BrandingPage() {
     toast.success("Asset moved");
   };
 
-  const handleSaveGuidelines = async (
-    section: string,
-    data: Partial<BrandingGuidelines>
-  ) => {
+  const handleSaveGuidelines = async (section: string, data: Partial<BrandingGuidelines>) => {
     await updateGuidelines({
       section,
       structuredData: data.structuredData,
@@ -214,10 +211,7 @@ export default function BrandingPage() {
   // Render
   if (isLoading) {
     return (
-      <PageWrapper
-        title="Branding"
-        description="Loading branding assets..."
-      >
+      <PageWrapper title="Branding" description="Loading branding assets...">
         <div className="flex h-[calc(100vh-180px)]">
           <div className="w-64 border-r p-4 space-y-2">
             <Skeleton className="h-6 w-24 mb-4" />
@@ -250,8 +244,8 @@ export default function BrandingPage() {
           </div>
           <h2 className="text-2xl font-semibold mb-2">Set Up Branding</h2>
           <p className="text-muted-foreground mb-6 max-w-md">
-            Initialize the branding system to create folder sections for organizing
-            your brand assets. AI will use these assets when generating content.
+            Initialize the branding system to create folder sections for organizing your brand
+            assets. AI will use these assets when generating content.
           </p>
           <RoleGuard permission="admin.manage">
             <Button onClick={handleInitialize} disabled={isInitializing} size="lg">

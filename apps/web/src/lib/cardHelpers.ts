@@ -83,12 +83,18 @@ export interface JsonCost {
 }
 
 /**
+ * Activation type for effects
+ */
+export type ActivationType = "trigger" | "ignition" | "quick" | "continuous";
+
+/**
  * JSON Effect definition from backend (simplified for frontend)
  */
 export interface JsonEffect {
   type?: EffectType;
   effectType?: EffectType;
   trigger?: TriggerCondition;
+  activationType?: ActivationType;
   name?: string;
   description?: string;
   value?: number;
@@ -145,6 +151,7 @@ export interface DisplayEffect {
   description: string;
   effectType?: string;
   trigger?: string;
+  activationType?: ActivationType;
   cost?: {
     type: string;
     value?: number;
@@ -333,6 +340,7 @@ function generateEffectDescription(effect: JsonEffect): string {
 function convertEffectToDisplay(effect: JsonEffect, abilityName?: string): DisplayEffect {
   const effectType = getEffectType(effect);
   const trigger = effect.trigger;
+  const activationType = effect.activationType;
 
   // Determine name
   let name = effect.name ?? abilityName ?? EFFECT_TYPE_LABELS[effectType ?? ""] ?? "Effect";
@@ -361,6 +369,7 @@ function convertEffectToDisplay(effect: JsonEffect, abilityName?: string): Displ
     description,
     effectType: effectType ?? undefined,
     trigger: trigger ?? undefined,
+    activationType,
     cost,
     isOPT,
     isHOPT,

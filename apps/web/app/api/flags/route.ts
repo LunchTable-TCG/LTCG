@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { getFlags } from "@/lib/flags";
+import { NextResponse } from "next/server";
 
 /**
  * GET /api/flags
@@ -19,10 +19,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Failed to fetch feature flags:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch feature flags" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch feature flags" }, { status: 500 });
   }
 }
 

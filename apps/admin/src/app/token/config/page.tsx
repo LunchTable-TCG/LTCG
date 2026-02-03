@@ -109,9 +109,9 @@ export default function TokenConfigPage() {
         telegram: form.telegram || undefined,
         website: form.website || undefined,
         discord: form.discord || undefined,
-        initialSupply: parseInt(form.initialSupply) || undefined,
-        decimals: parseInt(form.decimals) || undefined,
-        targetMarketCap: parseInt(form.targetMarketCap) || undefined,
+        initialSupply: Number.parseInt(form.initialSupply) || undefined,
+        decimals: Number.parseInt(form.decimals) || undefined,
+        targetMarketCap: Number.parseInt(form.targetMarketCap) || undefined,
       });
       toast.success("Token configuration saved");
     } catch (error) {
@@ -148,10 +148,7 @@ export default function TokenConfigPage() {
             {isSaving ? "Saving..." : "Save Configuration"}
           </Button>
           {config?.status === "draft" && readiness?.ready && (
-            <Button
-              onClick={handleMarkReady}
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
+            <Button onClick={handleMarkReady} className="bg-emerald-600 hover:bg-emerald-700">
               Mark Ready
             </Button>
           )}

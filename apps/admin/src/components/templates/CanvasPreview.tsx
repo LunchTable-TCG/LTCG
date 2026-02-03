@@ -7,15 +7,10 @@
  * Supports zoom and displays artwork area.
  */
 
-import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
+import { useDroppable } from "@dnd-kit/core";
 import { TextBlockLayer } from "./TextBlockLayer";
-import type {
-  CardTemplateBlock,
-  TemplateWithBlocks,
-  CardPreviewData,
-  Rarity,
-} from "./types";
+import type { CardPreviewData, CardTemplateBlock, Rarity, TemplateWithBlocks } from "./types";
 
 interface CanvasPreviewProps {
   template: TemplateWithBlocks;
@@ -45,8 +40,7 @@ export function CanvasPreview({
   });
 
   // Get frame URL based on rarity
-  const frameUrl =
-    template.frameImages[previewRarity] || template.defaultFrameImageUrl;
+  const frameUrl = template.frameImages[previewRarity] || template.defaultFrameImageUrl;
 
   // Calculate scaled dimensions
   const scaledWidth = template.width * zoom;
@@ -144,10 +138,7 @@ export function CanvasPreview({
 /**
  * Get the content to display for a block based on its type
  */
-export function getBlockContent(
-  block: CardTemplateBlock,
-  previewData: CardPreviewData
-): string {
+export function getBlockContent(block: CardTemplateBlock, previewData: CardPreviewData): string {
   switch (block.blockType) {
     case "name":
       return previewData.name || "Card Name";

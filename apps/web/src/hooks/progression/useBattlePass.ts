@@ -1,7 +1,7 @@
 "use client";
 
+import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { handleHookError } from "@/lib/errorHandling";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
@@ -157,26 +157,32 @@ interface UseBattlePassReturn {
 export function useBattlePass(): UseBattlePassReturn {
   const { isAuthenticated } = useAuth();
 
-  // Queries - use helpers to avoid TS2589
-  const status = useConvexQuery(
-    apiAny.progression.battlePass.getBattlePassStatus,
+  // Queries - using typed helpers for type safety
+  const status = useTypedQuery(
+    typedApi.progression.battlePass.getBattlePassStatus,
     isAuthenticated ? {} : "skip"
-  ) as BattlePassStatus | null | undefined;
-  const tiers = useConvexQuery(
-    apiAny.progression.battlePass.getBattlePassTiers,
+  );
+  const tiers = useTypedQuery(
+    typedApi.progression.battlePass.getBattlePassTiers,
     isAuthenticated ? {} : "skip"
-  ) as BattlePassTier[] | undefined;
+  );
 
-  // Mutations - use helpers to avoid TS2589
-  const claimRewardMutation = useConvexMutation(apiAny.progression.battlePass.claimBattlePassReward);
-  const claimAllMutation = useConvexMutation(apiAny.progression.battlePass.claimAllAvailableRewards);
-  const purchasePremiumMutation = useConvexMutation(apiAny.progression.battlePass.purchasePremiumPass);
+  // Mutations - using typed helpers for type safety
+  const claimRewardMutation = useTypedMutation(
+    typedApi.progression.battlePass.claimBattlePassReward
+  );
+  const claimAllMutation = useTypedMutation(
+    typedApi.progression.battlePass.claimAllAvailableRewards
+  );
+  const purchasePremiumMutation = useTypedMutation(
+    typedApi.progression.battlePass.purchasePremiumPass
+  );
 
   // Query pending premium purchases
-  const pendingPurchases = useConvexQuery(
-    apiAny.progression.battlePass.getUserPendingPremiumPurchases,
+  const pendingPurchases = useTypedQuery(
+    typedApi.progression.battlePass.getUserPendingPremiumPurchases,
     isAuthenticated ? {} : "skip"
-  ) as PendingPremiumPurchase[] | undefined;
+  );
 
   // Claim individual reward
   const claimReward = async (tier: number, track: "free" | "premium") => {
@@ -235,8 +241,8 @@ export function useBattlePass(): UseBattlePassReturn {
 
   // Calculate claimable rewards
   const tiersData = tiers ?? [];
-  const claimableFreeCount = tiersData.filter((t) => t.canClaimFree).length;
-  const claimablePremiumCount = tiersData.filter((t) => t.canClaimPremium).length;
+  const claimableFreeCount = tiersData.filter((t: BattlePassTier) => t.canClaimFree).length;
+  const claimablePremiumCount = tiersData.filter((t: BattlePassTier) => t.canClaimPremium).length;
   const totalClaimableCount = claimableFreeCount + claimablePremiumCount;
 
   // XP progress percentage within current tier

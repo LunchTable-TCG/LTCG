@@ -3,10 +3,10 @@
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, FastForward, MessageSquare } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export interface DialogueLine {
   speaker: string;
@@ -192,9 +192,7 @@ export function DialogueDisplay({
                   animate={{ opacity: 1, y: 0 }}
                   className="mb-2"
                 >
-                  <span className="text-[#d4af37] font-bold text-lg">
-                    {currentLine.speaker}
-                  </span>
+                  <span className="text-[#d4af37] font-bold text-lg">{currentLine.speaker}</span>
                 </motion.div>
               </AnimatePresence>
 
@@ -205,7 +203,7 @@ export function DialogueDisplay({
                   {isTyping && (
                     <motion.span
                       animate={{ opacity: [1, 0] }}
-                      transition={{ duration: 0.5, repeat: Infinity }}
+                      transition={{ duration: 0.5, repeat: Number.POSITIVE_INFINITY }}
                       className="inline-block w-0.5 h-5 ml-0.5 bg-[#d4af37] align-middle"
                     />
                   )}
@@ -231,7 +229,7 @@ export function DialogueDisplay({
 
             <motion.div
               animate={{ x: [0, 5, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
+              transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
               className="flex items-center gap-1 text-[#a89f94] text-sm"
             >
               {isTyping ? (

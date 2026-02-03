@@ -7,10 +7,8 @@
  * Integrates with the admin asset management system.
  */
 
-import { useState, useCallback, useMemo } from "react";
-import { useQuery } from "convex/react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,10 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Image, Loader2, Check, X } from "lucide-react";
 import { apiAny } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
-import type { AssetCategory, Asset } from "../types";
+import { useQuery } from "convex/react";
+import { Check, Image, Loader2, Search, X } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import type { Asset, AssetCategory } from "../types";
 import { isValidAssetCategory } from "../types";
 
 interface AssetPickerDialogProps {
@@ -89,8 +89,9 @@ export function AssetPickerDialog({
     if (!allowedCategories || allowedCategories.includes("all")) {
       return assets;
     }
-    return assets.filter((asset: Asset) =>
-      isValidAssetCategory(asset.category) && allowedCategories.includes(asset.category)
+    return assets.filter(
+      (asset: Asset) =>
+        isValidAssetCategory(asset.category) && allowedCategories.includes(asset.category)
     );
   }, [assets, allowedCategories]);
 
@@ -154,7 +155,10 @@ export function AssetPickerDialog({
             <Label htmlFor="category" className="sr-only">
               Category
             </Label>
-            <Select value={category} onValueChange={(v) => isValidAssetCategory(v) && setCategory(v)}>
+            <Select
+              value={category}
+              onValueChange={(v) => isValidAssetCategory(v) && setCategory(v)}
+            >
               <SelectTrigger id="category">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
@@ -250,8 +254,8 @@ export function AssetPickerDialog({
               <p className="text-sm text-muted-foreground">
                 {isValidAssetCategory(selectedAsset.category)
                   ? CATEGORY_LABELS[selectedAsset.category]
-                  : selectedAsset.category} •{" "}
-                {formatFileSize(selectedAsset.size)}
+                  : selectedAsset.category}{" "}
+                • {formatFileSize(selectedAsset.size)}
               </p>
             </div>
           </div>

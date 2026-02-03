@@ -6,12 +6,18 @@
  * A Konva image element that can be dragged, resized, and transformed.
  */
 
-import { useRef, useEffect, useCallback } from "react";
-import { Image, Group, Rect, Transformer } from "react-konva";
-import useImage from "use-image";
 import type Konva from "konva";
-import type { CardTemplateBlock, ImageFit, BlockId, BlockPosition, BlockTransformAttrs } from "../../types";
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../../types";
+import { useCallback, useEffect, useRef } from "react";
+import { Group, Image, Rect, Transformer } from "react-konva";
+import useImage from "use-image";
+import type {
+  BlockId,
+  BlockPosition,
+  BlockTransformAttrs,
+  CardTemplateBlock,
+  ImageFit,
+} from "../../types";
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../../types";
 
 interface DraggableImageProps {
   block: CardTemplateBlock;
@@ -195,14 +201,7 @@ export function DraggableImage({
 
         {/* Placeholder when no image or loading */}
         {(!image || status === "loading") && (
-          <Rect
-            x={4}
-            y={4}
-            width={width - 8}
-            height={height - 8}
-            fill="#f3f4f6"
-            cornerRadius={4}
-          />
+          <Rect x={4} y={4} width={width - 8} height={height - 8} fill="#f3f4f6" cornerRadius={4} />
         )}
 
         {/* Image */}

@@ -52,7 +52,10 @@ interface AssetDetailSheetProps {
   asset: Asset | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdate: (assetId: string, data: { category?: AssetCategory; description?: string }) => Promise<void>;
+  onUpdate: (
+    assetId: string,
+    data: { category?: AssetCategory; description?: string }
+  ) => Promise<void>;
   onDelete: (asset: Asset) => Promise<void>;
 }
 
@@ -96,7 +99,8 @@ export function AssetDetailSheet({
     }
   }, [asset]);
 
-  const hasChanges = asset && (category !== asset.category || description !== (asset.description || ""));
+  const hasChanges =
+    asset && (category !== asset.category || description !== (asset.description || ""));
 
   const handleCopyUrl = useCallback(() => {
     if (asset?.blobUrl) {
@@ -151,9 +155,7 @@ export function AssetDetailSheet({
         <SheetContent className="flex w-full flex-col sm:max-w-lg">
           <SheetHeader>
             <SheetTitle className="truncate">{asset.fileName}</SheetTitle>
-            <SheetDescription>
-              Uploaded {formatDate(asset.uploadedAt)}
-            </SheetDescription>
+            <SheetDescription>Uploaded {formatDate(asset.uploadedAt)}</SheetDescription>
           </SheetHeader>
 
           <div className="flex-1 space-y-6 overflow-y-auto py-4">
@@ -167,12 +169,7 @@ export function AssetDetailSheet({
                     className="max-h-64 w-full object-contain"
                   />
                 ) : (
-                  <video
-                    src={imageUrl}
-                    className="max-h-64 w-full"
-                    controls
-                    preload="metadata"
-                  />
+                  <video src={imageUrl} className="max-h-64 w-full" controls preload="metadata" />
                 )
               ) : (
                 <div className="flex h-32 items-center justify-center">
@@ -210,27 +207,15 @@ export function AssetDetailSheet({
               <div className="space-y-2">
                 <Label>Blob URL</Label>
                 <div className="flex gap-2">
-                  <Input
-                    value={asset.blobUrl}
-                    readOnly
-                    className="flex-1 font-mono text-xs"
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleCopyUrl}
-                  >
+                  <Input value={asset.blobUrl} readOnly className="flex-1 font-mono text-xs" />
+                  <Button variant="outline" size="icon" onClick={handleCopyUrl}>
                     {copied ? (
                       <CheckIcon className="h-4 w-4 text-green-500" />
                     ) : (
                       <CopyIcon className="h-4 w-4" />
                     )}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    asChild
-                  >
+                  <Button variant="outline" size="icon" asChild>
                     <a href={asset.blobUrl} target="_blank" rel="noopener noreferrer">
                       <ExternalLinkIcon className="h-4 w-4" />
                     </a>
@@ -285,17 +270,10 @@ export function AssetDetailSheet({
               Delete
             </Button>
             <div className="flex-1" />
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isUpdating}
-            >
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>
               Cancel
             </Button>
-            <Button
-              onClick={handleUpdate}
-              disabled={!hasChanges || isUpdating}
-            >
+            <Button onClick={handleUpdate} disabled={!hasChanges || isUpdating}>
               {isUpdating ? (
                 <>
                   <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />

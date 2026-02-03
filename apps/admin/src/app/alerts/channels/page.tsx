@@ -274,15 +274,9 @@ export default function AlertChannelsPage() {
                       <SelectValue placeholder="Select channel type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="in_app">
-                        🔔 In-App - Browser notifications
-                      </SelectItem>
-                      <SelectItem value="slack">
-                        💬 Slack - Webhook integration
-                      </SelectItem>
-                      <SelectItem value="discord">
-                        🎮 Discord - Webhook integration
-                      </SelectItem>
+                      <SelectItem value="in_app">🔔 In-App - Browser notifications</SelectItem>
+                      <SelectItem value="slack">💬 Slack - Webhook integration</SelectItem>
+                      <SelectItem value="discord">🎮 Discord - Webhook integration</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -298,9 +292,7 @@ export default function AlertChannelsPage() {
                           : "https://discord.com/api/webhooks/..."
                       }
                       value={formData.webhookUrl}
-                      onChange={(e) =>
-                        setFormData({ ...formData, webhookUrl: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, webhookUrl: e.target.value })}
                     />
                     <p className="text-xs text-muted-foreground">
                       {formData.type === "slack"
@@ -321,15 +313,9 @@ export default function AlertChannelsPage() {
                       <SelectValue placeholder="Select minimum severity" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="info">
-                        ℹ️ Info - Receive all alerts
-                      </SelectItem>
-                      <SelectItem value="warning">
-                        ⚠️ Warning - Warning and Critical only
-                      </SelectItem>
-                      <SelectItem value="critical">
-                        🚨 Critical - Critical alerts only
-                      </SelectItem>
+                      <SelectItem value="info">ℹ️ Info - Receive all alerts</SelectItem>
+                      <SelectItem value="warning">⚠️ Warning - Warning and Critical only</SelectItem>
+                      <SelectItem value="critical">🚨 Critical - Critical alerts only</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
@@ -425,9 +411,7 @@ export default function AlertChannelsPage() {
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>Sent: {channel.sentCount || 0} alerts</span>
                   {channel.lastSentAt && (
-                    <span>
-                      Last: {new Date(channel.lastSentAt).toLocaleDateString()}
-                    </span>
+                    <span>Last: {new Date(channel.lastSentAt).toLocaleDateString()}</span>
                   )}
                 </div>
 
@@ -488,8 +472,8 @@ export default function AlertChannelsPage() {
         </CardHeader>
         <CardContent>
           <Text className="text-muted-foreground">
-            Notification channels determine how and where you receive alert notifications.
-            You can have multiple channels and filter by severity level.
+            Notification channels determine how and where you receive alert notifications. You can
+            have multiple channels and filter by severity level.
           </Text>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             <li>

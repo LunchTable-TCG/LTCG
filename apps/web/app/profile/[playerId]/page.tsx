@@ -74,8 +74,13 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
   const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
   const profileUser = useQuery(api.core.users.getUser, { userId: playerId });
   const userStats = useQuery(api.core.users.getUserStats, { userId: playerId });
-  const profilePrivacy = useQuery(api.progression.matchHistory.getProfilePrivacy, { userId: playerId });
-  const matchHistory = useQuery(api.progression.matchHistory.getPublicMatchHistory, { userId: playerId, limit: 5 });
+  const profilePrivacy = useQuery(api.progression.matchHistory.getProfilePrivacy, {
+    userId: playerId,
+  });
+  const matchHistory = useQuery(api.progression.matchHistory.getPublicMatchHistory, {
+    userId: playerId,
+    limit: 5,
+  });
 
   const isOwnProfile = currentUser?._id === playerId;
 
@@ -138,7 +143,8 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
           </div>
           <h2 className="text-2xl font-bold mb-2 text-[#e8e0d5]">Private Profile</h2>
           <p className="text-[#a89f94] mb-6 max-w-md mx-auto">
-            This player has set their profile to private. Only they can view their profile information.
+            This player has set their profile to private. Only they can view their profile
+            information.
           </p>
           <Button asChild variant="outline" className="border-[#3d2b1f] text-[#a89f94]">
             <Link href="/social">Back to Social</Link>
@@ -223,7 +229,10 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
               ) : isOwnProfile ? (
                 <p className="text-[#a89f94]/50 text-sm mb-3 max-w-lg text-center md:text-left italic flex items-center gap-2">
                   No bio yet.{" "}
-                  <Link href="/settings" className="text-[#d4af37] hover:underline inline-flex items-center gap-1">
+                  <Link
+                    href="/settings"
+                    className="text-[#d4af37] hover:underline inline-flex items-center gap-1"
+                  >
                     <Settings className="w-3 h-3" />
                     Add one in settings
                   </Link>

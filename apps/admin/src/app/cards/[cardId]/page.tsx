@@ -669,8 +669,8 @@ export default function CardEditorPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Card</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to permanently delete "{name}"? This action cannot be undone.
-              If players own this card, the deletion will fail unless forced.
+              Are you sure you want to permanently delete "{name}"? This action cannot be undone. If
+              players own this card, the deletion will fail unless forced.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

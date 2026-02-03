@@ -3,21 +3,13 @@
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { AuthLoading, Authenticated } from "convex/react";
-import {
-  Book,
-  Filter,
-  Grid3X3,
-  List,
-  Loader2,
-  Search,
-  X,
-} from "lucide-react";
+import { Book, Filter, Grid3X3, List, Loader2, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   BinderCard,
   BinderCardSkeleton,
-  CardPreviewModal,
   type CardData,
+  CardPreviewModal,
   type CardType,
   type Element,
   type Rarity,
@@ -93,9 +85,9 @@ function CardCodexContent() {
       name: card.name,
       rarity: card.rarity as Rarity,
       element: (card.attribute === "fire" ||
-        card.attribute === "water" ||
-        card.attribute === "earth" ||
-        card.attribute === "wind"
+      card.attribute === "water" ||
+      card.attribute === "earth" ||
+      card.attribute === "wind"
         ? card.attribute
         : "neutral") as Element,
       cardType: card.cardType as CardType,
@@ -119,8 +111,7 @@ function CardCodexContent() {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (card) =>
-          card.name.toLowerCase().includes(query) ||
-          card.flavorText?.toLowerCase().includes(query)
+          card.name.toLowerCase().includes(query) || card.flavorText?.toLowerCase().includes(query)
       );
     }
 
@@ -266,9 +257,7 @@ function CardCodexContent() {
             >
               <Filter className="w-5 h-5" />
               <span>Filters</span>
-              {hasActiveFilters && (
-                <span className="w-2 h-2 rounded-full bg-[#d4af37]" />
-              )}
+              {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-[#d4af37]" />}
             </button>
 
             {/* View Mode */}

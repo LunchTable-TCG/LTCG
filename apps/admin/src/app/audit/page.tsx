@@ -15,8 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ColumnDef } from "@/types";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import type { ColumnDef } from "@/types";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { useState } from "react";
 
@@ -184,15 +184,11 @@ export default function AuditLogPage() {
           </Card>
           <Card>
             <Text className="text-sm text-muted-foreground">Successful</Text>
-            <Text className="text-2xl font-bold">
-              {logs.filter((l) => l.success).length}
-            </Text>
+            <Text className="text-2xl font-bold">{logs.filter((l) => l.success).length}</Text>
           </Card>
           <Card>
             <Text className="text-sm text-muted-foreground">Failed</Text>
-            <Text className="text-2xl font-bold">
-              {logs.filter((l) => !l.success).length}
-            </Text>
+            <Text className="text-2xl font-bold">{logs.filter((l) => !l.success).length}</Text>
           </Card>
           <Card>
             <Text className="text-sm text-muted-foreground">Today</Text>

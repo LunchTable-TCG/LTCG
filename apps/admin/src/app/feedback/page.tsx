@@ -7,14 +7,14 @@
  * Includes stats overview and detailed item view.
  */
 
-import { useState } from "react";
-import { PageWrapper } from "@/components/layout";
 import { StatCard, StatGrid } from "@/components/data";
-import { KanbanBoard } from "@/components/feedback/KanbanBoard";
 import { FeedbackDetailSheet } from "@/components/feedback/FeedbackDetailSheet";
+import { KanbanBoard } from "@/components/feedback/KanbanBoard";
+import { PageWrapper } from "@/components/layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
-import { Bug, Lightbulb, AlertCircle, CheckCircle, Clock, Inbox } from "lucide-react";
+import { AlertCircle, Bug, CheckCircle, Clock, Inbox, Lightbulb } from "lucide-react";
+import { useState } from "react";
 
 // =============================================================================
 // Types
@@ -124,18 +124,14 @@ export default function FeedbackPage() {
             <Bug className="w-4 h-4" />
             Bug Reports
             {stats?.byType.bug ? (
-              <span className="ml-1 text-xs text-muted-foreground">
-                ({stats.byType.bug})
-              </span>
+              <span className="ml-1 text-xs text-muted-foreground">({stats.byType.bug})</span>
             ) : null}
           </TabsTrigger>
           <TabsTrigger value="features" className="gap-2">
             <Lightbulb className="w-4 h-4" />
             Feature Requests
             {stats?.byType.feature ? (
-              <span className="ml-1 text-xs text-muted-foreground">
-                ({stats.byType.feature})
-              </span>
+              <span className="ml-1 text-xs text-muted-foreground">({stats.byType.feature})</span>
             ) : null}
           </TabsTrigger>
         </TabsList>

@@ -32,10 +32,7 @@ function Slider({
         data-slot="slider-track"
         className="bg-muted relative h-1.5 w-full grow overflow-hidden rounded-full"
       >
-        <SliderPrimitive.Range
-          data-slot="slider-range"
-          className="bg-primary absolute h-full"
-        />
+        <SliderPrimitive.Range data-slot="slider-range" className="bg-primary absolute h-full" />
       </SliderPrimitive.Track>
       {Array.from({ length: _values.length }, (_, index) => (
         <SliderPrimitive.Thumb

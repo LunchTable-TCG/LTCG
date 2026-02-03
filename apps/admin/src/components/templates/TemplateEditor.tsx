@@ -7,37 +7,31 @@
  * Handles state management, block operations, and export capabilities.
  */
 
-import { useState, useCallback, useEffect } from "react";
 import { useMutation } from "convex/react";
-import { toast } from "sonner";
-import dynamic from "next/dynamic";
 import type { Stage } from "konva/lib/Stage";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { useCanvasExport } from "./canvas/hooks/useCanvasExport";
 
 // Dynamic import with SSR disabled to avoid canvas module issues
-const KonvaCanvas = dynamic(
-  () => import("./canvas/KonvaCanvas").then((mod) => mod.KonvaCanvas),
-  { ssr: false, loading: () => <div className="flex-1 flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading canvas...</div></div> }
-);
-import { LayersPanel } from "./LayersPanel";
-import { PropertiesPanel } from "./PropertiesPanel";
-import { AssetPickerButton } from "./asset-picker";
-import {
-  SAMPLE_CARD_DATA,
-  DEFAULT_ZOOM,
-  ZOOM_LEVELS,
-  type TemplateWithBlocks,
-  type CardTemplateBlock,
-  type BlockType,
-  type Rarity,
-  type BlockId,
-  type BlockTransformAttrs,
-  type BlockPosition,
-  BLOCK_CONFIGS,
-} from "./types";
-import { apiAny } from "@/lib/convexHelpers";
+const KonvaCanvas = dynamic(() => import("./canvas/KonvaCanvas").then((mod) => mod.KonvaCanvas), {
+  ssr: false,
+  loading: () => (
+    <div className="flex-1 flex items-center justify-center">
+      <div className="animate-pulse text-muted-foreground">Loading canvas...</div>
+    </div>
+  ),
+});
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -45,23 +39,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { apiAny } from "@/lib/convexHelpers";
 import {
-  ZoomIn,
-  ZoomOut,
+  Download,
+  Eye,
   Grid3X3,
   ImageIcon,
-  Eye,
-  Download,
-  Magnet,
   Image as ImageLucide,
+  Magnet,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
+import { LayersPanel } from "./LayersPanel";
+import { PropertiesPanel } from "./PropertiesPanel";
+import { AssetPickerButton } from "./asset-picker";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  BLOCK_CONFIGS,
+  type BlockId,
+  type BlockPosition,
+  type BlockTransformAttrs,
+  type BlockType,
+  type CardTemplateBlock,
+  DEFAULT_ZOOM,
+  type Rarity,
+  SAMPLE_CARD_DATA,
+  type TemplateWithBlocks,
+  ZOOM_LEVELS,
+} from "./types";
 
 const api = apiAny;
 
@@ -123,9 +127,7 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
       const newY = Math.max(0, Math.min(100 - block.height, position.y));
 
       // Optimistic update
-      setBlocks((prev) =>
-        prev.map((b) => (b._id === blockId ? { ...b, x: newX, y: newY } : b))
-      );
+      setBlocks((prev) => prev.map((b) => (b._id === blockId ? { ...b, x: newX, y: newY } : b)));
 
       // Persist to database
       try {
@@ -191,9 +193,7 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
       if (!selectedBlockId) return;
 
       // Optimistic update
-      setBlocks((prev) =>
-        prev.map((b) => (b._id === selectedBlockId ? { ...b, ...updates } : b))
-      );
+      setBlocks((prev) => prev.map((b) => (b._id === selectedBlockId ? { ...b, ...updates } : b)));
 
       // Persist to database - extract only the fields the mutation accepts
       const {
@@ -370,10 +370,7 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
           {templateMode === "frame_artwork" && (
             <div className="flex items-center gap-2">
               <Eye className="h-4 w-4 text-muted-foreground" />
-              <Select
-                value={previewRarity}
-                onValueChange={(v) => setPreviewRarity(v as Rarity)}
-              >
+              <Select value={previewRarity} onValueChange={(v) => setPreviewRarity(v as Rarity)}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -394,7 +391,9 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
               <ImageLucide className="h-4 w-4 text-muted-foreground" />
               <AssetPickerButton
                 value={previewCardImageUrl}
-                onChange={(url) => setPreviewCardImageUrl(url ?? "/assets/cards-raw/infernal-dragons/102.png")}
+                onChange={(url) =>
+                  setPreviewCardImageUrl(url ?? "/assets/cards-raw/infernal-dragons/102.png")
+                }
                 dialogTitle="Select Preview Card Image"
                 allowedCategories={["card_image"]}
                 placeholder="Select card image"
@@ -415,12 +414,8 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportPNG}>
-                Export as PNG (2x)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportJPEG}>
-                Export as JPEG
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPNG}>Export as PNG (2x)</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportJPEG}>Export as JPEG</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -455,7 +450,9 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
             showArtworkBounds={showArtworkBounds && templateMode === "frame_artwork"}
             previewRarity={previewRarity}
             previewArtworkUrl={previewData.imageUrl}
-            previewCardImageUrl={templateMode === "full_card_image" ? previewCardImageUrl : undefined}
+            previewCardImageUrl={
+              templateMode === "full_card_image" ? previewCardImageUrl : undefined
+            }
             onSelectBlock={handleSelectBlock}
             onBlockMove={handleBlockMove}
             onBlockTransform={handleBlockTransform}

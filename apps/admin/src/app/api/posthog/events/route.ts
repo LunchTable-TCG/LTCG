@@ -5,7 +5,7 @@
  */
 
 import { posthogApi } from "@/lib/posthog";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const eventType = searchParams.get("event") || undefined;
     const dateFrom = searchParams.get("date_from") || undefined;
     const dateTo = searchParams.get("date_to") || undefined;
-    const limit = parseInt(searchParams.get("limit") || "100");
+    const limit = Number.parseInt(searchParams.get("limit") || "100");
 
     // Fetch events from PostHog
     const events = await posthogApi.getEvents({

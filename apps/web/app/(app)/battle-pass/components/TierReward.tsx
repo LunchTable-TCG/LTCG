@@ -82,9 +82,9 @@ export function TierReward({
           // Locked (tier not reached)
           !isUnlocked && "bg-black/20 border-[#3d2b1f] opacity-50",
           // Premium locked (tier reached but no premium)
-          isUnlocked && isPremiumTrack && !isPremiumUser && [
-            "bg-black/30 border-violet-500/30 opacity-70",
-          ],
+          isUnlocked &&
+            isPremiumTrack &&
+            !isPremiumUser && ["bg-black/30 border-violet-500/30 opacity-70"],
           // Unlocked but not yet claimable (already claimed or can't claim)
           isUnlocked && !showClaim && !isClaimed && "bg-black/20 border-[#3d2b1f]"
         )}

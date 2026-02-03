@@ -120,15 +120,21 @@ function CountdownDisplay({ targetTime }: { targetTime: number }) {
         <div className="text-sm text-muted-foreground">Days</div>
       </div>
       <div className="rounded-lg bg-muted p-4">
-        <div className="text-4xl font-bold tabular-nums">{countdown.hours.toString().padStart(2, "0")}</div>
+        <div className="text-4xl font-bold tabular-nums">
+          {countdown.hours.toString().padStart(2, "0")}
+        </div>
         <div className="text-sm text-muted-foreground">Hours</div>
       </div>
       <div className="rounded-lg bg-muted p-4">
-        <div className="text-4xl font-bold tabular-nums">{countdown.minutes.toString().padStart(2, "0")}</div>
+        <div className="text-4xl font-bold tabular-nums">
+          {countdown.minutes.toString().padStart(2, "0")}
+        </div>
         <div className="text-sm text-muted-foreground">Minutes</div>
       </div>
       <div className="rounded-lg bg-muted p-4">
-        <div className="text-4xl font-bold tabular-nums">{countdown.seconds.toString().padStart(2, "0")}</div>
+        <div className="text-4xl font-bold tabular-nums">
+          {countdown.seconds.toString().padStart(2, "0")}
+        </div>
         <div className="text-sm text-muted-foreground">Seconds</div>
       </div>
     </div>
@@ -164,8 +170,7 @@ export default function TokenLaunchPage() {
     : 0;
 
   const canMarkGo =
-    launchStatus?.isReady &&
-    (scheduleStatus === "countdown" || scheduleStatus === "scheduled");
+    launchStatus?.isReady && (scheduleStatus === "countdown" || scheduleStatus === "scheduled");
 
   async function handleMarkGo() {
     if (!confirm("Are you sure you want to mark this launch as GO? This is the final approval.")) {
@@ -208,7 +213,10 @@ export default function TokenLaunchPage() {
       }
     >
       {/* Status Banner */}
-      <Card className="mb-6 border-2" style={{ borderColor: `var(--${getStatusColor(scheduleStatus)})` }}>
+      <Card
+        className="mb-6 border-2"
+        style={{ borderColor: `var(--${getStatusColor(scheduleStatus)})` }}
+      >
         <CardContent className="flex items-center justify-between p-6">
           <div className="flex items-center gap-4">
             <div className="text-4xl">
@@ -221,20 +229,24 @@ export default function TokenLaunchPage() {
               </Badge>
             </div>
           </div>
-          {schedule?.scheduledAt && scheduleStatus !== "launched" && scheduleStatus !== "aborted" && (
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Scheduled for</p>
-              <p className="text-lg font-semibold">
-                {new Date(schedule.scheduledAt).toLocaleString()}
-              </p>
-            </div>
-          )}
+          {schedule?.scheduledAt &&
+            scheduleStatus !== "launched" &&
+            scheduleStatus !== "aborted" && (
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Scheduled for</p>
+                <p className="text-lg font-semibold">
+                  {new Date(schedule.scheduledAt).toLocaleString()}
+                </p>
+              </div>
+            )}
         </CardContent>
       </Card>
 
       {/* Countdown */}
       {schedule?.scheduledAt &&
-        (scheduleStatus === "scheduled" || scheduleStatus === "countdown" || scheduleStatus === "go") && (
+        (scheduleStatus === "scheduled" ||
+          scheduleStatus === "countdown" ||
+          scheduleStatus === "go") && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="text-center">Time Until Launch</CardTitle>
@@ -311,24 +323,29 @@ export default function TokenLaunchPage() {
 
                 {/* By Category */}
                 {checklistSummary?.byCategory &&
-                  Object.entries(checklistSummary.byCategory).map(([category, data]: [string, any]) => (
-                    <div key={category} className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="flex items-center gap-2">
-                        <span>{getCategoryIcon(category)}</span>
-                        <span className="capitalize">{category}</span>
+                  Object.entries(checklistSummary.byCategory).map(
+                    ([category, data]: [string, any]) => (
+                      <div
+                        key={category}
+                        className="flex items-center justify-between rounded-lg border p-3"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{getCategoryIcon(category)}</span>
+                          <span className="capitalize">{category}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            {data.requiredCompleted}/{data.required} required
+                          </span>
+                          {data.requiredCompleted === data.required ? (
+                            <Badge color="emerald">Done</Badge>
+                          ) : (
+                            <Badge color="amber">Pending</Badge>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          {data.requiredCompleted}/{data.required} required
-                        </span>
-                        {data.requiredCompleted === data.required ? (
-                          <Badge color="emerald">Done</Badge>
-                        ) : (
-                          <Badge color="amber">Pending</Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  )}
               </>
             )}
           </CardContent>
@@ -367,9 +384,7 @@ export default function TokenLaunchPage() {
                 </div>
 
                 <div className="rounded-lg border p-4 text-center">
-                  <div className="text-4xl font-bold">
-                    {approvalSummary?.approvedCount ?? 0}
-                  </div>
+                  <div className="text-4xl font-bold">{approvalSummary?.approvedCount ?? 0}</div>
                   <div className="text-sm text-muted-foreground">
                     of {approvalSummary?.requiredApprovals ?? 2} required approvals
                   </div>

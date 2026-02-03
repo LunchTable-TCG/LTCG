@@ -164,14 +164,9 @@ function DialogueEditor({
         ) : (
           <div className="space-y-3">
             {dialogue.map((line, index) => (
-              <div
-                key={index}
-                className="p-3 border rounded-lg bg-muted/30 space-y-2"
-              >
+              <div key={index} className="p-3 border rounded-lg bg-muted/30 space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground font-mono">
-                    Line {index + 1}
-                  </span>
+                  <span className="text-xs text-muted-foreground font-mono">Line {index + 1}</span>
                   {!disabled && (
                     <div className="flex gap-1">
                       <Button
@@ -374,10 +369,12 @@ export default function StageEditorPage() {
     }
   }, [stage]);
 
-  const handleFieldChange = <T,>(setter: (v: T) => void) => (value: T) => {
-    setter(value);
-    setHasChanges(true);
-  };
+  const handleFieldChange =
+    <T,>(setter: (v: T) => void) =>
+    (value: T) => {
+      setter(value);
+      setHasChanges(true);
+    };
 
   const handleSave = async () => {
     if (!stage) return;
@@ -390,8 +387,8 @@ export default function StageEditorPage() {
         description,
         opponentName,
         difficulty,
-        firstClearGold: parseInt(firstClearGold, 10),
-        repeatGold: parseInt(repeatGold, 10),
+        firstClearGold: Number.parseInt(firstClearGold, 10),
+        repeatGold: Number.parseInt(repeatGold, 10),
       };
 
       // Optional fields
@@ -402,7 +399,7 @@ export default function StageEditorPage() {
       }
 
       if (firstClearGems) {
-        args["firstClearGems"] = parseInt(firstClearGems, 10);
+        args["firstClearGems"] = Number.parseInt(firstClearGems, 10);
       }
 
       if (cardRewardId) {
@@ -526,9 +523,7 @@ export default function StageEditorPage() {
                     <div className="space-y-2">
                       <Label>Status</Label>
                       <div className="flex items-center h-10">
-                        <Badge
-                          variant={stage.status === "published" ? "default" : "secondary"}
-                        >
+                        <Badge variant={stage.status === "published" ? "default" : "secondary"}>
                           {stage.status === "published" ? "Published" : "Draft"}
                         </Badge>
                       </div>
@@ -661,7 +656,9 @@ export default function StageEditorPage() {
                     <Label>Card Reward (optional)</Label>
                     <Select
                       value={cardRewardId}
-                      onValueChange={(v) => handleFieldChange(setCardRewardId)(v === "none" ? "" : v)}
+                      onValueChange={(v) =>
+                        handleFieldChange(setCardRewardId)(v === "none" ? "" : v)
+                      }
                       disabled={!canEdit}
                     >
                       <SelectTrigger>
@@ -676,9 +673,7 @@ export default function StageEditorPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Guaranteed card on first clear.
-                    </p>
+                    <p className="text-xs text-muted-foreground">Guaranteed card on first clear.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -770,10 +765,7 @@ export default function StageEditorPage() {
                       <span className="text-3xl">?</span>
                     </div>
                     <div className="font-semibold">{opponentName || "Opponent"}</div>
-                    <Badge
-                      variant="outline"
-                      className="mt-1"
-                    >
+                    <Badge variant="outline" className="mt-1">
                       {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
                     </Badge>
                   </div>
@@ -782,15 +774,11 @@ export default function StageEditorPage() {
                 {/* Rewards Preview */}
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div className="p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-amber-500">
-                      {firstClearGold || 0}
-                    </div>
+                    <div className="text-2xl font-bold text-amber-500">{firstClearGold || 0}</div>
                     <div className="text-sm text-muted-foreground">First Clear Gold</div>
                   </div>
                   <div className="p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-amber-500/70">
-                      {repeatGold || 0}
-                    </div>
+                    <div className="text-2xl font-bold text-amber-500/70">{repeatGold || 0}</div>
                     <div className="text-sm text-muted-foreground">Repeat Gold</div>
                   </div>
                   <div className="p-4 border rounded-lg">

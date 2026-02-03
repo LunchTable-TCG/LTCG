@@ -28,11 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -60,15 +56,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import { formatDistanceToNow, format } from "date-fns";
-import { AlertTriangle, Check, ChevronsUpDown, DollarSign, History, RefreshCw, Trash2, Undo2, User } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import {
+  AlertTriangle,
+  Check,
+  ChevronsUpDown,
+  DollarSign,
+  History,
+  RefreshCw,
+  Trash2,
+  Undo2,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 type ListingStatus = "active" | "sold" | "cancelled" | "expired" | "suspended";
 
-const STATUS_BADGES: Record<ListingStatus, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+const STATUS_BADGES: Record<
+  ListingStatus,
+  { variant: "default" | "secondary" | "destructive" | "outline"; label: string }
+> = {
   active: { variant: "default", label: "Active" },
   sold: { variant: "secondary", label: "Sold" },
   cancelled: { variant: "destructive", label: "Cancelled" },
@@ -170,7 +179,9 @@ export default function MarketplaceModerationPage() {
   // Refund bid dialog state
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const [refundBidId, setRefundBidId] = useState<string | null>(null);
-  const [refundBidInfo, setRefundBidInfo] = useState<{ username: string; amount: number } | null>(null);
+  const [refundBidInfo, setRefundBidInfo] = useState<{ username: string; amount: number } | null>(
+    null
+  );
   const [refundReason, setRefundReason] = useState("");
 
   // Seller history sheet state
@@ -191,10 +202,7 @@ export default function MarketplaceModerationPage() {
       : "skip"
   );
 
-  const stats = useConvexQuery(
-    apiAny.admin.marketplace.getMarketplaceStats,
-    isAdmin ? {} : "skip"
-  );
+  const stats = useConvexQuery(apiAny.admin.marketplace.getMarketplaceStats, isAdmin ? {} : "skip");
 
   const anomalies = useConvexQuery(
     apiAny.admin.marketplace.getPriceAnomalies,
@@ -220,10 +228,9 @@ export default function MarketplaceModerationPage() {
   ) as SellerHistoryData | undefined;
 
   // Price caps query
-  const priceCaps = useConvexQuery(
-    apiAny.admin.marketplace.getPriceCaps,
-    isAdmin ? {} : "skip"
-  ) as PriceCap[] | undefined;
+  const priceCaps = useConvexQuery(apiAny.admin.marketplace.getPriceCaps, isAdmin ? {} : "skip") as
+    | PriceCap[]
+    | undefined;
 
   // Mutations
   const suspendListing = useConvexMutation(apiAny.admin.marketplace.suspendListing);
@@ -287,7 +294,7 @@ export default function MarketplaceModerationPage() {
   const handleSetPriceCap = async () => {
     if (!selectedCardId || !priceCapAmount || !priceCapReason) return;
 
-    const maxPrice = parseInt(priceCapAmount, 10);
+    const maxPrice = Number.parseInt(priceCapAmount, 10);
     if (isNaN(maxPrice) || maxPrice <= 0) {
       toast.error("Please enter a valid price cap amount");
       return;
@@ -504,113 +511,118 @@ export default function MarketplaceModerationPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {listings.listings.map((listing: {
-                      _id: string;
-                      cardName: string;
-                      cardRarity: string;
-                      sellerId: string;
-                      sellerUsername: string;
-                      listingType: string;
-                      price: number;
-                      currentBid?: number;
-                      status: ListingStatus;
-                      _creationTime: number;
-                      quantity: number;
-                    }) => (
-                      <TableRow key={listing._id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{listing.cardName}</p>
-                            <p className={`text-xs capitalize ${RARITY_COLORS[listing.cardRarity] ?? ""}`}>
-                              {listing.cardRarity}
-                              {listing.quantity > 1 && ` (x${listing.quantity})`}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/players/${listing.sellerId}`}
-                              className="text-primary hover:underline"
-                            >
-                              {listing.sellerUsername}
-                            </Link>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openSellerHistory(listing.sellerId);
-                              }}
-                              title="View seller history"
-                            >
-                              <History className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {listing.listingType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{formatGold(listing.price)} gold</p>
-                            {listing.listingType === "auction" && listing.currentBid && (
-                              <p className="text-xs text-muted-foreground">
-                                Current bid: {formatGold(listing.currentBid)}
+                    {listings.listings.map(
+                      (listing: {
+                        _id: string;
+                        cardName: string;
+                        cardRarity: string;
+                        sellerId: string;
+                        sellerUsername: string;
+                        listingType: string;
+                        price: number;
+                        currentBid?: number;
+                        status: ListingStatus;
+                        _creationTime: number;
+                        quantity: number;
+                      }) => (
+                        <TableRow key={listing._id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{listing.cardName}</p>
+                              <p
+                                className={`text-xs capitalize ${RARITY_COLORS[listing.cardRarity] ?? ""}`}
+                              >
+                                {listing.cardRarity}
+                                {listing.quantity > 1 && ` (x${listing.quantity})`}
                               </p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={STATUS_BADGES[listing.status].variant}>
-                            {STATUS_BADGES[listing.status].label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {formatDistanceToNow(new Date(listing._creationTime), {
-                            addSuffix: true,
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() =>
-                                window.location.href = `/moderation/marketplace/${listing._id}`
-                              }
-                            >
-                              View
-                            </Button>
-                            {listing.status === "active" && (
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={`/players/${listing.sellerId}`}
+                                className="text-primary hover:underline"
+                              >
+                                {listing.sellerUsername}
+                              </Link>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => openSuspendDialog(listing._id)}
+                                className="h-6 w-6 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openSellerHistory(listing.sellerId);
+                                }}
+                                title="View seller history"
                               >
-                                Suspend
+                                <History className="h-3 w-3" />
                               </Button>
-                            )}
-                            {(listing.status === "suspended" || listing.status === "cancelled") && (
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {listing.listingType}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{formatGold(listing.price)} gold</p>
+                              {listing.listingType === "auction" && listing.currentBid && (
+                                <p className="text-xs text-muted-foreground">
+                                  Current bid: {formatGold(listing.currentBid)}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={STATUS_BADGES[listing.status].variant}>
+                              {STATUS_BADGES[listing.status].label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {formatDistanceToNow(new Date(listing._creationTime), {
+                              addSuffix: true,
+                            })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="text-green-600 hover:text-green-600"
-                                onClick={() => handleUnsuspend(listing._id)}
-                                disabled={isSubmitting}
+                                onClick={() =>
+                                  (window.location.href = `/moderation/marketplace/${listing._id}`)
+                                }
                               >
-                                <Undo2 className="mr-1 h-3 w-3" />
-                                Reactivate
+                                View
                               </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                              {listing.status === "active" && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => openSuspendDialog(listing._id)}
+                                >
+                                  Suspend
+                                </Button>
+                              )}
+                              {(listing.status === "suspended" ||
+                                listing.status === "cancelled") && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-green-600 hover:text-green-600"
+                                  onClick={() => handleUnsuspend(listing._id)}
+                                  disabled={isSubmitting}
+                                >
+                                  <Undo2 className="mr-1 h-3 w-3" />
+                                  Reactivate
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
                   </TableBody>
                 </Table>
               )}
@@ -642,11 +654,7 @@ export default function MarketplaceModerationPage() {
                       Consider setting price caps or suspending suspicious listings.
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPriceCapDialogOpen(true)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setPriceCapDialogOpen(true)}>
                     <DollarSign className="mr-2 h-4 w-4" />
                     Set Price Cap
                   </Button>
@@ -671,7 +679,9 @@ export default function MarketplaceModerationPage() {
                 <div className="flex items-center justify-center h-32 flex-col gap-2">
                   <Check className="h-8 w-8 text-green-500" />
                   <p className="text-muted-foreground">No price anomalies detected</p>
-                  <p className="text-xs text-muted-foreground">All listings are within normal price ranges</p>
+                  <p className="text-xs text-muted-foreground">
+                    All listings are within normal price ranges
+                  </p>
                 </div>
               ) : (
                 <Table>
@@ -686,85 +696,83 @@ export default function MarketplaceModerationPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {anomalies.map((anomaly: {
-                      listingId: string;
-                      cardDefinitionId?: string;
-                      cardName: string;
-                      price: number;
-                      avgPrice: number;
-                      deviation: number;
-                      sellerUsername: string;
-                      sellerId?: string;
-                    }) => (
-                      <TableRow key={anomaly.listingId} className="bg-yellow-500/5">
-                        <TableCell className="font-medium">
-                          {anomaly.cardName}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {anomaly.sellerUsername}
-                            {anomaly.sellerId && (
+                    {anomalies.map(
+                      (anomaly: {
+                        listingId: string;
+                        cardDefinitionId?: string;
+                        cardName: string;
+                        price: number;
+                        avgPrice: number;
+                        deviation: number;
+                        sellerUsername: string;
+                        sellerId?: string;
+                      }) => (
+                        <TableRow key={anomaly.listingId} className="bg-yellow-500/5">
+                          <TableCell className="font-medium">{anomaly.cardName}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {anomaly.sellerUsername}
+                              {anomaly.sellerId && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => openSellerHistory(anomaly.sellerId!)}
+                                  title="View seller history"
+                                >
+                                  <History className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-red-500 font-medium">
+                            {formatGold(anomaly.price)} gold
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatGold(anomaly.avgPrice)} gold
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="destructive">{anomaly.deviation}x</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 w-6 p-0"
-                                onClick={() => openSellerHistory(anomaly.sellerId!)}
-                                title="View seller history"
+                                onClick={() =>
+                                  (window.location.href = `/moderation/marketplace/${anomaly.listingId}`)
+                                }
                               >
-                                <History className="h-3 w-3" />
+                                View
                               </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-red-500 font-medium">
-                          {formatGold(anomaly.price)} gold
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatGold(anomaly.avgPrice)} gold
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="destructive">
-                            {anomaly.deviation}x
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() =>
-                                window.location.href = `/moderation/marketplace/${anomaly.listingId}`
-                              }
-                            >
-                              View
-                            </Button>
-                            {anomaly.cardDefinitionId && (
+                              {anomaly.cardDefinitionId && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setSelectedCardId(anomaly.cardDefinitionId!);
+                                    setSelectedCardName(anomaly.cardName);
+                                    setPriceCapAmount(String(Math.round(anomaly.avgPrice * 2)));
+                                    setPriceCapDialogOpen(true);
+                                  }}
+                                  title="Set price cap for this card"
+                                >
+                                  <DollarSign className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => {
-                                  setSelectedCardId(anomaly.cardDefinitionId!);
-                                  setSelectedCardName(anomaly.cardName);
-                                  setPriceCapAmount(String(Math.round(anomaly.avgPrice * 2)));
-                                  setPriceCapDialogOpen(true);
-                                }}
-                                title="Set price cap for this card"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => openSuspendDialog(anomaly.listingId)}
                               >
-                                <DollarSign className="h-4 w-4" />
+                                Suspend
                               </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => openSuspendDialog(anomaly.listingId)}
-                            >
-                              Suspend
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
                   </TableBody>
                 </Table>
               )}
@@ -819,7 +827,9 @@ export default function MarketplaceModerationPage() {
                         <TableCell>
                           <div>
                             <p className="font-medium">{cap.cardName}</p>
-                            <p className={`text-xs capitalize ${RARITY_COLORS[cap.cardRarity] ?? ""}`}>
+                            <p
+                              className={`text-xs capitalize ${RARITY_COLORS[cap.cardRarity] ?? ""}`}
+                            >
                               {cap.cardRarity}
                             </p>
                           </div>
@@ -922,7 +932,8 @@ export default function MarketplaceModerationPage() {
           <DialogHeader>
             <DialogTitle>Set Price Cap</DialogTitle>
             <DialogDescription>
-              Set a maximum price for a specific card. Listings above this price may be flagged or prevented.
+              Set a maximum price for a specific card. Listings above this price may be flagged or
+              prevented.
             </DialogDescription>
           </DialogHeader>
 
@@ -969,7 +980,9 @@ export default function MarketplaceModerationPage() {
                               />
                               <div>
                                 <p className="font-medium">{card.name}</p>
-                                <p className={`text-xs capitalize ${RARITY_COLORS[card.rarity] ?? ""}`}>
+                                <p
+                                  className={`text-xs capitalize ${RARITY_COLORS[card.rarity] ?? ""}`}
+                                >
                                   {card.rarity} {card.cardType}
                                 </p>
                               </div>
@@ -1080,10 +1093,7 @@ export default function MarketplaceModerationPage() {
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleRefundBid}
-              disabled={!refundReason || isSubmitting}
-            >
+            <Button onClick={handleRefundBid} disabled={!refundReason || isSubmitting}>
               <RefreshCw className="mr-2 h-4 w-4" />
               {isSubmitting ? "Processing..." : "Refund Bid"}
             </Button>
@@ -1099,9 +1109,7 @@ export default function MarketplaceModerationPage() {
               <User className="h-5 w-5" />
               Seller History
             </SheetTitle>
-            <SheetDescription>
-              Review seller trading activity and history
-            </SheetDescription>
+            <SheetDescription>Review seller trading activity and history</SheetDescription>
           </SheetHeader>
 
           {!sellerHistory ? (
@@ -1127,9 +1135,7 @@ export default function MarketplaceModerationPage() {
                     <span className="text-muted-foreground">Account Status:</span>
                     <Badge
                       variant={
-                        sellerHistory.seller.accountStatus === "active"
-                          ? "default"
-                          : "destructive"
+                        sellerHistory.seller.accountStatus === "active" ? "default" : "destructive"
                       }
                     >
                       {sellerHistory.seller.accountStatus}
@@ -1190,7 +1196,9 @@ export default function MarketplaceModerationPage() {
                       >
                         <div>
                           <p className="font-medium text-sm">{listing.cardName}</p>
-                          <p className={`text-xs capitalize ${RARITY_COLORS[listing.cardRarity] ?? ""}`}>
+                          <p
+                            className={`text-xs capitalize ${RARITY_COLORS[listing.cardRarity] ?? ""}`}
+                          >
                             {listing.cardRarity}
                           </p>
                         </div>
@@ -1230,9 +1238,7 @@ export default function MarketplaceModerationPage() {
                         className="flex items-center justify-between py-2 border-b last:border-0"
                       >
                         <div>
-                          <p className="font-medium text-sm">
-                            {formatGold(bid.bidAmount)} gold
-                          </p>
+                          <p className="font-medium text-sm">{formatGold(bid.bidAmount)} gold</p>
                           <p className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(bid.createdAt), { addSuffix: true })}
                           </p>
@@ -1256,7 +1262,9 @@ export default function MarketplaceModerationPage() {
                               size="sm"
                               variant="ghost"
                               className="h-7 text-xs"
-                              onClick={() => openRefundDialog(bid._id, bid.bidderUsername, bid.bidAmount)}
+                              onClick={() =>
+                                openRefundDialog(bid._id, bid.bidderUsername, bid.bidAmount)
+                              }
                             >
                               Refund
                             </Button>

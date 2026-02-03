@@ -15,7 +15,9 @@ import { ErrorCode, createError } from "../../lib/errorCodes";
 import { validateGameActive } from "../../lib/gameValidation";
 import { getSpellSpeed } from "../../lib/spellSpeedHelper";
 import { type ChainEffect, addToChainHelper } from "../chainResolver";
+import { executeCost, validateCost } from "../effectSystem/costValidator";
 import { executeSearch } from "../effectSystem/executors/cardMovement/search";
+import type { ParsedEffect } from "../effectSystem/types";
 import { recordEventHelper } from "../gameEvents";
 
 /**
@@ -168,6 +170,8 @@ export const activateSpell = mutation({
     lobbyId: v.id("gameLobbies"),
     cardId: v.id("cardDefinitions"),
     targets: v.optional(v.array(v.id("cardDefinitions"))),
+    costTargets: v.optional(v.array(v.id("cardDefinitions"))),
+    effectIndex: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // 1. Validate session
@@ -228,6 +232,72 @@ export const activateSpell = mutation({
       throw createError(ErrorCode.GAME_INVALID_PHASE, {
         reason: "Can only activate Normal Spells during Main Phase",
       });
+    }
+
+    // 7.5. Check and execute cost payment
+    if (card.ability) {
+      let parsedAbility: { effects: ParsedEffect[] };
+      try {
+        if (typeof card.ability === "string") {
+          parsedAbility = JSON.parse(card.ability);
+        } else {
+          parsedAbility = card.ability as { effects: ParsedEffect[] };
+        }
+
+        const effectIndex = args.effectIndex ?? 0;
+        const effect = parsedAbility.effects[effectIndex];
+
+        if (effect?.cost) {
+          // Validate cost can be paid
+          const validation = await validateCost(
+            ctx,
+            gameState,
+            user.userId,
+            effect,
+            args.costTargets
+          );
+
+          if (!validation.canPay) {
+            throw createError(ErrorCode.GAME_INVALID_MOVE, {
+              reason: validation.reason || "Cannot pay activation cost",
+            });
+          }
+
+          // If cost requires selection but no targets provided, return error
+          if (
+            validation.requiresSelection &&
+            (!args.costTargets || args.costTargets.length === 0)
+          ) {
+            throw createError(ErrorCode.GAME_INVALID_MOVE, {
+              reason: "Cost payment requires card selection",
+              requiresSelection: true,
+              availableTargets: validation.availableTargets,
+              selectionPrompt: validation.selectionPrompt,
+            });
+          }
+
+          // Execute cost payment
+          const costResult = await executeCost(
+            ctx,
+            gameState,
+            user.userId,
+            effect,
+            args.costTargets
+          );
+
+          if (!costResult.success) {
+            throw createError(ErrorCode.GAME_INVALID_MOVE, {
+              reason: costResult.message,
+            });
+          }
+        }
+      } catch (error) {
+        // Re-throw if it's already an error code
+        if (error && typeof error === "object" && "code" in error) {
+          throw error;
+        }
+        // Otherwise just log and continue
+      }
     }
 
     // 8. Remove card from hand or spell/trap zone
@@ -383,6 +453,8 @@ export const activateTrap = mutation({
     lobbyId: v.id("gameLobbies"),
     cardId: v.id("cardDefinitions"),
     targets: v.optional(v.array(v.id("cardDefinitions"))),
+    costTargets: v.optional(v.array(v.id("cardDefinitions"))),
+    effectIndex: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // 1. Validate session
@@ -447,6 +519,72 @@ export const activateTrap = mutation({
         currentTurn,
         turnWasSet,
       });
+    }
+
+    // 6.5. Check and execute cost payment
+    if (card.ability) {
+      let parsedAbility: { effects: ParsedEffect[] };
+      try {
+        if (typeof card.ability === "string") {
+          parsedAbility = JSON.parse(card.ability);
+        } else {
+          parsedAbility = card.ability as { effects: ParsedEffect[] };
+        }
+
+        const effectIndex = args.effectIndex ?? 0;
+        const effect = parsedAbility.effects[effectIndex];
+
+        if (effect?.cost) {
+          // Validate cost can be paid
+          const validation = await validateCost(
+            ctx,
+            gameState,
+            user.userId,
+            effect,
+            args.costTargets
+          );
+
+          if (!validation.canPay) {
+            throw createError(ErrorCode.GAME_INVALID_MOVE, {
+              reason: validation.reason || "Cannot pay activation cost",
+            });
+          }
+
+          // If cost requires selection but no targets provided, return error
+          if (
+            validation.requiresSelection &&
+            (!args.costTargets || args.costTargets.length === 0)
+          ) {
+            throw createError(ErrorCode.GAME_INVALID_MOVE, {
+              reason: "Cost payment requires card selection",
+              requiresSelection: true,
+              availableTargets: validation.availableTargets,
+              selectionPrompt: validation.selectionPrompt,
+            });
+          }
+
+          // Execute cost payment
+          const costResult = await executeCost(
+            ctx,
+            gameState,
+            user.userId,
+            effect,
+            args.costTargets
+          );
+
+          if (!costResult.success) {
+            throw createError(ErrorCode.GAME_INVALID_MOVE, {
+              reason: costResult.message,
+            });
+          }
+        }
+      } catch (error) {
+        // Re-throw if it's already an error code
+        if (error && typeof error === "object" && "code" in error) {
+          throw error;
+        }
+        // Otherwise just log and continue
+      }
     }
 
     // 7. Remove from spell/trap zone

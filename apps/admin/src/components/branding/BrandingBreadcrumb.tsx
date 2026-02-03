@@ -40,10 +40,7 @@ export function BrandingBreadcrumb({ path, onNavigate }: BrandingBreadcrumbProps
               {index === parts.length - 1 ? (
                 <BreadcrumbPage>{part}</BreadcrumbPage>
               ) : (
-                <BreadcrumbLink
-                  onClick={() => handleClick(index)}
-                  className="cursor-pointer"
-                >
+                <BreadcrumbLink onClick={() => handleClick(index)} className="cursor-pointer">
                   {part}
                 </BreadcrumbLink>
               )}

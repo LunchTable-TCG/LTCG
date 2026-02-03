@@ -9,13 +9,7 @@
 import { PageWrapper } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -67,10 +61,7 @@ interface ConfigItem {
 
 type CategoryKey = "economy" | "matchmaking" | "gameplay" | "rates";
 
-const CATEGORY_CONFIG: Record<
-  CategoryKey,
-  { label: string; description: string; icon: string }
-> = {
+const CATEGORY_CONFIG: Record<CategoryKey, { label: string; description: string; icon: string }> = {
   economy: {
     label: "Economy",
     description: "Gold rewards, marketplace fees, and currency settings",
@@ -132,12 +123,16 @@ function EditConfigDialog({
     }
   }, [config, open]);
 
-  const parseValue = (): { success: boolean; value?: number | string | boolean; error?: string } => {
+  const parseValue = (): {
+    success: boolean;
+    value?: number | string | boolean;
+    error?: string;
+  } => {
     if (!config) return { success: false, error: "No config selected" };
 
     switch (config.valueType) {
       case "number": {
-        const num = parseFloat(editValue);
+        const num = Number.parseFloat(editValue);
         if (isNaN(num)) {
           return { success: false, error: "Please enter a valid number" };
         }
@@ -221,9 +216,7 @@ function EditConfigDialog({
               <Badge variant="secondary">{config.valueType}</Badge>
               <Badge variant="outline">{config.category}</Badge>
             </div>
-            <Text className="text-sm text-muted-foreground">
-              {config.description}
-            </Text>
+            <Text className="text-sm text-muted-foreground">{config.description}</Text>
             {(config.minValue !== undefined || config.maxValue !== undefined) && (
               <Text className="text-xs text-muted-foreground">
                 {config.minValue !== undefined && `Min: ${config.minValue}`}
@@ -287,9 +280,7 @@ function EditConfigDialog({
             <Text className="text-xs text-muted-foreground">
               Current value:{" "}
               <code className="font-mono">
-                {config.valueType === "json"
-                  ? JSON.stringify(config.value)
-                  : String(config.value)}
+                {config.valueType === "json" ? JSON.stringify(config.value) : String(config.value)}
               </code>
             </Text>
           </div>
@@ -342,9 +333,7 @@ function ConfigField({
       toast.success(result.message);
       onChange(result.defaultValue);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to reset config"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to reset config");
     } finally {
       setIsResetting(false);
     }
@@ -361,35 +350,27 @@ function ConfigField({
             </Badge>
           )}
         </div>
-        <Text className="text-sm text-muted-foreground">
-          {config.description}
-        </Text>
+        <Text className="text-sm text-muted-foreground">{config.description}</Text>
         {config.minValue !== undefined || config.maxValue !== undefined ? (
           <Text className="text-xs text-muted-foreground">
             {config.minValue !== undefined && `Min: ${config.minValue}`}
-            {config.minValue !== undefined &&
-              config.maxValue !== undefined &&
-              " | "}
+            {config.minValue !== undefined && config.maxValue !== undefined && " | "}
             {config.maxValue !== undefined && `Max: ${config.maxValue}`}
           </Text>
         ) : null}
         <Text className="text-xs text-muted-foreground mt-1">
-          Last updated: {new Date(config.updatedAt).toLocaleString()} by{" "}
-          {config.updatedByUsername}
+          Last updated: {new Date(config.updatedAt).toLocaleString()} by {config.updatedByUsername}
         </Text>
       </div>
 
       <div className="flex items-center gap-2">
         {config.valueType === "boolean" ? (
-          <Switch
-            checked={value as boolean}
-            onCheckedChange={(checked) => onChange(checked)}
-          />
+          <Switch checked={value as boolean} onCheckedChange={(checked) => onChange(checked)} />
         ) : config.valueType === "number" ? (
           <Input
             type="number"
             value={value as number}
-            onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+            onChange={(e) => onChange(Number.parseFloat(e.target.value) || 0)}
             min={config.minValue}
             max={config.maxValue}
             className="w-32"
@@ -404,12 +385,7 @@ function ConfigField({
         )}
 
         <RoleGuard permission="config.edit">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onEditClick}
-            title="Edit in dialog"
-          >
+          <Button variant="ghost" size="sm" onClick={onEditClick} title="Edit in dialog">
             <PencilIcon className="h-4 w-4" />
           </Button>
           <Button
@@ -442,9 +418,7 @@ function CategoryTab({
   category: CategoryKey;
   configs: ConfigItem[];
   localValues: Record<string, number | string | boolean>;
-  setLocalValues: React.Dispatch<
-    React.SetStateAction<Record<string, number | string | boolean>>
-  >;
+  setLocalValues: React.Dispatch<React.SetStateAction<Record<string, number | string | boolean>>>;
   originalValues: Record<string, number | string | boolean>;
   onEditConfig: (config: ConfigItem) => void;
 }) {
@@ -453,9 +427,7 @@ function CategoryTab({
 
   const categoryConfigs = configs.filter((c) => c.category === category);
 
-  const changedKeys = categoryConfigs.filter(
-    (c) => localValues[c.key] !== originalValues[c.key]
-  );
+  const changedKeys = categoryConfigs.filter((c) => localValues[c.key] !== originalValues[c.key]);
   const hasChanges = changedKeys.length > 0;
 
   const handleSave = async () => {
@@ -473,17 +445,13 @@ function CategoryTab({
       if (result.success) {
         toast.success(result.message);
       } else {
-        const failures = result.results.filter(
-          (r: { success: boolean }) => !r.success
-        );
+        const failures = result.results.filter((r: { success: boolean }) => !r.success);
         toast.error(
           `Some updates failed: ${failures.map((f: { key: string; error?: string }) => f.error).join(", ")}`
         );
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save changes"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save changes");
     } finally {
       setIsSaving(false);
     }
@@ -557,9 +525,7 @@ function CategoryTab({
                 key={config._id}
                 config={config}
                 value={localValues[config.key] ?? config.value}
-                onChange={(value) =>
-                  setLocalValues((prev) => ({ ...prev, [config.key]: value }))
-                }
+                onChange={(value) => setLocalValues((prev) => ({ ...prev, [config.key]: value }))}
                 hasChanges={localValues[config.key] !== originalValues[config.key]}
                 onReset={() => {
                   const originalValue = originalValues[config.key];
@@ -612,12 +578,10 @@ function LoadingSkeleton() {
 export default function SystemConfigPage() {
   useAdmin(); // Auth check
   const [activeTab, setActiveTab] = useState<CategoryKey>("economy");
-  const [localValues, setLocalValues] = useState<
-    Record<string, number | string | boolean>
-  >({});
-  const [originalValues, setOriginalValues] = useState<
-    Record<string, number | string | boolean>
-  >({});
+  const [localValues, setLocalValues] = useState<Record<string, number | string | boolean>>({});
+  const [originalValues, setOriginalValues] = useState<Record<string, number | string | boolean>>(
+    {}
+  );
 
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -628,9 +592,7 @@ export default function SystemConfigPage() {
   const statsResult = useConvexQuery(apiAny.admin.config.getConfigStats, {});
 
   // Mutations
-  const initializeDefaults = useConvexMutation(
-    apiAny.admin.config.initializeDefaults
-  );
+  const initializeDefaults = useConvexMutation(apiAny.admin.config.initializeDefaults);
   const [isInitializing, setIsInitializing] = useState(false);
 
   // Initialize local values when configs load
@@ -667,9 +629,7 @@ export default function SystemConfigPage() {
         toast.info(result.message);
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to initialize defaults"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to initialize defaults");
     } finally {
       setIsInitializing(false);
     }
@@ -682,9 +642,7 @@ export default function SystemConfigPage() {
   // Count changes per category for badges
   const getChangesCount = (category: CategoryKey) => {
     return configs.filter(
-      (c) =>
-        c.category === category &&
-        localValues[c.key] !== originalValues[c.key]
+      (c) => c.category === category && localValues[c.key] !== originalValues[c.key]
     ).length;
   };
 
@@ -694,11 +652,7 @@ export default function SystemConfigPage() {
       description="Manage game-wide configuration values"
       actions={
         <RoleGuard permission="config.edit">
-          <Button
-            variant="outline"
-            onClick={handleInitializeDefaults}
-            disabled={isInitializing}
-          >
+          <Button variant="outline" onClick={handleInitializeDefaults} disabled={isInitializing}>
             {isInitializing ? (
               <>
                 <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
@@ -718,9 +672,7 @@ export default function SystemConfigPage() {
       <div className="grid gap-4 md:grid-cols-5 mb-6">
         <Card>
           <div className="text-center p-4">
-            <Text className="text-2xl font-bold">
-              {statsResult?.totalConfigs ?? "..."}
-            </Text>
+            <Text className="text-2xl font-bold">{statsResult?.totalConfigs ?? "..."}</Text>
             <Text className="text-sm text-muted-foreground">Total Configs</Text>
           </div>
         </Card>
@@ -786,20 +738,13 @@ export default function SystemConfigPage() {
           </div>
         </Card>
       ) : (
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as CategoryKey)}
-        >
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as CategoryKey)}>
           <TabsList className="mb-4">
             {(Object.keys(CATEGORY_CONFIG) as CategoryKey[]).map((category) => {
               const changesCount = getChangesCount(category);
               const categoryConfig = CATEGORY_CONFIG[category];
               return (
-                <TabsTrigger
-                  key={category}
-                  value={category}
-                  className="flex items-center gap-2"
-                >
+                <TabsTrigger key={category} value={category} className="flex items-center gap-2">
                   <span>{categoryConfig.icon}</span>
                   <span>{categoryConfig.label}</span>
                   {changesCount > 0 && (

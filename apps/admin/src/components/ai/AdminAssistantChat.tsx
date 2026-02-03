@@ -237,7 +237,8 @@ export function AdminAssistantChat({
                 </div>
                 <h4 className="font-medium">How can I help you?</h4>
                 <p className="mt-1 text-sm text-muted-foreground max-w-xs">
-                  I can help with player lookups, moderation support, system stats, and content ideas.
+                  I can help with player lookups, moderation support, system stats, and content
+                  ideas.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2 justify-center">
                   {[
@@ -280,9 +281,7 @@ export function AdminAssistantChat({
                     <div
                       className={cn(
                         "rounded-lg px-4 py-2 max-w-[85%]",
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
+                        message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
                       )}
                     >
                       <div className="whitespace-pre-wrap text-sm">{message.content}</div>
@@ -365,11 +364,7 @@ export function AdminAssistantChat({
 
   // Full page layout
   if (isFullPage) {
-    return (
-      <Card className="flex h-full flex-col">
-        {chatContent}
-      </Card>
-    );
+    return <Card className="flex h-full flex-col">{chatContent}</Card>;
   }
 
   // Floating panel layout

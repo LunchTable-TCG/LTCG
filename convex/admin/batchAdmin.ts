@@ -1075,7 +1075,11 @@ export const sendSystemMessage = mutation({
       senderId: adminId,
       senderUsername: adminUsername || "System",
     };
-    await ctx.scheduler.runAfter(0, internal.social.inbox.createBroadcastMessages, systemMessageArgs);
+    await ctx.scheduler.runAfter(
+      0,
+      internal.social.inbox.createBroadcastMessages,
+      systemMessageArgs
+    );
 
     // Log action
     await scheduleAuditLog(ctx, {

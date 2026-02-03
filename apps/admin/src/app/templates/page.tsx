@@ -6,29 +6,12 @@
  * Lists all card templates with filtering and CRUD actions.
  */
 
-import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
 import { Card, Text, Title } from "@tremor/react";
-import { Plus, LayoutTemplate, Search } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
+import { LayoutTemplate, Plus, Search } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,12 +22,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-import { apiAny } from "@/lib/convexHelpers";
 import { TemplateCard } from "@/components/templates/TemplateCard";
 import type { CardType, TemplateListItem } from "@/components/templates/types";
+import { apiAny } from "@/lib/convexHelpers";
 
 const api = apiAny;
 
@@ -218,10 +218,7 @@ export default function TemplatesPage() {
             className="pl-9"
           />
         </div>
-        <Select
-          value={typeFilter}
-          onValueChange={(v) => setTypeFilter(v as CardType | "all")}
-        >
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as CardType | "all")}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by type" />
           </SelectTrigger>
@@ -306,10 +303,7 @@ export default function TemplatesPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="cardType">Card Type</Label>
-              <Select
-                value={newCardType}
-                onValueChange={(v) => setNewCardType(v as CardType)}
-              >
+              <Select value={newCardType} onValueChange={(v) => setNewCardType(v as CardType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -337,9 +331,7 @@ export default function TemplatesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Duplicate Template</DialogTitle>
-            <DialogDescription>
-              Create a copy of this template with a new name.
-            </DialogDescription>
+            <DialogDescription>Create a copy of this template with a new name.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -367,8 +359,8 @@ export default function TemplatesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Template</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this template? This action cannot be
-              undone. Templates in use by cards cannot be deleted.
+              Are you sure you want to delete this template? This action cannot be undone. Templates
+              in use by cards cannot be deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

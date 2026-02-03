@@ -55,10 +55,7 @@ import { toast } from "sonner";
 
 type Category = "gameplay" | "economy" | "social" | "experimental";
 
-const CATEGORY_CONFIG: Record<
-  Category,
-  { label: string; color: string; icon: React.ReactNode }
-> = {
+const CATEGORY_CONFIG: Record<Category, { label: string; color: string; icon: React.ReactNode }> = {
   gameplay: {
     label: "Gameplay",
     color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
@@ -193,9 +190,7 @@ function CreateFeatureFlagDialog({ onCreated }: { onCreated?: () => void }) {
                 onChange={(e) => setName(e.target.value.toLowerCase().replace(/\s+/g, "_"))}
                 placeholder="marketplace_enabled"
               />
-              <p className="text-xs text-muted-foreground">
-                Will be normalized to snake_case
-              </p>
+              <p className="text-xs text-muted-foreground">Will be normalized to snake_case</p>
             </div>
 
             <div className="space-y-2">
@@ -240,9 +235,7 @@ function CreateFeatureFlagDialog({ onCreated }: { onCreated?: () => void }) {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Enabled</Label>
-              <p className="text-xs text-muted-foreground">
-                Turn on the feature flag globally
-              </p>
+              <p className="text-xs text-muted-foreground">Turn on the feature flag globally</p>
             </div>
             <Switch checked={enabled} onCheckedChange={setEnabled} />
           </div>
@@ -251,9 +244,7 @@ function CreateFeatureFlagDialog({ onCreated }: { onCreated?: () => void }) {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Gradual Rollout</Label>
-                <p className="text-xs text-muted-foreground">
-                  Roll out to a percentage of users
-                </p>
+                <p className="text-xs text-muted-foreground">Roll out to a percentage of users</p>
               </div>
               <Switch checked={useRollout} onCheckedChange={setUseRollout} />
             </div>
@@ -438,9 +429,7 @@ function EditFeatureFlagDialog({
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Enabled</Label>
-              <p className="text-xs text-muted-foreground">
-                Turn on the feature flag globally
-              </p>
+              <p className="text-xs text-muted-foreground">Turn on the feature flag globally</p>
             </div>
             <Switch checked={enabled} onCheckedChange={setEnabled} />
           </div>
@@ -449,9 +438,7 @@ function EditFeatureFlagDialog({
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Gradual Rollout</Label>
-                <p className="text-xs text-muted-foreground">
-                  Roll out to a percentage of users
-                </p>
+                <p className="text-xs text-muted-foreground">Roll out to a percentage of users</p>
               </div>
               <Switch checked={useRollout} onCheckedChange={setUseRollout} />
             </div>
@@ -633,19 +620,13 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
           {hasTargeting && (
             <div className="flex flex-wrap gap-2 mb-3">
               {flag.rolloutPercentage !== undefined && (
-                <Badge variant="secondary">
-                  {flag.rolloutPercentage}% rollout
-                </Badge>
+                <Badge variant="secondary">{flag.rolloutPercentage}% rollout</Badge>
               )}
               {flag.targetRoles && flag.targetRoles.length > 0 && (
-                <Badge variant="secondary">
-                  Roles: {flag.targetRoles.join(", ")}
-                </Badge>
+                <Badge variant="secondary">Roles: {flag.targetRoles.join(", ")}</Badge>
               )}
               {flag.targetUserIds && flag.targetUserIds.length > 0 && (
-                <Badge variant="secondary">
-                  {flag.targetUserIds.length} targeted users
-                </Badge>
+                <Badge variant="secondary">{flag.targetUserIds.length} targeted users</Badge>
               )}
             </div>
           )}

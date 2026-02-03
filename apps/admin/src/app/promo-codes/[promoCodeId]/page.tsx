@@ -117,7 +117,7 @@ export default function PromoCodeDetailPage() {
   }, [promoCode]);
 
   const handleSave = async () => {
-    if (!rewardAmount || parseInt(rewardAmount) <= 0) {
+    if (!rewardAmount || Number.parseInt(rewardAmount) <= 0) {
       toast.error("Reward amount must be positive");
       return;
     }
@@ -132,9 +132,9 @@ export default function PromoCodeDetailPage() {
       await updatePromoCode({
         promoCodeId: promoCodeId as any,
         description,
-        rewardAmount: parseInt(rewardAmount),
+        rewardAmount: Number.parseInt(rewardAmount),
         rewardPackId: promoCode?.rewardType === "pack" ? rewardPackId : undefined,
-        maxRedemptions: maxRedemptions ? parseInt(maxRedemptions) : undefined,
+        maxRedemptions: maxRedemptions ? Number.parseInt(maxRedemptions) : undefined,
         clearMaxRedemptions: !maxRedemptions,
         expiresAt: expiresAtTimestamp,
         clearExpiresAt: !expiresAt,
@@ -218,10 +218,7 @@ export default function PromoCodeDetailPage() {
           <RoleGuard permission="admin.manage">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  disabled={promoCode.redemptionCount > 0}
-                >
+                <Button variant="destructive" disabled={promoCode.redemptionCount > 0}>
                   <TrashIcon className="mr-2 h-4 w-4" />
                   Delete
                 </Button>
@@ -230,8 +227,8 @@ export default function PromoCodeDetailPage() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Promo Code</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to permanently delete "{promoCode.code}"?
-                    This action cannot be undone.
+                    Are you sure you want to permanently delete "{promoCode.code}"? This action
+                    cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -309,9 +306,7 @@ export default function PromoCodeDetailPage() {
                       {rewardConfig.label}
                     </span>
                   </Badge>
-                  <Text className="text-sm text-muted-foreground">
-                    (Cannot be changed)
-                  </Text>
+                  <Text className="text-sm text-muted-foreground">(Cannot be changed)</Text>
                 </div>
               </div>
 
@@ -365,9 +360,7 @@ export default function PromoCodeDetailPage() {
                   value={expiresAt}
                   onChange={(e) => setExpiresAt(e.target.value)}
                 />
-                <Text className="text-xs text-muted-foreground">
-                  Leave empty for no expiration
-                </Text>
+                <Text className="text-xs text-muted-foreground">Leave empty for no expiration</Text>
               </div>
             </div>
           </Card>
@@ -406,9 +399,7 @@ export default function PromoCodeDetailPage() {
                 </table>
               </div>
             ) : (
-              <div className="mt-4 py-8 text-center text-muted-foreground">
-                No redemptions yet
-              </div>
+              <div className="mt-4 py-8 text-center text-muted-foreground">No redemptions yet</div>
             )}
           </Card>
         </div>
@@ -458,10 +449,7 @@ export default function PromoCodeDetailPage() {
                 <Text className="font-medium">
                   {promoCode.redemptionCount}
                   {promoCode.maxRedemptions && (
-                    <span className="text-muted-foreground">
-                      {" "}
-                      / {promoCode.maxRedemptions}
-                    </span>
+                    <span className="text-muted-foreground"> / {promoCode.maxRedemptions}</span>
                   )}
                 </Text>
               </div>
@@ -483,9 +471,7 @@ export default function PromoCodeDetailPage() {
               {promoCode.expiresAt && (
                 <div className="flex justify-between">
                   <Text className="text-muted-foreground">Expires</Text>
-                  <Text
-                    className={`font-medium ${isExpired ? "text-red-500" : ""}`}
-                  >
+                  <Text className={`font-medium ${isExpired ? "text-red-500" : ""}`}>
                     {new Date(promoCode.expiresAt).toLocaleDateString()}
                   </Text>
                 </div>
@@ -507,8 +493,8 @@ export default function PromoCodeDetailPage() {
                   Cannot delete
                 </Text>
                 <Text className="text-sm text-amber-600 dark:text-amber-400">
-                  This code has been redeemed {promoCode.redemptionCount} times.
-                  Deactivate it instead.
+                  This code has been redeemed {promoCode.redemptionCount} times. Deactivate it
+                  instead.
                 </Text>
               </div>
             </Card>

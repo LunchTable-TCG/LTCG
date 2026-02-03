@@ -6,8 +6,8 @@
 
 "use client";
 
-import { PageWrapper } from "@/components/layout";
 import { StatCard, StatGrid } from "@/components/data";
+import { PageWrapper } from "@/components/layout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,11 +72,27 @@ interface Article {
 }
 
 const CATEGORIES: { value: NewsCategory; label: string; color: string }[] = [
-  { value: "announcement", label: "Announcement", color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+  {
+    value: "announcement",
+    label: "Announcement",
+    color: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  },
   { value: "update", label: "Update", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  { value: "event", label: "Event", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
-  { value: "patch", label: "Patch Notes", color: "bg-green-500/20 text-green-400 border-green-500/30" },
-  { value: "maintenance", label: "Maintenance", color: "bg-red-500/20 text-red-400 border-red-500/30" },
+  {
+    value: "event",
+    label: "Event",
+    color: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  },
+  {
+    value: "patch",
+    label: "Patch Notes",
+    color: "bg-green-500/20 text-green-400 border-green-500/30",
+  },
+  {
+    value: "maintenance",
+    label: "Maintenance",
+    color: "bg-red-500/20 text-red-400 border-red-500/30",
+  },
 ];
 
 function getCategoryStyle(category: NewsCategory) {
@@ -117,8 +133,7 @@ export default function NewsPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
-        article.title.toLowerCase().includes(query) ||
-        article.excerpt.toLowerCase().includes(query)
+        article.title.toLowerCase().includes(query) || article.excerpt.toLowerCase().includes(query)
       );
     }
     return true;
@@ -234,16 +249,8 @@ export default function NewsPage() {
             value={statsResult?.published ?? 0}
             isLoading={!statsResult}
           />
-          <StatCard
-            title="Drafts"
-            value={statsResult?.drafts ?? 0}
-            isLoading={!statsResult}
-          />
-          <StatCard
-            title="Pinned"
-            value={statsResult?.pinned ?? 0}
-            isLoading={!statsResult}
-          />
+          <StatCard title="Drafts" value={statsResult?.drafts ?? 0} isLoading={!statsResult} />
+          <StatCard title="Pinned" value={statsResult?.pinned ?? 0} isLoading={!statsResult} />
         </StatGrid>
 
         {/* Filters */}
@@ -275,9 +282,7 @@ export default function NewsPage() {
             />
           </div>
 
-          <div className="text-sm text-muted-foreground">
-            {filteredArticles.length} articles
-          </div>
+          <div className="text-sm text-muted-foreground">{filteredArticles.length} articles</div>
         </div>
 
         {/* Articles List */}
@@ -305,27 +310,21 @@ export default function NewsPage() {
                     >
                       {article.category}
                     </span>
-                    {article.isPinned && (
-                      <PinIcon className="h-4 w-4 text-amber-500" />
-                    )}
+                    {article.isPinned && <PinIcon className="h-4 w-4 text-amber-500" />}
                     {!article.isPublished && (
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                         Draft
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground truncate mb-2">
-                    {article.excerpt}
-                  </p>
+                  <p className="text-sm text-muted-foreground truncate mb-2">{article.excerpt}</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <CalendarIcon className="h-3 w-3" />
                       {new Date(article.createdAt).toLocaleDateString()}
                     </span>
                     {article.publishedAt && (
-                      <span>
-                        Published {new Date(article.publishedAt).toLocaleDateString()}
-                      </span>
+                      <span>Published {new Date(article.publishedAt).toLocaleDateString()}</span>
                     )}
                   </div>
                 </div>
@@ -349,15 +348,9 @@ export default function NewsPage() {
                     onClick={() => handleTogglePinned(article)}
                     title={article.isPinned ? "Unpin" : "Pin"}
                   >
-                    <PinIcon
-                      className={`h-4 w-4 ${article.isPinned ? "text-amber-500" : ""}`}
-                    />
+                    <PinIcon className={`h-4 w-4 ${article.isPinned ? "text-amber-500" : ""}`} />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setEditingArticle(article)}
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => setEditingArticle(article)}>
                     <EditIcon className="h-4 w-4" />
                   </Button>
                   <Button
@@ -399,8 +392,8 @@ export default function NewsPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Article</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete &quot;{deleteConfirmArticle?.title}&quot;?
-                This action cannot be undone.
+                Are you sure you want to delete &quot;{deleteConfirmArticle?.title}&quot;? This
+                action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -439,13 +432,7 @@ interface ArticleDialogProps {
   initialData?: Article;
 }
 
-function ArticleDialog({
-  open,
-  onOpenChange,
-  onSubmit,
-  title,
-  initialData,
-}: ArticleDialogProps) {
+function ArticleDialog({ open, onOpenChange, onSubmit, title, initialData }: ArticleDialogProps) {
   const [formData, setFormData] = useState({
     title: initialData?.title ?? "",
     slug: initialData?.slug ?? "",
@@ -517,7 +504,9 @@ function ArticleDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {initialData ? "Update the article details below." : "Create a new article for the Chronicles page."}
+            {initialData
+              ? "Update the article details below."
+              : "Create a new article for the Chronicles page."}
           </DialogDescription>
         </DialogHeader>
 
@@ -581,9 +570,7 @@ function ArticleDialog({
               <Input
                 id="imageUrl"
                 value={formData.imageUrl}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, imageUrl: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, imageUrl: e.target.value }))}
                 placeholder="https://..."
               />
             </div>
@@ -594,9 +581,7 @@ function ArticleDialog({
             <Input
               id="excerpt"
               value={formData.excerpt}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, excerpt: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, excerpt: e.target.value }))}
               placeholder="Brief summary of the article"
             />
           </div>
@@ -606,9 +591,7 @@ function ArticleDialog({
             <textarea
               id="content"
               value={formData.content}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, content: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
               placeholder="Full article content..."
               className="w-full min-h-[200px] px-3 py-2 rounded-md border bg-background text-sm resize-y"
             />
@@ -619,9 +602,7 @@ function ArticleDialog({
               type="checkbox"
               id="isPublished"
               checked={formData.isPublished}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, isPublished: e.target.checked }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, isPublished: e.target.checked }))}
               className="h-4 w-4"
             />
             <Label htmlFor="isPublished" className="font-normal">

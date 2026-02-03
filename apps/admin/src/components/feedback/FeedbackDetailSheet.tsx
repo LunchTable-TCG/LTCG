@@ -1,18 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -22,17 +11,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {
   Bug,
-  Lightbulb,
   Clock,
-  Image,
-  Video,
-  Globe,
-  Monitor,
-  Loader2,
   ExternalLink,
+  Globe,
+  Image,
+  Lightbulb,
+  Loader2,
+  Monitor,
   Save,
+  Video,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // =============================================================================
 // Types
@@ -108,11 +108,7 @@ function parseUserAgent(ua: string) {
 // Main Component
 // =============================================================================
 
-export function FeedbackDetailSheet({
-  feedbackId,
-  open,
-  onOpenChange,
-}: FeedbackDetailSheetProps) {
+export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: FeedbackDetailSheetProps) {
   const [priority, setPriority] = useState<string | undefined>();
   const [status, setStatus] = useState<string | undefined>();
   const [adminNotes, setAdminNotes] = useState("");
@@ -282,7 +278,8 @@ export function FeedbackDetailSheet({
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Monitor className="w-4 h-4" />
-                    {feedback.viewport.width} × {feedback.viewport.height} • {parseUserAgent(feedback.userAgent)}
+                    {feedback.viewport.width} × {feedback.viewport.height} •{" "}
+                    {parseUserAgent(feedback.userAgent)}
                   </div>
                 </div>
               </div>
@@ -350,16 +347,10 @@ export function FeedbackDetailSheet({
             </div>
 
             <SheetFooter className="border-t pt-4">
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
-              <Button
-                onClick={handleSave}
-                disabled={!hasChanges || isSaving}
-              >
+              <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
                 {isSaving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

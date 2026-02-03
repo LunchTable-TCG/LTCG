@@ -3,11 +3,11 @@
 import { StoryChapterCard } from "@/components/story/StoryChapterCard";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { useFeatureFlag } from "@/hooks/useFeatureFlags";
-import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
-import { apiAny, useConvexQuery, useConvexMutation } from "@/lib/convexHelpers";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { BookOpen, ChevronLeft, Lock, Loader2, Shield, Star, Trophy } from "lucide-react";
+import { BookOpen, ChevronLeft, Loader2, Lock, Shield, Star, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
@@ -30,7 +30,9 @@ export default function StoryModePage() {
     isAuthenticated ? {} : "skip"
   );
 
-  const initializeStoryProgress = useConvexMutation(apiAny.progression.story.initializeStoryProgress);
+  const initializeStoryProgress = useConvexMutation(
+    apiAny.progression.story.initializeStoryProgress
+  );
 
   // Initialize progress on first access
   useEffect(() => {
@@ -144,7 +146,8 @@ export default function StoryModePage() {
           </div>
           <h1 className="text-3xl font-bold text-[#e8e0d5] mb-4">Story Mode Unavailable</h1>
           <p className="text-[#a89f94] mb-8">
-            Story mode is currently disabled. Check back later for epic adventures and legendary battles!
+            Story mode is currently disabled. Check back later for epic adventures and legendary
+            battles!
           </p>
           <Link
             href="/lunchtable"

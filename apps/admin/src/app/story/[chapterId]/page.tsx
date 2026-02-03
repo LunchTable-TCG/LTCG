@@ -31,7 +31,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { Text } from "@tremor/react";
 import {
   ArrowDownIcon,
@@ -120,7 +120,7 @@ function CreateStageDialog({
   const [firstClearGems, setFirstClearGems] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createStage = useConvexMutation(apiAny.admin.story.createStage);
+  const createStage = useTypedMutation(typedApi.admin.story.createStage);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,17 +129,17 @@ function CreateStageDialog({
     try {
       const args: Record<string, unknown> = {
         chapterId,
-        stageNumber: parseInt(stageNumber, 10),
+        stageNumber: Number.parseInt(stageNumber, 10),
         title,
         description,
         opponentName,
         difficulty,
-        firstClearGold: parseInt(firstClearGold, 10),
-        repeatGold: parseInt(repeatGold, 10),
+        firstClearGold: Number.parseInt(firstClearGold, 10),
+        repeatGold: Number.parseInt(repeatGold, 10),
       };
 
       if (opponentDeckArchetype) args["opponentDeckArchetype"] = opponentDeckArchetype;
-      if (firstClearGems) args["firstClearGems"] = parseInt(firstClearGems, 10);
+      if (firstClearGems) args["firstClearGems"] = Number.parseInt(firstClearGems, 10);
 
       const result = await createStage(args);
       toast.success(result.message);
@@ -165,9 +165,7 @@ function CreateStageDialog({
   };
 
   const suggestedNumber =
-    existingStages.length > 0
-      ? Math.max(...existingStages.map((s) => s.stageNumber)) + 1
-      : 1;
+    existingStages.length > 0 ? Math.max(...existingStages.map((s) => s.stageNumber)) + 1 : 1;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -320,7 +318,7 @@ function DeleteChapterDialog({
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
-  const deleteChapter = useConvexMutation(apiAny.admin.story.deleteChapter);
+  const deleteChapter = useTypedMutation(typedApi.admin.story.deleteChapter);
 
   const handleDelete = async () => {
     if (!chapter) return;
@@ -388,22 +386,22 @@ export default function ChapterDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Queries
-  const chapterData = useConvexQuery(apiAny.admin.story.getChapter, {
+  const chapterData = useTypedQuery(typedApi.admin.story.getChapter, {
     chapterId: chapterId as any,
   });
-  const stagesResult = useConvexQuery(apiAny.admin.story.listStages, {
+  const stagesResult = useTypedQuery(typedApi.admin.story.listStages, {
     chapterId: chapterId as any,
     includeUnpublished: true,
   });
-  const allChapters = useConvexQuery(apiAny.admin.story.listChapters, {
+  const allChapters = useTypedQuery(typedApi.admin.story.listChapters, {
     includeUnpublished: true,
   });
 
   // Mutations
-  const updateChapter = useConvexMutation(apiAny.admin.story.updateChapter);
-  const publishChapter = useConvexMutation(apiAny.admin.story.publishChapter);
-  const publishStage = useConvexMutation(apiAny.admin.story.publishStage);
-  const reorderStages = useConvexMutation(apiAny.admin.story.reorderStages);
+  const updateChapter = useTypedMutation(typedApi.admin.story.updateChapter);
+  const publishChapter = useTypedMutation(typedApi.admin.story.publishChapter);
+  const publishStage = useTypedMutation(typedApi.admin.story.publishStage);
+  const reorderStages = useTypedMutation(typedApi.admin.story.reorderStages);
 
   const chapter = chapterData?.chapter as Chapter | undefined;
   const stages = (stagesResult?.stages || []) as Stage[];
@@ -449,7 +447,7 @@ export default function ChapterDetailPage() {
           args["requiredChapterId"] = requiredChapterId;
         }
         if (unlockType === "player_level" && requiredLevel) {
-          args["requiredLevel"] = parseInt(requiredLevel, 10);
+          args["requiredLevel"] = Number.parseInt(requiredLevel, 10);
         }
       }
 
@@ -591,9 +589,7 @@ export default function ChapterDetailPage() {
                 <div className="space-y-2">
                   <Label>Status</Label>
                   <div className="flex items-center h-10">
-                    <Badge
-                      variant={chapter.status === "published" ? "default" : "secondary"}
-                    >
+                    <Badge variant={chapter.status === "published" ? "default" : "secondary"}>
                       {chapter.status === "published" ? "Published" : "Draft"}
                     </Badge>
                   </div>
@@ -815,9 +811,7 @@ export default function ChapterDetailPage() {
                     >
                       {stage.title}
                     </Link>
-                    <p className="text-sm text-muted-foreground">
-                      vs. {stage.opponentName}
-                    </p>
+                    <p className="text-sm text-muted-foreground">vs. {stage.opponentName}</p>
                   </div>
 
                   {/* Difficulty */}

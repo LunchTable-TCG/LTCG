@@ -48,11 +48,7 @@ export const bootstrapSuperadmin = internalMutation({
   },
 });
 
-async function createSuperadminRole(
-  ctx: { db: any },
-  userId: any,
-  identifier: string
-) {
+async function createSuperadminRole(ctx: { db: any }, userId: any, identifier: string) {
   // Check if user already has an active admin role
   const existingRole = await ctx.db
     .query("adminRoles")

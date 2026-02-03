@@ -69,9 +69,7 @@ self.addEventListener("push", (event) => {
       },
     };
 
-    event.waitUntil(
-      self.registration.showNotification(data.title || "LTCG Admin", options)
-    );
+    event.waitUntil(self.registration.showNotification(data.title || "LTCG Admin", options));
   } catch (error) {
     console.error("Error handling push notification:", error);
   }
@@ -84,21 +82,23 @@ self.addEventListener("notificationclick", (event) => {
   const url = event.notification.data?.url || "/";
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (clientList) => {
-      // Focus existing window if available
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          await client.focus();
-          if ("navigate" in client) {
-            await (client as WindowClient).navigate(url);
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then(async (clientList) => {
+        // Focus existing window if available
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && "focus" in client) {
+            await client.focus();
+            if ("navigate" in client) {
+              await (client as WindowClient).navigate(url);
+            }
+            return;
           }
-          return;
         }
-      }
-      // Open new window if no existing window found
-      if (self.clients.openWindow) {
-        await self.clients.openWindow(url);
-      }
-    })
+        // Open new window if no existing window found
+        if (self.clients.openWindow) {
+          await self.clients.openWindow(url);
+        }
+      })
   );
 });

@@ -1,0 +1,634 @@
+---
+title: Monitoring & Observability
+description: Comprehensive guide to monitoring and observability for LTCG production environments
+lastUpdated: '2026-02-03'
+tags: ['monitoring', 'observability', 'sentry', 'vercel', 'convex', 'operations']
+---
+
+# Monitoring & Observability
+
+Comprehensive monitoring and observability setup for the LTCG application in production.
+
+## Overview
+
+Effective monitoring ensures you can detect, diagnose, and resolve issues quickly. LTCG uses multiple monitoring tools:
+
+- **Sentry**: Error tracking and performance monitoring
+- **Vercel Analytics**: Web vitals and user analytics
+- **Convex Dashboard**: Backend function performance and logs
+- **Custom Logging**: Application-specific metrics
+
+## Error Tracking with Sentry
+
+### Setup
+
+#### 1. Create Sentry Project
+
+1. Sign up at [sentry.io](https://sentry.io)
+2. Create new project
+3. Select **Next.js** as platform
+4. Copy DSN from project settings
+
+#### 2. Install Sentry SDK
+
+```bash
+bun add @sentry/nextjs
+```
+
+#### 3. Configure Sentry
+
+Run the Sentry wizard:
+
+```bash
+bunx @sentry/wizard@latest -i nextjs
+```
+
+This creates:
+- `sentry.client.config.ts` - Client-side config
+- `sentry.server.config.ts` - Server-side config
+- `sentry.edge.config.ts` - Edge runtime config
+
+#### 4. Environment Variables
+
+Add to `.env.local` and Vercel:
+
+```env
+NEXT_PUBLIC_SENTRY_DSN=https://xxxxx@xxxxx.ingest.sentry.io/xxxxx
+SENTRY_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxx
+SENTRY_ORG=your-org-name
+SENTRY_PROJECT=ltcg-web
+```
+
+### Client-Side Error Tracking
+
+Sentry automatically captures unhandled errors. For custom error tracking:
+
+```typescript
+import * as Sentry from "@sentry/nextjs";
+
+// Capture exceptions
+try {
+  await riskyOperation();
+} catch (error) {
+  Sentry.captureException(error, {
+    tags: {
+      section: "game-lobby",
+      action: "join-game",
+    },
+    extra: {
+      gameId: lobby.id,
+      userId: user.id,
+    },
+  });
+}
+
+// Capture messages
+Sentry.captureMessage("Unexpected game state", {
+  level: "warning",
+  tags: { gameId: game.id },
+});
+```
+
+### Server-Side Error Tracking
+
+Track API route and server-side errors:
+
+```typescript
+// app/api/webhook/route.ts
+import * as Sentry from "@sentry/nextjs";
+
+export async function POST(request: Request) {
+  try {
+    const payload = await request.json();
+    await processWebhook(payload);
+    return new Response("OK", { status: 200 });
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: { webhook: "privy" },
+      extra: { payload },
+    });
+    return new Response("Error", { status: 500 });
+  }
+}
+```
+
+### Performance Monitoring
+
+Enable Sentry Performance Monitoring:
+
+```typescript
+// sentry.client.config.ts
+import * as Sentry from "@sentry/nextjs";
+
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  tracesSampleRate: 0.1, // Sample 10% of transactions
+  profilesSampleRate: 0.1, // Sample 10% of profiling
+
+  beforeSend(event) {
+    // Filter out low-priority errors
+    if (event.level === "info") return null;
+    return event;
+  },
+});
+```
+
+### User Context
+
+Associate errors with users for better debugging:
+
+```typescript
+import { useUser } from "@privy-io/react-auth";
+import * as Sentry from "@sentry/nextjs";
+
+function App() {
+  const { user } = useUser();
+
+  useEffect(() => {
+    if (user) {
+      Sentry.setUser({
+        id: user.id,
+        email: user.email?.address,
+        username: user.username,
+      });
+    } else {
+      Sentry.setUser(null);
+    }
+  }, [user]);
+}
+```
+
+### Release Tracking
+
+Track errors by release version:
+
+```typescript
+// next.config.mjs
+import { withSentryConfig } from "@sentry/nextjs";
+
+const nextConfig = {
+  // Your Next.js config
+};
+
+export default withSentryConfig(nextConfig, {
+  release: process.env.VERCEL_GIT_COMMIT_SHA,
+  uploadSourceMaps: true,
+});
+```
+
+### Alert Configuration
+
+Set up alerts in Sentry dashboard:
+
+1. Navigate to **Alerts** → **Create Alert Rule**
+2. Configure conditions:
+   - **New Issue**: Alert when new error type appears
+   - **High Volume**: Alert when error count > 100/hour
+   - **Performance Degradation**: Alert when P95 > 1s
+
+3. Set notification channels:
+   - Email
+   - Slack
+   - PagerDuty (for critical alerts)
+
+## Vercel Analytics
+
+### Setup
+
+Enable in Vercel dashboard:
+
+1. Navigate to project **Settings** → **Analytics**
+2. Enable **Web Vitals**
+3. Enable **Audiences** (optional, for user segmentation)
+
+### Web Vitals Monitoring
+
+Vercel automatically tracks:
+- **LCP** (Largest Contentful Paint): < 2.5s
+- **FID** (First Input Delay): < 100ms
+- **CLS** (Cumulative Layout Shift): < 0.1
+- **TTFB** (Time to First Byte): < 600ms
+
+### Custom Events
+
+Track custom events:
+
+```typescript
+import { track } from "@vercel/analytics";
+
+function GameLobby() {
+  const handleJoinGame = async (gameId: string) => {
+    track("game_joined", {
+      gameId,
+      timestamp: Date.now(),
+    });
+
+    await joinGame(gameId);
+  };
+}
+```
+
+### Speed Insights
+
+View performance by page:
+
+1. Navigate to **Analytics** → **Speed Insights**
+2. Review:
+   - Real User Monitoring (RUM) data
+   - Performance by page
+   - Performance by device type
+   - Geographic performance distribution
+
+## Convex Dashboard Monitoring
+
+### Accessing the Dashboard
+
+1. Navigate to [dashboard.convex.dev](https://dashboard.convex.dev)
+2. Select your production deployment
+3. Review tabs:
+   - **Functions**: Performance metrics
+   - **Data**: Database size and tables
+   - **Logs**: Real-time function logs
+   - **Usage**: API call volume
+
+### Key Metrics to Monitor
+
+#### Function Performance
+
+Monitor in **Functions** tab:
+
+- **Average Duration**: Should be < 100ms for simple queries
+- **P95 Duration**: Should be < 500ms
+- **Error Rate**: Should be < 0.1%
+- **Calls per Minute**: Monitor for unusual spikes
+
+**Red Flags**:
+- Duration > 1s consistently
+- Error rate > 1%
+- Sudden spike in call volume
+
+#### Database Metrics
+
+Monitor in **Data** tab:
+
+- **Total Documents**: Track growth rate
+- **Storage Used**: Monitor for unexpected growth
+- **Largest Tables**: Identify tables needing optimization
+
+**Optimization Triggers**:
+- Table > 100k documents without pagination
+- Query duration increasing over time
+- Storage growing faster than expected
+
+#### Real-Time Logs
+
+Monitor in **Logs** tab:
+
+```bash
+# View logs via CLI
+bunx convex logs --prod --limit 100
+
+# Follow logs in real-time
+bunx convex logs --prod --follow
+
+# Filter by function
+bunx convex logs --prod --follow | grep "games:join"
+
+# Filter by error
+bunx convex logs --prod --follow | grep "ERROR"
+```
+
+**Log Levels**:
+- **INFO**: Normal operations
+- **WARN**: Potential issues (e.g., retry, slow query)
+- **ERROR**: Failures requiring attention
+
+### Setting Up Alerts
+
+Create custom alerts with Convex webhooks:
+
+```typescript
+// convex/alerts/functionMonitor.ts
+import { internalMutation } from "../_generated/server";
+
+export const checkFunctionPerformance = internalMutation({
+  handler: async (ctx) => {
+    // Query function metrics (pseudo-code, use actual Convex API)
+    const metrics = await ctx.db.query("_functionMetrics").collect();
+
+    for (const metric of metrics) {
+      if (metric.p95Duration > 1000) {
+        // Send alert
+        await fetch("https://your-alerting-service.com/webhook", {
+          method: "POST",
+          body: JSON.stringify({
+            message: `Function ${metric.name} P95 > 1s`,
+            severity: "warning",
+          }),
+        });
+      }
+    }
+  },
+});
+```
+
+Schedule via Convex cron:
+
+```typescript
+// convex/crons.ts
+import { cronJobs } from "convex/server";
+import { internal } from "./_generated/api";
+
+const crons = cronJobs();
+
+crons.interval(
+  "monitor function performance",
+  { minutes: 5 },
+  internal.alerts.functionMonitor.checkFunctionPerformance
+);
+
+export default crons;
+```
+
+## Application Logging
+
+### Structured Logging
+
+Create a logging utility:
+
+```typescript
+// lib/logger.ts
+type LogLevel = "debug" | "info" | "warn" | "error";
+
+interface LogContext {
+  userId?: string;
+  gameId?: string;
+  [key: string]: any;
+}
+
+export const logger = {
+  debug(message: string, context?: LogContext) {
+    if (process.env.NODE_ENV === "development") {
+      console.debug(`[DEBUG] ${message}`, context);
+    }
+  },
+
+  info(message: string, context?: LogContext) {
+    console.info(`[INFO] ${message}`, context);
+  },
+
+  warn(message: string, context?: LogContext) {
+    console.warn(`[WARN] ${message}`, context);
+  },
+
+  error(message: string, error?: Error, context?: LogContext) {
+    console.error(`[ERROR] ${message}`, { error, ...context });
+    // Also send to Sentry
+    if (error) {
+      Sentry.captureException(error, { extra: context });
+    }
+  },
+};
+```
+
+**Usage**:
+
+```typescript
+import { logger } from "@/lib/logger";
+
+export const joinGame = mutation({
+  handler: async (ctx, { gameId }) => {
+    const userId = await requireAuth(ctx);
+
+    logger.info("User joining game", { userId, gameId });
+
+    try {
+      await addPlayerToGame(ctx, gameId, userId);
+      logger.info("User joined game successfully", { userId, gameId });
+    } catch (error) {
+      logger.error("Failed to join game", error, { userId, gameId });
+      throw error;
+    }
+  },
+});
+```
+
+### Log Aggregation
+
+For production, consider a log aggregation service:
+
+**Options**:
+- [Datadog](https://www.datadoghq.com)
+- [Logtail](https://logtail.com)
+- [Better Stack](https://betterstack.com)
+
+**Setup with Logtail**:
+
+```typescript
+// lib/logger.ts
+import { Logtail } from "@logtail/node";
+
+const logtail = new Logtail(process.env.LOGTAIL_TOKEN!);
+
+export const logger = {
+  async info(message: string, context?: LogContext) {
+    console.info(`[INFO] ${message}`, context);
+    await logtail.info(message, context);
+  },
+
+  async error(message: string, error?: Error, context?: LogContext) {
+    console.error(`[ERROR] ${message}`, { error, ...context });
+    await logtail.error(message, { error, ...context });
+    Sentry.captureException(error, { extra: context });
+  },
+};
+```
+
+## Key Metrics to Track
+
+### Application Health
+
+- **Uptime**: > 99.9%
+- **Error Rate**: < 0.1%
+- **Response Time P95**: < 500ms
+- **Real-Time Connection Stability**: < 1% disconnect rate
+
+### User Engagement
+
+- **Daily Active Users (DAU)**
+- **Monthly Active Users (MAU)**
+- **Session Duration**: Average time per session
+- **Retention Rate**: Day 1, Day 7, Day 30
+
+### Game Metrics
+
+- **Games Started**: Total games initiated per day
+- **Games Completed**: Completion rate
+- **Average Game Duration**
+- **Concurrent Games**: Peak concurrent games
+
+### Economy Metrics
+
+- **Pack Sales**: Daily pack purchases
+- **Currency Balance**: Total gold/gems in circulation
+- **Marketplace Activity**: Listings, purchases, average prices
+
+### Performance Metrics
+
+- **Query Duration P95**: < 100ms for simple, < 500ms for complex
+- **Function Invocations**: Calls per minute
+- **Database Size**: Growth rate
+- **Real-Time Subscription Count**: Active WebSocket connections
+
+## Dashboards
+
+### Vercel Dashboard
+
+Monitor in Vercel:
+- Deployment status
+- Build times
+- Function execution stats
+- Bandwidth usage
+
+### Custom Grafana Dashboard
+
+Set up a custom dashboard for key metrics:
+
+```yaml
+# Example metrics to visualize
+panels:
+  - title: "Active Users (15m)"
+    query: "userPresence.count where lastActiveAt > now() - 15m"
+
+  - title: "Games Created (24h)"
+    query: "gameLobbies.count where createdAt > now() - 24h"
+
+  - title: "Error Rate"
+    query: "errors.count / requests.count * 100"
+
+  - title: "P95 Response Time"
+    query: "percentile(functionDuration, 95)"
+```
+
+### Healthcheck Endpoint
+
+Create a healthcheck endpoint for monitoring:
+
+```typescript
+// app/api/health/route.ts
+export async function GET() {
+  const checks = {
+    api: "ok",
+    convex: "ok",
+    timestamp: Date.now(),
+  };
+
+  // Check Convex connectivity
+  try {
+    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    await client.query(api.health.ping);
+  } catch (error) {
+    checks.convex = "error";
+  }
+
+  const status = checks.convex === "ok" ? 200 : 503;
+
+  return Response.json(checks, { status });
+}
+```
+
+**Monitor with external service**:
+- [UptimeRobot](https://uptimerobot.com)
+- [Pingdom](https://www.pingdom.com)
+- [StatusCake](https://www.statuscake.com)
+
+## Alert Configuration
+
+### Critical Alerts (Page Immediately)
+
+Configure PagerDuty or equivalent for:
+
+- **Application Down**: Health check fails for > 2 minutes
+- **Error Spike**: Error rate > 5% for > 5 minutes
+- **Database Issues**: Query P95 > 5s for > 5 minutes
+- **Payment Failures**: Transaction failure rate > 10%
+
+### Warning Alerts (Slack/Email)
+
+Configure Slack notifications for:
+
+- **Performance Degradation**: Response time P95 > 1s
+- **High Load**: Function calls > 1000/min
+- **Slow Queries**: Query duration > 1s
+- **New Error Types**: Sentry reports new issue
+- **Low Disk Space**: Database size > 80% of limit
+
+### Info Alerts (Daily Digest)
+
+Email summary of:
+
+- Daily active users
+- Games played
+- Revenue metrics
+- Top errors (by frequency)
+- Performance trends
+
+## Incident Response
+
+### Incident Severity Levels
+
+**SEV-1 (Critical)**:
+- Complete application outage
+- Authentication broken
+- Payment processing down
+- **Response**: Immediate page, all hands on deck
+
+**SEV-2 (High)**:
+- Partial feature outage
+- Severe performance degradation
+- High error rate (> 1%)
+- **Response**: Page during business hours, fix within 4 hours
+
+**SEV-3 (Medium)**:
+- Minor feature issues
+- Moderate performance issues
+- **Response**: Create ticket, fix within 1 day
+
+**SEV-4 (Low)**:
+- Cosmetic issues
+- Non-critical bugs
+- **Response**: Add to backlog
+
+### Incident Response Playbook
+
+1. **Acknowledge**: Respond to alert within 5 minutes
+2. **Assess**: Determine severity and impact
+3. **Communicate**: Update status page and notify team
+4. **Investigate**: Review logs, metrics, recent deployments
+5. **Mitigate**: Apply temporary fix or rollback
+6. **Resolve**: Implement permanent fix
+7. **Post-Mortem**: Document incident and prevention steps
+
+### Rollback Procedure
+
+If deployment causes issues:
+
+1. **Vercel Rollback**:
+   - Go to Deployments tab
+   - Find last working deployment
+   - Click **Promote to Production**
+
+2. **Convex Rollback**:
+   ```bash
+   bunx convex deployments list --prod
+   bunx convex rollback <deployment-id> --prod
+   ```
+
+3. **Verify**: Check health endpoint and metrics
+
+## Related Documentation
+
+- [Production Deployment Guide](/develop/deployment/production-deployment) - Deployment procedures
+- [Query Optimization](/guides/performance/query-optimization) - Database performance
+- [Testing Strategy](/develop/testing-strategy) - Pre-deployment testing
+- [Error Codes Reference](/reference/backend/error-codes) - Error code documentation

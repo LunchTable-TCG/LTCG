@@ -1,6 +1,8 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -11,21 +13,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { apiAny } from "@/lib/convexHelpers";
 import { upload } from "@vercel/blob/client";
 import { useMutation } from "convex/react";
 import {
+  FileIcon,
   ImageIcon,
   Loader2Icon,
-  UploadIcon,
-  XIcon,
-  FileIcon,
   Music2Icon,
+  UploadIcon,
   VideoIcon,
+  XIcon,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -66,9 +66,7 @@ export function UploadAssetsDialog({
     const selectedFiles = Array.from(e.target.files || []);
 
     const newFiles: FileToUpload[] = selectedFiles.map((file) => {
-      const preview = file.type.startsWith("image/")
-        ? URL.createObjectURL(file)
-        : undefined;
+      const preview = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
 
       return {
         file,
@@ -96,9 +94,7 @@ export function UploadAssetsDialog({
   };
 
   const handleUpdateFile = (index: number, updates: Partial<FileToUpload>) => {
-    setFiles((prev) =>
-      prev.map((file, i) => (i === index ? { ...file, ...updates } : file))
-    );
+    setFiles((prev) => prev.map((file, i) => (i === index ? { ...file, ...updates } : file)));
   };
 
   const handleAddTag = (index: number, tag: string) => {
@@ -284,9 +280,7 @@ export function UploadAssetsDialog({
                         <div className="flex items-center justify-between">
                           <Input
                             value={fileData.name}
-                            onChange={(e) =>
-                              handleUpdateFile(index, { name: e.target.value })
-                            }
+                            onChange={(e) => handleUpdateFile(index, { name: e.target.value })}
                             placeholder="Display name"
                             className="font-medium"
                           />
@@ -300,8 +294,7 @@ export function UploadAssetsDialog({
                           </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {fileData.file.name} •{" "}
-                          {(fileData.file.size / 1024).toFixed(1)} KB
+                          {fileData.file.name} • {(fileData.file.size / 1024).toFixed(1)} KB
                         </p>
                       </div>
                     </div>
@@ -348,9 +341,7 @@ export function UploadAssetsDialog({
                           >
                             <Checkbox
                               checked={fileData.usageContext.includes(ctx.value)}
-                              onCheckedChange={() =>
-                                handleToggleContext(index, ctx.value)
-                              }
+                              onCheckedChange={() => handleToggleContext(index, ctx.value)}
                             />
                             {ctx.label}
                           </label>
@@ -364,9 +355,7 @@ export function UploadAssetsDialog({
                       <Textarea
                         placeholder="Describe when and how AI should use this asset..."
                         value={fileData.aiDescription}
-                        onChange={(e) =>
-                          handleUpdateFile(index, { aiDescription: e.target.value })
-                        }
+                        onChange={(e) => handleUpdateFile(index, { aiDescription: e.target.value })}
                         rows={2}
                         className="text-xs"
                       />
@@ -392,10 +381,7 @@ export function UploadAssetsDialog({
           <Button variant="outline" onClick={onClose} disabled={isUploading}>
             Cancel
           </Button>
-          <Button
-            onClick={handleUpload}
-            disabled={files.length === 0 || isUploading}
-          >
+          <Button onClick={handleUpload} disabled={files.length === 0 || isUploading}>
             {isUploading ? (
               <>
                 <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />

@@ -4,7 +4,7 @@
  * TypeScript interfaces for the template designer components.
  */
 
-import type { Id, Doc } from "@convex/_generated/dataModel";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 
 // =============================================================================
 // Convex Document Types

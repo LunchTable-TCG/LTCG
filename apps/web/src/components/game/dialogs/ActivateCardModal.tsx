@@ -27,6 +27,7 @@ export function ActivateCardModal({
   const isSpell =
     card.cardType === "spell" || card.cardType === "equipment" || card.cardType === "field";
   const isTrap = card.cardType === "trap";
+  const isMonster = card.cardType === "monster" || card.cardType === "creature";
 
   return (
     <AnimatePresence>
@@ -64,6 +65,12 @@ export function ActivateCardModal({
                       <>
                         <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-500" />
                         Trap Card
+                      </>
+                    )}
+                    {isMonster && (
+                      <>
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
+                        Monster Effect
                       </>
                     )}
                   </p>
@@ -193,6 +200,18 @@ export function ActivateCardModal({
                       </div>
                     )}
 
+                    {/* Helpful hint for monster effects */}
+                    {isMonster && (
+                      <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded text-center mb-2">
+                        <p className="text-[10px] text-blue-300 font-medium">
+                          {card.effects?.some((e) => e.activationType === "ignition") &&
+                            "💡 Ignition effects can only be activated during your Main Phase"}
+                          {card.effects?.some((e) => e.activationType === "quick") &&
+                            "⚡ Quick effects can be activated any time you have priority"}
+                        </p>
+                      </div>
+                    )}
+
                     {/* Activate each effect (usually just one) */}
                     {card.effects && card.effects.length > 0 ? (
                       card.effects.map((effect, index) => (
@@ -203,7 +222,13 @@ export function ActivateCardModal({
                           onClick={() => onActivate(index)}
                         >
                           <Zap
-                            className={`h-4 w-4 ${isSpell ? "text-green-500" : "text-purple-500"}`}
+                            className={`h-4 w-4 ${
+                              isSpell
+                                ? "text-green-500"
+                                : isTrap
+                                  ? "text-purple-500"
+                                  : "text-red-500"
+                            }`}
                           />
                           <div className="text-left">
                             <div className="font-medium text-xs">Activate: {effect.name}</div>

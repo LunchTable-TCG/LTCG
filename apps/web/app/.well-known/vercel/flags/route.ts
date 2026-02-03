@@ -1,5 +1,5 @@
+import type { ApiData } from "flags";
 import { NextResponse } from "next/server";
-import { type ApiData } from "flags";
 
 /**
  * Vercel Flags Explorer Endpoint

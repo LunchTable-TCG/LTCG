@@ -12,9 +12,9 @@
  * - Fallback: Vercel AI Gateway or direct OpenAI
  */
 
-import { Agent, createTool, type ToolCtx } from "@convex-dev/agent";
+import { Agent, type ToolCtx, createTool } from "@convex-dev/agent";
 import { z } from "zod";
-import { components, api } from "../_generated/api";
+import { api, components } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { getAdminAgentModel, getStandardEmbeddingModel } from "./providers";
 
@@ -192,7 +192,8 @@ const getPlayerProfile = createTool({
  * Tool to get player inventory
  */
 const getPlayerInventory = createTool({
-  description: "Get a player's card inventory including total cards, unique cards, and rarity breakdown.",
+  description:
+    "Get a player's card inventory including total cards, unique cards, and rarity breakdown.",
   args: z.object({
     playerId: z.string().describe("The player's ID"),
   }),
@@ -226,7 +227,8 @@ const getPlayerInventory = createTool({
  * Tool to get system statistics
  */
 const getSystemStats = createTool({
-  description: "Get current system statistics including player counts, game stats, and API key usage.",
+  description:
+    "Get current system statistics including player counts, game stats, and API key usage.",
   args: z.object({}),
   handler: async (ctx: ToolCtx) => {
     const stats = (await ctx.runQuery(apiAny.admin.admin.getSystemStats, {})) as SystemStats;
@@ -286,7 +288,10 @@ const getAuditLogs = createTool({
   description: "Get recent admin audit logs showing all admin actions taken in the system.",
   args: z.object({
     limit: z.number().optional().default(20).describe("Maximum logs to return"),
-    action: z.string().optional().describe("Filter by action type (e.g., 'ban_player', 'grant_role')"),
+    action: z
+      .string()
+      .optional()
+      .describe("Filter by action type (e.g., 'ban_player', 'grant_role')"),
   }),
   handler: async (ctx: ToolCtx, args: { limit: number; action?: string }) => {
     const result = (await ctx.runQuery(apiAny.admin.admin.getAuditLog, {

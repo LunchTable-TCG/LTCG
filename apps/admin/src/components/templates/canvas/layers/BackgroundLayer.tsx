@@ -9,9 +9,9 @@
  * - "full_card_image": Card's image is the complete background
  */
 
-import { Layer, Image, Rect } from "react-konva";
+import { Image, Layer, Rect } from "react-konva";
 import useImage from "use-image";
-import { CANVAS_WIDTH, CANVAS_HEIGHT, type Rarity, type TemplateMode } from "../../types";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, type Rarity, type TemplateMode } from "../../types";
 
 interface BackgroundLayerProps {
   /** Template rendering mode */
@@ -40,9 +40,8 @@ export function BackgroundLayer({
   previewRarity,
 }: BackgroundLayerProps) {
   // Determine which image to use based on mode
-  const imageUrl = mode === "full_card_image"
-    ? cardImageUrl
-    : (frameImages[previewRarity] ?? defaultFrameUrl);
+  const imageUrl =
+    mode === "full_card_image" ? cardImageUrl : (frameImages[previewRarity] ?? defaultFrameUrl);
 
   // Load the image
   const [backgroundImage, status] = useImage(imageUrl ?? "", "anonymous");
@@ -50,23 +49,11 @@ export function BackgroundLayer({
   return (
     <Layer name="background-layer">
       {/* Base background color */}
-      <Rect
-        x={0}
-        y={0}
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
-        fill="#1a1a2e"
-      />
+      <Rect x={0} y={0} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} fill="#1a1a2e" />
 
       {/* Background image (frame or full card) */}
       {backgroundImage && status === "loaded" ? (
-        <Image
-          image={backgroundImage}
-          x={0}
-          y={0}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-        />
+        <Image image={backgroundImage} x={0} y={0} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
       ) : (
         // Placeholder while loading or if no image
         <Rect

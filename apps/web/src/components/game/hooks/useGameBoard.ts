@@ -165,6 +165,7 @@ export interface CardInZone {
     description: string;
     effectType?: string;
     trigger?: string;
+    activationType?: "trigger" | "ignition" | "quick" | "continuous";
     cost?: {
       type: string;
       value?: number;
@@ -378,6 +379,9 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   const activateTrapMutation = useConvexMutation(
     apiAny.gameplay.gameEngine.spellsTraps.activateTrap
   );
+  const activateMonsterEffectMutation = useConvexMutation(
+    apiAny.gameplay.gameEngine.monsterEffects.activateMonsterEffect
+  );
 
   // Chain system mutations
   const passPriorityMutation = useConvexMutation(apiAny.gameplay.chainResolver.passPriority);
@@ -557,6 +561,28 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
       }
     },
     [activateTrapMutation, lobbyId]
+  );
+
+  const activateMonsterEffect = useCallback(
+    async (
+      cardId: Id<"cardDefinitions">,
+      effectIndex?: number,
+      targets?: Id<"cardDefinitions">[]
+    ) => {
+      try {
+        await activateMonsterEffectMutation({
+          lobbyId,
+          cardId,
+          effectIndex,
+          targets,
+        });
+        return { success: true };
+      } catch (error) {
+        console.error("Activate monster effect failed:", error);
+        return { success: false, error: String(error) };
+      }
+    },
+    [activateMonsterEffectMutation, lobbyId]
   );
 
   const respondToChain = useCallback(
@@ -983,6 +1009,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
     activateSpell,
     activateFieldSpell,
     activateTrap,
+    activateMonsterEffect,
     respondToChain,
   };
 }

@@ -5,9 +5,9 @@ import { ConvexClientProvider } from "@/components/ConvexProvider";
 import { PrivyAuthProvider } from "@/components/PrivyAuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AdminShell } from "@/components/layout";
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { Toaster } from "@/components/ui/sonner";
 import { AdminProvider } from "@/contexts/AdminContext";
-import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -97,9 +97,7 @@ export const metadata: Metadata = {
       { url: "/icons/icon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
-    apple: [
-      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 
   // Open Graph

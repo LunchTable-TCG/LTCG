@@ -7,9 +7,6 @@
  * Features smooth sun/moon icon transitions.
  */
 
-import { Moon, Sun, Monitor } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,6 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Monitor, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 interface ThemeToggleProps {
   /** Show as dropdown with system option, or simple toggle */

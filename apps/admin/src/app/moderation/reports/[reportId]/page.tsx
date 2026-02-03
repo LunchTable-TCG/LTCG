@@ -9,6 +9,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -19,10 +20,9 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { useAdmin } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import { formatDistanceToNow, format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -30,7 +30,10 @@ import { useState } from "react";
 type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed";
 type ModerationAction = "dismiss" | "warn" | "mute" | "suspend" | "ban";
 
-const STATUS_BADGES: Record<ReportStatus, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+const STATUS_BADGES: Record<
+  ReportStatus,
+  { variant: "default" | "secondary" | "destructive" | "outline"; label: string }
+> = {
   pending: { variant: "destructive", label: "Pending" },
   reviewed: { variant: "secondary", label: "Reviewed" },
   resolved: { variant: "default", label: "Resolved" },
@@ -57,10 +60,7 @@ export default function ReportDetailPage() {
   const [suspendDuration, setSuspendDuration] = useState(7);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const report = useConvexQuery(
-    apiAny.admin.reports.getReport,
-    isAdmin ? { reportId } : "skip"
-  );
+  const report = useConvexQuery(apiAny.admin.reports.getReport, isAdmin ? { reportId } : "skip");
 
   const updateStatus = useConvexMutation(apiAny.admin.reports.updateReportStatus);
   const resolveWithAction = useConvexMutation(apiAny.admin.reports.resolveReportWithAction);
@@ -123,11 +123,12 @@ export default function ReportDetailPage() {
             </Link>
           </div>
           <h1 className="text-3xl font-bold">Report Details</h1>
-          <p className="text-muted-foreground">
-            Report against {report.reportedUsername}
-          </p>
+          <p className="text-muted-foreground">Report against {report.reportedUsername}</p>
         </div>
-        <Badge variant={STATUS_BADGES[report.status as ReportStatus].variant} className="text-lg px-4 py-1">
+        <Badge
+          variant={STATUS_BADGES[report.status as ReportStatus].variant}
+          className="text-lg px-4 py-1"
+        >
           {STATUS_BADGES[report.status as ReportStatus].label}
         </Badge>
       </div>
@@ -191,9 +192,7 @@ export default function ReportDetailPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label className="text-muted-foreground">Submitted</Label>
-                  <p className="font-medium">
-                    {format(new Date(report.createdAt), "PPpp")}
-                  </p>
+                  <p className="font-medium">{format(new Date(report.createdAt), "PPpp")}</p>
                   <p className="text-sm text-muted-foreground">
                     {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
                   </p>
@@ -212,9 +211,7 @@ export default function ReportDetailPage() {
               {report.notes && (
                 <div>
                   <Label className="text-muted-foreground">Moderator Notes</Label>
-                  <p className="mt-1 p-3 bg-muted rounded-md whitespace-pre-wrap">
-                    {report.notes}
-                  </p>
+                  <p className="mt-1 p-3 bg-muted rounded-md whitespace-pre-wrap">{report.notes}</p>
                 </div>
               )}
             </CardContent>
@@ -225,9 +222,7 @@ export default function ReportDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Take Action</CardTitle>
-                <CardDescription>
-                  Choose an action to resolve this report
-                </CardDescription>
+                <CardDescription>Choose an action to resolve this report</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -297,13 +292,12 @@ export default function ReportDetailPage() {
                     disabled={isSubmitting}
                     variant={selectedAction === "ban" ? "destructive" : "default"}
                   >
-                    {isSubmitting ? "Processing..." : `${selectedAction === "dismiss" ? "Dismiss" : "Apply"} ${selectedAction !== "dismiss" ? selectedAction.charAt(0).toUpperCase() + selectedAction.slice(1) : ""}`}
+                    {isSubmitting
+                      ? "Processing..."
+                      : `${selectedAction === "dismiss" ? "Dismiss" : "Apply"} ${selectedAction !== "dismiss" ? selectedAction.charAt(0).toUpperCase() + selectedAction.slice(1) : ""}`}
                   </Button>
                   {report.status === "pending" && (
-                    <Button
-                      variant="outline"
-                      onClick={() => handleStatusChange("reviewed")}
-                    >
+                    <Button variant="outline" onClick={() => handleStatusChange("reviewed")}>
                       Mark as Reviewed
                     </Button>
                   )}
@@ -344,9 +338,7 @@ export default function ReportDetailPage() {
                 </div>
                 <Separator />
                 <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link href={`/players/${report.reported._id}`}>
-                    View Player Profile
-                  </Link>
+                  <Link href={`/players/${report.reported._id}`}>View Player Profile</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -363,27 +355,26 @@ export default function ReportDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {report.otherReports.slice(0, 5).map((r: {
-                    _id: string;
-                    reason: string;
-                    status: ReportStatus;
-                    createdAt: number;
-                  }) => (
-                    <div
-                      key={r._id}
-                      className="p-2 border rounded-md text-sm"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <Badge variant={STATUS_BADGES[r.status].variant} className="text-xs">
-                          {STATUS_BADGES[r.status].label}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })}
-                        </span>
+                  {report.otherReports.slice(0, 5).map(
+                    (r: {
+                      _id: string;
+                      reason: string;
+                      status: ReportStatus;
+                      createdAt: number;
+                    }) => (
+                      <div key={r._id} className="p-2 border rounded-md text-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <Badge variant={STATUS_BADGES[r.status].variant} className="text-xs">
+                            {STATUS_BADGES[r.status].label}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })}
+                          </span>
+                        </div>
+                        <p className="truncate">{r.reason}</p>
                       </div>
-                      <p className="truncate">{r.reason}</p>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -394,39 +385,36 @@ export default function ReportDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Moderation History</CardTitle>
-                <CardDescription>
-                  Previous actions against this user
-                </CardDescription>
+                <CardDescription>Previous actions against this user</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {report.moderationHistory.map((action: {
-                    _id: string;
-                    actionType: string;
-                    reason: string;
-                    createdAt: number;
-                    moderatorName: string;
-                  }) => (
-                    <div
-                      key={action._id}
-                      className="p-2 border rounded-md text-sm"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {action.actionType}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(action.createdAt), { addSuffix: true })}
-                        </span>
+                  {report.moderationHistory.map(
+                    (action: {
+                      _id: string;
+                      actionType: string;
+                      reason: string;
+                      createdAt: number;
+                      moderatorName: string;
+                    }) => (
+                      <div key={action._id} className="p-2 border rounded-md text-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {action.actionType}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(action.createdAt), { addSuffix: true })}
+                          </span>
+                        </div>
+                        <p className="truncate text-muted-foreground">{action.reason}</p>
+                        {action.moderatorName && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            by {action.moderatorName}
+                          </p>
+                        )}
                       </div>
-                      <p className="truncate text-muted-foreground">{action.reason}</p>
-                      {action.moderatorName && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          by {action.moderatorName}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               </CardContent>
             </Card>

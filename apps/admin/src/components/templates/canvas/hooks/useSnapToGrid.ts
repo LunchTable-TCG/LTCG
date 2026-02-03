@@ -6,7 +6,7 @@
 
 import { useCallback, useState } from "react";
 import type { SnapGuide } from "../../types";
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../../types";
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../../types";
 
 interface SnapConfig {
   /** Enable grid snapping */
@@ -27,12 +27,7 @@ interface UseSnapToGridResult {
   /** Toggle snapping on/off */
   toggleSnapping: () => void;
   /** Snap a position to grid */
-  snapPosition: (
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => { x: number; y: number };
+  snapPosition: (x: number, y: number, width: number, height: number) => { x: number; y: number };
   /** Get alignment guides for current position */
   getAlignmentGuides: (
     x: number,
@@ -224,8 +219,7 @@ export function useSnapToGrid(): UseSnapToGridResult {
           index ===
           self.findIndex(
             (g) =>
-              g.orientation === guide.orientation &&
-              Math.abs(g.position - guide.position) < 0.1
+              g.orientation === guide.orientation && Math.abs(g.position - guide.position) < 0.1
           )
       );
 
@@ -251,19 +245,13 @@ export function useSnapToGrid(): UseSnapToGridResult {
 }
 
 /** Convert percentage position to pixel position */
-export function percentToPixel(
-  percent: number,
-  dimension: "width" | "height"
-) {
+export function percentToPixel(percent: number, dimension: "width" | "height") {
   const base = dimension === "width" ? CANVAS_WIDTH : CANVAS_HEIGHT;
   return (percent / 100) * base;
 }
 
 /** Convert pixel position to percentage position */
-export function pixelToPercent(
-  pixel: number,
-  dimension: "width" | "height"
-) {
+export function pixelToPercent(pixel: number, dimension: "width" | "height") {
   const base = dimension === "width" ? CANVAS_WIDTH : CANVAS_HEIGHT;
   return (pixel / base) * 100;
 }

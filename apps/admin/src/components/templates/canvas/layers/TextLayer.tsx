@@ -7,7 +7,7 @@
  */
 
 import { Layer } from "react-konva";
-import type { CardTemplateBlock, BlockId, BlockPosition, BlockTransformAttrs } from "../../types";
+import type { BlockId, BlockPosition, BlockTransformAttrs, CardTemplateBlock } from "../../types";
 import { isTextBlockType } from "../../types";
 import { DraggableText } from "../elements/DraggableText";
 

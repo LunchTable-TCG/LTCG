@@ -1,7 +1,7 @@
-import { ConvexHttpClient } from "convex/browser";
-import { NextRequest, NextResponse } from "next/server";
 import { sendToEliza } from "@/lib/eliza/runtime";
 import type { Id } from "@convex/_generated/dataModel";
+import { ConvexHttpClient } from "convex/browser";
+import { type NextRequest, NextResponse } from "next/server";
 
 // Use require to avoid TS2589 deep type instantiation issues
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -31,24 +31,15 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!message || typeof message !== "string") {
-      return NextResponse.json(
-        { error: "Message is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
     if (!sessionId || typeof sessionId !== "string") {
-      return NextResponse.json(
-        { error: "Session ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Session ID is required" }, { status: 400 });
     }
 
     if (!userId || typeof userId !== "string") {
-      return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
     // Set auth token for Convex calls if provided
@@ -64,22 +55,19 @@ export async function POST(req: NextRequest) {
       });
 
       // Convert to the format expected by ElizaOS
-      conversationHistory = messages.slice(-10).map((m: { role: "user" | "agent"; message: string }) => ({
-        role: m.role,
-        message: m.message,
-      }));
+      conversationHistory = messages
+        .slice(-10)
+        .map((m: { role: "user" | "agent"; message: string }) => ({
+          role: m.role,
+          message: m.message,
+        }));
     } catch (err) {
       // Continue without history if fetch fails
       console.warn("Failed to fetch conversation history:", err);
     }
 
     // Send to ElizaOS and get response
-    const agentResponse = await sendToEliza(
-      userId,
-      sessionId,
-      message,
-      conversationHistory
-    );
+    const agentResponse = await sendToEliza(userId, sessionId, message, conversationHistory);
 
     // Save agent response to Convex
     try {

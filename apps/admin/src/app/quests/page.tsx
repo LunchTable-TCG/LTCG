@@ -39,10 +39,20 @@ import { toast } from "sonner";
 // =============================================================================
 
 type QuestType = "daily" | "weekly" | "achievement";
-type AchievementCategory = "wins" | "games_played" | "collection" | "social" | "story" | "ranked" | "special";
+type AchievementCategory =
+  | "wins"
+  | "games_played"
+  | "collection"
+  | "social"
+  | "story"
+  | "ranked"
+  | "special";
 type Rarity = "common" | "rare" | "epic" | "legendary";
 
-const QUEST_TYPE_CONFIG: Record<QuestType, { label: string; color: string; icon: React.ReactNode }> = {
+const QUEST_TYPE_CONFIG: Record<
+  QuestType,
+  { label: string; color: string; icon: React.ReactNode }
+> = {
   daily: { label: "Daily", color: "blue", icon: <CalendarIcon className="h-4 w-4" /> },
   weekly: { label: "Weekly", color: "violet", icon: <Clock3Icon className="h-4 w-4" /> },
   achievement: { label: "Achievement", color: "amber", icon: <TrophyIcon className="h-4 w-4" /> },
@@ -245,12 +255,8 @@ function QuestList() {
                       </td>
                       <td className="py-3 px-3">
                         <div className="text-xs space-y-0.5">
-                          {quest.rewards.gold > 0 && (
-                            <div>{quest.rewards.gold} Gold</div>
-                          )}
-                          {quest.rewards.xp > 0 && (
-                            <div>{quest.rewards.xp} XP</div>
-                          )}
+                          {quest.rewards.gold > 0 && <div>{quest.rewards.gold} Gold</div>}
+                          {quest.rewards.xp > 0 && <div>{quest.rewards.xp} XP</div>}
                           {quest.rewards.gems && quest.rewards.gems > 0 && (
                             <div>{quest.rewards.gems} Gems</div>
                           )}
@@ -326,7 +332,9 @@ function AchievementList() {
       <div className="grid gap-4 md:grid-cols-6">
         <Card>
           <div className="text-center">
-            <Text className="text-2xl font-bold">{achievementStats?.totalAchievements ?? "..."}</Text>
+            <Text className="text-2xl font-bold">
+              {achievementStats?.totalAchievements ?? "..."}
+            </Text>
             <Text className="text-sm text-muted-foreground">Total</Text>
           </div>
         </Card>
@@ -497,9 +505,7 @@ function AchievementList() {
                     <td className="py-3 px-3 text-muted-foreground">
                       {achievement.requirementType}: {achievement.targetValue}
                     </td>
-                    <td className="py-3 px-3 text-center">
-                      {achievement.isSecret ? "🔒" : "-"}
-                    </td>
+                    <td className="py-3 px-3 text-center">{achievement.isSecret ? "🔒" : "-"}</td>
                     <td className="py-3 px-3 text-center">
                       <Badge color={achievement.isActive ? "emerald" : "gray"} size="sm">
                         {achievement.isActive ? "Active" : "Inactive"}

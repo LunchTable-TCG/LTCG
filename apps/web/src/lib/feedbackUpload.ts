@@ -53,9 +53,7 @@ export async function uploadFeedbackMedia(
     };
   } catch (error) {
     console.error("Feedback upload error:", error);
-    throw new Error(
-      error instanceof Error ? error.message : "Failed to upload file"
-    );
+    throw new Error(error instanceof Error ? error.message : "Failed to upload file");
   }
 }
 
@@ -70,11 +68,10 @@ export async function uploadScreenshot(
   screenshot: Blob,
   feedbackType: "bug" | "feature"
 ): Promise<string> {
-  const result = await uploadFeedbackMedia(
-    screenshot,
-    `screenshot-${Date.now()}.png`,
-    { feedbackType, mediaType: "screenshot" }
-  );
+  const result = await uploadFeedbackMedia(screenshot, `screenshot-${Date.now()}.png`, {
+    feedbackType,
+    mediaType: "screenshot",
+  });
   return result.url;
 }
 
@@ -89,10 +86,9 @@ export async function uploadRecording(
   recording: Blob,
   feedbackType: "bug" | "feature"
 ): Promise<string> {
-  const result = await uploadFeedbackMedia(
-    recording,
-    `recording-${Date.now()}.webm`,
-    { feedbackType, mediaType: "recording" }
-  );
+  const result = await uploadFeedbackMedia(recording, `recording-${Date.now()}.webm`, {
+    feedbackType,
+    mediaType: "recording",
+  });
   return result.url;
 }

@@ -8,7 +8,7 @@
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { WifiOffIcon, RefreshCwIcon } from "lucide-react";
+import { RefreshCwIcon, WifiOffIcon } from "lucide-react";
 
 export default function OfflinePage() {
   return (
@@ -25,8 +25,8 @@ export default function OfflinePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Some features may be limited while you&apos;re offline.
-            Previously visited pages may still be available from cache.
+            Some features may be limited while you&apos;re offline. Previously visited pages may
+            still be available from cache.
           </p>
 
           <div className="flex flex-col gap-3">

@@ -18,13 +18,7 @@ import { apiAny } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { Text } from "@tremor/react";
 import { useAction } from "convex/react";
-import {
-  BotIcon,
-  HistoryIcon,
-  Loader2Icon,
-  PlusIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { BotIcon, HistoryIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -167,9 +161,7 @@ export default function AIAssistantPage() {
                 ) : threads.length === 0 ? (
                   <div className="px-4 py-8 text-center">
                     <BotIcon className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                    <Text className="text-sm text-muted-foreground">
-                      No conversations yet
-                    </Text>
+                    <Text className="text-sm text-muted-foreground">No conversations yet</Text>
                     <Button
                       variant="outline"
                       size="sm"
@@ -197,9 +189,7 @@ export default function AIAssistantPage() {
                           <BotIcon className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {thread.title}
-                          </p>
+                          <p className="text-sm font-medium truncate">{thread.title}</p>
                           <p className="text-xs text-muted-foreground">
                             {new Date(thread.createdAt).toLocaleDateString()}
                           </p>
@@ -245,8 +235,8 @@ export default function AIAssistantPage() {
                 </div>
                 <h3 className="text-lg font-semibold">Welcome to Admin Assistant</h3>
                 <p className="text-muted-foreground mt-2 max-w-sm">
-                  Start a new conversation to get AI-powered help with player lookups,
-                  moderation support, system analytics, and content ideas.
+                  Start a new conversation to get AI-powered help with player lookups, moderation
+                  support, system analytics, and content ideas.
                 </p>
                 <Button className="mt-6" onClick={handleNewThread} disabled={isCreatingThread}>
                   {isCreatingThread ? (

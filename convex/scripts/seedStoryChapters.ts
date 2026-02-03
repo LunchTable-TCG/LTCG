@@ -54,15 +54,28 @@ export const seedStoryChapters = mutation({
           title: stage.name, // Use name as title too
           description: stage.description,
           opponentName: `${chapter.archetype} Opponent`,
-          difficulty: (stage.aiDifficulty === "boss" ? "boss" : stage.aiDifficulty === "hard" ? "hard" : stage.aiDifficulty === "medium" ? "medium" : "easy") as "easy" | "medium" | "hard" | "boss",
-          aiDifficulty: (stage.aiDifficulty === "boss" ? "boss" : stage.aiDifficulty === "hard" ? "hard" : stage.aiDifficulty === "medium" ? "medium" : "easy") as "easy" | "medium" | "hard" | "boss",
+          difficulty: (stage.aiDifficulty === "boss"
+            ? "boss"
+            : stage.aiDifficulty === "hard"
+              ? "hard"
+              : stage.aiDifficulty === "medium"
+                ? "medium"
+                : "easy") as "easy" | "medium" | "hard" | "boss",
+          aiDifficulty: (stage.aiDifficulty === "boss"
+            ? "boss"
+            : stage.aiDifficulty === "hard"
+              ? "hard"
+              : stage.aiDifficulty === "medium"
+                ? "medium"
+                : "easy") as "easy" | "medium" | "hard" | "boss",
           rewardGold: stage.rewardGold,
           rewardXp: stage.rewardXp,
           firstClearGold: stage.rewardGold,
           repeatGold: Math.floor(stage.rewardGold * 0.5),
-          firstClearBonus: typeof stage.firstClearBonus === "number"
-            ? { gold: stage.firstClearBonus, xp: 0 }
-            : stage.firstClearBonus,
+          firstClearBonus:
+            typeof stage.firstClearBonus === "number"
+              ? { gold: stage.firstClearBonus, xp: 0 }
+              : stage.firstClearBonus,
           status: "published" as const,
           createdAt: Date.now(),
           updatedAt: Date.now(),

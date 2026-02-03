@@ -167,9 +167,12 @@ export const test = base.extend<TestFixtures>({
   gameHelper: async ({ gamePage }, use) => {
     const helper: GameHelper = {
       async waitForPhase(phase) {
-        await gamePage.page.waitForSelector(`[data-testid="phase-${phase}"], [data-phase="${phase}"]`, {
-          timeout: 10000,
-        });
+        await gamePage.page.waitForSelector(
+          `[data-testid="phase-${phase}"], [data-phase="${phase}"]`,
+          {
+            timeout: 10000,
+          }
+        );
       },
       async summonCreature(cardIndex) {
         await gamePage.page.click(`[data-testid="hand-card-${cardIndex}"]`);
@@ -206,14 +209,18 @@ export const test = base.extend<TestFixtures>({
       },
       async buyPack() {
         await shopPage.page.click('[data-testid="buy-pack-button"]');
-        await shopPage.page.waitForSelector('[data-testid="pack-opened"]', { timeout: 5000 }).catch(() => {});
+        await shopPage.page
+          .waitForSelector('[data-testid="pack-opened"]', { timeout: 5000 })
+          .catch(() => {});
       },
       async hasPack(packName) {
         const pack = shopPage.page.locator(`[data-testid="pack-${packName}"]`);
         return await pack.isVisible();
       },
       async hasPackResults() {
-        const results = shopPage.page.locator('[data-testid="pack-results"], [data-testid="pack-opened"]');
+        const results = shopPage.page.locator(
+          '[data-testid="pack-results"], [data-testid="pack-opened"]'
+        );
         return await results.isVisible({ timeout: 1000 }).catch(() => false);
       },
     };

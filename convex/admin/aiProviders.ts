@@ -8,8 +8,8 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
-import { requireRole } from "../lib/roles";
 import { scheduleAuditLog } from "../lib/internalHelpers";
+import { requireRole } from "../lib/roles";
 
 // =============================================================================
 // Types
@@ -283,7 +283,11 @@ export const fetchOpenRouterModels = action({
         let type: "language" | "embedding" | "image" = "language";
         if (m.id.includes("embed") || m.architecture?.modality?.includes("embed")) {
           type = "embedding";
-        } else if (m.id.includes("image") || m.id.includes("dall-e") || m.id.includes("stable-diffusion")) {
+        } else if (
+          m.id.includes("image") ||
+          m.id.includes("dall-e") ||
+          m.id.includes("stable-diffusion")
+        ) {
           type = "image";
         }
 

@@ -1,0 +1,101 @@
+---
+title: Welcome to LTCG Documentation
+description: Comprehensive guide for the Lunchtable Trading Card Game
+lastUpdated: '2026-02-03'
+---
+
+# Welcome to LTCG Documentation
+
+**Lunchtable Trading Card Game (LTCG)** is a Yu-Gi-Oh! inspired multiplayer card game built with modern web technologies.
+
+## Tech Stack
+
+- **Frontend:** Next.js 15, React 19, TypeScript, Tailwind CSS 4
+- **Backend:** Convex (real-time database + serverless functions)
+- **Auth:** Privy + Solana wallet authentication
+- **Runtime:** Bun 1.3+
+- **Deployment:** Vercel
+
+## Quick Start
+
+### First-Time Setup
+
+Use the interactive setup wizard:
+
+```bash
+# 1. Install dependencies
+bun install
+
+# 2. Configure environment
+cp .env.example .env.local
+# Edit .env.local with your Convex and Privy credentials
+
+# 3. Run setup wizard
+bun run setup:wizard
+```
+
+The wizard will:
+- ✅ Validate environment
+- ✅ Seed all game data (cards, story, configs)
+- ✅ Guide you through creating your first admin user
+
+For complete setup documentation, see [Setup Guide](/learn/setup/initial-setup).
+
+## Documentation Structure
+
+<Cards>
+  <Card title="📚 Learn" href="/learn">
+    Tutorials, guides, and how to play the game
+  </Card>
+  <Card title="📖 Reference" href="/reference">
+    Card database, API docs, and technical references
+  </Card>
+  <Card title="💻 Develop" href="/develop">
+    Development guides, testing, and contribution
+  </Card>
+  <Card title="🔌 Integrate" href="/integrate">
+    Plugin system and AI agent integration
+  </Card>
+</Cards>
+
+## Game Modes
+
+- **Story Mode**: Single-player campaign with narrative chapters
+- **PvP Battles**: Ranked and casual multiplayer
+- **Tournaments**: Competitive events with rewards
+- **Draft Mode**: Build decks on the fly (coming soon)
+
+## Key Features
+
+- 🎴 **400+ Cards** with unique abilities and artwork
+- 🔥 **Element System** (Fire, Water, Earth, Wind, Neutral)
+- ⚔️ **Real-Time Battles** powered by Convex
+- 🏆 **Ranked Ladder** with ELO matchmaking
+- 📖 **Story Mode** with 50+ stages
+- 🎨 **Deck Builder** with advanced filtering
+- 💰 **Economy System** with marketplace and trading
+- 🤖 **AI Agents** via elizaOS plugin
+
+## What's Next?
+
+<Steps>
+
+### Learn the Basics
+
+Start with [How to Play](/learn/how-to-play) to understand game mechanics
+
+### Build Your First Deck
+
+Follow the [Deck Building Guide](/learn/deck-building) to create a competitive deck
+
+### Explore the Card Database
+
+Browse [all cards](/reference/cards) and discover powerful combinations
+
+</Steps>
+
+## Need Help?
+
+- 💬 Join our [Discord community](https://discord.gg/ltcg)
+- 🐛 Report bugs on [GitHub](https://github.com/your-org/ltcg/issues)
+- 📧 Email us at support@ltcg.game

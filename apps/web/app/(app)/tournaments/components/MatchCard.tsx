@@ -66,11 +66,7 @@ function PlayerSlot({
       <div
         className={cn(
           "w-6 h-6 rounded flex items-center justify-center",
-          isEmpty
-            ? "bg-[#3d2b1f]/30"
-            : isWinner
-              ? "bg-[#d4af37]/20"
-              : "bg-[#3d2b1f]/50"
+          isEmpty ? "bg-[#3d2b1f]/30" : isWinner ? "bg-[#d4af37]/20" : "bg-[#3d2b1f]/50"
         )}
       >
         {isEmpty ? (

@@ -1,0 +1,614 @@
+---
+title: Query Optimization Guide
+description: Comprehensive guide to optimizing Convex database queries for performance
+lastUpdated: '2026-02-03'
+tags: ['performance', 'convex', 'database', 'optimization', 'indexes']
+---
+
+# Query Optimization Guide
+
+Learn how to write efficient Convex queries that scale with your LTCG application.
+
+## Overview
+
+Convex provides real-time database queries with automatic reactivity. However, poorly optimized queries can cause performance issues as your data grows. This guide covers best practices for writing fast, scalable queries.
+
+## Index Usage
+
+### Understanding Indexes
+
+Indexes are the foundation of query performance. Without indexes, Convex performs table scans that become slower as tables grow.
+
+**Performance Impact**:
+- **With Index**: Query 1M records in ~10ms
+- **Without Index**: Query 1M records in ~1000ms (100x slower)
+
+### Defining Indexes
+
+Define indexes in your schema:
+
+```typescript
+// convex/schema.ts
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+  users: defineTable({
+    email: v.string(),
+    username: v.string(),
+    createdAt: v.number(),
+    rankedElo: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_username", ["username"])
+    .index("by_creation", ["createdAt"])
+    .index("by_ranked_elo", ["rankedElo"]),
+
+  gameLobbies: defineTable({
+    hostId: v.id("users"),
+    status: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_host", ["hostId"])
+    .index("by_status", ["status"])
+    .index("by_status_and_creation", ["status", "createdAt"]),
+});
+```
+
+### Using Indexes in Queries
+
+Always use `.withIndex()` when filtering by indexed fields:
+
+```typescript
+// ✅ FAST: Uses email index
+const user = await ctx.db
+  .query("users")
+  .withIndex("by_email", (q) => q.eq("email", "user@example.com"))
+  .unique();
+
+// ❌ SLOW: Full table scan
+const user = await ctx.db
+  .query("users")
+  .filter((q) => q.eq(q.field("email"), "user@example.com"))
+  .unique();
+```
+
+### Compound Indexes
+
+Use compound indexes for multi-field queries:
+
+```typescript
+// Schema with compound index
+gameLobbies: defineTable({
+  status: v.string(),
+  createdAt: v.number(),
+})
+  .index("by_status_and_creation", ["status", "createdAt"]),
+
+// Query using compound index
+const activeGames = await ctx.db
+  .query("gameLobbies")
+  .withIndex("by_status_and_creation", (q) =>
+    q.eq("status", "active").gte("createdAt", yesterday)
+  )
+  .collect();
+```
+
+### Index Order Matters
+
+Indexes support equality checks followed by range checks:
+
+```typescript
+// ✅ Works: Equality first, then range
+.withIndex("by_status_and_creation", (q) =>
+  q.eq("status", "active").gte("createdAt", yesterday)
+)
+
+// ❌ Won't use index efficiently: Range first
+.withIndex("by_creation_and_status", (q) =>
+  q.gte("createdAt", yesterday).eq("status", "active")
+)
+```
+
+## Query Patterns
+
+### Filter Early, Collect Late
+
+Apply filters before collecting results:
+
+```typescript
+// ✅ GOOD: Filter before collect
+const activeGames = await ctx.db
+  .query("gameLobbies")
+  .withIndex("by_status", (q) => q.eq("status", "active"))
+  .collect();
+
+// ❌ BAD: Collect all then filter
+const allGames = await ctx.db.query("gameLobbies").collect();
+const activeGames = allGames.filter((g) => g.status === "active");
+```
+
+### Use `.first()` Instead of `.collect()[0]`
+
+For single results, use `.first()` or `.unique()`:
+
+```typescript
+// ✅ GOOD: Stops after finding first match
+const game = await ctx.db
+  .query("gameLobbies")
+  .withIndex("by_host", (q) => q.eq("hostId", userId))
+  .first();
+
+// ❌ BAD: Collects all matches, then takes first
+const games = await ctx.db
+  .query("gameLobbies")
+  .withIndex("by_host", (q) => q.eq("hostId", userId))
+  .collect();
+const game = games[0];
+```
+
+### Limit Result Sets
+
+Use `.take()` to limit results:
+
+```typescript
+// Get top 100 players by ELO
+const topPlayers = await ctx.db
+  .query("users")
+  .withIndex("by_ranked_elo")
+  .order("desc")
+  .take(100);
+```
+
+### Avoid N+1 Queries
+
+Batch related queries instead of looping:
+
+```typescript
+// ❌ BAD: N+1 queries
+const users = await ctx.db.query("users").collect();
+for (const user of users) {
+  const decks = await ctx.db
+    .query("userDecks")
+    .withIndex("by_user", (q) => q.eq("userId", user._id))
+    .collect();
+  // Process decks
+}
+
+// ✅ GOOD: Batch query
+const users = await ctx.db.query("users").collect();
+const allDecks = await ctx.db.query("userDecks").collect();
+const decksByUser = new Map();
+for (const deck of allDecks) {
+  if (!decksByUser.has(deck.userId)) {
+    decksByUser.set(deck.userId, []);
+  }
+  decksByUser.get(deck.userId).push(deck);
+}
+// Now process users with their decks
+```
+
+### Combine Related Queries with Promise.all
+
+Run independent queries in parallel:
+
+```typescript
+// ✅ GOOD: Parallel queries
+const [users, games, presence] = await Promise.all([
+  ctx.db.query("users").collect(),
+  ctx.db.query("gameLobbies").collect(),
+  ctx.db.query("userPresence").collect(),
+]);
+
+// ❌ BAD: Sequential queries
+const users = await ctx.db.query("users").collect();
+const games = await ctx.db.query("gameLobbies").collect();
+const presence = await ctx.db.query("userPresence").collect();
+```
+
+## Common Anti-Patterns
+
+### Filtering Without Indexes
+
+```typescript
+// ❌ SLOW: No index on status field
+const activeGames = await ctx.db
+  .query("gameLobbies")
+  .filter((q) => q.eq(q.field("status"), "active"))
+  .collect();
+
+// ✅ FAST: Add index and use it
+// In schema: .index("by_status", ["status"])
+const activeGames = await ctx.db
+  .query("gameLobbies")
+  .withIndex("by_status", (q) => q.eq("status", "active"))
+  .collect();
+```
+
+### Over-Fetching Data
+
+Only query data you actually need:
+
+```typescript
+// ❌ BAD: Fetching all users for count
+const allUsers = await ctx.db.query("users").collect();
+const userCount = allUsers.length;
+
+// ✅ GOOD: Use aggregation
+const userCount = (await ctx.db.query("users").collect()).length;
+
+// ✅ BETTER: If you only need count frequently, cache it
+const stats = await ctx.db.query("systemStats").first();
+const userCount = stats?.totalUsers ?? 0;
+```
+
+### Client-Side Sorting of Large Datasets
+
+Sort in the database, not in memory:
+
+```typescript
+// ❌ BAD: Sort in memory
+const users = await ctx.db.query("users").collect();
+const sorted = users.sort((a, b) => b.rankedElo - a.rankedElo);
+
+// ✅ GOOD: Use index with order
+const sorted = await ctx.db
+  .query("users")
+  .withIndex("by_ranked_elo")
+  .order("desc")
+  .collect();
+```
+
+### Unbounded Pagination
+
+Always limit pagination queries:
+
+```typescript
+// ❌ BAD: Could return millions of records
+const games = await ctx.db.query("gameLobbies").collect();
+
+// ✅ GOOD: Paginate with cursor
+const games = await ctx.db
+  .query("gameLobbies")
+  .withIndex("by_creation")
+  .order("desc")
+  .paginate({ cursor: paginationOpt.cursor, numItems: 50 });
+```
+
+## Pagination Best Practices
+
+### Cursor-Based Pagination
+
+Convex provides built-in cursor-based pagination:
+
+```typescript
+export const listGames = query({
+  args: {
+    paginationOpt: paginationOptsValidator,
+  },
+  returns: v.object({
+    page: v.array(v.any()),
+    continueCursor: v.string(),
+    isDone: v.boolean(),
+  }),
+  handler: async (ctx, { paginationOpt }) => {
+    const result = await ctx.db
+      .query("gameLobbies")
+      .withIndex("by_creation")
+      .order("desc")
+      .paginate(paginationOpt);
+
+    return result;
+  },
+});
+```
+
+**Client Usage**:
+
+```typescript
+const { page, continueCursor, isDone } = useQuery(
+  api.games.listGames,
+  { paginationOpt: { cursor: null, numItems: 20 } }
+);
+
+// Load next page
+const nextPage = useQuery(
+  api.games.listGames,
+  { paginationOpt: { cursor: continueCursor, numItems: 20 } }
+);
+```
+
+### Infinite Scroll
+
+For infinite scroll, use `usePaginatedQuery`:
+
+```typescript
+const { results, status, loadMore } = usePaginatedQuery(
+  api.games.listGames,
+  {},
+  { initialNumItems: 20 }
+);
+
+// Load more on scroll
+<button onClick={() => loadMore(20)}>Load More</button>
+```
+
+## Caching Strategies
+
+### System-Level Caching
+
+Cache expensive aggregations:
+
+```typescript
+// Store cached stats in database
+systemStats: defineTable({
+  totalUsers: v.number(),
+  totalGames: v.number(),
+  activeUsers: v.number(),
+  lastUpdated: v.number(),
+}).index("by_last_updated", ["lastUpdated"]),
+
+// Update cache periodically (via scheduled function)
+export const updateStatsCache = internalMutation({
+  handler: async (ctx) => {
+    const [users, games, presence] = await Promise.all([
+      ctx.db.query("users").collect(),
+      ctx.db.query("gameLobbies").collect(),
+      ctx.db
+        .query("userPresence")
+        .filter((q) => q.gte(q.field("lastActiveAt"), Date.now() - 15 * 60 * 1000))
+        .collect(),
+    ]);
+
+    await ctx.db.insert("systemStats", {
+      totalUsers: users.length,
+      totalGames: games.length,
+      activeUsers: presence.length,
+      lastUpdated: Date.now(),
+    });
+  },
+});
+```
+
+### Client-Side Caching
+
+Convex automatically caches query results. Optimize by:
+
+1. **Avoiding unnecessary re-queries**: Convex updates automatically
+2. **Using stable query arguments**: Don't create new objects inline
+3. **Leveraging Convex's reactivity**: Don't poll manually
+
+```typescript
+// ✅ GOOD: Stable arguments
+const stats = useQuery(api.stats.getPublicStats);
+
+// ❌ BAD: New object on every render causes re-query
+const stats = useQuery(api.stats.getPublicStats, {});
+```
+
+## Performance Monitoring
+
+### Measuring Query Performance
+
+Use Convex Dashboard to monitor:
+
+1. **Function Duration**: Average execution time
+2. **Documents Scanned**: How many documents were examined
+3. **Cache Hit Rate**: Percentage of cached results
+
+**Optimization Targets**:
+- Function duration < 100ms for simple queries
+- Function duration < 500ms for complex queries
+- Documents scanned should be proportional to results returned
+
+### Identifying Slow Queries
+
+Check Convex logs for slow functions:
+
+```bash
+# View slowest functions
+bunx convex logs --prod --limit 100 | grep "slow"
+
+# Monitor specific function
+bunx convex logs --prod --follow | grep "getPublicStats"
+```
+
+### Performance Testing
+
+Test query performance with realistic data:
+
+```typescript
+// Create test data
+export const seedTestData = internalMutation({
+  handler: async (ctx) => {
+    // Insert 100k test users
+    for (let i = 0; i < 100000; i++) {
+      await ctx.db.insert("users", {
+        email: `test${i}@example.com`,
+        username: `user${i}`,
+        rankedElo: 1000 + Math.random() * 1000,
+      });
+    }
+  },
+});
+
+// Benchmark query
+const start = Date.now();
+const result = await ctx.db
+  .query("users")
+  .withIndex("by_ranked_elo")
+  .order("desc")
+  .take(100);
+const duration = Date.now() - start;
+console.log(`Query took ${duration}ms`);
+```
+
+## Load Testing
+
+### Simulating Concurrent Users
+
+Use a load testing tool to simulate concurrent queries:
+
+```typescript
+// load-test.ts
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "./convex/_generated/api";
+
+const client = new ConvexHttpClient(process.env.CONVEX_URL!);
+
+async function runLoadTest() {
+  const concurrentUsers = 100;
+  const queriesPerUser = 10;
+
+  const promises = [];
+  for (let i = 0; i < concurrentUsers; i++) {
+    for (let j = 0; j < queriesPerUser; j++) {
+      promises.push(client.query(api.stats.getPublicStats));
+    }
+  }
+
+  const start = Date.now();
+  await Promise.all(promises);
+  const duration = Date.now() - start;
+
+  console.log(`Completed ${promises.length} queries in ${duration}ms`);
+  console.log(`Average: ${duration / promises.length}ms per query`);
+}
+
+runLoadTest();
+```
+
+## Real-Time Subscription Optimization
+
+### Minimize Subscription Scope
+
+Only subscribe to data you need:
+
+```typescript
+// ❌ BAD: Subscribe to all games
+const allGames = useQuery(api.games.listAll);
+
+// ✅ GOOD: Subscribe only to active games
+const activeGames = useQuery(api.games.listActive);
+```
+
+### Debounce Rapid Updates
+
+For high-frequency updates, debounce in the UI:
+
+```typescript
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+
+function GameList() {
+  const games = useQuery(api.games.listActive);
+  const debouncedGames = useDebouncedValue(games, 500);
+
+  return (
+    <div>
+      {debouncedGames?.map((game) => (
+        <GameCard key={game._id} game={game} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Unsubscribe When Not Visible
+
+Stop subscriptions when components unmount:
+
+```typescript
+function GameDetails({ gameId }: { gameId: string }) {
+  const game = useQuery(api.games.get, { gameId });
+
+  // Automatically unsubscribes when component unmounts
+  return <div>{game?.status}</div>;
+}
+```
+
+## Advanced Optimization Techniques
+
+### Denormalization for Read Performance
+
+Sometimes duplicating data improves read performance:
+
+```typescript
+// Instead of joining users and decks on every query
+userDecks: defineTable({
+  userId: v.id("users"),
+  name: v.string(),
+  // Denormalized user data
+  username: v.string(), // Duplicate from users table
+}),
+
+// Fast query without join
+const deck = await ctx.db.get(deckId);
+console.log(`Deck by ${deck.username}`); // No need to fetch user
+```
+
+**Trade-off**: Faster reads, but must update in multiple places
+
+### Precomputed Aggregations
+
+Store aggregated values instead of computing on demand:
+
+```typescript
+// Store card count on deck
+userDecks: defineTable({
+  userId: v.id("users"),
+  name: v.string(),
+  cardCount: v.number(), // Precomputed
+}),
+
+// Update count on card add/remove
+export const addCardToDeck = mutation({
+  handler: async (ctx, { deckId, cardId }) => {
+    await ctx.db.insert("deckCards", { deckId, cardId });
+
+    const deck = await ctx.db.get(deckId);
+    await ctx.db.patch(deckId, {
+      cardCount: (deck?.cardCount ?? 0) + 1,
+    });
+  },
+});
+```
+
+### Batch Updates
+
+Batch multiple updates together:
+
+```typescript
+// ❌ BAD: Multiple separate updates
+for (const card of cards) {
+  await ctx.db.patch(card._id, { level: card.level + 1 });
+}
+
+// ✅ GOOD: Batch with Promise.all
+await Promise.all(
+  cards.map((card) =>
+    ctx.db.patch(card._id, { level: card.level + 1 })
+  )
+);
+```
+
+## Optimization Checklist
+
+Before deploying to production:
+
+- [ ] All filtered fields have indexes
+- [ ] Queries use `.withIndex()` where applicable
+- [ ] No unbounded `.collect()` calls in production code
+- [ ] Pagination implemented for large result sets
+- [ ] N+1 query patterns eliminated
+- [ ] Independent queries run in parallel with `Promise.all()`
+- [ ] System stats cached and refreshed periodically
+- [ ] Query performance tested with realistic data volumes
+- [ ] Convex dashboard reviewed for slow functions
+- [ ] Load testing completed for critical queries
+
+## Related Documentation
+
+- [Database Schema](/reference/backend/schema) - Schema and index definitions
+- [Real-Time Query Performance](/guides/performance/real-time-queries) - Real-time optimization
+- [Monitoring & Observability](/develop/operations/monitoring) - Performance monitoring
+- [Convex Best Practices](https://docs.convex.dev/best-practices) - Official Convex docs

@@ -1,13 +1,7 @@
 "use client";
 
 import type { TournamentDetails } from "@/hooks/social/useTournament";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  X,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Loader2, X } from "lucide-react";
 import { useState } from "react";
 
 interface CheckInModalProps {
@@ -141,8 +135,8 @@ export function CheckInModal({ tournament, isOpen, onClose, onConfirm }: CheckIn
               <div>
                 <p className="text-sm text-amber-400 font-bold">Don't Miss It!</p>
                 <p className="text-xs text-amber-400/80 mt-0.5">
-                  If you don't check in before the deadline, you will be removed from
-                  the tournament and receive a refund.
+                  If you don't check in before the deadline, you will be removed from the tournament
+                  and receive a refund.
                 </p>
               </div>
             </div>

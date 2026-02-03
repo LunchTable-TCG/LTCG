@@ -8,11 +8,11 @@
  */
 
 import { v } from "convex/values";
-import { action } from "../_generated/server";
 import { api, components } from "../_generated/api";
-import { adminAgent } from "./adminAgent";
-import { internalAny } from "../lib/internalHelpers";
 import type { Doc } from "../_generated/dataModel";
+import { action } from "../_generated/server";
+import { internalAny } from "../lib/internalHelpers";
+import { adminAgent } from "./adminAgent";
 
 // Type for thread data returned from the agent component
 // Note: userId is stored as string (not Id<"users">) in the agent component
@@ -37,7 +37,9 @@ type ThreadDoc = {
  */
 export const getOrCreateThread = action({
   args: {},
-  handler: async (ctx): Promise<{
+  handler: async (
+    ctx
+  ): Promise<{
     threadId: string;
     title: string;
     createdAt: number;
@@ -57,13 +59,11 @@ export const getOrCreateThread = action({
     }
 
     // Check for existing thread
-    const existingThreads: { page: ThreadDoc[]; continueCursor: string | null } = await ctx.runQuery(
-      components.agent.threads.listThreadsByUserId,
-      {
+    const existingThreads: { page: ThreadDoc[]; continueCursor: string | null } =
+      await ctx.runQuery(components.agent.threads.listThreadsByUserId, {
         userId: currentUser._id,
         paginationOpts: { numItems: 1, cursor: null },
-      }
-    );
+      });
 
     if (existingThreads.page.length > 0) {
       const thread: ThreadDoc | undefined = existingThreads.page[0];
@@ -129,17 +129,14 @@ export const getThreadHistory = action({
     }
 
     // Get messages using the component API
-    const messages = await ctx.runQuery(
-      components.agent.messages.listMessagesByThreadId,
-      {
-        threadId: args.threadId,
-        order: "asc",
-        paginationOpts: {
-          numItems: args.limit ?? 50,
-          cursor: null,
-        },
-      }
-    );
+    const messages = await ctx.runQuery(components.agent.messages.listMessagesByThreadId, {
+      threadId: args.threadId,
+      order: "asc",
+      paginationOpts: {
+        numItems: args.limit ?? 50,
+        cursor: null,
+      },
+    });
 
     return {
       threadId: args.threadId,
@@ -162,7 +159,10 @@ export const listThreads = action({
   args: {
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
     threads: Array<{
       threadId: string;
       title: string;
@@ -185,13 +185,16 @@ export const listThreads = action({
       throw new Error("Admin role required");
     }
 
-    const threadsResult: { page: ThreadDoc[]; continueCursor: string | null } = await ctx.runQuery(components.agent.threads.listThreadsByUserId, {
-      userId: currentUser._id,
-      paginationOpts: {
-        numItems: args.limit ?? 20,
-        cursor: null,
-      },
-    });
+    const threadsResult: { page: ThreadDoc[]; continueCursor: string | null } = await ctx.runQuery(
+      components.agent.threads.listThreadsByUserId,
+      {
+        userId: currentUser._id,
+        paginationOpts: {
+          numItems: args.limit ?? 20,
+          cursor: null,
+        },
+      }
+    );
 
     return {
       threads: threadsResult.page.map((thread: ThreadDoc) => ({
@@ -255,11 +258,7 @@ export const sendMessage = action({
     // Generate response using the agent
     // biome-ignore lint/suspicious/noExplicitAny: @convex-dev/agent type inference workaround
     const promptArgs = { prompt: trimmedMessage } as any;
-    const result = await adminAgent.generateText(
-      ctx,
-      { threadId: args.threadId },
-      promptArgs
-    );
+    const result = await adminAgent.generateText(ctx, { threadId: args.threadId }, promptArgs);
 
     // Log the agent action for audit (using internalAny to avoid type issues)
     await ctx.runMutation(internalAny.ai.adminAgentAudit.logAgentResponse, {
@@ -325,12 +324,9 @@ export const streamMessage = action({
     // Stream response using the agent with delta saving
     // biome-ignore lint/suspicious/noExplicitAny: @convex-dev/agent type inference workaround
     const streamPromptArgs = { prompt: trimmedMessage } as any;
-    const result = await adminAgent.streamText(
-      ctx,
-      { threadId: args.threadId },
-      streamPromptArgs,
-      { saveStreamDeltas: true }
-    );
+    const result = await adminAgent.streamText(ctx, { threadId: args.threadId }, streamPromptArgs, {
+      saveStreamDeltas: true,
+    });
 
     // Collect the full response for logging
     let fullText = "";

@@ -10,7 +10,13 @@
 import { ChartCard, LeaderboardGrid, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, BarChart, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
@@ -386,10 +392,7 @@ export default function PlayerAnalyticsPage() {
               Player rating distribution across the ladder
             </Text>
           </div>
-          <Select
-            value={skillRatingType}
-            onValueChange={setSkillRatingType}
-          >
+          <Select value={skillRatingType} onValueChange={setSkillRatingType}>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Rating Type" />
             </SelectTrigger>
@@ -480,13 +483,19 @@ export default function PlayerAnalyticsPage() {
             {skillDistribution?.distribution && (
               <>
                 <Badge color="amber">
-                  Bronze: {skillDistribution.distribution.under800 + skillDistribution.distribution.r800_1000 + skillDistribution.distribution.r1000_1200 + (skillDistribution.distribution.r1200_1400 || 0)}
+                  Bronze:{" "}
+                  {skillDistribution.distribution.under800 +
+                    skillDistribution.distribution.r800_1000 +
+                    skillDistribution.distribution.r1000_1200 +
+                    (skillDistribution.distribution.r1200_1400 || 0)}
                 </Badge>
                 <Badge color="slate">
                   Silver: {skillDistribution.distribution.r1400_1600 || 0}
                 </Badge>
                 <Badge color="yellow">
-                  Gold: {(skillDistribution.distribution.r1600_1800 || 0) + (skillDistribution.distribution.r1800_2000 || 0)}
+                  Gold:{" "}
+                  {(skillDistribution.distribution.r1600_1800 || 0) +
+                    (skillDistribution.distribution.r1800_2000 || 0)}
                 </Badge>
                 <Badge color="cyan">
                   Platinum: {skillDistribution.distribution.r2000_2200 || 0}

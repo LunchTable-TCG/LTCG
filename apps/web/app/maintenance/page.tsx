@@ -48,14 +48,12 @@ export default function MaintenancePage() {
         </div>
 
         {/* Title */}
-        <h1 className="text-3xl font-bold text-white mb-4">
-          Under Maintenance
-        </h1>
+        <h1 className="text-3xl font-bold text-white mb-4">Under Maintenance</h1>
 
         {/* Description */}
         <p className="text-slate-300 mb-8">
-          We&apos;re currently performing scheduled maintenance to improve your
-          experience. We&apos;ll be back shortly!
+          We&apos;re currently performing scheduled maintenance to improve your experience.
+          We&apos;ll be back shortly!
         </p>
 
         {/* Status indicator */}
@@ -70,9 +68,7 @@ export default function MaintenancePage() {
         </div>
 
         {/* Footer */}
-        <p className="mt-8 text-slate-500 text-sm">
-          Thank you for your patience. Check back soon!
-        </p>
+        <p className="mt-8 text-slate-500 text-sm">Thank you for your patience. Check back soon!</p>
       </div>
     </div>
   );

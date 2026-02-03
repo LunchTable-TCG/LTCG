@@ -7,11 +7,11 @@
  * Can show a preview of the currently selected asset.
  */
 
-import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Image, X, Upload } from "lucide-react";
-import { AssetPickerDialog } from "./AssetPickerDialog";
 import { cn } from "@/lib/utils";
+import { Image, Upload, X } from "lucide-react";
+import { useCallback, useState } from "react";
+import { AssetPickerDialog } from "./AssetPickerDialog";
 
 type AssetCategory =
   | "all"
@@ -91,11 +91,7 @@ export function AssetPickerButton({
         >
           {value ? (
             <>
-              <img
-                src={value}
-                alt="Selected"
-                className="w-full h-full object-cover"
-              />
+              <img src={value} alt="Selected" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <Button
                   size="icon"
@@ -108,12 +104,7 @@ export function AssetPickerButton({
                 >
                   <Upload className="h-4 w-4" />
                 </Button>
-                <Button
-                  size="icon"
-                  variant="destructive"
-                  className="h-8 w-8"
-                  onClick={handleClear}
-                >
+                <Button size="icon" variant="destructive" className="h-8 w-8" onClick={handleClear}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -143,11 +134,7 @@ export function AssetPickerButton({
       <div className={cn("flex items-center gap-2", className)}>
         {showPreview && value && (
           <div className="relative w-10 h-10 rounded border overflow-hidden flex-shrink-0">
-            <img
-              src={value}
-              alt="Selected"
-              className="w-full h-full object-cover"
-            />
+            <img src={value} alt="Selected" className="w-full h-full object-cover" />
             <button
               type="button"
               onClick={handleClear}

@@ -1,23 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useScreenCapture } from "@/hooks/feedback/useScreenCapture";
 import { useRecording } from "@/hooks/feedback/useRecording";
-import { uploadScreenshot, uploadRecording } from "@/lib/feedbackUpload";
-import { cn } from "@/lib/utils";
+import { useScreenCapture } from "@/hooks/feedback/useScreenCapture";
 import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
-import {
-  Camera,
-  Video,
-  VideoOff,
-  Bug,
-  Lightbulb,
-  Loader2,
-  CheckCircle,
-  X,
-} from "lucide-react";
+import { uploadRecording, uploadScreenshot } from "@/lib/feedbackUpload";
+import { cn } from "@/lib/utils";
+import { Bug, Camera, CheckCircle, Lightbulb, Loader2, Video, VideoOff, X } from "lucide-react";
+import { useState } from "react";
 
 type FeedbackType = "bug" | "feature";
 
@@ -40,11 +31,7 @@ export function FeedbackForm({ onSuccess, onCancel }: FeedbackFormProps) {
 
   const submitFeedback = useConvexMutation(apiAny.feedback.feedback.submit);
 
-  const {
-    capture: captureScreenshot,
-    isCapturing,
-    error: screenshotError,
-  } = useScreenCapture();
+  const { capture: captureScreenshot, isCapturing, error: screenshotError } = useScreenCapture();
 
   const {
     startRecording,
@@ -156,9 +143,7 @@ export function FeedbackForm({ onSuccess, onCancel }: FeedbackFormProps) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-        <h3 className="text-lg font-semibold text-[#d4af37] mb-2">
-          Thank you for your feedback!
-        </h3>
+        <h3 className="text-lg font-semibold text-[#d4af37] mb-2">Thank you for your feedback!</h3>
         <p className="text-[#a89f94] text-sm">
           We&apos;ll review your {type === "bug" ? "bug report" : "feature request"} soon.
         </p>
@@ -209,9 +194,7 @@ export function FeedbackForm({ onSuccess, onCancel }: FeedbackFormProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={
-            type === "bug"
-              ? "Brief description of the bug..."
-              : "What feature would you like?"
+            type === "bug" ? "Brief description of the bug..." : "What feature would you like?"
           }
           required
           minLength={5}
@@ -221,7 +204,10 @@ export function FeedbackForm({ onSuccess, onCancel }: FeedbackFormProps) {
 
       {/* Description */}
       <div>
-        <label htmlFor="feedback-description" className="block text-sm font-medium text-[#d4af37] mb-1">
+        <label
+          htmlFor="feedback-description"
+          className="block text-sm font-medium text-[#d4af37] mb-1"
+        >
           Description
         </label>
         <textarea
@@ -249,9 +235,7 @@ export function FeedbackForm({ onSuccess, onCancel }: FeedbackFormProps) {
 
       {/* Media Capture */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-[#d4af37]">
-          Attachments (optional)
-        </label>
+        <label className="block text-sm font-medium text-[#d4af37]">Attachments (optional)</label>
 
         <div className="flex gap-2">
           {/* Screenshot Button */}
@@ -335,9 +319,7 @@ export function FeedbackForm({ onSuccess, onCancel }: FeedbackFormProps) {
 
         {/* Errors */}
         {(screenshotError || recordingError) && (
-          <p className="text-red-400 text-sm">
-            {screenshotError || recordingError}
-          </p>
+          <p className="text-red-400 text-sm">{screenshotError || recordingError}</p>
         )}
       </div>
 

@@ -2,15 +2,7 @@
 
 import type { TournamentDetails } from "@/hooks/social/useTournament";
 import { cn } from "@/lib/utils";
-import {
-  AlertTriangle,
-  Calendar,
-  Coins,
-  Loader2,
-  Trophy,
-  Users,
-  X,
-} from "lucide-react";
+import { AlertTriangle, Calendar, Coins, Loader2, Trophy, Users, X } from "lucide-react";
 import { useState } from "react";
 
 interface RegisterModalProps {
@@ -51,9 +43,7 @@ export function RegisterModal({ tournament, isOpen, onClose, onConfirm }: Regist
   };
 
   const totalPrize =
-    tournament.prizePool.first +
-    tournament.prizePool.second +
-    tournament.prizePool.thirdFourth * 2;
+    tournament.prizePool.first + tournament.prizePool.second + tournament.prizePool.thirdFourth * 2;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -152,7 +142,9 @@ export function RegisterModal({ tournament, isOpen, onClose, onConfirm }: Regist
 
           {/* Prize Breakdown */}
           <div className="p-3 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/20">
-            <p className="text-xs text-[#a89f94] uppercase tracking-wider mb-2">Prize Distribution</p>
+            <p className="text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+              Prize Distribution
+            </p>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
                 <p className="text-xs text-[#a89f94]">1st</p>
@@ -187,8 +179,8 @@ export function RegisterModal({ tournament, isOpen, onClose, onConfirm }: Regist
           {/* Check-in Reminder */}
           <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
             <p className="text-xs text-blue-400">
-              <strong>Important:</strong> You must check in before the tournament starts.
-              Check-in opens at {formatDate(tournament.checkInStartsAt)}.
+              <strong>Important:</strong> You must check in before the tournament starts. Check-in
+              opens at {formatDate(tournament.checkInStartsAt)}.
             </p>
           </div>
 

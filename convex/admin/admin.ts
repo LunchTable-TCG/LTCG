@@ -867,10 +867,14 @@ export const getPlayerInventory = query({
     const totalCards = inventory.reduce((sum, c) => sum + c.quantity, 0);
     const uniqueCards = inventory.length;
     const byRarity = {
-      legendary: inventory.filter((c) => c.rarity === "legendary").reduce((s, c) => s + c.quantity, 0),
+      legendary: inventory
+        .filter((c) => c.rarity === "legendary")
+        .reduce((s, c) => s + c.quantity, 0),
       epic: inventory.filter((c) => c.rarity === "epic").reduce((s, c) => s + c.quantity, 0),
       rare: inventory.filter((c) => c.rarity === "rare").reduce((s, c) => s + c.quantity, 0),
-      uncommon: inventory.filter((c) => c.rarity === "uncommon").reduce((s, c) => s + c.quantity, 0),
+      uncommon: inventory
+        .filter((c) => c.rarity === "uncommon")
+        .reduce((s, c) => s + c.quantity, 0),
       common: inventory.filter((c) => c.rarity === "common").reduce((s, c) => s + c.quantity, 0),
     };
 

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { ArrowRight, Coins, Gift, Star, Trophy, Zap } from "lucide-react";
+import { ArrowRight, Coins, Star, Trophy, Zap } from "lucide-react";
 
 interface StoryBattleCompleteDialogProps {
   open: boolean;
@@ -173,7 +173,9 @@ export function StoryBattleCompleteDialog({
                       >
                         <Trophy className="w-5 h-5 text-[#d4af37]" />
                         <div>
-                          <div className="text-sm font-bold text-[#e8e0d5]">{badge.displayName}</div>
+                          <div className="text-sm font-bold text-[#e8e0d5]">
+                            {badge.displayName}
+                          </div>
                           <div className="text-xs text-[#a89f94]">{badge.description}</div>
                         </div>
                       </motion.div>

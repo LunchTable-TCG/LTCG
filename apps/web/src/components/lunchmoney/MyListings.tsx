@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
+import { cn } from "@/lib/utils";
 import { Clock, Coins, Gavel, Loader2, Package, Wallet, X } from "lucide-react";
 import Image from "next/image";
 
@@ -113,7 +113,9 @@ function ListingCard({
 
       {/* Card Info */}
       <div className="space-y-2">
-        <h3 className="font-medium text-[#e8e0d5] truncate">{listing.cardName || "Unknown Card"}</h3>
+        <h3 className="font-medium text-[#e8e0d5] truncate">
+          {listing.cardName || "Unknown Card"}
+        </h3>
         <p className={cn("text-xs font-medium capitalize", textClass)}>
           {listing.cardRarity || "Common"}
         </p>
@@ -126,9 +128,7 @@ function ListingCard({
             ) : (
               <Coins className="h-4 w-4 text-yellow-400" />
             )}
-            <span
-              className={cn("font-medium", isToken ? "text-primary" : "text-yellow-400")}
-            >
+            <span className={cn("font-medium", isToken ? "text-primary" : "text-yellow-400")}>
               {isToken
                 ? (listing.tokenPrice || 0).toLocaleString()
                 : listing.price.toLocaleString()}
@@ -223,9 +223,7 @@ export function MyListings({
             listing={listing}
             isToken={listing.isToken}
             onCancel={() =>
-              listing.isToken
-                ? onCancelTokenListing(listing._id)
-                : onCancelGoldListing(listing._id)
+              listing.isToken ? onCancelTokenListing(listing._id) : onCancelGoldListing(listing._id)
             }
           />
         ))}
@@ -233,7 +231,9 @@ export function MyListings({
 
       {/* Summary */}
       <div className="flex items-center justify-between text-sm text-[#a89f94] pt-4 border-t border-[#3d2b1f]">
-        <span>{allListings.length} active listing{allListings.length !== 1 ? "s" : ""}</span>
+        <span>
+          {allListings.length} active listing{allListings.length !== 1 ? "s" : ""}
+        </span>
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1">
             <Coins className="h-4 w-4 text-yellow-400" />

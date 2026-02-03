@@ -19,7 +19,7 @@ import { Card, Text, Title } from "@tremor/react";
 import { Copy, MoreHorizontal, Pencil, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { TemplateListItem } from "./types";
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from "./types";
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "./types";
 
 interface TemplateCardProps {
   template: TemplateListItem;
@@ -28,12 +28,7 @@ interface TemplateCardProps {
   onSetDefault: (templateId: string) => void;
 }
 
-export function TemplateCard({
-  template,
-  onDuplicate,
-  onDelete,
-  onSetDefault,
-}: TemplateCardProps) {
+export function TemplateCard({ template, onDuplicate, onDelete, onSetDefault }: TemplateCardProps) {
   const cardTypeColors = {
     creature: "bg-red-500/20 text-red-400 border-red-500/50",
     spell: "bg-green-500/20 text-green-400 border-green-500/50",
@@ -126,10 +121,7 @@ export function TemplateCard({
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => onDelete(template._id)}
-              >
+              <DropdownMenuItem className="text-destructive" onClick={() => onDelete(template._id)}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </DropdownMenuItem>

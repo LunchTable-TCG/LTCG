@@ -10,13 +10,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { apiAny } from "@/lib/convexHelpers";
-import bs58 from "bs58";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTokenBalance } from "@/hooks/economy/useTokenBalance";
 import { type WalletType, useGameWallet } from "@/hooks/wallet/useGameWallet";
+import { apiAny } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { useExportWallet, useSignAndSendTransaction } from "@privy-io/react-auth/solana";
+import bs58 from "bs58";
 import { useAction } from "convex/react";
 import {
   AlertTriangle,
@@ -180,7 +180,12 @@ export function WalletDisplay({ className, compact = false }: WalletDisplayProps
 
   return (
     <>
-      <div className={cn("p-4 rounded-xl bg-[#1a1410]/95 backdrop-blur-sm border border-[#3d2b1f] shadow-xl", className)}>
+      <div
+        className={cn(
+          "p-4 rounded-xl bg-[#1a1410]/95 backdrop-blur-sm border border-[#3d2b1f] shadow-xl",
+          className
+        )}
+      >
         {/* Wallet Address Section */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -551,15 +556,16 @@ function TransferDialog({
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() =>
-                window.open(`https://solscan.io/tx/${txSignature}`, "_blank")
-              }
+              onClick={() => window.open(`https://solscan.io/tx/${txSignature}`, "_blank")}
               className="w-full border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5]"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               View on Solscan
             </Button>
-            <Button onClick={handleClose} className="w-full bg-primary hover:bg-primary/90 text-white">
+            <Button
+              onClick={handleClose}
+              className="w-full bg-primary hover:bg-primary/90 text-white"
+            >
               Done
             </Button>
           </DialogFooter>

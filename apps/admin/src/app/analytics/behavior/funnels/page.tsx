@@ -71,15 +71,15 @@ export default function FunnelsPage() {
   const [events, setEvents] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [configured, setConfigured] = useState(true);
-  const [selectedFunnel, setSelectedFunnel] = useState<typeof PREDEFINED_FUNNELS[number]>(PREDEFINED_FUNNELS[0]!);
+  const [selectedFunnel, setSelectedFunnel] = useState<(typeof PREDEFINED_FUNNELS)[number]>(
+    PREDEFINED_FUNNELS[0]!
+  );
 
   useEffect(() => {
     async function fetchEventCounts() {
       try {
         // Fetch all relevant events
-        const allEvents = [
-          ...new Set(PREDEFINED_FUNNELS.flatMap((f) => f.events)),
-        ];
+        const allEvents = [...new Set(PREDEFINED_FUNNELS.flatMap((f) => f.events))];
 
         const counts: Record<string, number> = {};
 
@@ -108,7 +108,7 @@ export default function FunnelsPage() {
   }, []);
 
   // Build funnel data from event counts
-  const buildFunnel = (funnelConfig: typeof PREDEFINED_FUNNELS[0]): Funnel => {
+  const buildFunnel = (funnelConfig: (typeof PREDEFINED_FUNNELS)[0]): Funnel => {
     const steps: FunnelStep[] = funnelConfig.events.map((event, idx) => {
       const count = events[event] || 0;
       const prevEventKey = funnelConfig.events[idx - 1];
@@ -237,9 +237,7 @@ export default function FunnelsPage() {
                 }`}
               >
                 <Text className="font-semibold">{funnel.name}</Text>
-                <Text className="text-xs text-muted-foreground mt-1">
-                  {funnel.description}
-                </Text>
+                <Text className="text-xs text-muted-foreground mt-1">{funnel.description}</Text>
                 <Flex justifyContent="between" alignItems="center" className="mt-3">
                   <Badge
                     color={
@@ -358,7 +356,8 @@ export default function FunnelsPage() {
                 {!isLast && step.dropOff > 0 && (
                   <div className="ml-5 pl-9 border-l-2 border-dashed border-rose-300 py-2">
                     <Badge color="rose" size="sm">
-                      ↓ {step.dropOff.toLocaleString()} dropped ({(100 - (currentFunnel.steps[idx + 1]?.conversionRate || 0)).toFixed(1)}%)
+                      ↓ {step.dropOff.toLocaleString()} dropped (
+                      {(100 - (currentFunnel.steps[idx + 1]?.conversionRate || 0)).toFixed(1)}%)
                     </Badge>
                   </div>
                 )}

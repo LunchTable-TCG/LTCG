@@ -11,9 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -21,18 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2Icon, PlusIcon, Trash2Icon, PaletteIcon, TypeIcon, MicIcon } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2Icon, MicIcon, PaletteIcon, PlusIcon, Trash2Icon, TypeIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { GuidelinesModalProps, ColorSpec, FontSpec, BrandVoice } from "./types";
+import type { BrandVoice, ColorSpec, FontSpec, GuidelinesModalProps } from "./types";
 import { BRANDING_SECTIONS, BRAND_VOICE_TONES } from "./types";
 
-export function GuidelinesModal({
-  isOpen,
-  onClose,
-  guidelines,
-  onSave,
-}: GuidelinesModalProps) {
+export function GuidelinesModal({ isOpen, onClose, guidelines, onSave }: GuidelinesModalProps) {
   const [activeTab, setActiveTab] = useState("global");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -100,9 +95,7 @@ export function GuidelinesModal({
   };
 
   const updateColor = (index: number, updates: Partial<ColorSpec>) => {
-    setColors((prev) =>
-      prev.map((color, i) => (i === index ? { ...color, ...updates } : color))
-    );
+    setColors((prev) => prev.map((color, i) => (i === index ? { ...color, ...updates } : color)));
     setHasChanges(true);
   };
 
@@ -118,9 +111,7 @@ export function GuidelinesModal({
   };
 
   const updateFont = (index: number, updates: Partial<FontSpec>) => {
-    setFonts((prev) =>
-      prev.map((font, i) => (i === index ? { ...font, ...updates } : font))
-    );
+    setFonts((prev) => prev.map((font, i) => (i === index ? { ...font, ...updates } : font)));
     setHasChanges(true);
   };
 
@@ -202,40 +193,28 @@ export function GuidelinesModal({
                           <Input
                             type="color"
                             value={color.hex}
-                            onChange={(e) =>
-                              updateColor(index, { hex: e.target.value })
-                            }
+                            onChange={(e) => updateColor(index, { hex: e.target.value })}
                             className="w-12 h-9 p-1 cursor-pointer"
                           />
                           <Input
                             placeholder="Color name"
                             value={color.name}
-                            onChange={(e) =>
-                              updateColor(index, { name: e.target.value })
-                            }
+                            onChange={(e) => updateColor(index, { name: e.target.value })}
                             className="w-32"
                           />
                           <Input
                             placeholder="Hex code"
                             value={color.hex}
-                            onChange={(e) =>
-                              updateColor(index, { hex: e.target.value })
-                            }
+                            onChange={(e) => updateColor(index, { hex: e.target.value })}
                             className="w-24 font-mono text-xs"
                           />
                           <Input
                             placeholder="Usage (e.g., Primary background)"
                             value={color.usage || ""}
-                            onChange={(e) =>
-                              updateColor(index, { usage: e.target.value })
-                            }
+                            onChange={(e) => updateColor(index, { usage: e.target.value })}
                             className="flex-1"
                           />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeColor(index)}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => removeColor(index)}>
                             <Trash2Icon className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
@@ -266,9 +245,7 @@ export function GuidelinesModal({
                           <Input
                             placeholder="Font name"
                             value={font.name}
-                            onChange={(e) =>
-                              updateFont(index, { name: e.target.value })
-                            }
+                            onChange={(e) => updateFont(index, { name: e.target.value })}
                             className="w-40"
                           />
                           <Input
@@ -278,7 +255,7 @@ export function GuidelinesModal({
                               updateFont(index, {
                                 weights: e.target.value
                                   .split(",")
-                                  .map((w) => parseInt(w.trim()))
+                                  .map((w) => Number.parseInt(w.trim()))
                                   .filter((w) => !isNaN(w)),
                               })
                             }
@@ -287,16 +264,10 @@ export function GuidelinesModal({
                           <Input
                             placeholder="Usage (e.g., Headings)"
                             value={font.usage || ""}
-                            onChange={(e) =>
-                              updateFont(index, { usage: e.target.value })
-                            }
+                            onChange={(e) => updateFont(index, { usage: e.target.value })}
                             className="flex-1"
                           />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeFont(index)}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => removeFont(index)}>
                             <Trash2Icon className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
@@ -338,9 +309,7 @@ export function GuidelinesModal({
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">
-                          Formality ({brandVoice.formality}/10)
-                        </Label>
+                        <Label className="text-xs">Formality ({brandVoice.formality}/10)</Label>
                         <Slider
                           value={[brandVoice.formality]}
                           onValueChange={(values) => {

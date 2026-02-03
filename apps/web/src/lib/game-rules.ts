@@ -109,10 +109,7 @@ export const TURN_PHASES: PhaseInfo[] = [
     shortDescription: "End your turn, resolve effects.",
     fullDescription:
       "Concludes your turn. Some effects activate or resolve during the End Phase. If you have more than 7 cards in hand, discard down to 7.",
-    allowedActions: [
-      "Resolve End Phase effects",
-      "Discard to hand limit (7 cards)",
-    ],
+    allowedActions: ["Resolve End Phase effects", "Discard to hand limit (7 cards)"],
     tips: [
       "Many temporary effects wear off at the End Phase.",
       "Your opponent's turn begins after your End Phase.",
@@ -368,7 +365,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   },
   {
     term: "DEF",
-    definition: "Defense points. Used when battling in Defense Position. Protects your Life Points.",
+    definition:
+      "Defense points. Used when battling in Defense Position. Protects your Life Points.",
     relatedTerms: ["ATK", "Defense Position"],
     category: "stats",
   },
@@ -406,7 +404,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   },
   {
     term: "Set",
-    definition: "Placing a card face-down. Creatures set in Defense Position, Spells/Traps in Spell Zone.",
+    definition:
+      "Placing a card face-down. Creatures set in Defense Position, Spells/Traps in Spell Zone.",
     relatedTerms: ["Face-down", "Flip"],
     category: "actions",
   },
@@ -430,7 +429,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   },
   {
     term: "Negate",
-    definition: "Canceling a card's activation or effect. The negated card usually still goes to Graveyard.",
+    definition:
+      "Canceling a card's activation or effect. The negated card usually still goes to Graveyard.",
     relatedTerms: ["Counter Trap", "Chain"],
     category: "actions",
   },
@@ -470,7 +470,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   },
   {
     term: "Direct Attack",
-    definition: "Attacking the opponent directly when they have no creatures. Deals full ATK as damage.",
+    definition:
+      "Attacking the opponent directly when they have no creatures. Deals full ATK as damage.",
     relatedTerms: ["Battle Damage", "ATK"],
     category: "mechanics",
   },
@@ -502,13 +503,15 @@ export const GLOSSARY: GlossaryTerm[] = [
   // Card Types
   {
     term: "Quick-Play Spell",
-    definition: "A Spell that can be activated during either player's turn, even during Battle Phase.",
+    definition:
+      "A Spell that can be activated during either player's turn, even during Battle Phase.",
     relatedTerms: ["Spell", "Spell Speed"],
     category: "card_types",
   },
   {
     term: "Counter Trap",
-    definition: "The fastest Trap type (Spell Speed 3). Can only be responded to by other Counter Traps.",
+    definition:
+      "The fastest Trap type (Spell Speed 3). Can only be responded to by other Counter Traps.",
     relatedTerms: ["Trap", "Chain", "Spell Speed"],
     category: "card_types",
   },
@@ -907,8 +910,7 @@ export function searchGlossary(query: string): GlossaryTerm[] {
   const lowerQuery = query.toLowerCase();
   return GLOSSARY.filter(
     (g) =>
-      g.term.toLowerCase().includes(lowerQuery) ||
-      g.definition.toLowerCase().includes(lowerQuery)
+      g.term.toLowerCase().includes(lowerQuery) || g.definition.toLowerCase().includes(lowerQuery)
   );
 }
 

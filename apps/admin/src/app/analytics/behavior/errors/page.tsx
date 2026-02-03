@@ -110,9 +110,7 @@ export default function ErrorHeatmapPage() {
       >
         <Card>
           <Badge color="amber">PostHog Not Configured</Badge>
-          <Text className="mt-2">
-            Please configure PostHog API access to view error tracking.
-          </Text>
+          <Text className="mt-2">Please configure PostHog API access to view error tracking.</Text>
         </Card>
       </PageWrapper>
     );
@@ -128,9 +126,7 @@ export default function ErrorHeatmapPage() {
             <Link href="/analytics/behavior">← Back to Behavior</Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/analytics/behavior/sessions?has_errors=true">
-              View Error Sessions →
-            </Link>
+            <Link href="/analytics/behavior/sessions?has_errors=true">View Error Sessions →</Link>
           </Button>
         </div>
       }
@@ -231,13 +227,9 @@ export default function ErrorHeatmapPage() {
                     : "border-border hover:border-primary/50"
                 } ${getHeatColor(intensity)}`}
               >
-                <Text className="font-mono text-sm truncate font-medium">
-                  {page.page}
-                </Text>
+                <Text className="font-mono text-sm truncate font-medium">{page.page}</Text>
                 <Flex justifyContent="between" alignItems="center" className="mt-2">
-                  <Badge
-                    color={intensity >= 60 ? "rose" : intensity >= 30 ? "amber" : "emerald"}
-                  >
+                  <Badge color={intensity >= 60 ? "rose" : intensity >= 30 ? "amber" : "emerald"}>
                     {page.count} errors
                   </Badge>
                   <Text className="text-xs text-muted-foreground">{intensity}%</Text>
@@ -249,9 +241,7 @@ export default function ErrorHeatmapPage() {
 
         {data?.byPage.length === 0 && (
           <div className="text-center py-8">
-            <Text className="text-muted-foreground">
-              No errors recorded in the last 7 days! 🎉
-            </Text>
+            <Text className="text-muted-foreground">No errors recorded in the last 7 days! 🎉</Text>
           </div>
         )}
       </Card>
@@ -273,10 +263,7 @@ export default function ErrorHeatmapPage() {
 
           <div className="mt-4 space-y-3">
             {selectedPageData.errors.map((error, idx) => (
-              <div
-                key={idx}
-                className="p-3 rounded-lg bg-muted/30 border border-border"
-              >
+              <div key={idx} className="p-3 rounded-lg bg-muted/30 border border-border">
                 <Flex justifyContent="between" alignItems="start">
                   <div className="flex-1">
                     <Flex alignItems="center" className="gap-2 mb-1">
@@ -354,9 +341,7 @@ export default function ErrorHeatmapPage() {
                   >
                     {idx + 1}
                   </span>
-                  <Text className="font-mono text-sm truncate max-w-[200px]">
-                    {page.page}
-                  </Text>
+                  <Text className="font-mono text-sm truncate max-w-[200px]">{page.page}</Text>
                 </div>
                 <div className="flex items-center gap-2">
                   <div
@@ -412,8 +397,8 @@ export default function ErrorHeatmapPage() {
             <Flex alignItems="center" className="gap-2">
               <span className="text-blue-500">💡</span>
               <Text className="text-sm">
-                <strong>Tip:</strong> Watch session recordings with errors to see exactly what
-                users experienced before the error occurred.
+                <strong>Tip:</strong> Watch session recordings with errors to see exactly what users
+                experienced before the error occurred.
               </Text>
             </Flex>
           </div>

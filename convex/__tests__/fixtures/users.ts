@@ -6,10 +6,7 @@
  * https://docs.privy.io/recipes/mock-jwt
  */
 
-import {
-  createDeterministicPrivyIdentity,
-  createPrivyIdentity,
-} from "../helpers/mockPrivyJwt";
+import { createDeterministicPrivyIdentity, createPrivyIdentity } from "../helpers/mockPrivyJwt";
 
 export interface TestUserData {
   email: string;

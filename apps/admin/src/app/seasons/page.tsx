@@ -32,13 +32,7 @@ import { RoleGuard } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
-import {
-  CalendarIcon,
-  PlayIcon,
-  PlusIcon,
-  StopCircleIcon,
-  TrophyIcon,
-} from "lucide-react";
+import { CalendarIcon, PlayIcon, PlusIcon, StopCircleIcon, TrophyIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -50,14 +44,12 @@ import { toast } from "sonner";
 type SeasonStatus = "upcoming" | "active" | "ended";
 type RankResetType = "full" | "soft" | "none";
 
-const STATUS_CONFIG: Record<
-  SeasonStatus,
-  { label: string; color: "yellow" | "emerald" | "gray" }
-> = {
-  upcoming: { label: "Upcoming", color: "yellow" },
-  active: { label: "Active", color: "emerald" },
-  ended: { label: "Ended", color: "gray" },
-};
+const STATUS_CONFIG: Record<SeasonStatus, { label: string; color: "yellow" | "emerald" | "gray" }> =
+  {
+    upcoming: { label: "Upcoming", color: "yellow" },
+    active: { label: "Active", color: "emerald" },
+    ended: { label: "Ended", color: "gray" },
+  };
 
 const RESET_TYPE_LABELS: Record<RankResetType, string> = {
   full: "Full Reset (back to 1000)",
@@ -93,13 +85,13 @@ function CreateSeasonDialog({ open, onOpenChange }: CreateSeasonDialogProps) {
     try {
       const result = await createSeason({
         name,
-        number: parseInt(number, 10),
+        number: Number.parseInt(number, 10),
         description: description || undefined,
         startDate: new Date(startDate).getTime(),
         endDate: new Date(endDate).getTime(),
         rankResetType,
         softResetPercentage:
-          rankResetType === "soft" ? parseInt(softResetPercentage, 10) : undefined,
+          rankResetType === "soft" ? Number.parseInt(softResetPercentage, 10) : undefined,
       });
 
       toast.success(result.message);
@@ -297,12 +289,7 @@ function SeasonActions({ season }: SeasonActionsProps) {
       <div className="flex gap-2">
         {season.status === "upcoming" && (
           <RoleGuard permission="config.edit">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={handleStart}
-              disabled={isStarting}
-            >
+            <Button size="sm" variant="default" onClick={handleStart} disabled={isStarting}>
               <PlayIcon className="h-3 w-3 mr-1" />
               {isStarting ? "Starting..." : "Start"}
             </Button>
@@ -334,30 +321,18 @@ function SeasonActions({ season }: SeasonActionsProps) {
           <DialogHeader>
             <DialogTitle>End Season "{season.name}"?</DialogTitle>
             <DialogDescription>
-              This will create snapshots of all player rankings and optionally distribute
-              rewards immediately. This action cannot be undone.
+              This will create snapshots of all player rankings and optionally distribute rewards
+              immediately. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowEndConfirm(false)}
-              disabled={isEnding}
-            >
+            <Button variant="outline" onClick={() => setShowEndConfirm(false)} disabled={isEnding}>
               Cancel
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => handleEnd(false)}
-              disabled={isEnding}
-            >
+            <Button variant="secondary" onClick={() => handleEnd(false)} disabled={isEnding}>
               End (No Rewards)
             </Button>
-            <Button
-              variant="default"
-              onClick={() => handleEnd(true)}
-              disabled={isEnding}
-            >
+            <Button variant="default" onClick={() => handleEnd(true)} disabled={isEnding}>
               {isEnding ? "Ending..." : "End & Distribute Rewards"}
             </Button>
           </DialogFooter>
@@ -393,9 +368,7 @@ export default function SeasonsPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <div className="text-center">
-              <Text className="text-2xl font-bold">
-                {seasonStats?.totalSeasons ?? "..."}
-              </Text>
+              <Text className="text-2xl font-bold">{seasonStats?.totalSeasons ?? "..."}</Text>
               <Text className="text-sm text-muted-foreground">Total Seasons</Text>
             </div>
           </Card>
@@ -509,9 +482,7 @@ export default function SeasonsPage() {
                           )}
                         </td>
                         <td className="py-3 px-3">
-                          <Badge color={statusConfig.color}>
-                            {statusConfig.label}
-                          </Badge>
+                          <Badge color={statusConfig.color}>{statusConfig.label}</Badge>
                         </td>
                         <td className="py-3 px-3 text-muted-foreground">
                           <div className="flex items-center gap-1 text-xs">

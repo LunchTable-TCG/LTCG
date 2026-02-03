@@ -1,0 +1,29 @@
+# LTCG Code Owners
+# 
+# These owners will be requested for review when someone opens a pull request.
+# More info: https://docs.github.com/articles/about-code-owners
+
+# Default owners for everything in the repo
+* @ltcg-team
+
+# Core packages
+/packages/core/ @ltcg-team
+/packages/plugin-ltcg/ @ltcg-team
+
+# Applications
+/apps/web/ @ltcg-team
+/apps/admin/ @ltcg-team
+
+# Backend
+/convex/ @ltcg-team
+
+# Infrastructure & DevOps
+/.github/ @ltcg-team
+/scripts/ @ltcg-team
+/.husky/ @ltcg-team
+/turbo.json @ltcg-team
+/biome.json @ltcg-team
+
+# Documentation
+/docs/ @ltcg-team
+*.md @ltcg-team

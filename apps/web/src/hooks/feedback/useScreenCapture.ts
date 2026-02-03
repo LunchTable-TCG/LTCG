@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { toPng, toBlob } from "html-to-image";
+import { toBlob, toPng } from "html-to-image";
+import { useCallback, useState } from "react";
 
 interface UseScreenCaptureReturn {
   capture: () => Promise<Blob | null>;

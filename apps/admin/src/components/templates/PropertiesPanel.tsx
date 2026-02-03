@@ -6,8 +6,10 @@
  * Right sidebar for editing selected block properties.
  */
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -15,30 +17,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   AlignCenter,
   AlignLeft,
   AlignRight,
   Bold,
+  Image,
   Italic,
   Move,
   Palette,
-  Type,
-  Image,
   RotateCw,
+  Type,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  FONT_FAMILIES,
-  type CardTemplateBlock,
-  type ImageFit,
-  isImageBlockType,
-} from "./types";
 import { AssetPickerButton } from "./asset-picker";
+import { type CardTemplateBlock, FONT_FAMILIES, type ImageFit, isImageBlockType } from "./types";
 
 interface PropertiesPanelProps {
   block: CardTemplateBlock | null;
@@ -68,9 +63,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
       {/* Header */}
       <div className="p-4 border-b">
         <h3 className="font-semibold text-sm">Properties</h3>
-        <p className="text-xs text-muted-foreground capitalize">
-          {block.blockType} block
-        </p>
+        <p className="text-xs text-muted-foreground capitalize">{block.blockType} block</p>
       </div>
 
       <ScrollArea className="flex-1">
@@ -88,9 +81,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
           {/* Custom Content (for custom blocks) */}
           {block.blockType === "custom" && (
             <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Content
-              </Label>
+              <Label className="text-xs font-medium text-muted-foreground">Content</Label>
               <Textarea
                 value={block.customContent || ""}
                 onChange={(e) => onChange({ customContent: e.target.value })}
@@ -117,7 +108,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
                   max={100}
                   step={0.5}
                   value={block.x}
-                  onChange={(e) => onChange({ x: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => onChange({ x: Number.parseFloat(e.target.value) || 0 })}
                 />
               </div>
               <div className="space-y-1">
@@ -128,7 +119,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
                   max={100}
                   step={0.5}
                   value={block.y}
-                  onChange={(e) => onChange({ y: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => onChange({ y: Number.parseFloat(e.target.value) || 0 })}
                 />
               </div>
               <div className="space-y-1">
@@ -139,7 +130,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
                   max={100}
                   step={0.5}
                   value={block.width}
-                  onChange={(e) => onChange({ width: parseFloat(e.target.value) || 10 })}
+                  onChange={(e) => onChange({ width: Number.parseFloat(e.target.value) || 10 })}
                 />
               </div>
               <div className="space-y-1">
@@ -150,7 +141,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
                   max={100}
                   step={0.5}
                   value={block.height}
-                  onChange={(e) => onChange({ height: parseFloat(e.target.value) || 5 })}
+                  onChange={(e) => onChange({ height: Number.parseFloat(e.target.value) || 5 })}
                 />
               </div>
             </div>
@@ -237,9 +228,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
                       min={-360}
                       max={360}
                       value={block.rotation ?? 0}
-                      onChange={(e) =>
-                        onChange({ rotation: parseInt(e.target.value) || 0 })
-                      }
+                      onChange={(e) => onChange({ rotation: Number.parseInt(e.target.value) || 0 })}
                       className="w-16"
                     />
                   </div>
@@ -252,114 +241,109 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
 
           {/* Typography (for text blocks only) */}
           {!isImageBlockType(block.blockType) && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              <Type className="h-3 w-3" />
-              Typography
-            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Type className="h-3 w-3" />
+                Typography
+              </div>
 
-            {/* Font Family */}
-            <div className="space-y-1">
-              <Label className="text-xs">Font Family</Label>
-              <Select
-                value={block.fontFamily}
-                onValueChange={(v) => onChange({ fontFamily: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FONT_FAMILIES.map((font) => (
-                    <SelectItem key={font.value} value={font.value}>
-                      <span style={{ fontFamily: font.value }}>{font.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Font Family */}
+              <div className="space-y-1">
+                <Label className="text-xs">Font Family</Label>
+                <Select value={block.fontFamily} onValueChange={(v) => onChange({ fontFamily: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FONT_FAMILIES.map((font) => (
+                      <SelectItem key={font.value} value={font.value}>
+                        <span style={{ fontFamily: font.value }}>{font.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Font Size */}
-            <div className="space-y-1">
-              <Label className="text-xs">Font Size</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[block.fontSize]}
-                  onValueChange={([v]) => v !== undefined && onChange({ fontSize: v })}
-                  min={8}
-                  max={48}
-                  step={1}
-                  className="flex-1"
-                />
-                <Input
-                  type="number"
-                  min={8}
-                  max={72}
-                  value={block.fontSize}
-                  onChange={(e) =>
-                    onChange({ fontSize: parseInt(e.target.value) || 12 })
-                  }
-                  className="w-16"
-                />
+              {/* Font Size */}
+              <div className="space-y-1">
+                <Label className="text-xs">Font Size</Label>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[block.fontSize]}
+                    onValueChange={([v]) => v !== undefined && onChange({ fontSize: v })}
+                    min={8}
+                    max={48}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    min={8}
+                    max={72}
+                    value={block.fontSize}
+                    onChange={(e) => onChange({ fontSize: Number.parseInt(e.target.value) || 12 })}
+                    className="w-16"
+                  />
+                </div>
+              </div>
+
+              {/* Font Style */}
+              <div className="space-y-1">
+                <Label className="text-xs">Style</Label>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant={block.fontWeight === "bold" ? "default" : "outline"}
+                    onClick={() =>
+                      onChange({
+                        fontWeight: block.fontWeight === "bold" ? "normal" : "bold",
+                      })
+                    }
+                  >
+                    <Bold className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={block.fontStyle === "italic" ? "default" : "outline"}
+                    onClick={() =>
+                      onChange({
+                        fontStyle: block.fontStyle === "italic" ? "normal" : "italic",
+                      })
+                    }
+                  >
+                    <Italic className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Text Align */}
+              <div className="space-y-1">
+                <Label className="text-xs">Alignment</Label>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant={block.textAlign === "left" ? "default" : "outline"}
+                    onClick={() => onChange({ textAlign: "left" })}
+                  >
+                    <AlignLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={block.textAlign === "center" ? "default" : "outline"}
+                    onClick={() => onChange({ textAlign: "center" })}
+                  >
+                    <AlignCenter className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={block.textAlign === "right" ? "default" : "outline"}
+                    onClick={() => onChange({ textAlign: "right" })}
+                  >
+                    <AlignRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-
-            {/* Font Style */}
-            <div className="space-y-1">
-              <Label className="text-xs">Style</Label>
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant={block.fontWeight === "bold" ? "default" : "outline"}
-                  onClick={() =>
-                    onChange({
-                      fontWeight: block.fontWeight === "bold" ? "normal" : "bold",
-                    })
-                  }
-                >
-                  <Bold className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant={block.fontStyle === "italic" ? "default" : "outline"}
-                  onClick={() =>
-                    onChange({
-                      fontStyle: block.fontStyle === "italic" ? "normal" : "italic",
-                    })
-                  }
-                >
-                  <Italic className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Text Align */}
-            <div className="space-y-1">
-              <Label className="text-xs">Alignment</Label>
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant={block.textAlign === "left" ? "default" : "outline"}
-                  onClick={() => onChange({ textAlign: "left" })}
-                >
-                  <AlignLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant={block.textAlign === "center" ? "default" : "outline"}
-                  onClick={() => onChange({ textAlign: "center" })}
-                >
-                  <AlignCenter className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant={block.textAlign === "right" ? "default" : "outline"}
-                  onClick={() => onChange({ textAlign: "right" })}
-                >
-                  <AlignRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
           )}
 
           <Separator />
@@ -404,9 +388,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
                 />
                 <Input
                   value={block.backgroundColor || ""}
-                  onChange={(e) =>
-                    onChange({ backgroundColor: e.target.value || undefined })
-                  }
+                  onChange={(e) => onChange({ backgroundColor: e.target.value || undefined })}
                   placeholder="None"
                   className="flex-1"
                 />
@@ -430,7 +412,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
                   value={block.borderWidth || 0}
                   onChange={(e) =>
                     onChange({
-                      borderWidth: parseInt(e.target.value) || undefined,
+                      borderWidth: Number.parseInt(e.target.value) || undefined,
                     })
                   }
                 />
@@ -444,7 +426,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
                   value={block.borderRadius || 0}
                   onChange={(e) =>
                     onChange({
-                      borderRadius: parseInt(e.target.value) || undefined,
+                      borderRadius: Number.parseInt(e.target.value) || undefined,
                     })
                   }
                 />
@@ -463,9 +445,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
                 />
                 <Input
                   value={block.borderColor || ""}
-                  onChange={(e) =>
-                    onChange({ borderColor: e.target.value || undefined })
-                  }
+                  onChange={(e) => onChange({ borderColor: e.target.value || undefined })}
                   placeholder="None"
                   className="flex-1"
                 />
@@ -477,9 +457,7 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
 
           {/* Padding */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">
-              Padding (px)
-            </Label>
+            <Label className="text-xs font-medium text-muted-foreground">Padding (px)</Label>
             <Slider
               value={[block.padding || 0]}
               onValueChange={([v]) => v !== undefined && onChange({ padding: v || undefined })}
@@ -487,25 +465,19 @@ export function PropertiesPanel({ block, onChange }: PropertiesPanelProps) {
               max={20}
               step={1}
             />
-            <div className="text-xs text-muted-foreground text-right">
-              {block.padding || 0}px
-            </div>
+            <div className="text-xs text-muted-foreground text-right">{block.padding || 0}px</div>
           </div>
 
           {/* Z-Index */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">
-              Layer Order
-            </Label>
+            <Label className="text-xs font-medium text-muted-foreground">Layer Order</Label>
             <Input
               type="number"
               min={0}
               value={block.zIndex}
-              onChange={(e) => onChange({ zIndex: parseInt(e.target.value) || 0 })}
+              onChange={(e) => onChange({ zIndex: Number.parseInt(e.target.value) || 0 })}
             />
-            <p className="text-xs text-muted-foreground">
-              Higher values appear on top
-            </p>
+            <p className="text-xs text-muted-foreground">Higher values appear on top</p>
           </div>
         </div>
       </ScrollArea>

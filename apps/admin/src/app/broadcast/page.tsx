@@ -38,10 +38,7 @@ type Priority = "normal" | "important" | "urgent";
 
 export default function BroadcastPage() {
   return (
-    <PageWrapper
-      title="Broadcast Center"
-      description="Send announcements and messages to players"
-    >
+    <PageWrapper title="Broadcast Center" description="Send announcements and messages to players">
       {/* Info Card */}
       <Card className="mb-6">
         <Title>About Broadcasts</Title>
@@ -51,9 +48,7 @@ export default function BroadcastPage() {
         <div className="mt-4 grid gap-2 md:grid-cols-3">
           <div className="p-3 rounded-lg bg-muted/50">
             <Text className="font-medium">📢 Announcements</Text>
-            <Text className="text-xs text-muted-foreground">
-              News, updates, events
-            </Text>
+            <Text className="text-xs text-muted-foreground">News, updates, events</Text>
           </div>
           <div className="p-3 rounded-lg bg-muted/50">
             <Text className="font-medium">🔧 System Messages</Text>
@@ -63,9 +58,7 @@ export default function BroadcastPage() {
           </div>
           <div className="p-3 rounded-lg bg-muted/50">
             <Text className="font-medium">📣 Broadcasts</Text>
-            <Text className="text-xs text-muted-foreground">
-              Send to all or filtered players
-            </Text>
+            <Text className="text-xs text-muted-foreground">Send to all or filtered players</Text>
           </div>
         </div>
       </Card>

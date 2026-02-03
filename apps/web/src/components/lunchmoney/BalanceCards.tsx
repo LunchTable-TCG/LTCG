@@ -57,7 +57,9 @@ export function BalanceCards({
         </div>
         <div className="relative">
           <p className="text-sm font-medium text-yellow-400/80">Gold</p>
-          <p className={cn("text-3xl font-bold text-yellow-300 mt-1", isLoading && "animate-pulse")}>
+          <p
+            className={cn("text-3xl font-bold text-yellow-300 mt-1", isLoading && "animate-pulse")}
+          >
             {isLoading ? "..." : formatNumber(gold)}
           </p>
           <div className="mt-4 space-y-1 text-xs text-[#a89f94]">
@@ -80,7 +82,9 @@ export function BalanceCards({
         </div>
         <div className="relative">
           <p className="text-sm font-medium text-purple-400/80">Gems</p>
-          <p className={cn("text-3xl font-bold text-purple-300 mt-1", isLoading && "animate-pulse")}>
+          <p
+            className={cn("text-3xl font-bold text-purple-300 mt-1", isLoading && "animate-pulse")}
+          >
             {isLoading ? "..." : formatNumber(gems)}
           </p>
           <div className="mt-4 space-y-1 text-xs text-[#a89f94]">
@@ -120,7 +124,9 @@ export function BalanceCards({
               <>
                 <div className="flex justify-between items-center">
                   <span>Wallet</span>
-                  <span className="font-mono text-primary/70">{truncateAddress(walletAddress)}</span>
+                  <span className="font-mono text-primary/70">
+                    {truncateAddress(walletAddress)}
+                  </span>
                 </div>
                 {tokenBalanceStale && (
                   <div className="flex items-center gap-1 text-amber-400/70">

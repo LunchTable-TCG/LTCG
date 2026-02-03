@@ -165,11 +165,7 @@ function ArticleContent() {
           {/* Featured Image */}
           {typedArticle.imageUrl && (
             <div className="mb-8 rounded-xl overflow-hidden border border-[#3d2b1f]">
-              <img
-                src={typedArticle.imageUrl}
-                alt={typedArticle.title}
-                className="w-full h-auto"
-              />
+              <img src={typedArticle.imageUrl} alt={typedArticle.title} className="w-full h-auto" />
             </div>
           )}
 

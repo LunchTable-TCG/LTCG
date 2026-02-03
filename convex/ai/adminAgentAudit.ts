@@ -11,8 +11,8 @@
  */
 
 import { v } from "convex/values";
-import { internalMutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { internalMutation } from "../_generated/server";
 
 // =============================================================================
 // Internal Mutations for Audit Logging

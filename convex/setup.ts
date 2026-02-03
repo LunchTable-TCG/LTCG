@@ -5,9 +5,9 @@
  * Run these functions to bootstrap a fresh deployment.
  */
 
-import { internalMutation, mutation } from "./_generated/server";
-import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
+import { internalMutation, mutation } from "./_generated/server";
 
 /**
  * Complete system setup - runs all setup functions in correct order
@@ -296,7 +296,8 @@ export const checkSetupStatus = mutation({
       details: status,
       recommendations: [
         !status.systemUser && "Run: bun convex run setup:setupComplete",
-        status.superadmins === 0 && "Run: bun convex run setup:setupSuperadmin --privyUserId YOUR_PRIVY_ID",
+        status.superadmins === 0 &&
+          "Run: bun convex run setup:setupSuperadmin --privyUserId YOUR_PRIVY_ID",
         status.treasuryPolicies === 0 && "Treasury policies not set up",
         status.alertChannels === 0 && "Alert channels not set up",
       ].filter(Boolean),

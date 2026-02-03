@@ -1,16 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import {
-  Coins,
-  Gem,
-  Image,
-  Package,
-  Sparkles,
-  Star,
-  Trophy,
-  Zap,
-} from "lucide-react";
+import { Coins, Gem, Image, Package, Sparkles, Star, Trophy, Zap } from "lucide-react";
 
 type RewardType = "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
 
@@ -121,9 +112,7 @@ export function RewardIcon({
         </span>
       )}
       {showAmount && amount === undefined && (
-        <span className={cn("font-medium text-[#a89f94]", sizeClass.text)}>
-          {config.label}
-        </span>
+        <span className={cn("font-medium text-[#a89f94]", sizeClass.text)}>{config.label}</span>
       )}
     </div>
   );

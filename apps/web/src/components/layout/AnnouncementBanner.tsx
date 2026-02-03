@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const DISMISSED_KEY = "announcement-dismissed";
 

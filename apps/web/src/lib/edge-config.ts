@@ -13,7 +13,7 @@
  * - Blocked user lists
  */
 
-import { get, getAll, has, type EdgeConfigItems } from "@vercel/edge-config";
+import { type EdgeConfigItems, get, getAll, has } from "@vercel/edge-config";
 
 // =============================================================================
 // Types

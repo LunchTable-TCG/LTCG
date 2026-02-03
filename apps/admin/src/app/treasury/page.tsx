@@ -176,9 +176,7 @@ export default function TreasuryOverviewPage() {
             <CardDescription>Platform fees</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {overview?.byPurpose?.fee_collection ?? 0}
-            </div>
+            <div className="text-2xl font-bold">{overview?.byPurpose?.fee_collection ?? 0}</div>
             <p className="text-xs text-muted-foreground">wallet(s)</p>
           </CardContent>
         </Card>
@@ -188,9 +186,7 @@ export default function TreasuryOverviewPage() {
             <CardDescription>Rewards & airdrops</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {overview?.byPurpose?.distribution ?? 0}
-            </div>
+            <div className="text-2xl font-bold">{overview?.byPurpose?.distribution ?? 0}</div>
             <p className="text-xs text-muted-foreground">wallet(s)</p>
           </CardContent>
         </Card>
@@ -200,9 +196,7 @@ export default function TreasuryOverviewPage() {
             <CardDescription>LP & bonding curve</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {overview?.byPurpose?.liquidity ?? 0}
-            </div>
+            <div className="text-2xl font-bold">{overview?.byPurpose?.liquidity ?? 0}</div>
             <p className="text-xs text-muted-foreground">wallet(s)</p>
           </CardContent>
         </Card>
@@ -212,9 +206,7 @@ export default function TreasuryOverviewPage() {
             <CardDescription>General reserves</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {overview?.byPurpose?.reserves ?? 0}
-            </div>
+            <div className="text-2xl font-bold">{overview?.byPurpose?.reserves ?? 0}</div>
             <p className="text-xs text-muted-foreground">wallet(s)</p>
           </CardContent>
         </Card>
@@ -320,9 +312,7 @@ export default function TreasuryOverviewPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm">
-                      {formatTokens(tx.amount)}
-                    </span>
+                    <span className="font-mono text-sm">{formatTokens(tx.amount)}</span>
                     {getStatusBadge(tx.status)}
                   </div>
                 </div>

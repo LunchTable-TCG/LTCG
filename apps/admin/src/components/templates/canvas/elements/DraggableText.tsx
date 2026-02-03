@@ -6,11 +6,11 @@
  * A Konva text element that can be dragged, resized, and edited.
  */
 
-import { useRef, useEffect, useCallback } from "react";
-import { Text, Group, Rect, Transformer } from "react-konva";
 import type Konva from "konva";
-import type { CardTemplateBlock, BlockId, BlockPosition, BlockTransformAttrs } from "../../types";
-import { CANVAS_WIDTH, CANVAS_HEIGHT, SAMPLE_CARD_DATA } from "../../types";
+import { useCallback, useEffect, useRef } from "react";
+import { Group, Rect, Text, Transformer } from "react-konva";
+import type { BlockId, BlockPosition, BlockTransformAttrs, CardTemplateBlock } from "../../types";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, SAMPLE_CARD_DATA } from "../../types";
 
 interface DraggableTextProps {
   block: CardTemplateBlock;

@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Ban, Shield, Sparkles, Sword } from "lucide-react";
+import { Ban, Check, Shield, Sparkles, Sword, Zap } from "lucide-react";
 import Image from "next/image";
 import type { CardInZone } from "../../hooks/useGameBoard";
 
@@ -18,6 +18,8 @@ interface BoardCardProps {
   size?: "xs" | "sm" | "md" | "lg";
   showStats?: boolean;
   isOpponent?: boolean;
+  effectUsed?: boolean;
+  hasContinuousEffect?: boolean;
 }
 
 const RARITY_COLORS: Record<string, string> = {
@@ -48,6 +50,8 @@ export function BoardCard({
   size = "md",
   showStats = true,
   isOpponent = false,
+  effectUsed = false,
+  hasContinuousEffect = false,
 }: BoardCardProps) {
   const isDefensePosition = card.position === "defense" || card.position === "setDefense";
   const isFaceDown = card.isFaceDown;
@@ -81,6 +85,7 @@ export function BoardCard({
   return (
     <motion.button
       data-testid={testId}
+      data-card-id={card.instanceId}
       onClick={onClick}
       whileHover={{ scale: 1.05, y: -1 }}
       whileTap={{ scale: 0.98 }}
@@ -206,6 +211,26 @@ export function BoardCard({
               <Ban className="w-2 h-2 text-white" />
             </div>
           )}
+          {hasContinuousEffect && (
+            <div
+              className="w-3 h-3 rounded-full bg-cyan-500/90 border border-cyan-300 flex items-center justify-center shadow-sm animate-pulse"
+              title="Continuous effect active"
+            >
+              <Zap className="w-2 h-2 text-white" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Effect Usage Indicator (OPT/HOPT) */}
+      {!isFaceDown && effectUsed && (
+        <div className="absolute top-1 right-1">
+          <div
+            className="w-3 h-3 rounded-full bg-gray-600/90 border border-gray-400 flex items-center justify-center shadow-sm"
+            title="Effect used this turn"
+          >
+            <Check className="w-2 h-2 text-white" />
+          </div>
         </div>
       )}
 

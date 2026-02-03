@@ -18,16 +18,7 @@ import {
 import { useGameWallet } from "@/hooks/wallet/useGameWallet";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import {
-  AlertCircle,
-  Coins,
-  Crown,
-  Gem,
-  Loader2,
-  RefreshCw,
-  Star,
-  XCircle,
-} from "lucide-react";
+import { AlertCircle, Coins, Crown, Gem, Loader2, RefreshCw, Star, XCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -351,7 +342,6 @@ export function PremiumUpgradeModal({
         showCloseButton={step !== "signing" && step !== "waiting"}
         className="sm:max-w-md overflow-hidden"
       >
-
         <DialogHeader className="text-center">
           <motion.div
             initial={{ scale: 0 }}
@@ -392,11 +382,7 @@ export function PremiumUpgradeModal({
         <DialogFooter className="mt-6">
           {step === "error" ? (
             <div className="flex gap-3 w-full">
-              <Button
-                variant="outline"
-                onClick={handleClose}
-                className="flex-1 border-[#3d2b1f]"
-              >
+              <Button variant="outline" onClick={handleClose} className="flex-1 border-[#3d2b1f]">
                 Cancel
               </Button>
               <Button
@@ -426,9 +412,7 @@ export function PremiumUpgradeModal({
               <Button
                 onClick={useTokens ? handleTokenPurchase : handleGemPurchase}
                 disabled={
-                  useTokens
-                    ? !walletConnected || !hasSufficientBalance || balanceLoading
-                    : false
+                  useTokens ? !walletConnected || !hasSufficientBalance || balanceLoading : false
                 }
                 className="flex-1 bg-gradient-to-r from-violet-600 via-violet-500 to-violet-600 hover:from-violet-500 hover:via-violet-400 hover:to-violet-500 text-white font-bold"
               >

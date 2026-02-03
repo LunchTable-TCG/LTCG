@@ -1,17 +1,17 @@
 "use client";
 
 import {
-  DifficultySelector,
   type DifficultyId,
   type DifficultyLevel,
+  DifficultySelector,
 } from "@/components/story/DifficultySelector";
 import { StoryStageNode } from "@/components/story/StoryStageNode";
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { getAssetUrl } from "@/lib/blob";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
-import { getAssetUrl } from "@/lib/blob";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Clock, Gift, Loader2, Lock, Play, Star } from "lucide-react";
 import Image from "next/image";
@@ -382,9 +382,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
                         <span
                           className={cn(
                             "font-medium",
-                            retryLimits.hard.remaining > 0
-                              ? "text-orange-400"
-                              : "text-red-400"
+                            retryLimits.hard.remaining > 0 ? "text-orange-400" : "text-red-400"
                           )}
                         >
                           {retryLimits.hard.remaining}/{retryLimits.hard.max} remaining
@@ -393,9 +391,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
                         <span
                           className={cn(
                             "font-medium",
-                            retryLimits.legendary.remaining > 0
-                              ? "text-purple-400"
-                              : "text-red-400"
+                            retryLimits.legendary.remaining > 0 ? "text-purple-400" : "text-red-400"
                           )}
                         >
                           {retryLimits.legendary.remaining}/{retryLimits.legendary.max} remaining
@@ -434,9 +430,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
                   }
 
                   // Check if difficulty is unlocked
-                  const selectedDiffData = difficulties.find(
-                    (d) => d.id === selectedDifficulty
-                  );
+                  const selectedDiffData = difficulties.find((d) => d.id === selectedDifficulty);
                   if (!selectedDiffData?.unlocked) {
                     toast.error(
                       `Reach level ${selectedDiffData?.requiredLevel} to unlock ${selectedDifficulty} mode`

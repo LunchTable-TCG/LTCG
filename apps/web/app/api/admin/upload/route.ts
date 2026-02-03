@@ -5,8 +5,8 @@
  * Uses handleUpload to generate secure upload tokens and process completion callbacks.
  */
 
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { del, list } from "@vercel/blob";
+import { type HandleUploadBody, handleUpload } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 
 // CORS helper - dynamically set origin based on request
@@ -150,19 +150,24 @@ export async function GET(request: Request): Promise<NextResponse> {
     // Paginate through all blobs
     do {
       const result = await list({ cursor, limit: 1000 });
-      allBlobs.push(...result.blobs.map(blob => ({
-        url: blob.url,
-        pathname: blob.pathname,
-        size: blob.size,
-        uploadedAt: blob.uploadedAt.toISOString(),
-      })));
+      allBlobs.push(
+        ...result.blobs.map((blob) => ({
+          url: blob.url,
+          pathname: blob.pathname,
+          size: blob.size,
+          uploadedAt: blob.uploadedAt.toISOString(),
+        }))
+      );
       cursor = result.hasMore ? result.cursor : undefined;
     } while (cursor);
 
-    return NextResponse.json({
-      blobs: allBlobs,
-      count: allBlobs.length,
-    }, { headers });
+    return NextResponse.json(
+      {
+        blobs: allBlobs,
+        count: allBlobs.length,
+      },
+      { headers }
+    );
   } catch (error) {
     console.error("List blobs error:", error);
     return NextResponse.json(
@@ -184,19 +189,13 @@ export async function DELETE(request: Request): Promise<NextResponse> {
     const { url } = await request.json();
 
     if (!url || typeof url !== "string") {
-      return NextResponse.json(
-        { error: "Missing or invalid blob URL" },
-        { status: 400, headers }
-      );
+      return NextResponse.json({ error: "Missing or invalid blob URL" }, { status: 400, headers });
     }
 
     // Validate the URL is from our blob storage
     const blobBaseUrl = process.env["NEXT_PUBLIC_BLOB_BASE_URL"];
     if (blobBaseUrl && !url.startsWith(blobBaseUrl)) {
-      return NextResponse.json(
-        { error: "Invalid blob URL" },
-        { status: 400, headers }
-      );
+      return NextResponse.json({ error: "Invalid blob URL" }, { status: 400, headers });
     }
 
     await del(url);

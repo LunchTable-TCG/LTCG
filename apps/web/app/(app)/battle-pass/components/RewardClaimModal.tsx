@@ -174,10 +174,7 @@ export function RewardClaimModal({
                     }}
                   >
                     <Gift
-                      className={cn(
-                        "w-10 h-10",
-                        isPremium ? "text-violet-400" : "text-[#d4af37]"
-                      )}
+                      className={cn("w-10 h-10", isPremium ? "text-violet-400" : "text-[#d4af37]")}
                     />
                   </motion.div>
                 )}

@@ -151,7 +151,9 @@ export function TransactionHistory({
         ) : filteredTransactions.length === 0 ? (
           <div className="py-12 text-center text-[#a89f94]">
             <p>No transactions found</p>
-            <p className="text-sm text-[#a89f94]/60 mt-1">Your transaction history will appear here</p>
+            <p className="text-sm text-[#a89f94]/60 mt-1">
+              Your transaction history will appear here
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-[#3d2b1f]/50">

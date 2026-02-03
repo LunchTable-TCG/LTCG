@@ -29,11 +29,7 @@ interface TutorialManagerProps {
  * Manages tutorial state and displays appropriate overlays.
  * Should be rendered alongside the GameBoard in story mode Ch1 S1.
  */
-export function TutorialManager({
-  enabled,
-  gameState,
-  highlightRefs = {},
-}: TutorialManagerProps) {
+export function TutorialManager({ enabled, gameState, highlightRefs = {} }: TutorialManagerProps) {
   const {
     currentMoment,
     isShowingTutorial,
@@ -53,11 +49,7 @@ export function TutorialManager({
   // Show resume prompt
   if (showResumePrompt) {
     return (
-      <TutorialResumePrompt
-        onResume={onResume}
-        onDismiss={onDismiss}
-        lastMoment={lastMoment}
-      />
+      <TutorialResumePrompt onResume={onResume} onDismiss={onDismiss} lastMoment={lastMoment} />
     );
   }
 

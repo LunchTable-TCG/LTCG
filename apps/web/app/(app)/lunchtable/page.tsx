@@ -1,11 +1,17 @@
 "use client";
 
+import { DailyLoginRewards } from "@/components/rewards/DailyLoginRewards";
 import { api } from "@convex/_generated/api";
 import { AuthLoading, Authenticated, useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { GameLobby, GlobalChat, IncomingChallengeNotification, WelcomeGuideDialog } from "./components";
+import {
+  GameLobby,
+  GlobalChat,
+  IncomingChallengeNotification,
+  WelcomeGuideDialog,
+} from "./components";
 
 export default function LunchtablePage() {
   return (
@@ -34,6 +40,7 @@ function LunchtableContent() {
   // Track if user needs onboarding (no starter deck)
   const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
   const [_isClaimingDeck, setIsClaimingDeck] = useState(false);
+  const [showDailyRewards, setShowDailyRewards] = useState(false);
 
   // Check if user has completed onboarding - runs on every currentUser update
   useEffect(() => {
@@ -189,6 +196,17 @@ function LunchtableContent() {
         <div className="lg:hidden mt-6 flex-1 min-h-0 overflow-hidden">
           <GlobalChat />
         </div>
+
+        {/* Daily Login Rewards */}
+        <DailyLoginRewards
+          isOpen={showDailyRewards}
+          onClose={() => setShowDailyRewards(false)}
+          currentStreak={1}
+          onClaim={async (_day: number) => {
+            // Claim logic would go here
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }}
+        />
       </div>
     </div>
   );

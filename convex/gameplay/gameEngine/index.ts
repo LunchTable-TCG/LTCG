@@ -13,6 +13,9 @@ export { changePosition } from "./positions";
 // Spells & Traps module (Set Spell/Trap, Activate Spell, Activate Trap, Complete Search)
 export { setSpellTrap, activateSpell, activateTrap, completeSearchEffect } from "./spellsTraps";
 
+// Monster Effects module (Activate Monster Effect)
+export { activateMonsterEffect } from "./monsterEffects";
+
 // Selection-based Effects (Special Summon, Destruction Targets)
 export {
   getGraveyardSummonTargets,

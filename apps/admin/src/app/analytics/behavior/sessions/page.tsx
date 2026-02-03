@@ -60,42 +60,45 @@ export default function SessionsPage() {
   });
   const [configured, setConfigured] = useState(true);
 
-  const fetchSessions = useCallback(async (append = false) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set("limit", "20");
-      params.set("offset", append ? offset.toString() : "0");
+  const fetchSessions = useCallback(
+    async (append = false) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("limit", "20");
+        params.set("offset", append ? offset.toString() : "0");
 
-      if (filters.hasErrors) {
-        params.set("has_errors", "true");
+        if (filters.hasErrors) {
+          params.set("has_errors", "true");
+        }
+        if (filters.dateFrom) {
+          params.set("date_from", filters.dateFrom);
+        }
+
+        const res = await fetch(`/api/posthog/sessions?${params}`);
+        const data: SessionsResponse = await res.json();
+
+        if (!data.configured) {
+          setConfigured(false);
+          return;
+        }
+
+        if (append) {
+          setSessions((prev) => [...prev, ...data.sessions]);
+        } else {
+          setSessions(data.sessions);
+        }
+
+        setHasMore(data.hasMore);
+        setOffset(append ? offset + data.sessions.length : data.sessions.length);
+      } catch (error) {
+        console.error("Failed to fetch sessions:", error);
+      } finally {
+        setLoading(false);
       }
-      if (filters.dateFrom) {
-        params.set("date_from", filters.dateFrom);
-      }
-
-      const res = await fetch(`/api/posthog/sessions?${params}`);
-      const data: SessionsResponse = await res.json();
-
-      if (!data.configured) {
-        setConfigured(false);
-        return;
-      }
-
-      if (append) {
-        setSessions((prev) => [...prev, ...data.sessions]);
-      } else {
-        setSessions(data.sessions);
-      }
-
-      setHasMore(data.hasMore);
-      setOffset(append ? offset + data.sessions.length : data.sessions.length);
-    } catch (error) {
-      console.error("Failed to fetch sessions:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters, offset]);
+    },
+    [filters, offset]
+  );
 
   useEffect(() => {
     fetchSessions(false);
@@ -232,9 +235,7 @@ export default function SessionsPage() {
                 <Flex justifyContent="between" alignItems="start">
                   <div className="flex gap-4">
                     {/* Status Icon */}
-                    <div className="text-3xl">
-                      {session.console_error_count > 0 ? "⚠️" : "▶️"}
-                    </div>
+                    <div className="text-3xl">{session.console_error_count > 0 ? "⚠️" : "▶️"}</div>
 
                     {/* Session Info */}
                     <div>
@@ -289,11 +290,7 @@ export default function SessionsPage() {
       {/* Load More */}
       {hasMore && (
         <div className="mt-6 text-center">
-          <Button
-            variant="outline"
-            onClick={() => fetchSessions(true)}
-            disabled={loading}
-          >
+          <Button variant="outline" onClick={() => fetchSessions(true)} disabled={loading}>
             {loading ? "Loading..." : "Load More Sessions"}
           </Button>
         </div>
@@ -313,8 +310,8 @@ export default function SessionsPage() {
         <Flex alignItems="center" className="gap-2">
           <span className="text-blue-500">💡</span>
           <Text className="text-sm text-muted-foreground">
-            Click on any session to open the full replay in PostHog with timeline, events,
-            and console logs.
+            Click on any session to open the full replay in PostHog with timeline, events, and
+            console logs.
           </Text>
         </Flex>
       </Card>

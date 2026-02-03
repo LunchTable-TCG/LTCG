@@ -43,7 +43,14 @@ import { toast } from "sonner";
 // =============================================================================
 
 type TournamentStatus = "registration" | "checkin" | "active" | "completed" | "cancelled";
-type ParticipantStatus = "registered" | "checked_in" | "active" | "eliminated" | "winner" | "forfeit" | "refunded";
+type ParticipantStatus =
+  | "registered"
+  | "checked_in"
+  | "active"
+  | "eliminated"
+  | "winner"
+  | "forfeit"
+  | "refunded";
 
 const STATUS_CONFIG: Record<
   TournamentStatus,
@@ -80,7 +87,12 @@ interface GrantEntryDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function GrantEntryDialog({ tournamentId, tournamentName, open, onOpenChange }: GrantEntryDialogProps) {
+function GrantEntryDialog({
+  tournamentId,
+  tournamentName,
+  open,
+  onOpenChange,
+}: GrantEntryDialogProps) {
   const [userId, setUserId] = useState("");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -191,10 +203,9 @@ export default function TournamentDetailPage() {
   const [showGrantDialog, setShowGrantDialog] = useState(false);
 
   // Queries and mutations
-  const tournament = useConvexQuery(
-    apiAny.admin.tournaments.getTournament,
-    { tournamentId: tournamentId as any }
-  );
+  const tournament = useConvexQuery(apiAny.admin.tournaments.getTournament, {
+    tournamentId: tournamentId as any,
+  });
 
   const updateTournament = useConvexMutation(apiAny.admin.tournaments.updateTournament);
   const forceStart = useConvexMutation(apiAny.admin.tournaments.forceStartTournament);
@@ -211,10 +222,14 @@ export default function TournamentDetailPage() {
       setPrizeSecond(tournament.prizePool.second?.toString() ?? "0");
       setPrizeThirdFourth(tournament.prizePool.thirdFourth?.toString() ?? "0");
       if (tournament.registrationStartsAt) {
-        setRegistrationStartsAt(format(new Date(tournament.registrationStartsAt), "yyyy-MM-dd'T'HH:mm"));
+        setRegistrationStartsAt(
+          format(new Date(tournament.registrationStartsAt), "yyyy-MM-dd'T'HH:mm")
+        );
       }
       if (tournament.registrationEndsAt) {
-        setRegistrationEndsAt(format(new Date(tournament.registrationEndsAt), "yyyy-MM-dd'T'HH:mm"));
+        setRegistrationEndsAt(
+          format(new Date(tournament.registrationEndsAt), "yyyy-MM-dd'T'HH:mm")
+        );
       }
       if (tournament.scheduledStartAt) {
         setScheduledStartAt(format(new Date(tournament.scheduledStartAt), "yyyy-MM-dd'T'HH:mm"));
@@ -234,14 +249,18 @@ export default function TournamentDetailPage() {
         updates: {
           name: name.trim(),
           description: description.trim() || undefined,
-          entryFee: parseInt(entryFee, 10),
+          entryFee: Number.parseInt(entryFee, 10),
           prizePool: {
-            first: parseInt(prizeFirst, 10),
-            second: parseInt(prizeSecond, 10),
-            thirdFourth: parseInt(prizeThirdFourth, 10),
+            first: Number.parseInt(prizeFirst, 10),
+            second: Number.parseInt(prizeSecond, 10),
+            thirdFourth: Number.parseInt(prizeThirdFourth, 10),
           },
-          registrationStartsAt: registrationStartsAt ? new Date(registrationStartsAt).getTime() : undefined,
-          registrationEndsAt: registrationEndsAt ? new Date(registrationEndsAt).getTime() : undefined,
+          registrationStartsAt: registrationStartsAt
+            ? new Date(registrationStartsAt).getTime()
+            : undefined,
+          registrationEndsAt: registrationEndsAt
+            ? new Date(registrationEndsAt).getTime()
+            : undefined,
           scheduledStartAt: scheduledStartAt ? new Date(scheduledStartAt).getTime() : undefined,
         },
       });
@@ -265,7 +284,12 @@ export default function TournamentDetailPage() {
     }
   };
 
-  const handleRemoveParticipant = async (userId: string, _username: string, refundEntry: boolean, reason: string) => {
+  const handleRemoveParticipant = async (
+    userId: string,
+    _username: string,
+    refundEntry: boolean,
+    reason: string
+  ) => {
     try {
       const result = await removeParticipant({
         tournamentId: tournamentId as any,
@@ -406,12 +430,7 @@ export default function TournamentDetailPage() {
 
               <div className="space-y-2">
                 <Label>Max Players</Label>
-                <Input
-                  type="number"
-                  value={tournament.maxPlayers}
-                  disabled
-                  className="bg-muted"
-                />
+                <Input type="number" value={tournament.maxPlayers} disabled className="bg-muted" />
                 <Text className="text-xs text-muted-foreground">
                   Cannot be changed after creation
                 </Text>
@@ -520,7 +539,8 @@ export default function TournamentDetailPage() {
                   </thead>
                   <tbody>
                     {tournament.participants.map((participant: any) => {
-                      const pStatusConfig = PARTICIPANT_STATUS_CONFIG[participant.status as ParticipantStatus];
+                      const pStatusConfig =
+                        PARTICIPANT_STATUS_CONFIG[participant.status as ParticipantStatus];
                       return (
                         <tr key={participant._id} className="border-b hover:bg-muted/30">
                           <td className="py-2 px-2 font-medium">{participant.username}</td>
@@ -577,7 +597,9 @@ export default function TournamentDetailPage() {
               </div>
               <div className="flex items-center justify-between">
                 <Text className="text-muted-foreground">Format</Text>
-                <Text className="font-medium capitalize">{tournament.format.replace('_', ' ')}</Text>
+                <Text className="font-medium capitalize">
+                  {tournament.format.replace("_", " ")}
+                </Text>
               </div>
               <div className="flex items-center justify-between">
                 <Text className="text-muted-foreground">Mode</Text>
@@ -604,7 +626,9 @@ export default function TournamentDetailPage() {
               </div>
               <div className="flex items-center justify-between">
                 <Text className="text-muted-foreground">Active</Text>
-                <Text className="text-xl font-bold text-emerald-600">{tournament.stats.activeCount}</Text>
+                <Text className="text-xl font-bold text-emerald-600">
+                  {tournament.stats.activeCount}
+                </Text>
               </div>
               <div className="flex items-center justify-between">
                 <Text className="text-muted-foreground">Eliminated</Text>
@@ -671,10 +695,7 @@ export default function TournamentDetailPage() {
             <div className="mt-4 space-y-2">
               {(tournament.status === "registration" || tournament.status === "checkin") && (
                 <RoleGuard permission="admin.manage">
-                  <ForceStartButton
-                    tournamentName={tournament.name}
-                    onConfirm={handleForceStart}
-                  />
+                  <ForceStartButton tournamentName={tournament.name} onConfirm={handleForceStart} />
                 </RoleGuard>
               )}
             </div>
@@ -703,7 +724,12 @@ interface ParticipantActionsProps {
   onDisqualify: (userId: string, username: string, reason: string) => void;
 }
 
-function ParticipantActions({ participant, tournament, onRemove, onDisqualify }: ParticipantActionsProps) {
+function ParticipantActions({
+  participant,
+  tournament,
+  onRemove,
+  onDisqualify,
+}: ParticipantActionsProps) {
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [showDisqualifyDialog, setShowDisqualifyDialog] = useState(false);
   const [removeReason, setRemoveReason] = useState("");
@@ -720,22 +746,14 @@ function ParticipantActions({ participant, tournament, onRemove, onDisqualify }:
       <div className="flex gap-1">
         {canRemove && (
           <RoleGuard permission="admin.manage">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowRemoveDialog(true)}
-            >
+            <Button size="sm" variant="outline" onClick={() => setShowRemoveDialog(true)}>
               <UserMinusIcon className="h-3 w-3" />
             </Button>
           </RoleGuard>
         )}
         {canDisqualify && (
           <RoleGuard permission="admin.manage">
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => setShowDisqualifyDialog(true)}
-            >
+            <Button size="sm" variant="destructive" onClick={() => setShowDisqualifyDialog(true)}>
               <ShieldAlertIcon className="h-3 w-3" />
             </Button>
           </RoleGuard>
@@ -799,8 +817,8 @@ function ParticipantActions({ participant, tournament, onRemove, onDisqualify }:
           <DialogHeader>
             <DialogTitle>Disqualify Participant</DialogTitle>
             <DialogDescription>
-              Disqualify {participant.username} from the active tournament?
-              They will forfeit any active matches.
+              Disqualify {participant.username} from the active tournament? They will forfeit any
+              active matches.
             </DialogDescription>
           </DialogHeader>
           <div>
@@ -849,10 +867,7 @@ function ForceStartButton({ tournamentName, onConfirm }: ForceStartButtonProps) 
 
   return (
     <>
-      <Button
-        className="w-full"
-        onClick={() => setShowDialog(true)}
-      >
+      <Button className="w-full" onClick={() => setShowDialog(true)}>
         <PlayIcon className="mr-2 h-4 w-4" />
         Force Start
       </Button>
@@ -862,8 +877,8 @@ function ForceStartButton({ tournamentName, onConfirm }: ForceStartButtonProps) 
           <DialogHeader>
             <DialogTitle>Force Start Tournament</DialogTitle>
             <DialogDescription>
-              Force start "{tournamentName}"? This will skip the check-in phase and start
-              the tournament immediately with all registered or checked-in players.
+              Force start "{tournamentName}"? This will skip the check-in phase and start the
+              tournament immediately with all registered or checked-in players.
             </DialogDescription>
           </DialogHeader>
           <div>

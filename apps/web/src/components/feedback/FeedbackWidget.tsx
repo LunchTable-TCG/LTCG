@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import {
   Dialog,
   DialogContent,
@@ -9,9 +7,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FeedbackForm } from "./FeedbackForm";
-import { MessageSquarePlus } from "lucide-react";
+import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { cn } from "@/lib/utils";
+import { MessageSquarePlus } from "lucide-react";
+import { useState } from "react";
+import { FeedbackForm } from "./FeedbackForm";
 
 /**
  * Floating feedback button widget.
@@ -60,10 +60,7 @@ export function FeedbackWidget() {
 
       {/* Feedback Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent
-          className="sm:max-w-md"
-          data-feedback-exclude="true"
-        >
+        <DialogContent className="sm:max-w-md" data-feedback-exclude="true">
           <DialogHeader>
             <DialogTitle>Send Feedback</DialogTitle>
             <DialogDescription>

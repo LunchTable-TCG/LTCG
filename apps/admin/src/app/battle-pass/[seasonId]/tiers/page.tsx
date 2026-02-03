@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,6 @@ import {
 } from "@/components/ui/select";
 import { RoleGuard } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import { Badge } from "@/components/ui/badge";
 import { Card, Text, Title } from "@tremor/react";
 import {
   ArrowLeftIcon,
@@ -191,7 +191,7 @@ function TierRow({ tier, onUpdate, isEditable }: TierRowProps) {
             className="w-20 h-8"
             value={reward.amount || ""}
             onChange={(e) =>
-              updateReward(track, "amount", parseInt(e.target.value, 10) || 0)
+              updateReward(track, "amount", Number.parseInt(e.target.value, 10) || 0)
             }
             placeholder="Amount"
             disabled={!isEditable}
@@ -229,11 +229,7 @@ function TierRow({ tier, onUpdate, isEditable }: TierRowProps) {
     >
       <td className="py-2 px-3">
         <div className="flex items-center gap-2">
-          <span
-            className={`font-mono font-bold ${
-              tier.isMilestone ? "text-amber-500" : ""
-            }`}
-          >
+          <span className={`font-mono font-bold ${tier.isMilestone ? "text-amber-500" : ""}`}>
             {tier.tier}
           </span>
           {tier.isMilestone && (
@@ -319,9 +315,7 @@ export default function BattlePassTiersPage() {
   }, [battlePass, existingTiers]);
 
   const handleTierUpdate = (updatedTier: TierConfig) => {
-    setTiers((prev) =>
-      prev.map((t) => (t.tier === updatedTier.tier ? updatedTier : t))
-    );
+    setTiers((prev) => prev.map((t) => (t.tier === updatedTier.tier ? updatedTier : t)));
   };
 
   const handleSaveAll = async () => {
@@ -356,7 +350,7 @@ export default function BattlePassTiersPage() {
   };
 
   const handleBulkAction = () => {
-    const amount = parseInt(bulkAmount, 10) || 100;
+    const amount = Number.parseInt(bulkAmount, 10) || 100;
 
     setTiers((prev) =>
       prev.map((tier) => {
@@ -502,8 +496,7 @@ export default function BattlePassTiersPage() {
               <div className="flex items-center gap-2">
                 <CheckIcon className="h-5 w-5 text-blue-500" />
                 <Text>
-                  {dirtyCount} tier{dirtyCount > 1 ? "s" : ""} modified. Don't forget to
-                  save!
+                  {dirtyCount} tier{dirtyCount > 1 ? "s" : ""} modified. Don't forget to save!
                 </Text>
               </div>
               <Button size="sm" onClick={handleSaveAll} disabled={isSaving}>
@@ -535,9 +528,7 @@ export default function BattlePassTiersPage() {
                 <tr className="border-b bg-muted/50">
                   <th className="text-left py-3 px-3 w-32">Tier</th>
                   <th className="text-left py-3 px-3">
-                    <span className="flex items-center gap-2">
-                      Free Reward
-                    </span>
+                    <span className="flex items-center gap-2">Free Reward</span>
                   </th>
                   <th className="text-left py-3 px-3">
                     <span className="flex items-center gap-2">

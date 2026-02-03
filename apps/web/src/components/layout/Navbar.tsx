@@ -6,9 +6,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet";
 import { useAuth, useLogout } from "@/hooks/auth/useConvexAuthHook";
+import { getAssetUrl } from "@/lib/blob";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
-import { getAssetUrl } from "@/lib/blob";
 import {
   Award,
   BookOpen,
@@ -85,7 +85,13 @@ const gameLinks: GameLink[] = [
   { href: "/quests", label: "Quests", icon: Target, description: "Daily & weekly rewards" },
   { href: "/leaderboards", label: "Leaderboards", icon: Trophy, description: "Global rankings" },
   { href: "/social", label: "Social", icon: MessageSquare, description: "Friends & community" },
-  { href: "/guilds", label: "Guilds", icon: Users, description: "Form alliances", comingSoon: true },
+  {
+    href: "/guilds",
+    label: "Guilds",
+    icon: Users,
+    description: "Form alliances",
+    comingSoon: true,
+  },
   { href: "/shop", label: "Shop", icon: Store, description: "Buy packs & trade cards" },
   { href: "/lunchmoney", label: "LunchMoney", icon: Wallet, description: "Economy dashboard" },
   { href: "/binder", label: "Binder", icon: BookOpen, description: "Your card collection" },

@@ -4,8 +4,8 @@
  * Manages layer ordering, visibility, and locking for canvas elements.
  */
 
-import { useCallback, useMemo } from "react";
 import type { Id } from "@convex/_generated/dataModel";
+import { useCallback, useMemo } from "react";
 import type { CardTemplateBlock } from "../../types";
 
 interface LayerItem {
@@ -52,16 +52,14 @@ export function useLayerManagement({
 
   // Convert to layer items for the panel (reversed for display - top items first)
   const layers = useMemo((): LayerItem[] => {
-    return [...sortedBlocks]
-      .reverse()
-      .map((block) => ({
-        id: block._id,
-        zIndex: block.zIndex,
-        label: block.label,
-        blockType: block.blockType,
-        isVisible: true, // Could be extended with visibility state
-        isLocked: false, // Could be extended with lock state
-      }));
+    return [...sortedBlocks].reverse().map((block) => ({
+      id: block._id,
+      zIndex: block.zIndex,
+      label: block.label,
+      blockType: block.blockType,
+      isVisible: true, // Could be extended with visibility state
+      isLocked: false, // Could be extended with lock state
+    }));
   }, [sortedBlocks]);
 
   const getBlockIndex = useCallback(
@@ -122,8 +120,7 @@ export function useLayerManagement({
   const moveToIndex = useCallback(
     (blockId: Id<"cardTemplateBlocks">, newIndex: number) => {
       const currentIndex = getBlockIndex(blockId);
-      if (currentIndex === -1 || newIndex < 0 || newIndex >= sortedBlocks.length)
-        return;
+      if (currentIndex === -1 || newIndex < 0 || newIndex >= sortedBlocks.length) return;
       if (currentIndex === newIndex) return;
       reorderBlocks(currentIndex, newIndex);
     },

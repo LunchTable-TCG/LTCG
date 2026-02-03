@@ -6,34 +6,26 @@
  * Full-page editor for designing card templates.
  */
 
-import { use, useState } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { toast } from "sonner";
 import { Text, Title } from "@tremor/react";
-import {
-  ArrowLeft,
-  Copy,
-  Download,
-  MoreHorizontal,
-  Settings,
-  Star,
-  Trash2,
-} from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
 import { toPng } from "html-to-image";
+import { ArrowLeft, Copy, Download, MoreHorizontal, Settings, Star, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use, useState } from "react";
+import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +41,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -57,20 +58,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 
-import { apiAny } from "@/lib/convexHelpers";
 import { TemplateEditor } from "@/components/templates/TemplateEditor";
 import type { Rarity, TemplateMode } from "@/components/templates/types";
+import { apiAny } from "@/lib/convexHelpers";
 
 const api = apiAny;
 
@@ -232,9 +224,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
             </p>
           </div>
           {template.isDefault && (
-            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-              Default
-            </span>
+            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Default</span>
           )}
         </div>
 
@@ -256,9 +246,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
             <SheetContent>
               <SheetHeader>
                 <SheetTitle>Template Settings</SheetTitle>
-                <SheetDescription>
-                  Configure template metadata and frame images.
-                </SheetDescription>
+                <SheetDescription>Configure template metadata and frame images.</SheetDescription>
               </SheetHeader>
               <div className="space-y-6 py-6">
                 {/* Basic Info */}
@@ -316,131 +304,136 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      {TEMPLATE_MODES.find((m) => m.value === (template.mode || "frame_artwork"))?.description}
+                      {
+                        TEMPLATE_MODES.find((m) => m.value === (template.mode || "frame_artwork"))
+                          ?.description
+                      }
                     </p>
                   </div>
                 </div>
 
                 {/* Frame Images - only for frame_artwork mode */}
                 {(template.mode || "frame_artwork") === "frame_artwork" && (
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium">Frame Images by Rarity</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Upload different frame images for each rarity level.
-                  </p>
-                  {RARITIES.map((rarity) => (
-                    <div key={rarity} className="space-y-1">
-                      <Label className="text-xs capitalize">{rarity}</Label>
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium">Frame Images by Rarity</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Upload different frame images for each rarity level.
+                    </p>
+                    {RARITIES.map((rarity) => (
+                      <div key={rarity} className="space-y-1">
+                        <Label className="text-xs capitalize">{rarity}</Label>
+                        <Input
+                          value={template.frameImages[rarity] || ""}
+                          onChange={(e) =>
+                            handleUpdateSettings({
+                              frameImages: {
+                                ...template.frameImages,
+                                [rarity]: e.target.value || undefined,
+                              },
+                            })
+                          }
+                          placeholder="Image URL..."
+                        />
+                      </div>
+                    ))}
+                    <div className="space-y-1">
+                      <Label className="text-xs">Default Frame (fallback)</Label>
                       <Input
-                        value={template.frameImages[rarity] || ""}
+                        value={template.defaultFrameImageUrl || ""}
                         onChange={(e) =>
                           handleUpdateSettings({
-                            frameImages: {
-                              ...template.frameImages,
-                              [rarity]: e.target.value || undefined,
-                            },
+                            defaultFrameImageUrl: e.target.value || undefined,
                           })
                         }
-                        placeholder="Image URL..."
+                        placeholder="Default frame URL..."
                       />
                     </div>
-                  ))}
-                  <div className="space-y-1">
-                    <Label className="text-xs">Default Frame (fallback)</Label>
-                    <Input
-                      value={template.defaultFrameImageUrl || ""}
-                      onChange={(e) =>
-                        handleUpdateSettings({
-                          defaultFrameImageUrl: e.target.value || undefined,
-                        })
-                      }
-                      placeholder="Default frame URL..."
-                    />
                   </div>
-                </div>
                 )}
 
                 {/* Artwork Bounds - only for frame_artwork mode */}
                 {(template.mode || "frame_artwork") === "frame_artwork" && (
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium">Artwork Area</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">X (px)</Label>
-                      <Input
-                        type="number"
-                        value={template.artworkBounds.x}
-                        onChange={(e) =>
-                          handleUpdateSettings({
-                            artworkBounds: {
-                              ...template.artworkBounds,
-                              x: parseInt(e.target.value) || 0,
-                            },
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Y (px)</Label>
-                      <Input
-                        type="number"
-                        value={template.artworkBounds.y}
-                        onChange={(e) =>
-                          handleUpdateSettings({
-                            artworkBounds: {
-                              ...template.artworkBounds,
-                              y: parseInt(e.target.value) || 0,
-                            },
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Width (px)</Label>
-                      <Input
-                        type="number"
-                        value={template.artworkBounds.width}
-                        onChange={(e) =>
-                          handleUpdateSettings({
-                            artworkBounds: {
-                              ...template.artworkBounds,
-                              width: parseInt(e.target.value) || 100,
-                            },
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Height (px)</Label>
-                      <Input
-                        type="number"
-                        value={template.artworkBounds.height}
-                        onChange={(e) =>
-                          handleUpdateSettings({
-                            artworkBounds: {
-                              ...template.artworkBounds,
-                              height: parseInt(e.target.value) || 100,
-                            },
-                          })
-                        }
-                      />
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium">Artwork Area</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">X (px)</Label>
+                        <Input
+                          type="number"
+                          value={template.artworkBounds.x}
+                          onChange={(e) =>
+                            handleUpdateSettings({
+                              artworkBounds: {
+                                ...template.artworkBounds,
+                                x: Number.parseInt(e.target.value) || 0,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Y (px)</Label>
+                        <Input
+                          type="number"
+                          value={template.artworkBounds.y}
+                          onChange={(e) =>
+                            handleUpdateSettings({
+                              artworkBounds: {
+                                ...template.artworkBounds,
+                                y: Number.parseInt(e.target.value) || 0,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Width (px)</Label>
+                        <Input
+                          type="number"
+                          value={template.artworkBounds.width}
+                          onChange={(e) =>
+                            handleUpdateSettings({
+                              artworkBounds: {
+                                ...template.artworkBounds,
+                                width: Number.parseInt(e.target.value) || 100,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Height (px)</Label>
+                        <Input
+                          type="number"
+                          value={template.artworkBounds.height}
+                          onChange={(e) =>
+                            handleUpdateSettings({
+                              artworkBounds: {
+                                ...template.artworkBounds,
+                                height: Number.parseInt(e.target.value) || 100,
+                              },
+                            })
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
                 )}
 
                 {/* Full Card Image Mode Info */}
                 {(template.mode || "frame_artwork") === "full_card_image" && (
-                <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
-                  <Label className="text-sm font-medium">Full Card Image Mode</Label>
-                  <p className="text-xs text-muted-foreground">
-                    In this mode, each card's <code className="bg-muted px-1 rounded">imageUrl</code> is used as the complete card background.
-                    The template only defines text overlay positions.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Use this mode when your card images already have the frame and artwork combined (e.g., pre-rendered card art).
-                  </p>
-                </div>
+                  <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+                    <Label className="text-sm font-medium">Full Card Image Mode</Label>
+                    <p className="text-xs text-muted-foreground">
+                      In this mode, each card's{" "}
+                      <code className="bg-muted px-1 rounded">imageUrl</code> is used as the
+                      complete card background. The template only defines text overlay positions.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Use this mode when your card images already have the frame and artwork
+                      combined (e.g., pre-rendered card art).
+                    </p>
+                  </div>
                 )}
 
                 {/* Default Styles */}
@@ -463,7 +456,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
                         value={template.defaultFontSize}
                         onChange={(e) =>
                           handleUpdateSettings({
-                            defaultFontSize: parseInt(e.target.value) || 16,
+                            defaultFontSize: Number.parseInt(e.target.value) || 16,
                           })
                         }
                       />
@@ -538,9 +531,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Duplicate Template</DialogTitle>
-            <DialogDescription>
-              Create a copy of this template with a new name.
-            </DialogDescription>
+            <DialogDescription>Create a copy of this template with a new name.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -567,8 +558,8 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Template</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this template? This action cannot be
-              undone. Templates in use by cards cannot be deleted.
+              Are you sure you want to delete this template? This action cannot be undone. Templates
+              in use by cards cannot be deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

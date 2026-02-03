@@ -4,13 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import {
-  FolderPlusIcon,
-  GridIcon,
-  ListIcon,
-  SearchIcon,
-  UploadIcon,
-} from "lucide-react";
+import { FolderPlusIcon, GridIcon, ListIcon, SearchIcon, UploadIcon } from "lucide-react";
 import { useState } from "react";
 import { BrandingAssetCard } from "./BrandingAssetCard";
 import { FolderCard } from "./FolderCard";
@@ -73,20 +67,11 @@ export function BrandingContentGrid({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onCreateFolder}
-            disabled={!selectedFolderId}
-          >
+          <Button variant="outline" size="sm" onClick={onCreateFolder} disabled={!selectedFolderId}>
             <FolderPlusIcon className="h-4 w-4 mr-2" />
             New Folder
           </Button>
-          <Button
-            size="sm"
-            onClick={onUploadAssets}
-            disabled={!selectedFolderId}
-          >
+          <Button size="sm" onClick={onUploadAssets} disabled={!selectedFolderId}>
             <UploadIcon className="h-4 w-4 mr-2" />
             Upload
           </Button>
@@ -126,15 +111,15 @@ export function BrandingContentGrid({
               {searchQuery
                 ? "No results found"
                 : selectedFolderId
-                ? "This folder is empty"
-                : "Select a section to get started"}
+                  ? "This folder is empty"
+                  : "Select a section to get started"}
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
               {searchQuery
                 ? "Try a different search term"
                 : selectedFolderId
-                ? "Upload assets or create subfolders"
-                : "Choose a section from the sidebar"}
+                  ? "Upload assets or create subfolders"
+                  : "Choose a section from the sidebar"}
             </p>
             {selectedFolderId && !searchQuery && (
               <div className="flex gap-2">

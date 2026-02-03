@@ -7,18 +7,18 @@
  * Provides layer-based rendering, drag-drop, and export capabilities.
  */
 
-import { useRef, useCallback } from "react";
-import { Stage, Layer, Line } from "react-konva";
-import type Konva from "konva";
 import type { Id } from "@convex/_generated/dataModel";
+import type Konva from "konva";
+import { useCallback, useRef } from "react";
+import { Layer, Line, Stage } from "react-konva";
 import type { CardTemplateBlock, Rarity, TemplateMode } from "../types";
-import { CANVAS_WIDTH, CANVAS_HEIGHT, isImageBlockType } from "../types";
-import { BackgroundLayer } from "./layers/BackgroundLayer";
-import { ArtworkLayer } from "./layers/ArtworkLayer";
-import { TextLayer } from "./layers/TextLayer";
-import { EffectsLayer } from "./layers/EffectsLayer";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, isImageBlockType } from "../types";
 import { SelectionRect } from "./elements/SelectionRect";
 import { useSnapToGrid } from "./hooks/useSnapToGrid";
+import { ArtworkLayer } from "./layers/ArtworkLayer";
+import { BackgroundLayer } from "./layers/BackgroundLayer";
+import { EffectsLayer } from "./layers/EffectsLayer";
+import { TextLayer } from "./layers/TextLayer";
 
 interface KonvaCanvasProps {
   /** Template data */
@@ -60,10 +60,7 @@ interface KonvaCanvasProps {
   /** Callback when a block is selected */
   onSelectBlock: (id: Id<"cardTemplateBlocks"> | null) => void;
   /** Callback when a block position changes */
-  onBlockMove: (
-    id: Id<"cardTemplateBlocks">,
-    position: { x: number; y: number }
-  ) => void;
+  onBlockMove: (id: Id<"cardTemplateBlocks">, position: { x: number; y: number }) => void;
   /** Callback when a block is transformed */
   onBlockTransform?: (
     id: Id<"cardTemplateBlocks">,

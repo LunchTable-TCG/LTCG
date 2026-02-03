@@ -78,17 +78,12 @@ export default function BattlePassDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Queries and mutations
-  const battlePass = useConvexQuery(
-    apiAny.admin.battlePass.getBattlePass,
-    { battlePassId: battlePassId as any }
-  );
+  const battlePass = useConvexQuery(apiAny.admin.battlePass.getBattlePass, {
+    battlePassId: battlePassId as any,
+  });
 
-  const updateBattlePass = useConvexMutation(
-    apiAny.admin.battlePass.updateBattlePassSeason
-  );
-  const deleteBattlePass = useConvexMutation(
-    apiAny.admin.battlePass.deleteBattlePass
-  );
+  const updateBattlePass = useConvexMutation(apiAny.admin.battlePass.updateBattlePassSeason);
+  const deleteBattlePass = useConvexMutation(apiAny.admin.battlePass.deleteBattlePass);
 
   // Populate form with existing data
   useEffect(() => {
@@ -117,8 +112,8 @@ export default function BattlePassDetailPage() {
         battlePassId: battlePassId as any,
         name: name.trim(),
         description: description.trim() || undefined,
-        xpPerTier: parseInt(xpPerTier, 10),
-        premiumPrice: parseInt(premiumPrice, 10),
+        xpPerTier: Number.parseInt(xpPerTier, 10),
+        premiumPrice: Number.parseInt(premiumPrice, 10),
         startDate: startDate ? new Date(startDate).getTime() : undefined,
         endDate: endDate ? new Date(endDate).getTime() : undefined,
       });
@@ -205,8 +200,8 @@ export default function BattlePassDetailPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Battle Pass</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to permanently delete "{battlePass.name}"?
-                      This will also delete all tier configurations. This action cannot be undone.
+                      Are you sure you want to permanently delete "{battlePass.name}"? This will
+                      also delete all tier configurations. This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -309,9 +304,7 @@ export default function BattlePassDetailPage() {
                   min="0"
                   disabled={!isEditable}
                 />
-                <Text className="text-xs text-muted-foreground">
-                  Cost to unlock premium track
-                </Text>
+                <Text className="text-xs text-muted-foreground">Cost to unlock premium track</Text>
               </div>
 
               <div className="space-y-2">
@@ -366,8 +359,8 @@ export default function BattlePassDetailPage() {
             {battlePass.tierCount < battlePass.totalTiers && (
               <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                 <Text className="text-sm text-yellow-600">
-                  Some tiers don't have rewards defined. Players won't receive rewards for
-                  those tiers until configured.
+                  Some tiers don't have rewards defined. Players won't receive rewards for those
+                  tiers until configured.
                 </Text>
               </div>
             )}
@@ -465,8 +458,8 @@ export default function BattlePassDetailPage() {
                 />
               </div>
               <Text className="text-xs text-muted-foreground">
-                {Math.round((battlePass.stats.averageTier / battlePass.totalTiers) * 100)}%
-                average completion
+                {Math.round((battlePass.stats.averageTier / battlePass.totalTiers) * 100)}% average
+                completion
               </Text>
             </div>
           </Card>
@@ -489,9 +482,7 @@ export default function BattlePassDetailPage() {
               <div>
                 <Text className="text-muted-foreground text-sm">End</Text>
                 <Text className="font-medium">
-                  {battlePass.endDate
-                    ? format(new Date(battlePass.endDate), "PPpp")
-                    : "Not set"}
+                  {battlePass.endDate ? format(new Date(battlePass.endDate), "PPpp") : "Not set"}
                 </Text>
               </div>
               {battlePass.status === "active" && battlePass.endDate && (
@@ -500,9 +491,7 @@ export default function BattlePassDetailPage() {
                   <Text className="font-bold text-lg">
                     {Math.max(
                       0,
-                      Math.ceil(
-                        (battlePass.endDate - Date.now()) / (24 * 60 * 60 * 1000)
-                      )
+                      Math.ceil((battlePass.endDate - Date.now()) / (24 * 60 * 60 * 1000))
                     )}{" "}
                     days
                   </Text>

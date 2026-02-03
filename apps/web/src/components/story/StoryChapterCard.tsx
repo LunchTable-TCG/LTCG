@@ -1,9 +1,9 @@
 "use client";
 
 import { FantasyFrame } from "@/components/ui/FantasyFrame";
-import { cn } from "@/lib/utils";
-import { getAssetUrl } from "@/lib/blob";
 import { getArchetypeTheme } from "@/lib/archetypeThemes";
+import { getAssetUrl } from "@/lib/blob";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Lock, Star, Trophy } from "lucide-react";
 import Image from "next/image";
@@ -125,9 +125,7 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500 bg-gradient-to-r",
-                      isCompleted
-                        ? "from-yellow-500 to-amber-300"
-                        : archetypeTheme.gradient
+                      isCompleted ? "from-yellow-500 to-amber-300" : archetypeTheme.gradient
                     )}
                     style={{ width: `${(completedStages / totalStages) * 100}%` }}
                   />

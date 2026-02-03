@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import type { AppFeatureFlags } from "@/lib/flags";
+import { useCallback, useEffect, useState } from "react";
 
 /**
  * Default flag values (matches server-side defaults)

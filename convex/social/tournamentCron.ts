@@ -56,9 +56,7 @@ export const processPhaseTransitions = internalAction({
 export const processNoShowForfeits = internalAction({
   handler: async (ctx) => {
     // Get matches that have timed out
-    const timedOutMatches = await ctx.runQuery(
-      internalAny.social.tournaments.getTimedOutMatches
-    );
+    const timedOutMatches = await ctx.runQuery(internalAny.social.tournaments.getTimedOutMatches);
 
     for (const match of timedOutMatches) {
       // Determine which player is the no-show

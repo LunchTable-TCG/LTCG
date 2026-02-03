@@ -7,15 +7,15 @@
 
 // Import from centralized JSON card data
 import {
+  ABYSSAL_DEPTHS_CARDS as ABYSSAL_DEPTHS_JSON,
+  ALL_CARDS,
+  type Card,
   // Primary archetypes (from master CSV)
   INFERNAL_DRAGONS_CARDS as INFERNAL_DRAGONS_JSON,
-  ABYSSAL_DEPTHS_CARDS as ABYSSAL_DEPTHS_JSON,
   IRON_LEGION_CARDS as IRON_LEGION_JSON,
   NECRO_EMPIRE_CARDS as NECRO_EMPIRE_JSON,
   // Legacy archetype (still used for Storm Riders deck until we have proper data)
   STORM_ELEMENTALS_CARDS as STORM_ELEMENTALS_JSON,
-  ALL_CARDS,
-  type Card,
   getCardsByArchetype,
 } from "@data/cards";
 

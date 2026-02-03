@@ -1,24 +1,10 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
-import {
-  ArrowDown,
-  ArrowUp,
-  BarChart3,
-  ChevronDown,
-  Loader2,
-  TrendingUp,
-} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ArrowDown, ArrowUp, BarChart3, ChevronDown, Loader2, TrendingUp } from "lucide-react";
 import Image from "next/image";
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 interface PriceDataPoint {
   date: string;
@@ -104,9 +90,7 @@ function CustomTooltip({
       <div className="space-y-1">
         <div className="flex justify-between gap-4">
           <span className="text-xs text-[#a89f94]">Avg Price:</span>
-          <span className="text-xs font-medium text-[#e8e0d5]">
-            {formatPrice(data.avgPrice)}
-          </span>
+          <span className="text-xs font-medium text-[#e8e0d5]">{formatPrice(data.avgPrice)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-xs text-[#a89f94]">Range:</span>
@@ -137,9 +121,7 @@ export function PriceHistoryChart({
   isLoading,
   isLoadingTopCards,
 }: PriceHistoryChartProps) {
-  const selectedCardData = topCards.find(
-    (c) => c.cardDefinitionId === selectedCard
-  );
+  const selectedCardData = topCards.find((c) => c.cardDefinitionId === selectedCard);
 
   return (
     <div className="space-y-4">
@@ -147,9 +129,7 @@ export function PriceHistoryChart({
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Card Selector */}
         <div className="flex-1">
-          <label className="block text-xs text-[#a89f94] mb-1.5">
-            Select Card
-          </label>
+          <label className="block text-xs text-[#a89f94] mb-1.5">Select Card</label>
           <div className="relative">
             <select
               value={selectedCard || ""}
@@ -170,9 +150,7 @@ export function PriceHistoryChart({
 
         {/* Time Range */}
         <div>
-          <label className="block text-xs text-[#a89f94] mb-1.5">
-            Time Range
-          </label>
+          <label className="block text-xs text-[#a89f94] mb-1.5">Time Range</label>
           <div className="flex gap-1">
             {(["7d", "30d", "90d", "all"] as const).map((range) => (
               <button
@@ -270,10 +248,7 @@ export function PriceHistoryChart({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart
-              data={priceHistory}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-            >
+            <AreaChart data={priceHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
@@ -345,9 +320,7 @@ export function PriceHistoryChart({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#e8e0d5] truncate">
-                    {card.name}
-                  </p>
+                  <p className="text-sm font-medium text-[#e8e0d5] truncate">{card.name}</p>
                   <p className="text-xs text-[#a89f94]">
                     {card.sales} sales | {formatPrice(card.avgPrice)} avg
                   </p>

@@ -1,9 +1,9 @@
 "use client";
 
-import { useInbox, type InboxMessage, type InboxMessageType } from "@/hooks/social/useInbox";
+import { type InboxMessage, type InboxMessageType, useInbox } from "@/hooks/social/useInbox";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
-import { Authenticated, AuthLoading } from "convex/react";
+import { AuthLoading, Authenticated } from "convex/react";
 import {
   Bell,
   Check,
@@ -86,8 +86,7 @@ function InboxContent() {
   } = useInbox();
 
   // Filter messages based on active filter
-  const filteredMessages =
-    activeFilter === "all" ? messages : getMessagesByType(activeFilter);
+  const filteredMessages = activeFilter === "all" ? messages : getMessagesByType(activeFilter);
 
   // Filter options with counts
   const allFilterOptions: Array<{ key: InboxMessageType | "all"; count: number }> = [
@@ -114,7 +113,9 @@ function InboxContent() {
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Inbox</h1>
                 <p className="text-sm text-muted-foreground">
-                  {unreadCount > 0 ? `${unreadCount} unread message${unreadCount !== 1 ? "s" : ""}` : "All caught up!"}
+                  {unreadCount > 0
+                    ? `${unreadCount} unread message${unreadCount !== 1 ? "s" : ""}`
+                    : "All caught up!"}
                 </p>
               </div>
             </div>
@@ -297,9 +298,7 @@ function InboxMessageRow({ message, onMarkAsRead, onClaimReward, onDelete }: Inb
               >
                 {message.title}
               </h3>
-              {isUnread && (
-                <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
-              )}
+              {isUnread && <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />}
             </div>
             <span className="text-xs text-muted-foreground flex-shrink-0">
               {formatDate(message.createdAt)}
@@ -310,9 +309,7 @@ function InboxMessageRow({ message, onMarkAsRead, onClaimReward, onDelete }: Inb
 
           {/* Sender info */}
           {message.senderUsername && (
-            <p className="text-xs text-muted-foreground/70 mb-2">
-              From: {message.senderUsername}
-            </p>
+            <p className="text-xs text-muted-foreground/70 mb-2">From: {message.senderUsername}</p>
           )}
 
           {/* Actions row */}

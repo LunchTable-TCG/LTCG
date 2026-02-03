@@ -5,23 +5,18 @@ import { MyListings } from "@/components/lunchmoney/MyListings";
 import { PriceHistoryChart } from "@/components/lunchmoney/PriceHistoryChart";
 import { TransactionHistory } from "@/components/lunchmoney/TransactionHistory";
 import { useLunchMoney, usePriceHistory, useTransactionHistory } from "@/hooks/economy";
-import { cn } from "@/lib/utils";
 import { getAssetUrl } from "@/lib/blob";
-import {
-  BarChart3,
-  History,
-  Loader2,
-  Package,
-  PieChart,
-  Wallet,
-} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { BarChart3, History, Loader2, Package, PieChart, Wallet } from "lucide-react";
 import { useState } from "react";
 
 type TabType = "overview" | "transactions" | "listings" | "prices";
 
 export default function LunchMoneyPage() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [transactionFilter, setTransactionFilter] = useState<"all" | "gold" | "gems" | "token">("all");
+  const [transactionFilter, setTransactionFilter] = useState<"all" | "gold" | "gems" | "token">(
+    "all"
+  );
 
   // Economy data
   const {
@@ -130,7 +125,8 @@ export default function LunchMoneyPage() {
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
-            const listingCount = tab.id === "listings" ? (goldListings.length + tokenListings.length) : 0;
+            const listingCount =
+              tab.id === "listings" ? goldListings.length + tokenListings.length : 0;
             return (
               <button
                 type="button"

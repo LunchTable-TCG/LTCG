@@ -41,12 +41,7 @@ import { toast } from "sonner";
 // Types
 // =============================================================================
 
-type TriggerType =
-  | "threshold"
-  | "rate_limit"
-  | "pattern"
-  | "scheduled"
-  | "event";
+type TriggerType = "threshold" | "rate_limit" | "pattern" | "scheduled" | "event";
 
 type Severity = "critical" | "warning" | "info";
 
@@ -191,7 +186,7 @@ export default function AlertRulesPage() {
           description: formData.description || undefined,
           triggerType: formData.triggerType as TriggerType,
           severity: formData.severity as Severity,
-          cooldownMinutes: parseInt(formData.cooldownMinutes) || 15,
+          cooldownMinutes: Number.parseInt(formData.cooldownMinutes) || 15,
           conditions: parsedConditions,
         });
         toast.success("Rule updated");
@@ -201,7 +196,7 @@ export default function AlertRulesPage() {
           description: formData.description || undefined,
           triggerType: formData.triggerType as TriggerType,
           severity: formData.severity as Severity,
-          cooldownMinutes: parseInt(formData.cooldownMinutes) || 15,
+          cooldownMinutes: Number.parseInt(formData.cooldownMinutes) || 15,
           conditions: parsedConditions,
         });
         toast.success("Rule created");
@@ -305,21 +300,11 @@ export default function AlertRulesPage() {
                       <SelectValue placeholder="Select trigger type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="threshold">
-                        📊 Threshold - Value exceeds limit
-                      </SelectItem>
-                      <SelectItem value="rate_limit">
-                        ⏱️ Rate Limit - Too many events
-                      </SelectItem>
-                      <SelectItem value="pattern">
-                        🔍 Pattern - Matches specific pattern
-                      </SelectItem>
-                      <SelectItem value="scheduled">
-                        🕐 Scheduled - Periodic check
-                      </SelectItem>
-                      <SelectItem value="event">
-                        ⚡ Event - Specific event occurs
-                      </SelectItem>
+                      <SelectItem value="threshold">📊 Threshold - Value exceeds limit</SelectItem>
+                      <SelectItem value="rate_limit">⏱️ Rate Limit - Too many events</SelectItem>
+                      <SelectItem value="pattern">🔍 Pattern - Matches specific pattern</SelectItem>
+                      <SelectItem value="scheduled">🕐 Scheduled - Periodic check</SelectItem>
+                      <SelectItem value="event">⚡ Event - Specific event occurs</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -338,12 +323,8 @@ export default function AlertRulesPage() {
                       <SelectItem value="critical">
                         🚨 Critical - Immediate action required
                       </SelectItem>
-                      <SelectItem value="warning">
-                        ⚠️ Warning - Should be reviewed
-                      </SelectItem>
-                      <SelectItem value="info">
-                        ℹ️ Info - For awareness
-                      </SelectItem>
+                      <SelectItem value="warning">⚠️ Warning - Should be reviewed</SelectItem>
+                      <SelectItem value="info">ℹ️ Info - For awareness</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -355,9 +336,7 @@ export default function AlertRulesPage() {
                     min="1"
                     placeholder="15"
                     value={formData.cooldownMinutes}
-                    onChange={(e) =>
-                      setFormData({ ...formData, cooldownMinutes: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, cooldownMinutes: e.target.value })}
                   />
                   <p className="text-xs text-muted-foreground">
                     Minimum time between repeated alerts for this rule
@@ -371,9 +350,7 @@ export default function AlertRulesPage() {
                     className="font-mono text-sm"
                     rows={4}
                     value={formData.conditions}
-                    onChange={(e) =>
-                      setFormData({ ...formData, conditions: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
                   />
                   <p className="text-xs text-muted-foreground">
                     Optional JSON object with trigger-specific conditions
@@ -427,9 +404,7 @@ export default function AlertRulesPage() {
                         {rule.name}
                         {getSeverityBadge(rule.severity)}
                       </CardTitle>
-                      {rule.description && (
-                        <CardDescription>{rule.description}</CardDescription>
-                      )}
+                      {rule.description && <CardDescription>{rule.description}</CardDescription>}
                     </div>
                   </div>
                   <Switch
@@ -465,9 +440,7 @@ export default function AlertRulesPage() {
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>Triggered: {rule.triggerCount || 0} times</span>
                   {rule.lastTriggeredAt && (
-                    <span>
-                      Last: {new Date(rule.lastTriggeredAt).toLocaleDateString()}
-                    </span>
+                    <span>Last: {new Date(rule.lastTriggeredAt).toLocaleDateString()}</span>
                   )}
                 </div>
 
@@ -519,8 +492,8 @@ export default function AlertRulesPage() {
         </CardHeader>
         <CardContent>
           <Text className="text-muted-foreground">
-            Alert rules define the conditions that trigger alerts. Each rule can have a
-            different severity level and cooldown period to prevent alert fatigue.
+            Alert rules define the conditions that trigger alerts. Each rule can have a different
+            severity level and cooldown period to prevent alert fatigue.
           </Text>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             <li>

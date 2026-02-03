@@ -60,7 +60,12 @@ const navigation: NavGroup[] = [
     items: [
       { title: "Overview", href: "/treasury", icon: "🏦", permission: "admin.manage" },
       { title: "Wallets", href: "/treasury/wallets", icon: "💳", permission: "admin.manage" },
-      { title: "Transactions", href: "/treasury/transactions", icon: "📋", permission: "admin.manage" },
+      {
+        title: "Transactions",
+        href: "/treasury/transactions",
+        icon: "📋",
+        permission: "admin.manage",
+      },
       { title: "Policies", href: "/treasury/policies", icon: "📜", permission: "admin.manage" },
     ],
   },
@@ -72,7 +77,12 @@ const navigation: NavGroup[] = [
       { title: "Reports", href: "/moderation/reports", icon: "📋", permission: "player.view" },
       { title: "Feedback", href: "/feedback", icon: "💬", permission: "player.view" },
       { title: "Chat", href: "/moderation/chat", icon: "💭", permission: "player.view" },
-      { title: "Marketplace", href: "/moderation/marketplace", icon: "🏪", permission: "player.view" },
+      {
+        title: "Marketplace",
+        href: "/moderation/marketplace",
+        icon: "🏪",
+        permission: "player.view",
+      },
       {
         title: "Suspicious Activity",
         href: "/moderation/suspicious",
@@ -117,7 +127,12 @@ const navigation: NavGroup[] = [
   {
     title: "Settings",
     items: [
-      { title: "Feature Flags", href: "/settings/features", icon: "🚩", permission: "admin.manage" },
+      {
+        title: "Feature Flags",
+        href: "/settings/features",
+        icon: "🚩",
+        permission: "admin.manage",
+      },
       { title: "Configuration", href: "/settings/config", icon: "⚙️", permission: "admin.manage" },
       { title: "AI Providers", href: "/settings/ai", icon: "🤖", permission: "admin.manage" },
     ],

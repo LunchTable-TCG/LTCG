@@ -173,9 +173,7 @@ export default function AlertsDashboardPage() {
             <CardDescription>Handled alerts</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-500">
-              {stats?.acknowledged ?? 0}
-            </div>
+            <div className="text-2xl font-bold text-emerald-500">{stats?.acknowledged ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -184,9 +182,7 @@ export default function AlertsDashboardPage() {
             <CardDescription>Informational</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">
-              {stats?.bySeverity?.info ?? 0}
-            </div>
+            <div className="text-2xl font-bold text-blue-500">{stats?.bySeverity?.info ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -324,14 +320,14 @@ export default function AlertsDashboardPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            The alerts system monitors your platform for important events and conditions.
-            Configure rules to trigger alerts based on specific criteria, and set up
-            notification channels to receive alerts via in-app notifications, Slack, or Discord.
+            The alerts system monitors your platform for important events and conditions. Configure
+            rules to trigger alerts based on specific criteria, and set up notification channels to
+            receive alerts via in-app notifications, Slack, or Discord.
           </p>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             <li>
-              • <strong>Rules</strong>: Define conditions that trigger alerts (e.g., high error rates,
-              suspicious activity)
+              • <strong>Rules</strong>: Define conditions that trigger alerts (e.g., high error
+              rates, suspicious activity)
             </li>
             <li>
               • <strong>Channels</strong>: Configure where alerts are sent (in-app, Slack, Discord)
@@ -340,8 +336,8 @@ export default function AlertsDashboardPage() {
               • <strong>History</strong>: Review all past alerts and their acknowledgement status
             </li>
             <li>
-              • <strong>Severity Levels</strong>: Critical (immediate action), Warning (review needed),
-              Info (awareness)
+              • <strong>Severity Levels</strong>: Critical (immediate action), Warning (review
+              needed), Info (awareness)
             </li>
           </ul>
         </CardContent>

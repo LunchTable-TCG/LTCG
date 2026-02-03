@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { handleHookError, logError } from "@/lib/errorHandling";
 import type { Notification } from "@/types";
 import type { Id } from "@convex/_generated/dataModel";
@@ -76,19 +76,19 @@ export function useNotifications(): UseNotificationsReturn {
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const unreadNotifications = useConvexQuery(
-    apiAny.progression.notifications.getUnreadNotifications,
+  const unreadNotifications = useTypedQuery(
+    typedApi.progression.notifications.getUnreadNotifications,
     isAuthenticated ? {} : "skip"
-  ) as Notification[] | undefined;
+  );
 
-  const allNotifications = useConvexQuery(
-    apiAny.progression.notifications.getAllNotifications,
+  const allNotifications = useTypedQuery(
+    typedApi.progression.notifications.getAllNotifications,
     isAuthenticated ? { limit: 50 } : "skip"
-  ) as Notification[] | undefined;
+  );
 
   // Mutations
-  const markAsReadMutation = useMutation(apiAny.progression.notifications.markNotificationAsRead);
-  const markAllAsReadMutation = useMutation(apiAny.progression.notifications.markAllAsRead);
+  const markAsReadMutation = useMutation(typedApi.progression.notifications.markNotificationAsRead);
+  const markAllAsReadMutation = useMutation(typedApi.progression.notifications.markAllAsRead);
 
   // Actions
   const markAsRead = async (notificationId: Id<"playerNotifications">) => {
@@ -115,10 +115,13 @@ export function useNotifications(): UseNotificationsReturn {
 
   // Separate notifications by type
   const achievementNotifications =
-    unreadNotifications?.filter((n) => n.type === "achievement_unlocked") || [];
-  const levelUpNotifications = unreadNotifications?.filter((n) => n.type === "level_up") || [];
-  const questNotifications = unreadNotifications?.filter((n) => n.type === "quest_completed") || [];
-  const badgeNotifications = unreadNotifications?.filter((n) => n.type === "badge_earned") || [];
+    unreadNotifications?.filter((n: Notification) => n.type === "achievement_unlocked") || [];
+  const levelUpNotifications =
+    unreadNotifications?.filter((n: Notification) => n.type === "level_up") || [];
+  const questNotifications =
+    unreadNotifications?.filter((n: Notification) => n.type === "quest_completed") || [];
+  const badgeNotifications =
+    unreadNotifications?.filter((n: Notification) => n.type === "badge_earned") || [];
 
   return {
     // Data

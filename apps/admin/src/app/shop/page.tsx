@@ -21,7 +21,14 @@ import { Switch } from "@/components/ui/switch";
 import { RoleGuard } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Card, Text, Title } from "@tremor/react";
-import { CoinsIcon, GemIcon, PackageIcon, PlusIcon, SearchIcon, ShoppingCartIcon } from "lucide-react";
+import {
+  CoinsIcon,
+  GemIcon,
+  PackageIcon,
+  PlusIcon,
+  SearchIcon,
+  ShoppingCartIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -32,7 +39,10 @@ import { toast } from "sonner";
 
 type ProductType = "pack" | "box" | "currency";
 
-const PRODUCT_TYPE_CONFIG: Record<ProductType, { label: string; color: string; icon: React.ReactNode }> = {
+const PRODUCT_TYPE_CONFIG: Record<
+  ProductType,
+  { label: string; color: string; icon: React.ReactNode }
+> = {
   pack: { label: "Pack", color: "blue", icon: <PackageIcon className="h-4 w-4" /> },
   box: { label: "Box", color: "violet", icon: <ShoppingCartIcon className="h-4 w-4" /> },
   currency: { label: "Currency", color: "amber", icon: <CoinsIcon className="h-4 w-4" /> },
@@ -133,9 +143,7 @@ export default function ShopPage() {
         </Card>
         <Card>
           <div className="text-center">
-            <Text className="text-2xl font-bold">
-              {statsResult?.pricing?.bothPricing ?? "..."}
-            </Text>
+            <Text className="text-2xl font-bold">{statsResult?.pricing?.bothPricing ?? "..."}</Text>
             <Text className="text-sm text-muted-foreground">Dual Pricing</Text>
           </div>
         </Card>
@@ -264,9 +272,7 @@ export default function ShopPage() {
                               </span>
                             )}
                             {product.packConfig.archetype && (
-                              <span className="ml-1">
-                                [{product.packConfig.archetype}]
-                              </span>
+                              <span className="ml-1">[{product.packConfig.archetype}]</span>
                             )}
                           </div>
                         )}

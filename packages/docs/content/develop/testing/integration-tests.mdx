@@ -1,0 +1,936 @@
+---
+title: Integration Testing Guide
+description: Comprehensive guide for Convex integration tests covering action failures, retries, and index performance
+tags: ['testing', 'integration', 'convex', 'vitest', 'performance']
+---
+
+# Integration Testing Guide
+
+Comprehensive integration tests for the LTCG backend covering action failure handling, retry logic, and database index performance.
+
+## Overview
+
+Integration tests verify the system's resilience to external API failures, ensure data consistency during error conditions, and validate database query performance at scale.
+
+### What Integration Tests Cover
+
+<Callout type="info">
+**Critical Protection Areas**
+- External API failures (email, payments, webhooks)
+- Idempotency guarantees (no duplicate charges)
+- Rollback behavior (atomic operations)
+- Concurrent operation safety (race conditions)
+- Database index performance (query optimization)
+- State consistency (no orphaned data)
+</Callout>
+
+### Why These Tests Matter
+
+These tests prevent critical production issues:
+
+1. **Financial Loss**: Duplicate charges from failed retries
+2. **Data Corruption**: Inconsistent state from partial failures
+3. **System Instability**: Unbounded retry loops crashing the system
+4. **Poor UX**: Users stuck in broken states, slow queries
+5. **Scaling Issues**: Race conditions and missing indexes that only appear under load
+
+## Test Suites
+
+### Action Failure Tests
+
+Located at `/convex/__tests__/integration/actions.test.ts` (795 lines, 19 tests across 7 categories).
+
+#### 1. Email Action Failures - Graceful Degradation
+
+Tests that email failures don't break core functionality.
+
+```typescript
+// Simulates Resend API being down
+✓ should gracefully degrade when Resend API is down
+✓ should handle Resend API rate limiting (429)
+✓ should handle malformed email addresses (400)
+✓ should log email in development mode when API key missing
+```
+
+**Key Insight**: Email is nice-to-have, not critical path. System continues working even if emails fail.
+
+**Actions Tested**:
+- `sendWelcomeEmail` - New user onboarding
+- `sendSecurityAlert` - Password changes
+- `sendCardSoldNotification` - Marketplace notifications
+- `sendAuctionWonNotification` - Auction results
+- `sendFriendRequestNotification` - Social features
+
+#### 2. Idempotency - Prevent Duplicate Charges
+
+Tests that operations can be safely retried without duplicate effects.
+
+```typescript
+✓ should NOT charge user twice if pack purchase called twice
+✓ should NOT create duplicate transactions for same operation
+```
+
+**Key Insight**: Each purchase creates exactly ONE transaction and ONE charge, even if called multiple times.
+
+**What This Prevents**:
+- User charged twice for one purchase
+- Transaction records duplicated in database
+- **Financial impact**: Revenue loss, user trust damage
+
+#### 3. Partial Failure Recovery - Rollback
+
+Tests that failures mid-operation leave no inconsistent state.
+
+```typescript
+✓ should rollback if pack purchase fails due to insufficient funds
+✓ should maintain data consistency when deck creation fails mid-operation
+✓ should prevent inventory corruption on failed card addition
+```
+
+**Key Insight**: Either the entire operation succeeds, or it's completely rolled back. No half-finished states.
+
+**What This Prevents**:
+- User charged but cards not delivered
+- Cards delivered but user not charged
+- Orphaned records cluttering database
+
+#### 4. Timeout Handling - Long-Running Actions
+
+Tests that slow external APIs don't hang the system.
+
+```typescript
+✓ should handle slow email API responses
+✓ should handle action scheduling timeouts
+```
+
+**Key Insight**: System handles timeouts gracefully without data corruption.
+
+#### 5. Retry Logic - Error Classification
+
+Tests that transient errors are retried but permanent errors are not.
+
+```typescript
+✓ should NOT retry on permanent errors (400 Bad Request)
+✓ should distinguish transient errors (503 Service Unavailable)
+✓ should handle network errors gracefully
+```
+
+**Key Insight**: Don't waste resources retrying errors that will never succeed.
+
+#### 6. Concurrent Actions - Race Conditions
+
+Tests that parallel operations don't corrupt shared state.
+
+```typescript
+✓ should handle concurrent pack purchases correctly
+✓ should prevent race condition in insufficient funds check
+```
+
+**Key Insight**: 10 concurrent purchases = 10 separate charges, not duplicates or lost transactions.
+
+**What This Prevents**:
+- Concurrent purchases causing duplicate inventory
+- Balance checks failing under load
+- **Scaling impact**: Issues only appear in production
+
+#### 7. State Consistency - No Orphaned Data
+
+Tests that failed operations don't leave garbage data.
+
+```typescript
+✓ should not leave orphaned records on failed operations
+✓ should maintain referential integrity on cascade failures
+```
+
+**Key Insight**: Database stays clean even when operations fail.
+
+**Actions Tested**:
+- `purchasePack` - Pack purchases with currency deduction
+- `createDeck` - Deck creation with validation
+- `deleteDeck` - Deck deletion with cascade
+- `setActiveDeck` - Active deck management
+
+### Index Performance Tests
+
+Located at `/convex/__tests__/integration/indexes.test.ts`.
+
+<Callout type="warn">
+**Performance Impact Without Indexes**
+
+Without proper indexes, production queries experience:
+- **10-100x slower** query times under load
+- **Database connection exhaustion** from slow queries
+- **User timeout errors** on leaderboards and history pages
+- **Failed matchmaking** due to slow queue queries
+</Callout>
+
+#### Test Strategy
+
+Each test follows this pattern:
+
+<Steps>
+
+### Seed large dataset
+1,000-10,000 records to simulate production load
+
+### Perform indexed query
+Using the appropriate index with `.withIndex()`
+
+### Measure execution time
+Using `Date.now()` before/after
+
+### Assert time < threshold
+- **Index scan**: <500ms (acceptable)
+- **Table scan**: >3000ms (unacceptable, indicates missing index)
+
+</Steps>
+
+#### 1. Leaderboard Query Performance
+
+```typescript
+✓ should query 10k users by rankedElo in <500ms
+✓ should query segmented leaderboard (humans only) in <500ms
+✓ should query XP leaderboard in <500ms
+```
+
+**Indexes Used**:
+- `users.rankedElo` - Main ranked leaderboard
+- `users.rankedElo_byType` - Composite index (isAiAgent + rankedElo)
+- `users.xp` - XP leaderboard
+
+**Why This Matters**: Without rating indexes, every leaderboard query scans the entire users table.
+
+#### 2. User Lookup by Email/Username
+
+```typescript
+✓ should use email index, not table scan (<100ms)
+✓ should lookup by username efficiently (<100ms)
+```
+
+**Indexes Used**:
+- `users.email` - Authentication lookups
+- `users.username` - Profile lookups
+
+**Why This Matters**: Without email/username indexes, every login would scan the entire users table.
+
+#### 3. Pack History Pagination
+
+```typescript
+✓ should use by_user_time index efficiently (<200ms)
+✓ should query global pack history by time (<300ms)
+```
+
+**Indexes Used**:
+- `packOpeningHistory.by_user_time` - Composite (userId + openedAt)
+- `packOpeningHistory.by_time` - Time-based global history
+
+#### 4. Matchmaking Queue Performance
+
+```typescript
+✓ should use by_mode_rating composite index (<200ms)
+✓ should handle queue by user lookup (<100ms)
+```
+
+**Indexes Used**:
+- `matchmakingQueue.by_mode_rating` - Composite (mode + rating)
+- `matchmakingQueue.by_user` - User queue status
+
+**Why This Matters**: Without composite index on (mode + rating), matchmaking would scan entire queue.
+
+#### 5. Game Events Query Performance
+
+```typescript
+✓ should use by_lobby index for event log (<300ms)
+✓ should query events by timestamp range (<300ms)
+```
+
+**Indexes Used**:
+- `gameEvents.by_lobby` - Composite (lobbyId + timestamp)
+- `gameEvents.by_timestamp` - Time-based event queries
+
+**Purpose**: Verify spectator/replay systems can load game events efficiently.
+
+#### 6. Currency Transaction Queries
+
+```typescript
+✓ should paginate user transactions efficiently (<200ms)
+```
+
+**Indexes Used**:
+- `currencyTransactions.by_user_time` - Composite (userId + createdAt)
+
+**Purpose**: Ensure transaction history loads quickly.
+
+#### 7. Match History Queries
+
+```typescript
+✓ should query user match history efficiently (<200ms)
+✓ should query matches by game type and time (<300ms)
+```
+
+**Indexes Used**:
+- `matchHistory.by_winner` - Player-specific history
+- `matchHistory.by_game_type` - Composite (gameType + completedAt)
+
+#### 8. Story Progress Queries
+
+```typescript
+✓ should query user progress efficiently (<500ms)
+```
+
+**Indexes Used**:
+- `storyProgress.by_user` - User-specific progress
+
+**Test Details**: Seeds 500 story progress entries (5 acts × 10 chapters × 3 difficulties).
+
+## Running Tests
+
+### Known Issue: Bun Compatibility
+
+`convex-test` uses `import.meta.glob` which is not yet supported in Bun's test runner.
+
+**Error**:
+```bash
+TypeError: import.meta.glob is not a function
+```
+
+**Status**: This affects ALL convex-test based tests in the codebase, not just action tests.
+
+### Using Vitest (Recommended)
+
+<Steps>
+
+### Install vitest if not already installed
+```bash
+bun add -d vitest
+```
+
+### Run action failure tests
+```bash
+bunx vitest convex/__tests__/integration/actions.test.ts
+```
+
+### Run index performance tests
+```bash
+bunx vitest convex/__tests__/integration/indexes.test.ts
+```
+
+### Run all integration tests
+```bash
+bunx vitest convex/__tests__/integration/
+```
+
+</Steps>
+
+### Running Options
+
+```bash
+# Watch mode for development
+bunx vitest convex/__tests__/integration/actions.test.ts --watch
+
+# Run with coverage
+bunx vitest convex/__tests__/integration/actions.test.ts --coverage
+
+# Run specific test suite
+bunx vitest convex/__tests__/integration/actions.test.ts -t "Email Action Failures"
+
+# Run specific test
+bunx vitest convex/__tests__/integration/actions.test.ts -t "should NOT charge user twice"
+
+# Verbose output
+bunx vitest convex/__tests__/integration/actions.test.ts --reporter=verbose
+```
+
+### When Bun Support is Added
+
+Once Bun supports `import.meta.glob`, you can run:
+
+```bash
+bun test convex/__tests__/integration/actions.test.ts
+bun test convex/__tests__/integration/indexes.test.ts
+```
+
+### Environment Setup
+
+#### Required Environment Variables
+
+For email tests to actually send emails (usually not needed):
+```bash
+RESEND_API_KEY=re_...
+AUTH_EMAIL="Your App <noreply@yourdomain.com>"
+```
+
+<Callout type="info">
+**Note**: Tests work without these. They'll log to console instead of sending real emails.
+</Callout>
+
+#### Optional Configuration
+
+```bash
+# Set custom test timeout
+VITE_TEST_TIMEOUT=10000
+```
+
+## Test Patterns
+
+### 1. Mock External API Failures
+
+```typescript
+// Mock Resend API being down
+const mockFetch = vi.fn().mockRejectedValue(new Error("API down"));
+global.fetch = mockFetch as any;
+
+// Execute action that calls fetch
+await expect(
+  t.action(internal.emailActions.sendWelcomeEmail, {
+    email: user.email,
+    username: user.username,
+  })
+).rejects.toThrow(/api down/i);
+
+// Clean up mock in afterEach
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+```
+
+### 2. Verify System State Unchanged
+
+```typescript
+// Capture state before operation
+const goldBefore = await getUserGold(t, userId);
+
+// Attempt failing operation
+await expect(
+  t.mutation(api.economy.shop.purchasePack, {
+    userId,
+    productId: "invalid",
+  })
+).rejects.toThrow();
+
+// Verify no side effects (rollback successful)
+const goldAfter = await getUserGold(t, userId);
+expect(goldAfter).toBe(goldBefore); // No charge occurred
+```
+
+### 3. Test Concurrent Operations
+
+```typescript
+// Execute parallel operations
+const purchases = await Promise.allSettled([
+  t.mutation(api.economy.shop.purchasePack, { userId, productId }),
+  t.mutation(api.economy.shop.purchasePack, { userId, productId }),
+  t.mutation(api.economy.shop.purchasePack, { userId, productId }),
+]);
+
+// Verify correct number succeed/fail
+const successful = purchases.filter(r => r.status === "fulfilled").length;
+expect(successful).toBe(3);
+
+// Verify correct final state (3 charges, not 1 or 6)
+const goldAfter = await getUserGold(t, userId);
+expect(goldAfter).toBe(goldBefore - (packPrice * 3));
+```
+
+### 4. Test Index Performance
+
+```typescript
+it("should query leaderboard efficiently", async () => {
+  const t = createTestInstance();
+
+  // Seed large dataset (10,000 users)
+  await t.run(async (ctx) => {
+    for (let i = 0; i < 10000; i++) {
+      await ctx.db.insert("users", {
+        username: `user${i}`,
+        rankedElo: Math.floor(Math.random() * 1400) + 800, // 800-2200
+      });
+    }
+  });
+
+  // Time the indexed query
+  const start = Date.now();
+  const results = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("rankedElo", (q) => q.gt("rankedElo", 2000))
+      .order("desc")
+      .take(100);
+  });
+  const duration = Date.now() - start;
+
+  // Assert performance (index scan should be <500ms)
+  expect(duration).toBeLessThan(500);
+  expect(results.length).toBeGreaterThan(0);
+});
+```
+
+### Helper Functions
+
+Located in `/convex/__tests__/integration/actions.test.ts`:
+
+```typescript
+// Create test user with currency
+async function createUserWithBalance(
+  t: TestInstance,
+  gold: number,
+  gems: number
+): Promise<Id<"users">>
+
+// Get user's current gold balance
+async function getUserGold(
+  t: TestInstance,
+  userId: Id<"users">
+): Promise<number>
+
+// Count user's transaction records
+async function getTransactionCount(
+  t: TestInstance,
+  userId: Id<"users">
+): Promise<number>
+
+// Create test shop product
+async function createShopProduct(
+  t: TestInstance,
+  productId: string,
+  goldPrice: number
+): Promise<void>
+```
+
+## Troubleshooting
+
+### Action Test Failures
+
+<Accordion title="Gold Balance Mismatch">
+
+```
+Expected: 900 (1000 - 100 for one pack)
+Actual: 800 (1000 - 200 for two packs)
+```
+
+**Cause**: Duplicate charge or idempotency bug
+
+**Fix**: Check mutation implementation for duplicate operations
+
+</Accordion>
+
+<Accordion title="Transaction Count Wrong">
+
+```
+Expected: 1 transaction
+Actual: 2 transactions
+```
+
+**Cause**: Transaction recorded twice for same operation
+
+**Fix**: Check `recordTransaction` call placement
+
+</Accordion>
+
+<Accordion title="State Not Rolled Back">
+
+```
+Expected: 1000 gold (no charge on failure)
+Actual: 900 gold (charge happened despite failure)
+```
+
+**Cause**: Rollback not working
+
+**Fix**: Ensure mutation throws error before deducting currency
+
+</Accordion>
+
+<Accordion title="Orphaned Records">
+
+```
+Expected: 0 deck cards after deletion
+Actual: 5 deck cards still exist
+```
+
+**Cause**: Cascade deletion not working
+
+**Fix**: Delete related records before parent record
+
+</Accordion>
+
+### Index Test Failures
+
+<Accordion title="Test Timeout (>500ms)">
+
+**Cause**: Missing or unused index
+
+**Fix**:
+1. Check `schema.ts` for the expected index
+2. Verify index exists in Convex dashboard
+3. Check query syntax - ensure `.withIndex()` is used correctly
+4. Run `npx convex deploy` to apply schema changes
+
+</Accordion>
+
+<Accordion title="Tests Hang Indefinitely">
+
+**Cause**: Timeout too short for operation
+
+**Solution**:
+```bash
+bunx vitest convex/__tests__/integration/ --testTimeout=30000
+```
+
+</Accordion>
+
+<Accordion title="Cannot Read Properties of Null">
+
+**Cause**: Database record not found
+
+**Solution**: Check test setup creates all required records
+
+</Accordion>
+
+### Common Issues
+
+<Accordion title="Rate Limit Exceeded">
+
+**Cause**: Too many test runs hitting rate limiter
+
+**Solution**: Wait 60 seconds or increase rate limits in test env
+
+</Accordion>
+
+<Accordion title="Network Error in Non-Email Tests">
+
+**Cause**: Mock not properly restored
+
+**Solution**: Check `afterEach` restores original fetch:
+```typescript
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+```
+
+</Accordion>
+
+<Accordion title="Tests Pass Locally But Fail in CI">
+
+**Cause**: Race condition or timing issue
+
+**Solution**: Add proper async/await, use deterministic test data
+
+</Accordion>
+
+### Debugging Commands
+
+```bash
+# Check Convex logs during test execution
+# Terminal 1: Run Convex dev
+bun convex dev
+
+# Terminal 2: Run tests
+bunx vitest convex/__tests__/integration/actions.test.ts
+
+# Watch Convex logs in Terminal 1 for errors
+```
+
+## Test Output Examples
+
+### All Passing
+
+```
+✓ convex/__tests__/integration/actions.test.ts (19)
+  ✓ Email Action Failures - Graceful Degradation (4)
+    ✓ should gracefully degrade when Resend API is down
+    ✓ should handle Resend API rate limiting
+    ✓ should handle malformed email addresses
+    ✓ should log email in development mode when API key missing
+  ✓ Idempotency - Prevent Duplicate Effects (2)
+    ✓ should NOT charge user twice if pack purchase called twice
+    ✓ should NOT create duplicate transactions for same operation
+  ✓ Partial Failure Recovery - Rollback (3)
+  ✓ Timeout Handling - Long-Running Actions (2)
+  ✓ Retry Logic - Error Classification (3)
+  ✓ Concurrent Actions - Race Conditions (2)
+  ✓ State Consistency - No Orphaned Data (2)
+
+Test Files  1 passed (1)
+     Tests  19 passed (19)
+  Start at  12:00:00
+  Duration  1.85s
+```
+
+### Failure Example
+
+```
+FAIL  convex/__tests__/integration/actions.test.ts > Idempotency > should NOT charge user twice
+AssertionError: expected 200 to be 300
+  Expected: 300
+  Actual: 200
+
+  at convex/__tests__/integration/actions.test.ts:275:25
+
+This means: User was charged twice (400 deducted instead of 200)
+```
+
+## Continuous Integration
+
+### GitHub Actions
+
+```yaml
+# .github/workflows/test.yml
+name: Integration Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Run Action Tests
+        run: bunx vitest convex/__tests__/integration/actions.test.ts --run
+        env:
+          NODE_ENV: test
+
+      - name: Run Index Tests
+        run: bunx vitest convex/__tests__/integration/indexes.test.ts --run
+        env:
+          NODE_ENV: test
+```
+
+### Local Pre-commit Hook
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit
+
+echo "Running integration tests..."
+bunx vitest convex/__tests__/integration/ --run
+
+if [ $? -ne 0 ]; then
+  echo "❌ Integration tests failed. Commit aborted."
+  exit 1
+fi
+
+echo "✅ All tests passed!"
+```
+
+Make executable:
+```bash
+chmod +x .git/hooks/pre-commit
+```
+
+## Index Schema Reference
+
+All indexes are defined in `/convex/schema.ts`:
+
+```typescript
+// Users table indexes
+.index("email", ["email"])
+.index("username", ["username"])
+.index("rankedElo", ["rankedElo"])
+.index("rankedElo_byType", ["isAiAgent", "rankedElo"])
+.index("xp", ["xp"])
+.index("xp_byType", ["isAiAgent", "xp"])
+
+// Pack history indexes
+.index("by_user_time", ["userId", "openedAt"])
+.index("by_time", ["openedAt"])
+
+// Matchmaking indexes
+.index("by_mode_rating", ["mode", "rating"])
+.index("by_user", ["userId"])
+
+// Game events indexes
+.index("by_lobby", ["lobbyId", "timestamp"])
+.index("by_timestamp", ["timestamp"])
+
+// Transactions indexes
+.index("by_user_time", ["userId", "createdAt"])
+
+// Match history indexes
+.index("by_winner", ["winnerId"])
+.index("by_game_type", ["gameType", "completedAt"])
+
+// Story progress indexes
+.index("by_user", ["userId"])
+```
+
+## Maintenance Guidelines
+
+### When Adding New Actions
+
+<Steps>
+
+### Choose appropriate test category
+Email, Idempotency, Rollback, Timeout, Retry, Concurrent, or State Consistency
+
+### Mock external dependencies
+Use `vi.fn().mockRejectedValue()` or `mockResolvedValue()`
+
+### Execute action with test context
+Use `t.action()`, `t.mutation()`, or `t.query()`
+
+### Verify system state
+Check gold balance, transaction count, record existence
+
+### Clean up mocks
+Add `vi.restoreAllMocks()` to `afterEach`
+
+</Steps>
+
+### When Modifying Existing Actions
+
+1. Run affected test suite
+2. Update tests if behavior intentionally changed
+3. Add new tests for new edge cases
+4. Verify backwards compatibility
+
+### When Adding New Database Queries
+
+<Steps>
+
+### Add index to schema.ts first
+Define appropriate single or composite index
+
+### Create test in indexes.test.ts
+```typescript
+it("should query feature efficiently", async () => {
+  const t = createTestInstance();
+
+  // Seed large dataset (1000+ records)
+  await t.run(async (ctx) => {
+    for (let i = 0; i < 1000; i++) {
+      await ctx.db.insert("tableName", { ... });
+    }
+  });
+
+  // Time the query
+  const start = Date.now();
+  const results = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("tableName")
+      .withIndex("index_name", (q) => q.eq("field", value))
+      .take(100);
+  });
+  const duration = Date.now() - start;
+
+  // Assert performance (<500ms for index scan)
+  expect(duration).toBeLessThan(500);
+});
+```
+
+### Deploy and verify
+```bash
+npx convex deploy
+```
+
+### Run tests before deployment
+Catch missing indexes before production
+
+</Steps>
+
+### Red Flags in Test Failures
+
+<Callout type="error">
+**Critical Issues**
+- **Gold balance changes after failed purchase**: Rollback broken
+- **Multiple transactions for single operation**: Idempotency broken
+- **Test passes but database has orphaned records**: Cleanup broken
+- **Concurrent tests fail intermittently**: Race condition exists
+- **Query takes >500ms**: Missing or unused index
+</Callout>
+
+## Performance Tips
+
+### Speed Up Tests
+
+```bash
+# Run in parallel (default)
+bunx vitest convex/__tests__/integration/ --threads
+
+# Skip slow tests during development
+it.skip("slow test", async () => { ... });
+
+# Use test.only for focused testing
+it.only("focus on this test", async () => { ... });
+```
+
+### Memory Optimization
+
+If tests run out of memory:
+```bash
+NODE_OPTIONS="--max-old-space-size=4096" bunx vitest
+```
+
+## Common Pitfalls
+
+<Callout type="warn">
+**Avoid These Mistakes**
+1. **Not mocking external APIs**: Tests will actually call real APIs
+2. **Not verifying state**: Tests pass but data is corrupted
+3. **Not testing concurrent execution**: Race conditions go unnoticed
+4. **Not cleaning up mocks**: Tests interfere with each other
+5. **Not using indexes**: Tests don't catch performance issues
+</Callout>
+
+## Future Enhancements
+
+### Priority 1 (Recommended)
+- [ ] Add circuit breaker pattern tests
+- [ ] Add distributed transaction tests
+- [ ] Add webhook retry tests
+
+### Priority 2 (Nice-to-have)
+- [ ] Add performance regression tests
+- [ ] Add load testing for concurrent operations
+- [ ] Add chaos engineering scenarios
+
+### Priority 3 (Future)
+- [ ] Add end-to-end action flow tests
+- [ ] Add monitoring/alerting tests
+- [ ] Add compliance/audit log tests
+
+## Related Documentation
+
+- `/convex/emailActions.ts` - Email action implementations
+- `/convex/economy/shop.ts` - Shop action implementations
+- `/convex/schema.ts` - Database schema and indexes
+- `/convex/__tests__/helpers/` - Test utilities
+- `/tests/fixtures/users.ts` - User test fixtures
+
+## Quick Stats
+
+**Action Tests**:
+- **File Size**: 795 lines
+- **Test Count**: 19 tests across 7 suites
+- **Estimated Runtime**: 1-2 seconds
+- **Coverage**: Email, Shop, Deck actions
+
+**Index Tests**:
+- **Coverage**: 8 major query patterns
+- **Datasets**: 1,000-10,000 records per test
+- **Performance Thresholds**: 100-500ms depending on query
+- **Tables Tested**: users, packOpeningHistory, matchmakingQueue, gameEvents, currencyTransactions, matchHistory, storyProgress
+
+## Support
+
+Having issues? Check these in order:
+
+1. **Test output** - Read error messages carefully
+2. **This guide** - Check troubleshooting section
+3. **Convex logs** - Check backend for errors (`bun convex dev`)
+4. **Convex dashboard** - Verify indexes exist
+5. **Mock configuration** - Ensure mocks are properly set up
+
+---
+
+**Created**: 2026-01-28
+**Last Updated**: 2026-02-03
+**Status**: Ready to run (use vitest)
+**Total Documentation Lines**: ~400 (consolidated from 1,243)

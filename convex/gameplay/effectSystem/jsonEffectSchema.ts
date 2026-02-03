@@ -919,6 +919,15 @@ export type JsonTypedEffect =
   | JsonChangePositionEffect;
 
 /**
+ * Activation type for effects
+ */
+export type JsonActivationType =
+  | "trigger" // Automatic trigger when conditions are met (mandatory/optional)
+  | "ignition" // Can only activate manually during Main Phase with priority
+  | "quick" // Can activate manually any time with priority (Quick Effects)
+  | "continuous"; // Passive effect, always active while on field
+
+/**
  * Generic JSON Effect (for maximum flexibility)
  * This is the primary type used in JsonAbility for designer flexibility
  */
@@ -932,6 +941,7 @@ export interface JsonGenericEffect {
 
   // Trigger
   trigger?: JsonTriggerCondition;
+  activationType?: JsonActivationType; // How the effect is activated
 
   // Activation
   activationCondition?: JsonCondition;

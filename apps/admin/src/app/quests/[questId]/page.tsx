@@ -33,13 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Card, Text, Title } from "@tremor/react";
-import {
-  ArrowLeftIcon,
-  CopyIcon,
-  Loader2Icon,
-  SaveIcon,
-  TrashIcon,
-} from "lucide-react";
+import { ArrowLeftIcon, CopyIcon, Loader2Icon, SaveIcon, TrashIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -161,10 +155,10 @@ export default function QuestEditorPage() {
           description: description.trim(),
           questType,
           requirementType,
-          targetValue: parseInt(targetValue),
-          rewardGold: parseInt(rewardGold) || 0,
-          rewardXp: parseInt(rewardXp) || 0,
-          rewardGems: rewardGems ? parseInt(rewardGems) : undefined,
+          targetValue: Number.parseInt(targetValue),
+          rewardGold: Number.parseInt(rewardGold) || 0,
+          rewardXp: Number.parseInt(rewardXp) || 0,
+          rewardGems: rewardGems ? Number.parseInt(rewardGems) : undefined,
           filterGameMode: filterGameMode !== "none" ? (filterGameMode as GameMode) : undefined,
           filterArchetype: filterArchetype || undefined,
           isActive,
@@ -177,10 +171,10 @@ export default function QuestEditorPage() {
           name: name.trim(),
           description: description.trim(),
           requirementType,
-          targetValue: parseInt(targetValue),
-          rewardGold: parseInt(rewardGold) || 0,
-          rewardXp: parseInt(rewardXp) || 0,
-          rewardGems: rewardGems ? parseInt(rewardGems) : undefined,
+          targetValue: Number.parseInt(targetValue),
+          rewardGold: Number.parseInt(rewardGold) || 0,
+          rewardXp: Number.parseInt(rewardXp) || 0,
+          rewardGems: rewardGems ? Number.parseInt(rewardGems) : undefined,
           filterGameMode: filterGameMode !== "none" ? (filterGameMode as GameMode) : undefined,
           clearFilters: filterGameMode === "none" && !filterArchetype,
           isActive,
@@ -524,7 +518,9 @@ export default function QuestEditorPage() {
               <div className="flex items-start justify-between mb-2">
                 <Text className="font-bold">{name || "Quest Name"}</Text>
                 <Badge
-                  color={questType === "daily" ? "blue" : questType === "weekly" ? "violet" : "amber"}
+                  color={
+                    questType === "daily" ? "blue" : questType === "weekly" ? "violet" : "amber"
+                  }
                   size="sm"
                 >
                   {questType}
@@ -535,16 +531,17 @@ export default function QuestEditorPage() {
               </Text>
               <div className="text-sm">
                 <Text className="font-medium">
-                  {REQUIREMENT_TYPES.find((r) => r.value === requirementType)?.label || "Requirement"}:{" "}
-                  {targetValue}
+                  {REQUIREMENT_TYPES.find((r) => r.value === requirementType)?.label ||
+                    "Requirement"}
+                  : {targetValue}
                 </Text>
               </div>
               <div className="mt-3 pt-3 border-t flex gap-3 text-sm">
-                {parseInt(rewardGold) > 0 && (
+                {Number.parseInt(rewardGold) > 0 && (
                   <span className="text-amber-600">{rewardGold} Gold</span>
                 )}
-                {parseInt(rewardXp) > 0 && <span>{rewardXp} XP</span>}
-                {rewardGems && parseInt(rewardGems) > 0 && (
+                {Number.parseInt(rewardXp) > 0 && <span>{rewardXp} XP</span>}
+                {rewardGems && Number.parseInt(rewardGems) > 0 && (
                   <span className="text-violet-600">{rewardGems} Gems</span>
                 )}
               </div>

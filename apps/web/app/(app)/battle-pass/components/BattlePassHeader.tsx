@@ -61,10 +61,7 @@ export function BattlePassHeader({
             <Clock className="w-5 h-5" />
             <span className="text-lg">
               <span
-                className={cn(
-                  "font-bold",
-                  daysRemaining <= 7 ? "text-red-400" : "text-[#e8e0d5]"
-                )}
+                className={cn("font-bold", daysRemaining <= 7 ? "text-red-400" : "text-[#e8e0d5]")}
               >
                 {daysRemaining}
               </span>{" "}
@@ -123,7 +120,9 @@ export function BattlePassHeader({
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-[#a89f94]">Progress to Tier {currentTier + 1}</span>
+                    <span className="text-sm text-[#a89f94]">
+                      Progress to Tier {currentTier + 1}
+                    </span>
                     <span className="text-sm font-bold text-[#e8e0d5]">
                       {xpInCurrentTier.toLocaleString()} / {xpPerTier.toLocaleString()} XP
                     </span>

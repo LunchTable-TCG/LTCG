@@ -91,14 +91,14 @@ export default function TreasuryPoliciesPage() {
         description: formData.description || undefined,
         rules: {
           maxTransactionAmount: formData.maxTransactionAmount
-            ? parseFloat(formData.maxTransactionAmount) * 1_000_000_000 // Convert SOL to lamports
+            ? Number.parseFloat(formData.maxTransactionAmount) * 1_000_000_000 // Convert SOL to lamports
             : undefined,
           dailyLimit: formData.dailyLimit
-            ? parseFloat(formData.dailyLimit) * 1_000_000_000
+            ? Number.parseFloat(formData.dailyLimit) * 1_000_000_000
             : undefined,
           requiresApproval: formData.requiresApproval,
           minApprovers: formData.requiresApproval
-            ? parseInt(formData.minApprovers) || 1
+            ? Number.parseInt(formData.minApprovers) || 1
             : undefined,
         },
       });
@@ -151,9 +151,7 @@ export default function TreasuryPoliciesPage() {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Create Spending Policy</DialogTitle>
-                <DialogDescription>
-                  Define rules for treasury spending.
-                </DialogDescription>
+                <DialogDescription>Define rules for treasury spending.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -185,9 +183,7 @@ export default function TreasuryPoliciesPage() {
                       setFormData({ ...formData, maxTransactionAmount: e.target.value })
                     }
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Leave empty for no limit
-                  </p>
+                  <p className="text-xs text-muted-foreground">Leave empty for no limit</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dailyLimit">Daily Limit (SOL)</Label>
@@ -198,9 +194,7 @@ export default function TreasuryPoliciesPage() {
                     value={formData.dailyLimit}
                     onChange={(e) => setFormData({ ...formData, dailyLimit: e.target.value })}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Leave empty for no limit
-                  </p>
+                  <p className="text-xs text-muted-foreground">Leave empty for no limit</p>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
@@ -225,9 +219,7 @@ export default function TreasuryPoliciesPage() {
                       type="number"
                       min="1"
                       value={formData.minApprovers}
-                      onChange={(e) =>
-                        setFormData({ ...formData, minApprovers: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, minApprovers: e.target.value })}
                     />
                   </div>
                 )}
@@ -281,9 +273,7 @@ export default function TreasuryPoliciesPage() {
                         <Badge color="gray">Inactive</Badge>
                       )}
                     </CardTitle>
-                    {policy.description && (
-                      <CardDescription>{policy.description}</CardDescription>
-                    )}
+                    {policy.description && <CardDescription>{policy.description}</CardDescription>}
                   </div>
                 </div>
               </CardHeader>
@@ -331,22 +321,18 @@ export default function TreasuryPoliciesPage() {
                 </div>
 
                 {/* Allowed Recipients */}
-                {policy.rules.allowedRecipients &&
-                  policy.rules.allowedRecipients.length > 0 && (
-                    <div className="space-y-2">
-                      <Text className="text-sm font-medium">Allowed Recipients</Text>
-                      <div className="space-y-1">
-                        {policy.rules.allowedRecipients.map((addr: string, i: number) => (
-                          <code
-                            key={i}
-                            className="block rounded bg-muted px-2 py-1 text-xs"
-                          >
-                            {addr}
-                          </code>
-                        ))}
-                      </div>
+                {policy.rules.allowedRecipients && policy.rules.allowedRecipients.length > 0 && (
+                  <div className="space-y-2">
+                    <Text className="text-sm font-medium">Allowed Recipients</Text>
+                    <div className="space-y-1">
+                      {policy.rules.allowedRecipients.map((addr: string, i: number) => (
+                        <code key={i} className="block rounded bg-muted px-2 py-1 text-xs">
+                          {addr}
+                        </code>
+                      ))}
                     </div>
-                  )}
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">

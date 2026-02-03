@@ -38,10 +38,7 @@ Communication style:
       "Use game terminology naturally",
       "Encourage strategic thinking",
     ],
-    chat: [
-      "Respond directly to questions",
-      "Offer follow-up suggestions when relevant",
-    ],
+    chat: ["Respond directly to questions", "Offer follow-up suggestions when relevant"],
   },
   messageExamples: [
     [

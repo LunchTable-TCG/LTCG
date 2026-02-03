@@ -62,13 +62,7 @@ export type MonsterType =
   | "pyro"
   | "divine_beast";
 
-export type SpellType =
-  | "normal"
-  | "quick_play"
-  | "continuous"
-  | "field"
-  | "equip"
-  | "ritual";
+export type SpellType = "normal" | "quick_play" | "continuous" | "field" | "equip" | "ritual";
 
 export type TrapType = "normal" | "continuous" | "counter";
 

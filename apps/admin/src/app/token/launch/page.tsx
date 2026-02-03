@@ -26,7 +26,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -134,25 +134,17 @@ function ChecklistItemRow({
       }`}
     >
       <div className="flex items-center gap-3">
-        <Checkbox
-          checked={item.isCompleted}
-          onCheckedChange={handleToggle}
-          disabled={isLoading}
-        />
+        <Checkbox checked={item.isCompleted} onCheckedChange={handleToggle} disabled={isLoading} />
         <div>
           <div className="flex items-center gap-2">
-            <span className={item.isCompleted ? "line-through opacity-60" : ""}>
-              {item.item}
-            </span>
+            <span className={item.isCompleted ? "line-through opacity-60" : ""}>{item.item}</span>
             {item.isRequired && (
               <Badge color="rose" size="xs">
                 Required
               </Badge>
             )}
           </div>
-          {item.description && (
-            <p className="text-xs text-muted-foreground">{item.description}</p>
-          )}
+          {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
           {item.isCompleted && item.completedAt && (
             <p className="text-xs text-muted-foreground">
               Completed {new Date(item.completedAt).toLocaleString()}
@@ -253,12 +245,7 @@ function ScheduleDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="time">Time</Label>
-            <Input
-              id="time"
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-            />
+            <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           </div>
           <p className="text-sm text-muted-foreground">
             Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
@@ -283,21 +270,21 @@ function ScheduleDialog({
 
 export default function TokenLaunchPage() {
   // Fetch data
-  const checklist = useConvexQuery(apiAny.tokenLaunch.checklist.getAll, {});
-  const checklistSummary = useConvexQuery(apiAny.tokenLaunch.checklist.getSummary);
-  const approvals = useConvexQuery(apiAny.tokenLaunch.approvals.getAll);
-  const approvalSummary = useConvexQuery(apiAny.tokenLaunch.approvals.getSummary);
-  const myApproval = useConvexQuery(apiAny.tokenLaunch.approvals.getMyApproval);
-  const schedule = useConvexQuery(apiAny.tokenLaunch.schedule.getSchedule);
+  const checklist = useTypedQuery(typedApi.tokenLaunch.checklist.getAll, {});
+  const checklistSummary = useTypedQuery(typedApi.tokenLaunch.checklist.getSummary, {});
+  const approvals = useTypedQuery(typedApi.tokenLaunch.approvals.getAll, {});
+  const approvalSummary = useTypedQuery(typedApi.tokenLaunch.approvals.getSummary, {});
+  const myApproval = useTypedQuery(typedApi.tokenLaunch.approvals.getMyApproval, {});
+  const schedule = useTypedQuery(typedApi.tokenLaunch.schedule.getSchedule, {});
 
   // Mutations
-  const completeItem = useConvexMutation(apiAny.tokenLaunch.checklist.completeItem);
-  const uncompleteItem = useConvexMutation(apiAny.tokenLaunch.checklist.uncompleteItem);
-  const setupDefaults = useConvexMutation(apiAny.tokenLaunch.checklist.setupDefaults);
-  const approve = useConvexMutation(apiAny.tokenLaunch.approvals.approve);
-  const revoke = useConvexMutation(apiAny.tokenLaunch.approvals.revoke);
-  const setSchedule = useConvexMutation(apiAny.tokenLaunch.schedule.setSchedule);
-  const clearSchedule = useConvexMutation(apiAny.tokenLaunch.schedule.clearSchedule);
+  const completeItem = useTypedMutation(typedApi.tokenLaunch.checklist.completeItem);
+  const uncompleteItem = useTypedMutation(typedApi.tokenLaunch.checklist.uncompleteItem);
+  const setupDefaults = useTypedMutation(typedApi.tokenLaunch.checklist.setupDefaults);
+  const approve = useTypedMutation(typedApi.tokenLaunch.approvals.approve);
+  const revoke = useTypedMutation(typedApi.tokenLaunch.approvals.revoke);
+  const setSchedule = useTypedMutation(typedApi.tokenLaunch.schedule.setSchedule);
+  const clearSchedule = useTypedMutation(typedApi.tokenLaunch.schedule.clearSchedule);
 
   const [approvalComment, setApprovalComment] = useState("");
 
@@ -520,9 +507,7 @@ export default function TokenLaunchPage() {
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Your Approval</CardTitle>
-              <CardDescription>
-                Submit or revoke your approval for the token launch
-              </CardDescription>
+              <CardDescription>Submit or revoke your approval for the token launch</CardDescription>
             </CardHeader>
             <CardContent>
               {myApproval?.approved ? (
@@ -573,7 +558,8 @@ export default function TokenLaunchPage() {
                 <div>
                   <p className="text-sm font-medium">Total Approvals</p>
                   <p className="text-2xl font-bold">
-                    {approvalSummary?.approvedCount ?? 0} / {approvalSummary?.requiredApprovals ?? 2}
+                    {approvalSummary?.approvedCount ?? 0} /{" "}
+                    {approvalSummary?.requiredApprovals ?? 2}
                   </p>
                 </div>
                 <div>

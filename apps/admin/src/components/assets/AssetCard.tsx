@@ -59,12 +59,7 @@ export function AssetCard({ asset, onSelect, onDelete, onCopyUrl }: AssetCardPro
               loading="lazy"
             />
           ) : (
-            <video
-              src={imageUrl}
-              className="h-full w-full object-cover"
-              muted
-              preload="metadata"
-            />
+            <video src={imageUrl} className="h-full w-full object-cover" muted preload="metadata" />
           )
         ) : (
           <div className="flex h-full w-full items-center justify-center">
@@ -138,9 +133,7 @@ export function AssetCard({ asset, onSelect, onDelete, onCopyUrl }: AssetCardPro
         </div>
         <div className="flex items-center justify-between gap-2">
           <CategoryBadge category={asset.category} />
-          <span className="text-xs text-muted-foreground">
-            {formatFileSize(asset.size)}
-          </span>
+          <span className="text-xs text-muted-foreground">{formatFileSize(asset.size)}</span>
         </div>
       </div>
     </Card>

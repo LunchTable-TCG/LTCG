@@ -1,19 +1,9 @@
 "use client";
 
-import {
-  useTournament,
-  useTournamentHistory,
-  useTournaments,
-} from "@/hooks/social/useTournament";
+import { useTournament, useTournamentHistory, useTournaments } from "@/hooks/social/useTournament";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
-import {
-  Crown,
-  History,
-  Loader2,
-  Medal,
-  Trophy,
-} from "lucide-react";
+import { Crown, History, Loader2, Medal, Trophy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { RegisterModal, TournamentCard } from "./components";
@@ -37,14 +27,17 @@ function formatDate(timestamp: number) {
 
 export default function TournamentsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("active");
-  const [registeringForTournament, setRegisteringForTournament] = useState<Id<"tournaments"> | null>(null);
+  const [registeringForTournament, setRegisteringForTournament] =
+    useState<Id<"tournaments"> | null>(null);
 
   // Hooks
   const { tournaments, isLoading: tournamentsLoading } = useTournaments();
   const { history, stats, isLoading: historyLoading } = useTournamentHistory();
 
   // For registration modal - get the selected tournament details
-  const { tournament: selectedTournament, register } = useTournament(registeringForTournament ?? undefined);
+  const { tournament: selectedTournament, register } = useTournament(
+    registeringForTournament ?? undefined
+  );
 
   const handleRegister = async () => {
     if (!selectedTournament) return;
@@ -242,7 +235,9 @@ export default function TournamentsPage() {
                           </div>
                           <div>
                             <p className="text-xs text-[#a89f94]">Date</p>
-                            <p className="text-sm text-[#e8e0d5]">{formatDate(entry.completedAt)}</p>
+                            <p className="text-sm text-[#e8e0d5]">
+                              {formatDate(entry.completedAt)}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -309,7 +304,9 @@ export default function TournamentsPage() {
 
                         {/* Date */}
                         <div className="col-span-2 text-center">
-                          <span className="text-[#a89f94] text-sm">{formatDate(entry.completedAt)}</span>
+                          <span className="text-[#a89f94] text-sm">
+                            {formatDate(entry.completedAt)}
+                          </span>
                         </div>
                       </div>
                     </div>

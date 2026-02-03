@@ -118,18 +118,12 @@ function NewsContent() {
         {articles && articles.length > 0 && (
           <div className="max-w-4xl mx-auto space-y-6">
             {articles.map((article: NewsArticle) => (
-              <Link
-                key={article._id}
-                href={`/news/${article.slug}`}
-                className="group block"
-              >
+              <Link key={article._id} href={`/news/${article.slug}`} className="group block">
                 <article className="p-6 rounded-xl bg-black/40 border border-[#3d2b1f] hover:border-[#d4af37]/50 transition-all">
                   <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
-                        {article.isPinned && (
-                          <Pin className="w-4 h-4 text-[#d4af37]" />
-                        )}
+                        {article.isPinned && <Pin className="w-4 h-4 text-[#d4af37]" />}
                         <span
                           className={cn(
                             "px-2.5 py-0.5 rounded-full text-xs font-medium border",
@@ -153,9 +147,7 @@ function NewsContent() {
                       <h2 className="text-xl font-bold text-[#e8e0d5] mb-2 group-hover:text-[#d4af37] transition-colors">
                         {article.title}
                       </h2>
-                      <p className="text-[#a89f94] text-sm leading-relaxed">
-                        {article.excerpt}
-                      </p>
+                      <p className="text-[#a89f94] text-sm leading-relaxed">{article.excerpt}</p>
                     </div>
                     <div className="sm:self-center">
                       <div className="w-10 h-10 rounded-full bg-[#d4af37]/10 flex items-center justify-center group-hover:bg-[#d4af37]/20 transition-colors">

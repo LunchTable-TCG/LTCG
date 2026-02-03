@@ -15,9 +15,9 @@
  * - Models can be overridden by passing specific model IDs
  */
 
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createGateway } from "@ai-sdk/gateway";
 import { openai } from "@ai-sdk/openai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
 // =============================================================================
 // Provider Instances
@@ -157,10 +157,7 @@ export function getPreferredProvider(): Provider {
  * // Force OpenRouter provider
  * const model = getLanguageModel("fast", "openrouter");
  */
-export function getLanguageModel(
-  tier: ModelTier = "balanced",
-  provider?: Provider
-) {
+export function getLanguageModel(tier: ModelTier = "balanced", provider?: Provider) {
   const selectedProvider = provider || getPreferredProvider();
   const modelConfig = LANGUAGE_MODELS[tier];
 
@@ -298,10 +295,7 @@ export const OPENROUTER_MODELS = {
  *   ["openai/gpt-4o", "google/gemini-2.0-flash"]
  * );
  */
-export function getOpenRouterWithFallbacks(
-  primary: string,
-  _fallbacks: string[] = []
-) {
+export function getOpenRouterWithFallbacks(primary: string, _fallbacks: string[] = []) {
   // OpenRouter handles fallbacks via the models array in provider options
   // This returns the primary model - fallbacks are handled at request time
   // TODO: Implement fallback routing when OpenRouter SDK supports it

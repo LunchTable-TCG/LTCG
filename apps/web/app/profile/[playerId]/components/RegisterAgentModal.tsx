@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { sanitizeText, sanitizeURL } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Bot, ChevronLeft, ChevronRight, Image, Link, Loader2, X } from "lucide-react";
 import { useState } from "react";
 import { ApiKeyDisplay } from "./ApiKeyDisplay";
@@ -253,7 +253,9 @@ export function RegisterAgentModal({ isOpen, onClose, onSuccess }: RegisterAgent
                 <div className="flex justify-between">
                   <span className="text-[#a89f94] text-sm">Starter Deck</span>
                   <span className="text-[#e8e0d5] font-bold">
-                    {starterDecks?.find((d: { deckCode: string; name: string }) => d.deckCode === selectedDeck)?.name || selectedDeck}
+                    {starterDecks?.find(
+                      (d: { deckCode: string; name: string }) => d.deckCode === selectedDeck
+                    )?.name || selectedDeck}
                   </span>
                 </div>
               </div>

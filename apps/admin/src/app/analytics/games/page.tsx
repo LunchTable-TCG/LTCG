@@ -10,7 +10,13 @@
 import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
@@ -86,13 +92,19 @@ function getHealthBadge(score: number) {
 
 export default function GameAnalyticsPage() {
   // State for period selection
-  const [gameStatsPeriod, setGameStatsPeriod] = useState<"daily" | "weekly" | "monthly" | "all_time">("weekly");
+  const [gameStatsPeriod, setGameStatsPeriod] = useState<
+    "daily" | "weekly" | "monthly" | "all_time"
+  >("weekly");
 
   // Fetch real data from Convex
   const stats = useConvexQuery(apiAny.admin.admin.getSystemStats);
   const matchmakingHealth = useConvexQuery(apiAny.admin.analytics.getMatchmakingHealth);
-  const matchmakingStats = useConvexQuery(apiAny.admin.analytics.getMatchmakingStatsDetailed, { days: 14 });
-  const skillDist = useConvexQuery(apiAny.admin.analytics.getSkillDistribution, { ratingType: "ranked" });
+  const matchmakingStats = useConvexQuery(apiAny.admin.analytics.getMatchmakingStatsDetailed, {
+    days: 14,
+  });
+  const skillDist = useConvexQuery(apiAny.admin.analytics.getSkillDistribution, {
+    ratingType: "ranked",
+  });
   const dailyStats = useConvexQuery(apiAny.admin.analytics.getDailyActiveStats, { days: 14 });
 
   // NEW: Game stats with configurable period
@@ -239,7 +251,9 @@ export default function GameAnalyticsPage() {
           </div>
           <Select
             value={gameStatsPeriod}
-            onValueChange={(v) => setGameStatsPeriod(v as "daily" | "weekly" | "monthly" | "all_time")}
+            onValueChange={(v) =>
+              setGameStatsPeriod(v as "daily" | "weekly" | "monthly" | "all_time")
+            }
           >
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Period" />
@@ -266,9 +280,7 @@ export default function GameAnalyticsPage() {
             <Text className="text-sm text-muted-foreground">Completed</Text>
           </div>
           <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
-            <Text className="text-2xl font-bold text-amber-500">
-              {gameStats?.activeGames ?? 0}
-            </Text>
+            <Text className="text-2xl font-bold text-amber-500">{gameStats?.activeGames ?? 0}</Text>
             <Text className="text-sm text-muted-foreground">Active Now</Text>
           </div>
           <div className="p-4 rounded-lg bg-violet-500/10 border border-violet-500/30 text-center">
@@ -278,9 +290,7 @@ export default function GameAnalyticsPage() {
             <Text className="text-sm text-muted-foreground">Avg Duration</Text>
           </div>
           <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-center">
-            <Text className="text-2xl font-bold text-cyan-500">
-              {gameStats?.averageTurns ?? 0}
-            </Text>
+            <Text className="text-2xl font-bold text-cyan-500">{gameStats?.averageTurns ?? 0}</Text>
             <Text className="text-sm text-muted-foreground">Avg Turns</Text>
           </div>
         </div>
@@ -300,9 +310,7 @@ export default function GameAnalyticsPage() {
         <Flex justifyContent="between" alignItems="center">
           <div>
             <Title>Queue Statistics</Title>
-            <Text className="text-muted-foreground">
-              Real-time matchmaking queue metrics
-            </Text>
+            <Text className="text-muted-foreground">Real-time matchmaking queue metrics</Text>
           </div>
           <Badge
             color={

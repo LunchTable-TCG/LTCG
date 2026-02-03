@@ -18,13 +18,7 @@ interface AssetGridProps {
   onCopyUrl: (asset: Asset) => void;
 }
 
-export function AssetGrid({
-  assets,
-  isLoading,
-  onSelect,
-  onDelete,
-  onCopyUrl,
-}: AssetGridProps) {
+export function AssetGrid({ assets, isLoading, onSelect, onDelete, onCopyUrl }: AssetGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
@@ -44,9 +38,7 @@ export function AssetGrid({
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
         <div className="text-4xl">📁</div>
         <h3 className="mt-4 text-lg font-medium">No assets found</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Upload your first asset to get started
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Upload your first asset to get started</p>
       </div>
     );
   }

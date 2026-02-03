@@ -10,7 +10,13 @@
 import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
@@ -190,9 +196,15 @@ export default function EconomyAnalyticsPage() {
   // Calculate trend statistics
   const trendStats = economyTrends
     ? {
-        totalGenerated: economyTrends.reduce((sum: number, t: EconomyTrend) => sum + t.goldGenerated, 0),
+        totalGenerated: economyTrends.reduce(
+          (sum: number, t: EconomyTrend) => sum + t.goldGenerated,
+          0
+        ),
         totalSpent: economyTrends.reduce((sum: number, t: EconomyTrend) => sum + t.goldSpent, 0),
-        totalNetChange: economyTrends.reduce((sum: number, t: EconomyTrend) => sum + t.netGoldChange, 0),
+        totalNetChange: economyTrends.reduce(
+          (sum: number, t: EconomyTrend) => sum + t.netGoldChange,
+          0
+        ),
         totalMarketplaceVolume: economyTrends.reduce(
           (sum: number, t: EconomyTrend) => sum + t.marketplaceVolume,
           0
@@ -322,7 +334,7 @@ export default function EconomyAnalyticsPage() {
             </Select>
             <Select
               value={trendDays.toString()}
-              onValueChange={(v) => setTrendDays(parseInt(v))}
+              onValueChange={(v) => setTrendDays(Number.parseInt(v))}
             >
               <SelectTrigger className="w-[100px]">
                 <SelectValue placeholder="Days" />

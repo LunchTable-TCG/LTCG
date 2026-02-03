@@ -64,9 +64,7 @@ export const getActiveSession = query({
 
     const session = await ctx.db
       .query("aiChatSessions")
-      .withIndex("by_user_active", (q) =>
-        q.eq("userId", auth.userId).eq("isActive", true)
-      )
+      .withIndex("by_user_active", (q) => q.eq("userId", auth.userId).eq("isActive", true))
       .first();
 
     return session;
@@ -147,9 +145,7 @@ export const createSession = mutation({
     // Deactivate existing active sessions
     const activeSessions = await ctx.db
       .query("aiChatSessions")
-      .withIndex("by_user_active", (q) =>
-        q.eq("userId", auth.userId).eq("isActive", true)
-      )
+      .withIndex("by_user_active", (q) => q.eq("userId", auth.userId).eq("isActive", true))
       .collect();
 
     for (const session of activeSessions) {
@@ -211,9 +207,7 @@ export const sendUserMessage = mutation({
       // Check for active session
       const activeSession = await ctx.db
         .query("aiChatSessions")
-        .withIndex("by_user_active", (q) =>
-          q.eq("userId", auth.userId).eq("isActive", true)
-        )
+        .withIndex("by_user_active", (q) => q.eq("userId", auth.userId).eq("isActive", true))
         .first();
 
       if (activeSession) {

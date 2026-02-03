@@ -110,15 +110,12 @@ export default function TreasuryTransactionsPage() {
   const limit = 20;
 
   // Fetch transactions
-  const { transactions, total } = useConvexQuery(
-    apiAny.treasury.transactions.listTransactions,
-    {
-      status: statusFilter !== "all" ? statusFilter : undefined,
-      type: typeFilter !== "all" ? typeFilter : undefined,
-      limit,
-      offset: page * limit,
-    }
-  ) ?? { transactions: [], total: 0 };
+  const { transactions, total } = useConvexQuery(apiAny.treasury.transactions.listTransactions, {
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    type: typeFilter !== "all" ? typeFilter : undefined,
+    limit,
+    offset: page * limit,
+  }) ?? { transactions: [], total: 0 };
 
   // Fetch stats
   const stats = useConvexQuery(apiAny.treasury.transactions.getStats, { daysBack: 30 });
@@ -166,9 +163,7 @@ export default function TreasuryTransactionsPage() {
             <CardDescription>Awaiting confirmation</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-500">
-              {stats?.byStatus?.pending ?? 0}
-            </div>
+            <div className="text-2xl font-bold text-amber-500">{stats?.byStatus?.pending ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -177,9 +172,7 @@ export default function TreasuryTransactionsPage() {
             <CardDescription>Errors encountered</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-rose-500">
-              {stats?.byStatus?.failed ?? 0}
-            </div>
+            <div className="text-2xl font-bold text-rose-500">{stats?.byStatus?.failed ?? 0}</div>
           </CardContent>
         </Card>
       </div>
@@ -263,13 +256,9 @@ export default function TreasuryTransactionsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {tx.walletName}
-                        </span>
+                        <span className="text-sm text-muted-foreground">{tx.walletName}</span>
                       </TableCell>
-                      <TableCell className="font-mono">
-                        {formatTokens(tx.amount)}
-                      </TableCell>
+                      <TableCell className="font-mono">{formatTokens(tx.amount)}</TableCell>
                       <TableCell>{getStatusBadge(tx.status)}</TableCell>
                       <TableCell>
                         {tx.signature ? (

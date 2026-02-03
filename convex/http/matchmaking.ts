@@ -157,11 +157,7 @@ export const lobbies = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("ACCOUNT_BANNED", "Your account is banned from matchmaking", 403);
     }
     if (user?.isSuspended) {
-      return errorResponse(
-        "ACCOUNT_SUSPENDED",
-        "Your account is suspended from matchmaking",
-        403
-      );
+      return errorResponse("ACCOUNT_SUSPENDED", "Your account is suspended from matchmaking", 403);
     }
 
     const userRating = user?.rankedElo || 1000;

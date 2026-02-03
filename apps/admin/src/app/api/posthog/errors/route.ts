@@ -5,7 +5,7 @@
  */
 
 import { posthogApi } from "@/lib/posthog";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;
-    const dateFrom = searchParams.get("date_from") ||
-      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const dateFrom =
+      searchParams.get("date_from") || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     // Fetch error events
     const events = await posthogApi.getEvents({
@@ -34,15 +34,18 @@ export async function GET(request: NextRequest) {
     });
 
     // Group errors by page
-    const errorsByPage: Record<string, {
-      count: number;
-      errors: Array<{
-        message: string;
-        code?: string;
-        timestamp: string;
-        errorType: string;
-      }>;
-    }> = {};
+    const errorsByPage: Record<
+      string,
+      {
+        count: number;
+        errors: Array<{
+          message: string;
+          code?: string;
+          timestamp: string;
+          errorType: string;
+        }>;
+      }
+    > = {};
 
     // Also track error types
     const errorsByType: Record<string, number> = {};

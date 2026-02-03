@@ -34,7 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { AreaChart, BarChart, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -149,22 +149,25 @@ export default function TokenAnalyticsPage() {
   const [volumePeriod, setVolumePeriod] = useState<VolumePeriod>("24h");
 
   // Fetch data from Convex
-  const latestMetrics = useConvexQuery(apiAny.tokenAnalytics.metrics.getLatest);
-  const priceChart = useConvexQuery(apiAny.tokenAnalytics.metrics.getPriceChart, {
+  const latestMetrics = useTypedQuery(typedApi.tokenAnalytics.metrics.getLatest, {});
+  const priceChart = useTypedQuery(typedApi.tokenAnalytics.metrics.getPriceChart, {
     period: pricePeriod,
   });
-  const bondingProgress = useConvexQuery(apiAny.tokenAnalytics.metrics.getBondingCurveProgress);
+  const bondingProgress = useTypedQuery(
+    typedApi.tokenAnalytics.metrics.getBondingCurveProgress,
+    {}
+  );
 
-  const topHolders = useConvexQuery(apiAny.tokenAnalytics.holders.getTop, { limit: 10 });
-  const holderDistribution = useConvexQuery(apiAny.tokenAnalytics.holders.getDistribution);
+  const topHolders = useTypedQuery(typedApi.tokenAnalytics.holders.getTop, { limit: 10 });
+  const holderDistribution = useTypedQuery(typedApi.tokenAnalytics.holders.getDistribution, {});
 
-  const recentTrades = useConvexQuery(apiAny.tokenAnalytics.trades.getRecent, { limit: 20 });
-  const tradeStats = useConvexQuery(apiAny.tokenAnalytics.trades.getStats, { period: "24h" });
-  const volumeChart = useConvexQuery(apiAny.tokenAnalytics.trades.getVolumeChart, {
+  const recentTrades = useTypedQuery(typedApi.tokenAnalytics.trades.getRecent, { limit: 20 });
+  const tradeStats = useTypedQuery(typedApi.tokenAnalytics.trades.getStats, { period: "24h" });
+  const volumeChart = useTypedQuery(typedApi.tokenAnalytics.trades.getVolumeChart, {
     period: volumePeriod,
   });
 
-  const summary = useConvexQuery(apiAny.tokenAnalytics.rollup.getSummary);
+  const summary = useTypedQuery(typedApi.tokenAnalytics.rollup.getSummary, {});
 
   // Loading states
   const isMetricsLoading = latestMetrics === undefined || summary === undefined;
@@ -179,7 +182,9 @@ export default function TokenAnalyticsPage() {
       time: new Date(p.timestamp).toLocaleString("en-US", {
         hour: "numeric",
         minute: "2-digit",
-        ...(pricePeriod === "7d" || pricePeriod === "30d" ? { month: "short", day: "numeric" } : {}),
+        ...(pricePeriod === "7d" || pricePeriod === "30d"
+          ? { month: "short", day: "numeric" }
+          : {}),
       }),
       Price: p.priceUsd,
       Volume: p.volume,
@@ -249,7 +254,9 @@ export default function TokenAnalyticsPage() {
           value={formatMarketCap(summary?.currentMarketCap ?? latestMetrics?.marketCap ?? 0)}
           icon={<span className="text-lg">📊</span>}
           delta={
-            summary?.mcChange24h !== undefined ? formatPercentChange(summary.mcChange24h) : undefined
+            summary?.mcChange24h !== undefined
+              ? formatPercentChange(summary.mcChange24h)
+              : undefined
           }
           deltaType={
             (summary?.mcChange24h ?? 0) > 0
@@ -437,9 +444,7 @@ export default function TokenAnalyticsPage() {
                   <Text className="text-xl font-bold">{tradeStats?.totalTrades ?? 0}</Text>
                 </div>
                 <div className="flex justify-between items-center p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                  <Text className="font-medium text-emerald-600 dark:text-emerald-400">
-                    Buys
-                  </Text>
+                  <Text className="font-medium text-emerald-600 dark:text-emerald-400">Buys</Text>
                   <div className="text-right">
                     <Text className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                       {tradeStats?.buyCount ?? 0}

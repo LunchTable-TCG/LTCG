@@ -90,7 +90,7 @@ function CreatePromoCodeDialog() {
       toast.error("Code is required");
       return;
     }
-    if (!rewardAmount || parseInt(rewardAmount) <= 0) {
+    if (!rewardAmount || Number.parseInt(rewardAmount) <= 0) {
       toast.error("Reward amount must be positive");
       return;
     }
@@ -102,16 +102,16 @@ function CreatePromoCodeDialog() {
     setIsSubmitting(true);
     try {
       const expiresAt = expiresInDays
-        ? Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000
+        ? Date.now() + Number.parseInt(expiresInDays) * 24 * 60 * 60 * 1000
         : undefined;
 
       await createPromoCode({
         code: code.trim(),
         description: description.trim(),
         rewardType,
-        rewardAmount: parseInt(rewardAmount),
+        rewardAmount: Number.parseInt(rewardAmount),
         rewardPackId: rewardType === "pack" ? rewardPackId : undefined,
-        maxRedemptions: maxRedemptions ? parseInt(maxRedemptions) : undefined,
+        maxRedemptions: maxRedemptions ? Number.parseInt(maxRedemptions) : undefined,
         expiresAt,
       });
 
@@ -143,9 +143,7 @@ function CreatePromoCodeDialog() {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Create Promo Code</DialogTitle>
-          <DialogDescription>
-            Create a new redeemable promo code for players.
-          </DialogDescription>
+          <DialogDescription>Create a new redeemable promo code for players.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -157,9 +155,7 @@ function CreatePromoCodeDialog() {
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="WELCOME2024"
               />
-              <Text className="text-xs text-muted-foreground">
-                Will be normalized to uppercase
-              </Text>
+              <Text className="text-xs text-muted-foreground">Will be normalized to uppercase</Text>
             </div>
 
             <div className="space-y-2">
@@ -231,9 +227,7 @@ function CreatePromoCodeDialog() {
                 placeholder="Unlimited"
                 min="1"
               />
-              <Text className="text-xs text-muted-foreground">
-                Leave empty for unlimited
-              </Text>
+              <Text className="text-xs text-muted-foreground">Leave empty for unlimited</Text>
             </div>
 
             <div className="space-y-2">
@@ -245,9 +239,7 @@ function CreatePromoCodeDialog() {
                 placeholder="Never"
                 min="1"
               />
-              <Text className="text-xs text-muted-foreground">
-                Leave empty for no expiration
-              </Text>
+              <Text className="text-xs text-muted-foreground">Leave empty for no expiration</Text>
             </div>
           </div>
         </div>
@@ -297,11 +289,11 @@ function BulkGenerateDialog() {
       toast.error("Prefix is required");
       return;
     }
-    if (!count || parseInt(count) < 1 || parseInt(count) > 100) {
+    if (!count || Number.parseInt(count) < 1 || Number.parseInt(count) > 100) {
       toast.error("Count must be between 1 and 100");
       return;
     }
-    if (!rewardAmount || parseInt(rewardAmount) <= 0) {
+    if (!rewardAmount || Number.parseInt(rewardAmount) <= 0) {
       toast.error("Reward amount must be positive");
       return;
     }
@@ -309,17 +301,17 @@ function BulkGenerateDialog() {
     setIsSubmitting(true);
     try {
       const expiresAt = expiresInDays
-        ? Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000
+        ? Date.now() + Number.parseInt(expiresInDays) * 24 * 60 * 60 * 1000
         : undefined;
 
       const result = await bulkGenerate({
         prefix: prefix.trim(),
-        count: parseInt(count),
+        count: Number.parseInt(count),
         description: description.trim(),
         rewardType,
-        rewardAmount: parseInt(rewardAmount),
+        rewardAmount: Number.parseInt(rewardAmount),
         rewardPackId: rewardType === "pack" ? rewardPackId : undefined,
-        maxRedemptions: maxRedemptions ? parseInt(maxRedemptions) : undefined,
+        maxRedemptions: maxRedemptions ? Number.parseInt(maxRedemptions) : undefined,
         expiresAt,
       });
 
@@ -389,9 +381,7 @@ function BulkGenerateDialog() {
                     onChange={(e) => setPrefix(e.target.value.toUpperCase())}
                     placeholder="PROMO"
                   />
-                  <Text className="text-xs text-muted-foreground">
-                    Codes will be PREFIX-XXXXXX
-                  </Text>
+                  <Text className="text-xs text-muted-foreground">Codes will be PREFIX-XXXXXX</Text>
                 </div>
 
                 <div className="space-y-2">
@@ -420,10 +410,7 @@ function BulkGenerateDialog() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Reward Type *</Label>
-                  <Select
-                    value={rewardType}
-                    onValueChange={(v) => setRewardType(v as RewardType)}
-                  >
+                  <Select value={rewardType} onValueChange={(v) => setRewardType(v as RewardType)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -605,9 +592,7 @@ export default function PromoCodesPage() {
         </Card>
         <Card>
           <div className="text-center">
-            <Text className="text-2xl font-bold">
-              {statsResult?.totalRedemptions ?? "..."}
-            </Text>
+            <Text className="text-2xl font-bold">{statsResult?.totalRedemptions ?? "..."}</Text>
             <Text className="text-sm text-muted-foreground">Redemptions</Text>
           </div>
         </Card>
@@ -717,10 +702,7 @@ export default function PromoCodesPage() {
                       <td className="py-3 px-3 text-center">
                         {code.redemptionCount}
                         {code.maxRedemptions && (
-                          <span className="text-muted-foreground">
-                            {" "}
-                            / {code.maxRedemptions}
-                          </span>
+                          <span className="text-muted-foreground"> / {code.maxRedemptions}</span>
                         )}
                       </td>
                       <td className="py-3 px-3">

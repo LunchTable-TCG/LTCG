@@ -10,9 +10,7 @@ export const createOrGetUser = mutation({
   args: {
     email: v.optional(v.string()),
     walletAddress: v.optional(v.string()),
-    walletType: v.optional(
-      v.union(v.literal("privy_embedded"), v.literal("external"))
-    ),
+    walletType: v.optional(v.union(v.literal("privy_embedded"), v.literal("external"))),
   },
   async handler(ctx, args) {
     const identity = await ctx.auth.getUserIdentity();

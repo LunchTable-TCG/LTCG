@@ -36,15 +36,12 @@ export class TestDataFactory {
     const displayName = opts.displayName ?? `TestPlayer_${Date.now()}`;
 
     // Type assertion needed for internal function references in test context
-    const userId = await this.client.mutation(
-      internal.testing.seedTestUser.seedTestUser as any,
-      {
-        privyDid,
-        displayName,
-        gold: opts.gold,
-        gems: opts.gems,
-      }
-    ) as Id<"users">;
+    const userId = (await this.client.mutation(internal.testing.seedTestUser.seedTestUser as any, {
+      privyDid,
+      displayName,
+      gold: opts.gold,
+      gems: opts.gems,
+    })) as Id<"users">;
 
     this.createdUsers.push(userId);
     return { userId, privyDid, displayName };
@@ -59,14 +56,11 @@ export class TestDataFactory {
    */
   async createDeckForUser(userId: Id<"users">, cardIds: Id<"cardDefinitions">[]) {
     // Type assertion needed for internal function references in test context
-    return await this.client.mutation(
-      internal.testing.seedTestDeck.seedTestDeck as any,
-      {
-        userId,
-        name: `Test Deck ${Date.now()}`,
-        cardIds,
-      }
-    ) as Id<"userDecks">;
+    return (await this.client.mutation(internal.testing.seedTestDeck.seedTestDeck as any, {
+      userId,
+      name: `Test Deck ${Date.now()}`,
+      cardIds,
+    })) as Id<"userDecks">;
   }
 
   /**
@@ -79,10 +73,7 @@ export class TestDataFactory {
     for (const userId of this.createdUsers) {
       try {
         // Type assertion needed for internal function references in test context
-        await this.client.mutation(
-          internal.testing.cleanup.cleanupTestUser as any,
-          { userId }
-        );
+        await this.client.mutation(internal.testing.cleanup.cleanupTestUser as any, { userId });
       } catch (e) {
         console.warn(`Failed to cleanup user ${userId}:`, e);
       }

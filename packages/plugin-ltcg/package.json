@@ -49,9 +49,13 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@cypress/react": "^9.0.1",
+    "@cypress/vite-dev-server": "^6.0.3",
+    "@testing-library/cypress": "^10.0.3",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^5.1.1",
+    "cypress": "^14.4.1",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
     "vite": "^7.2.6"

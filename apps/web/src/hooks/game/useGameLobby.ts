@@ -1,7 +1,7 @@
 "use client";
 
+import { typedApi, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { handleHookError } from "@/lib/errorHandling";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
@@ -133,30 +133,18 @@ interface UseGameLobbyReturn {
  */
 export function useGameLobby(): UseGameLobbyReturn {
   // No auth check needed - this hook should only be used inside <Authenticated>
-  // Using apiAny and useConvexQuery to avoid TS2589 "Type instantiation excessively deep" errors
-  // Type assertions provide proper typing while avoiding deep type instantiation
-  const waitingLobbies = useConvexQuery(apiAny.games.listWaitingLobbies, {}) as
-    | WaitingLobbyInfo[]
-    | undefined;
-  const myLobby = useConvexQuery(apiAny.games.getActiveLobby, {}) as
-    | LobbyDocument
-    | null
-    | undefined;
-  const privateLobby = useConvexQuery(apiAny.games.getMyPrivateLobby, {}) as
-    | LobbyDocument
-    | null
-    | undefined;
-  const incomingChallenge = useConvexQuery(apiAny.games.getIncomingChallenge, {}) as
-    | IncomingChallenge
-    | null
-    | undefined;
+  // Using typed helpers for type safety
+  const waitingLobbies = useTypedQuery(typedApi.games.listWaitingLobbies, {});
+  const myLobby = useTypedQuery(typedApi.games.getActiveLobby, {});
+  const privateLobby = useTypedQuery(typedApi.games.getMyPrivateLobby, {});
+  const incomingChallenge = useTypedQuery(typedApi.games.getIncomingChallenge, {});
 
-  // Mutations - using apiAny to avoid deep type instantiation
-  const createMutation = useMutation(apiAny.games.createLobby);
-  const joinMutation = useMutation(apiAny.games.joinLobby);
-  const joinByCodeMutation = useMutation(apiAny.games.joinLobbyByCode);
-  const cancelMutation = useMutation(apiAny.games.cancelLobby);
-  const leaveMutation = useMutation(apiAny.games.leaveLobby);
+  // Mutations - using typed helpers for type safety
+  const createMutation = useMutation(typedApi.games.createLobby);
+  const joinMutation = useMutation(typedApi.games.joinLobby);
+  const joinByCodeMutation = useMutation(typedApi.games.joinLobbyByCode);
+  const cancelMutation = useMutation(typedApi.games.cancelLobby);
+  const leaveMutation = useMutation(typedApi.games.leaveLobby);
 
   // Actions
   const createLobby = async (

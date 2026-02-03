@@ -3,7 +3,17 @@
 import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Flame, Loader2, Shield, Skull, Sparkles, Waves, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Flame,
+  Loader2,
+  Shield,
+  Skull,
+  Sparkles,
+  Waves,
+  Zap,
+} from "lucide-react";
 import { useState } from "react";
 
 interface StarterDeckStepProps {

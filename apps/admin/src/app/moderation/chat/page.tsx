@@ -39,7 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import { formatDistanceToNow, format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -84,15 +84,9 @@ export default function ChatModerationPage() {
       : "skip"
   );
 
-  const stats = useConvexQuery(
-    apiAny.admin.chat.getChatStats,
-    isAdmin ? {} : "skip"
-  );
+  const stats = useConvexQuery(apiAny.admin.chat.getChatStats, isAdmin ? {} : "skip");
 
-  const mutedUsers = useConvexQuery(
-    apiAny.admin.chat.getMutedUsers,
-    isAdmin ? {} : "skip"
-  );
+  const mutedUsers = useConvexQuery(apiAny.admin.chat.getMutedUsers, isAdmin ? {} : "skip");
 
   const deleteMessage = useConvexMutation(apiAny.admin.chat.deleteMessage);
   const bulkDeleteMessages = useConvexMutation(apiAny.admin.chat.bulkDeleteMessages);
@@ -187,9 +181,7 @@ export default function ChatModerationPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Chat Moderation</h1>
-        <p className="text-muted-foreground">
-          Monitor and moderate global chat messages
-        </p>
+        <p className="text-muted-foreground">Monitor and moderate global chat messages</p>
       </div>
 
       {/* Stats Overview */}
@@ -222,9 +214,7 @@ export default function ChatModerationPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Muted Users</CardDescription>
-              <CardTitle className="text-2xl text-yellow-500">
-                {stats.mutedUsersCount}
-              </CardTitle>
+              <CardTitle className="text-2xl text-yellow-500">{stats.mutedUsersCount}</CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -273,11 +263,7 @@ export default function ChatModerationPage() {
                     <span className="text-sm text-muted-foreground">
                       {selectedMessages.size} selected
                     </span>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={handleBulkDelete}
-                    >
+                    <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
                       Delete Selected
                     </Button>
                   </div>
@@ -313,69 +299,69 @@ export default function ChatModerationPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {messages.messages.map((message: {
-                      _id: string;
-                      userId: string;
-                      username: string;
-                      message: string;
-                      createdAt: number;
-                      isSystem: boolean;
-                    }) => (
-                      <TableRow key={message._id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedMessages.has(message._id)}
-                            onCheckedChange={(checked) =>
-                              handleSelectMessage(message._id, checked as boolean)
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/players/${message.userId}`}
-                              className="font-medium text-primary hover:underline"
-                            >
-                              {message.username}
-                            </Link>
-                            {message.isSystem && (
-                              <Badge variant="outline" className="text-xs">
-                                System
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="max-w-md">
-                          <p className="truncate">{message.message}</p>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {formatDistanceToNow(new Date(message.createdAt), {
-                            addSuffix: true,
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() =>
-                                openMuteDialog(message.userId, message.username)
+                    {messages.messages.map(
+                      (message: {
+                        _id: string;
+                        userId: string;
+                        username: string;
+                        message: string;
+                        createdAt: number;
+                        isSystem: boolean;
+                      }) => (
+                        <TableRow key={message._id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedMessages.has(message._id)}
+                              onCheckedChange={(checked) =>
+                                handleSelectMessage(message._id, checked as boolean)
                               }
-                            >
-                              Mute
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => handleDeleteMessage(message._id)}
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={`/players/${message.userId}`}
+                                className="font-medium text-primary hover:underline"
+                              >
+                                {message.username}
+                              </Link>
+                              {message.isSystem && (
+                                <Badge variant="outline" className="text-xs">
+                                  System
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="max-w-md">
+                            <p className="truncate">{message.message}</p>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {formatDistanceToNow(new Date(message.createdAt), {
+                              addSuffix: true,
+                            })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => openMuteDialog(message.userId, message.username)}
+                              >
+                                Mute
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteMessage(message._id)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
                   </TableBody>
                 </Table>
               )}
@@ -419,40 +405,38 @@ export default function ChatModerationPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mutedUsers.map((user: {
-                      _id: string;
-                      username: string;
-                      mutedUntil: number;
-                      remainingMinutes: number;
-                    }) => (
-                      <TableRow key={user._id}>
-                        <TableCell>
-                          <Link
-                            href={`/players/${user._id}`}
-                            className="font-medium text-primary hover:underline"
-                          >
-                            {user.username}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(user.mutedUntil), "PPpp")}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {user.remainingMinutes} min remaining
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleUnmuteUser(user._id)}
-                          >
-                            Unmute
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {mutedUsers.map(
+                      (user: {
+                        _id: string;
+                        username: string;
+                        mutedUntil: number;
+                        remainingMinutes: number;
+                      }) => (
+                        <TableRow key={user._id}>
+                          <TableCell>
+                            <Link
+                              href={`/players/${user._id}`}
+                              className="font-medium text-primary hover:underline"
+                            >
+                              {user.username}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{format(new Date(user.mutedUntil), "PPpp")}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{user.remainingMinutes} min remaining</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUnmuteUser(user._id)}
+                            >
+                              Unmute
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
                   </TableBody>
                 </Table>
               )}
@@ -508,9 +492,7 @@ export default function ChatModerationPage() {
             <Button variant="outline" onClick={() => setMuteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleMuteUser}>
-              Mute User
-            </Button>
+            <Button onClick={handleMuteUser}>Mute User</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

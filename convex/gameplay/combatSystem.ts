@@ -293,7 +293,54 @@ export const declareAttack = mutation({
       };
     }
 
-    // 10. Record attack_declared event
+    // 10. Check for "on_attack" trigger effects on attacker
+    {
+      const attackerAbility = getCardAbility(attackerCard);
+      if (attackerAbility) {
+        for (const parsedEffect of attackerAbility.effects) {
+          if (parsedEffect.trigger !== "on_attack") continue;
+
+          const refreshedState = await ctx.db
+            .query("gameStates")
+            .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+            .first();
+
+          if (refreshedState) {
+            const effectResult = await executeEffect(
+              ctx,
+              refreshedState,
+              args.lobbyId,
+              parsedEffect,
+              user.userId,
+              args.attackerCardId,
+              [] // No targets for auto-trigger effects
+            );
+
+            if (effectResult.success) {
+              // Validate game state for event recording
+              if (!gameState.gameId || gameState.turnNumber === undefined) {
+                throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+                  reason: "Game ID or turn number not found",
+                });
+              }
+
+              await recordEventHelper(ctx, {
+                lobbyId: args.lobbyId,
+                gameId: gameState.gameId,
+                turnNumber: gameState.turnNumber,
+                eventType: "effect_activated",
+                playerId: user.userId,
+                playerUsername: user.username,
+                description: `${attackerCard.name} attack effect: ${effectResult.message}`,
+                metadata: { cardId: args.attackerCardId, trigger: "on_attack" },
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // 11. Record attack_declared event
     const opponent = await ctx.db.get(opponentId);
 
     // Edge case: Validate opponent exists
@@ -334,7 +381,7 @@ export const declareAttack = mutation({
       },
     });
 
-    // 11. Resolve battle
+    // 12. Resolve battle
     const battleResult = await resolveBattle(
       ctx,
       args.lobbyId,
@@ -348,7 +395,7 @@ export const declareAttack = mutation({
       defenderCard
     );
 
-    // 12. Mark attacker as having attacked (if still on board)
+    // 13. Mark attacker as having attacked (if still on board)
     // IMPORTANT: Re-fetch game state to get current board after destruction
     const updatedGameState = await ctx.db.get(gameState._id);
     if (!updatedGameState) {
@@ -370,7 +417,7 @@ export const declareAttack = mutation({
     }
     // If attacker was destroyed, board was already updated by resolveBattle - don't overwrite
 
-    // 13. Run state-based action checks after combat
+    // 14. Run state-based action checks after combat
     // This catches any monsters that should be destroyed due to stat changes
     // and checks win conditions after damage
     const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {
@@ -383,7 +430,7 @@ export const declareAttack = mutation({
       battleResult.gameEnded = true;
     }
 
-    // 14. Return battle result
+    // 15. Return battle result
     return {
       success: true,
       battleResult,
@@ -675,9 +722,126 @@ async function resolveBattle(
     return result;
   }
 
-  // Get defender stats based on position
+  // Get defender position first (needed for damage calculation triggers)
   const defenderIsAttack = defender.position === 1;
-  const defenderValue = defenderIsAttack ? defender.attack : defender.defense;
+
+  // Check for "on_damage_calculation" triggers on both attacker and defender BEFORE calculating damage
+  // This allows effects to modify ATK/DEF before battle
+  let effectiveAttackerATK = attacker.attack;
+  let effectiveDefenderValue = defenderIsAttack ? defender.attack : defender.defense;
+
+  {
+    // Check attacker's on_damage_calculation effects
+    const attackerAbility = getCardAbility(attackerCard);
+    if (attackerAbility) {
+      for (const parsedEffect of attackerAbility.effects) {
+        if (parsedEffect.trigger !== "on_damage_calculation") continue;
+
+        const refreshedState = await ctx.db
+          .query("gameStates")
+          .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+          .first();
+
+        if (refreshedState) {
+          const effectResult = await executeEffect(
+            ctx,
+            refreshedState,
+            lobbyId,
+            parsedEffect,
+            attackerId,
+            attacker.cardId,
+            []
+          );
+
+          if (effectResult.success) {
+            await recordEventHelper(ctx, {
+              lobbyId,
+              gameId: gameState.gameId,
+              turnNumber,
+              eventType: "effect_activated",
+              playerId: attackerId,
+              playerUsername: attackerUser?.username || "Unknown",
+              description: `${attackerCard.name} damage calculation effect: ${effectResult.message}`,
+              metadata: { cardId: attacker.cardId, trigger: "on_damage_calculation" },
+            });
+
+            // Re-fetch attacker stats after effect (may have been modified)
+            const updatedState = await ctx.db
+              .query("gameStates")
+              .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+              .first();
+            if (updatedState) {
+              const updatedBoard = isHostAttacking
+                ? updatedState.hostBoard
+                : updatedState.opponentBoard;
+              const updatedAttacker = updatedBoard.find((bc) => bc.cardId === attacker.cardId);
+              if (updatedAttacker) {
+                effectiveAttackerATK = updatedAttacker.attack;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Check defender's on_damage_calculation effects
+    const defenderAbility = getCardAbility(defenderCard);
+    if (defenderAbility) {
+      for (const parsedEffect of defenderAbility.effects) {
+        if (parsedEffect.trigger !== "on_damage_calculation") continue;
+
+        const refreshedState = await ctx.db
+          .query("gameStates")
+          .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+          .first();
+
+        if (refreshedState) {
+          const effectResult = await executeEffect(
+            ctx,
+            refreshedState,
+            lobbyId,
+            parsedEffect,
+            defenderId,
+            defender.cardId,
+            []
+          );
+
+          if (effectResult.success) {
+            await recordEventHelper(ctx, {
+              lobbyId,
+              gameId: gameState.gameId,
+              turnNumber,
+              eventType: "effect_activated",
+              playerId: defenderId,
+              playerUsername: defenderUser?.username || "Unknown",
+              description: `${defenderCard.name} damage calculation effect: ${effectResult.message}`,
+              metadata: { cardId: defender.cardId, trigger: "on_damage_calculation" },
+            });
+
+            // Re-fetch defender stats after effect (may have been modified)
+            const updatedState = await ctx.db
+              .query("gameStates")
+              .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+              .first();
+            if (updatedState) {
+              const updatedBoard = isHostAttacking
+                ? updatedState.opponentBoard
+                : updatedState.hostBoard;
+              const updatedDefender = updatedBoard.find((bc) => bc.cardId === defender.cardId);
+              if (updatedDefender) {
+                effectiveDefenderValue = defenderIsAttack
+                  ? updatedDefender.attack
+                  : updatedDefender.defense;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Use the effective defender value after on_damage_calculation triggers
+  const defenderValue = effectiveDefenderValue;
 
   // Edge case: Validate defender value is not NaN or negative
   if (Number.isNaN(defenderValue) || defenderValue < 0) {
@@ -729,7 +893,7 @@ async function resolveBattle(
 
   // Scenario 2: Attack Position vs Attack Position
   if (defenderIsAttack) {
-    const damage = Math.abs(attacker.attack - defenderValue);
+    const damage = Math.abs(effectiveAttackerATK - defenderValue);
 
     // Record damage_calculated event
     await recordEventHelper(ctx, {
@@ -739,11 +903,11 @@ async function resolveBattle(
       eventType: "damage_calculated",
       playerId: attackerId,
       playerUsername: attackerUser?.username || "Unknown",
-      description: `${attackerCard.name} (${attacker.attack} ATK) vs ${defenderCard.name} (${defenderValue} ATK)`,
+      description: `${attackerCard.name} (${effectiveAttackerATK} ATK) vs ${defenderCard.name} (${defenderValue} ATK)`,
       metadata: {
         attackerId: attacker.cardId,
         attackerName: attackerCard.name,
-        attackerATK: attacker.attack,
+        attackerATK: effectiveAttackerATK,
         defenderId: defender.cardId,
         defenderName: defenderCard.name,
         defenderATK: defenderValue,
@@ -751,7 +915,7 @@ async function resolveBattle(
       },
     });
 
-    if (attacker.attack > defenderValue) {
+    if (effectiveAttackerATK > defenderValue) {
       // Attacker wins - destroy defender, deal damage
       result.destroyed.push(defender.cardId);
       await destroyCard(
@@ -856,7 +1020,7 @@ async function resolveBattle(
           }
         }
       }
-    } else if (attacker.attack < defenderValue) {
+    } else if (effectiveAttackerATK < defenderValue) {
       // Defender wins - destroy attacker, deal damage to attacker's controller
       result.destroyed.push(attacker.cardId);
       await destroyCard(
@@ -916,18 +1080,18 @@ async function resolveBattle(
       eventType: "damage_calculated",
       playerId: attackerId,
       playerUsername: attackerUser?.username || "Unknown",
-      description: `${attackerCard.name} (${attacker.attack} ATK) vs ${defenderCard.name} (${defenderValue} DEF)`,
+      description: `${attackerCard.name} (${effectiveAttackerATK} ATK) vs ${defenderCard.name} (${defenderValue} DEF)`,
       metadata: {
         attackerId: attacker.cardId,
         attackerName: attackerCard.name,
-        attackerATK: attacker.attack,
+        attackerATK: effectiveAttackerATK,
         defenderId: defender.cardId,
         defenderName: defenderCard.name,
         defenderDEF: defenderValue,
       },
     });
 
-    if (attacker.attack > defenderValue) {
+    if (effectiveAttackerATK > defenderValue) {
       // Attacker wins - destroy defender
       result.destroyed.push(defender.cardId);
       await destroyCard(
@@ -946,7 +1110,7 @@ async function resolveBattle(
         attackerCard.ability?.name?.toLowerCase().includes("piercing") ||
         attackerCard.ability?.effects?.some((e: { type?: string }) => e.type === "piercing");
       if (hasPiercing) {
-        const piercingDamage = attacker.attack - defenderValue;
+        const piercingDamage = effectiveAttackerATK - defenderValue;
         const gameEnded = await applyDamage(
           ctx,
           lobbyId,
@@ -1039,9 +1203,9 @@ async function resolveBattle(
           }
         }
       }
-    } else if (attacker.attack < defenderValue) {
+    } else if (effectiveAttackerATK < defenderValue) {
       // Defender wins - no destruction, damage to attacker's controller
-      const damage = defenderValue - attacker.attack;
+      const damage = defenderValue - effectiveAttackerATK;
       const gameEnded = await applyDamage(
         ctx,
         lobbyId,

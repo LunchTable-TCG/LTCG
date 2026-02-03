@@ -62,7 +62,6 @@ const STATUS_CONFIG = {
 
 type ChatMode = "global" | "agent";
 
-
 // Removed MOCK_MESSAGES and OLDER_MESSAGES - now using real data from Convex
 
 function formatTime(timestamp: number): string {
@@ -83,11 +82,7 @@ export function GlobalChat() {
   } = useGlobalChat();
 
   // AI Chat hook for agent mode
-  const {
-    messages: aiChatMessages,
-    isAgentTyping,
-    sendMessage: sendAIMessage,
-  } = useAIChat();
+  const { messages: aiChatMessages, isAgentTyping, sendMessage: sendAIMessage } = useAIChat();
 
   // Challenge mutation
   const sendChallengeMutation = useMutation(api.social.challenges.sendChallenge);
@@ -397,7 +392,9 @@ export function GlobalChat() {
             <div className="flex justify-center py-3">
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30">
                 <Loader2 className="w-4 h-4 text-[#d4af37] animate-spin" />
-                <span className="text-xs font-medium text-[#d4af37]">Loading older messages...</span>
+                <span className="text-xs font-medium text-[#d4af37]">
+                  Loading older messages...
+                </span>
               </div>
             </div>
           )}
@@ -507,7 +504,8 @@ export function GlobalChat() {
                     </span>
                   </div>
                   <p className="text-sm text-[#e8e0d5] leading-relaxed">
-                    Welcome to Lunchtable TCG! I'm your AI companion. Ask me anything about the game, strategies, or how to improve your deck!
+                    Welcome to Lunchtable TCG! I'm your AI companion. Ask me anything about the
+                    game, strategies, or how to improve your deck!
                   </p>
                 </div>
               </div>

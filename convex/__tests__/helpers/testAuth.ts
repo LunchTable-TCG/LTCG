@@ -17,11 +17,8 @@
  * ```
  */
 
-import {
-  createDeterministicPrivyIdentity,
-  createPrivyIdentity,
-} from "./mockPrivyJwt";
 import type { MutationCtx } from "../../_generated/server";
+import { createDeterministicPrivyIdentity, createPrivyIdentity } from "./mockPrivyJwt";
 
 // Type for the test instance - using any to avoid complex convex-test generic type issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

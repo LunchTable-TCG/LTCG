@@ -40,7 +40,8 @@ export const STARTER_DECKS: readonly StarterDeckDefinition[] = [
     name: "Necro Empire Starter",
     deckCode: "NECRO_EMPIRE",
     archetype: "dark" satisfies DeckArchetype,
-    description: "Command the undead legions. Revive fallen monsters and drain your opponent's life.",
+    description:
+      "Command the undead legions. Revive fallen monsters and drain your opponent's life.",
     playstyle: "Grind",
     cardCount: 34,
   },

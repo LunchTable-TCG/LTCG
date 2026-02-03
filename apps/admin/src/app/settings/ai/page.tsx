@@ -10,13 +10,7 @@
 import { PageWrapper } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 // Dialog components available for future use if needed
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,16 +26,16 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { Text, Title } from "@tremor/react";
-import { useAction, useMutation } from "convex/react";
+import { useAction as useConvexAction, useMutation } from "convex/react";
 import {
   AlertCircleIcon,
   BarChart3Icon,
   CheckCircleIcon,
+  ExternalLinkIcon,
   EyeIcon,
   EyeOffIcon,
-  ExternalLinkIcon,
   FilterIcon,
   ImageIcon,
   KeyIcon,
@@ -51,8 +45,8 @@ import {
   SaveIcon,
   SearchIcon,
   SettingsIcon,
-  TrendingUpIcon,
   Trash2Icon,
+  TrendingUpIcon,
   WifiIcon,
   WifiOffIcon,
   ZapIcon,
@@ -227,9 +221,7 @@ function ProviderStatusCard({
           <div className="flex items-center gap-3">
             <div
               className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold text-sm ${
-                isConfigured
-                  ? "bg-green-500/10 text-green-600"
-                  : "bg-muted text-muted-foreground"
+                isConfigured ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"
               }`}
             >
               {info.icon}
@@ -274,9 +266,7 @@ function ProviderStatusCard({
         {testResult && (
           <div
             className={`mt-3 flex items-center gap-2 rounded-md p-2 text-sm ${
-              testResult.success
-                ? "bg-green-500/10 text-green-600"
-                : "bg-red-500/10 text-red-600"
+              testResult.success ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"
             }`}
           >
             {testResult.success ? (
@@ -414,7 +404,7 @@ function ModelTypeIcon({ type }: { type: "language" | "embedding" | "image" }) {
 // Format pricing to human readable
 function formatPrice(price: string | undefined) {
   if (!price) return "N/A";
-  const num = parseFloat(price);
+  const num = Number.parseFloat(price);
   if (isNaN(num)) return price;
   if (num === 0) return "Free";
   if (num < 0.000001) return `$${(num * 1000000).toFixed(4)}/1M`;
@@ -499,7 +489,9 @@ function ModelBrowser({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Providers</SelectItem>
-              <SelectItem value="openrouter">OpenRouter ({counts.byProvider.openrouter})</SelectItem>
+              <SelectItem value="openrouter">
+                OpenRouter ({counts.byProvider.openrouter})
+              </SelectItem>
               <SelectItem value="vercel">Vercel ({counts.byProvider.vercel})</SelectItem>
             </SelectContent>
           </Select>
@@ -605,26 +597,26 @@ export default function AIProvidersPage() {
   useAdmin(); // Auth check
 
   // Queries
-  const configsResult = useConvexQuery(apiAny.admin.aiConfig.getAIConfigs, {});
+  const configsResult = useTypedQuery(typedApi.admin.aiConfig.getAIConfigs, {});
 
   // Mutations
-  const updateConfig = useConvexMutation(apiAny.admin.aiConfig.updateAIConfig);
-  const initializeDefaults = useConvexMutation(apiAny.admin.aiConfig.initializeAIDefaults);
-  const testProvider = useAction(apiAny.admin.aiConfig.testProviderConnection);
+  const updateConfig = useTypedMutation(typedApi.admin.aiConfig.updateAIConfig);
+  const initializeDefaults = useTypedMutation(typedApi.admin.aiConfig.initializeAIDefaults);
+  const testProvider = useConvexAction(typedApi.admin.aiConfig.testProviderConnection);
 
   // API Key management
-  const apiKeyStatus = useConvexQuery(apiAny.admin.aiConfig.getAPIKeyStatus, {});
-  const setAPIKeyMutation = useMutation(apiAny.admin.aiConfig.setAPIKey);
-  const clearAPIKeyMutation = useMutation(apiAny.admin.aiConfig.clearAPIKey);
+  const apiKeyStatus = useTypedQuery(typedApi.admin.aiConfig.getAPIKeyStatus, {});
+  const setAPIKeyMutation = useMutation(typedApi.admin.aiConfig.setAPIKey);
+  const clearAPIKeyMutation = useMutation(typedApi.admin.aiConfig.clearAPIKey);
 
   // Model fetching actions
-  const fetchAllModels = useAction(apiAny.admin.aiProviders.fetchAllModels);
+  const fetchAllModels = useConvexAction(typedApi.admin.aiProviders.fetchAllModels);
 
   // Usage tracking queries
-  const usageSummary = useConvexQuery(apiAny.admin.aiUsage.getUsageSummary, { days: 30 });
-  const topModels = useConvexQuery(apiAny.admin.aiUsage.getTopModels, { days: 30, limit: 5 });
-  const usageByFeature = useConvexQuery(apiAny.admin.aiUsage.getUsageByFeature, { days: 30 });
-  const recentUsage = useConvexQuery(apiAny.admin.aiUsage.getRecentUsage, { limit: 20 });
+  const usageSummary = useTypedQuery(typedApi.admin.aiUsage.getUsageSummary, { days: 30 });
+  const topModels = useTypedQuery(typedApi.admin.aiUsage.getTopModels, { days: 30, limit: 5 });
+  const usageByFeature = useTypedQuery(typedApi.admin.aiUsage.getUsageByFeature, { days: 30 });
+  const recentUsage = useTypedQuery(typedApi.admin.aiUsage.getRecentUsage, { limit: 20 });
 
   // Local state
   const [localValues, setLocalValues] = useState<Record<string, any>>({});
@@ -880,11 +872,7 @@ export default function AIProvidersPage() {
       actions={
         <div className="flex items-center gap-2">
           <RoleGuard permission="admin.manage">
-            <Button
-              variant="outline"
-              onClick={handleInitializeDefaults}
-              disabled={isInitializing}
-            >
+            <Button variant="outline" onClick={handleInitializeDefaults} disabled={isInitializing}>
               {isInitializing ? (
                 <>
                   <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
@@ -899,10 +887,7 @@ export default function AIProvidersPage() {
             </Button>
           </RoleGuard>
           <RoleGuard permission="admin.manage">
-            <Button
-              onClick={saveAllChanges}
-              disabled={totalChanges === 0 || isSaving}
-            >
+            <Button onClick={saveAllChanges} disabled={totalChanges === 0 || isSaving}>
               {isSaving ? (
                 <>
                   <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
@@ -990,9 +975,7 @@ export default function AIProvidersPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Provider Selection</CardTitle>
-                  <CardDescription>
-                    Choose your primary and fallback AI providers
-                  </CardDescription>
+                  <CardDescription>Choose your primary and fallback AI providers</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid gap-6 md:grid-cols-2">
@@ -1054,14 +1037,17 @@ export default function AIProvidersPage() {
                     <Text className="text-sm">
                       <strong>Current Setup:</strong> Primary requests go to{" "}
                       <Badge variant="secondary">
-                        {PROVIDER_INFO[getConfigValue("ai.provider", "vercel") as ProviderKey]?.name ?? "Vercel AI"}
+                        {PROVIDER_INFO[getConfigValue("ai.provider", "vercel") as ProviderKey]
+                          ?.name ?? "Vercel AI"}
                       </Badge>
                       , with{" "}
                       {getConfigValue("ai.fallback_provider", "openrouter") !== "none" ? (
                         <>
                           fallback to{" "}
                           <Badge variant="secondary">
-                            {PROVIDER_INFO[getConfigValue("ai.fallback_provider", "openrouter") as ProviderKey]?.name ?? "OpenRouter"}
+                            {PROVIDER_INFO[
+                              getConfigValue("ai.fallback_provider", "openrouter") as ProviderKey
+                            ]?.name ?? "OpenRouter"}
                           </Badge>
                         </>
                       ) : (
@@ -1084,11 +1070,13 @@ export default function AIProvidersPage() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
-                            apiKeyStatus?.openrouter?.isSet
-                              ? "bg-green-500/10 text-green-600"
-                              : "bg-blue-500/10 text-blue-600"
-                          }`}>
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
+                              apiKeyStatus?.openrouter?.isSet
+                                ? "bg-green-500/10 text-green-600"
+                                : "bg-blue-500/10 text-blue-600"
+                            }`}
+                          >
                             OR
                           </div>
                           <div>
@@ -1100,8 +1088,8 @@ export default function AIProvidersPage() {
                           {apiKeyStatus?.openrouter?.isSet
                             ? `Saved (${apiKeyStatus.openrouter.source})`
                             : providerStatus?.openrouter
-                            ? "Via Env Var"
-                            : "Not Set"}
+                              ? "Via Env Var"
+                              : "Not Set"}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -1109,7 +1097,9 @@ export default function AIProvidersPage() {
                       {apiKeyStatus?.openrouter?.isSet && (
                         <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-sm font-mono">
                           <KeyIcon className="h-4 w-4 text-muted-foreground" />
-                          <span className="flex-1 truncate">{apiKeyStatus.openrouter.maskedKey}</span>
+                          <span className="flex-1 truncate">
+                            {apiKeyStatus.openrouter.maskedKey}
+                          </span>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1149,7 +1139,9 @@ export default function AIProvidersPage() {
                         </div>
                         <Button
                           onClick={() => handleSaveApiKey("openrouter")}
-                          disabled={!apiKeyInputs.openrouter.trim() || savingApiKey === "openrouter"}
+                          disabled={
+                            !apiKeyInputs.openrouter.trim() || savingApiKey === "openrouter"
+                          }
                         >
                           {savingApiKey === "openrouter" ? (
                             <Loader2Icon className="h-4 w-4 animate-spin" />
@@ -1185,11 +1177,13 @@ export default function AIProvidersPage() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
-                            apiKeyStatus?.anthropic?.isSet
-                              ? "bg-green-500/10 text-green-600"
-                              : "bg-orange-500/10 text-orange-600"
-                          }`}>
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
+                              apiKeyStatus?.anthropic?.isSet
+                                ? "bg-green-500/10 text-green-600"
+                                : "bg-orange-500/10 text-orange-600"
+                            }`}
+                          >
                             A
                           </div>
                           <div>
@@ -1201,8 +1195,8 @@ export default function AIProvidersPage() {
                           {apiKeyStatus?.anthropic?.isSet
                             ? `Saved (${apiKeyStatus.anthropic.source})`
                             : providerStatus?.anthropic
-                            ? "Via Env Var"
-                            : "Not Set"}
+                              ? "Via Env Var"
+                              : "Not Set"}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -1210,7 +1204,9 @@ export default function AIProvidersPage() {
                       {apiKeyStatus?.anthropic?.isSet && (
                         <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-sm font-mono">
                           <KeyIcon className="h-4 w-4 text-muted-foreground" />
-                          <span className="flex-1 truncate">{apiKeyStatus.anthropic.maskedKey}</span>
+                          <span className="flex-1 truncate">
+                            {apiKeyStatus.anthropic.maskedKey}
+                          </span>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1286,11 +1282,13 @@ export default function AIProvidersPage() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
-                            apiKeyStatus?.openai?.isSet
-                              ? "bg-green-500/10 text-green-600"
-                              : "bg-emerald-500/10 text-emerald-600"
-                          }`}>
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
+                              apiKeyStatus?.openai?.isSet
+                                ? "bg-green-500/10 text-green-600"
+                                : "bg-emerald-500/10 text-emerald-600"
+                            }`}
+                          >
                             OA
                           </div>
                           <div>
@@ -1302,8 +1300,8 @@ export default function AIProvidersPage() {
                           {apiKeyStatus?.openai?.isSet
                             ? `Saved (${apiKeyStatus.openai.source})`
                             : providerStatus?.openai
-                            ? "Via Env Var"
-                            : "Not Set"}
+                              ? "Via Env Var"
+                              : "Not Set"}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -1387,11 +1385,13 @@ export default function AIProvidersPage() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
-                            apiKeyStatus?.vercel?.isSet
-                              ? "bg-green-500/10 text-green-600"
-                              : "bg-purple-500/10 text-purple-600"
-                          }`}>
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold ${
+                              apiKeyStatus?.vercel?.isSet
+                                ? "bg-green-500/10 text-green-600"
+                                : "bg-purple-500/10 text-purple-600"
+                            }`}
+                          >
                             V
                           </div>
                           <div>
@@ -1403,8 +1403,8 @@ export default function AIProvidersPage() {
                           {apiKeyStatus?.vercel?.isSet
                             ? `Saved (${apiKeyStatus.vercel.source})`
                             : providerStatus?.vercel
-                            ? "Via Env Var"
-                            : "Not Set"}
+                              ? "Via Env Var"
+                              : "Not Set"}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -1496,7 +1496,9 @@ export default function AIProvidersPage() {
                   <CardContent className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="rounded-md border p-4">
-                        <h4 className="font-medium mb-2 text-green-600">Database Storage (Recommended)</h4>
+                        <h4 className="font-medium mb-2 text-green-600">
+                          Database Storage (Recommended)
+                        </h4>
                         <ul className="text-sm text-muted-foreground space-y-1">
                           <li>• Keys entered above are stored securely in Convex</li>
                           <li>• Takes priority over environment variables</li>
@@ -1505,7 +1507,9 @@ export default function AIProvidersPage() {
                         </ul>
                       </div>
                       <div className="rounded-md border p-4">
-                        <h4 className="font-medium mb-2 text-amber-600">Environment Variables (Fallback)</h4>
+                        <h4 className="font-medium mb-2 text-amber-600">
+                          Environment Variables (Fallback)
+                        </h4>
                         <ul className="text-sm text-muted-foreground space-y-1">
                           <li>• Set in Convex Dashboard → Settings → Environment Variables</li>
                           <li>• Used when database key is not set</li>
@@ -1518,9 +1522,9 @@ export default function AIProvidersPage() {
                       </div>
                     </div>
                     <div className="rounded-md bg-blue-500/10 p-3 text-sm text-blue-600">
-                      <strong>Security Note:</strong> API keys stored in the database are never returned to the
-                      client in full. Only masked versions are displayed. The full keys are only accessed
-                      server-side when making API calls.
+                      <strong>Security Note:</strong> API keys stored in the database are never
+                      returned to the client in full. Only masked versions are displayed. The full
+                      keys are only accessed server-side when making API calls.
                     </div>
                   </CardContent>
                 </Card>
@@ -1816,7 +1820,9 @@ export default function AIProvidersPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>External Analytics</CardTitle>
-                    <CardDescription>View detailed analytics on provider dashboards</CardDescription>
+                    <CardDescription>
+                      View detailed analytics on provider dashboards
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-4 md:grid-cols-2">
@@ -1866,8 +1872,8 @@ export default function AIProvidersPage() {
                 <CardHeader>
                   <CardTitle>Available AI Models</CardTitle>
                   <CardDescription>
-                    Browse all available models from OpenRouter and Vercel AI Gateway.
-                    Filter by provider or model type (language, embedding, image generation).
+                    Browse all available models from OpenRouter and Vercel AI Gateway. Filter by
+                    provider or model type (language, embedding, image generation).
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1876,7 +1882,8 @@ export default function AIProvidersPage() {
                       <SearchIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                       <Title className="mb-2">No Models Loaded</Title>
                       <Text className="text-muted-foreground mb-6">
-                        Click the button below to fetch available models from your configured providers.
+                        Click the button below to fetch available models from your configured
+                        providers.
                       </Text>
                       <Button onClick={handleFetchModels} disabled={isLoadingModels}>
                         {isLoadingModels ? (
@@ -1983,8 +1990,8 @@ export default function AIProvidersPage() {
 
                   <div className="rounded-md bg-blue-500/10 p-4">
                     <Text className="text-sm text-blue-600">
-                      OpenRouter provides access to 400+ models through a unified API.
-                      Model pricing and availability may vary.{" "}
+                      OpenRouter provides access to 400+ models through a unified API. Model pricing
+                      and availability may vary.{" "}
                       <a
                         href="https://openrouter.ai/models"
                         target="_blank"
@@ -2045,7 +2052,9 @@ export default function AIProvidersPage() {
                     </div>
                     <Switch
                       checked={getConfigValue("ai.vercel.zdr_enabled", true)}
-                      onCheckedChange={(checked) => setConfigValue("ai.vercel.zdr_enabled", checked)}
+                      onCheckedChange={(checked) =>
+                        setConfigValue("ai.vercel.zdr_enabled", checked)
+                      }
                     />
                   </div>
                   {hasChanged("ai.vercel.zdr_enabled") && (

@@ -5,10 +5,10 @@
  * Parses transaction data and updates tokenTrades, tokenHolders, and tokenMetrics.
  */
 
-import { httpAction } from "../_generated/server";
-import { internal as generatedInternal } from "../_generated/api";
-import { internalMutation, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
+import { internal as generatedInternal } from "../_generated/api";
+import { httpAction } from "../_generated/server";
+import { internalMutation, internalQuery } from "../_generated/server";
 
 // biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround for new modules
 const internal = generatedInternal as any;
@@ -172,10 +172,7 @@ interface ParsedSwap {
   tokenMint: string;
 }
 
-function parseSwapTransaction(
-  tx: HeliusTransaction,
-  tokenMint: string
-): ParsedSwap | null {
+function parseSwapTransaction(tx: HeliusTransaction, tokenMint: string): ParsedSwap | null {
   // Check if this is a swap transaction
   if (!tx.events?.swap && tx.type !== "SWAP") {
     // Try to parse from token transfers for pump.fun
@@ -235,10 +232,7 @@ function parseSwapTransaction(
   };
 }
 
-function parseFromTransfers(
-  tx: HeliusTransaction,
-  tokenMint: string
-): ParsedSwap | null {
+function parseFromTransfers(tx: HeliusTransaction, tokenMint: string): ParsedSwap | null {
   // Parse swap from raw transfers (backup method)
   const tokenTransfers = tx.tokenTransfers?.filter((t) => t.mint === tokenMint) ?? [];
   const nativeTransfers = tx.nativeTransfers ?? [];
@@ -543,14 +537,10 @@ export const updateHolderFromTrade = internalMutation({
           : Math.max(0, existing.balance - args.tokenAmount);
 
       const newTotalBought =
-        args.type === "buy"
-          ? existing.totalBought + args.tokenAmount
-          : existing.totalBought;
+        args.type === "buy" ? existing.totalBought + args.tokenAmount : existing.totalBought;
 
       const newTotalSold =
-        args.type === "sell"
-          ? existing.totalSold + args.tokenAmount
-          : existing.totalSold;
+        args.type === "sell" ? existing.totalSold + args.tokenAmount : existing.totalSold;
 
       // If balance goes to 0, we could delete the holder
       // But keeping for history is often better
