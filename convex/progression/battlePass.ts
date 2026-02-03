@@ -51,6 +51,22 @@ interface BattlePassReward {
 // ============================================================================
 
 /**
+ * Check if user has an active Stripe subscription
+ */
+async function hasActiveSubscription(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">
+): Promise<boolean> {
+  const subscription = await ctx.db
+    .query("stripeSubscriptions")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .filter((q) => q.eq(q.field("status"), "active"))
+    .first();
+
+  return subscription !== null;
+}
+
+/**
  * Get the currently active battle pass
  */
 async function getActiveBattlePass(ctx: QueryCtx | MutationCtx) {
@@ -387,11 +403,14 @@ export const getUserBattlePassProgress = query({
     const battlePass = await ctx.db.get(battlePassId);
     if (!battlePass) return null;
 
+    // Check subscription status to determine premium access
+    const isPremium = await hasActiveSubscription(ctx, userId);
+
     return {
       battlePassId: progress.battlePassId,
       currentXP: progress.currentXP,
       currentTier: progress.currentTier,
-      isPremium: progress.isPremium,
+      isPremium, // Override with subscription status
       premiumPurchasedAt: progress.premiumPurchasedAt,
       claimedFreeTiers: progress.claimedFreeTiers,
       claimedPremiumTiers: progress.claimedPremiumTiers,
@@ -471,10 +490,11 @@ export const claimBattlePassReward = mutation({
         });
       }
     } else {
-      // Premium track
-      if (!progress.isPremium) {
+      // Premium track - check subscription status
+      const isPremium = await hasActiveSubscription(ctx, userId);
+      if (!isPremium) {
         throw createError(ErrorCode.ECONOMY_INSUFFICIENT_GEMS, {
-          reason: "Premium pass required",
+          reason: "Active subscription required to claim premium rewards",
         });
       }
       if (!tierDef.premiumReward) {
@@ -576,24 +596,17 @@ export const purchasePremiumPass = mutation({
  */
 export const initiatePremiumPassTokenPurchase = mutation({
   args: {},
+  // Note: This function is deprecated and always throws an error
+  // Return type kept for API compatibility but is never actually used
   returns: v.object({
     pendingPurchaseId: v.id("pendingTokenPurchases"),
     transactionBase64: v.string(),
     expiresAt: v.number(),
-    tokenPrice: v.number(),
   }),
   handler: async (ctx) => {
     await requireAuthMutation(ctx);
 
-    // 1. Get active battle pass
-    const battlePass = await getActiveBattlePass(ctx);
-    if (!battlePass) {
-      throw createError(ErrorCode.NOT_FOUND_QUEST, {
-        reason: "No active battle pass",
-      });
-    }
-
-    // 2. Token-based purchases are deprecated - premium access is now subscription-based
+    // Token-based purchases are deprecated - premium access is now subscription-based
     throw createError(ErrorCode.ECONOMY_TOKEN_PURCHASE_INVALID, {
       reason:
         "Premium battle pass purchases are now handled through Stripe subscriptions. Please use the subscription flow.",
@@ -1154,8 +1167,13 @@ export const addBattlePassXP = internalMutation({
     // Get or create user progress
     const progress = await getOrCreateBattlePassProgress(ctx, args.userId, battlePass._id);
 
+    // Apply premium XP multiplier if user has active subscription
+    const isPremium = await hasActiveSubscription(ctx, args.userId);
+    const xpMultiplier = isPremium ? 1.5 : 1.0; // 50% bonus for premium
+    const xpToAdd = Math.floor(args.xpAmount * xpMultiplier);
+
     const oldTier = progress.currentTier;
-    const newXP = progress.currentXP + args.xpAmount;
+    const newXP = progress.currentXP + xpToAdd;
     const newTier = calculateTierFromXP(newXP, battlePass.xpPerTier, battlePass.totalTiers);
 
     // Update progress
