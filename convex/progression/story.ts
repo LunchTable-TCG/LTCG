@@ -16,6 +16,7 @@ import {
   STAR_BONUS,
   XP_PER_LEVEL,
 } from "../lib/storyConstants";
+import { getAllRetryLimits, checkRetryLimit, formatTimeUntilReset } from "../lib/storyHelpers";
 import { addXP, getPlayerXP } from "../lib/xpHelpers";
 import { checkChapterUnlocked } from "./storyBattle";
 import { STORY_CHAPTERS } from "../seeds/storyChapters";
@@ -370,7 +371,6 @@ export const getRetryLimits = query({
   }),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
-    const { getAllRetryLimits } = await import("../lib/storyHelpers");
     return getAllRetryLimits(ctx, userId);
   },
 });
@@ -451,7 +451,6 @@ export const startChapter = mutation({
     }
 
     // Check retry limits using helper
-    const { checkRetryLimit, formatTimeUntilReset } = await import("../lib/storyHelpers");
     const retryLimit = await checkRetryLimit(ctx, userId, args.difficulty);
 
     if (!retryLimit.allowed) {
