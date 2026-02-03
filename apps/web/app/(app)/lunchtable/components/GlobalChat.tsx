@@ -1,6 +1,7 @@
 "use client";
 
 import { useGlobalChat } from "@/hooks";
+import { useAIChat } from "@/hooks/social/useAIChat";
 import { sanitizeChatMessage, sanitizeText } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
@@ -61,23 +62,6 @@ const STATUS_CONFIG = {
 
 type ChatMode = "global" | "agent";
 
-interface AgentMessage {
-  id: string;
-  role: "user" | "agent";
-  message: string;
-  timestamp: number;
-}
-
-// Mock agent conversation
-const MOCK_AGENT_MESSAGES: AgentMessage[] = [
-  {
-    id: "agent-1",
-    role: "agent",
-    message:
-      "Welcome to Lunchtable TCG! I'm your AI companion. Ask me anything about the game, strategies, or how to improve your deck!",
-    timestamp: Date.now() - 60000,
-  },
-];
 
 // Removed MOCK_MESSAGES and OLDER_MESSAGES - now using real data from Convex
 
@@ -98,6 +82,13 @@ export function GlobalChat() {
     loadMore,
   } = useGlobalChat();
 
+  // AI Chat hook for agent mode
+  const {
+    messages: aiChatMessages,
+    isAgentTyping,
+    sendMessage: sendAIMessage,
+  } = useAIChat();
+
   // Challenge mutation
   const sendChallengeMutation = useMutation(api.social.challenges.sendChallenge);
 
@@ -106,12 +97,7 @@ export function GlobalChat() {
 
   const [chatMode, setChatMode] = useState<ChatMode>("global");
   const [message, setMessage] = useState("");
-  const [agentMessages, setAgentMessages] = useState<AgentMessage[]>(MOCK_AGENT_MESSAGES);
-  // Removed: Load more functionality (not implemented in MVP)
-  // const [isLoadingMore, setIsLoadingMore] = useState(false);
-  // const [hasMore, setHasMore] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [isAgentTyping, setIsAgentTyping] = useState(false);
   const [isOnlinePanelOpen, setIsOnlinePanelOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const [userMenu, setUserMenu] = useState<{ username: string; x: number; y: number } | null>(null);
@@ -178,7 +164,7 @@ export function GlobalChat() {
       return;
     }
     scrollAgentToBottom();
-  }, [agentMessages.length, scrollAgentToBottom]);
+  }, [aiChatMessages.length, scrollAgentToBottom]);
 
   // Infinite scroll - load more when scrolling near the top
   const handleScroll = useCallback(() => {
@@ -323,44 +309,17 @@ export function GlobalChat() {
     }
   };
 
-  const handleAgentSend = () => {
+  const handleAgentSend = async () => {
     if (!message.trim() || isAgentTyping) return;
 
-    // Add user message
-    const userMessage: AgentMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      message: message.trim(),
-      timestamp: Date.now(),
-    };
-
-    setAgentMessages((prev) => [...prev, userMessage]);
+    const messageToSend = message.trim();
     setMessage("");
-    setIsAgentTyping(true);
 
-    // Simulate agent response
-    setTimeout(() => {
-      const responses = [
-        "That's a great question! In Lunchtable TCG, building a balanced deck is key. Consider mixing offensive and defensive cards for versatility.",
-        "Fire decks are excellent for aggressive plays! They excel at dealing burst damage but can run out of steam in longer matches.",
-        "Looking to climb the ranks? Focus on understanding your matchups and practice your mulligan decisions.",
-        "Water control decks are fantastic against aggressive strategies. They reward patient, calculated play.",
-        "Earth decks provide incredible sustain and can outlast most opponents in longer games.",
-        "Wind decks are all about tempo! Use your speed advantage to overwhelm opponents before they can stabilize.",
-      ];
-
-      const agentResponse: AgentMessage = {
-        id: `agent-${Date.now()}`,
-        role: "agent",
-        message:
-          responses[Math.floor(Math.random() * responses.length)] ||
-          "I'm here to help with your Lunchtable TCG questions!",
-        timestamp: Date.now(),
-      };
-
-      setAgentMessages((prev) => [...prev, agentResponse]);
-      setIsAgentTyping(false);
-    }, 1500);
+    try {
+      await sendAIMessage(messageToSend);
+    } catch (error) {
+      console.error("Failed to send AI message:", error);
+    }
   };
 
   return (
@@ -534,9 +493,29 @@ export function GlobalChat() {
       {/* Messages - Agent Chat */}
       {chatMode === "agent" && (
         <div className="flex-1 overflow-y-auto p-4 space-y-3 tcg-scrollbar">
-          {agentMessages.map((msg) => (
+          {/* Welcome message if no messages yet */}
+          {aiChatMessages.length === 0 && !isAgentTyping && (
+            <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="shrink-0 w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-purple-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="rounded-lg p-3 border bg-purple-500/10 border-purple-500/30 max-w-[85%]">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-black uppercase tracking-wide text-purple-400">
+                      Lunchtable Guide
+                    </span>
+                  </div>
+                  <p className="text-sm text-[#e8e0d5] leading-relaxed">
+                    Welcome to Lunchtable TCG! I'm your AI companion. Ask me anything about the game, strategies, or how to improve your deck!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          {aiChatMessages.map((msg) => (
             <div
-              key={msg.id}
+              key={msg._id}
               className={cn(
                 "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300",
                 msg.role === "user" ? "flex-row-reverse" : ""
@@ -577,7 +556,7 @@ export function GlobalChat() {
                       {msg.role === "agent" ? "AI Agent" : "You"}
                     </span>
                     <span className="text-[10px] text-[#a89f94]/60 ml-2">
-                      {formatTime(msg.timestamp)}
+                      {formatTime(msg.createdAt)}
                     </span>
                   </div>
                   <p

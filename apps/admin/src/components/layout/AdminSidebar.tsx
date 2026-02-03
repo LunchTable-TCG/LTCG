@@ -72,6 +72,8 @@ const navigation: NavGroup[] = [
       { title: "Shop", href: "/shop", icon: "🛒", permission: "config.edit" },
       { title: "Promo Codes", href: "/promo-codes", icon: "🎁", permission: "config.edit" },
       { title: "Quests", href: "/quests", icon: "🎯", permission: "config.edit" },
+      { title: "Story", href: "/story", icon: "📖", permission: "config.edit" },
+      { title: "Seasons", href: "/seasons", icon: "🏆", permission: "config.edit" },
     ],
   },
   {
@@ -81,6 +83,13 @@ const navigation: NavGroup[] = [
       { title: "API Keys", href: "/api-keys", icon: "🔑", permission: "player.view" },
       { title: "Batch Operations", href: "/batch", icon: "📦", permission: "batch.operations" },
       { title: "Maintenance", href: "/maintenance", icon: "🔧", permission: "admin.manage" },
+    ],
+  },
+  {
+    title: "Settings",
+    items: [
+      { title: "Feature Flags", href: "/settings/features", icon: "🚩", permission: "admin.manage" },
+      { title: "Configuration", href: "/settings/config", icon: "⚙️", permission: "admin.manage" },
     ],
   },
   {

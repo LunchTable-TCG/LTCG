@@ -1498,57 +1498,86 @@ export default defineSchema({
 
   // Chapter definitions (reference data)
   storyChapters: defineTable({
-    actNumber: v.number(),
-    chapterNumber: v.number(),
+    number: v.number(), // Chapter 1, 2, 3...
     title: v.string(),
     description: v.string(),
-    archetype: v.string(), // Which archetype this chapter focuses on
-    archetypeImageUrl: v.string(), // Path to story asset image
-    storyText: v.string(), // Narrative cutscene text
-    loreText: v.string(), // Lore entry unlocked on completion
-    aiOpponentDeckCode: v.string(), // Starter deck code for AI
-    aiDifficulty: v.object({
-      normal: v.number(), // AI strength 1-10
-      hard: v.number(),
-      legendary: v.number(),
-    }),
-    battleCount: v.number(), // 1-3 battles per chapter
-    baseRewards: v.object({
-      gold: v.number(),
-      xp: v.number(),
-      guaranteedCards: v.optional(v.array(v.string())), // Specific card IDs
-    }),
-    unlockRequirements: v.optional(
+    imageUrl: v.optional(v.string()),
+    unlockCondition: v.optional(
       v.object({
-        previousChapter: v.optional(v.boolean()), // Must complete previous chapter
-        minimumLevel: v.optional(v.number()),
+        type: v.union(
+          v.literal("chapter_complete"),
+          v.literal("player_level"),
+          v.literal("none")
+        ),
+        requiredChapterId: v.optional(v.id("storyChapters")),
+        requiredLevel: v.optional(v.number()),
       })
     ),
-    isActive: v.boolean(),
+    status: v.union(v.literal("draft"), v.literal("published")),
     createdAt: v.number(),
+    updatedAt: v.number(),
   })
-    .index("by_act_chapter", ["actNumber", "chapterNumber"])
-    .index("by_archetype", ["archetype"])
-    .index("by_active", ["isActive"]),
+    .index("by_number", ["number"])
+    .index("by_status", ["status"]),
 
-  // Stage definitions (10 stages per chapter)
+  // Stage definitions within chapters
   storyStages: defineTable({
     chapterId: v.id("storyChapters"),
-    stageNumber: v.number(), // 1-10
-    name: v.string(),
+    stageNumber: v.number(), // Stage 1, 2, 3 within chapter
+
+    title: v.string(),
     description: v.string(),
-    aiDifficulty: v.union(
+
+    // Opponent configuration
+    opponentName: v.string(),
+    opponentDeckId: v.optional(v.id("decks")), // Pre-built AI deck
+    opponentDeckArchetype: v.optional(v.string()), // Or generate from archetype
+    difficulty: v.union(
       v.literal("easy"),
       v.literal("medium"),
       v.literal("hard"),
       v.literal("boss")
     ),
-    rewardGold: v.number(),
-    rewardXp: v.number(),
-    firstClearBonus: v.number(), // Extra gold for first clear
+
+    // Dialogue/narrative
+    preMatchDialogue: v.optional(
+      v.array(
+        v.object({
+          speaker: v.string(),
+          text: v.string(),
+          imageUrl: v.optional(v.string()),
+        })
+      )
+    ),
+    postMatchWinDialogue: v.optional(
+      v.array(
+        v.object({
+          speaker: v.string(),
+          text: v.string(),
+        })
+      )
+    ),
+    postMatchLoseDialogue: v.optional(
+      v.array(
+        v.object({
+          speaker: v.string(),
+          text: v.string(),
+        })
+      )
+    ),
+
+    // Rewards
+    firstClearGold: v.number(),
+    repeatGold: v.number(),
+    firstClearGems: v.optional(v.number()),
+    cardRewardId: v.optional(v.id("cardDefinitions")), // Guaranteed card on first clear
+
+    status: v.union(v.literal("draft"), v.literal("published")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   })
-    .index("by_chapter", ["chapterId"])
-    .index("by_chapter_stage", ["chapterId", "stageNumber"]),
+    .index("by_chapter", ["chapterId", "stageNumber"])
+    .index("by_status", ["status"]),
 
   // Stage progress tracking (per user, per stage)
   storyStageProgress: defineTable({
@@ -1729,4 +1758,135 @@ export default defineSchema({
     .index("by_user_friend", ["userId", "friendId"])
     .index("by_status", ["status"])
     .index("by_created", ["createdAt"]),
+
+  // ============================================================================
+  // SEASONS SYSTEM
+  // ============================================================================
+
+  // Seasons - Competitive ranked seasons with rewards
+  seasons: defineTable({
+    name: v.string(), // "Season 1: Dawn of Cards"
+    number: v.number(), // 1, 2, 3...
+    status: v.union(v.literal("upcoming"), v.literal("active"), v.literal("ended")),
+    startDate: v.number(), // timestamp
+    endDate: v.number(), // timestamp
+    description: v.optional(v.string()),
+
+    // Rank reset configuration
+    rankResetType: v.union(v.literal("full"), v.literal("soft"), v.literal("none")),
+    softResetPercentage: v.optional(v.number()), // For soft reset, how much ELO to keep (0-100)
+
+    // Rewards configuration
+    rewards: v.array(
+      v.object({
+        tier: v.string(), // "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Legend"
+        minElo: v.number(),
+        goldReward: v.number(),
+        gemsReward: v.number(),
+        cardPackReward: v.optional(v.number()), // Number of packs
+        exclusiveCardId: v.optional(v.id("cardDefinitions")), // Exclusive card reward
+        titleReward: v.optional(v.string()), // Exclusive title
+      })
+    ),
+
+    createdAt: v.number(),
+    createdBy: v.id("users"),
+    updatedAt: v.number(),
+  })
+    .index("by_number", ["number"])
+    .index("by_status", ["status"]),
+
+  // Season snapshots - End-of-season data for rewards distribution
+  seasonSnapshots: defineTable({
+    seasonId: v.id("seasons"),
+    seasonNumber: v.number(),
+    userId: v.id("users"),
+    username: v.string(),
+    finalElo: v.number(),
+    tier: v.string(),
+    rank: v.number(), // Position in leaderboard
+    gamesPlayed: v.number(),
+    wins: v.number(),
+    losses: v.number(),
+    rewardsDistributed: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_season", ["seasonId"])
+    .index("by_season_rank", ["seasonId", "rank"])
+    .index("by_user", ["userId"]),
+
+  // ============================================================================
+  // SYSTEM CONFIGURATION
+  // ============================================================================
+
+  // System-wide configuration values managed by admins
+  systemConfig: defineTable({
+    key: v.string(), // unique config key like "economy.gold_per_win"
+    value: v.any(), // JSON value - different config types have different value structures
+    category: v.string(), // "economy", "matchmaking", "gameplay", "rates"
+    displayName: v.string(),
+    description: v.string(),
+    valueType: v.union(
+      v.literal("number"),
+      v.literal("string"),
+      v.literal("boolean"),
+      v.literal("json")
+    ),
+    minValue: v.optional(v.number()),
+    maxValue: v.optional(v.number()),
+    updatedAt: v.number(),
+    updatedBy: v.id("users"),
+  })
+    .index("by_key", ["key"])
+    .index("by_category", ["category"]),
+
+  // ============================================================================
+  // AI CHAT SYSTEM
+  // ============================================================================
+
+  // AI Chat Messages - stores conversation history with ElizaOS agent
+  aiChatMessages: defineTable({
+    userId: v.id("users"),
+    sessionId: v.string(), // Groups messages into conversations
+    role: v.union(v.literal("user"), v.literal("agent")),
+    message: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_session", ["sessionId"])
+    .index("by_user_session", ["userId", "sessionId"]),
+
+  // AI Chat Sessions - tracks conversation context per user
+  aiChatSessions: defineTable({
+    userId: v.id("users"),
+    sessionId: v.string(),
+    createdAt: v.number(),
+    lastMessageAt: v.number(),
+    messageCount: v.number(),
+    isActive: v.boolean(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_active", ["userId", "isActive"])
+    .index("by_session", ["sessionId"]),
+
+  // ============================================================================
+  // FEATURE FLAGS SYSTEM
+  // ============================================================================
+
+  // Feature flags for gradual rollout and A/B testing
+  featureFlags: defineTable({
+    name: v.string(), // Unique identifier like "marketplace_enabled"
+    displayName: v.string(), // Human readable name
+    description: v.string(),
+    enabled: v.boolean(),
+    rolloutPercentage: v.optional(v.number()), // 0-100 for gradual rollout
+    targetUserIds: v.optional(v.array(v.id("users"))), // Specific users
+    targetRoles: v.optional(v.array(v.string())), // Target by role
+    category: v.string(), // "gameplay", "economy", "social", "experimental"
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    updatedBy: v.id("users"),
+  })
+    .index("by_name", ["name"])
+    .index("by_category", ["category"]),
 });
