@@ -420,6 +420,19 @@ Skills were generated in January 2026. To refresh:
 
 ---
 
+## 📋 Task Graphs & Planning
+
+**Task graphs have been moved to** `/docs/plans/` **for better organization with design documents.**
+
+- Completed graphs are archived in `/docs/plans/archive/`
+- Active planning documents are in `/docs/plans/`
+- Each document includes design decisions, implementation timeline, and status
+
+**Currently Active**:
+- COMPLETE_PLUGIN_TESTS.md (in `.claude/tasks/` - still in use)
+
+---
+
 ## 🔄 Maintenance
 
 ### Regular Updates
