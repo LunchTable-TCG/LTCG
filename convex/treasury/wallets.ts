@@ -300,8 +300,17 @@ export const retryWalletCreation = mutation({
       throw new Error("Wallet not found");
     }
 
+    // Handle legacy wallets without creationStatus
+    if (wallet.creationStatus === undefined) {
+      throw new Error(
+        "Legacy wallet detected. Please run migrateExistingWallets before retrying creation."
+      );
+    }
+
     if (wallet.creationStatus !== "failed") {
-      throw new Error("Can only retry failed wallet creation");
+      throw new Error(
+        `Can only retry failed wallet creation. Current status: ${wallet.creationStatus}`
+      );
     }
 
     // Reset status to pending and clear error

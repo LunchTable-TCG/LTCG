@@ -93,7 +93,11 @@ function getStatusBadge(status: string) {
   }
 }
 
-function getCreationStatusBadge(creationStatus: string) {
+function getCreationStatusBadge(creationStatus: string | undefined) {
+  if (!creationStatus) {
+    return <Badge color="amber">Legacy - No Status</Badge>;
+  }
+
   switch (creationStatus) {
     case "pending":
       return <Badge color="slate">Pending</Badge>;
@@ -298,6 +302,14 @@ export default function TreasuryWalletsPage() {
                 {/* Creation Status Section */}
                 {wallet.creationStatus !== "active" && (
                   <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+                    {!wallet.creationStatus && (
+                      <div className="flex items-center gap-2">
+                        <span>⚠️</span>
+                        <Text>
+                          Legacy wallet without creation status. Run migration to populate status.
+                        </Text>
+                      </div>
+                    )}
                     {wallet.creationStatus === "pending" && (
                       <div className="flex items-center gap-2">
                         <span>⏳</span>
