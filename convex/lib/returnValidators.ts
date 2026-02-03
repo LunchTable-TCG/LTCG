@@ -1044,8 +1044,7 @@ export const battlePassStatusValidator = v.union(
     status: v.union(v.literal("upcoming"), v.literal("active"), v.literal("ended")),
     totalTiers: v.number(),
     xpPerTier: v.number(),
-    premiumPrice: v.number(),
-    tokenPrice: v.optional(v.number()),
+    // Note: premiumPrice and tokenPrice removed - premium access now via Stripe subscriptions
     startDate: v.number(),
     endDate: v.number(),
     // User progress

@@ -26,8 +26,6 @@ import {
   battlePassTierValidator,
   claimBattlePassRewardValidator,
 } from "../lib/returnValidators";
-import { fromRawAmount } from "../lib/solana/tokenBalance";
-import { buildTokenTransferTransaction } from "../lib/solana/tokenTransfer";
 
 // Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
 // biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround
@@ -51,30 +49,6 @@ interface BattlePassReward {
 // ============================================================================
 // Internal Helpers
 // ============================================================================
-
-/**
- * Build an unsigned token transfer transaction to treasury
- *
- * Creates an SPL transfer transaction from buyer to treasury wallet
- * for battle pass premium purchases.
- *
- * @param buyerWallet - Buyer's wallet address
- * @param amount - Amount in human-readable format
- * @returns Unsigned transaction result
- */
-async function buildTreasuryTransferTransaction(buyerWallet: string, amount: number) {
-  if (!TOKEN.TREASURY_WALLET) {
-    throw new Error(
-      "Treasury wallet not configured. Set LTCG_TREASURY_WALLET environment variable."
-    );
-  }
-
-  return buildTokenTransferTransaction({
-    from: buyerWallet,
-    to: TOKEN.TREASURY_WALLET,
-    amount,
-  });
-}
 
 /**
  * Get the currently active battle pass
@@ -309,8 +283,7 @@ export const getBattlePassStatus = query({
       status: battlePass.status,
       totalTiers: battlePass.totalTiers,
       xpPerTier: battlePass.xpPerTier,
-      premiumPrice: battlePass.premiumPrice,
-      tokenPrice: battlePass.tokenPrice,
+      // Note: premiumPrice and tokenPrice removed - premium access now via Stripe subscriptions
       startDate: battlePass.startDate,
       endDate: battlePass.endDate,
       // User progress
@@ -547,6 +520,9 @@ export const claimBattlePassReward = mutation({
 
 /**
  * Purchase premium battle pass
+ *
+ * @deprecated This function is deprecated. Premium battle pass access is now managed
+ * through Stripe subscriptions. Use Stripe subscription flow instead.
  */
 export const purchasePremiumPass = mutation({
   args: {},
@@ -576,40 +552,11 @@ export const purchasePremiumPass = mutation({
       });
     }
 
-    // Charge gems
-    await adjustPlayerCurrencyHelper(ctx, {
-      userId,
-      gemsDelta: -battlePass.premiumPrice,
-      transactionType: "purchase",
-      description: `Premium Battle Pass: ${battlePass.name}`,
-      referenceId: battlePass._id,
+    // Gem-based purchases are deprecated - premium access is now subscription-based
+    throw createError(ErrorCode.SYSTEM_INTERNAL_ERROR, {
+      reason:
+        "Premium battle pass purchases are now handled through Stripe subscriptions. Please use the subscription flow.",
     });
-
-    // Upgrade to premium
-    await ctx.db.patch(progress._id, {
-      isPremium: true,
-      premiumPurchasedAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-
-    // Count how many premium rewards are now available to claim
-    const tiers = await ctx.db
-      .query("battlePassTiers")
-      .withIndex("by_battlepass", (q) => q.eq("battlePassId", battlePass._id))
-      .collect();
-
-    const unlockedRewards = tiers.filter(
-      (t) =>
-        t.tier <= progress.currentTier &&
-        t.premiumReward !== undefined &&
-        !progress.claimedPremiumTiers.includes(t.tier)
-    ).length;
-
-    return {
-      success: true,
-      message: `Premium pass purchased! ${unlockedRewards} premium rewards ready to claim.`,
-      unlockedRewards,
-    };
   },
 });
 
@@ -623,6 +570,9 @@ export const purchasePremiumPass = mutation({
  *
  * Creates a pending purchase record and returns an unsigned SPL transfer
  * transaction for the frontend to sign via Privy wallet.
+ *
+ * @deprecated This function is deprecated. Premium battle pass access is now managed
+ * through Stripe subscriptions. Use Stripe subscription flow instead.
  */
 export const initiatePremiumPassTokenPurchase = mutation({
   args: {},
@@ -633,7 +583,7 @@ export const initiatePremiumPassTokenPurchase = mutation({
     tokenPrice: v.number(),
   }),
   handler: async (ctx) => {
-    const { userId } = await requireAuthMutation(ctx);
+    await requireAuthMutation(ctx);
 
     // 1. Get active battle pass
     const battlePass = await getActiveBattlePass(ctx);
@@ -643,87 +593,11 @@ export const initiatePremiumPassTokenPurchase = mutation({
       });
     }
 
-    // 2. Verify battle pass has token price configured
-    if (!battlePass.tokenPrice || battlePass.tokenPrice <= 0) {
-      throw createError(ErrorCode.ECONOMY_TOKEN_PURCHASE_INVALID, {
-        reason: "Token purchase is not available for this battle pass",
-      });
-    }
-
-    // 3. Get user progress and check if already premium
-    const progress = await getOrCreateBattlePassProgress(ctx, userId, battlePass._id);
-    if (progress.isPremium) {
-      throw createError(ErrorCode.QUEST_ALREADY_CLAIMED, {
-        reason: "Premium pass already purchased",
-      });
-    }
-
-    // 4. Verify user has wallet connected
-    const user = await ctx.db.get(userId);
-    if (!user?.walletAddress) {
-      throw createError(ErrorCode.ECONOMY_WALLET_NOT_CONNECTED);
-    }
-
-    // 5. Check for existing pending purchase for this battle pass
-    const existingPending = await ctx.db
-      .query("pendingTokenPurchases")
-      .withIndex("by_battle_pass", (q) => q.eq("battlePassId", battlePass._id))
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("buyerId"), userId),
-          q.or(q.eq(q.field("status"), "awaiting_signature"), q.eq(q.field("status"), "submitted"))
-        )
-      )
-      .first();
-
-    if (existingPending) {
-      // Check if it's expired
-      if (existingPending.expiresAt > Date.now()) {
-        throw createError(ErrorCode.ECONOMY_TOKEN_TRANSACTION_PENDING, {
-          reason: "A premium pass purchase is already pending",
-        });
-      }
-      // Mark expired purchase as expired
-      await ctx.db.patch(existingPending._id, {
-        status: "expired",
-      });
-    }
-
-    // 6. Validate treasury wallet is configured
-    if (!TOKEN.TREASURY_WALLET) {
-      throw createError(ErrorCode.SYSTEM_INTERNAL_ERROR, {
-        reason: "Treasury wallet not configured",
-      });
-    }
-
-    // 7. Build unsigned SPL transfer transaction to treasury
-    const tokenPrice = battlePass.tokenPrice;
-    const humanReadablePrice = fromRawAmount(BigInt(tokenPrice));
-
-    const txResult = await buildTreasuryTransferTransaction(user.walletAddress, humanReadablePrice);
-
-    const now = Date.now();
-    const expiresAt = now + TOKEN.PURCHASE_EXPIRY_MS;
-
-    // 8. Create pending purchase record
-    const pendingPurchaseId = await ctx.db.insert("pendingTokenPurchases", {
-      buyerId: userId,
-      battlePassId: battlePass._id,
-      purchaseType: "battle_pass",
-      amount: tokenPrice,
-      buyerWallet: user.walletAddress,
-      sellerWallet: TOKEN.TREASURY_WALLET,
-      status: "awaiting_signature",
-      createdAt: now,
-      expiresAt,
+    // 2. Token-based purchases are deprecated - premium access is now subscription-based
+    throw createError(ErrorCode.ECONOMY_TOKEN_PURCHASE_INVALID, {
+      reason:
+        "Premium battle pass purchases are now handled through Stripe subscriptions. Please use the subscription flow.",
     });
-
-    return {
-      pendingPurchaseId,
-      transactionBase64: txResult.transaction,
-      expiresAt,
-      tokenPrice,
-    };
   },
 });
 
