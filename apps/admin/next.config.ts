@@ -32,6 +32,15 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
   transpilePackages: ["convex"],
 
+  // Webpack configuration to handle Konva's canvas dependency
+  webpack: (config, { isServer }) => {
+    // Externalize 'canvas' module - it's only needed for Node.js SSR which we disable
+    if (isServer) {
+      config.externals = [...(config.externals || []), "canvas"];
+    }
+    return config;
+  },
+
   // Security and PWA headers
   async headers() {
     return [
