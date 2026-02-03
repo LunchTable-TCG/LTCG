@@ -91,7 +91,7 @@ const ICONS = ["🏆", "⭐", "🎮", "⚔️", "🛡️", "🎯", "🔥", "💎
 export default function AchievementEditorPage() {
   const params = useParams();
   const router = useRouter();
-  const achievementDbId = params.achievementId as string;
+  const achievementDbId = params["achievementId"] as string;
   const isNew = achievementDbId === "new";
 
   // Form state

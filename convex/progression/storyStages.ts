@@ -173,12 +173,12 @@ export const completeStage = mutation({
     if (args.finalLP >= 7500) starsEarned = 3; // 93.75%+ LP (nearly perfect)
 
     // Calculate rewards
-    let goldReward = stage.rewardGold;
-    let xpReward = stage.rewardXp;
+    let goldReward = stage.rewardGold ?? stage.firstClearGold;
+    let xpReward = stage.rewardXp ?? 0;
 
     // First clear bonus
-    if (!progress.firstClearClaimed) {
-      goldReward += stage.firstClearBonus;
+    if (!progress.firstClearClaimed && stage.firstClearBonus) {
+      goldReward += stage.firstClearBonus.gold ?? 0;
     }
 
     // Star bonus (20% per star)
@@ -305,12 +305,12 @@ export const completeStageInternal = internalMutation({
     if (args.finalLP >= 7500) starsEarned = 3; // 93.75%+ LP (nearly perfect)
 
     // Calculate rewards
-    let goldReward = stage.rewardGold;
-    let xpReward = stage.rewardXp;
+    let goldReward = stage.rewardGold ?? stage.firstClearGold;
+    let xpReward = stage.rewardXp ?? 0;
 
     // First clear bonus
-    if (!progress.firstClearClaimed) {
-      goldReward += stage.firstClearBonus;
+    if (!progress.firstClearClaimed && stage.firstClearBonus) {
+      goldReward += stage.firstClearBonus.gold ?? 0;
     }
 
     // Star bonus (20% per star)

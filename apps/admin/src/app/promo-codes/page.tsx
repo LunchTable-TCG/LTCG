@@ -533,7 +533,7 @@ export default function PromoCodesPage() {
 
   const toggleActive = useConvexMutation(apiAny.admin.promoCodes.togglePromoCodeActive);
 
-  const handleToggleActive = async (promoCodeId: string, code: string) => {
+  const handleToggleActive = async (promoCodeId: string, _code: string) => {
     try {
       const result = await toggleActive({ promoCodeId: promoCodeId as any });
       toast.success(result.message);

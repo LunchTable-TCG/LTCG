@@ -35,7 +35,6 @@ import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
   ArrowLeftIcon,
-  CalendarIcon,
   CoinsIcon,
   CopyIcon,
   GemIcon,
@@ -71,7 +70,7 @@ const REWARD_TYPE_CONFIG: Record<
 export default function PromoCodeDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const promoCodeId = params.promoCodeId as string;
+  const promoCodeId = params["promoCodeId"] as string;
 
   // Form state
   const [description, setDescription] = useState("");
@@ -109,7 +108,8 @@ export default function PromoCodeDetailPage() {
       // Convert timestamp to date string for input
       if (promoCode.expiresAt) {
         const date = new Date(promoCode.expiresAt);
-        setExpiresAt(date.toISOString().split("T")[0]);
+        const dateStr = date.toISOString().split("T")[0];
+        setExpiresAt(dateStr || "");
       } else {
         setExpiresAt("");
       }

@@ -371,7 +371,7 @@ function DeleteChapterDialog({
 export default function ChapterDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const chapterId = params.chapterId as string;
+  const chapterId = params["chapterId"] as string;
   const { hasPermission } = useAdmin();
 
   // Form state

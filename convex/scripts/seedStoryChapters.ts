@@ -24,11 +24,23 @@ export const seedStoryChapters = mutation({
     let stagesInserted = 0;
 
     for (const chapter of STORY_CHAPTERS) {
-      // Insert chapter
+      // Insert chapter - map fields to match schema
       const chapterId = await ctx.db.insert("storyChapters", {
-        ...chapter,
-        isActive: true,
+        number: chapter.chapterNumber,
+        actNumber: chapter.actNumber,
+        chapterNumber: chapter.chapterNumber,
+        title: chapter.title,
+        description: chapter.description,
+        archetype: chapter.archetype,
+        archetypeImageUrl: chapter.archetypeImageUrl,
+        storyText: chapter.storyText,
+        aiOpponentDeckCode: chapter.aiOpponentDeckCode,
+        aiDifficulty: "medium" as const, // Default difficulty
+        battleCount: chapter.battleCount,
+        baseRewards: chapter.baseRewards,
+        status: "published" as const,
         createdAt: Date.now(),
+        updatedAt: Date.now(),
       });
       chaptersInserted++;
 
@@ -37,7 +49,23 @@ export const seedStoryChapters = mutation({
       for (const stage of stages) {
         await ctx.db.insert("storyStages", {
           chapterId,
-          ...stage,
+          stageNumber: stage.stageNumber,
+          name: stage.name,
+          title: stage.name, // Use name as title too
+          description: stage.description,
+          opponentName: `${chapter.archetype} Opponent`,
+          difficulty: (stage.aiDifficulty === "boss" ? "boss" : stage.aiDifficulty === "hard" ? "hard" : stage.aiDifficulty === "medium" ? "medium" : "easy") as "easy" | "medium" | "hard" | "boss",
+          aiDifficulty: (stage.aiDifficulty === "boss" ? "boss" : stage.aiDifficulty === "hard" ? "hard" : stage.aiDifficulty === "medium" ? "medium" : "easy") as "easy" | "medium" | "hard" | "boss",
+          rewardGold: stage.rewardGold,
+          rewardXp: stage.rewardXp,
+          firstClearGold: stage.rewardGold,
+          repeatGold: Math.floor(stage.rewardGold * 0.5),
+          firstClearBonus: typeof stage.firstClearBonus === "number"
+            ? { gold: stage.firstClearBonus, xp: 0 }
+            : stage.firstClearBonus,
+          status: "published" as const,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
         });
         stagesInserted++;
       }

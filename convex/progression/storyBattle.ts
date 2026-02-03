@@ -622,7 +622,7 @@ export const quickPlayStoryInternal = internalMutation({
     if (stageToPlay && args.difficulty) {
       for (const progress of availableStages) {
         const stage = await ctx.db.get(progress.stageId);
-        if (stage && stage.aiDifficulty ?? stage.difficulty === args.difficulty) {
+        if (stage && (stage.aiDifficulty ?? stage.difficulty) === args.difficulty) {
           stageToPlay = progress;
           break;
         }

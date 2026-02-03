@@ -467,7 +467,7 @@ interface RewardsConfigProps {
   seasonId: string;
 }
 
-function RewardsConfig({ rewards, isEditable, seasonId }: RewardsConfigProps) {
+function RewardsConfig({ rewards, isEditable: _isEditable, seasonId: _seasonId }: RewardsConfigProps) {
   return (
     <Table>
       <TableHeader>
@@ -517,7 +517,7 @@ export default function SeasonDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { hasPermission } = useAdmin();
-  const seasonId = params.seasonId as string;
+  const seasonId = params["seasonId"] as string;
 
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);

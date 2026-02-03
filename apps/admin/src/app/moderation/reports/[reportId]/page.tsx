@@ -49,7 +49,7 @@ export default function ReportDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { isAdmin } = useAdmin();
-  const reportId = params.reportId as string;
+  const reportId = params["reportId"] as string;
 
   const [selectedAction, setSelectedAction] = useState<ModerationAction>("dismiss");
   const [notes, setNotes] = useState("");

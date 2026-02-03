@@ -101,7 +101,7 @@ const CURRENCY_TYPES = [
 export default function ShopProductEditorPage() {
   const params = useParams();
   const router = useRouter();
-  const productDbId = params.productId as string;
+  const productDbId = params["productId"] as string;
   const isNew = productDbId === "new";
 
   // Form state

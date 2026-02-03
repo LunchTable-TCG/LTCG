@@ -83,7 +83,7 @@ function QuestList() {
   const questStats = useConvexQuery(apiAny.admin.quests.getQuestStats, {});
   const toggleActive = useConvexMutation(apiAny.admin.quests.toggleQuestActive);
 
-  const handleToggleActive = async (questDbId: string, name: string) => {
+  const handleToggleActive = async (questDbId: string, _name: string) => {
     try {
       const result = await toggleActive({ questDbId: questDbId as any });
       toast.success(result.message);
@@ -309,7 +309,7 @@ function AchievementList() {
   const achievementStats = useConvexQuery(apiAny.admin.achievements.getAchievementStats, {});
   const toggleActive = useConvexMutation(apiAny.admin.achievements.toggleAchievementActive);
 
-  const handleToggleActive = async (achievementDbId: string, name: string) => {
+  const handleToggleActive = async (achievementDbId: string, _name: string) => {
     try {
       const result = await toggleActive({ achievementDbId: achievementDbId as any });
       toast.success(result.message);
