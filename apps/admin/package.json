@@ -45,11 +45,11 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.71.1",
-    "react-konva": "^18.2.10",
+    "react-konva": "19.2.1",
     "serwist": "^9.5.3",
     "sonner": "^2.0.7",
-    "use-image": "^1.1.1",
     "tailwind-merge": "^3.4.0",
+    "use-image": "^1.1.1",
     "zod": "^4.3.5"
   },
   "devDependencies": {

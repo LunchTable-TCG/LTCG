@@ -103,7 +103,7 @@ export function KonvaCanvas({
 
   // Click on empty space deselects
   const handleStageClick = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
+    (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       // Only deselect if clicking on the stage or background
       const clickedOnEmpty = e.target === e.target.getStage();
       const clickedOnBackground =
