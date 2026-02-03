@@ -29,7 +29,7 @@
     "test:once": "vitest run",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:coverage": "vitest run --coverage --coverage.reporter=text",
-    "test:unit": "vitest run apps/web/src",
+    "test:unit": "vitest run --project web",
     "test:unit:watch": "vitest apps/web/src",
     "test:convex": "vitest run convex",
     "test:convex:watch": "vitest convex",
