@@ -873,6 +873,122 @@ const MANUAL_ABILITIES: Record<string, JsonAbility> = {
     ],
     spellSpeed: 1,
   },
+
+  // === AGENT AGENDA (Limited) ===
+
+  ELIZA: {
+    effects: [
+      {
+        type: "randomChoice",
+        trigger: "on_turn_start",
+        choices: [
+          { type: "gainLP", trigger: "on_turn_start", value: 150 },
+          { type: "discard", trigger: "on_turn_start", value: 1, targetOwner: "self" },
+        ],
+      },
+      {
+        type: "randomChoice",
+        trigger: "on_turn_end",
+        choices: [
+          { type: "gainLP", trigger: "on_turn_end", value: 150 },
+          { type: "discard", trigger: "on_turn_end", value: 1, targetOwner: "self" },
+        ],
+      },
+    ],
+    spellSpeed: 1,
+  },
+
+  "Degen Spartan AI": {
+    effects: [
+      {
+        type: "randomChoice",
+        trigger: "on_turn_start",
+        choices: [
+          { type: "mill", trigger: "on_turn_start", value: 1, targetOwner: "opponent" },
+          { type: "damage", trigger: "on_turn_start", value: 100, targetOwner: "opponent" },
+          { type: "discard", trigger: "on_turn_start", value: 1, targetOwner: "self" },
+        ],
+      },
+      {
+        type: "randomChoice",
+        trigger: "on_turn_end",
+        choices: [
+          { type: "mill", trigger: "on_turn_end", value: 1, targetOwner: "opponent" },
+          { type: "damage", trigger: "on_turn_end", value: 100, targetOwner: "opponent" },
+          { type: "discard", trigger: "on_turn_end", value: 1, targetOwner: "self" },
+        ],
+      },
+    ],
+    spellSpeed: 1,
+  },
+
+  "Agent Scarlett": {
+    effects: [
+      {
+        type: "randomChoice",
+        trigger: "on_turn_start",
+        choices: [
+          { type: "discard", trigger: "on_turn_start", value: 1, targetOwner: "opponent" },
+          { type: "discard", trigger: "on_turn_start", value: 1, targetOwner: "self" },
+        ],
+      },
+      {
+        type: "randomChoice",
+        trigger: "on_turn_end",
+        choices: [
+          { type: "discard", trigger: "on_turn_end", value: 1, targetOwner: "opponent" },
+          { type: "discard", trigger: "on_turn_end", value: 1, targetOwner: "self" },
+        ],
+      },
+    ],
+    spellSpeed: 1,
+  },
+
+  SYMBaiEX: {
+    effects: [
+      {
+        type: "randomChoice",
+        trigger: "on_turn_start",
+        choices: [
+          { type: "draw", trigger: "on_turn_start", value: 1 },
+          { type: "mill", trigger: "on_turn_start", value: 1, targetOwner: "opponent" },
+        ],
+      },
+      {
+        type: "randomChoice",
+        trigger: "on_turn_end",
+        choices: [
+          { type: "draw", trigger: "on_turn_end", value: 1 },
+          { type: "mill", trigger: "on_turn_end", value: 1, targetOwner: "opponent" },
+        ],
+      },
+    ],
+    spellSpeed: 1,
+  },
+
+  "Donald Trump Bot": {
+    effects: [
+      {
+        type: "randomChoice",
+        trigger: "on_turn_start",
+        choices: [
+          { type: "damage", trigger: "on_turn_start", value: 150, targetOwner: "opponent" },
+          { type: "discard", trigger: "on_turn_start", value: 1, targetOwner: "self" },
+        ],
+      },
+      {
+        type: "randomChoice",
+        trigger: "on_turn_end",
+        choices: [
+          { type: "damage", trigger: "on_turn_end", value: 150, targetOwner: "opponent" },
+          { type: "discard", trigger: "on_turn_end", value: 1, targetOwner: "self" },
+        ],
+      },
+    ],
+    spellSpeed: 1,
+  },
+
+  // TODO(Jintern): Add Jintern agent once we have authoritative lore + naming.
 };
 
 // Update cards with manual abilities

@@ -289,7 +289,8 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
       // Can summon if haven't already
       if (!state.normalSummonedThisTurn) {
         const summonableMonsters = state.hand.filter(
-          (card: HandCard) => card.cardType === "creature" && (card.cost || 0) <= 4
+          (card: HandCard) =>
+            (card.cardType === "creature" || card.cardType === "agent") && (card.cost || 0) <= 4
         );
         if (summonableMonsters.length > 0) {
           actions.push({

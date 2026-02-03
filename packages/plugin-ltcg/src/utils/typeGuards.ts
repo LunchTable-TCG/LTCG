@@ -24,8 +24,14 @@ import type {
  */
 export function isCreatureCard(
   card: CardInHand | null | undefined
-): card is CardInHand & { cardType: "creature" } {
-  return card != null && (card.cardType === "creature" || card.type === "creature");
+): card is CardInHand & { cardType: "creature" | "agent" } {
+  return (
+    card != null &&
+    (card.cardType === "creature" ||
+      card.cardType === "agent" ||
+      card.type === "creature" ||
+      card.type === "agent")
+  );
 }
 
 /**
@@ -60,8 +66,8 @@ export function isEquipmentCard(
  */
 export function isBoardCreature(
   card: BoardCard | null | undefined
-): card is BoardCard & { cardType: "creature" } {
-  return card != null && card.cardType === "creature";
+): card is BoardCard & { cardType: "creature" | "agent" } {
+  return card != null && (card.cardType === "creature" || card.cardType === "agent");
 }
 
 /**
@@ -115,7 +121,11 @@ export function isGraveyardCard(card: unknown): card is CardInGraveyard {
   return (
     typeof c["cardId"] === "string" &&
     typeof c["name"] === "string" &&
-    (c["type"] === "creature" || c["type"] === "spell" || c["type"] === "trap" || c["type"] === "equipment")
+    (c["type"] === "creature" ||
+      c["type"] === "agent" ||
+      c["type"] === "spell" ||
+      c["type"] === "trap" ||
+      c["type"] === "equipment")
   );
 }
 

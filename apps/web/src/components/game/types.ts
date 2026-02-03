@@ -13,7 +13,7 @@ export type CardDefinitionId = string & { __brand: "CardDefinitionId" };
 // Card types
 export type CardRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type CardElement = "fire" | "water" | "earth" | "wind" | "neutral";
-export type CardType = "creature" | "spell" | "trap" | "equipment";
+export type CardType = "creature" | "agent" | "spell" | "trap" | "equipment";
 export type CardPosition = "attack" | "defense" | "facedown";
 
 // Card instance in a game

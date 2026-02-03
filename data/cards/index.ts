@@ -5,13 +5,14 @@
  *   import { ALL_CARDS, getCardsByArchetype } from "@/data/cards";
  */
 
-import { z } from "zod";
+import z from "zod";
 
 // Import raw JSON data
 import infernalDragonsRaw from "./infernal-dragons.json";
 import abyssalHorrorsRaw from "./abyssal-horrors.json";
 import natureSpiritsRaw from "./nature-spirits.json";
 import stormElementalsRaw from "./storm-elementals.json";
+import agentAgendaRaw from "./agent-agenda.json";
 
 // ============================================================================
 // Schema Definitions
@@ -27,6 +28,7 @@ export const RaritySchema = z.enum([
 
 export const CardTypeSchema = z.enum([
   "creature",
+  "agent",
   "spell",
   "trap",
   "equipment",
@@ -61,6 +63,24 @@ export const EffectSchema = z.object({
   effectType: EffectTypeSchema,
 });
 
+export const AgentOriginSchema = z.enum(["elizaos", "community", "parody", "unknown"]);
+
+export const AgentProfileSchema = z.object({
+  slug: z.string().min(1),
+  displayName: z.string().min(1),
+  origin: AgentOriginSchema,
+  lore: z.string().min(1),
+  voiceLines: z.array(z.string()),
+  links: z
+    .array(
+      z.object({
+        label: z.string(),
+        url: z.string(),
+      })
+    )
+    .optional(),
+});
+
 export const CardSchema = z.object({
   name: z.string().min(1),
   rarity: RaritySchema,
@@ -70,6 +90,9 @@ export const CardSchema = z.object({
   attack: z.number().int().min(0).optional(),
   defense: z.number().int().min(0).optional(),
   effects: z.array(EffectSchema).optional(),
+  // Abilities live in Convex today; keep this permissive for future JSON-authored abilities.
+  ability: z.unknown().optional(),
+  agentProfile: AgentProfileSchema.optional(),
   flavorText: z.string().optional(),
   imageUrl: z.string().optional(),
 });
@@ -85,6 +108,8 @@ export type CardType = z.infer<typeof CardTypeSchema>;
 export type Archetype = z.infer<typeof ArchetypeSchema>;
 export type EffectType = z.infer<typeof EffectTypeSchema>;
 export type Effect = z.infer<typeof EffectSchema>;
+export type AgentOrigin = z.infer<typeof AgentOriginSchema>;
+export type AgentProfile = z.infer<typeof AgentProfileSchema>;
 export type Card = z.infer<typeof CardSchema>;
 
 // ============================================================================
@@ -97,6 +122,7 @@ export const INFERNAL_DRAGONS_CARDS = CardArraySchema.parse(infernalDragonsRaw);
 export const ABYSSAL_HORRORS_CARDS = CardArraySchema.parse(abyssalHorrorsRaw);
 export const NATURE_SPIRITS_CARDS = CardArraySchema.parse(natureSpiritsRaw);
 export const STORM_ELEMENTALS_CARDS = CardArraySchema.parse(stormElementalsRaw);
+export const AGENT_AGENDA_CARDS = CardArraySchema.parse(agentAgendaRaw);
 
 /**
  * All cards from all archetypes combined
@@ -106,6 +132,7 @@ export const ALL_CARDS: Card[] = [
   ...ABYSSAL_HORRORS_CARDS,
   ...NATURE_SPIRITS_CARDS,
   ...STORM_ELEMENTALS_CARDS,
+  ...AGENT_AGENDA_CARDS,
 ];
 
 // ============================================================================
@@ -146,6 +173,13 @@ export function getCardByName(name: string): Card | undefined {
  */
 export function getCreatures(): Card[] {
   return ALL_CARDS.filter((card) => card.cardType === "creature");
+}
+
+/**
+ * Get all agent cards
+ */
+export function getAgents(): Card[] {
+  return ALL_CARDS.filter((card) => card.cardType === "agent");
 }
 
 /**
@@ -190,6 +224,7 @@ export function getCardStats() {
     },
     byType: {
       creature: getCreatures().length,
+      agent: getAgents().length,
       spell: getSpells().length,
       trap: getTraps().length,
     },

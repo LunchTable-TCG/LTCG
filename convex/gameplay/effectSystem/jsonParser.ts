@@ -74,6 +74,8 @@ export function parseJsonEffect(effect: JsonEffect, _spellSpeed?: 1 | 2 | 3): Pa
     type: effect.type,
     trigger: effect.trigger,
     value: effect.value,
+    targetOwner: effect.targetOwner,
+    choices: effect.type === "randomChoice" ? effect.choices : undefined,
     isOPT: effect.isOPT,
     continuous: effect.isContinuous,
     // SEGOC ordering: pass through optional/mandatory flags
@@ -186,6 +188,9 @@ function evaluateSimpleCondition(condition: JsonCondition, context: ConditionCon
     };
 
     const matches = cardTypes.some((ct) => {
+      if (ct === "monster") {
+        return card.cardType === "creature" || card.cardType === "agent";
+      }
       const expectedType = typeMap[ct] || ct;
       return card.cardType === expectedType;
     });

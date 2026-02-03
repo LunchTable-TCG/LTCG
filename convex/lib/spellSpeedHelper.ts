@@ -38,8 +38,8 @@ export function getSpellSpeed(card: Doc<"cardDefinitions">): 1 | 2 | 3 {
     return ability.spellSpeed;
   }
 
-  // Creatures (monsters): Spell Speed 1
-  if (cardType === "creature") {
+  // Monsters (creatures + agents): Spell Speed 1
+  if (cardType === "creature" || cardType === "agent") {
     return 1;
   }
 

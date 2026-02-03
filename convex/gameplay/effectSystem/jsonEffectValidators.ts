@@ -26,6 +26,7 @@ export const effectTypeValidator = v.union(
   v.literal("destroy"),
   v.literal("damage"),
   v.literal("gainLP"),
+  v.literal("randomChoice"),
   v.literal("modifyATK"),
   v.literal("modifyDEF"),
   v.literal("summon"),
@@ -391,7 +392,13 @@ export const jsonConditionValidator = v.object({
   archetype: v.optional(v.union(v.string(), v.array(v.string()))),
   attribute: v.optional(v.union(cardAttributeValidator, v.array(cardAttributeValidator))),
   cardType: v.optional(
-    v.union(v.literal("creature"), v.literal("spell"), v.literal("trap"), v.literal("equipment"))
+    v.union(
+      v.literal("creature"),
+      v.literal("agent"),
+      v.literal("spell"),
+      v.literal("trap"),
+      v.literal("equipment")
+    )
   ),
   monsterType: v.optional(v.union(monsterTypeValidator, v.array(monsterTypeValidator))),
   spellType: v.optional(v.union(spellTypeValidator, v.array(spellTypeValidator))),
@@ -662,6 +669,7 @@ export const jsonGenericEffectValidator = v.object({
   then: v.optional(v.any()),
   else: v.optional(v.any()),
   immediately: v.optional(v.any()),
+  choices: v.optional(v.array(v.any())),
 
   // Special flags
   canMissTiming: v.optional(v.boolean()),

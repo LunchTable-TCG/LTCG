@@ -1071,4 +1071,72 @@ describe("setActiveDeck", () => {
       /Deck cannot exceed 60 cards/
     );
   });
+
+  it("should reject deck with more than 3 Agent cards", async () => {
+    const t = createTestInstance();
+
+    const { userId, privyId } = await createTestUser(t, "agentlimit@test.com", "agentlimit");
+
+    const asUser = t.withIdentity({ subject: privyId });
+
+    const { agentIds, fillerIds } = await t.run(async (ctx: MutationCtx) => {
+      const agentIds = [];
+      for (let i = 0; i < 4; i++) {
+        const id = await ctx.db.insert("cardDefinitions", {
+          name: `Agent Card ${i}`,
+          rarity: "common",
+          cardType: "agent",
+          archetype: "neutral",
+          cost: 4,
+          attack: 1000,
+          defense: 1000,
+          isActive: true,
+          createdAt: Date.now(),
+        });
+        agentIds.push(id);
+      }
+
+      const fillerIds = [];
+      for (let i = 0; i < 26; i++) {
+        const id = await ctx.db.insert("cardDefinitions", {
+          name: `Filler Card ${i}`,
+          rarity: "common",
+          cardType: "creature",
+          archetype: "neutral",
+          cost: 3,
+          attack: 1000,
+          defense: 1000,
+          isActive: true,
+          createdAt: Date.now(),
+        });
+        fillerIds.push(id);
+      }
+
+      return { agentIds, fillerIds };
+    });
+
+    const deckId = await t.run(async (ctx: MutationCtx) => {
+      const id = await ctx.db.insert("userDecks", {
+        userId,
+        name: "Too Many Agents",
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      for (const cardId of [...agentIds, ...fillerIds]) {
+        await ctx.db.insert("deckCards", {
+          deckId: id,
+          cardDefinitionId: cardId,
+          quantity: 1,
+        });
+      }
+
+      return id;
+    });
+
+    await expect(asUser.mutation(coreDecks.setActiveDeck, { deckId })).rejects.toThrowError(
+      /Agent cards are limited to 3 per deck\./
+    );
+  });
 });

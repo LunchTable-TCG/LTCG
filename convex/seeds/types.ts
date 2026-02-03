@@ -7,7 +7,7 @@ import type { JsonAbilityInfer } from "../gameplay/effectSystem/jsonEffectValida
 
 // Card property types matching schema exactly
 export type CardRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
-export type CardType = "creature" | "spell" | "trap" | "equipment";
+export type CardType = "creature" | "agent" | "spell" | "trap" | "equipment";
 export type Archetype =
   | "infernal_dragons"
   | "abyssal_horrors"
@@ -25,6 +25,17 @@ export type DeckArchetype = "fire" | "water" | "earth" | "wind" | "neutral";
 // JSON ability type alias for seed data
 export type JsonAbility = JsonAbilityInfer;
 
+// Agent character sheet (seed format)
+export type AgentOrigin = "elizaos" | "community" | "parody" | "unknown";
+export interface AgentProfileSeed {
+  readonly slug: string;
+  readonly displayName: string;
+  readonly origin: AgentOrigin;
+  readonly lore: string;
+  readonly voiceLines: readonly string[];
+  readonly links?: readonly { label: string; url: string }[];
+}
+
 // Monster card definition
 export interface MonsterCardSeed {
   readonly name: string;
@@ -35,6 +46,19 @@ export interface MonsterCardSeed {
   readonly attack: number;
   readonly defense: number;
   readonly ability?: JsonAbility;
+}
+
+// Agent card definition (summonable like a monster)
+export interface AgentCardSeed {
+  readonly name: string;
+  readonly rarity: CardRarity;
+  readonly cardType: "agent";
+  readonly archetype: Archetype;
+  readonly cost: number;
+  readonly attack: number;
+  readonly defense: number;
+  readonly ability?: JsonAbility;
+  readonly agentProfile?: AgentProfileSeed;
 }
 
 // Spell card definition
@@ -70,7 +94,12 @@ export interface EquipmentCardSeed {
 }
 
 // Union of all card types
-export type CardSeed = MonsterCardSeed | SpellCardSeed | TrapCardSeed | EquipmentCardSeed;
+export type CardSeed =
+  | MonsterCardSeed
+  | AgentCardSeed
+  | SpellCardSeed
+  | TrapCardSeed
+  | EquipmentCardSeed;
 
 // Starter deck definition
 export interface StarterDeckDefinition {

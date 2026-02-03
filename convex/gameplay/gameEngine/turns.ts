@@ -12,6 +12,7 @@ import { ErrorCode, createError } from "../../lib/errorCodes";
 import { clearTemporaryModifiers, drawCards } from "../../lib/gameHelpers";
 import { validateGameActive } from "../../lib/gameValidation";
 import { resetOPTEffects } from "../effectSystem/optTracker";
+import { runBoardTriggers } from "../agentTriggers";
 import { recordEventHelper } from "../gameEvents";
 import { checkDeckOutCondition, checkStateBasedActions } from "./stateBasedActions";
 
@@ -72,7 +73,20 @@ export const endTurn = mutation({
 
     const isHost = user.userId === gameState.hostId;
 
-    // 6. Trigger end-of-turn effects (future implementation)
+    // 6. Trigger end-of-turn effects (agents/auto-triggers)
+    await runBoardTriggers(ctx, gameState, args.lobbyId, "on_turn_end");
+
+    // If a trigger ended the game, stop here (don't advance turns/phases).
+    const lobbyAfterTurnEndTriggers = await ctx.db.get(args.lobbyId);
+    if (lobbyAfterTurnEndTriggers && lobbyAfterTurnEndTriggers.status !== "active") {
+      return {
+        success: true,
+        gameEnded: true,
+        winnerId: lobbyAfterTurnEndTriggers.winnerId,
+        newTurnPlayer: undefined,
+        newTurnNumber: undefined,
+      };
+    }
 
     // 7. Enforce hand size limit via state-based actions (6 cards max)
     // SBA will handle discarding excess cards
@@ -175,6 +189,20 @@ export const endTurn = mutation({
     const gameStateForOPT = await ctx.db.get(gameState._id);
     if (gameStateForOPT) {
       await resetOPTEffects(ctx, gameStateForOPT, nextPlayerId);
+
+      // Turn-start triggers (agents/auto-triggers) run after OPT reset, before draw.
+      await runBoardTriggers(ctx, gameStateForOPT, args.lobbyId, "on_turn_start");
+
+      const lobbyAfterTurnStartTriggers = await ctx.db.get(args.lobbyId);
+      if (lobbyAfterTurnStartTriggers && lobbyAfterTurnStartTriggers.status !== "active") {
+        return {
+          success: true,
+          gameEnded: true,
+          winnerId: lobbyAfterTurnStartTriggers.winnerId,
+          newTurnPlayer: nextPlayer?.username || "Unknown",
+          newTurnNumber: nextTurnNumber,
+        };
+      }
     }
 
     // 13. Auto-execute Draw Phase and advance to Main Phase 1
@@ -301,6 +329,21 @@ export const endTurnInternal = internalMutation({
 
     const isHost = args.userId === gameState.hostId;
 
+    // 6. Trigger end-of-turn effects (agents/auto-triggers)
+    await runBoardTriggers(ctx, gameState, gameState.lobbyId, "on_turn_end");
+
+    // If a trigger ended the game, stop here (don't advance turns/phases).
+    const lobbyAfterTurnEndTriggers = await ctx.db.get(gameState.lobbyId);
+    if (lobbyAfterTurnEndTriggers && lobbyAfterTurnEndTriggers.status !== "active") {
+      return {
+        success: true,
+        gameEnded: true,
+        winnerId: lobbyAfterTurnEndTriggers.winnerId,
+        newTurnPlayer: undefined,
+        newTurnNumber: undefined,
+      };
+    }
+
     // 6. Enforce hand size limit via state-based actions
     const sbaResult = await checkStateBasedActions(ctx, gameState.lobbyId, {
       skipHandLimit: false,
@@ -394,6 +437,20 @@ export const endTurnInternal = internalMutation({
     const gameStateForOPT = await ctx.db.get(gameState._id);
     if (gameStateForOPT) {
       await resetOPTEffects(ctx, gameStateForOPT, nextPlayerId);
+
+      // Turn-start triggers (agents/auto-triggers) run after OPT reset, before draw.
+      await runBoardTriggers(ctx, gameStateForOPT, gameState.lobbyId, "on_turn_start");
+
+      const lobbyAfterTurnStartTriggers = await ctx.db.get(gameState.lobbyId);
+      if (lobbyAfterTurnStartTriggers && lobbyAfterTurnStartTriggers.status !== "active") {
+        return {
+          success: true,
+          gameEnded: true,
+          winnerId: lobbyAfterTurnStartTriggers.winnerId,
+          newTurnPlayer: nextPlayer?.username || "AI Opponent",
+          newTurnNumber: nextTurnNumber,
+        };
+      }
     }
 
     // 13. Auto-execute Draw Phase and advance to Main Phase 1

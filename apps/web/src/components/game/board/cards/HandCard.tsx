@@ -25,6 +25,7 @@ const RARITY_COLORS: Record<string, { border: string; glow: string }> = {
 
 const CARD_TYPE_COLORS: Record<string, string> = {
   monster: "from-orange-900/80 to-orange-950/80",
+  agent: "from-fuchsia-900/80 to-fuchsia-950/80",
   spell: "from-green-900/80 to-green-950/80",
   trap: "from-purple-900/80 to-purple-950/80",
   field: "from-teal-900/80 to-teal-950/80",
@@ -112,9 +113,9 @@ export function HandCard({
             className="object-cover"
             sizes="(max-width: 640px) 64px, 96px"
           />
-        ) : (
-          <div className="w-full h-full bg-linear-to-br from-slate-700 to-slate-800 flex items-center justify-center p-0.5">
-            {card.cardType === "creature" ? (
+          ) : (
+            <div className="w-full h-full bg-linear-to-br from-slate-700 to-slate-800 flex items-center justify-center p-0.5">
+            {card.cardType === "creature" || card.cardType === "agent" ? (
               <Sparkles className="w-4 h-4 text-slate-500" />
             ) : card.cardType === "spell" ? (
               <FlaskConical className="w-4 h-4 text-green-500/50" />
@@ -135,6 +136,7 @@ export function HandCard({
         className={cn(
           "absolute top-5 sm:top-6 right-0.5 px-1 py-0.5 rounded text-[7px] sm:text-[8px] font-bold uppercase",
           card.cardType === "creature" && "bg-orange-600 text-white",
+          card.cardType === "agent" && "bg-fuchsia-600 text-white",
           card.cardType === "spell" && "bg-green-600 text-white",
           card.cardType === "trap" && "bg-purple-600 text-white",
           card.cardType === "field" && "bg-teal-600 text-white"

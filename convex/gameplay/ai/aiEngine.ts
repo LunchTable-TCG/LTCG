@@ -58,7 +58,7 @@ export function findStrongestMonster(
 
   for (const cardId of cards) {
     const card = cardData.get(cardId);
-    if (!card || card.cardType !== "creature") continue;
+    if (!card || (card.cardType !== "creature" && card.cardType !== "agent")) continue;
 
     const power = (card.attack || 0) + (card.defense || 0);
     if (power > maxPower) {
@@ -94,7 +94,7 @@ export function findWeakestMonster(
  * Checks if a monster can be summoned without tribute (cost ≤ 4)
  */
 export function canSummonWithoutTribute(card: Doc<"cardDefinitions">): boolean {
-  return card.cardType === "creature" && card.cost <= 4;
+  return (card.cardType === "creature" || card.cardType === "agent") && card.cost <= 4;
 }
 
 /**

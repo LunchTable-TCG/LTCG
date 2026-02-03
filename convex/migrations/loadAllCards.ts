@@ -71,10 +71,15 @@ export const loadAllCards = internalMutation({
           createdAt: Date.now(),
         };
 
-        // Handle creature stats
-        if (rawCard.cardType === "creature") {
+        // Handle monster stats (creatures + agents)
+        if (rawCard.cardType === "creature" || rawCard.cardType === "agent") {
           card["attack"] = rawCard.attack;
           card["defense"] = rawCard.defense;
+        }
+
+        // Agent character sheet
+        if (rawCard.agentProfile) {
+          card["agentProfile"] = rawCard.agentProfile;
         }
 
         // Handle flavor text

@@ -34,7 +34,7 @@ export function handleMainPhase(
     // Check for tribute summons
     const highCostMonsters = myHand.filter((cardId) => {
       const card = cardData.get(cardId);
-      return card && card.cardType === "creature" && card.cost >= 5;
+      return card && (card.cardType === "creature" || card.cardType === "agent") && card.cost >= 5;
     });
 
     // Difficulty-based summon logic

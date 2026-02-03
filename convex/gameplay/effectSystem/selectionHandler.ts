@@ -104,8 +104,13 @@ export async function getAvailableSelections(
 
     filteredCards = filteredCards.filter((card) => {
       // Card type filter
-      if (cardType && cardType !== "any" && card.cardType !== cardType) {
-        return false;
+      if (cardType && cardType !== "any") {
+        // Treat agents as monsters for selection and targeting.
+        if (cardType === "creature") {
+          if (card.cardType !== "creature" && card.cardType !== "agent") return false;
+        } else if (card.cardType !== cardType) {
+          return false;
+        }
       }
 
       // Archetype filter (check name or archetype field)
@@ -117,7 +122,7 @@ export async function getAvailableSelections(
       }
 
       // Level filters (for monsters)
-      if (card.cardType === "creature") {
+      if (card.cardType === "creature" || card.cardType === "agent") {
         const level = card.cost || 1; // cost field stores level
 
         if (levelMin !== undefined && level < levelMin) return false;
@@ -170,7 +175,7 @@ export async function getAvailableSelections(
       cardType: card.cardType,
       imageUrl: card.imageUrl,
       monsterStats:
-        card.cardType === "creature"
+        card.cardType === "creature" || card.cardType === "agent"
           ? {
               attack: card.attack || 0,
               defense: card.defense || 0,

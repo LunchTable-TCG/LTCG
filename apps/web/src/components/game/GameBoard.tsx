@@ -815,11 +815,13 @@ export function GameBoard({
 
   // Determine summon options based on card type
   const isCreature = selectedHandCard?.cardType === "creature";
+  const isAgent = selectedHandCard?.cardType === "agent";
+  const isMonster = isCreature || isAgent;
   const isSpell = selectedHandCard?.cardType === "spell";
   const isTrap = selectedHandCard?.cardType === "trap";
 
-  const canSummonAttack = isCreature && (validActions?.canNormalSummon ?? false);
-  const canSummonDefense = isCreature && (validActions?.canNormalSummon ?? false);
+  const canSummonAttack = isMonster && (validActions?.canNormalSummon ?? false);
+  const canSummonDefense = isMonster && (validActions?.canNormalSummon ?? false);
   const canSetMonster = isCreature && (validActions?.canSetMonster ?? false);
   const canSetSpellTrap = (isSpell || isTrap) && (validActions?.canSetSpellTrap ?? false);
 
@@ -987,9 +989,7 @@ export function GameBoard({
           canSummonAttack={canSummonAttack ?? false}
           canSummonDefense={canSummonDefense ?? false}
           canSet={
-            selectedHandCard?.cardType === "creature"
-              ? (canSetMonster ?? false)
-              : (canSetSpellTrap ?? false)
+            isCreature ? (canSetMonster ?? false) : isSpell || isTrap ? (canSetSpellTrap ?? false) : false
           }
           canActivate={
             selectedHandCard?.cardType === "spell" && (validActions?.canActivateSpell ?? false)

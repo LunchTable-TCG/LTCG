@@ -653,7 +653,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         rarity: card.rarity,
         archetype: card.archetype,
         monsterStats:
-          card.cardType === "creature"
+          card.cardType === "creature" || card.cardType === "agent"
             ? {
                 attack: card.attack,
                 defense: card.defense,

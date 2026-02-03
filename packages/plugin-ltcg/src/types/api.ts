@@ -144,7 +144,7 @@ export interface CardInHand {
   /** Card name */
   name: string;
   /** Card type - use this over legacy 'type' field */
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "creature" | "agent" | "spell" | "trap" | "equipment";
   /** Mana/resource cost */
   cost?: number;
   /** Attack value - use this over legacy 'atk' field */
@@ -164,7 +164,7 @@ export interface CardInHand {
   /** @deprecated Use _id instead */
   cardId?: string;
   /** @deprecated Use cardType instead */
-  type?: "creature" | "spell" | "trap" | "equipment";
+  type?: "creature" | "agent" | "spell" | "trap" | "equipment";
   /** @deprecated Use cost instead */
   level?: number;
   /** @deprecated Use attack instead */
@@ -185,7 +185,7 @@ export interface BoardCard {
   /** Card name */
   name: string;
   /** Card type */
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "creature" | "agent" | "spell" | "trap" | "equipment";
   /** Base attack value */
   attack?: number;
   /** Base defense value */
@@ -233,7 +233,7 @@ export interface SpellTrapCard {
 export interface CardInGraveyard {
   cardId: string;
   name: string;
-  type: "creature" | "spell" | "trap" | "equipment";
+  type: "creature" | "agent" | "spell" | "trap" | "equipment";
 }
 
 // ============================================================================
@@ -387,7 +387,7 @@ export interface Deck {
 export interface CardDefinition {
   cardId: string;
   name: string;
-  type: "creature" | "spell" | "trap" | "equipment";
+  type: "creature" | "agent" | "spell" | "trap" | "equipment";
   level?: number;
   atk?: number;
   def?: number;

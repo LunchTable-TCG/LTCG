@@ -223,3 +223,49 @@ export const populateShop = mutation({
     };
   },
 });
+
+/**
+ * Upsert the limited "Agent Agenda" pack product.
+ *
+ * Run with: bunx convex run admin/shopSetup:upsertAgentAgenda
+ */
+export const upsertAgentAgenda = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const productId = "agent-agenda-pack";
+
+    const existing = await ctx.db
+      .query("shopProducts")
+      .withIndex("by_product_id", (q) => q.eq("productId", productId))
+      .first();
+
+    const product = {
+      productId,
+      name: "Agent Agenda Pack",
+      description:
+        'Limited drop. Walleted agents. Unstable agendas. (Story + Casual only; not legal in Ranked.)',
+      productType: "pack" as const,
+      goldPrice: 500,
+      gemPrice: 50,
+      packConfig: {
+        cardCount: 5,
+        guaranteedRarity: "rare" as const,
+        archetype: "neutral" as const,
+      },
+      boxConfig: undefined,
+      currencyConfig: undefined,
+      isActive: false,
+      sortOrder: 4,
+      createdAt: existing?.createdAt ?? now,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, product);
+      return { success: true, updated: true };
+    }
+
+    await ctx.db.insert("shopProducts", product);
+    return { success: true, updated: false };
+  },
+});

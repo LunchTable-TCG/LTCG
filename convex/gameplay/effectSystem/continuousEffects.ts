@@ -277,7 +277,10 @@ function evaluateSimpleCondition(condition: JsonCondition, context: ConditionCon
     }
 
     // Level check (monsters only)
-    if (condition.level !== undefined && targetCardDef.cardType === "creature") {
+    if (
+      condition.level !== undefined &&
+      (targetCardDef.cardType === "creature" || targetCardDef.cardType === "agent")
+    ) {
       const cardLevel = targetCardDef.cost || 0; // Level is derived from cost
       if (!evaluateNumericCondition(cardLevel, condition.level)) {
         return false;
@@ -285,7 +288,10 @@ function evaluateSimpleCondition(condition: JsonCondition, context: ConditionCon
     }
 
     // ATK check (monsters only)
-    if (condition.attack !== undefined && targetCardDef.cardType === "creature") {
+    if (
+      condition.attack !== undefined &&
+      (targetCardDef.cardType === "creature" || targetCardDef.cardType === "agent")
+    ) {
       const cardAtk = targetCardDef.attack || 0;
       if (!evaluateNumericCondition(cardAtk, condition.attack)) {
         return false;
@@ -293,7 +299,10 @@ function evaluateSimpleCondition(condition: JsonCondition, context: ConditionCon
     }
 
     // DEF check (monsters only)
-    if (condition.defense !== undefined && targetCardDef.cardType === "creature") {
+    if (
+      condition.defense !== undefined &&
+      (targetCardDef.cardType === "creature" || targetCardDef.cardType === "agent")
+    ) {
       const cardDef = targetCardDef.defense || 0;
       if (!evaluateNumericCondition(cardDef, condition.defense)) {
         return false;
@@ -666,9 +675,12 @@ export function evaluateAttribute(
  */
 export function evaluateCardType(
   cardType: string | undefined,
-  requiredType: "creature" | "spell" | "trap" | "equipment"
+  requiredType: "creature" | "agent" | "spell" | "trap" | "equipment"
 ): boolean {
   if (!cardType) return false;
+  if (requiredType === "creature") {
+    return cardType === "creature" || cardType === "agent";
+  }
   return cardType === requiredType;
 }
 
@@ -716,7 +728,7 @@ function matchesCondition(
   if (!condition) return true; // No condition = affects all
 
   // Only affect monsters (continuous stat modifiers don't apply to spells/traps)
-  if (card.cardType !== "creature") return false;
+  if (card.cardType !== "creature" && card.cardType !== "agent") return false;
 
   // Check if it's a JSON condition (object) or string condition (legacy)
   if (isJsonCondition(condition)) {

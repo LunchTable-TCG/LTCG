@@ -11,7 +11,7 @@
     },
     "cardType": {
       "type": "string",
-      "enum": ["creature", "spell", "trap", "equipment"]
+      "enum": ["creature", "agent", "spell", "trap", "equipment"]
     },
     "archetype": {
       "type": "string",
@@ -113,6 +113,35 @@
         "protection": { "type": "object" }
       }
     },
+    "agentOrigin": {
+      "type": "string",
+      "enum": ["elizaos", "community", "parody", "unknown"]
+    },
+    "agentProfile": {
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string", "minLength": 1 },
+        "displayName": { "type": "string", "minLength": 1 },
+        "origin": { "$ref": "#/definitions/agentOrigin" },
+        "lore": { "type": "string", "minLength": 1 },
+        "voiceLines": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "url": { "type": "string" }
+            },
+            "required": ["label", "url"]
+          }
+        }
+      },
+      "required": ["slug", "displayName", "origin", "lore", "voiceLines"]
+    },
     "card": {
       "type": "object",
       "properties": {
@@ -142,12 +171,12 @@
         "attack": {
           "type": "integer",
           "minimum": 0,
-          "description": "Attack stat (creatures only)"
+          "description": "Attack stat (creatures/agents only)"
         },
         "defense": {
           "type": "integer",
           "minimum": 0,
-          "description": "Defense stat (creatures only)"
+          "description": "Defense stat (creatures/agents only)"
         },
         "effects": {
           "type": "array",
@@ -157,6 +186,10 @@
         "ability": {
           "$ref": "#/definitions/jsonAbility",
           "description": "Machine-readable ability definition"
+        },
+        "agentProfile": {
+          "$ref": "#/definitions/agentProfile",
+          "description": "Agent character sheet (Agent cards only)"
         },
         "flavorText": {
           "type": "string",
@@ -169,7 +202,7 @@
       },
       "required": ["name", "rarity", "cardType", "archetype", "cost"],
       "if": {
-        "properties": { "cardType": { "const": "creature" } }
+        "properties": { "cardType": { "enum": ["creature", "agent"] } }
       },
       "then": {
         "required": ["attack", "defense"]

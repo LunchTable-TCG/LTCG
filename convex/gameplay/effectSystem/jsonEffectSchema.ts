@@ -103,7 +103,7 @@ export interface FieldCountCondition {
   owner: "self" | "opponent" | "both";
   count: number | NumericRange;
   filter?: {
-    cardType?: "creature" | "spell" | "trap";
+    cardType?: "creature" | "agent" | "spell" | "trap";
     archetype?: string;
     attribute?: string;
     position?: "attack" | "defense";
@@ -115,7 +115,7 @@ export interface FieldCountCondition {
  * Card property filter (used in conditions and targets)
  */
 export interface JsonCardPropertyFilter {
-  cardType?: "creature" | "spell" | "trap" | "equipment";
+  cardType?: "creature" | "agent" | "spell" | "trap" | "equipment";
   archetype?: CardArchetype | CardArchetype[] | string;
   attribute?: CardAttribute | CardAttribute[];
   level?: number | NumericRange;
@@ -215,7 +215,7 @@ export interface JsonCondition {
   attribute?: CardAttribute | CardAttribute[];
 
   /** Card type */
-  cardType?: "creature" | "spell" | "trap" | "equipment";
+  cardType?: "creature" | "agent" | "spell" | "trap" | "equipment";
 
   /** Monster level */
   level?: number | NumericRange;
@@ -373,7 +373,7 @@ export interface CardInfo {
   _id: Id<"cardDefinitions">;
   name: string;
   archetype: string;
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "creature" | "agent" | "spell" | "trap" | "equipment";
   attack?: number;
   defense?: number;
   cost: number;
@@ -1195,7 +1195,7 @@ export interface GameEvent {
   type: string;
   cardId?: Id<"cardDefinitions">;
   cardName?: string;
-  cardType?: "creature" | "spell" | "trap" | "equipment";
+  cardType?: "creature" | "agent" | "spell" | "trap" | "equipment";
   archetype?: string;
   level?: number;
   attack?: number;

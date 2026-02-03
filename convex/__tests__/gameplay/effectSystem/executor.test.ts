@@ -571,6 +571,143 @@ describe("executeEffect - Main Dispatcher", () => {
   });
 });
 
+describe("executeEffect - targetOwner", () => {
+  it("should discard opponent when targetOwner is opponent", async () => {
+    const t = convexTest(schema, modules);
+
+    const hostId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        username: "host",
+        email: "host_targetowner@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    const opponentId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        username: "opponent",
+        email: "opponent_targetowner@test.com",
+        createdAt: Date.now(),
+      });
+    });
+
+    const sourceCardId = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "Source Card",
+        rarity: "common",
+        cardType: "spell",
+        archetype: "neutral",
+        cost: 1,
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    const opponentHandCardId = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "Opponent Hand Card",
+        rarity: "common",
+        cardType: "creature",
+        archetype: "neutral",
+        cost: 1,
+        attack: 500,
+        defense: 500,
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    const hostHandCardId = await t.run(async (ctx) => {
+      return await ctx.db.insert("cardDefinitions", {
+        name: "Host Hand Card",
+        rarity: "common",
+        cardType: "creature",
+        archetype: "neutral",
+        cost: 1,
+        attack: 500,
+        defense: 500,
+        isActive: true,
+        createdAt: Date.now(),
+      });
+    });
+
+    const lobbyId = await t.run(async (ctx) => {
+      return await ctx.db.insert("gameLobbies", {
+        hostId,
+        hostUsername: "host",
+        hostRank: "Bronze",
+        hostRating: 1000,
+        deckArchetype: "neutral",
+        mode: "ranked",
+        status: "active",
+        isPrivate: false,
+        opponentId,
+        opponentUsername: "opponent",
+        opponentRank: "Bronze",
+        gameId: "test-targetowner",
+        turnNumber: 1,
+        createdAt: Date.now(),
+      });
+    });
+
+    const gameStateId = await t.run(async (ctx) => {
+      return await ctx.db.insert("gameStates", {
+        lobbyId,
+        gameId: "test-targetowner",
+        hostId,
+        opponentId,
+        currentTurnPlayerId: hostId,
+        currentPhase: "main1",
+        turnNumber: 1,
+        hostLifePoints: 8000,
+        opponentLifePoints: 8000,
+        hostMana: 0,
+        opponentMana: 0,
+        hostDeck: [],
+        opponentDeck: [],
+        hostHand: [hostHandCardId],
+        opponentHand: [opponentHandCardId],
+        hostBoard: [],
+        opponentBoard: [],
+        hostSpellTrapZone: [],
+        opponentSpellTrapZone: [],
+        hostGraveyard: [],
+        opponentGraveyard: [],
+        hostBanished: [],
+        opponentBanished: [],
+        lastMoveAt: Date.now(),
+        createdAt: Date.now(),
+      });
+    });
+
+    const result = await t.run(async (ctx) => {
+      const { executeEffect } = await import("@convex/gameplay/effectSystem/executor");
+      const gameState = await ctx.db.get(gameStateId);
+      if (!gameState) throw new Error("Game state not found");
+
+      return await executeEffect(
+        ctx,
+        gameState,
+        lobbyId,
+        { type: "discard", trigger: "manual", value: 1, targetOwner: "opponent" },
+        hostId,
+        sourceCardId,
+        []
+      );
+    });
+
+    expect(result.success).toBe(true);
+
+    const updated = await t.run(async (ctx) => {
+      return await ctx.db.get(gameStateId);
+    });
+
+    expect(updated?.hostHand).toHaveLength(1);
+    expect(updated?.opponentHand).toHaveLength(0);
+    expect(updated?.opponentGraveyard).toHaveLength(1);
+  });
+});
+
 describe("executeMultiPartAbility", () => {
   it("should execute multiple effects in sequence", async () => {
     const t = convexTest(schema, modules);

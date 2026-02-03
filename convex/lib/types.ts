@@ -31,7 +31,7 @@ export type Archetype =
   | "earth"
   | "wind";
 export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
-export type CardType = "creature" | "spell" | "trap" | "equipment";
+export type CardType = "creature" | "agent" | "spell" | "trap" | "equipment";
 
 // Industry-standard TCG types
 export type Attribute =
@@ -136,7 +136,7 @@ export interface CardResult {
   name: string;
   rarity: Rarity;
   archetype: Archetype;
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "creature" | "agent" | "spell" | "trap" | "equipment";
   attack?: number;
   defense?: number;
   cost: number;

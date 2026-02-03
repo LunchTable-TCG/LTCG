@@ -26,7 +26,7 @@ export type GameStatus = "waiting" | "active" | "completed";
  * Card types matching Convex schema
  * Note: Use 'creature' not 'monster' to match database schema
  */
-export type CardType = "creature" | "spell" | "trap" | "equipment";
+export type CardType = "creature" | "agent" | "spell" | "trap" | "equipment";
 
 export type MonsterPosition = "attack" | "defense" | "facedown";
 

@@ -80,7 +80,7 @@ export function DeckEditor({
 
     deckCards.forEach(({ card, count }) => {
       totalCost += card.cost * count;
-      if (card.cardType === "creature") creatureCount += count;
+      if (card.cardType === "creature" || card.cardType === "agent") creatureCount += count;
       if (card.cardType === "spell") spellCount += count;
     });
 

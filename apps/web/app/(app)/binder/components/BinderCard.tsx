@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 
 export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type Element = "fire" | "water" | "earth" | "wind" | "neutral";
-export type CardType = "creature" | "spell" | "trap" | "equipment";
+export type CardType = "creature" | "agent" | "spell" | "trap" | "equipment";
 
 // Re-export for backwards compatibility
 export type { JsonAbility };

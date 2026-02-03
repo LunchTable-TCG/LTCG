@@ -544,7 +544,7 @@ export async function applyContinuousEffects(
 
   // Get the card being modified
   const card = await ctx.db.get(cardId);
-  if (!card || card.cardType !== "creature") {
+  if (!card || (card.cardType !== "creature" && card.cardType !== "agent")) {
     return { atkBonus: 0, defBonus: 0 };
   }
 

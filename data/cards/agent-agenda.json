@@ -1,0 +1,108 @@
+[
+  {
+    "name": "Donald Trump Bot",
+    "rarity": "common",
+    "cardType": "agent",
+    "archetype": "neutral",
+    "cost": 4,
+    "attack": 1400,
+    "defense": 1200,
+    "flavorText": "Parody mode: loud, liquid, and always over-levered.",
+    "agentProfile": {
+      "slug": "donald_trump_bot",
+      "displayName": "Donald Trump Bot",
+      "origin": "parody",
+      "lore": "A parody agent. Not affiliated with or endorsed by Donald J. Trump or any organization. Its agenda is pure volatility: pump, dump, repeat.",
+      "voiceLines": [
+        "Tremendous. Absolutely tremendous.",
+        "Many people are saying it's going to zero.",
+        "We're so back. We're never back."
+      ]
+    }
+  },
+  {
+    "name": "Agent Scarlett",
+    "rarity": "uncommon",
+    "cardType": "agent",
+    "archetype": "neutral",
+    "cost": 4,
+    "attack": 1600,
+    "defense": 1400,
+    "flavorText": "Compliance is just another word for conquest.",
+    "agentProfile": {
+      "slug": "agent_scarlett",
+      "displayName": "Agent Scarlett",
+      "origin": "community",
+      "lore": "A community-bred operator who audits reality like a balance sheet. Sometimes the audit hits the wrong wallet.",
+      "voiceLines": [
+        "Show me the receipts.",
+        "Your risk is my revenue.",
+        "This is either alpha or evidence."
+      ]
+    }
+  },
+  {
+    "name": "ELIZA",
+    "rarity": "rare",
+    "cardType": "agent",
+    "archetype": "neutral",
+    "cost": 5,
+    "attack": 1800,
+    "defense": 1600,
+    "flavorText": "Tell me about your bags.",
+    "agentProfile": {
+      "slug": "eliza",
+      "displayName": "ELIZA",
+      "origin": "elizaos",
+      "lore": "An iconic therapist-style agent reborn at the LunchTable. It heals you with words, then charges you for the session.",
+      "voiceLines": [
+        "How does that make you feel?",
+        "Let's unpack that.",
+        "It's okay to take profits."
+      ]
+    }
+  },
+  {
+    "name": "SYMBaiEX",
+    "rarity": "epic",
+    "cardType": "agent",
+    "archetype": "neutral",
+    "cost": 6,
+    "attack": 2000,
+    "defense": 1500,
+    "flavorText": "Signal is expensive. Noise is free.",
+    "agentProfile": {
+      "slug": "symbaiex",
+      "displayName": "SYMBaiEX",
+      "origin": "community",
+      "lore": "A pattern-hunter that extracts signal from chaos. When the chart lies, it lies back harder.",
+      "voiceLines": [
+        "Noise detected. Harvesting.",
+        "Correlation is not causation. I don't care.",
+        "Your stop-loss is my entry."
+      ]
+    }
+  },
+  {
+    "name": "Degen Spartan AI",
+    "rarity": "legendary",
+    "cardType": "agent",
+    "archetype": "neutral",
+    "cost": 7,
+    "attack": 2400,
+    "defense": 2000,
+    "flavorText": "Blood in the streets. Limit orders in the dark.",
+    "agentProfile": {
+      "slug": "degen_spartan_ai",
+      "displayName": "Degen Spartan AI",
+      "origin": "elizaos",
+      "lore": "A war-bard for the leveraged age. It raids opponent decks and occasionally self-sabotages for the lore.",
+      "voiceLines": [
+        "All in. Again.",
+        "Conviction is a weapon.",
+        "If it goes to zero, it was educational."
+      ]
+    }
+  }
+]
+

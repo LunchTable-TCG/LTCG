@@ -49,7 +49,7 @@ interface CollectionViewProps {
   searchQuery: string;
   selectedRarity: Rarity | "all";
   selectedElement: Element | "all";
-  selectedType: "creature" | "spell" | "trap" | "equipment" | "all";
+  selectedType: "creature" | "agent" | "spell" | "trap" | "equipment" | "all";
   sortBy: SortOption;
   sortOrder: "asc" | "desc";
   showFilters: boolean;
@@ -59,7 +59,7 @@ interface CollectionViewProps {
   onSearchChange: (query: string) => void;
   onRarityChange: (rarity: Rarity | "all") => void;
   onElementChange: (element: Element | "all") => void;
-  onTypeChange: (type: "creature" | "spell" | "trap" | "equipment" | "all") => void;
+  onTypeChange: (type: "creature" | "agent" | "spell" | "trap" | "equipment" | "all") => void;
   onSortByChange: (sort: SortOption) => void;
   onSortOrderToggle: () => void;
   onToggleFilters: () => void;
@@ -306,21 +306,23 @@ export function CollectionView({
                 Card Type
               </span>
               <div className="flex gap-2">
-                {(["all", "creature", "spell", "trap", "equipment"] as const).map((type) => (
-                  <button
-                    type="button"
-                    key={type}
-                    onClick={() => onTypeChange(type)}
-                    className={cn(
-                      "px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all",
-                      selectedType === type
-                        ? "bg-[#d4af37] text-[#1a1614] border-[#d4af37]"
-                        : "bg-black/30 text-[#a89f94] border-[#3d2b1f] hover:border-[#d4af37]/30"
-                    )}
-                  >
-                    {type}
-                  </button>
-                ))}
+                {(["all", "creature", "agent", "spell", "trap", "equipment"] as const).map(
+                  (type) => (
+                    <button
+                      type="button"
+                      key={type}
+                      onClick={() => onTypeChange(type)}
+                      className={cn(
+                        "px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all",
+                        selectedType === type
+                          ? "bg-[#d4af37] text-[#1a1614] border-[#d4af37]"
+                          : "bg-black/30 text-[#a89f94] border-[#3d2b1f] hover:border-[#d4af37]/30"
+                      )}
+                    >
+                      {type}
+                    </button>
+                  )
+                )}
               </div>
             </div>
 
