@@ -553,6 +553,8 @@ export default defineSchema({
         // Position change tracking
         hasChangedPosition: v.optional(v.boolean()), // Reset each turn
         turnSummoned: v.optional(v.number()), // Turn number when summoned
+        // Equip spell tracking
+        equippedCards: v.optional(v.array(v.id("cardDefinitions"))), // IDs of equip spells attached to this monster
       })
     ),
     opponentBoard: v.array(
@@ -570,6 +572,8 @@ export default defineSchema({
         // Position change tracking
         hasChangedPosition: v.optional(v.boolean()), // Reset each turn
         turnSummoned: v.optional(v.number()), // Turn number when summoned
+        // Equip spell tracking
+        equippedCards: v.optional(v.array(v.id("cardDefinitions"))), // IDs of equip spells attached to this monster
       })
     ),
 
@@ -580,6 +584,7 @@ export default defineSchema({
         isFaceDown: v.boolean(),
         isActivated: v.boolean(), // Continuous spells/traps remain on field
         turnSet: v.optional(v.number()), // Track when card was set (for trap activation rules)
+        equippedTo: v.optional(v.id("cardDefinitions")), // For equip spells - ID of equipped monster
       })
     ),
     opponentSpellTrapZone: v.array(
@@ -588,6 +593,7 @@ export default defineSchema({
         isFaceDown: v.boolean(),
         isActivated: v.boolean(), // Continuous spells/traps remain on field
         turnSet: v.optional(v.number()), // Track when card was set (for trap activation rules)
+        equippedTo: v.optional(v.id("cardDefinitions")), // For equip spells - ID of equipped monster
       })
     ),
 
@@ -693,6 +699,35 @@ export default defineSchema({
           defBonus: v.number(),
           expiresAtTurn: v.number(), // Turn number when this expires
           expiresAtPhase: v.optional(v.string()), // Phase when this expires ("end", "battle_end", etc.)
+        })
+      )
+    ),
+
+    // Lingering Effects - effects that last for a duration (e.g., stat boosts, restrictions)
+    lingeringEffects: v.optional(
+      v.array(
+        v.object({
+          effectType: v.string(), // Type of lingering effect (modifyATK, preventActivation, etc.)
+          value: v.any(), // Effect value (number for stat mods, object for complex effects)
+          sourceCardId: v.optional(v.id("cardDefinitions")), // Card that created this effect
+          sourceCardName: v.optional(v.string()), // Name of source card for display
+          appliedBy: v.id("users"), // Player who applied the effect
+          appliedTurn: v.number(), // Turn number when applied
+          duration: v.object({
+            type: v.union(
+              v.literal("until_end_phase"),
+              v.literal("until_turn_end"),
+              v.literal("until_next_turn"),
+              v.literal("permanent"),
+              v.literal("custom")
+            ),
+            endTurn: v.optional(v.number()), // Specific turn number when effect expires
+            endPhase: v.optional(v.string()), // Specific phase when effect expires
+          }),
+          affectsPlayer: v.optional(
+            v.union(v.literal("host"), v.literal("opponent"), v.literal("both"))
+          ),
+          conditions: v.optional(v.any()), // Optional conditions for effect application
         })
       )
     ),
@@ -2095,8 +2130,6 @@ export default defineSchema({
     status: v.union(v.literal("upcoming"), v.literal("active"), v.literal("ended")),
     totalTiers: v.number(), // Usually 50
     xpPerTier: v.number(), // XP required per tier (e.g., 1000)
-    premiumPrice: v.number(), // Gems price for premium track
-    tokenPrice: v.optional(v.number()), // Token price for premium track (raw units, 6 decimals)
     startDate: v.number(),
     endDate: v.number(),
     createdAt: v.number(),
@@ -2992,4 +3025,49 @@ export default defineSchema({
   })
     .index("by_provider", ["provider"])
     .index("by_active", ["isActive"]),
+
+  // Stripe Customers - Maps users to Stripe customer IDs
+  stripeCustomers: defineTable({
+    userId: v.id("users"),
+    stripeCustomerId: v.string(), // "cus_..."
+    email: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_stripe_customer", ["stripeCustomerId"]),
+
+  // Stripe Subscriptions - Active/past subscriptions
+  stripeSubscriptions: defineTable({
+    userId: v.id("users"),
+    stripeCustomerId: v.string(),
+    stripeSubscriptionId: v.string(), // "sub_..."
+    status: v.union(
+      v.literal("active"),
+      v.literal("canceled"),
+      v.literal("past_due"),
+      v.literal("unpaid"),
+      v.literal("incomplete"),
+      v.literal("trialing")
+    ),
+    planInterval: v.union(v.literal("month"), v.literal("year")),
+    planAmount: v.number(), // 420 or 3690 (cents)
+    currentPeriodStart: v.number(),
+    currentPeriodEnd: v.number(),
+    cancelAtPeriodEnd: v.boolean(),
+    canceledAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_stripe_subscription", ["stripeSubscriptionId"])
+    .index("by_status", ["status"]),
+
+  // Stripe Webhook Events - Idempotency tracking
+  stripeWebhookEvents: defineTable({
+    stripeEventId: v.string(), // "evt_..."
+    type: v.string(),
+    processed: v.boolean(),
+    receivedAt: v.number(),
+    error: v.optional(v.string()),
+  })
+    .index("by_stripe_event", ["stripeEventId"])
+    .index("by_processed", ["processed"]),
 });

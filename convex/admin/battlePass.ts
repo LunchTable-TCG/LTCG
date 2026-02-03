@@ -92,7 +92,7 @@ export const listBattlePassSeasons = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    let battlePasses;
+    let battlePasses: Awaited<ReturnType<(typeof ctx.db.query<"battlePassSeasons">)["collect"]>>;
     if (args.status) {
       battlePasses = await ctx.db
         .query("battlePassSeasons")
@@ -315,7 +315,6 @@ export const createBattlePassSeason = mutation({
     description: v.optional(v.string()),
     totalTiers: v.optional(v.number()), // Default: 50
     xpPerTier: v.optional(v.number()), // Default: 1000
-    premiumPrice: v.optional(v.number()), // Default: 1000 gems
     useDefaultRewards: v.optional(v.boolean()), // Auto-generate tier rewards
   },
   handler: async (ctx, args) => {
@@ -340,7 +339,6 @@ export const createBattlePassSeason = mutation({
     const now = Date.now();
     const totalTiers = args.totalTiers ?? 50;
     const xpPerTier = args.xpPerTier ?? 1000;
-    const premiumPrice = args.premiumPrice ?? 1000;
 
     // Create battle pass
     const battlePassId = await ctx.db.insert("battlePassSeasons", {
@@ -350,7 +348,6 @@ export const createBattlePassSeason = mutation({
       status: season.status === "active" ? "active" : "upcoming",
       totalTiers,
       xpPerTier,
-      premiumPrice,
       startDate: season.startDate,
       endDate: season.endDate,
       createdAt: now,
@@ -391,7 +388,6 @@ export const updateBattlePassSeason = mutation({
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     xpPerTier: v.optional(v.number()),
-    premiumPrice: v.optional(v.number()),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
   },
@@ -411,12 +407,11 @@ export const updateBattlePassSeason = mutation({
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
 
-    if (args.name !== undefined) updates["name"] = args.name;
-    if (args.description !== undefined) updates["description"] = args.description;
-    if (args.xpPerTier !== undefined) updates["xpPerTier"] = args.xpPerTier;
-    if (args.premiumPrice !== undefined) updates["premiumPrice"] = args.premiumPrice;
-    if (args.startDate !== undefined) updates["startDate"] = args.startDate;
-    if (args.endDate !== undefined) updates["endDate"] = args.endDate;
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.description !== undefined) updates.description = args.description;
+    if (args.xpPerTier !== undefined) updates.xpPerTier = args.xpPerTier;
+    if (args.startDate !== undefined) updates.startDate = args.startDate;
+    if (args.endDate !== undefined) updates.endDate = args.endDate;
 
     await ctx.db.patch(args.battlePassId, updates);
 
