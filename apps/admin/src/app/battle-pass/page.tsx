@@ -30,7 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Card, Text, Title } from "@tremor/react";
 import {
   CalendarIcon,
@@ -81,10 +81,10 @@ function CreateBattlePassDialog({ open, onOpenChange }: CreateBattlePassDialogPr
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const availableSeasons = useConvexQuery(
-    apiAny.admin.battlePass.getAvailableSeasonsForBattlePass,
+    api.admin.battlePass.getAvailableSeasonsForBattlePass,
     {}
   );
-  const createBattlePass = useConvexMutation(apiAny.admin.battlePass.createBattlePassSeason);
+  const createBattlePass = useConvexMutation(api.admin.battlePass.createBattlePassSeason);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -265,13 +265,13 @@ function BattlePassActions({ battlePass }: BattlePassActionsProps) {
   const [isEnding, setIsEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
-  const activateBattlePass = useConvexMutation(apiAny.admin.battlePass.activateBattlePass);
-  const endBattlePass = useConvexMutation(apiAny.admin.battlePass.endBattlePass);
+  const activateBattlePass = useConvexMutation(api.admin.battlePass.activateBattlePass);
+  const endBattlePass = useConvexMutation(api.admin.battlePass.endBattlePass);
 
   const handleActivate = async () => {
     setIsActivating(true);
     try {
-      const result = await activateBattlePass({ battlePassId: battlePass._id as any });
+      const result = await activateBattlePass({ battlePassId: battlePass._id as BattlePassId });
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to activate battle pass");
@@ -283,7 +283,7 @@ function BattlePassActions({ battlePass }: BattlePassActionsProps) {
   const handleEnd = async () => {
     setIsEnding(true);
     try {
-      const result = await endBattlePass({ battlePassId: battlePass._id as any });
+      const result = await endBattlePass({ battlePassId: battlePass._id as BattlePassId });
       toast.success(result.message);
       setShowEndConfirm(false);
     } catch (error) {
@@ -363,11 +363,11 @@ export default function BattlePassPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const battlePassResult = useConvexQuery(apiAny.admin.battlePass.listBattlePassSeasons, {
+  const battlePassResult = useConvexQuery(api.admin.battlePass.listBattlePassSeasons, {
     status: statusFilter !== "all" ? (statusFilter as BattlePassStatus) : undefined,
   });
 
-  const battlePassStats = useConvexQuery(apiAny.admin.battlePass.getBattlePassStats, {});
+  const battlePassStats = useConvexQuery(api.admin.battlePass.getBattlePassStats, {});
 
   const isLoading = battlePassResult === undefined;
 

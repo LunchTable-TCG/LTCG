@@ -44,9 +44,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { TemplateCard } from "@/components/templates/TemplateCard";
 import type { CardType, TemplateListItem } from "@/components/templates/types";
-import { apiAny } from "@/lib/convexHelpers";
-
-const api = apiAny;
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 
 const CARD_TYPES: { value: CardType | "all"; label: string }[] = [
   { value: "all", label: "All Types" },
@@ -146,7 +144,7 @@ export default function TemplatesPage() {
 
   const handleSetDefault = async (templateId: string) => {
     try {
-      await setDefaultTemplate({ templateId: templateId as any });
+      await setDefaultTemplate({ templateId: templateId as TemplateId });
       toast.success("Set as default template");
     } catch (_error) {
       toast.error("Failed to set default");

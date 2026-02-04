@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -136,14 +136,14 @@ export default function TreasuryWalletsPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   // Fetch wallets
-  const wallets = useConvexQuery(apiAny.treasury.wallets.listWallets, {});
+  const wallets = useConvexQuery(api.treasury.wallets.listWallets, {});
   // policies query will be used when policy assignment UI is implemented
 
   // Mutations
-  const createWallet = useConvexMutation(apiAny.treasury.wallets.createWallet);
-  const syncBalance = useConvexMutation(apiAny.treasury.wallets.syncBalance);
-  const updateWallet = useConvexMutation(apiAny.treasury.wallets.updateWallet);
-  const retryWalletCreation = useConvexMutation(apiAny.treasury.wallets.retryWalletCreation);
+  const createWallet = useConvexMutation(api.treasury.wallets.createWallet);
+  const syncBalance = useConvexMutation(api.treasury.wallets.syncBalance);
+  const updateWallet = useConvexMutation(api.treasury.wallets.updateWallet);
+  const retryWalletCreation = useConvexMutation(api.treasury.wallets.retryWalletCreation);
 
   const isLoading = wallets === undefined;
 

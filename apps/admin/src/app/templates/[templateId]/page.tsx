@@ -62,9 +62,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { TemplateEditor } from "@/components/templates/TemplateEditor";
 import type { Rarity, TemplateMode } from "@/components/templates/types";
-import { apiAny } from "@/lib/convexHelpers";
-
-const api = apiAny;
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { TemplateId } from "@/lib/convexTypes";
 
 const TEMPLATE_MODES: { value: TemplateMode; label: string; description: string }[] = [
   {
@@ -97,7 +96,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
 
   // Queries
   const template = useQuery(api.admin.templates.getTemplate, {
-    templateId: templateId as any,
+    templateId: templateId as TemplateId,
   });
 
   // Mutations
@@ -110,7 +109,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
   const handleUpdateSettings = async (updates: Record<string, any>) => {
     try {
       await updateTemplate({
-        templateId: templateId as any,
+        templateId: templateId as TemplateId,
         ...updates,
       });
       toast.success("Template updated");
@@ -121,7 +120,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
 
   const handleSetDefault = async () => {
     try {
-      await setDefaultTemplate({ templateId: templateId as any });
+      await setDefaultTemplate({ templateId: templateId as TemplateId });
       toast.success("Set as default template");
     } catch (_error) {
       toast.error("Failed to set default");
@@ -136,7 +135,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
 
     try {
       const newId = await duplicateTemplate({
-        templateId: templateId as any,
+        templateId: templateId as TemplateId,
         newName: duplicateName.trim(),
       });
       toast.success("Template duplicated");
@@ -149,7 +148,7 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
 
   const handleDelete = async () => {
     try {
-      await deleteTemplate({ templateId: templateId as any });
+      await deleteTemplate({ templateId: templateId as TemplateId });
       toast.success("Template deleted");
       router.push("/templates");
     } catch (error: any) {

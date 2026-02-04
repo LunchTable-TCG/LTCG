@@ -31,7 +31,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { ArrowLeftIcon, CopyIcon, Loader2Icon, SaveIcon, TrashIcon } from "lucide-react";
 import Link from "next/link";
@@ -121,14 +121,14 @@ export default function AchievementEditorPage() {
 
   // Queries and mutations
   const existingAchievement = useConvexQuery(
-    apiAny.admin.achievements.getAchievement,
-    isNew ? "skip" : { achievementDbId: achievementDbId as any }
+    api.admin.achievements.getAchievement,
+    isNew ? "skip" : { achievementDbId: achievementDbId as AchievementId }
   );
 
-  const createAchievement = useConvexMutation(apiAny.admin.achievements.createAchievement);
-  const updateAchievement = useConvexMutation(apiAny.admin.achievements.updateAchievement);
-  const deleteAchievement = useConvexMutation(apiAny.admin.achievements.deleteAchievement);
-  const duplicateAchievement = useConvexMutation(apiAny.admin.achievements.duplicateAchievement);
+  const createAchievement = useConvexMutation(api.admin.achievements.createAchievement);
+  const updateAchievement = useConvexMutation(api.admin.achievements.updateAchievement);
+  const deleteAchievement = useConvexMutation(api.admin.achievements.deleteAchievement);
+  const duplicateAchievement = useConvexMutation(api.admin.achievements.duplicateAchievement);
 
   // Populate form with existing data
   useEffect(() => {
@@ -187,7 +187,7 @@ export default function AchievementEditorPage() {
         router.push(`/quests/achievement/${result.achievementDbId}`);
       } else {
         const result = await updateAchievement({
-          achievementDbId: achievementDbId as any,
+          achievementDbId: achievementDbId as AchievementId,
           name: name.trim(),
           description: description.trim(),
           category,
@@ -215,7 +215,7 @@ export default function AchievementEditorPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const result = await deleteAchievement({ achievementDbId: achievementDbId as any });
+      const result = await deleteAchievement({ achievementDbId: achievementDbId as AchievementId });
       toast.success(result.message);
       router.push("/quests");
     } catch (error) {
@@ -233,7 +233,7 @@ export default function AchievementEditorPage() {
 
     try {
       const result = await duplicateAchievement({
-        achievementDbId: achievementDbId as any,
+        achievementDbId: achievementDbId as AchievementId,
         newAchievementId: duplicateAchievementId.trim(),
         newName: duplicateName.trim(),
       });

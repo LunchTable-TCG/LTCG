@@ -13,7 +13,7 @@ import { ModerationActions, ModerationStatusBadge } from "@/components/players";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexQuery } from "@/lib/convexHelpers";
 import type { BannedPlayer, ColumnDef, SuspendedPlayer } from "@/types";
 import { Card, Text, Title } from "@tremor/react";
 import Link from "next/link";
@@ -141,9 +141,9 @@ export default function ModerationPage() {
   const router = useRouter();
 
   // Fetch moderation data
-  const bannedPlayers = useConvexQuery(apiAny.admin.moderation.listBannedPlayers, {});
-  const suspendedPlayers = useConvexQuery(apiAny.admin.moderation.listSuspendedPlayers, {});
-  const suspiciousReport = useConvexQuery(apiAny.admin.admin.getSuspiciousActivityReport, {
+  const bannedPlayers = useConvexQuery(api.admin.moderation.listBannedPlayers, {});
+  const suspendedPlayers = useConvexQuery(api.admin.moderation.listSuspendedPlayers, {});
+  const suspiciousReport = useConvexQuery(api.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
 

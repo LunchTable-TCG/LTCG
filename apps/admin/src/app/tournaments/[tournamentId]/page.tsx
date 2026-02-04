@@ -20,7 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { TournamentId } from "@/lib/convexTypes";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
 import {
@@ -97,7 +98,7 @@ function GrantEntryDialog({
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const grantEntry = useConvexMutation(apiAny.admin.tournaments.grantTournamentEntry);
+  const grantEntry = useConvexMutation(api.admin.tournaments.grantTournamentEntry);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,7 +114,7 @@ function GrantEntryDialog({
 
     try {
       const result = await grantEntry({
-        tournamentId: tournamentId as any,
+        tournamentId: tournamentId as TournamentId,
         userId: userId.trim() as any,
         reason: reason.trim(),
       });
@@ -203,14 +204,14 @@ export default function TournamentDetailPage() {
   const [showGrantDialog, setShowGrantDialog] = useState(false);
 
   // Queries and mutations
-  const tournament = useConvexQuery(apiAny.admin.tournaments.getTournament, {
-    tournamentId: tournamentId as any,
+  const tournament = useConvexQuery(api.admin.tournaments.getTournament, {
+    tournamentId: tournamentId as TournamentId,
   });
 
-  const updateTournament = useConvexMutation(apiAny.admin.tournaments.updateTournament);
-  const forceStart = useConvexMutation(apiAny.admin.tournaments.forceStartTournament);
-  const removeParticipant = useConvexMutation(apiAny.admin.tournaments.removeParticipant);
-  const disqualifyParticipant = useConvexMutation(apiAny.admin.tournaments.disqualifyParticipant);
+  const updateTournament = useConvexMutation(api.admin.tournaments.updateTournament);
+  const forceStart = useConvexMutation(api.admin.tournaments.forceStartTournament);
+  const removeParticipant = useConvexMutation(api.admin.tournaments.removeParticipant);
+  const disqualifyParticipant = useConvexMutation(api.admin.tournaments.disqualifyParticipant);
 
   // Populate form with existing data
   useEffect(() => {
@@ -245,7 +246,7 @@ export default function TournamentDetailPage() {
     setIsSaving(true);
     try {
       const result = await updateTournament({
-        tournamentId: tournamentId as any,
+        tournamentId: tournamentId as TournamentId,
         updates: {
           name: name.trim(),
           description: description.trim() || undefined,
@@ -275,7 +276,7 @@ export default function TournamentDetailPage() {
   const handleForceStart = async (reason: string) => {
     try {
       const result = await forceStart({
-        tournamentId: tournamentId as any,
+        tournamentId: tournamentId as TournamentId,
         reason,
       });
       toast.success(result.message);
@@ -292,7 +293,7 @@ export default function TournamentDetailPage() {
   ) => {
     try {
       const result = await removeParticipant({
-        tournamentId: tournamentId as any,
+        tournamentId: tournamentId as TournamentId,
         userId: userId as any,
         reason,
         refundEntry,
@@ -306,7 +307,7 @@ export default function TournamentDetailPage() {
   const handleDisqualify = async (userId: string, _username: string, reason: string) => {
     try {
       const result = await disqualifyParticipant({
-        tournamentId: tournamentId as any,
+        tournamentId: tournamentId as TournamentId,
         userId: userId as any,
         reason,
       });

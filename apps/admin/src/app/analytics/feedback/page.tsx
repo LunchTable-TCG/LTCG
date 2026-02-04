@@ -10,7 +10,7 @@
 import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, BarChart, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 
@@ -20,8 +20,8 @@ import Link from "next/link";
 
 export default function FeedbackAnalyticsPage() {
   // Fetch analytics data
-  const analytics = useConvexQuery(apiAny.feedback.feedback.getAnalytics, { days: 30 });
-  const stats = useConvexQuery(apiAny.feedback.feedback.getStats);
+  const analytics = useConvexQuery(api.feedback.feedback.getAnalytics, { days: 30 });
+  const stats = useConvexQuery(api.feedback.feedback.getStats);
 
   const isLoading = analytics === undefined || stats === undefined;
 

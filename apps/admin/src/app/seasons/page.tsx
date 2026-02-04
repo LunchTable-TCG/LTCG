@@ -29,7 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
 import { CalendarIcon, PlayIcon, PlusIcon, StopCircleIcon, TrophyIcon } from "lucide-react";
@@ -76,7 +76,7 @@ function CreateSeasonDialog({ open, onOpenChange }: CreateSeasonDialogProps) {
   const [softResetPercentage, setSoftResetPercentage] = useState("50");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createSeason = useConvexMutation(apiAny.admin.seasons.createSeason);
+  const createSeason = useConvexMutation(api.admin.seasons.createSeason);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,8 +253,8 @@ function SeasonActions({ season }: SeasonActionsProps) {
   const [isEnding, setIsEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
-  const startSeason = useConvexMutation(apiAny.admin.seasons.startSeason);
-  const endSeason = useConvexMutation(apiAny.admin.seasons.endSeason);
+  const startSeason = useConvexMutation(api.admin.seasons.startSeason);
+  const endSeason = useConvexMutation(api.admin.seasons.endSeason);
 
   const handleStart = async () => {
     setIsStarting(true);
@@ -350,11 +350,11 @@ export default function SeasonsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const seasonsResult = useConvexQuery(apiAny.admin.seasons.listSeasons, {
+  const seasonsResult = useConvexQuery(api.admin.seasons.listSeasons, {
     status: statusFilter !== "all" ? (statusFilter as SeasonStatus) : undefined,
   });
 
-  const seasonStats = useConvexQuery(apiAny.admin.seasons.getSeasonStats, {});
+  const seasonStats = useConvexQuery(api.admin.seasons.getSeasonStats, {});
 
   const isLoading = seasonsResult === undefined;
 

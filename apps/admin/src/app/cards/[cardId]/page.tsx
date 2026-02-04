@@ -31,7 +31,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type {
+  CardArchetype,
+  CardAttribute,
+  CardId,
+  CardRarity,
+  CardType,
+  MonsterType,
+  SpellType,
+  TrapType,
+} from "@/lib/convexTypes";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { CopyIcon, Loader2Icon, SaveIcon, TrashIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -146,15 +156,15 @@ export default function CardEditorPage() {
 
   // Fetch existing card
   const existingCard = useConvexQuery(
-    apiAny.admin.cards.getCard,
-    cardId ? { cardId: cardId as any } : "skip"
+    api.admin.cards.getCard,
+    cardId ? { cardId: cardId as CardId } : "skip"
   );
 
   // Mutations
-  const createCard = useConvexMutation(apiAny.admin.cards.createCard);
-  const updateCard = useConvexMutation(apiAny.admin.cards.updateCard);
-  const deleteCard = useConvexMutation(apiAny.admin.cards.deleteCard);
-  const duplicateCardMutation = useConvexMutation(apiAny.admin.cards.duplicateCard);
+  const createCard = useConvexMutation(api.admin.cards.createCard);
+  const updateCard = useConvexMutation(api.admin.cards.updateCard);
+  const deleteCard = useConvexMutation(api.admin.cards.deleteCard);
+  const duplicateCardMutation = useConvexMutation(api.admin.cards.duplicateCard);
 
   // Populate form when card loads
   useEffect(() => {
@@ -207,17 +217,17 @@ export default function CardEditorPage() {
     try {
       const cardData = {
         name: name.trim(),
-        rarity: rarity as any,
-        archetype: archetype as any,
-        cardType: cardType as any,
+        rarity: rarity as CardRarity,
+        archetype: archetype as CardArchetype,
+        cardType: cardType as CardType,
         attack: cardType === "creature" ? Number(attack) : undefined,
         defense: cardType === "creature" ? Number(defense) : undefined,
         cost,
         level: cardType === "creature" && level !== "" ? Number(level) : undefined,
-        attribute: cardType === "creature" ? (attribute as any) : undefined,
-        monsterType: cardType === "creature" ? (monsterType as any) : undefined,
-        spellType: cardType === "spell" ? (spellType as any) : undefined,
-        trapType: cardType === "trap" ? (trapType as any) : undefined,
+        attribute: cardType === "creature" ? (attribute as CardAttribute) : undefined,
+        monsterType: cardType === "creature" ? (monsterType as MonsterType) : undefined,
+        spellType: cardType === "spell" ? (spellType as SpellType) : undefined,
+        trapType: cardType === "trap" ? (trapType as TrapType) : undefined,
         flavorText: flavorText.trim() || undefined,
         imageUrl: imageUrl.trim() || undefined,
         ability: parsedAbility,
@@ -229,7 +239,7 @@ export default function CardEditorPage() {
         toast.success(result.message);
         router.push(`/cards/${result.cardId}`);
       } else {
-        await updateCard({ cardId: cardId as any, ...cardData });
+        await updateCard({ cardId: cardId as CardId, ...cardData });
         toast.success("Card updated successfully");
       }
     } catch (error) {
@@ -241,7 +251,7 @@ export default function CardEditorPage() {
 
   const handleDelete = async () => {
     try {
-      await deleteCard({ cardId: cardId as any, force: false });
+      await deleteCard({ cardId: cardId as CardId, force: false });
       toast.success("Card deleted");
       router.push("/cards");
     } catch (error) {
@@ -258,7 +268,7 @@ export default function CardEditorPage() {
 
     try {
       const result = await duplicateCardMutation({
-        cardId: cardId as any,
+        cardId: cardId as CardId,
         newName: duplicateName.trim(),
       });
       toast.success(result.message);
@@ -611,13 +621,13 @@ export default function CardEditorPage() {
                   <Text className="font-bold text-lg">{name || "Card Name"}</Text>
                   <Badge
                     color={
-                      {
+                      ({
                         common: "gray",
                         uncommon: "emerald",
                         rare: "blue",
                         epic: "violet",
                         legendary: "amber",
-                      }[rarity] as any
+                      } as const)[rarity]
                     }
                   >
                     {rarity}

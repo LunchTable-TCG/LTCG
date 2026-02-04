@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
   Badge,
@@ -99,15 +99,15 @@ export default function EconomyAnalyticsPage() {
   const [trendDays, setTrendDays] = useState(14);
 
   // Fetch real data from Convex
-  const snapshot = useConvexQuery(apiAny.admin.analytics.getCurrentEconomySnapshot);
-  const metrics = useConvexQuery(apiAny.admin.analytics.getEconomyMetrics, { days: 14 });
-  const wealth = useConvexQuery(apiAny.admin.analytics.getWealthDistribution);
-  const marketplaceStats = useConvexQuery(apiAny.admin.analytics.getMarketplaceStats, {
+  const snapshot = useConvexQuery(api.admin.analytics.getCurrentEconomySnapshot);
+  const metrics = useConvexQuery(api.admin.analytics.getEconomyMetrics, { days: 14 });
+  const wealth = useConvexQuery(api.admin.analytics.getWealthDistribution);
+  const marketplaceStats = useConvexQuery(api.admin.analytics.getMarketplaceStats, {
     periodType: "all_time",
   });
 
   // NEW: Economy trends data with configurable period
-  const economyTrends = useConvexQuery(apiAny.admin.analytics.getEconomyTrends, {
+  const economyTrends = useConvexQuery(api.admin.analytics.getEconomyTrends, {
     periodType: trendPeriod,
     days: trendDays,
   });

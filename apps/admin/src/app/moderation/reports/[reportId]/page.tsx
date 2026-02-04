@@ -21,7 +21,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { format, formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -60,10 +60,10 @@ export default function ReportDetailPage() {
   const [suspendDuration, setSuspendDuration] = useState(7);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const report = useConvexQuery(apiAny.admin.reports.getReport, isAdmin ? { reportId } : "skip");
+  const report = useConvexQuery(api.admin.reports.getReport, isAdmin ? { reportId } : "skip");
 
-  const updateStatus = useConvexMutation(apiAny.admin.reports.updateReportStatus);
-  const resolveWithAction = useConvexMutation(apiAny.admin.reports.resolveReportWithAction);
+  const updateStatus = useConvexMutation(api.admin.reports.updateReportStatus);
+  const resolveWithAction = useConvexMutation(api.admin.reports.resolveReportWithAction);
 
   const handleStatusChange = async (status: ReportStatus) => {
     try {

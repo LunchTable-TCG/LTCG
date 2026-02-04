@@ -29,7 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Card, Text, Title } from "@tremor/react";
 import {
   CalendarIcon,
@@ -107,7 +107,7 @@ function CreateTournamentDialog({ open, onOpenChange }: CreateTournamentDialogPr
     defaultTourneyStart.toISOString().slice(0, 16)
   );
 
-  const createTournament = useConvexMutation(apiAny.admin.tournaments.createTournament);
+  const createTournament = useConvexMutation(api.admin.tournaments.createTournament);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -381,7 +381,7 @@ function TournamentActions({ tournament }: TournamentActionsProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
-  const cancelTournament = useConvexMutation(apiAny.admin.tournaments.cancelTournament);
+  const cancelTournament = useConvexMutation(api.admin.tournaments.cancelTournament);
 
   const handleCancel = async () => {
     if (!cancelReason.trim()) {
@@ -479,13 +479,13 @@ export default function TournamentsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const tournamentsResult = useConvexQuery(apiAny.admin.tournaments.listTournaments, {
+  const tournamentsResult = useConvexQuery(api.admin.tournaments.listTournaments, {
     status: statusFilter !== "all" ? (statusFilter as TournamentStatus) : undefined,
     limit: 50,
     offset: 0,
   });
 
-  const tournamentStats = useConvexQuery(apiAny.admin.tournaments.getTournamentStats, {});
+  const tournamentStats = useConvexQuery(api.admin.tournaments.getTournamentStats, {});
 
   const isLoading = tournamentsResult === undefined;
 

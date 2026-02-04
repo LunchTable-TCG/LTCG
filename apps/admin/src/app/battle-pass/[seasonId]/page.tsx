@@ -23,7 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { BattlePassId } from "@/lib/convexTypes";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
 import {
@@ -78,12 +79,12 @@ export default function BattlePassDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Queries and mutations
-  const battlePass = useConvexQuery(apiAny.admin.battlePass.getBattlePass, {
-    battlePassId: battlePassId as any,
+  const battlePass = useConvexQuery(api.admin.battlePass.getBattlePass, {
+    battlePassId: battlePassId as BattlePassId,
   });
 
-  const updateBattlePass = useConvexMutation(apiAny.admin.battlePass.updateBattlePassSeason);
-  const deleteBattlePass = useConvexMutation(apiAny.admin.battlePass.deleteBattlePass);
+  const updateBattlePass = useConvexMutation(api.admin.battlePass.updateBattlePassSeason);
+  const deleteBattlePass = useConvexMutation(api.admin.battlePass.deleteBattlePass);
 
   // Populate form with existing data
   useEffect(() => {
@@ -109,7 +110,7 @@ export default function BattlePassDetailPage() {
     setIsSaving(true);
     try {
       const result = await updateBattlePass({
-        battlePassId: battlePassId as any,
+        battlePassId: battlePassId as BattlePassId,
         name: name.trim(),
         description: description.trim() || undefined,
         xpPerTier: Number.parseInt(xpPerTier, 10),
@@ -128,7 +129,7 @@ export default function BattlePassDetailPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const result = await deleteBattlePass({ battlePassId: battlePassId as any });
+      const result = await deleteBattlePass({ battlePassId: battlePassId as BattlePassId });
       toast.success(result.message);
       router.push("/battle-pass");
     } catch (error) {

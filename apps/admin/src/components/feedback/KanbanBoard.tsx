@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { Bug, Clock, GripVertical, Image, Lightbulb, User, Video } from "lucide-react";
 import { useState } from "react";
@@ -215,12 +215,12 @@ export function KanbanBoard({ type, onSelectItem }: KanbanBoardProps) {
   const [draggedItem, setDraggedItem] = useState<FeedbackItem | null>(null);
 
   // Query feedback grouped by status
-  const feedbackByStatus = useConvexQuery(apiAny.feedback.feedback.listByStatus, {
+  const feedbackByStatus = useConvexQuery(api.feedback.feedback.listByStatus, {
     type,
   }) as Record<StatusType, FeedbackItem[]> | undefined;
 
   // Mutation for updating status
-  const updateStatus = useConvexMutation(apiAny.feedback.feedback.updateStatus);
+  const updateStatus = useConvexMutation(api.feedback.feedback.updateStatus);
 
   const handleDragStart = (e: React.DragEvent, item: FeedbackItem) => {
     setDraggedItem(item);

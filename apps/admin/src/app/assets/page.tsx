@@ -36,7 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Loader2Icon, SearchIcon, UploadIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -63,18 +63,18 @@ export default function AssetsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Convex queries and mutations
-  const assetsResult = useConvexQuery(apiAny.admin.assets.listAssets, {
+  const assetsResult = useConvexQuery(api.admin.assets.listAssets, {
     category: categoryFilter === "all" ? undefined : categoryFilter,
     search: searchQuery || undefined,
     limit: 100,
   });
 
-  const statsResult = useConvexQuery(apiAny.admin.assets.getAssetStats, {});
+  const statsResult = useConvexQuery(api.admin.assets.getAssetStats, {});
 
-  const saveAssetMetadata = useConvexMutation(apiAny.admin.assets.saveAssetMetadata);
-  const updateAsset = useConvexMutation(apiAny.admin.assets.updateAsset);
-  const deleteAssetMetadata = useConvexMutation(apiAny.admin.assets.deleteAssetMetadata);
-  const syncBlobAssets = useConvexMutation(apiAny.admin.assets.syncBlobAssets);
+  const saveAssetMetadata = useConvexMutation(api.admin.assets.saveAssetMetadata);
+  const updateAsset = useConvexMutation(api.admin.assets.updateAsset);
+  const deleteAssetMetadata = useConvexMutation(api.admin.assets.deleteAssetMetadata);
+  const syncBlobAssets = useConvexMutation(api.admin.assets.syncBlobAssets);
 
   // Auto-sync on mount - only run once
   const hasSynced = useRef(false);

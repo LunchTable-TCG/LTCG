@@ -39,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiAny } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import {
   Download,
   Eye,
@@ -67,7 +67,6 @@ import {
   ZOOM_LEVELS,
 } from "./types";
 
-const api = apiAny;
 
 interface TemplateEditorProps {
   template: TemplateWithBlocks;

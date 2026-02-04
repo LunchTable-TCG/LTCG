@@ -72,6 +72,12 @@ interface AIConfigItem {
   updatedByUsername: string;
 }
 
+interface TestResult {
+  success: boolean;
+  latencyMs?: number;
+  error?: string;
+}
+
 interface NormalizedModel {
   id: string;
   name: string;
@@ -483,7 +489,7 @@ function ModelBrowser({
         </div>
         <div className="flex gap-2 items-center">
           <FilterIcon className="h-4 w-4 text-muted-foreground" />
-          <Select value={providerFilter} onValueChange={onProviderFilterChange as any}>
+          <Select value={providerFilter} onValueChange={onProviderFilterChange}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Provider" />
             </SelectTrigger>
@@ -495,7 +501,7 @@ function ModelBrowser({
               <SelectItem value="vercel">Vercel ({counts.byProvider.vercel})</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={typeFilter} onValueChange={onTypeFilterChange as any}>
+          <Select value={typeFilter} onValueChange={onTypeFilterChange}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
@@ -619,10 +625,10 @@ export default function AIProvidersPage() {
   const recentUsage = useTypedQuery(typedApi.admin.aiUsage.getRecentUsage, { limit: 20 });
 
   // Local state
-  const [localValues, setLocalValues] = useState<Record<string, any>>({});
-  const [originalValues, setOriginalValues] = useState<Record<string, any>>({});
+  const [localValues, setLocalValues] = useState<Record<string, number | string | boolean | string[]>>({});
+  const [originalValues, setOriginalValues] = useState<Record<string, number | string | boolean | string[]>>({});
   const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null);
-  const [testResults, setTestResults] = useState<Record<ProviderKey, any>>({} as any);
+  const [testResults, setTestResults] = useState<Record<ProviderKey, TestResult>>({});
   const [testingProvider, setTestingProvider] = useState<ProviderKey | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -671,7 +677,7 @@ export default function AIProvidersPage() {
   // Initialize local values when configs load
   useEffect(() => {
     if (configsResult?.configs) {
-      const values: Record<string, any> = {};
+      const values: Record<string, number | string | boolean | string[]> = {};
       for (const config of configsResult.configs as AIConfigItem[]) {
         values[config.key] = config.value;
       }
@@ -714,12 +720,12 @@ export default function AIProvidersPage() {
   }, [fetchAllModels]);
 
   // Get config value helper
-  const getConfigValue = (key: string, defaultValue: any = null) => {
+  const getConfigValue = (key: string, defaultValue: number | string | boolean | string[] | null = null) => {
     return localValues[key] ?? defaultValue;
   };
 
   // Update local value
-  const setConfigValue = (key: string, value: any) => {
+  const setConfigValue = (key: string, value: number | string | boolean | string[]) => {
     setLocalValues((prev) => ({ ...prev, [key]: value }));
   };
 

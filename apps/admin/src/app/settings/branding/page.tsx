@@ -26,7 +26,7 @@ import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { BookOpenIcon, Loader2Icon, SettingsIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -49,33 +49,33 @@ export default function BrandingPage() {
   const [isInitializing, setIsInitializing] = useState(false);
 
   // Queries
-  const folderTreeResult = useConvexQuery(apiAny.admin.branding.getFolderTree, {});
+  const folderTreeResult = useConvexQuery(api.admin.branding.getFolderTree, {});
   const childFoldersResult = useConvexQuery(
-    apiAny.admin.branding.listFolders,
+    api.admin.branding.listFolders,
     selectedFolderId ? { parentId: selectedFolderId } : "skip"
   );
   const assetsResult = useConvexQuery(
-    apiAny.admin.branding.listAssets,
+    api.admin.branding.listAssets,
     selectedFolderId ? { folderId: selectedFolderId } : "skip"
   );
   const selectedFolderResult = useConvexQuery(
-    apiAny.admin.branding.getFolder,
+    api.admin.branding.getFolder,
     selectedFolderId ? { folderId: selectedFolderId } : "skip"
   );
   const selectedAssetResult = useConvexQuery(
-    apiAny.admin.branding.getAsset,
+    api.admin.branding.getAsset,
     selectedAssetId ? { assetId: selectedAssetId } : "skip"
   );
-  const allTagsResult = useConvexQuery(apiAny.admin.branding.getAllTags, {});
-  const guidelinesResult = useConvexQuery(apiAny.admin.branding.getAllGuidelines, {});
+  const allTagsResult = useConvexQuery(api.admin.branding.getAllTags, {});
+  const guidelinesResult = useConvexQuery(api.admin.branding.getAllGuidelines, {});
 
   // Mutations
-  const initializeBranding = useConvexMutation(apiAny.admin.branding.initializeBranding);
-  const createFolder = useConvexMutation(apiAny.admin.branding.createFolder);
-  const updateAsset = useConvexMutation(apiAny.admin.branding.updateAsset);
-  const deleteAsset = useConvexMutation(apiAny.admin.branding.deleteAsset);
-  const moveAsset = useConvexMutation(apiAny.admin.branding.moveAsset);
-  const updateGuidelines = useConvexMutation(apiAny.admin.branding.updateGuidelines);
+  const initializeBranding = useConvexMutation(api.admin.branding.initializeBranding);
+  const createFolder = useConvexMutation(api.admin.branding.createFolder);
+  const updateAsset = useConvexMutation(api.admin.branding.updateAsset);
+  const deleteAsset = useConvexMutation(api.admin.branding.deleteAsset);
+  const moveAsset = useConvexMutation(api.admin.branding.moveAsset);
+  const updateGuidelines = useConvexMutation(api.admin.branding.updateGuidelines);
 
   // Derived state
   const folderTree = (folderTreeResult ?? []) as FolderTreeNode[];

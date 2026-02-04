@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
   Badge,
@@ -97,23 +97,23 @@ export default function GameAnalyticsPage() {
   >("weekly");
 
   // Fetch real data from Convex
-  const stats = useConvexQuery(apiAny.admin.admin.getSystemStats);
-  const matchmakingHealth = useConvexQuery(apiAny.admin.analytics.getMatchmakingHealth);
-  const matchmakingStats = useConvexQuery(apiAny.admin.analytics.getMatchmakingStatsDetailed, {
+  const stats = useConvexQuery(api.admin.admin.getSystemStats);
+  const matchmakingHealth = useConvexQuery(api.admin.analytics.getMatchmakingHealth);
+  const matchmakingStats = useConvexQuery(api.admin.analytics.getMatchmakingStatsDetailed, {
     days: 14,
   });
-  const skillDist = useConvexQuery(apiAny.admin.analytics.getSkillDistribution, {
+  const skillDist = useConvexQuery(api.admin.analytics.getSkillDistribution, {
     ratingType: "ranked",
   });
-  const dailyStats = useConvexQuery(apiAny.admin.analytics.getDailyActiveStats, { days: 14 });
+  const dailyStats = useConvexQuery(api.admin.analytics.getDailyActiveStats, { days: 14 });
 
   // NEW: Game stats with configurable period
-  const gameStats = useConvexQuery(apiAny.admin.analytics.getGameStats, {
+  const gameStats = useConvexQuery(api.admin.analytics.getGameStats, {
     periodType: gameStatsPeriod,
   });
 
   // NEW: Simple matchmaking stats (queue time, success rate)
-  const simpleMatchmakingStats = useConvexQuery(apiAny.admin.analytics.getMatchmakingStats);
+  const simpleMatchmakingStats = useConvexQuery(api.admin.analytics.getMatchmakingStats);
 
   const isLoading = stats === undefined;
 

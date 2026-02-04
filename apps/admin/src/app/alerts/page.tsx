@@ -12,7 +12,8 @@ import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api,  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Doc } from "@convex/_generated/dataModel";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -66,14 +67,14 @@ function formatTimeAgo(timestamp: number) {
 
 export default function AlertsDashboardPage() {
   // Fetch alerts data
-  const stats = useConvexQuery(apiAny.alerts.history.getStats);
-  const recentAlerts = useConvexQuery(apiAny.alerts.history.getRecent, { limit: 10 });
-  const unreadCount = useConvexQuery(apiAny.alerts.notifications.getUnreadCount);
+  const stats = useConvexQuery(api.alerts.history.getStats);
+  const recentAlerts = useConvexQuery(api.alerts.history.getRecent, { limit: 10 });
+  const unreadCount = useConvexQuery(api.alerts.notifications.getUnreadCount);
 
   // Mutations
-  const acknowledge = useConvexMutation(apiAny.alerts.history.acknowledge);
-  const acknowledgeAll = useConvexMutation(apiAny.alerts.history.acknowledgeAll);
-  const markAllAsRead = useConvexMutation(apiAny.alerts.notifications.markAllAsRead);
+  const acknowledge = useConvexMutation(api.alerts.history.acknowledge);
+  const acknowledgeAll = useConvexMutation(api.alerts.history.acknowledgeAll);
+  const markAllAsRead = useConvexMutation(api.alerts.notifications.markAllAsRead);
 
   const isLoading = stats === undefined;
 
@@ -232,11 +233,11 @@ export default function AlertsDashboardPage() {
               </div>
             ) : (recentAlerts?.length ?? 0) > 0 ? (
               <div className="space-y-3">
-                {recentAlerts?.map((alert: any) => (
+                {recentAlerts?.map((alert: Doc<"alertHistory">) => (
                   <div
                     key={alert._id}
                     className={`flex items-center justify-between rounded-lg border p-3 ${
-                      !alert.acknowledged ? "bg-muted/50" : ""
+                      !alert.acknowledgedBy ? "bg-muted/50" : ""
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -252,7 +253,7 @@ export default function AlertsDashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       {getSeverityBadge(alert.severity)}
-                      {!alert.acknowledged && (
+                      {!alert.acknowledgedBy && (
                         <Button
                           variant="ghost"
                           size="sm"

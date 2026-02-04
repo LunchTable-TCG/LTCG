@@ -63,7 +63,7 @@ import type { DefaultFunctionArgs, FunctionReference } from "convex/server";
  */
 export type TypedQuery<
   Args extends DefaultFunctionArgs = DefaultFunctionArgs,
-  Return = any,
+  Return = void,
 > = FunctionReference<"query", "public", Args, Return>;
 
 /**
@@ -108,7 +108,7 @@ export type TypedQuery<
  */
 export type TypedMutation<
   Args extends DefaultFunctionArgs = DefaultFunctionArgs,
-  Return = any,
+  Return = void,
 > = FunctionReference<"mutation", "public", Args, Return>;
 
 /**
@@ -155,7 +155,7 @@ export type TypedMutation<
  */
 export type TypedAction<
   Args extends DefaultFunctionArgs = DefaultFunctionArgs,
-  Return = any,
+  Return = void,
 > = FunctionReference<"action", "public", Args, Return>;
 
 /**
@@ -184,7 +184,7 @@ export type TypedAction<
  */
 export type TypedInternalQuery<
   Args extends DefaultFunctionArgs = DefaultFunctionArgs,
-  Return = any,
+  Return = void,
 > = FunctionReference<"query", "internal", Args, Return>;
 
 /**
@@ -213,7 +213,7 @@ export type TypedInternalQuery<
  */
 export type TypedInternalMutation<
   Args extends DefaultFunctionArgs = DefaultFunctionArgs,
-  Return = any,
+  Return = void,
 > = FunctionReference<"mutation", "internal", Args, Return>;
 
 /**
@@ -250,5 +250,5 @@ export type TypedInternalMutation<
  */
 export type TypedInternalAction<
   Args extends DefaultFunctionArgs = DefaultFunctionArgs,
-  Return = any,
+  Return = void,
 > = FunctionReference<"action", "internal", Args, Return>;

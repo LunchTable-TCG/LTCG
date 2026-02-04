@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { apiAny } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { useAction } from "convex/react";
 import {
@@ -78,8 +78,8 @@ export function AdminAssistantChat({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Actions
-  const getOrCreateThread = useAction(apiAny.ai.adminAgentApi.getOrCreateThread);
-  const sendMessage = useAction(apiAny.ai.adminAgentApi.sendMessage);
+  const getOrCreateThread = useAction(api.ai.adminAgentApi.getOrCreateThread);
+  const sendMessage = useAction(api.ai.adminAgentApi.sendMessage);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

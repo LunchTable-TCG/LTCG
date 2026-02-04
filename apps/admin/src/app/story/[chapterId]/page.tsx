@@ -387,10 +387,10 @@ export default function ChapterDetailPage() {
 
   // Queries
   const chapterData = useTypedQuery(typedApi.admin.story.getChapter, {
-    chapterId: chapterId as any,
+    chapterId: chapterId as ChapterId,
   });
   const stagesResult = useTypedQuery(typedApi.admin.story.listStages, {
-    chapterId: chapterId as any,
+    chapterId: chapterId as ChapterId,
     includeUnpublished: true,
   });
   const allChapters = useTypedQuery(typedApi.admin.story.listChapters, {

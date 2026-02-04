@@ -4,7 +4,7 @@
  * Ensures consistent response format across all API endpoints.
  */
 
-export interface ApiSuccessResponse<T = any> {
+export interface ApiSuccessResponse<T = unknown> {
   success: true;
   data: T;
   timestamp: number;
@@ -15,7 +15,7 @@ export interface ApiErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
   };
   timestamp: number;
 }
@@ -135,7 +135,7 @@ export function errorResponse(
   code: string,
   message: string,
   status = 400,
-  details?: Record<string, any>,
+  details?: Record<string, unknown>,
   request?: Request
 ): Response {
   const body: ApiErrorResponse = {

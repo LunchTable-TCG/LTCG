@@ -18,16 +18,16 @@ import type { DefaultFunctionArgs } from "convex/server";
 /**
  * Typed API object that provides type-safe access to Convex functions
  */
-export const typedApi = api as any;
+export const typedApi = api as unknown;
 
 /**
  * Type-safe query hook
  */
-export function useTypedQuery<Args extends DefaultFunctionArgs = DefaultFunctionArgs, Return = any>(
+export function useTypedQuery<Args extends DefaultFunctionArgs = DefaultFunctionArgs, Return = unknown>(
   query: TypedQuery<Args, Return>,
   args: Args | "skip"
 ): Return | undefined {
-  return useQuery(query as any, args);
+  return useQuery(query as unknown as DefaultFunctionArgs, args === "skip" ? "skip" : args);
 }
 
 /**
@@ -35,9 +35,9 @@ export function useTypedQuery<Args extends DefaultFunctionArgs = DefaultFunction
  */
 export function useTypedMutation<
   Args extends DefaultFunctionArgs = DefaultFunctionArgs,
-  Return = any,
+  Return = unknown,
 >(mutation: TypedMutation<Args, Return>) {
-  return useMutation(mutation as any) as (args: Args) => Promise<Return>;
+  return useMutation(mutation as unknown as DefaultFunctionArgs) as (args: Args) => Promise<Return>;
 }
 
 /**
@@ -45,9 +45,9 @@ export function useTypedMutation<
  */
 export function useTypedAction<
   Args extends DefaultFunctionArgs = DefaultFunctionArgs,
-  Return = any,
+  Return = unknown,
 >(action: TypedAction<Args, Return>) {
-  return useAction(action as any) as (args: Args) => Promise<Return>;
+  return useAction(action as unknown as DefaultFunctionArgs) as (args: Args) => Promise<Return>;
 }
 
 // Re-export the Expand utility type from convexHelpers

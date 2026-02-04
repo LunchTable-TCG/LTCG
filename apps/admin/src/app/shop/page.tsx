@@ -19,7 +19,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
   CoinsIcon,
@@ -65,15 +65,15 @@ export default function ShopPage() {
   const [showInactive, setShowInactive] = useState(false);
 
   // Query
-  const productsResult = useConvexQuery(apiAny.admin.shop.listProducts, {
+  const productsResult = useConvexQuery(api.admin.shop.listProducts, {
     search: search || undefined,
     productType: typeFilter !== "all" ? (typeFilter as ProductType) : undefined,
     includeInactive: showInactive,
   });
 
-  const statsResult = useConvexQuery(apiAny.admin.shop.getShopStats, {});
+  const statsResult = useConvexQuery(api.admin.shop.getShopStats, {});
 
-  const toggleActive = useConvexMutation(apiAny.admin.shop.toggleProductActive);
+  const toggleActive = useConvexMutation(api.admin.shop.toggleProductActive);
 
   const handleToggleActive = async (productDbId: string, _productName: string) => {
     try {

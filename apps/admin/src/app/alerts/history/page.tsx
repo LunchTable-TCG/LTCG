@@ -26,7 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Doc } from "@convex/_generated/dataModel";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -78,7 +79,7 @@ export default function AlertHistoryPage() {
   const limit = 20;
 
   // Fetch alerts and rules
-  const { alerts, total } = useConvexQuery(apiAny.alerts.history.getRecent, {
+  const { alerts, total } = useConvexQuery(api.alerts.history.getRecent, {
     severity: severityFilter !== "all" ? severityFilter : undefined,
     ruleId: ruleFilter !== "all" ? ruleFilter : undefined,
     acknowledged: acknowledgedFilter === "all" ? undefined : acknowledgedFilter === "acknowledged",
@@ -86,12 +87,12 @@ export default function AlertHistoryPage() {
     offset: page * limit,
   }) ?? { alerts: [], total: 0 };
 
-  const rules = useConvexQuery(apiAny.alerts.rules.getAll);
-  const stats = useConvexQuery(apiAny.alerts.history.getStats);
+  const rules = useConvexQuery(api.alerts.rules.getAll);
+  const stats = useConvexQuery(api.alerts.history.getStats);
 
   // Mutations
-  const acknowledge = useConvexMutation(apiAny.alerts.history.acknowledge);
-  const acknowledgeAll = useConvexMutation(apiAny.alerts.history.acknowledgeAll);
+  const acknowledge = useConvexMutation(api.alerts.history.acknowledge);
+  const acknowledgeAll = useConvexMutation(api.alerts.history.acknowledgeAll);
 
   const isLoading = alerts === undefined;
   const totalPages = Math.ceil(total / limit);
@@ -216,7 +217,7 @@ export default function AlertHistoryPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Rules</SelectItem>
-                  {rules?.map((rule: any) => (
+                  {rules?.map((rule: Doc<"alertRules">) => (
                     <SelectItem key={rule._id} value={rule._id}>
                       {rule.name}
                     </SelectItem>
@@ -275,8 +276,8 @@ export default function AlertHistoryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {alerts.map((alert: any) => (
-                    <TableRow key={alert._id} className={!alert.acknowledged ? "bg-muted/30" : ""}>
+                  {alerts.map((alert: Doc<"alertHistory">) => (
+                    <TableRow key={alert._id} className={!alert.acknowledgedBy ? "bg-muted/30" : ""}>
                       <TableCell>
                         <span className="text-lg">{getSeverityIcon(alert.severity)}</span>
                       </TableCell>
@@ -298,14 +299,14 @@ export default function AlertHistoryPage() {
                         {formatDateTime(alert.triggeredAt)}
                       </TableCell>
                       <TableCell>
-                        {alert.acknowledged ? (
+                        {alert.acknowledgedBy ? (
                           <Badge color="emerald">Acknowledged</Badge>
                         ) : (
                           <Badge color="gray">Pending</Badge>
                         )}
                       </TableCell>
                       <TableCell>
-                        {!alert.acknowledged && (
+                        {!alert.acknowledgedBy && (
                           <Button
                             variant="outline"
                             size="sm"

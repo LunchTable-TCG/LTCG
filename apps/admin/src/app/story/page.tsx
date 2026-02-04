@@ -30,7 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Card, Text, Title } from "@tremor/react";
 import { ArrowDownIcon, ArrowUpIcon, BookOpenIcon, PlusIcon } from "lucide-react";
 import Link from "next/link";
@@ -84,7 +84,7 @@ function CreateChapterDialog({
   const [requiredLevel, setRequiredLevel] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createChapter = useConvexMutation(apiAny.admin.story.createChapter);
+  const createChapter = useConvexMutation(api.admin.story.createChapter);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -258,14 +258,14 @@ export default function StoryPage() {
   const [showUnpublished, setShowUnpublished] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  const chaptersResult = useConvexQuery(apiAny.admin.story.listChapters, {
+  const chaptersResult = useConvexQuery(api.admin.story.listChapters, {
     includeUnpublished: showUnpublished,
   });
 
-  const stats = useConvexQuery(apiAny.admin.story.getChapterStats, {});
+  const stats = useConvexQuery(api.admin.story.getChapterStats, {});
 
-  const publishChapter = useConvexMutation(apiAny.admin.story.publishChapter);
-  const reorderChapters = useConvexMutation(apiAny.admin.story.reorderChapters);
+  const publishChapter = useConvexMutation(api.admin.story.publishChapter);
+  const reorderChapters = useConvexMutation(api.admin.story.reorderChapters);
 
   const handleTogglePublish = async (chapter: Chapter) => {
     try {

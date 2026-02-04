@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, BarChart, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -49,16 +49,16 @@ export default function PlayerAnalyticsPage() {
   const [skillRatingType, setSkillRatingType] = useState<string>("ranked");
 
   // Fetch real data from Convex
-  const stats = useConvexQuery(apiAny.admin.admin.getSystemStats);
-  const dailyStats = useConvexQuery(apiAny.admin.analytics.getDailyActiveStats, { days: 14 });
-  const retention = useConvexQuery(apiAny.admin.analytics.getRetentionOverview);
-  const topEngaged = useConvexQuery(apiAny.admin.analytics.getTopEngagedPlayers, {
+  const stats = useConvexQuery(api.admin.admin.getSystemStats);
+  const dailyStats = useConvexQuery(api.admin.analytics.getDailyActiveStats, { days: 14 });
+  const retention = useConvexQuery(api.admin.analytics.getRetentionOverview);
+  const topEngaged = useConvexQuery(api.admin.analytics.getTopEngagedPlayers, {
     days: 7,
     limit: 10,
   });
 
   // NEW: Skill distribution data with configurable rating type
-  const skillDistribution = useConvexQuery(apiAny.admin.analytics.getSkillDistribution, {
+  const skillDistribution = useConvexQuery(api.admin.analytics.getSkillDistribution, {
     ratingType: skillRatingType,
   });
 

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexQuery } from "@/lib/convexHelpers";
 import type { ColumnDef, PlayerType } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -109,7 +109,7 @@ export default function PlayersPage() {
   const [playerTypeFilter, setPlayerTypeFilter] = useState<"all" | "human" | "ai">("all");
 
   // Fetch players using admin listPlayers (doesn't rely on aggregates)
-  const playersData = useConvexQuery(apiAny.admin.admin.listPlayers, {
+  const playersData = useConvexQuery(api.admin.admin.listPlayers, {
     limit: 200,
   });
 

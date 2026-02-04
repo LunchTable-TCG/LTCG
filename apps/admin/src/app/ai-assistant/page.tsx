@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdmin } from "@/contexts/AdminContext";
-import { apiAny } from "@/lib/convexHelpers";
+import { api } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { Text } from "@tremor/react";
 import { useAction } from "convex/react";
@@ -48,9 +48,9 @@ export default function AIAssistantPage() {
   const [isDeletingThread, setIsDeletingThread] = useState<string | null>(null);
 
   // Actions
-  const listThreads = useAction(apiAny.ai.adminAgentApi.listThreads);
-  const getOrCreateThread = useAction(apiAny.ai.adminAgentApi.getOrCreateThread);
-  const deleteThread = useAction(apiAny.ai.adminAgentApi.deleteThread);
+  const listThreads = useAction(api.ai.adminAgentApi.listThreads);
+  const getOrCreateThread = useAction(api.ai.adminAgentApi.getOrCreateThread);
+  const deleteThread = useAction(api.ai.adminAgentApi.deleteThread);
 
   // Load threads
   const loadThreads = useCallback(async () => {

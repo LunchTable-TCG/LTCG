@@ -31,7 +31,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { PromoCodeId } from "@/lib/convexTypes";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
   ArrowLeftIcon,
@@ -84,17 +85,17 @@ export default function PromoCodeDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Queries and mutations
-  const promoCode = useConvexQuery(apiAny.admin.promoCodes.getPromoCode, {
-    promoCodeId: promoCodeId as any,
+  const promoCode = useConvexQuery(api.admin.promoCodes.getPromoCode, {
+    promoCodeId: promoCodeId as PromoCodeId,
   });
 
-  const productsResult = useConvexQuery(apiAny.admin.shop.listProducts, {
+  const productsResult = useConvexQuery(api.admin.shop.listProducts, {
     productType: "pack" as any,
     includeInactive: false,
   });
 
-  const updatePromoCode = useConvexMutation(apiAny.admin.promoCodes.updatePromoCode);
-  const deletePromoCode = useConvexMutation(apiAny.admin.promoCodes.deletePromoCode);
+  const updatePromoCode = useConvexMutation(api.admin.promoCodes.updatePromoCode);
+  const deletePromoCode = useConvexMutation(api.admin.promoCodes.deletePromoCode);
 
   // Populate form with existing data
   useEffect(() => {
@@ -130,7 +131,7 @@ export default function PromoCodeDetailPage() {
         : undefined;
 
       await updatePromoCode({
-        promoCodeId: promoCodeId as any,
+        promoCodeId: promoCodeId as PromoCodeId,
         description,
         rewardAmount: Number.parseInt(rewardAmount),
         rewardPackId: promoCode?.rewardType === "pack" ? rewardPackId : undefined,
@@ -152,7 +153,7 @@ export default function PromoCodeDetailPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deletePromoCode({ promoCodeId: promoCodeId as any });
+      await deletePromoCode({ promoCodeId: promoCodeId as PromoCodeId });
       toast.success("Promo code deleted");
       router.push("/promo-codes");
     } catch (error) {

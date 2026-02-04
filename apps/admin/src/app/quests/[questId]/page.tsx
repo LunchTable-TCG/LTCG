@@ -31,7 +31,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { QuestId, AchievementId } from "@/lib/convexTypes";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { ArrowLeftIcon, CopyIcon, Loader2Icon, SaveIcon, TrashIcon } from "lucide-react";
 import Link from "next/link";
@@ -105,14 +106,14 @@ export default function QuestEditorPage() {
 
   // Queries and mutations
   const existingQuest = useConvexQuery(
-    apiAny.admin.quests.getQuest,
-    isNew ? "skip" : { questDbId: questDbId as any }
+    api.admin.quests.getQuest,
+    isNew ? "skip" : { questDbId: questDbId as QuestId }
   );
 
-  const createQuest = useConvexMutation(apiAny.admin.quests.createQuest);
-  const updateQuest = useConvexMutation(apiAny.admin.quests.updateQuest);
-  const deleteQuest = useConvexMutation(apiAny.admin.quests.deleteQuest);
-  const duplicateQuest = useConvexMutation(apiAny.admin.quests.duplicateQuest);
+  const createQuest = useConvexMutation(api.admin.quests.createQuest);
+  const updateQuest = useConvexMutation(api.admin.quests.updateQuest);
+  const deleteQuest = useConvexMutation(api.admin.quests.deleteQuest);
+  const duplicateQuest = useConvexMutation(api.admin.quests.duplicateQuest);
 
   // Populate form with existing data
   useEffect(() => {
@@ -167,7 +168,7 @@ export default function QuestEditorPage() {
         router.push(`/quests/${result.questDbId}`);
       } else {
         const result = await updateQuest({
-          questDbId: questDbId as any,
+          questDbId: questDbId as QuestId,
           name: name.trim(),
           description: description.trim(),
           requirementType,
@@ -191,7 +192,7 @@ export default function QuestEditorPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const result = await deleteQuest({ questDbId: questDbId as any });
+      const result = await deleteQuest({ questDbId: questDbId as QuestId });
       toast.success(result.message);
       router.push("/quests");
     } catch (error) {
@@ -209,7 +210,7 @@ export default function QuestEditorPage() {
 
     try {
       const result = await duplicateQuest({
-        questDbId: questDbId as any,
+        questDbId: questDbId as QuestId,
         newQuestId: duplicateQuestId.trim(),
         newName: duplicateName.trim(),
       });

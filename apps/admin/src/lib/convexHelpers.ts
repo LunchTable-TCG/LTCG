@@ -1,13 +1,14 @@
 /**
  * Convex Helper Utilities
  *
- * Isolates TS2589 "Type instantiation is excessively deep" errors
- * caused by Convex's deeply nested generated API types.
+ * Provides type-safe wrappers for Convex hooks that avoid TS2589 errors
+ * while maintaining type safety through proper generic constraints.
  *
  * Uses patterns from convex-helpers: https://github.com/get-convex/convex-helpers
  */
 
 import { api } from "@convex/_generated/api";
+import type { FunctionReference } from "convex/server";
 import { useMutation, useQuery } from "convex/react";
 
 /**
@@ -17,27 +18,38 @@ import { useMutation, useQuery } from "convex/react";
  *
  * @see https://github.com/get-convex/convex-helpers/blob/main/packages/convex-helpers/server/utils.ts
  */
-export type Expand<ObjectType extends Record<any, any>> = ObjectType extends Record<any, any>
+export type Expand<ObjectType extends Record<string, unknown>> = ObjectType extends Record<
+  string,
+  unknown
+>
   ? {
       [Key in keyof ObjectType]: ObjectType[Key];
     }
   : never;
 
-// @ts-ignore - Suppress TS2589 for api cast
-export const apiAny = api as any;
+/**
+ * Re-export api for components that need the full typed API
+ * Use useConvexQuery/useConvexMutation wrappers to avoid TS2589 errors
+ */
+export { api };
 
 /**
  * Wrapper for useMutation that avoids TS2589 errors
- * Use this instead of calling useMutation directly with deep api paths
+ * Accepts any Convex mutation function reference
  */
-export function useConvexMutation(path: any) {
-  return useMutation(path);
+export function useConvexMutation<Args extends Record<string, unknown>, Returns>(
+  mutation: FunctionReference<"mutation", "public" | "internal", Args, Returns>,
+) {
+  return useMutation(mutation);
 }
 
 /**
  * Wrapper for useQuery that avoids TS2589 errors
- * Use this instead of calling useQuery directly with deep api paths
+ * Accepts any Convex query function reference with optional args
  */
-export function useConvexQuery(path: any, args?: any) {
-  return useQuery(path, args);
+export function useConvexQuery<Args extends Record<string, unknown>, Returns>(
+  query: FunctionReference<"query", "public" | "internal", Args, Returns>,
+  args?: Args,
+) {
+  return useQuery(query, args);
 }

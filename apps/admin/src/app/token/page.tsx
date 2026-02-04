@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -147,14 +147,14 @@ function CountdownDisplay({ targetTime }: { targetTime: number }) {
 
 export default function TokenLaunchPage() {
   // Fetch launch status data
-  const launchStatus = useConvexQuery(apiAny.tokenLaunch.schedule.getStatus);
-  const schedule = useConvexQuery(apiAny.tokenLaunch.schedule.getSchedule);
-  const checklistSummary = useConvexQuery(apiAny.tokenLaunch.checklist.getSummary);
-  const approvalSummary = useConvexQuery(apiAny.tokenLaunch.approvals.getSummary);
+  const launchStatus = useConvexQuery(api.tokenLaunch.schedule.getStatus);
+  const schedule = useConvexQuery(api.tokenLaunch.schedule.getSchedule);
+  const checklistSummary = useConvexQuery(api.tokenLaunch.checklist.getSummary);
+  const approvalSummary = useConvexQuery(api.tokenLaunch.approvals.getSummary);
 
   // Mutations
-  const markGo = useConvexMutation(apiAny.tokenLaunch.schedule.markGo);
-  const abortLaunch = useConvexMutation(apiAny.tokenLaunch.schedule.abort);
+  const markGo = useConvexMutation(api.tokenLaunch.schedule.markGo);
+  const abortLaunch = useConvexMutation(api.tokenLaunch.schedule.abort);
 
   const isLoading = launchStatus === undefined;
   const scheduleStatus = (schedule?.status ?? "not_scheduled") as ScheduleStatus;

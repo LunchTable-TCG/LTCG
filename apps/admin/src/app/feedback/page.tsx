@@ -12,7 +12,7 @@ import { FeedbackDetailSheet } from "@/components/feedback/FeedbackDetailSheet";
 import { KanbanBoard } from "@/components/feedback/KanbanBoard";
 import { PageWrapper } from "@/components/layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexQuery } from "@/lib/convexHelpers";
 import { AlertCircle, Bug, CheckCircle, Clock, Inbox, Lightbulb } from "lucide-react";
 import { useState } from "react";
 
@@ -66,7 +66,7 @@ export default function FeedbackPage() {
   const [activeTab, setActiveTab] = useState<"bugs" | "features">("bugs");
 
   // Query stats
-  const stats = useConvexQuery(apiAny.feedback.feedback.getStats, {}) as FeedbackStats | undefined;
+  const stats = useConvexQuery(api.feedback.feedback.getStats, {}) as FeedbackStats | undefined;
 
   const handleSelectItem = (item: FeedbackItem) => {
     setSelectedFeedbackId(item._id);

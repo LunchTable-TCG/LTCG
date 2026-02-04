@@ -7,6 +7,7 @@
 
 import { internal } from "../../_generated/api";
 import type { AuthenticatedRequest } from "./auth";
+import type { HttpActionCtx } from "./auth";
 
 export interface RateLimitConfig {
   perMinuteLimit: number;
@@ -37,7 +38,7 @@ export const DEFAULT_RATE_LIMITS: RateLimitConfig = {
  * @param endpoint - Optional endpoint path for tracking
  */
 export async function checkRateLimit(
-  ctx: any,
+  ctx: HttpActionCtx,
   auth: AuthenticatedRequest,
   config: RateLimitConfig = DEFAULT_RATE_LIMITS,
   endpoint?: string
@@ -119,7 +120,7 @@ export async function checkRateLimit(
  * Used for GET /api/agents/rate-limit endpoint
  */
 export async function getRateLimitStatus(
-  ctx: any,
+  ctx: HttpActionCtx,
   auth: AuthenticatedRequest,
   config: RateLimitConfig = DEFAULT_RATE_LIMITS
 ): Promise<RateLimitStatus> {
@@ -150,7 +151,7 @@ export async function getRateLimitStatus(
  * Call this after the request completes to track response codes
  */
 export async function recordRequestComplete(
-  _ctx: any,
+  _ctx: HttpActionCtx,
   _auth: AuthenticatedRequest,
   _endpoint: string,
   _responseStatus: number,

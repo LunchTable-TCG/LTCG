@@ -39,7 +39,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { SeasonId, SeasonLeaderboardEntry, TierBreakdown } from "@/lib/convexTypes";
+import type { Doc } from "@convex/_generated/dataModel";
 import { format } from "date-fns";
 import {
   AlertCircleIcon,
@@ -102,7 +104,7 @@ const TIER_COLORS: Record<string, string> = {
 interface EditSeasonDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  season: any;
+  season: Doc<"seasons"> | null;
 }
 
 function EditSeasonDialog({ open, onOpenChange, season }: EditSeasonDialogProps) {
@@ -118,7 +120,7 @@ function EditSeasonDialog({ open, onOpenChange, season }: EditSeasonDialogProps)
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateSeason = useConvexMutation(apiAny.admin.seasons.updateSeason);
+  const updateSeason = useConvexMutation(api.admin.seasons.updateSeason);
 
   useEffect(() => {
     if (season) {
@@ -267,8 +269,8 @@ interface RewardsPreviewProps {
 }
 
 function RewardsPreview({ seasonId }: RewardsPreviewProps) {
-  const preview = useConvexQuery(apiAny.admin.seasons.previewSeasonRewards, {
-    seasonId: seasonId as any,
+  const preview = useConvexQuery(api.admin.seasons.previewSeasonRewards, {
+    seasonId: seasonId as SeasonId,
   });
 
   if (!preview) {
@@ -319,7 +321,7 @@ function RewardsPreview({ seasonId }: RewardsPreviewProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {preview.tierBreakdown.map((tier: any) => (
+          {preview.tierBreakdown.map((tier: TierBreakdown) => (
             <TableRow key={tier.tier}>
               <TableCell className={TIER_COLORS[tier.tier] || ""}>{tier.tier}</TableCell>
               <TableCell className="text-right">{tier.playerCount}</TableCell>
@@ -344,8 +346,8 @@ interface LeaderboardProps {
 }
 
 function Leaderboard({ seasonId, isEnded }: LeaderboardProps) {
-  const leaderboard = useConvexQuery(apiAny.admin.seasons.getSeasonLeaderboard, {
-    seasonId: seasonId as any,
+  const leaderboard = useConvexQuery(api.admin.seasons.getSeasonLeaderboard, {
+    seasonId: seasonId as SeasonId,
     limit: 100,
   });
 
@@ -383,7 +385,7 @@ function Leaderboard({ seasonId, isEnded }: LeaderboardProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {leaderboard.leaderboard.map((player: any) => (
+          {leaderboard.leaderboard.map((player: SeasonLeaderboardEntry) => (
             <TableRow key={player.userId}>
               <TableCell className="font-mono">
                 {player.rank <= 3 ? (
@@ -505,19 +507,19 @@ export default function SeasonDetailPage() {
   const [isEnding, setIsEnding] = useState(false);
   const [isDistributing, setIsDistributing] = useState(false);
 
-  const season = useConvexQuery(apiAny.admin.seasons.getSeason, {
-    seasonId: seasonId as any,
+  const season = useConvexQuery(api.admin.seasons.getSeason, {
+    seasonId: seasonId as SeasonId,
   });
 
-  const startSeason = useConvexMutation(apiAny.admin.seasons.startSeason);
-  const endSeason = useConvexMutation(apiAny.admin.seasons.endSeason);
-  const distributeRewards = useConvexMutation(apiAny.admin.seasons.distributeSeasonRewards);
-  const deleteSeason = useConvexMutation(apiAny.admin.seasons.deleteSeason);
+  const startSeason = useConvexMutation(api.admin.seasons.startSeason);
+  const endSeason = useConvexMutation(api.admin.seasons.endSeason);
+  const distributeRewards = useConvexMutation(api.admin.seasons.distributeSeasonRewards);
+  const deleteSeason = useConvexMutation(api.admin.seasons.deleteSeason);
 
   const handleStart = async () => {
     setIsStarting(true);
     try {
-      const result = await startSeason({ seasonId: seasonId as any });
+      const result = await startSeason({ seasonId: seasonId as SeasonId });
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to start season");
@@ -530,7 +532,7 @@ export default function SeasonDetailPage() {
     setIsEnding(true);
     try {
       const result = await endSeason({
-        seasonId: seasonId as any,
+        seasonId: seasonId as SeasonId,
         distributeRewards: withRewards,
       });
       toast.success(result.message);
@@ -545,7 +547,7 @@ export default function SeasonDetailPage() {
   const handleDistributeRewards = async () => {
     setIsDistributing(true);
     try {
-      const result = await distributeRewards({ seasonId: seasonId as any });
+      const result = await distributeRewards({ seasonId: seasonId as SeasonId });
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to distribute rewards");
@@ -559,7 +561,7 @@ export default function SeasonDetailPage() {
       return;
     }
     try {
-      await deleteSeason({ seasonId: seasonId as any });
+      await deleteSeason({ seasonId: seasonId as SeasonId });
       toast.success("Season deleted");
       router.push("/seasons");
     } catch (error) {

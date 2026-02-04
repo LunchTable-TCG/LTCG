@@ -31,7 +31,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api,  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Doc } from "@convex/_generated/dataModel";
 import { Badge, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -112,7 +113,7 @@ function getTriggerTypeIcon(type: string) {
 export default function AlertRulesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [editingRule, setEditingRule] = useState<any>(null);
+  const [editingRule, setEditingRule] = useState<Doc<"alertRules"> | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<RuleFormData>({
@@ -125,14 +126,14 @@ export default function AlertRulesPage() {
   });
 
   // Fetch rules
-  const rules = useConvexQuery(apiAny.alerts.rules.getAll);
+  const rules = useConvexQuery(api.alerts.rules.getAll);
 
   // Mutations
-  const createRule = useConvexMutation(apiAny.alerts.rules.create);
-  const updateRule = useConvexMutation(apiAny.alerts.rules.update);
-  const removeRule = useConvexMutation(apiAny.alerts.rules.remove);
-  const toggleEnabled = useConvexMutation(apiAny.alerts.rules.toggleEnabled);
-  const setupDefaults = useConvexMutation(apiAny.alerts.rules.setupDefaults);
+  const createRule = useConvexMutation(api.alerts.rules.create);
+  const updateRule = useConvexMutation(api.alerts.rules.update);
+  const removeRule = useConvexMutation(api.alerts.rules.remove);
+  const toggleEnabled = useConvexMutation(api.alerts.rules.toggleEnabled);
+  const setupDefaults = useConvexMutation(api.alerts.rules.setupDefaults);
 
   const isLoading = rules === undefined;
 
@@ -148,7 +149,7 @@ export default function AlertRulesPage() {
     setEditingRule(null);
   }
 
-  function openEditDialog(rule: any) {
+  function openEditDialog(rule: Doc<"alertRules">) {
     setFormData({
       name: rule.name,
       description: rule.description || "",
@@ -393,7 +394,7 @@ export default function AlertRulesPage() {
         </div>
       ) : (rules?.length ?? 0) > 0 ? (
         <div className="grid gap-6 md:grid-cols-2">
-          {rules?.map((rule: any) => (
+          {rules?.map((rule: Doc<"alertRules">) => (
             <Card key={rule._id} className={!rule.enabled ? "opacity-60" : ""}>
               <CardHeader>
                 <div className="flex items-center justify-between">

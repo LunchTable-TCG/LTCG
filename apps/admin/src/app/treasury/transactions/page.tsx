@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexQuery } from "@/lib/convexHelpers";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -110,7 +110,7 @@ export default function TreasuryTransactionsPage() {
   const limit = 20;
 
   // Fetch transactions
-  const { transactions, total } = useConvexQuery(apiAny.treasury.transactions.listTransactions, {
+  const { transactions, total } = useConvexQuery(api.treasury.transactions.listTransactions, {
     status: statusFilter !== "all" ? statusFilter : undefined,
     type: typeFilter !== "all" ? typeFilter : undefined,
     limit,
@@ -118,7 +118,7 @@ export default function TreasuryTransactionsPage() {
   }) ?? { transactions: [], total: 0 };
 
   // Fetch stats
-  const stats = useConvexQuery(apiAny.treasury.transactions.getStats, { daysBack: 30 });
+  const stats = useConvexQuery(api.treasury.transactions.getStats, { daysBack: 30 });
 
   const isLoading = transactions === undefined;
   const totalPages = Math.ceil(total / limit);

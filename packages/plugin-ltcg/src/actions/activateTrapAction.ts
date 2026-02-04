@@ -19,6 +19,7 @@ import { LTCGApiClient } from "../client/LTCGApiClient";
 import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
 import { gameStateProvider } from "../providers/gameStateProvider";
 import type { GameEvent, GameStateResponse } from "../types/api";
+import type { ActionHandlerOptions } from "../types/action";
 import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const activateTrapAction: Action = {
@@ -63,7 +64,7 @@ export const activateTrapAction: Action = {
     runtime: IAgentRuntime,
     message: Memory,
     state: State,
-    _options: any,
+    _options: ActionHandlerOptions,
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {

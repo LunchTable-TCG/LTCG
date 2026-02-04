@@ -30,7 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
   CalendarIcon,
@@ -77,10 +77,10 @@ function CreatePromoCodeDialog() {
   const [expiresInDays, setExpiresInDays] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createPromoCode = useConvexMutation(apiAny.admin.promoCodes.createPromoCode);
+  const createPromoCode = useConvexMutation(api.admin.promoCodes.createPromoCode);
 
   // Get available packs for pack rewards
-  const productsResult = useConvexQuery(apiAny.admin.shop.listProducts, {
+  const productsResult = useConvexQuery(api.admin.shop.listProducts, {
     productType: "pack" as any,
     includeInactive: false,
   });
@@ -277,9 +277,9 @@ function BulkGenerateDialog() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
 
-  const bulkGenerate = useConvexMutation(apiAny.admin.promoCodes.bulkGeneratePromoCodes);
+  const bulkGenerate = useConvexMutation(api.admin.promoCodes.bulkGeneratePromoCodes);
 
-  const productsResult = useConvexQuery(apiAny.admin.shop.listProducts, {
+  const productsResult = useConvexQuery(api.admin.shop.listProducts, {
     productType: "pack" as any,
     includeInactive: false,
   });
@@ -510,19 +510,19 @@ export default function PromoCodesPage() {
   const [showExpired, setShowExpired] = useState(false);
 
   // Query
-  const codesResult = useConvexQuery(apiAny.admin.promoCodes.listPromoCodes, {
+  const codesResult = useConvexQuery(api.admin.promoCodes.listPromoCodes, {
     search: search || undefined,
     includeInactive: showInactive,
     includeExpired: showExpired,
   });
 
-  const statsResult = useConvexQuery(apiAny.admin.promoCodes.getPromoCodeStats, {});
+  const statsResult = useConvexQuery(api.admin.promoCodes.getPromoCodeStats, {});
 
-  const toggleActive = useConvexMutation(apiAny.admin.promoCodes.togglePromoCodeActive);
+  const toggleActive = useConvexMutation(api.admin.promoCodes.togglePromoCodeActive);
 
   const handleToggleActive = async (promoCodeId: string, _code: string) => {
     try {
-      const result = await toggleActive({ promoCodeId: promoCodeId as any });
+      const result = await toggleActive({ promoCodeId: promoCodeId as PromoCodeId });
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle code status");

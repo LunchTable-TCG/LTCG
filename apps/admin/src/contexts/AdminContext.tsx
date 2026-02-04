@@ -7,7 +7,7 @@
  * Reusable, typesafe context for RBAC.
  */
 
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { type ReactNode, createContext, useContext, useMemo } from "react";
 import type { AdminRole } from "../types";
@@ -73,10 +73,10 @@ interface AdminProviderProps {
 
 export function AdminProvider({ children }: AdminProviderProps) {
   // Use convexHelpers to avoid TS2589 type instantiation errors
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser);
+  const currentUser = useConvexQuery(api.core.users.currentUser);
   // Only query admin role if user is authenticated (skip query if not)
   const adminRoleData = useConvexQuery(
-    apiAny.admin.admin.getMyAdminRole,
+    api.admin.admin.getMyAdminRole,
     currentUser ? {} : "skip"
   ) as AdminRoleData | undefined;
 

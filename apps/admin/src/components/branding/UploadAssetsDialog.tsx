@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { apiAny } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { upload } from "@vercel/blob/client";
 import { useMutation } from "convex/react";
 import {
@@ -59,8 +59,8 @@ export function UploadAssetsDialog({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentTag, setCurrentTag] = useState("");
 
-  const saveMetadata = useMutation(apiAny.admin.assets.saveAssetMetadata);
-  const createBrandingAsset = useMutation(apiAny.admin.branding.createAsset);
+  const saveMetadata = useMutation(api.admin.assets.saveAssetMetadata);
+  const createBrandingAsset = useMutation(api.admin.branding.createAsset);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);

@@ -29,8 +29,9 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Text, Title } from "@tremor/react";
+import type { Doc } from "@convex/_generated/dataModel";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -39,7 +40,7 @@ import { toast } from "sonner";
 // Types
 // =============================================================================
 
-type ChannelType = "in_app" | "slack" | "discord";
+type ChannelType = "in_app" | "push" | "email" | "slack" | "discord";
 type Severity = "critical" | "warning" | "info";
 
 interface ChannelFormData {
@@ -100,7 +101,7 @@ export default function AlertChannelsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isTesting, setIsTesting] = useState<string | null>(null);
-  const [editingChannel, setEditingChannel] = useState<any>(null);
+  const [editingChannel, setEditingChannel] = useState<Doc<"alertChannels"> | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<ChannelFormData>({
@@ -111,14 +112,14 @@ export default function AlertChannelsPage() {
   });
 
   // Fetch channels
-  const channels = useConvexQuery(apiAny.alerts.channels.getAll);
+  const channels = useConvexQuery(api.alerts.channels.getAll);
 
   // Mutations
-  const createChannel = useConvexMutation(apiAny.alerts.channels.create);
-  const updateChannel = useConvexMutation(apiAny.alerts.channels.update);
-  const removeChannel = useConvexMutation(apiAny.alerts.channels.remove);
-  const testChannel = useConvexMutation(apiAny.alerts.channels.test);
-  const setupDefaults = useConvexMutation(apiAny.alerts.channels.setupDefaults);
+  const createChannel = useConvexMutation(api.alerts.channels.create);
+  const updateChannel = useConvexMutation(api.alerts.channels.update);
+  const removeChannel = useConvexMutation(api.alerts.channels.remove);
+  const testChannel = useConvexMutation(api.alerts.channels.test);
+  const setupDefaults = useConvexMutation(api.alerts.channels.setupDefaults);
 
   const isLoading = channels === undefined;
 
@@ -132,12 +133,12 @@ export default function AlertChannelsPage() {
     setEditingChannel(null);
   }
 
-  function openEditDialog(channel: any) {
+  function openEditDialog(channel: Doc<"alertChannels">) {
     setFormData({
       name: channel.name,
       type: channel.type,
-      webhookUrl: channel.webhookUrl || "",
-      minSeverity: channel.minSeverity || "warning",
+      webhookUrl: channel.config?.webhookUrl || "",
+      minSeverity: channel.config?.minSeverity || "warning",
     });
     setEditingChannel(channel);
     setIsCreateOpen(true);
@@ -359,8 +360,8 @@ export default function AlertChannelsPage() {
         </div>
       ) : (channels?.length ?? 0) > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {channels?.map((channel: any) => (
-            <Card key={channel._id} className={!channel.enabled ? "opacity-60" : ""}>
+          {channels?.map((channel: Doc<"alertChannels">) => (
+            <Card key={channel._id} className={!channel.isEnabled ? "opacity-60" : ""}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -371,15 +372,15 @@ export default function AlertChannelsPage() {
                     </div>
                   </div>
                   <Switch
-                    checked={channel.enabled !== false}
+                    checked={channel.isEnabled !== false}
                     onCheckedChange={async () => {
                       try {
                         await updateChannel({
                           channelId: channel._id,
-                          enabled: channel.enabled === false,
+                          enabled: channel.isEnabled === false,
                         });
                         toast.success(
-                          `Channel ${channel.enabled === false ? "enabled" : "disabled"}`
+                          `Channel ${channel.isEnabled === false ? "enabled" : "disabled"}`
                         );
                       } catch (error) {
                         toast.error(`Failed to update channel: ${error}`);
@@ -393,26 +394,23 @@ export default function AlertChannelsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Text className="text-sm text-muted-foreground">Min Severity</Text>
-                    {getSeverityBadge(channel.minSeverity || "info")}
+                    {getSeverityBadge(channel.config.minSeverity || "info")}
                   </div>
                 </div>
 
                 {/* Webhook URL (masked) */}
-                {channel.webhookUrl && (
+                {channel.config.webhookUrl && (
                   <div className="space-y-1">
                     <Text className="text-xs text-muted-foreground">Webhook</Text>
                     <code className="block rounded bg-muted px-2 py-1 text-xs truncate">
-                      {channel.webhookUrl.slice(0, 40)}...
+                      {channel.config.webhookUrl.slice(0, 40)}...
                     </code>
                   </div>
                 )}
 
-                {/* Stats */}
+                {/* Stats - Fields not yet in schema */}
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>Sent: {channel.sentCount || 0} alerts</span>
-                  {channel.lastSentAt && (
-                    <span>Last: {new Date(channel.lastSentAt).toLocaleDateString()}</span>
-                  )}
+                  <span>Status: {channel.isEnabled ? "Active" : "Disabled"}</span>
                 </div>
 
                 {/* Actions */}

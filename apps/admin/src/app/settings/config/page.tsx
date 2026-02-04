@@ -25,7 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Text, Title } from "@tremor/react";
 import {
   AlertCircleIcon,
@@ -106,7 +106,7 @@ function EditConfigDialog({
   onOpenChange: (open: boolean) => void;
   onSuccess: (key: string, newValue: number | string | boolean) => void;
 }) {
-  const updateConfig = useConvexMutation(apiAny.admin.config.updateConfig);
+  const updateConfig = useConvexMutation(api.admin.config.updateConfig);
   const [editValue, setEditValue] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -322,7 +322,7 @@ function ConfigField({
   onReset?: () => void;
   onEditClick: () => void;
 }) {
-  const resetToDefault = useConvexMutation(apiAny.admin.config.resetToDefault);
+  const resetToDefault = useConvexMutation(api.admin.config.resetToDefault);
   const [isResetting, setIsResetting] = useState(false);
 
   const handleResetToDefault = async () => {
@@ -421,7 +421,7 @@ function CategoryTab({
   originalValues: Record<string, number | string | boolean>;
   onEditConfig: (config: ConfigItem) => void;
 }) {
-  const bulkUpdate = useConvexMutation(apiAny.admin.config.bulkUpdateConfigs);
+  const bulkUpdate = useConvexMutation(api.admin.config.bulkUpdateConfigs);
   const [isSaving, setIsSaving] = useState(false);
 
   const categoryConfigs = configs.filter((c) => c.category === category);
@@ -587,11 +587,11 @@ export default function SystemConfigPage() {
   const [editingConfig, setEditingConfig] = useState<ConfigItem | null>(null);
 
   // Queries
-  const configsResult = useConvexQuery(apiAny.admin.config.listConfigs, {});
-  const statsResult = useConvexQuery(apiAny.admin.config.getConfigStats, {});
+  const configsResult = useConvexQuery(api.admin.config.listConfigs, {});
+  const statsResult = useConvexQuery(api.admin.config.getConfigStats, {});
 
   // Mutations
-  const initializeDefaults = useConvexMutation(apiAny.admin.config.initializeDefaults);
+  const initializeDefaults = useConvexMutation(api.admin.config.initializeDefaults);
   const [isInitializing, setIsInitializing] = useState(false);
 
   // Initialize local values when configs load

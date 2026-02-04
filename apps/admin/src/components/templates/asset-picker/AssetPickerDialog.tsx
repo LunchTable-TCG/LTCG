@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiAny } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { useQuery } from "convex/react";
 import { Check, Image, Loader2, Search, X } from "lucide-react";
@@ -79,7 +79,7 @@ export function AssetPickerDialog({
     return args;
   }, [category, search]);
 
-  const assetsResult = useQuery(apiAny.admin.assets.listAssets, queryArgs);
+  const assetsResult = useQuery(api.admin.assets.listAssets, queryArgs);
 
   const isLoading = assetsResult === undefined;
   const assets = assetsResult?.assets ?? [];

@@ -20,7 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { QuestId, AchievementId } from "@/lib/convexTypes";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
   CalendarIcon,
@@ -84,18 +85,18 @@ function QuestList() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [showInactive, setShowInactive] = useState(false);
 
-  const questsResult = useConvexQuery(apiAny.admin.quests.listQuests, {
+  const questsResult = useConvexQuery(api.admin.quests.listQuests, {
     search: search || undefined,
     questType: typeFilter !== "all" ? (typeFilter as QuestType) : undefined,
     includeInactive: showInactive,
   });
 
-  const questStats = useConvexQuery(apiAny.admin.quests.getQuestStats, {});
-  const toggleActive = useConvexMutation(apiAny.admin.quests.toggleQuestActive);
+  const questStats = useConvexQuery(api.admin.quests.getQuestStats, {});
+  const toggleActive = useConvexMutation(api.admin.quests.toggleQuestActive);
 
   const handleToggleActive = async (questDbId: string, _name: string) => {
     try {
-      const result = await toggleActive({ questDbId: questDbId as any });
+      const result = await toggleActive({ questDbId: questDbId as QuestId });
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle quest status");
@@ -305,19 +306,19 @@ function AchievementList() {
   const [rarityFilter, setRarityFilter] = useState<string>("all");
   const [showInactive, setShowInactive] = useState(false);
 
-  const achievementsResult = useConvexQuery(apiAny.admin.achievements.listAchievements, {
+  const achievementsResult = useConvexQuery(api.admin.achievements.listAchievements, {
     search: search || undefined,
     category: categoryFilter !== "all" ? (categoryFilter as AchievementCategory) : undefined,
     rarity: rarityFilter !== "all" ? (rarityFilter as Rarity) : undefined,
     includeInactive: showInactive,
   });
 
-  const achievementStats = useConvexQuery(apiAny.admin.achievements.getAchievementStats, {});
-  const toggleActive = useConvexMutation(apiAny.admin.achievements.toggleAchievementActive);
+  const achievementStats = useConvexQuery(api.admin.achievements.getAchievementStats, {});
+  const toggleActive = useConvexMutation(api.admin.achievements.toggleAchievementActive);
 
   const handleToggleActive = async (achievementDbId: string, _name: string) => {
     try {
-      const result = await toggleActive({ achievementDbId: achievementDbId as any });
+      const result = await toggleActive({ achievementDbId: achievementDbId as AchievementId });
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle achievement status");

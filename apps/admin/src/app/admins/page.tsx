@@ -932,7 +932,7 @@ function CleanupExpiredButton() {
   const handleCleanup = async () => {
     setIsSubmitting(true);
     try {
-      const result = await cleanupExpiredRoles({});
+      const result = await cleanupExpiredRoles({}) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to cleanup expired roles");
