@@ -216,18 +216,22 @@ export interface PresenceUserData {
 export async function readPresence(ctx: QueryCtx, roomId?: string): Promise<PresenceUserData[]> {
   if (FEATURE_FLAGS.USE_NEW_PRESENCE && roomId) {
     // Read from new system
-    try{
+    try {
       const roomPresence = await presence.listRoom(ctx, roomId, true);
 
-      return roomPresence.map((p) => ({
-        userId: p.userId as Id<"users">,
-        // @ts-expect-error - Presence component API migration in progress
-        username: (p.data as any)?.username ?? "Unknown",
-        // @ts-expect-error - Presence component API migration in progress
-        status: (p.data as any)?.status ?? "online",
-        // @ts-expect-error - Presence component API migration in progress
-        lastActiveAt: (p.data as any)?.lastActiveAt ?? Date.now(),
-      }));
+      return roomPresence.map((p) => {
+        const presenceData = p.data as {
+          username?: string;
+          status?: UserStatus;
+          lastActiveAt?: number;
+        };
+        return {
+          userId: p.userId as Id<"users">,
+          username: presenceData?.username ?? "Unknown",
+          status: presenceData?.status ?? "online",
+          lastActiveAt: presenceData?.lastActiveAt ?? Date.now(),
+        };
+      });
     } catch (error) {
       console.error("Failed to read from new presence system, falling back to old:", error);
       // Fall through to old system

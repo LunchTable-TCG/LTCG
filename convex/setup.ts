@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { mutation, internalMutation } from "./functions";
+import { internalMutation, mutation } from "./functions";
 
 /**
  * Complete system setup - runs all setup functions in correct order
@@ -30,7 +30,7 @@ export const setupComplete = internalMutation({
       // Get system user ID for seeding functions
       const systemUser = await ctx.db
         .query("users")
-        .filter((q) => q.eq(q.field("_id"), "system:internal" as any))
+        .withIndex("privyId", (q) => q.eq("privyId", "system:internal"))
         .first();
 
       if (!systemUser) {
@@ -130,7 +130,7 @@ export const setupQuick = internalMutation({
     // Get system user ID
     const systemUser = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("_id"), "system:internal" as any))
+      .withIndex("privyId", (q) => q.eq("privyId", "system:internal"))
       .first();
 
     if (!systemUser) {
@@ -259,7 +259,7 @@ export const checkSetupStatus = mutation({
     // Check system user
     const systemUser = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("_id"), "system:internal" as any))
+      .withIndex("privyId", (q) => q.eq("privyId", "system:internal"))
       .first();
     status.systemUser = !!systemUser;
 

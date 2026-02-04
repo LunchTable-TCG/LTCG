@@ -536,23 +536,33 @@ export function getModifiedStats(
 }
 
 /**
+ * Conditions that control how a lingering effect targets cards
+ */
+interface LingeringEffectConditions {
+  targetCardId?: Id<"cardDefinitions">;
+  targetAll?: boolean;
+  targetSelf?: boolean;
+}
+
+/**
+ * Simplified lingering effect for condition checking
+ */
+interface LingeringEffectForConditionCheck {
+  effectType: string;
+  value: number | string | boolean | Record<string, unknown>;
+  conditions?: LingeringEffectConditions;
+}
+
+/**
  * Check if a lingering effect should apply to a specific card
  */
 function shouldLingeringEffectApplyToCard(
-  effect: {
-    effectType: string;
-    value: any;
-    conditions?: any;
-  },
+  effect: LingeringEffectForConditionCheck,
   cardId: Id<"cardDefinitions">
 ): boolean {
   if (!effect.conditions) return true;
 
-  const conditions = effect.conditions as {
-    targetCardId?: Id<"cardDefinitions">;
-    targetAll?: boolean;
-    targetSelf?: boolean;
-  };
+  const conditions = effect.conditions;
 
   // Specific card target
   if (conditions.targetCardId) {

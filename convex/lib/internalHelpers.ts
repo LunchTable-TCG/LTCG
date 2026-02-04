@@ -14,7 +14,18 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 
 /**
- * Internal API reference cast to any to break deep type instantiation.
+ * Internal API helper type for breaking deep type instantiation
+ */
+type InternalApiHelper = {
+  lib: {
+    adminAudit: {
+      logAdminAction: (args: AuditLogParams) => void;
+    };
+  };
+};
+
+/**
+ * Internal API reference with simplified types to break deep type instantiation.
  * Use this instead of importing `internal` directly to avoid TS2589 errors.
  *
  * Example usage:
@@ -24,15 +35,19 @@ import type { MutationCtx } from "../_generated/server";
  * await ctx.scheduler.runAfter(0, auditLogAction, params);
  * ```
  */
-// biome-ignore lint/suspicious/noExplicitAny: Required to break TS2589 deep type instantiation
 // @ts-ignore TS2589: Type instantiation may be excessively deep in some configs
-export const internalAny: any = internal;
+export const internalAny: InternalApiHelper = internal;
 
 /**
  * Pre-extracted reference to the admin audit log action.
  * Use this for scheduling audit log writes without TS2589 errors.
  */
 export const auditLogAction = internalAny.lib.adminAudit.logAdminAction;
+
+/**
+ * Audit log metadata for flexible admin action tracking
+ */
+export type AuditLogMetadata = Record<string, string | number | boolean | null | undefined>;
 
 /**
  * Audit log parameters type for admin actions
@@ -42,8 +57,7 @@ export interface AuditLogParams {
   action: string;
   targetUserId?: Id<"users">;
   targetEmail?: string;
-  // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata structure for audit logging
-  metadata?: any;
+  metadata?: AuditLogMetadata;
   success: boolean;
   errorMessage?: string;
   ipAddress?: string;

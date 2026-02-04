@@ -19,8 +19,9 @@ export const getStripe = (): Stripe => {
 // Deprecated: Use getStripe() instead. Kept for backward compatibility.
 export const stripe = new Proxy({} as Stripe, {
   get(_target, prop) {
-    return (getStripe() as any)[prop];
-  }
+    const stripeInstance = getStripe();
+    return stripeInstance[prop as keyof Stripe];
+  },
 });
 
 export const getStripePriceIds = () => {
@@ -36,6 +37,10 @@ export const getStripePriceIds = () => {
 
 // Deprecated: Use getStripePriceIds() instead. Kept for backward compatibility.
 export const STRIPE_PRICE_IDS = {
-  get MONTHLY() { return getStripePriceIds().MONTHLY; },
-  get YEARLY() { return getStripePriceIds().YEARLY; },
+  get MONTHLY() {
+    return getStripePriceIds().MONTHLY;
+  },
+  get YEARLY() {
+    return getStripePriceIds().YEARLY;
+  },
 };

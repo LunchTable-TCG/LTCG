@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { internalMutation } from "./functions";
 
 /**
@@ -48,12 +50,16 @@ export const bootstrapSuperadmin = internalMutation({
   },
 });
 
-async function createSuperadminRole(ctx: { db: any }, userId: any, identifier: string) {
+async function createSuperadminRole(
+  ctx: Pick<MutationCtx, "db">,
+  userId: Id<"users">,
+  identifier: string
+) {
   // Check if user already has an active admin role
   const existingRole = await ctx.db
     .query("adminRoles")
-    .withIndex("by_user", (q: any) => q.eq("userId", userId))
-    .filter((q: any) => q.eq(q.field("isActive"), true))
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .filter((q) => q.eq(q.field("isActive"), true))
     .first();
 
   if (existingRole) {
@@ -138,9 +144,9 @@ export const createSystemUser = internalMutation({
  * Run this once during database initialization
  */
 // Extract references to avoid TS2589 "Type instantiation is excessively deep"
-// Use type assertion to avoid deep type instantiation
-const seedQuestsRef = internal.progression.quests.seedQuests as any;
-const seedAchievementsRef = internal.progression.achievements.seedAchievements as any;
+// These are typed internally by Convex based on the actual function signatures
+const seedQuestsRef = internal.progression.quests.seedQuests;
+const seedAchievementsRef = internal.progression.achievements.seedAchievements;
 
 export const initializeProgressionSystem = internalMutation({
   args: {},
