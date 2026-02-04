@@ -448,7 +448,7 @@ export const bulkUpdateAIConfigs = mutation({
         metadata: {
           totalRequested: args.updates.length,
           successCount,
-          changes: auditChanges,
+          changes: JSON.stringify(auditChanges),
         },
         success: true,
       });

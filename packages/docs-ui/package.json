@@ -1,0 +1,28 @@
+{
+  "name": "@ltcg/docs-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./components/astro/*": "./components/astro/*.astro",
+    "./components/react/*": "./components/react/*.tsx",
+    "./styles/*": "./styles/*.css"
+  },
+  "files": [
+    "components",
+    "styles"
+  ],
+  "dependencies": {
+    "clsx": "^2.1.1"
+  },
+  "peerDependencies": {
+    "astro": "^5.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}

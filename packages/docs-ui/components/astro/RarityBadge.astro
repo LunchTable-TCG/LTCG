@@ -1,0 +1,90 @@
+---
+/**
+ * RarityBadge Component
+ * Rarity indicator with color coding and optional star icons
+ */
+
+interface Props {
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  size?: 'sm' | 'md' | 'lg';
+  showStars?: boolean;
+  class?: string;
+}
+
+const { rarity, size = 'md', showStars = false, class: className } = Astro.props;
+
+const rarityConfig = {
+  common: {
+    label: 'Common',
+    color: '#9ca3af',
+    bgGradient: 'from-gray-600/20 to-gray-800/30',
+    stars: 1
+  },
+  uncommon: {
+    label: 'Uncommon',
+    color: '#22c55e',
+    bgGradient: 'from-green-600/20 to-green-900/30',
+    stars: 2
+  },
+  rare: {
+    label: 'Rare',
+    color: '#3b82f6',
+    bgGradient: 'from-blue-600/20 to-blue-900/30',
+    stars: 3
+  },
+  epic: {
+    label: 'Epic',
+    color: '#a855f7',
+    bgGradient: 'from-purple-600/20 to-purple-900/30',
+    stars: 4
+  },
+  legendary: {
+    label: 'Legendary',
+    color: '#d4af37',
+    bgGradient: 'from-amber-500/30 to-amber-900/40',
+    stars: 5
+  }
+};
+
+const config = rarityConfig[rarity];
+
+const sizeClasses = {
+  sm: 'text-xs px-2 py-0.5 gap-1',
+  md: 'text-sm px-3 py-1 gap-1.5',
+  lg: 'text-base px-4 py-1.5 gap-2'
+};
+
+const starSizes = {
+  sm: 'text-[10px]',
+  md: 'text-xs',
+  lg: 'text-sm'
+};
+---
+
+<span
+  class:list={[
+    'inline-flex items-center rounded font-semibold border uppercase tracking-wider',
+    'bg-gradient-to-b',
+    config.bgGradient,
+    sizeClasses[size],
+    className
+  ]}
+  style={`
+    color: ${config.color};
+    border-color: ${config.color};
+    text-shadow: 0 0 10px ${config.color}40;
+  `}
+>
+  {showStars && (
+    <span class:list={['flex', starSizes[size]]}>
+      {Array.from({ length: config.stars }).map(() => '★')}
+    </span>
+  )}
+  <span>{config.label}</span>
+</span>
+
+<style>
+  span {
+    font-family: var(--sl-font-heading, 'Cinzel', serif);
+  }
+</style>

@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import {
   CalendarIcon,
@@ -193,7 +193,9 @@ export default function NewsPage() {
   const handleTogglePublished = useCallback(
     async (article: Article) => {
       try {
-        const result = await togglePublished({ articleId: article._id });
+        const result = (await togglePublished({ articleId: article._id })) as {
+          isPublished: boolean;
+        };
         toast.success(result.isPublished ? "Article published" : "Article unpublished");
       } catch (_error) {
         toast.error("Failed to toggle publish status");
@@ -205,7 +207,7 @@ export default function NewsPage() {
   const handleTogglePinned = useCallback(
     async (article: Article) => {
       try {
-        const result = await togglePinned({ articleId: article._id });
+        const result = (await togglePinned({ articleId: article._id })) as { isPinned: boolean };
         toast.success(result.isPinned ? "Article pinned" : "Article unpinned");
       } catch (_error) {
         toast.error("Failed to toggle pin status");

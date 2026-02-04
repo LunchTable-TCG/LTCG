@@ -147,6 +147,7 @@ export function GameLobby() {
     startedAt?: number;
     opponentUsername?: string;
     turnNumber?: number;
+    spectatorCount?: number;
   }
 
   const activeGames: GameLobbyEntry[] =

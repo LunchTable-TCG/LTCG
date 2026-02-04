@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Card, Flex, Text, Title } from "@tremor/react";
 import { useParams, useRouter } from "next/navigation";
@@ -37,6 +37,88 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 // =============================================================================
+// Types
+// =============================================================================
+
+interface EngagementData {
+  metrics: {
+    totalGames: number;
+    daysActive: number;
+    wins: number;
+    losses: number;
+    avgSessionMinutes?: number;
+  };
+}
+
+interface ModerationStatus {
+  isBanned: boolean;
+  isSuspended: boolean;
+  warningCount: number;
+  banReason?: string;
+  bannedAt?: number;
+  suspendedUntil?: number;
+  suspensionReason?: string;
+}
+
+interface PlayerProfile {
+  _id: string;
+  name: string;
+  type: "human" | "ai";
+  eloRating: number;
+  seasonRating?: number;
+  peakRating: number;
+  rank: number;
+  percentile: number;
+  createdAt: number;
+  lastActiveAt: number;
+  aiDifficulty?: string;
+  aiPersonality?: string;
+  seasonId?: string;
+  stats: {
+    gamesPlayed: number;
+    gamesWon: number;
+    winRate: number;
+    currentStreak?: number;
+    totalScore: number;
+  };
+}
+
+interface PlayerInventory {
+  gold: number;
+  totalCards: number;
+  uniqueCards: number;
+  byRarity: {
+    common: number;
+    uncommon: number;
+    rare: number;
+    epic: number;
+    legendary: number;
+  };
+  cards: Array<{
+    playerCardId: string;
+    cardDefinitionId: string;
+    name: string;
+    rarity: string;
+    archetype: string;
+    cardType: string;
+    attack: number | null;
+    defense: number | null;
+    cost: number;
+    quantity: number;
+    isFavorite: boolean;
+    acquiredAt: number;
+    imageUrl?: string;
+  }>;
+}
+
+interface ModerationHistoryEntry {
+  _id: string;
+  action: string;
+  reason?: string;
+  timestamp?: number;
+  createdAt?: number;
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -54,21 +136,25 @@ export default function PlayerDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Fetch player data
-  const profile = useTypedQuery(typedApi.admin.admin.getPlayerProfile, { playerId });
-  const moderationStatus = useTypedQuery(typedApi.admin.moderation.getPlayerModerationStatus, {
+  const profile = useQuery(api.admin.admin.getPlayerProfile, { playerId }) as
+    | PlayerProfile
+    | undefined;
+  const moderationStatus = useQuery(api.admin.moderation.getPlayerModerationStatus, {
     playerId,
-  });
-  const moderationHistory = useTypedQuery(typedApi.admin.moderation.getModerationHistory, {
+  }) as ModerationStatus | undefined;
+  const moderationHistory = useQuery(api.admin.moderation.getModerationHistory, {
     playerId,
     limit: 20,
-  });
+  }) as ModerationHistoryEntry[] | undefined;
   // Fetch player engagement data
-  const engagementData = useTypedQuery(typedApi.admin.analytics.getPlayerEngagement, {
+  const engagementData = useQuery(api.admin.analytics.getPlayerEngagement, {
     userId: playerId,
     days: 30,
-  });
+  }) as EngagementData | undefined;
   // Fetch player inventory
-  const inventory = useTypedQuery(typedApi.admin.admin.getPlayerInventory, { playerId });
+  const inventory = useQuery(api.admin.admin.getPlayerInventory, { playerId }) as
+    | PlayerInventory
+    | undefined;
 
   // Transform engagement data to match expected format
   const engagement = engagementData
@@ -91,8 +177,8 @@ export default function PlayerDetailPage() {
     : undefined;
 
   // Mutations
-  const updateUsernameMutation = useTypedMutation(typedApi.core.users.adminUpdateUsername);
-  const addModerationNote = useTypedMutation(typedApi.admin.moderation.addModerationNote);
+  const updateUsernameMutation = useMutation(api.core.users.adminUpdateUsername);
+  const addModerationNote = useMutation(api.admin.moderation.addModerationNote);
 
   const updatePlayerName = async (newName: string) => {
     await updateUsernameMutation({ userId: playerId, newUsername: newName });
@@ -675,10 +761,10 @@ export default function PlayerDetailPage() {
               ) : (
                 <ModerationTimeline
                   entries={
-                    moderationHistory?.map((h: any) => ({
+                    moderationHistory?.map((h) => ({
                       action: h.action,
                       reason: h.reason,
-                      createdAt: h.timestamp || h.createdAt,
+                      createdAt: h.timestamp ?? h.createdAt ?? Date.now(),
                     })) ?? []
                   }
                 />

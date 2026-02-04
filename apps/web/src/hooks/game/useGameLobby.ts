@@ -1,9 +1,8 @@
 "use client";
 
-import { typedApi, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError } from "@/lib/errorHandling";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 
 // ============================================================================
@@ -133,18 +132,17 @@ interface UseGameLobbyReturn {
  */
 export function useGameLobby(): UseGameLobbyReturn {
   // No auth check needed - this hook should only be used inside <Authenticated>
-  // Using typed helpers for type safety
-  const waitingLobbies = useTypedQuery(typedApi.games.listWaitingLobbies, {});
-  const myLobby = useTypedQuery(typedApi.games.getActiveLobby, {});
-  const privateLobby = useTypedQuery(typedApi.games.getMyPrivateLobby, {});
-  const incomingChallenge = useTypedQuery(typedApi.games.getIncomingChallenge, {});
+  const waitingLobbies = useConvexQuery(apiAny.games.listWaitingLobbies, {});
+  const myLobby = useConvexQuery(apiAny.games.getActiveLobby, {});
+  const privateLobby = useConvexQuery(apiAny.games.getMyPrivateLobby, {});
+  const incomingChallenge = useConvexQuery(apiAny.games.getIncomingChallenge, {});
 
-  // Mutations - using typed helpers for type safety
-  const createMutation = useMutation(typedApi.games.createLobby);
-  const joinMutation = useMutation(typedApi.games.joinLobby);
-  const joinByCodeMutation = useMutation(typedApi.games.joinLobbyByCode);
-  const cancelMutation = useMutation(typedApi.games.cancelLobby);
-  const leaveMutation = useMutation(typedApi.games.leaveLobby);
+  // Mutations
+  const createMutation = useConvexMutation(apiAny.games.createLobby);
+  const joinMutation = useConvexMutation(apiAny.games.joinLobby);
+  const joinByCodeMutation = useConvexMutation(apiAny.games.joinLobbyByCode);
+  const cancelMutation = useConvexMutation(apiAny.games.cancelLobby);
+  const leaveMutation = useConvexMutation(apiAny.games.leaveLobby);
 
   // Actions
   const createLobby = async (

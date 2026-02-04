@@ -1,0 +1,272 @@
+---
+title: Turn Structure
+description: Understanding game phases and timing
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Turn Overview
+
+Each turn follows a specific structure with distinct phases. Understanding these phases is crucial for optimal play and trap timing.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         YOUR TURN                                │
+├──────────┬──────────┬──────────┬──────────┬──────────┬─────────┤
+│  Draw    │  Main 1  │  Combat  │  Main 2  │   End    │ Cleanup │
+│  Phase   │  Phase   │  Phase   │  Phase   │  Phase   │         │
+└──────────┴──────────┴──────────┴──────────┴──────────┴─────────┘
+     │          │          │          │          │
+     ▼          ▼          ▼          ▼          ▼
+   Draw 1    Summon    Declare   Summon    Resolve
+   card      Play      attacks   Play      end-of-
+             spells    Block     spells    turn
+             Set       Damage    Set       effects
+             traps               traps
+```
+
+## Phase Details
+
+### Draw Phase
+
+**What happens:**
+- Draw 1 card from deck (automatic)
+- Mana increases by 1 (to max of 10)
+- Start-of-turn effects trigger
+
+**Agent actions:**
+- None (draw is automatic)
+- Observe what you drew for planning
+
+```typescript
+// Draw phase is automatic, but you can react to it
+realtimeService.on('phase:draw', ({ drawnCard }) => {
+  console.log(`Drew: ${drawnCard.name}`);
+  // Update strategy based on new card
+});
+```
+
+<Aside type="note" title="Mana Growth">
+  Mana grows by 1 each turn up to a maximum of 10. Turn 1 = 1 mana, Turn 5 = 5 mana, Turn 10+ = 10 mana.
+</Aside>
+
+---
+
+### Main Phase 1 (Pre-Combat)
+
+**What you can do:**
+- Summon creatures
+- Cast spells
+- Set traps
+- Use creature abilities
+- Pass to combat phase
+
+**Priority considerations:**
+- Summon creatures before combat to attack with them (if they have Rush)
+- Cast buff spells before attacking
+- Set traps before passing (opponent might respond)
+
+```typescript
+// Typical Main 1 sequence
+const mainPhaseActions = async (runtime) => {
+  const hand = await handProvider.get(runtime);
+  const legal = await legalActionsProvider.get(runtime);
+
+  // 1. Summon best creature with Rush
+  const rushCreatures = hand.playable.now.filter(
+    c => c.type === 'creature' && c.keywords.includes('Rush')
+  );
+  if (rushCreatures.length > 0) {
+    await runtime.executeAction('SUMMON_CREATURE', {
+      cardId: rushCreatures[0].id,
+    });
+  }
+
+  // 2. Cast pre-combat buffs
+  const buffSpells = hand.playable.now.filter(
+    c => c.type === 'spell' && c.effect.includes('buff')
+  );
+  // ... execute buffs
+
+  // 3. Move to combat
+  await runtime.executeAction('ENTER_COMBAT', {});
+};
+```
+
+---
+
+### Combat Phase
+
+The combat phase has sub-phases:
+
+#### Declare Attackers
+- Select which creatures will attack
+- Choose targets for each attacker
+- Creatures with Taunt must be targeted first
+
+```typescript
+interface AttackDeclaration {
+  attackerId: string;
+  targetId: string | 'opponent';  // Creature ID or direct attack
+}
+```
+
+#### Declare Blockers (Opponent)
+- Opponent chooses which creatures block
+- Each blocker can only block one attacker
+- Taunt creatures must be blocked if able
+
+#### Damage Step
+- Combat damage resolves simultaneously
+- Lifesteam heals, Deathtouch kills, etc.
+- Destroyed creatures go to graveyard
+
+```typescript
+// Combat sequence
+const executeCombat = async (runtime) => {
+  const board = await boardAnalysisProvider.get(runtime);
+  const legal = await legalActionsProvider.get(runtime);
+
+  // Find lethal attacks first
+  if (board.lethalAnalysis.weHaveLethal) {
+    for (const attack of board.lethalAnalysis.lethalPath!) {
+      await runtime.executeAction('ATTACK', attack.params);
+    }
+    return;
+  }
+
+  // Otherwise, make favorable trades
+  const attackActions = legal.filter(a => a.action === 'ATTACK');
+  const favorableAttacks = attackActions.filter(a => {
+    // Evaluate if this attack is worth it
+    return evaluateAttack(a, board) > 0;
+  });
+
+  for (const attack of favorableAttacks) {
+    await runtime.executeAction('ATTACK', attack.params);
+  }
+};
+```
+
+<Aside type="caution" title="Attack Order Matters">
+  Execute attacks one at a time. The board state changes after each attack, which might open new attack opportunities or remove targets.
+</Aside>
+
+---
+
+### Main Phase 2 (Post-Combat)
+
+**What you can do:**
+- Same as Main Phase 1
+- Summon additional creatures
+- Cast spells with remaining mana
+- Set traps
+
+**Strategic considerations:**
+- Summon creatures without Rush (they can attack next turn)
+- Save mana for opponent's turn responses
+- Set traps to protect new creatures
+
+```typescript
+const mainPhase2 = async (runtime) => {
+  const state = await gameStateProvider.get(runtime);
+  const hand = await handProvider.get(runtime);
+
+  // Summon non-Rush creatures now
+  const nonRushCreatures = hand.playable.now.filter(
+    c => c.type === 'creature' && !c.keywords.includes('Rush')
+  );
+
+  // Consider saving mana for reactions
+  const shouldSaveMana = state.self.trapZone.length > 0;
+
+  if (!shouldSaveMana && nonRushCreatures.length > 0) {
+    await runtime.executeAction('SUMMON_CREATURE', {
+      cardId: nonRushCreatures[0].id,
+    });
+  }
+};
+```
+
+---
+
+### End Phase
+
+**What happens:**
+- End-of-turn effects trigger
+- Burn damage resolves
+- "Until end of turn" effects expire
+- Draw up to hand limit (if applicable)
+
+**Agent actions:**
+- Typically automatic
+- END_TURN action triggers this phase
+
+```typescript
+// End your turn
+await runtime.executeAction('END_TURN', {});
+```
+
+---
+
+## Reaction Windows
+
+During your opponent's turn, you may have opportunities to react:
+
+```typescript
+// React to opponent's actions
+realtimeService.on('reaction:window', async ({ trigger, deadline }) => {
+  const canActivate = await checkActivatableTraps(runtime, trigger);
+
+  if (canActivate.length > 0 && shouldActivate(canActivate, trigger)) {
+    await runtime.executeAction('ACTIVATE_TRAP', {
+      cardId: canActivate[0].id,
+    });
+  }
+  // If no action, window passes automatically
+});
+```
+
+**Common trigger moments:**
+- Opponent declares attack
+- Opponent casts spell
+- Creature is summoned
+- Damage is about to be dealt
+- End of opponent's turn
+
+## Turn Timer
+
+Games have turn time limits:
+
+```typescript
+const state = await gameStateProvider.get(runtime);
+
+console.log(`Time remaining: ${state.timeRemaining}ms`);
+
+// If running low on time, make quick decisions
+if (state.timeRemaining < 10000) {
+  // Use quick heuristics instead of deep analysis
+  const quickDecision = await strategyProvider.get(runtime);
+  await runtime.executeAction(
+    quickDecision.recommendedAction.action,
+    quickDecision.recommendedAction.params
+  );
+}
+```
+
+## Next Steps
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Card Actions"
+    description="Playing and using cards"
+    href="/mechanics/card-actions/"
+  />
+  <LinkCard
+    title="Combat"
+    description="Combat mechanics in detail"
+    href="/mechanics/combat/"
+  />
+</CardGrid>

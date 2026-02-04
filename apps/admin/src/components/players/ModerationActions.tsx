@@ -25,9 +25,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api } from "@convex/_generated/api";
+import { api, useConvexMutation } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -36,7 +35,7 @@ import { toast } from "sonner";
 // =============================================================================
 
 interface ModerationActionsProps {
-  playerId: any;
+  playerId: Id<"users">;
   playerName: string;
   isBanned?: boolean;
   isSuspended?: boolean;
@@ -44,7 +43,7 @@ interface ModerationActionsProps {
 }
 
 interface ActionDialogProps {
-  playerId: any;
+  playerId: Id<"users">;
   playerName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -58,7 +57,7 @@ interface ActionDialogProps {
 function BanDialog({ playerId, playerName, open, onOpenChange, onComplete }: ActionDialogProps) {
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const banPlayer = useMutation(api.admin.moderation.banPlayer);
+  const banPlayer = useConvexMutation(api.admin.moderation.banPlayer);
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -68,7 +67,7 @@ function BanDialog({ playerId, playerName, open, onOpenChange, onComplete }: Act
 
     setIsSubmitting(true);
     try {
-      await banPlayer({ playerId: playerId as Id<"users">, reason: reason.trim() });
+      await banPlayer({ playerId, reason: reason.trim() });
       toast.success(`${playerName} has been banned`);
       setReason("");
       onOpenChange(false);
@@ -122,7 +121,7 @@ function BanDialog({ playerId, playerName, open, onOpenChange, onComplete }: Act
 function UnbanDialog({ playerId, playerName, open, onOpenChange, onComplete }: ActionDialogProps) {
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const unbanPlayer = useMutation(api.admin.moderation.unbanPlayer);
+  const unbanPlayer = useConvexMutation(api.admin.moderation.unbanPlayer);
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -132,7 +131,7 @@ function UnbanDialog({ playerId, playerName, open, onOpenChange, onComplete }: A
 
     setIsSubmitting(true);
     try {
-      await unbanPlayer({ playerId: playerId as Id<"users"> });
+      await unbanPlayer({ playerId });
       toast.success(`${playerName} has been unbanned`);
       setReason("");
       onOpenChange(false);
@@ -202,7 +201,7 @@ function SuspendDialog({
   const [reason, setReason] = useState("");
   const [duration, setDuration] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const suspendPlayer = useMutation(api.admin.moderation.suspendPlayer);
+  const suspendPlayer = useConvexMutation(api.admin.moderation.suspendPlayer);
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -219,7 +218,7 @@ function SuspendDialog({
       const durationMs = Number.parseInt(duration, 10);
       const durationDays = durationMs / (24 * 60 * 60 * 1000);
       await suspendPlayer({
-        playerId: playerId as Id<"users">,
+        playerId,
         reason: reason.trim(),
         durationDays,
       });
@@ -303,7 +302,7 @@ function UnsuspendDialog({
 }: ActionDialogProps) {
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const unsuspendPlayer = useMutation(api.admin.moderation.unsuspendPlayer);
+  const unsuspendPlayer = useConvexMutation(api.admin.moderation.unsuspendPlayer);
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -313,7 +312,7 @@ function UnsuspendDialog({
 
     setIsSubmitting(true);
     try {
-      await unsuspendPlayer({ playerId: playerId as Id<"users"> });
+      await unsuspendPlayer({ playerId });
       toast.success(`${playerName}'s suspension has been lifted`);
       setReason("");
       onOpenChange(false);
@@ -366,7 +365,7 @@ function UnsuspendDialog({
 function WarnDialog({ playerId, playerName, open, onOpenChange, onComplete }: ActionDialogProps) {
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const warnPlayer = useMutation(api.admin.moderation.warnPlayer);
+  const warnPlayer = useConvexMutation(api.admin.moderation.warnPlayer);
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -376,7 +375,7 @@ function WarnDialog({ playerId, playerName, open, onOpenChange, onComplete }: Ac
 
     setIsSubmitting(true);
     try {
-      const result = await warnPlayer({ playerId: playerId as Id<"users">, reason: reason.trim() });
+      const result = await warnPlayer({ playerId, reason: reason.trim() });
       toast.success(result.message || `Warning issued to ${playerName}`);
       setReason("");
       onOpenChange(false);
@@ -441,7 +440,7 @@ function AddNoteDialog({
 }: ActionDialogProps) {
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const addModerationNote = useMutation(api.admin.moderation.addModerationNote);
+  const addModerationNote = useConvexMutation(api.admin.moderation.addModerationNote);
 
   const handleSubmit = async () => {
     if (!note.trim()) {
@@ -451,7 +450,7 @@ function AddNoteDialog({
 
     setIsSubmitting(true);
     try {
-      await addModerationNote({ playerId: playerId as Id<"users">, note: note.trim() });
+      await addModerationNote({ playerId, note: note.trim() });
       toast.success(`Note added to ${playerName}'s record`);
       setNote("");
       onOpenChange(false);

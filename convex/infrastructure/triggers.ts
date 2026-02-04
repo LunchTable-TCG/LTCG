@@ -41,7 +41,11 @@ function getChangedFields(change: {
   newDoc?: Record<string, unknown> | null;
 }): string[] | undefined {
   // Note: Convex triggers use "update" but we map it to "patch" for our schema
-  if ((change.operation !== "update" && change.operation !== "patch") || !change.newDoc || !change.oldDoc) {
+  if (
+    (change.operation !== "update" && change.operation !== "patch") ||
+    !change.newDoc ||
+    !change.oldDoc
+  ) {
     return undefined;
   }
 

@@ -1,0 +1,201 @@
+---
+title: First Game
+description: Create and understand your first LunchTable TCG game
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+## Creating a Test Game
+
+Once your environment is set up, let's create a game to understand the flow.
+
+<Steps>
+
+1. **Open the Convex Dashboard**
+
+   Navigate to [dashboard.convex.dev](https://dashboard.convex.dev) and select your project.
+
+2. **Create test users**
+
+   In the Data tab, create two users in the `users` table or use the seeded test data.
+
+3. **Create a game via the dashboard**
+
+   Use the Functions tab to call `gameplay/games/lifecycle:createGame`:
+
+   ```json
+   {
+     "hostId": "user1_id",
+     "gameMode": "ranked"
+   }
+   ```
+
+4. **Join with second player**
+
+   Call `gameplay/games/lobby:joinGame`:
+
+   ```json
+   {
+     "gameId": "your_game_id",
+     "playerId": "user2_id"
+   }
+   ```
+
+5. **Start the game**
+
+   Call `gameplay/games/lifecycle:startGame`:
+
+   ```json
+   {
+     "gameId": "your_game_id"
+   }
+   ```
+
+</Steps>
+
+## Game Flow
+
+```
+Create Game → Join Lobby → Start Game → Play Turns → End Game
+     │              │            │           │           │
+     ▼              ▼            ▼           ▼           ▼
+  WAITING     WAITING      ACTIVE      ACTIVE      ENDED
+```
+
+## Understanding the Code
+
+### Game Creation
+
+```typescript
+// convex/gameplay/games/lifecycle.ts
+export const createGame = mutation({
+  args: {
+    hostId: v.id("users"),
+    gameMode: v.union(v.literal("ranked"), v.literal("casual")),
+  },
+  handler: async (ctx, { hostId, gameMode }) => {
+    // Create the game lobby
+    const gameId = await ctx.db.insert("gameLobbies", {
+      hostId,
+      players: [hostId],
+      gameMode,
+      status: "waiting",
+      createdAt: Date.now(),
+    });
+
+    return gameId;
+  },
+});
+```
+
+### Turn Structure
+
+Each turn follows phases:
+
+```typescript
+type TurnPhase =
+  | "draw"     // Draw a card
+  | "main1"    // Play cards, summon creatures
+  | "battle"   // Attack phase
+  | "main2"    // Play more cards
+  | "end";     // End turn
+```
+
+### Playing a Card
+
+```typescript
+// convex/gameplay/gameEngine/cards.ts
+export const playCard = mutation({
+  args: {
+    gameId: v.id("games"),
+    cardInstanceId: v.string(),
+    targetZone: v.string(),
+  },
+  handler: async (ctx, { gameId, cardInstanceId, targetZone }) => {
+    const game = await ctx.db.get(gameId);
+    const player = getCurrentPlayer(game);
+
+    // Validate the play
+    validateCardPlay(game, player, cardInstanceId);
+
+    // Execute the play
+    const updatedGame = executeCardPlay(game, cardInstanceId, targetZone);
+
+    // Process any triggered effects
+    await processEffects(ctx, updatedGame);
+
+    // Update game state
+    await ctx.db.replace(gameId, updatedGame);
+  },
+});
+```
+
+## Real-time Updates
+
+Games use Convex's real-time subscriptions:
+
+```tsx
+// apps/web/src/components/game/GameBoard.tsx
+function GameBoard({ gameId }: { gameId: Id<"games"> }) {
+  const game = useQuery(api.gameplay.games.queries.getGame, { gameId });
+
+  // This automatically updates when game state changes!
+  if (!game) return <Loading />;
+
+  return (
+    <div className="game-board">
+      <PlayerField player={game.player1} />
+      <PlayerField player={game.player2} />
+    </div>
+  );
+}
+```
+
+<Aside type="tip">
+  All Convex queries are reactive by default. When the game state changes, all connected clients update automatically.
+</Aside>
+
+## Modifying Game Logic
+
+Try modifying the damage calculation:
+
+1. Open `convex/gameplay/combatSystem.ts`
+2. Find the `calculateDamage` function
+3. Add a console log to see damage calculation
+4. Save - Convex auto-deploys!
+
+```typescript
+function calculateDamage(
+  attacker: Creature,
+  defender: Creature
+): number {
+  let damage = attacker.attack;
+
+  // Add element advantage
+  if (hasElementAdvantage(attacker.element, defender.element)) {
+    damage = Math.floor(damage * 1.5);
+  }
+
+  console.log(`Damage calculated: ${damage}`);
+  return damage;
+}
+```
+
+---
+
+## Next Steps
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Game Engine"
+    description="Deep dive into game mechanics"
+    href="/architecture/game-engine/"
+  />
+  <LinkCard
+    title="API Reference"
+    description="Complete API documentation"
+    href="/api-reference/core/"
+  />
+</CardGrid>

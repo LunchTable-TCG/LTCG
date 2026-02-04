@@ -24,12 +24,12 @@
  */
 
 import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
-import { query as rawQuery, mutation as rawMutation } from "../_generated/server";
+import { mutation as rawMutation, query as rawQuery } from "../_generated/server";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { getCurrentUser } from "./convexAuth";
+import { ErrorCode, createError } from "./errorCodes";
 import { getUserRole } from "./roles";
 import type { UserRole } from "./roles";
-import { ErrorCode, createError } from "./errorCodes";
 
 // ============================================================================
 // Auth Context Helpers

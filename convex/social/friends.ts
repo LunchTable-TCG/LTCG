@@ -2,7 +2,6 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 
 // Workaround for TS2589 (excessively deep type instantiation)
-// biome-ignore lint/style/noNamespaceImport: Required for Convex internal API type workaround
 import * as generatedApi from "../_generated/api";
 // biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
 const internal = (generatedApi as any).internal;

@@ -77,7 +77,9 @@ Cypress.Commands.add("login", (username = "testuser", password = "testpass") => 
 // Wait for app to be ready
 Cypress.Commands.add("waitForApp", () => {
   // Wait for any loading indicators to disappear
-  cy.get('[data-testid="loading"], .loading, .spinner', { timeout: 10000 }).should("not.exist");
+  cy.get('[data-testid="loading"], .loading, .spinner', {
+    timeout: 10000,
+  }).should("not.exist");
 
   // Ensure the app container is visible
   cy.get('#root, #app, [data-testid="app"]').should("be.visible");
@@ -121,10 +123,10 @@ Cypress.Commands.add("sendChatMessage", (message: string) => {
 Cypress.Commands.add("clearAppData", () => {
   cy.window().then((win) => {
     // Clear local storage
-    (win as any).localStorage.clear();
+    (win as Window & { localStorage: Storage }).localStorage.clear();
 
     // Clear session storage
-    (win as any).sessionStorage.clear();
+    (win as Window & { sessionStorage: Storage }).sessionStorage.clear();
 
     // Clear cookies
     cy.clearCookies();

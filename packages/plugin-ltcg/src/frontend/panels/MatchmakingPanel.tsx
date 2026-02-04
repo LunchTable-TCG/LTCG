@@ -49,7 +49,11 @@ function getStatusLabel(status: string, enabled: boolean): string {
 /**
  * Countdown timer component
  */
-const CountdownTimer = React.memo(function CountdownTimer({ nextScanIn }: { nextScanIn: number }) {
+const CountdownTimer = React.memo(function CountdownTimer({
+  nextScanIn,
+}: {
+  nextScanIn: number;
+}) {
   const [timeLeft, setTimeLeft] = React.useState(Math.ceil(nextScanIn / 1000));
 
   React.useEffect(() => {
@@ -101,12 +105,30 @@ export function MatchmakingPanel({ agentId }: MatchmakingPanelProps) {
   const statusLabel = getStatusLabel(data.status, data.enabled);
   const hasRecentJoins = data.recentJoins && data.recentJoins.length > 0;
 
+  // Map status string to StatusVariant type
+  const getStatusVariant = (
+    status: string
+  ): "active" | "idle" | "error" | "scanning" | "in_game" | "joining" => {
+    switch (status) {
+      case "scanning":
+        return "scanning";
+      case "in_game":
+        return "in_game";
+      case "joining":
+        return "joining";
+      case "error":
+        return "error";
+      default:
+        return "idle";
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 max-w-5xl mx-auto">
       {/* Header with status badge */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Auto-Matchmaking</h2>
-        <StatusBadge variant={data.status as any} label={statusLabel} />
+        <StatusBadge variant={getStatusVariant(data.status)} label={statusLabel} />
       </div>
 
       {/* Statistics grid */}

@@ -35,7 +35,28 @@ import * as chat from "./http/chat";
 // Decision History
 import * as decisions from "./http/decisions";
 
+// Well-Known (x402 Discovery)
+import * as wellknown from "./http/wellknown";
+
 const http = httpRouter();
+
+// ============================================================================
+// Well-Known Endpoints (x402 Discovery)
+// ============================================================================
+
+// GET /.well-known/pay - x402 payment capabilities discovery
+http.route({
+  path: "/.well-known/pay",
+  method: "GET",
+  handler: wellknown.pay,
+});
+
+// OPTIONS /.well-known/pay - CORS preflight
+http.route({
+  path: "/.well-known/pay",
+  method: "OPTIONS",
+  handler: wellknown.pay,
+});
 
 // ============================================================================
 // Agent Management Endpoints
@@ -387,6 +408,61 @@ http.route({
   path: "/api/agents/decisions/stats",
   method: "GET",
   handler: decisions.getDecisionStats,
+});
+
+// ============================================================================
+// Shop Endpoints (x402 Payment-Gated)
+// ============================================================================
+
+import * as shop from "./http/shop";
+
+// GET /api/agents/shop/packages - List gem packages (no auth required)
+http.route({
+  path: "/api/agents/shop/packages",
+  method: "GET",
+  handler: shop.getPackages,
+});
+
+// GET /api/agents/shop/products - List shop products (no auth required)
+http.route({
+  path: "/api/agents/shop/products",
+  method: "GET",
+  handler: shop.getProducts,
+});
+
+// POST /api/agents/shop/gems - Purchase gems with x402 payment
+http.route({
+  path: "/api/agents/shop/gems",
+  method: "POST",
+  handler: shop.purchaseGems,
+});
+
+// OPTIONS /api/agents/shop/gems - CORS preflight
+http.route({
+  path: "/api/agents/shop/gems",
+  method: "OPTIONS",
+  handler: shop.purchaseGemsOptions,
+});
+
+// POST /api/agents/shop/pack - Purchase pack with x402 payment
+http.route({
+  path: "/api/agents/shop/pack",
+  method: "POST",
+  handler: shop.purchasePack,
+});
+
+// OPTIONS /api/agents/shop/pack - CORS preflight
+http.route({
+  path: "/api/agents/shop/pack",
+  method: "OPTIONS",
+  handler: shop.purchasePackOptions,
+});
+
+// POST /api/agents/shop/pack-gems - Purchase pack with gems (authenticated)
+http.route({
+  path: "/api/agents/shop/pack-gems",
+  method: "POST",
+  handler: shop.purchasePackWithGems,
 });
 
 export default http;

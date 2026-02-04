@@ -29,7 +29,7 @@ export const gameStateProvider: Provider = {
         return {
           text: "No active game. Use FIND_GAME or JOIN_LOBBY to start playing.",
           values: { error: "NO_GAME_ID" },
-          data: {},
+          data: undefined,
         };
       }
 
@@ -41,7 +41,7 @@ export const gameStateProvider: Provider = {
         return {
           text: "LTCG API credentials not configured. Please set LTCG_API_KEY and LTCG_API_URL.",
           values: { error: "MISSING_CONFIG" },
-          data: {},
+          data: undefined,
         };
       }
 
@@ -51,8 +51,11 @@ export const gameStateProvider: Provider = {
         baseUrl: apiUrl as string,
       });
 
+      // Assert gameId as string for type safety
+      const gameIdString = String(gameId);
+
       // Fetch game state
-      const gameState: GameStateResponse = await client.getGameState(gameId);
+      const gameState: GameStateResponse = await client.getGameState(gameIdString);
 
       // Use API's isMyTurn field (correct regardless of host/opponent role)
       const isMyTurn = gameState.isMyTurn ?? gameState.currentTurn === "host";

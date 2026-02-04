@@ -1,4 +1,5 @@
 "use node";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
  * Server-side HD wallet creation for AI Agents
@@ -23,13 +24,18 @@
  */
 
 import { PrivyClient } from "@privy-io/node";
-import type {
-  LinkedAccountCustomJwtInput,
-  LinkedAccountSolanaEmbeddedWallet,
-  UserCreateParams,
-  UserPregenerateWalletsParams,
-} from "@privy-io/node/resources/users";
-import type { WalletChainType } from "@privy-io/node/resources/wallets/wallets";
+
+// Types are defined inline to avoid module resolution issues with @privy-io/node in Convex
+// When Privy updates their SDK, these may need adjustment
+
+/** Linked account type for custom JWT auth */
+interface LinkedAccountCustomJwtInput {
+  type: "custom_auth";
+  custom_user_id: string;
+}
+
+/** Privy wallet chain types */
+type WalletChainType = "ethereum" | "solana";
 import { v } from "convex/values";
 import { internalAction } from "../_generated/server";
 
@@ -108,17 +114,16 @@ export const createWalletForUserAgent = internalAction({
 
       const updatedUser = await privy.users().pregenerateWallets(args.privyUserId, {
         wallets: [pregenerateConfig],
-      } as UserPregenerateWalletsParams);
+      });
 
       // Find the newly created wallet
       const solanaWallets = updatedUser.linked_accounts.filter(
-        (account): account is LinkedAccountSolanaEmbeddedWallet =>
-          account.type === "wallet" && account.chain_type === "solana"
-      );
+        (account: any) => account.type === "wallet" && account.chain_type === "solana"
+      ) as any[];
 
       // Get the wallet at the correct index (it should be the last one added)
       const agentWallet =
-        solanaWallets?.find((w) => w.wallet_index === walletIndex) ||
+        solanaWallets?.find((w: any) => w.wallet_index === walletIndex) ||
         solanaWallets?.[solanaWallets.length - 1];
 
       if (!agentWallet?.address) {
@@ -204,13 +209,12 @@ export const createSolanaWallet = internalAction({
         wallets: [walletConfig],
       };
 
-      const agentUser = await privy.users().create(createUserConfig as UserCreateParams);
+      const agentUser = await privy.users().create(createUserConfig);
 
       // Extract the wallet from the created user
       const solanaWallet = agentUser.linked_accounts.find(
-        (account): account is LinkedAccountSolanaEmbeddedWallet =>
-          account.type === "wallet" && account.chain_type === "solana"
-      );
+        (account: any) => account.type === "wallet" && account.chain_type === "solana"
+      ) as any;
 
       if (!solanaWallet?.address) {
         throw new Error("Failed to create embedded wallet for agent");

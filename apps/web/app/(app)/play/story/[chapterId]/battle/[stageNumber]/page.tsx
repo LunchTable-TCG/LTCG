@@ -6,40 +6,13 @@ import { StoryBattleCompleteDialog } from "@/components/story/StoryBattleComplet
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
-import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { Crown, Loader2, Shield, Swords } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
 
 type DialoguePhase = "pre" | "battle" | "post" | "complete";
-type StoryDifficulty = "normal" | "hard" | "legendary";
-
-// Difficulty display configuration
-const DIFFICULTY_DISPLAY = {
-  normal: {
-    label: "Normal",
-    icon: Shield,
-    color: "text-green-400",
-    bgColor: "bg-green-500/20",
-    borderColor: "border-green-500/50",
-  },
-  hard: {
-    label: "Hard",
-    icon: Swords,
-    color: "text-orange-400",
-    bgColor: "bg-orange-500/20",
-    borderColor: "border-orange-500/50",
-  },
-  legendary: {
-    label: "Legendary",
-    icon: Crown,
-    color: "text-purple-400",
-    bgColor: "bg-purple-500/20",
-    borderColor: "border-purple-500/50",
-  },
-} as const;
 
 interface BattlePageProps {
   params: Promise<{
@@ -52,12 +25,6 @@ export default function BattlePage({ params }: BattlePageProps) {
   const resolvedParams = use(params);
   const { chapterId, stageNumber } = resolvedParams;
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // Get difficulty from URL params, default to "normal"
-  const difficultyParam = searchParams.get("difficulty");
-  const difficulty: StoryDifficulty =
-    difficultyParam === "hard" || difficultyParam === "legendary" ? difficultyParam : "normal";
 
   const { isAuthenticated } = useAuth();
   const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
@@ -68,7 +35,19 @@ export default function BattlePage({ params }: BattlePageProps) {
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
-  const [completionResult, setCompletionResult] = useState<any>(null);
+  const [completionResult, setCompletionResult] = useState<{
+    won: boolean;
+    rewards: { gold: number; xp: number };
+    starsEarned: number;
+    levelUp?: { newLevel: number; oldLevel: number } | null;
+    newBadges?: Array<{ badgeId: string; displayName: string; description: string }>;
+    cardsReceived?: Array<{
+      cardDefinitionId: string;
+      name: string;
+      rarity: string;
+      imageUrl?: string;
+    }>;
+  } | null>(null);
 
   // Dialogue state
   const [dialoguePhase, setDialoguePhase] = useState<DialoguePhase>("pre");
@@ -105,19 +84,11 @@ export default function BattlePage({ params }: BattlePageProps) {
     let mounted = true;
 
     async function initialize() {
-      console.log(
-        "Initializing story battle for chapter:",
-        chapterId,
-        "stage:",
-        stageNumber,
-        "difficulty:",
-        difficulty
-      );
+      console.log("Initializing story battle for chapter:", chapterId, "stage:", stageNumber);
       try {
         const result = await initializeStoryBattle({
           chapterId,
           stageNumber: Number.parseInt(stageNumber),
-          difficulty,
         });
         console.log("Battle initialized successfully:", result);
 
@@ -140,12 +111,11 @@ export default function BattlePage({ params }: BattlePageProps) {
     return () => {
       mounted = false;
     };
-  }, [chapterId, stageNumber, difficulty, initializeStoryBattle]);
+  }, [chapterId, stageNumber, initializeStoryBattle]);
 
   // Once stage info loads, determine initial dialogue phase
   useEffect(() => {
     if (!isInitializing && stageInfo !== undefined) {
-      // If there's pre-match dialogue, show it; otherwise go straight to battle
       if (hasPreDialogue) {
         setDialoguePhase("pre");
       } else {
@@ -162,7 +132,6 @@ export default function BattlePage({ params }: BattlePageProps) {
   // Handle post-dialogue completion
   const handlePostDialogueComplete = useCallback(() => {
     if (battleOutcome && stageId) {
-      // Now complete the stage and show rewards
       completeStage({
         stageId,
         won: battleOutcome.won,
@@ -175,7 +144,6 @@ export default function BattlePage({ params }: BattlePageProps) {
         })
         .catch((error) => {
           console.error("Failed to complete stage:", error);
-          // Still show completion dialog on error
           setDialoguePhase("complete");
           setShowCompletionDialog(true);
         });
@@ -194,25 +162,20 @@ export default function BattlePage({ params }: BattlePageProps) {
     if (!gameState || !stageId || !currentUser) return;
     if (dialoguePhase !== "battle") return;
 
-    // Check if game ended
     const isGameEnded = gameState.myLifePoints <= 0 || gameState.opponentLifePoints <= 0;
 
     if (isGameEnded) {
       const playerWon = gameState.myLifePoints > 0;
       const finalLP = gameState.myLifePoints;
 
-      // Store the outcome
       setBattleOutcome({ won: playerWon, finalLP });
 
-      // Determine which post-dialogue to show
       const postDialogue = playerWon ? postMatchWinDialogue : postMatchLoseDialogue;
       const hasPostDialogue = postDialogue && postDialogue.length > 0;
 
       if (hasPostDialogue) {
-        // Show post-match dialogue first
         setDialoguePhase("post");
       } else {
-        // No post-dialogue, complete the stage directly
         completeStage({
           stageId,
           won: playerWon,
@@ -240,7 +203,7 @@ export default function BattlePage({ params }: BattlePageProps) {
     completeStage,
   ]);
 
-  // Show loading state (stageInfo is undefined while loading, null if not found)
+  // Show loading state
   if (isInitializing || stageInfo === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#0d0a09]">
@@ -292,7 +255,6 @@ export default function BattlePage({ params }: BattlePageProps) {
   if (dialoguePhase === "pre" && preMatchDialogue && preMatchDialogue.length > 0) {
     return (
       <div className="min-h-screen bg-[#0d0a09]">
-        {/* Background with stage info */}
         <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-[#d4af37] mb-2">
@@ -320,7 +282,6 @@ export default function BattlePage({ params }: BattlePageProps) {
     if (postDialogue && postDialogue.length > 0) {
       return (
         <div className="min-h-screen bg-[#0d0a09]">
-          {/* Background with outcome */}
           <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
             <h1
               className={`text-6xl font-bold ${battleOutcome.won ? "text-[#d4af37]" : "text-gray-500"}`}
@@ -340,28 +301,9 @@ export default function BattlePage({ params }: BattlePageProps) {
   }
 
   // Show game board during battle phase
-  const difficultyConfig = DIFFICULTY_DISPLAY[difficulty];
-  const DifficultyIcon = difficultyConfig.icon;
-
   return (
     <>
       <div className="min-h-screen bg-[#0d0a09] relative">
-        {/* Difficulty Indicator */}
-        <div className="absolute top-4 left-4 z-50">
-          <div
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-full border",
-              difficultyConfig.bgColor,
-              difficultyConfig.borderColor
-            )}
-          >
-            <DifficultyIcon className={cn("w-4 h-4", difficultyConfig.color)} />
-            <span className={cn("text-sm font-medium", difficultyConfig.color)}>
-              {difficultyConfig.label}
-            </span>
-          </div>
-        </div>
-
         <GameBoard lobbyId={lobbyId} gameMode="story" />
       </div>
 

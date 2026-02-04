@@ -163,7 +163,9 @@ Respond with JSON: { "isPrivate": true or false }`;
           maxTokens: 20,
         });
 
-        const parsed = extractJsonFromLlmResponse(decision, { isPrivate: false });
+        const parsed = extractJsonFromLlmResponse(decision, {
+          isPrivate: false,
+        });
         isPrivate = parsed.isPrivate === true;
       }
 

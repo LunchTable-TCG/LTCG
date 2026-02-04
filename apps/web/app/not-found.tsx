@@ -17,7 +17,6 @@ export default function NotFound() {
     <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden flex items-center justify-center">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-purple-900/20 via-[#0d0a09] to-[#0d0a09]" />
-      <div className="absolute inset-0 bg-[url('/assets/backgrounds/noise.png')] opacity-5" />
 
       {/* Floating particles - only render on client to avoid hydration mismatch */}
       {mounted && (

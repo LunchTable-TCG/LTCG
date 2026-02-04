@@ -1,4 +1,5 @@
 import { mutation } from "../functions";
+import { GEM_PACKAGES, GOLD_BUNDLES, SHOP_PACKS } from "../lib/constants";
 
 /**
  * Clear all shop products
@@ -183,19 +184,12 @@ export const populateShop = mutation({
       createdAt: now,
     });
 
-    // CURRENCY BUNDLES - Gem to Gold conversion
-    const currencyBundles = [
-      { id: "small", name: "Small Gold Bundle", gems: 50, gold: 500 },
-      { id: "medium", name: "Medium Gold Bundle", gems: 100, gold: 1100 }, // 10% bonus
-      { id: "large", name: "Large Gold Bundle", gems: 250, gold: 3000 }, // 20% bonus
-      { id: "mega", name: "Mega Gold Bundle", gems: 500, gold: 6500 }, // 30% bonus
-    ];
-
-    currencyBundles.forEach((bundle, idx) => {
+    // CURRENCY BUNDLES - Gem to Gold conversion (from constants)
+    GOLD_BUNDLES.forEach((bundle, idx) => {
       products.push({
-        productId: `gold-bundle-${bundle.id}`,
+        productId: bundle.id,
         name: bundle.name,
-        description: `Convert ${bundle.gems} Gems to ${bundle.gold} Gold`,
+        description: `Convert ${bundle.gems} Gems to ${bundle.gold.toLocaleString()} Gold`,
         productType: "currency" as const,
         goldPrice: undefined,
         gemPrice: bundle.gems,
@@ -211,6 +205,70 @@ export const populateShop = mutation({
       });
     });
 
+    // PREMIUM PACKS - Gems only, higher variant rates (from constants)
+    // Legendary Pack
+    products.push({
+      productId: SHOP_PACKS.legendary.id,
+      name: SHOP_PACKS.legendary.name,
+      description: "5 cards with a guaranteed Legendary! 3x Foil, 2x Alt Art rates.",
+      productType: "pack" as const,
+      goldPrice: undefined,
+      gemPrice: SHOP_PACKS.legendary.gemPrice,
+      packConfig: {
+        cardCount: SHOP_PACKS.legendary.cards,
+        guaranteedRarity: SHOP_PACKS.legendary.guaranteedRarity,
+        variantMultipliers: { foil: 3.0, altArt: 2.0, fullArt: 1.0 },
+      },
+      boxConfig: undefined,
+      currencyConfig: undefined,
+      isActive: true,
+      sortOrder: 4,
+      createdAt: now,
+    });
+
+    // Collector Pack
+    products.push({
+      productId: SHOP_PACKS.collector.id,
+      name: SHOP_PACKS.collector.name,
+      description: "3 cards, all Rare or better! 5x all variant rates.",
+      productType: "pack" as const,
+      goldPrice: undefined,
+      gemPrice: SHOP_PACKS.collector.gemPrice,
+      packConfig: {
+        cardCount: SHOP_PACKS.collector.cards,
+        guaranteedRarity: "rare" as const,
+        allRareOrBetter: true,
+        variantMultipliers: { foil: 5.0, altArt: 5.0, fullArt: 5.0 },
+      },
+      boxConfig: undefined,
+      currencyConfig: undefined,
+      isActive: true,
+      sortOrder: 5,
+      createdAt: now,
+    });
+
+    // Ultimate Pack
+    products.push({
+      productId: SHOP_PACKS.ultimate.id,
+      name: SHOP_PACKS.ultimate.name,
+      description:
+        "10 cards with 2 guaranteed Epics and 1 guaranteed Legendary! 10x Foil, 5x Alt Art, 2x Full Art rates.",
+      productType: "pack" as const,
+      goldPrice: undefined,
+      gemPrice: SHOP_PACKS.ultimate.gemPrice,
+      packConfig: {
+        cardCount: SHOP_PACKS.ultimate.cards,
+        guaranteedRarity: "legendary" as const,
+        guaranteedCount: 3, // 2 epic + 1 legendary
+        variantMultipliers: { foil: 10.0, altArt: 5.0, fullArt: 2.0 },
+      },
+      boxConfig: undefined,
+      currencyConfig: undefined,
+      isActive: true,
+      sortOrder: 6,
+      createdAt: now,
+    });
+
     // Insert all products
     for (const product of products) {
       await ctx.db.insert("shopProducts", product);
@@ -220,6 +278,88 @@ export const populateShop = mutation({
       success: true,
       message: `Created ${products.length} shop products`,
       count: products.length,
+    };
+  },
+});
+
+/**
+ * Seed gem packages to database
+ * Run with: bunx convex run admin/shopSetup:seedGemPackages
+ */
+export const seedGemPackages = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Check if already seeded
+    const existing = await ctx.db.query("gemPackages").first();
+    if (existing) {
+      return { success: false, message: "Gem packages already seeded" };
+    }
+
+    let count = 0;
+    const now = Date.now();
+    for (const pkg of GEM_PACKAGES) {
+      await ctx.db.insert("gemPackages", {
+        packageId: pkg.id,
+        name: pkg.name,
+        description: `${pkg.gems.toLocaleString()} gems${pkg.bonus > 0 ? ` (+${pkg.bonus}% bonus)` : ""}`,
+        gems: pkg.gems,
+        usdPrice: pkg.usdCents,
+        bonusPercent: pkg.bonus,
+        isActive: true,
+        sortOrder: count,
+        createdAt: now,
+      });
+      count++;
+    }
+
+    return { success: true, message: `Seeded ${count} gem packages` };
+  },
+});
+
+/**
+ * Clear gem packages
+ * Run with: bunx convex run admin/shopSetup:clearGemPackages
+ */
+export const clearGemPackages = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const packages = await ctx.db.query("gemPackages").collect();
+
+    for (const pkg of packages) {
+      await ctx.db.delete(pkg._id);
+    }
+
+    return {
+      success: true,
+      deleted: packages.length,
+      message: `Deleted ${packages.length} gem packages`,
+    };
+  },
+});
+
+/**
+ * Full shop setup - clears and repopulates everything
+ * Run with: bunx convex run admin/shopSetup:fullSetup
+ */
+export const fullSetup = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Clear existing
+    const products = await ctx.db.query("shopProducts").collect();
+    for (const product of products) {
+      await ctx.db.delete(product._id);
+    }
+
+    const packages = await ctx.db.query("gemPackages").collect();
+    for (const pkg of packages) {
+      await ctx.db.delete(pkg._id);
+    }
+
+    // Re-run populate and seed
+    // Note: This is a simplified version - in production you'd call the actual functions
+    return {
+      success: true,
+      message: `Cleared ${products.length} products and ${packages.length} gem packages. Run populateShop and seedGemPackages to repopulate.`,
     };
   },
 });

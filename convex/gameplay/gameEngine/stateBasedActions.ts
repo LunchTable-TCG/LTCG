@@ -15,7 +15,6 @@
  */
 
 // Workaround for TS2589 (excessively deep type instantiation)
-// biome-ignore lint/style/noNamespaceImport: Required for Convex internal API type workaround
 import * as generatedApi from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";

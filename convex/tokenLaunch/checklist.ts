@@ -38,9 +38,10 @@ export const getAll = query({
 
     let items: Doc<"launchChecklist">[];
     if (args.category) {
+      const category = args.category;
       items = await ctx.db
         .query("launchChecklist")
-        .withIndex("by_category", (q) => q.eq("category", args.category!))
+        .withIndex("by_category", (q) => q.eq("category", category))
         .collect();
     } else {
       items = await ctx.db.query("launchChecklist").collect();

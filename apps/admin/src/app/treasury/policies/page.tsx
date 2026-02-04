@@ -23,11 +23,18 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+type TreasuryPolicy = Doc<"treasuryPolicies">;
 
 // =============================================================================
 // Helper Functions
@@ -57,13 +64,13 @@ export default function TreasuryPoliciesPage() {
   });
 
   // Fetch policies
-  const policies = useConvexQuery(api.treasury.policies.listPolicies, { includeInactive: true });
+  const policies = useQuery(api.treasury.policies.listPolicies, { includeInactive: true });
 
   // Mutations
-  const createPolicy = useConvexMutation(api.treasury.policies.createPolicy);
-  const updatePolicy = useConvexMutation(api.treasury.policies.updatePolicy);
+  const createPolicy = useMutation(api.treasury.policies.createPolicy);
+  const updatePolicy = useMutation(api.treasury.policies.updatePolicy);
   // deletePolicy will be used when delete UI is implemented
-  const setupDefaults = useConvexMutation(api.treasury.policies.setupDefaultPolicies);
+  const setupDefaults = useMutation(api.treasury.policies.setupDefaultPolicies);
 
   const isLoading = policies === undefined;
 
@@ -114,7 +121,10 @@ export default function TreasuryPoliciesPage() {
 
   async function handleToggleActive(policyId: string, currentActive: boolean) {
     try {
-      await updatePolicy({ policyId, isActive: !currentActive });
+      await updatePolicy({
+        policyId: policyId as Id<"treasuryPolicies">,
+        isActive: !currentActive,
+      });
       toast.success(`Policy ${currentActive ? "deactivated" : "activated"}`);
     } catch (error) {
       toast.error(`Failed to update policy: ${error}`);
@@ -123,7 +133,7 @@ export default function TreasuryPoliciesPage() {
 
   async function handleSetupDefaults() {
     try {
-      const result = await setupDefaults({});
+      const result = (await setupDefaults({})) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(`Failed to setup defaults: ${error}`);
@@ -260,7 +270,7 @@ export default function TreasuryPoliciesPage() {
         </div>
       ) : (policies?.length ?? 0) > 0 ? (
         <div className="grid gap-6 md:grid-cols-2">
-          {policies?.map((policy: any) => (
+          {policies?.map((policy: TreasuryPolicy) => (
             <Card key={policy._id} className={!policy.isActive ? "opacity-60" : ""}>
               <CardHeader>
                 <div className="flex items-center justify-between">

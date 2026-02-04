@@ -240,10 +240,13 @@ function evaluateCompoundCondition(condition: JsonCondition, context: ConditionC
       // At least one condition must be true
       return nestedConditions.some((c) => evaluateJsonCondition(c, context));
 
-    case "not":
+    case "not": {
       // Negate the first condition
       if (nestedConditions.length === 0) return true;
-      return !evaluateJsonCondition(nestedConditions[0]!, context);
+      const firstCondition = nestedConditions[0];
+      if (!firstCondition) return true;
+      return !evaluateJsonCondition(firstCondition, context);
+    }
 
     default:
       return true;

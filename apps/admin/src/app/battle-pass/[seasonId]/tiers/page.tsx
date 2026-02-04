@@ -30,7 +30,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { BattlePassId } from "@/lib/convexTypes";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import {
   ArrowLeftIcon,
@@ -55,12 +57,14 @@ import { toast } from "sonner";
 // Types & Constants
 // =============================================================================
 
+type BattlePassTier = Doc<"battlePassTiers">;
+
 type RewardType = "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
 
 interface TierReward {
   type: RewardType;
   amount?: number;
-  cardId?: string;
+  cardId?: Id<"cardDefinitions">;
   packProductId?: string;
   titleName?: string;
   avatarUrl?: string;
@@ -291,7 +295,7 @@ export default function BattlePassTiersPage() {
   useEffect(() => {
     if (battlePass && existingTiers) {
       const totalTiers = battlePass.totalTiers;
-      const tierMap = new Map<number, any>();
+      const tierMap = new Map<number, BattlePassTier>();
 
       // Map existing tiers
       for (const tier of existingTiers) {
@@ -327,7 +331,7 @@ export default function BattlePassTiersPage() {
 
     setIsSaving(true);
     try {
-      const result = await defineTiers({
+      const result = (await defineTiers({
         battlePassId: battlePassId as BattlePassId,
         tiers: dirtyTiers.map((t) => ({
           tier: t.tier,
@@ -336,7 +340,7 @@ export default function BattlePassTiersPage() {
           isMilestone: t.isMilestone,
         })),
         replaceExisting: false,
-      });
+      })) as { message: string };
 
       toast.success(result.message);
 

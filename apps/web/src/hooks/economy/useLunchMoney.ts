@@ -7,15 +7,33 @@
  * and transaction history for the LunchMoney page.
  */
 
-import type { Id } from "@convex/_generated/dataModel";
-import type { MarketplaceListing } from "@/types/generated";
-import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
-interface TokenListing {
-  _id: Id<"marketplaceListings">;
-  cardDefinitionId: Id<"cardDefinitions">;
+// Local interfaces to avoid deep type issues
+// Match the Listing interface expected by MyListings component
+interface Listing {
+  _id: string;
+  listingType: "fixed" | "auction";
+  cardDefinitionId: string;
+  cardName?: string;
+  cardRarity?: string;
+  cardImageUrl?: string;
+  quantity: number;
+  price: number;
+  tokenPrice?: number;
+  currencyType?: "gold" | "token";
+  currentBid?: number;
+  bidCount?: number;
+  endsAt?: number;
+  createdAt: number;
+}
+
+// Raw token listing from backend before transformation
+interface RawTokenListing {
+  _id: string;
+  cardDefinitionId: string;
   cardName: string;
   cardType: string;
   cardRarity: string;
@@ -27,14 +45,14 @@ interface TokenListing {
 }
 
 interface PendingPurchase {
-  _id: Id<"tokenPurchases">;
-  listingId?: Id<"marketplaceListings">;
+  _id: string;
+  listingId?: string;
   amount: number;
   status: string;
   createdAt: number;
   expiresAt?: number;
   transactionSignature?: string;
-  listingCardName: string;
+  listingCardName?: string;
 }
 
 interface UseLunchMoneyReturn {
@@ -53,8 +71,8 @@ interface UseLunchMoneyReturn {
   lastTokenUpdate: number | undefined;
 
   // Listings
-  goldListings: MarketplaceListing[];
-  tokenListings: TokenListing[];
+  goldListings: Listing[];
+  tokenListings: Listing[];
   pendingPurchases: PendingPurchase[];
   activeListingsCount: number;
 
@@ -110,36 +128,36 @@ export function useLunchMoney(): UseLunchMoneyReturn {
   const { isAuthenticated } = useAuth();
 
   // Balance queries
-  const balance = useTypedQuery(typedApi.economy.getPlayerBalance, isAuthenticated ? {} : "skip");
-  const tokenData = useTypedQuery(
-    typedApi.economy.tokenBalance.getTokenBalance,
+  const balance = useConvexQuery(apiAny.economy.getPlayerBalance, isAuthenticated ? {} : "skip");
+  const tokenData = useConvexQuery(
+    apiAny.economy.tokenBalance.getTokenBalance,
     isAuthenticated ? {} : "skip"
   );
 
   // Listings queries
-  const goldListings = useTypedQuery(
-    typedApi.economy.marketplace.getUserListings,
+  const goldListingsData = useConvexQuery(
+    apiAny.economy.marketplace.getUserListings,
     isAuthenticated ? {} : "skip"
   );
-  const tokenListingsData = useTypedQuery(
-    typedApi.economy.tokenMarketplace.getUserTokenListings,
+  const tokenListingsData = useConvexQuery(
+    apiAny.economy.tokenMarketplace.getUserTokenListings,
     isAuthenticated ? {} : "skip"
   );
-  const pendingPurchases = useTypedQuery(
-    typedApi.economy.tokenMarketplace.getUserPendingPurchases,
+  const pendingPurchasesData = useConvexQuery(
+    apiAny.economy.tokenMarketplace.getUserPendingPurchases,
     isAuthenticated ? {} : "skip"
   );
 
   // Market overview
-  const marketOverview = useTypedQuery(typedApi.economy.priceHistory.getMarketOverview, {});
+  const marketOverviewData = useConvexQuery(apiAny.economy.priceHistory.getMarketOverview, {});
 
   // Mutations
-  const refreshBalanceMutation = useTypedMutation(
-    typedApi.economy.tokenBalance.requestBalanceRefresh
+  const refreshBalanceMutation = useConvexMutation(
+    apiAny.economy.tokenBalance.requestBalanceRefresh
   );
-  const cancelGoldListingMutation = useTypedMutation(typedApi.economy.marketplace.cancelListing);
-  const cancelTokenListingMutation = useTypedMutation(
-    typedApi.economy.tokenMarketplace.cancelTokenListing
+  const cancelGoldListingMutation = useConvexMutation(apiAny.economy.marketplace.cancelListing);
+  const cancelTokenListingMutation = useConvexMutation(
+    apiAny.economy.tokenMarketplace.cancelTokenListing
   );
 
   // Actions
@@ -170,9 +188,25 @@ export function useLunchMoney(): UseLunchMoneyReturn {
     }
   };
 
-  // Combine listings
-  const allGoldListings = goldListings ?? [];
-  const allTokenListings = tokenListingsData?.listings ?? [];
+  // Combine listings with safe defaults
+  const allGoldListings: Listing[] = goldListingsData ?? [];
+
+  // Transform raw token listings to match Listing interface
+  const rawTokenListings: RawTokenListing[] = tokenListingsData?.listings ?? [];
+  const allTokenListings: Listing[] = rawTokenListings.map((t) => ({
+    _id: t._id,
+    listingType: "fixed" as const,
+    cardDefinitionId: t.cardDefinitionId,
+    cardName: t.cardName,
+    cardRarity: t.cardRarity,
+    cardImageUrl: t.cardImageUrl,
+    quantity: t.quantity,
+    price: t.tokenPrice, // Use tokenPrice as the main price
+    tokenPrice: t.tokenPrice,
+    currencyType: "token" as const,
+    createdAt: t.createdAt,
+  }));
+  const allPendingPurchases: PendingPurchase[] = pendingPurchasesData ?? [];
 
   return {
     // Balances
@@ -192,11 +226,11 @@ export function useLunchMoney(): UseLunchMoneyReturn {
     // Listings
     goldListings: allGoldListings,
     tokenListings: allTokenListings,
-    pendingPurchases: pendingPurchases ?? [],
+    pendingPurchases: allPendingPurchases,
     activeListingsCount: allGoldListings.length + allTokenListings.length,
 
     // Market overview
-    marketOverview: marketOverview ?? null,
+    marketOverview: marketOverviewData ?? null,
 
     // Loading states
     isLoading: balance === undefined,

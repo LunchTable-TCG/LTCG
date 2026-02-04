@@ -263,7 +263,10 @@ export default function ErrorHeatmapPage() {
 
           <div className="mt-4 space-y-3">
             {selectedPageData.errors.map((error, idx) => (
-              <div key={idx} className="p-3 rounded-lg bg-muted/30 border border-border">
+              <div
+                key={`${error.timestamp}-${idx}`}
+                className="p-3 rounded-lg bg-muted/30 border border-border"
+              >
                 <Flex justifyContent="between" alignItems="start">
                   <div className="flex-1">
                     <Flex alignItems="center" className="gap-2 mb-1">

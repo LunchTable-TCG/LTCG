@@ -48,12 +48,12 @@
 
 import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
 import { wrapDatabaseReader, wrapDatabaseWriter } from "convex-helpers/server/rowLevelSecurity";
+import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "./convexAuth";
 import { requireRole } from "./roles";
 import { createRLSRules } from "./rowLevelSecurity";
-import type { Id, Doc } from "../_generated/dataModel";
 
 // =============================================================================
 // TYPE DEFINITIONS

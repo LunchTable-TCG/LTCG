@@ -102,7 +102,10 @@ export const gameOutcomeEvaluator: Evaluator = {
     {
       prompt: "Analyze game outcome after winning",
       messages: [
-        { name: "{{user1}}", content: { text: "Game over! You won with 2500 LP remaining." } },
+        {
+          name: "{{user1}}",
+          content: { text: "Game over! You won with 2500 LP remaining." },
+        },
       ],
       outcome:
         "Game analysis complete. Key insight: Aggressive early summons established board control leading to victory.",
@@ -110,7 +113,10 @@ export const gameOutcomeEvaluator: Evaluator = {
     {
       prompt: "Analyze game outcome after losing",
       messages: [
-        { name: "{{user1}}", content: { text: "Game over! You lost. Opponent had 4000 LP." } },
+        {
+          name: "{{user1}}",
+          content: { text: "Game over! You lost. Opponent had 4000 LP." },
+        },
       ],
       outcome:
         "Game analysis complete. Lesson learned: Attacking into stronger monsters on turns 3-4 led to resource disadvantage.",
@@ -329,17 +335,26 @@ function analyzeDecisions(
 function assessDecisionImpact(
   decision: { action: string; reasoning: string; result?: string },
   gameResult: "win" | "loss" | "draw"
-): { impact: "positive" | "negative" | "neutral" | "pivotal"; impactReason?: string } {
+): {
+  impact: "positive" | "negative" | "neutral" | "pivotal";
+  impactReason?: string;
+} {
   const reasoningLower = decision.reasoning.toLowerCase();
   const resultLower = (decision.result || "").toLowerCase();
   const combined = `${reasoningLower} ${resultLower}`;
 
   // Check for pivotal indicators
   if (combined.includes("lethal") && gameResult === "win") {
-    return { impact: "pivotal", impactReason: "Executed lethal damage for the win" };
+    return {
+      impact: "pivotal",
+      impactReason: "Executed lethal damage for the win",
+    };
   }
   if (combined.includes("missed lethal") && gameResult === "loss") {
-    return { impact: "pivotal", impactReason: "Missed lethal opportunity that could have won" };
+    return {
+      impact: "pivotal",
+      impactReason: "Missed lethal opportunity that could have won",
+    };
   }
 
   // Check for good play indicators
@@ -359,10 +374,16 @@ function assessDecisionImpact(
   // Assess based on action type and result
   if (decision.action === "attack" && resultLower.includes("destroyed")) {
     if (resultLower.includes("opponent")) {
-      return { impact: "positive", impactReason: "Successful attack destroyed opponent monster" };
+      return {
+        impact: "positive",
+        impactReason: "Successful attack destroyed opponent monster",
+      };
     }
     if (resultLower.includes("your") || resultLower.includes("my")) {
-      return { impact: "negative", impactReason: "Attack resulted in losing own monster" };
+      return {
+        impact: "negative",
+        impactReason: "Attack resulted in losing own monster",
+      };
     }
   }
 

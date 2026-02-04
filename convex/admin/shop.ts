@@ -24,10 +24,16 @@ const rarityValidator = v.union(
 );
 
 const archetypeValidator = v.union(
+  // Primary archetypes (from card CSV)
   v.literal("infernal_dragons"),
+  v.literal("abyssal_depths"),
+  v.literal("iron_legion"),
+  v.literal("necro_empire"),
+  // Legacy archetypes (for backwards compatibility)
   v.literal("abyssal_horrors"),
   v.literal("nature_spirits"),
   v.literal("storm_elementals"),
+  // Future/placeholder archetypes
   v.literal("shadow_assassins"),
   v.literal("celestial_guardians"),
   v.literal("undead_legion"),
@@ -35,6 +41,7 @@ const archetypeValidator = v.union(
   v.literal("arcane_mages"),
   v.literal("mechanical_constructs"),
   v.literal("neutral"),
+  // Old archetypes (temporary for migration)
   v.literal("fire"),
   v.literal("water"),
   v.literal("earth"),
@@ -62,18 +69,17 @@ export const listProducts = query({
 
     let products = await (async () => {
       if (args.productType) {
+        const productType = args.productType;
         const active = await ctx.db
           .query("shopProducts")
-          .withIndex("by_type", (q) => q.eq("productType", args.productType!).eq("isActive", true))
+          .withIndex("by_type", (q) => q.eq("productType", productType).eq("isActive", true))
           .collect();
 
         // If we want inactive too, we need a separate query
         if (args.includeInactive) {
           const inactive = await ctx.db
             .query("shopProducts")
-            .withIndex("by_type", (q) =>
-              q.eq("productType", args.productType!).eq("isActive", false)
-            )
+            .withIndex("by_type", (q) => q.eq("productType", productType).eq("isActive", false))
             .collect();
           return [...active, ...inactive];
         }
@@ -412,7 +418,7 @@ export const updateProduct = mutation({
         productDbId: args.productDbId,
         productId: product.productId,
         productName: product.name,
-        updates: Object.keys(updates),
+        updatedFields: Object.keys(updates).join(", "),
       },
       success: true,
     });

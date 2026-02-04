@@ -36,7 +36,12 @@ async function fetchDecisionHistory(
 export function useDecisionHistory(agentId: string, gameId: string | null, limit = 20) {
   return useQuery({
     queryKey: ["ltcg", "decisions", agentId, gameId, limit],
-    queryFn: () => fetchDecisionHistory(agentId, gameId!, limit),
+    queryFn: () => {
+      if (!gameId) {
+        throw new Error("gameId is required to fetch decision history");
+      }
+      return fetchDecisionHistory(agentId, gameId, limit);
+    },
     refetchInterval: 5000, // Poll every 5 seconds
     staleTime: 4000, // Consider data stale after 4 seconds
     enabled: !!agentId && !!gameId,

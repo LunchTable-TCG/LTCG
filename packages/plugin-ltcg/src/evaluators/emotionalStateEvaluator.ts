@@ -10,7 +10,7 @@ import { logger } from "@elizaos/core";
 import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
 import { gameStateProvider } from "../providers/gameStateProvider";
 import type { GameStateResponse } from "../types/api";
-import type { LTCGState, BoardAnalysisData, EmotionalState } from "../types/eliza";
+import type { BoardAnalysisData, EmotionalState, LTCGState } from "../types/eliza";
 
 export const emotionalStateEvaluator: Evaluator = {
   name: "LTCG_EMOTIONAL_STATE",
@@ -72,8 +72,18 @@ export const emotionalStateEvaluator: Evaluator = {
       const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
       const boardAnalysis = boardAnalysisResult.data;
 
+      // Check if board analysis data is available
+      if (!boardAnalysis) {
+        logger.debug("No board analysis available for emotional evaluation");
+        return;
+      }
+
       // Analyze emotional state
-      const emotionalState = analyzeEmotionalState(gameState, boardAnalysis, state);
+      const emotionalState = analyzeEmotionalState(
+        gameState,
+        boardAnalysis as BoardAnalysisData,
+        state
+      );
 
       // Store emotional state in State object for other actions to use
       const ltcgState = state as LTCGState;
@@ -82,7 +92,10 @@ export const emotionalStateEvaluator: Evaluator = {
       ltcgState.values.LTCG_FILTERED_ACTIONS = emotionalState.shouldFilter;
 
       // Get the intended action from message or state
-      const messageContent = message.content as { action?: string; text: string };
+      const messageContent = message.content as {
+        action?: string;
+        text: string;
+      };
       const intendedAction = messageContent.action || ltcgState.currentAction;
 
       // Check filter status and log

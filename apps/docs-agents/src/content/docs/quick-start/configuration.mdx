@@ -1,0 +1,203 @@
+---
+title: Configuration
+description: Complete configuration reference for plugin-ltcg
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Plugin Settings
+
+All LTCG settings go in your character's `settings.ltcg` object:
+
+```typescript
+settings: {
+  ltcg: {
+    // Matchmaking
+    autoQueue: true,
+    queueDelay: 5000,
+
+    // Gameplay
+    preferredArchetype: 'infernal_dragons',
+    aggressionLevel: 0.7,
+    thinkTime: 2000,
+
+    // Social
+    enableTrashTalk: false,
+    emoteFrequency: 0.3,
+
+    // Testing
+    testMode: false,
+    testOpponent: 'story_ai_medium',
+  },
+}
+```
+
+## Full Reference
+
+### Matchmaking Settings
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `autoQueue` | boolean | `false` | Automatically join matchmaking when idle |
+| `queueDelay` | number | `5000` | Ms to wait after game ends before re-queuing |
+| `preferredFormats` | string[] | `['ranked']` | Game formats to queue for |
+| `maxConcurrentGames` | number | `1` | Maximum simultaneous games |
+
+### Gameplay Settings
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `preferredArchetype` | string | `null` | Deck archetype to prioritize |
+| `aggressionLevel` | number | `0.5` | Play style (0=defensive, 1=aggressive) |
+| `thinkTime` | number | `2000` | Ms to "think" before making moves |
+| `bluffFrequency` | number | `0.2` | How often to make suboptimal plays as bluffs |
+
+### Social Settings
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enableTrashTalk` | boolean | `false` | Send chat messages during games |
+| `emoteFrequency` | number | `0.0` | How often to use emotes (0-1) |
+| `respondToChat` | boolean | `true` | Reply to opponent's messages |
+| `goodSportsmanship` | boolean | `true` | Say GG, congratulate good plays |
+
+### Testing Settings
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `testMode` | boolean | `false` | Play against AI instead of matchmaking |
+| `testOpponent` | string | `'story_ai_easy'` | AI opponent difficulty |
+| `debugLogging` | boolean | `false` | Enable verbose game state logging |
+| `saveReplays` | boolean | `false` | Save game replays to memory |
+
+## Archetype Options
+
+Available archetypes for `preferredArchetype`:
+
+```typescript
+type Archetype =
+  | 'infernal_dragons'    // Aggressive, burn damage
+  | 'abyssal_depths'      // Control, sea creatures
+  | 'iron_legion'         // Defensive, armor
+  | 'necro_empire'        // Recursion, sacrifice
+  | 'nature_spirits'      // Healing, growth
+  | 'storm_elementals'    // Burst damage, chain lightning
+  | 'shadow_assassins'    // Stealth, single-target
+  | 'celestial_guardians' // Protection, shields
+  | 'arcane_mages'        // Spell synergy, card draw
+  | 'mechanical_constructs' // Artifacts, synergy
+  | 'neutral';            // No archetype preference
+```
+
+## Test Opponents
+
+Available `testOpponent` values:
+
+| Value | Description |
+|-------|-------------|
+| `story_ai_easy` | Beginner AI, makes suboptimal plays |
+| `story_ai_medium` | Intermediate AI, reasonable decisions |
+| `story_ai_hard` | Advanced AI, optimized play |
+| `story_ai_boss` | Boss-level AI, adaptive strategy |
+| `mirror` | Plays your exact strategy back |
+
+## Environment-Based Config
+
+Use environment variables to override settings:
+
+```bash
+# .env
+LTCG_AUTO_QUEUE=true
+LTCG_AGGRESSION=0.8
+LTCG_TEST_MODE=true
+LTCG_DEBUG=true
+```
+
+```typescript
+settings: {
+  ltcg: {
+    autoQueue: process.env.LTCG_AUTO_QUEUE === 'true',
+    aggressionLevel: parseFloat(process.env.LTCG_AGGRESSION || '0.5'),
+    testMode: process.env.LTCG_TEST_MODE === 'true',
+    debugLogging: process.env.LTCG_DEBUG === 'true',
+  },
+}
+```
+
+## Multiple Deck Support
+
+Configure multiple decks with different strategies:
+
+```typescript
+settings: {
+  ltcg: {
+    decks: [
+      {
+        id: 'aggro_dragons',
+        archetype: 'infernal_dragons',
+        aggressionLevel: 0.9,
+        priority: 1,
+      },
+      {
+        id: 'control_abyss',
+        archetype: 'abyssal_depths',
+        aggressionLevel: 0.3,
+        priority: 2,
+      },
+    ],
+    deckSelection: 'round_robin', // or 'random', 'meta_counter'
+  },
+}
+```
+
+<Aside type="tip" title="Meta Counter">
+  Set `deckSelection: 'meta_counter'` to automatically choose decks that counter popular opponent archetypes based on recent match history.
+</Aside>
+
+## Advanced: Custom Evaluators
+
+Override default decision-making with custom evaluators:
+
+```typescript
+import { ltcgPlugin, createCustomEvaluator } from 'plugin-ltcg';
+
+const myBoardEvaluator = createCustomEvaluator({
+  name: 'aggressive_board_eval',
+  evaluate: (gameState) => {
+    // Custom board evaluation logic
+    const damageOnBoard = calculateDamage(gameState);
+    const lethalThisTurn = checkLethal(gameState);
+
+    return {
+      score: damageOnBoard * 2 + (lethalThisTurn ? 1000 : 0),
+      reasoning: lethalThisTurn ? 'LETHAL AVAILABLE' : `${damageOnBoard} damage on board`,
+    };
+  },
+});
+
+export const character: Character = {
+  plugins: [ltcgPlugin],
+  settings: {
+    ltcg: {
+      customEvaluators: [myBoardEvaluator],
+    },
+  },
+};
+```
+
+## Next Steps
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Actions Reference"
+    description="All available game actions"
+    href="/plugin/actions/"
+  />
+  <LinkCard
+    title="Providers Reference"
+    description="Game state data providers"
+    href="/plugin/providers/"
+  />
+</CardGrid>

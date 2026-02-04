@@ -1,8 +1,8 @@
 import { v } from "convex/values";
 import { mutation } from "../../functions";
+import { spectatorCounter } from "../../infrastructure/shardedCounters";
 import { SPECTATOR } from "../../lib/constants";
 import { ErrorCode, createError } from "../../lib/errorCodes";
-import { spectatorCounter } from "../../infrastructure/shardedCounters";
 
 // ============================================================================
 // SPECTATOR MUTATIONS

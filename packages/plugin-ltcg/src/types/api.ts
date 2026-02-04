@@ -104,6 +104,24 @@ export interface GameStateResponse {
   normalSummonedThisTurn?: boolean;
   hasNormalSummoned?: boolean; // Alias for compatibility
   canChangePosition?: boolean[]; // Array indexed by board position
+  monsterPositionChanges?: string[]; // Positions that can change
+
+  // Legacy flat fields for compatibility (before normalization)
+  hostId?: string;
+  hostLifePoints?: number;
+  hostDeckCount?: number;
+  hostMonsters?: MonsterCard[];
+  hostSpellTraps?: SpellTrapCard[];
+  hostGraveyard?: CardInGraveyard[];
+  hostBanished?: CardInGraveyard[];
+  hostExtraDeckCount?: number;
+  opponentId?: string;
+  opponentMonsters?: MonsterCard[];
+  opponentSpellTraps?: SpellTrapCard[];
+  opponentGraveyard?: CardInGraveyard[];
+  opponentBanished?: CardInGraveyard[];
+  opponentExtraDeckCount?: number;
+  myHand?: CardInHand[];
 
   // Legacy compatibility - always present after normalization
   hostPlayer: PlayerState;
@@ -138,6 +156,37 @@ export interface PlayerState {
  * - defense (not def)
  * - cost (not level)
  */
+/**
+ * Card ability effect structure
+ */
+export interface CardAbilityEffect {
+  type?: string;
+  value?: number | string;
+  target?: string;
+  condition?: string;
+  duration?: string;
+  [key: string]: number | string | boolean | undefined;
+}
+
+/**
+ * Card ability structure - covers all ability types in the game
+ */
+export interface CardAbility {
+  name?: string;
+  type?: string;
+  timing?: string;
+  description?: string;
+  cost?: Record<string, number | string>;
+  effects?: CardAbilityEffect[];
+  [key: string]:
+    | number
+    | string
+    | boolean
+    | Record<string, number | string>
+    | CardAbilityEffect[]
+    | undefined;
+}
+
 export interface CardInHand {
   /** Unique card instance ID */
   _id: string;
@@ -157,12 +206,8 @@ export interface CardInHand {
   archetype?: string;
   /** Card effect description */
   description?: string;
-  /**
-   * Card abilities/effects - flexible structure for various effect types.
-   * Uses any for maximum flexibility when interfacing with card engine.
-   */
-  // biome-ignore lint/suspicious/noExplicitAny: Flexible structure for various card abilities
-  abilities?: Record<string, any>[];
+  /** Card abilities/effects structure */
+  abilities?: CardAbility[];
   /** Position in hand (0-indexed) */
   handIndex?: number;
   /** @deprecated Use _id instead */
@@ -244,6 +289,24 @@ export interface CardInGraveyard {
 // Available Actions
 // ============================================================================
 
+/**
+ * Action parameters - covers all action types in the game
+ */
+export interface ActionParameters {
+  handIndex?: number;
+  boardIndex?: number;
+  position?: "attack" | "defense";
+  tributeIndices?: number[];
+  targetIndex?: number;
+  targetBoardIndex?: number;
+  attackerIndex?: number;
+  cardId?: string;
+  zone?: "monster" | "spellTrap";
+  targets?: Target[];
+  respond?: boolean;
+  [key: string]: number | number[] | string | string[] | Target[] | boolean | undefined;
+}
+
 export interface AvailableAction {
   type:
     | "summon"
@@ -255,12 +318,8 @@ export interface AvailableAction {
     | "end_turn"
     | "chain_response";
   description: string;
-  /**
-   * Action parameters - flexible structure for various action types.
-   * Uses any for maximum flexibility when interfacing with game engine.
-   */
-  // biome-ignore lint/suspicious/noExplicitAny: Flexible parameters for various action types
-  parameters?: Record<string, any>;
+  /** Action parameters structure */
+  parameters?: ActionParameters;
 }
 
 export interface AvailableActionsResponse {
@@ -403,12 +462,8 @@ export interface CardDefinition {
   attribute?: string;
   race?: string;
   description: string;
-  /**
-   * Card abilities - flexible structure for various effect types.
-   * Uses any for maximum flexibility when defining card mechanics.
-   */
-  // biome-ignore lint/suspicious/noExplicitAny: Flexible structure for card mechanics
-  abilities: Record<string, any>[];
+  /** Card abilities structure */
+  abilities: CardAbility[];
 }
 
 export interface StarterDeck {
@@ -428,6 +483,22 @@ export interface CreateDeckRequest {
 // Game Events (History)
 // ============================================================================
 
+/**
+ * Game event metadata - covers all event types
+ */
+export interface GameEventMetadata {
+  cardId?: string;
+  cardName?: string;
+  fromZone?: string;
+  toZone?: string;
+  damage?: number;
+  lifePoints?: number;
+  attackerId?: string;
+  targetId?: string;
+  tributeIds?: string[];
+  [key: string]: number | string | string[] | undefined;
+}
+
 export interface GameEvent {
   eventId: string;
   gameId: string;
@@ -437,12 +508,8 @@ export interface GameEvent {
   playerId: string;
   description: string;
   timestamp: number;
-  /**
-   * Event metadata - flexible structure for various event data.
-   * Uses any for maximum flexibility when storing event details.
-   */
-  // biome-ignore lint/suspicious/noExplicitAny: Flexible metadata for various event types
-  metadata?: Record<string, any>;
+  /** Event metadata structure */
+  metadata?: GameEventMetadata;
 }
 
 // ============================================================================
@@ -450,11 +517,25 @@ export interface GameEvent {
 // ============================================================================
 
 /**
- * Generic API success response wrapper.
- * Uses any as default type parameter for maximum flexibility.
+ * API error details structure
  */
-// biome-ignore lint/suspicious/noExplicitAny: Generic response type with flexible data type
-export interface ApiSuccessResponse<T = any> {
+export interface ApiErrorDetails {
+  gameId?: string;
+  phase?: string;
+  turnPlayer?: string;
+  retryAfter?: number;
+  remaining?: number;
+  limit?: number;
+  resetAt?: number;
+  missingFields?: string[];
+  invalidFields?: string[];
+  [key: string]: number | string | string[] | undefined;
+}
+
+/**
+ * Generic API success response wrapper.
+ */
+export interface ApiSuccessResponse<T = unknown> {
   success: true;
   data: T;
   timestamp: number;
@@ -465,12 +546,8 @@ export interface ApiErrorResponse {
   error: {
     code: string;
     message: string;
-    /**
-     * Error details - flexible structure for various error data.
-     * Uses any for maximum flexibility when returning error context.
-     */
-    // biome-ignore lint/suspicious/noExplicitAny: Flexible error details for various error types
-    details?: Record<string, any>;
+    /** Error details structure */
+    details?: ApiErrorDetails;
   };
   timestamp: number;
 }

@@ -19,9 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
-import { useQuery } from "convex/react";
 import { Check, Image, Loader2, Search, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import type { Asset, AssetCategory } from "../types";
@@ -65,21 +64,19 @@ export function AssetPickerDialog({
   const [category, setCategory] = useState<AssetCategory>("all");
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
 
-  // Query assets from Convex
-  const queryArgs = useMemo(() => {
-    const args: { category?: string; search?: string; limit: number } = {
-      limit: 50,
-    };
-    if (category !== "all") {
-      args.category = category;
-    }
-    if (search.trim()) {
-      args.search = search.trim();
-    }
-    return args;
-  }, [category, search]);
+  // Query assets from Convex - use apiAny to avoid type instantiation issues
+  const queryCategory: Exclude<AssetCategory, "all"> | undefined =
+    category !== "all" ? (category as Exclude<AssetCategory, "all">) : undefined;
+  const querySearch = search.trim() || undefined;
 
-  const assetsResult = useQuery(api.admin.assets.listAssets, queryArgs);
+  // Extract query args to avoid TS2589 deep type instantiation
+  const listAssetsQuery = api.admin.assets.listAssets;
+  const queryArgs = {
+    category: queryCategory,
+    search: querySearch,
+    limit: 50,
+  };
+  const assetsResult = useQuery(listAssetsQuery, queryArgs);
 
   const isLoading = assetsResult === undefined;
   const assets = assetsResult?.assets ?? [];
@@ -104,7 +101,7 @@ export function AssetPickerDialog({
   }, [allowedCategories]);
 
   const handleSelect = useCallback(() => {
-    if (selectedAsset) {
+    if (selectedAsset?.blobUrl) {
       onSelect({
         url: selectedAsset.blobUrl,
         id: selectedAsset._id,
@@ -200,7 +197,7 @@ export function AssetPickerDialog({
                   )}
                 >
                   {/* Image preview */}
-                  {asset.contentType.startsWith("image/") ? (
+                  {asset.contentType.startsWith("image/") && asset.blobUrl ? (
                     <img
                       src={asset.blobUrl}
                       alt={asset.fileName}
@@ -237,7 +234,7 @@ export function AssetPickerDialog({
         {selectedAsset && (
           <div className="border-t pt-4 flex items-center gap-4">
             <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-              {selectedAsset.contentType.startsWith("image/") ? (
+              {selectedAsset.contentType.startsWith("image/") && selectedAsset.blobUrl ? (
                 <img
                   src={selectedAsset.blobUrl}
                   alt={selectedAsset.fileName}
@@ -267,7 +264,7 @@ export function AssetPickerDialog({
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
-          <Button onClick={handleSelect} disabled={!selectedAsset}>
+          <Button onClick={handleSelect} disabled={!selectedAsset?.blobUrl}>
             <Check className="h-4 w-4 mr-2" />
             Select
           </Button>

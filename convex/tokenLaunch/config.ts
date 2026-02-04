@@ -143,7 +143,7 @@ export const upsertConfig = mutation({
       await scheduleAuditLog(ctx, {
         adminId: userId,
         action: "token.config.update",
-        metadata: { configId: existing._id, updates: args },
+        metadata: { configId: existing._id, updates: JSON.stringify(args) },
         success: true,
       });
 

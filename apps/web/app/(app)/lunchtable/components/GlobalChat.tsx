@@ -86,9 +86,7 @@ export function GlobalChat() {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const [userMenu, setUserMenu] = useState<{ username: string; x: number; y: number } | null>(null);
   const [mutedUsers, setMutedUsers] = useState<Set<string>>(new Set());
-  const [challengeTarget, setChallengeTarget] = useState<{ username: string } | null>(
-    null
-  );
+  const [challengeTarget, setChallengeTarget] = useState<{ username: string } | null>(null);
   const [reportTarget, setReportTarget] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const agentMessagesEndRef = useRef<HTMLDivElement>(null);

@@ -232,6 +232,9 @@ export interface JsonCondition {
   hasNoMonstersInAttackPosition?: boolean;
   opponentHasNoMonsters?: boolean;
   controlsNoMonsters?: boolean;
+
+  // Specific card targeting (for lingering effects)
+  targetCardId?: Id<"cardDefinitions">;
 }
 
 /**

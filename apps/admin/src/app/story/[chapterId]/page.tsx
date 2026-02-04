@@ -31,7 +31,8 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Text } from "@tremor/react";
 import {
   ArrowDownIcon,
@@ -83,6 +84,18 @@ interface Chapter {
   };
 }
 
+interface ChapterDataResult {
+  chapter: Chapter;
+}
+
+interface StagesResult {
+  stages: Stage[];
+}
+
+interface ChaptersResult {
+  chapters: Chapter[];
+}
+
 // =============================================================================
 // Constants
 // =============================================================================
@@ -120,15 +133,26 @@ function CreateStageDialog({
   const [firstClearGems, setFirstClearGems] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createStage = useTypedMutation(typedApi.admin.story.createStage);
+  const createStage = useMutation(api.admin.story.createStage);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const args: Record<string, unknown> = {
-        chapterId,
+      const args: {
+        chapterId: Id<"storyChapters">;
+        stageNumber: number;
+        title: string;
+        description: string;
+        opponentName: string;
+        difficulty: Difficulty;
+        firstClearGold: number;
+        repeatGold: number;
+        opponentDeckArchetype?: string;
+        firstClearGems?: number;
+      } = {
+        chapterId: chapterId as Id<"storyChapters">,
         stageNumber: Number.parseInt(stageNumber, 10),
         title,
         description,
@@ -141,7 +165,7 @@ function CreateStageDialog({
       if (opponentDeckArchetype) args.opponentDeckArchetype = opponentDeckArchetype;
       if (firstClearGems) args.firstClearGems = Number.parseInt(firstClearGems, 10);
 
-      const result = await createStage(args);
+      const result = (await createStage(args)) as { message: string };
       toast.success(result.message);
       onOpenChange(false);
       resetForm();
@@ -318,14 +342,16 @@ function DeleteChapterDialog({
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
-  const deleteChapter = useTypedMutation(typedApi.admin.story.deleteChapter);
+  const deleteChapter = useMutation(api.admin.story.deleteChapter);
 
   const handleDelete = async () => {
     if (!chapter) return;
     setIsDeleting(true);
 
     try {
-      const result = await deleteChapter({ chapterId: chapter._id as any });
+      const result = (await deleteChapter({ chapterId: chapter._id as Id<"storyChapters"> })) as {
+        message: string;
+      };
       toast.success(result.message);
       router.push("/story");
     } catch (error) {
@@ -386,22 +412,22 @@ export default function ChapterDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Queries
-  const chapterData = useTypedQuery(typedApi.admin.story.getChapter, {
-    chapterId: chapterId as ChapterId,
-  });
-  const stagesResult = useTypedQuery(typedApi.admin.story.listStages, {
-    chapterId: chapterId as ChapterId,
+  const chapterData = useQuery(api.admin.story.getChapter, {
+    chapterId: chapterId as Id<"storyChapters">,
+  }) as ChapterDataResult | undefined;
+  const stagesResult = useQuery(api.admin.story.listStages, {
+    chapterId: chapterId as Id<"storyChapters">,
     includeUnpublished: true,
-  });
-  const allChapters = useTypedQuery(typedApi.admin.story.listChapters, {
+  }) as StagesResult | undefined;
+  const allChapters = useQuery(api.admin.story.listChapters, {
     includeUnpublished: true,
-  });
+  }) as ChaptersResult | undefined;
 
   // Mutations
-  const updateChapter = useTypedMutation(typedApi.admin.story.updateChapter);
-  const publishChapter = useTypedMutation(typedApi.admin.story.publishChapter);
-  const publishStage = useTypedMutation(typedApi.admin.story.publishStage);
-  const reorderStages = useTypedMutation(typedApi.admin.story.reorderStages);
+  const updateChapter = useMutation(api.admin.story.updateChapter);
+  const publishChapter = useMutation(api.admin.story.publishChapter);
+  const publishStage = useMutation(api.admin.story.publishStage);
+  const reorderStages = useMutation(api.admin.story.reorderStages);
 
   const chapter = chapterData?.chapter as Chapter | undefined;
   const stages = (stagesResult?.stages || []) as Stage[];
@@ -432,8 +458,17 @@ export default function ChapterDetailPage() {
     setIsSaving(true);
 
     try {
-      const args: Record<string, unknown> = {
-        chapterId: chapter._id,
+      const args: {
+        chapterId: Id<"storyChapters">;
+        title?: string;
+        description?: string;
+        imageUrl?: string;
+        clearUnlockCondition?: boolean;
+        unlockConditionType?: UnlockConditionType;
+        requiredChapterId?: Id<"storyChapters">;
+        requiredLevel?: number;
+      } = {
+        chapterId: chapter._id as Id<"storyChapters">,
         title,
         description,
         imageUrl: imageUrl || undefined,
@@ -444,7 +479,7 @@ export default function ChapterDetailPage() {
       } else {
         args.unlockConditionType = unlockType;
         if (unlockType === "chapter_complete" && requiredChapterId) {
-          args.requiredChapterId = requiredChapterId;
+          args.requiredChapterId = requiredChapterId as Id<"storyChapters">;
         }
         if (unlockType === "player_level" && requiredLevel) {
           args.requiredLevel = Number.parseInt(requiredLevel, 10);
@@ -464,10 +499,10 @@ export default function ChapterDetailPage() {
   const handleTogglePublish = async () => {
     if (!chapter) return;
     try {
-      const result = await publishChapter({
-        chapterId: chapter._id as any,
+      const result = (await publishChapter({
+        chapterId: chapter._id as Id<"storyChapters">,
         publish: chapter.status === "draft",
-      });
+      })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update chapter");
@@ -476,10 +511,10 @@ export default function ChapterDetailPage() {
 
   const handleToggleStagePublish = async (stage: Stage) => {
     try {
-      const result = await publishStage({
-        stageId: stage._id as any,
+      const result = (await publishStage({
+        stageId: stage._id as Id<"storyStages">,
         publish: stage.status === "draft",
-      });
+      })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update stage");
@@ -493,7 +528,7 @@ export default function ChapterDetailPage() {
     const prevStage = stages[currentIndex - 1]!;
     try {
       await reorderStages({
-        stageId: stage._id as any,
+        stageId: stage._id as Id<"storyStages">,
         newStageNumber: prevStage.stageNumber,
       });
       toast.success("Stages reordered");
@@ -509,7 +544,7 @@ export default function ChapterDetailPage() {
     const nextStage = stages[currentIndex + 1]!;
     try {
       await reorderStages({
-        stageId: stage._id as any,
+        stageId: stage._id as Id<"storyStages">,
         newStageNumber: nextStage.stageNumber,
       });
       toast.success("Stages reordered");

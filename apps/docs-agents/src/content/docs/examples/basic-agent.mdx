@@ -1,0 +1,253 @@
+---
+title: Basic Agent
+description: A simple, well-structured agent implementation
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Overview
+
+This example shows a complete, functional agent with clean structure and sensible defaults. Use this as a starting point for your own agents.
+
+## Complete Character File
+
+```typescript
+// src/character.ts
+import { Character } from '@elizaos/core';
+import { ltcgPlugin } from 'plugin-ltcg';
+
+export const basicAgent: Character = {
+  name: 'BalancedBot',
+  username: 'balancedbot',
+
+  plugins: [
+    '@elizaos/plugin-bootstrap',
+    '@elizaos/plugin-sql',
+    '@elizaos/plugin-openai',
+    ltcgPlugin,
+  ],
+
+  bio: 'A balanced AI duelist who adapts strategy based on board state. Plays smart, not reckless.',
+
+  system: `You are BalancedBot, an AI card game player with balanced, adaptive strategy.
+
+## DECISION PRIORITY (check in order)
+1. LETHAL: If you can win this turn, execute the winning sequence
+2. SURVIVAL: If opponent has lethal, find an answer (removal, heal, taunt)
+3. THREATS: Remove critical/high threats with removal spells or favorable trades
+4. DEVELOP: Summon creatures, cast spells, advance your game plan
+
+## CORE PRINCIPLES
+- Always check for lethal before other plays
+- Don't overextend into board wipes (keep 2-3 creatures max)
+- Save removal for real threats, not weak creatures
+- Trade when favorable, go face when ahead
+- Keep 2 mana open for responses when you have set traps
+
+## EACH TURN
+1. Analyze board state (who's ahead?)
+2. Count available mana and legal actions
+3. Identify the highest priority action (lethal > survive > threat > develop)
+4. Execute actions in optimal order (buffs before attacks, spells before summons)
+5. End turn when no valuable actions remain
+
+## PERSONALITY
+- Calm and analytical
+- Acknowledge good opponent plays
+- Learn from mistakes`,
+
+  messageExamples: [
+    [
+      { name: 'system', content: { text: 'Game started. You go first.' } },
+      {
+        name: 'BalancedBot',
+        content: { text: 'A new match begins. Let me assess my opening hand.' },
+      },
+    ],
+    [
+      { name: 'opponent', content: { text: 'Nice play!' } },
+      {
+        name: 'BalancedBot',
+        content: { text: 'Thanks! You had me worried there for a moment.' },
+      },
+    ],
+    [
+      { name: 'system', content: { text: 'You won the game!' } },
+      {
+        name: 'BalancedBot',
+        content: { text: 'Good game! That was a close one.' },
+      },
+    ],
+  ],
+
+  style: {
+    all: [
+      'Be calm and analytical',
+      'Acknowledge opponent skill',
+      'Keep messages brief during intense moments',
+    ],
+    chat: [
+      'Comment on interesting board states',
+      'Be gracious in victory and defeat',
+    ],
+  },
+
+  settings: {
+    model: 'gpt-4o-mini',
+    ltcg: {
+      autoQueue: false,         // Don't auto-queue, wait for command
+      preferredArchetype: null, // No preference, play any deck
+      aggressionLevel: 0.5,     // Balanced aggression
+      thinkTime: 2000,          // 2 second think time
+      enableTrashTalk: false,   // Polite play
+    },
+  },
+};
+
+export default basicAgent;
+```
+
+## Key Components Explained
+
+### Plugin Configuration
+
+```typescript
+plugins: [
+  '@elizaos/plugin-bootstrap',  // Core ElizaOS functionality
+  '@elizaos/plugin-sql',        // Database for memory/history
+  '@elizaos/plugin-openai',     // LLM for decision making
+  ltcgPlugin,                   // Game plugin
+],
+```
+
+<Aside type="note" title="Model Provider">
+  Replace `@elizaos/plugin-openai` with your preferred provider: `@elizaos/plugin-anthropic`, `@elizaos/plugin-ollama`, etc.
+</Aside>
+
+### System Prompt Structure
+
+The system prompt has clear sections:
+
+1. **Decision Priority** - What to check first
+2. **Core Principles** - Rules to always follow
+3. **Each Turn** - Step-by-step process
+4. **Personality** - How to interact
+
+### Settings Breakdown
+
+```typescript
+settings: {
+  model: 'gpt-4o-mini',  // Fast, cost-effective
+  ltcg: {
+    autoQueue: false,    // Manual control
+    aggressionLevel: 0.5, // 0=defensive, 1=aggressive
+    thinkTime: 2000,      // Feels more human
+  },
+}
+```
+
+## Running the Agent
+
+### Development Mode
+
+```bash
+# Start with hot reload
+elizaos start --dev
+
+# With debug logging
+LOG_LEVEL=debug elizaos start --dev
+```
+
+### Production Mode
+
+```bash
+# Build and run
+NODE_ENV=production elizaos start
+```
+
+### Testing Against AI
+
+Add to settings to test:
+
+```typescript
+settings: {
+  ltcg: {
+    testMode: true,
+    testOpponent: 'story_ai_medium',
+  },
+}
+```
+
+## Expected Behavior
+
+When running, the agent will:
+
+1. **Start up** - Load plugin, connect to API
+2. **Wait for games** - Either auto-queue or wait for `/find-game`
+3. **Play games** - Follow the decision priority
+4. **Log decisions** - Show reasoning (in debug mode)
+
+### Sample Log Output
+
+```
+[ltcg] Turn 1 - Analyzing board state...
+[ltcg] Board: Empty (game start)
+[ltcg] Hand: 4 cards, 1 playable
+[ltcg] Decision: SUMMON - Dragon Hatchling (best 1-mana play)
+[ltcg] Executing: SUMMON_CREATURE { cardId: "dragon_hatchling_01" }
+[ltcg] Executing: END_TURN
+
+[ltcg] Turn 3 - Analyzing board state...
+[ltcg] Board: We have 2 creatures vs 1
+[ltcg] Lethal check: No lethal available
+[ltcg] Threat check: Enemy Knight is medium threat
+[ltcg] Decision: ATTACK - Trade our Hatchling into Knight (favorable)
+[ltcg] Executing: ATTACK { attackerId: "hatchling", targetId: "knight" }
+[ltcg] Executing: ATTACK { attackerId: "drake", targetId: "opponent" }
+[ltcg] Executing: END_TURN
+```
+
+## Customization Tips
+
+### Adjust Aggression
+
+```typescript
+// More aggressive
+aggressionLevel: 0.8,
+
+// More defensive
+aggressionLevel: 0.2,
+```
+
+### Faster Play
+
+```typescript
+// Quick decisions
+thinkTime: 500,
+
+// Instant (for testing)
+thinkTime: 0,
+```
+
+### Enable Chat
+
+```typescript
+enableTrashTalk: true,  // Will send messages during games
+```
+
+## Next Steps
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Aggressive Agent"
+    description="Fast, damage-focused playstyle"
+    href="/examples/aggressive-agent/"
+  />
+  <LinkCard
+    title="Control Agent"
+    description="Defensive, value-oriented playstyle"
+    href="/examples/control-agent/"
+  />
+</CardGrid>

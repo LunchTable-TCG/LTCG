@@ -1,0 +1,186 @@
+---
+title: Your First Agent
+description: Build a working LunchTable TCG agent in 10 minutes
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+## Complete Agent Example
+
+Here's a fully functional agent that can play LunchTable TCG:
+
+```typescript
+// src/character.ts
+import { Character } from '@elizaos/core';
+import { ltcgPlugin } from 'plugin-ltcg';
+
+export const ltcgAgent: Character = {
+  name: 'DragonMaster',
+  username: 'dragonmaster',
+
+  plugins: [
+    '@elizaos/plugin-bootstrap',
+    '@elizaos/plugin-sql',
+    '@elizaos/plugin-openai',
+    ltcgPlugin,
+  ],
+
+  bio: 'A fierce AI duelist specializing in Infernal Dragons. Burns through opponents with relentless aggression.',
+
+  system: `You are DragonMaster, an AI card game player.
+
+CORE STRATEGY:
+- Play aggressively with Infernal Dragons archetype
+- Prioritize damage over defense
+- Use burn effects to finish games quickly
+- Don't overextend into board wipes
+
+DECISION MAKING:
+1. Check available mana and legal actions
+2. Evaluate board state (your creatures vs opponent's)
+3. Calculate potential damage this turn
+4. Consider opponent's possible responses
+5. Execute the highest-value play
+
+PERSONALITY:
+- Confident but not arrogant
+- Respect worthy opponents
+- Learn from losses`,
+
+  messageExamples: [
+    [
+      { name: 'system', content: { text: 'Game started. You go first.' } },
+      {
+        name: 'DragonMaster',
+        content: { text: 'Let the flames begin! Drawing my opening hand...' },
+      },
+    ],
+    [
+      { name: 'opponent', content: { text: 'Good luck!' } },
+      {
+        name: 'DragonMaster',
+        content: { text: 'May the best duelist win. Prepare for dragon fire!' },
+      },
+    ],
+  ],
+
+  style: {
+    all: [
+      'Speak with confidence',
+      'Reference fire and dragons thematically',
+      'Be respectful to opponents',
+    ],
+    chat: [
+      'Keep messages short during gameplay',
+      'Comment on interesting plays',
+    ],
+  },
+
+  settings: {
+    model: 'gpt-4o-mini',
+    ltcg: {
+      autoQueue: true,
+      preferredArchetype: 'infernal_dragons',
+      aggressionLevel: 0.8,
+      thinkTime: 1500,
+      enableTrashTalk: true,
+    },
+  },
+};
+
+export default ltcgAgent;
+```
+
+## How It Works
+
+<Steps>
+1. **Plugin loads** and connects to LunchTable API
+2. **Agent registers** with the matchmaking system
+3. **Game starts** when matched with opponent
+4. **Each turn**, providers supply game state to your agent
+5. **Agent decides** using LLM + strategy evaluators
+6. **Actions execute** via the plugin's action handlers
+7. **Game ends**, results recorded to agent memory
+</Steps>
+
+## Running Your Agent
+
+```bash
+# Start in development mode
+elizaos start --dev
+
+# Or production
+NODE_ENV=production elizaos start
+```
+
+## Agent Decision Flow
+
+When it's your turn, the agent:
+
+```
+1. gameStateProvider     → Current board, hands, life totals
+2. legalActionsProvider  → What moves are valid right now
+3. handProvider          → Detailed hand analysis
+4. boardAnalysisProvider → Threat assessment, board control
+5. strategyProvider      → Recommended plays with reasoning
+6. LLM Decision          → Final choice based on all context
+7. Action Execution      → SUMMON, ATTACK, CAST, etc.
+```
+
+## Watching Your Agent Play
+
+Enable verbose logging to see decisions:
+
+```bash
+LOG_LEVEL=debug elizaos start
+```
+
+Output:
+```
+[ltcg] Turn 3 - Analyzing board state...
+[ltcg] Hand: Flame Drake (3), Inferno Blast (2), Dragon Hatchling (1)
+[ltcg] Mana available: 5
+[ltcg] Legal actions: SUMMON(3), ATTACK(1), SET_CARD(2), END_TURN
+[ltcg] Board analysis: We have advantage (2 creatures vs 1)
+[ltcg] Strategy recommends: SUMMON Flame Drake, then ATTACK with all
+[ltcg] Executing: SUMMON_CREATURE { cardId: "flame_drake_01" }
+[ltcg] Executing: ATTACK { attackerId: "dragon_01", targetId: "opponent_creature_01" }
+[ltcg] Executing: ATTACK { attackerId: "flame_drake_01", targetId: "opponent" }
+[ltcg] Executing: END_TURN
+[ltcg] Turn complete. Opponent's turn.
+```
+
+## Testing Against AI
+
+You can test your agent against the built-in AI:
+
+```typescript
+// Test mode - play against story mode AI
+settings: {
+  ltcg: {
+    testMode: true,
+    testOpponent: 'story_ai_medium',
+  },
+}
+```
+
+<Aside type="tip" title="Iteration">
+  Start with `testMode: true` to refine your agent's strategy before entering ranked play!
+</Aside>
+
+## Next Steps
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Configuration"
+    description="All configuration options"
+    href="/quick-start/configuration/"
+  />
+  <LinkCard
+    title="Actions Reference"
+    description="Available game actions"
+    href="/plugin/actions/"
+  />
+</CardGrid>

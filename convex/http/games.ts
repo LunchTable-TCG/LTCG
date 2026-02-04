@@ -7,8 +7,8 @@
  * @module http/games
  */
 
-import { api } from "../_generated/api";
-import { internalAny } from "../lib/internalHelpers";
+import { api, internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 import { type HttpActionCtx, authHttpAction } from "./middleware/auth";
 import {
   corsPreflightResponse,
@@ -37,43 +37,45 @@ import type {
 } from "./types";
 
 // =============================================================================
-// Module-scope typed helpers to avoid TS2589 "Type instantiation is excessively deep"
-// =============================================================================
-
-// Use type assertion to break TS2589 cycle without explicit any
-const apiAny = api as typeof api;
-
-// =============================================================================
 // Query Mapping
 // =============================================================================
 
 /**
- * Query map to avoid dynamic code generation (not allowed in Convex runtime)
- * Each key maps to a typed Convex query function reference
+ * Query path type
  */
-const queryMap = {
-  "gameplay.games.queries.getActiveLobby": apiAny.gameplay.games.queries.getActiveLobby,
-  "gameplay.games.queries.getGameStateForPlayer":
-    apiAny.gameplay.games.queries.getGameStateForPlayer,
-  "gameplay.gameEvents.getGameEvents": apiAny.gameplay.gameEvents.getGameEvents,
-  "gameplay.games.queries.getGameStateForPlayerInternal":
-    internalAny.gameplay.games.queries.getGameStateForPlayerInternal,
-} as const;
-
-type QueryPath = keyof typeof queryMap;
+type QueryPath =
+  | "gameplay.games.queries.getActiveLobby"
+  | "gameplay.games.queries.getGameStateForPlayer"
+  | "gameplay.gameEvents.getGameEvents"
+  | "gameplay.games.queries.getGameStateForPlayerInternal";
 
 /**
- * Run a game query using the mapping
+ * Get query reference from path
+ */
+function getQueryFromPath(path: QueryPath) {
+  switch (path) {
+    case "gameplay.games.queries.getActiveLobby":
+      return api.gameplay.games.queries.getActiveLobby;
+    case "gameplay.games.queries.getGameStateForPlayer":
+      return api.gameplay.games.queries.getGameStateForPlayer;
+    case "gameplay.gameEvents.getGameEvents":
+      return api.gameplay.gameEvents.getGameEvents;
+    case "gameplay.games.queries.getGameStateForPlayerInternal":
+      return internal.gameplay.games.queries.getGameStateForPlayerInternal;
+    default:
+      throw new Error(`Query not found: ${path}`);
+  }
+}
+
+/**
+ * Run a game query using the path
  */
 async function runGameQuery<T>(
   ctx: HttpActionCtx,
   path: QueryPath,
   args: Record<string, unknown>
 ): Promise<T> {
-  const query = queryMap[path];
-  if (!query) {
-    throw new Error(`Query not found in mapping: ${path}`);
-  }
+  const query = getQueryFromPath(path);
   // The query map contains either public queries (runQuery) or internal queries (runQuery)
   // Convex httpAction ctx has runQuery for both
   return (await ctx.runQuery(query, args)) as T;
@@ -141,7 +143,7 @@ export const pendingTurns = authHttpAction(async (ctx, request, auth) => {
     return successResponse([
       {
         gameId: gameState.gameId,
-        lobbyId: activeLobby._id,
+        lobbyId: activeLobby._id as string,
         currentPhase: gameState.currentPhase,
         turnNumber: gameState.turnNumber,
         opponent: {
@@ -294,7 +296,7 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
           actions.push({
             action: "NORMAL_SUMMON",
             description: "Summon a monster from hand",
-            availableCards: summonableMonsters.map((c: HandCard) => c._id),
+            availableCards: summonableMonsters.map((c: HandCard) => c._id as string),
           });
         }
       }
@@ -311,7 +313,7 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
         actions.push({
           action: "ACTIVATE_SPELL",
           description: "Activate a spell card",
-          availableCards: spellsInHand.map((c: HandCard) => c._id),
+          availableCards: spellsInHand.map((c: HandCard) => c._id as string),
         });
       }
 
@@ -488,14 +490,14 @@ export const summonMonster = authHttpAction(async (ctx, request, auth) => {
 
     // Execute summon via internal mutation that accepts gameId string
     interface SummonMutationResult {
-      cardSummoned: string;
+      cardSummoned: Id<"cardDefinitions">;
       position: string;
-      tributesUsed?: string[];
+      tributesUsed?: number;
       triggerEffect?: boolean;
     }
 
     const result: SummonMutationResult = await ctx.runMutation(
-      internalAny.gameplay.gameEngine.summons.normalSummonInternal,
+      internal.gameplay.gameEngine.summons.normalSummonInternal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -507,10 +509,10 @@ export const summonMonster = authHttpAction(async (ctx, request, auth) => {
 
     return successResponse({
       success: true,
-      cardSummoned: result.cardSummoned,
+      cardSummoned: result.cardSummoned as string,
       position: result.position,
-      tributesUsed: result.tributesUsed,
-      triggerEffect: result.triggerEffect,
+      // tributesUsed omitted - mutation only returns count, not IDs
+      triggerEffect: !!result.triggerEffect,
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -556,24 +558,25 @@ export const setCard = authHttpAction(async (ctx, request, _auth) => {
     const validation = validateRequiredFields(body, ["gameId", "cardId"]);
     if (validation) return validation;
 
-    interface SetCardResult {
+    interface SetCardMutationResult {
+      success: boolean;
       cardSet: string;
-      tributesUsed?: string[];
+      tributesUsed: number;
     }
 
-    const result: SetCardResult = await ctx.runMutation(
-      apiAny.gameplay.gameEngine.summons.setMonster,
+    const result: SetCardMutationResult = await ctx.runMutation(
+      api.gameplay.gameEngine.summons.setMonster,
       {
-        lobbyId: body.gameId,
-        cardId: body.cardId,
-        tributeCardIds: body.tributeCardIds,
+        lobbyId: body.gameId as Id<"gameLobbies">,
+        cardId: body.cardId as Id<"cardDefinitions">,
+        tributeCardIds: body.tributeCardIds as Id<"cardDefinitions">[] | undefined,
       }
     );
 
     return successResponse({
       success: true,
       cardSet: result.cardSet,
-      tributesUsed: result.tributesUsed,
+      // tributesUsed omitted - mutation only returns count, not IDs
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -628,26 +631,27 @@ export const flipSummonMonster = authHttpAction(async (ctx, request, _auth) => {
       return errorResponse("INVALID_POSITION", 'Position must be "attack" or "defense"', 400);
     }
 
-    interface FlipSummonResult {
+    interface FlipSummonMutationResult {
+      success: boolean;
       cardFlipped: string;
       position: string;
-      flipEffect?: boolean;
+      flipEffect?: string;
     }
 
-    const result: FlipSummonResult = await ctx.runMutation(
-      apiAny.gameplay.gameEngine.summons.flipSummon,
+    const result: FlipSummonMutationResult = await ctx.runMutation(
+      api.gameplay.gameEngine.summons.flipSummon,
       {
-        lobbyId: body.gameId,
-        cardId: body.cardId,
+        lobbyId: body.gameId as Id<"gameLobbies">,
+        cardId: body.cardId as Id<"cardDefinitions">,
         newPosition: body.newPosition,
       }
     );
 
     return successResponse({
       success: true,
-      cardFlipped: result.cardFlipped,
+      cardFlipped: result.cardFlipped as string,
       position: result.position,
-      flipEffect: result.flipEffect,
+      flipEffect: result.flipEffect !== undefined,
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -700,10 +704,10 @@ export const changeMonsterPosition = authHttpAction(async (ctx, request, _auth) 
     }
 
     const result: ChangePositionResult = await ctx.runMutation(
-      apiAny.gameplay.gameEngine.positions.changePosition,
+      api.gameplay.gameEngine.positions.changePosition,
       {
-        lobbyId: body.gameId,
-        cardId: body.cardId,
+        lobbyId: body.gameId as Id<"gameLobbies">,
+        cardId: body.cardId as Id<"cardDefinitions">,
       }
     );
 
@@ -772,10 +776,10 @@ export const setSpellTrapCard = authHttpAction(async (ctx, request, _auth) => {
     }
 
     const result: SetSpellTrapResult = await ctx.runMutation(
-      apiAny.gameplay.gameEngine.spellsTraps.setSpellTrap,
+      api.gameplay.gameEngine.spellsTraps.setSpellTrap,
       {
-        lobbyId: body.gameId,
-        cardId: body.cardId,
+        lobbyId: body.gameId as Id<"gameLobbies">,
+        cardId: body.cardId as Id<"cardDefinitions">,
       }
     );
 
@@ -833,11 +837,11 @@ export const activateSpellCard = authHttpAction(async (ctx, request, _auth) => {
     }
 
     const result: ActivateSpellResult = await ctx.runMutation(
-      apiAny.gameplay.gameEngine.spellsTraps.activateSpell,
+      api.gameplay.gameEngine.spellsTraps.activateSpell,
       {
-        lobbyId: body.gameId,
-        cardId: body.cardId,
-        targets: body.targets,
+        lobbyId: body.gameId as Id<"gameLobbies">,
+        cardId: body.cardId as Id<"cardDefinitions">,
+        targets: body.targets as Id<"cardDefinitions">[] | undefined,
       }
     );
 
@@ -910,11 +914,11 @@ export const activateTrapCard = authHttpAction(async (ctx, request, _auth) => {
     }
 
     const result: ActivateTrapResult = await ctx.runMutation(
-      apiAny.gameplay.gameEngine.spellsTraps.activateTrap,
+      api.gameplay.gameEngine.spellsTraps.activateTrap,
       {
-        lobbyId: body.gameId,
-        cardId: body.cardId,
-        targets: body.targets,
+        lobbyId: body.gameId as Id<"gameLobbies">,
+        cardId: body.cardId as Id<"cardDefinitions">,
+        targets: body.targets as Id<"cardDefinitions">[] | undefined,
       }
     );
 
@@ -985,9 +989,9 @@ export const chainResponse = authHttpAction(async (ctx, request, _auth) => {
       }
 
       const result: PassPriorityResult = await ctx.runMutation(
-        apiAny.gameplay.chainResolver.passPriority,
+        api.gameplay.chainResolver.passPriority,
         {
-          lobbyId: body.gameId,
+          lobbyId: body.gameId as Id<"gameLobbies">,
         }
       );
 
@@ -1063,7 +1067,7 @@ export const attackMonster = authHttpAction(async (ctx, request, auth) => {
     }
 
     const result: AttackResult = await ctx.runMutation(
-      internalAny.gameplay.combatSystem.declareAttackInternal,
+      internal.gameplay.combatSystem.declareAttackInternal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -1154,7 +1158,7 @@ export const enterBattlePhase = authHttpAction(async (ctx, request, auth) => {
     }
 
     // Update phase to battle
-    await ctx.runMutation(internalAny.gameplay.gameEngine.phases.advanceToBattlePhaseInternal, {
+    await ctx.runMutation(internal.gameplay.gameEngine.phases.advanceToBattlePhaseInternal, {
       gameId: body.gameId,
       userId: auth.userId,
     });
@@ -1215,7 +1219,7 @@ export const enterMain2 = authHttpAction(async (ctx, request, auth) => {
     }
 
     // Update phase to main2
-    await ctx.runMutation(internalAny.gameplay.gameEngine.phases.advanceToMainPhase2Internal, {
+    await ctx.runMutation(internal.gameplay.gameEngine.phases.advanceToMainPhase2Internal, {
       gameId: body.gameId,
       userId: auth.userId,
     });
@@ -1262,7 +1266,7 @@ export const endPlayerTurn = authHttpAction(async (ctx, request, auth) => {
     }
 
     const result: EndTurnResult = await ctx.runMutation(
-      internalAny.gameplay.gameEngine.turns.endTurnInternal,
+      internal.gameplay.gameEngine.turns.endTurnInternal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -1322,8 +1326,8 @@ export const surrenderGame = authHttpAction(async (ctx, request, _auth) => {
     if (validation) return validation;
 
     // Execute surrender via game lifecycle
-    await ctx.runMutation(apiAny.gameplay.games.lifecycle.surrenderGame, {
-      lobbyId: body.gameId,
+    await ctx.runMutation(api.gameplay.games.lifecycle.surrenderGame, {
+      lobbyId: body.gameId as Id<"gameLobbies">,
     });
 
     return successResponse({

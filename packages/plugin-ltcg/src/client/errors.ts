@@ -171,6 +171,153 @@ export class GameError extends LTCGApiError {
   }
 }
 
+// =============================================================================
+// x402 Payment Errors
+// =============================================================================
+
+/**
+ * Payment required error (402)
+ * Thrown when a resource requires x402 payment
+ */
+export class PaymentRequiredError extends LTCGApiError {
+  public readonly paymentRequirements: X402PaymentRequirements;
+
+  constructor(
+    requirements: X402PaymentRequirements,
+    message = "Payment required",
+    details?: ErrorDetails
+  ) {
+    super(message, "PAYMENT_REQUIRED", 402, details);
+    this.name = "PaymentRequiredError";
+    this.paymentRequirements = requirements;
+  }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      paymentRequirements: this.paymentRequirements,
+    };
+  }
+}
+
+/**
+ * Insufficient balance error
+ * Thrown when agent doesn't have enough tokens for payment
+ */
+export class InsufficientBalanceError extends LTCGApiError {
+  public readonly currentBalance: bigint;
+  public readonly requiredAmount: bigint;
+
+  constructor(currentBalance: bigint, requiredAmount: bigint, details?: ErrorDetails) {
+    super(
+      `Insufficient balance: have ${currentBalance.toString()}, need ${requiredAmount.toString()}`,
+      "INSUFFICIENT_BALANCE",
+      400,
+      details
+    );
+    this.name = "InsufficientBalanceError";
+    this.currentBalance = currentBalance;
+    this.requiredAmount = requiredAmount;
+  }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      currentBalance: this.currentBalance.toString(),
+      requiredAmount: this.requiredAmount.toString(),
+    };
+  }
+}
+
+/**
+ * Payment limit exceeded error
+ * Thrown when payment exceeds configured safety limits
+ */
+export class PaymentLimitExceededError extends LTCGApiError {
+  public readonly amount: bigint;
+  public readonly limit: bigint;
+
+  constructor(amount: bigint, limit: bigint, details?: ErrorDetails) {
+    super(
+      `Payment amount ${amount.toString()} exceeds limit ${limit.toString()}`,
+      "PAYMENT_LIMIT_EXCEEDED",
+      400,
+      details
+    );
+    this.name = "PaymentLimitExceededError";
+    this.amount = amount;
+    this.limit = limit;
+  }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      amount: this.amount.toString(),
+      limit: this.limit.toString(),
+    };
+  }
+}
+
+/**
+ * Wallet delegation error
+ * Thrown when agent hasn't delegated signing permissions
+ */
+export class WalletDelegationError extends LTCGApiError {
+  constructor(message = "Agent has not delegated signing permissions", details?: ErrorDetails) {
+    super(message, "WALLET_DELEGATION_REQUIRED", 403, details);
+    this.name = "WalletDelegationError";
+  }
+}
+
+/**
+ * Unsupported payment method error
+ * Thrown when server requires payment method not supported by client
+ */
+export class UnsupportedPaymentError extends LTCGApiError {
+  public readonly supportedSchemes: string[];
+
+  constructor(
+    message = "No supported payment method available",
+    supportedSchemes: string[] = [],
+    details?: ErrorDetails
+  ) {
+    super(message, "UNSUPPORTED_PAYMENT", 400, details);
+    this.name = "UnsupportedPaymentError";
+    this.supportedSchemes = supportedSchemes;
+  }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      supportedSchemes: this.supportedSchemes,
+    };
+  }
+}
+
+/**
+ * x402 Payment Requirements from server
+ */
+export interface X402PaymentRequirements {
+  x402Version: number;
+  accepts: Array<{
+    scheme: string;
+    network: string;
+    amount: string;
+    asset: string;
+    payTo: string;
+    maxTimeoutSeconds: number;
+    extra?: {
+      name?: string;
+      description?: string;
+    };
+  }>;
+  resource?: {
+    url: string;
+    description?: string;
+  };
+  error?: string;
+}
+
 /**
  * Parse error response from API and throw appropriate error
  */

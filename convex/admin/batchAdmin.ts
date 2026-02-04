@@ -596,7 +596,7 @@ export const grantCardsToPlayer = mutation({
         reason,
         cardsGranted: successCount,
         cardsFailed: failureCount,
-        cardNames,
+        cardNames: cardNames.filter(Boolean).join(", "),
         playerUsername: player.username,
         notificationSent: sendNotification,
       },
@@ -718,7 +718,11 @@ export const removeCardsFromPlayer = mutation({
         reason,
         cardsRemoved: successCount,
         cardsFailed: failureCount,
-        cardNames: results.filter((r) => r.success).map((r) => r.cardName),
+        cardNames: results
+          .filter((r) => r.success)
+          .map((r) => r.cardName)
+          .filter(Boolean)
+          .join(", "),
         playerUsername: player.username,
       },
       success: failureCount === 0,
@@ -842,7 +846,10 @@ export const batchGrantCards = mutation({
           metadata: {
             reason,
             cardsGranted: cardIds.length,
-            cardNames: cardIds.map((id) => cardDefinitions.get(id)?.name),
+            cardNames: cardIds
+              .map((id) => cardDefinitions.get(id)?.name)
+              .filter(Boolean)
+              .join(", "),
             playerUsername: player.username,
             notificationSent: sendNotification,
           },

@@ -10,7 +10,7 @@
 
 import type { IAgentRuntime, Memory, Provider, ProviderResult, State } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
-import type { GameStateResponse } from "../types/api";
+import type { BoardCard, GameStateResponse } from "../types/api";
 
 export const strategyProvider: Provider = {
   name: "LTCG_STRATEGY",
@@ -19,14 +19,14 @@ export const strategyProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get game ID from state first, then message content
-      // biome-ignore lint/suspicious/noExplicitAny: Flexible message content access
-      const gameId = state.values?.LTCG_CURRENT_GAME_ID || (message.content as any)?.gameId;
+      const content = message.content as { text: string; gameId?: string };
+      const gameId = state.values?.LTCG_CURRENT_GAME_ID || content.gameId;
 
       if (!gameId) {
         return {
           text: "No active game. Use FIND_GAME or JOIN_LOBBY to start playing.",
           values: { error: "NO_GAME_ID" },
-          data: {},
+          data: undefined,
         };
       }
 
@@ -38,7 +38,7 @@ export const strategyProvider: Provider = {
         return {
           text: "LTCG API credentials not configured. Please set LTCG_API_KEY and LTCG_API_URL.",
           values: { error: "MISSING_CONFIG" },
-          data: {},
+          data: undefined,
         };
       }
 
@@ -48,8 +48,11 @@ export const strategyProvider: Provider = {
         baseUrl: apiUrl as string,
       });
 
+      // Assert gameId as string for type safety
+      const gameIdString = String(gameId);
+
       // Fetch game state
-      const gameState: GameStateResponse = await client.getGameState(gameId);
+      const gameState: GameStateResponse = await client.getGameState(gameIdString);
 
       // Analyze strategy
       const strategy = analyzeStrategy(gameState);
@@ -116,12 +119,13 @@ function analyzeStrategy(gameState: GameStateResponse): StrategyAnalysis {
   const myMonsters = gameState.myBoard || [];
   const opponentMonsters = gameState.opponentBoard || [];
   // Note: Spell/trap zones not returned separately in current API
-  // biome-ignore lint/suspicious/noExplicitAny: Backrow structure varies by game state
-  const opponentBackrow: any[] = [];
+  interface BackrowCard {
+    [key: string]: number | string | undefined;
+  }
+  const opponentBackrow: BackrowCard[] = [];
 
   // Helper to get attack value from BoardCard
-  // biome-ignore lint/suspicious/noExplicitAny: BoardCard structure varies by game state
-  const getAtk = (card: any) => card.currentAttack ?? card.attack ?? 0;
+  const getAtk = (card: BoardCard) => card.currentAttack ?? card.attack ?? 0;
 
   // Evaluate game state
   const lpDiff = myLP - opponentLP;
@@ -225,16 +229,14 @@ function analyzeStrategy(gameState: GameStateResponse): StrategyAnalysis {
  * Note: BoardCard uses hasAttacked, position, isFaceDown instead of canAttack
  */
 function calculateCanWinThisTurn(
-  // biome-ignore lint/suspicious/noExplicitAny: BoardCard structure varies during game
-  myMonsters: any[],
+  myMonsters: BoardCard[],
   opponentLP: number,
   opponentMonsterCount: number
 ): boolean {
   if (opponentMonsterCount > 0) return false;
 
   // Helper to get attack value
-  // biome-ignore lint/suspicious/noExplicitAny: BoardCard structure varies during game
-  const getAtk = (card: any) => card.currentAttack ?? card.attack ?? 0;
+  const getAtk = (card: BoardCard) => card.currentAttack ?? card.attack ?? 0;
 
   // Can attack if: not already attacked, in attack position (1), not face-down
   const totalDirectDamage = myMonsters.reduce((sum, m) => {

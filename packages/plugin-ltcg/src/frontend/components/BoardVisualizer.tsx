@@ -13,7 +13,11 @@ function CardZone({
   count,
   label,
   variant = "default",
-}: { count: number; label: string; variant?: "agent" | "opponent" | "default" }) {
+}: {
+  count: number;
+  label: string;
+  variant?: "agent" | "opponent" | "default";
+}) {
   const variantStyles = {
     agent: "bg-blue-500/10 border-blue-500/30 text-blue-400",
     opponent: "bg-red-500/10 border-red-500/30 text-red-400",

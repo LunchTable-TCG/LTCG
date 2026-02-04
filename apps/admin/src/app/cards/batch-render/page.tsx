@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 
 // Import card data directly from the data package
 import {
@@ -299,7 +299,7 @@ export default function BatchRenderPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="default">Default Template</SelectItem>
-                {templates?.map((t: any) => (
+                {templates?.map((t: { _id: string; name: string }) => (
                   <SelectItem key={t._id} value={t._id}>
                     {t.name}
                   </SelectItem>

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -23,6 +23,29 @@ import { useEffect, useState } from "react";
 // =============================================================================
 
 type ScheduleStatus = "not_scheduled" | "scheduled" | "countdown" | "go" | "launched" | "aborted";
+
+interface ChecklistSummary {
+  overall: {
+    completed: number;
+    total: number;
+    requiredCompleted: number;
+    required: number;
+    allRequiredComplete: boolean;
+    percentComplete: number;
+  };
+  byCategory: Record<
+    string,
+    { completed: number; total: number; requiredCompleted: number; required: number }
+  >;
+}
+
+interface ApprovalSummary {
+  approvedCount: number;
+  requiredApprovals: number;
+  totalAdmins: number;
+  hasEnoughApprovals: boolean;
+  hasCurrentUserApproved?: boolean;
+}
 
 // =============================================================================
 // Helper Functions
@@ -149,8 +172,12 @@ export default function TokenLaunchPage() {
   // Fetch launch status data
   const launchStatus = useConvexQuery(api.tokenLaunch.schedule.getStatus);
   const schedule = useConvexQuery(api.tokenLaunch.schedule.getSchedule);
-  const checklistSummary = useConvexQuery(api.tokenLaunch.checklist.getSummary);
-  const approvalSummary = useConvexQuery(api.tokenLaunch.approvals.getSummary);
+  const checklistSummary = useConvexQuery(api.tokenLaunch.checklist.getSummary) as
+    | ChecklistSummary
+    | undefined;
+  const approvalSummary = useConvexQuery(api.tokenLaunch.approvals.getSummary) as
+    | ApprovalSummary
+    | undefined;
 
   // Mutations
   const markGo = useConvexMutation(api.tokenLaunch.schedule.markGo);
@@ -324,7 +351,15 @@ export default function TokenLaunchPage() {
                 {/* By Category */}
                 {checklistSummary?.byCategory &&
                   Object.entries(checklistSummary.byCategory).map(
-                    ([category, data]: [string, any]) => (
+                    ([category, data]: [
+                      string,
+                      {
+                        completed: number;
+                        total: number;
+                        requiredCompleted: number;
+                        required: number;
+                      },
+                    ]) => (
                       <div
                         key={category}
                         className="flex items-center justify-between rounded-lg border p-3"

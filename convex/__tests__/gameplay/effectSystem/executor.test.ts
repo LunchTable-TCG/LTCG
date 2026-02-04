@@ -5,18 +5,12 @@
  * Covers happy paths, error cases, and edge conditions.
  */
 
-import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
 import schema from "@convex/schema";
 import { modules } from "@convex/test.setup";
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-
-// Type helper to avoid TS2589 deep instantiation errors with Convex API
-// @ts-ignore - Suppress TS2589 for api cast
-// biome-ignore lint/suspicious/noExplicitAny: Required for TS2589 workaround
-const _apiAny = api as any;
 
 describe("executeEffect - Main Dispatcher", () => {
   it("should execute draw effect", async () => {

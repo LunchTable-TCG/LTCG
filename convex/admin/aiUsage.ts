@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 import { requireAuthQuery } from "../lib/convexAuth";
 import { requireRole } from "../lib/roles";
 
@@ -70,12 +70,15 @@ export const recordUsage = internalMutation({
       const topModels = [...existing.topModels];
       const modelIndex = topModels.findIndex((m) => m.modelId === args.modelId);
       if (modelIndex >= 0) {
-        const existing = topModels[modelIndex]!;
+        const existingModel = topModels[modelIndex];
+        if (!existingModel) {
+          throw new Error("Model index out of bounds");
+        }
         topModels[modelIndex] = {
           modelId: args.modelId,
-          requests: existing.requests + 1,
-          tokens: existing.tokens + args.inputTokens + args.outputTokens,
-          cost: existing.cost + args.estimatedCost,
+          requests: existingModel.requests + 1,
+          tokens: existingModel.tokens + args.inputTokens + args.outputTokens,
+          cost: existingModel.cost + args.estimatedCost,
         };
       } else if (topModels.length < 10) {
         topModels.push({
@@ -149,7 +152,11 @@ export const getUsageSummary = query({
     await requireRole(ctx, userId, "moderator");
 
     const cutoffTime = Date.now() - days * 24 * 60 * 60 * 1000;
-    const cutoffDate = new Date(cutoffTime).toISOString().split("T")[0]!;
+    const dateParts = new Date(cutoffTime).toISOString().split("T");
+    const cutoffDate = dateParts[0];
+    if (!cutoffDate) {
+      throw new Error("Failed to parse cutoff date");
+    }
 
     // Get daily stats for the period
     const dailyStats = await ctx.db
@@ -279,9 +286,11 @@ export const getTopModels = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0]!;
+    const dateParts = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split("T");
+    const cutoffDate = dateParts[0];
+    if (!cutoffDate) {
+      throw new Error("Failed to parse cutoff date");
+    }
 
     const dailyStats = await ctx.db
       .query("aiUsageDailyStats")

@@ -970,7 +970,8 @@ describe("Invariant 6: Consistent Totals (Wins + Losses = Match History)", () =>
     expect(playerA?.totalLosses).toBe(1);
 
     // INVARIANT: Total games = wins + losses
-    const totalGames = playerA?.totalWins! + playerA?.totalLosses!;
+    expect(playerA).toBeDefined();
+    const totalGames = (playerA?.totalWins ?? 0) + (playerA?.totalLosses ?? 0);
     const matchHistoryTotal = playerAWins.length + playerALosses.length;
     expect(totalGames).toBe(matchHistoryTotal);
     expect(totalGames).toBe(3);

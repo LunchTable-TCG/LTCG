@@ -115,9 +115,11 @@ export default function CardAnalyticsPage() {
     ? topByPlayRate.reduce((sum, c) => sum + (c.playRate ?? 0), 0) / topByPlayRate.length
     : 0;
 
-  // Extract unique archetypes
+  // Extract unique archetypes (filter out undefined)
   const uniqueArchetypes = Array.from(
-    new Set(topByPlayRate?.filter((c) => c.archetype).map((c) => c.archetype) ?? [])
+    new Set(
+      topByPlayRate?.map((c) => c.archetype).filter((a): a is string => a !== undefined) ?? []
+    )
   );
 
   // Transform archetype stats for display
@@ -265,8 +267,8 @@ export default function CardAnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {topByWinRate?.map((card, idx) => (
-                  <tr key={idx} className="border-b border-muted/50 hover:bg-muted/30">
+                {topByWinRate?.map((card) => (
+                  <tr key={card.cardId} className="border-b border-muted/50 hover:bg-muted/30">
                     <td className="py-2 px-3 font-medium">{card.cardName}</td>
                     <td className="py-2 px-3">
                       <span
@@ -289,7 +291,7 @@ export default function CardAnalyticsPage() {
                       </span>
                     </td>
                     <td className="py-2 px-3 text-right">
-                      {card.wins}/{card.gamesPlayed}
+                      {Math.round((card.winRate / 100) * card.gamesPlayed)}/{card.gamesPlayed}
                     </td>
                     <td className="py-2 px-3 text-right">{card.archetype}</td>
                     <td className="py-2 px-3 text-right text-muted-foreground">
@@ -320,7 +322,7 @@ export default function CardAnalyticsPage() {
             )}
           </Flex>
           <div className="mt-4 grid gap-4 md:grid-cols-5">
-            {uniqueArchetypes.slice(0, 5).map((archetype: string) => {
+            {uniqueArchetypes.slice(0, 5).map((archetype) => {
               const cardsInArchetype =
                 topByPlayRate?.filter((c) => c.archetype === archetype) ?? [];
               const count = cardsInArchetype.length;
@@ -381,8 +383,8 @@ export default function CardAnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {archetypeStats?.map((card, idx) => (
-                  <tr key={idx} className="border-b border-muted/50 hover:bg-muted/30">
+                {archetypeStats?.map((card) => (
+                  <tr key={card.cardId} className="border-b border-muted/50 hover:bg-muted/30">
                     <td className="py-2 px-3 font-medium">{card.cardName}</td>
                     <td className="py-2 px-3">
                       <span
@@ -405,7 +407,7 @@ export default function CardAnalyticsPage() {
                       </span>
                     </td>
                     <td className="py-2 px-3 text-right">
-                      {card.wins}/{card.gamesPlayed}
+                      {Math.round((card.winRate / 100) * card.gamesPlayed)}/{card.gamesPlayed}
                     </td>
                     <td className="py-2 px-3 text-right text-muted-foreground">
                       {card.gamesPlayed}

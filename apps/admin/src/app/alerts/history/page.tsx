@@ -26,12 +26,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import type { Doc } from "@convex/_generated/dataModel";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+/** Enriched alert with rule information from the query */
+interface EnrichedAlert extends Doc<"alertHistory"> {
+  ruleName: string;
+  ruleType?: string;
+}
 
 // =============================================================================
 // Helper Functions
@@ -78,26 +88,38 @@ export default function AlertHistoryPage() {
   const [page, setPage] = useState(0);
   const limit = 20;
 
-  // Fetch alerts and rules
-  const { alerts, total } = useConvexQuery(api.alerts.history.getRecent, {
-    severity: severityFilter !== "all" ? severityFilter : undefined,
-    ruleId: ruleFilter !== "all" ? ruleFilter : undefined,
-    acknowledged: acknowledgedFilter === "all" ? undefined : acknowledgedFilter === "acknowledged",
-    limit,
-    offset: page * limit,
-  }) ?? { alerts: [], total: 0 };
+  // Fetch alerts (backend returns enriched array with ruleName)
+  const allAlerts = useQuery(api.alerts.history.getRecent, {
+    limit: 200, // Fetch more for client-side filtering
+  }) as EnrichedAlert[] | undefined;
 
-  const rules = useConvexQuery(api.alerts.rules.getAll);
-  const stats = useConvexQuery(api.alerts.history.getStats);
+  const rules = useQuery(api.alerts.rules.getAll, {});
+  const stats = useQuery(api.alerts.history.getStats, {});
 
   // Mutations
-  const acknowledge = useConvexMutation(api.alerts.history.acknowledge);
-  const acknowledgeAll = useConvexMutation(api.alerts.history.acknowledgeAll);
+  const acknowledge = useMutation(api.alerts.history.acknowledge);
+  const acknowledgeAll = useMutation(api.alerts.history.acknowledgeAll);
 
-  const isLoading = alerts === undefined;
+  // Client-side filtering (backend doesn't support these filters yet)
+  const filteredAlerts = useMemo(() => {
+    if (!allAlerts) return [];
+    return allAlerts.filter((alert) => {
+      if (severityFilter !== "all" && alert.severity !== severityFilter) return false;
+      if (ruleFilter !== "all" && alert.ruleId !== ruleFilter) return false;
+      if (acknowledgedFilter === "acknowledged" && !alert.acknowledgedBy) return false;
+      if (acknowledgedFilter === "unacknowledged" && alert.acknowledgedBy) return false;
+      return true;
+    });
+  }, [allAlerts, severityFilter, ruleFilter, acknowledgedFilter]);
+
+  // Pagination on filtered results
+  const total = filteredAlerts.length;
+  const alerts = filteredAlerts.slice(page * limit, (page + 1) * limit);
+
+  const isLoading = allAlerts === undefined;
   const totalPages = Math.ceil(total / limit);
 
-  async function handleAcknowledge(alertId: string) {
+  async function handleAcknowledge(alertId: Id<"alertHistory">) {
     try {
       await acknowledge({ alertId });
       toast.success("Alert acknowledged");
@@ -109,11 +131,8 @@ export default function AlertHistoryPage() {
   async function handleAcknowledgeAll() {
     if (!confirm("Are you sure you want to acknowledge all unacknowledged alerts?")) return;
     try {
-      const result = await acknowledgeAll({
-        severity: severityFilter !== "all" ? severityFilter : undefined,
-        ruleId: ruleFilter !== "all" ? ruleFilter : undefined,
-      });
-      toast.success(result.message);
+      const result = (await acknowledgeAll({})) as { acknowledged: number };
+      toast.success(`Acknowledged ${result.acknowledged} alerts`);
     } catch (error) {
       toast.error(`Failed to acknowledge alerts: ${error}`);
     }
@@ -154,7 +173,7 @@ export default function AlertHistoryPage() {
             <CardDescription>Last 24 hours</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.total ?? 0}</div>
+            <div className="text-2xl font-bold">{stats?.totalAlerts ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -276,8 +295,11 @@ export default function AlertHistoryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {alerts.map((alert: Doc<"alertHistory">) => (
-                    <TableRow key={alert._id} className={!alert.acknowledgedBy ? "bg-muted/30" : ""}>
+                  {alerts.map((alert) => (
+                    <TableRow
+                      key={alert._id}
+                      className={!alert.acknowledgedBy ? "bg-muted/30" : ""}
+                    >
                       <TableCell>
                         <span className="text-lg">{getSeverityIcon(alert.severity)}</span>
                       </TableCell>
@@ -296,7 +318,7 @@ export default function AlertHistoryPage() {
                         <span className="text-sm text-muted-foreground">{alert.ruleName}</span>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {formatDateTime(alert.triggeredAt)}
+                        {formatDateTime(alert.createdAt)}
                       </TableCell>
                       <TableCell>
                         {alert.acknowledgedBy ? (

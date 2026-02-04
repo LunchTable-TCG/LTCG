@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { SortOption } from "@/types";
+import { RARITY_STYLES } from "@ltcg/core/ui";
 import {
   ChevronDown,
   Crown,
@@ -22,12 +23,13 @@ import {
 import type { ViewMode } from "../types";
 import { BinderCard, type CardData, type Element, type Rarity } from "./BinderCard";
 
+// Use core rarity styles with adjusted opacities for this component
 const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: string }> = {
-  legendary: { bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/40" },
-  epic: { bg: "bg-purple-500/20", text: "text-purple-400", border: "border-purple-500/40" },
-  rare: { bg: "bg-blue-500/20", text: "text-blue-400", border: "border-blue-500/40" },
-  uncommon: { bg: "bg-green-500/20", text: "text-green-400", border: "border-green-500/40" },
-  common: { bg: "bg-gray-500/20", text: "text-gray-400", border: "border-gray-500/40" },
+  legendary: { ...RARITY_STYLES.legendary, bg: "bg-amber-500/20", border: "border-amber-500/40" },
+  epic: { ...RARITY_STYLES.epic, bg: "bg-purple-500/20", border: "border-purple-500/40" },
+  rare: { ...RARITY_STYLES.rare, bg: "bg-blue-500/20", border: "border-blue-500/40" },
+  uncommon: { ...RARITY_STYLES.uncommon, bg: "bg-green-500/20", border: "border-green-500/40" },
+  common: { ...RARITY_STYLES.common, bg: "bg-gray-500/20", border: "border-gray-500/40" },
 };
 
 const ELEMENT_CONFIG: Record<Element, { icon: typeof Flame; color: string }> = {

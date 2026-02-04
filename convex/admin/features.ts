@@ -38,9 +38,10 @@ export const listFeatureFlags = query({
 
     const flags = await (async () => {
       if (args.category) {
+        const category = args.category;
         return await ctx.db
           .query("featureFlags")
-          .withIndex("by_category", (q) => q.eq("category", args.category!))
+          .withIndex("by_category", (q) => q.eq("category", category))
           .collect();
       }
       return await ctx.db.query("featureFlags").collect();
@@ -301,7 +302,9 @@ export const updateFeatureFlag = mutation({
       metadata: {
         featureFlagId: args.featureFlagId,
         name: flag.name,
-        updates: Object.keys(updates).filter((k) => k !== "updatedAt" && k !== "updatedBy"),
+        updates: Object.keys(updates)
+          .filter((k) => k !== "updatedAt" && k !== "updatedBy")
+          .join(", "),
       },
       success: true,
     });

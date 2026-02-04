@@ -1,7 +1,7 @@
-import type { MutationCtx } from "../../_generated/server";
 import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
-import { mutation, internalMutation } from "../../functions";
+import type { MutationCtx } from "../../_generated/server";
+import { internalMutation, mutation } from "../../functions";
 import { totalGamesCounter } from "../../infrastructure/shardedCounters";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { createTraceContext, logMatchmaking, logger, performance } from "../../lib/debug";
@@ -405,8 +405,13 @@ export const joinLobby = mutation({
       // CRITICAL: Re-check lobby hasn't been claimed by another player
       // This prevents race condition where two players pass validation simultaneously
       // Convex OCC will retry if concurrent writes, but we need this check for sequential writes
+      // For challenge lobbies, opponentId is pre-set - allow the designated opponent to join
       const lobbyRecheck = await ctx.db.get(args.lobbyId);
-      if (!lobbyRecheck || lobbyRecheck.status !== "waiting" || lobbyRecheck.opponentId) {
+      if (
+        !lobbyRecheck ||
+        lobbyRecheck.status !== "waiting" ||
+        (lobbyRecheck.opponentId && lobbyRecheck.opponentId !== userId)
+      ) {
         logger.warn("Lobby no longer available (claimed by another player)", traceCtx);
         throw createError(ErrorCode.GAME_LOBBY_FULL, {
           reason: "This lobby is no longer available",
@@ -936,8 +941,13 @@ export const joinLobbyInternal = internalMutation({
 
       // CRITICAL: Re-check lobby hasn't been claimed by another player
       // This prevents race condition where two players pass validation simultaneously
+      // For challenge lobbies, opponentId is pre-set - allow the designated opponent to join
       const lobbyRecheck = await ctx.db.get(args.lobbyId);
-      if (!lobbyRecheck || lobbyRecheck.status !== "waiting" || lobbyRecheck.opponentId) {
+      if (
+        !lobbyRecheck ||
+        lobbyRecheck.status !== "waiting" ||
+        (lobbyRecheck.opponentId && lobbyRecheck.opponentId !== args.userId)
+      ) {
         logger.warn("Lobby no longer available (claimed by another player)", traceCtx);
         throw createError(ErrorCode.GAME_LOBBY_FULL, {
           reason: "This lobby is no longer available",

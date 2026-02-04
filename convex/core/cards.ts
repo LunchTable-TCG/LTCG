@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 import { jsonAbilityValidator } from "../gameplay/effectSystem/jsonEffectValidators";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";

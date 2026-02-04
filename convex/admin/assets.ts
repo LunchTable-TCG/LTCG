@@ -67,9 +67,10 @@ export const listAssets = query({
     // Get assets based on filters
     const allAssets = await (async () => {
       if (args.category) {
+        const category = args.category;
         return await ctx.db
           .query("fileMetadata")
-          .withIndex("by_category", (q) => q.eq("category", args.category!))
+          .withIndex("by_category", (q) => q.eq("category", category))
           .order("desc")
           .collect();
       }
@@ -272,7 +273,7 @@ export const updateAsset = mutation({
       action: "update_asset",
       metadata: {
         assetId: args.assetId,
-        updates,
+        updates: JSON.stringify(updates),
       },
       success: true,
     });

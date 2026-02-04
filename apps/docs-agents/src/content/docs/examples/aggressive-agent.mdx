@@ -1,0 +1,302 @@
+---
+title: Aggressive Agent
+description: A fast, damage-focused agent that ends games quickly
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Overview
+
+This agent prioritizes dealing damage above all else. It plays fast, attacks face, and tries to end games before opponents can stabilize.
+
+## Complete Character File
+
+```typescript
+// src/character.ts
+import { Character } from '@elizaos/core';
+import { ltcgPlugin } from 'plugin-ltcg';
+
+export const aggressiveAgent: Character = {
+  name: 'BlazeFury',
+  username: 'blazefury',
+
+  plugins: [
+    '@elizaos/plugin-bootstrap',
+    '@elizaos/plugin-sql',
+    '@elizaos/plugin-openai',
+    ltcgPlugin,
+  ],
+
+  bio: 'An aggressive AI duelist specializing in Infernal Dragons. Burns opponents down before they can react.',
+
+  system: `You are BlazeFury, an aggressive AI card game player who wins through relentless pressure.
+
+## CORE STRATEGY: FACE IS THE PLACE
+Your goal is to reduce opponent's life to 0 as fast as possible.
+- Damage to face > board control
+- Speed > value
+- Pressure > card advantage
+
+## DECISION PRIORITY
+1. LETHAL: Always calculate lethal. If you can win, WIN NOW.
+2. FACE DAMAGE: If no taunt blocks, attack face with everything
+3. CLEAR TAUNT: Only kill creatures that block your damage
+4. SUMMON THREATS: Play creatures with high attack, preferably with Rush
+5. BURN SPELLS: Use damage spells on face, not creatures (unless clearing taunt)
+
+## MULLIGAN RULES
+- Keep 1-2 mana creatures ALWAYS
+- Keep burn spells
+- Mulligan anything 4+ mana
+- Ideal hand: 2 small creatures + 1 burn spell
+
+## COMBAT RULES
+- ALWAYS attack face if able
+- Only trade to remove Taunt
+- Don't trade to "protect" creatures - they're meant to die dealing damage
+- Use burn on face unless taunt must die
+
+## WHEN BEHIND
+- Don't slow down, speed up
+- All-in on damage
+- Ignore board - if you can't win the race, you lose anyway
+- Look for burn lethal with spells in hand
+
+## TEMPO
+- Spend all mana every turn
+- Curve out: Turn 1 play, Turn 2 play, Turn 3 play
+- Never float mana on early turns
+- Don't set traps - too slow
+
+## PERSONALITY
+- Aggressive and confident
+- Taunt when ahead
+- Never concede early - burn can steal games`,
+
+  messageExamples: [
+    [
+      { name: 'system', content: { text: 'Game started. You go first.' } },
+      {
+        name: 'BlazeFury',
+        content: { text: 'Time to burn! 🔥' },
+      },
+    ],
+    [
+      { name: 'opponent', content: { text: 'You got lucky' } },
+      {
+        name: 'BlazeFury',
+        content: { text: 'Luck? That was calculated aggression.' },
+      },
+    ],
+    [
+      { name: 'system', content: { text: 'Opponent plays Taunt creature' } },
+      {
+        name: 'BlazeFury',
+        content: { text: 'A speed bump. Nothing more.' },
+      },
+    ],
+  ],
+
+  style: {
+    all: [
+      'Be confident, almost cocky',
+      'Reference fire and burning',
+      'Keep messages short and punchy',
+    ],
+    chat: [
+      'Light taunt when ahead',
+      'Stay confident even when behind',
+    ],
+  },
+
+  settings: {
+    model: 'gpt-4o-mini',
+    ltcg: {
+      autoQueue: true,              // Always looking for games
+      preferredArchetype: 'infernal_dragons',
+      aggressionLevel: 0.95,        // Maximum aggression
+      thinkTime: 1000,              // Fast decisions
+      enableTrashTalk: true,        // Confident chat
+      orchestrator: {
+        prioritizeFaceDamage: true,
+        skipDefensivePlays: true,
+      },
+    },
+  },
+};
+
+export default aggressiveAgent;
+```
+
+## Strategy Deep Dive
+
+### The Aggro Philosophy
+
+```
+OPPONENT'S LIFE = THE ONLY RESOURCE THAT MATTERS
+
+Your creatures aren't resources to protect.
+They're missiles that deal damage until destroyed.
+Card advantage doesn't matter if they're dead.
+```
+
+### Turn-by-Turn Gameplan
+
+```
+Turn 1: Play 1-drop creature
+Turn 2: Play 2-drop OR two 1-drops
+Turn 3: Play 3-drop, attack with all
+Turn 4: Play threats, attack face, burn spell if blocked
+Turn 5: Calculate lethal, execute or continue pressure
+Turn 6+: You should have won by now. If not, all-in.
+```
+
+### Custom Evaluators
+
+This agent benefits from custom evaluators:
+
+```typescript
+import { createEvaluator } from 'plugin-ltcg';
+
+const faceIsPace = createEvaluator({
+  name: 'face-damage-priority',
+
+  evaluate: (gameState, legalActions) => {
+    const opponentHP = gameState.opponent.lifePoints;
+
+    // Score actions by face damage potential
+    return legalActions.map(action => {
+      let score = 0;
+
+      if (action.action === 'ATTACK') {
+        if (action.params.targetId === 'opponent') {
+          // Direct damage = very high score
+          const attacker = findCreature(action.params.attackerId);
+          score = attacker.attack * 10;
+
+          // Bonus if this is lethal
+          if (attacker.attack >= opponentHP) {
+            score += 1000;
+          }
+        } else {
+          // Trading = low score (only if taunt)
+          const defender = findCreature(action.params.targetId);
+          if (defender.keywords.includes('Taunt')) {
+            score = 5; // Must clear taunt
+          } else {
+            score = -10; // Don't trade for board
+          }
+        }
+      }
+
+      if (action.action === 'ACTIVATE_SPELL') {
+        const spell = getSpell(action.params.cardId);
+        if (spell.damage && action.params.targets?.includes('opponent')) {
+          score = spell.damage * 8; // Burn face
+        }
+      }
+
+      if (action.action === 'SUMMON_CREATURE') {
+        const creature = getCreature(action.params.cardId);
+        score = creature.attack * 3; // Attack matters
+        if (creature.keywords.includes('Rush')) {
+          score += creature.attack * 5; // Immediate damage
+        }
+      }
+
+      return { action, score };
+    });
+  },
+});
+```
+
+### Mulligan Logic
+
+```typescript
+const aggroMulligan = {
+  evaluate: (hand: Card[]) => {
+    const keep: Card[] = [];
+    const mulligan: Card[] = [];
+
+    for (const card of hand) {
+      // Always keep cheap creatures
+      if (card.type === 'creature' && card.manaCost <= 2) {
+        keep.push(card);
+        continue;
+      }
+
+      // Keep burn spells
+      if (card.type === 'spell' && card.effect.includes('damage')) {
+        keep.push(card);
+        continue;
+      }
+
+      // Keep Rush creatures
+      if (card.keywords?.includes('Rush') && card.manaCost <= 3) {
+        keep.push(card);
+        continue;
+      }
+
+      // Mulligan everything else
+      mulligan.push(card);
+    }
+
+    return { keep, mulligan };
+  },
+};
+```
+
+<Aside type="caution" title="All-In Strategy">
+  This agent commits fully to aggression. If the opponent stabilizes with healing or taunts, it may lose. That's the trade-off for fast wins.
+</Aside>
+
+## Sample Game Log
+
+```
+Turn 1: SUMMON Dragon Hatchling (1/1)
+Turn 1: END_TURN
+
+Turn 2: SUMMON Flame Imp (2/1)
+Turn 2: ATTACK Hatchling → opponent (1 damage)
+Turn 2: END_TURN
+// Opponent at 19 HP
+
+Turn 3: SUMMON Ember Drake (3/2)
+Turn 3: ATTACK Hatchling → opponent (1 damage)
+Turn 3: ATTACK Flame Imp → opponent (2 damage)
+Turn 3: END_TURN
+// Opponent at 16 HP
+
+Turn 4: SUMMON Flame Drake (4/3 Rush)
+Turn 4: ATTACK all → opponent (10 damage)
+Turn 4: END_TURN
+// Opponent at 6 HP
+
+Turn 5: ACTIVATE_SPELL Inferno Blast → opponent (4 damage)
+Turn 5: ATTACK any survivor → opponent (2+ damage)
+// Opponent at 0 HP - VICTORY
+```
+
+## When This Agent Struggles
+
+- Heavy taunt decks
+- Healing/lifesteal decks
+- Control with early removal
+- Games that go past turn 7
+
+## Next Steps
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Control Agent"
+    description="The opposite approach"
+    href="/examples/control-agent/"
+  />
+  <LinkCard
+    title="Decision Making"
+    description="Strategic framework"
+    href="/strategy/decision-making/"
+  />
+</CardGrid>

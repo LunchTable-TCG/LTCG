@@ -128,7 +128,7 @@ export const deleteTestUsers = mutation({
         action: "delete_test_users",
         metadata: {
           deletedCount,
-          deletedEmails,
+          deletedEmails: deletedEmails.join(", "),
         },
         success: true,
       });
@@ -397,7 +397,7 @@ export const forceCloseMyGame = mutation({
         targetEmail: user?.email,
         metadata: {
           closedLobbies: closedCount,
-          lobbyIds: lobbies.map((l) => l._id),
+          lobbyIds: lobbies.map((l) => l._id).join(", "),
         },
         success: true,
       });

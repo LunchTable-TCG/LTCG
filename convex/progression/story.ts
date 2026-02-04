@@ -5,8 +5,8 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
+import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { type CardResult, type Rarity, addCardsToInventory, getRandomCard } from "../lib/helpers";
@@ -639,6 +639,7 @@ export const completeChapter = mutation({
             defense: card.defense,
             cost: card.cost,
             imageUrl: card.imageUrl,
+            variant: "standard",
           });
         }
       }

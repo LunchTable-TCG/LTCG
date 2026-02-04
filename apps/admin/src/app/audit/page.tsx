@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import type { ColumnDef } from "@/types";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { useState } from "react";

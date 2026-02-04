@@ -1,0 +1,81 @@
+---
+/**
+ * CardFrame Component
+ * Decorative frame with TCG styling for wrapping content
+ */
+
+interface Props {
+  variant?: 'default' | 'gold' | 'element';
+  element?: 'ember' | 'void' | 'arcane' | 'nature' | 'frost' | 'neutral';
+  class?: string;
+}
+
+const { variant = 'default', element, class: className } = Astro.props;
+
+const frameClasses = {
+  default: 'border-[rgba(139,69,19,0.4)] shadow-[0_0_0_1px_rgba(0,0,0,0.8),inset_0_0_40px_rgba(139,69,19,0.15),0_8px_32px_rgba(0,0,0,0.8)]',
+  gold: 'border-[#d4af37] shadow-[0_0_0_1px_rgba(0,0,0,0.8),inset_0_0_60px_rgba(212,175,55,0.1),0_0_30px_rgba(212,175,55,0.2),0_12px_40px_rgba(0,0,0,0.9)]',
+  element: ''
+};
+
+const elementGradients = {
+  ember: 'from-[#ff6b35]/30 to-[#ff6b35]/10',
+  void: 'from-[#9333ea]/30 to-[#9333ea]/10',
+  arcane: 'from-[#06b6d4]/30 to-[#06b6d4]/10',
+  nature: 'from-[#10b981]/30 to-[#10b981]/10',
+  frost: 'from-[#0ea5e9]/30 to-[#0ea5e9]/10',
+  neutral: 'from-[#a89f94]/30 to-[#a89f94]/10'
+};
+
+const elementBorders = {
+  ember: '#ff6b35',
+  void: '#9333ea',
+  arcane: '#06b6d4',
+  nature: '#10b981',
+  frost: '#0ea5e9',
+  neutral: '#a89f94'
+};
+
+const baseClass = 'relative rounded-lg border-2 overflow-hidden';
+const bgClass = 'bg-gradient-to-b from-[#171314] to-[#0a0503]';
+---
+
+<div
+  class:list={[
+    baseClass,
+    bgClass,
+    variant !== 'element' && frameClasses[variant],
+    className
+  ]}
+  style={variant === 'element' && element ? `border-color: ${elementBorders[element]}` : undefined}
+>
+  {/* Ornamental corners */}
+  <div class="ornament-corner ornament-corner-tl" />
+  <div class="ornament-corner ornament-corner-tr" />
+  <div class="ornament-corner ornament-corner-bl" />
+  <div class="ornament-corner ornament-corner-br" />
+
+  {/* Optional element gradient overlay */}
+  {variant === 'element' && element && (
+    <div class:list={['absolute inset-0 bg-gradient-to-b pointer-events-none', elementGradients[element]]} />
+  )}
+
+  {/* Content */}
+  <div class="relative z-10 p-6">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .ornament-corner {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.3) 0%, transparent 50%);
+  }
+
+  .ornament-corner-tl { top: 0; left: 0; }
+  .ornament-corner-tr { top: 0; right: 0; transform: scaleX(-1); }
+  .ornament-corner-bl { bottom: 0; left: 0; transform: scaleY(-1); }
+  .ornament-corner-br { bottom: 0; right: 0; transform: scale(-1); }
+</style>

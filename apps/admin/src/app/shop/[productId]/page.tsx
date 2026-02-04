@@ -31,8 +31,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import type { ProductId } from "@/lib/convexTypes";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
   ArrowLeftIcon,
@@ -57,6 +57,39 @@ import { toast } from "sonner";
 type ProductType = "pack" | "box" | "currency";
 type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 type CurrencyType = "gold" | "gems";
+type Archetype =
+  // Primary archetypes
+  | "infernal_dragons"
+  | "abyssal_depths"
+  | "iron_legion"
+  | "necro_empire"
+  // Legacy archetypes
+  | "abyssal_horrors"
+  | "nature_spirits"
+  | "storm_elementals"
+  // Future/placeholder archetypes
+  | "shadow_assassins"
+  | "celestial_guardians"
+  | "undead_legion"
+  | "divine_knights"
+  | "arcane_mages"
+  | "mechanical_constructs"
+  | "neutral"
+  // Old archetypes
+  | "fire"
+  | "water"
+  | "earth"
+  | "wind";
+
+interface ShopProduct {
+  _id: Id<"shopProducts">;
+  productId: string;
+  name: string;
+  productType: ProductType;
+  isActive: boolean;
+  goldPrice?: number;
+  gemPrice?: number;
+}
 
 const PRODUCT_TYPES = [
   { value: "pack", label: "Pack", description: "Contains random cards" },
@@ -140,7 +173,7 @@ export default function ShopProductEditorPage() {
   // Queries and mutations
   const existingProduct = useConvexQuery(
     api.admin.shop.getProduct,
-    isNew ? "skip" : { productDbId: productDbId as any }
+    isNew ? "skip" : { productDbId: productDbId as Id<"shopProducts"> }
   );
 
   const allProducts = useConvexQuery(api.admin.shop.listProducts, {
@@ -200,7 +233,7 @@ export default function ShopProductEditorPage() {
     setIsSaving(true);
     try {
       if (isNew) {
-        const result = await createProduct({
+        const result = (await createProduct({
           productId: productId.trim(),
           name: name.trim(),
           description: description.trim(),
@@ -213,7 +246,9 @@ export default function ShopProductEditorPage() {
               ? (packGuaranteedRarity as Rarity)
               : undefined,
           packArchetype:
-            productType === "pack" && packArchetype !== "none" ? packArchetype : undefined,
+            productType === "pack" && packArchetype !== "none"
+              ? (packArchetype as Archetype)
+              : undefined,
           boxPackProductId: productType === "box" ? boxPackProductId : undefined,
           boxPackCount: productType === "box" ? Number.parseInt(boxPackCount) : undefined,
           boxBonusCards:
@@ -222,12 +257,12 @@ export default function ShopProductEditorPage() {
           currencyAmount: productType === "currency" ? Number.parseInt(currencyAmount) : undefined,
           isActive,
           sortOrder: sortOrder ? Number.parseInt(sortOrder) : undefined,
-        });
+        })) as { message: string; productDbId: string };
         toast.success(result.message);
         router.push(`/shop/${result.productDbId}`);
       } else {
-        const result = await updateProduct({
-          productDbId: productDbId as any,
+        const result = (await updateProduct({
+          productDbId: productDbId as Id<"shopProducts">,
           name: name.trim(),
           description: description.trim(),
           goldPrice: goldPrice ? Number.parseInt(goldPrice) : undefined,
@@ -241,7 +276,9 @@ export default function ShopProductEditorPage() {
               : undefined,
           clearGuaranteedRarity: productType === "pack" && packGuaranteedRarity === "none",
           packArchetype:
-            productType === "pack" && packArchetype !== "none" ? packArchetype : undefined,
+            productType === "pack" && packArchetype !== "none"
+              ? (packArchetype as Archetype)
+              : undefined,
           clearArchetype: productType === "pack" && packArchetype === "none",
           boxPackProductId: productType === "box" ? boxPackProductId : undefined,
           boxPackCount: productType === "box" ? Number.parseInt(boxPackCount) : undefined,
@@ -251,7 +288,7 @@ export default function ShopProductEditorPage() {
           currencyAmount: productType === "currency" ? Number.parseInt(currencyAmount) : undefined,
           isActive,
           sortOrder: sortOrder ? Number.parseInt(sortOrder) : undefined,
-        });
+        })) as { message: string };
         toast.success(result.message);
       }
     } catch (error) {
@@ -264,7 +301,9 @@ export default function ShopProductEditorPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const result = await deleteProduct({ productDbId: productDbId as any });
+      const result = (await deleteProduct({ productDbId: productDbId as Id<"shopProducts"> })) as {
+        message: string;
+      };
       toast.success(result.message);
       router.push("/shop");
     } catch (error) {
@@ -281,11 +320,11 @@ export default function ShopProductEditorPage() {
     }
 
     try {
-      const result = await duplicateProduct({
-        productDbId: productDbId as any,
+      const result = (await duplicateProduct({
+        productDbId: productDbId as Id<"shopProducts">,
         newProductId: duplicateProductId.trim(),
         newName: duplicateName.trim(),
-      });
+      })) as { message: string; productDbId: string };
       toast.success(result.message);
       setDuplicateDialogOpen(false);
       router.push(`/shop/${result.productDbId}`);
@@ -295,7 +334,8 @@ export default function ShopProductEditorPage() {
   };
 
   // Available pack products for box config
-  const packProducts = allProducts?.products.filter((p: any) => p.productType === "pack") ?? [];
+  const packProducts =
+    allProducts?.products.filter((p: ShopProduct) => p.productType === "pack") ?? [];
 
   if (!isNew && existingProduct === undefined) {
     return (
@@ -624,7 +664,7 @@ export default function ShopProductEditorPage() {
                       <SelectValue placeholder="Select pack..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {packProducts.map((p: any) => (
+                      {packProducts.map((p: ShopProduct) => (
                         <SelectItem key={p.productId} value={p.productId}>
                           {p.name}
                         </SelectItem>

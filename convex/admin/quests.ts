@@ -40,9 +40,10 @@ export const listQuests = query({
 
     let quests = await (async () => {
       if (args.questType) {
+        const questType = args.questType;
         return await ctx.db
           .query("questDefinitions")
-          .withIndex("by_type", (q) => q.eq("questType", args.questType!))
+          .withIndex("by_type", (q) => q.eq("questType", questType))
           .collect();
       }
       return await ctx.db.query("questDefinitions").collect();
@@ -292,7 +293,7 @@ export const updateQuest = mutation({
       metadata: {
         questDbId: args.questDbId,
         questId: quest.questId,
-        updates: Object.keys(updates),
+        updates: Object.keys(updates).join(", "),
       },
       success: true,
     });

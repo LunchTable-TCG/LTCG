@@ -1,0 +1,231 @@
+---
+title: Effect System
+description: Card abilities and effect processing
+---
+
+## Overview
+
+The effect system processes all card abilities, from simple damage to complex chains.
+
+## Effect Types
+
+### Triggered Effects
+
+Activate automatically when conditions are met.
+
+```typescript
+interface TriggeredEffect {
+  type: "triggered";
+  trigger: TriggerType;
+  condition?: Condition;
+  effect: EffectPayload;
+}
+
+type TriggerType =
+  | "on_enter"       // When card enters play
+  | "on_death"       // When card is destroyed
+  | "on_attack"      // When declaring attack
+  | "on_damage"      // When dealing damage
+  | "on_heal"        // When healing occurs
+  | "turn_start"     // At turn start
+  | "turn_end";      // At turn end
+```
+
+### Activated Effects
+
+Player-initiated with a cost.
+
+```typescript
+interface ActivatedEffect {
+  type: "activated";
+  cost: EffectCost;
+  effect: EffectPayload;
+}
+
+interface EffectCost {
+  mana?: number;
+  tap?: boolean;
+  discard?: number;
+  sacrifice?: number;
+  lifePoints?: number;
+}
+```
+
+### Continuous Effects
+
+Always active while the source is in play.
+
+```typescript
+interface ContinuousEffect {
+  type: "continuous";
+  modifier: Modifier;
+  affectedTargets: TargetSelector;
+}
+
+interface Modifier {
+  stat?: "attack" | "health";
+  value: number;
+  // or
+  ability?: AbilityModifier;
+}
+```
+
+## Effect Resolution
+
+Effects are processed in a stack (LIFO):
+
+```
+┌─────────────────────────────────────────┐
+│           EFFECT STACK                   │
+├─────────────────────────────────────────┤
+│  [4] Counter Trap: Negate spell         │ ← Resolves first
+│  [3] Spell: Deal 3 damage               │
+│  [2] Triggered: Draw 1 card             │
+│  [1] Summoning: Fire Drake              │ ← Resolves last
+└─────────────────────────────────────────┘
+```
+
+### Resolution Order
+
+```typescript
+async function resolveEffectStack(ctx: MutationCtx, game: GameState) {
+  while (game.effectStack.length > 0) {
+    const effect = game.effectStack.pop();
+
+    // Check if effect is still valid
+    if (!isEffectValid(game, effect)) continue;
+
+    // Execute the effect
+    const result = await executeEffect(ctx, game, effect);
+
+    // Collect new triggers
+    const triggers = collectTriggers(game, effect, result);
+
+    // Add new triggers to stack
+    game.effectStack.push(...triggers);
+  }
+}
+```
+
+## Targeting
+
+Effects can target various entities:
+
+```typescript
+type TargetType =
+  | "self"              // The source card
+  | "player"            // A player
+  | "creature"          // A creature on the field
+  | "card_in_hand"      // A card in hand
+  | "card_in_graveyard" // A card in graveyard
+  | "any";              // Any valid target
+
+interface TargetSelector {
+  type: TargetType;
+  count: number | "all";
+  filter?: TargetFilter;
+}
+
+interface TargetFilter {
+  element?: Element;
+  minAttack?: number;
+  maxAttack?: number;
+  hasAbility?: string;
+  controller?: "self" | "opponent";
+}
+```
+
+## Common Effect Patterns
+
+### Damage Effect
+
+```typescript
+const damageEffect: EffectPayload = {
+  type: "damage",
+  value: 3,
+  target: {
+    type: "creature",
+    count: 1,
+    filter: { controller: "opponent" }
+  }
+};
+```
+
+### Draw Effect
+
+```typescript
+const drawEffect: EffectPayload = {
+  type: "draw",
+  value: 2,
+  target: { type: "self" }
+};
+```
+
+### Buff Effect
+
+```typescript
+const buffEffect: EffectPayload = {
+  type: "modify_stat",
+  stat: "attack",
+  value: 2,
+  duration: "until_end_of_turn",
+  target: { type: "creature", filter: { controller: "self" } }
+};
+```
+
+### Destroy Effect
+
+```typescript
+const destroyEffect: EffectPayload = {
+  type: "destroy",
+  target: {
+    type: "creature",
+    count: 1,
+    filter: { element: "ember" }
+  }
+};
+```
+
+## Chain Resolution
+
+When multiple effects trigger simultaneously:
+
+1. Active player's effects are added first
+2. Then opponent's effects
+3. Both players can respond
+4. Stack resolves top-to-bottom
+
+```typescript
+function orderSimultaneousTriggers(
+  game: GameState,
+  triggers: Effect[]
+): Effect[] {
+  const activePlayerTriggers = triggers.filter(
+    t => t.controllerId === game.activePlayerId
+  );
+  const opponentTriggers = triggers.filter(
+    t => t.controllerId !== game.activePlayerId
+  );
+
+  return [...opponentTriggers, ...activePlayerTriggers];
+}
+```
+
+---
+
+## Related
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Game Engine"
+    description="Overall game flow"
+    href="/architecture/game-engine/"
+  />
+  <LinkCard
+    title="Real-time"
+    description="State synchronization"
+    href="/architecture/realtime/"
+  />
+</CardGrid>

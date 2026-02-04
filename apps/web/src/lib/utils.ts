@@ -1,9 +1,11 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+/**
+ * Utility functions for the web app
+ *
+ * Re-exports shared utilities from @ltcg/core and app-specific helpers.
+ */
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+// Re-export cn from core package
+export { cn, type ClassValue } from "@ltcg/core/utils";
 
 // ============================================================================
 // JSON ABILITY TYPES - Re-exported from cardHelpers for backwards compatibility

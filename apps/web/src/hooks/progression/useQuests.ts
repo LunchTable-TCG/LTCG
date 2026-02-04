@@ -93,12 +93,12 @@ export function useQuests(): UseQuestsReturn {
   };
 
   // Separate quests by type
-  const activeQuests = quests?.filter((q) => q.status === "active") || [];
-  const completedQuests = quests?.filter((q) => q.status === "completed") || [];
-  const claimedQuests = quests?.filter((q) => q.status === "claimed") || [];
-  const dailyQuests = quests?.filter((q) => q.questType === "daily") || [];
-  const weeklyQuests = quests?.filter((q) => q.questType === "weekly") || [];
-  const achievementQuests = quests?.filter((q) => q.questType === "achievement") || [];
+  const activeQuests = quests?.filter((q: Quest) => q.status === "active") || [];
+  const completedQuests = quests?.filter((q: Quest) => q.status === "completed") || [];
+  const claimedQuests = quests?.filter((q: Quest) => q.status === "claimed") || [];
+  const dailyQuests = quests?.filter((q: Quest) => q.questType === "daily") || [];
+  const weeklyQuests = quests?.filter((q: Quest) => q.questType === "weekly") || [];
+  const achievementQuests = quests?.filter((q: Quest) => q.questType === "achievement") || [];
 
   return {
     // Data

@@ -26,6 +26,7 @@
         "package.json",
         "tsconfig.json",
         "next.config.ts",
+        "astro.config.mjs",
         "tailwind.config.*",
         "postcss.config.*",
         "!**/*.test.ts",
@@ -39,7 +40,8 @@
         ".source/**",
         "dist/**",
         "build/**",
-        ".convex/**"
+        ".convex/**",
+        ".astro/**"
       ],
       "env": [
         "NODE_ENV",

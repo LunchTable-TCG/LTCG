@@ -1,8 +1,9 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
+import type { Id } from "@convex/_generated/dataModel";
 import { Bug, Clock, GripVertical, Image, Lightbulb, User, Video } from "lucide-react";
 import { useState } from "react";
 
@@ -251,7 +252,7 @@ export function KanbanBoard({ type, onSelectItem }: KanbanBoardProps) {
 
     try {
       await updateStatus({
-        feedbackId: draggedItem._id,
+        feedbackId: draggedItem._id as Id<"feedback">,
         status: newStatus,
       });
     } catch (error) {

@@ -7,7 +7,6 @@
  */
 
 import { Text, Title } from "@tremor/react";
-import { useMutation, useQuery } from "convex/react";
 import { toPng } from "html-to-image";
 import { ArrowLeft, Copy, Download, MoreHorizontal, Settings, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -95,18 +94,18 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
   const [duplicateName, setDuplicateName] = useState("");
 
   // Queries
-  const template = useQuery(api.admin.templates.getTemplate, {
+  const template = useConvexQuery(api.admin.templates.getTemplate, {
     templateId: templateId as TemplateId,
   });
 
   // Mutations
-  const updateTemplate = useMutation(api.admin.templates.updateTemplate);
-  const duplicateTemplate = useMutation(api.admin.templates.duplicateTemplate);
-  const deleteTemplate = useMutation(api.admin.templates.deleteTemplate);
-  const setDefaultTemplate = useMutation(api.admin.templates.setDefaultTemplate);
+  const updateTemplate = useConvexMutation(api.admin.templates.updateTemplate);
+  const duplicateTemplate = useConvexMutation(api.admin.templates.duplicateTemplate);
+  const deleteTemplate = useConvexMutation(api.admin.templates.deleteTemplate);
+  const setDefaultTemplate = useConvexMutation(api.admin.templates.setDefaultTemplate);
 
   // Handlers
-  const handleUpdateSettings = async (updates: Record<string, any>) => {
+  const handleUpdateSettings = async (updates: Record<string, unknown>) => {
     try {
       await updateTemplate({
         templateId: templateId as TemplateId,
@@ -151,8 +150,8 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
       await deleteTemplate({ templateId: templateId as TemplateId });
       toast.success("Template deleted");
       router.push("/templates");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete template");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete template");
     }
   };
 

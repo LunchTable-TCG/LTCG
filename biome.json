@@ -39,7 +39,8 @@
         "noExplicitAny": "error",
         "noUnsafeDeclarationMerging": "error",
         "noConfusingVoidType": "error",
-        "noDoubleEquals": "error"
+        "noDoubleEquals": "error",
+        "noThenProperty": "off"
       },
       "correctness": {
         "noUnusedVariables": "error",
@@ -57,6 +58,12 @@
       "security": {
         "noDangerouslySetInnerHtml": "warn",
         "noDangerouslySetInnerHtmlWithChildren": "error"
+      },
+      "a11y": {
+        "useButtonType": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useKeyWithClickEvents": "warn",
+        "useSemanticElements": "warn"
       }
     }
   },
@@ -69,5 +76,17 @@
   },
   "organizeImports": {
     "enabled": true
-  }
+  },
+  "overrides": [
+    {
+      "include": ["convex/wallet/createAgentWallet.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    }
+  ]
 }

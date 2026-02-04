@@ -6,9 +6,8 @@
  * Provides card price history data for charts.
  */
 
-import { typedApi } from "@/lib/convexTypedHelpers";
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
-import { useQuery } from "convex/react";
 import { useState } from "react";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
@@ -95,13 +94,13 @@ export function usePriceHistory(): UsePriceHistoryReturn {
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
 
   // Get top traded cards for selector
-  const topCards = useQuery(typedApi.economy.priceHistory.getTopTradedCards, {
+  const topCards = useConvexQuery(apiAny.economy.priceHistory.getTopTradedCards, {
     limit: 20,
     timeRange,
   });
 
   // Get price history for selected card (or all cards if none selected)
-  const priceHistory = useQuery(typedApi.economy.priceHistory.getCardPriceHistory, {
+  const priceHistory = useConvexQuery(apiAny.economy.priceHistory.getCardPriceHistory, {
     cardDefinitionId: selectedCard ? (selectedCard as Id<"cardDefinitions">) : undefined,
     timeRange,
   });

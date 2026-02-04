@@ -43,9 +43,10 @@ export const listReports = query({
 
     let reports = await (async () => {
       if (args.status) {
+        const status = args.status;
         return await ctx.db
           .query("userReports")
-          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .withIndex("by_status", (q) => q.eq("status", status))
           .order("desc")
           .collect();
       }
@@ -163,8 +164,13 @@ export const getReportStats = query({
     const resolvedReports = reports.filter((r) => r.status === "resolved" && r.reviewedAt);
     const avgResolutionTime =
       resolvedReports.length > 0
-        ? resolvedReports.reduce((sum, r) => sum + (r.reviewedAt! - r.createdAt), 0) /
-          resolvedReports.length
+        ? resolvedReports.reduce((sum, r) => {
+            const reviewedAt = r.reviewedAt;
+            if (!reviewedAt) {
+              throw new Error("reviewedAt is required for resolved reports");
+            }
+            return sum + (reviewedAt - r.createdAt);
+          }, 0) / resolvedReports.length
         : 0;
 
     return {

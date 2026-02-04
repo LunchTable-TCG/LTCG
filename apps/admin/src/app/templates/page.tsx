@@ -7,7 +7,6 @@
  */
 
 import { Card, Text, Title } from "@tremor/react";
-import { useMutation, useQuery } from "convex/react";
 import { LayoutTemplate, Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -45,6 +44,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { TemplateCard } from "@/components/templates/TemplateCard";
 import type { CardType, TemplateListItem } from "@/components/templates/types";
 import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 
 const CARD_TYPES: { value: CardType | "all"; label: string }[] = [
   { value: "all", label: "All Types" },
@@ -70,16 +70,16 @@ export default function TemplatesPage() {
   const [duplicateName, setDuplicateName] = useState("");
 
   // Queries
-  const templates = useQuery(api.admin.templates.listTemplates, {
+  const templates = useConvexQuery(api.admin.templates.listTemplates, {
     cardType: typeFilter === "all" ? undefined : typeFilter,
   });
-  const stats = useQuery(api.admin.templates.getTemplateStats, {});
+  const stats = useConvexQuery(api.admin.templates.getTemplateStats, {});
 
   // Mutations
-  const createTemplate = useMutation(api.admin.templates.createTemplate);
-  const duplicateTemplate = useMutation(api.admin.templates.duplicateTemplate);
-  const deleteTemplate = useMutation(api.admin.templates.deleteTemplate);
-  const setDefaultTemplate = useMutation(api.admin.templates.setDefaultTemplate);
+  const createTemplate = useConvexMutation(api.admin.templates.createTemplate);
+  const duplicateTemplate = useConvexMutation(api.admin.templates.duplicateTemplate);
+  const deleteTemplate = useConvexMutation(api.admin.templates.deleteTemplate);
+  const setDefaultTemplate = useConvexMutation(api.admin.templates.setDefaultTemplate);
 
   // Filter templates by search query
   const filteredTemplates = templates?.filter((t: TemplateListItem) =>
@@ -117,7 +117,7 @@ export default function TemplatesPage() {
 
     try {
       await duplicateTemplate({
-        templateId: selectedTemplateId as any,
+        templateId: selectedTemplateId as Id<"cardTemplates">,
         newName: duplicateName.trim(),
       });
       toast.success("Template duplicated");
@@ -133,18 +133,18 @@ export default function TemplatesPage() {
     if (!selectedTemplateId) return;
 
     try {
-      await deleteTemplate({ templateId: selectedTemplateId as any });
+      await deleteTemplate({ templateId: selectedTemplateId as Id<"cardTemplates"> });
       toast.success("Template deleted");
       setShowDeleteDialog(false);
       setSelectedTemplateId(null);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete template");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete template");
     }
   };
 
   const handleSetDefault = async (templateId: string) => {
     try {
-      await setDefaultTemplate({ templateId: templateId as TemplateId });
+      await setDefaultTemplate({ templateId: templateId as Id<"cardTemplates"> });
       toast.success("Set as default template");
     } catch (_error) {
       toast.error("Failed to set default");
@@ -233,8 +233,8 @@ export default function TemplatesPage() {
       {/* Templates Grid */}
       {!templates ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
+          {[...Array(8)].map((_: unknown, i: number) => (
+            <Card key={`template-card-${i}` as string} className="animate-pulse">
               <div className="aspect-[750/1050] bg-muted rounded-lg mb-4" />
               <div className="h-6 bg-muted rounded w-3/4 mb-2" />
               <div className="h-4 bg-muted rounded w-1/2" />

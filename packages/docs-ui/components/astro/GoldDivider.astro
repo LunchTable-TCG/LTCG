@@ -1,0 +1,88 @@
+---
+/**
+ * GoldDivider Component
+ * Ornamental section divider with fantasy styling
+ */
+
+interface Props {
+  variant?: 'simple' | 'ornate' | 'diamond';
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+}
+
+const { variant = 'simple', size = 'md', class: className } = Astro.props;
+
+const sizeStyles = {
+  sm: 'my-4',
+  md: 'my-6',
+  lg: 'my-8'
+};
+---
+
+{variant === 'simple' && (
+  <div
+    class:list={['tcg-divider w-full', sizeStyles[size], className]}
+    role="separator"
+  />
+)}
+
+{variant === 'ornate' && (
+  <div
+    class:list={['flex items-center justify-center gap-4', sizeStyles[size], className]}
+    role="separator"
+  >
+    <div class="flex-1 h-[2px] bg-gradient-to-r from-transparent via-[rgba(139,69,19,0.3)] to-[rgba(212,175,55,0.5)]" />
+    <div class="ornate-center">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-[#d4af37]">
+        <path
+          d="M12 2L14.5 9H22L16 14L18.5 21L12 17L5.5 21L8 14L2 9H9.5L12 2Z"
+          fill="currentColor"
+          opacity="0.8"
+        />
+      </svg>
+    </div>
+    <div class="flex-1 h-[2px] bg-gradient-to-l from-transparent via-[rgba(139,69,19,0.3)] to-[rgba(212,175,55,0.5)]" />
+  </div>
+)}
+
+{variant === 'diamond' && (
+  <div
+    class:list={['flex items-center justify-center gap-3', sizeStyles[size], className]}
+    role="separator"
+  >
+    <div class="flex-1 h-[1px] bg-gradient-to-r from-transparent to-[rgba(212,175,55,0.5)]" />
+    <div class="diamond-center flex items-center gap-2">
+      <div class="w-1.5 h-1.5 rotate-45 bg-[#8b4513]" />
+      <div class="w-2 h-2 rotate-45 bg-[#d4af37]" />
+      <div class="w-1.5 h-1.5 rotate-45 bg-[#8b4513]" />
+    </div>
+    <div class="flex-1 h-[1px] bg-gradient-to-l from-transparent to-[rgba(212,175,55,0.5)]" />
+  </div>
+)}
+
+<style>
+  .tcg-divider {
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(139, 69, 19, 0.3) 20%,
+      rgba(212, 175, 55, 0.5) 50%,
+      rgba(139, 69, 19, 0.3) 80%,
+      transparent 100%
+    );
+  }
+
+  .ornate-center {
+    animation: pulse-gold 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% {
+      filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.3));
+    }
+    50% {
+      filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.6));
+    }
+  }
+</style>

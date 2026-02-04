@@ -21,7 +21,7 @@ registerRoutes(http, components.stripe, {
     "customer.subscription.created": async (ctx, event) => {
       const subscription = event.data.object as Stripe.Subscription;
       if (subscription.status === "active" || subscription.status === "trialing") {
-        const userId = subscription.metadata?.userId;
+        const userId = subscription.metadata?.["userId"];
         if (userId) {
           await ctx.runMutation(internal.stripe.battlePassSync.grantPremiumAccess, {
             privyId: userId,
@@ -31,7 +31,7 @@ registerRoutes(http, components.stripe, {
     },
     "customer.subscription.updated": async (ctx, event) => {
       const subscription = event.data.object as Stripe.Subscription;
-      const userId = subscription.metadata?.userId;
+      const userId = subscription.metadata?.["userId"];
       if (!userId) return;
 
       if (subscription.status === "active" || subscription.status === "trialing") {
@@ -46,7 +46,7 @@ registerRoutes(http, components.stripe, {
     },
     "customer.subscription.deleted": async (ctx, event) => {
       const subscription = event.data.object as Stripe.Subscription;
-      const userId = subscription.metadata?.userId;
+      const userId = subscription.metadata?.["userId"];
       if (userId) {
         await ctx.runMutation(internal.stripe.battlePassSync.revokePremiumAccess, {
           privyId: userId,

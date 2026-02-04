@@ -222,17 +222,28 @@ export interface CardEffect {
 // Game Actions (Internal representation)
 // ============================================================================
 
+/**
+ * Game action parameters - covers all action types
+ */
+export interface GameActionParameters {
+  handIndex?: number;
+  boardIndex?: number;
+  position?: MonsterPosition;
+  tributeIndices?: number[];
+  targetIndex?: number;
+  targets?: Target[];
+  location?: "hand" | "field";
+  index?: number;
+  [key: string]: number | number[] | string | Target[] | MonsterPosition | undefined;
+}
+
 export interface GameAction {
   type: string;
   description: string;
   isLegal: boolean;
   reason?: string; // If not legal
-  /**
-   * Action parameters - flexible structure for various action types.
-   * Uses any for maximum flexibility when representing game actions.
-   */
-  // biome-ignore lint/suspicious/noExplicitAny: Flexible parameters for various action types
-  parameters?: Record<string, any>;
+  /** Action parameters structure */
+  parameters?: GameActionParameters;
 }
 
 export interface SummonAction extends GameAction {

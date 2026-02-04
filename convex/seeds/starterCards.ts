@@ -26,14 +26,17 @@ import type { CardSeed } from "./types";
  */
 function toCardSeed(card: Card): CardSeed {
   if (card.cardType === "creature") {
+    if (typeof card.attack !== "number" || typeof card.defense !== "number") {
+      throw new Error(`Creature card ${card.name} must have attack and defense values`);
+    }
     return {
       name: card.name,
       rarity: card.rarity,
       cardType: card.cardType,
       archetype: card.archetype,
       cost: card.cost,
-      attack: card.attack!,
-      defense: card.defense!,
+      attack: card.attack,
+      defense: card.defense,
     };
   }
 

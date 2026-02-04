@@ -29,9 +29,9 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Text, Title } from "@tremor/react";
-import type { Doc } from "@convex/_generated/dataModel";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -112,14 +112,14 @@ export default function AlertChannelsPage() {
   });
 
   // Fetch channels
-  const channels = useConvexQuery(api.alerts.channels.getAll);
+  const channels = useQuery(api.alerts.channels.getAll, {});
 
   // Mutations
-  const createChannel = useConvexMutation(api.alerts.channels.create);
-  const updateChannel = useConvexMutation(api.alerts.channels.update);
-  const removeChannel = useConvexMutation(api.alerts.channels.remove);
-  const testChannel = useConvexMutation(api.alerts.channels.test);
-  const setupDefaults = useConvexMutation(api.alerts.channels.setupDefaults);
+  const createChannel = useMutation(api.alerts.channels.create);
+  const updateChannel = useMutation(api.alerts.channels.update);
+  const removeChannel = useMutation(api.alerts.channels.remove);
+  const testChannel = useMutation(api.alerts.channels.test);
+  const setupDefaults = useMutation(api.alerts.channels.setupDefaults);
 
   const isLoading = channels === undefined;
 
@@ -162,17 +162,20 @@ export default function AlertChannelsPage() {
         await updateChannel({
           channelId: editingChannel._id,
           name: formData.name,
-          type: formData.type as ChannelType,
-          webhookUrl: formData.webhookUrl || undefined,
-          minSeverity: (formData.minSeverity as Severity) || "warning",
+          config: {
+            webhookUrl: formData.webhookUrl || undefined,
+            minSeverity: (formData.minSeverity as Severity) || "warning",
+          },
         });
         toast.success("Channel updated");
       } else {
         await createChannel({
           name: formData.name,
           type: formData.type as ChannelType,
-          webhookUrl: formData.webhookUrl || undefined,
-          minSeverity: (formData.minSeverity as Severity) || "warning",
+          config: {
+            webhookUrl: formData.webhookUrl || undefined,
+            minSeverity: (formData.minSeverity as Severity) || "warning",
+          },
         });
         toast.success("Channel created");
       }
@@ -188,11 +191,14 @@ export default function AlertChannelsPage() {
   async function handleTest(channelId: string) {
     setIsTesting(channelId);
     try {
-      const result = await testChannel({ channelId });
+      const result = (await testChannel({ channelId: channelId as Id<"alertChannels"> })) as {
+        success: boolean;
+        message?: string;
+      };
       if (result.success) {
-        toast.success("Test notification sent successfully");
+        toast.success(result.message || "Test notification sent successfully");
       } else {
-        toast.error(`Test failed: ${result.error}`);
+        toast.error("Test failed");
       }
     } catch (error) {
       toast.error(`Failed to test channel: ${error}`);
@@ -204,7 +210,7 @@ export default function AlertChannelsPage() {
   async function handleDelete(channelId: string) {
     if (!confirm("Are you sure you want to delete this channel?")) return;
     try {
-      await removeChannel({ channelId });
+      await removeChannel({ channelId: channelId as Id<"alertChannels"> });
       toast.success("Channel deleted");
     } catch (error) {
       toast.error(`Failed to delete channel: ${error}`);
@@ -213,7 +219,7 @@ export default function AlertChannelsPage() {
 
   async function handleSetupDefaults() {
     try {
-      const result = await setupDefaults({});
+      const result = (await setupDefaults({})) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(`Failed to setup defaults: ${error}`);
@@ -377,7 +383,7 @@ export default function AlertChannelsPage() {
                       try {
                         await updateChannel({
                           channelId: channel._id,
-                          enabled: channel.isEnabled === false,
+                          isEnabled: channel.isEnabled === false,
                         });
                         toast.success(
                           `Channel ${channel.isEnabled === false ? "enabled" : "disabled"}`

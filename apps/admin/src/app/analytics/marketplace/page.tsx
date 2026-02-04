@@ -11,7 +11,7 @@ import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 

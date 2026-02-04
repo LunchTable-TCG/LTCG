@@ -31,8 +31,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import type { QuestId, AchievementId } from "@/lib/convexTypes";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { QuestId } from "@/lib/convexTypes";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { ArrowLeftIcon, CopyIcon, Loader2Icon, SaveIcon, TrashIcon } from "lucide-react";
 import Link from "next/link";
@@ -77,9 +77,9 @@ const GAME_MODES = [
 // =============================================================================
 
 export default function QuestEditorPage() {
-  const params = useParams();
+  const params = useParams<{ questId: string }>();
   const router = useRouter();
-  const questDbId = params.questId as string;
+  const questDbId = params.questId as QuestId | "new";
   const isNew = questDbId === "new";
 
   // Form state
@@ -150,7 +150,7 @@ export default function QuestEditorPage() {
     setIsSaving(true);
     try {
       if (isNew) {
-        const result = await createQuest({
+        const result = (await createQuest({
           questId: questId.trim(),
           name: name.trim(),
           description: description.trim(),
@@ -163,11 +163,11 @@ export default function QuestEditorPage() {
           filterGameMode: filterGameMode !== "none" ? (filterGameMode as GameMode) : undefined,
           filterArchetype: filterArchetype || undefined,
           isActive,
-        });
+        })) as { message: string; questDbId: string };
         toast.success(result.message);
         router.push(`/quests/${result.questDbId}`);
       } else {
-        const result = await updateQuest({
+        const result = (await updateQuest({
           questDbId: questDbId as QuestId,
           name: name.trim(),
           description: description.trim(),
@@ -179,7 +179,7 @@ export default function QuestEditorPage() {
           filterGameMode: filterGameMode !== "none" ? (filterGameMode as GameMode) : undefined,
           clearFilters: filterGameMode === "none" && !filterArchetype,
           isActive,
-        });
+        })) as { message: string };
         toast.success(result.message);
       }
     } catch (error) {
@@ -192,7 +192,9 @@ export default function QuestEditorPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const result = await deleteQuest({ questDbId: questDbId as QuestId });
+      const result = (await deleteQuest({ questDbId: questDbId as QuestId })) as {
+        message: string;
+      };
       toast.success(result.message);
       router.push("/quests");
     } catch (error) {
@@ -209,11 +211,11 @@ export default function QuestEditorPage() {
     }
 
     try {
-      const result = await duplicateQuest({
+      const result = (await duplicateQuest({
         questDbId: questDbId as QuestId,
         newQuestId: duplicateQuestId.trim(),
         newName: duplicateName.trim(),
-      });
+      })) as { message: string; questDbId: string };
       toast.success(result.message);
       setDuplicateDialogOpen(false);
       router.push(`/quests/${result.questDbId}`);

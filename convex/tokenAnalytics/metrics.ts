@@ -44,7 +44,8 @@ export const getHistory = query({
     const metrics = await query_.take(args.limit ?? 100);
 
     if (args.since) {
-      return metrics.filter((m) => m.timestamp >= args.since!);
+      const since = args.since;
+      return metrics.filter((m) => m.timestamp >= since);
     }
 
     return metrics;

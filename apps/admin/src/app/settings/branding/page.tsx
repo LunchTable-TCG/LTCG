@@ -14,7 +14,6 @@ import {
   BrandingSidebar,
   CreateFolderDialog,
   GuidelinesModal,
-  UploadAssetsDialog,
 } from "@/components/branding";
 import type {
   BrandingFolder,
@@ -23,10 +22,11 @@ import type {
   FolderTreeNode,
 } from "@/components/branding/types";
 import { PageWrapper } from "@/components/layout";
+import { BatchUploadDialog } from "@/components/shared/BatchUploadDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { BookOpenIcon, Loader2Icon, SettingsIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -121,7 +121,7 @@ export default function BrandingPage() {
   const handleInitialize = async () => {
     setIsInitializing(true);
     try {
-      const result = await initializeBranding({});
+      const result = (await initializeBranding({})) as { message: string };
       toast.success(result.message);
     } catch (_error) {
       toast.error("Failed to initialize branding system");
@@ -323,11 +323,12 @@ export default function BrandingPage() {
         onCreate={handleCreateFolder}
       />
 
-      <UploadAssetsDialog
-        isOpen={showUploadAssets && !!selectedFolderId}
-        onClose={() => setShowUploadAssets(false)}
+      <BatchUploadDialog
+        open={showUploadAssets && !!selectedFolderId}
+        onOpenChange={setShowUploadAssets}
+        mode="branding"
         folderId={selectedFolderId!}
-        onUploadComplete={() => setShowUploadAssets(false)}
+        onSuccess={() => setShowUploadAssets(false)}
       />
 
       <AssetDetailSheet

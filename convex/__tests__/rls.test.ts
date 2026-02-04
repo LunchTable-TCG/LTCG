@@ -16,7 +16,7 @@
  * 6. Relationship-based access (deckCards → userDecks)
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it } from "vitest";
 // Note: Actual test setup would import from Convex test utilities
 // import { convexTest } from "convex-test";
 // import schema from "../schema";

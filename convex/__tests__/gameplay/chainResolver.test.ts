@@ -7,17 +7,11 @@
  * Supports both legacy string effects and JSON effects.
  */
 
-import { api } from "@convex/_generated/api";
 import type { JsonAbility } from "@convex/gameplay/effectSystem/types";
 import schema from "@convex/schema";
 import { modules } from "@convex/test.setup";
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-
-// Type helper to avoid TS2589 deep instantiation errors with Convex API
-// @ts-ignore - Suppress TS2589 for api cast
-// biome-ignore lint/suspicious/noExplicitAny: Required for TS2589 workaround
-const _apiAny = api as any;
 
 // Helper: Create a JSON ability for draw effect
 function createDrawJsonAbility(count: number): JsonAbility {
@@ -1105,7 +1099,9 @@ describe("Chain link limits and loop protection", () => {
 
     // Try to add 13th card - should fail
     const thirteenthCard = cardIds[12];
-    if (!thirteenthCard) throw new Error("Expected 13th card in test setup");
+    if (thirteenthCard === undefined) {
+      throw new Error("Expected 13th card in test setup");
+    }
 
     await expect(
       t.run(async (ctx) => {
@@ -1409,7 +1405,9 @@ describe("Chain link limits and loop protection", () => {
 
     // Add 12th card - should succeed (exactly at limit)
     const twelfthCard = cardIds[11];
-    if (!twelfthCard) throw new Error("Expected 12th card in test setup");
+    if (twelfthCard === undefined) {
+      throw new Error("Expected 12th card in test setup");
+    }
 
     const result = await t.run(async (ctx) => {
       const { addToChainHelper } = await import("@convex/gameplay/chainResolver");

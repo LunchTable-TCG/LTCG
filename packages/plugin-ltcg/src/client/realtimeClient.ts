@@ -9,7 +9,7 @@
  */
 
 import { ConvexClient } from "convex/browser";
-import type { GameStateResponse } from "../types/api";
+import type { BoardCard, GameEvent, GameStateResponse } from "../types/api";
 import type {
   GameEventCallback,
   GameStateCallback,
@@ -32,7 +32,11 @@ export type ConvexFunction = {
 export interface IConvexClient {
   setAuth(fetchToken: () => Promise<string | null | undefined>): void;
   clearAuth?(): void;
-  onUpdate<T>(query: ConvexFunction, args: ConvexQueryArgs, callback: (result: T) => void): Unsubscribe;
+  onUpdate<T>(
+    query: ConvexFunction,
+    args: ConvexQueryArgs,
+    callback: (result: T) => void
+  ): Unsubscribe;
   query<T>(query: ConvexFunction, args: ConvexQueryArgs): Promise<T>;
   close(): void;
 }
@@ -86,7 +90,7 @@ export class ConvexRealtimeClient {
     }
 
     // Use injected test client if provided, otherwise create real ConvexClient
-    this.client = config._testClient ?? new ConvexClient(config.convexUrl);
+    this.client = (config._testClient ?? new ConvexClient(config.convexUrl)) as IConvexClient;
     this.subscriptions = new Map();
     this.debug = config.debug ?? false;
     this.isConnected = false;
@@ -284,7 +288,7 @@ export class ConvexRealtimeClient {
             lobbyId: result._id,
           })
           .then((gameState) => {
-            if (gameState && gameState.currentTurnPlayerId === userId) {
+            if (gameState && gameState.currentTurnPlayer === userId) {
               callback([result._id]);
             } else {
               callback([]);
@@ -359,7 +363,9 @@ export class ConvexRealtimeClient {
     const unsubscribe = this.client.onUpdate(
       eventQuery,
       { lobbyId: gameId },
-      (result: { gameEvents?: Array<{ eventId: string; eventType: string }> }) => {
+      (result: {
+        gameEvents?: Array<{ eventId: string; eventType: string }>;
+      }) => {
         if (!result || !result.gameEvents || result.gameEvents.length === 0) {
           return;
         }
@@ -378,7 +384,9 @@ export class ConvexRealtimeClient {
             );
           }
 
-          callback(latestEvent);
+          // Cast to GameEvent with required properties - the callback expects a minimal event
+          const gameEvent = latestEvent as unknown as GameEvent;
+          callback(gameEvent);
         }
       }
     );
@@ -487,34 +495,38 @@ export class ConvexRealtimeClient {
   private formatGameState(result: GameStateResponse): GameStateResponse {
     // The query returns a comprehensive game state object
     // We map it to the GameStateResponse format
-    const isHost = result.isHost ?? true;
+
+    // Determine if this player is the host based on available data
+    const isHost = result.currentTurn === "host";
 
     return {
       gameId: result.lobbyId || result.gameId,
       lobbyId: result.lobbyId || result.gameId,
       status: result.status || "active",
-      currentTurn: isHost ? "host" : "opponent",
-      currentTurnPlayer: result.currentTurnPlayerId || "",
-      isMyTurn: result.isMyTurn ?? isHost,
-      phase: result.currentPhase || "main1",
+      currentTurn: result.currentTurn || "host",
+      currentTurnPlayer: result.currentTurnPlayer || "",
+      isMyTurn: result.isMyTurn ?? false,
+      phase: result.phase || "main1",
       turnNumber: result.turnNumber || 1,
 
       // New format fields
       myLifePoints: isHost ? result.hostLifePoints || 0 : result.opponentLifePoints || 0,
       opponentLifePoints: isHost ? result.opponentLifePoints || 0 : result.hostLifePoints || 0,
-      myBoard: (isHost ? result.hostMonsters : result.opponentMonsters) || [],
-      opponentBoard: (isHost ? result.opponentMonsters : result.hostMonsters) || [],
+      myBoard:
+        ((isHost ? result.hostMonsters : result.opponentMonsters) as unknown as BoardCard[]) || [],
+      opponentBoard:
+        ((isHost ? result.opponentMonsters : result.hostMonsters) as unknown as BoardCard[]) || [],
       myDeckCount: (isHost ? result.hostDeckCount : result.opponentDeckCount) || 0,
       opponentDeckCount: (isHost ? result.opponentDeckCount : result.hostDeckCount) || 0,
       myGraveyardCount:
         (isHost ? result.hostGraveyard?.length : result.opponentGraveyard?.length) || 0,
       opponentGraveyardCount:
         (isHost ? result.opponentGraveyard?.length : result.hostGraveyard?.length) || 0,
-      opponentHandCount: (isHost ? result.opponentHandCount : result.hostHandCount) || 0,
+      opponentHandCount: result.opponentHandCount || 0,
 
       // Legacy fields for compatibility
       hostPlayer: {
-        playerId: result.hostId,
+        playerId: result.hostId || "",
         lifePoints: result.hostLifePoints || 0,
         deckCount: result.hostDeckCount || 0,
         monsterZone: result.hostMonsters || [],
@@ -525,7 +537,7 @@ export class ConvexRealtimeClient {
       },
 
       opponentPlayer: {
-        playerId: result.opponentId,
+        playerId: result.opponentId || "",
         lifePoints: result.opponentLifePoints || 0,
         deckCount: result.opponentDeckCount || 0,
         monsterZone: result.opponentMonsters || [],
@@ -537,7 +549,9 @@ export class ConvexRealtimeClient {
 
       hand: result.myHand || [],
       hasNormalSummoned: result.hasNormalSummoned || false,
-      canChangePosition: result.monsterPositionChanges || [],
+      canChangePosition: Array.isArray(result.monsterPositionChanges)
+        ? result.monsterPositionChanges.map(() => true)
+        : [],
     };
   }
 }

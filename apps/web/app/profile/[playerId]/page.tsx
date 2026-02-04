@@ -31,6 +31,19 @@ import { AgentManagement } from "./components";
 
 type PageParams = { playerId: string };
 
+/** Match history item returned from getPublicMatchHistory query */
+interface MatchHistoryItem {
+  id: string;
+  result: "victory" | "defeat";
+  mode: string;
+  opponent: {
+    id: string;
+    username: string;
+  };
+  ratingChange: number;
+  timestamp: number;
+}
+
 // Format date
 function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString("en-US", {
@@ -396,7 +409,7 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {matchHistory.map((match: any) => (
+                  {matchHistory.map((match: MatchHistoryItem) => (
                     <div
                       key={match.id}
                       className={cn(

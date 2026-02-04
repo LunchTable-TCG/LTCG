@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { BattlePassId } from "@/lib/convexTypes";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
@@ -31,7 +31,6 @@ import {
   ArrowLeftIcon,
   CalendarIcon,
   CrownIcon,
-  GemIcon,
   LayersIcon,
   Loader2Icon,
   PercentIcon,
@@ -72,7 +71,6 @@ export default function BattlePassDetailPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [xpPerTier, setXpPerTier] = useState("");
-  const [premiumPrice, setPremiumPrice] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -92,7 +90,6 @@ export default function BattlePassDetailPage() {
       setName(battlePass.name);
       setDescription(battlePass.description ?? "");
       setXpPerTier(battlePass.xpPerTier?.toString() ?? "1000");
-      setPremiumPrice(battlePass.premiumPrice?.toString() ?? "1000");
       if (battlePass.startDate) {
         setStartDate(format(new Date(battlePass.startDate), "yyyy-MM-dd'T'HH:mm"));
       }
@@ -109,15 +106,14 @@ export default function BattlePassDetailPage() {
     }
     setIsSaving(true);
     try {
-      const result = await updateBattlePass({
+      const result = (await updateBattlePass({
         battlePassId: battlePassId as BattlePassId,
         name: name.trim(),
         description: description.trim() || undefined,
         xpPerTier: Number.parseInt(xpPerTier, 10),
-        premiumPrice: Number.parseInt(premiumPrice, 10),
         startDate: startDate ? new Date(startDate).getTime() : undefined,
         endDate: endDate ? new Date(endDate).getTime() : undefined,
-      });
+      })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save battle pass");
@@ -129,7 +125,9 @@ export default function BattlePassDetailPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const result = await deleteBattlePass({ battlePassId: battlePassId as BattlePassId });
+      const result = (await deleteBattlePass({ battlePassId: battlePassId as BattlePassId })) as {
+        message: string;
+      };
       toast.success(result.message);
       router.push("/battle-pass");
     } catch (error) {
@@ -290,22 +288,6 @@ export default function BattlePassDetailPage() {
                 <Text className="text-xs text-muted-foreground">
                   XP required to advance one tier
                 </Text>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <GemIcon className="h-4 w-4 text-violet-500" />
-                  Premium Price (Gems)
-                </Label>
-                <Input
-                  type="number"
-                  value={premiumPrice}
-                  onChange={(e) => setPremiumPrice(e.target.value)}
-                  placeholder="1000"
-                  min="0"
-                  disabled={!isEditable}
-                />
-                <Text className="text-xs text-muted-foreground">Cost to unlock premium track</Text>
               </div>
 
               <div className="space-y-2">

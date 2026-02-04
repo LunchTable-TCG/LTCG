@@ -160,7 +160,10 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
       });
 
       // Parse LLM decision
-      const parsed = extractJsonFromLlmResponse(decision, { handIndex: 0, zone: "monster" });
+      const parsed = extractJsonFromLlmResponse(decision, {
+        handIndex: 0,
+        zone: "monster",
+      });
       const selectedCard = settableCards[parsed.handIndex];
 
       if (!selectedCard) {

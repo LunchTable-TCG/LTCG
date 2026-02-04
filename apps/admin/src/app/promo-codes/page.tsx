@@ -30,7 +30,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
   CalendarIcon,
@@ -52,10 +53,30 @@ import { toast } from "sonner";
 // =============================================================================
 
 type RewardType = "gold" | "gems" | "pack";
+type BadgeColor = "amber" | "violet" | "blue" | "emerald" | "rose" | "indigo" | "gray" | "slate";
+
+interface ShopProduct {
+  productId: string;
+  name: string;
+}
+
+interface PromoCode {
+  _id: Id<"promoCodes">;
+  code: string;
+  description: string;
+  rewardType: RewardType;
+  rewardAmount: number;
+  rewardPackId?: string;
+  maxRedemptions?: number;
+  redemptionCount: number;
+  expiresAt?: number;
+  isActive: boolean;
+  createdAt: number;
+}
 
 const REWARD_TYPE_CONFIG: Record<
   RewardType,
-  { label: string; color: string; icon: React.ReactNode }
+  { label: string; color: BadgeColor; icon: React.ReactNode }
 > = {
   gold: { label: "Gold", color: "amber", icon: <CoinsIcon className="h-4 w-4" /> },
   gems: { label: "Gems", color: "violet", icon: <GemIcon className="h-4 w-4" /> },
@@ -81,7 +102,7 @@ function CreatePromoCodeDialog() {
 
   // Get available packs for pack rewards
   const productsResult = useConvexQuery(api.admin.shop.listProducts, {
-    productType: "pack" as any,
+    productType: "pack",
     includeInactive: false,
   });
 
@@ -206,7 +227,7 @@ function CreatePromoCodeDialog() {
                     <SelectValue placeholder="Select pack..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {productsResult?.products.map((p: any) => (
+                    {productsResult?.products.map((p: ShopProduct) => (
                       <SelectItem key={p.productId} value={p.productId}>
                         {p.name}
                       </SelectItem>
@@ -280,7 +301,7 @@ function BulkGenerateDialog() {
   const bulkGenerate = useConvexMutation(api.admin.promoCodes.bulkGeneratePromoCodes);
 
   const productsResult = useConvexQuery(api.admin.shop.listProducts, {
-    productType: "pack" as any,
+    productType: "pack",
     includeInactive: false,
   });
 
@@ -304,7 +325,7 @@ function BulkGenerateDialog() {
         ? Date.now() + Number.parseInt(expiresInDays) * 24 * 60 * 60 * 1000
         : undefined;
 
-      const result = await bulkGenerate({
+      const result = (await bulkGenerate({
         prefix: prefix.trim(),
         count: Number.parseInt(count),
         description: description.trim(),
@@ -313,7 +334,7 @@ function BulkGenerateDialog() {
         rewardPackId: rewardType === "pack" ? rewardPackId : undefined,
         maxRedemptions: maxRedemptions ? Number.parseInt(maxRedemptions) : undefined,
         expiresAt,
-      });
+      })) as { message: string; codes: string[] };
 
       toast.success(result.message);
       setGeneratedCodes(result.codes);
@@ -442,7 +463,7 @@ function BulkGenerateDialog() {
                       <SelectValue placeholder="Select pack..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {productsResult?.products.map((p: any) => (
+                      {productsResult?.products.map((p: ShopProduct) => (
                         <SelectItem key={p.productId} value={p.productId}>
                           {p.name}
                         </SelectItem>
@@ -520,9 +541,11 @@ export default function PromoCodesPage() {
 
   const toggleActive = useConvexMutation(api.admin.promoCodes.togglePromoCodeActive);
 
-  const handleToggleActive = async (promoCodeId: string, _code: string) => {
+  const handleToggleActive = async (promoCodeId: Id<"promoCodes">, _code: string) => {
     try {
-      const result = await toggleActive({ promoCodeId: promoCodeId as PromoCodeId });
+      const result = (await toggleActive({ promoCodeId })) as {
+        message: string;
+      };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle code status");
@@ -657,11 +680,12 @@ export default function PromoCodesPage() {
                 </tr>
               </thead>
               <tbody>
-                {codesResult?.codes.map((code: any) => {
+                {codesResult?.codes.map((code: PromoCode) => {
                   const rewardConfig = REWARD_TYPE_CONFIG[code.rewardType as RewardType];
-                  const isExpired = code.expiresAt && code.expiresAt <= now;
-                  const isExhausted =
-                    code.maxRedemptions && code.redemptionCount >= code.maxRedemptions;
+                  const isExpired = Boolean(code.expiresAt && code.expiresAt <= now);
+                  const isExhausted = Boolean(
+                    code.maxRedemptions && code.redemptionCount >= code.maxRedemptions
+                  );
 
                   return (
                     <tr
@@ -689,7 +713,7 @@ export default function PromoCodesPage() {
                         </div>
                       </td>
                       <td className="py-3 px-3">
-                        <Badge color={rewardConfig.color as any} size="sm">
+                        <Badge color={rewardConfig.color} size="sm">
                           <span className="flex items-center gap-1">
                             {rewardConfig.icon}
                             {code.rewardAmount.toLocaleString()} {rewardConfig.label}

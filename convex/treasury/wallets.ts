@@ -7,8 +7,9 @@
 
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
+import type { Doc } from "../_generated/dataModel";
 import { internalAction, query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
@@ -43,16 +44,18 @@ export const listWallets = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "admin");
 
-    let wallets;
+    let wallets: Doc<"treasuryWallets">[];
     if (args.purpose) {
+      const purpose = args.purpose;
       wallets = await ctx.db
         .query("treasuryWallets")
-        .withIndex("by_purpose", (q) => q.eq("purpose", args.purpose!))
+        .withIndex("by_purpose", (q) => q.eq("purpose", purpose))
         .collect();
     } else if (args.status) {
+      const status = args.status;
       wallets = await ctx.db
         .query("treasuryWallets")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .withIndex("by_status", (q) => q.eq("status", status))
         .collect();
     } else {
       wallets = await ctx.db.query("treasuryWallets").collect();
@@ -250,7 +253,7 @@ export const updateWallet = mutation({
       action: "treasury.wallet.update",
       metadata: {
         walletId: args.walletId,
-        updates,
+        updates: JSON.stringify(updates),
       },
       success: true,
     });
@@ -450,12 +453,14 @@ export const createPrivyWallet = internalAction({
 
     try {
       // Create wallet via Privy API
+      // Use btoa() instead of Buffer.from() for base64 encoding in Convex runtime
+      const basicAuth = btoa(`${PRIVY_APP_ID}:${PRIVY_APP_SECRET}`);
       const response = await fetch("https://api.privy.io/v1/wallets", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "privy-app-id": PRIVY_APP_ID,
-          Authorization: `Basic ${Buffer.from(`${PRIVY_APP_ID}:${PRIVY_APP_SECRET}`).toString("base64")}`,
+          Authorization: `Basic ${basicAuth}`,
         },
         body: JSON.stringify({
           chain_type: "solana",
@@ -572,5 +577,68 @@ export const migrateExistingWallets = internalMutation({
 
     console.log(`Migrated ${migrated} treasury wallets`);
     return { migrated };
+  },
+});
+
+// =============================================================================
+// Setup - Initialize required treasury wallets
+// =============================================================================
+
+/**
+ * Setup the required treasury wallets for x402 payments.
+ * Creates fee_collection wallet if it doesn't exist.
+ *
+ * Run this via: npx convex run treasury/wallets:setupX402TreasuryWallets
+ *
+ * Note: This is exposed as a public mutation (not internal) so it can be
+ * run via CLI. It's a one-time setup operation that doesn't require auth.
+ */
+export const setupX402TreasuryWallets = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Check if fee_collection wallet already exists
+    const existingWallet = await ctx.db
+      .query("treasuryWallets")
+      .withIndex("by_purpose", (q) => q.eq("purpose", "fee_collection"))
+      .first();
+
+    if (existingWallet) {
+      console.log(
+        `Fee collection wallet already exists: ${existingWallet.address || "pending creation"}`
+      );
+      return {
+        created: false,
+        walletId: existingWallet._id,
+        address: existingWallet.address,
+        status: existingWallet.creationStatus,
+      };
+    }
+
+    // Create fee_collection wallet
+    // Note: createdBy is optional for system-created wallets
+    const walletId = await ctx.db.insert("treasuryWallets", {
+      privyWalletId: "",
+      address: "",
+      name: "LunchTable Fee Collection",
+      purpose: "fee_collection",
+      policyId: undefined,
+      status: "active",
+      creationStatus: "pending",
+      creationAttempts: 0,
+      createdAt: Date.now(),
+    });
+
+    // Schedule Privy wallet creation
+    await ctx.scheduler.runAfter(0, internal.treasury.wallets.createPrivyWallet, {
+      walletDbId: walletId,
+      policyId: undefined,
+    });
+
+    console.log(`Fee collection wallet creation scheduled: ${walletId}`);
+    return {
+      created: true,
+      walletId,
+      message: "Fee collection wallet creation scheduled. Check admin dashboard for status.",
+    };
   },
 });

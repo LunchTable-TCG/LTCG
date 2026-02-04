@@ -34,17 +34,17 @@ const listWaitingLobbiesQuery = require("../_generated/api").api.gameplay.games.
 
 const joinLobbyInternalMutation = require("../_generated/api").internal.gameplay.games.lobby
   .joinLobbyInternal as MutationFunction<
-  { userId: Id<"users">; lobbyId: Id<"lobbies">; joinCode?: string },
+  { userId: Id<"users">; lobbyId: Id<"gameLobbies">; joinCode?: string },
   {
-    gameId: Id<"games">;
-    lobbyId: Id<"lobbies">;
+    gameId: Id<"gameStates">;
+    lobbyId: Id<"gameLobbies">;
     opponentUsername: string;
     mode: string;
   }
 >;
 
 const cancelLobbyInternalMutation = require("../_generated/api").internal.gameplay.games.lobby
-  .cancelLobbyInternal as MutationFunction<{ userId: Id<"users"> }, { lobbyId: Id<"lobbies"> }>;
+  .cancelLobbyInternal as MutationFunction<{ userId: Id<"users"> }, { lobbyId: Id<"gameLobbies"> }>;
 
 /**
  * POST /api/agents/matchmaking/enter
@@ -286,7 +286,7 @@ export const join = authHttpAction(async (ctx, request, auth) => {
 
     const result = await ctx.runMutation(joinLobbyInternalMutation, {
       userId: auth.userId,
-      lobbyId: lobbyId as Id<"lobbies">,
+      lobbyId: lobbyId as Id<"gameLobbies">,
       joinCode: body.joinCode,
     });
 

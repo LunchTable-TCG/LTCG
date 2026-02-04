@@ -79,11 +79,19 @@ if (rootElement) {
   createRoot(rootElement).render(<ExampleRoute />);
 }
 
+/**
+ * Props interface for panel components
+ */
+export interface PanelProps {
+  agentId: UUID;
+  [key: string]: unknown;
+}
+
 // Define types for integration with agent UI system
 export interface AgentPanel {
   name: string;
   path: string;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<PanelProps>;
   icon?: string;
   public?: boolean;
   shortLabel?: string; // Optional short label for mobile
@@ -92,8 +100,8 @@ export interface AgentPanel {
 /**
  * Wrap panels with ErrorBoundary for production resilience
  */
-function withErrorBoundary(Component: React.ComponentType<any>) {
-  return function WrappedPanel(props: any) {
+function withErrorBoundary<P extends PanelProps>(Component: React.ComponentType<P>) {
+  return function WrappedPanel(props: P) {
     return (
       <ErrorBoundary>
         <Component {...props} />

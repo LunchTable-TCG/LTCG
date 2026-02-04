@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
   Badge,
@@ -62,7 +62,11 @@ interface EconomyTrend {
   marketplaceVolume: number;
 }
 
-// WealthDistributionItem type - now inferred from API response
+interface WealthDistributionItem {
+  label: string;
+  count: number;
+  percentage: number;
+}
 
 // =============================================================================
 // Helper Functions
@@ -128,10 +132,10 @@ export default function EconomyAnalyticsPage() {
 
   // Transform wealth distribution for donut chart
   const wealthDistributionData =
-    (wealth?.distribution as any[] | undefined)?.map((d) => ({
+    wealth?.distribution?.map((d: WealthDistributionItem) => ({
       name: d.label,
       value: d.count,
-      totalGold: d.totalGold ?? 0,
+      percentage: d.percentage,
     })) ?? [];
 
   // Calculate inflation/deflation percentage

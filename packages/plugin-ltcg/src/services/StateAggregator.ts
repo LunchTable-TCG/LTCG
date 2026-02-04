@@ -293,25 +293,32 @@ export class StateAggregator extends Service {
           try {
             // Query match history from Convex
             // Using string path to avoid importing from convex directory
-            // biome-ignore lint/suspicious/noExplicitAny: Dynamic Convex query with string-based API path
-            const matchHistory: any = await this.convexClient.query(
-              // biome-ignore lint/suspicious/noExplicitAny: String-based API path for loose coupling
-              "progression/matchHistory:getMatchHistory" as any,
+            type ConvexQueryPath = (
+              path: string,
+              args: Record<string, number>
+            ) => Promise<ConvexMatchHistoryEntry[]>;
+            interface ConvexMatchHistoryEntry {
+              id?: string | number;
+              result?: "victory" | "defeat" | "draw";
+              timestamp?: number;
+              duration?: number;
+              turns?: number;
+              [key: string]: string | number | undefined;
+            }
+
+            const matchHistory = await (this.convexClient.query as ConvexQueryPath)(
+              "progression/matchHistory:getMatchHistory",
               { limit: 50 }
             );
 
             if (matchHistory && Array.isArray(matchHistory)) {
               // Calculate lifetime stats from real data
               metrics.lifetime.gamesPlayed = matchHistory.length;
-              // biome-ignore lint/suspicious/noExplicitAny: Dynamic match data from Convex query
               metrics.lifetime.wins = matchHistory.filter(
-                // biome-ignore lint/suspicious/noExplicitAny: Dynamic match data from Convex query
-                (m: any) => m.result === "victory"
+                (m: ConvexMatchHistoryEntry) => m.result === "victory"
               ).length;
-              // biome-ignore lint/suspicious/noExplicitAny: Dynamic match data from Convex query
               metrics.lifetime.losses = matchHistory.filter(
-                // biome-ignore lint/suspicious/noExplicitAny: Dynamic match data from Convex query
-                (m: any) => m.result === "defeat"
+                (m: ConvexMatchHistoryEntry) => m.result === "defeat"
               ).length;
               metrics.lifetime.winRate =
                 metrics.lifetime.gamesPlayed > 0
@@ -319,14 +326,15 @@ export class StateAggregator extends Service {
                   : 0;
 
               // Map to recent games format
-              // biome-ignore lint/suspicious/noExplicitAny: Dynamic match data mapping from Convex query
-              metrics.recentGames = matchHistory.slice(0, 10).map((match: any) => ({
-                gameId: String(match.id || "unknown"),
-                timestamp: match.timestamp || Date.now(),
-                result: match.result === "victory" ? ("win" as const) : ("loss" as const),
-                duration: 0, // Not available in match history
-                turns: 0, // Not available in match history
-              }));
+              metrics.recentGames = matchHistory
+                .slice(0, 10)
+                .map((match: ConvexMatchHistoryEntry) => ({
+                  gameId: String(match.id || "unknown"),
+                  timestamp: match.timestamp || Date.now(),
+                  result: match.result === "victory" ? ("win" as const) : ("loss" as const),
+                  duration: 0, // Not available in match history
+                  turns: 0, // Not available in match history
+                }));
 
               logger.info(`Fetched ${matchHistory.length} matches from Convex for metrics`);
             }

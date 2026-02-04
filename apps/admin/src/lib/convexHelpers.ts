@@ -1,55 +1,67 @@
 /**
  * Convex Helper Utilities
  *
- * Provides type-safe wrappers for Convex hooks that avoid TS2589 errors
- * while maintaining type safety through proper generic constraints.
- *
- * Uses patterns from convex-helpers: https://github.com/get-convex/convex-helpers
+ * Provides type-safe helpers for Convex API access.
+ * Uses TypedAPI from @ltcg/core for full type safety.
  */
 
+// Re-export Convex React hooks directly for full type inference
+export { useAction, useMutation, useQuery } from "convex/react";
+
+// Re-export types from core
+export type {
+  Expand,
+  TypedQuery,
+  TypedMutation,
+  TypedAction,
+} from "@ltcg/core";
+
+// Import TypedAPI for proper typing
+import type { TypedAPI } from "@ltcg/core/api";
+
+// Re-export typed hooks from core for type-safe code
+export { useTypedQuery, useTypedMutation, useTypedAction } from "@ltcg/core/react";
+
+// Re-export API types and factory functions for type-safe code
+export type {
+  User,
+  UserInfo,
+  UserProfile,
+  PlayerBalance,
+  Transaction,
+  CardDefinition,
+  UserCard,
+  UserDeck,
+  Notification,
+  Tournament,
+  Id,
+} from "@ltcg/core/types/api";
+
+export {
+  createTypedQuery,
+  createTypedMutation,
+  createTypedAction,
+} from "@ltcg/core/api";
+
+// Direct re-export of api for type inference
+export { api } from "@convex/_generated/api";
+
+// Import api and cast to TypedAPI for full type safety
 import { api } from "@convex/_generated/api";
-import type { FunctionReference } from "convex/server";
-import { useMutation, useQuery } from "convex/react";
 
 /**
- * Expand utility type from convex-helpers
- * Forces TypeScript to expand complex intersection types (A & B) into flattened objects.
- * This helps avoid "Type instantiation is excessively deep" errors.
- *
- * @see https://github.com/get-convex/convex-helpers/blob/main/packages/convex-helpers/server/utils.ts
+ * Typed API with full type inference.
+ * Use this for all Convex queries/mutations to get proper return type inference.
  */
-export type Expand<ObjectType extends Record<string, unknown>> = ObjectType extends Record<
-  string,
-  unknown
->
-  ? {
-      [Key in keyof ObjectType]: ObjectType[Key];
-    }
-  : never;
+export const typedApi = api as unknown as TypedAPI;
 
 /**
- * Re-export api for components that need the full typed API
- * Use useConvexQuery/useConvexMutation wrappers to avoid TS2589 errors
+ * Alias for typedApi - use when you need to bypass strict typing.
+ * Prefer typedApi when possible for better type safety.
  */
-export { api };
+export const apiAny = typedApi;
 
-/**
- * Wrapper for useMutation that avoids TS2589 errors
- * Accepts any Convex mutation function reference
- */
-export function useConvexMutation<Args extends Record<string, unknown>, Returns>(
-  mutation: FunctionReference<"mutation", "public" | "internal", Args, Returns>,
-) {
-  return useMutation(mutation);
-}
-
-/**
- * Wrapper for useQuery that avoids TS2589 errors
- * Accepts any Convex query function reference with optional args
- */
-export function useConvexQuery<Args extends Record<string, unknown>, Returns>(
-  query: FunctionReference<"query", "public" | "internal", Args, Returns>,
-  args?: Args,
-) {
-  return useQuery(query, args);
-}
+// Legacy aliases for backward compatibility
+export { useQuery as useConvexQuery } from "convex/react";
+export { useMutation as useConvexMutation } from "convex/react";
+export { useAction as useConvexAction } from "convex/react";

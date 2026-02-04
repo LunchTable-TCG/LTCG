@@ -20,19 +20,19 @@ export type TrapType = NonNullable<Doc<"cardDefinitions">["trapType"]>;
 export type SeasonStatus = Doc<"seasons">["status"];
 
 // User/Player types
-export type UserRole = NonNullable<Doc<"users">["role"]>;
+export type UserRole = Doc<"adminRoles">["role"];
 
 // Shop types
-export type ProductType = Doc<"shopProducts">["type"];
-export type PurchaseStatus = Doc<"purchases">["status"];
+export type ProductType = Doc<"shopProducts">["productType"];
+export type PurchaseStatus = Doc<"tokenGemPurchases">["status"];
 
 // Tournament types
 export type TournamentStatus = Doc<"tournaments">["status"];
 export type TournamentFormat = Doc<"tournaments">["format"];
 
 // Quest types
-export type QuestType = Doc<"quests">["type"];
-export type QuestStatus = Doc<"quests">["status"];
+export type QuestType = Doc<"questDefinitions">["questType"];
+export type QuestStatus = Doc<"userQuests">["status"];
 
 // Achievement types
 export type AchievementCategory = Doc<"achievementDefinitions">["category"];
@@ -41,12 +41,10 @@ export type AchievementCategory = Doc<"achievementDefinitions">["category"];
 export type StageStatus = Doc<"storyStages">["status"];
 
 // Promo code types
-export type PromoCodeType = Doc<"promoCodes">["type"];
-export type PromoCodeStatus = Doc<"promoCodes">["status"];
+export type PromoCodeRewardType = Doc<"promoCodes">["rewardType"];
 
-// Alert types
-export type AlertSeverity = Doc<"alertHistory">["severity"];
-export type AlertStatus = Doc<"alertHistory">["status"];
+// Alert types - severity is a string
+export type AlertSeverity = string;
 
 // Common ID types for easy reference
 export type CardId = Id<"cardDefinitions">;
@@ -54,15 +52,15 @@ export type UserId = Id<"users">;
 export type SeasonId = Id<"seasons">;
 export type ProductId = Id<"shopProducts">;
 export type TournamentId = Id<"tournaments">;
-export type QuestId = Id<"quests">;
+export type QuestId = Id<"questDefinitions">;
 export type AchievementId = Id<"achievementDefinitions">;
 export type PromoCodeId = Id<"promoCodes">;
-export type TemplateId = Id<"templates">;
-export type BattlePassId = Id<"battlePasses">;
+export type TemplateId = Id<"cardTemplates">;
+export type BattlePassId = Id<"battlePassSeasons">;
 export type ChapterId = Id<"storyChapters">;
 export type StageId = Id<"storyStages">;
 export type FeatureFlagId = Id<"featureFlags">;
-export type LaunchChecklistItemId = Id<"launchChecklistItems">;
+export type LaunchChecklistItemId = Id<"launchChecklist">;
 
 // Analytics query result types
 export interface CardWinRateStat {
@@ -101,4 +99,6 @@ export interface SeasonLeaderboardEntry {
   losses: number;
   rank: number;
   tier: string;
+  winRate: number;
+  rewardsDistributed?: boolean;
 }

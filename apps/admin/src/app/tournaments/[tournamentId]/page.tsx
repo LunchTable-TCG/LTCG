@@ -20,8 +20,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import type { TournamentId } from "@/lib/convexTypes";
+import { useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { TournamentId, UserId } from "@/lib/convexTypes";
+import { api } from "@convex/_generated/api";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
 import {
@@ -44,6 +45,49 @@ import { toast } from "sonner";
 // =============================================================================
 
 type TournamentStatus = "registration" | "checkin" | "active" | "completed" | "cancelled";
+
+interface TournamentParticipant {
+  _id: string;
+  userId: string;
+  username: string;
+  status: ParticipantStatus;
+  seedRating: number;
+  currentRound?: number;
+  finalPlacement?: number;
+  prizeAwarded?: number;
+}
+
+interface TournamentData {
+  name: string;
+  description?: string;
+  format: string;
+  mode: string;
+  status: TournamentStatus;
+  entryFee: number;
+  maxPlayers: number;
+  prizePool: { first: number; second: number; thirdFourth: number };
+  registrationStartsAt?: number;
+  registrationEndsAt?: number;
+  scheduledStartAt?: number;
+  registeredCount: number;
+  currentRound: number;
+  totalRounds?: number;
+  creatorUsername: string;
+  participants: TournamentParticipant[];
+  stats: {
+    registeredCount: number;
+    checkedInCount: number;
+    activeCount: number;
+    eliminatedCount: number;
+    totalMatchesPlayed: number;
+    pendingMatches: number;
+    activeMatches: number;
+    potentialPrize: number;
+    totalPrizeDistributed: number;
+    totalEntryFees: number;
+  };
+}
+
 type ParticipantStatus =
   | "registered"
   | "checked_in"
@@ -113,11 +157,11 @@ function GrantEntryDialog({
     setIsSubmitting(true);
 
     try {
-      const result = await grantEntry({
+      const result = (await grantEntry({
         tournamentId: tournamentId as TournamentId,
-        userId: userId.trim() as any,
+        userId: userId.trim() as UserId,
         reason: reason.trim(),
-      });
+      })) as { message: string };
       toast.success(result.message);
       onOpenChange(false);
       setUserId("");
@@ -218,10 +262,10 @@ export default function TournamentDetailPage() {
     if (tournament) {
       setName(tournament.name);
       setDescription(tournament.description ?? "");
-      setEntryFee(tournament.entryFee?.toString() ?? "0");
-      setPrizeFirst(tournament.prizePool.first?.toString() ?? "0");
-      setPrizeSecond(tournament.prizePool.second?.toString() ?? "0");
-      setPrizeThirdFourth(tournament.prizePool.thirdFourth?.toString() ?? "0");
+      setEntryFee(tournament.entryFee.toString());
+      setPrizeFirst(tournament.prizePool.first.toString());
+      setPrizeSecond(tournament.prizePool.second.toString());
+      setPrizeThirdFourth(tournament.prizePool.thirdFourth.toString());
       if (tournament.registrationStartsAt) {
         setRegistrationStartsAt(
           format(new Date(tournament.registrationStartsAt), "yyyy-MM-dd'T'HH:mm")
@@ -245,7 +289,7 @@ export default function TournamentDetailPage() {
     }
     setIsSaving(true);
     try {
-      const result = await updateTournament({
+      const result = (await updateTournament({
         tournamentId: tournamentId as TournamentId,
         updates: {
           name: name.trim(),
@@ -264,7 +308,7 @@ export default function TournamentDetailPage() {
             : undefined,
           scheduledStartAt: scheduledStartAt ? new Date(scheduledStartAt).getTime() : undefined,
         },
-      });
+      })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save tournament");
@@ -275,10 +319,10 @@ export default function TournamentDetailPage() {
 
   const handleForceStart = async (reason: string) => {
     try {
-      const result = await forceStart({
+      const result = (await forceStart({
         tournamentId: tournamentId as TournamentId,
         reason,
-      });
+      })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to force start tournament");
@@ -292,12 +336,12 @@ export default function TournamentDetailPage() {
     reason: string
   ) => {
     try {
-      const result = await removeParticipant({
+      const result = (await removeParticipant({
         tournamentId: tournamentId as TournamentId,
-        userId: userId as any,
+        userId: userId as UserId,
         reason,
         refundEntry,
-      });
+      })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to remove participant");
@@ -306,11 +350,11 @@ export default function TournamentDetailPage() {
 
   const handleDisqualify = async (userId: string, _username: string, reason: string) => {
     try {
-      const result = await disqualifyParticipant({
+      const result = (await disqualifyParticipant({
         tournamentId: tournamentId as TournamentId,
-        userId: userId as any,
+        userId: userId as UserId,
         reason,
-      });
+      })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to disqualify participant");
@@ -539,7 +583,7 @@ export default function TournamentDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {tournament.participants.map((participant: any) => {
+                    {tournament.participants.map((participant: TournamentParticipant) => {
                       const pStatusConfig =
                         PARTICIPANT_STATUS_CONFIG[participant.status as ParticipantStatus];
                       return (
@@ -719,8 +763,8 @@ export default function TournamentDetailPage() {
 // =============================================================================
 
 interface ParticipantActionsProps {
-  participant: any;
-  tournament: any;
+  participant: TournamentParticipant;
+  tournament: TournamentData;
   onRemove: (userId: string, username: string, refund: boolean, reason: string) => void;
   onDisqualify: (userId: string, username: string, reason: string) => void;
 }

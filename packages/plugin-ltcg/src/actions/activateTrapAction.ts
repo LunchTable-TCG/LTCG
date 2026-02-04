@@ -18,8 +18,8 @@ import { ModelType, logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
 import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
 import { gameStateProvider } from "../providers/gameStateProvider";
-import type { GameEvent, GameStateResponse } from "../types/api";
 import type { ActionHandlerOptions } from "../types/action";
+import type { GameEvent, GameStateResponse } from "../types/api";
 import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const activateTrapAction: Action = {

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, BarChart, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -38,7 +38,16 @@ interface DailyStat {
   day7Retention?: number;
 }
 
-// EngagedPlayer type - now inferred from API response
+interface EngagedPlayer {
+  rank: number;
+  userId: string;
+  username: string;
+  gamesPlayed: number;
+  daysActive: number;
+  avgGamesPerDay: number;
+  lastActiveAt: number;
+  engagementScore: number;
+}
 
 // =============================================================================
 // Component
@@ -122,11 +131,11 @@ export default function PlayerAnalyticsPage() {
 
   // Transform top engaged players for leaderboard
   const engagementLeaderboard =
-    (topEngaged as any[] | undefined)?.map((player, idx) => ({
+    (topEngaged as EngagedPlayer[] | undefined)?.map((player, idx) => ({
       rank: idx + 1,
-      name: player.username || player.playerName,
-      value: player.engagementScore ?? Math.round((player.totalSessionTime ?? 0) / 60000),
-      subtitle: `${player.gamesPlayed ?? player.totalGamesPlayed} games • ${player.daysActive} days active`,
+      name: player.username,
+      value: player.engagementScore,
+      subtitle: `${player.gamesPlayed} games • ${player.daysActive} days active`,
     })) ?? [];
 
   // Get trend indicator for retention

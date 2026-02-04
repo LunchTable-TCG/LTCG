@@ -22,10 +22,16 @@ const rarityValidator = v.union(
 );
 
 const archetypeValidator = v.union(
+  // Primary archetypes
   v.literal("infernal_dragons"),
+  v.literal("abyssal_depths"),
+  v.literal("iron_legion"),
+  v.literal("necro_empire"),
+  // Legacy archetypes
   v.literal("abyssal_horrors"),
   v.literal("nature_spirits"),
   v.literal("storm_elementals"),
+  // Future archetypes
   v.literal("shadow_assassins"),
   v.literal("celestial_guardians"),
   v.literal("undead_legion"),
@@ -33,6 +39,7 @@ const archetypeValidator = v.union(
   v.literal("arcane_mages"),
   v.literal("mechanical_constructs"),
   v.literal("neutral"),
+  // Deprecated archetypes (for backward compatibility)
   v.literal("fire"),
   v.literal("water"),
   v.literal("earth"),
@@ -112,21 +119,24 @@ export const listCards = query({
     // Build query based on filters
     const cards = await (async () => {
       if (args.rarity) {
+        const rarity = args.rarity;
         return await ctx.db
           .query("cardDefinitions")
-          .withIndex("by_rarity", (q) => q.eq("rarity", args.rarity!))
+          .withIndex("by_rarity", (q) => q.eq("rarity", rarity))
           .collect();
       }
       if (args.archetype) {
+        const archetype = args.archetype;
         return await ctx.db
           .query("cardDefinitions")
-          .withIndex("by_archetype", (q) => q.eq("archetype", args.archetype!))
+          .withIndex("by_archetype", (q) => q.eq("archetype", archetype))
           .collect();
       }
       if (args.cardType) {
+        const cardType = args.cardType;
         return await ctx.db
           .query("cardDefinitions")
-          .withIndex("by_type", (q) => q.eq("cardType", args.cardType!))
+          .withIndex("by_type", (q) => q.eq("cardType", cardType))
           .collect();
       }
       return await ctx.db.query("cardDefinitions").collect();
@@ -352,7 +362,7 @@ export const updateCard = mutation({
       metadata: {
         cardId,
         cardName: existingCard.name,
-        updates: Object.keys(updateObj),
+        updates: Object.keys(updateObj).join(", "),
       },
       success: true,
     });

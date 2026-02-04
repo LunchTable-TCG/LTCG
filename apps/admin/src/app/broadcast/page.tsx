@@ -20,7 +20,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation } from "@/lib/convexHelpers";
+import { api, useConvexMutation } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import { Loader2, Megaphone, Send, Users, Wrench } from "lucide-react";
 import { useState } from "react";
@@ -146,13 +147,13 @@ function AnnouncementForm() {
 
     setIsLoading(true);
     try {
-      const result = await sendAnnouncement({
-        playerIds: ids as any,
+      const result = (await sendAnnouncement({
+        playerIds: ids as Id<"users">[],
         title: title.trim(),
         message: message.trim(),
         priority,
         expiresInDays: expiresInDays ? Number.parseInt(expiresInDays) : undefined,
-      });
+      })) as { message: string };
 
       toast.success(result.message);
 
@@ -290,14 +291,14 @@ function BroadcastForm() {
 
     setIsLoading(true);
     try {
-      const result = await broadcastAnnouncement({
+      const result = (await broadcastAnnouncement({
         title: title.trim(),
         message: message.trim(),
         priority,
         expiresInDays: expiresInDays ? Number.parseInt(expiresInDays) : undefined,
         filterByMinLevel: minLevel ? Number.parseInt(minLevel) : undefined,
         filterByActiveInDays: activeInDays ? Number.parseInt(activeInDays) : undefined,
-      });
+      })) as { message: string };
 
       toast.success(result.message);
 
@@ -456,12 +457,12 @@ function SystemMessageForm() {
 
     setIsLoading(true);
     try {
-      const result = await sendSystemMessage({
-        playerIds: ids as any,
+      const result = (await sendSystemMessage({
+        playerIds: ids as Id<"users">[],
         title: title.trim(),
         message: message.trim(),
         category,
-      });
+      })) as { message: string };
 
       toast.success(result.message);
 

@@ -1,25 +1,18 @@
 "use client";
 
-import { typedApi, useTypedQuery } from "@/lib/convexTypedHelpers";
-import type { api } from "@convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import type { FunctionReturnType } from "convex/server";
-import { useAuth } from "../auth/useConvexAuthHook";
+// Import inferred types from validators - single source of truth
+import type { FullUser, UserInfo } from "@convex/lib/returnValidators";
+import { useQuery } from "convex/react";
 
-// Extract return types from Convex queries to avoid type depth issues
-// Note: @ts-ignore is required here because FunctionReturnType<typeof api.X>
-// triggers TS2589 during type extraction. The apiAny helper doesn't help here
-// since we need the actual type for type inference, not runtime usage.
-// @ts-ignore - TS2589: FunctionReturnType requires full api type which exceeds depth limit
-type CurrentUserReturn = FunctionReturnType<typeof api.core.users.currentUser>;
-// @ts-ignore - TS2589: FunctionReturnType requires full api type which exceeds depth limit
-type UserInfoReturn = FunctionReturnType<typeof api.core.users.getUser>;
+import { useAuth } from "../auth/useConvexAuthHook";
 
 /**
  * Type-safe profile with optional stats fields
- * All stats fields are guaranteed to be present for current user, but may be undefined for other users
+ * Types are inferred from Convex validators for full type safety
  */
-export type ProfileWithStats = (CurrentUserReturn | UserInfoReturn) & {
+export type ProfileWithStats = (FullUser | UserInfo) & {
   xp?: number;
   level?: number;
   totalWins?: number;
@@ -28,12 +21,6 @@ export type ProfileWithStats = (CurrentUserReturn | UserInfoReturn) & {
   casualRating?: number;
   activeDeckId?: string;
 };
-
-interface UseProfileReturn {
-  profile: ProfileWithStats | undefined;
-  isLoading: boolean;
-  isCurrentUser: boolean;
-}
 
 /**
  * User profile data retrieval for current user or other players.
@@ -65,29 +52,23 @@ interface UseProfileReturn {
  *
  * @param userId - Optional user ID to fetch specific user's profile
  *
- * @returns {UseProfileReturn} Profile interface
+ * @returns Profile data with loading state and current user check
  *
  * @throws {Error} When user is not authenticated
  */
-export function useProfile(userId?: Id<"users">): UseProfileReturn {
+export function useProfile(userId?: Id<"users">) {
   const { isAuthenticated } = useAuth();
 
-  // Current user - explicit type annotation avoids TypeScript type depth errors
-  const currentUser = useTypedQuery(
-    typedApi.core.users.currentUser,
-    isAuthenticated ? {} : "skip"
-  ) as CurrentUserReturn | null | undefined;
+  // Let TypeScript infer types from the generated api
+  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
 
-  // Other user - explicit type annotation avoids TypeScript type depth errors
-  const otherUser = useTypedQuery(typedApi.core.users.getUser, userId ? { userId } : "skip") as
-    | UserInfoReturn
-    | null
-    | undefined;
+  const otherUser = useQuery(api.core.users.getUser, userId ? { userId } : "skip");
 
-  const profile = userId ? (otherUser ?? undefined) : (currentUser ?? undefined);
+  // Profile type is inferred from validators via query return types
+  const profile: FullUser | UserInfo | null | undefined = userId ? otherUser : currentUser;
 
   return {
-    profile,
+    profile: profile ?? undefined,
     isLoading: profile === undefined,
     isCurrentUser: !userId || (currentUser ? userId === currentUser._id : false),
   };

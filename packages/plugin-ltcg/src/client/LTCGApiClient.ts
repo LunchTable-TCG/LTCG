@@ -43,10 +43,12 @@ import {
   AuthenticationError,
   GameError,
   NetworkError,
+  PaymentRequiredError,
   RateLimitError,
   ValidationError,
   parseErrorResponse,
 } from "./errors";
+import { type X402Config, X402PaymentHandler } from "./x402PaymentHandler";
 
 export interface LTCGApiClientConfig {
   apiKey: string;
@@ -54,6 +56,8 @@ export interface LTCGApiClientConfig {
   timeout?: number;
   maxRetries?: number;
   debug?: boolean;
+  /** x402 payment configuration for autonomous purchases */
+  x402Config?: X402Config;
 }
 
 export class LTCGApiClient {
@@ -62,6 +66,8 @@ export class LTCGApiClient {
   private readonly timeout: number;
   private readonly maxRetries: number;
   private readonly debug: boolean;
+  private readonly x402Handler: X402PaymentHandler | null;
+  private readonly x402Config: X402Config | null;
 
   constructor(config: LTCGApiClientConfig) {
     if (!config.apiKey) {
@@ -76,6 +82,12 @@ export class LTCGApiClient {
     this.timeout = config.timeout ?? TIMEOUTS.DEFAULT;
     this.maxRetries = config.maxRetries ?? RETRY_CONFIG.maxAttempts;
     this.debug = config.debug ?? false;
+
+    // Initialize x402 payment handler if configured
+    this.x402Config = config.x402Config ?? null;
+    this.x402Handler = config.x402Config?.enabled
+      ? new X402PaymentHandler(config.x402Config)
+      : null;
   }
 
   // ============================================================================
@@ -139,6 +151,83 @@ export class LTCGApiClient {
 
         // Handle errors
         if (!response.ok) {
+          // Handle 402 Payment Required (x402 protocol)
+          if (response.status === 402) {
+            const paymentHeader = response.headers.get("PAYMENT-REQUIRED");
+
+            if (paymentHeader && this.x402Handler && this.x402Config?.autoPayEnabled !== false) {
+              // Parse payment requirements
+              const requirements = X402PaymentHandler.decodePaymentRequired(paymentHeader);
+
+              if (requirements) {
+                if (this.debug) {
+                  console.log("[LTCG API] 402 Payment Required, attempting x402 payment...");
+                }
+
+                // Attempt to make payment
+                const paymentResult = await this.x402Handler.handlePayment(requirements);
+
+                if (paymentResult.success && paymentResult.proof) {
+                  // Retry request with payment proof
+                  if (this.debug) {
+                    console.log("[LTCG API] Payment signed, retrying with PAYMENT-SIGNATURE...");
+                  }
+
+                  const paymentSignature = X402PaymentHandler.encodePaymentProof(
+                    paymentResult.proof
+                  );
+
+                  // Make new request with payment header
+                  const retryHeaders: Record<string, string> = {
+                    "Content-Type": "application/json",
+                    "PAYMENT-SIGNATURE": paymentSignature,
+                    ...(options.headers as Record<string, string>),
+                  };
+
+                  if (requiresAuth) {
+                    retryHeaders.Authorization = `Bearer ${this.apiKey}`;
+                  }
+
+                  const retryController = new AbortController();
+                  const retryTimeoutId = setTimeout(() => retryController.abort(), timeout);
+
+                  const retryResponse = await fetch(url, {
+                    ...options,
+                    headers: retryHeaders,
+                    signal: retryController.signal,
+                  });
+
+                  clearTimeout(retryTimeoutId);
+
+                  const retryBody = await retryResponse.json();
+
+                  if (retryResponse.ok) {
+                    const successResponse = retryBody as unknown as ApiSuccessResponse<T>;
+                    return successResponse.data;
+                  }
+
+                  // Payment was made but request still failed
+                  throw parseErrorResponse(retryResponse.status, retryBody);
+                }
+
+                // Payment failed - throw error with requirements
+                throw new PaymentRequiredError(
+                  requirements,
+                  paymentResult.error || "Payment failed"
+                );
+              }
+            }
+
+            // No x402 handler or auto-pay disabled - throw payment required error
+            const requirements = paymentHeader
+              ? X402PaymentHandler.decodePaymentRequired(paymentHeader)
+              : null;
+
+            if (requirements) {
+              throw new PaymentRequiredError(requirements, "Payment required");
+            }
+          }
+
           const error = parseErrorResponse(response.status, body);
 
           // Retry on rate limit errors (429)
@@ -169,7 +258,7 @@ export class LTCGApiClient {
         }
 
         // Success response
-        const successResponse = body as ApiSuccessResponse<T>;
+        const successResponse = body as unknown as ApiSuccessResponse<T>;
         return successResponse.data;
       } catch (error) {
         lastError = error as Error;
@@ -178,7 +267,8 @@ export class LTCGApiClient {
         if (
           error instanceof AuthenticationError ||
           error instanceof ValidationError ||
-          error instanceof GameError
+          error instanceof GameError ||
+          error instanceof PaymentRequiredError
         ) {
           throw error;
         }
@@ -612,9 +702,11 @@ export class LTCGApiClient {
    * Get all available cards
    * GET /api/agents/cards?type=xxx&archetype=xxx
    */
-  async getCards(filters?: { type?: string; archetype?: string; race?: string }): Promise<
-    CardDefinition[]
-  > {
+  async getCards(filters?: {
+    type?: string;
+    archetype?: string;
+    race?: string;
+  }): Promise<CardDefinition[]> {
     let endpoint: string = API_ENDPOINTS.GET_CARDS;
 
     if (filters) {
@@ -818,7 +910,9 @@ export class LTCGApiClient {
         firstClearClaimed: boolean;
       }>;
       count: number;
-    }>(`${API_ENDPOINTS.STORY_STAGES}?chapterId=${chapterId}`, { method: "GET" });
+    }>(`${API_ENDPOINTS.STORY_STAGES}?chapterId=${chapterId}`, {
+      method: "GET",
+    });
   }
 
   /**
@@ -964,10 +1058,7 @@ export class LTCGApiClient {
    * Get decisions, optionally filtered by game
    * GET /api/agents/decisions?gameId=xxx&limit=50
    */
-  async getDecisions(options?: {
-    gameId?: string;
-    limit?: number;
-  }): Promise<{
+  async getDecisions(options?: { gameId?: string; limit?: number }): Promise<{
     decisions: Array<{
       _id: string;
       agentId: string;
@@ -1023,5 +1114,181 @@ export class LTCGApiClient {
       successCount: number;
       failureCount: number;
     }>("/api/agents/decisions/stats", { method: "GET" });
+  }
+
+  // ============================================================================
+  // Shop Endpoints (x402 Payment-Gated)
+  // ============================================================================
+
+  /**
+   * Get available gem packages
+   * GET /api/agents/shop/packages
+   *
+   * No payment required - returns package info
+   */
+  async getGemPackages(): Promise<{
+    packages: Array<{
+      packageId: string;
+      name: string;
+      gems: number;
+      usdCents: number;
+      bonusPercent: number;
+    }>;
+  }> {
+    return this.request<{
+      packages: Array<{
+        packageId: string;
+        name: string;
+        gems: number;
+        usdCents: number;
+        bonusPercent: number;
+      }>;
+    }>("/api/agents/shop/packages", { method: "GET" }, this.timeout, false);
+  }
+
+  /**
+   * Get available shop products (packs, boxes)
+   * GET /api/agents/shop/products
+   *
+   * No payment required - returns product info
+   */
+  async getShopProducts(): Promise<{
+    products: Array<{
+      productId: string;
+      name: string;
+      description: string;
+      productType: "pack" | "box" | "currency";
+      goldPrice?: number;
+      gemPrice?: number;
+      isActive: boolean;
+    }>;
+  }> {
+    return this.request<{
+      products: Array<{
+        productId: string;
+        name: string;
+        description: string;
+        productType: "pack" | "box" | "currency";
+        goldPrice?: number;
+        gemPrice?: number;
+        isActive: boolean;
+      }>;
+    }>("/api/agents/shop/products", { method: "GET" }, this.timeout, false);
+  }
+
+  /**
+   * Purchase gems using x402 payment
+   * POST /api/agents/shop/gems
+   *
+   * Requires x402 payment. If x402Config is set with autoPayEnabled,
+   * the payment will be made automatically. Otherwise, throws PaymentRequiredError.
+   *
+   * @param packageId - The gem package ID to purchase
+   * @returns Result with gems credited and new balance
+   */
+  async purchaseGems(packageId: string): Promise<{
+    success: boolean;
+    gemsCredited: number;
+    transactionSignature: string;
+    newBalance: number;
+  }> {
+    return this.request<{
+      success: boolean;
+      gemsCredited: number;
+      transactionSignature: string;
+      newBalance: number;
+    }>("/api/agents/shop/gems", {
+      method: "POST",
+      body: JSON.stringify({ packageId }),
+    });
+  }
+
+  /**
+   * Purchase a card pack using x402 payment
+   * POST /api/agents/shop/pack
+   *
+   * Requires x402 payment. If x402Config is set with autoPayEnabled,
+   * the payment will be made automatically. Otherwise, throws PaymentRequiredError.
+   *
+   * @param productId - The shop product ID (must be a pack)
+   * @returns Result with cards received
+   */
+  async purchasePack(productId: string): Promise<{
+    success: boolean;
+    productName: string;
+    cardsReceived: Array<{
+      cardDefinitionId: string;
+      name: string;
+      rarity: string;
+      variant: string;
+    }>;
+    transactionSignature: string;
+  }> {
+    return this.request<{
+      success: boolean;
+      productName: string;
+      cardsReceived: Array<{
+        cardDefinitionId: string;
+        name: string;
+        rarity: string;
+        variant: string;
+      }>;
+      transactionSignature: string;
+    }>("/api/agents/shop/pack", {
+      method: "POST",
+      body: JSON.stringify({ productId }),
+    });
+  }
+
+  /**
+   * Purchase a card pack using gems (no x402)
+   * POST /api/agents/shop/pack-gems
+   *
+   * Requires authentication. Deducts gems from player balance.
+   *
+   * @param productId - The shop product ID (must be a pack)
+   * @returns Result with cards received and gem balance
+   */
+  async purchaseWithGems(productId: string): Promise<{
+    success: boolean;
+    productName: string;
+    cardsReceived: Array<{
+      cardDefinitionId: string;
+      name: string;
+      rarity: string;
+      variant: string;
+    }>;
+    gemsSpent: number;
+    newGemBalance: number;
+  }> {
+    return this.request<{
+      success: boolean;
+      productName: string;
+      cardsReceived: Array<{
+        cardDefinitionId: string;
+        name: string;
+        rarity: string;
+        variant: string;
+      }>;
+      gemsSpent: number;
+      newGemBalance: number;
+    }>("/api/agents/shop/pack-gems", {
+      method: "POST",
+      body: JSON.stringify({ productId }),
+    });
+  }
+
+  /**
+   * Check if x402 payments are enabled for this client
+   */
+  isX402Enabled(): boolean {
+    return this.x402Handler !== null && this.x402Config?.enabled === true;
+  }
+
+  /**
+   * Get the x402 configuration (if set)
+   */
+  getX402Config(): X402Config | null {
+    return this.x402Config;
   }
 }

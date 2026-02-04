@@ -123,10 +123,26 @@ export type ProductType = "pack" | "box" | "currency";
 export interface PackConfig {
   cardCount: number;
   guaranteedRarity?: Rarity;
+  guaranteedCount?: number; // How many guaranteed slots
   archetype?: Archetype;
   packType?: string;
+  allRareOrBetter?: boolean; // For collector packs
+  variantMultipliers?: {
+    foil?: number; // e.g., 1.5 = 150% of base foil rate
+    altArt?: number;
+    fullArt?: number;
+  };
   [key: string]: unknown; // Allow additional config properties
 }
+
+/** Card variants for collectible scarcity */
+export type CardVariant =
+  | "standard"
+  | "foil"
+  | "alt_art"
+  | "full_art"
+  | "numbered"
+  | "first_edition";
 
 /**
  * Card result from pack opening
@@ -143,6 +159,7 @@ export interface CardResult {
   imageUrl?: string;
   ability?: string;
   flavorText?: string;
+  variant: CardVariant;
 }
 
 /**

@@ -1,0 +1,85 @@
+---
+/**
+ * ElementBadge Component
+ * Element indicator with icon and optional label
+ */
+
+interface Props {
+  element: 'ember' | 'void' | 'arcane' | 'nature' | 'frost' | 'neutral';
+  size?: 'sm' | 'md' | 'lg';
+  showLabel?: boolean;
+  class?: string;
+}
+
+const { element, size = 'md', showLabel = false, class: className } = Astro.props;
+
+const elementConfig = {
+  ember: {
+    icon: '🔥',
+    label: 'Ember',
+    color: '#ff6b35',
+    glow: 'rgba(255, 107, 53, 0.4)'
+  },
+  void: {
+    icon: '🌑',
+    label: 'Void',
+    color: '#9333ea',
+    glow: 'rgba(147, 51, 234, 0.4)'
+  },
+  arcane: {
+    icon: '✨',
+    label: 'Arcane',
+    color: '#06b6d4',
+    glow: 'rgba(6, 182, 212, 0.4)'
+  },
+  nature: {
+    icon: '🌿',
+    label: 'Nature',
+    color: '#10b981',
+    glow: 'rgba(16, 185, 129, 0.4)'
+  },
+  frost: {
+    icon: '❄️',
+    label: 'Frost',
+    color: '#0ea5e9',
+    glow: 'rgba(14, 165, 233, 0.4)'
+  },
+  neutral: {
+    icon: '⚪',
+    label: 'Neutral',
+    color: '#a89f94',
+    glow: 'rgba(168, 159, 148, 0.4)'
+  }
+};
+
+const config = elementConfig[element];
+
+const sizeClasses = {
+  sm: 'text-xs px-2 py-0.5 gap-1',
+  md: 'text-sm px-3 py-1 gap-1.5',
+  lg: 'text-base px-4 py-2 gap-2'
+};
+
+const iconSizes = {
+  sm: 'text-sm',
+  md: 'text-base',
+  lg: 'text-lg'
+};
+---
+
+<span
+  class:list={[
+    'inline-flex items-center rounded-full font-semibold border',
+    sizeClasses[size],
+    className
+  ]}
+  style={`
+    color: ${config.color};
+    border-color: ${config.color};
+    background: linear-gradient(180deg, ${config.glow} 0%, rgba(0,0,0,0.3) 100%);
+    box-shadow: 0 0 10px ${config.glow}, inset 0 0 10px ${config.glow};
+  `}
+>
+  <span class={iconSizes[size]}>{config.icon}</span>
+  {showLabel && <span>{config.label}</span>}
+</span>

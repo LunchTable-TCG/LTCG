@@ -154,7 +154,10 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
       });
 
       // Parse LLM decision
-      const parsed = extractJsonFromLlmResponse(decision, { monsterIndex: 0, reasoning: "" });
+      const parsed = extractJsonFromLlmResponse(decision, {
+        monsterIndex: 0,
+        reasoning: "",
+      });
       const selectedMonster = faceDownMonsters[parsed.monsterIndex];
 
       if (!selectedMonster) {

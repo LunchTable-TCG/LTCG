@@ -322,7 +322,7 @@ export const ProjectStarterTestSuite: TestSuite = {
         let responseReceived = false;
         const callback: HandlerCallback = async (
           response: Content,
-          _files?: any
+          _files?: unknown
         ): Promise<Memory[]> => {
           if (response.text === "hello world!" && response.action === "HELLO_WORLD") {
             responseReceived = true;

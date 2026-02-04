@@ -49,16 +49,18 @@ export const listAchievements = query({
     await requireRole(ctx, userId, "moderator");
 
     let achievements = await (async () => {
-      if (args.category) {
+      const category = args.category;
+      if (category) {
         return await ctx.db
           .query("achievementDefinitions")
-          .withIndex("by_category", (q) => q.eq("category", args.category!))
+          .withIndex("by_category", (q) => q.eq("category", category))
           .collect();
       }
-      if (args.rarity) {
+      const rarity = args.rarity;
+      if (rarity) {
         return await ctx.db
           .query("achievementDefinitions")
-          .withIndex("by_rarity", (q) => q.eq("rarity", args.rarity!))
+          .withIndex("by_rarity", (q) => q.eq("rarity", rarity))
           .collect();
       }
       return await ctx.db.query("achievementDefinitions").collect();
@@ -87,7 +89,7 @@ export const listAchievements = query({
     achievements.sort((a: Achievement, b: Achievement) => {
       const catCompare = a.category.localeCompare(b.category);
       if (catCompare !== 0) return catCompare;
-      const rarCompare = rarityOrder[a.rarity]! - rarityOrder[b.rarity]!;
+      const rarCompare = (rarityOrder[a.rarity] ?? 0) - (rarityOrder[b.rarity] ?? 0);
       if (rarCompare !== 0) return rarCompare;
       return a.name.localeCompare(b.name);
     });
@@ -328,7 +330,7 @@ export const updateAchievement = mutation({
       metadata: {
         achievementDbId: args.achievementDbId,
         achievementId: achievement.achievementId,
-        updates: Object.keys(updates),
+        updates: Object.keys(updates).join(", "),
       },
       success: true,
     });

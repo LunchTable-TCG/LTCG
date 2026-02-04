@@ -55,7 +55,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   AlertTriangle,
@@ -204,10 +205,7 @@ export default function MarketplaceModerationPage() {
 
   const stats = useConvexQuery(api.admin.marketplace.getMarketplaceStats, isAdmin ? {} : "skip");
 
-  const anomalies = useConvexQuery(
-    api.admin.marketplace.getPriceAnomalies,
-    isAdmin ? {} : "skip"
-  );
+  const anomalies = useConvexQuery(api.admin.marketplace.getPriceAnomalies, isAdmin ? {} : "skip");
 
   // Cards query for price cap selector
   const cardsResult = useConvexQuery(
@@ -224,7 +222,7 @@ export default function MarketplaceModerationPage() {
   // Seller history query
   const sellerHistory = useConvexQuery(
     api.admin.marketplace.getSellerHistory,
-    isAdmin && selectedSellerId ? { sellerId: selectedSellerId } : "skip"
+    isAdmin && selectedSellerId ? { sellerId: selectedSellerId as Id<"users"> } : "skip"
   ) as SellerHistoryData | undefined;
 
   // Price caps query
@@ -245,7 +243,7 @@ export default function MarketplaceModerationPage() {
     setIsSubmitting(true);
     try {
       await suspendListing({
-        listingId: suspendListingId,
+        listingId: suspendListingId as Id<"marketplaceListings">,
         reason: suspendReason,
       });
       toast.success("Listing suspended successfully");
@@ -268,7 +266,7 @@ export default function MarketplaceModerationPage() {
   const handleUnsuspend = async (listingId: string) => {
     setIsSubmitting(true);
     try {
-      await unsuspendListing({ listingId });
+      await unsuspendListing({ listingId: listingId as Id<"marketplaceListings"> });
       toast.success("Listing reactivated successfully");
     } catch (error) {
       console.error("Failed to unsuspend listing:", error);
@@ -281,7 +279,7 @@ export default function MarketplaceModerationPage() {
   const handleRemovePriceCap = async (priceCapId: string, cardName: string) => {
     setIsSubmitting(true);
     try {
-      await removePriceCap({ priceCapId });
+      await removePriceCap({ priceCapId: priceCapId as Id<"marketplacePriceCaps"> });
       toast.success(`Price cap removed for ${cardName}`);
     } catch (error) {
       console.error("Failed to remove price cap:", error);
@@ -303,7 +301,7 @@ export default function MarketplaceModerationPage() {
     setIsSubmitting(true);
     try {
       await setPriceCap({
-        cardDefinitionId: selectedCardId,
+        cardDefinitionId: selectedCardId as Id<"cardDefinitions">,
         maxPrice,
         reason: priceCapReason,
       });
@@ -326,10 +324,10 @@ export default function MarketplaceModerationPage() {
 
     setIsSubmitting(true);
     try {
-      const result = await refundBid({
-        bidId: refundBidId,
+      const result = (await refundBid({
+        bidId: refundBidId as Id<"marketplaceBids">,
         reason: refundReason,
-      });
+      })) as { message?: string };
       toast.success(result.message || "Bid refunded successfully");
       setRefundDialogOpen(false);
       setRefundBidId(null);

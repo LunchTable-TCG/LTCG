@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { format, formatDistanceToNow } from "date-fns";
 import { DollarSign, RefreshCw } from "lucide-react";
 import Link from "next/link";
@@ -83,7 +84,7 @@ export default function ListingDetailPage() {
 
   const listing = useConvexQuery(
     api.admin.marketplace.getListing,
-    isAdmin ? { listingId } : "skip"
+    isAdmin ? { listingId: listingId as Id<"marketplaceListings"> } : "skip"
   );
 
   const suspendListing = useConvexMutation(api.admin.marketplace.suspendListing);
@@ -101,7 +102,7 @@ export default function ListingDetailPage() {
     setIsSubmitting(true);
     try {
       await suspendListing({
-        listingId,
+        listingId: listingId as Id<"marketplaceListings">,
         reason: suspendReason,
       });
       toast.success("Listing suspended successfully");
@@ -140,10 +141,10 @@ export default function ListingDetailPage() {
 
     setIsSubmitting(true);
     try {
-      const result = await refundBid({
-        bidId: refundBidId,
+      const result = (await refundBid({
+        bidId: refundBidId as Id<"marketplaceBids">,
         reason: refundReason,
-      });
+      })) as { message?: string };
       toast.success(result.message || "Bid refunded successfully");
       setRefundDialogOpen(false);
       setRefundBidId(null);

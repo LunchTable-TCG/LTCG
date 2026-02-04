@@ -5,7 +5,13 @@ import { mutation } from "../functions";
 import { PAGINATION } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
-import { addCardsToInventory, getRandomCard, openPack, weightedRandomRarity } from "../lib/helpers";
+import {
+  addCardsToInventory,
+  getRandomCard,
+  openPack,
+  selectVariant,
+  weightedRandomRarity,
+} from "../lib/helpers";
 import { checkRateLimitWrapper } from "../lib/rateLimit";
 import { cardResultValidator } from "../lib/returnValidators";
 import { packPurchaseValidator } from "../lib/returnValidators";
@@ -186,6 +192,7 @@ export const purchasePack = mutation({
         cardDefinitionId: c.cardDefinitionId,
         name: c.name,
         rarity: c.rarity,
+        variant: c.variant,
       })),
       currencyUsed: currencyType,
       amountPaid: price,
@@ -301,8 +308,9 @@ export const purchaseBox = mutation({
     if (product.boxConfig.bonusCards && product.boxConfig.bonusCards > 0) {
       for (let i = 0; i < product.boxConfig.bonusCards; i++) {
         const rarity = weightedRandomRarity();
+        const variant = selectVariant(undefined, !args.useGems); // Use gold rates if paying with gold
         const card = await getRandomCard(ctx, rarity);
-        await addCardsToInventory(ctx, userId, card._id, 1);
+        await addCardsToInventory(ctx, userId, card._id, 1, variant, "pack");
         allCards.push({
           cardDefinitionId: card._id,
           name: card.name,
@@ -313,6 +321,7 @@ export const purchaseBox = mutation({
           defense: card.defense,
           cost: card.cost,
           imageUrl: card.imageUrl,
+          variant,
         });
       }
     }
@@ -326,6 +335,7 @@ export const purchaseBox = mutation({
         cardDefinitionId: c.cardDefinitionId,
         name: c.name,
         rarity: c.rarity,
+        variant: c.variant,
       })),
       currencyUsed: currencyType,
       amountPaid: price,
@@ -415,6 +425,143 @@ export const purchaseCurrencyBundle = mutation({
       productName: product.name,
       gemsSpent: product.gemPrice,
       goldReceived: product.currencyConfig.amount,
+    };
+  },
+});
+
+// ============================================================================
+// INTERNAL QUERIES & MUTATIONS
+// ============================================================================
+
+import { internalMutation, internalQuery } from "../_generated/server";
+import { TOKEN } from "../lib/constants";
+
+/**
+ * Get shop products (internal query for HTTP endpoints)
+ * @internal Used by convex/http/shop.ts
+ */
+export const getShopProductsInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const products = await ctx.db
+      .query("shopProducts")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .take(100);
+
+    return products.sort((a, b) => a.sortOrder - b.sortOrder);
+  },
+});
+
+/**
+ * Purchase pack from x402 payment
+ * Called by HTTP shop endpoint after x402 payment is verified by facilitator
+ *
+ * @internal Used by convex/http/shop.ts
+ */
+export const purchasePackFromX402 = internalMutation({
+  args: {
+    payerWallet: v.string(),
+    transactionSignature: v.string(),
+    productId: v.string(),
+    tokenAmount: v.string(),
+    userId: v.union(v.id("users"), v.null()),
+    agentId: v.union(v.id("agents"), v.null()),
+  },
+  handler: async (ctx, args) => {
+    // Check for duplicate transaction (idempotency)
+    const existingPayment = await ctx.db
+      .query("x402Payments")
+      .withIndex("by_signature", (q) => q.eq("transactionSignature", args.transactionSignature))
+      .first();
+
+    if (existingPayment) {
+      throw new Error("Transaction already processed");
+    }
+
+    // Get product
+    const product = await ctx.db
+      .query("shopProducts")
+      .withIndex("by_product_id", (q) => q.eq("productId", args.productId))
+      .first();
+
+    if (!product || !product.isActive) {
+      throw new Error("Product not found or inactive");
+    }
+
+    if (product.productType !== "pack") {
+      throw new Error("This endpoint is only for pack purchases");
+    }
+
+    if (!product.packConfig) {
+      throw new Error("Invalid pack configuration");
+    }
+
+    // Find user by wallet address if not provided
+    let userId = args.userId;
+    if (!userId) {
+      const user = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("walletAddress"), args.payerWallet))
+        .first();
+      userId = user?._id ?? null;
+    }
+
+    // If still no user and we have an agentId, get the agent's user
+    if (!userId && args.agentId) {
+      const agent = await ctx.db.get(args.agentId);
+      userId = agent?.userId ?? null;
+    }
+
+    if (!userId) {
+      throw new Error(
+        "Could not determine user for pack purchase. Wallet not associated with any user."
+      );
+    }
+
+    // Record x402 payment for audit trail
+    await ctx.db.insert("x402Payments", {
+      transactionSignature: args.transactionSignature,
+      payerWallet: args.payerWallet,
+      recipientWallet: TOKEN.TREASURY_WALLET,
+      amount: Number(args.tokenAmount),
+      tokenMint: TOKEN.MINT_ADDRESS,
+      network:
+        process.env["SOLANA_NETWORK"] === "devnet"
+          ? "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1"
+          : "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      resourcePath: "/api/agents/shop/pack",
+      resourceDescription: `Pack purchase: ${product.name}`,
+      userId,
+      agentId: args.agentId ?? undefined,
+      purchaseType: "pack",
+      status: "settled",
+      verifiedAt: Date.now(),
+      createdAt: Date.now(),
+    });
+
+    // Open pack and generate cards
+    const cards = await openPack(ctx, product.packConfig, userId);
+
+    // Record pack opening
+    await ctx.db.insert("packOpeningHistory", {
+      userId,
+      productId: args.productId,
+      packType: product.name,
+      cardsReceived: cards.map((c) => ({
+        cardDefinitionId: c.cardDefinitionId,
+        name: c.name,
+        rarity: c.rarity,
+        variant: c.variant,
+      })),
+      currencyUsed: "token" as "gold" | "gems", // x402 uses tokens
+      amountPaid: Number(args.tokenAmount),
+      openedAt: Date.now(),
+    });
+
+    return {
+      success: true,
+      productName: product.name,
+      cardsReceived: cards,
     };
   },
 });

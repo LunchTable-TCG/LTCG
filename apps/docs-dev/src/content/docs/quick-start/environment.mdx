@@ -1,0 +1,188 @@
+---
+title: Environment Setup
+description: Configure your development environment
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Environment Variables
+
+LunchTable TCG uses environment variables for configuration. Create a `.env.local` file in the project root:
+
+```env
+# Convex Configuration
+CONVEX_DEPLOYMENT=dev:your-deployment-name
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+
+# Authentication (Privy)
+NEXT_PUBLIC_PRIVY_APP_ID=your-privy-app-id
+PRIVY_APP_SECRET=your-privy-secret
+
+# Optional: Vercel Blob Storage
+BLOB_READ_WRITE_TOKEN=your-blob-token
+
+# Optional: Analytics
+NEXT_PUBLIC_POSTHOG_KEY=your-posthog-key
+
+# Development
+NODE_ENV=development
+```
+
+## Convex Setup
+
+### Local Development
+
+For local development, Convex runs a development server that hot-reloads:
+
+```bash
+bunx convex dev
+```
+
+This command:
+- Deploys your schema and functions
+- Watches for file changes
+- Auto-deploys on save
+
+### Production
+
+For production deployment:
+
+```bash
+bunx convex deploy
+```
+
+<Aside type="caution">
+  Never run `convex deploy` in development. Use `convex dev` instead.
+</Aside>
+
+## VS Code Configuration
+
+### Recommended Extensions
+
+```json
+// .vscode/extensions.json
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "biomejs.biome",
+    "convex.convex"
+  ]
+}
+```
+
+### Settings
+
+```json
+// .vscode/settings.json
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "biomejs.biome",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "tailwindCSS.experimental.classRegex": [
+    ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ]
+}
+```
+
+## TypeScript Configuration
+
+The project uses TypeScript with strict settings:
+
+```json
+// tsconfig.json (excerpt)
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
+  }
+}
+```
+
+### Convex Type Helpers
+
+To avoid deep type instantiation errors, use our type helpers:
+
+```typescript
+// Import the helper
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+
+// Use in components
+const game = useConvexQuery(apiAny.gameplay.games.get, { gameId });
+```
+
+<Aside type="tip">
+  See [CLAUDE.md](/contributing/code-style/) for detailed TypeScript conventions.
+</Aside>
+
+## Testing Setup
+
+### Unit Tests (Vitest)
+
+```bash
+bun run test:unit
+```
+
+Tests are located alongside source files:
+
+```
+src/
+├── utils/
+│   ├── calculateXP.ts
+│   └── calculateXP.test.ts
+```
+
+### Integration Tests
+
+```bash
+bun run test:integration
+```
+
+Integration tests use Convex's testing helpers.
+
+### E2E Tests (Playwright)
+
+```bash
+bun run test:e2e
+```
+
+E2E tests are in the `e2e/` directory.
+
+## Debugging
+
+### Convex Functions
+
+View logs in the Convex dashboard or use:
+
+```bash
+bunx convex logs
+```
+
+### Frontend
+
+Use React DevTools and the browser console. The game state is logged for debugging:
+
+```typescript
+// Enable debug mode
+localStorage.setItem("LunchTable TCG_DEBUG", "true");
+```
+
+---
+
+## Next Steps
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Architecture"
+    description="Understand the system design"
+    href="/architecture/schema/"
+  />
+  <LinkCard
+    title="Contributing"
+    description="Start contributing"
+    href="/contributing/guidelines/"
+  />
+</CardGrid>

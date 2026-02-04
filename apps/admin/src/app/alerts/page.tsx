@@ -12,11 +12,22 @@ import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api,  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import type { Doc } from "@convex/_generated/dataModel";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { toast } from "sonner";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+/** Enriched alert with rule information from the query */
+interface EnrichedAlert extends Doc<"alertHistory"> {
+  ruleName: string;
+  ruleType?: string;
+}
 
 // =============================================================================
 // Helper Functions
@@ -66,19 +77,22 @@ function formatTimeAgo(timestamp: number) {
 // =============================================================================
 
 export default function AlertsDashboardPage() {
-  // Fetch alerts data
-  const stats = useConvexQuery(api.alerts.history.getStats);
-  const recentAlerts = useConvexQuery(api.alerts.history.getRecent, { limit: 10 });
-  const unreadCount = useConvexQuery(api.alerts.notifications.getUnreadCount);
+  // Fetch alerts data - extract queries to avoid TS2589 deep type instantiation
+  const getStatsQuery = api.alerts.history.getStats;
+  const stats = useQuery(getStatsQuery, {});
+  const getRecentQuery = api.alerts.history.getRecent;
+  const recentAlerts = useQuery(getRecentQuery, { limit: 10 }) as EnrichedAlert[] | undefined;
+  const getUnreadCountQuery = api.alerts.notifications.getUnreadCount;
+  const unreadCount = useQuery(getUnreadCountQuery, {});
 
   // Mutations
-  const acknowledge = useConvexMutation(api.alerts.history.acknowledge);
-  const acknowledgeAll = useConvexMutation(api.alerts.history.acknowledgeAll);
-  const markAllAsRead = useConvexMutation(api.alerts.notifications.markAllAsRead);
+  const acknowledge = useMutation(api.alerts.history.acknowledge);
+  const acknowledgeAll = useMutation(api.alerts.history.acknowledgeAll);
+  const markAllAsRead = useMutation(api.alerts.notifications.markAllAsRead);
 
   const isLoading = stats === undefined;
 
-  async function handleAcknowledge(alertId: string) {
+  async function handleAcknowledge(alertId: Id<"alertHistory">) {
     try {
       await acknowledge({ alertId });
       toast.success("Alert acknowledged");
@@ -165,7 +179,7 @@ export default function AlertsDashboardPage() {
             <CardDescription>Last 24 hours</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.total ?? 0}</div>
+            <div className="text-2xl font-bold">{stats?.totalAlerts ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -188,11 +202,11 @@ export default function AlertsDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Rules</CardTitle>
-            <CardDescription>Monitoring</CardDescription>
+            <CardTitle className="text-sm font-medium">Avg Per Day</CardTitle>
+            <CardDescription>Alert frequency</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeRules ?? 0}</div>
+            <div className="text-2xl font-bold">{stats?.avgPerDay?.toFixed(1) ?? 0}</div>
           </CardContent>
         </Card>
       </div>
@@ -233,7 +247,7 @@ export default function AlertsDashboardPage() {
               </div>
             ) : (recentAlerts?.length ?? 0) > 0 ? (
               <div className="space-y-3">
-                {recentAlerts?.map((alert: Doc<"alertHistory">) => (
+                {recentAlerts?.map((alert) => (
                   <div
                     key={alert._id}
                     className={`flex items-center justify-between rounded-lg border p-3 ${
@@ -247,7 +261,7 @@ export default function AlertsDashboardPage() {
                       <div>
                         <p className="font-medium">{alert.title}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatTimeAgo(alert.triggeredAt)} • {alert.ruleName}
+                          {formatTimeAgo(alert.createdAt)} • {alert.ruleName}
                         </p>
                       </div>
                     </div>

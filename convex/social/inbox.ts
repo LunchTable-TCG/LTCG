@@ -43,33 +43,39 @@ export const getInboxMessages = query({
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     const limit = Math.min(args.limit ?? 50, 100);
+    const now = Date.now();
 
-    type InboxQuery = ReturnType<typeof ctx.db.query<"userInbox">>;
-
-    let messagesQuery: InboxQuery;
+    // Build query based on filters - each branch handles the full query chain
+    let messages: Awaited<ReturnType<typeof ctx.db.query>>;
 
     if (args.type) {
       // Filter by type
-      messagesQuery = ctx.db
+      const type = args.type;
+      messages = await ctx.db
         .query("userInbox")
-        .withIndex("by_user_type", (q) => q.eq("userId", userId).eq("type", args.type!));
+        .withIndex("by_user_type", (q) => q.eq("userId", userId).eq("type", type))
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
+        .order("desc")
+        .take(limit);
     } else if (args.unreadOnly) {
       // Filter by unread only
-      messagesQuery = ctx.db
+      messages = await ctx.db
         .query("userInbox")
-        .withIndex("by_user_unread", (q) => q.eq("userId", userId).eq("isRead", false));
+        .withIndex("by_user_unread", (q) => q.eq("userId", userId).eq("isRead", false))
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
+        .order("desc")
+        .take(limit);
     } else {
       // All messages for user
-      messagesQuery = ctx.db.query("userInbox").withIndex("by_user", (q) => q.eq("userId", userId));
+      messages = await ctx.db
+        .query("userInbox")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
+        .order("desc")
+        .take(limit);
     }
 
-    const messages = await messagesQuery
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
-      .order("desc")
-      .take(limit);
-
     // Filter out expired messages
-    const now = Date.now();
     return messages.filter((m) => !m.expiresAt || m.expiresAt > now);
   },
 });

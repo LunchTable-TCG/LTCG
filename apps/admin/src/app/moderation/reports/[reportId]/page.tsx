@@ -21,7 +21,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useMutation } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
+import { useTypedQuery } from "@ltcg/core/react";
+import type { FunctionReference } from "convex/server";
 import { format, formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -60,14 +63,19 @@ export default function ReportDetailPage() {
   const [suspendDuration, setSuspendDuration] = useState(7);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const report = useConvexQuery(api.admin.reports.getReport, isAdmin ? { reportId } : "skip");
+  // Use useTypedQuery from @ltcg/core/react to avoid TS2589 deep type instantiation
+  const getReportQuery = api.admin.reports.getReport as FunctionReference<"query">;
+  const reportQueryArgs = isAdmin ? { reportId: reportId as Id<"userReports"> } : "skip";
+  const report = useTypedQuery(getReportQuery, reportQueryArgs);
 
-  const updateStatus = useConvexMutation(api.admin.reports.updateReportStatus);
-  const resolveWithAction = useConvexMutation(api.admin.reports.resolveReportWithAction);
+  const updateStatusMutation = api.admin.reports.updateReportStatus;
+  const updateStatus = useMutation(updateStatusMutation);
+  const resolveWithActionMutation = api.admin.reports.resolveReportWithAction;
+  const resolveWithAction = useMutation(resolveWithActionMutation);
 
   const handleStatusChange = async (status: ReportStatus) => {
     try {
-      await updateStatus({ reportId, status });
+      await updateStatus({ reportId: reportId as Id<"userReports">, status });
     } catch (error) {
       console.error("Failed to update status:", error);
     }
@@ -77,7 +85,7 @@ export default function ReportDetailPage() {
     setIsSubmitting(true);
     try {
       await resolveWithAction({
-        reportId,
+        reportId: reportId as Id<"userReports">,
         action: selectedAction,
         notes: notes || undefined,
         muteDurationHours: selectedAction === "mute" ? muteDuration : undefined,
@@ -180,11 +188,11 @@ export default function ReportDetailPage() {
                 <p className="mt-1 p-3 bg-muted rounded-md">{report.reason}</p>
               </div>
 
-              {report.details && (
+              {"details" in report && Boolean(report.details) && (
                 <div>
                   <Label className="text-muted-foreground">Additional Details</Label>
                   <p className="mt-1 p-3 bg-muted rounded-md whitespace-pre-wrap">
-                    {report.details}
+                    {String(report.details)}
                   </p>
                 </div>
               )}
@@ -389,32 +397,24 @@ export default function ReportDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {report.moderationHistory.map(
-                    (action: {
-                      _id: string;
-                      actionType: string;
-                      reason: string;
-                      createdAt: number;
-                      moderatorName: string;
-                    }) => (
-                      <div key={action._id} className="p-2 border rounded-md text-sm">
-                        <div className="flex items-center justify-between mb-1">
-                          <Badge variant="outline" className="text-xs capitalize">
-                            {action.actionType}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(action.createdAt), { addSuffix: true })}
-                          </span>
-                        </div>
-                        <p className="truncate text-muted-foreground">{action.reason}</p>
-                        {action.moderatorName && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            by {action.moderatorName}
-                          </p>
-                        )}
+                  {report.moderationHistory.map((action) => (
+                    <div key={action._id} className="p-2 border rounded-md text-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {action.actionType}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(action.createdAt), { addSuffix: true })}
+                        </span>
                       </div>
-                    )
-                  )}
+                      <p className="truncate text-muted-foreground">{action.reason ?? ""}</p>
+                      {"moderatorName" in action && Boolean(action.moderatorName) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          by {String(action.moderatorName)}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>

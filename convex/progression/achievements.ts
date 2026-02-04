@@ -1,10 +1,12 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { query, type MutationCtx } from "../_generated/server";
-import { internalMutation } from "../functions";
+import { type MutationCtx, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
+import { internalMutation } from "../functions";
+import { ELIZAOS_TOKEN } from "../lib/constants";
 import { requireAuthQuery } from "../lib/convexAuth";
+import { addCardsToInventory } from "../lib/helpers";
 import { achievementUnlockedValidator, achievementValidator } from "../lib/returnValidators";
 
 // Type definitions matching schema
@@ -23,6 +25,7 @@ interface AchievementRewards {
   xp?: number;
   gems?: number;
   badge?: string;
+  cardDefinitionId?: Id<"cardDefinitions">; // Card reward for special achievements
 }
 
 interface AchievementDefinitionInput {
@@ -264,6 +267,18 @@ export const updateAchievementProgress = internalMutation({
             }
           }
 
+          // Award card if any (for special achievements like ElizaOS holder)
+          if (definition.rewards.cardDefinitionId) {
+            await addCardsToInventory(
+              ctx,
+              args.userId,
+              definition.rewards.cardDefinitionId,
+              1,
+              "standard",
+              "reward"
+            );
+          }
+
           // Create achievement unlock notification
           await ctx.scheduler.runAfter(
             0,
@@ -477,5 +492,106 @@ export const seedAchievements = internalMutation({
     }
 
     return { success: true, count: achievements.length };
+  },
+});
+
+/**
+ * Seeds the ElizaOS holder achievement and Agent Card reward.
+ * This is a special achievement that rewards users who hold ElizaOS tokens.
+ * Must be run after creating the Agent Card definition.
+ *
+ * @returns Success status with achievement and card creation details
+ */
+export const seedElizaOSAchievement = internalMutation({
+  args: {},
+  handler: async (ctx: MutationCtx) => {
+    const now = Date.now();
+
+    // First, create the Agent Card definition if it doesn't exist
+    const existingCard = await ctx.db
+      .query("cardDefinitions")
+      .filter((q) => q.eq(q.field("name"), "Agent Card"))
+      .first();
+
+    let agentCardId: Id<"cardDefinitions">;
+
+    if (existingCard) {
+      agentCardId = existingCard._id;
+    } else {
+      // Create the Agent Card - a special legendary creature
+      agentCardId = await ctx.db.insert("cardDefinitions", {
+        name: "Agent Card",
+        rarity: "legendary",
+        archetype: "neutral",
+        cardType: "creature",
+        cost: 4,
+        attack: 2500,
+        defense: 2000,
+        level: 4,
+        attribute: "neutral",
+        monsterType: "machine",
+        flavorText:
+          "An autonomous digital entity born from the convergence of AI and blockchain. Only true believers can summon this agent.",
+        isActive: true,
+        createdAt: now,
+      });
+    }
+
+    // Now create the ElizaOS holder achievement if it doesn't exist
+    const existingAchievement = await ctx.db
+      .query("achievementDefinitions")
+      .withIndex("by_achievement_id", (q) =>
+        q.eq("achievementId", ELIZAOS_TOKEN.HOLDER_ACHIEVEMENT_ID)
+      )
+      .first();
+
+    if (existingAchievement) {
+      // Update existing achievement with card reward if not set
+      if (!existingAchievement.rewards?.cardDefinitionId) {
+        await ctx.db.patch(existingAchievement._id, {
+          rewards: {
+            ...existingAchievement.rewards,
+            gold: 1000,
+            xp: 500,
+            gems: 50,
+            cardDefinitionId: agentCardId,
+          },
+        });
+      }
+      return {
+        success: true,
+        message: "Achievement already exists, updated rewards",
+        agentCardId,
+        achievementId: ELIZAOS_TOKEN.HOLDER_ACHIEVEMENT_ID,
+      };
+    }
+
+    // Create the ElizaOS holder hidden achievement
+    await ctx.db.insert("achievementDefinitions", {
+      achievementId: ELIZAOS_TOKEN.HOLDER_ACHIEVEMENT_ID,
+      name: "Agent Believer",
+      description: "Hold ElizaOS tokens in your wallet to unlock this secret achievement",
+      category: "special",
+      rarity: "legendary",
+      icon: "robot",
+      requirementType: "hold_elizaos_token",
+      targetValue: 1, // Just need to detect the token once
+      rewards: {
+        gold: 1000,
+        xp: 500,
+        gems: 50,
+        cardDefinitionId: agentCardId,
+      },
+      isSecret: true, // Hidden until unlocked
+      isActive: true,
+      createdAt: now,
+    });
+
+    return {
+      success: true,
+      message: "Created ElizaOS holder achievement and Agent Card",
+      agentCardId,
+      achievementId: ELIZAOS_TOKEN.HOLDER_ACHIEVEMENT_ID,
+    };
   },
 });

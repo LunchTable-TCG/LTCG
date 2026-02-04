@@ -93,7 +93,7 @@ export async function authenticateRequest(
 
   // Validate API key using existing internal function
   const result: ApiKeyValidationResult = await ctx.runQuery(
-    internalAny.agents.validateApiKeyInternalQuery,
+    internalAny.agents.agents.validateApiKeyInternalQuery,
     { apiKey }
   );
 

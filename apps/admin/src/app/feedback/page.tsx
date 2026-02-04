@@ -12,7 +12,7 @@ import { FeedbackDetailSheet } from "@/components/feedback/FeedbackDetailSheet";
 import { KanbanBoard } from "@/components/feedback/KanbanBoard";
 import { PageWrapper } from "@/components/layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import { AlertCircle, Bug, CheckCircle, Clock, Inbox, Lightbulb } from "lucide-react";
 import { useState } from "react";
 

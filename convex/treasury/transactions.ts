@@ -6,8 +6,9 @@
  */
 
 import { v } from "convex/values";
+import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
@@ -51,24 +52,27 @@ export const listTransactions = query({
     const limit = args.limit || 50;
     const offset = args.offset || 0;
 
-    let transactions;
+    let transactions: Doc<"treasuryTransactions">[];
 
     if (args.walletId) {
+      const walletId = args.walletId;
       transactions = await ctx.db
         .query("treasuryTransactions")
-        .withIndex("by_wallet", (q) => q.eq("walletId", args.walletId!))
+        .withIndex("by_wallet", (q) => q.eq("walletId", walletId))
         .order("desc")
         .collect();
     } else if (args.status) {
+      const status = args.status;
       transactions = await ctx.db
         .query("treasuryTransactions")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .withIndex("by_status", (q) => q.eq("status", status))
         .order("desc")
         .collect();
     } else if (args.type) {
+      const type = args.type;
       transactions = await ctx.db
         .query("treasuryTransactions")
-        .withIndex("by_type", (q) => q.eq("type", args.type!))
+        .withIndex("by_type", (q) => q.eq("type", type))
         .order("desc")
         .collect();
     } else {
@@ -172,11 +176,12 @@ export const getStats = query({
     const daysBack = args.daysBack || 30;
     const cutoff = Date.now() - daysBack * 24 * 60 * 60 * 1000;
 
-    let transactions;
+    let transactions: Doc<"treasuryTransactions">[];
     if (args.walletId) {
+      const walletId = args.walletId;
       transactions = await ctx.db
         .query("treasuryTransactions")
-        .withIndex("by_wallet", (q) => q.eq("walletId", args.walletId!))
+        .withIndex("by_wallet", (q) => q.eq("walletId", walletId))
         .collect();
     } else {
       transactions = await ctx.db.query("treasuryTransactions").collect();
@@ -205,8 +210,8 @@ export const getStats = query({
     let totalVolume = 0;
 
     for (const tx of transactions) {
-      byType[tx.type]++;
-      byStatus[tx.status]++;
+      byType[tx.type as keyof typeof byType]++;
+      byStatus[tx.status as keyof typeof byStatus]++;
       if (tx.status === "confirmed") {
         totalVolume += tx.amount;
       }

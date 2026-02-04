@@ -2,10 +2,17 @@ import React from "react";
 import "../../../frontend/index.css";
 
 /**
+ * API response data interface
+ */
+interface AgentData {
+  items?: string[];
+}
+
+/**
  * Example component that fetches data from an API using React state
  */
 const DataFetchingComponent: React.FC<{ agentId: string }> = ({ agentId }) => {
-  const [data, setData] = React.useState<any>(null);
+  const [data, setData] = React.useState<AgentData | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 

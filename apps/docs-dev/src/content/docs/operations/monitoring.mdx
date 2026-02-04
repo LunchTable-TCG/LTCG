@@ -1,0 +1,287 @@
+---
+title: Monitoring
+description: Monitoring LunchTable TCG in production
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Overview
+
+LunchTable TCG uses multiple monitoring systems to ensure reliability and performance.
+
+## Monitoring Stack
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    MONITORING STACK                      │
+│                                                          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│  │   Sentry    │  │   Convex    │  │   Vercel    │     │
+│  │  (Errors)   │  │ (Functions) │  │ (Frontend)  │     │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘     │
+│         │                │                │             │
+│         └────────────────┴────────────────┘             │
+│                          │                              │
+│                   ┌──────┴──────┐                       │
+│                   │   Alerts    │                       │
+│                   │  (Discord)  │                       │
+│                   └─────────────┘                       │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Error Tracking (Sentry)
+
+### Configuration
+
+```typescript
+// sentry.client.config.ts
+import * as Sentry from "@sentry/nextjs";
+
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  tracesSampleRate: 0.1,
+  environment: process.env.NODE_ENV,
+  beforeSend(event) {
+    // Filter out known non-issues
+    if (event.exception?.values?.[0]?.value?.includes("ResizeObserver")) {
+      return null;
+    }
+    return event;
+  },
+});
+```
+
+### Custom Error Context
+
+```typescript
+// Add user context
+Sentry.setUser({
+  id: user.id,
+  username: user.username,
+});
+
+// Add game context
+Sentry.setContext("game", {
+  gameId: game._id,
+  turn: game.currentTurn,
+  phase: game.phase,
+});
+
+// Capture with extra data
+Sentry.captureException(error, {
+  extra: {
+    cardId: card._id,
+    action: "playCard",
+  },
+});
+```
+
+## Function Monitoring (Convex)
+
+### Dashboard Metrics
+
+Convex provides built-in monitoring for:
+
+- Function execution time
+- Function call frequency
+- Error rates
+- Database operations
+
+### Custom Logging
+
+```typescript
+export const playCard = mutation({
+  args: { gameId: v.id("games"), cardId: v.string() },
+  handler: async (ctx, { gameId, cardId }) => {
+    const start = Date.now();
+
+    try {
+      // ... logic
+
+      console.log(`[playCard] Success`, {
+        gameId,
+        cardId,
+        duration: Date.now() - start,
+      });
+    } catch (error) {
+      console.error(`[playCard] Failed`, {
+        gameId,
+        cardId,
+        error: error.message,
+        duration: Date.now() - start,
+      });
+      throw error;
+    }
+  },
+});
+```
+
+## Performance Monitoring
+
+### Core Web Vitals
+
+```typescript
+// app/layout.tsx
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <SpeedInsights />
+      </body>
+    </html>
+  );
+}
+```
+
+### Custom Performance Marks
+
+```typescript
+function GameBoard({ gameId }) {
+  useEffect(() => {
+    performance.mark("game-board-mount-start");
+
+    return () => {
+      performance.measure("game-board-mount", "game-board-mount-start");
+    };
+  }, []);
+
+  // ...
+}
+```
+
+## Alerting
+
+### Discord Integration
+
+```typescript
+// convex/alerts/notifications.ts
+export async function sendDiscordAlert(
+  message: string,
+  severity: "info" | "warning" | "error"
+) {
+  const colors = {
+    info: 0x3498db,
+    warning: 0xf39c12,
+    error: 0xe74c3c,
+  };
+
+  await fetch(process.env.DISCORD_WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      embeds: [{
+        title: `[${severity.toUpperCase()}] LunchTable TCG Alert`,
+        description: message,
+        color: colors[severity],
+        timestamp: new Date().toISOString(),
+      }],
+    }),
+  });
+}
+```
+
+### Alert Rules
+
+| Condition | Severity | Action |
+|-----------|----------|--------|
+| Error rate > 1% | Warning | Discord notification |
+| Error rate > 5% | Critical | Discord + on-call page |
+| Function timeout | Warning | Discord notification |
+| Database errors | Critical | Discord + on-call page |
+
+## Health Checks
+
+### API Health Endpoint
+
+```typescript
+// app/api/health/route.ts
+export async function GET() {
+  const checks = {
+    database: await checkDatabase(),
+    auth: await checkAuth(),
+    timestamp: new Date().toISOString(),
+  };
+
+  const healthy = Object.values(checks).every(
+    (c) => c === true || typeof c === "string"
+  );
+
+  return Response.json(checks, {
+    status: healthy ? 200 : 503,
+  });
+}
+
+async function checkDatabase() {
+  try {
+    // Quick query to verify connectivity
+    await convex.query(api.health.ping);
+    return true;
+  } catch {
+    return false;
+  }
+}
+```
+
+### Uptime Monitoring
+
+Use external services like:
+- Vercel's built-in monitoring
+- UptimeRobot
+- Pingdom
+
+## Debugging Production Issues
+
+### Log Analysis
+
+<Tabs>
+  <TabItem label="Convex Logs">
+    ```bash
+    # View recent logs
+    bunx convex logs
+
+    # Filter by function
+    bunx convex logs --function gameplay.turns.playCard
+
+    # Follow logs in real-time
+    bunx convex logs --follow
+    ```
+  </TabItem>
+  <TabItem label="Vercel Logs">
+    ```bash
+    # View function logs
+    vercel logs [deployment-url]
+
+    # Filter by status
+    vercel logs --filter status=500
+    ```
+  </TabItem>
+</Tabs>
+
+### Reproducing Issues
+
+1. Check Sentry for error context
+2. Review Convex logs for the failing function
+3. Identify the game state at time of error
+4. Reproduce locally with similar state
+
+---
+
+## Related
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Deployment"
+    description="Deployment guide"
+    href="/operations/deployment/"
+  />
+  <LinkCard
+    title="Security"
+    description="Security practices"
+    href="/operations/security/"
+  />
+</CardGrid>

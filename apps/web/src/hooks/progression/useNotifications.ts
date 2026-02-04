@@ -1,10 +1,9 @@
 "use client";
 
-import { typedApi, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError, logError } from "@/lib/errorHandling";
 import type { Notification } from "@/types";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
@@ -76,19 +75,21 @@ export function useNotifications(): UseNotificationsReturn {
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const unreadNotifications = useTypedQuery(
-    typedApi.progression.notifications.getUnreadNotifications,
+  const unreadNotifications = useConvexQuery(
+    apiAny.progression.notifications.getUnreadNotifications,
     isAuthenticated ? {} : "skip"
   );
 
-  const allNotifications = useTypedQuery(
-    typedApi.progression.notifications.getAllNotifications,
+  const allNotifications = useConvexQuery(
+    apiAny.progression.notifications.getAllNotifications,
     isAuthenticated ? { limit: 50 } : "skip"
   );
 
   // Mutations
-  const markAsReadMutation = useMutation(typedApi.progression.notifications.markNotificationAsRead);
-  const markAllAsReadMutation = useMutation(typedApi.progression.notifications.markAllAsRead);
+  const markAsReadMutation = useConvexMutation(
+    apiAny.progression.notifications.markNotificationAsRead
+  );
+  const markAllAsReadMutation = useConvexMutation(apiAny.progression.notifications.markAllAsRead);
 
   // Actions
   const markAsRead = async (notificationId: Id<"playerNotifications">) => {

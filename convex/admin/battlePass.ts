@@ -95,9 +95,10 @@ export const listBattlePassSeasons = query({
 
     const battlePasses = await (async () => {
       if (args.status) {
+        const status = args.status;
         return await ctx.db
           .query("battlePassSeasons")
-          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .withIndex("by_status", (q) => q.eq("status", status))
           .collect();
       }
       return await ctx.db.query("battlePassSeasons").collect();
@@ -423,7 +424,9 @@ export const updateBattlePassSeason = mutation({
       action: "update_battle_pass",
       metadata: {
         battlePassId: args.battlePassId,
-        updates: Object.keys(updates).filter((k) => k !== "updatedAt"),
+        updates: Object.keys(updates)
+          .filter((k) => k !== "updatedAt")
+          .join(", "),
       },
       success: true,
     });

@@ -96,7 +96,17 @@ export const storyModeAction: Action = {
       const chapterMatch = messageText.match(/chapter\s*(\d+)[-\s]*(\d+)?/i);
       const stageMatch = messageText.match(/stage\s*(\d+)/i);
 
-      let result;
+      let result: {
+        gameId: string;
+        lobbyId: string;
+        stageId: string;
+        chapter: string;
+        stage: { name: string; number: number };
+        aiOpponent: string;
+        difficulty: string;
+        rewards: { gold: number; xp: number; firstClearBonus: number };
+        message: string;
+      };
 
       if (chapterMatch) {
         // Start specific chapter/stage

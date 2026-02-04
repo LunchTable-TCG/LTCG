@@ -1,0 +1,319 @@
+---
+title: Core API
+description: Core API endpoints for LunchTable TCG
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Overview
+
+The Core API provides fundamental functionality for user management, authentication, and system operations.
+
+## Users
+
+### Get User
+
+Retrieve a user by ID.
+
+```typescript
+// Query
+api.core.users.get
+
+// Arguments
+{
+  userId: Id<"users">
+}
+
+// Returns
+{
+  _id: Id<"users">,
+  privyId: string,
+  username: string,
+  displayName?: string,
+  avatarUrl?: string,
+  level: number,
+  xp: number,
+  createdAt: number
+}
+```
+
+### Get Current User
+
+Get the authenticated user's profile.
+
+```typescript
+// Query
+api.core.users.getCurrent
+
+// Arguments
+none
+
+// Returns
+User | null
+```
+
+### Update Profile
+
+Update user profile information.
+
+```typescript
+// Mutation
+api.core.users.updateProfile
+
+// Arguments
+{
+  displayName?: string,
+  avatarUrl?: string
+}
+
+// Returns
+void
+```
+
+## Decks
+
+### List Decks
+
+Get all decks for the current user.
+
+```typescript
+// Query
+api.core.decks.list
+
+// Arguments
+{
+  userId?: Id<"users">  // Optional, defaults to current user
+}
+
+// Returns
+Array<{
+  _id: Id<"decks">,
+  name: string,
+  element: Element,
+  cardCount: number,
+  isValid: boolean,
+  createdAt: number
+}>
+```
+
+### Get Deck
+
+Get a specific deck with full card list.
+
+```typescript
+// Query
+api.core.decks.get
+
+// Arguments
+{
+  deckId: Id<"decks">
+}
+
+// Returns
+{
+  _id: Id<"decks">,
+  name: string,
+  cards: Array<CardInstance>,
+  // ... full deck data
+}
+```
+
+### Create Deck
+
+Create a new deck.
+
+```typescript
+// Mutation
+api.core.decks.create
+
+// Arguments
+{
+  name: string,
+  cards: Array<{
+    cardId: Id<"cards">,
+    count: number
+  }>
+}
+
+// Returns
+Id<"decks">
+```
+
+<Aside type="note">
+  Deck validation is automatic. Invalid decks are marked but can still be saved.
+</Aside>
+
+### Update Deck
+
+Modify an existing deck.
+
+```typescript
+// Mutation
+api.core.decks.update
+
+// Arguments
+{
+  deckId: Id<"decks">,
+  name?: string,
+  cards?: Array<{
+    cardId: Id<"cards">,
+    count: number
+  }>
+}
+
+// Returns
+void
+```
+
+### Delete Deck
+
+Remove a deck.
+
+```typescript
+// Mutation
+api.core.decks.delete
+
+// Arguments
+{
+  deckId: Id<"decks">
+}
+
+// Returns
+void
+```
+
+## Cards
+
+### List Cards
+
+Get all available cards.
+
+```typescript
+// Query
+api.core.cards.list
+
+// Arguments
+{
+  element?: Element,
+  type?: CardType,
+  rarity?: Rarity,
+  search?: string,
+  limit?: number,
+  cursor?: string
+}
+
+// Returns
+{
+  cards: Array<Card>,
+  nextCursor?: string
+}
+```
+
+### Get Card
+
+Get a specific card by ID.
+
+```typescript
+// Query
+api.core.cards.get
+
+// Arguments
+{
+  cardId: Id<"cards">
+}
+
+// Returns
+Card
+```
+
+## Collection
+
+### Get Collection
+
+Get user's card collection.
+
+```typescript
+// Query
+api.core.collection.get
+
+// Arguments
+{
+  userId?: Id<"users">
+}
+
+// Returns
+{
+  cards: Array<{
+    card: Card,
+    count: number,
+    variants: Array<Variant>
+  }>,
+  totalCards: number,
+  uniqueCards: number
+}
+```
+
+### Add to Collection
+
+Add cards to user's collection.
+
+```typescript
+// Mutation
+api.core.collection.add
+
+// Arguments
+{
+  cardId: Id<"cards">,
+  count: number,
+  variant?: Variant
+}
+
+// Returns
+void
+```
+
+## Types
+
+### Element
+
+```typescript
+type Element =
+  | "ember"
+  | "frost"
+  | "nature"
+  | "arcane"
+  | "void"
+  | "neutral";
+```
+
+### CardType
+
+```typescript
+type CardType =
+  | "creature"
+  | "spell"
+  | "trap";
+```
+
+### Rarity
+
+```typescript
+type Rarity =
+  | "common"
+  | "uncommon"
+  | "rare"
+  | "epic"
+  | "legendary";
+```
+
+---
+
+## Next: Game API
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+<LinkCard
+  title="Game API"
+  description="Game loop and gameplay functions"
+  href="/api-reference/game/"
+/>

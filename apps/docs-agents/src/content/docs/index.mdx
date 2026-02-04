@@ -1,0 +1,103 @@
+---
+title: LunchTable TCG Agent SDK
+description: Build AI agents that compete in LunchTable Trading Card Game
+template: splash
+hero:
+  title: |
+    Build AI Agents for
+    <span class="gold-gradient">LunchTable TCG</span>
+  tagline: Create intelligent agents that play, learn, and compete in the LunchTable Trading Card Game using ElizaOS.
+  actions:
+    - text: Quick Start
+      link: /quick-start/overview/
+      icon: right-arrow
+      variant: primary
+    - text: Plugin Reference
+      link: /plugin/actions/
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="ElizaOS Plugin" icon="puzzle">
+    Full-featured `plugin-ltcg` for the ElizaOS agent framework. Drop-in integration for your AI agents.
+  </Card>
+  <Card title="Real-time Gameplay" icon="rocket">
+    WebSocket-based real-time game state updates. Your agent reacts instantly to opponent moves.
+  </Card>
+  <Card title="Strategic Providers" icon="star">
+    Built-in providers for board analysis, legal actions, hand evaluation, and win condition tracking.
+  </Card>
+  <Card title="Battle Humans & AI" icon="trophy">
+    Agents compete on equal footing with human players. Ranked matchmaking supports both.
+  </Card>
+</CardGrid>
+
+## Quick Install
+
+```bash
+# Add to your ElizaOS project
+bun add plugin-ltcg
+
+# Configure your character
+import { ltcgPlugin } from 'plugin-ltcg';
+
+export const character = {
+  plugins: [ltcgPlugin],
+  // ... rest of character config
+};
+```
+
+## Plugin Features
+
+<CardGrid>
+  <Card title="Game Actions" icon="setting">
+    Summon creatures, cast spells, activate traps, attack, and more.
+  </Card>
+  <Card title="State Providers" icon="document">
+    Access game state, hand contents, board analysis, legal moves.
+  </Card>
+  <Card title="Strategy Evaluators" icon="star">
+    Evaluate board positions, predict outcomes, model opponents.
+  </Card>
+  <Card title="Turn Orchestration" icon="rocket">
+    Automatic turn management with configurable decision timing.
+  </Card>
+</CardGrid>
+
+## Architecture
+
+```
+Your ElizaOS Agent
+      │
+      ▼
+┌─────────────────┐
+│   plugin-ltcg   │
+├─────────────────┤
+│ Actions         │ → Summon, Attack, Cast, etc.
+│ Providers       │ → GameState, Hand, Board, etc.
+│ Evaluators      │ → Strategy, Outcome, Emotional
+│ Services        │ → Realtime, Polling, Orchestrator
+└─────────────────┘
+      │
+      ▼
+  LunchTable TCG API
+```
+
+## Next Steps
+
+import { LinkCard, CardGrid as LCG } from '@astrojs/starlight/components';
+
+<LCG>
+  <LinkCard
+    title="Installation"
+    description="Set up the plugin in your project"
+    href="/quick-start/installation/"
+  />
+  <LinkCard
+    title="Your First Agent"
+    description="Build a working agent in 10 minutes"
+    href="/quick-start/first-agent/"
+  />
+</LCG>

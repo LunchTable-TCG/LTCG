@@ -20,8 +20,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import type { QuestId, AchievementId } from "@/lib/convexTypes";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { AchievementId, QuestId } from "@/lib/convexTypes";
+import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
   CalendarIcon,
@@ -48,11 +49,40 @@ type AchievementCategory =
   | "story"
   | "ranked"
   | "special";
+type BadgeColor = "amber" | "violet" | "blue" | "emerald" | "rose" | "indigo" | "gray" | "slate";
 type Rarity = "common" | "rare" | "epic" | "legendary";
+
+interface Quest {
+  _id: Id<"questDefinitions">;
+  questId: string;
+  name: string;
+  questType: QuestType;
+  isActive: boolean;
+  requirementType: string;
+  targetValue: number;
+  rewards: {
+    gold: number;
+    xp: number;
+    gems?: number;
+  };
+}
+
+interface Achievement {
+  _id: Id<"achievementDefinitions">;
+  achievementId: string;
+  name: string;
+  icon: string;
+  category: AchievementCategory;
+  rarity: Rarity;
+  isActive: boolean;
+  requirementType: string;
+  targetValue: number;
+  isSecret: boolean;
+}
 
 const QUEST_TYPE_CONFIG: Record<
   QuestType,
-  { label: string; color: string; icon: React.ReactNode }
+  { label: string; color: BadgeColor; icon: React.ReactNode }
 > = {
   daily: { label: "Daily", color: "blue", icon: <CalendarIcon className="h-4 w-4" /> },
   weekly: { label: "Weekly", color: "violet", icon: <Clock3Icon className="h-4 w-4" /> },
@@ -69,7 +99,7 @@ const ACHIEVEMENT_CATEGORIES: { value: AchievementCategory; label: string }[] = 
   { value: "special", label: "Special" },
 ];
 
-const RARITY_COLORS: Record<Rarity, string> = {
+const RARITY_COLORS: Record<Rarity, BadgeColor> = {
   common: "gray",
   rare: "blue",
   epic: "violet",
@@ -94,9 +124,9 @@ function QuestList() {
   const questStats = useConvexQuery(api.admin.quests.getQuestStats, {});
   const toggleActive = useConvexMutation(api.admin.quests.toggleQuestActive);
 
-  const handleToggleActive = async (questDbId: string, _name: string) => {
+  const handleToggleActive = async (questDbId: QuestId, _name: string) => {
     try {
-      const result = await toggleActive({ questDbId: questDbId as QuestId });
+      const result = (await toggleActive({ questDbId })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle quest status");
@@ -225,7 +255,7 @@ function QuestList() {
                 </tr>
               </thead>
               <tbody>
-                {questsResult?.quests.map((quest: any) => {
+                {questsResult?.quests.map((quest: Quest) => {
                   const typeConfig = QUEST_TYPE_CONFIG[quest.questType as QuestType];
                   return (
                     <tr
@@ -244,7 +274,7 @@ function QuestList() {
                         </div>
                       </td>
                       <td className="py-3 px-3">
-                        <Badge color={typeConfig.color as any} size="sm">
+                        <Badge color={typeConfig.color} size="sm">
                           <span className="flex items-center gap-1">
                             {typeConfig.icon}
                             {typeConfig.label}
@@ -316,9 +346,9 @@ function AchievementList() {
   const achievementStats = useConvexQuery(api.admin.achievements.getAchievementStats, {});
   const toggleActive = useConvexMutation(api.admin.achievements.toggleAchievementActive);
 
-  const handleToggleActive = async (achievementDbId: string, _name: string) => {
+  const handleToggleActive = async (achievementDbId: AchievementId, _name: string) => {
     try {
-      const result = await toggleActive({ achievementDbId: achievementDbId as AchievementId });
+      const result = (await toggleActive({ achievementDbId })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle achievement status");
@@ -476,7 +506,7 @@ function AchievementList() {
                 </tr>
               </thead>
               <tbody>
-                {achievementsResult?.achievements.map((achievement: any) => (
+                {achievementsResult?.achievements.map((achievement: Achievement) => (
                   <tr
                     key={achievement._id}
                     className={`border-b hover:bg-muted/30 ${!achievement.isActive ? "opacity-50" : ""}`}
@@ -499,7 +529,7 @@ function AchievementList() {
                     </td>
                     <td className="py-3 px-3 capitalize">{achievement.category}</td>
                     <td className="py-3 px-3">
-                      <Badge color={RARITY_COLORS[achievement.rarity as Rarity] as any} size="sm">
+                      <Badge color={RARITY_COLORS[achievement.rarity]} size="sm">
                         {achievement.rarity}
                       </Badge>
                     </td>

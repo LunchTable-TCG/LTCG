@@ -148,7 +148,10 @@ Respond with JSON: { "attackerIndex": <index>, "targetIndex": <index or null for
       });
 
       // Parse LLM decision
-      const parsed = extractJsonFromLlmResponse(decision, { attackerIndex: 0, targetIndex: null });
+      const parsed = extractJsonFromLlmResponse(decision, {
+        attackerIndex: 0,
+        targetIndex: null,
+      });
       const attacker = attackers[parsed.attackerIndex];
 
       if (!attacker) {

@@ -45,9 +45,10 @@ export const getPublishedNews = query({
 
     const articles = await (async () => {
       if (args.category) {
+        const category = args.category;
         return await ctx.db
           .query("newsArticles")
-          .withIndex("by_category", (q) => q.eq("category", args.category!).eq("isPublished", true))
+          .withIndex("by_category", (q) => q.eq("category", category).eq("isPublished", true))
           .order("desc")
           .take(limit);
       }
@@ -282,9 +283,10 @@ export const updateArticle = mutation({
 
     // Check for duplicate slug if changing
     if (args.slug && args.slug !== article.slug) {
+      const slug = args.slug;
       const existing = await ctx.db
         .query("newsArticles")
-        .withIndex("by_slug", (q) => q.eq("slug", args.slug!))
+        .withIndex("by_slug", (q) => q.eq("slug", slug))
         .first();
 
       if (existing) {
@@ -320,7 +322,9 @@ export const updateArticle = mutation({
       action: "update_news_article",
       metadata: {
         articleId: args.articleId,
-        updates: Object.keys(updates).filter((k) => k !== "updatedAt"),
+        updates: Object.keys(updates)
+          .filter((k) => k !== "updatedAt")
+          .join(", "),
       },
       success: true,
     });

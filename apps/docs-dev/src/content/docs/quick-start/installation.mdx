@@ -1,0 +1,156 @@
+---
+title: Installation
+description: Set up your LunchTable TCG development environment
+---
+
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Prerequisites
+
+Ensure you have the following installed:
+
+| Tool | Version | Check Command |
+|------|---------|---------------|
+| Bun | 1.1.38+ | `bun --version` |
+| Node.js | 20+ | `node --version` |
+| Git | Latest | `git --version` |
+
+## Installation Steps
+
+<Steps>
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/ltcg/ltcg.git
+   cd ltcg
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   bun install
+   ```
+
+3. **Set up environment variables**
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Edit `.env.local` and fill in required values:
+
+   ```env
+   # Convex
+   CONVEX_DEPLOYMENT=dev:your-deployment
+   NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+
+   # Privy (Authentication)
+   NEXT_PUBLIC_PRIVY_APP_ID=your-privy-app-id
+   PRIVY_APP_SECRET=your-privy-secret
+   ```
+
+4. **Initialize Convex**
+
+   ```bash
+   bunx convex dev
+   ```
+
+   This will:
+   - Create a new Convex project (if needed)
+   - Deploy your schema and functions
+   - Start watching for changes
+
+5. **Run setup script**
+
+   In a new terminal:
+
+   ```bash
+   bun run setup:dev
+   ```
+
+   This seeds the database with test data.
+
+6. **Start the development server**
+
+   ```bash
+   bun run dev:web
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+</Steps>
+
+## Verifying Installation
+
+<Tabs>
+  <TabItem label="Web App">
+    Navigate to `http://localhost:3000`. You should see the LunchTable TCG landing page.
+  </TabItem>
+  <TabItem label="Admin">
+    Navigate to `http://localhost:3001`. You should see the admin dashboard.
+  </TabItem>
+  <TabItem label="Convex">
+    Navigate to `https://dashboard.convex.dev`. Your project should show active functions.
+  </TabItem>
+</Tabs>
+
+## Common Issues
+
+### Bun not found
+
+<Aside type="caution">
+  If `bun` is not found, install it:
+
+  ```bash
+  curl -fsSL https://bun.sh/install | bash
+  ```
+</Aside>
+
+### Convex connection issues
+
+Ensure your `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` are correct. Run:
+
+```bash
+bunx convex dev --once
+```
+
+to verify the connection.
+
+### Port already in use
+
+If port 3000 is in use:
+
+```bash
+bun run dev:web -- --port 3001
+```
+
+## Development Scripts
+
+| Script | Description |
+|--------|-------------|
+| `bun run dev` | Start all dev servers |
+| `bun run dev:web` | Start web app only |
+| `bun run dev:admin` | Start admin dashboard |
+| `bun run build` | Build all apps |
+| `bun run test` | Run all tests |
+| `bun run lint` | Lint all code |
+
+---
+
+## Next Steps
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="First Game"
+    description="Create and modify your first game"
+    href="/quick-start/first-game/"
+  />
+  <LinkCard
+    title="Environment"
+    description="Understand the environment setup"
+    href="/quick-start/environment/"
+  />
+</CardGrid>

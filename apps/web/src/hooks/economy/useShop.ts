@@ -11,7 +11,12 @@ interface CardResult {
   name: string;
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
   archetype: string;
+  cardType: "creature" | "spell" | "trap" | "equipment";
+  attack?: number;
+  defense?: number;
+  cost: number;
   imageUrl?: string;
+  variant: "standard" | "foil" | "alt_art" | "full_art" | "numbered" | "first_edition";
 }
 
 interface PackPurchaseResult {

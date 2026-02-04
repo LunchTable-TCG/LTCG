@@ -53,10 +53,16 @@ import { toast } from "sonner";
 // =============================================================================
 
 const ARCHETYPES = [
+  // Primary archetypes
   { value: "infernal_dragons", label: "Infernal Dragons" },
+  { value: "abyssal_depths", label: "Abyssal Depths" },
+  { value: "iron_legion", label: "Iron Legion" },
+  { value: "necro_empire", label: "Necro Empire" },
+  // Legacy archetypes
   { value: "abyssal_horrors", label: "Abyssal Horrors" },
   { value: "nature_spirits", label: "Nature Spirits" },
   { value: "storm_elementals", label: "Storm Elementals" },
+  // Future archetypes
   { value: "shadow_assassins", label: "Shadow Assassins" },
   { value: "celestial_guardians", label: "Celestial Guardians" },
   { value: "undead_legion", label: "Undead Legion" },
@@ -235,7 +241,7 @@ export default function CardEditorPage() {
       };
 
       if (isNew) {
-        const result = await createCard(cardData);
+        const result = (await createCard(cardData)) as { message: string; cardId: string };
         toast.success(result.message);
         router.push(`/cards/${result.cardId}`);
       } else {
@@ -267,10 +273,10 @@ export default function CardEditorPage() {
     }
 
     try {
-      const result = await duplicateCardMutation({
+      const result = (await duplicateCardMutation({
         cardId: cardId as CardId,
         newName: duplicateName.trim(),
-      });
+      })) as { message: string; cardId: string };
       toast.success(result.message);
       router.push(`/cards/${result.cardId}`);
     } catch (error) {
@@ -621,13 +627,15 @@ export default function CardEditorPage() {
                   <Text className="font-bold text-lg">{name || "Card Name"}</Text>
                   <Badge
                     color={
-                      ({
-                        common: "gray",
-                        uncommon: "emerald",
-                        rare: "blue",
-                        epic: "violet",
-                        legendary: "amber",
-                      } as const)[rarity]
+                      (
+                        {
+                          common: "gray",
+                          uncommon: "emerald",
+                          rare: "blue",
+                          epic: "violet",
+                          legendary: "amber",
+                        } as const
+                      )[rarity]
                     }
                   >
                     {rarity}

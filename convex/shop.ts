@@ -6,6 +6,7 @@
 export {
   getShopProducts,
   getPackOpeningHistory,
+  getPackOpeningHistoryPaginated,
   purchasePack,
   purchaseBox,
   purchaseCurrencyBundle,

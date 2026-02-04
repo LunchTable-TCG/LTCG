@@ -13,6 +13,7 @@ import type * as __tests___fixtures_users from "../__tests__/fixtures/users.js";
 import type * as __tests___helpers_index from "../__tests__/helpers/index.js";
 import type * as __tests___helpers_mockPrivyJwt from "../__tests__/helpers/mockPrivyJwt.js";
 import type * as __tests___helpers_testAuth from "../__tests__/helpers/testAuth.js";
+import type * as admin_CRUD_EXAMPLES from "../admin/CRUD_EXAMPLES.js";
 import type * as admin_achievements from "../admin/achievements.js";
 import type * as admin_admin from "../admin/admin.js";
 import type * as admin_aiConfig from "../admin/aiConfig.js";
@@ -28,6 +29,7 @@ import type * as admin_cards from "../admin/cards.js";
 import type * as admin_chat from "../admin/chat.js";
 import type * as admin_cleanupAuth from "../admin/cleanupAuth.js";
 import type * as admin_config from "../admin/config.js";
+import type * as admin_crudGenerated from "../admin/crudGenerated.js";
 import type * as admin_features from "../admin/features.js";
 import type * as admin_marketplace from "../admin/marketplace.js";
 import type * as admin_moderation from "../admin/moderation.js";
@@ -36,11 +38,15 @@ import type * as admin_news from "../admin/news.js";
 import type * as admin_promoCodes from "../admin/promoCodes.js";
 import type * as admin_quests from "../admin/quests.js";
 import type * as admin_reports from "../admin/reports.js";
+import type * as admin_revenue from "../admin/revenue.js";
+import type * as admin_rngConfig from "../admin/rngConfig.js";
 import type * as admin_roles from "../admin/roles.js";
+import type * as admin_sales from "../admin/sales.js";
 import type * as admin_seasons from "../admin/seasons.js";
 import type * as admin_shop from "../admin/shop.js";
 import type * as admin_shopSetup from "../admin/shopSetup.js";
 import type * as admin_story from "../admin/story.js";
+import type * as admin_stripe from "../admin/stripe.js";
 import type * as admin_templates from "../admin/templates.js";
 import type * as admin_tournaments from "../admin/tournaments.js";
 import type * as agents_agents from "../agents/agents.js";
@@ -69,10 +75,15 @@ import type * as core_userPreferences from "../core/userPreferences.js";
 import type * as core_users from "../core/users.js";
 import type * as decks from "../decks.js";
 import type * as economy from "../economy.js";
+import type * as economy_dailyRewards from "../economy/dailyRewards.js";
 import type * as economy_economy from "../economy/economy.js";
+import type * as economy_elizaOSMonitor from "../economy/elizaOSMonitor.js";
+import type * as economy_gemPurchases from "../economy/gemPurchases.js";
 import type * as economy_index from "../economy/index.js";
 import type * as economy_marketplace from "../economy/marketplace.js";
 import type * as economy_priceHistory from "../economy/priceHistory.js";
+import type * as economy_rngConfig from "../economy/rngConfig.js";
+import type * as economy_sales from "../economy/sales.js";
 import type * as economy_shop from "../economy/shop.js";
 import type * as economy_tokenBalance from "../economy/tokenBalance.js";
 import type * as economy_tokenMaintenance from "../economy/tokenMaintenance.js";
@@ -152,13 +163,17 @@ import type * as http_chat from "../http/chat.js";
 import type * as http_decisions from "../http/decisions.js";
 import type * as http_decks from "../http/decks.js";
 import type * as http_games from "../http/games.js";
+import type * as http_lib_apiHelpers from "../http/lib/apiHelpers.js";
 import type * as http_matchmaking from "../http/matchmaking.js";
 import type * as http_middleware_auth from "../http/middleware/auth.js";
 import type * as http_middleware_rateLimit from "../http/middleware/rateLimit.js";
 import type * as http_middleware_rateLimitInternal from "../http/middleware/rateLimitInternal.js";
 import type * as http_middleware_responses from "../http/middleware/responses.js";
+import type * as http_middleware_x402 from "../http/middleware/x402.js";
+import type * as http_shop from "../http/shop.js";
 import type * as http_story from "../http/story.js";
 import type * as http_types from "../http/types.js";
+import type * as http_wellknown from "../http/wellknown.js";
 import type * as infrastructure_actionRetrier from "../infrastructure/actionRetrier.js";
 import type * as infrastructure_aggregates from "../infrastructure/aggregates.js";
 import type * as infrastructure_auditLog from "../infrastructure/auditLog.js";
@@ -174,6 +189,7 @@ import type * as lib_adminAudit from "../lib/adminAudit.js";
 import type * as lib_cardPropertyHelpers from "../lib/cardPropertyHelpers.js";
 import type * as lib_constants from "../lib/constants.js";
 import type * as lib_convexAuth from "../lib/convexAuth.js";
+import type * as lib_crudBuilders from "../lib/crudBuilders.js";
 import type * as lib_customFunctions from "../lib/customFunctions.js";
 import type * as lib_debug from "../lib/debug.js";
 import type * as lib_debugHelpers from "../lib/debugHelpers.js";
@@ -188,6 +204,7 @@ import type * as lib_presenceMigration from "../lib/presenceMigration.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_returnValidators from "../lib/returnValidators.js";
 import type * as lib_roles from "../lib/roles.js";
+import type * as lib_rowLevelSecurity from "../lib/rowLevelSecurity.js";
 import type * as lib_schemaValidators from "../lib/schemaValidators.js";
 import type * as lib_solana_connection from "../lib/solana/connection.js";
 import type * as lib_solana_index from "../lib/solana/index.js";
@@ -196,13 +213,18 @@ import type * as lib_solana_tokenTransfer from "../lib/solana/tokenTransfer.js";
 import type * as lib_spellSpeedHelper from "../lib/spellSpeedHelper.js";
 import type * as lib_storyConstants from "../lib/storyConstants.js";
 import type * as lib_storyHelpers from "../lib/storyHelpers.js";
-import type * as lib_stripe from "../lib/stripe.js";
 import type * as lib_types from "../lib/types.js";
 import type * as lib_validation from "../lib/validation.js";
 import type * as lib_validators from "../lib/validators.js";
+import type * as lib_x402_config from "../lib/x402/config.js";
+import type * as lib_x402_constants from "../lib/x402/constants.js";
+import type * as lib_x402_facilitator from "../lib/x402/facilitator.js";
+import type * as lib_x402_queries from "../lib/x402/queries.js";
+import type * as lib_x402_types from "../lib/x402/types.js";
 import type * as lib_xpHelpers from "../lib/xpHelpers.js";
 import type * as marketplace from "../marketplace.js";
 import type * as matchmaking from "../matchmaking.js";
+import type * as migrations from "../migrations.js";
 import type * as migrations_addLeaderboardFields from "../migrations/addLeaderboardFields.js";
 import type * as migrations_loadAllCards from "../migrations/loadAllCards.js";
 import type * as migrations_manualAbilities from "../migrations/manualAbilities.js";
@@ -246,10 +268,11 @@ import type * as social_tournaments from "../social/tournaments.js";
 import type * as storage_cards from "../storage/cards.js";
 import type * as storage_images from "../storage/images.js";
 import type * as story from "../story.js";
+import type * as stripe_battlePassSync from "../stripe/battlePassSync.js";
 import type * as stripe_checkout from "../stripe/checkout.js";
+import type * as stripe_client from "../stripe/client.js";
 import type * as stripe_portal from "../stripe/portal.js";
 import type * as stripe_queries from "../stripe/queries.js";
-import type * as stripe_webhooks from "../stripe/webhooks.js";
 import type * as testing_cleanup from "../testing/cleanup.js";
 import type * as testing_seedTestDeck from "../testing/seedTestDeck.js";
 import type * as testing_seedTestUser from "../testing/seedTestUser.js";
@@ -284,6 +307,7 @@ declare const fullApi: ApiFromModules<{
   "__tests__/helpers/index": typeof __tests___helpers_index;
   "__tests__/helpers/mockPrivyJwt": typeof __tests___helpers_mockPrivyJwt;
   "__tests__/helpers/testAuth": typeof __tests___helpers_testAuth;
+  "admin/CRUD_EXAMPLES": typeof admin_CRUD_EXAMPLES;
   "admin/achievements": typeof admin_achievements;
   "admin/admin": typeof admin_admin;
   "admin/aiConfig": typeof admin_aiConfig;
@@ -299,6 +323,7 @@ declare const fullApi: ApiFromModules<{
   "admin/chat": typeof admin_chat;
   "admin/cleanupAuth": typeof admin_cleanupAuth;
   "admin/config": typeof admin_config;
+  "admin/crudGenerated": typeof admin_crudGenerated;
   "admin/features": typeof admin_features;
   "admin/marketplace": typeof admin_marketplace;
   "admin/moderation": typeof admin_moderation;
@@ -307,11 +332,15 @@ declare const fullApi: ApiFromModules<{
   "admin/promoCodes": typeof admin_promoCodes;
   "admin/quests": typeof admin_quests;
   "admin/reports": typeof admin_reports;
+  "admin/revenue": typeof admin_revenue;
+  "admin/rngConfig": typeof admin_rngConfig;
   "admin/roles": typeof admin_roles;
+  "admin/sales": typeof admin_sales;
   "admin/seasons": typeof admin_seasons;
   "admin/shop": typeof admin_shop;
   "admin/shopSetup": typeof admin_shopSetup;
   "admin/story": typeof admin_story;
+  "admin/stripe": typeof admin_stripe;
   "admin/templates": typeof admin_templates;
   "admin/tournaments": typeof admin_tournaments;
   "agents/agents": typeof agents_agents;
@@ -340,10 +369,15 @@ declare const fullApi: ApiFromModules<{
   "core/users": typeof core_users;
   decks: typeof decks;
   economy: typeof economy;
+  "economy/dailyRewards": typeof economy_dailyRewards;
   "economy/economy": typeof economy_economy;
+  "economy/elizaOSMonitor": typeof economy_elizaOSMonitor;
+  "economy/gemPurchases": typeof economy_gemPurchases;
   "economy/index": typeof economy_index;
   "economy/marketplace": typeof economy_marketplace;
   "economy/priceHistory": typeof economy_priceHistory;
+  "economy/rngConfig": typeof economy_rngConfig;
+  "economy/sales": typeof economy_sales;
   "economy/shop": typeof economy_shop;
   "economy/tokenBalance": typeof economy_tokenBalance;
   "economy/tokenMaintenance": typeof economy_tokenMaintenance;
@@ -423,13 +457,17 @@ declare const fullApi: ApiFromModules<{
   "http/decisions": typeof http_decisions;
   "http/decks": typeof http_decks;
   "http/games": typeof http_games;
+  "http/lib/apiHelpers": typeof http_lib_apiHelpers;
   "http/matchmaking": typeof http_matchmaking;
   "http/middleware/auth": typeof http_middleware_auth;
   "http/middleware/rateLimit": typeof http_middleware_rateLimit;
   "http/middleware/rateLimitInternal": typeof http_middleware_rateLimitInternal;
   "http/middleware/responses": typeof http_middleware_responses;
+  "http/middleware/x402": typeof http_middleware_x402;
+  "http/shop": typeof http_shop;
   "http/story": typeof http_story;
   "http/types": typeof http_types;
+  "http/wellknown": typeof http_wellknown;
   "infrastructure/actionRetrier": typeof infrastructure_actionRetrier;
   "infrastructure/aggregates": typeof infrastructure_aggregates;
   "infrastructure/auditLog": typeof infrastructure_auditLog;
@@ -445,6 +483,7 @@ declare const fullApi: ApiFromModules<{
   "lib/cardPropertyHelpers": typeof lib_cardPropertyHelpers;
   "lib/constants": typeof lib_constants;
   "lib/convexAuth": typeof lib_convexAuth;
+  "lib/crudBuilders": typeof lib_crudBuilders;
   "lib/customFunctions": typeof lib_customFunctions;
   "lib/debug": typeof lib_debug;
   "lib/debugHelpers": typeof lib_debugHelpers;
@@ -459,6 +498,7 @@ declare const fullApi: ApiFromModules<{
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/returnValidators": typeof lib_returnValidators;
   "lib/roles": typeof lib_roles;
+  "lib/rowLevelSecurity": typeof lib_rowLevelSecurity;
   "lib/schemaValidators": typeof lib_schemaValidators;
   "lib/solana/connection": typeof lib_solana_connection;
   "lib/solana/index": typeof lib_solana_index;
@@ -467,13 +507,18 @@ declare const fullApi: ApiFromModules<{
   "lib/spellSpeedHelper": typeof lib_spellSpeedHelper;
   "lib/storyConstants": typeof lib_storyConstants;
   "lib/storyHelpers": typeof lib_storyHelpers;
-  "lib/stripe": typeof lib_stripe;
   "lib/types": typeof lib_types;
   "lib/validation": typeof lib_validation;
   "lib/validators": typeof lib_validators;
+  "lib/x402/config": typeof lib_x402_config;
+  "lib/x402/constants": typeof lib_x402_constants;
+  "lib/x402/facilitator": typeof lib_x402_facilitator;
+  "lib/x402/queries": typeof lib_x402_queries;
+  "lib/x402/types": typeof lib_x402_types;
   "lib/xpHelpers": typeof lib_xpHelpers;
   marketplace: typeof marketplace;
   matchmaking: typeof matchmaking;
+  migrations: typeof migrations;
   "migrations/addLeaderboardFields": typeof migrations_addLeaderboardFields;
   "migrations/loadAllCards": typeof migrations_loadAllCards;
   "migrations/manualAbilities": typeof migrations_manualAbilities;
@@ -517,10 +562,11 @@ declare const fullApi: ApiFromModules<{
   "storage/cards": typeof storage_cards;
   "storage/images": typeof storage_images;
   story: typeof story;
+  "stripe/battlePassSync": typeof stripe_battlePassSync;
   "stripe/checkout": typeof stripe_checkout;
+  "stripe/client": typeof stripe_client;
   "stripe/portal": typeof stripe_portal;
   "stripe/queries": typeof stripe_queries;
-  "stripe/webhooks": typeof stripe_webhooks;
   "testing/cleanup": typeof testing_cleanup;
   "testing/seedTestDeck": typeof testing_seedTestDeck;
   "testing/seedTestUser": typeof testing_seedTestUser;
@@ -4302,6 +4348,357 @@ export declare const components: {
           | { previousAttempts: number; state: "running" }
           | { state: "finished" }
         >
+      >;
+    };
+  };
+  stripe: {
+    private: {
+      handleCheckoutSessionCompleted: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          metadata?: any;
+          mode: string;
+          stripeCheckoutSessionId: string;
+          stripeCustomerId?: string;
+        },
+        null
+      >;
+      handleCustomerCreated: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          email?: string;
+          metadata?: any;
+          name?: string;
+          stripeCustomerId: string;
+        },
+        null
+      >;
+      handleCustomerUpdated: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          email?: string;
+          metadata?: any;
+          name?: string;
+          stripeCustomerId: string;
+        },
+        null
+      >;
+      handleInvoiceCreated: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          amountDue: number;
+          amountPaid: number;
+          created: number;
+          status: string;
+          stripeCustomerId: string;
+          stripeInvoiceId: string;
+          stripeSubscriptionId?: string;
+        },
+        null
+      >;
+      handleInvoicePaid: FunctionReference<
+        "mutation",
+        "internal",
+        { amountPaid: number; stripeInvoiceId: string },
+        null
+      >;
+      handleInvoicePaymentFailed: FunctionReference<
+        "mutation",
+        "internal",
+        { stripeInvoiceId: string },
+        null
+      >;
+      handlePaymentIntentSucceeded: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          amount: number;
+          created: number;
+          currency: string;
+          metadata?: any;
+          status: string;
+          stripeCustomerId?: string;
+          stripePaymentIntentId: string;
+        },
+        null
+      >;
+      handleSubscriptionCreated: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          cancelAt?: number;
+          cancelAtPeriodEnd: boolean;
+          currentPeriodEnd: number;
+          metadata?: any;
+          priceId: string;
+          quantity?: number;
+          status: string;
+          stripeCustomerId: string;
+          stripeSubscriptionId: string;
+        },
+        null
+      >;
+      handleSubscriptionDeleted: FunctionReference<
+        "mutation",
+        "internal",
+        { stripeSubscriptionId: string },
+        null
+      >;
+      handleSubscriptionUpdated: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          cancelAt?: number;
+          cancelAtPeriodEnd: boolean;
+          currentPeriodEnd: number;
+          metadata?: any;
+          priceId?: string;
+          quantity?: number;
+          status: string;
+          stripeSubscriptionId: string;
+        },
+        null
+      >;
+      updatePaymentCustomer: FunctionReference<
+        "mutation",
+        "internal",
+        { stripeCustomerId: string; stripePaymentIntentId: string },
+        null
+      >;
+      updateSubscriptionQuantityInternal: FunctionReference<
+        "mutation",
+        "internal",
+        { quantity: number; stripeSubscriptionId: string },
+        null
+      >;
+    };
+    public: {
+      createOrUpdateCustomer: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          email?: string;
+          metadata?: any;
+          name?: string;
+          stripeCustomerId: string;
+        },
+        string
+      >;
+      getCustomer: FunctionReference<
+        "query",
+        "internal",
+        { stripeCustomerId: string },
+        {
+          email?: string;
+          metadata?: any;
+          name?: string;
+          stripeCustomerId: string;
+        } | null
+      >;
+      getPayment: FunctionReference<
+        "query",
+        "internal",
+        { stripePaymentIntentId: string },
+        {
+          amount: number;
+          created: number;
+          currency: string;
+          metadata?: any;
+          orgId?: string;
+          status: string;
+          stripeCustomerId?: string;
+          stripePaymentIntentId: string;
+          userId?: string;
+        } | null
+      >;
+      getSubscription: FunctionReference<
+        "query",
+        "internal",
+        { stripeSubscriptionId: string },
+        {
+          cancelAt?: number;
+          cancelAtPeriodEnd: boolean;
+          currentPeriodEnd: number;
+          metadata?: any;
+          orgId?: string;
+          priceId: string;
+          quantity?: number;
+          status: string;
+          stripeCustomerId: string;
+          stripeSubscriptionId: string;
+          userId?: string;
+        } | null
+      >;
+      getSubscriptionByOrgId: FunctionReference<
+        "query",
+        "internal",
+        { orgId: string },
+        {
+          cancelAt?: number;
+          cancelAtPeriodEnd: boolean;
+          currentPeriodEnd: number;
+          metadata?: any;
+          orgId?: string;
+          priceId: string;
+          quantity?: number;
+          status: string;
+          stripeCustomerId: string;
+          stripeSubscriptionId: string;
+          userId?: string;
+        } | null
+      >;
+      listInvoices: FunctionReference<
+        "query",
+        "internal",
+        { stripeCustomerId: string },
+        Array<{
+          amountDue: number;
+          amountPaid: number;
+          created: number;
+          orgId?: string;
+          status: string;
+          stripeCustomerId: string;
+          stripeInvoiceId: string;
+          stripeSubscriptionId?: string;
+          userId?: string;
+        }>
+      >;
+      listInvoicesByOrgId: FunctionReference<
+        "query",
+        "internal",
+        { orgId: string },
+        Array<{
+          amountDue: number;
+          amountPaid: number;
+          created: number;
+          orgId?: string;
+          status: string;
+          stripeCustomerId: string;
+          stripeInvoiceId: string;
+          stripeSubscriptionId?: string;
+          userId?: string;
+        }>
+      >;
+      listInvoicesByUserId: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          amountDue: number;
+          amountPaid: number;
+          created: number;
+          orgId?: string;
+          status: string;
+          stripeCustomerId: string;
+          stripeInvoiceId: string;
+          stripeSubscriptionId?: string;
+          userId?: string;
+        }>
+      >;
+      listPayments: FunctionReference<
+        "query",
+        "internal",
+        { stripeCustomerId: string },
+        Array<{
+          amount: number;
+          created: number;
+          currency: string;
+          metadata?: any;
+          orgId?: string;
+          status: string;
+          stripeCustomerId?: string;
+          stripePaymentIntentId: string;
+          userId?: string;
+        }>
+      >;
+      listPaymentsByOrgId: FunctionReference<
+        "query",
+        "internal",
+        { orgId: string },
+        Array<{
+          amount: number;
+          created: number;
+          currency: string;
+          metadata?: any;
+          orgId?: string;
+          status: string;
+          stripeCustomerId?: string;
+          stripePaymentIntentId: string;
+          userId?: string;
+        }>
+      >;
+      listPaymentsByUserId: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          amount: number;
+          created: number;
+          currency: string;
+          metadata?: any;
+          orgId?: string;
+          status: string;
+          stripeCustomerId?: string;
+          stripePaymentIntentId: string;
+          userId?: string;
+        }>
+      >;
+      listSubscriptions: FunctionReference<
+        "query",
+        "internal",
+        { stripeCustomerId: string },
+        Array<{
+          cancelAt?: number;
+          cancelAtPeriodEnd: boolean;
+          currentPeriodEnd: number;
+          metadata?: any;
+          orgId?: string;
+          priceId: string;
+          quantity?: number;
+          status: string;
+          stripeCustomerId: string;
+          stripeSubscriptionId: string;
+          userId?: string;
+        }>
+      >;
+      listSubscriptionsByUserId: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          cancelAt?: number;
+          cancelAtPeriodEnd: boolean;
+          currentPeriodEnd: number;
+          metadata?: any;
+          orgId?: string;
+          priceId: string;
+          quantity?: number;
+          status: string;
+          stripeCustomerId: string;
+          stripeSubscriptionId: string;
+          userId?: string;
+        }>
+      >;
+      updateSubscriptionMetadata: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          metadata: any;
+          orgId?: string;
+          stripeSubscriptionId: string;
+          userId?: string;
+        },
+        null
+      >;
+      updateSubscriptionQuantity: FunctionReference<
+        "action",
+        "internal",
+        { apiKey: string; quantity: number; stripeSubscriptionId: string },
+        null
       >;
     };
   };

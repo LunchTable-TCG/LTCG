@@ -30,7 +30,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import { ArrowDownIcon, ArrowUpIcon, BookOpenIcon, PlusIcon } from "lucide-react";
 import Link from "next/link";
@@ -46,9 +47,9 @@ type UnlockConditionType = "chapter_complete" | "player_level" | "none";
 
 interface Chapter {
   _id: string;
-  number: number;
+  number?: number;
   title: string;
-  description: string;
+  description?: string;
   imageUrl?: string;
   status: ChapterStatus;
   stageCount: number;
@@ -58,8 +59,8 @@ interface Chapter {
     requiredChapterId?: string;
     requiredLevel?: number;
   };
-  createdAt: number;
-  updatedAt: number;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 // =============================================================================
@@ -91,7 +92,15 @@ function CreateChapterDialog({
     setIsSubmitting(true);
 
     try {
-      const args: Record<string, unknown> = {
+      const args: {
+        number: number;
+        title: string;
+        description: string;
+        imageUrl?: string;
+        unlockConditionType?: UnlockConditionType;
+        requiredChapterId?: Id<"storyChapters">;
+        requiredLevel?: number;
+      } = {
         number: Number.parseInt(number, 10),
         title,
         description,
@@ -101,14 +110,14 @@ function CreateChapterDialog({
       if (unlockType !== "none") {
         args.unlockConditionType = unlockType;
         if (unlockType === "chapter_complete" && requiredChapterId) {
-          args.requiredChapterId = requiredChapterId;
+          args.requiredChapterId = requiredChapterId as Id<"storyChapters">;
         }
         if (unlockType === "player_level" && requiredLevel) {
           args.requiredLevel = Number.parseInt(requiredLevel, 10);
         }
       }
 
-      const result = await createChapter(args);
+      const result = (await createChapter(args)) as { message: string };
       toast.success(result.message);
       onOpenChange(false);
       resetForm();
@@ -130,7 +139,8 @@ function CreateChapterDialog({
   };
 
   // Suggest next chapter number
-  const suggestedNumber = chapters.length > 0 ? Math.max(...chapters.map((c) => c.number)) + 1 : 1;
+  const suggestedNumber =
+    chapters.length > 0 ? Math.max(...chapters.map((c) => c.number ?? 0)) + 1 : 1;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -269,10 +279,10 @@ export default function StoryPage() {
 
   const handleTogglePublish = async (chapter: Chapter) => {
     try {
-      const result = await publishChapter({
-        chapterId: chapter._id as any,
+      const result = (await publishChapter({
+        chapterId: chapter._id as Id<"storyChapters">,
         publish: chapter.status === "draft",
-      });
+      })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update chapter");
@@ -281,14 +291,14 @@ export default function StoryPage() {
 
   const handleMoveUp = async (chapter: Chapter) => {
     const chapters = chaptersResult?.chapters || [];
-    const currentIndex = chapters.findIndex((c: Chapter) => c._id === chapter._id);
+    const currentIndex = chapters.findIndex((c) => c._id === chapter._id);
     if (currentIndex <= 0) return;
 
     const prevChapter = chapters[currentIndex - 1];
     try {
       await reorderChapters({
-        chapterId: chapter._id as any,
-        newNumber: prevChapter.number,
+        chapterId: chapter._id as Id<"storyChapters">,
+        newNumber: prevChapter?.number ?? 1,
       });
       toast.success("Chapters reordered");
     } catch (error) {
@@ -298,14 +308,14 @@ export default function StoryPage() {
 
   const handleMoveDown = async (chapter: Chapter) => {
     const chapters = chaptersResult?.chapters || [];
-    const currentIndex = chapters.findIndex((c: Chapter) => c._id === chapter._id);
+    const currentIndex = chapters.findIndex((c) => c._id === chapter._id);
     if (currentIndex >= chapters.length - 1) return;
 
     const nextChapter = chapters[currentIndex + 1];
     try {
       await reorderChapters({
-        chapterId: chapter._id as any,
-        newNumber: nextChapter.number,
+        chapterId: chapter._id as Id<"storyChapters">,
+        newNumber: nextChapter?.number ?? 1,
       });
       toast.success("Chapters reordered");
     } catch (error) {

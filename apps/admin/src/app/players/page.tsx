@@ -17,8 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useQuery } from "@/lib/convexHelpers";
 import type { ColumnDef, PlayerType } from "@/types";
+import type { Id } from "@convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -27,7 +28,7 @@ import { useState } from "react";
 // =============================================================================
 
 interface LeaderboardPlayer {
-  playerId: any; // Id type
+  playerId: Id<"users">;
   name: string;
   type: PlayerType;
   eloRating: number;
@@ -41,7 +42,7 @@ interface LeaderboardPlayer {
 }
 
 interface PlayerListItem extends LeaderboardPlayer {
-  _id: any; // Id type
+  _id: Id<"users">;
 }
 
 // =============================================================================
@@ -109,13 +110,23 @@ export default function PlayersPage() {
   const [playerTypeFilter, setPlayerTypeFilter] = useState<"all" | "human" | "ai">("all");
 
   // Fetch players using admin listPlayers (doesn't rely on aggregates)
-  const playersData = useConvexQuery(api.admin.admin.listPlayers, {
+  // Extract query to avoid TS2589 deep type instantiation
+  const listPlayersQuery = api.admin.admin.listPlayers;
+  const playersData = useQuery(listPlayersQuery, {
     limit: 200,
   });
 
   // Transform data for table (handle case where data isn't an array)
+  // Use a simpler type for the API return since it doesn't include gamesPlayed/Won/winRate
+  type SimplePlayer = {
+    playerId: Id<"users">;
+    name: string;
+    type: "ai" | "human";
+    eloRating: number;
+    rank: number;
+  };
   const tableData: PlayerListItem[] | undefined = Array.isArray(playersData)
-    ? playersData.map((player: any) => ({
+    ? playersData.map((player: SimplePlayer) => ({
         _id: player.playerId,
         playerId: player.playerId,
         name: player.name || "Unknown",

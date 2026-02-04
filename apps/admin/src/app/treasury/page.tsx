@@ -12,9 +12,17 @@ import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
+import type { Doc } from "@convex/_generated/dataModel";
 import { Badge, BarList } from "@tremor/react";
 import Link from "next/link";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+type TreasuryWallet = Doc<"treasuryWallets">;
+type TreasuryTransaction = Doc<"treasuryTransactions">;
 
 // =============================================================================
 // Helper Functions
@@ -94,7 +102,7 @@ export default function TreasuryOverviewPage() {
 
   // Transform wallets for bar list
   const walletBalances =
-    wallets?.map((w: any) => ({
+    wallets?.map((w: TreasuryWallet) => ({
       name: `${getPurposeIcon(w.purpose)} ${w.name}`,
       value: w.balance || 0,
       href: "/treasury/wallets",
@@ -295,7 +303,7 @@ export default function TreasuryOverviewPage() {
             </div>
           ) : (overview?.recentTransactions?.length ?? 0) > 0 ? (
             <div className="space-y-3">
-              {overview?.recentTransactions?.map((tx: any) => (
+              {overview?.recentTransactions?.map((tx: TreasuryTransaction) => (
                 <div
                   key={tx._id}
                   className="flex items-center justify-between rounded-lg border p-3"

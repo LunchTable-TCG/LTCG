@@ -27,7 +27,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdmin } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -90,7 +91,7 @@ export default function ReportsPage() {
 
     try {
       await bulkUpdateStatus({
-        reportIds: Array.from(selectedReports),
+        reportIds: Array.from(selectedReports) as Id<"userReports">[],
         status,
       });
       setSelectedReports(new Set());

@@ -14,10 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdmin } from "@/contexts/AdminContext";
-import { api } from "@/lib/convexHelpers";
+import { api, useConvexAction } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { Text } from "@tremor/react";
-import { useAction } from "convex/react";
 import { BotIcon, HistoryIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -38,6 +37,9 @@ interface Thread {
 // Component
 // =============================================================================
 
+// Static skeleton keys to avoid using array indices
+const SKELETON_KEYS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"] as const;
+
 export default function AIAssistantPage() {
   useAdmin(); // Auth check
 
@@ -48,19 +50,20 @@ export default function AIAssistantPage() {
   const [isDeletingThread, setIsDeletingThread] = useState<string | null>(null);
 
   // Actions
-  const listThreads = useAction(api.ai.adminAgentApi.listThreads);
-  const getOrCreateThread = useAction(api.ai.adminAgentApi.getOrCreateThread);
-  const deleteThread = useAction(api.ai.adminAgentApi.deleteThread);
+  const listThreads = useConvexAction(api.ai.adminAgentApi.listThreads);
+  const getOrCreateThread = useConvexAction(api.ai.adminAgentApi.getOrCreateThread);
+  const deleteThread = useConvexAction(api.ai.adminAgentApi.deleteThread);
 
   // Load threads
   const loadThreads = useCallback(async () => {
     try {
-      const result = await listThreads({ limit: 20 });
+      const result = (await listThreads({ limit: 20 })) as { threads: Thread[] };
       setThreads(result.threads);
 
       // Auto-select first thread if none selected
-      if (!selectedThreadId && result.threads.length > 0) {
-        setSelectedThreadId(result.threads[0].threadId);
+      const firstThread = result.threads[0];
+      if (!selectedThreadId && firstThread) {
+        setSelectedThreadId(firstThread.threadId);
       }
     } catch (error) {
       console.error("Failed to load threads:", error);
@@ -77,7 +80,7 @@ export default function AIAssistantPage() {
   const handleNewThread = async () => {
     setIsCreatingThread(true);
     try {
-      const result = await getOrCreateThread({});
+      const result = (await getOrCreateThread({})) as { threadId: string };
       setSelectedThreadId(result.threadId);
       await loadThreads();
       toast.success("New conversation started");
@@ -148,8 +151,8 @@ export default function AIAssistantPage() {
               <ScrollArea className="h-[calc(100vh-320px)]">
                 {isLoadingThreads ? (
                   <div className="space-y-2 px-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 py-2">
+                    {SKELETON_KEYS.map((key) => (
+                      <div key={key} className="flex items-center gap-3 py-2">
                         <Skeleton className="h-8 w-8 rounded" />
                         <div className="flex-1 space-y-1">
                           <Skeleton className="h-4 w-32" />

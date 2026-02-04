@@ -1,0 +1,75 @@
+---
+title: Ranked Mode
+description: Climb the competitive ladder
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Ranked Overview
+
+Ranked mode is LunchTable TCG's competitive ladder. Test your skills against players of similar ability and climb to the top!
+
+## Ranks
+
+| Rank | Division | Tier Points to Advance |
+|------|----------|------------------------|
+| 🥉 Bronze | III → II → I | 100 TP each |
+| 🥈 Silver | III → II → I | 100 TP each |
+| 🥇 Gold | III → II → I | 100 TP each |
+| 💎 Diamond | III → II → I | 150 TP each |
+| 👑 Master | Single tier | Top 1000 players |
+| 🏆 Legend | Single tier | Top 100 players |
+
+## Earning Tier Points
+
+| Result | Tier Points |
+|--------|-------------|
+| Win | +25 to +35 TP |
+| Loss | -20 to -25 TP |
+| Win Streak (3+) | +5 bonus TP |
+
+<Aside type="tip">
+  Win streaks give bonus TP! Three wins in a row starts the streak.
+</Aside>
+
+## Season Structure
+
+- Each season lasts **3 months**
+- Ranks reset at season end (soft reset)
+- Season rewards based on highest rank achieved
+
+### Season Rewards
+
+| Rank Achieved | Reward |
+|---------------|--------|
+| Gold+ | Exclusive card back |
+| Diamond+ | Exclusive card + card back |
+| Master+ | Legendary card + exclusive title |
+| Legend | All rewards + special border |
+
+## Tips for Climbing
+
+1. **Play your best deck** - Don't experiment in ranked
+2. **Learn matchups** - Know how to play vs common decks
+3. **Take breaks** - Stop after 2-3 losses in a row
+4. **Track your stats** - Identify and fix weaknesses
+5. **Play at off-peak times** - Often easier opponents
+
+---
+
+## What's Next?
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Casual Mode"
+    description="Practice without pressure"
+    href="/modes/casual/"
+  />
+  <LinkCard
+    title="Tournaments"
+    description="Compete for glory"
+    href="/community/tournaments/"
+  />
+</CardGrid>

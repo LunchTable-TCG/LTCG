@@ -1,11 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { typedApi, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { componentLogger, logger, perf, useDebugLifecycle } from "@/lib/debug";
 import { categorizeEffect, showEffectActivated } from "@/lib/effectToasts";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation } from "convex/react";
 import { Flag, Loader2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,28 +41,39 @@ interface GameBoardProps {
   gameMode?: "pvp" | "story";
 }
 
+interface TargetCard {
+  cardId: Id<"cardDefinitions">;
+  name: string;
+  instanceId: string;
+  imageUrl?: string;
+  attack?: number;
+  defense?: number;
+  cardType?: string;
+  monsterStats?: {
+    level: number;
+    attack: number;
+    defense: number;
+  };
+}
+
 interface ActivationResult {
   success: boolean;
   error?: string;
   requiresSelection?: boolean;
-  availableTargets?: Array<{
-    cardId: Id<"cardDefinitions">;
-    name: string;
-    instanceId: string;
-    imageUrl?: string;
-    attack?: number;
-    defense?: number;
-    cardType?: string;
-    monsterStats?: {
-      level: number;
-      attack: number;
-      defense: number;
-    };
-  }>;
+  availableTargets?: TargetCard[];
   selectionSource?: "deck" | "graveyard" | "banished" | "board" | "hand";
   minSelections?: number;
   maxSelections?: number;
   selectionPrompt?: string;
+}
+
+interface ChainLink {
+  cardId: Id<"cardDefinitions">;
+  effect: string;
+  spellSpeed: number;
+  playerId: Id<"users">;
+  chainLink?: number;
+  cardName?: string;
 }
 
 export function GameBoard({
@@ -78,17 +88,17 @@ export function GameBoard({
   useDebugLifecycle("GameBoard", { lobbyId, gameMode });
 
   // Get player ID from auth if not provided (story mode)
-  const authUser = useTypedQuery(typedApi.core.users.currentUser, {});
+  const authUser = useConvexQuery(apiAny.core.users.currentUser, {});
   const playerId = providedPlayerId || (authUser?._id as Id<"users"> | undefined);
 
   log.debug("GameBoard rendered", { lobbyId, playerId, gameMode });
 
   // First check lobby status - MUST be called before any conditional returns
-  const lobbyDetails = useTypedQuery(typedApi.gameplay.games.queries.getLobbyDetails, { lobbyId });
+  const lobbyDetails = useConvexQuery(apiAny.gameplay.games.queries.getLobbyDetails, { lobbyId });
 
   // Selection effect mutations
-  const completeSearchEffectMutation = useMutation(
-    typedApi.gameplay.gameEngine.spellsTraps.completeSearchEffect
+  const completeSearchEffectMutation = useConvexMutation(
+    apiAny.gameplay.gameEngine.spellsTraps.completeSearchEffect
   );
   const completeSearchEffect = useCallback(
     async (args: {
@@ -176,19 +186,19 @@ export function GameBoard({
     callback: (costTargets?: Id<"cardDefinitions">[]) => void;
   } | null>(null);
 
-  // AI Turn Automation (Story Mode) - use useMutation directly for this mutation
-  const executeAITurnMutation = useMutation(typedApi.gameplay.ai.aiTurn.executeAITurn);
-  const gameState = useTypedQuery(
-    typedApi.gameplay.games.queries.getGameStateForPlayer,
+  // AI Turn Automation (Story Mode) - use useConvexMutation directly for this mutation
+  const executeAITurnMutation = useConvexMutation(apiAny.gameplay.ai.aiTurn.executeAITurn);
+  const gameState = useConvexQuery(
+    apiAny.gameplay.games.queries.getGameStateForPlayer,
     lobbyId ? { lobbyId } : "skip"
   );
 
   // New feature queries
-  const pendingOptionalTriggers = useTypedQuery(
-    typedApi.gameplay.games.queries.getPendingOptionalTriggers,
+  const pendingOptionalTriggers = useConvexQuery(
+    apiAny.gameplay.games.queries.getPendingOptionalTriggers,
     { lobbyId }
   );
-  const timeoutStatus = useTypedQuery(typedApi.gameplay.games.queries.getTimeoutStatus, {
+  const timeoutStatus = useConvexQuery(apiAny.gameplay.games.queries.getTimeoutStatus, {
     lobbyId,
   });
 
@@ -225,8 +235,8 @@ export function GameBoard({
         limit: 10,
       }
     : "skip";
-  const gameEvents = useTypedQuery(
-    typedApi.gameplay.gameEvents.subscribeToGameEvents,
+  const gameEvents = useConvexQuery(
+    apiAny.gameplay.gameEvents.subscribeToGameEvents,
     gameEventsArgs
   );
 
@@ -639,8 +649,8 @@ export function GameBoard({
   }, []);
 
   // Cost payment query
-  const getPendingCostMutation = useMutation(
-    typedApi.gameplay.effectSystem.costPayment.getPendingCostRequirement
+  const getPendingCostMutation = useConvexMutation(
+    apiAny.gameplay.effectSystem.costPayment.getPendingCostRequirement
   );
 
   const handleActivateCard = useCallback(
@@ -668,7 +678,7 @@ export function GameBoard({
             cardName: costCheck.cardName || selectedCard.name,
             costType: costCheck.costType as "discard" | "pay_lp" | "tribute" | "banish",
             costValue: costCheck.costValue || 1,
-            availableCards: (costCheck.availableTargets || []).map((target: any) => ({
+            availableCards: ((costCheck.availableTargets || []) as TargetCard[]).map((target) => ({
               cardId: target.cardId,
               name: target.name,
               cardType: target.cardType,
@@ -1209,7 +1219,7 @@ export function GameBoard({
         {/* Chain Display Widget */}
         {chainResponses?.chain && chainResponses.chain.length > 0 && (
           <ChainDisplayWidget
-            chain={chainResponses.chain.map((c: any) => ({
+            chain={chainResponses.chain.map((c: ChainLink) => ({
               chainPosition: c.chainLink || 1,
               cardId: c.cardId,
               cardName: c.cardName || "Unknown Card",

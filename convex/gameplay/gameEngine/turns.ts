@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
-import { mutation, internalMutation } from "../../functions";
+import { internalMutation, mutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";

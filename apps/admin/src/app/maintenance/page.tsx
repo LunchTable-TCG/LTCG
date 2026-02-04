@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, BarList, Card, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";

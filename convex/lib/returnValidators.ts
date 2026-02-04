@@ -8,9 +8,17 @@
  * This extends that guidance to return values for runtime type safety.
  */
 
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import type { GenericValidator } from "convex/values";
 import { jsonAbilityValidator } from "../gameplay/effectSystem/jsonEffectValidators";
+
+// ============================================================================
+// INFERRED TYPES - These types are derived from validators (single source of truth)
+// Import these types in frontend code for full type safety and autocomplete
+// ============================================================================
+
+// Export inferred types that match validators exactly
+// These types are used in frontend/packages for autocomplete without TS2589
 
 // ============================================================================
 // AUTHENTICATION VALIDATORS
@@ -1326,3 +1334,101 @@ export const userTournamentStatsValidator = v.object({
   bestPlacement: v.optional(v.number()),
   winRate: v.number(),
 });
+
+// ============================================================================
+// INFERRED TYPES - Single source of truth for TypeScript types
+// These types are derived directly from validators above
+// Import these in frontend code for full type safety and autocomplete
+// ============================================================================
+
+// User types
+export type UserProfile = Infer<typeof userProfileValidator>;
+export type UserInfo = Infer<typeof userInfoValidator>;
+export type FullUser = Infer<typeof fullUserValidator>;
+
+// Economy types
+export type PlayerBalance = Infer<typeof playerBalanceValidator>;
+export type CurrencyTransaction = Infer<typeof currencyTransactionValidator>;
+export type TransactionHistory = Infer<typeof transactionHistoryValidator>;
+export type CardResult = Infer<typeof cardResultValidator>;
+export type PackPurchase = Infer<typeof packPurchaseValidator>;
+
+// Social types
+export type FriendInfo = Infer<typeof friendInfoValidator>;
+export type FriendRequest = Infer<typeof friendRequestValidator>;
+export type FriendOperation = Infer<typeof friendOperationValidator>;
+
+// Game types
+export type GameLobby = Infer<typeof gameLobbyValidator>;
+export type LobbyForCleanup = Infer<typeof lobbyForCleanupValidator>;
+export type MatchmakingStatus = Infer<typeof matchmakingStatusValidator>;
+export type QueueStats = Infer<typeof queueStatsValidator>;
+
+// Quest/Achievement types
+export type QuestReward = Infer<typeof questRewardValidator>;
+export type QuestClaim = Infer<typeof questClaimValidator>;
+export type UserQuest = Infer<typeof userQuestValidator>;
+export type Achievement = Infer<typeof achievementValidator>;
+export type AchievementUnlocked = Infer<typeof achievementUnlockedValidator>;
+
+// Leaderboard types
+export type LeaderboardEntry = Infer<typeof leaderboardEntryValidator>;
+export type CachedLeaderboard = Infer<typeof cachedLeaderboardValidator>;
+export type UserRank = Infer<typeof userRankValidator>;
+
+// Response types
+export type SuccessResponse = Infer<typeof successResponseValidator>;
+
+// Card/Deck types
+export type CardWithOwnership = Infer<typeof cardWithOwnershipValidator>;
+export type DeckWithCount = Infer<typeof deckWithCountValidator>;
+export type DeckCardEntry = Infer<typeof deckCardEntryValidator>;
+export type DeckWithCards = Infer<typeof deckWithCardsValidator>;
+export type DeckStats = Infer<typeof deckStatsValidator>;
+
+// Marketplace types
+export type MarketplaceListing = Infer<typeof marketplaceListingValidator>;
+export type MarketplaceListings = Infer<typeof marketplaceListingsValidator>;
+export type AuctionBid = Infer<typeof auctionBidValidator>;
+
+// Story/Progress types
+export type StoryProgressRecord = Infer<typeof storyProgressRecordValidator>;
+export type PlayerProgress = Infer<typeof playerProgressValidator>;
+export type ChapterDefinition = Infer<typeof chapterDefinitionValidator>;
+export type AvailableChapter = Infer<typeof availableChapterValidator>;
+export type PlayerBadge = Infer<typeof playerBadgeValidator>;
+export type PlayerBadges = Infer<typeof playerBadgesValidator>;
+export type BattleAttempt = Infer<typeof battleAttemptValidator>;
+export type StoryBattleStart = Infer<typeof storyBattleStartValidator>;
+export type StoryBattleCompletion = Infer<typeof storyBattleCompletionValidator>;
+
+// Shop types
+export type ShopProduct = Infer<typeof shopProductValidator>;
+export type PackOpeningHistory = Infer<typeof packOpeningHistoryValidator>;
+
+// History types
+export type MatchHistoryEntry = Infer<typeof matchHistoryEntryValidator>;
+export type BattleHistoryEntry = Infer<typeof battleHistoryEntryValidator>;
+
+// Battle Pass types
+export type BattlePassRewardType = Infer<typeof battlePassRewardTypeValidator>;
+export type BattlePassReward = Infer<typeof battlePassRewardValidator>;
+export type BattlePassStatus = Infer<typeof battlePassStatusValidator>;
+export type BattlePassTier = Infer<typeof battlePassTierValidator>;
+export type BattlePassProgress = Infer<typeof battlePassProgressValidator>;
+export type ClaimBattlePassReward = Infer<typeof claimBattlePassRewardValidator>;
+
+// Tournament types
+export type TournamentStatus = Infer<typeof tournamentStatusValidator>;
+export type TournamentParticipantStatus = Infer<typeof tournamentParticipantStatusValidator>;
+export type TournamentMatchStatus = Infer<typeof tournamentMatchStatusValidator>;
+export type TournamentPrizePool = Infer<typeof tournamentPrizePoolValidator>;
+export type TournamentSummary = Infer<typeof tournamentSummaryValidator>;
+export type TournamentDetails = Infer<typeof tournamentDetailsValidator>;
+export type TournamentParticipant = Infer<typeof tournamentParticipantValidator>;
+export type TournamentMatch = Infer<typeof tournamentMatchValidator>;
+export type TournamentBracket = Infer<typeof tournamentBracketValidator>;
+export type TournamentHistoryEntry = Infer<typeof tournamentHistoryEntryValidator>;
+export type TournamentRegistrationResponse = Infer<typeof tournamentRegistrationResponseValidator>;
+export type TournamentCheckInResponse = Infer<typeof tournamentCheckInResponseValidator>;
+export type UserTournamentStats = Infer<typeof userTournamentStatsValidator>;

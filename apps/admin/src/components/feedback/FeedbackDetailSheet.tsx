@@ -19,7 +19,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import {
   Bug,
   Clock,
@@ -38,6 +39,9 @@ import { useEffect, useState } from "react";
 // Types
 // =============================================================================
 
+type FeedbackStatus = "new" | "triaged" | "in_progress" | "resolved" | "closed";
+type FeedbackPriority = "low" | "medium" | "high" | "critical";
+
 interface FeedbackItem {
   _id: string;
   userId: string;
@@ -45,8 +49,8 @@ interface FeedbackItem {
   type: "bug" | "feature";
   title: string;
   description: string;
-  status: string;
-  priority?: "low" | "medium" | "high" | "critical";
+  status: FeedbackStatus;
+  priority?: FeedbackPriority;
   screenshotUrl?: string;
   recordingUrl?: string;
   pageUrl: string;
@@ -109,8 +113,8 @@ function parseUserAgent(ua: string) {
 // =============================================================================
 
 export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: FeedbackDetailSheetProps) {
-  const [priority, setPriority] = useState<string | undefined>();
-  const [status, setStatus] = useState<string | undefined>();
+  const [priority, setPriority] = useState<FeedbackPriority | undefined>();
+  const [status, setStatus] = useState<FeedbackStatus | undefined>();
   const [adminNotes, setAdminNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -118,7 +122,7 @@ export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: Feedback
   // Fetch feedback details
   const feedback = useConvexQuery(
     api.feedback.feedback.get,
-    feedbackId ? { feedbackId } : "skip"
+    feedbackId ? { feedbackId: feedbackId as Id<"feedback"> } : "skip"
   ) as FeedbackItem | undefined;
 
   // Mutations
@@ -136,12 +140,12 @@ export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: Feedback
   }, [feedback?._id, feedback?.priority, feedback?.status, feedback?.adminNotes]);
 
   const handlePriorityChange = (value: string) => {
-    setPriority(value);
+    setPriority(value as FeedbackPriority);
     setHasChanges(true);
   };
 
   const handleStatusChange = (value: string) => {
-    setStatus(value);
+    setStatus(value as FeedbackStatus);
     setHasChanges(true);
   };
 
@@ -158,15 +162,15 @@ export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: Feedback
       // Update status if changed
       if (status && status !== feedback?.status) {
         await updateStatus({
-          feedbackId,
-          status: status as any,
+          feedbackId: feedbackId as Id<"feedback">,
+          status,
         });
       }
 
       // Update other fields
       await updateFeedback({
-        feedbackId,
-        priority: priority as any,
+        feedbackId: feedbackId as Id<"feedback">,
+        priority,
         adminNotes,
       });
 

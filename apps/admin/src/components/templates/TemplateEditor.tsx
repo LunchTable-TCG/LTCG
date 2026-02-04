@@ -7,7 +7,6 @@
  * Handles state management, block operations, and export capabilities.
  */
 
-import { useMutation } from "convex/react";
 import type { Stage } from "konva/lib/Stage";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
@@ -39,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation } from "@/lib/convexHelpers";
 import {
   Download,
   Eye,
@@ -66,7 +65,6 @@ import {
   type TemplateWithBlocks,
   ZOOM_LEVELS,
 } from "./types";
-
 
 interface TemplateEditorProps {
   template: TemplateWithBlocks;
@@ -105,10 +103,10 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
   const selectedBlock = blocks.find((b) => b._id === selectedBlockId) ?? null;
 
   // Mutations
-  const addBlockMutation = useMutation(api.admin.templates.addBlock);
-  const updateBlockMutation = useMutation(api.admin.templates.updateBlock);
-  const deleteBlockMutation = useMutation(api.admin.templates.deleteBlock);
-  const reorderBlocksMutation = useMutation(api.admin.templates.reorderBlocks);
+  const addBlockMutation = useConvexMutation(api.admin.templates.addBlock);
+  const updateBlockMutation = useConvexMutation(api.admin.templates.updateBlock);
+  const deleteBlockMutation = useConvexMutation(api.admin.templates.deleteBlock);
+  const reorderBlocksMutation = useConvexMutation(api.admin.templates.reorderBlocks);
 
   // Handle block selection from canvas
   const handleSelectBlock = useCallback((id: BlockId | null) => {

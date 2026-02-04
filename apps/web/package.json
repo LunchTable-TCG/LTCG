@@ -6,7 +6,7 @@
     "dev": "next dev --port 3333 --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "biome check --write ."
   },
   "dependencies": {
     "@elizaos/core": "^1.7.2",

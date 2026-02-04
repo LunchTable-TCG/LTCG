@@ -126,8 +126,8 @@ export default function BehaviorAnalyticsPage() {
           </Text>
 
           <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-            {config.instructions?.map((instruction, idx) => (
-              <Text key={idx} className="text-sm">
+            {config.instructions?.map((instruction) => (
+              <Text key={instruction} className="text-sm">
                 {instruction}
               </Text>
             ))}

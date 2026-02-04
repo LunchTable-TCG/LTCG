@@ -37,10 +37,8 @@ export interface PerformanceMetric {
 // Environment Configuration
 // ============================================================================
 
-// biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
 const IS_PRODUCTION = process.env["CONVEX_CLOUD_URL"] !== undefined;
 const LOG_LEVEL: LogLevel =
-  // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
   (process.env["LOG_LEVEL"] as LogLevel) || (IS_PRODUCTION ? "info" : "debug");
 
 // Log level hierarchy

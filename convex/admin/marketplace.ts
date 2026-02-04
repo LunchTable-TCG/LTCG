@@ -49,16 +49,18 @@ export const listListings = query({
 
     let listings = await (async () => {
       if (args.status) {
+        const status = args.status;
         return await ctx.db
           .query("marketplaceListings")
-          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .withIndex("by_status", (q) => q.eq("status", status))
           .order("desc")
           .collect();
       }
       if (args.sellerId) {
+        const sellerId = args.sellerId;
         return await ctx.db
           .query("marketplaceListings")
-          .withIndex("by_seller", (q) => q.eq("sellerId", args.sellerId!))
+          .withIndex("by_seller", (q) => q.eq("sellerId", sellerId))
           .order("desc")
           .collect();
       }
@@ -77,10 +79,12 @@ export const listListings = query({
 
     // Apply price filters
     if (args.priceMin !== undefined) {
-      listings = listings.filter((l: Listing) => l.price >= args.priceMin!);
+      const priceMin = args.priceMin;
+      listings = listings.filter((l: Listing) => l.price >= priceMin);
     }
     if (args.priceMax !== undefined) {
-      listings = listings.filter((l: Listing) => l.price <= args.priceMax!);
+      const priceMax = args.priceMax;
+      listings = listings.filter((l: Listing) => l.price <= priceMax);
     }
 
     // Enhance with card info
@@ -153,7 +157,12 @@ export const getListing = query({
 
     const soldPrices = allListingsForCard
       .filter((l) => l.status === "sold" && l.soldFor)
-      .map((l) => l.soldFor!);
+      .map((l) => {
+        if (!l.soldFor) {
+          throw new Error("soldFor is required for sold listings");
+        }
+        return l.soldFor;
+      });
 
     return {
       ...listing,
@@ -598,7 +607,12 @@ export const getSellerHistory = query({
     // Calculate total volume
     const totalSalesVolume = allListings
       .filter((l) => l.status === "sold" && l.soldFor)
-      .reduce((sum, l) => sum + l.soldFor!, 0);
+      .reduce((sum, l) => {
+        if (!l.soldFor) {
+          throw new Error("soldFor is required for sold listings");
+        }
+        return sum + l.soldFor;
+      }, 0);
 
     // Get recent bids by this user (buying activity)
     const bids = await ctx.db

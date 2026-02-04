@@ -31,8 +31,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { PromoCodeId } from "@/lib/convexTypes";
+import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
   ArrowLeftIcon,
@@ -54,10 +55,25 @@ import { toast } from "sonner";
 // =============================================================================
 
 type RewardType = "gold" | "gems" | "pack";
+type BadgeColor = "amber" | "violet" | "blue" | "emerald" | "rose" | "indigo" | "gray" | "slate";
+
+interface ShopProduct {
+  productId: string;
+  name: string;
+}
+
+interface PromoRedemption {
+  _id: Id<"promoRedemptions">;
+  userId: Id<"users">;
+  promoCodeId: Id<"promoCodes">;
+  code: string;
+  rewardReceived: string;
+  redeemedAt: number;
+}
 
 const REWARD_TYPE_CONFIG: Record<
   RewardType,
-  { label: string; color: string; icon: React.ReactNode }
+  { label: string; color: BadgeColor; icon: React.ReactNode }
 > = {
   gold: { label: "Gold", color: "amber", icon: <CoinsIcon className="h-4 w-4" /> },
   gems: { label: "Gems", color: "violet", icon: <GemIcon className="h-4 w-4" /> },
@@ -69,9 +85,9 @@ const REWARD_TYPE_CONFIG: Record<
 // =============================================================================
 
 export default function PromoCodeDetailPage() {
-  const params = useParams();
+  const params = useParams<{ promoCodeId: string }>();
   const router = useRouter();
-  const promoCodeId = params.promoCodeId as string;
+  const promoCodeId = params.promoCodeId as PromoCodeId;
 
   // Form state
   const [description, setDescription] = useState("");
@@ -86,11 +102,11 @@ export default function PromoCodeDetailPage() {
 
   // Queries and mutations
   const promoCode = useConvexQuery(api.admin.promoCodes.getPromoCode, {
-    promoCodeId: promoCodeId as PromoCodeId,
+    promoCodeId,
   });
 
   const productsResult = useConvexQuery(api.admin.shop.listProducts, {
-    productType: "pack" as any,
+    productType: "pack",
     includeInactive: false,
   });
 
@@ -131,7 +147,7 @@ export default function PromoCodeDetailPage() {
         : undefined;
 
       await updatePromoCode({
-        promoCodeId: promoCodeId as PromoCodeId,
+        promoCodeId,
         description,
         rewardAmount: Number.parseInt(rewardAmount),
         rewardPackId: promoCode?.rewardType === "pack" ? rewardPackId : undefined,
@@ -153,7 +169,7 @@ export default function PromoCodeDetailPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deletePromoCode({ promoCodeId: promoCodeId as PromoCodeId });
+      await deletePromoCode({ promoCodeId });
       toast.success("Promo code deleted");
       router.push("/promo-codes");
     } catch (error) {
@@ -301,7 +317,7 @@ export default function PromoCodeDetailPage() {
               <div className="space-y-2">
                 <Label>Reward Type</Label>
                 <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-muted/50">
-                  <Badge color={rewardConfig.color as any} size="sm">
+                  <Badge color={rewardConfig.color} size="sm">
                     <span className="flex items-center gap-1">
                       {rewardConfig.icon}
                       {rewardConfig.label}
@@ -330,7 +346,7 @@ export default function PromoCodeDetailPage() {
                       <SelectValue placeholder="Select pack..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {productsResult?.products.map((p: any) => (
+                      {productsResult?.products.map((p: ShopProduct) => (
                         <SelectItem key={p.productId} value={p.productId}>
                           {p.name}
                         </SelectItem>
@@ -380,7 +396,7 @@ export default function PromoCodeDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {promoCode.redemptions.map((redemption: any) => (
+                    {promoCode.redemptions.map((redemption: PromoRedemption) => (
                       <tr key={redemption._id} className="border-b">
                         <td className="py-2 px-3 font-mono text-xs">
                           <Link
@@ -457,7 +473,7 @@ export default function PromoCodeDetailPage() {
 
               <div className="flex justify-between">
                 <Text className="text-muted-foreground">Reward Type</Text>
-                <Badge color={rewardConfig.color as any} size="sm">
+                <Badge color={rewardConfig.color} size="sm">
                   {rewardConfig.label}
                 </Badge>
               </div>

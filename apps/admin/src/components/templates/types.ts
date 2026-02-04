@@ -316,16 +316,15 @@ export const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 export const DEFAULT_ZOOM = 0.5;
 
 // =============================================================================
-// Rarity Colors
+// Rarity Colors (Re-exported from @ltcg/core/ui for local use)
 // =============================================================================
 
-export const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: string }> = {
-  common: { bg: "bg-gray-500/20", text: "text-gray-400", border: "border-gray-500/50" },
-  uncommon: { bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/50" },
-  rare: { bg: "bg-blue-500/20", text: "text-blue-400", border: "border-blue-500/50" },
-  epic: { bg: "bg-purple-500/20", text: "text-purple-400", border: "border-purple-500/50" },
-  legendary: { bg: "bg-amber-500/20", text: "text-amber-400", border: "border-amber-500/50" },
-};
+export {
+  RARITY_STYLES as RARITY_COLORS,
+  RARITY_TEXT_COLORS,
+  RARITY_BG_COLORS,
+  RARITY_BORDER_COLORS,
+} from "@ltcg/core/ui";
 
 // =============================================================================
 // Konva Canvas Types
@@ -440,7 +439,7 @@ export function isValidAssetCategory(value: string): value is AssetCategory {
 export interface Asset {
   _id: string;
   fileName: string;
-  blobUrl: string;
+  blobUrl?: string;
   category: string;
   contentType: string;
   size: number;

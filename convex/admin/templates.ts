@@ -330,7 +330,7 @@ export const updateTemplate = mutation({
     await scheduleAuditLog(ctx, {
       adminId: userId,
       action: "card_template.update",
-      metadata: { templateId, updates: Object.keys(filteredUpdates) },
+      metadata: { templateId, updates: Object.keys(filteredUpdates).join(", ") },
       success: true,
     });
   },
@@ -676,7 +676,7 @@ export const updateBlock = mutation({
     await scheduleAuditLog(ctx, {
       adminId: userId,
       action: "card_template_block.update",
-      metadata: { blockId, updates: Object.keys(filteredUpdates) },
+      metadata: { blockId, updates: Object.keys(filteredUpdates).join(", ") },
       success: true,
     });
   },

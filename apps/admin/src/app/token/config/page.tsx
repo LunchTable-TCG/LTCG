@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -130,8 +130,8 @@ export default function TokenConfigPage() {
     try {
       await markReady({});
       toast.success("Token marked as ready for launch");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to mark token as ready");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to mark token as ready");
     }
   }
 

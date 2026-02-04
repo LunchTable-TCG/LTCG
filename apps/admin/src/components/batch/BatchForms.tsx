@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Text } from "@tremor/react";
 import { AlertCircle, CheckCircle2, Eye, Loader2, Play } from "lucide-react";
@@ -251,11 +251,8 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
     amount: number;
   } | null>(null);
 
-  const batchGrantGold = useConvexMutation(api.admin.batchAdmin.batchGrantGold);
-  const previewData = useConvexQuery(
-    api.admin.batchAdmin.previewBatchGrantGold,
-    previewArgs ?? "skip"
-  );
+  const batchGrantGold = useMutation(api.admin.batchAdmin.batchGrantGold);
+  const previewData = useQuery(api.admin.batchAdmin.previewBatchGrantGold, previewArgs ?? "skip");
 
   const handlePreview = () => {
     if (selectedPlayers.length === 0) {
@@ -466,8 +463,8 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [previewArgs, setPreviewArgs] = useState<{ playerIds: Id<"users">[] } | null>(null);
 
-  const batchResetRatings = useConvexMutation(api.admin.batchAdmin.batchResetRatings);
-  const previewData = useConvexQuery(
+  const batchResetRatings = useMutation(api.admin.batchAdmin.batchResetRatings);
+  const previewData = useQuery(
     api.admin.batchAdmin.previewBatchResetRatings,
     previewArgs ?? "skip"
   );
@@ -629,11 +626,8 @@ export function GrantPacksForm({ onSuccess }: BatchOperationFormProps) {
     quantity: number;
   } | null>(null);
 
-  const batchGrantPacks = useConvexMutation(api.admin.batchAdmin.batchGrantPacks);
-  const previewData = useConvexQuery(
-    api.admin.batchAdmin.previewBatchGrantPacks,
-    previewArgs ?? "skip"
-  );
+  const batchGrantPacks = useMutation(api.admin.batchAdmin.batchGrantPacks);
+  const previewData = useQuery(api.admin.batchAdmin.previewBatchGrantPacks, previewArgs ?? "skip");
 
   const handlePreview = () => {
     if (selectedPlayers.length === 0) {
@@ -801,7 +795,7 @@ export function GrantCardsForm({ onSuccess }: BatchOperationFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const grantCards = useConvexMutation(api.admin.batchAdmin.grantCardsToPlayer);
+  const grantCards = useMutation(api.admin.batchAdmin.grantCardsToPlayer);
 
   const addCardGrant = () => {
     setCardGrants([...cardGrants, { cardId: "", quantity: 1 }]);
@@ -841,7 +835,7 @@ export function GrantCardsForm({ onSuccess }: BatchOperationFormProps) {
     try {
       const result = await grantCards({
         playerId: playerId.trim() as Id<"users">,
-        cardIds: validGrants.map((g) => g.cardId.trim()),
+        cardIds: validGrants.map((g) => g.cardId.trim()) as Id<"cardDefinitions">[],
         reason: reason.trim(),
       });
       const typedResult = result as { success: boolean; message: string };
@@ -996,7 +990,7 @@ export function RemoveCardsForm({ onSuccess }: BatchOperationFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const removeCards = useConvexMutation(api.admin.batchAdmin.removeCardsFromPlayer);
+  const removeCards = useMutation(api.admin.batchAdmin.removeCardsFromPlayer);
 
   const addCardRemoval = () => {
     setCardRemovals([...cardRemovals, { cardId: "", quantity: 1 }]);
@@ -1036,7 +1030,7 @@ export function RemoveCardsForm({ onSuccess }: BatchOperationFormProps) {
     try {
       const result = await removeCards({
         playerId: playerId.trim() as Id<"users">,
-        cardIds: validRemovals.map((r) => r.cardId.trim()),
+        cardIds: validRemovals.map((r) => r.cardId.trim()) as Id<"cardDefinitions">[],
         reason: reason.trim(),
       });
       const typedResult = result as { success: boolean; message: string };
@@ -1215,11 +1209,8 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
     cardIds: Id<"cardDefinitions">[];
   } | null>(null);
 
-  const batchGrantCards = useConvexMutation(api.admin.batchAdmin.batchGrantCards);
-  const previewData = useConvexQuery(
-    api.admin.batchAdmin.previewBatchGrantCards,
-    previewArgs ?? "skip"
-  );
+  const batchGrantCards = useMutation(api.admin.batchAdmin.batchGrantCards);
+  const previewData = useQuery(api.admin.batchAdmin.previewBatchGrantCards, previewArgs ?? "skip");
 
   const addCardGrant = () => {
     setCardGrants([...cardGrants, { cardId: "", quantity: 1 }]);
@@ -1263,7 +1254,7 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
     try {
       await batchGrantCards({
         playerIds: selectedPlayers,
-        cardIds: validGrants.map((g) => g.cardId.trim()),
+        cardIds: validGrants.map((g) => g.cardId.trim()) as Id<"cardDefinitions">[],
         reason: reason.trim(),
       });
       toast.success(`Granted cards to ${selectedPlayers.length} players successfully`);

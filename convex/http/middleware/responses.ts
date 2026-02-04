@@ -169,9 +169,9 @@ export function corsPreflightResponse(request?: Request): Response {
 
 /**
  * JSON object type for request bodies
+ * Uses Record<string, unknown> for flexibility with nested objects
  */
-export type JsonObject = Record<string, string | number | boolean | null | JsonObject | JsonArray>;
-type JsonArray = (string | number | boolean | null | JsonObject | JsonArray)[];
+export type JsonObject = Record<string, unknown>;
 
 /**
  * Parse JSON body from request

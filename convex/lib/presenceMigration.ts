@@ -219,12 +219,21 @@ export async function readPresence(ctx: QueryCtx, roomId?: string): Promise<Pres
     try {
       const roomPresence = await presence.listRoom(ctx, roomId, true);
 
-      return roomPresence.map((p) => {
-        const presenceData = p.data as {
+      // The presence library returns objects with userId, online, lastDisconnected
+      // Custom data is stored under the 'data' property when available
+      type PresenceEntry = {
+        userId: string;
+        online: boolean;
+        lastDisconnected: number;
+        data?: {
           username?: string;
           status?: UserStatus;
           lastActiveAt?: number;
         };
+      };
+
+      return (roomPresence as PresenceEntry[]).map((p) => {
+        const presenceData = p.data;
         return {
           userId: p.userId as Id<"users">,
           username: presenceData?.username ?? "Unknown",

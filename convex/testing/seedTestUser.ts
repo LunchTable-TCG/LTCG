@@ -1,13 +1,28 @@
 import { v } from "convex/values";
-import { internalMutation } from "../functions";
+import { mutation } from "../functions";
+import { ErrorCode, createError } from "../lib/errorCodes";
+
+/**
+ * Validate that the caller is in a test environment.
+ * Throws an error if not in test mode.
+ */
+function requireTestEnvironment() {
+  const isTestEnv =
+    process.env["NODE_ENV"] === "test" || process.env["CONVEX_TEST_MODE"] === "true";
+  if (!isTestEnv) {
+    throw createError(ErrorCode.AUTH_REQUIRED, {
+      reason: "Test mutations are only available in test environment",
+    });
+  }
+}
 
 /**
  * Seed a test user for E2E testing
  *
  * Creates a user with the provided Privy DID and sensible test defaults.
- * This mutation is internal-only and not exposed to clients.
+ * Only available in test environments (NODE_ENV=test or CONVEX_TEST_MODE=true).
  */
-export const seedTestUser = internalMutation({
+export const seedTestUser = mutation({
   args: {
     privyDid: v.string(),
     displayName: v.string(),
@@ -15,6 +30,7 @@ export const seedTestUser = internalMutation({
     gems: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    requireTestEnvironment();
     const now = Date.now();
 
     // Create user matching the schema structure

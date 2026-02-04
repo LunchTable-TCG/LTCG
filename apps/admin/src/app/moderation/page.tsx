@@ -13,8 +13,9 @@ import { ModerationActions, ModerationStatusBadge } from "@/components/players";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import type { BannedPlayer, ColumnDef, SuspendedPlayer } from "@/types";
+import type { Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,11 +43,11 @@ function formatTimeRemaining(suspendedUntil: number) {
 // =============================================================================
 
 interface BannedPlayerRow extends BannedPlayer {
-  _id: any; // Id type - players table
+  _id: Id<"users">;
 }
 
 interface SuspendedPlayerRow extends SuspendedPlayer {
-  _id: any; // Id type - players table
+  _id: Id<"users">;
 }
 
 interface SuspiciousSummaryItem {

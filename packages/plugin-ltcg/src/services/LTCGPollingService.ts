@@ -846,12 +846,19 @@ export class LTCGPollingService extends Service {
    * Create a snapshot of game state for comparison
    */
   private createSnapshot(state: GameStateResponse): GameStateSnapshot {
+    interface ExtendedGameState extends GameStateResponse {
+      chainState?: {
+        isWaiting?: boolean;
+        [key: string]: boolean | number | string | undefined;
+      };
+    }
+    const extendedState = state as ExtendedGameState;
+
     return {
       turnNumber: state.turnNumber ?? 0,
       phase: state.phase ?? "",
       currentTurn: state.currentTurn ?? "",
-      // biome-ignore lint/suspicious/noExplicitAny: Extended state property access
-      isChainWaiting: (state as any).chainState?.isWaiting ?? false,
+      isChainWaiting: extendedState.chainState?.isWaiting ?? false,
       status: state.status ?? "unknown",
     };
   }
@@ -886,14 +893,18 @@ export class LTCGPollingService extends Service {
 
     // Game ended
     if (prev.status !== "completed" && curr.status === "completed") {
+      interface ExtendedGameState extends GameStateResponse {
+        endReason?: string;
+        [key: string]: string | number | boolean | undefined | unknown;
+      }
+      const extendedState = fullState as ExtendedGameState;
       const agentWon = this.didAgentWin(fullState);
       events.push({
         type: "game_ended",
         data: {
           gameResult: {
             winner: agentWon ? "agent" : "opponent",
-            // biome-ignore lint/suspicious/noExplicitAny: Extended state property access
-            reason: (fullState as any).endReason ?? "unknown",
+            reason: extendedState.endReason ?? "unknown",
           },
         },
       });
@@ -931,13 +942,21 @@ export class LTCGPollingService extends Service {
 
     // Chain waiting
     if (!prev.isChainWaiting && curr.isChainWaiting) {
+      interface ExtendedGameState extends GameStateResponse {
+        chainState?: {
+          timeoutMs?: number;
+          isWaiting?: boolean;
+          [key: string]: number | boolean | undefined;
+        };
+      }
+      const extendedState = fullState as ExtendedGameState;
+
       events.push({
         type: "chain_waiting",
         data: {
           chainState: {
             isWaiting: true,
-            // biome-ignore lint/suspicious/noExplicitAny: Extended state property access
-            timeoutMs: (fullState as any).chainState?.timeoutMs ?? 30000,
+            timeoutMs: extendedState.chainState?.timeoutMs ?? 30000,
           },
         },
       });
@@ -960,8 +979,11 @@ export class LTCGPollingService extends Service {
    */
   private didAgentWin(state: GameStateResponse): boolean {
     // Check extended state for winner info
-    // biome-ignore lint/suspicious/noExplicitAny: Extended state property access
-    const extState = state as any;
+    interface ExtendedGameState extends GameStateResponse {
+      winner?: string;
+      [key: string]: string | number | boolean | undefined | unknown;
+    }
+    const extState = state as ExtendedGameState;
     if (extState.winner) {
       const agentPlayerId = state.hostPlayer?.playerId;
       return extState.winner === agentPlayerId;
@@ -991,14 +1013,15 @@ export class LTCGPollingService extends Service {
 
     logger.info({ eventType: event.type, gameId: this.currentGameId }, "Polling detected event");
 
-    // Create a state object for the handler
+    // Create a state object for the handler with required State interface properties
     const state = {
-      values: {} as Record<string, unknown>,
+      values: {},
+      data: {},
+      text: "",
     };
 
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: Webhook handler expects flexible state type
-      await handleGameWebhook(payload, this.runtime, state as any);
+      await handleGameWebhook(payload, this.runtime, state);
     } catch (error) {
       logger.error({ error, eventType: event.type }, "Error handling polled event");
     }
@@ -1068,7 +1091,11 @@ export class LTCGPollingService extends Service {
         successCount: 0,
       });
     }
-    return this.circuitBreakers.get(operationName)!;
+    const breaker = this.circuitBreakers.get(operationName);
+    if (!breaker) {
+      throw new Error(`Circuit breaker for ${operationName} not found after initialization`);
+    }
+    return breaker;
   }
 
   /**

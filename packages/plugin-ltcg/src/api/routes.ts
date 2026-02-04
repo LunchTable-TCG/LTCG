@@ -44,7 +44,9 @@ function getAggregator(req: RouteRequest): IStateAggregator | null {
       return null;
     }
 
-    const aggregator = runtime.getService(SERVICE_TYPES.STATE_AGGREGATOR) as IStateAggregator;
+    const aggregator = runtime.getService(
+      SERVICE_TYPES.STATE_AGGREGATOR
+    ) as unknown as IStateAggregator;
     if (!aggregator) {
       logger.warn("StateAggregator service not found");
       return null;

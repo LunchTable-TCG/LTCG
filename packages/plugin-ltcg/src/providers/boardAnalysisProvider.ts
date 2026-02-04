@@ -27,7 +27,7 @@ export const boardAnalysisProvider: Provider = {
         return {
           text: "No active game. Use FIND_GAME or JOIN_LOBBY to start playing.",
           values: { error: "NO_GAME_ID" },
-          data: {},
+          data: undefined,
         };
       }
 
@@ -39,7 +39,7 @@ export const boardAnalysisProvider: Provider = {
         return {
           text: "LTCG API credentials not configured. Please set LTCG_API_KEY and LTCG_API_URL.",
           values: { error: "MISSING_CONFIG" },
-          data: {},
+          data: undefined,
         };
       }
 
@@ -49,8 +49,9 @@ export const boardAnalysisProvider: Provider = {
         baseUrl: apiUrl as string,
       });
 
-      // Fetch game state
-      const gameState: GameStateResponse = await client.getGameState(gameId);
+      // Fetch game state - gameId is definitely a string after the check above
+      const currentGameId = gameId as string;
+      const gameState: GameStateResponse = await client.getGameState(currentGameId);
 
       // Analyze board
       const analysis = analyzeBoardState(gameState);

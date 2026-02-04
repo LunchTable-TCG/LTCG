@@ -18,11 +18,6 @@ import { api, components } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { getAdminAgentModel, getStandardEmbeddingModel } from "./providers";
 
-// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-// @ts-ignore - Suppress TS2589 for api cast
-// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround to avoid TS2589
-const apiAny = api as any;
-
 // =============================================================================
 // Helper Types
 // =============================================================================
@@ -129,7 +124,7 @@ const searchPlayers = createTool({
     limit: z.number().optional().default(10).describe("Maximum results to return"),
   }),
   handler: async (ctx: ToolCtx, args: { query: string; limit: number }) => {
-    const players = (await ctx.runQuery(apiAny.admin.admin.listPlayers, {
+    const players = (await ctx.runQuery(api.admin.admin.listPlayers, {
       limit: args.limit,
     })) as PlayerListItem[];
 
@@ -163,7 +158,7 @@ const getPlayerProfile = createTool({
     playerId: z.string().describe("The player's ID (from search results)"),
   }),
   handler: async (ctx: ToolCtx, args: { playerId: string }) => {
-    const profile = (await ctx.runQuery(apiAny.admin.admin.getPlayerProfile, {
+    const profile = (await ctx.runQuery(api.admin.admin.getPlayerProfile, {
       playerId: args.playerId as Id<"users">,
     })) as PlayerProfile | null;
 
@@ -198,7 +193,7 @@ const getPlayerInventory = createTool({
     playerId: z.string().describe("The player's ID"),
   }),
   handler: async (ctx: ToolCtx, args: { playerId: string }) => {
-    const inventory = (await ctx.runQuery(apiAny.admin.admin.getPlayerInventory, {
+    const inventory = (await ctx.runQuery(api.admin.admin.getPlayerInventory, {
       playerId: args.playerId as Id<"users">,
     })) as PlayerInventory | null;
 
@@ -231,7 +226,7 @@ const getSystemStats = createTool({
     "Get current system statistics including player counts, game stats, and API key usage.",
   args: z.object({}),
   handler: async (ctx: ToolCtx) => {
-    const stats = (await ctx.runQuery(apiAny.admin.admin.getSystemStats, {})) as SystemStats;
+    const stats = (await ctx.runQuery(api.admin.admin.getSystemStats, {})) as SystemStats;
 
     return {
       players: {
@@ -265,7 +260,7 @@ const getSuspiciousActivity = createTool({
     lookbackDays: z.number().optional().default(7).describe("Number of days to analyze"),
   }),
   handler: async (ctx: ToolCtx, args: { lookbackDays: number }) => {
-    const report = (await ctx.runQuery(apiAny.admin.admin.getSuspiciousActivityReport, {
+    const report = (await ctx.runQuery(api.admin.admin.getSuspiciousActivityReport, {
       lookbackDays: args.lookbackDays,
     })) as SuspiciousReport;
 
@@ -294,7 +289,7 @@ const getAuditLogs = createTool({
       .describe("Filter by action type (e.g., 'ban_player', 'grant_role')"),
   }),
   handler: async (ctx: ToolCtx, args: { limit: number; action?: string }) => {
-    const result = (await ctx.runQuery(apiAny.admin.admin.getAuditLog, {
+    const result = (await ctx.runQuery(api.admin.admin.getAuditLog, {
       limit: args.limit,
       action: args.action,
     })) as AuditLogResult;
@@ -326,7 +321,7 @@ const listAdmins = createTool({
       .describe("Filter by specific role"),
   }),
   handler: async (ctx: ToolCtx, args: { role?: "moderator" | "admin" | "superadmin" }) => {
-    const admins = (await ctx.runQuery(apiAny.admin.admin.listAdmins, {
+    const admins = (await ctx.runQuery(api.admin.admin.listAdmins, {
       role: args.role,
     })) as AdminUser[];
 

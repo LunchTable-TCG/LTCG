@@ -30,8 +30,8 @@ const initializeStoryBattleInternalMutation = require("../_generated/api").inter
   .storyBattle.initializeStoryBattleInternal as MutationFunction<
   { userId: Id<"users">; chapterId: string; stageNumber?: number },
   {
-    gameId: Id<"games">;
-    lobbyId: Id<"lobbies">;
+    gameId: Id<"gameStates">;
+    lobbyId: Id<"gameLobbies">;
     stageId: Id<"storyStages">;
     chapterTitle: string;
     stageName: string;
@@ -46,8 +46,8 @@ const quickPlayStoryInternalMutation = require("../_generated/api").internal.pro
   .quickPlayStoryInternal as MutationFunction<
   { userId: Id<"users">; difficulty?: string },
   {
-    gameId: Id<"games">;
-    lobbyId: Id<"lobbies">;
+    gameId: Id<"gameStates">;
+    lobbyId: Id<"gameLobbies">;
     stageId: Id<"storyStages">;
     chapterTitle: string;
     stageName: string;

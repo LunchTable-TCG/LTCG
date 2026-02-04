@@ -10,6 +10,7 @@
  *
  * // Or import from specific modules
  * import { TypedQuery } from "@ltcg/core/types";
+ * import { createTypedQuery } from "@ltcg/core/api";
  * ```
  */
 
@@ -18,3 +19,5 @@ export * from "./types";
 export * from "./utils";
 export * from "./validators";
 export * from "./config";
+export * from "./api";
+export * from "./ui";

@@ -7,9 +7,28 @@
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { ELO_SYSTEM, RANK_THRESHOLDS, RARITY_WEIGHTS } from "./constants";
+import {
+  type PityThresholds,
+  type RarityWeights,
+  type VariantRates,
+  getFullRngConfig,
+} from "../economy/rngConfig";
+import {
+  ELO_SYSTEM,
+  PITY_THRESHOLDS,
+  RANK_THRESHOLDS,
+  RARITY_WEIGHTS,
+  VARIANT_CONFIG,
+} from "./constants";
 import { ErrorCode, createError } from "./errorCodes";
-import type { Archetype, CardDefinition, CardResult, PackConfig, Rarity } from "./types";
+import type {
+  Archetype,
+  CardDefinition,
+  CardResult,
+  CardVariant,
+  PackConfig,
+  Rarity,
+} from "./types";
 
 // Re-export types for backwards compatibility
 export type { Rarity, Archetype, PackConfig, CardResult };
@@ -89,27 +108,29 @@ export async function batchFetchCardDefinitions(
 /**
  * Weighted random rarity selection based on configured weights
  *
- * Uses a weighted probability system from RARITY_WEIGHTS constant.
- * Rolls a random number (0-1000) and selects rarity based on cumulative weights.
+ * Uses a weighted probability system. Can use dynamic config from DB
+ * or fallback to RARITY_WEIGHTS constant.
  *
- * **Probability Distribution:**
- * - Common: 65% (650/1000)
- * - Uncommon: 20% (200/1000)
- * - Rare: 10% (100/1000)
+ * **Default Probability Distribution:**
+ * - Common: 55% (550/1000)
+ * - Uncommon: 28% (280/1000)
+ * - Rare: 12% (120/1000)
  * - Epic: 4% (40/1000)
  * - Legendary: 1% (10/1000)
  *
+ * @param weights - Optional custom weights (use getRarityWeightsInternal for dynamic)
  * @returns Randomly selected rarity (common, uncommon, rare, epic, legendary)
  * @example
- * weightedRandomRarity() // "common" (most likely, 65% chance)
- * weightedRandomRarity() // "legendary" (rare outcome, 1% chance)
+ * weightedRandomRarity() // "common" (most likely, 55% chance)
+ * weightedRandomRarity(customWeights) // Using dynamic config
  */
-export function weightedRandomRarity(): Rarity {
+export function weightedRandomRarity(weights?: RarityWeights): Rarity {
+  const useWeights = weights ?? RARITY_WEIGHTS;
   const totalWeight = 1000;
   const roll = Math.random() * totalWeight;
   let cumulative = 0;
 
-  for (const [rarity, weight] of Object.entries(RARITY_WEIGHTS)) {
+  for (const [rarity, weight] of Object.entries(useWeights)) {
     cumulative += weight;
     if (roll < cumulative) {
       return rarity as Rarity;
@@ -184,7 +205,7 @@ export async function getRandomCard(
 /**
  * Add cards to player's inventory (creates or increments quantity)
  *
- * If player already owns the card, increments quantity.
+ * If player already owns the card with the same variant, increments quantity.
  * If player doesn't own the card, creates new playerCards entry.
  * Updates lastUpdatedAt timestamp.
  *
@@ -192,19 +213,43 @@ export async function getRandomCard(
  * @param userId - Player's user ID
  * @param cardDefinitionId - Card definition ID to add
  * @param quantity - Number of cards to add
+ * @param variant - Card variant (defaults to "standard")
+ * @param source - Where the card came from
+ * @param serialNumber - Optional serial number for numbered variants
  * @example
- * await addCardsToInventory(ctx, userId, blueEyesId, 3) // Add 3 Blue-Eyes to inventory
+ * await addCardsToInventory(ctx, userId, blueEyesId, 3) // Add 3 standard Blue-Eyes to inventory
+ * await addCardsToInventory(ctx, userId, blueEyesId, 1, "foil", "pack") // Add 1 foil from pack
  */
 export async function addCardsToInventory(
   ctx: MutationCtx,
   userId: Id<"users">,
   cardDefinitionId: Id<"cardDefinitions">,
-  quantity: number
+  quantity: number,
+  variant: CardVariant = "standard",
+  source?: "pack" | "marketplace" | "reward" | "trade" | "event" | "daily" | "jackpot",
+  serialNumber?: number
 ) {
+  // For numbered variants, always create separate entries (each is unique)
+  if (variant === "numbered" && serialNumber !== undefined) {
+    await ctx.db.insert("playerCards", {
+      userId,
+      cardDefinitionId,
+      quantity: 1,
+      variant,
+      serialNumber,
+      source,
+      isFavorite: false,
+      acquiredAt: Date.now(),
+      lastUpdatedAt: Date.now(),
+    });
+    return;
+  }
+
+  // For other variants, look for existing entry with same variant
   const existing = await ctx.db
     .query("playerCards")
-    .withIndex("by_user_card", (q) =>
-      q.eq("userId", userId).eq("cardDefinitionId", cardDefinitionId)
+    .withIndex("by_user_card_variant", (q) =>
+      q.eq("userId", userId).eq("cardDefinitionId", cardDefinitionId).eq("variant", variant)
     )
     .first();
 
@@ -220,6 +265,8 @@ export async function addCardsToInventory(
       userId,
       cardDefinitionId,
       quantity,
+      variant,
+      source,
       isFavorite: false,
       acquiredAt: Date.now(),
       lastUpdatedAt: Date.now(),
@@ -293,27 +340,148 @@ export async function adjustCardInventory(
 }
 
 /**
- * Open a pack and generate cards based on pack configuration
+ * Select a random variant based on pack multipliers
  *
- * Generates random cards using weighted rarity system.
- * Last card in pack gets guaranteed rarity if specified.
- * Automatically adds all cards to player's inventory.
+ * Uses base rates (from config or constants) multiplied by pack-specific multipliers.
+ * Standard variant is the default if no special variant is rolled.
+ *
+ * @param multipliers - Optional pack-specific multipliers for foil, altArt, fullArt
+ * @param useGold - Whether this is a gold pack (uses different multipliers)
+ * @param variantRates - Optional dynamic variant rates from DB config
+ * @returns Selected card variant
+ */
+export function selectVariant(
+  multipliers?: { foil?: number; altArt?: number; fullArt?: number },
+  useGold = false,
+  variantRates?: VariantRates
+): CardVariant {
+  // Use dynamic config if provided, otherwise fall back to constants
+  const baseRates = variantRates ?? {
+    standard: VARIANT_CONFIG.BASE_RATES.standard,
+    foil: VARIANT_CONFIG.BASE_RATES.foil,
+    altArt: VARIANT_CONFIG.BASE_RATES.alt_art,
+    fullArt: VARIANT_CONFIG.BASE_RATES.full_art,
+  };
+
+  const defaultMultipliers = useGold
+    ? VARIANT_CONFIG.GOLD_PACK_MULTIPLIERS.basic
+    : { foil: 1, altArt: 1, fullArt: 1 };
+
+  const foilMult = multipliers?.foil ?? defaultMultipliers.foil;
+  const altArtMult = multipliers?.altArt ?? defaultMultipliers.altArt;
+  const fullArtMult = multipliers?.fullArt ?? defaultMultipliers.fullArt;
+
+  // Calculate effective rates (out of 10,000)
+  const foilRate = baseRates.foil * foilMult;
+  const altArtRate = baseRates.altArt * altArtMult;
+  const fullArtRate = baseRates.fullArt * fullArtMult;
+
+  const roll = Math.random() * 10000;
+
+  // Check from rarest to most common
+  if (roll < fullArtRate) return "full_art";
+  if (roll < fullArtRate + altArtRate) return "alt_art";
+  if (roll < fullArtRate + altArtRate + foilRate) return "foil";
+
+  return "standard";
+}
+
+/**
+ * Update user's pity counters after pack opening
  *
  * @param ctx - Mutation context
- * @param packConfig - Pack configuration (cardCount, guaranteedRarity, archetype)
+ * @param userId - Player's user ID
+ * @param gotEpic - Whether player pulled an epic+ card
+ * @param gotLegendary - Whether player pulled a legendary card
+ * @param gotFullArt - Whether player pulled a full art variant
+ * @param pityThresholds - Optional dynamic pity thresholds from DB config
+ * @returns Updated pity counter state and whether any pity was triggered
+ */
+async function updatePityCounters(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  gotEpic: boolean,
+  gotLegendary: boolean,
+  gotFullArt: boolean,
+  pityThresholds?: PityThresholds
+): Promise<{
+  pityTriggered: "epic" | "legendary" | "fullArt" | null;
+  counters: { packsSinceEpic: number; packsSinceLegendary: number; packsSinceFullArt: number };
+}> {
+  const user = await ctx.db.get(userId);
+  if (!user) throw createError(ErrorCode.NOT_FOUND_USER);
+
+  // Use dynamic config if provided, otherwise fall back to constants
+  const thresholds = pityThresholds ?? PITY_THRESHOLDS;
+
+  const currentCounters = user.pityCounter ?? {
+    packsSinceEpic: 0,
+    packsSinceLegendary: 0,
+    packsSinceFullArt: 0,
+  };
+
+  // Check if pity should trigger (before incrementing)
+  let pityTriggered: "epic" | "legendary" | "fullArt" | null = null;
+
+  // Legendary pity takes priority
+  if (!gotLegendary && currentCounters.packsSinceLegendary + 1 >= thresholds.legendary) {
+    pityTriggered = "legendary";
+  } else if (!gotEpic && !gotLegendary && currentCounters.packsSinceEpic + 1 >= thresholds.epic) {
+    pityTriggered = "epic";
+  } else if (!gotFullArt && currentCounters.packsSinceFullArt + 1 >= thresholds.fullArt) {
+    pityTriggered = "fullArt";
+  }
+
+  // Update counters - reset if got the rarity, otherwise increment
+  const newCounters = {
+    packsSinceEpic:
+      gotEpic || gotLegendary || pityTriggered === "epic" || pityTriggered === "legendary"
+        ? 0
+        : currentCounters.packsSinceEpic + 1,
+    packsSinceLegendary:
+      gotLegendary || pityTriggered === "legendary" ? 0 : currentCounters.packsSinceLegendary + 1,
+    packsSinceFullArt:
+      gotFullArt || pityTriggered === "fullArt" ? 0 : currentCounters.packsSinceFullArt + 1,
+  };
+
+  await ctx.db.patch(userId, { pityCounter: newCounters });
+
+  return { pityTriggered, counters: newCounters };
+}
+
+/**
+ * Open a pack and generate cards based on pack configuration
+ *
+ * Generates random cards using weighted rarity system with variant selection.
+ * Last card in pack gets guaranteed rarity if specified.
+ * Implements pity system for epic, legendary, and full art cards.
+ * Automatically adds all cards to player's inventory.
+ * Uses dynamic RNG configuration from database with fallback to constants.
+ *
+ * @param ctx - Mutation context
+ * @param packConfig - Pack configuration (cardCount, guaranteedRarity, archetype, variantMultipliers)
  * @param userId - Player opening the pack
+ * @param useGold - Whether this was a gold purchase (affects variant rates)
  * @returns Array of card results with full details for display
  * @example
- * await openPack(ctx, { cardCount: 5, guaranteedRarity: "super_rare" }, userId)
- * // Returns 5 cards, last one guaranteed to be super rare or better
+ * await openPack(ctx, { cardCount: 5, guaranteedRarity: "rare" }, userId)
+ * // Returns 5 cards with variant selection, last one guaranteed rare or better
  */
 export async function openPack(
   ctx: MutationCtx,
   packConfig: PackConfig,
-  userId: Id<"users">
+  userId: Id<"users">,
+  useGold = false
 ): Promise<CardResult[]> {
-  const { cardCount, guaranteedRarity, archetype } = packConfig;
+  const { cardCount, guaranteedRarity, archetype, variantMultipliers } = packConfig;
   const cards: CardResult[] = [];
+
+  // Fetch dynamic RNG config from database (with fallback to constants)
+  const rngConfig = await getFullRngConfig(ctx);
+
+  let gotEpic = false;
+  let gotLegendary = false;
+  let gotFullArt = false;
 
   for (let i = 0; i < cardCount; i++) {
     const isLastCard = i === cardCount - 1;
@@ -323,14 +491,22 @@ export async function openPack(
     if (isLastCard && guaranteedRarity) {
       rarity = guaranteedRarity;
     } else {
-      rarity = weightedRandomRarity();
+      rarity = weightedRandomRarity(rngConfig.rarityWeights);
     }
+
+    // Track epic/legendary pulls for pity system
+    if (rarity === "epic" || rarity === "legendary") gotEpic = true;
+    if (rarity === "legendary") gotLegendary = true;
+
+    // Select variant with pack multipliers and dynamic config
+    const variant = selectVariant(variantMultipliers, useGold, rngConfig.variantRates);
+    if (variant === "full_art") gotFullArt = true;
 
     // Get random card of this rarity
     const card = await getRandomCard(ctx, rarity, archetype);
 
-    // Add to inventory
-    await addCardsToInventory(ctx, userId, card._id, 1);
+    // Add to inventory with variant
+    await addCardsToInventory(ctx, userId, card._id, 1, variant, "pack");
 
     cards.push({
       cardDefinitionId: card._id,
@@ -342,6 +518,46 @@ export async function openPack(
       defense: card.defense,
       cost: card.cost,
       imageUrl: card.imageUrl,
+      variant,
+    });
+  }
+
+  // Update pity counters and check for pity trigger (with dynamic thresholds)
+  const { pityTriggered } = await updatePityCounters(
+    ctx,
+    userId,
+    gotEpic,
+    gotLegendary,
+    gotFullArt,
+    rngConfig.pityThresholds
+  );
+
+  // If pity triggered, add a bonus card
+  if (pityTriggered) {
+    let bonusRarity: Rarity = "epic";
+    let bonusVariant: CardVariant = "standard";
+
+    if (pityTriggered === "legendary") {
+      bonusRarity = "legendary";
+    } else if (pityTriggered === "fullArt") {
+      bonusRarity = weightedRandomRarity(rngConfig.rarityWeights); // Random rarity but guaranteed full art
+      bonusVariant = "full_art";
+    }
+
+    const bonusCard = await getRandomCard(ctx, bonusRarity, archetype);
+    await addCardsToInventory(ctx, userId, bonusCard._id, 1, bonusVariant, "pack");
+
+    cards.push({
+      cardDefinitionId: bonusCard._id,
+      name: bonusCard.name,
+      rarity: bonusCard.rarity,
+      archetype: bonusCard.archetype,
+      cardType: bonusCard.cardType,
+      attack: bonusCard.attack,
+      defense: bonusCard.defense,
+      cost: bonusCard.cost,
+      imageUrl: bonusCard.imageUrl,
+      variant: bonusVariant,
     });
   }
 

@@ -1,21 +1,11 @@
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import { api } from "../_generated/api";
 import { query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 import { MARKETPLACE, PAGINATION } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { adjustCardInventory } from "../lib/helpers";
-
-// Email action references - extracted to module level
-// @ts-ignore - Deep type instantiation limit workaround
-const emailActions = internal.emailActions;
-
-// Helper to avoid TypeScript "Type instantiation is excessively deep" errors
-// This is a known limitation with deeply nested generic types in large codebases
-// biome-ignore lint/suspicious/noExplicitAny: Convex scheduler type workaround for TS2589
-const scheduleEmail = (ctx: any, emailFunction: any, args: any) =>
-  ctx.scheduler.runAfter(0, emailFunction, args);
 import { auctionBidValidator } from "../lib/returnValidators";
 import { checkCardOwnership } from "../lib/validators";
 import { adjustPlayerCurrencyHelper } from "./economy";
@@ -478,7 +468,7 @@ export const buyNow = mutation({
     const cardDefinition = await ctx.db.get(listing.cardDefinitionId);
 
     if (seller?.email && cardDefinition) {
-      await scheduleEmail(ctx, emailActions.sendCardSoldNotification, {
+      await ctx.scheduler.runAfter(0, api.infrastructure.emailActions.sendCardSoldNotification, {
         email: seller.email,
         username: seller.username || seller.name || "Player",
         cardName: cardDefinition.name,
@@ -596,13 +586,17 @@ export const placeBid = mutation({
         if (previousBidder?.email && cardDefinition && listing.endsAt) {
           const auctionEndsAt = new Date(listing.endsAt).toLocaleString();
 
-          await scheduleEmail(ctx, emailActions.sendAuctionOutbidNotification, {
-            email: previousBidder.email,
-            username: previousBidder.username || previousBidder.name || "Player",
-            cardName: cardDefinition.name,
-            currentBid: args.bidAmount,
-            auctionEndsAt,
-          });
+          await ctx.scheduler.runAfter(
+            0,
+            api.infrastructure.emailActions.sendAuctionOutbidNotification,
+            {
+              email: previousBidder.email,
+              username: previousBidder.username || previousBidder.name || "Player",
+              cardName: cardDefinition.name,
+              currentBid: args.bidAmount,
+              auctionEndsAt,
+            }
+          );
         }
       }
     }
@@ -742,7 +736,7 @@ export const claimAuctionWin = mutation({
 
     if (winner?.email && cardDefinition) {
       // Notify winner
-      await scheduleEmail(ctx, emailActions.sendAuctionWonNotification, {
+      await ctx.scheduler.runAfter(0, api.infrastructure.emailActions.sendAuctionWonNotification, {
         email: winner.email,
         username: winner.username || winner.name || "Player",
         cardName: cardDefinition.name,
@@ -753,7 +747,7 @@ export const claimAuctionWin = mutation({
 
     if (seller?.email && cardDefinition) {
       // Notify seller
-      await scheduleEmail(ctx, emailActions.sendCardSoldNotification, {
+      await ctx.scheduler.runAfter(0, api.infrastructure.emailActions.sendCardSoldNotification, {
         email: seller.email,
         username: seller.username || seller.name || "Player",
         cardName: cardDefinition.name,

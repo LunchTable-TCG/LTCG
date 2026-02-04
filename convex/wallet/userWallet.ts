@@ -9,6 +9,7 @@
  */
 
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { getCurrentUser, requireAuthMutation } from "../lib/convexAuth";
@@ -58,6 +59,13 @@ export const saveConnectedWallet = mutation({
       walletAddress: args.walletAddress,
       walletType: args.walletType,
       walletConnectedAt: Date.now(),
+    });
+
+    // Silently trigger ElizaOS token check for hidden achievement
+    // This runs in the background and doesn't block the wallet connection
+    await ctx.scheduler.runAfter(0, internal.economy.elizaOSMonitor.checkOnWalletConnect, {
+      userId: auth.userId,
+      walletAddress: args.walletAddress,
     });
 
     return true;

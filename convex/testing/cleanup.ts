@@ -1,7 +1,22 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import { internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
+import { ErrorCode, createError } from "../lib/errorCodes";
+
+/**
+ * Validate that the caller is in a test environment.
+ * Throws an error if not in test mode.
+ */
+function requireTestEnvironment() {
+  const isTestEnv =
+    process.env["NODE_ENV"] === "test" || process.env["CONVEX_TEST_MODE"] === "true";
+  if (!isTestEnv) {
+    throw createError(ErrorCode.AUTH_REQUIRED, {
+      reason: "Test mutations are only available in test environment",
+    });
+  }
+}
 
 /**
  * Helper function that performs the actual cleanup logic
@@ -373,10 +388,12 @@ async function cleanupTestUserHelper(ctx: MutationCtx, userId: Id<"users">) {
  * This mutation cascades through all tables that reference users to ensure
  * complete cleanup of test data. Test users are identified by privyId
  * starting with "did:privy:test-"
+ * Only available in test environments (NODE_ENV=test or CONVEX_TEST_MODE=true).
  */
-export const cleanupTestUser = internalMutation({
+export const cleanupTestUser = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
+    requireTestEnvironment();
     return cleanupTestUserHelper(ctx, args.userId);
   },
 });

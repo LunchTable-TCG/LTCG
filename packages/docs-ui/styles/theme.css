@@ -1,0 +1,427 @@
+/**
+ * LTCG Documentation Theme
+ * Dark fantasy aesthetic with gold accents
+ *
+ * Design tokens for Starlight customization
+ */
+
+/* ============================================================================
+   STARLIGHT THEME OVERRIDES
+   ============================================================================ */
+
+:root {
+  /* === Dark Leather & Wood Backgrounds === */
+  --sl-color-bg: #1a1614;
+  --sl-color-bg-nav: #130f0d;
+  --sl-color-bg-sidebar: #0f0c0a;
+  --sl-color-bg-inline-code: #261f1c;
+  --sl-color-bg-accent: #3d2b25;
+
+  /* === Parchment Text === */
+  --sl-color-text: #e8e0d5;
+  --sl-color-text-accent: #d4af37;
+
+  /* === Gold Accents === */
+  --sl-color-accent-low: #3d2b1f;
+  --sl-color-accent: #d4af37;
+  --sl-color-accent-high: #f0d77a;
+
+  /* === Borders === */
+  --sl-color-gray-1: #5c4033;
+  --sl-color-gray-2: #4a3728;
+  --sl-color-gray-3: #3d2b25;
+  --sl-color-gray-4: #261f1c;
+  --sl-color-gray-5: #1a1614;
+  --sl-color-gray-6: #130f0d;
+
+  /* === Typography === */
+  --sl-font: 'Crimson Text', 'Georgia', serif;
+  --sl-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+
+  /* Custom heading font - load via @font-face */
+  --sl-font-heading: 'Cinzel', 'Garamond', serif;
+
+  /* === Custom LTCG Variables === */
+  --ltcg-gold: #d4af37;
+  --ltcg-gold-light: #f0d77a;
+  --ltcg-gold-dark: #8b6914;
+  --ltcg-leather: #3d2b25;
+  --ltcg-leather-dark: #261f1c;
+  --ltcg-parchment: #e8e0d5;
+  --ltcg-oak: #5c4033;
+  --ltcg-saddle: #8b4513;
+
+  /* Element Colors */
+  --ltcg-ember: #ff6b35;
+  --ltcg-void: #9333ea;
+  --ltcg-arcane: #06b6d4;
+  --ltcg-nature: #10b981;
+  --ltcg-frost: #0ea5e9;
+  --ltcg-neutral: #a89f94;
+}
+
+/* ============================================================================
+   GOOGLE FONTS LOADING
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ============================================================================
+   GLOBAL STYLES
+   ============================================================================ */
+
+/* Body background with subtle texture */
+body {
+  background:
+    radial-gradient(ellipse 70% 70% at 50% 0%, rgba(212, 175, 55, 0.03) 0%, transparent 50%),
+    linear-gradient(180deg, var(--sl-color-bg-nav) 0%, var(--sl-color-bg) 100%);
+  background-attachment: fixed;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(212, 175, 55, 0.3);
+  color: var(--ltcg-parchment);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--ltcg-gold);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   TYPOGRAPHY
+   ============================================================================ */
+
+/* Headings use Cinzel */
+h1, h2, h3, h4, h5, h6,
+.sl-heading {
+  font-family: var(--sl-font-heading);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Gold gradient for main titles */
+h1 {
+  background: linear-gradient(180deg, var(--ltcg-gold-light) 0%, var(--ltcg-gold) 40%, var(--ltcg-gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+}
+
+/* Subtle gold tint for h2 */
+h2 {
+  color: var(--ltcg-gold-light);
+}
+
+/* ============================================================================
+   NAVIGATION & SIDEBAR
+   ============================================================================ */
+
+/* Sidebar styling */
+.sidebar-content {
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.02) 0%, transparent 20%),
+    var(--sl-color-bg-sidebar);
+}
+
+/* Active nav item */
+[data-current="true"],
+.sidebar-link[aria-current="page"] {
+  background: linear-gradient(90deg, rgba(139, 69, 19, 0.2) 0%, transparent 100%);
+  border-left: 3px solid var(--ltcg-gold);
+  color: var(--ltcg-gold);
+}
+
+/* Nav hover */
+.sidebar-link:hover {
+  background: linear-gradient(90deg, rgba(139, 69, 19, 0.1) 0%, transparent 100%);
+  color: var(--ltcg-parchment);
+}
+
+/* ============================================================================
+   CARDS & PANELS
+   ============================================================================ */
+
+/* TCG-styled card */
+.tcg-card {
+  background: linear-gradient(180deg, rgba(23, 19, 20, 0.98) 0%, rgba(10, 5, 3, 0.95) 100%);
+  border: 2px solid transparent;
+  border-image: linear-gradient(180deg, rgba(212, 175, 55, 0.5) 0%, rgba(139, 69, 19, 0.3) 100%) 1;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.8),
+    inset 0 0 40px rgba(139, 69, 19, 0.15),
+    0 8px 32px rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+}
+
+/* Gold frame variant */
+.tcg-card-gold {
+  border-image: linear-gradient(180deg, var(--ltcg-gold) 0%, var(--ltcg-saddle) 100%) 1;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.8),
+    inset 0 0 60px rgba(212, 175, 55, 0.1),
+    0 0 30px rgba(212, 175, 55, 0.2),
+    0 12px 40px rgba(0, 0, 0, 0.9);
+}
+
+/* Panel styling (asides, callouts) */
+.tcg-panel {
+  background:
+    radial-gradient(ellipse at top, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(23, 19, 20, 0.98) 0%, rgba(10, 5, 3, 0.95) 100%);
+  border: 1px solid rgba(139, 69, 19, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 0 30px rgba(0, 0, 0, 0.5),
+    0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* ============================================================================
+   STARLIGHT COMPONENT OVERRIDES
+   ============================================================================ */
+
+/* Asides (Note, Tip, Caution, Danger) */
+.starlight-aside {
+  background: var(--sl-color-bg-inline-code);
+  border-left: 4px solid var(--ltcg-gold);
+  border-radius: 0 8px 8px 0;
+}
+
+.starlight-aside--note {
+  border-left-color: var(--ltcg-arcane);
+}
+
+.starlight-aside--tip {
+  border-left-color: var(--ltcg-nature);
+}
+
+.starlight-aside--caution {
+  border-left-color: var(--ltcg-ember);
+}
+
+.starlight-aside--danger {
+  border-left-color: #dc2626;
+}
+
+/* Code blocks */
+.expressive-code {
+  --ec-brdCol: var(--ltcg-oak) !important;
+}
+
+.expressive-code .frame {
+  background: var(--sl-color-bg-sidebar) !important;
+  border: 1px solid var(--ltcg-leather);
+  border-radius: 8px;
+}
+
+/* Table styling */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--ltcg-leather);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th {
+  background: var(--ltcg-leather-dark);
+  color: var(--ltcg-gold-light);
+  font-family: var(--sl-font-heading);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+td {
+  border-top: 1px solid var(--ltcg-leather);
+}
+
+/* Card grid (LinkCard) */
+.sl-link-card {
+  background: var(--sl-color-bg-inline-code);
+  border: 1px solid var(--ltcg-leather);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.sl-link-card:hover {
+  border-color: var(--ltcg-gold);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+  transform: translateY(-2px);
+}
+
+/* ============================================================================
+   DIVIDERS & ORNAMENTS
+   ============================================================================ */
+
+/* Gold horizontal divider */
+.tcg-divider {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 69, 19, 0.3) 20%,
+    rgba(212, 175, 55, 0.5) 50%,
+    rgba(139, 69, 19, 0.3) 80%,
+    transparent 100%
+  );
+  margin: 2rem 0;
+}
+
+/* Ornamental corner */
+.ornament-corner {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.3) 0%, transparent 50%);
+}
+
+.ornament-corner-tl { top: 0; left: 0; }
+.ornament-corner-tr { top: 0; right: 0; transform: scaleX(-1); }
+.ornament-corner-bl { bottom: 0; left: 0; transform: scaleY(-1); }
+.ornament-corner-br { bottom: 0; right: 0; transform: scale(-1); }
+
+/* ============================================================================
+   ELEMENT COLORS
+   ============================================================================ */
+
+.element-ember { color: var(--ltcg-ember); }
+.element-void { color: var(--ltcg-void); }
+.element-arcane { color: var(--ltcg-arcane); }
+.element-nature { color: var(--ltcg-nature); }
+.element-frost { color: var(--ltcg-frost); }
+.element-neutral { color: var(--ltcg-neutral); }
+
+.bg-element-ember { background-color: var(--ltcg-ember); }
+.bg-element-void { background-color: var(--ltcg-void); }
+.bg-element-arcane { background-color: var(--ltcg-arcane); }
+.bg-element-nature { background-color: var(--ltcg-nature); }
+.bg-element-frost { background-color: var(--ltcg-frost); }
+.bg-element-neutral { background-color: var(--ltcg-neutral); }
+
+/* Element glow effects */
+.glow-ember {
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2);
+}
+
+.glow-void {
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4), 0 0 40px rgba(147, 51, 234, 0.2);
+}
+
+.glow-arcane {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 40px rgba(6, 182, 212, 0.2);
+}
+
+.glow-nature {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.2);
+}
+
+.glow-frost {
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.4), 0 0 40px rgba(14, 165, 233, 0.2);
+}
+
+/* ============================================================================
+   RARITY COLORS
+   ============================================================================ */
+
+.rarity-common { color: #9ca3af; }
+.rarity-uncommon { color: #22c55e; }
+.rarity-rare { color: #3b82f6; }
+.rarity-epic { color: #a855f7; }
+.rarity-legendary { color: var(--ltcg-gold); }
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.5); }
+}
+
+@keyframes flip-card {
+  0% { transform: perspective(1000px) rotateY(0); }
+  50% { transform: perspective(1000px) rotateY(90deg); }
+  100% { transform: perspective(1000px) rotateY(180deg); }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(212, 175, 55, 0.2) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 4s ease-in-out infinite;
+}
+
+/* ============================================================================
+   SCROLLBAR STYLING
+   ============================================================================ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sl-color-bg-sidebar);
+  border-left: 1px solid rgba(139, 69, 19, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4e3a3c 0%, #2a1f14 100%);
+  border: 1px solid rgba(139, 69, 19, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5e4a4c 0%, #3a2f24 100%);
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+.gold-text {
+  color: var(--ltcg-gold);
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.5), 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.gold-gradient {
+  background: linear-gradient(180deg, var(--ltcg-gold-light) 0%, var(--ltcg-gold) 40%, var(--ltcg-gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.font-heading {
+  font-family: var(--sl-font-heading);
+}
+
+.font-body {
+  font-family: var(--sl-font);
+}

@@ -10,6 +10,60 @@ import { internal } from "./_generated/api";
 import { internalMutation, mutation } from "./functions";
 
 /**
+ * Setup the x402 fee collection treasury wallet.
+ * Creates a new Privy Server Wallet for x402 payment collection.
+ * This runs automatically as part of setupComplete.
+ */
+export const setupX402TreasuryWallet = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // Check if fee_collection wallet already exists
+    const existingWallet = await ctx.db
+      .query("treasuryWallets")
+      .withIndex("by_purpose", (q) => q.eq("purpose", "fee_collection"))
+      .first();
+
+    if (existingWallet) {
+      console.log(
+        `Fee collection wallet already exists: ${existingWallet.address || "pending creation"}`
+      );
+      return {
+        created: false,
+        walletId: existingWallet._id,
+        address: existingWallet.address,
+        status: existingWallet.creationStatus,
+      };
+    }
+
+    // Create fee_collection wallet (no createdBy - system-created)
+    const walletId = await ctx.db.insert("treasuryWallets", {
+      privyWalletId: "",
+      address: "",
+      name: "LunchTable Fee Collection",
+      purpose: "fee_collection",
+      policyId: undefined,
+      status: "active",
+      creationStatus: "pending",
+      creationAttempts: 0,
+      createdAt: Date.now(),
+    });
+
+    // Schedule Privy wallet creation
+    await ctx.scheduler.runAfter(0, internal.treasury.wallets.createPrivyWallet, {
+      walletDbId: walletId,
+      policyId: undefined,
+    });
+
+    console.log(`x402 Fee collection wallet creation scheduled: ${walletId}`);
+    return {
+      created: true,
+      walletId,
+      message: "Fee collection wallet creation scheduled.",
+    };
+  },
+});
+
+/**
  * Complete system setup - runs all setup functions in correct order
  * This is idempotent and safe to run multiple times
  */
@@ -64,6 +118,12 @@ export const setupComplete = internalMutation({
       await ctx.runMutation(internal.setupSystem.initializeProgressionSystem, {});
       const lastStep5 = results.steps[results.steps.length - 1];
       if (lastStep5) lastStep5.message = "Quests and achievements seeded";
+
+      // Step 6: Setup x402 treasury wallet
+      results.steps.push({ name: "Treasury Wallet", success: true, message: "Starting..." });
+      await ctx.runMutation(internal.setup.setupX402TreasuryWallet, {});
+      const lastStep6 = results.steps[results.steps.length - 1];
+      if (lastStep6) lastStep6.message = "x402 fee collection wallet created";
 
       // Note: The following must be run separately as public mutations:
       // - bun run seed:story (Story chapters)

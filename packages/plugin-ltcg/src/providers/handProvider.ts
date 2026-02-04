@@ -20,13 +20,14 @@ export const handProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get game ID from state first, then message content
-      const gameId = state.values?.LTCG_CURRENT_GAME_ID || (message.content as any)?.gameId;
+      const messageContent = message.content as { gameId?: string };
+      const gameId = state.values?.LTCG_CURRENT_GAME_ID || messageContent?.gameId;
 
       if (!gameId) {
         return {
           text: "No active game. Use FIND_GAME or JOIN_LOBBY to start playing.",
           values: { error: "NO_GAME_ID" },
-          data: {},
+          data: undefined,
         };
       }
 
@@ -38,7 +39,7 @@ export const handProvider: Provider = {
         return {
           text: "LTCG API credentials not configured. Please set LTCG_API_KEY and LTCG_API_URL.",
           values: { error: "MISSING_CONFIG" },
-          data: {},
+          data: undefined,
         };
       }
 
@@ -48,8 +49,11 @@ export const handProvider: Provider = {
         baseUrl: apiUrl as string,
       });
 
+      // Assert gameId as string for type safety
+      const gameIdString = String(gameId);
+
       // Fetch game state
-      const gameState: GameStateResponse = await client.getGameState(gameId);
+      const gameState: GameStateResponse = await client.getGameState(gameIdString);
 
       // Format hand cards
       const hand = gameState.hand;

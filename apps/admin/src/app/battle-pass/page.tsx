@@ -30,7 +30,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { BattlePassId } from "@/lib/convexTypes";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import {
   CalendarIcon,
@@ -49,6 +51,12 @@ import { toast } from "sonner";
 // =============================================================================
 // Types & Constants
 // =============================================================================
+
+type BattlePassSeason = Doc<"battlePassSeasons"> & {
+  seasonNumber: number;
+  seasonName: string;
+  tierCount: number;
+};
 
 type BattlePassStatus = "upcoming" | "active" | "ended";
 
@@ -76,7 +84,6 @@ function CreateBattlePassDialog({ open, onOpenChange }: CreateBattlePassDialogPr
   const [seasonId, setSeasonId] = useState("");
   const [totalTiers, setTotalTiers] = useState("50");
   const [xpPerTier, setXpPerTier] = useState("1000");
-  const [premiumPrice, setPremiumPrice] = useState("1000");
   const [useDefaultRewards, setUseDefaultRewards] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -95,15 +102,14 @@ function CreateBattlePassDialog({ open, onOpenChange }: CreateBattlePassDialogPr
     setIsSubmitting(true);
 
     try {
-      const result = await createBattlePass({
-        seasonId: seasonId as any,
+      const result = (await createBattlePass({
+        seasonId: seasonId as Id<"seasons">,
         name,
         description: description || undefined,
         totalTiers: Number.parseInt(totalTiers, 10),
         xpPerTier: Number.parseInt(xpPerTier, 10),
-        premiumPrice: Number.parseInt(premiumPrice, 10),
         useDefaultRewards,
-      });
+      })) as { message: string };
 
       toast.success(result.message);
       onOpenChange(false);
@@ -114,7 +120,6 @@ function CreateBattlePassDialog({ open, onOpenChange }: CreateBattlePassDialogPr
       setSeasonId("");
       setTotalTiers("50");
       setXpPerTier("1000");
-      setPremiumPrice("1000");
       setUseDefaultRewards(true);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to create battle pass");
@@ -147,7 +152,7 @@ function CreateBattlePassDialog({ open, onOpenChange }: CreateBattlePassDialogPr
                       No available seasons. Create a season first.
                     </div>
                   )}
-                  {availableSeasons?.map((s: any) => (
+                  {availableSeasons?.map((s) => (
                     <SelectItem key={s._id} value={s._id}>
                       Season {s.number}: {s.name}
                     </SelectItem>
@@ -189,21 +194,6 @@ function CreateBattlePassDialog({ open, onOpenChange }: CreateBattlePassDialogPr
                 placeholder="1000"
                 value={xpPerTier}
                 onChange={(e) => setXpPerTier(e.target.value)}
-              />
-            </div>
-
-            <div className="col-span-2">
-              <Label htmlFor="premiumPrice" className="flex items-center gap-2">
-                <GemIcon className="h-4 w-4 text-violet-500" />
-                Premium Price (Gems)
-              </Label>
-              <Input
-                id="premiumPrice"
-                type="number"
-                min="0"
-                placeholder="1000"
-                value={premiumPrice}
-                onChange={(e) => setPremiumPrice(e.target.value)}
               />
             </div>
 
@@ -271,7 +261,9 @@ function BattlePassActions({ battlePass }: BattlePassActionsProps) {
   const handleActivate = async () => {
     setIsActivating(true);
     try {
-      const result = await activateBattlePass({ battlePassId: battlePass._id as BattlePassId });
+      const result = (await activateBattlePass({
+        battlePassId: battlePass._id as BattlePassId,
+      })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to activate battle pass");
@@ -283,7 +275,9 @@ function BattlePassActions({ battlePass }: BattlePassActionsProps) {
   const handleEnd = async () => {
     setIsEnding(true);
     try {
-      const result = await endBattlePass({ battlePassId: battlePass._id as BattlePassId });
+      const result = (await endBattlePass({ battlePassId: battlePass._id as BattlePassId })) as {
+        message: string;
+      };
       toast.success(result.message);
       setShowEndConfirm(false);
     } catch (error) {
@@ -440,7 +434,7 @@ export default function BattlePassPage() {
               </div>
               <Button asChild>
                 <Link
-                  href={`/battle-pass/${battlePassResult?.battlePasses.find((bp: any) => bp.status === "active")?._id}`}
+                  href={`/battle-pass/${battlePassResult?.battlePasses.find((bp: BattlePassSeason) => bp.status === "active")?._id}`}
                 >
                   Manage Active
                 </Link>
@@ -484,8 +478,8 @@ export default function BattlePassPage() {
 
           {isLoading ? (
             <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
+              {["sk-bp-1", "sk-bp-2", "sk-bp-3", "sk-bp-4", "sk-bp-5"].map((key) => (
+                <Skeleton key={key} className="h-16 w-full" />
               ))}
             </div>
           ) : battlePassResult?.battlePasses.length === 0 ? (
@@ -502,14 +496,13 @@ export default function BattlePassPage() {
                     <th className="text-left py-3 px-3">Season</th>
                     <th className="text-left py-3 px-3">Status</th>
                     <th className="text-center py-3 px-3">Tiers</th>
-                    <th className="text-center py-3 px-3">Premium Price</th>
                     <th className="text-center py-3 px-3">Users</th>
                     <th className="text-center py-3 px-3">Premium</th>
                     <th className="text-right py-3 px-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {battlePassResult?.battlePasses.map((bp: any) => {
+                  {battlePassResult?.battlePasses.map((bp: BattlePassSeason) => {
                     const statusConfig = STATUS_CONFIG[bp.status as BattlePassStatus];
                     return (
                       <tr
@@ -544,12 +537,6 @@ export default function BattlePassPage() {
                           <div className="flex items-center justify-center gap-1">
                             <LayersIcon className="h-3 w-3 text-muted-foreground" />
                             {bp.tierCount}/{bp.totalTiers}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <div className="flex items-center justify-center gap-1 text-violet-600">
-                            <GemIcon className="h-3 w-3" />
-                            {bp.premiumPrice?.toLocaleString() ?? 0}
                           </div>
                         </td>
                         <td className="py-3 px-3 text-center text-muted-foreground">-</td>

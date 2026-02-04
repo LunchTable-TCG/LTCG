@@ -14,7 +14,7 @@
 
 import type { Doc, Id } from "../../../../_generated/dataModel";
 import type { MutationCtx } from "../../../../_generated/server";
-import type { EffectResult, ExtendedParsedEffect, ChainLink } from "../../types";
+import type { ChainLink, EffectResult, ExtendedParsedEffect } from "../../types";
 
 /**
  * Execute Activation Negation effect

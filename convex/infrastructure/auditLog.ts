@@ -5,8 +5,8 @@
  * Audit logs are automatically created by triggers when critical data changes.
  */
 
-import { query } from "../_generated/server";
 import { v } from "convex/values";
+import { query } from "../_generated/server";
 import { requireAuthQuery } from "../lib/convexAuth";
 import { requireRole } from "../lib/roles";
 
@@ -24,11 +24,7 @@ export const getRecentAuditLogs = query({
 
     const limit = args.limit ?? 100;
 
-    return await ctx.db
-      .query("auditLog")
-      .withIndex("by_timestamp")
-      .order("desc")
-      .take(limit);
+    return await ctx.db.query("auditLog").withIndex("by_timestamp").order("desc").take(limit);
   },
 });
 
@@ -73,9 +69,7 @@ export const getAuditLogsByDocument = query({
 
     return await ctx.db
       .query("auditLog")
-      .withIndex("by_document", (q) =>
-        q.eq("table", args.table).eq("documentId", args.documentId)
-      )
+      .withIndex("by_document", (q) => q.eq("table", args.table).eq("documentId", args.documentId))
       .order("desc")
       .take(limit);
   },

@@ -1,0 +1,96 @@
+---
+title: Overview
+description: Introduction to LunchTable TCG development
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## What is LunchTable TCG?
+
+Lunchtable Trading Card Game (LunchTable TCG) is a digital trading card game platform built on modern web technologies. This documentation covers everything you need to contribute to or build on the platform.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Client Layer                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │   Web App   │  │    Admin    │  │   Mobile    │         │
+│  │  (Next.js)  │  │  (Next.js)  │  │   (React)   │         │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘         │
+└─────────┼────────────────┼────────────────┼─────────────────┘
+          │                │                │
+          ▼                ▼                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Convex Layer                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │   Queries   │  │  Mutations  │  │   Actions   │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+│                          │                                   │
+│  ┌───────────────────────┴───────────────────────┐         │
+│  │              Database (Document Store)         │         │
+│  └────────────────────────────────────────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Key Concepts
+
+### Convex Backend
+
+We use [Convex](https://convex.dev) as our backend-as-a-service:
+
+- **Real-time by default** - All queries automatically update
+- **Type-safe** - End-to-end TypeScript
+- **Serverless** - No infrastructure to manage
+- **Transactional** - ACID guarantees on mutations
+
+### Game Engine
+
+The game engine handles:
+
+- Turn management and phase transitions
+- Card effect resolution
+- Combat calculations
+- Win condition checking
+
+### Effect System
+
+Cards have abilities that are processed through our effect system:
+
+- **Triggered effects** - Activate on events
+- **Activated effects** - Player-initiated
+- **Continuous effects** - Always active
+- **Replacement effects** - Modify other effects
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- **Bun** v1.1.38+ ([install](https://bun.sh))
+- **Node.js** v20+ (for compatibility)
+- **Git** configured
+- **VS Code** (recommended)
+
+<Aside type="tip">
+  We recommend using VS Code with the following extensions:
+  - ESLint
+  - Tailwind CSS IntelliSense
+  - Convex
+</Aside>
+
+## Next Steps
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Installation"
+    description="Set up your development environment"
+    href="/quick-start/installation/"
+  />
+  <LinkCard
+    title="First Game"
+    description="Run and modify your first game"
+    href="/quick-start/first-game/"
+  />
+</CardGrid>

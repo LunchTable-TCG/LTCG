@@ -1069,7 +1069,10 @@ Choose wisely!`;
       this.decisionHistory.set(gameId, []);
     }
 
-    const history = this.decisionHistory.get(gameId)!;
+    const history = this.decisionHistory.get(gameId);
+    if (!history) {
+      throw new Error(`Decision history for game ${gameId} not found after initialization`);
+    }
     history.push(decisionRecord);
 
     // Trim in-memory history to max
@@ -1208,10 +1211,15 @@ Choose wisely!`;
     const card = hand.find((c: CardInHand) => c.handIndex === handIndex);
     const zone = card?.type === "creature" ? "monster" : "spellTrap";
 
+    if (handIndex === undefined) {
+      logger.error("No valid card to set");
+      return false;
+    }
+
     try {
       await this.client?.setCard({
         gameId,
-        handIndex: handIndex!,
+        handIndex,
         zone,
       });
 
@@ -1295,6 +1303,11 @@ Choose wisely!`;
 
     const attacker = myMonsters.find((m: MonsterCard) => m.boardIndex === attackerBoardIndex);
 
+    if (attackerBoardIndex === undefined) {
+      logger.error("No valid attacker available");
+      return false;
+    }
+
     // Choose target - direct attack if no opponents, otherwise from decision or attack weakest
     let targetBoardIndex = decision.parameters?.targetBoardIndex as number | undefined;
 
@@ -1317,7 +1330,7 @@ Choose wisely!`;
     try {
       await this.client?.attack({
         gameId,
-        attackerBoardIndex: attackerBoardIndex!,
+        attackerBoardIndex,
         targetBoardIndex, // undefined = direct attack
       });
 
@@ -1350,13 +1363,18 @@ Choose wisely!`;
       boardIndex = changeable[0]?.boardIndex;
     }
 
+    if (boardIndex === undefined) {
+      logger.error("No valid monster to change position");
+      return false;
+    }
+
     const monster = myMonsters.find((m: MonsterCard) => m.boardIndex === boardIndex);
     const newPosition = monster?.position === "attack" ? "defense" : "attack";
 
     try {
       await this.client?.changePosition({
         gameId,
-        boardIndex: boardIndex!,
+        boardIndex,
         newPosition,
       });
 
@@ -1386,12 +1404,17 @@ Choose wisely!`;
       boardIndex = faceDown[0]?.boardIndex;
     }
 
+    if (boardIndex === undefined) {
+      logger.error("No valid face-down monster to flip summon");
+      return false;
+    }
+
     const monster = myMonsters.find((m: MonsterCard) => m.boardIndex === boardIndex);
 
     try {
       await this.client?.flipSummon({
         gameId,
-        boardIndex: boardIndex!,
+        boardIndex,
       });
 
       logger.info({ monster: monster?.name }, "Flip summoned");

@@ -25,10 +25,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useQuery } from "@/lib/convexHelpers";
+import type { Doc } from "@convex/_generated/dataModel";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+type TreasuryTransaction = Doc<"treasuryTransactions"> & {
+  walletName: string;
+  walletAddress: string;
+};
 
 // =============================================================================
 // Helper Functions
@@ -110,15 +120,27 @@ export default function TreasuryTransactionsPage() {
   const limit = 20;
 
   // Fetch transactions
-  const { transactions, total } = useConvexQuery(api.treasury.transactions.listTransactions, {
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    type: typeFilter !== "all" ? typeFilter : undefined,
+  const { transactions, total } = useQuery(api.treasury.transactions.listTransactions, {
+    status:
+      statusFilter !== "all"
+        ? (statusFilter as "pending" | "submitted" | "confirmed" | "failed")
+        : undefined,
+    type:
+      typeFilter !== "all"
+        ? (typeFilter as
+            | "distribution"
+            | "fee_received"
+            | "liquidity_add"
+            | "liquidity_remove"
+            | "transfer_internal"
+            | "transfer_external")
+        : undefined,
     limit,
     offset: page * limit,
   }) ?? { transactions: [], total: 0 };
 
   // Fetch stats
-  const stats = useConvexQuery(api.treasury.transactions.getStats, { daysBack: 30 });
+  const stats = useQuery(api.treasury.transactions.getStats, { daysBack: 30 });
 
   const isLoading = transactions === undefined;
   const totalPages = Math.ceil(total / limit);
@@ -247,7 +269,7 @@ export default function TreasuryTransactionsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactions.map((tx: any) => (
+                  {transactions.map((tx: TreasuryTransaction) => (
                     <TableRow key={tx._id}>
                       <TableCell>
                         <div className="flex items-center gap-2">

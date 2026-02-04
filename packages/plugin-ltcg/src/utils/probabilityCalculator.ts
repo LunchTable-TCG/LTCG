@@ -132,8 +132,8 @@ export function calculateDamageRange(
       if ("hasAttacked" in a) return !a.hasAttacked;
       return true;
     })
-    .map((a) => {
-      if ("atk" in a) return a.atk;
+    .map((a): number => {
+      if ("atk" in a) return a.atk ?? 0;
       if ("currentAttack" in a) return a.currentAttack ?? a.attack ?? 0;
       if ("attack" in a) return a.attack ?? 0;
       return 0;

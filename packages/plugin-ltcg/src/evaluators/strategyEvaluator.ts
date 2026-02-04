@@ -23,7 +23,9 @@ export const strategyEvaluator: Evaluator = {
       messages: [
         {
           name: "{{user1}}",
-          content: { text: "I want to attack with weak monster into strong monster" },
+          content: {
+            text: "I want to attack with weak monster into strong monster",
+          },
         },
       ],
       outcome:
@@ -31,7 +33,12 @@ export const strategyEvaluator: Evaluator = {
     },
     {
       prompt: "Evaluate summoning strongest monster",
-      messages: [{ name: "{{user1}}", content: { text: "I will summon my strongest monster" } }],
+      messages: [
+        {
+          name: "{{user1}}",
+          content: { text: "I will summon my strongest monster" },
+        },
+      ],
       outcome: "Strategy evaluation: GOOD_PLAY. Allowed.",
     },
   ],

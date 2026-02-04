@@ -19,7 +19,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import type { CardArchetype } from "@/lib/convexTypes";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { PlusIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
@@ -28,10 +30,36 @@ import { toast } from "sonner";
 
 // =============================================================================
 // Types & Constants
+
+type CardDefinition = Doc<"cardDefinitions">;
 // =============================================================================
 
 type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 type CardType = "creature" | "spell" | "trap" | "equipment";
+
+interface CardStats {
+  totalCards: number;
+  activeCards: number;
+  byType: {
+    creature: number;
+    spell: number;
+    trap: number;
+    equipment?: number;
+  };
+  byRarity: {
+    common: number;
+    uncommon: number;
+    rare: number;
+    epic: number;
+    legendary: number;
+  };
+}
+
+interface CardsListResult {
+  cards: CardDefinition[];
+  totalCount: number;
+  hasMore: boolean;
+}
 
 const RARITY_COLORS: Record<Rarity, string> = {
   common: "gray",
@@ -89,22 +117,24 @@ export default function CardsPage() {
   const [showInactive, setShowInactive] = useState(false);
 
   // Query
-  const cardsResult = useTypedQuery(typedApi.admin.cards.listCards, {
+  const cardsResult = useQuery(api.admin.cards.listCards, {
     search: search || undefined,
     rarity: rarityFilter !== "all" ? (rarityFilter as Rarity) : undefined,
     cardType: typeFilter !== "all" ? (typeFilter as CardType) : undefined,
-    archetype: archetypeFilter !== "all" ? archetypeFilter : undefined,
+    archetype: archetypeFilter !== "all" ? (archetypeFilter as CardArchetype) : undefined,
     includeInactive: showInactive,
     limit: 100,
-  });
+  }) as CardsListResult | undefined;
 
-  const statsResult = useTypedQuery(typedApi.admin.cards.getCardStats, {});
+  const statsResult = useQuery(api.admin.cards.getCardStats, {}) as CardStats | undefined;
 
-  const toggleActive = useTypedMutation(typedApi.admin.cards.toggleCardActive);
+  const toggleActive = useMutation(api.admin.cards.toggleCardActive);
 
   const handleToggleActive = async (cardId: string, _cardName: string) => {
     try {
-      const result = await toggleActive({ cardId: cardId as any });
+      const result = (await toggleActive({ cardId: cardId as Id<"cardDefinitions"> })) as {
+        message: string;
+      };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle card status");
@@ -254,9 +284,11 @@ export default function CardsPage() {
 
         {isLoading ? (
           <div className="space-y-2">
-            {[...Array(10)].map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))}
+            {["sk-1", "sk-2", "sk-3", "sk-4", "sk-5", "sk-6", "sk-7", "sk-8", "sk-9", "sk-10"].map(
+              (key) => (
+                <Skeleton key={key} className="h-16 w-full" />
+              )
+            )}
           </div>
         ) : cardsResult?.cards.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground">
@@ -279,7 +311,7 @@ export default function CardsPage() {
                 </tr>
               </thead>
               <tbody>
-                {cardsResult?.cards.map((card: any) => (
+                {cardsResult?.cards.map((card: CardDefinition) => (
                   <tr
                     key={card._id}
                     className={`border-b hover:bg-muted/30 ${!card.isActive ? "opacity-50" : ""}`}

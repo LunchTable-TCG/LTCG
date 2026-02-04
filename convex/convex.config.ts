@@ -5,7 +5,7 @@ import presence from "@convex-dev/presence/convex.config";
 import rag from "@convex-dev/rag/convex.config";
 import rateLimiter from "@convex-dev/ratelimiter/convex.config";
 import shardedCounter from "@convex-dev/sharded-counter/convex.config";
-import stripe from "@convex-dev/stripe/convex.config";
+import stripe from "@convex-dev/stripe/convex.config.js";
 import workpool from "@convex-dev/workpool/convex.config";
 import { defineApp } from "convex/server";
 

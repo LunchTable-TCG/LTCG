@@ -1,8 +1,8 @@
 // @ts-nocheck - ActionRetrier circular type issues - TODO: Add explicit return types
 import { v } from "convex/values";
-import { action, internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
-import { actionRetrier, RetryConfig } from "./actionRetrier";
+import { action, internalAction } from "../_generated/server";
+import { RetryConfig, actionRetrier } from "./actionRetrier";
 
 /**
  * Transactional Email Actions using Resend API
@@ -16,7 +16,6 @@ import { actionRetrier, RetryConfig } from "./actionRetrier";
  * - Retries use exponential backoff (500ms, 1s, 2s, 4s)
  */
 
-// biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
 const EMAIL_FROM = process.env["AUTH_EMAIL"] ?? "Lunchtable <onboarding@resend.dev>";
 
 async function sendEmail({
@@ -28,7 +27,6 @@ async function sendEmail({
   subject: string;
   html: string;
 }): Promise<void> {
-  // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
   const apiKey = process.env["RESEND_API_KEY"];
 
   if (!apiKey) {

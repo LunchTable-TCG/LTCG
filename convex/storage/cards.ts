@@ -123,12 +123,10 @@ export const updateCardImage = mutation({
     const updates: Record<string, Id<"_storage"> | undefined> = {};
 
     if (args.imageStorageId) {
-      // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for Record index (TS4111)
       updates["imageStorageId"] = args.imageStorageId;
     }
 
     if (args.thumbnailStorageId) {
-      // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for Record index (TS4111)
       updates["thumbnailStorageId"] = args.thumbnailStorageId;
     }
 

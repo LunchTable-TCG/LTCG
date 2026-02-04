@@ -1,0 +1,393 @@
+---
+title: Board Analysis
+description: Techniques for evaluating board states
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Overview
+
+Board analysis is the process of evaluating the current game state to determine who's winning and what actions to take. This guide covers techniques for comprehensive board evaluation.
+
+## Board State Metrics
+
+### Creature Comparison
+
+Compare total stats on each side:
+
+```typescript
+interface BoardStats {
+  totalAttack: number;
+  totalHealth: number;
+  creatureCount: number;
+  averageStats: number;
+}
+
+function calculateBoardStats(creatures: Creature[]): BoardStats {
+  const totalAttack = creatures.reduce((sum, c) => sum + c.attack, 0);
+  const totalHealth = creatures.reduce((sum, c) => sum + c.health, 0);
+
+  return {
+    totalAttack,
+    totalHealth,
+    creatureCount: creatures.length,
+    averageStats: creatures.length > 0
+      ? (totalAttack + totalHealth) / creatures.length
+      : 0,
+  };
+}
+
+function compareBoardStats(ours: BoardStats, theirs: BoardStats): number {
+  // Score from -100 to +100
+  const attackDiff = (ours.totalAttack - theirs.totalAttack) * 3;
+  const healthDiff = (ours.totalHealth - theirs.totalHealth) * 2;
+  const countDiff = (ours.creatureCount - theirs.creatureCount) * 10;
+
+  return Math.max(-100, Math.min(100, attackDiff + healthDiff + countDiff));
+}
+```
+
+### Resource Comparison
+
+```typescript
+interface ResourceAnalysis {
+  lifeDiff: number;         // Our LP - Their LP
+  cardDiff: number;         // Our hand size - Their hand size
+  manaDiff: number;         // Our current mana - Their current mana
+  boardValueDiff: number;   // Total mana value of creatures
+}
+
+function analyzeResources(state: GameState): ResourceAnalysis {
+  return {
+    lifeDiff: state.self.lifePoints - state.opponent.lifePoints,
+    cardDiff: state.self.hand.length - state.opponent.handCount,
+    manaDiff: state.self.mana - state.opponent.mana,
+    boardValueDiff: calculateBoardValue(state.self.field) -
+                    calculateBoardValue(state.opponent.field),
+  };
+}
+
+function calculateBoardValue(creatures: Creature[]): number {
+  return creatures.reduce((sum, c) => {
+    // Mana cost + ability value
+    let value = c.manaCost;
+    if (c.keywords.includes('Taunt')) value += 1;
+    if (c.keywords.includes('Rush')) value += 1;
+    if (c.keywords.includes('Lifesteal')) value += 2;
+    if (c.keywords.includes('Deathtouch')) value += 2;
+    return sum + value;
+  }, 0);
+}
+```
+
+---
+
+## Threat Assessment
+
+### Identifying Threats
+
+```typescript
+interface Threat {
+  creature: Creature;
+  level: 'low' | 'medium' | 'high' | 'critical';
+  damagePerTurn: number;
+  turnsToKill: number;
+  keywords: string[];
+  abilities: string[];
+}
+
+function assessThreat(creature: Creature, state: GameState): Threat {
+  const damagePerTurn = creature.canAttack ? creature.attack : 0;
+  const ourLP = state.self.lifePoints;
+  const turnsToKill = damagePerTurn > 0 ? Math.ceil(ourLP / damagePerTurn) : Infinity;
+
+  let level: Threat['level'] = 'low';
+
+  // Determine threat level
+  if (turnsToKill <= 1) {
+    level = 'critical';
+  } else if (turnsToKill <= 2 || creature.attack >= 5) {
+    level = 'high';
+  } else if (creature.attack >= 3 || creature.abilities.length > 0) {
+    level = 'medium';
+  }
+
+  // Adjust for dangerous keywords
+  if (creature.keywords.includes('Lifesteal')) level = upgradeLevel(level);
+  if (creature.keywords.includes('Deathtouch')) level = upgradeLevel(level);
+  if (creature.abilities.some(a => a.includes('destroy'))) level = upgradeLevel(level);
+
+  return {
+    creature,
+    level,
+    damagePerTurn,
+    turnsToKill,
+    keywords: creature.keywords,
+    abilities: creature.abilities.map(a => a.name),
+  };
+}
+
+function upgradeLevel(level: Threat['level']): Threat['level'] {
+  const levels = ['low', 'medium', 'high', 'critical'];
+  const index = levels.indexOf(level);
+  return levels[Math.min(index + 1, 3)] as Threat['level'];
+}
+```
+
+### Prioritizing Threats
+
+```typescript
+function prioritizeThreats(threats: Threat[]): Threat[] {
+  return threats.sort((a, b) => {
+    // Critical always first
+    if (a.level === 'critical' && b.level !== 'critical') return -1;
+    if (b.level === 'critical' && a.level !== 'critical') return 1;
+
+    // Then by damage per turn
+    if (a.damagePerTurn !== b.damagePerTurn) {
+      return b.damagePerTurn - a.damagePerTurn;
+    }
+
+    // Then by ability danger
+    const aAbilityDanger = a.abilities.length * 2 + a.keywords.length;
+    const bAbilityDanger = b.abilities.length * 2 + b.keywords.length;
+
+    return bAbilityDanger - aAbilityDanger;
+  });
+}
+```
+
+---
+
+## Trade Analysis
+
+Evaluate potential combat trades:
+
+```typescript
+interface TradeAnalysis {
+  attacker: Creature;
+  defender: Creature;
+  result: 'win' | 'lose' | 'trade' | 'bounce';
+  ourLoss: number;        // Mana value lost
+  theirLoss: number;      // Mana value removed
+  netValue: number;       // theirLoss - ourLoss
+}
+
+function analyzeTrade(attacker: Creature, defender: Creature): TradeAnalysis {
+  const attackerDies = defender.attack >= attacker.health;
+  const defenderDies = attacker.attack >= defender.health;
+
+  let result: TradeAnalysis['result'];
+  if (defenderDies && !attackerDies) result = 'win';
+  else if (attackerDies && !defenderDies) result = 'lose';
+  else if (attackerDies && defenderDies) result = 'trade';
+  else result = 'bounce';
+
+  const ourLoss = attackerDies ? attacker.manaCost : 0;
+  const theirLoss = defenderDies ? defender.manaCost : 0;
+
+  return {
+    attacker,
+    defender,
+    result,
+    ourLoss,
+    theirLoss,
+    netValue: theirLoss - ourLoss,
+  };
+}
+
+// Find best trades
+function findBestTrades(
+  ourField: Creature[],
+  theirField: Creature[]
+): TradeAnalysis[] {
+  const allTrades: TradeAnalysis[] = [];
+
+  for (const attacker of ourField) {
+    if (!attacker.canAttack) continue;
+
+    for (const defender of theirField) {
+      allTrades.push(analyzeTrade(attacker, defender));
+    }
+  }
+
+  // Sort by net value (best trades first)
+  return allTrades
+    .filter(t => t.netValue > 0 || t.result === 'win')
+    .sort((a, b) => b.netValue - a.netValue);
+}
+```
+
+<Aside type="tip" title="Trade Value">
+  A trade is favorable when `netValue > 0`. Even trades (`netValue = 0`) can be worth it if the opponent's creature is more threatening.
+</Aside>
+
+---
+
+## Board Control
+
+Measure who controls the board:
+
+```typescript
+interface BoardControl {
+  controller: 'self' | 'opponent' | 'contested';
+  score: number;          // -100 (they control) to +100 (we control)
+  factors: {
+    creatureAdvantage: number;
+    threatBalance: number;
+    resourceAdvantage: number;
+    positionAdvantage: number;
+  };
+}
+
+function analyzeBoardControl(state: GameState): BoardControl {
+  const ourStats = calculateBoardStats(state.self.field);
+  const theirStats = calculateBoardStats(state.opponent.field);
+
+  const creatureAdvantage = compareBoardStats(ourStats, theirStats);
+
+  // Threat balance: do we have answers?
+  const threats = state.opponent.field.map(c => assessThreat(c, state));
+  const ourRemoval = state.self.hand.filter(c =>
+    c.type === 'spell' && c.effect.includes('destroy')
+  ).length;
+  const threatBalance = ourRemoval * 20 - threats.filter(t => t.level !== 'low').length * 15;
+
+  // Resource advantage
+  const resources = analyzeResources(state);
+  const resourceAdvantage =
+    resources.lifeDiff * 2 +
+    resources.cardDiff * 10 +
+    resources.boardValueDiff;
+
+  // Position advantage (traps set, mana available for responses)
+  const positionAdvantage =
+    state.self.trapZone.length * 10 +
+    (state.self.mana >= 2 ? 10 : 0) -
+    state.opponent.trapZone * 10;
+
+  const totalScore =
+    creatureAdvantage * 0.4 +
+    threatBalance * 0.2 +
+    resourceAdvantage * 0.3 +
+    positionAdvantage * 0.1;
+
+  let controller: BoardControl['controller'];
+  if (totalScore > 20) controller = 'self';
+  else if (totalScore < -20) controller = 'opponent';
+  else controller = 'contested';
+
+  return {
+    controller,
+    score: Math.max(-100, Math.min(100, totalScore)),
+    factors: {
+      creatureAdvantage,
+      threatBalance,
+      resourceAdvantage,
+      positionAdvantage,
+    },
+  };
+}
+```
+
+---
+
+## Clock Analysis
+
+Determine racing situations:
+
+```typescript
+interface ClockAnalysis {
+  ourClock: number;       // Turns to kill opponent
+  theirClock: number;     // Turns until we die
+  racing: boolean;        // Both clocks < 5
+  whoWins: 'self' | 'opponent' | 'draw' | 'unclear';
+}
+
+function analyzeClocks(state: GameState): ClockAnalysis {
+  // Calculate our damage per turn
+  const ourDamage = state.self.field
+    .filter(c => c.canAttack)
+    .reduce((sum, c) => sum + c.attack, 0);
+
+  // Calculate their damage per turn
+  const theirDamage = state.opponent.field
+    .filter(c => c.canAttack)
+    .reduce((sum, c) => sum + c.attack, 0);
+
+  const ourClock = ourDamage > 0
+    ? Math.ceil(state.opponent.lifePoints / ourDamage)
+    : Infinity;
+
+  const theirClock = theirDamage > 0
+    ? Math.ceil(state.self.lifePoints / theirDamage)
+    : Infinity;
+
+  let whoWins: ClockAnalysis['whoWins'];
+  if (ourClock < theirClock) whoWins = 'self';
+  else if (theirClock < ourClock) whoWins = 'opponent';
+  else if (ourClock === theirClock && ourClock < Infinity) whoWins = 'draw';
+  else whoWins = 'unclear';
+
+  return {
+    ourClock,
+    theirClock,
+    racing: ourClock < 5 && theirClock < 5,
+    whoWins,
+  };
+}
+```
+
+---
+
+## Archetype Analysis
+
+Identify opponent's likely archetype:
+
+```typescript
+function identifyOpponentArchetype(state: GameState): string | null {
+  const cards = [
+    ...state.opponent.field,
+    ...state.opponent.graveyard,
+  ];
+
+  const archetypeCounts: Record<string, number> = {};
+
+  for (const card of cards) {
+    if (card.archetype && card.archetype !== 'neutral') {
+      archetypeCounts[card.archetype] =
+        (archetypeCounts[card.archetype] || 0) + 1;
+    }
+  }
+
+  // Find dominant archetype
+  let maxCount = 0;
+  let dominant: string | null = null;
+
+  for (const [archetype, count] of Object.entries(archetypeCounts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      dominant = archetype;
+    }
+  }
+
+  return dominant;
+}
+```
+
+## Next Steps
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Opponent Modeling"
+    description="Predict opponent behavior"
+    href="/strategy/opponent-modeling/"
+  />
+  <LinkCard
+    title="Examples"
+    description="Agent implementation examples"
+    href="/examples/basic-agent/"
+  />
+</CardGrid>

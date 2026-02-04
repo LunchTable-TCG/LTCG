@@ -1,0 +1,472 @@
+/**
+ * LTCG Player Documentation - Custom Styles
+ * Dark fantasy theme for Starlight
+ * WCAG AA Compliant Contrast Ratios
+ */
+
+/* ============================================
+   Starlight Theme Overrides - Dark Fantasy
+   ============================================ */
+
+:root,
+[data-theme="dark"] {
+  /* Dark leather/wood backgrounds */
+  --sl-color-bg: #1a1614;
+  --sl-color-bg-nav: #130f0d;
+  --sl-color-bg-sidebar: #130f0d;
+  --sl-color-bg-inline-code: #2d2620;
+
+  /* High contrast text - cream/parchment on dark */
+  --sl-color-text: #f5f0e8;
+  --sl-color-text-accent: #f0d77a;
+  --sl-color-gray-1: #f5f0e8;
+  --sl-color-gray-2: #e8e0d5;
+  --sl-color-gray-3: #c4b8a8;
+  --sl-color-gray-4: #a89f94;
+  --sl-color-gray-5: #6b5d52;
+  --sl-color-gray-6: #3d2b25;
+  --sl-color-white: #f5f0e8;
+  --sl-color-black: #0a0806;
+
+  /* Gold accents - brightened for contrast */
+  --sl-color-accent: #f0d77a;
+  --sl-color-accent-low: rgba(240, 215, 122, 0.2);
+  --sl-color-accent-high: #fff4c4;
+
+  /* Borders */
+  --sl-color-hairline: rgba(168, 159, 148, 0.3);
+  --sl-color-hairline-light: rgba(168, 159, 148, 0.15);
+
+  /* Links - bright gold for visibility */
+  --sl-color-text-link: #f0d77a;
+
+  /* Typography */
+  --sl-font: "Crimson Text", Georgia, "Times New Roman", serif;
+  --sl-font-system: "Crimson Text", Georgia, "Times New Roman", serif;
+  --sl-font-system-mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  --sl-font-mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+
+  /* Card backgrounds - dark instead of white */
+  --sl-color-bg-badge: #261f1c;
+}
+
+/* Force all headings to use Cinzel */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+.sl-markdown-content h5,
+.sl-markdown-content h6 {
+  font-family: "Cinzel", Georgia, serif !important;
+  color: #f0d77a !important;
+  font-weight: 600;
+}
+
+/* Hero section - ensure light text on dark */
+.hero {
+  --sl-color-text: #f5f0e8 !important;
+}
+
+.hero h1 {
+  color: #f0d77a !important;
+  font-family: "Cinzel", Georgia, serif !important;
+}
+
+.hero .tagline {
+  color: #e8e0d5 !important;
+}
+
+/* Card grid - dark backgrounds with light text */
+.card-grid > article,
+.sl-link-card,
+[class*="CardGrid"] article {
+  background: #1f1916 !important;
+  border: 1px solid #3d2b25 !important;
+  color: #e8e0d5 !important;
+}
+
+.card-grid > article:hover,
+.sl-link-card:hover {
+  border-color: #f0d77a !important;
+  background: #261f1c !important;
+}
+
+/* Card titles */
+.card-grid > article .title,
+.card-grid > article p:first-of-type,
+.sl-link-card .title {
+  color: #f0d77a !important;
+  font-family: "Cinzel", Georgia, serif !important;
+}
+
+/* Card body text */
+.card-grid > article p,
+.sl-link-card p {
+  color: #c4b8a8 !important;
+}
+
+/* Ensure all body text is readable */
+.sl-markdown-content,
+.sl-markdown-content p,
+.sl-markdown-content li,
+.sl-markdown-content td,
+main p,
+main li {
+  color: #e8e0d5;
+}
+
+/* Strong/bold text */
+strong,
+b {
+  color: #f5f0e8;
+}
+
+/* Navigation - active page indicator */
+nav a[aria-current="page"],
+.sidebar-content a[aria-current="page"] {
+  background: rgba(240, 215, 122, 0.15) !important;
+  border-left: 3px solid #f0d77a !important;
+  color: #f0d77a !important;
+}
+
+/* Sidebar links */
+nav a,
+.sidebar a {
+  color: #c4b8a8 !important;
+}
+
+nav a:hover,
+.sidebar a:hover {
+  color: #f0d77a !important;
+}
+
+/* Code blocks */
+.expressive-code {
+  --ec-brdCol: #3d2b25;
+  --ec-frm-edActTabBrdCol: #f0d77a;
+}
+
+pre,
+code {
+  background: #0f0c0a !important;
+  color: #e8e0d5 !important;
+}
+
+code {
+  padding: 0.125em 0.375em;
+  border-radius: 4px;
+}
+
+/* Inline code */
+:not(pre) > code {
+  background: #2d2620 !important;
+  color: #f0d77a !important;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+}
+
+th {
+  background: #261f1c !important;
+  color: #f0d77a !important;
+  font-family: "Cinzel", Georgia, serif !important;
+  font-weight: 600;
+}
+
+td {
+  background: #1a1614 !important;
+  color: #e8e0d5 !important;
+  border-color: #3d2b25 !important;
+}
+
+tr:nth-child(even) td {
+  background: #1f1916 !important;
+}
+
+/* Links in content */
+.sl-markdown-content a,
+main a:not(.sl-link-card) {
+  color: #f0d77a !important;
+  text-decoration: underline;
+  text-decoration-color: rgba(240, 215, 122, 0.4);
+}
+
+.sl-markdown-content a:hover,
+main a:hover {
+  color: #fff4c4 !important;
+  text-decoration-color: #f0d77a;
+}
+
+/* Buttons - Starlight uses .sl-link-button */
+.sl-link-button,
+.sl-link-button.primary,
+.action,
+a.action {
+  background: #f0d77a !important;
+  color: #0a0806 !important;
+  font-weight: 600 !important;
+}
+
+.sl-link-button:hover,
+.action:hover {
+  background: #fff4c4 !important;
+  color: #0a0806 !important;
+}
+
+.sl-link-button.secondary,
+.action.secondary,
+a.action.secondary {
+  background: transparent !important;
+  color: #f0d77a !important;
+  border: 2px solid #f0d77a !important;
+}
+
+.sl-link-button.secondary:hover,
+.action.secondary:hover {
+  background: rgba(240, 215, 122, 0.1) !important;
+  color: #f0d77a !important;
+}
+
+/* Search */
+button[data-open-modal] {
+  background: #1f1916 !important;
+  border-color: #3d2b25 !important;
+  color: #c4b8a8 !important;
+}
+
+/* ============================================
+   Player Docs Specific Styles
+   ============================================ */
+
+/* Lore quote styling */
+.lore-quote {
+  position: relative;
+  padding: 1.5rem 2rem;
+  margin: 2rem 0;
+  background: linear-gradient(135deg, rgba(240, 215, 122, 0.08) 0%, transparent 50%), #1f1916;
+  border-left: 4px solid #f0d77a;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: #c4b8a8;
+}
+
+.lore-quote::before {
+  content: '"';
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  font-size: 4rem;
+  color: rgba(240, 215, 122, 0.3);
+  font-family: "Cinzel", serif;
+}
+
+.lore-quote-author {
+  display: block;
+  margin-top: 1rem;
+  font-style: normal;
+  font-weight: 600;
+  color: #f0d77a;
+}
+
+/* Element badges - high contrast colors */
+.element-ember {
+  color: #ff8f66 !important;
+}
+.element-frost {
+  color: #66d9ff !important;
+}
+.element-nature {
+  color: #66ffb2 !important;
+}
+.element-arcane {
+  color: #66e5ff !important;
+}
+.element-void {
+  color: #c299ff !important;
+}
+.element-neutral {
+  color: #e8e0d5 !important;
+}
+
+/* Tier list */
+.tier-s {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  color: #1a1614 !important;
+}
+.tier-a {
+  background: linear-gradient(180deg, #c084fc 0%, #9333ea 100%);
+  color: #fff !important;
+}
+.tier-b {
+  background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+  color: #fff !important;
+}
+.tier-c {
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+  color: #1a1614 !important;
+}
+.tier-d {
+  background: linear-gradient(180deg, #d1d5db 0%, #9ca3af 100%);
+  color: #1a1614 !important;
+}
+
+/* Leaderboard */
+.leaderboard-rank.gold {
+  color: #f0d77a !important;
+}
+.leaderboard-rank.silver {
+  color: #d1d5db !important;
+}
+.leaderboard-rank.bronze {
+  color: #f59e0b !important;
+}
+
+/* Bracket styling */
+.bracket-match {
+  background: #1f1916;
+  border: 1px solid #3d2b25;
+}
+
+.bracket-player {
+  color: #e8e0d5;
+}
+
+.bracket-player.winner {
+  background: rgba(240, 215, 122, 0.15);
+  color: #f0d77a;
+  font-weight: 600;
+}
+
+/* Asides/Callouts - dark backgrounds with light text */
+.starlight-aside,
+aside,
+[role="complementary"]:not(nav):not(.right-sidebar) {
+  background: #1f1916 !important;
+  border-color: #3d2b25 !important;
+  color: #e8e0d5 !important;
+}
+
+.starlight-aside--note,
+aside.note {
+  background: #1f1916 !important;
+  border-left-color: #66e5ff !important;
+}
+
+.starlight-aside--tip,
+aside.tip {
+  background: #1f1916 !important;
+  border-left-color: #4ade80 !important;
+}
+
+.starlight-aside--caution,
+aside.caution {
+  background: #1f1916 !important;
+  border-left-color: #fbbf24 !important;
+}
+
+.starlight-aside--danger,
+aside.danger {
+  background: #1f1916 !important;
+  border-left-color: #f87171 !important;
+}
+
+.starlight-aside .starlight-aside__title,
+aside p:first-child,
+.starlight-aside__title {
+  color: #f0d77a !important;
+}
+
+.starlight-aside p,
+aside p {
+  color: #e8e0d5 !important;
+}
+
+/* Link cards at bottom of pages */
+.link-card,
+[class*="LinkCard"],
+.sl-link-card {
+  background: #1f1916 !important;
+  border: 1px solid #3d2b25 !important;
+}
+
+.link-card:hover,
+.sl-link-card:hover {
+  background: #261f1c !important;
+  border-color: #f0d77a !important;
+}
+
+.link-card a,
+.sl-link-card a {
+  color: #f0d77a !important;
+}
+
+.link-card p,
+.sl-link-card p {
+  color: #c4b8a8 !important;
+}
+
+/* Tabs */
+[role="tablist"] {
+  background: #1a1614 !important;
+  border-color: #3d2b25 !important;
+}
+
+[role="tab"] {
+  color: #c4b8a8 !important;
+  background: transparent !important;
+}
+
+[role="tab"][aria-selected="true"] {
+  color: #f0d77a !important;
+  border-bottom-color: #f0d77a !important;
+}
+
+[role="tabpanel"] {
+  background: #1f1916 !important;
+  color: #e8e0d5 !important;
+  border-color: #3d2b25 !important;
+}
+
+/* Footer */
+footer {
+  background: #130f0d !important;
+  color: #a89f94 !important;
+}
+
+/* Ensure icons are visible */
+svg {
+  fill: currentColor;
+}
+
+/* Selection highlight */
+::selection {
+  background: rgba(240, 215, 122, 0.3);
+  color: #f5f0e8;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1614;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3d2b25;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5c4033;
+}

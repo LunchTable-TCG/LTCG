@@ -177,28 +177,6 @@ async function buildCardCache(client: LTCGApiClient): Promise<CardDatabaseCache>
 }
 
 /**
- * Format a card for LLM consumption
- */
-function formatCardForLLM(card: CardDefinition): string {
-  const lines: string[] = [];
-
-  lines.push(`**${card.name}** (${card.type.toUpperCase()})`);
-
-  if (card.type === "creature") {
-    lines.push(`  Level: ${card.level || "?"} | ATK: ${card.atk || 0} | DEF: ${card.def || 0}`);
-    if (card.attribute) {
-      lines.push(`  Attribute: ${card.attribute}`);
-    }
-  }
-
-  if (card.description) {
-    lines.push(`  Effect: ${card.description}`);
-  }
-
-  return lines.join("\n");
-}
-
-/**
  * Format threat card summary
  */
 function formatThreatSummary(threats: CategorizedCard[]): string {

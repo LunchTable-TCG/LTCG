@@ -31,7 +31,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { ArrowLeftIcon, CopyIcon, Loader2Icon, SaveIcon, TrashIcon } from "lucide-react";
 import Link from "next/link";
@@ -63,7 +64,9 @@ const CATEGORIES = [
   { value: "special", label: "Special" },
 ];
 
-const RARITIES = [
+type BadgeColor = "amber" | "violet" | "blue" | "emerald" | "rose" | "indigo" | "gray" | "slate";
+
+const RARITIES: Array<{ value: string; label: string; color: BadgeColor }> = [
   { value: "common", label: "Common", color: "gray" },
   { value: "rare", label: "Rare", color: "blue" },
   { value: "epic", label: "Epic", color: "violet" },
@@ -122,7 +125,7 @@ export default function AchievementEditorPage() {
   // Queries and mutations
   const existingAchievement = useConvexQuery(
     api.admin.achievements.getAchievement,
-    isNew ? "skip" : { achievementDbId: achievementDbId as AchievementId }
+    isNew ? "skip" : { achievementDbId: achievementDbId as Id<"achievementDefinitions"> }
   );
 
   const createAchievement = useConvexMutation(api.admin.achievements.createAchievement);
@@ -167,7 +170,7 @@ export default function AchievementEditorPage() {
     setIsSaving(true);
     try {
       if (isNew) {
-        const result = await createAchievement({
+        const result = (await createAchievement({
           achievementId: achievementId.trim(),
           name: name.trim(),
           description: description.trim(),
@@ -182,12 +185,12 @@ export default function AchievementEditorPage() {
           rewardBadge: rewardBadge || undefined,
           isSecret,
           isActive,
-        });
+        })) as { message: string; achievementDbId: string };
         toast.success(result.message);
         router.push(`/quests/achievement/${result.achievementDbId}`);
       } else {
-        const result = await updateAchievement({
-          achievementDbId: achievementDbId as AchievementId,
+        const result = (await updateAchievement({
+          achievementDbId: achievementDbId as Id<"achievementDefinitions">,
           name: name.trim(),
           description: description.trim(),
           category,
@@ -202,7 +205,7 @@ export default function AchievementEditorPage() {
           clearRewards: !rewardGold && !rewardXp && !rewardGems && !rewardBadge,
           isSecret,
           isActive,
-        });
+        })) as { message: string };
         toast.success(result.message);
       }
     } catch (error) {
@@ -215,7 +218,9 @@ export default function AchievementEditorPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const result = await deleteAchievement({ achievementDbId: achievementDbId as AchievementId });
+      const result = (await deleteAchievement({
+        achievementDbId: achievementDbId as Id<"achievementDefinitions">,
+      })) as { message: string };
       toast.success(result.message);
       router.push("/quests");
     } catch (error) {
@@ -232,11 +237,11 @@ export default function AchievementEditorPage() {
     }
 
     try {
-      const result = await duplicateAchievement({
-        achievementDbId: achievementDbId as AchievementId,
+      const result = (await duplicateAchievement({
+        achievementDbId: achievementDbId as Id<"achievementDefinitions">,
         newAchievementId: duplicateAchievementId.trim(),
         newName: duplicateName.trim(),
-      });
+      })) as { message: string; achievementDbId: string };
       toast.success(result.message);
       setDuplicateDialogOpen(false);
       router.push(`/quests/achievement/${result.achievementDbId}`);
@@ -570,7 +575,7 @@ export default function AchievementEditorPage() {
               <div className="text-4xl mb-2">{icon}</div>
               <Text className="font-bold">{name || "Achievement Name"}</Text>
               <div className="mt-1">
-                <Badge color={rarityConfig?.color as any} size="sm">
+                <Badge color={rarityConfig?.color} size="sm">
                   {rarity}
                 </Badge>
               </div>

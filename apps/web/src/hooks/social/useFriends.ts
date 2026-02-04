@@ -199,8 +199,8 @@ export function useFriends(): UseFriendsReturn {
     outgoingRequestCount: outgoingRequests?.length || 0,
 
     // Online friends
-    onlineFriends: friends?.filter((f) => f.isOnline) || [],
-    onlineCount: friends?.filter((f) => f.isOnline).length || 0,
+    onlineFriends: friends?.filter((f: Friend) => f.isOnline) || [],
+    onlineCount: friends?.filter((f: Friend) => f.isOnline).length || 0,
 
     // Loading states
     isLoading: friends === undefined,

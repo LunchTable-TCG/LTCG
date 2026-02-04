@@ -32,7 +32,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Text } from "@tremor/react";
 import {
   ChevronLeftIcon,
@@ -124,10 +125,13 @@ function DialogueEditor({
     onChange([...dialogue, newLine]);
   };
 
-  const updateLine = (index: number, field: keyof DialogueLine, value: string) => {
-    const updated = [...dialogue];
-    (updated[index] as any)[field] = value;
-    onChange(updated);
+  const updateLine = (index: number, field: "speaker" | "text" | "imageUrl", value: string) => {
+    const updated = [...dialogue] as unknown as Array<Record<string, string>>;
+    const line = updated[index];
+    if (line) {
+      line[field] = value;
+      onChange(updated as unknown as DialogueLine[] | SimpleDialogueLine[]);
+    }
   };
 
   const removeLine = (index: number) => {
@@ -271,7 +275,9 @@ function DeleteStageDialog({
     setIsDeleting(true);
 
     try {
-      const result = await deleteStage({ stageId: stage._id as any });
+      const result = (await deleteStage({ stageId: stage._id as Id<"storyStages"> })) as {
+        message: string;
+      };
       toast.success(result.message);
       router.push(`/story/${chapterId}`);
     } catch (error) {
@@ -334,7 +340,7 @@ export default function StageEditorPage() {
 
   // Queries
   const stageData = useConvexQuery(api.admin.story.getStage, {
-    stageId: stageId as StageId,
+    stageId: stageId as Id<"storyStages">,
   });
 
   // Get card definitions for reward selector
@@ -381,8 +387,24 @@ export default function StageEditorPage() {
     setIsSaving(true);
 
     try {
-      const args: Record<string, unknown> = {
-        stageId: stage._id,
+      const args: {
+        stageId: Id<"storyStages">;
+        title?: string;
+        description?: string;
+        opponentName?: string;
+        difficulty?: Difficulty;
+        firstClearGold?: number;
+        repeatGold?: number;
+        opponentDeckArchetype?: string;
+        clearOpponentDeckArchetype?: boolean;
+        firstClearGems?: number;
+        cardRewardId?: Id<"cardDefinitions">;
+        clearCardRewardId?: boolean;
+        preMatchDialogue?: DialogueLine[];
+        postMatchWinDialogue?: SimpleDialogueLine[];
+        postMatchLoseDialogue?: SimpleDialogueLine[];
+      } = {
+        stageId: stage._id as Id<"storyStages">,
         title,
         description,
         opponentName,
@@ -403,7 +425,7 @@ export default function StageEditorPage() {
       }
 
       if (cardRewardId) {
-        args.cardRewardId = cardRewardId;
+        args.cardRewardId = cardRewardId as Id<"cardDefinitions">;
       } else {
         args.clearCardRewardId = true;
       }
@@ -432,10 +454,10 @@ export default function StageEditorPage() {
   const handleTogglePublish = async () => {
     if (!stage) return;
     try {
-      const result = await publishStage({
-        stageId: stage._id as any,
+      const result = (await publishStage({
+        stageId: stage._id as Id<"storyStages">,
         publish: stage.status === "draft",
-      });
+      })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update stage");

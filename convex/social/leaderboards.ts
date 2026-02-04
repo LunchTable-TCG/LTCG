@@ -12,11 +12,11 @@
  * - Scheduled snapshot refresh for performance
  */
 
+import { getAll } from "convex-helpers/server/relationships";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
-import { getAll } from "convex-helpers/server/relationships";
 import { internalMutation } from "../functions";
 import {
   casualLeaderboard,
@@ -95,7 +95,9 @@ export const getLeaderboard = query({
       );
 
       // Step 3: Batch fetch all user documents (1 query instead of N)
-      const userIds = xpDocs.filter((xp) => xp !== null).map((xp) => xp!.userId);
+      const userIds = xpDocs
+        .filter((xp): xp is NonNullable<typeof xp> => xp !== null)
+        .map((xp) => xp.userId);
       const users = await getAll(ctx.db, "users", userIds);
 
       // Step 4: Build results with filtering

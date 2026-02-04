@@ -29,7 +29,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
 import { CalendarIcon, PlayIcon, PlusIcon, StopCircleIcon, TrophyIcon } from "lucide-react";
@@ -76,14 +77,14 @@ function CreateSeasonDialog({ open, onOpenChange }: CreateSeasonDialogProps) {
   const [softResetPercentage, setSoftResetPercentage] = useState("50");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createSeason = useConvexMutation(api.admin.seasons.createSeason);
+  const createSeason = useMutation(api.admin.seasons.createSeason);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const result = await createSeason({
+      const result = (await createSeason({
         name,
         number: Number.parseInt(number, 10),
         description: description || undefined,
@@ -92,7 +93,7 @@ function CreateSeasonDialog({ open, onOpenChange }: CreateSeasonDialogProps) {
         rankResetType,
         softResetPercentage:
           rankResetType === "soft" ? Number.parseInt(softResetPercentage, 10) : undefined,
-      });
+      })) as { message: string };
 
       toast.success(result.message);
       onOpenChange(false);
@@ -253,13 +254,15 @@ function SeasonActions({ season }: SeasonActionsProps) {
   const [isEnding, setIsEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
-  const startSeason = useConvexMutation(api.admin.seasons.startSeason);
-  const endSeason = useConvexMutation(api.admin.seasons.endSeason);
+  const startSeason = useMutation(api.admin.seasons.startSeason);
+  const endSeason = useMutation(api.admin.seasons.endSeason);
 
   const handleStart = async () => {
     setIsStarting(true);
     try {
-      const result = await startSeason({ seasonId: season._id as any });
+      const result = (await startSeason({ seasonId: season._id as Id<"seasons"> })) as {
+        message: string;
+      };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to start season");
@@ -271,10 +274,10 @@ function SeasonActions({ season }: SeasonActionsProps) {
   const handleEnd = async (distributeRewards: boolean) => {
     setIsEnding(true);
     try {
-      const result = await endSeason({
-        seasonId: season._id as any,
+      const result = (await endSeason({
+        seasonId: season._id as Id<"seasons">,
         distributeRewards,
-      });
+      })) as { message: string };
       toast.success(result.message);
       setShowEndConfirm(false);
     } catch (error) {
@@ -350,11 +353,11 @@ export default function SeasonsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const seasonsResult = useConvexQuery(api.admin.seasons.listSeasons, {
+  const seasonsResult = useQuery(api.admin.seasons.listSeasons, {
     status: statusFilter !== "all" ? (statusFilter as SeasonStatus) : undefined,
   });
 
-  const seasonStats = useConvexQuery(api.admin.seasons.getSeasonStats, {});
+  const seasonStats = useQuery(api.admin.seasons.getSeasonStats, {});
 
   const isLoading = seasonsResult === undefined;
 
@@ -456,54 +459,66 @@ export default function SeasonsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {seasonsResult?.seasons.map((season: any) => {
-                    const statusConfig = STATUS_CONFIG[season.status as SeasonStatus];
-                    return (
-                      <tr
-                        key={season._id}
-                        className={`border-b hover:bg-muted/30 ${
-                          season.status === "active" ? "bg-emerald-500/5" : ""
-                        }`}
-                      >
-                        <td className="py-3 px-3 font-mono text-muted-foreground">
-                          {season.number}
-                        </td>
-                        <td className="py-3 px-3">
-                          <Link
-                            href={`/seasons/${season._id}`}
-                            className="font-medium hover:underline text-primary"
-                          >
-                            {season.name}
-                          </Link>
-                          {season.description && (
-                            <div className="text-xs text-muted-foreground truncate max-w-[300px]">
-                              {season.description}
+                  {seasonsResult?.seasons.map(
+                    (season: {
+                      _id: Id<"seasons">;
+                      name: string;
+                      status: SeasonStatus;
+                      startDate: number;
+                      endDate: number;
+                      number?: number;
+                      description?: string;
+                      rankResetType?: string;
+                      softResetPercentage?: number;
+                    }) => {
+                      const statusConfig = STATUS_CONFIG[season.status as SeasonStatus];
+                      return (
+                        <tr
+                          key={season._id}
+                          className={`border-b hover:bg-muted/30 ${
+                            season.status === "active" ? "bg-emerald-500/5" : ""
+                          }`}
+                        >
+                          <td className="py-3 px-3 font-mono text-muted-foreground">
+                            {season.number}
+                          </td>
+                          <td className="py-3 px-3">
+                            <Link
+                              href={`/seasons/${season._id}`}
+                              className="font-medium hover:underline text-primary"
+                            >
+                              {season.name}
+                            </Link>
+                            {season.description && (
+                              <div className="text-xs text-muted-foreground truncate max-w-[300px]">
+                                {season.description}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-3">
+                            <Badge color={statusConfig.color}>{statusConfig.label}</Badge>
+                          </td>
+                          <td className="py-3 px-3 text-muted-foreground">
+                            <div className="flex items-center gap-1 text-xs">
+                              <CalendarIcon className="h-3 w-3" />
+                              {format(new Date(season.startDate), "MMM d, yyyy")}
+                              <span className="mx-1">-</span>
+                              {format(new Date(season.endDate), "MMM d, yyyy")}
                             </div>
-                          )}
-                        </td>
-                        <td className="py-3 px-3">
-                          <Badge color={statusConfig.color}>{statusConfig.label}</Badge>
-                        </td>
-                        <td className="py-3 px-3 text-muted-foreground">
-                          <div className="flex items-center gap-1 text-xs">
-                            <CalendarIcon className="h-3 w-3" />
-                            {format(new Date(season.startDate), "MMM d, yyyy")}
-                            <span className="mx-1">-</span>
-                            {format(new Date(season.endDate), "MMM d, yyyy")}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-xs">
-                          {RESET_TYPE_LABELS[season.rankResetType as RankResetType]}
-                          {season.rankResetType === "soft" &&
-                            season.softResetPercentage !== undefined &&
-                            ` (${season.softResetPercentage}%)`}
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <SeasonActions season={season} />
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                          <td className="py-3 px-3 text-xs">
+                            {RESET_TYPE_LABELS[season.rankResetType as RankResetType]}
+                            {season.rankResetType === "soft" &&
+                              season.softResetPercentage !== undefined &&
+                              ` (${season.softResetPercentage}%)`}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <SeasonActions season={season} />
+                          </td>
+                        </tr>
+                      );
+                    }
+                  )}
                 </tbody>
               </table>
             </div>

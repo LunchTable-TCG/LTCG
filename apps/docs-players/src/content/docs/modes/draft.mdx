@@ -1,0 +1,65 @@
+---
+title: Draft Mode
+description: Build decks on the fly from random card packs
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Draft Overview
+
+In Draft mode, you build a deck from scratch using randomly offered cards. It's a true test of adaptability and card evaluation.
+
+## How It Works
+
+1. **Open a pack** - See 5 random cards
+2. **Pick one** - Add it to your draft pool
+3. **Repeat** - Continue for 30 picks
+4. **Build your deck** - Make a 40-card deck from your pool
+5. **Battle** - Play until 3 losses or 12 wins
+
+## Draft Tips
+
+<Aside type="tip" title="BREAD Method">
+  Prioritize picks in this order:
+  - **B**ombs - Game-winning cards
+  - **R**emoval - Creature destruction
+  - **E**vasion - Hard-to-block creatures
+  - **A**ggro - Efficient attackers
+  - **D**uds - Filler cards
+</Aside>
+
+### Key Strategies
+
+1. **Stay flexible** - Don't commit to an element too early
+2. **Value removal highly** - It's scarce in draft
+3. **Pick creatures over spells** - You need a board presence
+4. **Mind your curve** - Draft low-cost cards
+
+## Rewards
+
+| Wins | Rewards |
+|------|---------|
+| 0-2 | 1 pack |
+| 3-5 | 2 packs |
+| 6-8 | 3 packs + gold |
+| 9-11 | 4 packs + gold |
+| 12 | 5 packs + premium rewards |
+
+---
+
+## What's Next?
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Ranked Mode"
+    description="Climb the ladder"
+    href="/modes/ranked/"
+  />
+  <LinkCard
+    title="Deck Building"
+    description="Build constructed decks"
+    href="/strategy/deck-building/"
+  />
+</CardGrid>

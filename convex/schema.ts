@@ -32,6 +32,28 @@ export type Difficulty = Infer<typeof difficultyValidator>;
 export const progressStatusValidator = literals("locked", "available", "in_progress", "completed");
 export type ProgressStatus = Infer<typeof progressStatusValidator>;
 
+/** Card variant types for collectible scarcity */
+export const cardVariantValidator = literals(
+  "standard",
+  "foil",
+  "alt_art",
+  "full_art",
+  "numbered",
+  "first_edition"
+);
+export type CardVariant = Infer<typeof cardVariantValidator>;
+
+/** Sale types for shop promotions */
+export const saleTypeValidator = literals(
+  "flash",
+  "weekend",
+  "launch",
+  "holiday",
+  "anniversary",
+  "returning"
+);
+export type SaleType = Infer<typeof saleTypeValidator>;
+
 export default defineSchema({
   migrations: migrationsTable,
   ...rateLimitTables,
@@ -118,6 +140,26 @@ export default defineSchema({
       })
     ),
     helpModeEnabled: v.optional(v.boolean()), // User's preference for help mode
+
+    // Pity counter for guaranteed pulls (resets on pull of target rarity/variant)
+    pityCounter: v.optional(
+      v.object({
+        packsSinceEpic: v.number(), // Guaranteed Epic at 150
+        packsSinceLegendary: v.number(), // Guaranteed Legendary at 500
+        packsSinceFullArt: v.number(), // Guaranteed Full Art variant at 1000
+      })
+    ),
+
+    // Daily/weekly reward tracking
+    lastDailyPackClaim: v.optional(v.number()),
+    lastWeeklyJackpotClaim: v.optional(v.number()),
+    loginStreak: v.optional(v.number()),
+    lastLoginDate: v.optional(v.string()), // "YYYY-MM-DD" format for streak tracking
+
+    // ElizaOS token tracking (for hidden achievement)
+    lastElizaOSCheck: v.optional(v.number()), // Last time we checked their wallet
+    hasElizaOSToken: v.optional(v.boolean()), // Whether they hold ElizaOS tokens
+    elizaOSBalance: v.optional(v.number()), // Their ElizaOS token balance (smallest unit)
   })
     .index("privyId", ["privyId"])
     .index("walletAddress", ["walletAddress"])
@@ -697,7 +739,13 @@ export default defineSchema({
           appliedBy: v.id("users"), // Player who applied the effect
           appliedTurn: v.number(), // Turn number when applied
           duration: v.object({
-            type: literals("until_end_phase", "until_turn_end", "until_next_turn", "permanent", "custom"),
+            type: literals(
+              "until_end_phase",
+              "until_turn_end",
+              "until_next_turn",
+              "permanent",
+              "custom"
+            ),
             endTurn: v.optional(v.number()), // Specific turn number when effect expires
             endPhase: v.optional(v.string()), // Specific phase when effect expires
           }),
@@ -1051,9 +1099,7 @@ export default defineSchema({
     opacity: v.optional(v.number()), // 0-1
     rotation: v.optional(v.number()), // degrees
     // Visibility rules - which card types should show this block
-    showForCardTypes: v.optional(
-      v.array(literals("creature", "spell", "trap", "equipment"))
-    ),
+    showForCardTypes: v.optional(v.array(literals("creature", "spell", "trap", "equipment"))),
     // Z-index for layering
     zIndex: v.number(),
   })
@@ -1061,17 +1107,25 @@ export default defineSchema({
     .index("by_template_zIndex", ["templateId", "zIndex"]),
 
   // Player's card inventory - tracks owned cards and quantities
+  // NOTE: Each unique (card + variant) combination is a separate row
   playerCards: defineTable({
     userId: v.id("users"),
     cardDefinitionId: v.id("cardDefinitions"),
     quantity: v.number(),
+    variant: v.optional(cardVariantValidator), // defaults to "standard" for legacy data
+    serialNumber: v.optional(v.number()), // For numbered variants (#1-500)
     isFavorite: v.boolean(),
     acquiredAt: v.number(),
     lastUpdatedAt: v.number(),
+    source: v.optional(
+      literals("pack", "marketplace", "reward", "trade", "event", "daily", "jackpot")
+    ),
   })
     .index("by_user", ["userId"])
     .index("by_user_card", ["userId", "cardDefinitionId"])
-    .index("by_user_favorite", ["userId", "isFavorite"]),
+    .index("by_user_card_variant", ["userId", "cardDefinitionId", "variant"])
+    .index("by_user_favorite", ["userId", "isFavorite"])
+    .index("by_variant", ["variant"]),
 
   // User-created decks - custom deck builds
   userDecks: defineTable({
@@ -1248,6 +1302,8 @@ export default defineSchema({
       v.object({
         cardCount: v.number(),
         guaranteedRarity: v.optional(literals("common", "uncommon", "rare", "epic", "legendary")),
+        guaranteedCount: v.optional(v.number()), // How many guaranteed rarity slots
+        allRareOrBetter: v.optional(v.boolean()), // For collector packs - all cards Rare+
         archetype: v.optional(
           literals(
             // Primary archetypes (from card CSV)
@@ -1273,6 +1329,14 @@ export default defineSchema({
             "earth",
             "wind"
           )
+        ),
+        // Variant drop rate multipliers (1.0 = base rate, 2.0 = 2x chance)
+        variantMultipliers: v.optional(
+          v.object({
+            foil: v.number(), // Base: 10% → 1.5 means 15%
+            altArt: v.number(), // Base: 2% → 2.0 means 4%
+            fullArt: v.number(), // Base: 0.5% → 5.0 means 2.5%
+          })
         ),
       })
     ),
@@ -1307,10 +1371,20 @@ export default defineSchema({
         cardDefinitionId: v.id("cardDefinitions"),
         name: v.string(),
         rarity: v.string(),
+        variant: v.optional(v.string()), // "standard", "foil", "alt_art", "full_art", "numbered"
+        serialNumber: v.optional(v.number()), // For numbered variants
       })
     ),
-    currencyUsed: literals("gold", "gems"),
+    currencyUsed: literals("gold", "gems", "token", "free"),
     amountPaid: v.number(),
+    // Pity tracking - whether any pity guarantees were triggered
+    pityTriggered: v.optional(
+      v.object({
+        epic: v.optional(v.boolean()),
+        legendary: v.optional(v.boolean()),
+        fullArt: v.optional(v.boolean()),
+      })
+    ),
     openedAt: v.number(),
   })
     .index("by_user_time", ["userId", "openedAt"])
@@ -1392,6 +1466,148 @@ export default defineSchema({
     .index("by_active", ["isActive", "createdAt"]),
 
   // ============================================================================
+  // GEM PACKAGES (Token → Gems Purchase)
+  // ============================================================================
+
+  // Gem package definitions for purchasing gems with native token
+  gemPackages: defineTable({
+    packageId: v.string(), // e.g., "gem_starter", "gem_whale"
+    name: v.string(),
+    description: v.string(),
+    gems: v.number(), // Amount of gems received
+    usdPrice: v.number(), // Price in cents (299 = $2.99)
+    bonusPercent: v.number(), // Bonus percentage (0-400)
+    isActive: v.boolean(),
+    sortOrder: v.number(),
+    // Visual/marketing
+    featuredBadge: v.optional(v.string()), // "Best Value", "Most Popular", etc.
+    iconUrl: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_package_id", ["packageId"])
+    .index("by_active", ["isActive", "sortOrder"]),
+
+  // Token → Gems purchase history
+  tokenGemPurchases: defineTable({
+    userId: v.id("users"),
+    packageId: v.string(),
+    gemsReceived: v.number(),
+    usdValue: v.number(), // In cents
+    tokenAmount: v.number(), // Tokens paid (in smallest unit / lamports)
+    tokenPriceUsd: v.number(), // Token price at time of purchase (cents per token)
+    solanaSignature: v.string(),
+    status: literals("pending", "confirmed", "failed", "expired"),
+    createdAt: v.number(),
+    confirmedAt: v.optional(v.number()),
+    failureReason: v.optional(v.string()),
+  })
+    .index("by_user", ["userId", "createdAt"])
+    .index("by_signature", ["solanaSignature"])
+    .index("by_status", ["status", "createdAt"]),
+
+  // ============================================================================
+  // SHOP SALES SYSTEM
+  // ============================================================================
+
+  // Sale definitions for shop promotions
+  shopSales: defineTable({
+    saleId: v.string(), // Unique identifier
+    name: v.string(),
+    description: v.string(),
+    saleType: saleTypeValidator,
+    // Discount configuration
+    discountPercent: v.optional(v.number()), // 0-50 typically
+    bonusCards: v.optional(v.number()), // Extra cards per pack
+    bonusGems: v.optional(v.number()), // Extra gems per purchase
+    // Applicable products (empty = all products)
+    applicableProducts: v.array(v.string()), // Product IDs
+    applicableProductTypes: v.optional(v.array(literals("pack", "box", "currency", "gem_package"))),
+    // Timing
+    startsAt: v.number(),
+    endsAt: v.number(),
+    isActive: v.boolean(),
+    priority: v.number(), // Higher priority overrides lower
+    // Conditions/limits
+    conditions: v.optional(
+      v.object({
+        minPurchaseAmount: v.optional(v.number()), // Minimum gems/gold to qualify
+        maxUsesTotal: v.optional(v.number()), // Total uses across all users
+        maxUsesPerUser: v.optional(v.number()), // Max uses per user
+        returningPlayerOnly: v.optional(v.boolean()), // Only for players away 14+ days
+        newPlayerOnly: v.optional(v.boolean()), // Only for accounts < 7 days old
+        minPlayerLevel: v.optional(v.number()),
+      })
+    ),
+    // Stats
+    usageCount: v.number(),
+    totalDiscountGiven: v.number(), // Running total of discounts applied
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_sale_id", ["saleId"])
+    .index("by_active_time", ["isActive", "startsAt", "endsAt"])
+    .index("by_type", ["saleType", "isActive"])
+    .index("by_priority", ["isActive", "priority"]),
+
+  // Sale usage tracking per user
+  saleUsage: defineTable({
+    userId: v.id("users"),
+    saleId: v.string(),
+    productId: v.string(),
+    originalPrice: v.number(),
+    discountedPrice: v.number(),
+    discountAmount: v.number(),
+    usedAt: v.number(),
+  })
+    .index("by_user_sale", ["userId", "saleId"])
+    .index("by_sale", ["saleId", "usedAt"])
+    .index("by_user", ["userId", "usedAt"]),
+
+  // ============================================================================
+  // DAILY/WEEKLY REWARDS
+  // ============================================================================
+
+  // Daily and weekly reward claims
+  dailyRewards: defineTable({
+    userId: v.id("users"),
+    rewardType: literals("daily_pack", "weekly_jackpot", "login_streak", "season_end", "event"),
+    claimedAt: v.number(),
+    reward: v.object({
+      type: literals("pack", "gold", "gems", "card", "lottery_ticket"),
+      amount: v.optional(v.number()), // For gold/gems
+      packId: v.optional(v.string()), // For pack rewards
+      cardId: v.optional(v.id("cardDefinitions")), // For card rewards
+      variant: v.optional(v.string()), // If card has specific variant
+      serialNumber: v.optional(v.number()), // For numbered cards
+    }),
+    // Jackpot result tracking
+    jackpotResult: v.optional(
+      v.object({
+        won: v.boolean(),
+        prizeType: v.optional(v.string()), // "full_art", "numbered", "foil", etc.
+        rollValue: v.optional(v.number()), // Random roll for transparency
+      })
+    ),
+  })
+    .index("by_user_type", ["userId", "rewardType"])
+    .index("by_user_date", ["userId", "claimedAt"])
+    .index("by_type_date", ["rewardType", "claimedAt"]),
+
+  // Numbered card registry (tracks minted numbered editions)
+  numberedCardRegistry: defineTable({
+    cardDefinitionId: v.id("cardDefinitions"),
+    serialNumber: v.number(), // 1-500
+    maxSerial: v.number(), // Total minted (typically 500)
+    mintedAt: v.number(),
+    mintedTo: v.optional(v.id("users")), // Original owner
+    mintMethod: literals("event", "tournament", "pack", "admin"), // How it was minted
+    currentOwner: v.optional(v.id("users")), // Current owner (updated on trade)
+  })
+    .index("by_card", ["cardDefinitionId"])
+    .index("by_card_serial", ["cardDefinitionId", "serialNumber"])
+    .index("by_owner", ["currentOwner"]),
+
+  // ============================================================================
   // TOKEN INTEGRATION
   // ============================================================================
 
@@ -1409,7 +1625,13 @@ export default defineSchema({
   // Token transaction history
   tokenTransactions: defineTable({
     userId: v.id("users"),
-    transactionType: literals("marketplace_purchase", "marketplace_sale", "platform_fee", "battle_pass_purchase"),
+    transactionType: literals(
+      "marketplace_purchase",
+      "marketplace_sale",
+      "platform_fee",
+      "battle_pass_purchase",
+      "gem_purchase" // Token → Gems conversion
+    ),
     amount: v.number(),
     signature: v.optional(v.string()),
     status: literals("pending", "confirmed", "failed"),
@@ -1439,6 +1661,53 @@ export default defineSchema({
     .index("by_listing", ["listingId"])
     .index("by_battle_pass", ["battlePassId"])
     .index("by_status", ["status"]),
+
+  // ============================================================================
+  // x402 PAYMENT PROTOCOL
+  // ============================================================================
+
+  /**
+   * x402 payment records for audit trail
+   * Records all payments made via the x402 protocol (HTTP 402 Payment Required)
+   * Used for AI agent purchases and other machine-to-machine payments
+   */
+  x402Payments: defineTable({
+    // Payment identification
+    transactionSignature: v.string(), // Solana transaction signature (idempotency key)
+    payerWallet: v.string(), // Wallet address that made the payment
+    recipientWallet: v.string(), // Wallet address that received the payment
+
+    // Amount and token
+    amount: v.number(), // Amount in atomic units (lamports/smallest unit)
+    tokenMint: v.string(), // SPL token mint address
+    network: v.string(), // CAIP-2 network identifier (e.g., "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp")
+
+    // Resource accessed
+    resourcePath: v.string(), // API endpoint path (e.g., "/api/agents/shop/gems")
+    resourceDescription: v.string(), // Human-readable description
+
+    // Linked entities
+    userId: v.optional(v.id("users")), // User who made the purchase (if known)
+    agentId: v.optional(v.id("agents")), // Agent that made the purchase (if applicable)
+    purchaseType: v.optional(literals("gems", "pack", "box", "other")), // Type of purchase
+    purchaseId: v.optional(v.string()), // Reference to specific purchase record
+
+    // Verification details
+    verifiedAt: v.number(), // When payment was verified by facilitator
+    facilitatorResponse: v.optional(v.string()), // JSON string of full facilitator response
+
+    // Status
+    status: literals("verified", "settled", "failed"),
+    errorMessage: v.optional(v.string()),
+
+    createdAt: v.number(),
+  })
+    .index("by_signature", ["transactionSignature"])
+    .index("by_payer", ["payerWallet", "createdAt"])
+    .index("by_user", ["userId", "createdAt"])
+    .index("by_agent", ["agentId", "createdAt"])
+    .index("by_status", ["status", "createdAt"])
+    .index("by_type", ["purchaseType", "createdAt"]),
 
   // ============================================================================
   // PROMOTIONAL CODES
@@ -1830,7 +2099,15 @@ export default defineSchema({
     achievementId: v.string(),
     name: v.string(),
     description: v.string(),
-    category: literals("wins", "games_played", "collection", "social", "story", "ranked", "special"),
+    category: literals(
+      "wins",
+      "games_played",
+      "collection",
+      "social",
+      "story",
+      "ranked",
+      "special"
+    ),
     rarity: literals("common", "rare", "epic", "legendary"),
     icon: v.string(), // Icon name
     requirementType: v.string(),
@@ -1841,6 +2118,7 @@ export default defineSchema({
         xp: v.optional(v.number()),
         gems: v.optional(v.number()),
         badge: v.optional(v.string()),
+        cardDefinitionId: v.optional(v.id("cardDefinitions")), // Card reward for special achievements
       })
     ),
     isSecret: v.boolean(), // Hidden until unlocked
@@ -2564,7 +2842,7 @@ export default defineSchema({
     creationErrorMessage: v.optional(v.string()), // Error details if creation failed
     creationAttempts: v.optional(v.number()), // Number of creation attempts
     lastAttemptAt: v.optional(v.number()), // Timestamp of last creation attempt
-    createdBy: v.id("users"),
+    createdBy: v.optional(v.id("users")), // Optional for system-created wallets
     createdAt: v.number(),
   })
     .index("by_purpose", ["purpose"])

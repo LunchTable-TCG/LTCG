@@ -83,7 +83,6 @@ export async function checkRateLimitWrapper(
   key?: string
 ): Promise<void> {
   // In development/testing, rate limiting might be disabled
-  // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
   if (process.env["CONVEX_CLOUD_URL"] === undefined) {
     // Local development - skip rate limiting
     return;

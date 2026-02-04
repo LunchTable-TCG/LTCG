@@ -12,8 +12,9 @@ import { PageWrapper } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import type { AbnormalRatingChange, ColumnDef, SuspiciousMatchup } from "@/types";
+import type { Id } from "@convex/_generated/dataModel";
 import { Card, Flex, Text, Title } from "@tremor/react";
 import { useRouter } from "next/navigation";
 
@@ -26,7 +27,7 @@ interface SuspiciousMatchupRow extends SuspiciousMatchup {
 }
 
 interface AbnormalRatingRow extends AbnormalRatingChange {
-  _id: any; // Id type - players table
+  _id: Id<"users">;
 }
 
 interface SuspiciousSummaryItem {
@@ -187,8 +188,8 @@ export default function SuspiciousActivityPage() {
   });
 
   // Extract data from report (currently stubs until backend implements full analysis)
-  const suspiciousMatchups: any[] = [];
-  const abnormalRatings: any[] = [];
+  const suspiciousMatchups: SuspiciousMatchup[] = [];
+  const abnormalRatings: AbnormalRatingChange[] = [];
 
   const isLoading = report === undefined;
 

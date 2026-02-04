@@ -2,9 +2,18 @@ import React from "react";
 import "../../../frontend/index.css";
 
 /**
+ * Form data interface
+ */
+interface FormData {
+  name: string;
+  email: string;
+  message: string;
+}
+
+/**
  * Example accessible form component
  */
-const AccessibleForm: React.FC<{ onSubmit: (data: any) => void }> = ({ onSubmit }) => {
+const AccessibleForm: React.FC<{ onSubmit: (data: FormData) => void }> = ({ onSubmit }) => {
   const [formData, setFormData] = React.useState({
     name: "",
     email: "",

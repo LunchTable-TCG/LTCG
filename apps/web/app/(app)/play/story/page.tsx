@@ -38,7 +38,7 @@ export default function StoryModePage() {
   useEffect(() => {
     if (isAuthenticated && playerProgress && !playerProgress.progressByAct) {
       // No progress exists, initialize it
-      initializeStoryProgress().catch(console.error);
+      initializeStoryProgress({}).catch(console.error);
     }
   }, [isAuthenticated, playerProgress, initializeStoryProgress]);
 
@@ -205,32 +205,34 @@ export default function StoryModePage() {
             transition={{ delay: 0.2 }}
             className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-16"
           >
-            {[
-              {
-                label: "Chapters",
-                value: `${stats.completedChapters}/${stats.totalChapters}`,
-                color: "text-purple-400",
-                icon: BookOpen,
-              },
-              {
-                label: "Stages Cleared",
-                value: `${stats.completedStages}/${stats.totalStages}`,
-                color: "text-blue-400",
-                icon: Shield,
-              },
-              {
-                label: "Stars Earned",
-                value: stats.starredStages,
-                color: "text-yellow-400",
-                icon: Star,
-                testId: "stage-stars",
-              },
-              { label: "Badges", value: badges, color: "text-green-400", icon: Trophy },
-            ].map((stat) => (
+            {(
+              [
+                {
+                  label: "Chapters",
+                  value: `${stats.completedChapters}/${stats.totalChapters}`,
+                  color: "text-purple-400",
+                  icon: BookOpen,
+                },
+                {
+                  label: "Stages Cleared",
+                  value: `${stats.completedStages}/${stats.totalStages}`,
+                  color: "text-blue-400",
+                  icon: Shield,
+                },
+                {
+                  label: "Stars Earned",
+                  value: stats.starredStages,
+                  color: "text-yellow-400",
+                  icon: Star,
+                  testId: "stage-stars",
+                },
+                { label: "Badges", value: badges, color: "text-green-400", icon: Trophy },
+              ] as const
+            ).map((stat) => (
               <div
                 key={stat.label}
                 className="bg-black/40 border border-[#3d2b1f] rounded-xl p-4 backdrop-blur-sm flex flex-col items-center"
-                data-testid={(stat as any).testId}
+                data-testid={"testId" in stat ? stat.testId : undefined}
               >
                 <stat.icon className={cn("w-6 h-6 mb-2", stat.color)} />
                 <div className={cn("text-2xl font-bold", stat.color)}>{stat.value}</div>

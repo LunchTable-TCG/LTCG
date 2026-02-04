@@ -12,10 +12,10 @@ import {
   type AssetCategory,
   AssetDetailSheet,
   AssetGrid,
-  UploadDialog,
 } from "@/components/assets";
 import { StatCard, StatGrid } from "@/components/data";
 import { PageWrapper } from "@/components/layout";
+import { BatchUploadDialog } from "@/components/shared/BatchUploadDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,7 +36,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Loader2Icon, SearchIcon, UploadIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -71,7 +72,6 @@ export default function AssetsPage() {
 
   const statsResult = useConvexQuery(api.admin.assets.getAssetStats, {});
 
-  const saveAssetMetadata = useConvexMutation(api.admin.assets.saveAssetMetadata);
   const updateAsset = useConvexMutation(api.admin.assets.updateAsset);
   const deleteAssetMetadata = useConvexMutation(api.admin.assets.deleteAssetMetadata);
   const syncBlobAssets = useConvexMutation(api.admin.assets.syncBlobAssets);
@@ -101,7 +101,7 @@ export default function AssetsPage() {
         if (blobs.length === 0) return;
 
         // Sync to Convex (silently)
-        const result = await syncBlobAssets({ blobs });
+        const result = (await syncBlobAssets({ blobs })) as { synced: number };
 
         // Only show toast if new assets were synced
         if (result.synced > 0) {
@@ -116,29 +116,6 @@ export default function AssetsPage() {
   }, [syncBlobAssets]);
 
   // Handlers
-  const handleUploadComplete = useCallback(
-    async (result: {
-      blobUrl: string;
-      blobPathname: string;
-      fileName: string;
-      contentType: string;
-      size: number;
-      category: AssetCategory;
-      description: string;
-    }) => {
-      await saveAssetMetadata({
-        fileName: result.fileName,
-        contentType: result.contentType,
-        size: result.size,
-        category: result.category,
-        description: result.description || undefined,
-        blobUrl: result.blobUrl,
-        blobPathname: result.blobPathname,
-      });
-    },
-    [saveAssetMetadata]
-  );
-
   const handleSelectAsset = useCallback((asset: Asset) => {
     setSelectedAsset(asset);
     setDetailSheetOpen(true);
@@ -154,7 +131,7 @@ export default function AssetsPage() {
   const handleUpdateAsset = useCallback(
     async (assetId: string, data: { category?: AssetCategory; description?: string }) => {
       await updateAsset({
-        assetId,
+        assetId: assetId as Id<"fileMetadata">,
         category: data.category,
         description: data.description,
       });
@@ -185,7 +162,7 @@ export default function AssetsPage() {
       }
 
       // Then delete metadata from Convex
-      await deleteAssetMetadata({ assetId: deleteConfirmAsset._id });
+      await deleteAssetMetadata({ assetId: deleteConfirmAsset._id as Id<"fileMetadata"> });
 
       toast.success("Asset deleted");
       setDeleteConfirmAsset(null);
@@ -216,7 +193,7 @@ export default function AssetsPage() {
       }
 
       // Then delete metadata from Convex
-      await deleteAssetMetadata({ assetId: asset._id });
+      await deleteAssetMetadata({ assetId: asset._id as Id<"fileMetadata"> });
 
       // Clear selection
       setSelectedAsset(null);
@@ -306,11 +283,10 @@ export default function AssetsPage() {
         />
 
         {/* Upload dialog */}
-        <UploadDialog
+        <BatchUploadDialog
           open={uploadDialogOpen}
           onOpenChange={setUploadDialogOpen}
-          onUploadComplete={handleUploadComplete}
-          webAppUrl={WEB_APP_URL}
+          mode="assets"
         />
 
         {/* Detail sheet */}

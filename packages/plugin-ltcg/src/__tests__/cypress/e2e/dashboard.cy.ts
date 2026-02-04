@@ -45,7 +45,9 @@ describe("Dashboard E2E Tests", () => {
       // Check for common navigation items
       const navItems = ["agents", "chat", "settings", "docs"];
       navItems.forEach((item) => {
-        cy.get(`a[href*="${item}"], button:contains("${item}")`, { timeout: 2000 }).should("exist");
+        cy.get(`a[href*="${item}"], button:contains("${item}")`, {
+          timeout: 2000,
+        }).should("exist");
       });
     });
 

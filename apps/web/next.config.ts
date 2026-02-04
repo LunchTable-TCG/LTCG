@@ -3,6 +3,9 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   reactStrictMode: true,
 
+  // Externalize packages with dynamic requires to suppress webpack warnings
+  serverExternalPackages: ['@elizaos/core'],
+
   // Allow images from Vercel Blob storage
   images: {
     remotePatterns: [

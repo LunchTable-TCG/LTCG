@@ -26,7 +26,8 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -59,6 +60,26 @@ interface Approval {
   approved: boolean;
   comments?: string;
   approvedAt?: number;
+}
+
+interface ChecklistSummary {
+  overall: {
+    completed: number;
+    total: number;
+    requiredCompleted: number;
+    required: number;
+    allRequiredComplete: boolean;
+    percentComplete: number;
+  };
+  byCategory: Record<
+    string,
+    {
+      completed?: number;
+      total?: number;
+      requiredCompleted?: number;
+      required?: number;
+    }
+  >;
 }
 
 // =============================================================================
@@ -270,21 +291,46 @@ function ScheduleDialog({
 
 export default function TokenLaunchPage() {
   // Fetch data
-  const checklist = useTypedQuery(typedApi.tokenLaunch.checklist.getAll, {});
-  const checklistSummary = useTypedQuery(typedApi.tokenLaunch.checklist.getSummary, {});
-  const approvals = useTypedQuery(typedApi.tokenLaunch.approvals.getAll, {});
-  const approvalSummary = useTypedQuery(typedApi.tokenLaunch.approvals.getSummary, {});
-  const myApproval = useTypedQuery(typedApi.tokenLaunch.approvals.getMyApproval, {});
-  const schedule = useTypedQuery(typedApi.tokenLaunch.schedule.getSchedule, {});
+  const checklist = useQuery(api.tokenLaunch.checklist.getAll, {}) as ChecklistItem[] | undefined;
+  const checklistSummary = useQuery(api.tokenLaunch.checklist.getSummary, {}) as
+    | ChecklistSummary
+    | undefined;
+  const approvals = useQuery(api.tokenLaunch.approvals.getAll, {}) as Approval[] | undefined;
+  const approvalSummary = useQuery(api.tokenLaunch.approvals.getSummary, {}) as
+    | {
+        approvedCount: number;
+        requiredApprovals: number;
+        totalAdmins: number;
+        hasEnoughApprovals: boolean;
+      }
+    | undefined;
+  const myApproval = useQuery(api.tokenLaunch.approvals.getMyApproval, {}) as
+    | Approval
+    | null
+    | undefined;
+  const schedule = useQuery(api.tokenLaunch.schedule.getSchedule, {}) as
+    | {
+        scheduledAt: number;
+        timezone?: string;
+        status?: "countdown" | "go" | "launched" | "aborted" | "scheduled";
+        countdown?: {
+          days: number;
+          hours: number;
+          minutes: number;
+          seconds: number;
+        };
+      }
+    | null
+    | undefined;
 
   // Mutations
-  const completeItem = useTypedMutation(typedApi.tokenLaunch.checklist.completeItem);
-  const uncompleteItem = useTypedMutation(typedApi.tokenLaunch.checklist.uncompleteItem);
-  const setupDefaults = useTypedMutation(typedApi.tokenLaunch.checklist.setupDefaults);
-  const approve = useTypedMutation(typedApi.tokenLaunch.approvals.approve);
-  const revoke = useTypedMutation(typedApi.tokenLaunch.approvals.revoke);
-  const setSchedule = useTypedMutation(typedApi.tokenLaunch.schedule.setSchedule);
-  const clearSchedule = useTypedMutation(typedApi.tokenLaunch.schedule.clearSchedule);
+  const completeItem = useMutation(api.tokenLaunch.checklist.completeItem);
+  const uncompleteItem = useMutation(api.tokenLaunch.checklist.uncompleteItem);
+  const setupDefaults = useMutation(api.tokenLaunch.checklist.setupDefaults);
+  const approve = useMutation(api.tokenLaunch.approvals.approve);
+  const revoke = useMutation(api.tokenLaunch.approvals.revoke);
+  const setSchedule = useMutation(api.tokenLaunch.schedule.setSchedule);
+  const clearSchedule = useMutation(api.tokenLaunch.schedule.clearSchedule);
 
   const [approvalComment, setApprovalComment] = useState("");
 
@@ -303,7 +349,7 @@ export default function TokenLaunchPage() {
   // Handlers
   async function handleComplete(id: string, evidence?: string) {
     try {
-      await completeItem({ itemId: id as any, evidence });
+      await completeItem({ itemId: id as Id<"launchChecklist">, evidence });
       toast.success("Item marked as complete");
     } catch (_error) {
       toast.error("Failed to complete item");
@@ -312,7 +358,7 @@ export default function TokenLaunchPage() {
 
   async function handleUncomplete(id: string) {
     try {
-      await uncompleteItem({ itemId: id as any });
+      await uncompleteItem({ itemId: id as Id<"launchChecklist"> });
       toast.success("Item marked as incomplete");
     } catch (_error) {
       toast.error("Failed to update item");
@@ -321,7 +367,7 @@ export default function TokenLaunchPage() {
 
   async function handleSetupDefaults() {
     try {
-      const result = await setupDefaults({});
+      const result = (await setupDefaults({})) as { message: string };
       toast.success(result.message);
     } catch (_error) {
       toast.error("Failed to setup defaults");
@@ -352,8 +398,8 @@ export default function TokenLaunchPage() {
     try {
       await setSchedule({ scheduledAt, timezone });
       toast.success("Launch scheduled");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to schedule launch");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to schedule launch");
     }
   }
 

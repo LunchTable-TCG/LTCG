@@ -117,7 +117,7 @@ export const createPolicy = mutation({
       metadata: {
         policyId,
         name: args.name,
-        rules: args.rules,
+        rules: JSON.stringify(args.rules),
       },
       success: true,
     });
@@ -171,7 +171,7 @@ export const updatePolicy = mutation({
       action: "treasury.policy.update",
       metadata: {
         policyId: args.policyId,
-        updates,
+        updates: JSON.stringify(updates),
       },
       success: true,
     });

@@ -283,7 +283,9 @@ export const updateChapter = mutation({
       action: "update_story_chapter",
       metadata: {
         chapterId: args.chapterId,
-        updates: Object.keys(updates).filter((k) => k !== "updatedAt"),
+        updates: Object.keys(updates)
+          .filter((k) => k !== "updatedAt")
+          .join(", "),
       },
       success: true,
     });
@@ -740,7 +742,9 @@ export const updateStage = mutation({
       action: "update_story_stage",
       metadata: {
         stageId: args.stageId,
-        updates: Object.keys(updates).filter((k) => k !== "updatedAt"),
+        updates: Object.keys(updates)
+          .filter((k) => k !== "updatedAt")
+          .join(", "),
       },
       success: true,
     });

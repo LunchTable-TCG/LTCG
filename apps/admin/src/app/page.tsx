@@ -10,7 +10,7 @@ import { StatCard, StatGrid } from "@/components/data";
 import { PageWrapper } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import { BarList, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 
@@ -132,7 +132,7 @@ export default function DashboardPage() {
             {stats?.activeSeason ? (
               <div className="flex items-center gap-3">
                 <Badge variant="default" className="text-lg px-3 py-1">
-                  {(stats.activeSeason as any).name ?? "Active Season"}
+                  {(stats.activeSeason as { name?: string })?.name ?? "Active Season"}
                 </Badge>
                 <Text className="text-muted-foreground">Currently active</Text>
               </div>
@@ -181,22 +181,24 @@ export default function DashboardPage() {
             </Button>
           </Flex>
           <div className="mt-4 flex flex-wrap gap-4">
-            {suspiciousReport.summary.map((item: any) => (
-              <div key={item.category} className="flex items-center gap-2">
-                <Badge
-                  variant={
-                    item.severity === "high"
-                      ? "destructive"
-                      : item.severity === "medium"
-                        ? "default"
-                        : "outline"
-                  }
-                >
-                  {item.count}
-                </Badge>
-                <Text className="text-sm">{item.category}</Text>
-              </div>
-            ))}
+            {suspiciousReport.summary.map(
+              (item: { category: string; count: number; severity: "high" | "medium" | "low" }) => (
+                <div key={item.category} className="flex items-center gap-2">
+                  <Badge
+                    variant={
+                      item.severity === "high"
+                        ? "destructive"
+                        : item.severity === "medium"
+                          ? "default"
+                          : "outline"
+                    }
+                  >
+                    {item.count}
+                  </Badge>
+                  <Text className="text-sm">{item.category}</Text>
+                </div>
+              )
+            )}
           </div>
           <Text className="mt-3 text-xs text-muted-foreground">
             Report generated {new Date(suspiciousReport.reportGeneratedAt).toLocaleString()}

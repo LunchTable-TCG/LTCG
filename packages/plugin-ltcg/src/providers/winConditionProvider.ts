@@ -344,7 +344,10 @@ function calculateLethalPath(
 
   // Strategy: Destroy defenders with minimal attackers, then go for direct damage
   while (remainingAttackers.length > 0) {
-    const attacker = remainingAttackers.shift()!;
+    const attacker = remainingAttackers.shift();
+    if (!attacker) {
+      break; // Should not happen but guard against undefined
+    }
 
     if (remainingDefenders.length === 0) {
       // Direct attack

@@ -12,7 +12,7 @@ import type { Doc, Id } from "../../_generated/dataModel";
  * Deck response types - matches internal query returns
  */
 export interface DeckSummary {
-  _id: Id<"decks">;
+  _id: Id<"userDecks">;
   name: string;
   archetype: string;
   cardCount: number;
@@ -58,7 +58,7 @@ export interface ChatMessage {
  * Game state response types
  */
 export interface GameStateSummary {
-  _id: Id<"games">;
+  _id: Id<"gameStates">;
   status: string;
   hostPlayerId: Id<"users">;
   guestPlayerId?: Id<"users">;
@@ -107,7 +107,7 @@ export interface StoryStage {
  * Lobby and matchmaking types
  */
 export interface LobbyInfo {
-  _id: Id<"lobbies">;
+  _id: Id<"gameLobbies">;
   status: string;
   mode: string;
   createdAt: number;
@@ -150,23 +150,17 @@ export interface DeckInfo extends DeckSummary {
 /**
  * Type-safe API function reference helpers
  */
-export type QueryFunction<Args = object, Returns = Record<string, never>> = FunctionReference<
-  "query",
-  "public" | "internal",
-  Args,
-  Returns
->;
+export type QueryFunction<
+  Args extends Record<string, unknown> = Record<string, never>,
+  Returns = unknown,
+> = FunctionReference<"query", "public" | "internal", Args, Returns>;
 
-export type MutationFunction<Args = object, Returns = Record<string, never>> = FunctionReference<
-  "mutation",
-  "public" | "internal",
-  Args,
-  Returns
->;
+export type MutationFunction<
+  Args extends Record<string, unknown> = Record<string, never>,
+  Returns = unknown,
+> = FunctionReference<"mutation", "public" | "internal", Args, Returns>;
 
-export type ActionFunction<Args = object, Returns = Record<string, never>> = FunctionReference<
-  "action",
-  "public" | "internal",
-  Args,
-  Returns
->;
+export type ActionFunction<
+  Args extends Record<string, unknown> = Record<string, never>,
+  Returns = unknown,
+> = FunctionReference<"action", "public" | "internal", Args, Returns>;

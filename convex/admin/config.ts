@@ -175,9 +175,10 @@ export const listConfigs = query({
 
     const configs = await (async () => {
       if (args.category) {
+        const category = args.category;
         return await ctx.db
           .query("systemConfig")
-          .withIndex("by_category", (q) => q.eq("category", args.category!))
+          .withIndex("by_category", (q) => q.eq("category", category))
           .collect();
       }
       return await ctx.db.query("systemConfig").collect();
@@ -464,7 +465,7 @@ export const bulkUpdateConfigs = mutation({
         metadata: {
           totalRequested: args.updates.length,
           successCount,
-          changes: auditChanges,
+          changes: JSON.stringify(auditChanges),
         },
         success: true,
       });
@@ -516,8 +517,12 @@ export const resetToDefault = mutation({
       action: "reset_config_to_default",
       metadata: {
         key,
-        previousValue,
-        defaultValue: defaultConfig.value,
+        previousValue:
+          typeof previousValue === "object" ? JSON.stringify(previousValue) : previousValue,
+        defaultValue:
+          typeof defaultConfig.value === "object"
+            ? JSON.stringify(defaultConfig.value)
+            : defaultConfig.value,
       },
       success: true,
     });

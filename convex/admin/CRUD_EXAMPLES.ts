@@ -15,7 +15,7 @@
  */
 
 import { v } from "convex/values";
-import { query, mutation } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { requireRole } from "../lib/roles";
 
@@ -335,7 +335,8 @@ export const toggleFeatureFlagWithRollout = mutation({
     const newEnabled = !flag.enabled;
 
     // If enabling with gradual rollout
-    const rolloutPercentage = newEnabled && targetPercentage !== undefined ? targetPercentage : newEnabled ? 100 : 0;
+    const rolloutPercentage =
+      newEnabled && targetPercentage !== undefined ? targetPercentage : newEnabled ? 100 : 0;
 
     await ctx.db.patch(flag._id, {
       enabled: newEnabled,

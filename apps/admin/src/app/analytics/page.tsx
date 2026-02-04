@@ -10,7 +10,7 @@
 import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 

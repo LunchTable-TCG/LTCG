@@ -25,7 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Text, Title } from "@tremor/react";
 import {
   AlertCircleIcon,
@@ -180,10 +180,10 @@ function EditConfigDialog({
     setError(null);
 
     try {
-      const response = await updateConfig({
+      const response = (await updateConfig({
         key: config.key,
         value: result.value,
-      });
+      })) as { message: string };
       toast.success(response.message);
       onSuccess(config.key, result.value as number | string | boolean);
       onOpenChange(false);
@@ -328,7 +328,10 @@ function ConfigField({
   const handleResetToDefault = async () => {
     setIsResetting(true);
     try {
-      const result = await resetToDefault({ key: config.key });
+      const result = (await resetToDefault({ key: config.key })) as {
+        message: string;
+        defaultValue: number | string | boolean;
+      };
       toast.success(result.message);
       onChange(result.defaultValue);
     } catch (error) {
@@ -439,15 +442,17 @@ function CategoryTab({
         value: localValues[c.key],
       }));
 
-      const result = await bulkUpdate({ updates });
+      const result = (await bulkUpdate({ updates })) as {
+        success: boolean;
+        message: string;
+        results: Array<{ success: boolean; key: string; error?: string }>;
+      };
 
       if (result.success) {
         toast.success(result.message);
       } else {
-        const failures = result.results.filter((r: { success: boolean }) => !r.success);
-        toast.error(
-          `Some updates failed: ${failures.map((f: { key: string; error?: string }) => f.error).join(", ")}`
-        );
+        const failures = result.results.filter((r) => !r.success);
+        toast.error(`Some updates failed: ${failures.map((f) => f.error).join(", ")}`);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save changes");
@@ -621,7 +626,7 @@ export default function SystemConfigPage() {
   const handleInitializeDefaults = async () => {
     setIsInitializing(true);
     try {
-      const result = await initializeDefaults({});
+      const result = (await initializeDefaults({})) as { createdCount: number; message: string };
       if (result.createdCount > 0) {
         toast.success(result.message);
       } else {

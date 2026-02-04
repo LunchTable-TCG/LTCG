@@ -128,7 +128,9 @@ Respond with JSON: { "confirm": true or false }`;
             maxTokens: 20,
           });
 
-          const parsed = extractJsonFromLlmResponse(decision, { confirm: false });
+          const parsed = extractJsonFromLlmResponse(decision, {
+            confirm: false,
+          });
           if (!parsed.confirm) {
             await callback({
               text: "Surrender cancelled. Continuing the game.",

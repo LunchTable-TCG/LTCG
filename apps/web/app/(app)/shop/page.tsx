@@ -3,7 +3,9 @@
 import {
   CardSelectorModal,
   CurrencySelector,
+  ElizaOSDiscountBadge,
   ListingDialog,
+  PaymentInfoCard,
   TokenListingDialog,
   TokenPurchaseFlow,
 } from "@/components/marketplace";
@@ -364,6 +366,10 @@ export default function ShopPage() {
           <div>
             <h1 className="text-3xl font-bold text-[#e8e0d5] mb-2">Shop & Market</h1>
             <p className="text-[#a89f94]">Purchase packs or trade with other players</p>
+            <div className="mt-3 flex items-center gap-3">
+              <ElizaOSDiscountBadge />
+              <PaymentInfoCard variant="compact" />
+            </div>
           </div>
 
           {/* Balance Display */}
@@ -720,14 +726,14 @@ export default function ShopPage() {
         <CardSelectorModal
           isOpen={isCardSelectorOpen}
           onClose={() => setIsCardSelectorOpen(false)}
-          cards={userCards?.map((card: any) => ({
+          cards={userCards?.map((card) => ({
             cardDefinitionId: card.cardDefinitionId,
             playerCardId: card.id as Id<"playerCards">,
             name: card.name,
-            rarity: card.rarity,
+            rarity: card.rarity as Rarity,
             quantity: card.owned,
           }))}
-          onSelectCard={(card: any) => {
+          onSelectCard={(card) => {
             // Route to appropriate listing dialog based on currency selection
             if (listingCurrencyType === "token") {
               setTokenListingCard({

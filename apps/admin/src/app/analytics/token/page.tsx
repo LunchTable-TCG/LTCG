@@ -34,7 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { typedApi, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { api, useQuery } from "@/lib/convexHelpers";
 import { AreaChart, BarChart, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -87,6 +87,55 @@ interface HolderDistributionBucket {
   label: string;
   count: number;
   percentage: number;
+}
+
+interface HolderDistributionResponse {
+  distribution: HolderDistributionBucket[];
+  topHoldersPercentage?: number;
+}
+
+interface TokenMetrics {
+  priceUsd: number;
+  marketCap: number;
+  holderCount: number;
+  volume24h: number;
+  bondingCurveProgress: number;
+  txCount24h?: number;
+}
+
+interface TokenSummary {
+  currentPrice: number;
+  priceChange24h: number;
+  currentMarketCap: number;
+  mcChange24h: number;
+  currentHolders: number;
+  newHolders24h: number;
+  volume24h: number;
+  volumeChange: number;
+  bondingProgress: number;
+  trades24h?: number;
+}
+
+interface BondingProgress {
+  progress: number;
+  currentProgress?: number;
+  targetMarketCap: number;
+  currentMarketCap: number;
+  liquidity: number;
+}
+
+interface TradeStats {
+  buyCount: number;
+  sellCount: number;
+  buyVolume: number;
+  sellVolume: number;
+  buyVolumeSol: number;
+  sellVolumeSol: number;
+  netFlow: number;
+  totalTrades: number;
+  uniqueTraders: number;
+  avgTradeSize: number;
+  whaleTradeCount: number;
 }
 
 // =============================================================================
@@ -148,26 +197,35 @@ export default function TokenAnalyticsPage() {
   const [pricePeriod, setPricePeriod] = useState<PricePeriod>("24h");
   const [volumePeriod, setVolumePeriod] = useState<VolumePeriod>("24h");
 
-  // Fetch data from Convex
-  const latestMetrics = useTypedQuery(typedApi.tokenAnalytics.metrics.getLatest, {});
-  const priceChart = useTypedQuery(typedApi.tokenAnalytics.metrics.getPriceChart, {
+  // Fetch data from Convex (with type assertions for proper typing)
+  const latestMetrics = useQuery(api.tokenAnalytics.metrics.getLatest, {}) as
+    | TokenMetrics
+    | undefined;
+  const priceChart = useQuery(api.tokenAnalytics.metrics.getPriceChart, {
     period: pricePeriod,
-  });
-  const bondingProgress = useTypedQuery(
-    typedApi.tokenAnalytics.metrics.getBondingCurveProgress,
-    {}
-  );
+  }) as PriceChartPoint[] | undefined;
+  const bondingProgress = useQuery(api.tokenAnalytics.metrics.getBondingCurveProgress, {}) as
+    | BondingProgress
+    | undefined;
 
-  const topHolders = useTypedQuery(typedApi.tokenAnalytics.holders.getTop, { limit: 10 });
-  const holderDistribution = useTypedQuery(typedApi.tokenAnalytics.holders.getDistribution, {});
+  const topHolders = useQuery(api.tokenAnalytics.holders.getTop, { limit: 10 }) as
+    | TokenHolder[]
+    | undefined;
+  const holderDistribution = useQuery(api.tokenAnalytics.holders.getDistribution, {}) as
+    | HolderDistributionResponse
+    | undefined;
 
-  const recentTrades = useTypedQuery(typedApi.tokenAnalytics.trades.getRecent, { limit: 20 });
-  const tradeStats = useTypedQuery(typedApi.tokenAnalytics.trades.getStats, { period: "24h" });
-  const volumeChart = useTypedQuery(typedApi.tokenAnalytics.trades.getVolumeChart, {
+  const recentTrades = useQuery(api.tokenAnalytics.trades.getRecent, { limit: 20 }) as
+    | TokenTrade[]
+    | undefined;
+  const tradeStats = useQuery(api.tokenAnalytics.trades.getStats, { period: "24h" }) as
+    | TradeStats
+    | undefined;
+  const volumeChart = useQuery(api.tokenAnalytics.trades.getVolumeChart, {
     period: volumePeriod,
-  });
+  }) as VolumeChartPoint[] | undefined;
 
-  const summary = useTypedQuery(typedApi.tokenAnalytics.rollup.getSummary, {});
+  const summary = useQuery(api.tokenAnalytics.rollup.getSummary, {}) as TokenSummary | undefined;
 
   // Loading states
   const isMetricsLoading = latestMetrics === undefined || summary === undefined;
@@ -575,8 +633,8 @@ export default function TokenAnalyticsPage() {
               <CardTitle>Recent Trades</CardTitle>
               <CardDescription>Latest buy and sell transactions</CardDescription>
             </div>
-            {tradeStats?.whaleTradeCount > 0 && (
-              <Badge variant="secondary">{tradeStats.whaleTradeCount} whale trades today</Badge>
+            {(tradeStats?.whaleTradeCount ?? 0) > 0 && (
+              <Badge variant="secondary">{tradeStats?.whaleTradeCount} whale trades today</Badge>
             )}
           </Flex>
         </CardHeader>

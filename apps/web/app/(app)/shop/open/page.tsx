@@ -241,8 +241,6 @@ function PackOpeningContent() {
     <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-purple-900/20 via-[#0d0a09] to-[#0d0a09]" />
-      {/* Noise texture - keeping local as it's a tiny repeating pattern */}
-      <div className="absolute inset-0 bg-[url('/assets/backgrounds/noise.png')] opacity-5" />
 
       {/* Magical particles during opening */}
       <AnimatePresence>

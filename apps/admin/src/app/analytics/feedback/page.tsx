@@ -10,7 +10,7 @@
 import { ChartCard, MetricGrid, MetricTile } from "@/components/analytics";
 import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import {  useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, BarChart, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 
@@ -282,7 +282,7 @@ export default function FeedbackAnalyticsPage() {
                     idx: number
                   ) => (
                     <div
-                      key={idx}
+                      key={reporter.username}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
                     >
                       <div className="flex items-center gap-3">

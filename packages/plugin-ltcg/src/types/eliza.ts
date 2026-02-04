@@ -102,7 +102,8 @@ export interface ChatMessageContent {
   text: string;
   gameId?: string;
   playerId?: string;
-  [key: string]: unknown;
+  action?: string;
+  [key: string]: string | number | boolean | undefined;
 }
 
 /**
@@ -238,5 +239,37 @@ export interface MonsterCardData {
   currentDefense?: number;
   defense?: number;
   name?: string;
-  [key: string]: unknown;
+  [key: string]: number | string | undefined;
+}
+
+/**
+ * Convex match history entry
+ */
+export interface ConvexMatchHistoryEntry {
+  id?: string | number;
+  result?: "victory" | "defeat" | "draw";
+  timestamp?: number;
+  duration?: number;
+  turns?: number;
+  opponentId?: string;
+  [key: string]: string | number | undefined;
+}
+
+/**
+ * Board card with flexible positioning
+ */
+export interface FlexibleBoardCard {
+  _id?: string;
+  name?: string;
+  cardType?: string;
+  attack?: number;
+  defense?: number;
+  currentAttack?: number;
+  currentDefense?: number;
+  position?: number | string;
+  hasAttacked?: boolean;
+  isFaceDown?: boolean;
+  element?: string;
+  cost?: number;
+  [key: string]: string | number | boolean | undefined;
 }

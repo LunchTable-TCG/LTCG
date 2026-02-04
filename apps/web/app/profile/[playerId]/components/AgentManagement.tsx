@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { Bot, Loader2, Plus } from "lucide-react";
 import { useState } from "react";
-import { AgentCard } from "./AgentCard";
+import { type Agent, AgentCard } from "./AgentCard";
 import { RegisterAgentModal } from "./RegisterAgentModal";
 
 const MAX_AGENTS = 3;
@@ -64,7 +64,7 @@ export function AgentManagement() {
       {/* Agent List */}
       {agents && agents.length > 0 ? (
         <div className="space-y-4">
-          {agents.map((agent: any) => (
+          {agents.map((agent: Agent) => (
             <AgentCard key={agent._id} agent={agent} onDeleted={handleAgentDeleted} />
           ))}
         </div>

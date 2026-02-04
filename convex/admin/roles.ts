@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { scheduleAuditLog } from "../lib/internalHelpers";
@@ -517,7 +517,7 @@ export const cleanupExpiredRoles = mutation({
       action: "cleanup_expired_roles",
       metadata: {
         expiredCount: expiredRoles.length,
-        expiredUserIds: expiredRoles.map((r) => r.userId),
+        expiredUserIds: expiredRoles.map((r) => r.userId).join(", "),
       },
       success: true,
     });
@@ -564,13 +564,16 @@ export const getExpiringRoles = query({
         const user = await ctx.db.get(role.userId);
         const grantedBy = await ctx.db.get(role.grantedBy);
 
+        if (!role.expiresAt) {
+          throw new Error("expiresAt is required for expiring roles");
+        }
         return {
           userId: role.userId,
           username: user?.username,
           email: user?.email,
           role: role.role,
           expiresAt: role.expiresAt,
-          timeRemaining: role.expiresAt! - now,
+          timeRemaining: role.expiresAt - now,
           grantNote: role.grantNote,
           grantedBy: {
             userId: role.grantedBy,
@@ -581,7 +584,14 @@ export const getExpiringRoles = query({
     );
 
     // Sort by expiration (soonest first)
-    result.sort((a, b) => a.expiresAt! - b.expiresAt!);
+    result.sort((a, b) => {
+      const aExpires = a.expiresAt;
+      const bExpires = b.expiresAt;
+      if (!aExpires || !bExpires) {
+        throw new Error("expiresAt is required for sorting");
+      }
+      return aExpires - bExpires;
+    });
 
     return result;
   },

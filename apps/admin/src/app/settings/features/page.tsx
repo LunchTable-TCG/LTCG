@@ -33,7 +33,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { FeatureFlagId } from "@/lib/convexTypes";
 import {
   AlertTriangleIcon,
@@ -112,7 +112,7 @@ function CreateFeatureFlagDialog({ onCreated }: { onCreated?: () => void }) {
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createFlag = useConvexMutation(api.admin.features.createFeatureFlag);
+  const createFlag = useMutation(api.admin.features.createFeatureFlag);
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -330,7 +330,7 @@ function EditFeatureFlagDialog({
   const [targetRoles, setTargetRoles] = useState<string[]>(flag.targetRoles || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateFlag = useConvexMutation(api.admin.features.updateFeatureFlag);
+  const updateFlag = useMutation(api.admin.features.updateFeatureFlag);
 
   const handleSubmit = async () => {
     if (!displayName.trim()) {
@@ -514,7 +514,7 @@ function DeleteFeatureFlagDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const deleteFlag = useConvexMutation(api.admin.features.deleteFeatureFlag);
+  const deleteFlag = useMutation(api.admin.features.deleteFeatureFlag);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -573,11 +573,13 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { hasPermission } = useAdmin();
 
-  const toggleFlag = useConvexMutation(api.admin.features.toggleFeatureFlag);
+  const toggleFlag = useMutation(api.admin.features.toggleFeatureFlag);
 
   const handleToggle = async () => {
     try {
-      const result = await toggleFlag({ featureFlagId: flag._id as FeatureFlagId });
+      const result = (await toggleFlag({ featureFlagId: flag._id as FeatureFlagId })) as {
+        message: string;
+      };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle feature flag");
@@ -671,11 +673,11 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
 export default function FeatureFlagsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  const flagsResult = useConvexQuery(api.admin.features.listFeatureFlags, {
+  const flagsResult = useQuery(api.admin.features.listFeatureFlags, {
     category: categoryFilter === "all" ? undefined : categoryFilter,
   });
 
-  const statsResult = useConvexQuery(api.admin.features.getFeatureFlagStats, {});
+  const statsResult = useQuery(api.admin.features.getFeatureFlagStats, {});
 
   const isLoading = flagsResult === undefined;
 
@@ -800,8 +802,8 @@ export default function FeatureFlagsPage() {
       ) : categoryFilter !== "all" ? (
         // Show flat list when filtering
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {flagsResult?.flags.map((flag: FeatureFlag) => (
-            <FeatureFlagCard key={flag._id} flag={flag} />
+          {flagsResult?.flags.map((flag) => (
+            <FeatureFlagCard key={flag._id} flag={flag as FeatureFlag} />
           ))}
         </div>
       ) : (

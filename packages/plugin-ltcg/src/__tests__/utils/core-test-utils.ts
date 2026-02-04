@@ -10,10 +10,25 @@ import { v4 as uuidv4 } from "uuid";
  */
 
 /**
+ * Type for state values used in tests
+ */
+export type StateValues = Record<string, unknown>;
+
+/**
+ * Type for state data used in tests
+ */
+export type StateData = Record<string, unknown>;
+
+/**
+ * Type for runtime settings map
+ */
+export type SettingsMap = Record<string, unknown>;
+
+/**
  * Type for mock runtime with additional test methods
  */
 export type MockRuntime = IAgentRuntime & {
-  _settings: Record<string, any>;
+  _settings: SettingsMap;
   _secretSettings: Set<string>;
 };
 
@@ -24,12 +39,12 @@ export type MockRuntime = IAgentRuntime & {
 export interface SetupActionTestOptions {
   /** Override state values (for transient game state) */
   stateOverrides?: {
-    values?: Record<string, any>;
-    data?: Record<string, any>;
+    values?: StateValues;
+    data?: StateData;
     text?: string;
   };
   /** Override runtime settings (for persistent configuration) */
-  settingOverrides?: Record<string, any>;
+  settingOverrides?: SettingsMap;
   /** Custom character configuration */
   characterOverrides?: {
     name?: string;
@@ -97,10 +112,10 @@ export const setupActionTest = (options: SetupActionTestOptions = {}) => {
  * Following ElizaOS pattern for persistent settings
  */
 export const createMockRuntimeWithSettings = (
-  initialSettings: Record<string, any> = {},
+  initialSettings: SettingsMap = {},
   characterOverrides: { name?: string; bio?: string; system?: string } = {}
 ): MockRuntime => {
-  const _settings: Record<string, any> = { ...initialSettings };
+  const _settings: SettingsMap = { ...initialSettings };
   const _secretSettings = new Set<string>();
 
   const runtime = {
@@ -115,7 +130,7 @@ export const createMockRuntimeWithSettings = (
     getSetting: (key: string) => {
       return _settings[key] ?? null;
     },
-    setSetting: mock(async (key: string, value: any, isSecret?: boolean) => {
+    setSetting: mock(async (key: string, value: unknown, isSecret?: boolean) => {
       _settings[key] = value;
       if (isSecret) {
         _secretSettings.add(key);
@@ -123,7 +138,7 @@ export const createMockRuntimeWithSettings = (
     }),
     // Legacy methods for compatibility - prefer state.values for transient state
     get: mock(async (key: string) => _settings[key] ?? null),
-    set: mock(async (key: string, value: any) => {
+    set: mock(async (key: string, value: unknown) => {
       _settings[key] = value;
     }),
     delete: mock(async (key: string) => {
@@ -155,7 +170,7 @@ export const createMockRuntimeWithSettings = (
     registerPlugin: mock(async () => {}),
     processActions: mock(),
     hasElizaOS: mock(() => false),
-  } as any as MockRuntime;
+  } as unknown as MockRuntime;
 
   return runtime;
 };
@@ -165,7 +180,7 @@ export const createMockRuntimeWithSettings = (
  * Following ElizaOS pattern: state.values for transient game state
  */
 export const createMockStateWithOverrides = (
-  overrides: { values?: Record<string, any>; data?: Record<string, any>; text?: string } = {}
+  overrides: { values?: StateValues; data?: StateData; text?: string } = {}
 ): State => {
   return {
     values: { ...overrides.values },
@@ -259,7 +274,11 @@ export const createMockRuntime = (): IAgentRuntime => {
 /**
  * Documents test results for logging and debugging
  */
-export const documentTestResult = (testName: string, result: any, error: Error | null = null) => {
+export const documentTestResult = (
+  testName: string,
+  result: unknown,
+  error: Error | null = null
+) => {
   // Clean, useful test documentation for developers
   logger.info(`✓ Testing: ${testName}`);
 

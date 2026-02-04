@@ -6,7 +6,7 @@
 
 import { v } from "convex/values";
 import { internalAction, query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 
@@ -181,7 +181,7 @@ export const update = mutation({
     await scheduleAuditLog(ctx, {
       adminId: userId,
       action: "alert.channel.update",
-      metadata: { channelId: args.channelId, updates },
+      metadata: { channelId: args.channelId, updates: JSON.stringify(updates) },
       success: true,
     });
 
@@ -379,6 +379,10 @@ export const sendToChannels = internalMutation({
     // Schedule notifications for external channels
     for (const channel of channelsToNotify) {
       if (channel.type === "slack" || channel.type === "discord") {
+        const webhookUrl = channel.config.webhookUrl;
+        if (!webhookUrl) {
+          throw new Error(`Channel ${channel.name} is missing webhookUrl in config`);
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await ctx.scheduler.runAfter(
           0,
@@ -386,7 +390,7 @@ export const sendToChannels = internalMutation({
           (internal as any).alerts.channels.sendExternalNotificationAction,
           {
             channelType: channel.type,
-            webhookUrl: channel.config.webhookUrl!,
+            webhookUrl,
             title: args.title,
             message: args.message,
             severity: args.severity,
@@ -419,7 +423,7 @@ export const sendExternalNotificationAction = internalAction({
       critical: { slack: "#d9534f", discord: 0xd9534f },
     };
 
-    const color = severityColors[args.severity] ?? severityColors["info"]!;
+    const color = severityColors[args.severity] ?? { slack: "#36a64f", discord: 0x36a64f };
 
     try {
       if (args.channelType === "slack") {

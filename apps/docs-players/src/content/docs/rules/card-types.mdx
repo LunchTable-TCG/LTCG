@@ -1,0 +1,159 @@
+---
+title: Card Types
+description: Understanding Creatures, Spells, and Traps in LunchTable TCG
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Overview
+
+LunchTable TCG features three main card types, each serving a unique strategic purpose on the battlefield.
+
+## Creatures
+
+Creatures are the backbone of your army. They attack opponents and defend your Life Points.
+
+### Creature Stats
+
+| Stat | Description |
+|------|-------------|
+| **Cost** | Mana required to summon |
+| **ATK** | Attack power - damage dealt in combat |
+| **HP** | Health points - damage creature can take |
+| **Archetype** | Faction affinity (Infernal Dragons, Necro Empire, etc.) |
+
+### Summoning Creatures
+
+1. Pay the mana cost during Main Phase
+2. Place creature in an empty Creature Zone
+3. Creature has **summoning sickness** - cannot attack this turn
+
+<Aside type="tip">
+  Plan your summons! You can only have 4 creatures on the field at once.
+</Aside>
+
+### Creature Abilities
+
+Creatures can have various ability types:
+
+<Tabs>
+  <TabItem label="Triggered">
+    Activates automatically when a condition is met.
+
+    **Example:** "When this creature enters the battlefield, draw 1 card."
+  </TabItem>
+  <TabItem label="Activated">
+    Pay a cost to activate manually.
+
+    **Example:** "Tap, pay 2 mana: Deal 3 damage to target creature."
+  </TabItem>
+  <TabItem label="Continuous">
+    Always active while the creature is on the field.
+
+    **Example:** "Your other Ember creatures get +1 ATK."
+  </TabItem>
+  <TabItem label="Static">
+    Modifies game rules.
+
+    **Example:** "Opponents cannot target this creature with spells."
+  </TabItem>
+</Tabs>
+
+---
+
+## Spells
+
+Spells are one-time effects that go to the graveyard after use.
+
+### Casting Spells
+
+1. Pay the mana cost during Main Phase
+2. Declare targets (if any)
+3. Resolve the effect
+4. Spell goes to graveyard
+
+### Spell Categories
+
+| Type | Description |
+|------|-------------|
+| **Damage** | Deal direct damage to creatures or players |
+| **Healing** | Restore Life Points or HP |
+| **Buff** | Boost creature stats temporarily |
+| **Debuff** | Weaken enemy creatures |
+| **Draw** | Draw additional cards |
+| **Removal** | Destroy or exile cards |
+
+<Aside type="note">
+  **Quick-Play Spells** can be cast during your opponent's turn in response to their actions!
+</Aside>
+
+---
+
+## Traps
+
+Traps are face-down cards that activate when triggered by specific conditions.
+
+### Setting Traps
+
+1. Set trap face-down during Main Phase (costs no mana)
+2. Trap cannot activate the turn it is set
+3. When trigger condition is met, you may activate the trap
+4. Trap goes to graveyard after resolving
+
+### Trap Timing
+
+<Aside type="caution" title="Trap Timing">
+  Traps can be activated:
+  - During opponent's turn
+  - In response to attacks
+  - In response to spells
+  - In response to abilities
+
+  They **cannot** activate the turn they are set!
+</Aside>
+
+### Common Trap Types
+
+| Type | Trigger | Effect |
+|------|---------|--------|
+| **Counter** | When opponent casts a spell | Negate the spell |
+| **Defensive** | When opponent attacks | Reduce or negate damage |
+| **Offensive** | When you attack | Boost your attack |
+| **Removal** | When creature enters | Destroy the creature |
+
+---
+
+## Card Rarity
+
+Cards come in different rarities, affecting their power level and availability:
+
+| Rarity | Description |
+|--------|-------------|
+| ⚪ **Common** | Basic cards, foundation of most decks |
+| 🟢 **Uncommon** | Slightly stronger effects |
+| 🔵 **Rare** | Powerful cards with unique abilities |
+| 🟣 **Epic** | Game-changing effects |
+| 🟡 **Legendary** | Extremely powerful, limit 1 per deck |
+
+<Aside type="tip" title="Deck Building Tip">
+  A good deck uses mostly Common and Uncommon cards as a solid foundation, with Rare+ cards for key strategies.
+</Aside>
+
+---
+
+## What's Next?
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Archetypes"
+    description="Learn about archetype synergies"
+    href="/rules/archetypes/"
+  />
+  <LinkCard
+    title="Combat"
+    description="Deep dive into battle mechanics"
+    href="/rules/combat/"
+  />
+</CardGrid>

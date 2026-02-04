@@ -26,9 +26,8 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
+import { api, useAction, useMutation, useQuery } from "@/lib/convexHelpers";
 import { Text, Title } from "@tremor/react";
-import { useAction as useConvexAction, useMutation } from "convex/react";
 import {
   AlertCircleIcon,
   BarChart3Icon,
@@ -131,6 +130,45 @@ interface ProviderStatus {
 }
 
 type ProviderKey = keyof ProviderStatus;
+
+interface AIConfigsResult {
+  configs: AIConfigItem[];
+}
+
+interface APIKeyProviderStatus {
+  isSet: boolean;
+  maskedKey?: string;
+  source?: string;
+}
+
+interface APIKeyStatusResult {
+  openrouter?: APIKeyProviderStatus;
+  anthropic?: APIKeyProviderStatus;
+  openai?: APIKeyProviderStatus;
+  vercel?: APIKeyProviderStatus;
+}
+
+interface ProviderUsageStats {
+  requests: number;
+  tokens: number;
+  cost: number;
+  successRate: number;
+  avgLatency: number;
+}
+
+interface UsageSummaryResult {
+  total: {
+    requests: number;
+    tokens: number;
+    cost: number;
+  };
+  byProvider: {
+    openrouter: ProviderUsageStats;
+    vercel: ProviderUsageStats;
+    anthropic?: ProviderUsageStats;
+    openai?: ProviderUsageStats;
+  };
+}
 
 const PROVIDER_INFO: Record<
   ProviderKey,
@@ -603,32 +641,48 @@ export default function AIProvidersPage() {
   useAdmin(); // Auth check
 
   // Queries
-  const configsResult = useTypedQuery(typedApi.admin.aiConfig.getAIConfigs, {});
+  const configsResult = useQuery(api.admin.aiConfig.getAIConfigs, {}) as
+    | AIConfigsResult
+    | undefined;
 
   // Mutations
-  const updateConfig = useTypedMutation(typedApi.admin.aiConfig.updateAIConfig);
-  const initializeDefaults = useTypedMutation(typedApi.admin.aiConfig.initializeAIDefaults);
-  const testProvider = useConvexAction(typedApi.admin.aiConfig.testProviderConnection);
+  const updateConfig = useMutation(api.admin.aiConfig.updateAIConfig);
+  const initializeDefaults = useMutation(api.admin.aiConfig.initializeAIDefaults);
+  const testProvider = useAction(api.admin.aiConfig.testProviderConnection);
 
   // API Key management
-  const apiKeyStatus = useTypedQuery(typedApi.admin.aiConfig.getAPIKeyStatus, {});
-  const setAPIKeyMutation = useMutation(typedApi.admin.aiConfig.setAPIKey);
-  const clearAPIKeyMutation = useMutation(typedApi.admin.aiConfig.clearAPIKey);
+  const apiKeyStatus = useQuery(api.admin.aiConfig.getAPIKeyStatus, {}) as
+    | APIKeyStatusResult
+    | undefined;
+  const setAPIKeyMutation = useMutation(api.admin.aiConfig.setAPIKey);
+  const clearAPIKeyMutation = useMutation(api.admin.aiConfig.clearAPIKey);
 
   // Model fetching actions
-  const fetchAllModels = useConvexAction(typedApi.admin.aiProviders.fetchAllModels);
+  const fetchAllModels = useAction(api.admin.aiProviders.fetchAllModels);
 
   // Usage tracking queries
-  const usageSummary = useTypedQuery(typedApi.admin.aiUsage.getUsageSummary, { days: 30 });
-  const topModels = useTypedQuery(typedApi.admin.aiUsage.getTopModels, { days: 30, limit: 5 });
-  const usageByFeature = useTypedQuery(typedApi.admin.aiUsage.getUsageByFeature, { days: 30 });
-  const recentUsage = useTypedQuery(typedApi.admin.aiUsage.getRecentUsage, { limit: 20 });
+  const usageSummary = useQuery(api.admin.aiUsage.getUsageSummary, { days: 30 }) as
+    | UsageSummaryResult
+    | undefined;
+  const topModels = useQuery(api.admin.aiUsage.getTopModels, { days: 30, limit: 5 }) as
+    | TopModelData[]
+    | undefined;
+  const usageByFeature = useQuery(api.admin.aiUsage.getUsageByFeature, { days: 30 }) as
+    | FeatureUsageData[]
+    | undefined;
+  const recentUsage = useQuery(api.admin.aiUsage.getRecentUsage, { limit: 20 }) as
+    | RecentUsageData[]
+    | undefined;
 
   // Local state
-  const [localValues, setLocalValues] = useState<Record<string, number | string | boolean | string[]>>({});
-  const [originalValues, setOriginalValues] = useState<Record<string, number | string | boolean | string[]>>({});
+  const [localValues, setLocalValues] = useState<
+    Record<string, number | string | boolean | string[]>
+  >({});
+  const [originalValues, setOriginalValues] = useState<
+    Record<string, number | string | boolean | string[]>
+  >({});
   const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null);
-  const [testResults, setTestResults] = useState<Record<ProviderKey, TestResult>>({});
+  const [testResults, setTestResults] = useState<Partial<Record<ProviderKey, TestResult>>>({});
   const [testingProvider, setTestingProvider] = useState<ProviderKey | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -661,7 +715,7 @@ export default function AIProvidersPage() {
   // Fetch provider status on mount
   const fetchProviderStatus = useCallback(async () => {
     try {
-      const result = await testProvider({});
+      const result = (await testProvider({})) as { providerStatus?: ProviderStatus };
       if (result.providerStatus) {
         setProviderStatus(result.providerStatus);
       }
@@ -691,11 +745,17 @@ export default function AIProvidersPage() {
     setIsLoadingModels(true);
     setModelsError(null);
     try {
-      const result = await fetchAllModels({});
+      const result = (await fetchAllModels({})) as {
+        success: boolean;
+        models?: unknown[];
+        totalCount?: number;
+        byProvider?: { openrouter: number; vercel: number };
+        errors?: { openrouter?: string; vercel?: string };
+      };
       if (result.success) {
         setAllModels(result.models as NormalizedModel[]);
         toast.success(
-          `Loaded ${result.totalCount} models (OpenRouter: ${result.byProvider.openrouter}, Vercel: ${result.byProvider.vercel})`
+          `Loaded ${result.totalCount} models (OpenRouter: ${result.byProvider?.openrouter}, Vercel: ${result.byProvider?.vercel})`
         );
       } else {
         const errors = [];
@@ -706,7 +766,7 @@ export default function AIProvidersPage() {
           toast.error(`Some providers failed: ${errors.join("; ")}`);
         }
         // Still set whatever models we got
-        if (result.models?.length > 0) {
+        if (result.models && result.models.length > 0) {
           setAllModels(result.models as NormalizedModel[]);
         }
       }
@@ -719,9 +779,29 @@ export default function AIProvidersPage() {
     }
   }, [fetchAllModels]);
 
-  // Get config value helper
-  const getConfigValue = (key: string, defaultValue: number | string | boolean | string[] | null = null) => {
-    return localValues[key] ?? defaultValue;
+  // Get config value helpers - return value from local state or default
+  const getConfigValue = (key: string, defaultValue: string): string => {
+    const value = localValues[key];
+    if (value === undefined) return defaultValue;
+    return String(value);
+  };
+
+  const getConfigArrayValue = (key: string, defaultValue: string[]): string[] => {
+    const value = localValues[key];
+    if (value === undefined) return defaultValue;
+    return Array.isArray(value) ? value : defaultValue;
+  };
+
+  const getConfigNumberValue = (key: string, defaultValue: number): number => {
+    const value = localValues[key];
+    if (value === undefined) return defaultValue;
+    return typeof value === "number" ? value : defaultValue;
+  };
+
+  const getConfigBoolValue = (key: string, defaultValue: boolean): boolean => {
+    const value = localValues[key];
+    if (value === undefined) return defaultValue;
+    return typeof value === "boolean" ? value : defaultValue;
   };
 
   // Update local value
@@ -768,7 +848,11 @@ export default function AIProvidersPage() {
     setTestResults((prev) => ({ ...prev, [provider]: null }));
 
     try {
-      const result = await testProvider({ provider });
+      const result = (await testProvider({ provider })) as {
+        success: boolean;
+        latencyMs?: number;
+        error?: string;
+      };
       setTestResults((prev) => ({
         ...prev,
         [provider]: {
@@ -801,7 +885,7 @@ export default function AIProvidersPage() {
   const handleInitializeDefaults = async () => {
     setIsInitializing(true);
     try {
-      const result = await initializeDefaults({});
+      const result = (await initializeDefaults({})) as { createdCount: number; message: string };
       if (result.createdCount > 0) {
         toast.success(result.message);
       } else {
@@ -824,7 +908,9 @@ export default function AIProvidersPage() {
 
     setSavingApiKey(provider);
     try {
-      const result = await setAPIKeyMutation({ provider, apiKey: apiKey.trim() });
+      const result = (await setAPIKeyMutation({ provider, apiKey: apiKey.trim() })) as {
+        message: string;
+      };
       toast.success(result.message);
       // Clear the input after successful save
       setApiKeyInputs((prev) => ({ ...prev, [provider]: "" }));
@@ -841,7 +927,7 @@ export default function AIProvidersPage() {
   const handleClearApiKey = async (provider: ProviderKey) => {
     setClearingApiKey(provider);
     try {
-      const result = await clearAPIKeyMutation({ provider });
+      const result = (await clearAPIKeyMutation({ provider })) as { message: string };
       toast.success(result.message);
       // Refresh provider status
       fetchProviderStatus();
@@ -1973,7 +2059,9 @@ export default function AIProvidersPage() {
                       Models to try if the primary model fails (JSON array)
                     </Text>
                     <Input
-                      value={JSON.stringify(getConfigValue("ai.openrouter.fallback_models", []))}
+                      value={JSON.stringify(
+                        getConfigArrayValue("ai.openrouter.fallback_models", [])
+                      )}
                       onChange={(e) => {
                         try {
                           const parsed = JSON.parse(e.target.value);
@@ -2057,7 +2145,7 @@ export default function AIProvidersPage() {
                       </Text>
                     </div>
                     <Switch
-                      checked={getConfigValue("ai.vercel.zdr_enabled", true)}
+                      checked={getConfigBoolValue("ai.vercel.zdr_enabled", true)}
                       onCheckedChange={(checked) =>
                         setConfigValue("ai.vercel.zdr_enabled", checked)
                       }
@@ -2119,7 +2207,7 @@ export default function AIProvidersPage() {
                   <ConfigSlider
                     label="Max Tokens"
                     description="Maximum tokens per response (100-8000)"
-                    value={getConfigValue("ai.max_tokens", 2000)}
+                    value={getConfigNumberValue("ai.max_tokens", 2000)}
                     onChange={(value) => setConfigValue("ai.max_tokens", value)}
                     min={100}
                     max={8000}
@@ -2134,7 +2222,7 @@ export default function AIProvidersPage() {
                   <ConfigSlider
                     label="Temperature"
                     description="Response creativity (0 = deterministic, 1 = creative)"
-                    value={getConfigValue("ai.temperature", 0.7)}
+                    value={getConfigNumberValue("ai.temperature", 0.7)}
                     onChange={(value) => setConfigValue("ai.temperature", value)}
                     min={0}
                     max={1}
@@ -2161,7 +2249,7 @@ export default function AIProvidersPage() {
                   <FeatureToggle
                     label="Admin Assistant"
                     description="Enable the AI assistant in the admin dashboard for moderation support, content generation, and analytics help"
-                    checked={getConfigValue("ai.admin_assistant_enabled", true)}
+                    checked={getConfigBoolValue("ai.admin_assistant_enabled", true)}
                     onChange={(checked) => setConfigValue("ai.admin_assistant_enabled", checked)}
                   />
                   {hasChanged("ai.admin_assistant_enabled") && (
@@ -2173,7 +2261,7 @@ export default function AIProvidersPage() {
                   <FeatureToggle
                     label="Game Guide Chat"
                     description="Enable the Lunchtable Guide AI in the web app to help players learn the game"
-                    checked={getConfigValue("ai.game_guide_enabled", true)}
+                    checked={getConfigBoolValue("ai.game_guide_enabled", true)}
                     onChange={(checked) => setConfigValue("ai.game_guide_enabled", checked)}
                   />
                   {hasChanged("ai.game_guide_enabled") && (

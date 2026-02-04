@@ -19,6 +19,7 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 // Icon and color mappings
@@ -200,6 +201,14 @@ function InboxContent() {
   );
 }
 
+// Challenge data structure from inbox messages
+interface ChallengeData {
+  lobbyId: string;
+  challengerId: string;
+  challengerUsername: string;
+  mode: "casual" | "ranked";
+}
+
 // Individual message row component
 interface InboxMessageRowProps {
   message: InboxMessage;
@@ -209,6 +218,7 @@ interface InboxMessageRowProps {
 }
 
 function InboxMessageRow({ message, onMarkAsRead, onClaimReward, onDelete }: InboxMessageRowProps) {
+  const router = useRouter();
   const [isClaiming, setIsClaiming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -333,6 +343,23 @@ function InboxMessageRow({ message, onMarkAsRead, onClaimReward, onDelete }: Inb
                     Claim Reward
                   </>
                 )}
+              </button>
+            )}
+
+            {/* Accept Challenge button */}
+            {message.type === "challenge" && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const data = message.data as ChallengeData | undefined;
+                  if (data?.lobbyId) {
+                    router.push(`/game/${data.lobbyId}`);
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-400/20 hover:bg-red-400/30 text-red-400 text-sm font-medium transition-colors"
+              >
+                <Swords className="w-4 h-4" />
+                Accept Challenge
               </button>
             )}
 

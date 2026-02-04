@@ -122,7 +122,10 @@ export const getFolderTree = query({
 
     // Second pass: build tree
     for (const folder of allFolders) {
-      const node = folderMap.get(folder._id)!;
+      const node = folderMap.get(folder._id);
+      if (!node) {
+        continue;
+      }
       if (folder.parentId) {
         const parent = folderMap.get(folder.parentId);
         if (parent) {

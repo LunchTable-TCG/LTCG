@@ -76,6 +76,10 @@ export const ErrorCode = {
   ECONOMY_PROMO_CODE_INVALID: "ECONOMY_6004",
   ECONOMY_PROMO_CODE_EXPIRED: "ECONOMY_6005",
   ECONOMY_PROMO_CODE_USED: "ECONOMY_6006",
+  ECONOMY_ALREADY_CLAIMED: "ECONOMY_6008",
+  ECONOMY_SALE_NOT_FOUND: "ECONOMY_6009",
+  ECONOMY_SALE_UNAVAILABLE: "ECONOMY_6010",
+  ECONOMY_TRANSACTION_NOT_FOUND: "ECONOMY_6011",
 
   // Marketplace Errors (6xxx - Economy Related)
   MARKETPLACE_BID_TOO_LOW: "MARKETPLACE_6007",
@@ -233,6 +237,10 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   ECONOMY_6004: "Invalid promo code",
   ECONOMY_6005: "This promo code has expired",
   ECONOMY_6006: "You have already redeemed this promo code",
+  ECONOMY_6008: "This item has already been claimed",
+  ECONOMY_6009: "Sale not found",
+  ECONOMY_6010: "Sale is no longer available",
+  ECONOMY_6011: "Transaction not found",
 
   // Marketplace
   MARKETPLACE_6007: "Bid amount is too low",

@@ -136,12 +136,21 @@ export function getConfigFromEnv(): Partial<LTCGPluginConfig> {
     LTCG_API_KEY: process.env.LTCG_API_KEY,
     LTCG_CONVEX_URL: process.env.LTCG_CONVEX_URL,
     LTCG_API_URL: process.env.LTCG_API_URL,
-    LTCG_PLAY_STYLE: process.env.LTCG_PLAY_STYLE as "aggressive" | "defensive" | "control" | "balanced" | undefined,
+    LTCG_PLAY_STYLE: process.env.LTCG_PLAY_STYLE as
+      | "aggressive"
+      | "defensive"
+      | "control"
+      | "balanced"
+      | undefined,
     LTCG_RISK_TOLERANCE: process.env.LTCG_RISK_TOLERANCE as "low" | "medium" | "high" | undefined,
     LTCG_AUTO_MATCHMAKING: process.env.LTCG_AUTO_MATCHMAKING === "true",
     LTCG_RANKED_MODE: process.env.LTCG_RANKED_MODE === "true",
     LTCG_CHAT_ENABLED: process.env.LTCG_CHAT_ENABLED !== "false",
-    LTCG_TRASH_TALK_LEVEL: process.env.LTCG_TRASH_TALK_LEVEL as "none" | "mild" | "aggressive" | undefined,
+    LTCG_TRASH_TALK_LEVEL: process.env.LTCG_TRASH_TALK_LEVEL as
+      | "none"
+      | "mild"
+      | "aggressive"
+      | undefined,
     LTCG_RESPONSE_TIME: process.env.LTCG_RESPONSE_TIME
       ? Number.parseInt(process.env.LTCG_RESPONSE_TIME, 10)
       : undefined,

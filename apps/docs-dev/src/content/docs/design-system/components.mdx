@@ -1,0 +1,425 @@
+---
+title: Components
+description: LunchTable TCG UI component library
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Overview
+
+LunchTable TCG provides a library of themed UI components built with React and Tailwind CSS.
+
+## Buttons
+
+### Primary Button
+
+```tsx
+<Button variant="primary">Play Card</Button>
+```
+
+```css
+.btn-primary {
+  background: linear-gradient(135deg, var(--ltcg-gold-dark), var(--ltcg-gold));
+  color: var(--ltcg-bg-primary);
+  font-family: var(--ltcg-font-heading);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--ltcg-gold), var(--ltcg-gold-light));
+  box-shadow: 0 0 20px var(--ltcg-gold-glow);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+}
+
+.btn-primary:disabled {
+  background: var(--ltcg-bg-hover);
+  color: var(--ltcg-text-muted);
+  cursor: not-allowed;
+}
+```
+
+### Secondary Button
+
+```tsx
+<Button variant="secondary">Cancel</Button>
+```
+
+```css
+.btn-secondary {
+  background: transparent;
+  color: var(--ltcg-gold);
+  border: 1px solid var(--ltcg-gold-dark);
+  font-family: var(--ltcg-font-heading);
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(212, 175, 55, 0.1);
+  border-color: var(--ltcg-gold);
+}
+```
+
+### Element Buttons
+
+```tsx
+<Button element="ember">Fire Attack</Button>
+<Button element="frost">Ice Shield</Button>
+```
+
+```css
+.btn-ember {
+  background: linear-gradient(135deg, var(--ltcg-ember-dark), var(--ltcg-ember));
+  color: white;
+}
+
+.btn-frost {
+  background: linear-gradient(135deg, var(--ltcg-frost-dark), var(--ltcg-frost));
+  color: white;
+}
+```
+
+## Cards
+
+### Card Frame
+
+```tsx
+<CardFrame element="arcane" rarity="rare">
+  <CardContent card={card} />
+</CardFrame>
+```
+
+```css
+.card-frame {
+  position: relative;
+  width: 250px;
+  aspect-ratio: 2.5 / 3.5;
+  background: var(--ltcg-bg-elevated);
+  border: 2px solid var(--element-color);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 0 20px var(--element-glow),
+    inset 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.card-frame::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  pointer-events: none;
+}
+```
+
+### Card Preview
+
+Interactive card with flip animation:
+
+```tsx
+<CardPreview
+  card={{
+    name: "Phoenix Rising",
+    element: "ember",
+    rarity: "legendary",
+    attack: 8,
+    defense: 4,
+    cost: 6,
+    abilities: [
+      { name: "Rebirth", effect: "When destroyed, return to hand" }
+    ],
+    flavorText: "From ashes, glory."
+  }}
+/>
+```
+
+## Badges
+
+### Element Badge
+
+```tsx
+<ElementBadge element="void" size="md" />
+```
+
+```css
+.element-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: rgba(var(--element-rgb), 0.2);
+  border: 1px solid var(--element-color);
+  border-radius: 9999px;
+  font-family: var(--ltcg-font-heading);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+```
+
+### Rarity Badge
+
+```tsx
+<RarityBadge rarity="epic" />
+```
+
+```css
+.rarity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--rarity-bg);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.rarity-epic {
+  --rarity-bg: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+```
+
+## Form Elements
+
+### Input Field
+
+```tsx
+<Input
+  label="Deck Name"
+  placeholder="Enter deck name..."
+  value={name}
+  onChange={setName}
+/>
+```
+
+```css
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--ltcg-bg-primary);
+  border: 1px solid var(--ltcg-gold-dark);
+  border-radius: 4px;
+  color: var(--ltcg-text-primary);
+  font-family: var(--ltcg-font-body);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--ltcg-gold);
+  box-shadow: 0 0 0 2px var(--ltcg-gold-glow);
+}
+
+.input::placeholder {
+  color: var(--ltcg-text-muted);
+}
+```
+
+### Select
+
+```tsx
+<Select
+  label="Element Filter"
+  options={[
+    { value: "all", label: "All Elements" },
+    { value: "ember", label: "Ember" },
+    { value: "frost", label: "Frost" },
+  ]}
+  value={selected}
+  onChange={setSelected}
+/>
+```
+
+## Modals
+
+### Dialog
+
+```tsx
+<Dialog open={isOpen} onClose={close}>
+  <Dialog.Title>Confirm Action</Dialog.Title>
+  <Dialog.Content>
+    Are you sure you want to discard this card?
+  </Dialog.Content>
+  <Dialog.Actions>
+    <Button variant="secondary" onClick={close}>Cancel</Button>
+    <Button variant="primary" onClick={confirm}>Confirm</Button>
+  </Dialog.Actions>
+</Dialog>
+```
+
+```css
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.dialog {
+  background: var(--ltcg-bg-elevated);
+  border: 1px solid var(--ltcg-gold-dark);
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow:
+    0 0 40px rgba(0, 0, 0, 0.5),
+    0 0 20px var(--ltcg-gold-glow);
+}
+
+.dialog-title {
+  font-family: var(--ltcg-font-heading);
+  font-size: 1.25rem;
+  color: var(--ltcg-gold);
+  margin-bottom: 1rem;
+}
+```
+
+## Decorative Elements
+
+### Gold Divider
+
+```tsx
+<GoldDivider variant="ornate" />
+```
+
+```css
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--ltcg-gold-dark),
+    transparent
+  );
+}
+
+.divider-ornate::before,
+.divider-ornate::after {
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--ltcg-gold-dark) 20%,
+    var(--ltcg-gold) 50%,
+    var(--ltcg-gold-dark) 80%,
+    transparent
+  );
+}
+```
+
+### Corner Ornaments
+
+```tsx
+<OrnamentCorner position="top-left" />
+```
+
+```css
+.ornament-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--ltcg-gold);
+  border-style: solid;
+}
+
+.ornament-corner-tl {
+  top: 8px;
+  left: 8px;
+  border-width: 2px 0 0 2px;
+}
+
+.ornament-corner-tr {
+  top: 8px;
+  right: 8px;
+  border-width: 2px 2px 0 0;
+}
+```
+
+## Animation Classes
+
+### Glow Pulse
+
+```css
+.glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--ltcg-gold-glow);
+  }
+  50% {
+    box-shadow: 0 0 25px var(--ltcg-gold-glow);
+  }
+}
+```
+
+### Card Flip
+
+```css
+.card-flip {
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.card-flip.flipped {
+  transform: rotateY(180deg);
+}
+```
+
+<Aside type="tip">
+  Import components from `@ltcg/docs-ui/components/react/*` for interactive elements.
+</Aside>
+
+---
+
+## Related
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Colors"
+    description="Color system"
+    href="/design-system/colors/"
+  />
+  <LinkCard
+    title="Typography"
+    description="Font system"
+    href="/design-system/typography/"
+  />
+</CardGrid>

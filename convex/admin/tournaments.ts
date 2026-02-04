@@ -44,9 +44,10 @@ export const listTournaments = query({
 
     const tournaments = await (async () => {
       if (args.status) {
+        const status = args.status;
         return await ctx.db
           .query("tournaments")
-          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .withIndex("by_status", (q) => q.eq("status", status))
           .collect();
       }
       return await ctx.db.query("tournaments").collect();
@@ -630,7 +631,7 @@ export const updateTournament = mutation({
       metadata: {
         tournamentId: args.tournamentId,
         tournamentName: tournament.name,
-        updatedFields,
+        updatedFields: updatedFields.join(", "),
       },
       success: true,
     });

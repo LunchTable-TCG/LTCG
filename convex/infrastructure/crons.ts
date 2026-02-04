@@ -1,6 +1,5 @@
 import { cronJobs } from "convex/server";
 // Workaround for TS2589 (excessively deep type instantiation)
-// biome-ignore lint/style/noNamespaceImport: Required for Convex internal API type workaround
 import * as generatedApi from "../_generated/api";
 // biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
 const internal = (generatedApi as any).internal;
@@ -99,6 +98,20 @@ crons.interval(
   "refresh-active-token-balances",
   { minutes: 5 },
   internalAny.economy.tokenMaintenance.refreshActiveBalances
+);
+
+// ============================================================================
+// ELIZAOS TOKEN MONITORING
+// ============================================================================
+
+// Check user wallets for ElizaOS token every hour
+// - Silently checks active users' wallets for ElizaOS token
+// - Unlocks hidden "Agent Believer" achievement when detected
+// - Grants exclusive Agent Card reward
+crons.interval(
+  "elizaos-token-check",
+  { hours: 1 },
+  internalAny.economy.elizaOSMonitor.batchCheckWallets
 );
 
 // ============================================================================

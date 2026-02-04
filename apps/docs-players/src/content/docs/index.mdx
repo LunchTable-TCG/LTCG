@@ -1,0 +1,65 @@
+---
+title: Welcome to LunchTable TCG
+description: Master the Lunchtable Trading Card Game
+template: splash
+hero:
+  title: |
+    Master the Art of
+    <span class="gold-gradient">Card Combat</span>
+  tagline: Learn to play, build powerful decks, and climb the ranks in LunchTable Trading Card Game.
+  actions:
+    - text: Learn to Play
+      link: /rules/how-to-play/
+      icon: right-arrow
+      variant: primary
+    - text: View Archetypes
+      link: /rules/archetypes/
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="New Player?" icon="rocket">
+    Start with our **How to Play** guide to learn the basics of combat, card types, and winning strategies.
+  </Card>
+  <Card title="Build Your Deck" icon="puzzle">
+    Explore deck building fundamentals, archetype synergies, and meta strategies.
+  </Card>
+  <Card title="Discover the Lore" icon="open-book">
+    Immerse yourself in the world of LunchTable - ancient factions, legendary characters, and epic stories.
+  </Card>
+  <Card title="Compete" icon="trophy">
+    Join tournaments, climb the ranked ladder, and prove your mastery.
+  </Card>
+</CardGrid>
+
+## Quick Start
+
+1. **Understand the Basics** - Each player starts with 20 Life Points and 5 Mana per turn
+2. **Build a Deck** - Create a 40-60 card deck with creatures, spells, and traps
+3. **Battle** - Summon creatures, cast spells, and reduce your opponent to 0 LP
+4. **Win** - Be the last player standing or force a deck-out
+
+## The Archetypes
+
+<CardGrid>
+  <Card title="Infernal Dragons" icon="sun">
+    Aggressive fire-breathers. Burn damage and relentless attacks.
+  </Card>
+  <Card title="Abyssal Depths" icon="moon">
+    Deep sea horrors. Control and drown your enemies.
+  </Card>
+  <Card title="Iron Legion" icon="setting">
+    Mechanical warfare. Armor and construct synergies.
+  </Card>
+  <Card title="Necro Empire" icon="warning">
+    Undead armies. Sacrifice and resurrection.
+  </Card>
+  <Card title="Nature Spirits" icon="approve-check">
+    Forest guardians. Healing and growth.
+  </Card>
+  <Card title="Storm Elementals" icon="star">
+    Lightning fury. Chain damage and burst.
+  </Card>
+</CardGrid>

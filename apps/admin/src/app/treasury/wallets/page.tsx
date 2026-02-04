@@ -28,11 +28,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+type TreasuryWallet = Doc<"treasuryWallets">;
 
 // =============================================================================
 // Helper Functions
@@ -136,14 +143,14 @@ export default function TreasuryWalletsPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   // Fetch wallets
-  const wallets = useConvexQuery(api.treasury.wallets.listWallets, {});
+  const wallets = useQuery(api.treasury.wallets.listWallets, {});
   // policies query will be used when policy assignment UI is implemented
 
   // Mutations
-  const createWallet = useConvexMutation(api.treasury.wallets.createWallet);
-  const syncBalance = useConvexMutation(api.treasury.wallets.syncBalance);
-  const updateWallet = useConvexMutation(api.treasury.wallets.updateWallet);
-  const retryWalletCreation = useConvexMutation(api.treasury.wallets.retryWalletCreation);
+  const createWallet = useMutation(api.treasury.wallets.createWallet);
+  const syncBalance = useMutation(api.treasury.wallets.syncBalance);
+  const updateWallet = useMutation(api.treasury.wallets.updateWallet);
+  const retryWalletCreation = useMutation(api.treasury.wallets.retryWalletCreation);
 
   const isLoading = wallets === undefined;
 
@@ -157,7 +164,7 @@ export default function TreasuryWalletsPage() {
     try {
       await createWallet({
         name: newWalletName,
-        purpose: newWalletPurpose as any,
+        purpose: newWalletPurpose as "fee_collection" | "distribution" | "liquidity" | "reserves",
       });
       toast.success("Wallet creation initiated");
       setIsCreateOpen(false);
@@ -172,7 +179,7 @@ export default function TreasuryWalletsPage() {
 
   async function handleSyncBalance(walletId: string) {
     try {
-      await syncBalance({ walletId });
+      await syncBalance({ walletId: walletId as Id<"treasuryWallets"> });
       toast.success("Balance sync initiated");
     } catch (error) {
       toast.error(`Failed to sync balance: ${error}`);
@@ -181,7 +188,7 @@ export default function TreasuryWalletsPage() {
 
   async function handleRetryCreation(walletId: string) {
     try {
-      await retryWalletCreation({ walletId });
+      await retryWalletCreation({ walletId: walletId as Id<"treasuryWallets"> });
       toast.success("Wallet creation retry initiated");
     } catch (error) {
       toast.error(`Failed to retry: ${error}`);
@@ -191,7 +198,7 @@ export default function TreasuryWalletsPage() {
   async function handleFreezeWallet(walletId: string, currentStatus: string) {
     const newStatus = currentStatus === "active" ? "frozen" : "active";
     try {
-      await updateWallet({ walletId, status: newStatus });
+      await updateWallet({ walletId: walletId as Id<"treasuryWallets">, status: newStatus });
       toast.success(`Wallet ${newStatus === "frozen" ? "frozen" : "unfrozen"}`);
     } catch (error) {
       toast.error(`Failed to update wallet: ${error}`);
@@ -277,7 +284,7 @@ export default function TreasuryWalletsPage() {
         </div>
       ) : (wallets?.length ?? 0) > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {wallets?.map((wallet: any) => (
+          {wallets?.map((wallet: TreasuryWallet) => (
             <Card key={wallet._id} className="relative">
               <CardHeader>
                 <div className="flex items-center justify-between">

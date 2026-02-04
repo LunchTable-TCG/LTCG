@@ -1,6 +1,8 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+/**
+ * Utility functions for the admin app
+ *
+ * Re-exports shared utilities from @ltcg/core for convenience.
+ */
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+// Re-export cn from core package
+export { cn, type ClassValue } from "@ltcg/core/utils";

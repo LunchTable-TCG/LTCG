@@ -1,0 +1,214 @@
+---
+title: Code Style
+description: Coding standards and conventions for LunchTable TCG
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## TypeScript Standards
+
+### Return Type Inference
+
+**Prefer TypeScript inference over explicit return types.** Only add explicit types when they provide value.
+
+```typescript
+// ✅ Good - let inference work
+function getUserName(user: User) {
+  return user.name || "Unknown";
+}
+
+// ❌ Avoid - unnecessary explicit type
+function getUserName(user: User): string {
+  return user.name || "Unknown";
+}
+```
+
+### When to Use Explicit Types
+
+```typescript
+// Type guards (required)
+function isUser(value: unknown): value is User {
+  return typeof value === "object" && value !== null && "id" in value;
+}
+
+// Public API contracts
+export function calculateElo(winner: number, loser: number): {
+  newWinner: number;
+  newLoser: number;
+} {
+  // Implementation
+}
+
+// Union types for documentation
+function getElement(archetype: string): Element {
+  // Return type documents valid values
+}
+```
+
+### Convex Type Handling
+
+<Aside type="caution">
+  Always use the helper to avoid TS2589 errors!
+</Aside>
+
+```typescript
+// ✅ Good - use the helper
+import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+
+function GameLobby({ gameId }: { gameId: string }) {
+  const game = useConvexQuery(apiAny.games.get, { gameId });
+  // ...
+}
+
+// ❌ Bad - inline casting causes errors
+const game = useQuery(api.games.get as any, { gameId });
+```
+
+## React Patterns
+
+### Component Structure
+
+```typescript
+// 1. Imports
+import { useState } from 'react';
+import { useConvexQuery } from '@/lib/convexHelpers';
+
+// 2. Types (if not in separate file)
+interface Props {
+  gameId: string;
+  onAction?: () => void;
+}
+
+// 3. Component
+export function GameBoard({ gameId, onAction }: Props) {
+  // Hooks first
+  const [state, setState] = useState(initial);
+  const game = useConvexQuery(api.games.get, { gameId });
+
+  // Derived values
+  const isMyTurn = game?.activePlayer === currentUser;
+
+  // Handlers
+  const handleClick = () => {
+    // ...
+  };
+
+  // Early returns
+  if (!game) return <Loading />;
+
+  // Render
+  return (
+    <div>
+      {/* JSX */}
+    </div>
+  );
+}
+```
+
+### Custom Hooks
+
+Extract complex logic into hooks:
+
+```typescript
+function useGameActions(gameId: string) {
+  const playCard = useConvexMutation(api.games.playCard);
+  const endTurn = useConvexMutation(api.games.endTurn);
+
+  return {
+    playCard: (cardId: string) => playCard({ gameId, cardId }),
+    endTurn: () => endTurn({ gameId }),
+  };
+}
+```
+
+## Convex Functions
+
+### Function Structure
+
+```typescript
+export const joinGame = mutation({
+  args: {
+    gameId: v.id("gameLobbies"),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+  }),
+  handler: async (ctx, { gameId }) => {
+    // 1. Authentication
+    const userId = await requireAuth(ctx);
+
+    // 2. Load data
+    const game = await ctx.db.get(gameId);
+    if (!game) throw new Error("Game not found");
+
+    // 3. Validate
+    if (game.players.length >= game.maxPlayers) {
+      return { success: false, message: "Game is full" };
+    }
+
+    // 4. Mutate
+    await ctx.db.patch(gameId, {
+      players: [...game.players, userId],
+    });
+
+    // 5. Return
+    return { success: true, message: "Joined successfully" };
+  },
+});
+```
+
+## File Organization
+
+```
+apps/web/
+├── app/                    # Next.js App Router
+├── src/
+│   ├── components/        # React components
+│   │   ├── game/         # Game-specific
+│   │   ├── ui/           # Reusable UI
+│   │   └── layout/       # Layout components
+│   ├── hooks/            # Custom hooks
+│   ├── lib/              # Utilities
+│   └── types/            # TypeScript types
+└── public/
+
+convex/
+├── schema.ts             # Database schema
+├── auth/                 # Auth functions
+├── gameplay/             # Game logic
+│   ├── games/           # Game state
+│   ├── turns/           # Turn actions
+│   └── effects/         # Effect system
+└── lib/                  # Shared utilities
+```
+
+## Naming Conventions
+
+| Entity | Convention | Example |
+|--------|------------|---------|
+| Components | PascalCase | `GameBoard.tsx` |
+| Hooks | camelCase with `use` | `useGameState.ts` |
+| Utilities | camelCase | `calculateDamage.ts` |
+| Types | PascalCase | `PlayerState` |
+| Constants | UPPER_SNAKE | `MAX_HAND_SIZE` |
+| Files | kebab-case | `game-board.tsx` |
+
+---
+
+## Related
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Testing"
+    description="Testing requirements"
+    href="/contributing/testing/"
+  />
+  <LinkCard
+    title="Pull Requests"
+    description="PR process"
+    href="/contributing/pull-requests/"
+  />
+</CardGrid>

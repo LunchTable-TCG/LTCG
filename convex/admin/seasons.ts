@@ -9,8 +9,8 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
-import { mutation } from "../functions";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
+import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
@@ -109,9 +109,10 @@ export const listSeasons = query({
 
     const seasons = await (async () => {
       if (args.status) {
+        const status = args.status;
         return await ctx.db
           .query("seasons")
-          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .withIndex("by_status", (q) => q.eq("status", status))
           .collect();
       }
       return await ctx.db.query("seasons").collect();
@@ -369,7 +370,10 @@ export const previewSeasonRewards = query({
         tierStats[tierInfo.tier] = { count: 0, totalGold: 0, totalGems: 0, totalPacks: 0 };
       }
 
-      const stats = tierStats[tierInfo.tier]!;
+      const stats = tierStats[tierInfo.tier];
+      if (!stats) {
+        throw new Error(`Tier stats not found for tier ${tierInfo.tier}`);
+      }
       stats.count++;
       stats.totalGold += tierInfo.goldReward;
       stats.totalGems += tierInfo.gemsReward;
@@ -531,7 +535,9 @@ export const updateSeason = mutation({
       action: "update_season",
       metadata: {
         seasonId: args.seasonId,
-        updates: Object.keys(updates).filter((k) => k !== "updatedAt"),
+        updates: Object.keys(updates)
+          .filter((k) => k !== "updatedAt")
+          .join(", "),
       },
       success: true,
     });
@@ -791,7 +797,10 @@ async function createSeasonSnapshots(
   let count = 0;
 
   for (let i = 0; i < rankedUsers.length; i++) {
-    const user = rankedUsers[i]!;
+    const user = rankedUsers[i];
+    if (!user) {
+      continue;
+    }
     const elo = user.rankedElo ?? DEFAULT_ELO;
     const wins = user.rankedWins ?? 0;
     const losses = user.rankedLosses ?? 0;

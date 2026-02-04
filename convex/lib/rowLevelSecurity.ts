@@ -47,8 +47,8 @@
 
 import type { Rules } from "convex-helpers/server/rowLevelSecurity";
 import type { DataModel } from "../_generated/dataModel";
-import type { QueryCtx, MutationCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 // =============================================================================
 // HELPER TYPES

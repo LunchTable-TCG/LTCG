@@ -21,7 +21,6 @@ export default function ErrorPage({ error, reset }: ErrorProps) {
     <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden flex items-center justify-center">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-[#0d0a09] to-[#0d0a09]" />
-      <div className="absolute inset-0 bg-[url('/assets/backgrounds/noise.png')] opacity-5" />
 
       <div className="relative z-10 text-center px-4 max-w-2xl mx-auto">
         {/* Error Icon */}

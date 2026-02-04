@@ -258,7 +258,7 @@ export const updatePromoCode = mutation({
       metadata: {
         promoCodeId: args.promoCodeId,
         code: code.code,
-        updates: Object.keys(updates),
+        updates: Object.keys(updates).join(", "),
       },
       success: true,
     });

@@ -31,8 +31,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { api,  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import type { Doc } from "@convex/_generated/dataModel";
+import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -42,7 +42,16 @@ import { toast } from "sonner";
 // Types
 // =============================================================================
 
-type TriggerType = "threshold" | "rate_limit" | "pattern" | "scheduled" | "event";
+type TriggerType =
+  | "price_change"
+  | "price_threshold"
+  | "volume_spike"
+  | "whale_activity"
+  | "holder_milestone"
+  | "bonding_progress"
+  | "treasury_balance"
+  | "transaction_failed"
+  | "graduation";
 
 type Severity = "critical" | "warning" | "info";
 
@@ -74,16 +83,24 @@ function getSeverityBadge(severity: string) {
 
 function getTriggerTypeLabel(type: string) {
   switch (type) {
-    case "threshold":
-      return "Threshold";
-    case "rate_limit":
-      return "Rate Limit";
-    case "pattern":
-      return "Pattern Match";
-    case "scheduled":
-      return "Scheduled Check";
-    case "event":
-      return "Event Trigger";
+    case "price_change":
+      return "Price Change";
+    case "price_threshold":
+      return "Price Threshold";
+    case "volume_spike":
+      return "Volume Spike";
+    case "whale_activity":
+      return "Whale Activity";
+    case "holder_milestone":
+      return "Holder Milestone";
+    case "bonding_progress":
+      return "Bonding Progress";
+    case "treasury_balance":
+      return "Treasury Balance";
+    case "transaction_failed":
+      return "Transaction Failed";
+    case "graduation":
+      return "Graduation";
     default:
       return type;
   }
@@ -91,16 +108,24 @@ function getTriggerTypeLabel(type: string) {
 
 function getTriggerTypeIcon(type: string) {
   switch (type) {
-    case "threshold":
+    case "price_change":
+      return "📈";
+    case "price_threshold":
       return "📊";
-    case "rate_limit":
-      return "⏱️";
-    case "pattern":
-      return "🔍";
-    case "scheduled":
-      return "🕐";
-    case "event":
-      return "⚡";
+    case "volume_spike":
+      return "📶";
+    case "whale_activity":
+      return "🐋";
+    case "holder_milestone":
+      return "👥";
+    case "bonding_progress":
+      return "🔗";
+    case "treasury_balance":
+      return "💰";
+    case "transaction_failed":
+      return "❌";
+    case "graduation":
+      return "🎓";
     default:
       return "📋";
   }
@@ -126,14 +151,14 @@ export default function AlertRulesPage() {
   });
 
   // Fetch rules
-  const rules = useConvexQuery(api.alerts.rules.getAll);
+  const rules = useQuery(api.alerts.rules.getAll, {});
 
   // Mutations
-  const createRule = useConvexMutation(api.alerts.rules.create);
-  const updateRule = useConvexMutation(api.alerts.rules.update);
-  const removeRule = useConvexMutation(api.alerts.rules.remove);
-  const toggleEnabled = useConvexMutation(api.alerts.rules.toggleEnabled);
-  const setupDefaults = useConvexMutation(api.alerts.rules.setupDefaults);
+  const createRule = useMutation(api.alerts.rules.create);
+  const updateRule = useMutation(api.alerts.rules.update);
+  const removeRule = useMutation(api.alerts.rules.remove);
+  const toggleEnabled = useMutation(api.alerts.rules.toggleEnabled);
+  const setupDefaults = useMutation(api.alerts.rules.setupDefaults);
 
   const isLoading = rules === undefined;
 
@@ -185,7 +210,6 @@ export default function AlertRulesPage() {
           ruleId: editingRule._id,
           name: formData.name,
           description: formData.description || undefined,
-          triggerType: formData.triggerType as TriggerType,
           severity: formData.severity as Severity,
           cooldownMinutes: Number.parseInt(formData.cooldownMinutes) || 15,
           conditions: parsedConditions,
@@ -213,7 +237,7 @@ export default function AlertRulesPage() {
 
   async function handleToggle(ruleId: string, currentEnabled: boolean) {
     try {
-      await toggleEnabled({ ruleId, enabled: !currentEnabled });
+      await toggleEnabled({ ruleId: ruleId as Id<"alertRules"> });
       toast.success(`Rule ${currentEnabled ? "disabled" : "enabled"}`);
     } catch (error) {
       toast.error(`Failed to toggle rule: ${error}`);
@@ -223,7 +247,7 @@ export default function AlertRulesPage() {
   async function handleDelete(ruleId: string) {
     if (!confirm("Are you sure you want to delete this rule?")) return;
     try {
-      await removeRule({ ruleId });
+      await removeRule({ ruleId: ruleId as Id<"alertRules"> });
       toast.success("Rule deleted");
     } catch (error) {
       toast.error(`Failed to delete rule: ${error}`);
@@ -232,7 +256,7 @@ export default function AlertRulesPage() {
 
   async function handleSetupDefaults() {
     try {
-      const result = await setupDefaults({});
+      const result = (await setupDefaults({})) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(`Failed to setup defaults: ${error}`);
@@ -301,11 +325,29 @@ export default function AlertRulesPage() {
                       <SelectValue placeholder="Select trigger type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="threshold">📊 Threshold - Value exceeds limit</SelectItem>
-                      <SelectItem value="rate_limit">⏱️ Rate Limit - Too many events</SelectItem>
-                      <SelectItem value="pattern">🔍 Pattern - Matches specific pattern</SelectItem>
-                      <SelectItem value="scheduled">🕐 Scheduled - Periodic check</SelectItem>
-                      <SelectItem value="event">⚡ Event - Specific event occurs</SelectItem>
+                      <SelectItem value="price_change">
+                        📈 Price Change - % change in timeframe
+                      </SelectItem>
+                      <SelectItem value="price_threshold">
+                        📊 Price Threshold - Above/below price
+                      </SelectItem>
+                      <SelectItem value="volume_spike">📶 Volume Spike - Unusual volume</SelectItem>
+                      <SelectItem value="whale_activity">
+                        🐋 Whale Activity - Large holder movement
+                      </SelectItem>
+                      <SelectItem value="holder_milestone">
+                        👥 Holder Milestone - Holder count threshold
+                      </SelectItem>
+                      <SelectItem value="bonding_progress">
+                        🔗 Bonding Progress - Graduation proximity
+                      </SelectItem>
+                      <SelectItem value="treasury_balance">
+                        💰 Treasury Balance - Low balance warning
+                      </SelectItem>
+                      <SelectItem value="transaction_failed">
+                        ❌ Transaction Failed - Failed tx alert
+                      </SelectItem>
+                      <SelectItem value="graduation">🎓 Graduation - Token graduated!</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -395,7 +437,7 @@ export default function AlertRulesPage() {
       ) : (rules?.length ?? 0) > 0 ? (
         <div className="grid gap-6 md:grid-cols-2">
           {rules?.map((rule: Doc<"alertRules">) => (
-            <Card key={rule._id} className={!rule.enabled ? "opacity-60" : ""}>
+            <Card key={rule._id} className={!rule.isEnabled ? "opacity-60" : ""}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -409,8 +451,8 @@ export default function AlertRulesPage() {
                     </div>
                   </div>
                   <Switch
-                    checked={rule.enabled}
-                    onCheckedChange={() => handleToggle(rule._id, rule.enabled)}
+                    checked={rule.isEnabled}
+                    onCheckedChange={() => handleToggle(rule._id, rule.isEnabled)}
                   />
                 </div>
               </CardHeader>
@@ -438,12 +480,13 @@ export default function AlertRulesPage() {
                 )}
 
                 {/* Stats */}
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>Triggered: {rule.triggerCount || 0} times</span>
-                  {rule.lastTriggeredAt && (
-                    <span>Last: {new Date(rule.lastTriggeredAt).toLocaleDateString()}</span>
-                  )}
-                </div>
+                {rule.lastTriggeredAt && (
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span>
+                      Last triggered: {new Date(rule.lastTriggeredAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">

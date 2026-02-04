@@ -28,7 +28,10 @@ const getUserDecksInternalQuery = require("../_generated/api").internal.core.dec
   .getUserDecksInternal as QueryFunction<{ userId: Id<"users"> }, DeckSummary[]>;
 
 const getDeckWithCardsQuery = require("../_generated/api").api.core.decks
-  .getDeckWithCards as QueryFunction<{ deckId: Id<"decks">; userId: Id<"users"> }, DeckInfo | null>;
+  .getDeckWithCards as QueryFunction<
+  { deckId: Id<"userDecks">; userId: Id<"users"> },
+  DeckInfo | null
+>;
 
 const getStarterDecksQuery = require("../_generated/api").api.agents
   .getStarterDecks as QueryFunction<
@@ -44,7 +47,7 @@ const createDeckMutation = require("../_generated/api").api.core.decks
     cardDefinitionIds: Id<"cardDefinitions">[];
     archetype: string;
   },
-  Id<"decks">
+  Id<"userDecks">
 >;
 
 const getAllCardDefinitionsQuery = require("../_generated/api").api.core.cards
@@ -59,7 +62,7 @@ const getCardDefinitionQuery = require("../_generated/api").api.core.cards
 const selectStarterDeckInternalMutation = require("../_generated/api").internal.agents
   .selectStarterDeckInternal as MutationFunction<
   { userId: Id<"users">; starterDeckCode: string },
-  { success: boolean; deckId: Id<"decks"> }
+  { success: boolean; deckId: Id<"userDecks"> }
 >;
 
 /**
@@ -130,7 +133,7 @@ export const getDeck = authHttpAction(async (ctx, request, auth) => {
 
     // Get deck with cards
     const deck = await ctx.runQuery(getDeckWithCardsQuery, {
-      deckId: deckId as Id<"decks">,
+      deckId: deckId as Id<"userDecks">,
       userId: auth.userId,
     });
 

@@ -13,9 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
-import { useAction } from "convex/react";
+import { useTypedAction } from "@ltcg/core/react";
+import type { FunctionReference } from "convex/server";
 import {
   BotIcon,
   ExternalLinkIcon,
@@ -77,9 +78,12 @@ export function AdminAssistantChat({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Actions
-  const getOrCreateThread = useAction(api.ai.adminAgentApi.getOrCreateThread);
-  const sendMessage = useAction(api.ai.adminAgentApi.sendMessage);
+  // Actions - use useTypedAction from @ltcg/core/react to avoid TS2589 deep type instantiation
+  const getOrCreateThreadAction = api.ai.adminAgentApi
+    .getOrCreateThread as FunctionReference<"action">;
+  const getOrCreateThread = useTypedAction(getOrCreateThreadAction);
+  const sendMessageAction = api.ai.adminAgentApi.sendMessage as FunctionReference<"action">;
+  const sendMessage = useTypedAction(sendMessageAction);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -140,11 +144,15 @@ export function AdminAssistantChat({
 
       // Add assistant response
       const assistantMessage: Message = {
-        id: result.messageId,
+        id: result.messageId ?? `msg-${Date.now()}`,
         role: "assistant",
         content: result.text,
         createdAt: Date.now(),
-        toolCalls: result.toolCalls,
+        toolCalls: result.toolCalls?.map((tc) => ({
+          name: "toolName" in tc ? String(tc.toolName) : "unknown",
+          args: "args" in tc ? tc.args : {},
+          result: "result" in tc ? tc.result : undefined,
+        })),
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {

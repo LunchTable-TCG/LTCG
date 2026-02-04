@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { components } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
-import { mutation, internalMutation } from "./functions";
+import { internalMutation, mutation } from "./functions";
 import { requireAuthMutation, requireAuthQuery } from "./lib/convexAuth";
 import { ErrorCode, createError } from "./lib/errorCodes";
 import type { UserStatus } from "./lib/types";
@@ -191,24 +191,25 @@ export const list = query({
     const presenceList = await presence.list(ctx, args.roomToken);
 
     // Transform presence data to include custom metadata
-    // Presence component API migration in progress - type checking presence data structure
+    // The presence library returns { userId, online, lastDisconnected, data?: unknown }
+    // We cast data inside the callback to extract our custom metadata
     type PresenceData = {
-      userId: string;
-      sessionId: string;
-      data?: {
-        username?: string;
-        status?: "online" | "in_game" | "idle";
-        lastActiveAt?: number;
-      };
+      username?: string;
+      status?: "online" | "in_game" | "idle";
+      lastActiveAt?: number;
+      sessionId?: string;
     };
 
-    return presenceList.map((p: PresenceData) => ({
-      userId: p.userId,
-      sessionId: p.sessionId,
-      username: p.data?.username ?? "Unknown",
-      status: p.data?.status ?? "online",
-      lastActiveAt: p.data?.lastActiveAt ?? Date.now(),
-    }));
+    return presenceList.map((p) => {
+      const data = p.data as PresenceData | undefined;
+      return {
+        userId: p.userId,
+        sessionId: data?.sessionId ?? p.userId, // Use userId as fallback sessionId
+        username: data?.username ?? "Unknown",
+        status: data?.status ?? "online",
+        lastActiveAt: data?.lastActiveAt ?? Date.now(),
+      };
+    });
   },
 });
 
@@ -232,21 +233,13 @@ export const listUserRooms = query({
 
     const userPresence = await presence.listUser(ctx, userId);
 
-    // Presence component API migration in progress - type checking presence data structure
-    type UserPresenceData = {
-      roomId: string;
-      sessionId: string;
-      data?: {
-        status?: "online" | "in_game" | "idle";
-        lastActiveAt?: number;
-      };
-    };
-
-    return userPresence.map((p: UserPresenceData) => ({
+    // The presence library returns { roomId, online, lastDisconnected }
+    // Note: listUser does NOT return data, so we use defaults for status/sessionId
+    return userPresence.map((p) => ({
       roomId: p.roomId,
-      sessionId: p.sessionId,
-      status: p.data?.status ?? "online",
-      lastActiveAt: p.data?.lastActiveAt ?? Date.now(),
+      sessionId: `${userId}:${p.roomId}`, // Generate sessionId from userId + roomId
+      status: "online" as const,
+      lastActiveAt: Date.now(),
     }));
   },
 });
@@ -303,19 +296,28 @@ export function generateRoomId(
     case "lobby":
       return "lobby:browse";
     case "story":
-      if (!resourceId) throw createError(ErrorCode.VALIDATION_MISSING_FIELD, { reason: "Story requires chapterId" });
+      if (!resourceId)
+        throw createError(ErrorCode.VALIDATION_MISSING_FIELD, {
+          reason: "Story requires chapterId",
+        });
       return `story:${resourceId}`;
     case "tournament":
       if (!resourceId)
-        throw createError(ErrorCode.VALIDATION_MISSING_FIELD, { reason: "Tournament requires tournamentId" });
+        throw createError(ErrorCode.VALIDATION_MISSING_FIELD, {
+          reason: "Tournament requires tournamentId",
+        });
       return `tournament:${resourceId}`;
     case "marketplace":
       if (!resourceId)
-        throw createError(ErrorCode.VALIDATION_MISSING_FIELD, { reason: "Marketplace requires listingId" });
+        throw createError(ErrorCode.VALIDATION_MISSING_FIELD, {
+          reason: "Marketplace requires listingId",
+        });
       return `marketplace:listing:${resourceId}`;
     case "admin_template":
       if (!resourceId)
-        throw createError(ErrorCode.VALIDATION_MISSING_FIELD, { reason: "Admin template requires templateId" });
+        throw createError(ErrorCode.VALIDATION_MISSING_FIELD, {
+          reason: "Admin template requires templateId",
+        });
       return `admin:template:${resourceId}`;
   }
 }

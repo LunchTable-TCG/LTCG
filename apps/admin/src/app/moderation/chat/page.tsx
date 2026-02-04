@@ -38,7 +38,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { format, formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useState } from "react";
@@ -113,7 +114,10 @@ export default function ChatModerationPage() {
 
   const handleDeleteMessage = async (messageId: string) => {
     try {
-      await deleteMessage({ messageId, reason: deleteReason || undefined });
+      await deleteMessage({
+        messageId: messageId as Id<"globalChatMessages">,
+        reason: deleteReason || undefined,
+      });
       setDeleteReason("");
     } catch (error) {
       console.error("Failed to delete message:", error);
@@ -125,7 +129,7 @@ export default function ChatModerationPage() {
 
     try {
       await bulkDeleteMessages({
-        messageIds: Array.from(selectedMessages),
+        messageIds: Array.from(selectedMessages) as Id<"globalChatMessages">[],
         reason: deleteReason || undefined,
       });
       setSelectedMessages(new Set());
@@ -140,7 +144,7 @@ export default function ChatModerationPage() {
 
     try {
       await muteUser({
-        userId: muteUserId,
+        userId: muteUserId as Id<"users">,
         durationMinutes: muteDuration,
         reason: muteReason || undefined,
       });
@@ -156,7 +160,7 @@ export default function ChatModerationPage() {
 
   const handleUnmuteUser = async (userId: string) => {
     try {
-      await unmuteUser({ userId });
+      await unmuteUser({ userId: userId as Id<"users"> });
     } catch (error) {
       console.error("Failed to unmute user:", error);
     }
@@ -303,7 +307,7 @@ export default function ChatModerationPage() {
                       (message: {
                         _id: string;
                         userId: string;
-                        username: string;
+                        username?: string;
                         message: string;
                         createdAt: number;
                         isSystem: boolean;
@@ -323,7 +327,7 @@ export default function ChatModerationPage() {
                                 href={`/players/${message.userId}`}
                                 className="font-medium text-primary hover:underline"
                               >
-                                {message.username}
+                                {message.username || "Unknown User"}
                               </Link>
                               {message.isSystem && (
                                 <Badge variant="outline" className="text-xs">
@@ -345,7 +349,9 @@ export default function ChatModerationPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => openMuteDialog(message.userId, message.username)}
+                                onClick={() =>
+                                  openMuteDialog(message.userId, message.username || "Unknown User")
+                                }
                               >
                                 Mute
                               </Button>
@@ -408,7 +414,7 @@ export default function ChatModerationPage() {
                     {mutedUsers.map(
                       (user: {
                         _id: string;
-                        username: string;
+                        username?: string;
                         mutedUntil: number;
                         remainingMinutes: number;
                       }) => (
@@ -418,7 +424,7 @@ export default function ChatModerationPage() {
                               href={`/players/${user._id}`}
                               className="font-medium text-primary hover:underline"
                             >
-                              {user.username}
+                              {user.username || "Unknown User"}
                             </Link>
                           </TableCell>
                           <TableCell>{format(new Date(user.mutedUntil), "PPpp")}</TableCell>

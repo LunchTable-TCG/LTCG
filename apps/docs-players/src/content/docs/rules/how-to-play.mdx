@@ -1,0 +1,173 @@
+---
+title: How to Play
+description: Learn the rules and mechanics of Lunchtable Trading Card Game
+---
+
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Overview
+
+Lunchtable Trading Card Game (LunchTable TCG) is a strategic card battle game where players summon creatures, cast spells, and activate traps to defeat their opponent.
+
+<Aside type="tip" title="Win Conditions">
+  Reduce your opponent's **Life Points to 0** or force them to **deck out** (unable to draw).
+</Aside>
+
+## Game Setup
+
+Each player starts with:
+- **20 Life Points**
+- **40-60 card deck** (no more than 3 copies of any card)
+- **5 cards** in opening hand
+- **5 Mana** to spend each turn (refreshes)
+
+## The Battlefield
+
+```
+┌─────────────────────────────────────────────┐
+│  OPPONENT'S FIELD                           │
+│  [Trap 1] [Trap 2] [Trap 3]                │
+│  [Creature] [Creature] [Creature] [Creature]│
+├─────────────────────────────────────────────┤
+│  YOUR FIELD                                 │
+│  [Creature] [Creature] [Creature] [Creature]│
+│  [Trap 1] [Trap 2] [Trap 3]                │
+└─────────────────────────────────────────────┘
+```
+
+**Zones:**
+- **4 Creature Zones** per player
+- **3 Trap/Spell Zones** per player
+- **Graveyard** for destroyed/used cards
+- **Deck** (face down)
+
+## Turn Structure
+
+<Steps>
+
+1. **Draw Phase**
+
+   Draw 1 card from your deck. (Skip on first turn for player 1)
+
+2. **Main Phase 1**
+
+   - Summon creatures (costs mana)
+   - Set trap cards face-down
+   - Cast spell cards
+   - Activate creature abilities
+
+3. **Battle Phase**
+
+   - Declare attackers
+   - Opponent can activate traps
+   - Resolve combat damage
+
+4. **Main Phase 2**
+
+   - Additional summons or spells
+   - Set more traps
+
+5. **End Phase**
+
+   - Discard down to 7 cards if over hand limit
+   - End-of-turn effects trigger
+
+</Steps>
+
+## Combat
+
+### Attacking
+
+1. **Declare attacker** - Tap (turn sideways) an untapped creature
+2. **Declare target** - Attack opponent directly OR attack their creature
+3. **Damage resolution**:
+   - **Creature vs Creature**: Compare ATK values, lower ATK creature is destroyed
+   - **Direct attack**: Deal ATK damage to opponent's Life Points
+
+<Aside type="caution" title="Summoning Sickness">
+  Creatures cannot attack the turn they are summoned!
+</Aside>
+
+### Combat Example
+
+<Tabs>
+  <TabItem label="Scenario">
+    Your **Fire Drake** (ATK 1500) attacks opponent's **Stone Golem** (ATK 1200).
+  </TabItem>
+  <TabItem label="Result">
+    Stone Golem is destroyed because 1500 > 1200. Fire Drake survives.
+  </TabItem>
+  <TabItem label="Alternative">
+    If you attacked directly instead, opponent would lose 1500 Life Points.
+  </TabItem>
+</Tabs>
+
+## Mana System
+
+Every turn you have **5 Mana** to spend:
+
+| Card Type | Typical Cost |
+|-----------|-------------|
+| Weak Creature | 1-2 Mana |
+| Medium Creature | 3-4 Mana |
+| Strong Creature | 5+ Mana |
+| Spell Cards | 1-4 Mana |
+| Trap Cards | 0 (set free, activation may cost) |
+
+<Aside type="note">
+  Unspent mana does **not** carry over to next turn!
+</Aside>
+
+## Card Abilities
+
+Creatures can have special abilities:
+
+- **On Summon** - Triggers when the creature enters play
+- **On Attack** - Triggers when declaring an attack
+- **On Destroy** - Triggers when sent to graveyard
+- **Passive** - Always active while on field
+- **Activated** - Pay a cost to use (tap, discard, mana)
+
+## Winning the Game
+
+**You win if:**
+- ✅ Opponent's Life Points reach 0
+- ✅ Opponent cannot draw a card (deck out)
+- ✅ Special win condition card effect
+
+**You lose if:**
+- ❌ Your Life Points reach 0
+- ❌ You cannot draw when required
+- ❌ You surrender
+
+## Quick Tips for Beginners
+
+<Aside type="tip" title="Beginner Tips">
+  1. **Don't overextend** - Keep some cards in hand for recovery
+  2. **Set traps before attacking** - Protect yourself from counters
+  3. **Watch your mana** - Don't use it all on turn 1
+  4. **Learn archetype synergies** - Each archetype has unique strengths
+  5. **Read card effects carefully** - Timing matters!
+</Aside>
+
+## What's Next?
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Card Types"
+    description="Learn about Creatures, Spells, and Traps"
+    href="/rules/card-types/"
+  />
+  <LinkCard
+    title="Archetypes"
+    description="Understand the archetype system"
+    href="/rules/archetypes/"
+  />
+  <LinkCard
+    title="Deck Building"
+    description="Build your first competitive deck"
+    href="/strategy/deck-building/"
+  />
+</CardGrid>

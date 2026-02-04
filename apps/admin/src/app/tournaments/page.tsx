@@ -29,7 +29,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import {
   CalendarIcon,
@@ -118,7 +119,7 @@ function CreateTournamentDialog({ open, onOpenChange }: CreateTournamentDialogPr
     setIsSubmitting(true);
 
     try {
-      const result = await createTournament({
+      const result = (await createTournament({
         name: name.trim(),
         description: description.trim() || undefined,
         format,
@@ -133,7 +134,7 @@ function CreateTournamentDialog({ open, onOpenChange }: CreateTournamentDialogPr
         registrationStartsAt: new Date(registrationStartsAt).getTime(),
         registrationEndsAt: new Date(registrationEndsAt).getTime(),
         scheduledStartAt: new Date(scheduledStartAt).getTime(),
-      });
+      })) as { message: string; warning?: string };
 
       toast.success(result.message);
       if (result.warning) {
@@ -390,10 +391,10 @@ function TournamentActions({ tournament }: TournamentActionsProps) {
     }
     setIsCancelling(true);
     try {
-      const result = await cancelTournament({
-        tournamentId: tournament._id as any,
+      const result = (await cancelTournament({
+        tournamentId: tournament._id as Id<"tournaments">,
         reason: cancelReason.trim(),
-      });
+      })) as { message: string; refundedCount: number; totalRefunded: number };
       toast.success(result.message);
       if (result.refundedCount > 0) {
         toast.info(`Refunded ${result.refundedCount} players (${result.totalRefunded} gold total)`);
@@ -590,81 +591,97 @@ export default function TournamentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tournamentsResult?.tournaments.map((tournament: any) => {
-                    const statusConfig = STATUS_CONFIG[tournament.status as TournamentStatus];
-                    const startDate = new Date(tournament.scheduledStartAt);
+                  {tournamentsResult?.tournaments.map(
+                    (tournament: {
+                      _id: Id<"tournaments">;
+                      name: string;
+                      status: TournamentStatus;
+                      scheduledStartAt: number;
+                      description?: string;
+                      format: string;
+                      mode: string;
+                      registeredCount: number;
+                      maxPlayers: number;
+                      entryFee: number;
+                      potentialPrize: number;
+                      creatorUsername: string;
+                      totalPrizeDistributed: number;
+                    }) => {
+                      const statusConfig = STATUS_CONFIG[tournament.status as TournamentStatus];
+                      const startDate = new Date(tournament.scheduledStartAt);
 
-                    return (
-                      <tr
-                        key={tournament._id}
-                        className={`border-b hover:bg-muted/30 ${
-                          tournament.status === "active" ? "bg-emerald-500/5" : ""
-                        }`}
-                      >
-                        <td className="py-3 px-3">
-                          <Link
-                            href={`/tournaments/${tournament._id}`}
-                            className="font-medium hover:underline text-primary"
-                          >
-                            {tournament.name}
-                          </Link>
-                          {tournament.description && (
-                            <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                              {tournament.description}
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="text-xs">
-                            <div className="font-medium">
-                              {FORMAT_LABELS[tournament.format as TournamentFormat]}
-                            </div>
-                            <div className="text-muted-foreground">
-                              {MODE_LABELS[tournament.mode as TournamentMode]}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3">
-                          <Badge color={statusConfig.color}>{statusConfig.label}</Badge>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <UsersIcon className="h-3 w-3 text-muted-foreground" />
-                            {tournament.registeredCount}/{tournament.maxPlayers}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <div className="flex items-center justify-center gap-1 text-amber-600">
-                            <CoinsIcon className="h-3 w-3" />
-                            {tournament.entryFee.toLocaleString()}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <div className="flex items-center justify-center gap-1 text-emerald-600">
-                            <TrophyIcon className="h-3 w-3" />
-                            {tournament.potentialPrize.toLocaleString()}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-1 text-xs">
-                            <CalendarIcon className="h-3 w-3 text-muted-foreground" />
-                            <div>
-                              <div className="font-medium">{startDate.toLocaleDateString()}</div>
+                      return (
+                        <tr
+                          key={tournament._id}
+                          className={`border-b hover:bg-muted/30 ${
+                            tournament.status === "active" ? "bg-emerald-500/5" : ""
+                          }`}
+                        >
+                          <td className="py-3 px-3">
+                            <Link
+                              href={`/tournaments/${tournament._id}`}
+                              className="font-medium hover:underline text-primary"
+                            >
+                              {tournament.name}
+                            </Link>
+                            {tournament.description && (
+                              <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                {tournament.description}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="text-xs">
+                              <div className="font-medium">
+                                {FORMAT_LABELS[tournament.format as TournamentFormat]}
+                              </div>
                               <div className="text-muted-foreground">
-                                {startDate.toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                                {MODE_LABELS[tournament.mode as TournamentMode]}
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <TournamentActions tournament={tournament} />
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                          <td className="py-3 px-3">
+                            <Badge color={statusConfig.color}>{statusConfig.label}</Badge>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <UsersIcon className="h-3 w-3 text-muted-foreground" />
+                              {tournament.registeredCount}/{tournament.maxPlayers}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex items-center justify-center gap-1 text-amber-600">
+                              <CoinsIcon className="h-3 w-3" />
+                              {tournament.entryFee.toLocaleString()}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex items-center justify-center gap-1 text-emerald-600">
+                              <TrophyIcon className="h-3 w-3" />
+                              {tournament.potentialPrize.toLocaleString()}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-1 text-xs">
+                              <CalendarIcon className="h-3 w-3 text-muted-foreground" />
+                              <div>
+                                <div className="font-medium">{startDate.toLocaleDateString()}</div>
+                                <div className="text-muted-foreground">
+                                  {startDate.toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <TournamentActions tournament={tournament} />
+                          </td>
+                        </tr>
+                      );
+                    }
+                  )}
                 </tbody>
               </table>
             </div>

@@ -64,7 +64,6 @@ export function withMutationDebug<TArgs extends Record<string, unknown>, TResult
       performance.start(opId);
     }
 
-    // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
     const userId = args["userId"] as string | undefined;
     logger.mutation(functionName, userId || "unknown", logArgs ? args : undefined);
 
@@ -129,7 +128,6 @@ export function withQueryDebug<TArgs extends Record<string, unknown>, TResult>(
       performance.start(opId);
     }
 
-    // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
     const userId = args["userId"] as string | undefined;
     logger.query(functionName, userId, logArgs ? args : undefined);
 
@@ -194,7 +192,6 @@ export function withActionDebug<TArgs extends Record<string, unknown>, TResult>(
       performance.start(opId);
     }
 
-    // biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for index signatures (TS4111)
     const userId = args["userId"] as string | undefined;
     logger.action(functionName, { ...options?.context, userId, args: logArgs ? args : undefined });
 

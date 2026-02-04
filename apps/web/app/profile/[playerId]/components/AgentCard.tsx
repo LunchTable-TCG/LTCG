@@ -27,7 +27,7 @@ import {
 import { useState } from "react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
-interface Agent {
+export interface Agent {
   _id: Id<"agents">;
   name: string;
   profilePictureUrl?: string;

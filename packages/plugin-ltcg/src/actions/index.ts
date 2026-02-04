@@ -16,6 +16,8 @@ import { flipSummonAction } from "./flipSummonAction";
 import { getWalletInfoAction } from "./getWalletInfoAction";
 import { ggAction } from "./ggAction";
 import { joinLobbyAction } from "./joinLobbyAction";
+import { purchaseGemsAction } from "./purchaseGemsAction";
+import { purchasePackAction } from "./purchasePackAction";
 import { reactToPlayAction } from "./reactToPlayAction";
 import { registerAgentAction } from "./registerAgentAction";
 import { sendChatMessageAction } from "./sendChatMessageAction";
@@ -37,6 +39,10 @@ import { trashTalkAction } from "./trashTalkAction";
  * - Join specific lobbies by ID or code
  * - Play story mode (instant AI battles)
  * - Surrender games
+ *
+ * Economy (x402 payments):
+ * - Purchase gems with Solana tokens
+ * - Buy card packs with gems or tokens
  *
  * Gameplay:
  * - Summon monsters (with tribute support)
@@ -63,6 +69,10 @@ export const ltcgActions = [
   joinLobbyAction,
   storyModeAction,
   surrenderAction,
+
+  // Economy Actions
+  purchaseGemsAction,
+  purchasePackAction,
 
   // Gameplay Actions
   summonAction,
@@ -92,6 +102,9 @@ export {
   joinLobbyAction,
   storyModeAction,
   surrenderAction,
+  // Economy
+  purchaseGemsAction,
+  purchasePackAction,
   // Gameplay
   summonAction,
   setCardAction,

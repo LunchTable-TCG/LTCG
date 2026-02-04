@@ -28,7 +28,12 @@ async function fetchGameState(agentId: string, gameId: string): Promise<GameSnap
 export function useGameState(agentId: string, gameId: string | null) {
   return useQuery({
     queryKey: ["ltcg", "game", agentId, gameId],
-    queryFn: () => fetchGameState(agentId, gameId!),
+    queryFn: () => {
+      if (!gameId) {
+        throw new Error("gameId is required to fetch game state");
+      }
+      return fetchGameState(agentId, gameId);
+    },
     refetchInterval: 5000, // Poll every 5 seconds
     staleTime: 4000, // Consider data stale after 4 seconds
     enabled: !!agentId && !!gameId,

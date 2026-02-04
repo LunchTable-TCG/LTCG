@@ -1,0 +1,322 @@
+---
+title: Economy API
+description: Shop, currency, and marketplace functions
+---
+
+## Overview
+
+The Economy API handles all financial operations including currency, purchases, and the player marketplace.
+
+## Currency
+
+### Get Balance
+
+Get user's currency balances.
+
+```typescript
+// Query
+api.economy.currency.getBalance
+
+// Arguments
+none (uses authenticated user)
+
+// Returns
+{
+  gold: number,
+  gems: number,
+  lunchMoney: number  // Premium currency
+}
+```
+
+### Add Currency (Admin)
+
+Add currency to a user's account.
+
+```typescript
+// Mutation (Admin only)
+api.admin.economy.addCurrency
+
+// Arguments
+{
+  userId: Id<"users">,
+  currency: "gold" | "gems" | "lunchMoney",
+  amount: number,
+  reason: string
+}
+
+// Returns
+void
+```
+
+## Shop
+
+### List Products
+
+Get available shop items.
+
+```typescript
+// Query
+api.economy.shop.listProducts
+
+// Arguments
+{
+  category?: "packs" | "bundles" | "cosmetics" | "battle-pass"
+}
+
+// Returns
+Array<{
+  _id: Id<"shopProducts">,
+  name: string,
+  description: string,
+  price: {
+    currency: Currency,
+    amount: number
+  },
+  contents: ProductContents,
+  available: boolean
+}>
+```
+
+### Purchase
+
+Buy a shop item.
+
+```typescript
+// Mutation
+api.economy.shop.purchase
+
+// Arguments
+{
+  productId: Id<"shopProducts">,
+  quantity?: number
+}
+
+// Returns
+{
+  success: boolean,
+  items: Array<ReceivedItem>
+}
+```
+
+### Open Pack
+
+Open a card pack.
+
+```typescript
+// Mutation
+api.economy.shop.openPack
+
+// Arguments
+{
+  packId: Id<"packs">
+}
+
+// Returns
+{
+  cards: Array<{
+    card: Card,
+    isNew: boolean,
+    rarity: Rarity
+  }>
+}
+```
+
+## Marketplace
+
+### List Listings
+
+Get marketplace listings.
+
+```typescript
+// Query
+api.economy.marketplace.list
+
+// Arguments
+{
+  cardId?: Id<"cards">,
+  element?: Element,
+  rarity?: Rarity,
+  minPrice?: number,
+  maxPrice?: number,
+  sortBy?: "price" | "date",
+  sortOrder?: "asc" | "desc",
+  limit?: number,
+  cursor?: string
+}
+
+// Returns
+{
+  listings: Array<MarketListing>,
+  nextCursor?: string
+}
+```
+
+### Create Listing
+
+List a card for sale.
+
+```typescript
+// Mutation
+api.economy.marketplace.createListing
+
+// Arguments
+{
+  cardId: Id<"cards">,
+  variant?: Variant,
+  price: number,  // In gold
+  duration: number  // Hours (24, 48, 72)
+}
+
+// Returns
+Id<"marketListings">
+```
+
+### Buy Listing
+
+Purchase a marketplace listing.
+
+```typescript
+// Mutation
+api.economy.marketplace.buy
+
+// Arguments
+{
+  listingId: Id<"marketListings">
+}
+
+// Returns
+{
+  success: boolean,
+  card: Card
+}
+```
+
+### Cancel Listing
+
+Cancel your own listing.
+
+```typescript
+// Mutation
+api.economy.marketplace.cancel
+
+// Arguments
+{
+  listingId: Id<"marketListings">
+}
+
+// Returns
+void
+```
+
+## Battle Pass
+
+### Get Progress
+
+Get current battle pass progress.
+
+```typescript
+// Query
+api.economy.battlePass.getProgress
+
+// Arguments
+none
+
+// Returns
+{
+  tier: number,
+  xp: number,
+  xpToNextTier: number,
+  isPremium: boolean,
+  claimedRewards: Array<number>,
+  availableRewards: Array<BattlePassReward>
+}
+```
+
+### Claim Reward
+
+Claim a battle pass reward.
+
+```typescript
+// Mutation
+api.economy.battlePass.claimReward
+
+// Arguments
+{
+  tier: number
+}
+
+// Returns
+{
+  reward: BattlePassReward
+}
+```
+
+### Upgrade to Premium
+
+Purchase premium battle pass.
+
+```typescript
+// Mutation
+api.economy.battlePass.upgradeToPremium
+
+// Arguments
+none
+
+// Returns
+{
+  success: boolean
+}
+```
+
+## Types
+
+### Currency
+
+```typescript
+type Currency = "gold" | "gems" | "lunchMoney";
+```
+
+### MarketListing
+
+```typescript
+interface MarketListing {
+  _id: Id<"marketListings">;
+  sellerId: Id<"users">;
+  sellerName: string;
+  card: Card;
+  variant?: Variant;
+  price: number;
+  listedAt: number;
+  expiresAt: number;
+}
+```
+
+### BattlePassReward
+
+```typescript
+interface BattlePassReward {
+  tier: number;
+  type: "card" | "pack" | "gold" | "cosmetic";
+  isPremium: boolean;
+  value: any;
+}
+```
+
+---
+
+## Related
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard
+    title="Core API"
+    description="User and collection management"
+    href="/api-reference/core/"
+  />
+  <LinkCard
+    title="Architecture"
+    description="System design overview"
+    href="/architecture/schema/"
+  />
+</CardGrid>

@@ -136,10 +136,11 @@ function EditSeasonDialog({ open, onOpenChange, season }: EditSeasonDialogProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!season) return;
     setIsSubmitting(true);
 
     try {
-      const result = await updateSeason({
+      const result = (await updateSeason({
         seasonId: season._id,
         name,
         description: description || undefined,
@@ -148,7 +149,7 @@ function EditSeasonDialog({ open, onOpenChange, season }: EditSeasonDialogProps)
         rankResetType,
         softResetPercentage:
           rankResetType === "soft" ? Number.parseInt(softResetPercentage, 10) : undefined,
-      });
+      })) as { message: string };
 
       toast.success(result.message);
       onOpenChange(false);
@@ -519,7 +520,7 @@ export default function SeasonDetailPage() {
   const handleStart = async () => {
     setIsStarting(true);
     try {
-      const result = await startSeason({ seasonId: seasonId as SeasonId });
+      const result = (await startSeason({ seasonId: seasonId as SeasonId })) as { message: string };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to start season");
@@ -531,10 +532,10 @@ export default function SeasonDetailPage() {
   const handleEnd = async (withRewards: boolean) => {
     setIsEnding(true);
     try {
-      const result = await endSeason({
+      const result = (await endSeason({
         seasonId: seasonId as SeasonId,
         distributeRewards: withRewards,
-      });
+      })) as { message: string };
       toast.success(result.message);
       setShowEndConfirm(false);
     } catch (error) {
@@ -547,7 +548,9 @@ export default function SeasonDetailPage() {
   const handleDistributeRewards = async () => {
     setIsDistributing(true);
     try {
-      const result = await distributeRewards({ seasonId: seasonId as SeasonId });
+      const result = (await distributeRewards({ seasonId: seasonId as SeasonId })) as {
+        message: string;
+      };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to distribute rewards");
@@ -646,13 +649,13 @@ export default function SeasonDetailPage() {
               </>
             )}
 
-            {season.status === "ended" && season.snapshotStats?.pendingRewards > 0 && (
+            {season.status === "ended" && (season.snapshotStats?.pendingRewards ?? 0) > 0 && (
               <RoleGuard permission="config.edit">
                 <Button onClick={handleDistributeRewards} disabled={isDistributing}>
                   <GiftIcon className="h-4 w-4 mr-2" />
                   {isDistributing
                     ? "Distributing..."
-                    : `Distribute Rewards (${season.snapshotStats.pendingRewards} pending)`}
+                    : `Distribute Rewards (${season.snapshotStats?.pendingRewards ?? 0} pending)`}
                 </Button>
               </RoleGuard>
             )}

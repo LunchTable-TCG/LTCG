@@ -19,7 +19,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { RoleGuard } from "@/contexts/AdminContext";
-import {  useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
   CoinsIcon,
@@ -38,10 +39,36 @@ import { toast } from "sonner";
 // =============================================================================
 
 type ProductType = "pack" | "box" | "currency";
+type BadgeColor = "amber" | "violet" | "blue" | "emerald" | "rose" | "indigo" | "gray" | "slate";
+
+interface ShopProduct {
+  _id: Id<"shopProducts">;
+  productId: string;
+  name: string;
+  productType: ProductType;
+  isActive: boolean;
+  goldPrice?: number;
+  gemPrice?: number;
+  sortOrder?: number;
+  packConfig?: {
+    cardCount: number;
+    guaranteedRarity?: string;
+    archetype?: string;
+  };
+  boxConfig?: {
+    packCount: number;
+    packProductId: string;
+    bonusCards?: number;
+  };
+  currencyConfig?: {
+    amount: number;
+    currencyType: string;
+  };
+}
 
 const PRODUCT_TYPE_CONFIG: Record<
   ProductType,
-  { label: string; color: string; icon: React.ReactNode }
+  { label: string; color: BadgeColor; icon: React.ReactNode }
 > = {
   pack: { label: "Pack", color: "blue", icon: <PackageIcon className="h-4 w-4" /> },
   box: { label: "Box", color: "violet", icon: <ShoppingCartIcon className="h-4 w-4" /> },
@@ -61,13 +88,13 @@ const PRODUCT_TYPES = [
 export default function ShopPage() {
   // Filters
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<ProductType | "all">("all");
   const [showInactive, setShowInactive] = useState(false);
 
   // Query
   const productsResult = useConvexQuery(api.admin.shop.listProducts, {
     search: search || undefined,
-    productType: typeFilter !== "all" ? (typeFilter as ProductType) : undefined,
+    productType: typeFilter !== "all" ? typeFilter : undefined,
     includeInactive: showInactive,
   });
 
@@ -77,7 +104,9 @@ export default function ShopPage() {
 
   const handleToggleActive = async (productDbId: string, _productName: string) => {
     try {
-      const result = await toggleActive({ productDbId: productDbId as any });
+      const result = (await toggleActive({ productDbId: productDbId as Id<"shopProducts"> })) as {
+        message: string;
+      };
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle product status");
@@ -167,7 +196,10 @@ export default function ShopPage() {
 
           <div className="w-[150px]">
             <Text className="text-sm text-muted-foreground mb-1">Type</Text>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <Select
+              value={typeFilter}
+              onValueChange={(value) => setTypeFilter(value as ProductType | "all")}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
@@ -220,7 +252,7 @@ export default function ShopPage() {
                 </tr>
               </thead>
               <tbody>
-                {productsResult?.products.map((product: any) => {
+                {productsResult?.products.map((product: ShopProduct) => {
                   const typeConfig = PRODUCT_TYPE_CONFIG[product.productType as ProductType];
                   return (
                     <tr
@@ -239,7 +271,7 @@ export default function ShopPage() {
                         </div>
                       </td>
                       <td className="py-3 px-3">
-                        <Badge color={typeConfig.color as any} size="sm">
+                        <Badge color={typeConfig.color} size="sm">
                           <span className="flex items-center gap-1">
                             {typeConfig.icon}
                             {typeConfig.label}

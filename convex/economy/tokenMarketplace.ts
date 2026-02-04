@@ -17,7 +17,6 @@
  * 5. On confirmation → transfers card, updates listing
  */
 
-import { paginator } from "convex-helpers/server/pagination";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
@@ -29,7 +28,6 @@ import {
   mutation,
   query,
 } from "../_generated/server";
-import schema from "../schema";
 import { PAGINATION, TOKEN } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
@@ -1051,8 +1049,7 @@ export const getPendingPurchase = internalQuery({
 /**
  * Get token transaction history for the current user
  *
- * Uses convex-helpers paginator for efficient cursor-based pagination.
- * The paginator handles cursor encryption and proper index traversal.
+ * Uses standard Convex pagination for reliable cursor-based pagination.
  *
  * @param paginationOpts - Convex pagination options with cursor and numItems
  * @returns Paginated token transactions with continueCursor for next page
@@ -1064,8 +1061,8 @@ export const getTokenTransactionHistory = query({
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
 
-    // Use convex-helpers paginator for clean cursor-based pagination
-    const result = await paginator(ctx.db, schema)
+    // Use standard Convex pagination for stability
+    const result = await ctx.db
       .query("tokenTransactions")
       .withIndex("by_user_time", (q) => q.eq("userId", userId))
       .order("desc")

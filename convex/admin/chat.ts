@@ -36,9 +36,10 @@ export const listMessages = query({
 
     let messages = await (async () => {
       if (args.userId) {
+        const userId = args.userId;
         return await ctx.db
           .query("globalChatMessages")
-          .withIndex("by_user", (q) => q.eq("userId", args.userId!))
+          .withIndex("by_user", (q) => q.eq("userId", userId))
           .order("desc")
           .collect();
       }
@@ -49,7 +50,8 @@ export const listMessages = query({
 
     // Filter by time
     if (args.since) {
-      messages = messages.filter((m: Message) => m.createdAt >= args.since!);
+      const since = args.since;
+      messages = messages.filter((m: Message) => m.createdAt >= since);
     }
 
     // Filter by search term
@@ -169,12 +171,17 @@ export const getMutedUsers = query({
       .filter((q) => q.gt(q.field("mutedUntil"), now))
       .collect();
 
-    return mutedUsers.map((u) => ({
-      _id: u._id,
-      username: u.username,
-      mutedUntil: u.mutedUntil,
-      remainingMinutes: Math.ceil((u.mutedUntil! - now) / (1000 * 60)),
-    }));
+    return mutedUsers.map((u) => {
+      if (!u.mutedUntil) {
+        throw new Error("mutedUntil is required for muted users");
+      }
+      return {
+        _id: u._id,
+        username: u.username,
+        mutedUntil: u.mutedUntil,
+        remainingMinutes: Math.ceil((u.mutedUntil - now) / (1000 * 60)),
+      };
+    });
   },
 });
 
@@ -290,7 +297,8 @@ export const deleteUserMessages = mutation({
 
     // Filter by time if specified
     if (args.since) {
-      messages = messages.filter((m) => m.createdAt >= args.since!);
+      const since = args.since;
+      messages = messages.filter((m) => m.createdAt >= since);
     }
 
     let deleted = 0;

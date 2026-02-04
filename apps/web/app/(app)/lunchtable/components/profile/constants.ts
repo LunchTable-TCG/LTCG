@@ -4,6 +4,13 @@
  */
 
 import {
+  ELEMENT_BG_COLORS,
+  ELEMENT_TEXT_COLORS,
+  RARITY_BORDER_COLORS,
+  RARITY_GLOW_COLORS,
+  RARITY_TEXT_COLORS,
+} from "@ltcg/core/ui";
+import {
   Crown,
   Droplets,
   Flame,
@@ -30,21 +37,35 @@ export const RANK_COLORS: Record<
   Legend: { text: "text-yellow-400", bg: "bg-yellow-400/20", border: "border-yellow-400/30" },
 };
 
+// Element config combining core colors with lucide icons
 export const ELEMENT_CONFIG = {
-  fire: { icon: Flame, color: "text-orange-400", bg: "bg-orange-500/20" },
-  water: { icon: Droplets, color: "text-blue-400", bg: "bg-blue-500/20" },
-  earth: { icon: Mountain, color: "text-amber-600", bg: "bg-amber-600/20" },
-  wind: { icon: Wind, color: "text-emerald-400", bg: "bg-emerald-500/20" },
+  fire: { icon: Flame, color: ELEMENT_TEXT_COLORS.fire, bg: ELEMENT_BG_COLORS.fire },
+  water: { icon: Droplets, color: ELEMENT_TEXT_COLORS.water, bg: ELEMENT_BG_COLORS.water },
+  earth: { icon: Mountain, color: ELEMENT_TEXT_COLORS.earth, bg: ELEMENT_BG_COLORS.earth },
+  wind: { icon: Wind, color: ELEMENT_TEXT_COLORS.wind, bg: ELEMENT_BG_COLORS.wind },
 };
 
+// Rarity config using core colors (subset without uncommon for this UI)
 export const RARITY_CONFIG = {
-  common: { color: "text-gray-400", border: "border-gray-500/30", glow: "" },
-  rare: { color: "text-blue-400", border: "border-blue-500/50", glow: "shadow-blue-500/20" },
-  epic: { color: "text-purple-400", border: "border-purple-500/50", glow: "shadow-purple-500/20" },
+  common: {
+    color: RARITY_TEXT_COLORS.common,
+    border: RARITY_BORDER_COLORS.common,
+    glow: RARITY_GLOW_COLORS.common,
+  },
+  rare: {
+    color: RARITY_TEXT_COLORS.rare,
+    border: RARITY_BORDER_COLORS.rare,
+    glow: RARITY_GLOW_COLORS.rare,
+  },
+  epic: {
+    color: RARITY_TEXT_COLORS.epic,
+    border: RARITY_BORDER_COLORS.epic,
+    glow: RARITY_GLOW_COLORS.epic,
+  },
   legendary: {
-    color: "text-yellow-400",
-    border: "border-yellow-500/50",
-    glow: "shadow-yellow-500/30 shadow-lg",
+    color: RARITY_TEXT_COLORS.legendary,
+    border: RARITY_BORDER_COLORS.legendary,
+    glow: `${RARITY_GLOW_COLORS.legendary} shadow-lg`,
   },
 };
 

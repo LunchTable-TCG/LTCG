@@ -22,10 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/lib/convexHelpers";
+import { api, useConvexMutation } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { upload } from "@vercel/blob/client";
-import { useMutation } from "convex/react";
 import {
   AlertCircleIcon,
   CheckCircle2Icon,
@@ -136,8 +135,8 @@ export function BatchUploadDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Convex mutations
-  const saveAssetMetadata = useMutation(api.admin.assets.saveAssetMetadata);
-  const createBrandingAsset = useMutation(api.admin.branding.createAsset);
+  const saveAssetMetadata = useConvexMutation(api.admin.assets.saveAssetMetadata);
+  const createBrandingAsset = useConvexMutation(api.admin.branding.createAsset);
 
   // ---------------------------------------------------------------------------
   // File Selection

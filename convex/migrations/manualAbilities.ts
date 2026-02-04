@@ -6,8 +6,8 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalMutation } from "../functions";
-import { migrationsPool } from "../infrastructure/workpools";
 import type { JsonAbility } from "../gameplay/effectSystem/types";
+import { migrationsPool } from "../infrastructure/workpools";
 
 // Map of card name -> proper JSON ability
 const MANUAL_ABILITIES: Record<string, JsonAbility> = {
