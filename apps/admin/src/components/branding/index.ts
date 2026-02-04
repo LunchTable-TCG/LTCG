@@ -7,4 +7,3 @@ export { BrandingAssetCard } from "./BrandingAssetCard";
 export { AssetDetailSheet } from "./AssetDetailSheet";
 export { GuidelinesModal } from "./GuidelinesModal";
 export { CreateFolderDialog } from "./CreateFolderDialog";
-export { UploadAssetsDialog } from "./UploadAssetsDialog";
