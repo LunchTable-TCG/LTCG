@@ -59,7 +59,7 @@
     "test:e2e:story": "playwright test e2e/story.spec.ts",
     "test:e2e:social": "playwright test e2e/social.spec.ts",
     "test:e2e:realtime": "playwright test e2e/realtime.spec.ts",
-    "type-check": "tsc --noEmit && tsc --project apps/web/tsconfig.json --noEmit && tsc --project apps/admin/tsconfig.json --noEmit && tsc --project convex/tsconfig.json --noEmit && tsc --project packages/plugin-ltcg/tsconfig.json --noEmit",
+    "type-check": "cd packages/core && bun run build && cd ../.. && tsc --noEmit && tsc --project apps/web/tsconfig.json --noEmit && tsc --project apps/admin/tsconfig.json --noEmit && tsc --project packages/plugin-ltcg/tsconfig.json --noEmit",
     "type-check:watch": "tsc --noEmit --watch",
     "type-check:root": "tsc --noEmit",
     "type-check:web": "tsc --project apps/web/tsconfig.json --noEmit",

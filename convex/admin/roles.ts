@@ -6,6 +6,7 @@
  */
 
 import { v } from "convex/values";
+import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -284,8 +285,8 @@ export const listAdminsByRole = query({
     // Fetch user details
     const admins = await Promise.all(
       adminRoles.map(async (adminRole) => {
-        const user = await ctx.db.get(adminRole.userId);
-        const grantedBy = await ctx.db.get(adminRole.grantedBy);
+        const user = (await ctx.db.get(adminRole.userId)) as Doc<"users"> | null;
+        const grantedBy = (await ctx.db.get(adminRole.grantedBy)) as Doc<"users"> | null;
 
         // Calculate temporal status
         const isExpired = adminRole.expiresAt ? adminRole.expiresAt < now : false;
