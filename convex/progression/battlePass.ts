@@ -8,6 +8,7 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
 import { mutation, internalMutation } from "../functions";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";

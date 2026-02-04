@@ -4,9 +4,90 @@
  * Adds rating, XP, level, and stats fields to existing users for the leaderboard system.
  *
  * Run this migration once after deploying the schema changes:
- * - convex migrations run addLeaderboardFields
+ * - npx convex run migrations/addLeaderboardFields
+ *
+ * REFACTORED to use convex-helpers makeMigration for:
+ * - Automatic batch processing and pagination
+ * - Built-in progress tracking
+ * - Resumability from cursor if interrupted
+ * - Better error handling
  */
 
+import { migration } from "../migrations";
+import { ELO_SYSTEM } from "../lib/constants";
+
+/**
+ * Add leaderboard fields to users
+ *
+ * This migration uses the convex-helpers migration wrapper which provides:
+ * - Automatic pagination (100 users per batch by default)
+ * - Progress tracking in migrations table
+ * - Resumability if interrupted
+ * - Error handling with automatic cursor tracking
+ *
+ * The migration will:
+ * 1. Query users in batches
+ * 2. Skip users that already have rankedElo field (idempotent)
+ * 3. Add default values for rating, XP, level, and stats
+ * 4. Track progress automatically in migrations table
+ */
+export default migration({
+  table: "users",
+  migrateOne: async (_ctx, user) => {
+    // Skip users that already have the field (idempotent)
+    if (user.rankedElo !== undefined) {
+      return null; // null = skip this document
+    }
+
+    // Return the fields to patch
+    return {
+      // Rating fields
+      rankedElo: ELO_SYSTEM.DEFAULT_RATING,
+      casualRating: ELO_SYSTEM.DEFAULT_RATING,
+
+      // Progression fields
+      xp: 0,
+      level: 1,
+
+      // Stats fields
+      totalWins: 0,
+      totalLosses: 0,
+      rankedWins: 0,
+      rankedLosses: 0,
+      casualWins: 0,
+      casualLosses: 0,
+      storyWins: 0,
+
+      // Player type (default to human; AI agents can be updated separately)
+      isAiAgent: false,
+
+      lastStatsUpdate: Date.now(),
+    };
+  },
+});
+
+/**
+ * LEGACY IMPLEMENTATION (kept for reference)
+ *
+ * This is the old workpool-based implementation. The new makeMigration
+ * approach above provides better progress tracking and error handling.
+ *
+ * Old approach issues:
+ * - Manual progress tracking
+ * - No automatic resumability
+ * - Required separate worker mutation
+ * - No built-in status monitoring
+ * - Manual batch size management
+ *
+ * New approach benefits:
+ * - Automatic batch processing
+ * - Built-in progress tracking via migrations table
+ * - Resumable from cursor if interrupted
+ * - Status monitoring via migrations:status query
+ * - Simpler implementation (no separate worker needed)
+ */
+
+/*
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalMutation } from "../functions";
@@ -55,9 +136,6 @@ export default internalMutation({
   },
 });
 
-/**
- * Worker mutation: Update a single user's leaderboard fields
- */
 export const updateUserLeaderboardFields = internalMutation({
   args: {
     userId: v.id("users"),
@@ -104,3 +182,4 @@ export const updateUserLeaderboardFields = internalMutation({
     return { success: true, updated: true };
   },
 });
+*/

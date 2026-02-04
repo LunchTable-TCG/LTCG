@@ -38,21 +38,10 @@ interface ChatMessage {
 interface OnlineUser {
   id: string;
   username: string;
-  rank: string;
   status: "online" | "in_game" | "idle";
 }
 
 // Removed MOCK_ONLINE_USERS - now using real data from Convex
-
-const RANK_COLORS: Record<string, string> = {
-  Bronze: "text-orange-400",
-  Silver: "text-gray-300",
-  Gold: "text-yellow-500",
-  Platinum: "text-blue-400",
-  Diamond: "text-cyan-400",
-  Master: "text-purple-400",
-  Legend: "text-yellow-400",
-};
 
 const STATUS_CONFIG = {
   online: { color: "bg-green-500", label: "Online" },
@@ -97,7 +86,7 @@ export function GlobalChat() {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const [userMenu, setUserMenu] = useState<{ username: string; x: number; y: number } | null>(null);
   const [mutedUsers, setMutedUsers] = useState<Set<string>>(new Set());
-  const [challengeTarget, setChallengeTarget] = useState<{ username: string; rank: string } | null>(
+  const [challengeTarget, setChallengeTarget] = useState<{ username: string } | null>(
     null
   );
   const [reportTarget, setReportTarget] = useState<string | null>(null);
@@ -121,7 +110,6 @@ export function GlobalChat() {
     (user: NonNullable<typeof convexOnlineUsers>[number]) => ({
       id: user.userId,
       username: user.username,
-      rank: user.rank, // Real rank calculated from ELO
       status: user.status,
     })
   );
@@ -146,7 +134,7 @@ export function GlobalChat() {
       return;
     }
     scrollToBottom();
-  }, [messages.length, scrollToBottom]);
+  }, [scrollToBottom]);
 
   // Auto-scroll for agent chat
   const scrollAgentToBottom = useCallback(() => {
@@ -159,7 +147,7 @@ export function GlobalChat() {
       return;
     }
     scrollAgentToBottom();
-  }, [aiChatMessages.length, scrollAgentToBottom]);
+  }, [scrollAgentToBottom]);
 
   // Infinite scroll - load more when scrolling near the top
   const handleScroll = useCallback(() => {
@@ -253,12 +241,10 @@ export function GlobalChat() {
     setUserMenu(null);
   };
 
-  const handleOpenChallenge = (username: string, rank?: string) => {
-    // Find user's rank if not provided
-    const user = onlineUsers.find((u) => u.username === username);
+  const handleOpenChallenge = (username: string) => {
+    // Challenge target set
     setChallengeTarget({
       username,
-      rank: rank || user?.rank || "Gold",
     });
     setUserMenu(null);
   };
@@ -721,14 +707,6 @@ export function GlobalChat() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "text-[10px] font-bold uppercase tracking-wider",
-                          RANK_COLORS[user.rank] || "text-[#a89f94]"
-                        )}
-                      >
-                        {user.rank}
-                      </span>
                       {user.status === "in_game" && (
                         <span className="flex items-center gap-1 text-[9px] text-amber-400">
                           <Gamepad2 className="w-3 h-3" />
@@ -744,7 +722,7 @@ export function GlobalChat() {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleOpenChallenge(user.username, user.rank);
+                        handleOpenChallenge(user.username);
                       }}
                       className="shrink-0 p-2 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#d4af37] hover:bg-[#d4af37]/20 hover:border-[#d4af37]/50 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
                     >
@@ -848,7 +826,6 @@ export function GlobalChat() {
         onClose={() => setChallengeTarget(null)}
         onConfirm={handleChallengeConfirm}
         opponentUsername={challengeTarget?.username || ""}
-        opponentRank={challengeTarget?.rank}
       />
 
       {/* Report User Dialog */}

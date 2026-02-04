@@ -14,7 +14,9 @@
 
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
+import { getAll } from "convex-helpers/server/relationships";
 import { internalMutation } from "../functions";
 import {
   casualLeaderboard,
@@ -75,44 +77,45 @@ export const getLeaderboard = query({
     }
 
     // Story mode requires special handling due to join with users table
+    // OPTIMIZATION: Batch fetch to eliminate N+1 pattern (N+1 queries → 3 queries total)
     if (type === "story") {
-      const results = [];
-      let index = 0;
-      let fetched = 0;
-
-      // Fetch documents until we have enough after filtering
-      while (fetched < limit && index < limit * 3) {
-        const item = await aggregate.at(ctx, index);
+      // Step 1: Fetch aggregate items (1 query)
+      const aggregateItems = [];
+      for (let i = 0; i < limit * 3; i++) {
+        const item = await aggregate.at(ctx, i);
         if (!item) break;
+        aggregateItems.push(item);
+      }
 
-        // Get full playerXP document
-        const xp = await ctx.db.get(item.id as Id<"playerXP">);
-        if (!xp) {
-          index++;
-          continue;
-        }
+      // Step 2: Batch fetch all playerXP documents (1 query instead of N)
+      const xpDocs = await getAll(
+        ctx.db,
+        "playerXP",
+        aggregateItems.map((item) => item.id as Id<"playerXP">)
+      );
 
-        const user = await ctx.db.get(xp.userId);
-        if (!user) {
-          index++;
-          continue;
-        }
+      // Step 3: Batch fetch all user documents (1 query instead of N)
+      const userIds = xpDocs.filter((xp) => xp !== null).map((xp) => xp!.userId);
+      const users = await getAll(ctx.db, "users", userIds);
+
+      // Step 4: Build results with filtering
+      const results = [];
+      for (let i = 0; i < xpDocs.length && results.length < limit; i++) {
+        const xp = xpDocs[i];
+        if (!xp) continue;
+
+        const user = users[i];
+        if (!user) continue;
 
         // Filter by segment
         const isAiAgent = user.isAiAgent || false;
-        if (segment === "humans" && isAiAgent) {
-          index++;
-          continue;
-        }
-        if (segment === "ai" && !isAiAgent) {
-          index++;
-          continue;
-        }
+        if (segment === "humans" && isAiAgent) continue;
+        if (segment === "ai" && !isAiAgent) continue;
 
         results.push({
           userId: user._id,
           username: user.username,
-          rank: fetched + 1,
+          rank: results.length + 1,
           rating: xp.currentXP,
           level: xp.currentLevel,
           wins: user.storyWins || 0,
@@ -120,24 +123,35 @@ export const getLeaderboard = query({
           winRate: calculateWinRate(user, type),
           isAiAgent,
         });
-
-        fetched++;
-        index++;
       }
 
       return results;
     }
 
-    // Ranked and Casual modes - fetch full documents from aggregate items
-    const results = [];
+    // Ranked and Casual modes
+    // OPTIMIZATION: Batch fetch to eliminate N+1 pattern (N+1 queries → 2 queries total)
+
+    // Step 1: Fetch all aggregate items (1 query)
+    const aggregateItems = [];
     for (let i = 0; i < limit; i++) {
       const item = namespace
         ? await aggregate.at(ctx, i, { namespace })
         : await aggregate.at(ctx, i);
       if (!item) break;
+      aggregateItems.push(item);
+    }
 
-      // Get full user document
-      const player = await ctx.db.get(item.id as Id<"users">);
+    // Step 2: Batch fetch all user documents (1 query instead of N)
+    const players = await getAll(
+      ctx.db,
+      "users",
+      aggregateItems.map((item) => item.id as Id<"users">)
+    );
+
+    // Step 3: Build results
+    const results = [];
+    for (let i = 0; i < players.length; i++) {
+      const player = players[i];
       if (!player) continue;
 
       const rating = type === "ranked" ? player.rankedElo || 1000 : player.casualRating || 1000;

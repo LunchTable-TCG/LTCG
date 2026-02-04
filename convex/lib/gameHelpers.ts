@@ -5,6 +5,7 @@
  * All functions record appropriate game events for spectators and elizaOS agents.
  */
 
+import { getAll } from "convex-helpers/server/relationships";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import type { JsonCondition, NumericRange } from "../gameplay/effectSystem/types";
@@ -601,6 +602,45 @@ export async function applyContinuousEffects(
     return { atkBonus: 0, defBonus: 0 };
   }
 
+  // OPTIMIZATION: Batch fetch all card definitions to eliminate N+1 pattern
+  // Step 1: Collect all card IDs we need to fetch
+  const cardIdsToFetch: Id<"cardDefinitions">[] = [];
+
+  const playerFieldSpell = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
+  if (playerFieldSpell?.isActive) {
+    cardIdsToFetch.push(playerFieldSpell.cardId);
+  }
+
+  const opponentFieldSpell = isHost ? gameState.opponentFieldSpell : gameState.hostFieldSpell;
+  if (opponentFieldSpell?.isActive) {
+    cardIdsToFetch.push(opponentFieldSpell.cardId);
+  }
+
+  const backrow = isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
+  for (const backrowCard of backrow) {
+    if (backrowCard && !backrowCard.isFaceDown) {
+      cardIdsToFetch.push(backrowCard.cardId);
+    }
+  }
+
+  const allBoards = [...gameState.hostBoard, ...gameState.opponentBoard];
+  for (const boardCard of allBoards) {
+    cardIdsToFetch.push(boardCard.cardId);
+  }
+
+  // Step 2: Batch fetch all cards (1 query instead of N)
+  const fetchedCards = await getAll(ctx.db, "cardDefinitions", cardIdsToFetch);
+
+  // Step 3: Build a lookup map for O(1) access
+  const cardMap = new Map<string, Doc<"cardDefinitions">>();
+  for (let i = 0; i < cardIdsToFetch.length; i++) {
+    const cardId = cardIdsToFetch[i];
+    const fetchedCard = fetchedCards[i];
+    if (cardId && fetchedCard) {
+      cardMap.set(cardId, fetchedCard as Doc<"cardDefinitions">);
+    }
+  }
+
   // Helper function to check if card matches a condition
   const matchesCondition = (condition?: string): boolean => {
     if (!condition) return true;
@@ -664,9 +704,8 @@ export async function applyContinuousEffects(
   };
 
   // Check field spells (affects both players unless specified)
-  const playerFieldSpell = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
   if (playerFieldSpell?.isActive) {
-    const fieldCard = await ctx.db.get(playerFieldSpell.cardId);
+    const fieldCard = cardMap.get(playerFieldSpell.cardId);
     const parsedAbility = getCardAbility(fieldCard);
     if (parsedAbility) {
       for (const effect of parsedAbility.effects) {
@@ -682,9 +721,8 @@ export async function applyContinuousEffects(
   }
 
   // Check opponent's field spell (some affect opponent's monsters)
-  const opponentFieldSpell = isHost ? gameState.opponentFieldSpell : gameState.hostFieldSpell;
   if (opponentFieldSpell?.isActive) {
-    const fieldCard = await ctx.db.get(opponentFieldSpell.cardId);
+    const fieldCard = cardMap.get(opponentFieldSpell.cardId);
     const parsedAbility = getCardAbility(fieldCard);
     if (parsedAbility) {
       for (const effect of parsedAbility.effects) {
@@ -700,11 +738,10 @@ export async function applyContinuousEffects(
   }
 
   // Check continuous traps in player's spell/trap zone
-  const backrow = isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
   for (const backrowCard of backrow) {
     if (!backrowCard || backrowCard.isFaceDown) continue;
 
-    const backrowCardDef = await ctx.db.get(backrowCard.cardId);
+    const backrowCardDef = cardMap.get(backrowCard.cardId);
     if (backrowCardDef?.cardType === "trap") {
       const parsedAbility = getCardAbility(backrowCardDef);
       if (parsedAbility) {
@@ -722,9 +759,8 @@ export async function applyContinuousEffects(
   }
 
   // Check continuous effects from monsters on the field
-  const allBoards = [...gameState.hostBoard, ...gameState.opponentBoard];
   for (const boardCard of allBoards) {
-    const cardDefinition = await ctx.db.get(boardCard.cardId);
+    const cardDefinition = cardMap.get(boardCard.cardId);
     const parsedAbility = getCardAbility(cardDefinition);
     if (!parsedAbility) continue;
 

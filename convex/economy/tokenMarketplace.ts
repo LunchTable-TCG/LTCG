@@ -17,6 +17,8 @@
  * 5. On confirmation → transfers card, updates listing
  */
 
+import { paginator } from "convex-helpers/server/pagination";
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
@@ -27,6 +29,7 @@ import {
   mutation,
   query,
 } from "../_generated/server";
+import schema from "../schema";
 import { PAGINATION, TOKEN } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
@@ -1048,48 +1051,29 @@ export const getPendingPurchase = internalQuery({
 /**
  * Get token transaction history for the current user
  *
- * @param limit - Maximum results to return (default: 20)
- * @param cursor - Pagination cursor for loading more
- * @returns Paginated token transactions
+ * Uses convex-helpers paginator for efficient cursor-based pagination.
+ * The paginator handles cursor encryption and proper index traversal.
+ *
+ * @param paginationOpts - Convex pagination options with cursor and numItems
+ * @returns Paginated token transactions with continueCursor for next page
  */
 export const getTokenTransactionHistory = query({
   args: {
-    limit: v.optional(v.number()),
-    cursor: v.optional(v.string()),
+    paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
-    const limit = Math.min(args.limit ?? 20, 100);
 
-    // Query token transactions for this user
-    const transactionsQuery = ctx.db
+    // Use convex-helpers paginator for clean cursor-based pagination
+    const result = await paginator(ctx.db, schema)
       .query("tokenTransactions")
       .withIndex("by_user_time", (q) => q.eq("userId", userId))
-      .order("desc");
-
-    // Apply cursor if provided
-    let transactions: Awaited<ReturnType<typeof transactionsQuery.take>>;
-    if (args.cursor) {
-      const cursorTimestamp = Number.parseInt(args.cursor, 10);
-      transactions = await transactionsQuery
-        .filter((q) => q.lt(q.field("createdAt"), cursorTimestamp))
-        .take(limit + 1);
-    } else {
-      transactions = await transactionsQuery.take(limit + 1);
-    }
-
-    // Check if there are more results
-    const hasMore = transactions.length > limit;
-    if (hasMore) {
-      transactions = transactions.slice(0, limit);
-    }
-
-    // Get next cursor
-    const lastTx = transactions[transactions.length - 1];
-    const nextCursor = hasMore && lastTx ? lastTx.createdAt.toString() : undefined;
+      .order("desc")
+      .paginate(args.paginationOpts);
 
     return {
-      transactions: transactions.map((tx) => ({
+      ...result,
+      page: result.page.map((tx) => ({
         _id: tx._id,
         transactionType: tx.transactionType,
         amount: tx.amount,
@@ -1099,8 +1083,6 @@ export const getTokenTransactionHistory = query({
         createdAt: tx.createdAt,
         confirmedAt: tx.confirmedAt,
       })),
-      nextCursor,
-      hasMore,
     };
   },
 });

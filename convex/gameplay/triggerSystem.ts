@@ -15,6 +15,7 @@
 
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 import { mutation } from "../functions";
 import { getCardAbility } from "../lib/abilityHelpers";
 import { evaluateTriggerCondition } from "../lib/gameHelpers";

@@ -47,10 +47,12 @@
  */
 
 import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
+import { wrapDatabaseReader, wrapDatabaseWriter } from "convex-helpers/server/rowLevelSecurity";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "./convexAuth";
 import { requireRole } from "./roles";
+import { createRLSRules } from "./rowLevelSecurity";
 import type { Id, Doc } from "../_generated/dataModel";
 
 // =============================================================================
@@ -334,3 +336,170 @@ export const adminQuery = customQuery(query, adminQueryCtx);
  * ```
  */
 export const adminMutation = customMutation(mutation, adminMutationCtx);
+
+// =============================================================================
+// ROW-LEVEL SECURITY (RLS) CONTEXT BUILDERS
+// =============================================================================
+
+/**
+ * Custom context for authenticated queries with Row-Level Security
+ * Injects ctx.auth and wraps ctx.db with RLS rules
+ *
+ * RLS automatically filters query results based on user permissions:
+ * - Users only see their own data
+ * - Admins can view more but cannot modify user data
+ * - Superadmins have unrestricted access
+ *
+ * See lib/rowLevelSecurity.ts for rule definitions.
+ */
+const rlsQueryCtx = customCtx(query, {
+  async auth(ctx) {
+    // Use existing requireAuthQuery for consistent auth logic
+    const { userId, privyId, username } = await requireAuthQuery(ctx);
+
+    // Get full user document
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User not found in database");
+    }
+
+    return {
+      userId,
+      user,
+      privyId,
+      username,
+    };
+  },
+  async db(ctx) {
+    // Get the authenticated user ID from the auth context
+    const { userId } = await requireAuthQuery(ctx);
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User not found in database");
+    }
+
+    // Create RLS rules for this user
+    const rules = await createRLSRules(ctx, userId);
+
+    // Wrap the database reader with RLS enforcement
+    return wrapDatabaseReader(ctx, ctx.db, rules);
+  },
+});
+
+/**
+ * Custom context for authenticated mutations with Row-Level Security
+ * Injects ctx.auth and wraps ctx.db with RLS rules
+ *
+ * RLS automatically enforces write permissions:
+ * - Users can only modify their own data
+ * - Admins have restricted modification rights
+ * - Superadmins can modify anything
+ *
+ * See lib/rowLevelSecurity.ts for rule definitions.
+ */
+const rlsMutationCtx = customCtx(mutation, {
+  async auth(ctx) {
+    // Use existing requireAuthMutation for consistent auth logic
+    const { userId, privyId, username } = await requireAuthMutation(ctx);
+
+    // Get full user document
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User not found in database");
+    }
+
+    return {
+      userId,
+      user,
+      privyId,
+      username,
+    };
+  },
+  async db(ctx) {
+    // Get the authenticated user ID from the auth context
+    const { userId } = await requireAuthMutation(ctx);
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User not found in database");
+    }
+
+    // Create RLS rules for this user
+    const rules = await createRLSRules(ctx, userId);
+
+    // Wrap the database writer with RLS enforcement
+    return wrapDatabaseWriter(ctx, ctx.db, rules);
+  },
+});
+
+/**
+ * Query builder with automatic authentication and Row-Level Security
+ *
+ * All queries using this builder will have:
+ * - ctx.auth populated with { userId, user, privyId, username }
+ * - ctx.db wrapped with RLS enforcement
+ *
+ * Database operations are automatically filtered by RLS rules:
+ * - Read operations only return documents the user is allowed to see
+ * - Unauthorized documents are silently filtered from query results
+ *
+ * Use this for tables with sensitive data that requires access control:
+ * - apiKeys (users see only their own keys)
+ * - playerCards (users see only their own cards)
+ * - deckCards (users see only their own deck configurations)
+ * - adminRoles (users cannot see admin role assignments)
+ *
+ * @example
+ * ```typescript
+ * export const getMyApiKeys = rlsQuery({
+ *   args: {},
+ *   handler: async (ctx) => {
+ *     // RLS automatically filters to only this user's keys
+ *     const keys = await ctx.db
+ *       .query("apiKeys")
+ *       .withIndex("by_user", q => q.eq("userId", ctx.auth.userId))
+ *       .collect();
+ *     return keys;
+ *   }
+ * });
+ * ```
+ */
+export const rlsQuery = customQuery(query, rlsQueryCtx);
+
+/**
+ * Mutation builder with automatic authentication and Row-Level Security
+ *
+ * All mutations using this builder will have:
+ * - ctx.auth populated with { userId, user, privyId, username }
+ * - ctx.db wrapped with RLS enforcement
+ *
+ * Database operations are automatically validated by RLS rules:
+ * - Insert operations fail if user cannot create the document
+ * - Update/delete operations fail if user cannot modify the document
+ * - Errors are thrown immediately on unauthorized operations
+ *
+ * Use this for tables with sensitive data that requires access control:
+ * - apiKeys (users can only create/modify their own keys)
+ * - playerCards (users can only modify their own card collections)
+ * - deckCards (users can only modify their own deck configurations)
+ * - adminRoles (only superadmins can grant/revoke roles)
+ *
+ * @example
+ * ```typescript
+ * export const createApiKey = rlsMutation({
+ *   args: { agentId: v.id("agents") },
+ *   handler: async (ctx, args) => {
+ *     // RLS automatically validates the user can create this key
+ *     const keyId = await ctx.db.insert("apiKeys", {
+ *       userId: ctx.auth.userId,
+ *       agentId: args.agentId,
+ *       keyHash: generateHash(),
+ *       keyPrefix: generatePrefix(),
+ *       isActive: true,
+ *       createdAt: Date.now(),
+ *     });
+ *     return keyId;
+ *   }
+ * });
+ * ```
+ */
+export const rlsMutation = customMutation(mutation, rlsMutationCtx);

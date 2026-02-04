@@ -7,6 +7,7 @@
 
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";

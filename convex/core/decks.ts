@@ -1,5 +1,6 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { getAll } from "convex-helpers/server/relationships";
 import type { Id } from "../_generated/dataModel";
 import { internalQuery, query } from "../_generated/server";
 import { mutation } from "../functions";
@@ -219,32 +220,37 @@ export const getDeckWithCards = query({
       .withIndex("by_deck", (q) => q.eq("deckId", args.deckId))
       .take(50); // Reasonable limit per deck
 
-    // Join with card definitions (N+1 acceptable for small N=50 max)
-    const cardsWithDefinitions = (
-      await Promise.all(
-        deckCards.map(async (dc) => {
-          const cardDef = await ctx.db.get(dc.cardDefinitionId);
-          if (!cardDef || !cardDef.isActive) return null;
+    // OPTIMIZATION: Batch fetch card definitions to eliminate N+1 pattern (N+1 queries → 2 queries)
+    // Step 1: Get all card definition IDs
+    const cardDefIds = deckCards.map((dc) => dc.cardDefinitionId);
 
-          return {
-            cardDefinitionId: dc.cardDefinitionId,
-            name: cardDef.name,
-            rarity: cardDef.rarity,
-            archetype: cardDef.archetype,
-            element: archetypeToElement(cardDef.archetype),
-            cardType: cardDef.cardType,
-            attack: cardDef.attack,
-            defense: cardDef.defense,
-            cost: cardDef.cost,
-            ability: cardDef.ability,
-            flavorText: cardDef.flavorText,
-            imageUrl: cardDef.imageUrl,
-            quantity: dc.quantity,
-            position: dc.position,
-          };
-        })
-      )
-    ).filter((c): c is NonNullable<typeof c> => c !== null);
+    // Step 2: Batch fetch all card definitions (1 query instead of N)
+    const cardDefs = await getAll(ctx.db, "cardDefinitions", cardDefIds);
+
+    // Step 3: Build results by combining deckCards with fetched definitions
+    const cardsWithDefinitions = deckCards
+      .map((dc, index) => {
+        const cardDef = cardDefs[index];
+        if (!cardDef || !cardDef.isActive) return null;
+
+        return {
+          cardDefinitionId: dc.cardDefinitionId,
+          name: cardDef.name,
+          rarity: cardDef.rarity,
+          archetype: cardDef.archetype,
+          element: archetypeToElement(cardDef.archetype),
+          cardType: cardDef.cardType,
+          attack: cardDef.attack,
+          defense: cardDef.defense,
+          cost: cardDef.cost,
+          ability: cardDef.ability,
+          flavorText: cardDef.flavorText,
+          imageUrl: cardDef.imageUrl,
+          quantity: dc.quantity,
+          position: dc.position,
+        };
+      })
+      .filter((c): c is NonNullable<typeof c> => c !== null);
 
     return {
       id: deck._id,

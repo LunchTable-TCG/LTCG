@@ -1,4 +1,6 @@
+import { migrationsTable } from "convex-helpers/server/migrations";
 import { rateLimitTables } from "convex-helpers/server/rateLimit";
+import { literals } from "convex-helpers/validators";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import type { Infer } from "convex/values";
@@ -7,41 +9,31 @@ import { jsonAbilityValidator } from "./gameplay/effectSystem/jsonEffectValidato
 // ============================================================================
 // SHARED VALIDATORS (Reusable across schema and function args)
 // ============================================================================
+//
+// NOTE: We use `literals()` from convex-helpers for cleaner union validators.
+// Instead of verbose: v.union(v.literal("a"), v.literal("b"), v.literal("c"))
+// We can write: literals("a", "b", "c")
+//
+// This pattern is preferred throughout the schema for string literal unions.
 
 /** Game mode types for leaderboards and matchmaking */
-export const gameModeValidator = v.union(
-  v.literal("ranked"),
-  v.literal("casual"),
-  v.literal("story")
-);
+export const gameModeValidator = literals("ranked", "casual", "story");
 export type GameMode = Infer<typeof gameModeValidator>;
 
 /** Player segment filters for leaderboards */
-export const playerSegmentValidator = v.union(
-  v.literal("all"),
-  v.literal("humans"),
-  v.literal("ai")
-);
+export const playerSegmentValidator = literals("all", "humans", "ai");
 export type PlayerSegment = Infer<typeof playerSegmentValidator>;
 
 /** Story mode difficulty levels */
-export const difficultyValidator = v.union(
-  v.literal("normal"),
-  v.literal("hard"),
-  v.literal("legendary")
-);
+export const difficultyValidator = literals("normal", "hard", "legendary");
 export type Difficulty = Infer<typeof difficultyValidator>;
 
 /** Story progress status */
-export const progressStatusValidator = v.union(
-  v.literal("locked"),
-  v.literal("available"),
-  v.literal("in_progress"),
-  v.literal("completed")
-);
+export const progressStatusValidator = literals("locked", "available", "in_progress", "completed");
 export type ProgressStatus = Infer<typeof progressStatusValidator>;
 
 export default defineSchema({
+  migrations: migrationsTable,
   ...rateLimitTables,
   users: defineTable({
     // Privy authentication (optional during migration from old auth system)
@@ -103,9 +95,7 @@ export default defineSchema({
     suspensionReason: v.optional(v.string()),
     suspendedBy: v.optional(v.id("users")),
     warningCount: v.optional(v.number()), // default: 0
-    accountStatus: v.optional(
-      v.union(v.literal("active"), v.literal("suspended"), v.literal("banned"))
-    ), // default: "active"
+    accountStatus: v.optional(literals("active", "suspended", "banned")), // default: "active"
     mutedUntil: v.optional(v.number()), // Chat mute expiry timestamp
 
     // HD Wallet tracking (non-custodial)
@@ -115,7 +105,7 @@ export default defineSchema({
 
     // Token wallet fields
     walletAddress: v.optional(v.string()),
-    walletType: v.optional(v.union(v.literal("privy_embedded"), v.literal("external"))),
+    walletType: v.optional(literals("privy_embedded", "external")),
     walletConnectedAt: v.optional(v.number()),
 
     // Tutorial and Help system
@@ -150,7 +140,7 @@ export default defineSchema({
   // Admin roles for protected operations with role hierarchy
   adminRoles: defineTable({
     userId: v.id("users"),
-    role: v.union(v.literal("moderator"), v.literal("admin"), v.literal("superadmin")),
+    role: literals("moderator", "admin", "superadmin"),
     grantedBy: v.id("users"), // Required: who granted this role
     grantedAt: v.number(),
     isActive: v.boolean(),
@@ -201,15 +191,7 @@ export default defineSchema({
   moderationActions: defineTable({
     userId: v.id("users"),
     adminId: v.id("users"),
-    actionType: v.union(
-      v.literal("mute"),
-      v.literal("unmute"),
-      v.literal("warn"),
-      v.literal("suspend"),
-      v.literal("unsuspend"),
-      v.literal("ban"),
-      v.literal("unban")
-    ),
+    actionType: literals("mute", "unmute", "warn", "suspend", "unsuspend", "ban", "unban"),
     reason: v.optional(v.string()),
     duration: v.optional(v.number()), // Duration in ms (for mute/suspend)
     expiresAt: v.optional(v.number()),
@@ -278,9 +260,7 @@ export default defineSchema({
     walletAddress: v.optional(v.string()), // Solana public address (non-custodial)
     walletChainType: v.optional(v.string()), // 'solana'
     walletCreatedAt: v.optional(v.number()), // Wallet creation timestamp
-    walletStatus: v.optional(
-      v.union(v.literal("pending"), v.literal("created"), v.literal("failed"))
-    ), // Wallet creation status
+    walletStatus: v.optional(literals("pending", "created", "failed")), // Wallet creation status
     walletErrorMessage: v.optional(v.string()), // Error message if wallet creation failed
 
     // Webhook callback configuration for real-time notifications
@@ -375,12 +355,7 @@ export default defineSchema({
     reportedUserId: v.id("users"),
     reportedUsername: v.string(),
     reason: v.string(),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("reviewed"),
-      v.literal("resolved"),
-      v.literal("dismissed")
-    ),
+    status: literals("pending", "reviewed", "resolved", "dismissed"),
     reviewedBy: v.optional(v.id("users")),
     reviewedAt: v.optional(v.number()),
     notes: v.optional(v.string()),
@@ -395,7 +370,7 @@ export default defineSchema({
     userId: v.id("users"),
     username: v.string(),
     lastActiveAt: v.number(),
-    status: v.union(v.literal("online"), v.literal("in_game"), v.literal("idle")),
+    status: literals("online", "in_game", "idle"),
   })
     .index("by_user", ["userId"])
     .index("by_last_active", ["lastActiveAt"]),
@@ -446,60 +421,53 @@ export default defineSchema({
     lobbyId: v.id("gameLobbies"),
     gameId: v.string(),
     turnNumber: v.number(),
-    eventType: v.union(
+    eventType: literals(
       // Lifecycle Events (5)
-      v.literal("game_start"),
-      v.literal("game_end"),
-      v.literal("turn_start"),
-      v.literal("turn_end"),
-      v.literal("phase_changed"),
-
+      "game_start",
+      "game_end",
+      "turn_start",
+      "turn_end",
+      "phase_changed",
       // Summon Events (5)
-      v.literal("normal_summon"),
-      v.literal("tribute_summon"),
-      v.literal("flip_summon"),
-      v.literal("special_summon"),
-      v.literal("summon_negated"),
-
+      "normal_summon",
+      "tribute_summon",
+      "flip_summon",
+      "special_summon",
+      "summon_negated",
       // Card Placement Events (3)
-      v.literal("monster_set"),
-      v.literal("spell_set"),
-      v.literal("trap_set"),
-
+      "monster_set",
+      "spell_set",
+      "trap_set",
       // Activation Events (4)
-      v.literal("spell_activated"),
-      v.literal("trap_activated"),
-      v.literal("effect_activated"),
-      v.literal("activation_negated"),
-
+      "spell_activated",
+      "trap_activated",
+      "effect_activated",
+      "activation_negated",
       // Chain Events (3)
-      v.literal("chain_link_added"),
-      v.literal("chain_resolving"),
-      v.literal("chain_resolved"),
-
+      "chain_link_added",
+      "chain_resolving",
+      "chain_resolved",
       // Combat Events (8)
-      v.literal("battle_phase_entered"),
-      v.literal("attack_declared"),
-      v.literal("damage_calculated"),
-      v.literal("damage"),
-      v.literal("card_destroyed_battle"),
-      v.literal("replay_triggered"), // Battle replay triggered (monster count changed)
-      v.literal("replay_target_selected"), // Attacker chose new target during replay
-      v.literal("replay_cancelled"), // Attacker cancelled attack during replay
-
+      "battle_phase_entered",
+      "attack_declared",
+      "damage_calculated",
+      "damage",
+      "card_destroyed_battle",
+      "replay_triggered", // Battle replay triggered (monster count changed)
+      "replay_target_selected", // Attacker chose new target during replay
+      "replay_cancelled", // Attacker cancelled attack during replay
       // Zone Transition Events (6)
-      v.literal("card_drawn"),
-      v.literal("card_to_hand"),
-      v.literal("card_to_graveyard"),
-      v.literal("card_banished"),
-      v.literal("card_to_deck"),
-      v.literal("position_changed"),
-
+      "card_drawn",
+      "card_to_hand",
+      "card_to_graveyard",
+      "card_banished",
+      "card_to_deck",
+      "position_changed",
       // Resource Events (4)
-      v.literal("lp_changed"),
-      v.literal("tribute_paid"),
-      v.literal("deck_shuffled"),
-      v.literal("hand_limit_enforced")
+      "lp_changed",
+      "tribute_paid",
+      "deck_shuffled",
+      "hand_limit_enforced"
     ),
     playerId: v.id("users"),
     playerUsername: v.string(),
@@ -654,16 +622,7 @@ export default defineSchema({
 
     // Phase Management (Yu-Gi-Oh turn structure)
     currentPhase: v.optional(
-      v.union(
-        v.literal("draw"),
-        v.literal("standby"),
-        v.literal("main1"),
-        v.literal("battle_start"),
-        v.literal("battle"),
-        v.literal("battle_end"),
-        v.literal("main2"),
-        v.literal("end")
-      )
+      literals("draw", "standby", "main1", "battle_start", "battle", "battle_end", "main2", "end")
     ),
 
     // Turn Flags
@@ -690,7 +649,7 @@ export default defineSchema({
     // Pending Action (waiting for response window to resolve)
     pendingAction: v.optional(
       v.object({
-        type: v.union(v.literal("attack"), v.literal("summon")),
+        type: literals("attack", "summon"),
         attackerId: v.optional(v.id("cardDefinitions")), // For attack actions
         targetId: v.optional(v.id("cardDefinitions")), // For attack actions (undefined = direct attack)
         summonedCardId: v.optional(v.id("cardDefinitions")), // For summon actions
@@ -738,19 +697,11 @@ export default defineSchema({
           appliedBy: v.id("users"), // Player who applied the effect
           appliedTurn: v.number(), // Turn number when applied
           duration: v.object({
-            type: v.union(
-              v.literal("until_end_phase"),
-              v.literal("until_turn_end"),
-              v.literal("until_next_turn"),
-              v.literal("permanent"),
-              v.literal("custom")
-            ),
+            type: literals("until_end_phase", "until_turn_end", "until_next_turn", "permanent", "custom"),
             endTurn: v.optional(v.number()), // Specific turn number when effect expires
             endPhase: v.optional(v.string()), // Specific phase when effect expires
           }),
-          affectsPlayer: v.optional(
-            v.union(v.literal("host"), v.literal("opponent"), v.literal("both"))
-          ),
+          affectsPlayer: v.optional(literals("host", "opponent", "both")),
           conditions: v.optional(v.any()), // Optional conditions for effect application
         })
       )
@@ -831,30 +782,24 @@ export default defineSchema({
     ),
 
     // AI & Story Mode (for single-player battles)
-    gameMode: v.optional(v.union(v.literal("pvp"), v.literal("story"))), // Default: "pvp"
+    gameMode: v.optional(literals("pvp", "story")), // Default: "pvp"
     isAIOpponent: v.optional(v.boolean()), // True if opponent is AI
     aiDifficulty: v.optional(
-      v.union(
-        v.literal("easy"),
-        v.literal("normal"), // Legacy: equivalent to "medium"
-        v.literal("medium"),
-        v.literal("hard"),
-        v.literal("boss")
-      )
+      literals("easy", "normal", "medium", "hard", "boss") // Legacy: "normal" equivalent to "medium"
     ), // AI difficulty level (matches storyStages difficulty)
 
     // Response Window (for priority/chain system)
     responseWindow: v.optional(
       v.object({
-        type: v.union(
-          v.literal("summon"),
-          v.literal("attack_declaration"),
-          v.literal("spell_activation"),
-          v.literal("trap_activation"),
-          v.literal("effect_activation"),
-          v.literal("damage_calculation"),
-          v.literal("end_phase"),
-          v.literal("open")
+        type: literals(
+          "summon",
+          "attack_declaration",
+          "spell_activation",
+          "trap_activation",
+          "effect_activation",
+          "damage_calculation",
+          "end_phase",
+          "open"
         ),
         triggerPlayerId: v.id("users"),
         activePlayerId: v.id("users"),
@@ -932,43 +877,32 @@ export default defineSchema({
   // Master card definitions - all cards available in the game
   cardDefinitions: defineTable({
     name: v.string(),
-    rarity: v.union(
-      v.literal("common"),
-      v.literal("uncommon"),
-      v.literal("rare"),
-      v.literal("epic"),
-      v.literal("legendary")
-    ),
-    archetype: v.union(
+    rarity: literals("common", "uncommon", "rare", "epic", "legendary"),
+    archetype: literals(
       // Primary archetypes (from card CSV)
-      v.literal("infernal_dragons"),
-      v.literal("abyssal_depths"),
-      v.literal("iron_legion"),
-      v.literal("necro_empire"),
+      "infernal_dragons",
+      "abyssal_depths",
+      "iron_legion",
+      "necro_empire",
       // Legacy archetypes (for backwards compatibility)
-      v.literal("abyssal_horrors"),
-      v.literal("nature_spirits"),
-      v.literal("storm_elementals"),
+      "abyssal_horrors",
+      "nature_spirits",
+      "storm_elementals",
       // Future/placeholder archetypes
-      v.literal("shadow_assassins"),
-      v.literal("celestial_guardians"),
-      v.literal("undead_legion"),
-      v.literal("divine_knights"),
-      v.literal("arcane_mages"),
-      v.literal("mechanical_constructs"),
-      v.literal("neutral"),
+      "shadow_assassins",
+      "celestial_guardians",
+      "undead_legion",
+      "divine_knights",
+      "arcane_mages",
+      "mechanical_constructs",
+      "neutral",
       // Old archetypes (deprecated - for backward compatibility)
-      v.literal("fire"),
-      v.literal("water"),
-      v.literal("earth"),
-      v.literal("wind")
+      "fire",
+      "water",
+      "earth",
+      "wind"
     ),
-    cardType: v.union(
-      v.literal("creature"),
-      v.literal("spell"),
-      v.literal("trap"),
-      v.literal("equipment")
-    ),
+    cardType: literals("creature", "spell", "trap", "equipment"),
     attack: v.optional(v.number()),
     defense: v.optional(v.number()),
     cost: v.number(),
@@ -976,16 +910,7 @@ export default defineSchema({
     // Industry-standard TCG fields
     level: v.optional(v.number()), // Monster level (1-12), determines tribute requirements
     attribute: v.optional(
-      v.union(
-        v.literal("fire"),
-        v.literal("water"),
-        v.literal("earth"),
-        v.literal("wind"),
-        v.literal("light"),
-        v.literal("dark"),
-        v.literal("divine"),
-        v.literal("neutral")
-      )
+      literals("fire", "water", "earth", "wind", "light", "dark", "divine", "neutral")
     ),
     monsterType: v.optional(
       v.union(
@@ -1037,17 +962,11 @@ export default defineSchema({
   cardTemplates: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
-    cardType: v.union(
-      v.literal("creature"),
-      v.literal("spell"),
-      v.literal("trap"),
-      v.literal("equipment"),
-      v.literal("universal") // applies to all types
-    ),
+    cardType: literals("creature", "spell", "trap", "equipment", "universal"), // "universal" applies to all types
     // Template mode:
     // - "frame_artwork": Traditional mode with separate frame image + artwork placement
     // - "full_card_image": Card's own image is the full background (frame + art baked in)
-    mode: v.optional(v.union(v.literal("frame_artwork"), v.literal("full_card_image"))), // defaults to "frame_artwork" for backwards compatibility
+    mode: v.optional(literals("frame_artwork", "full_card_image")), // defaults to "frame_artwork" for backwards compatibility
     // Canvas dimensions (standard TCG: 750x1050)
     width: v.number(),
     height: v.number(),
@@ -1086,22 +1005,22 @@ export default defineSchema({
   // Blocks within a template (text, image, icon elements)
   cardTemplateBlocks: defineTable({
     templateId: v.id("cardTemplates"),
-    blockType: v.union(
+    blockType: literals(
       // Text blocks
-      v.literal("name"),
-      v.literal("level"),
-      v.literal("attribute"),
-      v.literal("attack"),
-      v.literal("defense"),
-      v.literal("cost"),
-      v.literal("cardType"),
-      v.literal("monsterType"),
-      v.literal("effect"),
-      v.literal("flavorText"),
-      v.literal("custom"),
+      "name",
+      "level",
+      "attribute",
+      "attack",
+      "defense",
+      "cost",
+      "cardType",
+      "monsterType",
+      "effect",
+      "flavorText",
+      "custom",
       // Image blocks (NEW)
-      v.literal("image"),
-      v.literal("icon")
+      "image",
+      "icon"
     ),
     label: v.string(), // Display label in editor
     // For custom blocks, what field or static text to display
@@ -1114,9 +1033,9 @@ export default defineSchema({
     // Typography (for text blocks)
     fontFamily: v.string(),
     fontSize: v.number(),
-    fontWeight: v.union(v.literal("normal"), v.literal("bold")),
-    fontStyle: v.union(v.literal("normal"), v.literal("italic")),
-    textAlign: v.union(v.literal("left"), v.literal("center"), v.literal("right")),
+    fontWeight: literals("normal", "bold"),
+    fontStyle: literals("normal", "italic"),
+    textAlign: literals("left", "center", "right"),
     color: v.string(),
     // Optional styling
     backgroundColor: v.optional(v.string()),
@@ -1127,22 +1046,13 @@ export default defineSchema({
     // Image block properties (NEW)
     imageUrl: v.optional(v.string()), // URL to image (Vercel Blob or external)
     imageStorageId: v.optional(v.string()), // Reference to asset storage
-    imageFit: v.optional(
-      v.union(v.literal("fill"), v.literal("contain"), v.literal("cover"), v.literal("none"))
-    ),
+    imageFit: v.optional(literals("fill", "contain", "cover", "none")),
     // Transform properties (NEW)
     opacity: v.optional(v.number()), // 0-1
     rotation: v.optional(v.number()), // degrees
     // Visibility rules - which card types should show this block
     showForCardTypes: v.optional(
-      v.array(
-        v.union(
-          v.literal("creature"),
-          v.literal("spell"),
-          v.literal("trap"),
-          v.literal("equipment")
-        )
-      )
+      v.array(literals("creature", "spell", "trap", "equipment"))
     ),
     // Z-index for layering
     zIndex: v.number(),
@@ -1168,16 +1078,7 @@ export default defineSchema({
     userId: v.id("users"),
     name: v.string(),
     description: v.optional(v.string()),
-    deckArchetype: v.optional(
-      v.union(
-        v.literal("fire"),
-        v.literal("water"),
-        v.literal("earth"),
-        v.literal("wind"),
-        v.literal("dark"),
-        v.literal("neutral")
-      )
-    ),
+    deckArchetype: v.optional(literals("fire", "water", "earth", "wind", "dark", "neutral")),
     isActive: v.boolean(), // for soft deletes
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -1203,19 +1104,19 @@ export default defineSchema({
     fileName: v.string(),
     contentType: v.string(),
     size: v.number(),
-    category: v.union(
+    category: literals(
       // User uploads
-      v.literal("profile_picture"),
-      v.literal("card_image"),
-      v.literal("document"),
-      v.literal("other"),
+      "profile_picture",
+      "card_image",
+      "document",
+      "other",
       // Admin-managed assets (Vercel Blob)
-      v.literal("background"),
-      v.literal("texture"),
-      v.literal("ui_element"),
-      v.literal("shop_asset"),
-      v.literal("story_asset"),
-      v.literal("logo")
+      "background",
+      "texture",
+      "ui_element",
+      "shop_asset",
+      "story_asset",
+      "logo"
     ),
     // Vercel Blob fields (optional for backward compatibility)
     blobUrl: v.optional(v.string()), // Full Vercel Blob URL
@@ -1238,7 +1139,7 @@ export default defineSchema({
   matchHistory: defineTable({
     winnerId: v.id("users"),
     loserId: v.id("users"),
-    gameType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
+    gameType: literals("ranked", "casual", "story"),
 
     // Rating changes
     winnerRatingBefore: v.number(),
@@ -1258,8 +1159,8 @@ export default defineSchema({
 
   // Leaderboard snapshots - cached rankings to avoid recalculating
   leaderboardSnapshots: defineTable({
-    leaderboardType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
-    playerSegment: v.union(v.literal("all"), v.literal("humans"), v.literal("ai")),
+    leaderboardType: literals("ranked", "casual", "story"),
+    playerSegment: literals("all", "humans", "ai"),
 
     // Top N players snapshot
     rankings: v.array(
@@ -1298,19 +1199,19 @@ export default defineSchema({
   // Currency transaction ledger (audit trail)
   currencyTransactions: defineTable({
     userId: v.id("users"),
-    transactionType: v.union(
-      v.literal("purchase"),
-      v.literal("reward"),
-      v.literal("sale"),
-      v.literal("gift"),
-      v.literal("refund"),
-      v.literal("admin_refund"),
-      v.literal("conversion"),
-      v.literal("marketplace_fee"),
-      v.literal("auction_bid"),
-      v.literal("auction_refund")
+    transactionType: literals(
+      "purchase",
+      "reward",
+      "sale",
+      "gift",
+      "refund",
+      "admin_refund",
+      "conversion",
+      "marketplace_fee",
+      "auction_bid",
+      "auction_refund"
     ),
-    currencyType: v.union(v.literal("gold"), v.literal("gems")),
+    currencyType: literals("gold", "gems"),
     amount: v.number(),
     balanceAfter: v.number(),
     referenceId: v.optional(v.string()),
@@ -1340,45 +1241,37 @@ export default defineSchema({
     productId: v.string(),
     name: v.string(),
     description: v.string(),
-    productType: v.union(v.literal("pack"), v.literal("box"), v.literal("currency")),
+    productType: literals("pack", "box", "currency"),
     goldPrice: v.optional(v.number()),
     gemPrice: v.optional(v.number()),
     packConfig: v.optional(
       v.object({
         cardCount: v.number(),
-        guaranteedRarity: v.optional(
-          v.union(
-            v.literal("common"),
-            v.literal("uncommon"),
-            v.literal("rare"),
-            v.literal("epic"),
-            v.literal("legendary")
-          )
-        ),
+        guaranteedRarity: v.optional(literals("common", "uncommon", "rare", "epic", "legendary")),
         archetype: v.optional(
-          v.union(
+          literals(
             // Primary archetypes (from card CSV)
-            v.literal("infernal_dragons"),
-            v.literal("abyssal_depths"),
-            v.literal("iron_legion"),
-            v.literal("necro_empire"),
+            "infernal_dragons",
+            "abyssal_depths",
+            "iron_legion",
+            "necro_empire",
             // Legacy archetypes (for backwards compatibility)
-            v.literal("abyssal_horrors"),
-            v.literal("nature_spirits"),
-            v.literal("storm_elementals"),
+            "abyssal_horrors",
+            "nature_spirits",
+            "storm_elementals",
             // Future/placeholder archetypes
-            v.literal("shadow_assassins"),
-            v.literal("celestial_guardians"),
-            v.literal("undead_legion"),
-            v.literal("divine_knights"),
-            v.literal("arcane_mages"),
-            v.literal("mechanical_constructs"),
-            v.literal("neutral"),
+            "shadow_assassins",
+            "celestial_guardians",
+            "undead_legion",
+            "divine_knights",
+            "arcane_mages",
+            "mechanical_constructs",
+            "neutral",
             // Old archetypes (temporary for migration)
-            v.literal("fire"),
-            v.literal("water"),
-            v.literal("earth"),
-            v.literal("wind")
+            "fire",
+            "water",
+            "earth",
+            "wind"
           )
         ),
       })
@@ -1392,7 +1285,7 @@ export default defineSchema({
     ),
     currencyConfig: v.optional(
       v.object({
-        currencyType: v.union(v.literal("gold"), v.literal("gems")),
+        currencyType: literals("gold", "gems"),
         amount: v.number(),
       })
     ),
@@ -1416,7 +1309,7 @@ export default defineSchema({
         rarity: v.string(),
       })
     ),
-    currencyUsed: v.union(v.literal("gold"), v.literal("gems")),
+    currencyUsed: literals("gold", "gems"),
     amountPaid: v.number(),
     openedAt: v.number(),
   })
@@ -1431,7 +1324,7 @@ export default defineSchema({
   marketplaceListings: defineTable({
     sellerId: v.id("users"),
     sellerUsername: v.string(),
-    listingType: v.union(v.literal("fixed"), v.literal("auction")),
+    listingType: literals("fixed", "auction"),
     cardDefinitionId: v.id("cardDefinitions"),
     quantity: v.number(),
     price: v.number(),
@@ -1440,13 +1333,7 @@ export default defineSchema({
     highestBidderUsername: v.optional(v.string()),
     endsAt: v.optional(v.number()),
     bidCount: v.number(),
-    status: v.union(
-      v.literal("active"),
-      v.literal("sold"),
-      v.literal("cancelled"),
-      v.literal("expired"),
-      v.literal("suspended")
-    ),
+    status: literals("active", "sold", "cancelled", "expired", "suspended"),
     soldTo: v.optional(v.id("users")),
     soldFor: v.optional(v.number()),
     soldAt: v.optional(v.number()),
@@ -1454,7 +1341,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     // Token payment support
-    currencyType: v.optional(v.union(v.literal("gold"), v.literal("token"))),
+    currencyType: v.optional(literals("gold", "token")),
     tokenPrice: v.optional(v.number()),
   })
     .index("by_status", ["status", "createdAt"])
@@ -1470,13 +1357,7 @@ export default defineSchema({
     bidderId: v.id("users"),
     bidderUsername: v.string(),
     bidAmount: v.number(),
-    bidStatus: v.union(
-      v.literal("active"),
-      v.literal("outbid"),
-      v.literal("won"),
-      v.literal("refunded"),
-      v.literal("cancelled")
-    ),
+    bidStatus: literals("active", "outbid", "won", "refunded", "cancelled"),
     refundedAt: v.optional(v.number()),
     createdAt: v.number(),
   })
@@ -1489,13 +1370,7 @@ export default defineSchema({
     bidderId: v.id("users"),
     bidderUsername: v.string(),
     bidAmount: v.number(),
-    bidStatus: v.union(
-      v.literal("active"),
-      v.literal("outbid"),
-      v.literal("won"),
-      v.literal("refunded"),
-      v.literal("cancelled")
-    ),
+    bidStatus: literals("active", "outbid", "won", "refunded", "cancelled"),
     refundedAt: v.optional(v.number()),
     createdAt: v.number(),
   })
@@ -1534,15 +1409,10 @@ export default defineSchema({
   // Token transaction history
   tokenTransactions: defineTable({
     userId: v.id("users"),
-    transactionType: v.union(
-      v.literal("marketplace_purchase"),
-      v.literal("marketplace_sale"),
-      v.literal("platform_fee"),
-      v.literal("battle_pass_purchase")
-    ),
+    transactionType: literals("marketplace_purchase", "marketplace_sale", "platform_fee", "battle_pass_purchase"),
     amount: v.number(),
     signature: v.optional(v.string()),
-    status: v.union(v.literal("pending"), v.literal("confirmed"), v.literal("failed")),
+    status: literals("pending", "confirmed", "failed"),
     referenceId: v.optional(v.string()),
     description: v.string(),
     createdAt: v.number(),
@@ -1556,17 +1426,11 @@ export default defineSchema({
     buyerId: v.id("users"),
     listingId: v.optional(v.id("marketplaceListings")), // Optional for non-marketplace purchases
     battlePassId: v.optional(v.id("battlePassSeasons")), // For battle pass premium purchases
-    purchaseType: v.optional(v.union(v.literal("marketplace"), v.literal("battle_pass"))), // Type of purchase
+    purchaseType: v.optional(literals("marketplace", "battle_pass")), // Type of purchase
     amount: v.number(),
     buyerWallet: v.string(),
     sellerWallet: v.string(), // Treasury wallet for battle pass purchases
-    status: v.union(
-      v.literal("awaiting_signature"),
-      v.literal("submitted"),
-      v.literal("confirmed"),
-      v.literal("failed"),
-      v.literal("expired")
-    ),
+    status: literals("awaiting_signature", "submitted", "confirmed", "failed", "expired"),
     transactionSignature: v.optional(v.string()),
     createdAt: v.number(),
     expiresAt: v.number(),
@@ -1584,7 +1448,7 @@ export default defineSchema({
   promoCodes: defineTable({
     code: v.string(),
     description: v.string(),
-    rewardType: v.union(v.literal("gold"), v.literal("gems"), v.literal("pack")),
+    rewardType: literals("gold", "gems", "pack"),
     rewardAmount: v.number(),
     rewardPackId: v.optional(v.string()),
     maxRedemptions: v.optional(v.number()),
@@ -1638,7 +1502,7 @@ export default defineSchema({
     actNumber: v.number(),
     chapterNumber: v.number(),
     difficulty: difficultyValidator,
-    outcome: v.union(v.literal("won"), v.literal("lost"), v.literal("abandoned")),
+    outcome: literals("won", "lost", "abandoned"),
     starsEarned: v.number(),
     finalLP: v.number(), // Life points remaining
     rewardsEarned: v.object({
@@ -1668,13 +1532,13 @@ export default defineSchema({
   // Badge/achievement system
   playerBadges: defineTable({
     userId: v.id("users"),
-    badgeType: v.union(
-      v.literal("archetype_complete"), // Completed all chapters for an archetype
-      v.literal("act_complete"), // Completed entire act
-      v.literal("difficulty_complete"), // Completed all chapters on a difficulty
-      v.literal("perfect_chapter"), // 3 stars on a chapter
-      v.literal("speed_run"), // Special achievements
-      v.literal("milestone") // XP/level milestones
+    badgeType: literals(
+      "archetype_complete", // Completed all chapters for an archetype
+      "act_complete", // Completed entire act
+      "difficulty_complete", // Completed all chapters on a difficulty
+      "perfect_chapter", // 3 stars on a chapter
+      "speed_run", // Special achievements
+      "milestone" // XP/level milestones
     ),
     badgeId: v.string(), // e.g., "infernal_dragons_complete", "act_1_hard"
     displayName: v.string(),
@@ -1690,12 +1554,7 @@ export default defineSchema({
   // Player notifications - real-time notifications for achievements, level ups, etc.
   playerNotifications: defineTable({
     userId: v.id("users"),
-    type: v.union(
-      v.literal("achievement_unlocked"),
-      v.literal("level_up"),
-      v.literal("quest_completed"),
-      v.literal("badge_earned")
-    ),
+    type: literals("achievement_unlocked", "level_up", "quest_completed", "badge_earned"),
     title: v.string(),
     message: v.string(),
     /**
@@ -1725,13 +1584,13 @@ export default defineSchema({
 
   userInbox: defineTable({
     userId: v.id("users"),
-    type: v.union(
-      v.literal("reward"), // Admin-granted rewards (gold, cards, packs)
-      v.literal("announcement"), // System/admin announcements
-      v.literal("challenge"), // Game challenge invitations
-      v.literal("friend_request"), // Friend request notifications
-      v.literal("system"), // System messages (maintenance, updates)
-      v.literal("achievement") // Achievement unlocks (synced from playerNotifications)
+    type: literals(
+      "reward", // Admin-granted rewards (gold, cards, packs)
+      "announcement", // System/admin announcements
+      "challenge", // Game challenge invitations
+      "friend_request", // Friend request notifications
+      "system", // System messages (maintenance, updates)
+      "achievement" // Achievement unlocks (synced from playerNotifications)
     ),
     title: v.string(),
     message: v.string(),
@@ -1806,7 +1665,7 @@ export default defineSchema({
     ),
     unlockCondition: v.optional(
       v.object({
-        type: v.union(v.literal("chapter_complete"), v.literal("player_level"), v.literal("none")),
+        type: literals("chapter_complete", "player_level", "none"),
         requiredChapterId: v.optional(v.id("storyChapters")),
         requiredLevel: v.optional(v.number()),
       })
@@ -1820,7 +1679,7 @@ export default defineSchema({
       })
     ),
     isActive: v.optional(v.boolean()),
-    status: v.optional(v.union(v.literal("draft"), v.literal("published"))), // Optional for old data
+    status: v.optional(literals("draft", "published")), // Optional for old data
     createdAt: v.number(),
     updatedAt: v.optional(v.number()), // Optional for old data
   })
@@ -1842,13 +1701,9 @@ export default defineSchema({
     opponentName: v.optional(v.string()), // Optional for old data
     opponentDeckId: v.optional(v.id("decks")), // Pre-built AI deck
     opponentDeckArchetype: v.optional(v.string()), // Or generate from archetype
-    difficulty: v.optional(
-      v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"), v.literal("boss"))
-    ), // Optional for old data
+    difficulty: v.optional(literals("easy", "medium", "hard", "boss")), // Optional for old data
     // Legacy field name for difficulty (code uses both)
-    aiDifficulty: v.optional(
-      v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"), v.literal("boss"))
-    ),
+    aiDifficulty: v.optional(literals("easy", "medium", "hard", "boss")),
 
     // Dialogue/narrative
     preMatchDialogue: v.optional(
@@ -1898,7 +1753,7 @@ export default defineSchema({
     firstClearGems: v.optional(v.number()),
     cardRewardId: v.optional(v.id("cardDefinitions")), // Guaranteed card on first clear
 
-    status: v.optional(v.union(v.literal("draft"), v.literal("published"))), // Optional for old data
+    status: v.optional(literals("draft", "published")), // Optional for old data
     createdAt: v.optional(v.number()), // Optional for old data
     updatedAt: v.optional(v.number()), // Optional for old data
   })
@@ -1911,12 +1766,7 @@ export default defineSchema({
     stageId: v.id("storyStages"),
     chapterId: v.id("storyChapters"),
     stageNumber: v.number(),
-    status: v.union(
-      v.literal("locked"),
-      v.literal("available"),
-      v.literal("completed"),
-      v.literal("starred") // 3 stars
-    ),
+    status: literals("locked", "available", "completed", "starred"), // "starred" = 3 stars
     starsEarned: v.number(), // 0-3
     bestScore: v.optional(v.number()), // Highest LP remaining
     timesCompleted: v.number(),
@@ -1936,7 +1786,7 @@ export default defineSchema({
     questId: v.string(), // Unique identifier (e.g., "daily_win_3")
     name: v.string(),
     description: v.string(),
-    questType: v.union(v.literal("daily"), v.literal("weekly"), v.literal("achievement")),
+    questType: literals("daily", "weekly", "achievement"),
     requirementType: v.string(), // "win_games", "play_cards", "deal_damage", etc.
     targetValue: v.number(),
     rewards: v.object({
@@ -1947,7 +1797,7 @@ export default defineSchema({
     // Optional filters for requirements
     filters: v.optional(
       v.object({
-        gameMode: v.optional(v.union(v.literal("ranked"), v.literal("casual"), v.literal("story"))),
+        gameMode: v.optional(literals("ranked", "casual", "story")),
         archetype: v.optional(v.string()),
         cardType: v.optional(v.string()),
       })
@@ -1964,7 +1814,7 @@ export default defineSchema({
     userId: v.id("users"),
     questId: v.string(), // References questDefinitions.questId
     currentProgress: v.number(),
-    status: v.union(v.literal("active"), v.literal("completed"), v.literal("claimed")),
+    status: literals("active", "completed", "claimed"),
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
     claimedAt: v.optional(v.number()),
@@ -1980,21 +1830,8 @@ export default defineSchema({
     achievementId: v.string(),
     name: v.string(),
     description: v.string(),
-    category: v.union(
-      v.literal("wins"),
-      v.literal("games_played"),
-      v.literal("collection"),
-      v.literal("social"),
-      v.literal("story"),
-      v.literal("ranked"),
-      v.literal("special")
-    ),
-    rarity: v.union(
-      v.literal("common"),
-      v.literal("rare"),
-      v.literal("epic"),
-      v.literal("legendary")
-    ),
+    category: literals("wins", "games_played", "collection", "social", "story", "ranked", "special"),
+    rarity: literals("common", "rare", "epic", "legendary"),
     icon: v.string(), // Icon name
     requirementType: v.string(),
     targetValue: v.number(),
@@ -2037,12 +1874,12 @@ export default defineSchema({
     slug: v.string(), // URL-friendly identifier
     excerpt: v.string(), // Short summary for listing
     content: v.string(), // Full article content (markdown supported)
-    category: v.union(
-      v.literal("update"), // Game updates
-      v.literal("event"), // Events and tournaments
-      v.literal("patch"), // Patch notes
-      v.literal("announcement"), // General announcements
-      v.literal("maintenance") // Maintenance notices
+    category: literals(
+      "update", // Game updates
+      "event", // Events and tournaments
+      "patch", // Patch notes
+      "announcement", // General announcements
+      "maintenance" // Maintenance notices
     ),
     imageUrl: v.optional(v.string()), // Featured image
     authorId: v.id("users"), // Admin who created it

@@ -69,12 +69,6 @@
   ],
   "exclude": [
     "node_modules",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "**/__tests__/**",
-    "convex/**/*.test.ts",
-    "../../convex/migrations/*",
-    "../../convex/seeds/*",
-    "../../convex/admin/*"
+    "../**"
   ]
 }

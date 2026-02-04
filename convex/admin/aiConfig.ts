@@ -9,6 +9,7 @@
  */
 
 import { v } from "convex/values";
+import type { ActionCtx } from "../_generated/server";
 import { action, query } from "../_generated/server";
 import { mutation, internalMutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
