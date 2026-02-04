@@ -5,6 +5,7 @@
  */
 
 import { v } from "convex/values";
+import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -35,7 +36,7 @@ export const getAll = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "admin");
 
-    let items;
+    let items: Doc<"launchChecklist">[];
     if (args.category) {
       items = await ctx.db
         .query("launchChecklist")

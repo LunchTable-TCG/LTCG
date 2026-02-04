@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 
@@ -44,7 +44,9 @@ export const getInboxMessages = query({
     const { userId } = await requireAuthQuery(ctx);
     const limit = Math.min(args.limit ?? 50, 100);
 
-    let messagesQuery;
+    type InboxQuery = ReturnType<typeof ctx.db.query<"userInbox">>;
+
+    let messagesQuery: InboxQuery;
 
     if (args.type) {
       // Filter by type
