@@ -84,9 +84,7 @@
     "seed:story": "convex run scripts/seedStoryChapters:seedStoryChapters --prod",
     "seed:configs": "convex run admin/config:seedDefaultConfigs --prod",
     "migrate:admins": "convex run migrations/migrateAdminRoles:migrateAdminRoles --prod",
-    "migrate:treasury": "convex run treasury/wallets:migrateExistingWallets --prod",
-    "prepare": "husky",
-    "lint:staged": "lint-staged"
+    "migrate:treasury": "convex run treasury/wallets:migrateExistingWallets --prod"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.35",
@@ -160,8 +158,6 @@
     "convex-test": "^0.0.41",
     "critters": "^0.0.25",
     "happy-dom": "^20.4.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
     "postcss": "^8.4.0",
     "tailwindcss": "4",
     "turbo": "^2.7.5",
