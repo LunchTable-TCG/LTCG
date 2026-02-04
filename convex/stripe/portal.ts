@@ -1,40 +1,43 @@
-import { mutation } from "../functions";
-import { stripe } from "../lib/stripe";
+// convex/stripe/portal.ts
+"use node";
 
-export const createBillingPortalSession = mutation({
+import { v } from "convex/values";
+import { action } from "../_generated/server";
+import { stripeClient } from "./client";
+
+/**
+ * Create a Stripe Customer Portal session for subscription management.
+ * Uses the @convex-dev/stripe component to manage customer lookup/creation.
+ */
+export const createBillingPortalSession = action({
   args: {},
+  returns: v.object({
+    portalUrl: v.string(),
+  }),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Not authenticated");
     }
 
-    const privyId = identity.subject;
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("privyId", (q) => q.eq("privyId", privyId))
-      .first();
-
-    if (!user) {
-      throw new Error("User not found");
+    // Get base URL for return redirect
+    const baseUrl = process.env["APP_URL"] ?? process.env["CONVEX_SITE_URL"];
+    if (!baseUrl) {
+      throw new Error("Missing APP_URL or CONVEX_SITE_URL environment variable");
     }
 
-    const stripeCustomer = await ctx.db
-      .query("stripeCustomers")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .first();
+    // Get or create customer using the component
+    // The component stores customers in its own tables and links via userId
+    const customer = await stripeClient.getOrCreateCustomer(ctx, {
+      userId: identity.subject,
+      email: identity.email ?? undefined,
+      name: identity.name ?? undefined,
+    });
 
-    if (!stripeCustomer) {
-      throw new Error("No Stripe customer found");
-    }
-
-    // Get base URL from environment
-    const baseUrl = process.env["CONVEX_SITE_URL"] || "http://localhost:3000";
-
-    const session = await stripe.billingPortal.sessions.create({
-      customer: stripeCustomer.stripeCustomerId,
-      return_url: `${baseUrl}/battle-pass`,
+    // Create portal session using the customer ID from the component
+    const session = await stripeClient.createCustomerPortalSession(ctx, {
+      customerId: customer.customerId,
+      returnUrl: `${baseUrl}/battle-pass`,
     });
 
     return {
