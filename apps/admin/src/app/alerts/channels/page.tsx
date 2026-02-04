@@ -47,6 +47,7 @@ interface ChannelFormData {
   name: string;
   type: ChannelType | "";
   webhookUrl: string;
+  email: string;
   minSeverity: Severity | "";
 }
 
@@ -108,6 +109,7 @@ export default function AlertChannelsPage() {
     name: "",
     type: "",
     webhookUrl: "",
+    email: "",
     minSeverity: "warning",
   });
 
@@ -130,6 +132,7 @@ export default function AlertChannelsPage() {
       name: "",
       type: "",
       webhookUrl: "",
+      email: "",
       minSeverity: "warning",
     });
     setEditingChannel(null);
@@ -140,6 +143,7 @@ export default function AlertChannelsPage() {
       name: channel.name,
       type: channel.type,
       webhookUrl: channel.config?.webhookUrl || "",
+      email: channel.config?.email || "",
       minSeverity: channel.config?.minSeverity || "warning",
     });
     setEditingChannel(channel);
@@ -158,6 +162,12 @@ export default function AlertChannelsPage() {
       return;
     }
 
+    // Email address required for email channels
+    if (formData.type === "email" && !formData.email) {
+      toast.error("Email address is required for email channels");
+      return;
+    }
+
     setIsCreating(true);
     try {
       if (editingChannel) {
@@ -166,6 +176,7 @@ export default function AlertChannelsPage() {
           name: formData.name,
           config: {
             webhookUrl: formData.webhookUrl || undefined,
+            email: formData.email || undefined,
             minSeverity: (formData.minSeverity as Severity) || "warning",
           },
         });
@@ -176,6 +187,7 @@ export default function AlertChannelsPage() {
           type: formData.type as ChannelType,
           config: {
             webhookUrl: formData.webhookUrl || undefined,
+            email: formData.email || undefined,
             minSeverity: (formData.minSeverity as Severity) || "warning",
           },
         });
@@ -284,6 +296,7 @@ export default function AlertChannelsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="in_app">🔔 In-App - Browser notifications</SelectItem>
+                      <SelectItem value="email">📧 Email - Email notifications</SelectItem>
                       <SelectItem value="slack">💬 Slack - Webhook integration</SelectItem>
                       <SelectItem value="discord">🎮 Discord - Webhook integration</SelectItem>
                     </SelectContent>
@@ -307,6 +320,21 @@ export default function AlertChannelsPage() {
                       {formData.type === "slack"
                         ? "Create a Slack app and add an Incoming Webhook"
                         : "Create a Discord webhook in your server settings"}
+                    </p>
+                  </div>
+                )}
+                {formData.type === "email" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="alerts@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Alert notifications will be sent to this email address
                     </p>
                   </div>
                 )}
