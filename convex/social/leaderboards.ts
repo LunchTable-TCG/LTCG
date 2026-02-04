@@ -80,7 +80,8 @@ export const getLeaderboard = query({
     // OPTIMIZATION: Batch fetch to eliminate N+1 pattern (N+1 queries → 3 queries total)
     if (type === "story") {
       // Step 1: Fetch aggregate items (1 query)
-      const aggregateItems = [];
+      // biome-ignore lint/suspicious/noExplicitAny: Aggregate item type varies based on leaderboard configuration
+      const aggregateItems: any[] = [];
       for (let i = 0; i < limit * 3; i++) {
         const item = await aggregate.at(ctx, i);
         if (!item) break;
@@ -101,7 +102,17 @@ export const getLeaderboard = query({
       const users = await getAll(ctx.db, "users", userIds);
 
       // Step 4: Build results with filtering
-      const results = [];
+      const results: Array<{
+        userId: Id<"users">;
+        username: string | undefined;
+        rank: number;
+        rating: number;
+        level: number;
+        wins: number;
+        losses: number;
+        winRate: number;
+        isAiAgent: boolean;
+      }> = [];
       for (let i = 0; i < xpDocs.length && results.length < limit; i++) {
         const xp = xpDocs[i];
         if (!xp) continue;
@@ -134,7 +145,8 @@ export const getLeaderboard = query({
     // OPTIMIZATION: Batch fetch to eliminate N+1 pattern (N+1 queries → 2 queries total)
 
     // Step 1: Fetch all aggregate items (1 query)
-    const aggregateItems = [];
+    // biome-ignore lint/suspicious/noExplicitAny: Aggregate item type varies based on leaderboard configuration
+    const aggregateItems: any[] = [];
     for (let i = 0; i < limit; i++) {
       const item = namespace
         ? await aggregate.at(ctx, i, { namespace })
@@ -151,7 +163,17 @@ export const getLeaderboard = query({
     );
 
     // Step 3: Build results
-    const results = [];
+    const results: Array<{
+      userId: Id<"users">;
+      username: string | undefined;
+      rank: number;
+      rating: number;
+      level: number;
+      wins: number;
+      losses: number;
+      winRate: number;
+      isAiAgent: boolean;
+    }> = [];
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
       if (!player) continue;
