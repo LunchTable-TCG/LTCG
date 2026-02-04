@@ -62,15 +62,17 @@ export const strategyEvaluator: Evaluator = {
       }
 
       const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
-      const boardAnalysis = boardAnalysisResult.data;
+      const boardAnalysis = (boardAnalysisResult.data ?? {}) as BoardAnalysis;
 
       const legalActionsResult = await legalActionsProvider.get(runtime, message, state);
-      const legalActions = legalActionsResult.data;
+      const legalActions = (legalActionsResult.data ?? {}) as LegalActions;
 
       // Get intended action and parameters
       const messageContent = message.content as Record<string, unknown>;
       const stateValues = state.values as Record<string, unknown>;
-      const intendedAction = messageContent?.action || stateValues?.currentAction;
+      const intendedAction = (messageContent?.action || stateValues?.currentAction) as
+        | string
+        | undefined;
       const actionParams = (stateValues?.actionParams || {}) as ActionParams;
 
       if (!intendedAction) {
@@ -84,7 +86,7 @@ export const strategyEvaluator: Evaluator = {
 
       // Evaluate the strategic quality of the action
       const evaluation = evaluateStrategicDecision(
-        intendedAction,
+        intendedAction as string,
         actionParams,
         gameState,
         boardAnalysis,
@@ -221,6 +223,16 @@ function evaluateAttack(
   const attackerIndex = params.attackerIndex;
   const targetIndex = params.targetIndex;
 
+  if (attackerIndex === undefined) {
+    return {
+      quality: "TERRIBLE",
+      risk: "CRITICAL",
+      shouldFilter: true,
+      reason: "No attacker index provided",
+      suggestion: "Select a monster to attack with",
+    };
+  }
+
   // Use new API fields with fallback to legacy fields
   const myMonsters = gameState.myBoard ?? gameState.hostPlayer?.monsterZone ?? [];
   const oppMonsters = gameState.opponentBoard ?? gameState.opponentPlayer?.monsterZone ?? [];
@@ -341,6 +353,16 @@ function evaluateSummon(
   const handIndex = params.handIndex;
   const hand = gameState.hand;
 
+  if (handIndex === undefined) {
+    return {
+      quality: "TERRIBLE",
+      risk: "CRITICAL",
+      shouldFilter: true,
+      reason: "No hand index provided",
+      suggestion: "Select a card from hand to summon",
+    };
+  }
+
   const monsterToSummon = hand[handIndex];
 
   if (!monsterToSummon || monsterToSummon.type !== "creature") {
@@ -396,6 +418,16 @@ function evaluateSpellTrap(
   // Basic validation - can be enhanced later
   const handIndex = params.handIndex;
   const hand = gameState.hand;
+
+  if (handIndex === undefined) {
+    return {
+      quality: "TERRIBLE",
+      risk: "CRITICAL",
+      shouldFilter: true,
+      reason: "No hand index provided",
+      suggestion: "Select a card from hand to activate",
+    };
+  }
 
   const card = hand[handIndex];
 

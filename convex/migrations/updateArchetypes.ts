@@ -14,8 +14,8 @@
  * - Better error handling
  */
 
-import { migration } from "../migrations";
 import type { Archetype } from "../lib/types";
+import { migration } from "../migrations";
 
 const ARCHETYPE_MAP: Record<string, Archetype> = {
   fire: "infernal_dragons",
@@ -46,12 +46,10 @@ export default migration({
 
     // Skip cards that don't need migration or already have the new archetype
     if (!newArchetype || newArchetype === card.archetype) {
-      return null; // null = skip this document
+      return; // undefined = skip this document
     }
 
-    console.log(
-      `[Migration] Updating card ${card.name}: ${card.archetype} → ${newArchetype}`
-    );
+    console.log(`[Migration] Updating card ${card.name}: ${card.archetype} → ${newArchetype}`);
 
     // Return the fields to patch
     return {

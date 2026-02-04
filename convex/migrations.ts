@@ -34,10 +34,10 @@
  */
 
 import {
+  cancelMigration,
+  getStatus,
   makeMigration,
   startMigration,
-  getStatus,
-  cancelMigration,
 } from "convex-helpers/server/migrations";
 import type { MigrationStatus } from "convex-helpers/server/migrations";
 import { internal } from "./_generated/api";
@@ -106,7 +106,7 @@ export const cancel = internalMutation({
     const targetMigration = migrations.find((m) => !m.isDone);
 
     if (targetMigration) {
-      await cancelMigration(ctx, targetMigration._id);
+      await cancelMigration(ctx, "migrations", targetMigration._id);
       console.log(`Cancelled migration: ${targetMigration.name}`);
     } else {
       console.log("No running migrations found");

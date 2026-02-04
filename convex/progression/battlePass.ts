@@ -6,12 +6,11 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import type { MutationCtx } from "../_generated/server";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
+import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import {
@@ -20,11 +19,6 @@ import {
   battlePassTierValidator,
   claimBattlePassRewardValidator,
 } from "../lib/returnValidators";
-
-// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround
-// @ts-expect-error TS2589: Known TypeScript limitation with Convex's deeply nested generated types
-const _internalAny = internal as any;
 
 // ============================================================================
 // Types
@@ -182,11 +176,10 @@ async function grantReward(
     case "card":
       if (reward.cardId) {
         // Add card to player's collection
+        const cardId = reward.cardId;
         const existingCard = await ctx.db
           .query("playerCards")
-          .withIndex("by_user_card", (q) =>
-            q.eq("userId", userId).eq("cardDefinitionId", reward.cardId!)
-          )
+          .withIndex("by_user_card", (q) => q.eq("userId", userId).eq("cardDefinitionId", cardId))
           .first();
 
         if (existingCard) {
@@ -473,12 +466,14 @@ export const claimBattlePassReward = mutation({
     }
 
     // Validate track and claim status
+    let reward: BattlePassReward;
     if (args.track === "free") {
       if (!tierDef.freeReward) {
         throw createError(ErrorCode.NOT_FOUND_QUEST, {
           reason: `No free reward for tier ${args.tier}`,
         });
       }
+      reward = tierDef.freeReward;
       if (progress.claimedFreeTiers.includes(args.tier)) {
         throw createError(ErrorCode.QUEST_ALREADY_CLAIMED, {
           reason: "Free reward already claimed",
@@ -497,6 +492,7 @@ export const claimBattlePassReward = mutation({
           reason: `No premium reward for tier ${args.tier}`,
         });
       }
+      reward = tierDef.premiumReward;
       if (progress.claimedPremiumTiers.includes(args.tier)) {
         throw createError(ErrorCode.QUEST_ALREADY_CLAIMED, {
           reason: "Premium reward already claimed",
@@ -505,7 +501,6 @@ export const claimBattlePassReward = mutation({
     }
 
     // Grant the reward
-    const reward = args.track === "free" ? tierDef.freeReward! : tierDef.premiumReward!;
     await grantReward(ctx, userId, reward, args.tier, args.track === "premium");
 
     // Mark as claimed

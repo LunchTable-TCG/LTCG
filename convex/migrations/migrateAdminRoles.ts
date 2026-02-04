@@ -15,8 +15,8 @@
  * - Better error handling
  */
 
-import { migration } from "../migrations";
 import { internalMutation } from "../functions";
+import { migration } from "../migrations";
 
 /**
  * Update admin roles to ensure grantedBy field is set
@@ -41,7 +41,7 @@ export default migration({
   migrateOne: async (ctx, role) => {
     // Skip roles that already have grantedBy set (idempotent)
     if (role.grantedBy) {
-      return null; // null = skip this document
+      return; // undefined = skip this document
     }
 
     // Find the first admin to use as the system granter
@@ -57,9 +57,7 @@ export default migration({
       );
     }
 
-    console.log(
-      `[Migration] Updating role ${role._id} (user: ${role.userId}, role: ${role.role})`
-    );
+    console.log(`[Migration] Updating role ${role._id} (user: ${role.userId}, role: ${role.role})`);
 
     // Return the fields to patch
     return {

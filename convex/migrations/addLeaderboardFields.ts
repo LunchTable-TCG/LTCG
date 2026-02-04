@@ -13,8 +13,8 @@
  * - Better error handling
  */
 
-import { migration } from "../migrations";
 import { ELO_SYSTEM } from "../lib/constants";
+import { migration } from "../migrations";
 
 /**
  * Add leaderboard fields to users
@@ -36,7 +36,7 @@ export default migration({
   migrateOne: async (_ctx, user) => {
     // Skip users that already have the field (idempotent)
     if (user.rankedElo !== undefined) {
-      return null; // null = skip this document
+      return; // undefined = skip this document
     }
 
     // Return the fields to patch

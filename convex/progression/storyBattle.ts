@@ -6,9 +6,9 @@
 
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
-import type { MutationCtx } from "../_generated/server";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internalQuery, query } from "../_generated/server";
-import { mutation, internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 import { initializeGameStateHelper } from "../gameplay/games/lifecycle";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
@@ -163,7 +163,8 @@ export async function checkChapterUnlocked(
 
     if (requiredChapterId) {
       // Specific chapter ID required
-      const requiredChapter = await ctx.db.get(requiredChapterId);
+      const chapterId = requiredChapterId;
+      const requiredChapter = await ctx.db.get(chapterId);
       if (requiredChapter) {
         prevChapterTitle = requiredChapter.title;
         prevActNumber = requiredChapter.actNumber;
@@ -172,9 +173,7 @@ export async function checkChapterUnlocked(
         // Check if any stage in that chapter is completed
         const stageProgress = await ctx.db
           .query("storyStageProgress")
-          .withIndex("by_user_chapter", (q) =>
-            q.eq("userId", userId).eq("chapterId", requiredChapterId!)
-          )
+          .withIndex("by_user_chapter", (q) => q.eq("userId", userId).eq("chapterId", chapterId))
           .filter((q) =>
             q.or(q.eq(q.field("status"), "completed"), q.eq(q.field("status"), "starred"))
           )
@@ -1026,7 +1025,7 @@ export const quickPlayStoryInternal = internalMutation({
       if (firstStage) {
         availableStages = [
           {
-            _id: "" as any,
+            _id: "" as Id<"storyStageProgress">,
             _creationTime: 0,
             userId: args.userId,
             stageId: firstStage._id,
