@@ -291,16 +291,16 @@ function BroadcastForm() {
 
     setIsLoading(true);
     try {
-      const result = (await broadcastAnnouncement({
+      const result = await broadcastAnnouncement({
         title: title.trim(),
         message: message.trim(),
         priority,
         expiresInDays: expiresInDays ? Number.parseInt(expiresInDays) : undefined,
         filterByMinLevel: minLevel ? Number.parseInt(minLevel) : undefined,
         filterByActiveInDays: activeInDays ? Number.parseInt(activeInDays) : undefined,
-      })) as { message: string };
+      });
 
-      toast.success(result.message);
+      toast.success((result as { message?: string })?.message ?? "Broadcast sent successfully");
 
       // Reset form
       setTitle("");
