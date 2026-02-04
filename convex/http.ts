@@ -1,6 +1,7 @@
 import { registerRoutes } from "@convex-dev/stripe";
+import type Stripe from "stripe";
 
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import router from "./router";
 
 // Webhooks
@@ -15,6 +16,44 @@ const http = router;
 
 registerRoutes(http, components.stripe, {
   webhookPath: "/stripe/webhook",
+  events: {
+    // Grant premium when subscription becomes active
+    "customer.subscription.created": async (ctx, event) => {
+      const subscription = event.data.object as Stripe.Subscription;
+      if (subscription.status === "active" || subscription.status === "trialing") {
+        const userId = subscription.metadata?.userId;
+        if (userId) {
+          await ctx.runMutation(internal.stripe.battlePassSync.grantPremiumAccess, {
+            privyId: userId,
+          });
+        }
+      }
+    },
+    "customer.subscription.updated": async (ctx, event) => {
+      const subscription = event.data.object as Stripe.Subscription;
+      const userId = subscription.metadata?.userId;
+      if (!userId) return;
+
+      if (subscription.status === "active" || subscription.status === "trialing") {
+        await ctx.runMutation(internal.stripe.battlePassSync.grantPremiumAccess, {
+          privyId: userId,
+        });
+      } else if (subscription.status === "canceled" || subscription.status === "unpaid") {
+        await ctx.runMutation(internal.stripe.battlePassSync.revokePremiumAccess, {
+          privyId: userId,
+        });
+      }
+    },
+    "customer.subscription.deleted": async (ctx, event) => {
+      const subscription = event.data.object as Stripe.Subscription;
+      const userId = subscription.metadata?.userId;
+      if (userId) {
+        await ctx.runMutation(internal.stripe.battlePassSync.revokePremiumAccess, {
+          privyId: userId,
+        });
+      }
+    },
+  },
 });
 
 // ============================================================================
