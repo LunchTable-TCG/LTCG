@@ -274,7 +274,8 @@ export const populateShop = mutation({
 
     // Insert all products
     for (const product of products) {
-      await ctx.db.insert("shopProducts", product);
+      // biome-ignore lint/suspicious/noExplicitAny: Product shape is validated at runtime by Convex schema
+      await ctx.db.insert("shopProducts", product as any);
     }
 
     return {
