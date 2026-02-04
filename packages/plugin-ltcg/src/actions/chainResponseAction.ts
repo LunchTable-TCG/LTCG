@@ -19,7 +19,7 @@ import { LTCGApiClient } from "../client/LTCGApiClient";
 import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
 import { gameStateProvider } from "../providers/gameStateProvider";
 import { handProvider } from "../providers/handProvider";
-import type { CardInHand, GameEvent, GameStateResponse } from "../types/api";
+import type { CardInHand, GameEvent, GameStateResponse, SpellTrapCard } from "../types/api";
 import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const chainResponseAction: Action = {
@@ -226,16 +226,16 @@ Respond with JSON: { "shouldChain": true/false, "location": "hand"/"field", "car
       }
 
       // Agent decided to chain - get the selected card
-      let selectedCard: CardInHand | undefined;
+      let selectedCard: CardInHand | SpellTrapCard | undefined;
       let handIndex: number | undefined;
       let boardIndex: number | undefined;
 
       if (parsed.location === "hand") {
         selectedCard = quickPlaySpells[parsed.cardIndex];
-        handIndex = selectedCard?.handIndex;
+        handIndex = (selectedCard as CardInHand)?.handIndex;
       } else {
         selectedCard = setTraps[parsed.cardIndex];
-        boardIndex = selectedCard?.boardIndex;
+        boardIndex = (selectedCard as SpellTrapCard)?.boardIndex;
       }
 
       if (!selectedCard) {

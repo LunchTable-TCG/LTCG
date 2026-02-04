@@ -17,6 +17,7 @@ import type {
 } from "@elizaos/core";
 import { logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
+import type { ChatMessageContent } from "../types/eliza";
 
 export const sendChatMessageAction: Action = {
   name: "SEND_CHAT_MESSAGE",

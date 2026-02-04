@@ -103,11 +103,7 @@ export class RateLimitError extends LTCGApiError {
 export class ValidationError extends LTCGApiError {
   public readonly invalidFields?: string[];
 
-  constructor(
-    message = "Validation failed",
-    invalidFields?: string[],
-    details?: ErrorDetails
-  ) {
+  constructor(message = "Validation failed", invalidFields?: string[], details?: ErrorDetails) {
     super(message, ApiErrorCode.VALIDATION_ERROR, 400, details);
     this.name = "ValidationError";
     this.invalidFields = invalidFields;
@@ -128,11 +124,7 @@ export class ValidationError extends LTCGApiError {
 export class NetworkError extends LTCGApiError {
   public readonly originalError?: Error;
 
-  constructor(
-    message = "Network request failed",
-    originalError?: Error,
-    details?: ErrorDetails
-  ) {
+  constructor(message = "Network request failed", originalError?: Error, details?: ErrorDetails) {
     super(message, ApiErrorCode.NETWORK_ERROR, 0, details);
     this.name = "NetworkError";
     this.originalError = originalError;
@@ -183,9 +175,12 @@ export class GameError extends LTCGApiError {
  * Parse error response from API and throw appropriate error
  */
 export function parseErrorResponse(statusCode: number, body: ErrorDetails): LTCGApiError {
-  const errorCode = body?.error?.code || "UNKNOWN_ERROR";
-  const errorMessage = body?.error?.message || "An unknown error occurred";
-  const errorDetails = body?.error?.details;
+  const bodyWithError = body as ErrorDetails & {
+    error?: { code?: string; message?: string; details?: ErrorDetails };
+  };
+  const errorCode = bodyWithError?.error?.code || "UNKNOWN_ERROR";
+  const errorMessage = bodyWithError?.error?.message || "An unknown error occurred";
+  const errorDetails = bodyWithError?.error?.details;
 
   // Authentication errors (401)
   if (

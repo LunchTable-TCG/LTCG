@@ -5,7 +5,7 @@
  * via REST endpoints with 5-second polling intervals.
  */
 
-import type { RouteRequest, RouteResponse } from "@elizaos/core";
+import type { IAgentRuntime, RouteRequest, RouteResponse } from "@elizaos/core";
 import { logger } from "@elizaos/core";
 import { type IStateAggregator, SERVICE_TYPES } from "../services/types";
 
@@ -37,7 +37,8 @@ function setCorsHeaders(res: RouteResponse) {
  */
 function getAggregator(req: RouteRequest): IStateAggregator | null {
   try {
-    const runtime = (req as any).runtime;
+    const extendedReq = req as RouteRequest & { runtime?: IAgentRuntime };
+    const runtime = extendedReq.runtime;
     if (!runtime) {
       logger.warn("Runtime not available in request context");
       return null;

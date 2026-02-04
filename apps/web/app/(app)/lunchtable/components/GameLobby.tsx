@@ -139,8 +139,18 @@ export function GameLobby() {
         status: "waiting" as const,
       })) || [];
 
+  interface ActiveGameData {
+    lobbyId: string;
+    hostUsername: string;
+    deckArchetype: string;
+    mode: string;
+    startedAt?: number;
+    opponentUsername?: string;
+    turnNumber?: number;
+  }
+
   const activeGames: GameLobbyEntry[] =
-    activeGamesData?.map((game: any) => ({
+    activeGamesData?.map((game: ActiveGameData) => ({
       id: game.lobbyId,
       hostName: game.hostUsername,
       hostRank: "Bronze", // Rank not included in query, using default
@@ -463,7 +473,7 @@ export function GameLobby() {
       >
         {activeTab === "join" ? (
           waitingGames.length > 0 ? (
-            waitingGames.map((game: any) => (
+            waitingGames.map((game: GameLobbyEntry) => (
               <WaitingGameCard key={game.id} game={game} onJoin={() => handleJoinGame(game)} />
             ))
           ) : (
@@ -478,7 +488,7 @@ export function GameLobby() {
             />
           )
         ) : activeGames.length > 0 ? (
-          activeGames.map((game: any) => (
+          activeGames.map((game: GameLobbyEntry) => (
             <ActiveGameCard key={game.id} game={game} onWatch={handleWatchGame} />
           ))
         ) : (

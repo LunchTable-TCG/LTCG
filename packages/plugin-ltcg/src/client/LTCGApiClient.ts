@@ -37,6 +37,7 @@ import type {
   SurrenderRequest,
   WalletStatusResponse,
 } from "../types/api";
+import type { ErrorDetails } from "../types/eliza";
 import { normalizeGameState } from "../utils/normalizeGameState";
 import {
   AuthenticationError,
@@ -120,7 +121,7 @@ export class LTCGApiClient {
         clearTimeout(timeoutId);
 
         // Parse response - handle malformed JSON gracefully
-        let body: any;
+        let body: ErrorDetails;
         try {
           body = await response.json();
         } catch (jsonError) {

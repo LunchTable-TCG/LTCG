@@ -18,7 +18,7 @@ import { ModelType, logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
 import { gameStateProvider } from "../providers/gameStateProvider";
 import { handProvider } from "../providers/handProvider";
-import type { CardInHand, GameStateResponse } from "../types/api";
+import type { CardInHand, GameStateResponse, SpellTrapCard } from "../types/api";
 import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const activateSpellAction: Action = {
@@ -152,13 +152,13 @@ Respond with JSON: { "location": "hand" or "field", "index": <index>, "targets":
         targets: [],
       });
 
-      let selectedCard: CardInHand | undefined;
+      let selectedCard: CardInHand | SpellTrapCard | undefined;
       let handIndex: number | undefined;
       let boardIndex: number | undefined;
 
       if (parsed.location === "hand") {
         selectedCard = spellsInHand[parsed.index];
-        handIndex = selectedCard?.handIndex;
+        handIndex = (selectedCard as CardInHand)?.handIndex;
       } else {
         selectedCard = spellsOnField[parsed.index];
         boardIndex = parsed.index;

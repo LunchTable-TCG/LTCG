@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { getAssetUrl } from "@/lib/blob";
 import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
+import type { Doc } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Clock, Gift, Loader2, Lock, Play, Star } from "lucide-react";
 import Image from "next/image";
@@ -19,6 +20,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+interface StoryStageWithProgress extends Doc<"storyStages"> {
+  status: "locked" | "available" | "in_progress" | "completed";
+  starsEarned: number;
+  bestScore?: number;
+  timesCompleted: number;
+  firstClearClaimed: boolean;
+  lastCompletedAt?: number;
+}
 
 /**
  * Format milliseconds until reset into a human-readable string
@@ -257,7 +267,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
         <div className="max-w-7xl mx-auto">
           {stages.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              {stages.map((stage: any, index: number) => {
+              {stages.map((stage: StoryStageWithProgress, index: number) => {
                 const stageData = {
                   stageNumber: stage.stageNumber,
                   name: stage.name,

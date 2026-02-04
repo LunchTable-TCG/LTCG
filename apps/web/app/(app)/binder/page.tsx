@@ -14,6 +14,7 @@ import { useCardBinder, useDeck, useDeckBuilder, useProfile } from "@/hooks";
 import { cn } from "@/lib/utils";
 import type { SortOption } from "@/types";
 import { isSortOption } from "@/types";
+import type { DeckWithCards } from "@/types/generated";
 import type { Id } from "@convex/_generated/dataModel";
 import { AuthLoading, Authenticated } from "convex/react";
 import {
@@ -337,25 +338,27 @@ function BinderContent() {
   // Load deck cards when selectedDeckData changes
   useEffect(() => {
     if (selectedDeckData?.cards) {
-      const loadedCards: DeckCard[] = selectedDeckData.cards.map((apiCard: any) => ({
-        card: {
-          id: apiCard.cardDefinitionId,
-          cardDefinitionId: apiCard.cardDefinitionId,
-          name: apiCard.name,
-          rarity: apiCard.rarity as Rarity,
-          element: apiCard.element as Element,
-          cardType: apiCard.cardType as CardType,
-          attack: apiCard.attack,
-          defense: apiCard.defense,
-          cost: apiCard.cost,
-          ability: apiCard.ability,
-          flavorText: apiCard.flavorText,
-          imageUrl: apiCard.imageUrl,
-          owned: 0,
-          isFavorite: false,
-        },
-        count: apiCard.quantity,
-      }));
+      const loadedCards: DeckCard[] = selectedDeckData.cards.map(
+        (apiCard: DeckWithCards["cards"][number]) => ({
+          card: {
+            id: apiCard.cardDefinitionId,
+            cardDefinitionId: apiCard.cardDefinitionId,
+            name: apiCard.name,
+            rarity: apiCard.rarity as Rarity,
+            element: apiCard.element as Element,
+            cardType: apiCard.cardType as CardType,
+            attack: apiCard.attack,
+            defense: apiCard.defense,
+            cost: apiCard.cost,
+            ability: apiCard.ability,
+            flavorText: apiCard.flavorText,
+            imageUrl: apiCard.imageUrl,
+            owned: 0,
+            isFavorite: false,
+          },
+          count: apiCard.quantity,
+        })
+      );
       setCurrentDeckCards(loadedCards);
     }
   }, [selectedDeckData, selectedDeckId]);

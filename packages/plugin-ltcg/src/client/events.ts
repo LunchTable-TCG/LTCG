@@ -108,7 +108,7 @@ export type ChainWindowCallback = (gameId: string, timeRemaining: number) => voi
 /**
  * Generic event callback
  */
-export type EventCallback<T = any> = (data: T) => void;
+export type EventCallback<T = unknown> = (data: T) => void;
 
 // ============================================================================
 // Event Emitter Interface
@@ -136,7 +136,7 @@ export interface GameEventEmitter {
   emit(event: "game_event_occurred", data: GameEventOccurredEvent): void;
   emit(event: "game_ended", data: GameEndedEvent): void;
   emit(event: "chain_window_open", data: ChainWindowOpenEvent): void;
-  emit(event: string, data: any): void;
+  emit(event: string, data: unknown): void;
 
   /**
    * Remove all listeners for a specific event or all events
