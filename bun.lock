@@ -15,6 +15,7 @@
         "@convex-dev/rag": "^0.7.0",
         "@convex-dev/ratelimiter": "^0.1.7",
         "@convex-dev/sharded-counter": "^0.2.0",
+        "@convex-dev/stripe": "^0.1.3",
         "@convex-dev/workpool": "^0.3.1",
         "@flags-sdk/hypertune": "^0.3.2",
         "@openrouter/ai-sdk-provider": "^2.1.1",
@@ -460,6 +461,8 @@
     "@convex-dev/ratelimiter": ["@convex-dev/ratelimiter@0.1.7", "", { "peerDependencies": { "convex": "~1.16.5 || ~1.17.0" } }, "sha512-fzrx0mrWxF4n+F54bg84VQOK62C0Qxcu8UHuBIKOdl1p+frBsYaakhT7S4EMPKKt9E/tS4gJKl+m8UKqZNYwiQ=="],
 
     "@convex-dev/sharded-counter": ["@convex-dev/sharded-counter@0.2.0", "", { "peerDependencies": { "convex": "^1.24.8" } }, "sha512-Qv1TvFXyQ60rADS1fWH01mnMDNSPfmKKowXva6WxIXGIC2ta5xvohe9TfUhXp4AT1vtOXoFgse3Z9mJB9fJlSQ=="],
+
+    "@convex-dev/stripe": ["@convex-dev/stripe@0.1.3", "", { "dependencies": { "stripe": "^20.0.0" }, "peerDependencies": { "convex": "^1.29.3", "react": "^18.3.1 || ^19.0.0" } }, "sha512-yL0ygrWrjto9f7rprCb4KYp+p3Oka7KG5e3HBoJ9qSzbncpavZI+JTkGZnLCYZjPOo2ByCrBJvtGAxfP169Nzw=="],
 
     "@convex-dev/workpool": ["@convex-dev/workpool@0.3.1", "", { "peerDependencies": { "convex": "^1.24.8", "convex-helpers": "^0.1.94" } }, "sha512-uw4Mi+irhhoYA/KwaMo5wXyYJ7BbxqeaLcCZbst3t1SxPN5488rpnR0OwBcPDCmwcdQjBVHOx+q8S4GUjq0Csg=="],
 
