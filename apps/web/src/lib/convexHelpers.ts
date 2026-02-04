@@ -18,14 +18,20 @@ import type { DefaultFunctionArgs } from "convex/server";
  *
  * @see https://github.com/get-convex/convex-helpers/blob/main/packages/convex-helpers/server/utils.ts
  */
-export type Expand<ObjectType extends Record<string, unknown>> = ObjectType extends Record<string, unknown>
+export type Expand<ObjectType extends Record<string, unknown>> = ObjectType extends Record<
+  string,
+  unknown
+>
   ? {
       [Key in keyof ObjectType]: ObjectType[Key];
     }
   : never;
 
-// @ts-ignore - Suppress TS2589 for api cast
-export const apiAny = api as unknown;
+/**
+ * API accessor that bypasses TS2589 "excessively deep" type errors.
+ * biome-ignore lint/suspicious/noExplicitAny: Required to bypass deep Convex type instantiation
+ */
+export const apiAny: any = api;
 
 /**
  * Wrapper for useMutation that avoids TS2589 errors
@@ -38,7 +44,9 @@ export function useConvexMutation(path: unknown) {
 /**
  * Wrapper for useQuery that avoids TS2589 errors
  * Use this instead of calling useQuery directly with deep api paths
+ * Supports "skip" as args to conditionally skip the query
  */
-export function useConvexQuery(path: unknown, args?: DefaultFunctionArgs) {
-  return useQuery(path as DefaultFunctionArgs, args);
+export function useConvexQuery(path: unknown, args?: DefaultFunctionArgs | "skip") {
+  // biome-ignore lint/suspicious/noExplicitAny: Required for Convex query compatibility
+  return useQuery(path as any, args as any);
 }

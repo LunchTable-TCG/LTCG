@@ -262,7 +262,7 @@ export default function TemplatesPage() {
           {filteredTemplates?.map((template: TemplateListItem) => (
             <TemplateCard
               key={template._id}
-              template={{ ...template, blockCount: (template as any).blockCount ?? 0 }}
+              template={template}
               onDuplicate={openDuplicateDialog}
               onDelete={openDeleteDialog}
               onSetDefault={handleSetDefault}
