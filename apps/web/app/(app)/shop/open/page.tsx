@@ -76,7 +76,10 @@ function PackOpeningContent() {
   const dataParam = searchParams.get("data");
 
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(
+    typedApi.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
   const createListingMutation = useConvexMutation(typedApi.marketplace.createListing);
 
   const [phase, setPhase] = useState<OpeningPhase>("ready");

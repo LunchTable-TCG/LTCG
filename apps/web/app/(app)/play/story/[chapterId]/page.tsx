@@ -25,7 +25,10 @@ export default function ChapterPage({ params }: ChapterPageProps) {
   const [actNumber, chapterNumber] = chapterId.split("-").map(Number);
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(
+    typedApi.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
   const chapterDetails = useConvexQuery(
     typedApi.progression.story.getChapterDetails,
     isAuthenticated && actNumber && chapterNumber ? { actNumber, chapterNumber } : "skip"

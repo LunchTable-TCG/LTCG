@@ -21,7 +21,10 @@ export default function GamePage({ params }: GamePageProps) {
   const router = useRouter();
 
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(
+    typedApi.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
 
   // Get lobby details to check if user is a player
   const lobby = useConvexQuery(typedApi.gameplay.games.queries.getLobbyDetails, {

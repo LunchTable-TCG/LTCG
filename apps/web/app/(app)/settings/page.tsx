@@ -66,7 +66,10 @@ function Toggle({ enabled, onChange, disabled }: ToggleProps) {
 
 export default function SettingsPage() {
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(
+    typedApi.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
   const preferences = useConvexQuery(
     typedApi.core.userPreferences.getPreferences,
     isAuthenticated ? {} : "skip"

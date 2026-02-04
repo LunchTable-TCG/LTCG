@@ -15,7 +15,10 @@ import { useEffect, useMemo } from "react";
 export default function StoryModePage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(
+    typedApi.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
 
   // Feature flag check
   const { enabled: storyModeEnabled, isLoading: flagsLoading } = useFeatureFlag("storyModeEnabled");

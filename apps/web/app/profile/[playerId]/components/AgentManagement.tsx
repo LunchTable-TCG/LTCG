@@ -14,7 +14,10 @@ export function AgentManagement() {
   const { isAuthenticated } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const agents = useConvexQuery(typedApi.agents.agents.getUserAgents, isAuthenticated ? {} : "skip");
+  const agents = useConvexQuery(
+    typedApi.agents.agents.getUserAgents,
+    isAuthenticated ? {} : "skip"
+  );
 
   const isLoading = agents === undefined;
   const agentCount = agents?.length || 0;

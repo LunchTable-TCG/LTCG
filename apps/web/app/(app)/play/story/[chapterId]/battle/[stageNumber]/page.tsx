@@ -27,7 +27,10 @@ export default function BattlePage({ params }: BattlePageProps) {
   const router = useRouter();
 
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(
+    typedApi.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
 
   const [gameId, setGameId] = useState<string | null>(null);
   const [lobbyId, setLobbyId] = useState<Id<"gameLobbies"> | null>(null);
