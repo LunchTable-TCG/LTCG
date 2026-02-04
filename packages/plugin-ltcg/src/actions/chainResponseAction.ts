@@ -226,7 +226,7 @@ Respond with JSON: { "shouldChain": true/false, "location": "hand"/"field", "car
       }
 
       // Agent decided to chain - get the selected card
-      let selectedCard: any;
+      let selectedCard: CardInHand | undefined;
       let handIndex: number | undefined;
       let boardIndex: number | undefined;
 

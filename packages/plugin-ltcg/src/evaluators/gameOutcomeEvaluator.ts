@@ -13,6 +13,7 @@ import type { Evaluator, IAgentRuntime, Memory, State } from "@elizaos/core";
 import { logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
 import type { GameEvent, GameStateResponse } from "../types/api";
+import type { LTCGState } from "../types/eliza";
 
 /**
  * Decision record with outcome impact assessment
@@ -167,9 +168,11 @@ export const gameOutcomeEvaluator: Evaluator = {
         (stateContent?.currentGameId as string) ||
         (stateContent?.gameId as string);
 
+      const ltcgState = state as LTCGState;
+
       if (!gameId) {
         logger.warn("No gameId found for outcome analysis");
-        (state.values as any).LTCG_GAME_OUTCOME_SUCCESS = false;
+        ltcgState.values.LTCG_GAME_OUTCOME_SUCCESS = false;
         return;
       }
 
@@ -182,7 +185,7 @@ export const gameOutcomeEvaluator: Evaluator = {
 
       if (!gameState) {
         logger.warn({ gameId }, "Could not fetch game state for analysis");
-        (state.values as any).LTCG_GAME_OUTCOME_SUCCESS = false;
+        ltcgState.values.LTCG_GAME_OUTCOME_SUCCESS = false;
         return;
       }
 
@@ -219,11 +222,12 @@ export const gameOutcomeEvaluator: Evaluator = {
       logger.info({ summary: summaryText }, "Game analysis summary");
 
       // Store success in state
-      (state.values as any).LTCG_GAME_OUTCOME_SUCCESS = true;
-      (state.values as any).LTCG_GAME_ANALYSIS = analysis;
+      ltcgState.values.LTCG_GAME_OUTCOME_SUCCESS = true;
+      ltcgState.values.LTCG_GAME_ANALYSIS = analysis;
     } catch (error) {
       logger.error({ error }, "Error in game outcome evaluator");
-      (state.values as any).LTCG_GAME_OUTCOME_SUCCESS = false;
+      const ltcgState = state as LTCGState;
+      ltcgState.values.LTCG_GAME_OUTCOME_SUCCESS = false;
     }
   },
 };

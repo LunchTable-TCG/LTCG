@@ -219,3 +219,24 @@ export interface SelectedCard {
   cardType?: string;
   [key: string]: unknown;
 }
+
+/**
+ * Card ability structure
+ */
+export interface CardAbility {
+  name?: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Monster card type with attack/defense
+ */
+export interface MonsterCardData {
+  currentAttack?: number;
+  attack?: number;
+  currentDefense?: number;
+  defense?: number;
+  name?: string;
+  [key: string]: unknown;
+}

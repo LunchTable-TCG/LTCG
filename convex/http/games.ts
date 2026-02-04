@@ -40,9 +40,8 @@ import type {
 // Module-scope typed helpers to avoid TS2589 "Type instantiation is excessively deep"
 // =============================================================================
 
-// biome-ignore lint/suspicious/noExplicitAny: Required to break TS2589 deep type instantiation
-// @ts-ignore TS2589: Type instantiation may be excessively deep in some configs
-const apiAny: any = api;
+// Use type assertion to break TS2589 cycle without explicit any
+const apiAny = api as typeof api;
 
 // =============================================================================
 // Query Mapping

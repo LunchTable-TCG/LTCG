@@ -11,6 +11,7 @@
 import type { IAgentRuntime, Memory, Provider, ProviderResult, State } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
 import type { CardInHand, GameStateResponse } from "../types/api";
+import type { CardAbility } from "../types/eliza";
 
 export const handProvider: Provider = {
   name: "LTCG_HAND",
@@ -112,7 +113,7 @@ function formatCard(card: CardInHand): string {
     const tributeText = getTributeRequirementText(card.cost || 0);
     const abilityText =
       card.abilities && card.abilities.length > 0
-        ? `   - Abilities: ${card.abilities.map((a: any) => a.name || a.description).join(", ")}`
+        ? `   - Abilities: ${card.abilities.map((a: CardAbility) => a.name || a.description).join(", ")}`
         : "   - No special effects";
 
     return `${card.name} [Creature, Cost ${card.cost || 0}] ATK: ${card.attack || 0}, DEF: ${card.defense || 0}
@@ -123,7 +124,7 @@ ${abilityText}`;
     const effectText = card.description
       ? `   - Effect: ${card.description}`
       : card.abilities && card.abilities.length > 0
-        ? `   - Effect: ${card.abilities.map((a: any) => a.description || a.name).join(", ")}`
+        ? `   - Effect: ${card.abilities.map((a: CardAbility) => a.description || a.name).join(", ")}`
         : "";
 
     return `${card.name} [Spell]
@@ -133,7 +134,7 @@ ${effectText}`;
     const effectText = card.description
       ? `   - Effect: ${card.description}`
       : card.abilities && card.abilities.length > 0
-        ? `   - Effect: ${card.abilities.map((a: any) => a.description || a.name).join(", ")}`
+        ? `   - Effect: ${card.abilities.map((a: CardAbility) => a.description || a.name).join(", ")}`
         : "";
 
     return `${card.name} [Trap]

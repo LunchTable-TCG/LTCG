@@ -1,5 +1,6 @@
 "use client";
 
+import type { Doc } from "@convex/_generated/dataModel";
 import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { AuthLoading, Authenticated } from "convex/react";
@@ -79,7 +80,7 @@ function CardCodexContent() {
   const cards: CardData[] = useMemo(() => {
     if (!allCards) return [];
 
-    return allCards.map((card: any) => ({
+    return allCards.map((card: Doc<"cardDefinitions">) => ({
       id: card._id,
       cardDefinitionId: card._id,
       name: card.name,

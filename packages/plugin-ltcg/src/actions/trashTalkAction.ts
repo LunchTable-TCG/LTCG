@@ -18,6 +18,7 @@ import { ModelType, logger } from "@elizaos/core";
 import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
 import { gameStateProvider } from "../providers/gameStateProvider";
 import type { GameStateResponse } from "../types/api";
+import type { LTCGState } from "../types/eliza";
 
 export const trashTalkAction: Action = {
   name: "TRASH_TALK",
@@ -119,7 +120,8 @@ export const trashTalkAction: Action = {
       }
 
       // Add recent event context if available
-      const recentEvent = (state as any)?.lastAction;
+      const ltcgState = state as LTCGState;
+      const recentEvent = ltcgState.values.lastAction as string | undefined;
       if (recentEvent) {
         context += `\nYou just: ${recentEvent}`;
       }

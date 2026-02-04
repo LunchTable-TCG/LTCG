@@ -56,10 +56,7 @@ describe("CORS Configuration", () => {
 
   it("should validate environment variables are optional", () => {
     // All CORS environment variables are optional
-    const optionalEnvVars = [
-      "FRONTEND_URL",
-      "ADMIN_DASHBOARD_URL",
-    ];
+    const optionalEnvVars = ["FRONTEND_URL", "ADMIN_DASHBOARD_URL"];
 
     expect(optionalEnvVars).toHaveLength(2);
   });

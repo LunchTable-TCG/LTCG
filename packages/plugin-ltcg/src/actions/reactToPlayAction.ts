@@ -18,6 +18,7 @@ import { ModelType, logger } from "@elizaos/core";
 import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
 import { gameStateProvider } from "../providers/gameStateProvider";
 import type { GameStateResponse } from "../types/api";
+import type { LTCGState, BoardAnalysisData } from "../types/eliza";
 
 export const reactToPlayAction: Action = {
   name: "REACT_TO_PLAY",
@@ -49,7 +50,8 @@ export const reactToPlayAction: Action = {
       }
 
       // Check if there's a recent opponent action to react to
-      const opponentAction = (state as any)?.lastOpponentAction;
+      const ltcgState = state as LTCGState;
+      const opponentAction = ltcgState.values.lastOpponentAction as string | undefined;
       if (!opponentAction) {
         logger.debug("No recent opponent action to react to");
         return false;
@@ -88,10 +90,12 @@ export const reactToPlayAction: Action = {
       const personality = runtime.character?.bio || "Strategic and thoughtful card game player";
 
       // Get opponent action from state
-      const opponentAction = (state as any)?.lastOpponentAction || "made a play";
+      const ltcgState = state as LTCGState;
+      const opponentAction = (ltcgState.values.lastOpponentAction as string) || "made a play";
 
       // Classify opponent's play
-      const classification = classifyOpponentPlay(opponentAction, gameState, boardAnalysis);
+      const boardAnalysisData = boardAnalysis as BoardAnalysisData;
+      const classification = classifyOpponentPlay(opponentAction, gameState, boardAnalysisData);
 
       // Build prompt
       const prompt = `You are ${characterName}, a card game player with this personality: ${personality}
@@ -238,7 +242,7 @@ interface PlayClassification {
 function classifyOpponentPlay(
   action: string,
   gameState: GameStateResponse,
-  boardAnalysis: any
+  boardAnalysis: BoardAnalysisData
 ): PlayClassification {
   const actionLower = action.toLowerCase();
 

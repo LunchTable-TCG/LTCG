@@ -5,6 +5,14 @@
  * Used by elizaOS agents to browse cards and manage decks.
  */
 
+import type { Id } from "../_generated/dataModel";
+import type {
+  CardDefinition,
+  DeckInfo,
+  DeckSummary,
+  MutationFunction,
+  QueryFunction,
+} from "./lib/apiHelpers";
 import { authHttpAction } from "./middleware/auth";
 import {
   corsPreflightResponse,
@@ -14,27 +22,13 @@ import {
   successResponse,
   validateRequiredFields,
 } from "./middleware/responses";
-import type {
-  CardDefinition,
-  DeckInfo,
-  DeckSummary,
-  MutationFunction,
-  QueryFunction,
-} from "./lib/apiHelpers";
-import type { Id } from "../_generated/dataModel";
 
 // Type-safe API references to avoid TS2589
 const getUserDecksInternalQuery = require("../_generated/api").internal.core.decks
-  .getUserDecksInternal as QueryFunction<
-  { userId: Id<"users"> },
-  DeckSummary[]
->;
+  .getUserDecksInternal as QueryFunction<{ userId: Id<"users"> }, DeckSummary[]>;
 
 const getDeckWithCardsQuery = require("../_generated/api").api.core.decks
-  .getDeckWithCards as QueryFunction<
-  { deckId: Id<"decks">; userId: Id<"users"> },
-  DeckInfo | null
->;
+  .getDeckWithCards as QueryFunction<{ deckId: Id<"decks">; userId: Id<"users"> }, DeckInfo | null>;
 
 const getStarterDecksQuery = require("../_generated/api").api.agents
   .getStarterDecks as QueryFunction<
@@ -54,10 +48,7 @@ const createDeckMutation = require("../_generated/api").api.core.decks
 >;
 
 const getAllCardDefinitionsQuery = require("../_generated/api").api.core.cards
-  .getAllCardDefinitions as QueryFunction<
-  Record<string, never>,
-  CardDefinition[]
->;
+  .getAllCardDefinitions as QueryFunction<Record<string, never>, CardDefinition[]>;
 
 const getCardDefinitionQuery = require("../_generated/api").api.core.cards
   .getCardDefinition as QueryFunction<

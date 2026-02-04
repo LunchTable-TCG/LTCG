@@ -5,7 +5,8 @@
  * Allows agents to instantly play against AI opponents without matchmaking.
  */
 
-import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import type { MutationFunction, QueryFunction, StoryChapter, StoryStage } from "./lib/apiHelpers";
 import { authHttpAction } from "./middleware/auth";
 import {
   corsPreflightResponse,
@@ -14,6 +15,68 @@ import {
   parseJsonBody,
   successResponse,
 } from "./middleware/responses";
+
+// Type-safe API references to avoid TS2589
+const getChaptersInternalQuery = require("../_generated/api").internal.progression.storyBattle
+  .getChaptersInternal as QueryFunction<{ userId: Id<"users"> }, StoryChapter[]>;
+
+const getChapterStagesInternalQuery = require("../_generated/api").internal.progression.storyBattle
+  .getChapterStagesInternal as QueryFunction<
+  { userId: Id<"users">; chapterId: Id<"storyChapters"> },
+  StoryStage[]
+>;
+
+const initializeStoryBattleInternalMutation = require("../_generated/api").internal.progression
+  .storyBattle.initializeStoryBattleInternal as MutationFunction<
+  { userId: Id<"users">; chapterId: string; stageNumber?: number },
+  {
+    gameId: Id<"games">;
+    lobbyId: Id<"lobbies">;
+    stageId: Id<"storyStages">;
+    chapterTitle: string;
+    stageName: string;
+    stageNumber: number;
+    aiOpponentName: string;
+    aiDifficulty: string;
+    rewards: Record<string, number>;
+  }
+>;
+
+const quickPlayStoryInternalMutation = require("../_generated/api").internal.progression.storyBattle
+  .quickPlayStoryInternal as MutationFunction<
+  { userId: Id<"users">; difficulty?: string },
+  {
+    gameId: Id<"games">;
+    lobbyId: Id<"lobbies">;
+    stageId: Id<"storyStages">;
+    chapterTitle: string;
+    stageName: string;
+    stageNumber: number;
+    aiOpponentName: string;
+    aiDifficulty: string;
+    rewards: Record<string, number>;
+  }
+>;
+
+const completeStageInternalMutation = require("../_generated/api").internal.progression.storyStages
+  .completeStageInternal as MutationFunction<
+  { userId: Id<"users">; stageId: Id<"storyStages">; won: boolean; finalLP: number },
+  {
+    won: boolean;
+    rewards: Record<string, number>;
+    starsEarned: number;
+    newBestScore: boolean;
+    unlockedNextStage: boolean;
+    levelUp?: { newLevel: number; rewards: Record<string, number> };
+    newBadges?: string[];
+  }
+>;
+
+const executeAITurnInternalMutation = require("../_generated/api").internal.gameplay.ai.aiTurn
+  .executeAITurnInternal as MutationFunction<
+  { gameId: string },
+  { success: boolean; message: string; actionsTaken: number }
+>;
 
 /**
  * GET /api/agents/story/chapters
@@ -31,10 +94,9 @@ export const chapters = authHttpAction(async (ctx, request, auth) => {
   }
 
   try {
-    const chaptersWithProgress = await ctx.runQuery(
-      internal.progression.storyBattle.getChaptersInternal,
-      { userId: auth.userId }
-    );
+    const chaptersWithProgress = await ctx.runQuery(getChaptersInternalQuery, {
+      userId: auth.userId,
+    });
 
     return successResponse({
       chapters: chaptersWithProgress,
@@ -69,10 +131,10 @@ export const stages = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("MISSING_CHAPTER_ID", "chapterId query parameter is required", 400);
     }
 
-    const stagesWithProgress = await ctx.runQuery(
-      internal.progression.storyBattle.getChapterStagesInternal,
-      { userId: auth.userId, chapterId: chapterId as any }
-    );
+    const stagesWithProgress = await ctx.runQuery(getChapterStagesInternalQuery, {
+      userId: auth.userId,
+      chapterId: chapterId as Id<"storyChapters">,
+    });
 
     return successResponse({
       stages: stagesWithProgress,
@@ -116,14 +178,11 @@ export const start = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("MISSING_CHAPTER_ID", "chapterId is required", 400);
     }
 
-    const result = await ctx.runMutation(
-      internal.progression.storyBattle.initializeStoryBattleInternal,
-      {
-        userId: auth.userId,
-        chapterId: body.chapterId,
-        stageNumber: body.stageNumber,
-      }
-    );
+    const result = await ctx.runMutation(initializeStoryBattleInternalMutation, {
+      userId: auth.userId,
+      chapterId: body.chapterId,
+      stageNumber: body.stageNumber,
+    });
 
     return successResponse(
       {
@@ -198,7 +257,7 @@ export const quickPlay = authHttpAction(async (ctx, request, auth) => {
 
     if (body instanceof Response) return body;
 
-    const result = await ctx.runMutation(internal.progression.storyBattle.quickPlayStoryInternal, {
+    const result = await ctx.runMutation(quickPlayStoryInternalMutation, {
       userId: auth.userId,
       difficulty: body.difficulty,
     });
@@ -287,9 +346,9 @@ export const complete = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("MISSING_FINAL_LP", "finalLP field is required", 400);
     }
 
-    const result = await ctx.runMutation(internal.progression.storyStages.completeStageInternal, {
+    const result = await ctx.runMutation(completeStageInternalMutation, {
       userId: auth.userId,
-      stageId: body.stageId as any,
+      stageId: body.stageId as Id<"storyStages">,
       won: body.won,
       finalLP: body.finalLP,
     });
@@ -350,7 +409,7 @@ export const aiTurn = authHttpAction(async (ctx, request, _auth) => {
     }
 
     // Execute AI turn using internal mutation
-    const result = await ctx.runMutation(internal.gameplay.ai.aiTurn.executeAITurnInternal, {
+    const result = await ctx.runMutation(executeAITurnInternalMutation, {
       gameId: body.gameId,
     });
 

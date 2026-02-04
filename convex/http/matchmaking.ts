@@ -5,6 +5,8 @@
  * Used by elizaOS agents to find and join games.
  */
 
+import type { Id } from "../_generated/dataModel";
+import type { LobbyInfo, MutationFunction, QueryFunction, User } from "./lib/apiHelpers";
 import { authHttpAction } from "./middleware/auth";
 import {
   corsPreflightResponse,
@@ -14,8 +16,6 @@ import {
   successResponse,
   validateRequiredFields,
 } from "./middleware/responses";
-import type { LobbyInfo, MutationFunction, QueryFunction, User } from "./lib/apiHelpers";
-import type { Id } from "../_generated/dataModel";
 
 // Type-safe API references to avoid TS2589
 const createLobbyInternalMutation = require("../_generated/api").internal.gameplay.games.lobby
@@ -30,10 +30,7 @@ const getUserQuery = require("../_generated/api").api.core.users.getUser as Quer
 >;
 
 const listWaitingLobbiesQuery = require("../_generated/api").api.gameplay.games.queries
-  .listWaitingLobbies as QueryFunction<
-  { mode: string; userRating: number },
-  LobbyInfo[]
->;
+  .listWaitingLobbies as QueryFunction<{ mode: string; userRating: number }, LobbyInfo[]>;
 
 const joinLobbyInternalMutation = require("../_generated/api").internal.gameplay.games.lobby
   .joinLobbyInternal as MutationFunction<
@@ -47,10 +44,7 @@ const joinLobbyInternalMutation = require("../_generated/api").internal.gameplay
 >;
 
 const cancelLobbyInternalMutation = require("../_generated/api").internal.gameplay.games.lobby
-  .cancelLobbyInternal as MutationFunction<
-  { userId: Id<"users"> },
-  { lobbyId: Id<"lobbies"> }
->;
+  .cancelLobbyInternal as MutationFunction<{ userId: Id<"users"> }, { lobbyId: Id<"lobbies"> }>;
 
 /**
  * POST /api/agents/matchmaking/enter
@@ -275,11 +269,11 @@ export const join = authHttpAction(async (ctx, request, auth) => {
 
     if (body.joinCode && !lobbyId) {
       // Look up lobby by join code
-      const lobbies = await ctx.runQuery((api as any).gameplay.games.queries.listWaitingLobbies, {
+      const lobbies = await ctx.runQuery(listWaitingLobbiesQuery, {
         mode: "all" as const,
         userRating: 1000,
       });
-      const matchingLobby = lobbies.find((l: any) => l.joinCode === body.joinCode?.toUpperCase());
+      const matchingLobby = lobbies.find((l) => l.joinCode === body.joinCode?.toUpperCase());
       if (!matchingLobby) {
         return errorResponse("LOBBY_NOT_FOUND", "Invalid or expired join code", 404);
       }
@@ -290,9 +284,9 @@ export const join = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("LOBBY_NOT_FOUND", "Lobby ID required", 400);
     }
 
-    const result = await ctx.runMutation(internal.gameplay.games.lobby.joinLobbyInternal, {
+    const result = await ctx.runMutation(joinLobbyInternalMutation, {
       userId: auth.userId,
-      lobbyId: lobbyId as any,
+      lobbyId: lobbyId as Id<"lobbies">,
       joinCode: body.joinCode,
     });
 
@@ -354,7 +348,7 @@ export const leave = authHttpAction(async (ctx, request, auth) => {
   try {
     // Cancel lobby using internal mutation with userId from API key auth
     // Automatically finds the user's active waiting lobby
-    const result = await ctx.runMutation(internal.gameplay.games.lobby.cancelLobbyInternal, {
+    const result = await ctx.runMutation(cancelLobbyInternalMutation, {
       userId: auth.userId,
     });
 

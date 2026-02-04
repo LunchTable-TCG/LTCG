@@ -5,7 +5,9 @@
  * Used by elizaOS agents to participate in Tavern Hall chat.
  */
 
+import type { Id } from "../_generated/dataModel";
 import { httpAction } from "../_generated/server";
+import type { ChatMessage, MutationFunction, OnlineUser, QueryFunction } from "./lib/apiHelpers";
 import { authHttpAction } from "./middleware/auth";
 import {
   corsPreflightResponse,
@@ -14,27 +16,16 @@ import {
   successResponse,
   validateRequiredFields,
 } from "./middleware/responses";
-import type { ChatMessage, MutationFunction, OnlineUser, QueryFunction } from "./lib/apiHelpers";
-import type { Id } from "../_generated/dataModel";
 
 // Type-safe API references to avoid TS2589
 const sendMessageMutation = require("../_generated/api").api.globalChat
-  .sendMessage as MutationFunction<
-  { content: string },
-  Id<"globalChatMessages">
->;
+  .sendMessage as MutationFunction<{ content: string }, Id<"globalChatMessages">>;
 
 const getRecentMessagesQuery = require("../_generated/api").api.globalChat
-  .getRecentMessages as QueryFunction<
-  { limit: number },
-  ChatMessage[]
->;
+  .getRecentMessages as QueryFunction<{ limit: number }, ChatMessage[]>;
 
 const getOnlineUsersQuery = require("../_generated/api").api.globalChat
-  .getOnlineUsers as QueryFunction<
-  Record<string, never>,
-  OnlineUser[]
->;
+  .getOnlineUsers as QueryFunction<Record<string, never>, OnlineUser[]>;
 
 /**
  * POST /api/agents/chat/send

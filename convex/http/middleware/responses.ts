@@ -24,13 +24,9 @@ export interface ApiErrorResponse {
  * CORS Configuration
  * Allowed origins are read from environment variables for security
  */
-// biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
 const CONVEX_SITE_URL = process.env["CONVEX_SITE_URL"];
-// biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
 const FRONTEND_URL = process.env["FRONTEND_URL"];
-// biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
 const ADMIN_DASHBOARD_URL = process.env["ADMIN_DASHBOARD_URL"];
-// biome-ignore lint/complexity/useLiteralKeys: TypeScript requires bracket notation for process.env (TS4111)
 const IS_PRODUCTION = process.env["CONVEX_CLOUD_URL"] !== undefined;
 
 /**
@@ -172,12 +168,20 @@ export function corsPreflightResponse(request?: Request): Response {
 }
 
 /**
+ * JSON object type for request bodies
+ */
+export type JsonObject = Record<string, string | number | boolean | null | JsonObject | JsonArray>;
+type JsonArray = (string | number | boolean | null | JsonObject | JsonArray)[];
+
+/**
  * Parse JSON body from request
  * Returns error response if invalid
  * @param request - The HTTP request to parse
  * @returns The parsed body or an error response
  */
-export async function parseJsonBody<T = any>(request: Request): Promise<T | Response> {
+export async function parseJsonBody<T extends JsonObject = JsonObject>(
+  request: Request
+): Promise<T | Response> {
   try {
     const contentType = request.headers.get("Content-Type");
     if (!contentType || !contentType.includes("application/json")) {
@@ -221,7 +225,7 @@ export function getQueryParam(request: Request, paramName: string): string | nul
  * @returns Error response if validation fails, null if valid
  */
 export function validateRequiredFields(
-  body: Record<string, any>,
+  body: JsonObject,
   requiredFields: string[],
   request?: Request
 ): Response | null {

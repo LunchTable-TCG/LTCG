@@ -11,6 +11,7 @@
 import type { IAgentRuntime, Memory, Provider, ProviderResult, State } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
 import type { BoardCard, GameStateResponse } from "../types/api";
+import type { ChatMessageContent } from "../types/eliza";
 
 export const boardAnalysisProvider: Provider = {
   name: "LTCG_BOARD_ANALYSIS",
@@ -19,7 +20,8 @@ export const boardAnalysisProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get game ID from state first, then message content
-      const gameId = state.values?.LTCG_CURRENT_GAME_ID || (message.content as any)?.gameId;
+      const messageContent = message.content as ChatMessageContent;
+      const gameId = state.values?.LTCG_CURRENT_GAME_ID || messageContent.gameId;
 
       if (!gameId) {
         return {

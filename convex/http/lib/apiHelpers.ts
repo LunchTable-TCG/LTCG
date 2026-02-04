@@ -150,21 +150,21 @@ export interface DeckInfo extends DeckSummary {
 /**
  * Type-safe API function reference helpers
  */
-export type QueryFunction<Args = object, Returns = unknown> = FunctionReference<
+export type QueryFunction<Args = object, Returns = Record<string, never>> = FunctionReference<
   "query",
   "public" | "internal",
   Args,
   Returns
 >;
 
-export type MutationFunction<Args = object, Returns = unknown> = FunctionReference<
+export type MutationFunction<Args = object, Returns = Record<string, never>> = FunctionReference<
   "mutation",
   "public" | "internal",
   Args,
   Returns
 >;
 
-export type ActionFunction<Args = object, Returns = unknown> = FunctionReference<
+export type ActionFunction<Args = object, Returns = Record<string, never>> = FunctionReference<
   "action",
   "public" | "internal",
   Args,

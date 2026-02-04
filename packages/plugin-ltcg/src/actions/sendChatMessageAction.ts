@@ -60,7 +60,8 @@ export const sendChatMessageAction: Action = {
 
       // Get message content from state or message
       // LLM will provide the message content in the response
-      let chatMessage = (message.content as any)?.text || message.content || "";
+      const messageContent = message.content as ChatMessageContent;
+      let chatMessage = messageContent.text || "";
 
       // If no explicit message provided, this shouldn't happen as LLM should provide it
       if (!chatMessage || typeof chatMessage !== "string") {

@@ -12,6 +12,7 @@
 import type { IAgentRuntime, Memory, Provider, ProviderResult, State } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
 import type { GameStateResponse } from "../types/api";
+import type { ChatMessageContent } from "../types/eliza";
 
 export const gameStateProvider: Provider = {
   name: "LTCG_GAME_STATE",
@@ -21,7 +22,8 @@ export const gameStateProvider: Provider = {
   async get(runtime: IAgentRuntime, message: Memory, state: State): Promise<ProviderResult> {
     try {
       // Get game ID from State (set by service or action)
-      const gameId = state.values.LTCG_CURRENT_GAME_ID || (message.content as any)?.gameId;
+      const messageContent = message.content as ChatMessageContent;
+      const gameId = state.values.LTCG_CURRENT_GAME_ID || messageContent.gameId;
 
       if (!gameId) {
         return {
@@ -139,14 +141,14 @@ function calculateAdvantage(gameState: GameStateResponse): string {
   const opponentMonsters = oppBoard.length;
 
   // Calculate total ATK on board
-  const myTotalAtk = myBoard.reduce(
-    (sum, m) => sum + ((m as any).attack ?? (m as any).atk ?? 0),
-    0
-  );
-  const opponentTotalAtk = oppBoard.reduce(
-    (sum, m) => sum + ((m as any).attack ?? (m as any).atk ?? 0),
-    0
-  );
+  const myTotalAtk = myBoard.reduce((sum, m) => {
+    const card = m as { attack?: number; atk?: number };
+    return sum + (card.attack ?? card.atk ?? 0);
+  }, 0);
+  const opponentTotalAtk = oppBoard.reduce((sum, m) => {
+    const card = m as { attack?: number; atk?: number };
+    return sum + (card.attack ?? card.atk ?? 0);
+  }, 0);
 
   // Simple advantage calculation
   const monsterAdvantage = myMonsters - opponentMonsters;
