@@ -506,60 +506,62 @@ function AchievementList() {
                 </tr>
               </thead>
               <tbody>
-                {(achievementsResult?.achievements as unknown as Achievement[])?.map((achievement) => (
-                  <tr
-                    key={achievement._id}
-                    className={`border-b hover:bg-muted/30 ${!achievement.isActive ? "opacity-50" : ""}`}
-                  >
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{achievement.icon}</span>
-                        <div>
-                          <Link
-                            href={`/quests/achievement/${achievement._id}`}
-                            className="font-medium hover:underline text-primary"
-                          >
-                            {achievement.name}
-                          </Link>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            {achievement.achievementId}
+                {(achievementsResult?.achievements as unknown as Achievement[])?.map(
+                  (achievement) => (
+                    <tr
+                      key={achievement._id}
+                      className={`border-b hover:bg-muted/30 ${!achievement.isActive ? "opacity-50" : ""}`}
+                    >
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{achievement.icon}</span>
+                          <div>
+                            <Link
+                              href={`/quests/achievement/${achievement._id}`}
+                              className="font-medium hover:underline text-primary"
+                            >
+                              {achievement.name}
+                            </Link>
+                            <div className="text-xs text-muted-foreground font-mono">
+                              {achievement.achievementId}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-3 capitalize">{achievement.category}</td>
-                    <td className="py-3 px-3">
-                      <Badge color={RARITY_COLORS[achievement.rarity]} size="sm">
-                        {achievement.rarity}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-3 text-muted-foreground">
-                      {achievement.requirementType}: {achievement.targetValue}
-                    </td>
-                    <td className="py-3 px-3 text-center">{achievement.isSecret ? "🔒" : "-"}</td>
-                    <td className="py-3 px-3 text-center">
-                      <Badge color={achievement.isActive ? "emerald" : "gray"} size="sm">
-                        {achievement.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/quests/achievement/${achievement._id}`}>Edit</Link>
-                        </Button>
-                        <RoleGuard permission="config.edit">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleToggleActive(achievement._id, achievement.name)}
-                          >
-                            {achievement.isActive ? "Deactivate" : "Activate"}
+                      </td>
+                      <td className="py-3 px-3 capitalize">{achievement.category}</td>
+                      <td className="py-3 px-3">
+                        <Badge color={RARITY_COLORS[achievement.rarity]} size="sm">
+                          {achievement.rarity}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-3 text-muted-foreground">
+                        {achievement.requirementType}: {achievement.targetValue}
+                      </td>
+                      <td className="py-3 px-3 text-center">{achievement.isSecret ? "🔒" : "-"}</td>
+                      <td className="py-3 px-3 text-center">
+                        <Badge color={achievement.isActive ? "emerald" : "gray"} size="sm">
+                          {achievement.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/quests/achievement/${achievement._id}`}>Edit</Link>
                           </Button>
-                        </RoleGuard>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <RoleGuard permission="config.edit">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleActive(achievement._id, achievement.name)}
+                            >
+                              {achievement.isActive ? "Deactivate" : "Activate"}
+                            </Button>
+                          </RoleGuard>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>

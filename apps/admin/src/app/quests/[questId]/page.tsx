@@ -45,7 +45,15 @@ import { toast } from "sonner";
 // =============================================================================
 
 type QuestType = "daily" | "weekly" | "achievement";
-type RequirementType = "win_games" | "play_games" | "play_cards" | "deal_damage" | "win_with_archetype" | "collect_cards" | "spend_gold" | "complete_story";
+type RequirementType =
+  | "win_games"
+  | "play_games"
+  | "play_cards"
+  | "deal_damage"
+  | "win_with_archetype"
+  | "collect_cards"
+  | "spend_gold"
+  | "complete_story";
 type GameMode = "ranked" | "casual" | "story";
 
 const QUEST_TYPES = [

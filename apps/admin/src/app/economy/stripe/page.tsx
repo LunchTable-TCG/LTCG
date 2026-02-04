@@ -225,7 +225,9 @@ function SubscriptionStats() {
               data={statusData}
               category="value"
               index="name"
-              colors={statusData.map((s: { name: string }) => (statusColors as Record<string, string>)[s.name] || "gray")}
+              colors={statusData.map(
+                (s: { name: string }) => (statusColors as Record<string, string>)[s.name] || "gray"
+              )}
               showLabel
             />
             <div className="space-y-2">

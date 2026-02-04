@@ -55,9 +55,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
     if (chapterDetails?._id) {
       type StageWithProgress = { status?: string; timesCompleted?: number };
       const stages = chapterDetails.stages as StageWithProgress[] | undefined;
-      const hasProgress = stages?.some(
-        (s) => s.status !== "locked" || (s.timesCompleted ?? 0) > 0
-      );
+      const hasProgress = stages?.some((s) => s.status !== "locked" || (s.timesCompleted ?? 0) > 0);
       if (!hasProgress) {
         initializeStageProgress({ chapterId: chapterDetails._id }).catch(console.error);
       }
@@ -184,45 +182,44 @@ export default function ChapterPage({ params }: ChapterPageProps) {
           {stages.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {stages.map((stage, index) => {
-                  // Normalize firstClearBonus to a number
-                  const firstClearBonusValue =
-                    typeof stage.firstClearBonus === "number"
-                      ? stage.firstClearBonus
-                      : ((stage.firstClearBonus as { gold?: number } | undefined)?.gold ?? 0);
-                  // Map progress status to display status
-                  const displayStatus = stage.status === "in_progress" ? "available" : stage.status;
-                  const stageData = {
-                    stageNumber: stage.stageNumber,
-                    name: stage.name ?? `Stage ${stage.stageNumber}`,
-                    description: stage.description ?? "",
-                    rewardGold: stage.rewardGold ?? 0,
-                    rewardXp: stage.rewardXp ?? 0,
-                    firstClearBonus: firstClearBonusValue,
-                    firstClearClaimed: stage.firstClearClaimed ?? false,
-                    aiDifficulty: stage.aiDifficulty ?? "medium",
-                    status: displayStatus ?? "locked",
-                  };
-                  return (
-                    <motion.div
-                      key={stage.stageNumber}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <StoryStageNode
-                        stage={stageData}
-                        onClick={() => {
-                          if (stageData.status === "locked") {
-                            toast.error("Complete the previous stage first!");
-                            return;
-                          }
-                          setSelectedStage(stageData);
-                        }}
-                      />
-                    </motion.div>
-                  );
-                }
-              )}
+                // Normalize firstClearBonus to a number
+                const firstClearBonusValue =
+                  typeof stage.firstClearBonus === "number"
+                    ? stage.firstClearBonus
+                    : ((stage.firstClearBonus as { gold?: number } | undefined)?.gold ?? 0);
+                // Map progress status to display status
+                const displayStatus = stage.status === "in_progress" ? "available" : stage.status;
+                const stageData = {
+                  stageNumber: stage.stageNumber,
+                  name: stage.name ?? `Stage ${stage.stageNumber}`,
+                  description: stage.description ?? "",
+                  rewardGold: stage.rewardGold ?? 0,
+                  rewardXp: stage.rewardXp ?? 0,
+                  firstClearBonus: firstClearBonusValue,
+                  firstClearClaimed: stage.firstClearClaimed ?? false,
+                  aiDifficulty: stage.aiDifficulty ?? "medium",
+                  status: displayStatus ?? "locked",
+                };
+                return (
+                  <motion.div
+                    key={stage.stageNumber}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <StoryStageNode
+                      stage={stageData}
+                      onClick={() => {
+                        if (stageData.status === "locked") {
+                          toast.error("Complete the previous stage first!");
+                          return;
+                        }
+                        setSelectedStage(stageData);
+                      }}
+                    />
+                  </motion.div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-16">

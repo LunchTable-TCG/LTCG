@@ -94,7 +94,12 @@ export default function EconomyAnalyticsPage() {
   const isLoading = snapshot === undefined || metrics === undefined;
 
   // Transform metrics for chart
-  type EconomyMetric = { date: number; goldGenerated: number; goldSpent: number; netGoldChange: number };
+  type EconomyMetric = {
+    date: number;
+    goldGenerated: number;
+    goldSpent: number;
+    netGoldChange: number;
+  };
   const metricsArray = (metrics ?? []) as unknown as EconomyMetric[];
   const currencyFlowData = metricsArray
     .slice()
@@ -124,12 +129,16 @@ export default function EconomyAnalyticsPage() {
   const marketplaceActivityData = metricsArray
     .slice()
     .reverse()
-    .map((m: EconomyMetric & { packsOpened?: number; salesVolume?: number; activeListings?: number }) => ({
-      date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
-      "Packs Opened": m.packsOpened ?? 0,
-      "Sales Volume": m.salesVolume ?? 0,
-      "Active Listings": m.activeListings ?? 0,
-    }));
+    .map(
+      (
+        m: EconomyMetric & { packsOpened?: number; salesVolume?: number; activeListings?: number }
+      ) => ({
+        date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
+        "Packs Opened": m.packsOpened ?? 0,
+        "Sales Volume": m.salesVolume ?? 0,
+        "Active Listings": m.activeListings ?? 0,
+      })
+    );
 
   // Card economy data
   const cardEconomyData = metricsArray
@@ -159,7 +168,14 @@ export default function EconomyAnalyticsPage() {
   ];
 
   // Transform economy trends for chart
-  type TrendItem = { date: number; netGoldChange: number; goldGenerated: number; goldSpent: number; marketplaceVolume: number; packsOpened: number };
+  type TrendItem = {
+    date: number;
+    netGoldChange: number;
+    goldGenerated: number;
+    goldSpent: number;
+    marketplaceVolume: number;
+    packsOpened: number;
+  };
   const trendsArray = (economyTrends ?? []) as unknown as TrendItem[];
   const economyTrendsData = trendsArray.map((t: TrendItem) => ({
     date: new Date(t.date).toLocaleDateString("en-US", {
@@ -173,17 +189,27 @@ export default function EconomyAnalyticsPage() {
   }));
 
   // Calculate trend statistics
-  const trendStats = trendsArray.length > 0
-    ? {
-        totalGenerated: trendsArray.reduce((sum: number, t: TrendItem) => sum + t.goldGenerated, 0),
-        totalSpent: trendsArray.reduce((sum: number, t: TrendItem) => sum + t.goldSpent, 0),
-        totalNetChange: trendsArray.reduce((sum: number, t: TrendItem) => sum + t.netGoldChange, 0),
-        totalMarketplaceVolume: trendsArray.reduce((sum: number, t: TrendItem) => sum + t.marketplaceVolume, 0),
-        avgPacksOpened:
-          trendsArray.reduce((sum: number, t: TrendItem) => sum + t.packsOpened, 0) /
-          Math.max(trendsArray.length, 1),
-      }
-    : null;
+  const trendStats =
+    trendsArray.length > 0
+      ? {
+          totalGenerated: trendsArray.reduce(
+            (sum: number, t: TrendItem) => sum + t.goldGenerated,
+            0
+          ),
+          totalSpent: trendsArray.reduce((sum: number, t: TrendItem) => sum + t.goldSpent, 0),
+          totalNetChange: trendsArray.reduce(
+            (sum: number, t: TrendItem) => sum + t.netGoldChange,
+            0
+          ),
+          totalMarketplaceVolume: trendsArray.reduce(
+            (sum: number, t: TrendItem) => sum + t.marketplaceVolume,
+            0
+          ),
+          avgPacksOpened:
+            trendsArray.reduce((sum: number, t: TrendItem) => sum + t.packsOpened, 0) /
+            Math.max(trendsArray.length, 1),
+        }
+      : null;
 
   return (
     <PageWrapper

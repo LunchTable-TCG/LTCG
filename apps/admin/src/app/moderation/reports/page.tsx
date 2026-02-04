@@ -230,48 +230,49 @@ export default function ReportsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(reportsData.reports as unknown as Array<{
+                  {(
+                    reportsData.reports as unknown as Array<{
                       _id: string;
                       reporterUsername: string;
                       reportedUsername: string;
                       reason: string;
                       status: ReportStatus;
                       createdAt: number;
-                    }>).map((report) => (
-                      <TableRow key={report._id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedReports.has(report._id)}
-                            onCheckedChange={(checked) =>
-                              handleSelectReport(report._id, checked as boolean)
-                            }
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{report.reporterUsername}</TableCell>
-                        <TableCell className="font-medium">{report.reportedUsername}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{report.reason}</TableCell>
-                        <TableCell>
-                          <Badge variant={STATUS_BADGES[report.status].variant}>
-                            {STATUS_BADGES[report.status].label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDistanceToNow(new Date(report.createdAt), {
-                            addSuffix: true,
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => router.push(`/moderation/reports/${report._id}`)}
-                          >
-                            Review
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  )}
+                    }>
+                  ).map((report) => (
+                    <TableRow key={report._id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedReports.has(report._id)}
+                          onCheckedChange={(checked) =>
+                            handleSelectReport(report._id, checked as boolean)
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">{report.reporterUsername}</TableCell>
+                      <TableCell className="font-medium">{report.reportedUsername}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{report.reason}</TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_BADGES[report.status].variant}>
+                          {STATUS_BADGES[report.status].label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDistanceToNow(new Date(report.createdAt), {
+                          addSuffix: true,
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => router.push(`/moderation/reports/${report._id}`)}
+                        >
+                          Review
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
 

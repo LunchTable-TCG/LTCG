@@ -636,7 +636,10 @@ export default function SystemConfigPage() {
     setIsInitializing(true);
     try {
       // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-      const result = (await initializeDefaults({})) as unknown as { createdCount: number; message: string };
+      const result = (await initializeDefaults({})) as unknown as {
+        createdCount: number;
+        message: string;
+      };
       if (result.createdCount > 0) {
         toast.success(result.message);
       } else {

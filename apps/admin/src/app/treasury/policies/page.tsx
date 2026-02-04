@@ -65,7 +65,9 @@ export default function TreasuryPoliciesPage() {
 
   // Fetch policies
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-  const policies = useQuery(typedApi.treasury.policies.listPolicies, { includeInactive: true }) as TreasuryPolicy[] | undefined;
+  const policies = useQuery(typedApi.treasury.policies.listPolicies, { includeInactive: true }) as
+    | TreasuryPolicy[]
+    | undefined;
 
   // Mutations
   const createPolicy = useMutation(typedApi.treasury.policies.createPolicy);

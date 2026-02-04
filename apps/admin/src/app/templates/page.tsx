@@ -76,7 +76,13 @@ export default function TemplatesPage() {
   }) as TemplateListItem[] | undefined;
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const stats = useConvexQuery(typedApi.admin.templates.getTemplateStats, {}) as
-    | { total: number; active: number; defaults: number; totalBlocks: number; byType: Record<string, number> }
+    | {
+        total: number;
+        active: number;
+        defaults: number;
+        totalBlocks: number;
+        byType: Record<string, number>;
+      }
     | undefined;
 
   // Mutations

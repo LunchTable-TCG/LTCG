@@ -399,30 +399,32 @@ export default function ReportDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {report.moderationHistory.map((action: {
-                    _id: string;
-                    actionType: string;
-                    createdAt: number;
-                    reason?: string;
-                    moderatorName?: string;
-                  }) => (
-                    <div key={action._id} className="p-2 border rounded-md text-sm">
-                      <div className="flex items-center justify-between mb-1">
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {action.actionType}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(action.createdAt), { addSuffix: true })}
-                        </span>
+                  {report.moderationHistory.map(
+                    (action: {
+                      _id: string;
+                      actionType: string;
+                      createdAt: number;
+                      reason?: string;
+                      moderatorName?: string;
+                    }) => (
+                      <div key={action._id} className="p-2 border rounded-md text-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {action.actionType}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(action.createdAt), { addSuffix: true })}
+                          </span>
+                        </div>
+                        <p className="truncate text-muted-foreground">{action.reason ?? ""}</p>
+                        {"moderatorName" in action && Boolean(action.moderatorName) && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            by {String(action.moderatorName)}
+                          </p>
+                        )}
                       </div>
-                      <p className="truncate text-muted-foreground">{action.reason ?? ""}</p>
-                      {"moderatorName" in action && Boolean(action.moderatorName) && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          by {String(action.moderatorName)}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               </CardContent>
             </Card>

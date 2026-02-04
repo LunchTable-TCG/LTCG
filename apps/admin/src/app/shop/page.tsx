@@ -114,7 +114,9 @@ export default function ShopPage() {
   const handleToggleActive = async (productDbId: string, _productName: string) => {
     try {
       // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-      const result = (await toggleActive({ productDbId: productDbId as Id<"shopProducts"> })) as unknown as {
+      const result = (await toggleActive({
+        productDbId: productDbId as Id<"shopProducts">,
+      })) as unknown as {
         message: string;
       };
       toast.success(result.message);

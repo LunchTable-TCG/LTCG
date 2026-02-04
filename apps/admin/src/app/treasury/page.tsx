@@ -98,7 +98,9 @@ export default function TreasuryOverviewPage() {
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incomplete return type
   const overview = useConvexQuery(typedApi.treasury.wallets.getOverview) as any;
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incomplete return type
-  const wallets = useConvexQuery(typedApi.treasury.wallets.listWallets, { status: "active" }) as TreasuryWallet[] | undefined;
+  const wallets = useConvexQuery(typedApi.treasury.wallets.listWallets, { status: "active" }) as
+    | TreasuryWallet[]
+    | undefined;
 
   const isLoading = overview === undefined;
 

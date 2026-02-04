@@ -490,7 +490,10 @@ export default function TournamentsPage() {
   }) as any;
 
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg types
-  const tournamentStats = useConvexQuery(typedApi.admin.tournaments.getTournamentStats, {} as any) as any;
+  const tournamentStats = useConvexQuery(
+    typedApi.admin.tournaments.getTournamentStats,
+    {} as any
+  ) as any;
 
   const isLoading = tournamentsResult === undefined;
 

@@ -144,7 +144,9 @@ export default function TreasuryWalletsPage() {
 
   // Fetch wallets
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-  const wallets = useQuery(typedApi.treasury.wallets.listWallets, {}) as TreasuryWallet[] | undefined;
+  const wallets = useQuery(typedApi.treasury.wallets.listWallets, {}) as
+    | TreasuryWallet[]
+    | undefined;
   // policies query will be used when policy assignment UI is implemented
 
   // Mutations

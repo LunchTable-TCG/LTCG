@@ -276,7 +276,12 @@ export default function StoryPage() {
 
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg/return types
   const stats = useConvexQuery(typedApi.admin.story.getChapterStats, {} as any) as
-    | { totalChapters: number; publishedChapters: number; draftChapters: number; totalStages: number }
+    | {
+        totalChapters: number;
+        publishedChapters: number;
+        draftChapters: number;
+        totalStages: number;
+      }
     | undefined;
 
   const publishChapter = useConvexMutation(typedApi.admin.story.publishChapter);
