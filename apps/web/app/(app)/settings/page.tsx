@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { WalletConnect } from "@/components/wallet";
 import { useGameWallet, useTokenBalance } from "@/hooks";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -66,16 +66,16 @@ function Toggle({ enabled, onChange, disabled }: ToggleProps) {
 
 export default function SettingsPage() {
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
   const preferences = useConvexQuery(
-    apiAny.core.userPreferences.getPreferences,
+    typedApi.core.userPreferences.getPreferences,
     isAuthenticated ? {} : "skip"
   );
 
-  const updatePreferences = useConvexMutation(apiAny.core.userPreferences.updatePreferences);
-  const updateUsername = useConvexMutation(apiAny.core.userPreferences.updateUsername);
-  const updateBio = useConvexMutation(apiAny.core.userPreferences.updateBio);
-  const deleteAccount = useConvexMutation(apiAny.core.userPreferences.deleteAccount);
+  const updatePreferences = useConvexMutation(typedApi.core.userPreferences.updatePreferences);
+  const updateUsername = useConvexMutation(typedApi.core.userPreferences.updateUsername);
+  const updateBio = useConvexMutation(typedApi.core.userPreferences.updateBio);
+  const deleteAccount = useConvexMutation(typedApi.core.userPreferences.deleteAccount);
 
   // Wallet hooks
   const {

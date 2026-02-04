@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import type { IAgentRuntime, Memory, State } from "@elizaos/core";
-import { LTCGApiClient } from "../client/LTCGApiClient";
-import { gameStateProvider } from "../providers/gameStateProvider";
-import { handProvider } from "../providers/handProvider";
-import { summonAction } from "./summonAction";
+import { LTCGApiClient } from "../../src/client/LTCGApiClient";
+import { gameStateProvider } from "../../src/providers/gameStateProvider";
+import { handProvider } from "../../src/providers/handProvider";
+import { summonAction } from "../../src/actions/summonAction";
 
 describe("Summon Action", () => {
   let mockRuntime: IAgentRuntime;

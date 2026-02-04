@@ -30,7 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { BattlePassId } from "@/lib/convexTypes";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
@@ -88,10 +88,10 @@ function CreateBattlePassDialog({ open, onOpenChange }: CreateBattlePassDialogPr
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const availableSeasons = useConvexQuery(
-    api.admin.battlePass.getAvailableSeasonsForBattlePass,
+    typedApi.admin.battlePass.getAvailableSeasonsForBattlePass,
     {}
   );
-  const createBattlePass = useConvexMutation(api.admin.battlePass.createBattlePassSeason);
+  const createBattlePass = useConvexMutation(typedApi.admin.battlePass.createBattlePassSeason);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,8 +255,8 @@ function BattlePassActions({ battlePass }: BattlePassActionsProps) {
   const [isEnding, setIsEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
-  const activateBattlePass = useConvexMutation(api.admin.battlePass.activateBattlePass);
-  const endBattlePass = useConvexMutation(api.admin.battlePass.endBattlePass);
+  const activateBattlePass = useConvexMutation(typedApi.admin.battlePass.activateBattlePass);
+  const endBattlePass = useConvexMutation(typedApi.admin.battlePass.endBattlePass);
 
   const handleActivate = async () => {
     setIsActivating(true);
@@ -357,11 +357,11 @@ export default function BattlePassPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const battlePassResult = useConvexQuery(api.admin.battlePass.listBattlePassSeasons, {
+  const battlePassResult = useConvexQuery(typedApi.admin.battlePass.listBattlePassSeasons, {
     status: statusFilter !== "all" ? (statusFilter as BattlePassStatus) : undefined,
   });
 
-  const battlePassStats = useConvexQuery(api.admin.battlePass.getBattlePassStats, {});
+  const battlePassStats = useConvexQuery(typedApi.admin.battlePass.getBattlePassStats, {});
 
   const isLoading = battlePassResult === undefined;
 

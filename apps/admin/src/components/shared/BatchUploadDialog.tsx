@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { api, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { upload } from "@vercel/blob/client";
 import {
@@ -135,8 +135,8 @@ export function BatchUploadDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Convex mutations
-  const saveAssetMetadata = useConvexMutation(api.admin.assets.saveAssetMetadata);
-  const createBrandingAsset = useConvexMutation(api.admin.branding.createAsset);
+  const saveAssetMetadata = useConvexMutation(typedApi.admin.assets.saveAssetMetadata);
+  const createBrandingAsset = useConvexMutation(typedApi.admin.branding.createAsset);
 
   // ---------------------------------------------------------------------------
   // File Selection

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
@@ -125,7 +125,7 @@ export function OptionalTriggerPrompt({
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const respondToTrigger = useConvexMutation(
-    apiAny.gameplay.triggerSystem.respondToOptionalTrigger
+    typedApi.gameplay.triggerSystem.respondToOptionalTrigger
   );
 
   // Filter triggers for current player only

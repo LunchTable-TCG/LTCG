@@ -8,6 +8,7 @@ import { AdminShell } from "@/components/layout";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { Toaster } from "@/components/ui/sonner";
 import { AdminProvider } from "@/contexts/AdminContext";
+import { AdminJsonRenderProvider } from "@/lib/json-render";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -142,9 +143,11 @@ export default function RootLayout({
           <PrivyAuthProvider>
             <ConvexClientProvider>
               <AdminProvider>
-                <AdminShell>{children}</AdminShell>
-                <Toaster position="top-center" richColors closeButton />
-                <PWAInstallPrompt />
+                <AdminJsonRenderProvider>
+                  <AdminShell>{children}</AdminShell>
+                  <Toaster position="top-center" richColors closeButton />
+                  <PWAInstallPrompt />
+                </AdminJsonRenderProvider>
               </AdminProvider>
             </ConvexClientProvider>
           </PrivyAuthProvider>

@@ -31,7 +31,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { ArrowLeftIcon, CopyIcon, Loader2Icon, SaveIcon, TrashIcon } from "lucide-react";
@@ -124,14 +124,14 @@ export default function AchievementEditorPage() {
 
   // Queries and mutations
   const existingAchievement = useConvexQuery(
-    api.admin.achievements.getAchievement,
+    typedApi.admin.achievements.getAchievement,
     isNew ? "skip" : { achievementDbId: achievementDbId as Id<"achievementDefinitions"> }
   );
 
-  const createAchievement = useConvexMutation(api.admin.achievements.createAchievement);
-  const updateAchievement = useConvexMutation(api.admin.achievements.updateAchievement);
-  const deleteAchievement = useConvexMutation(api.admin.achievements.deleteAchievement);
-  const duplicateAchievement = useConvexMutation(api.admin.achievements.duplicateAchievement);
+  const createAchievement = useConvexMutation(typedApi.admin.achievements.createAchievement);
+  const updateAchievement = useConvexMutation(typedApi.admin.achievements.updateAchievement);
+  const deleteAchievement = useConvexMutation(typedApi.admin.achievements.deleteAchievement);
+  const duplicateAchievement = useConvexMutation(typedApi.admin.achievements.duplicateAchievement);
 
   // Populate form with existing data
   useEffect(() => {

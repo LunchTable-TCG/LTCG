@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Text, Title } from "@tremor/react";
 import Link from "next/link";
@@ -112,14 +112,14 @@ export default function AlertChannelsPage() {
   });
 
   // Fetch channels
-  const channels = useQuery(api.alerts.channels.getAll, {});
+  const channels = useQuery(typedApi.alerts.channels.getAll, {});
 
   // Mutations
-  const createChannel = useMutation(api.alerts.channels.create);
-  const updateChannel = useMutation(api.alerts.channels.update);
-  const removeChannel = useMutation(api.alerts.channels.remove);
-  const testChannel = useMutation(api.alerts.channels.test);
-  const setupDefaults = useMutation(api.alerts.channels.setupDefaults);
+  const createChannel = useMutation(typedApi.alerts.channels.create);
+  const updateChannel = useMutation(typedApi.alerts.channels.update);
+  const removeChannel = useMutation(typedApi.alerts.channels.remove);
+  const testChannel = useMutation(typedApi.alerts.channels.test);
+  const setupDefaults = useMutation(typedApi.alerts.channels.setupDefaults);
 
   const isLoading = channels === undefined;
 

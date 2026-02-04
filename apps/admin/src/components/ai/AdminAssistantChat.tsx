@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/lib/convexHelpers";
+import { typedApi } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { useTypedAction } from "@ltcg/core/react";
 import type { FunctionReference } from "convex/server";
@@ -79,10 +79,10 @@ export function AdminAssistantChat({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Actions - use useTypedAction from @ltcg/core/react to avoid TS2589 deep type instantiation
-  const getOrCreateThreadAction = api.ai.adminAgentApi
+  const getOrCreateThreadAction = typedApi.ai.adminAgentApi
     .getOrCreateThread as FunctionReference<"action">;
   const getOrCreateThread = useTypedAction(getOrCreateThreadAction);
-  const sendMessageAction = api.ai.adminAgentApi.sendMessage as FunctionReference<"action">;
+  const sendMessageAction = typedApi.ai.adminAgentApi.sendMessage as FunctionReference<"action">;
   const sendMessage = useTypedAction(sendMessageAction);
 
   // Auto-scroll to bottom when new messages arrive

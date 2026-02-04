@@ -4,7 +4,7 @@ import { StoryChapterCard } from "@/components/story/StoryChapterCard";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { useFeatureFlag } from "@/hooks/useFeatureFlags";
 import { getAssetUrl } from "@/lib/blob";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { BookOpen, ChevronLeft, Loader2, Lock, Shield, Star, Trophy } from "lucide-react";
@@ -15,23 +15,23 @@ import { useEffect, useMemo } from "react";
 export default function StoryModePage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
 
   // Feature flag check
   const { enabled: storyModeEnabled, isLoading: flagsLoading } = useFeatureFlag("storyModeEnabled");
 
   // Fetch real data
   const allChapters = useConvexQuery(
-    apiAny.progression.story.getAvailableChapters,
+    typedApi.progression.story.getAvailableChapters,
     isAuthenticated ? {} : "skip"
   );
   const playerProgress = useConvexQuery(
-    apiAny.progression.story.getPlayerProgress,
+    typedApi.progression.story.getPlayerProgress,
     isAuthenticated ? {} : "skip"
   );
 
   const initializeStoryProgress = useConvexMutation(
-    apiAny.progression.story.initializeStoryProgress
+    typedApi.progression.story.initializeStoryProgress
   );
 
   // Initialize progress on first access

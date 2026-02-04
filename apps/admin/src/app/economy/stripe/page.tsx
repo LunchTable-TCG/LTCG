@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, BarChart, DonutChart, Metric, ProgressBar, Text, Title } from "@tremor/react";
 import {
   AlertTriangleIcon,
@@ -122,7 +122,7 @@ function MetricCard({
 // =============================================================================
 
 function StripeOverview() {
-  const overview = useConvexQuery(api.admin.stripe.getStripeOverview, {});
+  const overview = useConvexQuery(typedApi.admin.stripe.getStripeOverview, {});
 
   if (!overview) {
     return (
@@ -177,8 +177,8 @@ function StripeOverview() {
 // =============================================================================
 
 function SubscriptionStats() {
-  const overview = useConvexQuery(api.admin.stripe.getStripeOverview, {});
-  const breakdown = useConvexQuery(api.admin.stripe.getSubscriptionBreakdown, {});
+  const overview = useConvexQuery(typedApi.admin.stripe.getStripeOverview, {});
+  const breakdown = useConvexQuery(typedApi.admin.stripe.getSubscriptionBreakdown, {});
 
   if (!overview || !breakdown) {
     return (
@@ -316,7 +316,7 @@ function SubscriptionStats() {
 
 function SubscriptionTrendChart() {
   const [days, setDays] = useState(30);
-  const trend = useConvexQuery(api.admin.stripe.getSubscriptionTrend, { days });
+  const trend = useConvexQuery(typedApi.admin.stripe.getSubscriptionTrend, { days });
 
   if (!trend) {
     return (
@@ -380,11 +380,11 @@ function SubscriptionTrendChart() {
 
 function WebhookEventsMonitor() {
   const [showProcessed, setShowProcessed] = useState(true);
-  const events = useConvexQuery(api.admin.stripe.getRecentStripeEvents, {
+  const events = useConvexQuery(typedApi.admin.stripe.getRecentStripeEvents, {
     limit: 50,
     includeProcessed: showProcessed,
   });
-  const failedEvents = useConvexQuery(api.admin.stripe.getFailedWebhookEvents, { limit: 10 });
+  const failedEvents = useConvexQuery(typedApi.admin.stripe.getFailedWebhookEvents, { limit: 10 });
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -477,7 +477,7 @@ function CustomerSearch() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const customers = useConvexQuery(
-    api.admin.stripe.searchStripeCustomers,
+    typedApi.admin.stripe.searchStripeCustomers,
     searchQuery.length >= 2 ? { search: searchQuery, limit: 20 } : "skip"
   );
 

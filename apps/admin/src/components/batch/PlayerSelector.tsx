@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMemo, useState } from "react";
 
@@ -45,7 +45,7 @@ export function PlayerSelector({
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch player list from backend
-  const players = useConvexQuery(api.admin.admin.listPlayers, { limit: 200 }) as
+  const players = useConvexQuery(typedApi.admin.admin.listPlayers, { limit: 200 }) as
     | PlayerOption[]
     | undefined;
   const isLoading = players === undefined;

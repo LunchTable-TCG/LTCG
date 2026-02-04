@@ -31,7 +31,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { QuestId } from "@/lib/convexTypes";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { ArrowLeftIcon, CopyIcon, Loader2Icon, SaveIcon, TrashIcon } from "lucide-react";
@@ -106,14 +106,14 @@ export default function QuestEditorPage() {
 
   // Queries and mutations
   const existingQuest = useConvexQuery(
-    api.admin.quests.getQuest,
+    typedApi.admin.quests.getQuest,
     isNew ? "skip" : { questDbId: questDbId as QuestId }
   );
 
-  const createQuest = useConvexMutation(api.admin.quests.createQuest);
-  const updateQuest = useConvexMutation(api.admin.quests.updateQuest);
-  const deleteQuest = useConvexMutation(api.admin.quests.deleteQuest);
-  const duplicateQuest = useConvexMutation(api.admin.quests.duplicateQuest);
+  const createQuest = useConvexMutation(typedApi.admin.quests.createQuest);
+  const updateQuest = useConvexMutation(typedApi.admin.quests.updateQuest);
+  const deleteQuest = useConvexMutation(typedApi.admin.quests.deleteQuest);
+  const duplicateQuest = useConvexMutation(typedApi.admin.quests.duplicateQuest);
 
   // Populate form with existing data
   useEffect(() => {

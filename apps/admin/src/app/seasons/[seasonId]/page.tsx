@@ -39,7 +39,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { SeasonId, SeasonLeaderboardEntry, TierBreakdown } from "@/lib/convexTypes";
 import type { Doc } from "@convex/_generated/dataModel";
 import { format } from "date-fns";
@@ -120,7 +120,7 @@ function EditSeasonDialog({ open, onOpenChange, season }: EditSeasonDialogProps)
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateSeason = useConvexMutation(api.admin.seasons.updateSeason);
+  const updateSeason = useConvexMutation(typedApi.admin.seasons.updateSeason);
 
   useEffect(() => {
     if (season) {
@@ -270,7 +270,7 @@ interface RewardsPreviewProps {
 }
 
 function RewardsPreview({ seasonId }: RewardsPreviewProps) {
-  const preview = useConvexQuery(api.admin.seasons.previewSeasonRewards, {
+  const preview = useConvexQuery(typedApi.admin.seasons.previewSeasonRewards, {
     seasonId: seasonId as SeasonId,
   });
 
@@ -347,7 +347,7 @@ interface LeaderboardProps {
 }
 
 function Leaderboard({ seasonId, isEnded }: LeaderboardProps) {
-  const leaderboard = useConvexQuery(api.admin.seasons.getSeasonLeaderboard, {
+  const leaderboard = useConvexQuery(typedApi.admin.seasons.getSeasonLeaderboard, {
     seasonId: seasonId as SeasonId,
     limit: 100,
   });
@@ -508,14 +508,14 @@ export default function SeasonDetailPage() {
   const [isEnding, setIsEnding] = useState(false);
   const [isDistributing, setIsDistributing] = useState(false);
 
-  const season = useConvexQuery(api.admin.seasons.getSeason, {
+  const season = useConvexQuery(typedApi.admin.seasons.getSeason, {
     seasonId: seasonId as SeasonId,
   });
 
-  const startSeason = useConvexMutation(api.admin.seasons.startSeason);
-  const endSeason = useConvexMutation(api.admin.seasons.endSeason);
-  const distributeRewards = useConvexMutation(api.admin.seasons.distributeSeasonRewards);
-  const deleteSeason = useConvexMutation(api.admin.seasons.deleteSeason);
+  const startSeason = useConvexMutation(typedApi.admin.seasons.startSeason);
+  const endSeason = useConvexMutation(typedApi.admin.seasons.endSeason);
+  const distributeRewards = useConvexMutation(typedApi.admin.seasons.distributeSeasonRewards);
+  const deleteSeason = useConvexMutation(typedApi.admin.seasons.deleteSeason);
 
   const handleStart = async () => {
     setIsStarting(true);

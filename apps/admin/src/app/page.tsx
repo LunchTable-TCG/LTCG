@@ -10,7 +10,7 @@ import { StatCard, StatGrid } from "@/components/data";
 import { PageWrapper } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { api, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { BarList, Card, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 
@@ -20,8 +20,8 @@ import Link from "next/link";
 
 export default function DashboardPage() {
   // Fetch system stats using helper to avoid TS2589
-  const stats = useConvexQuery(api.admin.admin.getSystemStats, {});
-  const suspiciousReport = useConvexQuery(api.admin.admin.getSuspiciousActivityReport, {
+  const stats = useConvexQuery(typedApi.admin.admin.getSystemStats, {});
+  const suspiciousReport = useConvexQuery(typedApi.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
 

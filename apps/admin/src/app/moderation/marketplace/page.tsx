@@ -55,7 +55,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { format, formatDistanceToNow } from "date-fns";
 import {
@@ -193,7 +193,7 @@ export default function MarketplaceModerationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const listings = useConvexQuery(
-    api.admin.marketplace.listListings,
+    typedApi.admin.marketplace.listListings,
     isAdmin
       ? {
           status: statusFilter === "all" ? undefined : statusFilter,
@@ -203,13 +203,19 @@ export default function MarketplaceModerationPage() {
       : "skip"
   );
 
-  const stats = useConvexQuery(api.admin.marketplace.getMarketplaceStats, isAdmin ? {} : "skip");
+  const stats = useConvexQuery(
+    typedApi.admin.marketplace.getMarketplaceStats,
+    isAdmin ? {} : "skip"
+  );
 
-  const anomalies = useConvexQuery(api.admin.marketplace.getPriceAnomalies, isAdmin ? {} : "skip");
+  const anomalies = useConvexQuery(
+    typedApi.admin.marketplace.getPriceAnomalies,
+    isAdmin ? {} : "skip"
+  );
 
   // Cards query for price cap selector
   const cardsResult = useConvexQuery(
-    api.admin.cards.listCards,
+    typedApi.admin.cards.listCards,
     isAdmin
       ? {
           search: cardSearchQuery || undefined,
@@ -221,21 +227,22 @@ export default function MarketplaceModerationPage() {
 
   // Seller history query
   const sellerHistory = useConvexQuery(
-    api.admin.marketplace.getSellerHistory,
+    typedApi.admin.marketplace.getSellerHistory,
     isAdmin && selectedSellerId ? { sellerId: selectedSellerId as Id<"users"> } : "skip"
   ) as SellerHistoryData | undefined;
 
   // Price caps query
-  const priceCaps = useConvexQuery(api.admin.marketplace.getPriceCaps, isAdmin ? {} : "skip") as
-    | PriceCap[]
-    | undefined;
+  const priceCaps = useConvexQuery(
+    typedApi.admin.marketplace.getPriceCaps,
+    isAdmin ? {} : "skip"
+  ) as PriceCap[] | undefined;
 
   // Mutations
-  const suspendListing = useConvexMutation(api.admin.marketplace.suspendListing);
-  const unsuspendListing = useConvexMutation(api.admin.marketplace.unsuspendListing);
-  const setPriceCap = useConvexMutation(api.admin.marketplace.setPriceCap);
-  const removePriceCap = useConvexMutation(api.admin.marketplace.removePriceCap);
-  const refundBid = useConvexMutation(api.admin.marketplace.refundBid);
+  const suspendListing = useConvexMutation(typedApi.admin.marketplace.suspendListing);
+  const unsuspendListing = useConvexMutation(typedApi.admin.marketplace.unsuspendListing);
+  const setPriceCap = useConvexMutation(typedApi.admin.marketplace.setPriceCap);
+  const removePriceCap = useConvexMutation(typedApi.admin.marketplace.removePriceCap);
+  const refundBid = useConvexMutation(typedApi.admin.marketplace.refundBid);
 
   const handleSuspend = async () => {
     if (!suspendListingId || !suspendReason) return;

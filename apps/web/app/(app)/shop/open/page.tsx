@@ -4,7 +4,7 @@ import { ListingDialog } from "@/components/marketplace/ListingDialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { getAssetUrl } from "@/lib/blob";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
@@ -76,8 +76,8 @@ function PackOpeningContent() {
   const dataParam = searchParams.get("data");
 
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
-  const createListingMutation = useConvexMutation(apiAny.marketplace.createListing);
+  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const createListingMutation = useConvexMutation(typedApi.marketplace.createListing);
 
   const [phase, setPhase] = useState<OpeningPhase>("ready");
   const [cards, setCards] = useState<Card[]>([]);

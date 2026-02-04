@@ -268,7 +268,60 @@ export interface ChainLink {
 
 export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type CardType = "creature" | "spell" | "trap" | "equipment";
-export type Element = "fire" | "water" | "earth" | "wind" | "neutral";
+export type Attribute =
+  | "fire"
+  | "water"
+  | "earth"
+  | "wind"
+  | "light"
+  | "dark"
+  | "divine"
+  | "neutral";
+/** @deprecated Use Attribute instead */
+export type Element = Attribute;
+
+export type Archetype =
+  | "infernal_dragons"
+  | "abyssal_depths"
+  | "iron_legion"
+  | "necro_empire"
+  | "abyssal_horrors"
+  | "nature_spirits"
+  | "storm_elementals"
+  | "shadow_assassins"
+  | "celestial_guardians"
+  | "undead_legion"
+  | "divine_knights"
+  | "arcane_mages"
+  | "mechanical_constructs"
+  | "neutral"
+  | "fire"
+  | "water"
+  | "earth"
+  | "wind";
+
+export type MonsterType =
+  | "dragon"
+  | "spellcaster"
+  | "warrior"
+  | "beast"
+  | "fiend"
+  | "zombie"
+  | "machine"
+  | "aqua"
+  | "pyro"
+  | "divine_beast";
+
+export type SpellType =
+  | "normal"
+  | "quick_play"
+  | "continuous"
+  | "field"
+  | "equip"
+  | "ritual";
+
+export type TrapType = "normal" | "continuous" | "counter";
+
 export type CardVariant =
   | "standard"
   | "foil"
@@ -277,27 +330,173 @@ export type CardVariant =
   | "numbered"
   | "first_edition";
 
-/** Card definition from database */
+// =============================================================================
+// JSON Ability Types (matches convex/gameplay/effectSystem/jsonEffectValidators.ts)
+// =============================================================================
+
+export type TriggerCondition =
+  | "on_summon"
+  | "on_opponent_summon"
+  | "on_destroy"
+  | "on_flip"
+  | "on_battle_damage"
+  | "on_battle_destroy"
+  | "on_battle_attacked"
+  | "on_battle_start"
+  | "on_draw"
+  | "on_end"
+  | "manual"
+  | "on_normal_summon"
+  | "on_special_summon"
+  | "on_flip_summon"
+  | "on_destroy_by_battle"
+  | "on_destroy_by_effect"
+  | "on_sent_to_gy"
+  | "on_banished"
+  | "on_returned_to_hand"
+  | "on_targeted"
+  | "on_opponent_normal_summon"
+  | "on_opponent_special_summon"
+  | "on_opponent_draws"
+  | "on_opponent_activates"
+  | "on_opponent_attacks"
+  | "on_standby"
+  | "on_main1_start"
+  | "on_main2_start"
+  | "on_battle_end"
+  | "on_turn_start"
+  | "on_turn_end"
+  | "on_opponent_turn_start"
+  | "on_opponent_turn_end"
+  | "on_chain_start"
+  | "on_chain_link"
+  | "on_chain_resolve"
+  | "on_spell_activated"
+  | "on_trap_activated"
+  | "on_effect_activated"
+  | "on_damage_calculation"
+  | "quick"
+  | "continuous"
+  | "while_in_gy"
+  | "while_banished";
+
+/** JSON Ability format stored in database */
+export interface JsonAbility {
+  // Identity
+  id?: string;
+  name?: string;
+  schemaVersion?: number;
+
+  // Trigger & activation
+  trigger?: TriggerCondition;
+  activationCondition?: JsonCondition;
+  cost?: JsonCost;
+
+  // Restrictions
+  isOPT?: boolean;
+  isHOPT?: boolean;
+  isHardOPT?: boolean;
+  spellSpeed?: 1 | 2 | 3;
+  isContinuous?: boolean;
+
+  // Effects (flexible structure)
+  effects: JsonEffect[];
+
+  // Summoning
+  summonRestriction?: JsonSummonRestriction;
+
+  // Restrictions while on field
+  restrictions?: {
+    cannotAttackDirectly?: boolean;
+    mustAttack?: boolean;
+    cannotChangePosition?: boolean;
+    cannotActivate?: JsonCondition;
+    othersCannotAttack?: boolean;
+    cannotSpecialSummon?: boolean;
+    cannotDraw?: boolean;
+  };
+
+  // Protection
+  protection?: JsonProtection;
+  passiveProtection?: JsonProtection;
+
+  // Continuous modifiers
+  continuousModifiers?: ContinuousEffectDefinition[];
+}
+
+/** Condition for activation/targeting */
+export interface JsonCondition {
+  type: string;
+  [key: string]: unknown;
+}
+
+/** Cost to activate ability */
+export interface JsonCost {
+  type: string;
+  amount?: number;
+  [key: string]: unknown;
+}
+
+/** Effect definition */
+export interface JsonEffect {
+  type: string;
+  [key: string]: unknown;
+}
+
+/** Summon restriction */
+export interface JsonSummonRestriction {
+  type: string;
+  [key: string]: unknown;
+}
+
+/** Protection definition */
+export interface JsonProtection {
+  cannotBeDestroyedByBattle?: boolean;
+  cannotBeDestroyedByEffects?: boolean;
+  cannotBeTargeted?: boolean;
+  cannotBeAffectedByEffects?: boolean;
+  cannotBeTributed?: boolean;
+  cannotBeBanished?: boolean;
+  cannotBeReturnedToHand?: boolean;
+  cannotBeReturnedToDeck?: boolean;
+  [key: string]: unknown;
+}
+
+/** Continuous effect definition */
+export interface ContinuousEffectDefinition {
+  type: string;
+  [key: string]: unknown;
+}
+
+/** Card definition from database - matches convex/schema.ts cardDefinitions */
 export interface CardDefinition {
   _id: Id<"cardDefinitions">;
   _creationTime: number;
   name: string;
-  cardType: CardType;
   rarity: Rarity;
-  attribute: Element;
+  archetype: Archetype;
+  cardType: CardType;
   attack?: number;
   defense?: number;
-  cost?: number;
-  description: string;
+  cost: number;
+  // Industry-standard TCG fields
+  level?: number;
+  attribute?: Attribute;
+  monsterType?: MonsterType;
+  spellType?: SpellType;
+  trapType?: TrapType;
+  // Ability (JSON format)
+  ability?: JsonAbility;
   flavorText?: string;
   imageUrl?: string;
-  abilities?: CardAbility[];
-  keywords?: string[];
-  isLimited?: boolean;
-  isBanned?: boolean;
+  imageStorageId?: Id<"_storage">;
+  thumbnailStorageId?: Id<"_storage">;
+  isActive: boolean;
+  createdAt: number;
+  templateId?: Id<"cardTemplates">;
 }
 
-/** Card ability definition */
+/** @deprecated Use JsonAbility instead - legacy card ability definition */
 export interface CardAbility {
   id: string;
   name: string;

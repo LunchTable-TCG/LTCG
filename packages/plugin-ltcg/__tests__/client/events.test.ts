@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import type { GameEvent } from "../../types/api";
+import type { GameEvent } from "../../src/types/api";
 import type {
   ChainWindowOpenEvent,
   GameEndedEvent,
@@ -15,7 +15,7 @@ import type {
   GameStateUpdatedEvent,
   Subscription,
   TurnNotificationEvent,
-} from "../events";
+} from "../../src/client/events";
 
 describe("Event Types", () => {
   // ============================================================================

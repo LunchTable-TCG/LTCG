@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { WalletConnect } from "@/components/wallet";
 import { useGameWallet } from "@/hooks/wallet/useGameWallet";
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AlertCircle, Check, Coins, Loader2, Wallet } from "lucide-react";
@@ -69,7 +69,7 @@ export function TokenListingDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWalletConnect, setShowWalletConnect] = useState(false);
 
-  const createTokenListing = useConvexMutation(apiAny.economy.tokenMarketplace.createTokenListing);
+  const createTokenListing = useConvexMutation(typedApi.economy.tokenMarketplace.createTokenListing);
 
   const rarity = card.rarity as Rarity;
 

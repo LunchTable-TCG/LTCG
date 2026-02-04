@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError } from "@/lib/errorHandling";
 import type { Id } from "@convex/_generated/dataModel";
 import { toast } from "sonner";
@@ -132,17 +132,17 @@ interface UseGameLobbyReturn {
  */
 export function useGameLobby(): UseGameLobbyReturn {
   // No auth check needed - this hook should only be used inside <Authenticated>
-  const waitingLobbies = useConvexQuery(apiAny.games.listWaitingLobbies, {});
-  const myLobby = useConvexQuery(apiAny.games.getActiveLobby, {});
-  const privateLobby = useConvexQuery(apiAny.games.getMyPrivateLobby, {});
-  const incomingChallenge = useConvexQuery(apiAny.games.getIncomingChallenge, {});
+  const waitingLobbies = useConvexQuery(typedApi.games.listWaitingLobbies, {});
+  const myLobby = useConvexQuery(typedApi.games.getActiveLobby, {});
+  const privateLobby = useConvexQuery(typedApi.games.getMyPrivateLobby, {});
+  const incomingChallenge = useConvexQuery(typedApi.games.getIncomingChallenge, {});
 
   // Mutations
-  const createMutation = useConvexMutation(apiAny.games.createLobby);
-  const joinMutation = useConvexMutation(apiAny.games.joinLobby);
-  const joinByCodeMutation = useConvexMutation(apiAny.games.joinLobbyByCode);
-  const cancelMutation = useConvexMutation(apiAny.games.cancelLobby);
-  const leaveMutation = useConvexMutation(apiAny.games.leaveLobby);
+  const createMutation = useConvexMutation(typedApi.games.createLobby);
+  const joinMutation = useConvexMutation(typedApi.games.joinLobby);
+  const joinByCodeMutation = useConvexMutation(typedApi.games.joinLobbyByCode);
+  const cancelMutation = useConvexMutation(typedApi.games.cancelLobby);
+  const leaveMutation = useConvexMutation(typedApi.games.leaveLobby);
 
   // Actions
   const createLobby = async (

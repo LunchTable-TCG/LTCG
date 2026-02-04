@@ -1,8 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { ModelType, logger } from "@elizaos/core";
 import type { IAgentRuntime } from "@elizaos/core";
-import dotenv from "dotenv";
-import plugin from "../plugin";
+import plugin from "../src/plugin";
 import { createMockRuntime, documentTestResult } from "./utils/core-test-utils";
 
 // Define a simplified version of the GenerateTextParams for testing
@@ -15,8 +14,7 @@ interface TestGenerateParams {
   presencePenalty?: number;
 }
 
-// Setup environment variables from .env file
-dotenv.config();
+// Note: Bun automatically loads .env files
 
 // Spy on logger to capture logs for documentation
 beforeAll(() => {

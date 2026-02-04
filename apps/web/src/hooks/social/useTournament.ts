@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { useAuth } from "../auth/useConvexAuthHook";
 
@@ -159,7 +159,7 @@ interface UseTournamentsReturn {
  * ```
  */
 export function useTournaments(): UseTournamentsReturn {
-  const tournaments = useConvexQuery(apiAny.social.tournaments.getActiveTournaments, {});
+  const tournaments = useConvexQuery(typedApi.social.tournaments.getActiveTournaments, {});
 
   return {
     tournaments: tournaments || [],
@@ -208,18 +208,18 @@ export function useTournament(tournamentId: Id<"tournaments"> | undefined): UseT
 
   // Queries
   const tournament = useConvexQuery(
-    apiAny.social.tournaments.getTournamentDetails,
+    typedApi.social.tournaments.getTournamentDetails,
     tournamentId ? { tournamentId } : "skip"
   );
 
   const bracket = useConvexQuery(
-    apiAny.social.tournaments.getTournamentBracket,
+    typedApi.social.tournaments.getTournamentBracket,
     tournamentId ? { tournamentId } : "skip"
   );
 
   // Mutations
-  const registerMutation = useConvexMutation(apiAny.social.tournaments.registerForTournament);
-  const checkInMutation = useConvexMutation(apiAny.social.tournaments.checkInToTournament);
+  const registerMutation = useConvexMutation(typedApi.social.tournaments.registerForTournament);
+  const checkInMutation = useConvexMutation(typedApi.social.tournaments.checkInToTournament);
 
   // Action handlers
   const register = async () => {
@@ -279,12 +279,12 @@ export function useTournamentHistory(limit = 20): UseTournamentHistoryReturn {
   const { isAuthenticated } = useAuth();
 
   const history = useConvexQuery(
-    apiAny.social.tournaments.getUserTournamentHistory,
+    typedApi.social.tournaments.getUserTournamentHistory,
     isAuthenticated ? { limit } : "skip"
   );
 
   const stats = useConvexQuery(
-    apiAny.social.tournaments.getUserTournamentStats,
+    typedApi.social.tournaments.getUserTournamentStats,
     isAuthenticated ? {} : "skip"
   );
 

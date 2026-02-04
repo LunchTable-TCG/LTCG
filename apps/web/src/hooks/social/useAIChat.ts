@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError, logError } from "@/lib/errorHandling";
 import { usePrivy } from "@privy-io/react-auth";
 import { useCallback, useState } from "react";
@@ -59,23 +59,23 @@ export function useAIChat(): UseAIChatReturn {
   const [isAgentTyping, setIsAgentTyping] = useState(false);
 
   // Get the current user from Convex for the userId
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
   const userId = currentUser?._id;
 
   // Get active session
-  const activeSession = useConvexQuery(apiAny.social.aiChat.getActiveSession, {});
+  const activeSession = useConvexQuery(typedApi.social.aiChat.getActiveSession, {});
   const sessionId = activeSession?.sessionId ?? null;
 
   // Get messages for current session
   const messagesData = useConvexQuery(
-    apiAny.social.aiChat.getSessionMessages,
+    typedApi.social.aiChat.getSessionMessages,
     sessionId ? { sessionId } : "skip"
   );
 
   // Mutations
-  const sendUserMessageMutation = useConvexMutation(apiAny.social.aiChat.sendUserMessage);
-  const createSessionMutation = useConvexMutation(apiAny.social.aiChat.createSession);
-  const endSessionMutation = useConvexMutation(apiAny.social.aiChat.endSession);
+  const sendUserMessageMutation = useConvexMutation(typedApi.social.aiChat.sendUserMessage);
+  const createSessionMutation = useConvexMutation(typedApi.social.aiChat.createSession);
+  const endSessionMutation = useConvexMutation(typedApi.social.aiChat.endSession);
 
   /**
    * Send a message to the AI agent.

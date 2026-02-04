@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, Text } from "@tremor/react";
 import { AlertTriangleIcon, RefreshCwIcon, SaveIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -345,13 +345,13 @@ function PityThresholdsEditor({
 export default function RngConfigPage() {
   const [saving, setSaving] = useState<string | null>(null);
 
-  const configResult = useConvexQuery(api.economy.getRngConfig, {});
-  const historyResult = useConvexQuery(api.admin.rngConfig.getRngConfigHistory, { limit: 20 });
+  const configResult = useConvexQuery(typedApi.economy.getRngConfig, {});
+  const historyResult = useConvexQuery(typedApi.admin.rngConfig.getRngConfigHistory, { limit: 20 });
 
-  const updateRarityWeights = useConvexMutation(api.admin.rngConfig.updateRarityWeights);
-  const updateVariantRates = useConvexMutation(api.admin.rngConfig.updateVariantRates);
-  const updatePityThresholds = useConvexMutation(api.admin.rngConfig.updatePityThresholds);
-  const resetToDefaults = useConvexMutation(api.admin.rngConfig.resetRngConfigToDefaults);
+  const updateRarityWeights = useConvexMutation(typedApi.admin.rngConfig.updateRarityWeights);
+  const updateVariantRates = useConvexMutation(typedApi.admin.rngConfig.updateVariantRates);
+  const updatePityThresholds = useConvexMutation(typedApi.admin.rngConfig.updatePityThresholds);
+  const resetToDefaults = useConvexMutation(typedApi.admin.rngConfig.resetRngConfigToDefaults);
 
   const handleSaveRarityWeights = async (weights: RarityWeights) => {
     setSaving("rarity");

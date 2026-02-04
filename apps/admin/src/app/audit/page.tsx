@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import type { ColumnDef } from "@/types";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { useState } from "react";
@@ -69,7 +69,7 @@ export default function AuditLogPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "success" | "failed">("all");
   const [limit, setLimit] = useState(100);
 
-  const logsResponse = useConvexQuery(api.admin.admin.getAuditLog, {
+  const logsResponse = useConvexQuery(typedApi.admin.admin.getAuditLog, {
     limit,
   });
 

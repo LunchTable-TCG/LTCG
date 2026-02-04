@@ -31,7 +31,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import {
@@ -172,18 +172,18 @@ export default function ShopProductEditorPage() {
 
   // Queries and mutations
   const existingProduct = useConvexQuery(
-    api.admin.shop.getProduct,
+    typedApi.admin.shop.getProduct,
     isNew ? "skip" : { productDbId: productDbId as Id<"shopProducts"> }
   );
 
-  const allProducts = useConvexQuery(api.admin.shop.listProducts, {
+  const allProducts = useConvexQuery(typedApi.admin.shop.listProducts, {
     includeInactive: true,
   });
 
-  const createProduct = useConvexMutation(api.admin.shop.createProduct);
-  const updateProduct = useConvexMutation(api.admin.shop.updateProduct);
-  const deleteProduct = useConvexMutation(api.admin.shop.deleteProduct);
-  const duplicateProduct = useConvexMutation(api.admin.shop.duplicateProduct);
+  const createProduct = useConvexMutation(typedApi.admin.shop.createProduct);
+  const updateProduct = useConvexMutation(typedApi.admin.shop.updateProduct);
+  const deleteProduct = useConvexMutation(typedApi.admin.shop.deleteProduct);
+  const duplicateProduct = useConvexMutation(typedApi.admin.shop.duplicateProduct);
 
   // Populate form with existing product data
   useEffect(() => {

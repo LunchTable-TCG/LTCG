@@ -5,7 +5,7 @@ import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { getAssetUrl } from "@/lib/blob";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Gift, Loader2, Lock, Play, Star } from "lucide-react";
@@ -25,9 +25,9 @@ export default function ChapterPage({ params }: ChapterPageProps) {
   const [actNumber, chapterNumber] = chapterId.split("-").map(Number);
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
   const chapterDetails = useConvexQuery(
-    apiAny.progression.story.getChapterDetails,
+    typedApi.progression.story.getChapterDetails,
     isAuthenticated && actNumber && chapterNumber ? { actNumber, chapterNumber } : "skip"
   );
 
@@ -44,7 +44,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
   } | null>(null);
 
   const initializeStageProgress = useConvexMutation(
-    apiAny.progression.storyStages.initializeChapterStageProgress
+    typedApi.progression.storyStages.initializeChapterStageProgress
   );
 
   // Initialize stage progress when chapter loads

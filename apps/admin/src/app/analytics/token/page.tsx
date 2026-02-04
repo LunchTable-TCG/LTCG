@@ -34,7 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useQuery } from "@/lib/convexHelpers";
 import { AreaChart, BarChart, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -198,34 +198,36 @@ export default function TokenAnalyticsPage() {
   const [volumePeriod, setVolumePeriod] = useState<VolumePeriod>("24h");
 
   // Fetch data from Convex (with type assertions for proper typing)
-  const latestMetrics = useQuery(api.tokenAnalytics.metrics.getLatest, {}) as
+  const latestMetrics = useQuery(typedApi.tokenAnalytics.metrics.getLatest, {}) as
     | TokenMetrics
     | undefined;
-  const priceChart = useQuery(api.tokenAnalytics.metrics.getPriceChart, {
+  const priceChart = useQuery(typedApi.tokenAnalytics.metrics.getPriceChart, {
     period: pricePeriod,
   }) as PriceChartPoint[] | undefined;
-  const bondingProgress = useQuery(api.tokenAnalytics.metrics.getBondingCurveProgress, {}) as
+  const bondingProgress = useQuery(typedApi.tokenAnalytics.metrics.getBondingCurveProgress, {}) as
     | BondingProgress
     | undefined;
 
-  const topHolders = useQuery(api.tokenAnalytics.holders.getTop, { limit: 10 }) as
+  const topHolders = useQuery(typedApi.tokenAnalytics.holders.getTop, { limit: 10 }) as
     | TokenHolder[]
     | undefined;
-  const holderDistribution = useQuery(api.tokenAnalytics.holders.getDistribution, {}) as
+  const holderDistribution = useQuery(typedApi.tokenAnalytics.holders.getDistribution, {}) as
     | HolderDistributionResponse
     | undefined;
 
-  const recentTrades = useQuery(api.tokenAnalytics.trades.getRecent, { limit: 20 }) as
+  const recentTrades = useQuery(typedApi.tokenAnalytics.trades.getRecent, { limit: 20 }) as
     | TokenTrade[]
     | undefined;
-  const tradeStats = useQuery(api.tokenAnalytics.trades.getStats, { period: "24h" }) as
+  const tradeStats = useQuery(typedApi.tokenAnalytics.trades.getStats, { period: "24h" }) as
     | TradeStats
     | undefined;
-  const volumeChart = useQuery(api.tokenAnalytics.trades.getVolumeChart, {
+  const volumeChart = useQuery(typedApi.tokenAnalytics.trades.getVolumeChart, {
     period: volumePeriod,
   }) as VolumeChartPoint[] | undefined;
 
-  const summary = useQuery(api.tokenAnalytics.rollup.getSummary, {}) as TokenSummary | undefined;
+  const summary = useQuery(typedApi.tokenAnalytics.rollup.getSummary, {}) as
+    | TokenSummary
+    | undefined;
 
   // Loading states
   const isMetricsLoading = latestMetrics === undefined || summary === undefined;

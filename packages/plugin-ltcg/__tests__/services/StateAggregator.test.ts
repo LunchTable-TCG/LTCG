@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { logger } from "@elizaos/core";
 import type { IAgentRuntime } from "@elizaos/core";
-import type { LTCGApiClient } from "../../client/LTCGApiClient";
-import type { GameStateResponse } from "../../types/api";
-import type { LTCGPollingService } from "../LTCGPollingService";
-import { StateAggregator } from "../StateAggregator";
-import type { TurnOrchestrator } from "../TurnOrchestrator";
+import type { LTCGApiClient } from "../../src/client/LTCGApiClient";
+import type { GameStateResponse } from "../../src/types/api";
+import type { LTCGPollingService } from "../../src/services/LTCGPollingService";
+import { StateAggregator } from "../../src/services/StateAggregator";
+import type { TurnOrchestrator } from "../../src/services/TurnOrchestrator";
 
 // ============================================================================
 // Mock Setup

@@ -11,7 +11,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { useTokenBalance } from "@/hooks/economy/useTokenBalance";
 import { useGameWallet } from "@/hooks/wallet/useGameWallet";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { useSignAndSendTransaction } from "@privy-io/react-auth/solana";
@@ -105,17 +105,17 @@ export function TokenPurchaseFlow({
   const { signAndSendTransaction } = useSignAndSendTransaction();
 
   // Convex mutations
-  const initiatePurchase = useConvexMutation(apiAny.economy.tokenMarketplace.initiateTokenPurchase);
+  const initiatePurchase = useConvexMutation(typedApi.economy.tokenMarketplace.initiateTokenPurchase);
   const submitSignedTransaction = useConvexMutation(
-    apiAny.economy.tokenMarketplace.submitSignedTransaction
+    typedApi.economy.tokenMarketplace.submitSignedTransaction
   );
   const cancelPendingPurchase = useConvexMutation(
-    apiAny.economy.tokenMarketplace.cancelPendingPurchase
+    typedApi.economy.tokenMarketplace.cancelPendingPurchase
   );
 
   // Query pending purchases to poll for status
   const pendingPurchases = useConvexQuery(
-    apiAny.economy.tokenMarketplace.getUserPendingPurchases,
+    typedApi.economy.tokenMarketplace.getUserPendingPurchases,
     walletConnected ? {} : "skip"
   ) as
     | Array<{

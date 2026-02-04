@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 interface HelpModeContextValue {
@@ -36,8 +36,8 @@ export function HelpModeProvider({ children }: HelpModeProviderProps) {
   const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
 
   // Persist preference to database
-  const helpModeEnabled = useConvexQuery(apiAny.tutorial.getHelpModeEnabled, {});
-  const setHelpModeEnabled = useConvexMutation(apiAny.tutorial.setHelpModeEnabled);
+  const helpModeEnabled = useConvexQuery(typedApi.tutorial.getHelpModeEnabled, {});
+  const setHelpModeEnabled = useConvexMutation(typedApi.tutorial.setHelpModeEnabled);
 
   // Sync local state with database preference on load
   useEffect(() => {

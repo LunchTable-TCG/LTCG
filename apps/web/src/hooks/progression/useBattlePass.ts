@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError } from "@/lib/errorHandling";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
@@ -157,30 +157,30 @@ interface UseBattlePassReturn {
 export function useBattlePass(): UseBattlePassReturn {
   const { isAuthenticated } = useAuth();
 
-  // Queries - using apiAny helpers to avoid TS2589 deep type errors
+  // Queries - using typedApi helpers to avoid TS2589 deep type errors
   const status = useConvexQuery(
-    apiAny.progression.battlePass.getBattlePassStatus,
+    typedApi.progression.battlePass.getBattlePassStatus,
     isAuthenticated ? {} : "skip"
   ) as BattlePassStatus | undefined;
   const tiers = useConvexQuery(
-    apiAny.progression.battlePass.getBattlePassTiers,
+    typedApi.progression.battlePass.getBattlePassTiers,
     isAuthenticated ? {} : "skip"
   ) as BattlePassTier[] | undefined;
 
-  // Mutations - using apiAny helpers to avoid TS2589 deep type errors
+  // Mutations - using typedApi helpers to avoid TS2589 deep type errors
   const claimRewardMutation = useConvexMutation(
-    apiAny.progression.battlePass.claimBattlePassReward
+    typedApi.progression.battlePass.claimBattlePassReward
   ) as (args: { tier: number; track: "free" | "premium" }) => Promise<ClaimRewardResult>;
   const claimAllMutation = useConvexMutation(
-    apiAny.progression.battlePass.claimAllAvailableRewards
+    typedApi.progression.battlePass.claimAllAvailableRewards
   ) as (args: Record<string, never>) => Promise<ClaimAllResult>;
   const purchasePremiumMutation = useConvexMutation(
-    apiAny.progression.battlePass.purchasePremiumPass
+    typedApi.progression.battlePass.purchasePremiumPass
   ) as (args: Record<string, never>) => Promise<PurchasePremiumResult>;
 
   // Query pending premium purchases
   const pendingPurchases = useConvexQuery(
-    apiAny.progression.battlePass.getUserPendingPremiumPurchases,
+    typedApi.progression.battlePass.getUserPendingPremiumPurchases,
     isAuthenticated ? {} : "skip"
   ) as PendingPremiumPurchase[] | undefined;
 

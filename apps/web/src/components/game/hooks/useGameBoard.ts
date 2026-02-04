@@ -1,7 +1,7 @@
 "use client";
 
 import { type JsonAbility, getCardEffectsArray } from "@/lib/cardHelpers";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { useCallback, useMemo } from "react";
 
@@ -332,7 +332,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   // ==========================================================================
 
   // First, get lobby details to check if game is active
-  const lobbyDetails = useConvexQuery(apiAny.gameplay.games.queries.getLobbyDetails, {
+  const lobbyDetails = useConvexQuery(typedApi.gameplay.games.queries.getLobbyDetails, {
     lobbyId,
   }) as LobbyDetails | undefined;
 
@@ -342,23 +342,23 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
     lobbyDetails?.status === "active" || lobbyDetails?.status === "waiting";
 
   const gameState = useConvexQuery(
-    apiAny.gameplay.games.queries.getGameStateForPlayer,
+    typedApi.gameplay.games.queries.getGameStateForPlayer,
     shouldQueryGameState ? { lobbyId } : "skip"
   ) as GameState | undefined | null;
 
   const availableActions = useConvexQuery(
-    apiAny.gameplay.games.queries.getAvailableActions,
+    typedApi.gameplay.games.queries.getAvailableActions,
     lobbyDetails?.status === "active" ? { lobbyId } : "skip"
   ) as AvailableActions | undefined;
 
   // Chain system query
   const chainState = useConvexQuery(
-    apiAny.gameplay.chainResolver.getCurrentChain,
+    typedApi.gameplay.chainResolver.getCurrentChain,
     lobbyDetails?.status === "active" ? { lobbyId } : "skip"
   ) as ChainState | undefined | null;
 
   // Current user query for player name
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser, {}) as
+  const currentUser = useConvexQuery(typedApi.core.users.currentUser, {}) as
     | CurrentUser
     | undefined
     | null;
@@ -368,27 +368,27 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   // ==========================================================================
 
   // Mutations using convexHelpers to avoid TS2589
-  const normalSummonMutation = useConvexMutation(apiAny.gameplay.gameEngine.summons.normalSummon);
-  const setMonsterMutation = useConvexMutation(apiAny.gameplay.gameEngine.summons.setMonster);
+  const normalSummonMutation = useConvexMutation(typedApi.gameplay.gameEngine.summons.normalSummon);
+  const setMonsterMutation = useConvexMutation(typedApi.gameplay.gameEngine.summons.setMonster);
   const setSpellTrapMutation = useConvexMutation(
-    apiAny.gameplay.gameEngine.spellsTraps.setSpellTrap
+    typedApi.gameplay.gameEngine.spellsTraps.setSpellTrap
   );
   const activateSpellMutation = useConvexMutation(
-    apiAny.gameplay.gameEngine.spellsTraps.activateSpell
+    typedApi.gameplay.gameEngine.spellsTraps.activateSpell
   );
   const activateTrapMutation = useConvexMutation(
-    apiAny.gameplay.gameEngine.spellsTraps.activateTrap
+    typedApi.gameplay.gameEngine.spellsTraps.activateTrap
   );
   const activateMonsterEffectMutation = useConvexMutation(
-    apiAny.gameplay.gameEngine.monsterEffects.activateMonsterEffect
+    typedApi.gameplay.gameEngine.monsterEffects.activateMonsterEffect
   );
 
   // Chain system mutations
-  const passPriorityMutation = useConvexMutation(apiAny.gameplay.chainResolver.passPriority);
-  const advancePhaseMutation = useConvexMutation(apiAny.gameplay.phaseManager.advancePhase);
-  const endTurnMutation = useConvexMutation(apiAny.gameplay.gameEngine.turns.endTurn);
-  const surrenderGameMutation = useConvexMutation(apiAny.gameplay.games.lifecycle.surrenderGame);
-  const declareAttackMutation = useConvexMutation(apiAny.gameplay.combatSystem.declareAttack);
+  const passPriorityMutation = useConvexMutation(typedApi.gameplay.chainResolver.passPriority);
+  const advancePhaseMutation = useConvexMutation(typedApi.gameplay.phaseManager.advancePhase);
+  const endTurnMutation = useConvexMutation(typedApi.gameplay.gameEngine.turns.endTurn);
+  const surrenderGameMutation = useConvexMutation(typedApi.gameplay.games.lifecycle.surrenderGame);
+  const declareAttackMutation = useConvexMutation(typedApi.gameplay.combatSystem.declareAttack);
 
   // ==========================================================================
   // Actions
@@ -458,7 +458,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
     }
   }, [advancePhaseMutation, lobbyId]);
 
-  const executeAITurnMutation = useConvexMutation(apiAny.gameplay.ai.aiTurn.executeAITurn);
+  const executeAITurnMutation = useConvexMutation(typedApi.gameplay.ai.aiTurn.executeAITurn);
 
   const endTurn = useCallback(async () => {
     try {

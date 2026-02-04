@@ -19,7 +19,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import {
   Bug,
@@ -121,13 +121,13 @@ export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: Feedback
 
   // Fetch feedback details
   const feedback = useConvexQuery(
-    api.feedback.feedback.get,
+    typedApi.feedback.feedback.get,
     feedbackId ? { feedbackId: feedbackId as Id<"feedback"> } : "skip"
   ) as FeedbackItem | undefined;
 
   // Mutations
-  const updateFeedback = useConvexMutation(api.feedback.feedback.update);
-  const updateStatus = useConvexMutation(api.feedback.feedback.updateStatus);
+  const updateFeedback = useConvexMutation(typedApi.feedback.feedback.update);
+  const updateStatus = useConvexMutation(typedApi.feedback.feedback.updateStatus);
 
   // Initialize local state when feedback loads or changes
   useEffect(() => {

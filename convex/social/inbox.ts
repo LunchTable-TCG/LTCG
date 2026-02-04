@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -46,7 +46,7 @@ export const getInboxMessages = query({
     const now = Date.now();
 
     // Build query based on filters - each branch handles the full query chain
-    let messages: Awaited<ReturnType<typeof ctx.db.query>>;
+    let messages: Doc<"userInbox">[];
 
     if (args.type) {
       // Filter by type

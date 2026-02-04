@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { logger } from "@elizaos/core";
-import dotenv from "dotenv";
-import plugin from "../plugin";
+import plugin from "../src/plugin";
 import {
   createMockMessage,
   createMockRuntime,
@@ -10,8 +9,7 @@ import {
   runCoreActionTests,
 } from "./utils/core-test-utils";
 
-// Setup environment variables
-dotenv.config();
+// Note: Bun automatically loads .env files
 
 // Spy on logger to capture logs for documentation
 beforeAll(() => {

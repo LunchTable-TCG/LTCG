@@ -1,11 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { ModelType, logger } from "@elizaos/core";
-import dotenv from "dotenv";
-import plugin from "../plugin";
-import { LTCGRealtimeService } from "../services/LTCGRealtimeService";
+import plugin from "../src/plugin";
+import { LTCGRealtimeService } from "../src/services/LTCGRealtimeService";
 
-// Setup environment variables
-dotenv.config();
+// Note: Bun automatically loads .env files
 
 // Need to spy on logger for documentation
 beforeAll(() => {

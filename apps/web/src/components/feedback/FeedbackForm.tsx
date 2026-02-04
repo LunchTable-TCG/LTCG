@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRecording } from "@/hooks/feedback/useRecording";
 import { useScreenCapture } from "@/hooks/feedback/useScreenCapture";
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import { uploadRecording, uploadScreenshot } from "@/lib/feedbackUpload";
 import { cn } from "@/lib/utils";
 import { Bug, Camera, CheckCircle, Lightbulb, Loader2, Video, VideoOff, X } from "lucide-react";
@@ -29,7 +29,7 @@ export function FeedbackForm({ onSuccess, onCancel }: FeedbackFormProps) {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submitFeedback = useConvexMutation(apiAny.feedback.feedback.submit);
+  const submitFeedback = useConvexMutation(typedApi.feedback.feedback.submit);
 
   const { capture: captureScreenshot, isCapturing, error: screenshotError } = useScreenCapture();
 

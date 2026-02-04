@@ -5,11 +5,11 @@
  */
 
 import { describe, expect, it, spyOn } from "bun:test";
-import { activateTrapAction } from "../actions/activateTrapAction";
-import { chainResponseAction } from "../actions/chainResponseAction";
-import { flipSummonAction } from "../actions/flipSummonAction";
-import { gameStateProvider } from "../providers/gameStateProvider";
-import type { GameStateResponse } from "../types/api";
+import { activateTrapAction } from "../src/actions/activateTrapAction";
+import { chainResponseAction } from "../src/actions/chainResponseAction";
+import { flipSummonAction } from "../src/actions/flipSummonAction";
+import { gameStateProvider } from "../src/providers/gameStateProvider";
+import type { GameStateResponse } from "../src/types/api";
 import { createMockMessage, createMockRuntime, createMockState } from "./utils/core-test-utils";
 
 // Mock game state data

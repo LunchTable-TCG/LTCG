@@ -31,7 +31,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { PromoCodeId } from "@/lib/convexTypes";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
@@ -101,17 +101,17 @@ export default function PromoCodeDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Queries and mutations
-  const promoCode = useConvexQuery(api.admin.promoCodes.getPromoCode, {
+  const promoCode = useConvexQuery(typedApi.admin.promoCodes.getPromoCode, {
     promoCodeId,
   });
 
-  const productsResult = useConvexQuery(api.admin.shop.listProducts, {
+  const productsResult = useConvexQuery(typedApi.admin.shop.listProducts, {
     productType: "pack",
     includeInactive: false,
   });
 
-  const updatePromoCode = useConvexMutation(api.admin.promoCodes.updatePromoCode);
-  const deletePromoCode = useConvexMutation(api.admin.promoCodes.deletePromoCode);
+  const updatePromoCode = useConvexMutation(typedApi.admin.promoCodes.updatePromoCode);
+  const deletePromoCode = useConvexMutation(typedApi.admin.promoCodes.deletePromoCode);
 
   // Populate form with existing data
   useEffect(() => {

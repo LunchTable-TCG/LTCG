@@ -31,7 +31,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Text, Title } from "@tremor/react";
 import Link from "next/link";
@@ -151,14 +151,14 @@ export default function AlertRulesPage() {
   });
 
   // Fetch rules
-  const rules = useQuery(api.alerts.rules.getAll, {});
+  const rules = useQuery(typedApi.alerts.rules.getAll, {});
 
   // Mutations
-  const createRule = useMutation(api.alerts.rules.create);
-  const updateRule = useMutation(api.alerts.rules.update);
-  const removeRule = useMutation(api.alerts.rules.remove);
-  const toggleEnabled = useMutation(api.alerts.rules.toggleEnabled);
-  const setupDefaults = useMutation(api.alerts.rules.setupDefaults);
+  const createRule = useMutation(typedApi.alerts.rules.create);
+  const updateRule = useMutation(typedApi.alerts.rules.update);
+  const removeRule = useMutation(typedApi.alerts.rules.remove);
+  const toggleEnabled = useMutation(typedApi.alerts.rules.toggleEnabled);
+  const setupDefaults = useMutation(typedApi.alerts.rules.setupDefaults);
 
   const isLoading = rules === undefined;
 

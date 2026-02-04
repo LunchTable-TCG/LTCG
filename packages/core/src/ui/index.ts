@@ -6,7 +6,7 @@
  * the web app and admin dashboard.
  */
 
-import type { CardType, Element, Rarity } from "../types/api";
+import type { Attribute, CardType, Rarity } from "../types/api";
 
 // =============================================================================
 // Rarity Colors
@@ -120,46 +120,58 @@ export const RARITY_STYLES: Record<
 // =============================================================================
 
 /**
- * Element color mappings for text classes.
+ * Attribute color mappings for text classes.
  */
-export const ELEMENT_TEXT_COLORS: Record<Element, string> = {
+export const ELEMENT_TEXT_COLORS: Record<Attribute, string> = {
   fire: "text-red-400",
   water: "text-blue-400",
   earth: "text-amber-400",
   wind: "text-emerald-400",
+  light: "text-yellow-300",
+  dark: "text-violet-400",
+  divine: "text-amber-200",
   neutral: "text-gray-400",
 };
 
 /**
- * Element background color mappings.
+ * Attribute background color mappings.
  */
-export const ELEMENT_BG_COLORS: Record<Element, string> = {
+export const ELEMENT_BG_COLORS: Record<Attribute, string> = {
   fire: "bg-red-500/10",
   water: "bg-blue-500/10",
   earth: "bg-amber-500/10",
   wind: "bg-emerald-500/10",
+  light: "bg-yellow-500/10",
+  dark: "bg-violet-500/10",
+  divine: "bg-amber-500/10",
   neutral: "bg-gray-500/10",
 };
 
 /**
- * Element border color mappings.
+ * Attribute border color mappings.
  */
-export const ELEMENT_BORDER_COLORS: Record<Element, string> = {
+export const ELEMENT_BORDER_COLORS: Record<Attribute, string> = {
   fire: "border-red-400/30",
   water: "border-blue-400/30",
   earth: "border-amber-400/30",
   wind: "border-emerald-400/30",
+  light: "border-yellow-400/30",
+  dark: "border-violet-400/30",
+  divine: "border-amber-300/30",
   neutral: "border-gray-400/30",
 };
 
 /**
- * Element icon/emoji mappings.
+ * Attribute icon/emoji mappings.
  */
-export const ELEMENT_ICONS: Record<Element, string> = {
+export const ELEMENT_ICONS: Record<Attribute, string> = {
   fire: "🔥",
   water: "💧",
   earth: "🪨",
   wind: "🌪️",
+  light: "☀️",
+  dark: "🌙",
+  divine: "✨",
   neutral: "⚪",
 };
 
@@ -230,7 +242,7 @@ export function getRarityTextColor(rarity: string | undefined): string {
  */
 export function getElementTextColor(element: string | undefined): string {
   if (!element) return ELEMENT_TEXT_COLORS.neutral;
-  return ELEMENT_TEXT_COLORS[element as Element] ?? ELEMENT_TEXT_COLORS.neutral;
+  return ELEMENT_TEXT_COLORS[element as Attribute] ?? ELEMENT_TEXT_COLORS.neutral;
 }
 
 /**

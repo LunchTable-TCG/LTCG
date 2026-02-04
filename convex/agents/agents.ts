@@ -237,6 +237,38 @@ export const getAgentCount = query({
 });
 
 /**
+ * Validate an API key and return the associated agent info
+ * Public query for external clients (e.g., Next.js API routes)
+ *
+ * @param apiKey - The API key to validate (format: ltcg_...)
+ * @returns Agent info if valid, null otherwise
+ */
+export const getAgentByApiKey = query({
+  args: {
+    apiKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const result = await validateApiKeyInternal(ctx, args.apiKey);
+    if (!result || !result.isValid) {
+      return null;
+    }
+
+    // Get the agent details
+    const agent = await ctx.db.get(result.agentId as Id<"agents">);
+    if (!agent) {
+      return null;
+    }
+
+    return {
+      agentId: result.agentId,
+      userId: result.userId,
+      name: agent.name,
+      profilePictureUrl: agent.profilePictureUrl,
+    };
+  },
+});
+
+/**
  * Get a single agent by ID (for the owner)
  */
 export const getAgent = query({

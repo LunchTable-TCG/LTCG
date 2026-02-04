@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { AuthLoading, Authenticated } from "convex/react";
 import { ArrowLeft, Calendar, Clock, Loader2, Newspaper, Pin, Tag } from "lucide-react";
@@ -58,7 +58,7 @@ function ArticleContent() {
   const params = useParams();
   const slug = params["slug"] as string;
 
-  const article = useConvexQuery(apiAny.admin.news.getArticleBySlug, { slug });
+  const article = useConvexQuery(typedApi.admin.news.getArticleBySlug, { slug });
 
   // Loading state
   if (article === undefined) {

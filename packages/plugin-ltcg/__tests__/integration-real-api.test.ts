@@ -10,11 +10,9 @@
  */
 import { beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import path from "node:path";
-import dotenv from "dotenv";
-import { LTCGApiClient } from "../client/LTCGApiClient";
+import { LTCGApiClient } from "../src/client/LTCGApiClient";
 
-// Load environment variables
-dotenv.config({ path: path.join(__dirname, "../../.env") });
+// Note: Bun automatically loads .env files
 
 const API_KEY = process.env['LTCG_API_KEY'];
 const CONVEX_URL = process.env['CONVEX_URL'];

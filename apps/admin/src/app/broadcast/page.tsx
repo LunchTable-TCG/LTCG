@@ -20,7 +20,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import { Loader2, Megaphone, Send, Users, Wrench } from "lucide-react";
@@ -125,7 +125,7 @@ function AnnouncementForm() {
   const [playerIds, setPlayerIds] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const sendAnnouncement = useConvexMutation(api.admin.batchAdmin.sendAnnouncement);
+  const sendAnnouncement = useConvexMutation(typedApi.admin.batchAdmin.sendAnnouncement);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,7 +274,7 @@ function BroadcastForm() {
   const [activeInDays, setActiveInDays] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const broadcastAnnouncement = useConvexMutation(api.admin.batchAdmin.broadcastAnnouncement);
+  const broadcastAnnouncement = useConvexMutation(typedApi.admin.batchAdmin.broadcastAnnouncement);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -435,7 +435,7 @@ function SystemMessageForm() {
   const [playerIds, setPlayerIds] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const sendSystemMessage = useConvexMutation(api.admin.batchAdmin.sendSystemMessage);
+  const sendSystemMessage = useConvexMutation(typedApi.admin.batchAdmin.sendSystemMessage);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

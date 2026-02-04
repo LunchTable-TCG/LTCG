@@ -6,7 +6,7 @@
  * Paginated transaction history for gold/gems and tokens.
  */
 
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { usePaginatedQuery } from "convex/react";
 import { useState } from "react";
 import { useAuth } from "../auth/useConvexAuthHook";
@@ -94,14 +94,14 @@ export function useTransactionHistory(): UseTransactionHistoryReturn {
     status,
     loadMore,
   } = usePaginatedQuery(
-    apiAny.economy.getTransactionHistoryPaginated,
+    typedApi.economy.getTransactionHistoryPaginated,
     isAuthenticated ? {} : "skip",
     { initialNumItems: 20 }
   );
 
   // Token transactions - using cursor-based pagination
   const tokenTxData = useConvexQuery(
-    apiAny.economy.tokenMarketplace.getTokenTransactionHistory,
+    typedApi.economy.tokenMarketplace.getTokenTransactionHistory,
     isAuthenticated ? { limit: 50 } : "skip"
   );
 

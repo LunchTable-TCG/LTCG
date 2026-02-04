@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { AchievementId, QuestId } from "@/lib/convexTypes";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
@@ -115,14 +115,14 @@ function QuestList() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [showInactive, setShowInactive] = useState(false);
 
-  const questsResult = useConvexQuery(api.admin.quests.listQuests, {
+  const questsResult = useConvexQuery(typedApi.admin.quests.listQuests, {
     search: search || undefined,
     questType: typeFilter !== "all" ? (typeFilter as QuestType) : undefined,
     includeInactive: showInactive,
   });
 
-  const questStats = useConvexQuery(api.admin.quests.getQuestStats, {});
-  const toggleActive = useConvexMutation(api.admin.quests.toggleQuestActive);
+  const questStats = useConvexQuery(typedApi.admin.quests.getQuestStats, {});
+  const toggleActive = useConvexMutation(typedApi.admin.quests.toggleQuestActive);
 
   const handleToggleActive = async (questDbId: QuestId, _name: string) => {
     try {
@@ -336,15 +336,15 @@ function AchievementList() {
   const [rarityFilter, setRarityFilter] = useState<string>("all");
   const [showInactive, setShowInactive] = useState(false);
 
-  const achievementsResult = useConvexQuery(api.admin.achievements.listAchievements, {
+  const achievementsResult = useConvexQuery(typedApi.admin.achievements.listAchievements, {
     search: search || undefined,
     category: categoryFilter !== "all" ? (categoryFilter as AchievementCategory) : undefined,
     rarity: rarityFilter !== "all" ? (rarityFilter as Rarity) : undefined,
     includeInactive: showInactive,
   });
 
-  const achievementStats = useConvexQuery(api.admin.achievements.getAchievementStats, {});
-  const toggleActive = useConvexMutation(api.admin.achievements.toggleAchievementActive);
+  const achievementStats = useConvexQuery(typedApi.admin.achievements.getAchievementStats, {});
+  const toggleActive = useConvexMutation(typedApi.admin.achievements.toggleAchievementActive);
 
   const handleToggleActive = async (achievementDbId: AchievementId, _name: string) => {
     try {

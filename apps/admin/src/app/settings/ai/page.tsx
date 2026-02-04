@@ -26,7 +26,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { api, useAction, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useAction, useMutation, useQuery } from "@/lib/convexHelpers";
 import { Text, Title } from "@tremor/react";
 import {
   AlertCircleIcon,
@@ -641,36 +641,36 @@ export default function AIProvidersPage() {
   useAdmin(); // Auth check
 
   // Queries
-  const configsResult = useQuery(api.admin.aiConfig.getAIConfigs, {}) as
+  const configsResult = useQuery(typedApi.admin.aiConfig.getAIConfigs, {}) as
     | AIConfigsResult
     | undefined;
 
   // Mutations
-  const updateConfig = useMutation(api.admin.aiConfig.updateAIConfig);
-  const initializeDefaults = useMutation(api.admin.aiConfig.initializeAIDefaults);
-  const testProvider = useAction(api.admin.aiConfig.testProviderConnection);
+  const updateConfig = useMutation(typedApi.admin.aiConfig.updateAIConfig);
+  const initializeDefaults = useMutation(typedApi.admin.aiConfig.initializeAIDefaults);
+  const testProvider = useAction(typedApi.admin.aiConfig.testProviderConnection);
 
   // API Key management
-  const apiKeyStatus = useQuery(api.admin.aiConfig.getAPIKeyStatus, {}) as
+  const apiKeyStatus = useQuery(typedApi.admin.aiConfig.getAPIKeyStatus, {}) as
     | APIKeyStatusResult
     | undefined;
-  const setAPIKeyMutation = useMutation(api.admin.aiConfig.setAPIKey);
-  const clearAPIKeyMutation = useMutation(api.admin.aiConfig.clearAPIKey);
+  const setAPIKeyMutation = useMutation(typedApi.admin.aiConfig.setAPIKey);
+  const clearAPIKeyMutation = useMutation(typedApi.admin.aiConfig.clearAPIKey);
 
   // Model fetching actions
-  const fetchAllModels = useAction(api.admin.aiProviders.fetchAllModels);
+  const fetchAllModels = useAction(typedApi.admin.aiProviders.fetchAllModels);
 
   // Usage tracking queries
-  const usageSummary = useQuery(api.admin.aiUsage.getUsageSummary, { days: 30 }) as
+  const usageSummary = useQuery(typedApi.admin.aiUsage.getUsageSummary, { days: 30 }) as
     | UsageSummaryResult
     | undefined;
-  const topModels = useQuery(api.admin.aiUsage.getTopModels, { days: 30, limit: 5 }) as
+  const topModels = useQuery(typedApi.admin.aiUsage.getTopModels, { days: 30, limit: 5 }) as
     | TopModelData[]
     | undefined;
-  const usageByFeature = useQuery(api.admin.aiUsage.getUsageByFeature, { days: 30 }) as
+  const usageByFeature = useQuery(typedApi.admin.aiUsage.getUsageByFeature, { days: 30 }) as
     | FeatureUsageData[]
     | undefined;
-  const recentUsage = useQuery(api.admin.aiUsage.getRecentUsage, { limit: 20 }) as
+  const recentUsage = useQuery(typedApi.admin.aiUsage.getRecentUsage, { limit: 20 }) as
     | RecentUsageData[]
     | undefined;
 

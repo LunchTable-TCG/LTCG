@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 describe("Build Order Integration Test", () => {
-  const rootDir = path.resolve(__dirname, "../..");
+  const rootDir = path.resolve(__dirname, "..");
   const distDir = path.join(rootDir, "dist");
   const bunBuildMarker = path.join(distDir, "index.js"); // Bun creates this
 

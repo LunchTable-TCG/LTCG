@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { logger } from "@elizaos/core";
 import type { IAgentRuntime } from "@elizaos/core";
-import type { LTCGApiClient } from "../../client/LTCGApiClient";
-import { LTCGPollingService, type PollingConfig } from "../LTCGPollingService";
+import type { LTCGApiClient } from "../../src/client/LTCGApiClient";
+import { LTCGPollingService, type PollingConfig } from "../../src/services/LTCGPollingService";
 
 // ============================================================================
 // Mock Setup

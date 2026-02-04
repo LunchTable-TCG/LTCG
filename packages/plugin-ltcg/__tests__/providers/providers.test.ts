@@ -5,13 +5,13 @@
 
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import type { IAgentRuntime, Memory, State } from "@elizaos/core";
-import { LTCGApiClient } from "../../client/LTCGApiClient";
-import type { AvailableActionsResponse, GameStateResponse } from "../../types/api";
-import { boardAnalysisProvider } from "../boardAnalysisProvider";
-import { gameStateProvider } from "../gameStateProvider";
-import { handProvider } from "../handProvider";
-import { legalActionsProvider } from "../legalActionsProvider";
-import { strategyProvider } from "../strategyProvider";
+import { LTCGApiClient } from "../../src/client/LTCGApiClient";
+import type { AvailableActionsResponse, GameStateResponse } from "../../src/types/api";
+import { boardAnalysisProvider } from "../../src/providers/boardAnalysisProvider";
+import { gameStateProvider } from "../../src/providers/gameStateProvider";
+import { handProvider } from "../../src/providers/handProvider";
+import { legalActionsProvider } from "../../src/providers/legalActionsProvider";
+import { strategyProvider } from "../../src/providers/strategyProvider";
 
 // Create mock functions using bun:test mock
 const mockGetGameState = mock();

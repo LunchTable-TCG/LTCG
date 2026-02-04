@@ -33,7 +33,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { FeatureFlagId } from "@/lib/convexTypes";
 import {
   AlertTriangleIcon,
@@ -112,7 +112,7 @@ function CreateFeatureFlagDialog({ onCreated }: { onCreated?: () => void }) {
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createFlag = useMutation(api.admin.features.createFeatureFlag);
+  const createFlag = useMutation(typedApi.admin.features.createFeatureFlag);
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -330,7 +330,7 @@ function EditFeatureFlagDialog({
   const [targetRoles, setTargetRoles] = useState<string[]>(flag.targetRoles || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateFlag = useMutation(api.admin.features.updateFeatureFlag);
+  const updateFlag = useMutation(typedApi.admin.features.updateFeatureFlag);
 
   const handleSubmit = async () => {
     if (!displayName.trim()) {
@@ -514,7 +514,7 @@ function DeleteFeatureFlagDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const deleteFlag = useMutation(api.admin.features.deleteFeatureFlag);
+  const deleteFlag = useMutation(typedApi.admin.features.deleteFeatureFlag);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -573,7 +573,7 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { hasPermission } = useAdmin();
 
-  const toggleFlag = useMutation(api.admin.features.toggleFeatureFlag);
+  const toggleFlag = useMutation(typedApi.admin.features.toggleFeatureFlag);
 
   const handleToggle = async () => {
     try {
@@ -673,11 +673,11 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
 export default function FeatureFlagsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  const flagsResult = useQuery(api.admin.features.listFeatureFlags, {
+  const flagsResult = useQuery(typedApi.admin.features.listFeatureFlags, {
     category: categoryFilter === "all" ? undefined : categoryFilter,
   });
 
-  const statsResult = useQuery(api.admin.features.getFeatureFlagStats, {});
+  const statsResult = useQuery(typedApi.admin.features.getFeatureFlagStats, {});
 
   const isLoading = flagsResult === undefined;
 

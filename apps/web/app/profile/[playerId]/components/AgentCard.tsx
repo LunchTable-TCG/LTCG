@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import { sanitizeText, sanitizeURL } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import {
@@ -72,9 +72,9 @@ export function AgentCard({ agent, onDeleted }: AgentCardProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const regenerateApiKey = useConvexMutation(apiAny.agents.agents.regenerateApiKey);
-  const deleteAgent = useConvexMutation(apiAny.agents.agents.deleteAgent);
-  const retryWalletCreation = useConvexMutation(apiAny.agents.agents.retryWalletCreation);
+  const regenerateApiKey = useConvexMutation(typedApi.agents.agents.regenerateApiKey);
+  const deleteAgent = useConvexMutation(typedApi.agents.agents.deleteAgent);
+  const retryWalletCreation = useConvexMutation(typedApi.agents.agents.retryWalletCreation);
   const [isRetryingWallet, setIsRetryingWallet] = useState(false);
 
   const DeckIcon = DECK_ICONS[agent.starterDeckCode] || Shield;

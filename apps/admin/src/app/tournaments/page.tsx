@@ -29,7 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import {
@@ -108,7 +108,7 @@ function CreateTournamentDialog({ open, onOpenChange }: CreateTournamentDialogPr
     defaultTourneyStart.toISOString().slice(0, 16)
   );
 
-  const createTournament = useConvexMutation(api.admin.tournaments.createTournament);
+  const createTournament = useConvexMutation(typedApi.admin.tournaments.createTournament);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -382,7 +382,7 @@ function TournamentActions({ tournament }: TournamentActionsProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
-  const cancelTournament = useConvexMutation(api.admin.tournaments.cancelTournament);
+  const cancelTournament = useConvexMutation(typedApi.admin.tournaments.cancelTournament);
 
   const handleCancel = async () => {
     if (!cancelReason.trim()) {
@@ -480,13 +480,13 @@ export default function TournamentsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const tournamentsResult = useConvexQuery(api.admin.tournaments.listTournaments, {
+  const tournamentsResult = useConvexQuery(typedApi.admin.tournaments.listTournaments, {
     status: statusFilter !== "all" ? (statusFilter as TournamentStatus) : undefined,
     limit: 50,
     offset: 0,
   });
 
-  const tournamentStats = useConvexQuery(api.admin.tournaments.getTournamentStats, {});
+  const tournamentStats = useConvexQuery(typedApi.admin.tournaments.getTournamentStats, {});
 
   const isLoading = tournamentsResult === undefined;
 

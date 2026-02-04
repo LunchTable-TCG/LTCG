@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { format, formatDistanceToNow } from "date-fns";
 import { DollarSign, RefreshCw } from "lucide-react";
@@ -83,14 +83,14 @@ export default function ListingDetailPage() {
   const [priceCapReason, setPriceCapReason] = useState("");
 
   const listing = useConvexQuery(
-    api.admin.marketplace.getListing,
+    typedApi.admin.marketplace.getListing,
     isAdmin ? { listingId: listingId as Id<"marketplaceListings"> } : "skip"
   );
 
-  const suspendListing = useConvexMutation(api.admin.marketplace.suspendListing);
-  const suspendSellerListings = useConvexMutation(api.admin.marketplace.suspendSellerListings);
-  const refundBid = useConvexMutation(api.admin.marketplace.refundBid);
-  const setPriceCap = useConvexMutation(api.admin.marketplace.setPriceCap);
+  const suspendListing = useConvexMutation(typedApi.admin.marketplace.suspendListing);
+  const suspendSellerListings = useConvexMutation(typedApi.admin.marketplace.suspendSellerListings);
+  const refundBid = useConvexMutation(typedApi.admin.marketplace.refundBid);
+  const setPriceCap = useConvexMutation(typedApi.admin.marketplace.setPriceCap);
 
   const formatGold = (amount: number) => {
     return amount.toLocaleString();

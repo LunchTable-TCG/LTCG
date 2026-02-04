@@ -32,7 +32,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { type Id, api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { type Id, typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge, DonutChart, Metric, Text, Title } from "@tremor/react";
 import {
   CalendarIcon,
@@ -85,7 +85,7 @@ interface Sale {
 // =============================================================================
 
 function SalesStatsOverview() {
-  const stats = useConvexQuery(api.admin.sales.getSaleStats, {});
+  const stats = useConvexQuery(typedApi.admin.sales.getSaleStats, {});
 
   if (!stats) {
     return (
@@ -165,7 +165,7 @@ function FlashSaleDialog() {
   const [products, setProducts] = useState("all");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createFlashSale = useConvexMutation(api.admin.sales.createFlashSale);
+  const createFlashSale = useConvexMutation(typedApi.admin.sales.createFlashSale);
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -294,8 +294,8 @@ function SaleFormDialog({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createSale = useConvexMutation(api.admin.sales.createSale);
-  const updateSale = useConvexMutation(api.admin.sales.updateSale);
+  const createSale = useConvexMutation(typedApi.admin.sales.createSale);
+  const updateSale = useConvexMutation(typedApi.admin.sales.updateSale);
 
   const handleSubmit = async () => {
     if (!form.name.trim()) {
@@ -583,9 +583,9 @@ function SaleCard({ sale, onEdit }: { sale: Sale; onEdit: () => void }) {
   const isUpcoming = sale.isActive && sale.startsAt > now;
   const isExpired = sale.endsAt <= now;
 
-  const toggleActive = useConvexMutation(api.admin.sales.toggleSaleActive);
-  const endEarly = useConvexMutation(api.admin.sales.endSaleEarly);
-  const deleteSale = useConvexMutation(api.admin.sales.deleteSale);
+  const toggleActive = useConvexMutation(typedApi.admin.sales.toggleSaleActive);
+  const endEarly = useConvexMutation(typedApi.admin.sales.endSaleEarly);
+  const deleteSale = useConvexMutation(typedApi.admin.sales.deleteSale);
 
   const [isToggling, setIsToggling] = useState(false);
 
@@ -723,7 +723,7 @@ function SaleCard({ sale, onEdit }: { sale: Sale; onEdit: () => void }) {
 // =============================================================================
 
 function SalesList({ filter }: { filter: "active" | "upcoming" | "all" | "expired" }) {
-  const sales = useConvexQuery(api.admin.sales.listSales, {
+  const sales = useConvexQuery(typedApi.admin.sales.listSales, {
     includeInactive: filter === "all" || filter === "expired",
     includeExpired: filter === "all" || filter === "expired",
   });

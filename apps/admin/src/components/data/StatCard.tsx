@@ -40,8 +40,10 @@ interface StatCardProps {
 
 interface StatGridProps {
   children: ReactNode;
-  /** Number of columns (1-4) */
-  columns?: 1 | 2 | 3 | 4;
+  /** Number of columns (1-5) */
+  columns?: 1 | 2 | 3 | 4 | 5;
+  /** Additional CSS classes */
+  className?: string;
 }
 
 // =============================================================================
@@ -123,15 +125,16 @@ export function StatCard({
 /**
  * Grid container for stat cards
  */
-export function StatGrid({ children, columns = 4 }: StatGridProps) {
+export function StatGrid({ children, columns = 4, className = "" }: StatGridProps) {
   const gridCols = {
     1: "grid-cols-1",
     2: "grid-cols-1 sm:grid-cols-2",
     3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
     4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+    5: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
   };
 
-  return <div className={`grid gap-4 ${gridCols[columns]}`}>{children}</div>;
+  return <div className={`grid gap-3 sm:gap-4 ${gridCols[columns]} ${className}`}>{children}</div>;
 }
 
 // =============================================================================

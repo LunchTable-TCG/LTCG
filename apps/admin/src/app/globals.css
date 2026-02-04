@@ -395,3 +395,259 @@
     @apply text-sm;
   }
 }
+
+/* =============================================================================
+   Admin Dashboard Specific Styles
+   ============================================================================= */
+
+@layer utilities {
+  /* Page container with consistent spacing */
+  .admin-page {
+    @apply space-y-6 sm:space-y-8;
+  }
+
+  /* Section containers */
+  .admin-section {
+    @apply space-y-4;
+  }
+
+  .admin-section-header {
+    @apply mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  /* Card variations with enhanced spacing */
+  .admin-card {
+    @apply rounded-xl border bg-card p-4 sm:p-6 shadow-sm transition-all;
+  }
+
+  .admin-card-compact {
+    @apply rounded-lg border bg-card p-3 sm:p-4 shadow-sm;
+  }
+
+  .admin-card-interactive {
+    @apply admin-card hover:border-primary/30 hover:shadow-md cursor-pointer;
+  }
+
+  /* Stat card styling */
+  .admin-stat-card {
+    @apply rounded-xl border bg-card p-4 sm:p-5;
+  }
+
+  /* Grid layouts for dashboard widgets */
+  .admin-grid-stats {
+    @apply grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4;
+  }
+
+  .admin-grid-cards {
+    @apply grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .admin-grid-2 {
+    @apply grid gap-4 sm:gap-6 md:grid-cols-2;
+  }
+
+  /* Content blocks with visual separation */
+  .admin-content-block {
+    @apply rounded-xl border bg-card overflow-hidden;
+  }
+
+  .admin-content-block-header {
+    @apply border-b bg-muted/30 px-4 py-3 sm:px-6 sm:py-4;
+  }
+
+  .admin-content-block-body {
+    @apply p-4 sm:p-6;
+  }
+
+  /* Table container with better spacing */
+  .admin-table-container {
+    @apply rounded-xl border bg-card overflow-hidden;
+  }
+
+  .admin-table-header {
+    @apply border-b bg-muted/30 px-4 py-3 flex items-center justify-between;
+  }
+
+  /* Form layouts */
+  .admin-form {
+    @apply space-y-6;
+  }
+
+  .admin-form-section {
+    @apply space-y-4 rounded-xl border bg-card p-4 sm:p-6;
+  }
+
+  .admin-form-row {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  .admin-form-actions {
+    @apply flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end;
+  }
+
+  /* Detail page layouts */
+  .admin-detail-grid {
+    @apply grid gap-6 lg:grid-cols-3;
+  }
+
+  .admin-detail-main {
+    @apply space-y-6 lg:col-span-2;
+  }
+
+  .admin-detail-sidebar {
+    @apply space-y-6;
+  }
+
+  /* Empty states */
+  .admin-empty-state {
+    @apply flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 p-8 sm:p-12 text-center;
+  }
+
+  /* Page title styling */
+  .admin-page-title {
+    @apply text-2xl sm:text-3xl font-bold tracking-tight;
+  }
+
+  .admin-page-description {
+    @apply text-muted-foreground mt-1;
+  }
+
+  /* Action bar styling */
+  .admin-action-bar {
+    @apply flex flex-wrap items-center gap-2 sm:gap-3;
+  }
+
+  /* Breadcrumb spacing */
+  .admin-breadcrumb {
+    @apply flex items-center gap-2 text-sm text-muted-foreground;
+  }
+
+  /* Tab navigation */
+  .admin-tabs {
+    @apply rounded-xl border bg-card;
+  }
+
+  .admin-tabs-list {
+    @apply border-b bg-muted/30 px-2;
+  }
+
+  .admin-tabs-content {
+    @apply p-4 sm:p-6;
+  }
+
+  /* Alert/notification cards */
+  .admin-alert {
+    @apply rounded-xl border p-4 sm:p-5;
+  }
+
+  .admin-alert-warning {
+    @apply admin-alert bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-400;
+  }
+
+  .admin-alert-error {
+    @apply admin-alert bg-destructive/10 border-destructive/30 text-destructive;
+  }
+
+  .admin-alert-success {
+    @apply admin-alert bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400;
+  }
+
+  .admin-alert-info {
+    @apply admin-alert bg-primary/10 border-primary/30 text-primary;
+  }
+
+  /* Data list styling */
+  .admin-data-list {
+    @apply divide-y;
+  }
+
+  .admin-data-list-item {
+    @apply flex items-center justify-between py-3 first:pt-0 last:pb-0;
+  }
+
+  /* Metric/KPI display */
+  .admin-metric {
+    @apply text-3xl sm:text-4xl font-bold tracking-tight;
+  }
+
+  .admin-metric-label {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .admin-metric-change {
+    @apply text-sm font-medium;
+  }
+
+  .admin-metric-change-positive {
+    @apply admin-metric-change text-green-600 dark:text-green-400;
+  }
+
+  .admin-metric-change-negative {
+    @apply admin-metric-change text-red-600 dark:text-red-400;
+  }
+
+  /* Filter bar */
+  .admin-filter-bar {
+    @apply flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-3 sm:p-4;
+  }
+
+  /* Quick actions floating bar */
+  .admin-quick-actions {
+    @apply fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border bg-card/95 backdrop-blur-sm px-4 py-2 shadow-lg;
+  }
+
+  /* Loading skeleton enhancements */
+  .admin-skeleton-card {
+    @apply rounded-xl border bg-card p-4 sm:p-6 space-y-4;
+  }
+
+  /* Scrollable content area */
+  .admin-scroll-area {
+    @apply max-h-[400px] overflow-y-auto pr-2;
+  }
+
+  /* Badge group */
+  .admin-badge-group {
+    @apply flex flex-wrap gap-1.5;
+  }
+
+  /* Status indicator */
+  .admin-status-dot {
+    @apply h-2 w-2 rounded-full;
+  }
+
+  .admin-status-dot-active {
+    @apply admin-status-dot bg-green-500;
+  }
+
+  .admin-status-dot-inactive {
+    @apply admin-status-dot bg-muted-foreground;
+  }
+
+  .admin-status-dot-warning {
+    @apply admin-status-dot bg-yellow-500;
+  }
+
+  .admin-status-dot-error {
+    @apply admin-status-dot bg-destructive;
+  }
+}
+
+/* Admin-specific component overrides */
+@layer components {
+  /* Better card shadows in dark mode */
+  .dark .admin-card,
+  .dark .admin-stat-card,
+  .dark .admin-content-block {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  }
+
+  /* Hover effects for interactive cards */
+  .admin-card-interactive:hover {
+    transform: translateY(-1px);
+  }
+
+  .dark .admin-card-interactive:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 20px rgba(var(--primary), 0.05);
+  }
+}

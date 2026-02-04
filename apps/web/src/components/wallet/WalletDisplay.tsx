@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTokenBalance } from "@/hooks/economy/useTokenBalance";
 import { type WalletType, useGameWallet } from "@/hooks/wallet/useGameWallet";
-import { apiAny } from "@/lib/convexHelpers";
+import { typedApi } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { useExportWallet, useSignAndSendTransaction } from "@privy-io/react-auth/solana";
 import bs58 from "bs58";
@@ -455,7 +455,7 @@ function TransferDialog({
   const [isSending, setIsSending] = useState(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
 
-  const buildTransferTransaction = useAction(apiAny.wallet.tokenTransfer.buildTransferTransaction);
+  const buildTransferTransaction = useAction(typedApi.wallet.tokenTransfer.buildTransferTransaction);
   const { signAndSendTransaction } = useSignAndSendTransaction();
 
   const handleTransfer = async () => {

@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
 import { useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { TournamentId, UserId } from "@/lib/convexTypes";
-import { api } from "@convex/_generated/api";
+import { typedApi } from "@convex/_generated/api";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
 import {
@@ -142,7 +142,7 @@ function GrantEntryDialog({
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const grantEntry = useConvexMutation(api.admin.tournaments.grantTournamentEntry);
+  const grantEntry = useConvexMutation(typedApi.admin.tournaments.grantTournamentEntry);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -248,14 +248,14 @@ export default function TournamentDetailPage() {
   const [showGrantDialog, setShowGrantDialog] = useState(false);
 
   // Queries and mutations
-  const tournament = useConvexQuery(api.admin.tournaments.getTournament, {
+  const tournament = useConvexQuery(typedApi.admin.tournaments.getTournament, {
     tournamentId: tournamentId as TournamentId,
   });
 
-  const updateTournament = useConvexMutation(api.admin.tournaments.updateTournament);
-  const forceStart = useConvexMutation(api.admin.tournaments.forceStartTournament);
-  const removeParticipant = useConvexMutation(api.admin.tournaments.removeParticipant);
-  const disqualifyParticipant = useConvexMutation(api.admin.tournaments.disqualifyParticipant);
+  const updateTournament = useConvexMutation(typedApi.admin.tournaments.updateTournament);
+  const forceStart = useConvexMutation(typedApi.admin.tournaments.forceStartTournament);
+  const removeParticipant = useConvexMutation(typedApi.admin.tournaments.removeParticipant);
+  const disqualifyParticipant = useConvexMutation(typedApi.admin.tournaments.disqualifyParticipant);
 
   // Populate form with existing data
   useEffect(() => {

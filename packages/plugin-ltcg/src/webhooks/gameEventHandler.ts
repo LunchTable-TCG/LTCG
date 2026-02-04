@@ -8,6 +8,7 @@
 import type { IAgentRuntime, State } from "@elizaos/core";
 import { logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
+import { SERVICE_TYPES, type ITurnOrchestrator } from "../services/types";
 
 /**
  * Webhook event types sent by the game server
@@ -203,6 +204,9 @@ export async function handleGameWebhook(
 
 /**
  * Handle turn started event - agent should make a move
+ *
+ * This triggers the TurnOrchestrator to begin autonomous turn execution.
+ * The orchestrator will make LLM calls to decide actions and execute them.
  */
 async function handleTurnStarted(
   gameId: string,
@@ -212,7 +216,7 @@ async function handleTurnStarted(
 ): Promise<WebhookHandlerResult> {
   logger.info(
     { gameId, phase: data.phase, turn: data.turnNumber },
-    "Turn started - agent should act"
+    "Turn started - triggering autonomous turn execution"
   );
 
   // Get API client
@@ -233,9 +237,29 @@ async function handleTurnStarted(
   state.values.LTCG_CURRENT_PHASE = data.phase;
   state.values.LTCG_TURN_NUMBER = data.turnNumber;
 
-  // Emit event that will trigger action selection
-  // The action system will pick the appropriate move based on game state
-  logger.info({ gameId, phase: data.phase }, "Game state fetched, ready for action selection");
+  // Trigger TurnOrchestrator for autonomous gameplay
+  const orchestrator = runtime.getService(
+    SERVICE_TYPES.ORCHESTRATOR
+  ) as unknown as ITurnOrchestrator | null;
+
+  if (orchestrator) {
+    // Fire-and-forget: orchestrator handles the full turn asynchronously
+    orchestrator
+      .onTurnStarted(gameId, data.phase ?? "main1", data.turnNumber ?? 1)
+      .catch((error) => {
+        logger.error({ error, gameId }, "TurnOrchestrator error during turn execution");
+      });
+
+    logger.info({ gameId, phase: data.phase }, "TurnOrchestrator triggered for autonomous play");
+
+    return {
+      processed: true,
+      actionTaken: "autonomous_turn_started",
+    };
+  }
+
+  // Fallback: orchestrator not available
+  logger.warn({ gameId }, "TurnOrchestrator not available - turn will not be autonomous");
 
   return {
     processed: true,
@@ -245,23 +269,49 @@ async function handleTurnStarted(
 
 /**
  * Handle chain waiting event - agent must respond to chain or pass
+ *
+ * This triggers the TurnOrchestrator to decide whether to chain or pass.
  */
 async function handleChainWaiting(
   gameId: string,
   data: GameWebhookPayload["data"],
-  _runtime: IAgentRuntime,
+  runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   const chainState = data.chainState;
 
   logger.info(
     { gameId, isWaiting: chainState?.isWaiting, timeoutMs: chainState?.timeoutMs },
-    "Chain waiting for response"
+    "Chain waiting - triggering chain response decision"
   );
 
   // Store chain state for chain response action
   state.values.LTCG_CHAIN_WAITING = true;
   state.values.LTCG_CHAIN_TIMEOUT = chainState?.timeoutMs;
+
+  // Trigger TurnOrchestrator for chain response
+  const orchestrator = runtime.getService(
+    SERVICE_TYPES.ORCHESTRATOR
+  ) as unknown as ITurnOrchestrator | null;
+
+  if (orchestrator) {
+    // Fire-and-forget: orchestrator handles chain response asynchronously
+    orchestrator
+      .onChainWaiting(gameId, chainState?.timeoutMs ?? 30000)
+      .catch((error) => {
+        logger.error({ error, gameId }, "TurnOrchestrator error during chain response");
+      });
+
+    logger.info({ gameId }, "TurnOrchestrator triggered for chain response");
+
+    return {
+      processed: true,
+      actionTaken: "autonomous_chain_response_started",
+    };
+  }
+
+  // Fallback: orchestrator not available
+  logger.warn({ gameId }, "TurnOrchestrator not available - chain response will not be autonomous");
 
   return {
     processed: true,

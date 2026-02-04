@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 
 // Import card data directly from the data package
 import {
@@ -112,7 +112,7 @@ export default function BatchRenderPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("default");
 
   // Queries
-  const templates = useConvexQuery(api.admin.templates.listTemplates, {});
+  const templates = useConvexQuery(typedApi.admin.templates.listTemplates, {});
 
   // Filter cards based on selection
   const filteredCards = useMemo(() => {

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import type { CardPlayRateStat, CardWinRateStat } from "@/lib/convexTypes";
 import { Badge, BarChart, Card, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
@@ -59,22 +59,22 @@ export default function CardAnalyticsPage() {
   const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
 
   // Fetch real data from Convex
-  const topByWinRate = useConvexQuery(api.admin.analytics.getTopCardsByWinRate, {
+  const topByWinRate = useConvexQuery(typedApi.admin.analytics.getTopCardsByWinRate, {
     periodType: period,
     limit: 10,
     minGames: 5,
   }) as CardWinRateStat[] | undefined;
 
-  const topByPlayRate = useConvexQuery(api.admin.analytics.getTopCardsByPlayRate, {
+  const topByPlayRate = useConvexQuery(typedApi.admin.analytics.getTopCardsByPlayRate, {
     periodType: period,
     limit: 10,
   }) as CardPlayRateStat[] | undefined;
 
-  const economySnapshot = useConvexQuery(api.admin.analytics.getCurrentEconomySnapshot, {});
+  const economySnapshot = useConvexQuery(typedApi.admin.analytics.getCurrentEconomySnapshot, {});
 
   // Fetch archetype-specific stats when an archetype is selected
   const archetypeStats = useConvexQuery(
-    api.admin.analytics.getCardStatsByArchetype,
+    typedApi.admin.analytics.getCardStatsByArchetype,
     selectedArchetype ? { archetype: selectedArchetype, periodType: period } : "skip"
   ) as CardWinRateStat[] | undefined;
 

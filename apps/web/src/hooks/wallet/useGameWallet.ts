@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { usePrivy } from "@privy-io/react-auth";
 import {
   type ConnectedStandardSolanaWallet,
@@ -99,11 +99,11 @@ export function useGameWallet(): UseGameWalletReturn {
   // Convex queries and mutations - using helpers to avoid TS2589 errors
   // Only query when explicitly authenticated (not during initial auth check) to avoid "Authentication required" errors
   const savedWallet = useConvexQuery(
-    apiAny.wallet.userWallet.getUserWallet,
+    typedApi.wallet.userWallet.getUserWallet,
     isAuthenticated === true && !authLoading ? {} : "skip"
   );
-  const saveWalletMutation = useConvexMutation(apiAny.wallet.userWallet.saveConnectedWallet);
-  const disconnectWalletMutation = useConvexMutation(apiAny.wallet.userWallet.disconnectWallet);
+  const saveWalletMutation = useConvexMutation(typedApi.wallet.userWallet.saveConnectedWallet);
+  const disconnectWalletMutation = useConvexMutation(typedApi.wallet.userWallet.disconnectWallet);
 
   // Find embedded wallet (isPrivyWallet flag or name contains 'Privy')
   const embeddedWallet = useMemo(

@@ -29,7 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
@@ -77,7 +77,7 @@ function CreateSeasonDialog({ open, onOpenChange }: CreateSeasonDialogProps) {
   const [softResetPercentage, setSoftResetPercentage] = useState("50");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createSeason = useMutation(api.admin.seasons.createSeason);
+  const createSeason = useMutation(typedApi.admin.seasons.createSeason);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -254,8 +254,8 @@ function SeasonActions({ season }: SeasonActionsProps) {
   const [isEnding, setIsEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
-  const startSeason = useMutation(api.admin.seasons.startSeason);
-  const endSeason = useMutation(api.admin.seasons.endSeason);
+  const startSeason = useMutation(typedApi.admin.seasons.startSeason);
+  const endSeason = useMutation(typedApi.admin.seasons.endSeason);
 
   const handleStart = async () => {
     setIsStarting(true);
@@ -353,11 +353,11 @@ export default function SeasonsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const seasonsResult = useQuery(api.admin.seasons.listSeasons, {
+  const seasonsResult = useQuery(typedApi.admin.seasons.listSeasons, {
     status: statusFilter !== "all" ? (statusFilter as SeasonStatus) : undefined,
   });
 
-  const seasonStats = useQuery(api.admin.seasons.getSeasonStats, {});
+  const seasonStats = useQuery(typedApi.admin.seasons.getSeasonStats, {});
 
   const isLoading = seasonsResult === undefined;
 

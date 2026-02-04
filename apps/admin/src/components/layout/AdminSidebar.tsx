@@ -94,6 +94,12 @@ const navigation: NavGroup[] = [
   {
     title: "Content",
     items: [
+      {
+        title: "Content Calendar",
+        href: "/content-calendar",
+        icon: "📅",
+        permission: "config.edit",
+      },
       { title: "News", href: "/news", icon: "📰", permission: "config.edit" },
       { title: "Broadcast", href: "/broadcast", icon: "📢", permission: "batch.operations" },
       { title: "Assets", href: "/assets", icon: "🖼️", permission: "config.edit" },
@@ -122,6 +128,7 @@ const navigation: NavGroup[] = [
     title: "AI",
     items: [
       { title: "AI Assistant", href: "/ai-assistant", icon: "🧠", permission: "player.view" },
+      { title: "Dashboard Builder", href: "/ai-dashboard", icon: "✨", permission: "player.view" },
     ],
   },
   {

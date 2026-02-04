@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import {
   CalendarIcon,
@@ -114,18 +114,18 @@ export default function NewsPage() {
   const [categoryFilter, setCategoryFilter] = useState<NewsCategory | "all">("all");
 
   // Convex queries and mutations
-  const articlesResult = useConvexQuery(api.admin.news.listArticles, {
+  const articlesResult = useConvexQuery(typedApi.admin.news.listArticles, {
     includeUnpublished: true,
     limit: 100,
   });
 
-  const statsResult = useConvexQuery(api.admin.news.getNewsStats, {});
+  const statsResult = useConvexQuery(typedApi.admin.news.getNewsStats, {});
 
-  const createArticle = useConvexMutation(api.admin.news.createArticle);
-  const updateArticle = useConvexMutation(api.admin.news.updateArticle);
-  const deleteArticle = useConvexMutation(api.admin.news.deleteArticle);
-  const togglePublished = useConvexMutation(api.admin.news.togglePublished);
-  const togglePinned = useConvexMutation(api.admin.news.togglePinned);
+  const createArticle = useConvexMutation(typedApi.admin.news.createArticle);
+  const updateArticle = useConvexMutation(typedApi.admin.news.updateArticle);
+  const deleteArticle = useConvexMutation(typedApi.admin.news.deleteArticle);
+  const togglePublished = useConvexMutation(typedApi.admin.news.togglePublished);
+  const togglePinned = useConvexMutation(typedApi.admin.news.togglePinned);
 
   // Filter articles
   const filteredArticles = (articlesResult ?? []).filter((article: Article) => {

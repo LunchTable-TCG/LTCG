@@ -32,7 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Text } from "@tremor/react";
 import {
@@ -268,7 +268,7 @@ function DeleteStageDialog({
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
-  const deleteStage = useConvexMutation(api.admin.story.deleteStage);
+  const deleteStage = useConvexMutation(typedApi.admin.story.deleteStage);
 
   const handleDelete = async () => {
     if (!stage) return;
@@ -339,18 +339,18 @@ export default function StageEditorPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Queries
-  const stageData = useConvexQuery(api.admin.story.getStage, {
+  const stageData = useConvexQuery(typedApi.admin.story.getStage, {
     stageId: stageId as Id<"storyStages">,
   });
 
   // Get card definitions for reward selector
-  const cardsResult = useConvexQuery(api.admin.cards.listCards, {
+  const cardsResult = useConvexQuery(typedApi.admin.cards.listCards, {
     includeInactive: false,
   });
 
   // Mutations
-  const updateStage = useConvexMutation(api.admin.story.updateStage);
-  const publishStage = useConvexMutation(api.admin.story.publishStage);
+  const updateStage = useConvexMutation(typedApi.admin.story.updateStage);
+  const publishStage = useConvexMutation(typedApi.admin.story.publishStage);
 
   const stage = stageData?.stage as Stage | undefined;
   const chapter = stageData?.chapter as Chapter | undefined;

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import type { IAgentRuntime, Memory, State } from "@elizaos/core";
-import { LTCGApiClient } from "../client/LTCGApiClient";
-import type { StarterDeck } from "../types/api";
-import { registerAgentAction } from "./registerAgentAction";
+import { LTCGApiClient } from "../../src/client/LTCGApiClient";
+import type { StarterDeck } from "../../src/types/api";
+import { registerAgentAction } from "../../src/actions/registerAgentAction";
 
 describe("Register Agent Action", () => {
   let mockRuntime: IAgentRuntime;

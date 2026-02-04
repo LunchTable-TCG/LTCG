@@ -40,7 +40,9 @@
         "noUnsafeDeclarationMerging": "error",
         "noConfusingVoidType": "error",
         "noDoubleEquals": "error",
-        "noThenProperty": "off"
+        "noThenProperty": "off",
+        "noArrayIndexKey": "warn",
+        "noAssignInExpressions": "warn"
       },
       "correctness": {
         "noUnusedVariables": "error",

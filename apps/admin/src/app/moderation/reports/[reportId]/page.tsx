@@ -21,7 +21,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import { api, useMutation } from "@/lib/convexHelpers";
+import { typedApi, useMutation } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { useTypedQuery } from "@ltcg/core/react";
 import type { FunctionReference } from "convex/server";
@@ -64,13 +64,13 @@ export default function ReportDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Use useTypedQuery from @ltcg/core/react to avoid TS2589 deep type instantiation
-  const getReportQuery = api.admin.reports.getReport as FunctionReference<"query">;
+  const getReportQuery = typedApi.admin.reports.getReport as FunctionReference<"query">;
   const reportQueryArgs = isAdmin ? { reportId: reportId as Id<"userReports"> } : "skip";
   const report = useTypedQuery(getReportQuery, reportQueryArgs);
 
-  const updateStatusMutation = api.admin.reports.updateReportStatus;
+  const updateStatusMutation = typedApi.admin.reports.updateReportStatus;
   const updateStatus = useMutation(updateStatusMutation);
-  const resolveWithActionMutation = api.admin.reports.resolveReportWithAction;
+  const resolveWithActionMutation = typedApi.admin.reports.resolveReportWithAction;
   const resolveWithAction = useMutation(resolveWithActionMutation);
 
   const handleStatusChange = async (status: ReportStatus) => {

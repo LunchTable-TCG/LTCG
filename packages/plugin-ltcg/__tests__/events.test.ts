@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { logger } from "@elizaos/core";
-import plugin from "../plugin";
+import plugin from "../src/plugin";
 
 describe("Plugin Events", () => {
   // Use spyOn like all other tests in the codebase

@@ -14,7 +14,7 @@ function directoryExists(dirPath: string): boolean {
 }
 
 describe("Project Structure Validation", () => {
-  const rootDir = path.resolve(__dirname, "../..");
+  const rootDir = path.resolve(__dirname, "..");
 
   describe("Directory Structure", () => {
     it("should have the expected directory structure", () => {

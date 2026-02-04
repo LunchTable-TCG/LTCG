@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { type TutorialMoment, getTutorialMoment } from "@/lib/game-rules";
 import { useMutation } from "convex/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -42,12 +42,12 @@ export function useTutorial({ enabled, gameState }: UseTutorialOptions): UseTuto
   const [triggeredMoments, setTriggeredMoments] = useState<Set<number>>(new Set());
 
   // Get tutorial status from database
-  const tutorialStatus = useConvexQuery(apiAny.tutorial.getTutorialStatus, enabled ? {} : "skip");
+  const tutorialStatus = useConvexQuery(typedApi.tutorial.getTutorialStatus, enabled ? {} : "skip");
 
   // Mutations
-  const updateProgress = useMutation(apiAny.tutorial.updateTutorialProgress);
-  const completeTutorial = useMutation(apiAny.tutorial.completeTutorial);
-  const dismissTutorial = useMutation(apiAny.tutorial.dismissTutorial);
+  const updateProgress = useMutation(typedApi.tutorial.updateTutorialProgress);
+  const completeTutorial = useMutation(typedApi.tutorial.completeTutorial);
+  const dismissTutorial = useMutation(typedApi.tutorial.dismissTutorial);
 
   // Determine if tutorial should be active
   const shouldShowTutorial = useMemo(() => {

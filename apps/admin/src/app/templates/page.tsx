@@ -43,7 +43,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { TemplateCard } from "@/components/templates/TemplateCard";
 import type { CardType, TemplateListItem } from "@/components/templates/types";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 
 const CARD_TYPES: { value: CardType | "all"; label: string }[] = [
@@ -70,16 +70,16 @@ export default function TemplatesPage() {
   const [duplicateName, setDuplicateName] = useState("");
 
   // Queries
-  const templates = useConvexQuery(api.admin.templates.listTemplates, {
+  const templates = useConvexQuery(typedApi.admin.templates.listTemplates, {
     cardType: typeFilter === "all" ? undefined : typeFilter,
   });
-  const stats = useConvexQuery(api.admin.templates.getTemplateStats, {});
+  const stats = useConvexQuery(typedApi.admin.templates.getTemplateStats, {});
 
   // Mutations
-  const createTemplate = useConvexMutation(api.admin.templates.createTemplate);
-  const duplicateTemplate = useConvexMutation(api.admin.templates.duplicateTemplate);
-  const deleteTemplate = useConvexMutation(api.admin.templates.deleteTemplate);
-  const setDefaultTemplate = useConvexMutation(api.admin.templates.setDefaultTemplate);
+  const createTemplate = useConvexMutation(typedApi.admin.templates.createTemplate);
+  const duplicateTemplate = useConvexMutation(typedApi.admin.templates.duplicateTemplate);
+  const deleteTemplate = useConvexMutation(typedApi.admin.templates.deleteTemplate);
+  const setDefaultTemplate = useConvexMutation(typedApi.admin.templates.setDefaultTemplate);
 
   // Filter templates by search query
   const filteredTemplates = templates?.filter((t: TemplateListItem) =>

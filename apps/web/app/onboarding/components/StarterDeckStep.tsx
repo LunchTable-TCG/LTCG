@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
@@ -120,7 +120,7 @@ export function StarterDeckStep({ onComplete }: StarterDeckStepProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectStarterDeckMutation = useConvexMutation(apiAny.core.decks.selectStarterDeck);
+  const selectStarterDeckMutation = useConvexMutation(typedApi.core.decks.selectStarterDeck);
 
   const handleSubmit = async () => {
     if (!selectedDeck) {

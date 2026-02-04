@@ -31,7 +31,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Text } from "@tremor/react";
 import {
@@ -133,7 +133,7 @@ function CreateStageDialog({
   const [firstClearGems, setFirstClearGems] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createStage = useMutation(api.admin.story.createStage);
+  const createStage = useMutation(typedApi.admin.story.createStage);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -342,7 +342,7 @@ function DeleteChapterDialog({
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
-  const deleteChapter = useMutation(api.admin.story.deleteChapter);
+  const deleteChapter = useMutation(typedApi.admin.story.deleteChapter);
 
   const handleDelete = async () => {
     if (!chapter) return;
@@ -412,22 +412,22 @@ export default function ChapterDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Queries
-  const chapterData = useQuery(api.admin.story.getChapter, {
+  const chapterData = useQuery(typedApi.admin.story.getChapter, {
     chapterId: chapterId as Id<"storyChapters">,
   }) as ChapterDataResult | undefined;
-  const stagesResult = useQuery(api.admin.story.listStages, {
+  const stagesResult = useQuery(typedApi.admin.story.listStages, {
     chapterId: chapterId as Id<"storyChapters">,
     includeUnpublished: true,
   }) as StagesResult | undefined;
-  const allChapters = useQuery(api.admin.story.listChapters, {
+  const allChapters = useQuery(typedApi.admin.story.listChapters, {
     includeUnpublished: true,
   }) as ChaptersResult | undefined;
 
   // Mutations
-  const updateChapter = useMutation(api.admin.story.updateChapter);
-  const publishChapter = useMutation(api.admin.story.publishChapter);
-  const publishStage = useMutation(api.admin.story.publishStage);
-  const reorderStages = useMutation(api.admin.story.reorderStages);
+  const updateChapter = useMutation(typedApi.admin.story.updateChapter);
+  const publishChapter = useMutation(typedApi.admin.story.publishChapter);
+  const publishStage = useMutation(typedApi.admin.story.publishStage);
+  const reorderStages = useMutation(typedApi.admin.story.reorderStages);
 
   const chapter = chapterData?.chapter as Chapter | undefined;
   const stages = (stagesResult?.stages || []) as Stage[];

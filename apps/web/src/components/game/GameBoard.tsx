@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { componentLogger, logger, perf, useDebugLifecycle } from "@/lib/debug";
 import { categorizeEffect, showEffectActivated } from "@/lib/effectToasts";
 import type { Id } from "@convex/_generated/dataModel";
@@ -34,6 +34,7 @@ import { SummonModal } from "./dialogs/SummonModal";
 import { EffectFeedback, useEffectFeedback } from "./effects/EffectFeedback";
 import { EffectQueueWidget, type QueuedEffect } from "./effects/EffectQueueWidget";
 import { type CardInZone, useGameBoard } from "./hooks/useGameBoard";
+import { AgentActivityIndicator } from "./AgentActivityIndicator";
 
 interface GameBoardProps {
   lobbyId: Id<"gameLobbies">;
@@ -88,17 +89,17 @@ export function GameBoard({
   useDebugLifecycle("GameBoard", { lobbyId, gameMode });
 
   // Get player ID from auth if not provided (story mode)
-  const authUser = useConvexQuery(apiAny.core.users.currentUser, {});
+  const authUser = useConvexQuery(typedApi.core.users.currentUser, {});
   const playerId = providedPlayerId || (authUser?._id as Id<"users"> | undefined);
 
   log.debug("GameBoard rendered", { lobbyId, playerId, gameMode });
 
   // First check lobby status - MUST be called before any conditional returns
-  const lobbyDetails = useConvexQuery(apiAny.gameplay.games.queries.getLobbyDetails, { lobbyId });
+  const lobbyDetails = useConvexQuery(typedApi.gameplay.games.queries.getLobbyDetails, { lobbyId });
 
   // Selection effect mutations
   const completeSearchEffectMutation = useConvexMutation(
-    apiAny.gameplay.gameEngine.spellsTraps.completeSearchEffect
+    typedApi.gameplay.gameEngine.spellsTraps.completeSearchEffect
   );
   const completeSearchEffect = useCallback(
     async (args: {
@@ -157,7 +158,6 @@ export function GameBoard({
   const [showActivateModal, setShowActivateModal] = useState(false);
   const [showCardInspector, setShowCardInspector] = useState(false);
   const [isForfeitLoading, setIsForfeitLoading] = useState(false);
-  const [isAIThinking, setIsAIThinking] = useState(false);
 
   // Card Selection State (for search effects, etc.)
   const [cardSelection, setCardSelection] = useState<{
@@ -186,44 +186,14 @@ export function GameBoard({
     callback: (costTargets?: Id<"cardDefinitions">[]) => void;
   } | null>(null);
 
-  // AI Turn Automation (Story Mode) - use useConvexMutation directly for this mutation
-  const executeAITurnMutation = useConvexMutation(apiAny.gameplay.ai.aiTurn.executeAITurn);
-  const gameState = useConvexQuery(
-    apiAny.gameplay.games.queries.getGameStateForPlayer,
-    lobbyId ? { lobbyId } : "skip"
-  );
-
   // New feature queries
   const pendingOptionalTriggers = useConvexQuery(
-    apiAny.gameplay.games.queries.getPendingOptionalTriggers,
+    typedApi.gameplay.games.queries.getPendingOptionalTriggers,
     { lobbyId }
   );
-  const timeoutStatus = useConvexQuery(apiAny.gameplay.games.queries.getTimeoutStatus, {
+  const timeoutStatus = useConvexQuery(typedApi.gameplay.games.queries.getTimeoutStatus, {
     lobbyId,
   });
-
-  useEffect(() => {
-    if (gameMode !== "story") return;
-    if (!gameState || !lobbyDetails) return;
-    if (isAIThinking) return; // Already executing
-
-    const isAITurn = gameState.currentTurnPlayerId === gameState.opponentId;
-
-    if (isAITurn && !gameEnded) {
-      setIsAIThinking(true);
-
-      // Delay AI turn slightly for better UX
-      setTimeout(async () => {
-        try {
-          await executeAITurnMutation({ gameId: gameState.gameId });
-        } catch (error) {
-          console.error("AI turn failed:", error);
-        } finally {
-          setIsAIThinking(false);
-        }
-      }, 1000);
-    }
-  }, [gameMode, gameState, lobbyDetails, gameEnded, isAIThinking, executeAITurnMutation]);
 
   // Effect Notifications - Subscribe to auto-triggered effects
   const lastEventTimestamp = useRef<number>(Date.now());
@@ -236,7 +206,7 @@ export function GameBoard({
       }
     : "skip";
   const gameEvents = useConvexQuery(
-    apiAny.gameplay.gameEvents.subscribeToGameEvents,
+    typedApi.gameplay.gameEvents.subscribeToGameEvents,
     gameEventsArgs
   );
 
@@ -650,7 +620,7 @@ export function GameBoard({
 
   // Cost payment query
   const getPendingCostMutation = useConvexMutation(
-    apiAny.gameplay.effectSystem.costPayment.getPendingCostRequirement
+    typedApi.gameplay.effectSystem.costPayment.getPendingCostRequirement
   );
 
   const handleActivateCard = useCallback(
@@ -1253,6 +1223,9 @@ export function GameBoard({
 
         {/* Effect Queue Widget */}
         {effectQueue.length > 0 && <EffectQueueWidget effects={effectQueue} isResolving={false} />}
+
+        {/* elizaOS Agent Activity Indicator */}
+        <AgentActivityIndicator lobbyId={lobbyId} />
 
         {/* Tutorial Manager (Story Mode Only) */}
         {gameMode === "story" && player && opponent && phase && (

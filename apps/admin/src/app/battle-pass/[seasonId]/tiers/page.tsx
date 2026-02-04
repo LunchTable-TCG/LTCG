@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { BattlePassId } from "@/lib/convexTypes";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Card, Text, Title } from "@tremor/react";
@@ -281,15 +281,15 @@ export default function BattlePassTiersPage() {
   const [bulkAmount, setBulkAmount] = useState("100");
 
   // Queries and mutations
-  const battlePass = useConvexQuery(api.admin.battlePass.getBattlePass, {
+  const battlePass = useConvexQuery(typedApi.admin.battlePass.getBattlePass, {
     battlePassId: battlePassId as BattlePassId,
   });
 
-  const existingTiers = useConvexQuery(api.admin.battlePass.getBattlePassTiers, {
+  const existingTiers = useConvexQuery(typedApi.admin.battlePass.getBattlePassTiers, {
     battlePassId: battlePassId as BattlePassId,
   });
 
-  const defineTiers = useConvexMutation(api.admin.battlePass.defineBattlePassTiers);
+  const defineTiers = useConvexMutation(typedApi.admin.battlePass.defineBattlePassTiers);
 
   // Initialize tiers when data loads
   useEffect(() => {

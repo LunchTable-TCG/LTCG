@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import type { Memory, State } from "@elizaos/core";
-import { type MockRuntime, setupActionTest } from "../__tests__/utils/core-test-utils";
-import { LTCGApiClient } from "../client/LTCGApiClient";
-import { gameStateProvider } from "../providers/gameStateProvider";
-import { surrenderAction } from "./surrenderAction";
+import { type MockRuntime, setupActionTest } from "../utils/core-test-utils";
+import { LTCGApiClient } from "../../src/client/LTCGApiClient";
+import { gameStateProvider } from "../../src/providers/gameStateProvider";
+import { surrenderAction } from "../../src/actions/surrenderAction";
 
 describe("Surrender Action", () => {
   let mockRuntime: MockRuntime;

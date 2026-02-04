@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentActivityIndicator } from "@/components/game/AgentActivityIndicator";
 import { useSpectator } from "@/hooks";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -330,6 +331,9 @@ export function SpectatorGameView({ lobbyId, onExit }: SpectatorGameViewProps) {
           </div>
         </div>
       </div>
+
+      {/* elizaOS Agent Activity Indicator */}
+      <AgentActivityIndicator lobbyId={lobbyId} />
     </div>
   );
 }

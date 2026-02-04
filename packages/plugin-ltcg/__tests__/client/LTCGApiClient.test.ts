@@ -4,15 +4,15 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
-import { ApiErrorCode } from "../../types/api";
-import { LTCGApiClient } from "../LTCGApiClient";
+import { ApiErrorCode } from "../../src/types/api";
+import { LTCGApiClient } from "../../src/client/LTCGApiClient";
 import {
   AuthenticationError,
   GameError,
   NetworkError,
   RateLimitError,
   ValidationError,
-} from "../errors";
+} from "../../src/client/errors";
 
 // Mock fetch globally using bun:test mock
 const mockFetch = mock();

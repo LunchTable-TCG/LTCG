@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import type { ColumnDef } from "@/types";
 import type { Id } from "@convex/_generated/dataModel";
@@ -235,9 +235,9 @@ function ExpiringRoleActions({ role }: { role: ExpiringRole }) {
   const [isMakingPermanent, setIsMakingPermanent] = useState(false);
 
   // Use type assertion to avoid TS2589 deep type instantiation
-  const extendRoleMutation = api.admin.roles.extendRole;
+  const extendRoleMutation = typedApi.admin.roles.extendRole;
   const extendRole = useMutation(extendRoleMutation);
-  const makeRolePermanentMutation = api.admin.roles.makeRolePermanent;
+  const makeRolePermanentMutation = typedApi.admin.roles.makeRolePermanent;
   const makeRolePermanent = useMutation(makeRolePermanentMutation);
 
   const handleQuickExtend = async () => {
@@ -357,7 +357,7 @@ function UserSearchCombobox({
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch player list for search
-  const players = useQuery(api.admin.admin.listPlayers, { limit: 200 }) as
+  const players = useQuery(typedApi.admin.admins.listPlayers, { limit: 200 }) as
     | PlayerOption[]
     | undefined;
 
@@ -450,7 +450,7 @@ function GrantRoleDialog() {
   const [expiresInDays, setExpiresInDays] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const grantRole = useMutation(api.admin.roles.grantRole);
+  const grantRole = useMutation(typedApi.admin.roles.grantRole);
 
   const handleSelectUser = (userId: Id<"users"> | null, displayName: string) => {
     setSelectedUserId(userId);
@@ -627,7 +627,7 @@ function RevokeRoleDialog({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const revokeRole = useMutation(api.admin.roles.revokeRole);
+  const revokeRole = useMutation(typedApi.admin.roles.revokeRole);
 
   const handleRevoke = async () => {
     setIsSubmitting(true);
@@ -697,7 +697,7 @@ function ExtendRoleDialog({
   const [extendDays, setExtendDays] = useState("30");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const extendRole = useMutation(api.admin.roles.extendRole);
+  const extendRole = useMutation(typedApi.admin.roles.extendRole);
 
   const handleExtend = async () => {
     if (!extendDays || Number(extendDays) <= 0) {
@@ -783,7 +783,7 @@ function MakePermanentDialog({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const makeRolePermanent = useMutation(api.admin.roles.makeRolePermanent);
+  const makeRolePermanent = useMutation(typedApi.admin.roles.makeRolePermanent);
 
   const handleMakePermanent = async () => {
     setIsSubmitting(true);
@@ -930,7 +930,7 @@ function RoleHierarchyCard() {
 
 function CleanupExpiredButton() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const cleanupExpiredRoles = useMutation(api.admin.roles.cleanupExpiredRoles);
+  const cleanupExpiredRoles = useMutation(typedApi.admin.roles.cleanupExpiredRoles);
 
   const handleCleanup = async () => {
     setIsSubmitting(true);
@@ -959,11 +959,11 @@ export default function AdminManagementPage() {
   const { role: myRole, adminRole } = useAdmin();
 
   // Fetch all admins using the new API
-  const admins = useQuery(api.admin.roles.listAdminsByRole, {}) as AdminListItem[] | undefined;
+  const admins = useQuery(typedApi.admin.roles.listAdminsByRole, {}) as AdminListItem[] | undefined;
 
   // Fetch expiring roles (only for admins and superadmins)
   const expiringRoles = useQuery(
-    api.admin.roles.getExpiringRoles,
+    typedApi.admin.roles.getExpiringRoles,
     adminRole?.isFullAdmin ? { withinDays: 7 } : "skip"
   ) as ExpiringRole[] | undefined;
 

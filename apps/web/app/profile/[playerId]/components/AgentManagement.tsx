@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { Bot, Loader2, Plus } from "lucide-react";
 import { useState } from "react";
 import { type Agent, AgentCard } from "./AgentCard";
@@ -14,7 +14,7 @@ export function AgentManagement() {
   const { isAuthenticated } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const agents = useConvexQuery(apiAny.agents.agents.getUserAgents, isAuthenticated ? {} : "skip");
+  const agents = useConvexQuery(typedApi.agents.agents.getUserAgents, isAuthenticated ? {} : "skip");
 
   const isLoading = agents === undefined;
   const agentCount = agents?.length || 0;

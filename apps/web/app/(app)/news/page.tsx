@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { AuthLoading, Authenticated } from "convex/react";
 import { ArrowRight, Clock, Loader2, Newspaper, Pin } from "lucide-react";
@@ -52,7 +52,7 @@ export default function NewsPage() {
 }
 
 function NewsContent() {
-  const articles = useConvexQuery(apiAny.admin.news.getPublishedNews, { limit: 50 });
+  const articles = useConvexQuery(typedApi.admin.news.getPublishedNews, { limit: 50 });
 
   return (
     <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden">

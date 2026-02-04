@@ -115,6 +115,17 @@ crons.interval(
 );
 
 // ============================================================================
+// CONTENT CALENDAR PUBLISHING
+// ============================================================================
+
+// Check and publish scheduled content every 5 minutes
+crons.interval(
+  "publish-scheduled-content",
+  { minutes: 5 },
+  internalAny.content.publishing.checkAndPublishDue
+);
+
+// ============================================================================
 // TOURNAMENT SYSTEM MAINTENANCE
 // ============================================================================
 

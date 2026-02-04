@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -44,12 +44,12 @@ interface TokenConfigForm {
 
 export default function TokenConfigPage() {
   // Fetch current config
-  const config = useConvexQuery(api.tokenLaunch.config.getConfig);
-  const readiness = useConvexQuery(api.tokenLaunch.config.getReadiness);
+  const config = useConvexQuery(typedApi.tokenLaunch.config.getConfig);
+  const readiness = useConvexQuery(typedApi.tokenLaunch.config.getReadiness);
 
   // Mutations
-  const upsertConfig = useConvexMutation(api.tokenLaunch.config.upsertConfig);
-  const markReady = useConvexMutation(api.tokenLaunch.config.markReady);
+  const upsertConfig = useConvexMutation(typedApi.tokenLaunch.config.upsertConfig);
+  const markReady = useConvexMutation(typedApi.tokenLaunch.config.markReady);
 
   // Form state
   const [form, setForm] = useState<TokenConfigForm>({

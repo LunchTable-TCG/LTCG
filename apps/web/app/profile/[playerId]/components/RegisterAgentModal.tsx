@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { sanitizeText, sanitizeURL } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import { Bot, ChevronLeft, ChevronRight, Image, Link, Loader2, X } from "lucide-react";
@@ -36,8 +36,8 @@ export function RegisterAgentModal({ isOpen, onClose, onSuccess }: RegisterAgent
   const [error, setError] = useState<string | null>(null);
 
   // Queries and mutations
-  const starterDecks = useConvexQuery(apiAny.agents.agents.getStarterDecks, {});
-  const registerAgent = useConvexMutation(apiAny.agents.agents.registerAgent);
+  const starterDecks = useConvexQuery(typedApi.agents.agents.getStarterDecks, {});
+  const registerAgent = useConvexMutation(typedApi.agents.agents.registerAgent);
 
   const handleSubmit = async () => {
     if (!isAuthenticated || !name || !selectedDeck) return;

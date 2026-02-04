@@ -27,7 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdmin } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
@@ -54,7 +54,7 @@ export default function ReportsPage() {
   const [selectedReports, setSelectedReports] = useState<Set<string>>(new Set());
 
   const reportsData = useConvexQuery(
-    api.admin.reports.listReports,
+    typedApi.admin.reports.listReports,
     isAdmin
       ? {
           status: statusFilter === "all" ? undefined : statusFilter,
@@ -64,9 +64,9 @@ export default function ReportsPage() {
       : "skip"
   );
 
-  const stats = useConvexQuery(api.admin.reports.getReportStats, isAdmin ? {} : "skip");
+  const stats = useConvexQuery(typedApi.admin.reports.getReportStats, isAdmin ? {} : "skip");
 
-  const bulkUpdateStatus = useConvexMutation(api.admin.reports.bulkUpdateReportStatus);
+  const bulkUpdateStatus = useConvexMutation(typedApi.admin.reports.bulkUpdateReportStatus);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked && reportsData?.reports) {

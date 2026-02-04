@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Card, Flex, Text, Title } from "@tremor/react";
 import { useParams, useRouter } from "next/navigation";
@@ -136,23 +136,23 @@ export default function PlayerDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Fetch player data
-  const profile = useQuery(api.admin.admin.getPlayerProfile, { playerId }) as
+  const profile = useQuery(typedApi.admin.admin.getPlayerProfile, { playerId }) as
     | PlayerProfile
     | undefined;
-  const moderationStatus = useQuery(api.admin.moderation.getPlayerModerationStatus, {
+  const moderationStatus = useQuery(typedApi.admin.moderation.getPlayerModerationStatus, {
     playerId,
   }) as ModerationStatus | undefined;
-  const moderationHistory = useQuery(api.admin.moderation.getModerationHistory, {
+  const moderationHistory = useQuery(typedApi.admin.moderation.getModerationHistory, {
     playerId,
     limit: 20,
   }) as ModerationHistoryEntry[] | undefined;
   // Fetch player engagement data
-  const engagementData = useQuery(api.admin.analytics.getPlayerEngagement, {
+  const engagementData = useQuery(typedApi.admin.analytics.getPlayerEngagement, {
     userId: playerId,
     days: 30,
   }) as EngagementData | undefined;
   // Fetch player inventory
-  const inventory = useQuery(api.admin.admin.getPlayerInventory, { playerId }) as
+  const inventory = useQuery(typedApi.admin.admin.getPlayerInventory, { playerId }) as
     | PlayerInventory
     | undefined;
 
@@ -177,8 +177,8 @@ export default function PlayerDetailPage() {
     : undefined;
 
   // Mutations
-  const updateUsernameMutation = useMutation(api.core.users.adminUpdateUsername);
-  const addModerationNote = useMutation(api.admin.moderation.addModerationNote);
+  const updateUsernameMutation = useMutation(typedApi.core.users.adminUpdateUsername);
+  const addModerationNote = useMutation(typedApi.admin.moderation.addModerationNote);
 
   const updatePlayerName = async (newName: string) => {
     await updateUsernameMutation({ userId: playerId, newUsername: newName });

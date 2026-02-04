@@ -31,7 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type {
   CardArchetype,
   CardAttribute,
@@ -162,15 +162,15 @@ export default function CardEditorPage() {
 
   // Fetch existing card
   const existingCard = useConvexQuery(
-    api.admin.cards.getCard,
+    typedApi.admin.cards.getCard,
     cardId ? { cardId: cardId as CardId } : "skip"
   );
 
   // Mutations
-  const createCard = useConvexMutation(api.admin.cards.createCard);
-  const updateCard = useConvexMutation(api.admin.cards.updateCard);
-  const deleteCard = useConvexMutation(api.admin.cards.deleteCard);
-  const duplicateCardMutation = useConvexMutation(api.admin.cards.duplicateCard);
+  const createCard = useConvexMutation(typedApi.admin.cards.createCard);
+  const updateCard = useConvexMutation(typedApi.admin.cards.updateCard);
+  const deleteCard = useConvexMutation(typedApi.admin.cards.deleteCard);
+  const duplicateCardMutation = useConvexMutation(typedApi.admin.cards.duplicateCard);
 
   // Populate form when card loads
   useEffect(() => {

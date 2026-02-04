@@ -1,12 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import type { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
 import { logger } from "@elizaos/core";
-import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
-import plugin from "../plugin";
+import plugin from "../src/plugin";
 
-// Setup environment variables
-dotenv.config();
+// Note: Bun automatically loads .env files
 
 // Set up logging to capture issues
 beforeAll(() => {

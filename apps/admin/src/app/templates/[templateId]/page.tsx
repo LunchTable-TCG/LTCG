@@ -61,7 +61,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { TemplateEditor } from "@/components/templates/TemplateEditor";
 import type { Rarity, TemplateMode } from "@/components/templates/types";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { TemplateId } from "@/lib/convexTypes";
 
 const TEMPLATE_MODES: { value: TemplateMode; label: string; description: string }[] = [
@@ -94,15 +94,15 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
   const [duplicateName, setDuplicateName] = useState("");
 
   // Queries
-  const template = useConvexQuery(api.admin.templates.getTemplate, {
+  const template = useConvexQuery(typedApi.admin.templates.getTemplate, {
     templateId: templateId as TemplateId,
   });
 
   // Mutations
-  const updateTemplate = useConvexMutation(api.admin.templates.updateTemplate);
-  const duplicateTemplate = useConvexMutation(api.admin.templates.duplicateTemplate);
-  const deleteTemplate = useConvexMutation(api.admin.templates.deleteTemplate);
-  const setDefaultTemplate = useConvexMutation(api.admin.templates.setDefaultTemplate);
+  const updateTemplate = useConvexMutation(typedApi.admin.templates.updateTemplate);
+  const duplicateTemplate = useConvexMutation(typedApi.admin.templates.duplicateTemplate);
+  const deleteTemplate = useConvexMutation(typedApi.admin.templates.deleteTemplate);
+  const setDefaultTemplate = useConvexMutation(typedApi.admin.templates.setDefaultTemplate);
 
   // Handlers
   const handleUpdateSettings = async (updates: Record<string, unknown>) => {

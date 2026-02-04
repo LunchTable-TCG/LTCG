@@ -7,8 +7,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
-import type { GameEvent } from "../../types/api";
-import { ConvexRealtimeClient, type IConvexClient } from "../realtimeClient";
+import type { GameEvent } from "../../src/types/api";
+import { ConvexRealtimeClient, type IConvexClient } from "../../src/client/realtimeClient";
 
 // Mock ConvexClient methods using bun:test mock
 const mockOnUpdate = mock();

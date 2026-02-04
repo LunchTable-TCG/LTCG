@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { BattlePassId } from "@/lib/convexTypes";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
@@ -77,12 +77,12 @@ export default function BattlePassDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Queries and mutations
-  const battlePass = useConvexQuery(api.admin.battlePass.getBattlePass, {
+  const battlePass = useConvexQuery(typedApi.admin.battlePass.getBattlePass, {
     battlePassId: battlePassId as BattlePassId,
   });
 
-  const updateBattlePass = useConvexMutation(api.admin.battlePass.updateBattlePassSeason);
-  const deleteBattlePass = useConvexMutation(api.admin.battlePass.deleteBattlePass);
+  const updateBattlePass = useConvexMutation(typedApi.admin.battlePass.updateBattlePassSeason);
+  const deleteBattlePass = useConvexMutation(typedApi.admin.battlePass.deleteBattlePass);
 
   // Populate form with existing data
   useEffect(() => {

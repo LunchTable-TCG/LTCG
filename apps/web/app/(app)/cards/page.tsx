@@ -1,8 +1,6 @@
 "use client";
-
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
-import type { Doc } from "@convex/_generated/dataModel";
 import { AuthLoading, Authenticated } from "convex/react";
 import { Book, Filter, Grid3X3, List, Loader2, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -61,7 +59,7 @@ export default function CardCodexPage() {
 
 function CardCodexContent() {
   // Fetch ALL card definitions
-  const allCards = useConvexQuery(apiAny.core.cards.getAllCardDefinitions, {});
+  const allCards = useConvexQuery(typedApi.core.cards.getAllCardDefinitions, {});
 
   // View state
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -77,10 +75,10 @@ function CardCodexContent() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Transform card definitions to CardData format
-  const cards: CardData[] = useMemo(() => {
-    if (!allCards) return [];
+  const cards = useMemo(() => {
+    if (!allCards) return [] as CardData[];
 
-    return allCards.map((card: Doc<"cardDefinitions">) => ({
+    return allCards.map((card) => ({
       id: card._id,
       cardDefinitionId: card._id,
       name: card.name,
@@ -95,7 +93,7 @@ function CardCodexContent() {
       attack: card.attack,
       defense: card.defense,
       cost: card.cost ?? 0,
-      ability: card.ability,
+      ability: card.ability, // Already JSON format
       flavorText: card.flavorText,
       imageUrl: card.imageUrl,
       owned: 0, // Not showing ownership in codex
@@ -105,6 +103,7 @@ function CardCodexContent() {
 
   // Filter and sort cards
   const filteredCards = useMemo(() => {
+    if (!cards) return [];
     let result = [...cards];
 
     // Search filter

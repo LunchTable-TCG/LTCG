@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny } from "@/lib/convexHelpers";
+import { typedApi } from "@/lib/convexHelpers";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
@@ -67,10 +67,10 @@ export function AuthGuard({
   const embeddedWallet = wallets.find((w) => isPrivyEmbeddedWallet(w));
 
   // User data - only query when Convex is authenticated
-  const currentUser = useQuery(apiAny.core.users.currentUser, convexAuthenticated ? {} : "skip");
+  const currentUser = useQuery(typedApi.core.users.currentUser, convexAuthenticated ? {} : "skip");
 
   // Mutation to create user - useRef to prevent re-creation on every render
-  const createOrGetUser = useMutation(apiAny.auth.syncUser.createOrGetUser);
+  const createOrGetUser = useMutation(typedApi.auth.syncUser.createOrGetUser);
   const syncInProgress = useRef(false);
   const syncCompleted = useRef(false);
 

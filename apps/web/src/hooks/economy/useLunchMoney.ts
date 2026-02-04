@@ -7,7 +7,7 @@
  * and transaction history for the LunchMoney page.
  */
 
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
@@ -128,36 +128,36 @@ export function useLunchMoney(): UseLunchMoneyReturn {
   const { isAuthenticated } = useAuth();
 
   // Balance queries
-  const balance = useConvexQuery(apiAny.economy.getPlayerBalance, isAuthenticated ? {} : "skip");
+  const balance = useConvexQuery(typedApi.economy.getPlayerBalance, isAuthenticated ? {} : "skip");
   const tokenData = useConvexQuery(
-    apiAny.economy.tokenBalance.getTokenBalance,
+    typedApi.economy.tokenBalance.getTokenBalance,
     isAuthenticated ? {} : "skip"
   );
 
   // Listings queries
   const goldListingsData = useConvexQuery(
-    apiAny.economy.marketplace.getUserListings,
+    typedApi.economy.marketplace.getUserListings,
     isAuthenticated ? {} : "skip"
   );
   const tokenListingsData = useConvexQuery(
-    apiAny.economy.tokenMarketplace.getUserTokenListings,
+    typedApi.economy.tokenMarketplace.getUserTokenListings,
     isAuthenticated ? {} : "skip"
   );
   const pendingPurchasesData = useConvexQuery(
-    apiAny.economy.tokenMarketplace.getUserPendingPurchases,
+    typedApi.economy.tokenMarketplace.getUserPendingPurchases,
     isAuthenticated ? {} : "skip"
   );
 
   // Market overview
-  const marketOverviewData = useConvexQuery(apiAny.economy.priceHistory.getMarketOverview, {});
+  const marketOverviewData = useConvexQuery(typedApi.economy.priceHistory.getMarketOverview, {});
 
   // Mutations
   const refreshBalanceMutation = useConvexMutation(
-    apiAny.economy.tokenBalance.requestBalanceRefresh
+    typedApi.economy.tokenBalance.requestBalanceRefresh
   );
-  const cancelGoldListingMutation = useConvexMutation(apiAny.economy.marketplace.cancelListing);
+  const cancelGoldListingMutation = useConvexMutation(typedApi.economy.marketplace.cancelListing);
   const cancelTokenListingMutation = useConvexMutation(
-    apiAny.economy.tokenMarketplace.cancelTokenListing
+    typedApi.economy.tokenMarketplace.cancelTokenListing
   );
 
   // Actions

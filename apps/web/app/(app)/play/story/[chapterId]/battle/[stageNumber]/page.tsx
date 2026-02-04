@@ -5,7 +5,7 @@ import { DialogueDisplay, type DialogueLine } from "@/components/story/DialogueD
 import { StoryBattleCompleteDialog } from "@/components/story/StoryBattleCompleteDialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
@@ -27,7 +27,7 @@ export default function BattlePage({ params }: BattlePageProps) {
   const router = useRouter();
 
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
 
   const [gameId, setGameId] = useState<string | null>(null);
   const [lobbyId, setLobbyId] = useState<Id<"gameLobbies"> | null>(null);
@@ -56,17 +56,17 @@ export default function BattlePage({ params }: BattlePageProps) {
     finalLP: number;
   } | null>(null);
 
-  const initializeStoryBattle = useMutation(apiAny.progression.storyBattle.initializeStoryBattle);
-  const completeStage = useMutation(apiAny.progression.storyStages.completeStage);
+  const initializeStoryBattle = useMutation(typedApi.progression.storyBattle.initializeStoryBattle);
+  const completeStage = useMutation(typedApi.progression.storyStages.completeStage);
 
   // Get game state to watch for end
   const gameState = useQuery(
-    apiAny.gameplay.games.queries.getGameStateForPlayer,
+    typedApi.gameplay.games.queries.getGameStateForPlayer,
     lobbyId && dialoguePhase === "battle" ? { lobbyId } : "skip"
   );
 
   // Get stage information (includes dialogue)
-  const stageInfo = useQuery(apiAny.progression.storyQueries.getStageByChapterAndNumber, {
+  const stageInfo = useQuery(typedApi.progression.storyQueries.getStageByChapterAndNumber, {
     chapterId,
     stageNumber: Number.parseInt(stageNumber),
   });

@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { logger } from "@elizaos/core";
 import type { IAgentRuntime, Memory, State } from "@elizaos/core";
 import { v4 as uuidv4 } from "uuid";
-import plugin from "../plugin";
-import { LTCGRealtimeService } from "../services/LTCGRealtimeService";
+import plugin from "../src/plugin";
+import { LTCGRealtimeService } from "../src/services/LTCGRealtimeService";
 
 describe("Error Handling", () => {
   beforeEach(() => {

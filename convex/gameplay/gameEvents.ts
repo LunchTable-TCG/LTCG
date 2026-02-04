@@ -306,7 +306,12 @@ export const recordEvent = mutation({
       v.literal("lp_changed"),
       v.literal("tribute_paid"),
       v.literal("deck_shuffled"),
-      v.literal("hand_limit_enforced")
+      v.literal("hand_limit_enforced"),
+
+      // elizaOS Agent Events (3) - Real autonomous AI agents using LLM
+      v.literal("agent_thinking"), // Agent is making LLM call to decide action
+      v.literal("agent_decided"), // Agent finished LLM call, chose an action
+      v.literal("agent_error") // Agent encountered an error during decision
     ),
     playerId: v.id("users"),
     playerUsername: v.string(),

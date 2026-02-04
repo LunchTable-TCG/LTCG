@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { FastForward, Flag, SkipForward } from "lucide-react";
 import { useState } from "react";
@@ -46,9 +46,9 @@ export function PhaseSkipButtons({
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   // Mutations for phase skipping
-  const skipBattlePhase = useConvexMutation(apiAny.gameplay.phaseManager.skipBattlePhase);
-  const skipToEndPhase = useConvexMutation(apiAny.gameplay.phaseManager.skipToEndPhase);
-  const skipMainPhase2 = useConvexMutation(apiAny.gameplay.phaseManager.skipMainPhase2);
+  const skipBattlePhase = useConvexMutation(typedApi.gameplay.phaseManager.skipBattlePhase);
+  const skipToEndPhase = useConvexMutation(typedApi.gameplay.phaseManager.skipToEndPhase);
+  const skipMainPhase2 = useConvexMutation(typedApi.gameplay.phaseManager.skipMainPhase2);
 
   const isDisabled = !isCurrentPlayerTurn || loadingAction !== null;
 

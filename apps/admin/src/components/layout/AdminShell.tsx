@@ -110,7 +110,7 @@ export function AdminShell({ children, title, breadcrumb }: AdminShellProps) {
       <AdminSidebar />
       <SidebarInset>
         <AdminHeader breadcrumb={breadcrumbContent} />
-        <main className="flex-1 overflow-auto p-4 sm:p-6">{children}</main>
+        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </SidebarInset>
       {/* Floating AI Assistant Chat */}
       {showFloatingChat && <AdminAssistantChat />}
@@ -130,23 +130,37 @@ interface PageWrapperProps {
   description?: string;
   /** Actions to show in the header */
   actions?: ReactNode;
+  /** Optional className for the container */
+  className?: string;
+  /** Whether to use compact spacing */
+  compact?: boolean;
 }
 
 /**
  * Wrapper for individual admin pages
  * Provides consistent page structure with title and optional actions
  */
-export function PageWrapper({ children, title, description, actions }: PageWrapperProps) {
+export function PageWrapper({
+  children,
+  title,
+  description,
+  actions,
+  className,
+  compact = false,
+}: PageWrapperProps) {
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-          {description && <p className="text-muted-foreground">{description}</p>}
+    <div className={`admin-page ${compact ? "space-y-4 sm:space-y-6" : ""} ${className ?? ""}`}>
+      {/* Page Header */}
+      <div className="admin-section-header">
+        <div className="space-y-1">
+          <h1 className="admin-page-title">{title}</h1>
+          {description && <p className="admin-page-description">{description}</p>}
         </div>
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
+        {actions && <div className="admin-action-bar">{actions}</div>}
       </div>
-      {children}
+
+      {/* Page Content */}
+      <div className="admin-section">{children}</div>
     </div>
   );
 }

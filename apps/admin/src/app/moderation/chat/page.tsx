@@ -38,7 +38,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { format, formatDistanceToNow } from "date-fns";
 import Link from "next/link";
@@ -75,7 +75,7 @@ export default function ChatModerationPage() {
   };
 
   const messages = useConvexQuery(
-    api.admin.chat.listMessages,
+    typedApi.admin.chat.listMessages,
     isAdmin
       ? {
           search: search || undefined,
@@ -85,14 +85,14 @@ export default function ChatModerationPage() {
       : "skip"
   );
 
-  const stats = useConvexQuery(api.admin.chat.getChatStats, isAdmin ? {} : "skip");
+  const stats = useConvexQuery(typedApi.admin.chat.getChatStats, isAdmin ? {} : "skip");
 
-  const mutedUsers = useConvexQuery(api.admin.chat.getMutedUsers, isAdmin ? {} : "skip");
+  const mutedUsers = useConvexQuery(typedApi.admin.chat.getMutedUsers, isAdmin ? {} : "skip");
 
-  const deleteMessage = useConvexMutation(api.admin.chat.deleteMessage);
-  const bulkDeleteMessages = useConvexMutation(api.admin.chat.bulkDeleteMessages);
-  const muteUser = useConvexMutation(api.admin.chat.muteUser);
-  const unmuteUser = useConvexMutation(api.admin.chat.unmuteUser);
+  const deleteMessage = useConvexMutation(typedApi.admin.chat.deleteMessage);
+  const bulkDeleteMessages = useConvexMutation(typedApi.admin.chat.bulkDeleteMessages);
+  const muteUser = useConvexMutation(typedApi.admin.chat.muteUser);
+  const unmuteUser = useConvexMutation(typedApi.admin.chat.unmuteUser);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked && messages?.messages) {

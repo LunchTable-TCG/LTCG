@@ -1117,6 +1117,39 @@ export class LTCGApiClient {
   }
 
   // ============================================================================
+  // Agent Event Emission (elizaOS Real-Time Visibility)
+  // ============================================================================
+
+  /**
+   * Emit an agent event to the game event stream
+   * POST /api/agents/events
+   *
+   * This allows elizaOS agents to broadcast their thinking process
+   * so spectators and opponents can see real LLM activity.
+   */
+  async emitAgentEvent(event: {
+    gameId: string;
+    lobbyId: string;
+    turnNumber: number;
+    eventType: "agent_thinking" | "agent_decided" | "agent_error";
+    agentName: string;
+    description: string;
+    metadata?: {
+      phase?: string;
+      cardsConsidered?: string[];
+      action?: string;
+      reasoning?: string;
+      error?: string;
+      executionTimeMs?: number;
+    };
+  }): Promise<{ success: boolean; eventId: string }> {
+    return this.request<{ success: boolean; eventId: string }>("/api/agents/events", {
+      method: "POST",
+      body: JSON.stringify(event),
+    });
+  }
+
+  // ============================================================================
   // Shop Endpoints (x402 Payment-Gated)
   // ============================================================================
 

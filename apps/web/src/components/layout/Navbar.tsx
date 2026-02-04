@@ -7,19 +7,21 @@ import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet";
 import { useAuth, useLogout } from "@/hooks/auth/useConvexAuthHook";
 import { getAssetUrl } from "@/lib/blob";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import {
   Award,
   BookOpen,
-  ChevronRight,
+  Coins,
   Crown,
+  Gamepad2,
   LogOut,
-  Map,
+  Map as MapIcon,
   Menu,
   MessageSquare,
   Settings,
   Sparkles,
+  Star,
   Store,
   Swords,
   Target,
@@ -69,34 +71,63 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-interface GameLink {
+interface NavLink {
   href: string;
   label: string;
   icon: typeof Swords;
-  description: string;
   comingSoon?: boolean;
 }
 
-const gameLinks: GameLink[] = [
-  { href: "/lunchtable", label: "The Table", icon: Swords, description: "Enter the battlefield" },
-  { href: "/play/story", label: "Story Mode", icon: Map, description: "Campaign adventure" },
-  { href: "/tournaments", label: "Tournaments", icon: Award, description: "Compete for prizes" },
-  { href: "/battle-pass", label: "Battle Pass", icon: Sparkles, description: "Season rewards" },
-  { href: "/quests", label: "Quests", icon: Target, description: "Daily & weekly rewards" },
-  { href: "/leaderboards", label: "Leaderboards", icon: Trophy, description: "Global rankings" },
-  { href: "/social", label: "Social", icon: MessageSquare, description: "Friends & community" },
+interface NavGroup {
+  label: string;
+  icon: typeof Swords;
+  links: NavLink[];
+}
+
+const navGroups: NavGroup[] = [
   {
-    href: "/guilds",
-    label: "Guilds",
-    icon: Users,
-    description: "Form alliances",
-    comingSoon: true,
+    label: "Play",
+    icon: Gamepad2,
+    links: [
+      { href: "/lunchtable", label: "The Table", icon: Swords },
+      { href: "/play/story", label: "Story Mode", icon: MapIcon },
+      { href: "/tournaments", label: "Tournaments", icon: Award },
+    ],
   },
-  { href: "/shop", label: "Shop", icon: Store, description: "Buy packs & trade cards" },
-  { href: "/lunchmoney", label: "LunchMoney", icon: Wallet, description: "Economy dashboard" },
-  { href: "/binder", label: "Binder", icon: BookOpen, description: "Your card collection" },
-  { href: "/profile", label: "Profile", icon: User, description: "View your stats" },
-  { href: "/settings", label: "Settings", icon: Settings, description: "Manage preferences" },
+  {
+    label: "Progress",
+    icon: Star,
+    links: [
+      { href: "/battle-pass", label: "Battle Pass", icon: Sparkles },
+      { href: "/quests", label: "Quests", icon: Target },
+      { href: "/leaderboards", label: "Leaderboards", icon: Trophy },
+    ],
+  },
+  {
+    label: "Community",
+    icon: MessageSquare,
+    links: [
+      { href: "/social", label: "Social", icon: MessageSquare },
+      { href: "/guilds", label: "Guilds", icon: Users, comingSoon: true },
+    ],
+  },
+  {
+    label: "Economy",
+    icon: Coins,
+    links: [
+      { href: "/shop", label: "Shop", icon: Store },
+      { href: "/lunchmoney", label: "LunchMoney", icon: Wallet },
+    ],
+  },
+  {
+    label: "Collection",
+    icon: BookOpen,
+    links: [
+      { href: "/binder", label: "Binder", icon: BookOpen },
+      { href: "/profile", label: "Profile", icon: User },
+      { href: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
 ];
 
 export function Navbar() {
@@ -107,7 +138,7 @@ export function Navbar() {
   const { isAuthenticated } = useAuth();
   const { logout } = useLogout();
 
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
 
   const handleSignOut = async () => {
     await logout();
@@ -134,6 +165,7 @@ export function Navbar() {
           <nav className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
+                type="button"
                 onClick={toggle}
                 className="tcg-button w-12 h-12 rounded-lg flex items-center justify-center"
                 aria-label="Toggle menu"
@@ -216,6 +248,7 @@ export function Navbar() {
         </div>
       </header>
 
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop click is supplementary to close button */}
       <div
         className={cn(
           "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm transition-opacity duration-300",
@@ -226,7 +259,7 @@ export function Navbar() {
 
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-80 transition-transform duration-500 ease-out",
+          "fixed top-0 left-0 z-50 h-full w-72 transition-transform duration-500 ease-out",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -234,144 +267,135 @@ export function Navbar() {
           <div className="ornament-corner ornament-corner-tr" />
           <div className="ornament-corner ornament-corner-br" />
 
-          <div className="flex items-center justify-between p-6 border-b border-border">
-            <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3">
-              <div className="w-11 h-11 flex items-center justify-center">
+          <div className="flex items-center justify-between px-4 py-4 border-b border-border">
+            <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-2">
+              <div className="w-9 h-9 flex items-center justify-center">
                 <Image
                   src={getAssetUrl("/assets/logo-icon.png")}
                   alt="LT"
-                  width={36}
-                  height={36}
-                  className="w-9 h-9 object-contain"
-                  sizes="36px"
+                  width={28}
+                  height={28}
+                  className="w-7 h-7 object-contain"
+                  sizes="28px"
                 />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold gold-gradient">Lunchtable</span>
-                  <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full uppercase tracking-wider">
-                    Alpha
-                  </span>
-                </div>
-                <span className="block text-[10px] text-primary/60 font-semibold tracking-widest uppercase">
-                  Trading Card Game
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold gold-gradient">Lunchtable</span>
+                <span className="px-1 py-0.5 text-[8px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full uppercase tracking-wider">
+                  α
                 </span>
               </div>
             </Link>
             <button
+              type="button"
               onClick={() => setIsOpen(false)}
-              className="tcg-button w-10 h-10 rounded-lg flex items-center justify-center"
+              className="tcg-button w-9 h-9 rounded-lg flex items-center justify-center"
             >
-              <X className="w-5 h-5 text-primary" />
+              <X className="w-4 h-4 text-primary" />
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto">
             {isAuthenticated && (
-              <div className="p-4">
-                <div className="tcg-frame rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Avatar className="w-12 h-12 border-2 border-primary/50">
-                      <AvatarFallback className="bg-secondary text-primary font-bold">
+              <div className="px-3 py-3 border-b border-border/50">
+                <div className="flex items-center gap-3">
+                  <Link href="/profile" onClick={() => setIsOpen(false)} className="shrink-0">
+                    <Avatar className="w-10 h-10 border-2 border-primary/30 hover:border-primary/50 transition-colors">
+                      <AvatarFallback className="bg-secondary text-primary text-sm font-bold">
                         {currentUser === undefined
                           ? "..."
                           : currentUser?.username?.[0]?.toUpperCase() || "?"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-foreground truncate">
-                        {currentUser === undefined
-                          ? "Loading..."
-                          : currentUser?.username || "Champion"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Rating: 1000</p>
-                    </div>
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-foreground text-sm truncate">
+                      {currentUser === undefined
+                        ? "Loading..."
+                        : currentUser?.username || "Champion"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">Welcome back</p>
                   </div>
-                  {/* Mobile wallet button */}
-                  <div className="mt-3 pt-3 border-t border-border/50">
-                    <WalletButton className="w-full justify-center" />
-                  </div>
+                  <InboxDropdown />
                 </div>
               </div>
             )}
 
             {isAuthenticated && (
-              <nav className="px-2">
-                <div className="px-4 py-3">
-                  <span className="text-xs font-bold text-primary/60 uppercase tracking-widest">
-                    Navigation
-                  </span>
-                </div>
-                {gameLinks.map((link) => {
-                  const Icon = link.icon;
-                  const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
-                  const isComingSoon = link.comingSoon === true;
+              <nav className="px-3 py-2 space-y-1">
+                {/* Primary CTA - The Table */}
+                <Link
+                  href="/lunchtable"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/30 hover:from-primary/30 hover:to-primary/10 transition-all group mb-4"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <Swords className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="block font-bold text-primary">Play Now</span>
+                    <span className="text-[11px] text-primary/60">Enter The Table</span>
+                  </div>
+                </Link>
 
-                  const content = (
-                    <>
-                      <div
-                        className={cn(
-                          "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-                          isActive ? "bg-primary/20" : "bg-secondary/50",
-                          isComingSoon && "opacity-50"
-                        )}
-                      >
-                        <Icon
-                          className={cn(
-                            "w-5 h-5",
-                            isActive ? "text-primary" : "text-muted-foreground"
-                          )}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "block font-semibold",
-                              isComingSoon && "text-muted-foreground"
-                            )}
-                          >
-                            {link.label}
-                          </span>
-                          {isComingSoon && (
-                            <span className="text-[10px] font-bold text-primary px-1.5 py-0.5 rounded border border-primary/30 bg-primary/10 uppercase tracking-tighter">
-                              Soon
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground">{link.description}</span>
-                      </div>
-                      {!isComingSoon && (
-                        <ChevronRight
-                          className={cn(
-                            "w-4 h-4 transition-transform",
-                            isActive ? "text-primary" : "text-muted-foreground/50"
-                          )}
-                        />
-                      )}
-                    </>
-                  );
-
-                  if (isComingSoon) {
-                    return (
-                      <div
-                        key={link.href}
-                        className="nav-link rounded-lg mx-2 mb-1 cursor-default opacity-70 grayscale-[0.5]"
-                      >
-                        {content}
-                      </div>
-                    );
-                  }
+                {/* Grouped Navigation */}
+                {navGroups.map((group) => {
+                  const GroupIcon = group.icon;
+                  // Skip "The Table" from Play group since it's featured above
+                  const filteredLinks = group.links.filter((l) => l.href !== "/lunchtable");
+                  if (filteredLinks.length === 0) return null;
 
                   return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setIsOpen(false)}
-                      className={cn("nav-link rounded-lg mx-2 mb-1", isActive && "active")}
-                    >
-                      {content}
-                    </Link>
+                    <div key={group.label} className="mb-2">
+                      <div className="flex items-center gap-2 px-3 py-2">
+                        <GroupIcon className="w-3.5 h-3.5 text-muted-foreground/50" />
+                        <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+                          {group.label}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        {filteredLinks.map((link) => {
+                          const Icon = link.icon;
+                          const isActive =
+                            pathname === link.href || pathname.startsWith(`${link.href}/`);
+                          const isComingSoon = link.comingSoon === true;
+
+                          if (isComingSoon) {
+                            return (
+                              <div
+                                key={link.href}
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-40 cursor-not-allowed"
+                              >
+                                <Icon className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">{link.label}</span>
+                                <span className="ml-auto text-[9px] font-bold text-primary/60 px-1.5 py-0.5 rounded border border-primary/20 bg-primary/5 uppercase">
+                                  Soon
+                                </span>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <Link
+                              key={link.href}
+                              href={link.href}
+                              onClick={() => setIsOpen(false)}
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+                                isActive
+                                  ? "bg-primary/10 text-primary"
+                                  : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                              )}
+                            >
+                              <Icon
+                                className={cn("w-4 h-4", isActive ? "text-primary" : "opacity-70")}
+                              />
+                              <span className="text-sm font-medium">{link.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
                   );
                 })}
               </nav>
@@ -379,13 +403,14 @@ export function Navbar() {
           </div>
 
           {isAuthenticated && (
-            <div className="p-4 border-t border-border">
+            <div className="px-3 py-3 border-t border-border">
               <button
+                type="button"
                 onClick={() => {
                   setIsOpen(false);
                   setShowLogoutDialog(true);
                 }}
-                className="w-full tcg-button rounded-lg py-3 px-4 flex items-center justify-center gap-2 text-destructive"
+                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="font-medium">Sign Out</span>
@@ -394,8 +419,8 @@ export function Navbar() {
           )}
 
           {!isAuthenticated && (
-            <div className="p-4 border-t border-border space-y-2">
-              <Button asChild className="w-full tcg-button-primary rounded-lg py-6">
+            <div className="px-3 py-3 border-t border-border space-y-2">
+              <Button asChild className="w-full tcg-button-primary rounded-lg py-5">
                 <Link href="/signup" onClick={() => setIsOpen(false)}>
                   <Crown className="w-4 h-4 mr-2" />
                   Begin Your Journey
@@ -404,6 +429,7 @@ export function Navbar() {
               <Button
                 asChild
                 variant="ghost"
+                size="sm"
                 className="w-full text-muted-foreground hover:text-foreground"
               >
                 <Link href="/login" onClick={() => setIsOpen(false)}>

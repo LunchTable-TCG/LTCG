@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, Badge, BarList, Card, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -77,13 +77,13 @@ export default function MaintenancePage() {
   const [isRunning, setIsRunning] = useState<Record<string, boolean>>({});
 
   // Fetch real data
-  const stats = useConvexQuery(api.admin.admin.getSystemStats);
-  const suspiciousReport = useConvexQuery(api.admin.admin.getSuspiciousActivityReport, {
+  const stats = useConvexQuery(typedApi.admin.admin.getSystemStats);
+  const suspiciousReport = useConvexQuery(typedApi.admin.admin.getSuspiciousActivityReport, {
     lookbackDays: 7,
   });
-  const matchmakingHealth = useConvexQuery(api.admin.analytics.getMatchmakingHealth);
-  const economySnapshot = useConvexQuery(api.admin.analytics.getCurrentEconomySnapshot);
-  const dailyStats = useConvexQuery(api.admin.analytics.getDailyActiveStats, { days: 7 });
+  const matchmakingHealth = useConvexQuery(typedApi.admin.analytics.getMatchmakingHealth);
+  const economySnapshot = useConvexQuery(typedApi.admin.analytics.getCurrentEconomySnapshot);
+  const dailyStats = useConvexQuery(typedApi.admin.analytics.getDailyActiveStats, { days: 7 });
 
   const isLoading = stats === undefined;
 

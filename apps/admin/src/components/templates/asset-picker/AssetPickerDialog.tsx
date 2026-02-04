@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { Check, Image, Loader2, Search, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -70,7 +70,7 @@ export function AssetPickerDialog({
   const querySearch = search.trim() || undefined;
 
   // Extract query args to avoid TS2589 deep type instantiation
-  const listAssetsQuery = api.admin.assets.listAssets;
+  const listAssetsQuery = typedApi.admin.assets.listAssets;
   const queryArgs = {
     category: queryCategory,
     search: querySearch,

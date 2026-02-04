@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import type { IAgentRuntime, Memory, State } from "@elizaos/core";
-import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
-import { gameStateProvider } from "../providers/gameStateProvider";
-import { legalActionsProvider } from "../providers/legalActionsProvider";
-import { strategyEvaluator } from "./strategyEvaluator";
+import { boardAnalysisProvider } from "../../src/providers/boardAnalysisProvider";
+import { gameStateProvider } from "../../src/providers/gameStateProvider";
+import { legalActionsProvider } from "../../src/providers/legalActionsProvider";
+import { strategyEvaluator } from "../../src/evaluators/strategyEvaluator";
 
 describe("Strategy Evaluator", () => {
   let mockRuntime: IAgentRuntime;

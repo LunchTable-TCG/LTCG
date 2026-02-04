@@ -26,7 +26,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
@@ -291,12 +291,14 @@ function ScheduleDialog({
 
 export default function TokenLaunchPage() {
   // Fetch data
-  const checklist = useQuery(api.tokenLaunch.checklist.getAll, {}) as ChecklistItem[] | undefined;
-  const checklistSummary = useQuery(api.tokenLaunch.checklist.getSummary, {}) as
+  const checklist = useQuery(typedApi.tokenLaunch.checklist.getAll, {}) as
+    | ChecklistItem[]
+    | undefined;
+  const checklistSummary = useQuery(typedApi.tokenLaunch.checklist.getSummary, {}) as
     | ChecklistSummary
     | undefined;
-  const approvals = useQuery(api.tokenLaunch.approvals.getAll, {}) as Approval[] | undefined;
-  const approvalSummary = useQuery(api.tokenLaunch.approvals.getSummary, {}) as
+  const approvals = useQuery(typedApi.tokenLaunch.approvals.getAll, {}) as Approval[] | undefined;
+  const approvalSummary = useQuery(typedApi.tokenLaunch.approvals.getSummary, {}) as
     | {
         approvedCount: number;
         requiredApprovals: number;
@@ -304,11 +306,11 @@ export default function TokenLaunchPage() {
         hasEnoughApprovals: boolean;
       }
     | undefined;
-  const myApproval = useQuery(api.tokenLaunch.approvals.getMyApproval, {}) as
+  const myApproval = useQuery(typedApi.tokenLaunch.approvals.getMyApproval, {}) as
     | Approval
     | null
     | undefined;
-  const schedule = useQuery(api.tokenLaunch.schedule.getSchedule, {}) as
+  const schedule = useQuery(typedApi.tokenLaunch.schedule.getSchedule, {}) as
     | {
         scheduledAt: number;
         timezone?: string;
@@ -324,13 +326,13 @@ export default function TokenLaunchPage() {
     | undefined;
 
   // Mutations
-  const completeItem = useMutation(api.tokenLaunch.checklist.completeItem);
-  const uncompleteItem = useMutation(api.tokenLaunch.checklist.uncompleteItem);
-  const setupDefaults = useMutation(api.tokenLaunch.checklist.setupDefaults);
-  const approve = useMutation(api.tokenLaunch.approvals.approve);
-  const revoke = useMutation(api.tokenLaunch.approvals.revoke);
-  const setSchedule = useMutation(api.tokenLaunch.schedule.setSchedule);
-  const clearSchedule = useMutation(api.tokenLaunch.schedule.clearSchedule);
+  const completeItem = useMutation(typedApi.tokenLaunch.checklist.completeItem);
+  const uncompleteItem = useMutation(typedApi.tokenLaunch.checklist.uncompleteItem);
+  const setupDefaults = useMutation(typedApi.tokenLaunch.checklist.setupDefaults);
+  const approve = useMutation(typedApi.tokenLaunch.approvals.approve);
+  const revoke = useMutation(typedApi.tokenLaunch.approvals.revoke);
+  const setSchedule = useMutation(typedApi.tokenLaunch.schedule.setSchedule);
+  const clearSchedule = useMutation(typedApi.tokenLaunch.schedule.clearSchedule);
 
   const [approvalComment, setApprovalComment] = useState("");
 

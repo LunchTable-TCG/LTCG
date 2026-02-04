@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { logger } from "@elizaos/core";
 import { z } from "zod";
-import plugin from "../plugin";
+import plugin from "../src/plugin";
 import { createMockRuntime } from "./utils/core-test-utils";
 
 // Access the plugin's init function

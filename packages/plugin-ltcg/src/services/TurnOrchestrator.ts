@@ -808,10 +808,61 @@ export class TurnOrchestrator extends Service {
   // ============================================================================
 
   /**
+   * Get the agent's display name from runtime settings
+   */
+  private getAgentName(): string {
+    return (this.runtime.getSetting("LTCG_AGENT_NAME") as string) || "AI Agent";
+  }
+
+  /**
+   * Emit an agent event to the game stream for UI visibility
+   */
+  private async emitAgentEvent(
+    gameId: string,
+    lobbyId: string,
+    turnNumber: number,
+    eventType: "agent_thinking" | "agent_decided" | "agent_error",
+    description: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
+    if (!this.client) return;
+
+    try {
+      await this.client.emitAgentEvent({
+        gameId,
+        lobbyId,
+        turnNumber,
+        eventType,
+        agentName: this.getAgentName(),
+        description,
+        metadata,
+      });
+    } catch (error) {
+      // Non-critical - log but don't fail the turn
+      logger.debug({ error }, "Failed to emit agent event (non-critical)");
+    }
+  }
+
+  /**
    * Ask LLM to decide which action to take
    */
   private async decideAction(context: TurnContext): Promise<ActionDecision | null> {
     const prompt = this.buildDecisionPrompt(context);
+    const { gameState } = context;
+    const startTime = Date.now();
+
+    // Emit thinking event - visible to spectators and opponent
+    await this.emitAgentEvent(
+      gameState.gameId,
+      gameState.lobbyId,
+      context.turnNumber,
+      "agent_thinking",
+      `${this.getAgentName()} is analyzing the board...`,
+      {
+        phase: context.phase,
+        cardsConsidered: (gameState.hand ?? []).slice(0, 3).map((c) => c.name),
+      }
+    );
 
     try {
       const response = await this.runtime.useModel(ModelType.TEXT_LARGE, {
@@ -820,8 +871,42 @@ export class TurnOrchestrator extends Service {
         maxTokens: 500,
       });
 
-      return this.parseActionDecision(response);
+      const decision = this.parseActionDecision(response);
+      const executionTimeMs = Date.now() - startTime;
+
+      // Emit decided event with reasoning
+      if (decision) {
+        await this.emitAgentEvent(
+          gameState.gameId,
+          gameState.lobbyId,
+          context.turnNumber,
+          "agent_decided",
+          `${this.getAgentName()} chose: ${decision.action}`,
+          {
+            action: decision.action,
+            reasoning: decision.reasoning.substring(0, 150),
+            executionTimeMs,
+          }
+        );
+      }
+
+      return decision;
     } catch (error) {
+      const executionTimeMs = Date.now() - startTime;
+
+      // Emit error event
+      await this.emitAgentEvent(
+        gameState.gameId,
+        gameState.lobbyId,
+        context.turnNumber,
+        "agent_error",
+        `${this.getAgentName()} encountered an error`,
+        {
+          error: error instanceof Error ? error.message : "Unknown error",
+          executionTimeMs,
+        }
+      );
+
       logger.error({ error }, "Failed to get LLM decision");
       return null;
     }

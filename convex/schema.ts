@@ -54,6 +54,36 @@ export const saleTypeValidator = literals(
 );
 export type SaleType = Infer<typeof saleTypeValidator>;
 
+/** Content types for the content calendar */
+export const scheduledContentTypeValidator = literals(
+  "blog",
+  "x_post",
+  "reddit",
+  "email",
+  "announcement",
+  "news",
+  "image"
+);
+export type ScheduledContentType = Infer<typeof scheduledContentTypeValidator>;
+
+/** Content status for scheduled content */
+export const contentStatusValidator = literals("draft", "scheduled", "published", "failed");
+export type ContentStatus = Infer<typeof contentStatusValidator>;
+
+/** Email template categories */
+export const emailCategoryValidator = literals(
+  "newsletter",
+  "announcement",
+  "promotional",
+  "transactional",
+  "custom"
+);
+export type EmailCategory = Infer<typeof emailCategoryValidator>;
+
+/** Email recipient types */
+export const emailRecipientTypeValidator = literals("players", "subscribers", "both", "custom");
+export type EmailRecipientType = Infer<typeof emailRecipientTypeValidator>;
+
 export default defineSchema({
   migrations: migrationsTable,
   ...rateLimitTables,
@@ -3209,6 +3239,125 @@ export default defineSchema({
   })
     .index("by_stripe_event", ["stripeEventId"])
     .index("by_processed", ["processed"]),
+
+  // ============================================================================
+  // CONTENT CALENDAR & EMAIL SYSTEM
+  // ============================================================================
+
+  // Scheduled content for the content calendar
+  scheduledContent: defineTable({
+    type: literals(
+      "blog", // Long-form blog posts
+      "x_post", // Twitter/X posts
+      "reddit", // Reddit posts
+      "email", // Email campaigns via Resend
+      "announcement", // In-game announcements
+      "news", // News articles (links to newsArticles)
+      "image" // Image posts with captions
+    ),
+    title: v.string(),
+    content: v.string(), // Main content body (markdown supported)
+    scheduledFor: v.number(), // Timestamp when to publish
+    status: literals("draft", "scheduled", "published", "failed"),
+    // Type-specific metadata
+    metadata: v.object({
+      // Blog-specific
+      slug: v.optional(v.string()),
+      excerpt: v.optional(v.string()),
+      featuredImage: v.optional(v.string()),
+      // X/Twitter-specific
+      tweetId: v.optional(v.string()), // After publishing
+      // Reddit-specific
+      subreddit: v.optional(v.string()),
+      redditPostId: v.optional(v.string()), // After publishing
+      // Email-specific
+      subject: v.optional(v.string()),
+      recipientType: v.optional(literals("players", "subscribers", "both", "custom")),
+      recipientListId: v.optional(v.id("emailLists")),
+      templateId: v.optional(v.id("emailTemplates")),
+      // Announcement-specific
+      priority: v.optional(literals("normal", "important", "urgent")),
+      expiresAt: v.optional(v.number()),
+      // News-specific (links to existing news article)
+      newsArticleId: v.optional(v.id("newsArticles")),
+      // Image-specific
+      imageUrl: v.optional(v.string()),
+      altText: v.optional(v.string()),
+      caption: v.optional(v.string()),
+    }),
+    // Publishing result
+    publishedAt: v.optional(v.number()),
+    publishError: v.optional(v.string()),
+    // Tracking
+    authorId: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_scheduled", ["scheduledFor", "status"])
+    .index("by_status", ["status"])
+    .index("by_type", ["type", "status"])
+    .index("by_author", ["authorId"])
+    .index("by_date_range", ["scheduledFor"]),
+
+  // Email templates for reusable email designs
+  emailTemplates: defineTable({
+    name: v.string(),
+    subject: v.string(),
+    body: v.string(), // HTML/markdown with {{variable}} placeholders
+    variables: v.array(v.string()), // List of available variables
+    category: literals("newsletter", "announcement", "promotional", "transactional", "custom"),
+    isActive: v.boolean(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_category", ["category", "isActive"])
+    .index("by_active", ["isActive"]),
+
+  // Email subscriber lists for external contacts
+  emailLists: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    subscriberCount: v.number(), // Denormalized for quick access
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_name", ["name"]),
+
+  // Email subscribers (external contacts not in users table)
+  emailSubscribers: defineTable({
+    email: v.string(),
+    name: v.optional(v.string()),
+    listId: v.id("emailLists"),
+    tags: v.optional(v.array(v.string())),
+    isActive: v.boolean(), // For unsubscribes
+    subscribedAt: v.number(),
+    unsubscribedAt: v.optional(v.number()),
+  })
+    .index("by_list", ["listId", "isActive"])
+    .index("by_email", ["email"])
+    .index("by_email_list", ["email", "listId"]),
+
+  // Email send history for tracking
+  emailHistory: defineTable({
+    scheduledContentId: v.optional(v.id("scheduledContent")),
+    templateId: v.optional(v.id("emailTemplates")),
+    subject: v.string(),
+    recipientCount: v.number(),
+    sentCount: v.number(),
+    failedCount: v.number(),
+    openCount: v.optional(v.number()), // If tracking opens
+    clickCount: v.optional(v.number()), // If tracking clicks
+    status: literals("sending", "completed", "partial", "failed"),
+    resendBatchId: v.optional(v.string()), // Resend batch ID
+    sentBy: v.id("users"),
+    sentAt: v.number(),
+    completedAt: v.optional(v.number()),
+    error: v.optional(v.string()),
+  })
+    .index("by_status", ["status"])
+    .index("by_sent", ["sentAt"])
+    .index("by_content", ["scheduledContentId"]),
 
   // ============================================================================
   // AUDIT LOGGING

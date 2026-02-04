@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { usePrivy } from "@privy-io/react-auth";
 import { useConvexAuth } from "convex/react";
 import { Loader2 } from "lucide-react";
@@ -27,7 +27,7 @@ export default function OnboardingPage() {
 
   // Query onboarding status from backend
   const onboardingStatus = useConvexQuery(
-    apiAny.auth.syncUser.getOnboardingStatus,
+    typedApi.auth.syncUser.getOnboardingStatus,
     convexAuthenticated ? {} : "skip"
   ) as { hasUsername: boolean; hasStarterDeck: boolean; hasWallet: boolean } | null | undefined;
 

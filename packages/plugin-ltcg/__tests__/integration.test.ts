@@ -3,8 +3,8 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { type IAgentRuntime, type Plugin, logger } from "@elizaos/core";
-import { character } from "../character";
-import plugin from "../plugin";
+import { character } from "../src/character";
+import plugin from "../src/plugin";
 
 // Set up spies on logger
 beforeAll(() => {

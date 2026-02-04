@@ -2,7 +2,7 @@
 
 import { GameBoard } from "@/components/game/GameBoard";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { apiAny, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -21,16 +21,16 @@ export default function GamePage({ params }: GamePageProps) {
   const router = useRouter();
 
   const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(apiAny.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
 
   // Get lobby details to check if user is a player
-  const lobby = useConvexQuery(apiAny.gameplay.games.queries.getLobbyDetails, {
+  const lobby = useConvexQuery(typedApi.gameplay.games.queries.getLobbyDetails, {
     lobbyId: lobbyId as Id<"gameLobbies">,
   });
 
   // Get game state to check if game exists
   const gameState = useConvexQuery(
-    apiAny.gameplay.games.queries.getGameStateForPlayer,
+    typedApi.gameplay.games.queries.getGameStateForPlayer,
     lobby ? { lobbyId: lobbyId as Id<"gameLobbies"> } : "skip"
   );
 

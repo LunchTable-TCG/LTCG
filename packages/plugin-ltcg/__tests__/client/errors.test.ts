@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { ApiErrorCode } from "../../types/api";
+import { ApiErrorCode } from "../../src/types/api";
 import {
   AuthenticationError,
   GameError,
@@ -13,7 +13,7 @@ import {
   RateLimitError,
   ValidationError,
   parseErrorResponse,
-} from "../errors";
+} from "../../src/client/errors";
 
 describe("LTCGApiError", () => {
   it("should create base error with all properties", () => {

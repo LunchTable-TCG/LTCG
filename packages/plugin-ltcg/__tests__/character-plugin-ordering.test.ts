@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { character } from "../character";
+import { character } from "../src/character";
 
 describe("Project Starter Character Plugin Ordering", () => {
   let originalEnv: Record<string, string | undefined>;

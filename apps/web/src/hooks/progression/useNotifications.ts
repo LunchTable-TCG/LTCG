@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError, logError } from "@/lib/errorHandling";
 import type { Notification } from "@/types";
 import type { Id } from "@convex/_generated/dataModel";
@@ -76,20 +76,20 @@ export function useNotifications(): UseNotificationsReturn {
 
   // Queries
   const unreadNotifications = useConvexQuery(
-    apiAny.progression.notifications.getUnreadNotifications,
+    typedApi.progression.notifications.getUnreadNotifications,
     isAuthenticated ? {} : "skip"
   );
 
   const allNotifications = useConvexQuery(
-    apiAny.progression.notifications.getAllNotifications,
+    typedApi.progression.notifications.getAllNotifications,
     isAuthenticated ? { limit: 50 } : "skip"
   );
 
   // Mutations
   const markAsReadMutation = useConvexMutation(
-    apiAny.progression.notifications.markNotificationAsRead
+    typedApi.progression.notifications.markNotificationAsRead
   );
-  const markAllAsReadMutation = useConvexMutation(apiAny.progression.notifications.markAllAsRead);
+  const markAllAsReadMutation = useConvexMutation(typedApi.progression.notifications.markAllAsRead);
 
   // Actions
   const markAsRead = async (notificationId: Id<"playerNotifications">) => {

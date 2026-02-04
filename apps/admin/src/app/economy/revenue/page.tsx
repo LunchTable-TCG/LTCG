@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
   Badge,
@@ -107,7 +107,7 @@ function MetricCard({
 // =============================================================================
 
 function RevenueOverview() {
-  const overview = useConvexQuery(api.admin.revenue.getRevenueOverview, {});
+  const overview = useConvexQuery(typedApi.admin.revenue.getRevenueOverview, {});
 
   if (!overview) {
     return (
@@ -166,7 +166,7 @@ function RevenueOverview() {
 
 function RevenueTrendChart() {
   const [days, setDays] = useState(30);
-  const trend = useConvexQuery(api.admin.revenue.getRevenueTrend, { days });
+  const trend = useConvexQuery(typedApi.admin.revenue.getRevenueTrend, { days });
 
   if (!trend) {
     return (
@@ -229,7 +229,7 @@ function RevenueTrendChart() {
 
 function PackSalesBreakdown() {
   const [period, setPeriod] = useState<Period>("month");
-  const breakdown = useConvexQuery(api.admin.revenue.getPackSalesBreakdown, { period });
+  const breakdown = useConvexQuery(typedApi.admin.revenue.getPackSalesBreakdown, { period });
 
   if (!breakdown) {
     return (
@@ -308,7 +308,7 @@ function PackSalesBreakdown() {
 // =============================================================================
 
 function GemPurchaseMetrics() {
-  const metrics = useConvexQuery(api.admin.revenue.getGemPurchaseMetrics, {});
+  const metrics = useConvexQuery(typedApi.admin.revenue.getGemPurchaseMetrics, {});
 
   if (!metrics) {
     return (
@@ -383,7 +383,7 @@ function GemPurchaseMetrics() {
 // =============================================================================
 
 function CurrencyCirculation() {
-  const circulation = useConvexQuery(api.admin.revenue.getCurrencyCirculation, {});
+  const circulation = useConvexQuery(typedApi.admin.revenue.getCurrencyCirculation, {});
 
   if (!circulation) {
     return (
@@ -496,7 +496,7 @@ function CurrencyCirculation() {
 
 function TopSpendersTable() {
   const [period, setPeriod] = useState<Period>("month");
-  const spenders = useConvexQuery(api.admin.revenue.getTopSpenders, { period, limit: 10 });
+  const spenders = useConvexQuery(typedApi.admin.revenue.getTopSpenders, { period, limit: 10 });
 
   if (!spenders) {
     return (
@@ -575,7 +575,7 @@ function TopSpendersTable() {
 // =============================================================================
 
 function RecentLargePurchases() {
-  const purchases = useConvexQuery(api.admin.revenue.getRecentLargePurchases, {
+  const purchases = useConvexQuery(typedApi.admin.revenue.getRecentLargePurchases, {
     limit: 20,
     minAmount: 500,
   });

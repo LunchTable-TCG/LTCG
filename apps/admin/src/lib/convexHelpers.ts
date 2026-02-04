@@ -3,6 +3,9 @@
  *
  * Provides type-safe helpers for Convex API access.
  * Uses TypedAPI from @ltcg/core for full type safety.
+ *
+ * IMPORTANT: Always use `typedApi` for all Convex queries/mutations.
+ * Never use raw `api` - it lacks type safety.
  */
 
 // Re-export Convex React hooks directly for full type inference
@@ -43,25 +46,16 @@ export {
   createTypedAction,
 } from "@ltcg/core/api";
 
-// Direct re-export of api for type inference
-export { api } from "@convex/_generated/api";
-
 // Import api and cast to TypedAPI for full type safety
 import { api } from "@convex/_generated/api";
 
 /**
  * Typed API with full type inference.
- * Use this for all Convex queries/mutations to get proper return type inference.
+ * Use this for ALL Convex queries/mutations to get proper return type inference.
  */
 export const typedApi = api as unknown as TypedAPI;
 
-/**
- * Alias for typedApi - use when you need to bypass strict typing.
- * Prefer typedApi when possible for better type safety.
- */
-export const apiAny = typedApi;
-
-// Legacy aliases for backward compatibility
+// Legacy aliases for backward compatibility - use typedApi instead
 export { useQuery as useConvexQuery } from "convex/react";
 export { useMutation as useConvexMutation } from "convex/react";
 export { useAction as useConvexAction } from "convex/react";

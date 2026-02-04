@@ -21,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { api, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { ApiKey, ColumnDef } from "@/types";
 import { Card, Flex, Text, Title } from "@tremor/react";
 import { useRouter } from "next/navigation";
@@ -97,12 +97,12 @@ export default function ApiKeysPage() {
   const [selectedKey, setSelectedKey] = useState<ApiKey | null>(null);
 
   // Fetch API keys
-  const apiKeys = useConvexQuery(api.admin.apiKeys.listApiKeys, { limit: 100 });
+  const apiKeys = useConvexQuery(typedApi.admin.apiKeys.listApiKeys, { limit: 100 });
 
   // Mutations
-  const revokeKey = useConvexMutation(api.admin.apiKeys.revokeApiKey);
-  const reactivateKey = useConvexMutation(api.admin.apiKeys.reactivateApiKey);
-  const deleteKey = useConvexMutation(api.admin.apiKeys.deleteApiKey);
+  const revokeKey = useConvexMutation(typedApi.admin.apiKeys.revokeApiKey);
+  const reactivateKey = useConvexMutation(typedApi.admin.apiKeys.reactivateApiKey);
+  const deleteKey = useConvexMutation(typedApi.admin.apiKeys.deleteApiKey);
 
   const isLoading = apiKeys === undefined;
 

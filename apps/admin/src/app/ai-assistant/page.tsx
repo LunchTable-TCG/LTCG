@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdmin } from "@/contexts/AdminContext";
-import { api, useConvexAction } from "@/lib/convexHelpers";
+import { typedApi, useConvexAction } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import { Text } from "@tremor/react";
 import { BotIcon, HistoryIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
@@ -50,9 +50,9 @@ export default function AIAssistantPage() {
   const [isDeletingThread, setIsDeletingThread] = useState<string | null>(null);
 
   // Actions
-  const listThreads = useConvexAction(api.ai.adminAgentApi.listThreads);
-  const getOrCreateThread = useConvexAction(api.ai.adminAgentApi.getOrCreateThread);
-  const deleteThread = useConvexAction(api.ai.adminAgentApi.deleteThread);
+  const listThreads = useConvexAction(typedApi.ai.adminAgentApi.listThreads);
+  const getOrCreateThread = useConvexAction(typedApi.ai.adminAgentApi.getOrCreateThread);
+  const deleteThread = useConvexAction(typedApi.ai.adminAgentApi.deleteThread);
 
   // Load threads
   const loadThreads = useCallback(async () => {

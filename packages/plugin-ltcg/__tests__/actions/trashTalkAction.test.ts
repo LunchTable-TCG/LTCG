@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import type { IAgentRuntime, Memory, State } from "@elizaos/core";
-import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
-import { gameStateProvider } from "../providers/gameStateProvider";
-import { trashTalkAction } from "./trashTalkAction";
+import { boardAnalysisProvider } from "../../src/providers/boardAnalysisProvider";
+import { gameStateProvider } from "../../src/providers/gameStateProvider";
+import { trashTalkAction } from "../../src/actions/trashTalkAction";
 
 describe("Trash Talk Action", () => {
   let mockRuntime: IAgentRuntime;

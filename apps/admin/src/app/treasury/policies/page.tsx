@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { api, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Text, Title } from "@tremor/react";
 import Link from "next/link";
@@ -64,13 +64,13 @@ export default function TreasuryPoliciesPage() {
   });
 
   // Fetch policies
-  const policies = useQuery(api.treasury.policies.listPolicies, { includeInactive: true });
+  const policies = useQuery(typedApi.treasury.policies.listPolicies, { includeInactive: true });
 
   // Mutations
-  const createPolicy = useMutation(api.treasury.policies.createPolicy);
-  const updatePolicy = useMutation(api.treasury.policies.updatePolicy);
+  const createPolicy = useMutation(typedApi.treasury.policies.createPolicy);
+  const updatePolicy = useMutation(typedApi.treasury.policies.updatePolicy);
   // deletePolicy will be used when delete UI is implemented
-  const setupDefaults = useMutation(api.treasury.policies.setupDefaultPolicies);
+  const setupDefaults = useMutation(typedApi.treasury.policies.setupDefaultPolicies);
 
   const isLoading = policies === undefined;
 

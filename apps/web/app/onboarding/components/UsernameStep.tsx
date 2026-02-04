@@ -1,6 +1,6 @@
 "use client";
 
-import { apiAny, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import { usePrivy } from "@privy-io/react-auth";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, Sparkles, User } from "lucide-react";
@@ -20,7 +20,7 @@ export function UsernameStep({ onComplete }: UsernameStepProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setUsernameMutation = useConvexMutation(apiAny.auth.syncUser.setUsername);
+  const setUsernameMutation = useConvexMutation(typedApi.auth.syncUser.setUsername);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

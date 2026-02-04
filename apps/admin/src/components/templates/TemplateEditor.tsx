@@ -38,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api, useConvexMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import {
   Download,
   Eye,
@@ -103,10 +103,10 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
   const selectedBlock = blocks.find((b) => b._id === selectedBlockId) ?? null;
 
   // Mutations
-  const addBlockMutation = useConvexMutation(api.admin.templates.addBlock);
-  const updateBlockMutation = useConvexMutation(api.admin.templates.updateBlock);
-  const deleteBlockMutation = useConvexMutation(api.admin.templates.deleteBlock);
-  const reorderBlocksMutation = useConvexMutation(api.admin.templates.reorderBlocks);
+  const addBlockMutation = useConvexMutation(typedApi.admin.templates.addBlock);
+  const updateBlockMutation = useConvexMutation(typedApi.admin.templates.updateBlock);
+  const deleteBlockMutation = useConvexMutation(typedApi.admin.templates.deleteBlock);
+  const reorderBlocksMutation = useConvexMutation(typedApi.admin.templates.reorderBlocks);
 
   // Handle block selection from canvas
   const handleSelectBlock = useCallback((id: BlockId | null) => {

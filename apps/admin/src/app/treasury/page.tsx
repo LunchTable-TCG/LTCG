@@ -12,7 +12,7 @@ import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import type { Doc } from "@convex/_generated/dataModel";
 import { Badge, BarList } from "@tremor/react";
 import Link from "next/link";
@@ -95,8 +95,8 @@ function getTransactionTypeLabel(type: string) {
 
 export default function TreasuryOverviewPage() {
   // Fetch treasury data
-  const overview = useConvexQuery(api.treasury.wallets.getOverview);
-  const wallets = useConvexQuery(api.treasury.wallets.listWallets, { status: "active" });
+  const overview = useConvexQuery(typedApi.treasury.wallets.getOverview);
+  const wallets = useConvexQuery(typedApi.treasury.wallets.listWallets, { status: "active" });
 
   const isLoading = overview === undefined;
 
