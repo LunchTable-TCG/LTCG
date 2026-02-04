@@ -369,8 +369,15 @@ export const fetchVercelModels = action({
 export const _fetchVercelModelsInternal = internalAction({
   args: {},
   handler: async () => {
-    // Vercel AI Gateway models endpoint is public (no auth required)
-    const response = await fetch("https://ai-gateway.vercel.sh/v1/models");
+    // Vercel AI Gateway models endpoint requires authentication
+    const apiKey = process.env["AI_GATEWAY_API_KEY"];
+    if (!apiKey) {
+      throw new Error("AI_GATEWAY_API_KEY environment variable not set");
+    }
+
+    const response = await fetch("https://ai-gateway.vercel.sh/v1/models", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
 
     if (!response.ok) {
       throw new Error(`Vercel AI Gateway error: ${response.status}`);
@@ -458,8 +465,15 @@ export const _testProviderConnectionInternal = internalAction({
         modelCount: data.data?.length || 0,
       };
     }
-    // Vercel AI Gateway - public endpoint
-    const response = await fetch("https://ai-gateway.vercel.sh/v1/models");
+    // Vercel AI Gateway - requires authentication
+    const apiKey = process.env["AI_GATEWAY_API_KEY"];
+    if (!apiKey) {
+      return { success: false, error: "AI_GATEWAY_API_KEY not configured", latencyMs: 0 };
+    }
+
+    const response = await fetch("https://ai-gateway.vercel.sh/v1/models", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
     const latencyMs = Date.now() - startTime;
 
     if (!response.ok) {
