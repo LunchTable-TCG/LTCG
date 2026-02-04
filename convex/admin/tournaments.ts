@@ -109,7 +109,7 @@ export const listTournaments = query({
           createdAt: t.createdAt,
           updatedAt: t.updatedAt,
           // Enriched fields
-          creatorUsername: (creator as Doc<"users"> | null)?.username || "Unknown",
+          creatorUsername: (creator satisfies Doc<"users"> | null)?.username || "Unknown",
           potentialPrize,
           totalPrizeDistributed,
         };

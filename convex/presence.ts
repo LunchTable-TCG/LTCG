@@ -191,8 +191,18 @@ export const list = query({
     const presenceList = await presence.list(ctx, args.roomToken);
 
     // Transform presence data to include custom metadata
-    // Presence component API migration in progress - using any cast for type compatibility
-    return presenceList.map((p: any) => ({
+    // Presence component API migration in progress - type checking presence data structure
+    type PresenceData = {
+      userId: string;
+      sessionId: string;
+      data?: {
+        username?: string;
+        status?: "online" | "in_game" | "idle";
+        lastActiveAt?: number;
+      };
+    };
+
+    return presenceList.map((p: PresenceData) => ({
       userId: p.userId,
       sessionId: p.sessionId,
       username: p.data?.username ?? "Unknown",
@@ -222,8 +232,17 @@ export const listUserRooms = query({
 
     const userPresence = await presence.listUser(ctx, userId);
 
-    // Presence component API migration in progress - using any cast for type compatibility
-    return userPresence.map((p: any) => ({
+    // Presence component API migration in progress - type checking presence data structure
+    type UserPresenceData = {
+      roomId: string;
+      sessionId: string;
+      data?: {
+        status?: "online" | "in_game" | "idle";
+        lastActiveAt?: number;
+      };
+    };
+
+    return userPresence.map((p: UserPresenceData) => ({
       roomId: p.roomId,
       sessionId: p.sessionId,
       status: p.data?.status ?? "online",

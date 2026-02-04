@@ -63,8 +63,8 @@ export const listFeatureFlags = query({
         return {
           ...flag,
           updatedByUsername:
-            (updater as Doc<"users"> | null)?.username ||
-            (updater as Doc<"users"> | null)?.name ||
+            (updater satisfies Doc<"users"> | null)?.username ||
+            (updater satisfies Doc<"users"> | null)?.name ||
             "Unknown",
         };
       })

@@ -14,7 +14,7 @@
 
 import type { Doc, Id } from "../../../../_generated/dataModel";
 import type { MutationCtx } from "../../../../_generated/server";
-import type { EffectResult, ParsedEffect } from "../../types";
+import type { EffectResult, ExtendedParsedEffect, ChainLink } from "../../types";
 
 /**
  * Execute Activation Negation effect
@@ -34,7 +34,7 @@ export async function executeNegateActivation(
   ctx: MutationCtx,
   gameState: Doc<"gameStates">,
   _lobbyId: Id<"gameLobbies">,
-  effect: ParsedEffect,
+  effect: ExtendedParsedEffect,
   _playerId: Id<"users">,
   targetCardId?: Id<"cardDefinitions">
 ): Promise<EffectResult> {
@@ -84,8 +84,7 @@ export async function executeNegateActivation(
   }
 
   // Validate target type if specified in effect
-  // Access through any type since ParsedEffect may not have this field yet
-  const negateTargetType = (effect as any).negateTargetType;
+  const negateTargetType = effect.negateTargetType;
   if (negateTargetType && negateTargetType !== "any") {
     const cardTypeMap: Record<string, string> = {
       creature: "monster",
@@ -104,12 +103,11 @@ export async function executeNegateActivation(
 
   // Mark the chain link as negated
   const updatedChain = [...currentChain];
-  const negatedLink = {
+  const negatedLink: ChainLink = {
     ...chainLink,
     negated: true,
+    isNegated: true,
   };
-  // Add isNegated flag using type assertion
-  (negatedLink as any).isNegated = true;
   updatedChain[targetChainIndex] = negatedLink;
 
   // Update game state with negated chain
@@ -118,8 +116,7 @@ export async function executeNegateActivation(
   });
 
   // Determine if card should be destroyed after negation
-  // Access through any type since ParsedEffect may not have these fields yet
-  const shouldDestroy = (effect as any).destroyAfterNegation || (effect as any).negateAndDestroy;
+  const shouldDestroy = effect.destroyAfterNegation || effect.negateAndDestroy;
 
   // Build result message
   let message = `Negated activation of ${targetCard.name}`;

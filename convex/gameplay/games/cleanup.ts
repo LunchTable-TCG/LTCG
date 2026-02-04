@@ -1,12 +1,22 @@
 import type { MutationCtx } from "../../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../../_generated/api";
-
-// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-const internalAny = internal as any;
 import type { Id } from "../../_generated/dataModel";
 import { internalAction } from "../../_generated/server";
 import { internalMutation } from "../../functions";
+
+/**
+ * Type-safe internal API accessor
+ * Avoids TS2589 "Type instantiation is excessively deep" by using a typed wrapper
+ */
+interface InternalGamesAPI {
+  getActiveLobbiesForCleanup: typeof internal.games.getActiveLobbiesForCleanup;
+  forfeitGame: typeof internal.games.forfeitGame;
+  getWaitingLobbiesForCleanup: typeof internal.games.getWaitingLobbiesForCleanup;
+  cancelStaleWaitingLobby: typeof internal.games.cancelStaleWaitingLobby;
+}
+
+const internalGames = internal.games as InternalGamesAPI;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -55,14 +65,14 @@ export const cleanupStaleGames = internalAction({
     const TIMEOUT_MS = 120000; // 2 minutes (120 seconds)
 
     // Get all active games
-    const activeLobbies = await ctx.runQuery(internalAny.games.getActiveLobbiesForCleanup);
+    const activeLobbies = await ctx.runQuery(internalGames.getActiveLobbiesForCleanup);
 
     for (const lobby of activeLobbies) {
       // Check if last move was more than 2 minutes ago
       if (lobby.lastMoveAt && now - lobby.lastMoveAt > TIMEOUT_MS) {
         // Forfeit the game for the player whose turn it is
         if (lobby.currentTurnPlayerId) {
-          await ctx.runMutation(internalAny.games.forfeitGame, {
+          await ctx.runMutation(internalGames.forfeitGame, {
             lobbyId: lobby._id,
             forfeitingPlayerId: lobby.currentTurnPlayerId,
           });
@@ -72,11 +82,11 @@ export const cleanupStaleGames = internalAction({
 
     // Also cleanup waiting lobbies that have been waiting for too long (30 minutes)
     const WAITING_TIMEOUT_MS = 1800000; // 30 minutes
-    const waitingLobbies = await ctx.runQuery(internalAny.games.getWaitingLobbiesForCleanup);
+    const waitingLobbies = await ctx.runQuery(internalGames.getWaitingLobbiesForCleanup);
 
     for (const lobby of waitingLobbies) {
       if (now - lobby.createdAt > WAITING_TIMEOUT_MS) {
-        await ctx.runMutation(internalAny.games.cancelStaleWaitingLobby, {
+        await ctx.runMutation(internalGames.cancelStaleWaitingLobby, {
           lobbyId: lobby._id,
         });
       }

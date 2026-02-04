@@ -319,7 +319,13 @@ export const updateMyDeck = rlsMutation({
     }
 
     // Build update object
-    const updates: Record<string, any> = {
+    type DeckUpdate = {
+      updatedAt: number;
+      name?: string;
+      description?: string;
+    };
+
+    const updates: DeckUpdate = {
       updatedAt: Date.now(),
     };
 

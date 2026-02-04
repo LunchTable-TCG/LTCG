@@ -89,8 +89,8 @@ export const listListings = query({
         const cardDef = await ctx.db.get(listing.cardDefinitionId);
         return {
           ...listing,
-          cardName: (cardDef as Doc<"cardDefinitions"> | null)?.name ?? "Unknown Card",
-          cardRarity: (cardDef as Doc<"cardDefinitions"> | null)?.rarity ?? "unknown",
+          cardName: (cardDef satisfies Doc<"cardDefinitions"> | null)?.name ?? "Unknown Card",
+          cardRarity: (cardDef satisfies Doc<"cardDefinitions"> | null)?.rarity ?? "unknown",
         };
       })
     );

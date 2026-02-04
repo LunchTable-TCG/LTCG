@@ -5,9 +5,6 @@
  * Used by elizaOS agents to find and join games.
  */
 
-// Import at runtime only (not for type checking) to avoid TS2589
-const api: any = require("../_generated/api").api;
-import { internal } from "../_generated/api";
 import { authHttpAction } from "./middleware/auth";
 import {
   corsPreflightResponse,
@@ -17,6 +14,43 @@ import {
   successResponse,
   validateRequiredFields,
 } from "./middleware/responses";
+import type { LobbyInfo, MutationFunction, QueryFunction, User } from "./lib/apiHelpers";
+import type { Id } from "../_generated/dataModel";
+
+// Type-safe API references to avoid TS2589
+const createLobbyInternalMutation = require("../_generated/api").internal.gameplay.games.lobby
+  .createLobbyInternal as MutationFunction<
+  { userId: Id<"users">; mode: string; isPrivate: boolean },
+  LobbyInfo
+>;
+
+const getUserQuery = require("../_generated/api").api.core.users.getUser as QueryFunction<
+  { userId: Id<"users"> },
+  User | null
+>;
+
+const listWaitingLobbiesQuery = require("../_generated/api").api.gameplay.games.queries
+  .listWaitingLobbies as QueryFunction<
+  { mode: string; userRating: number },
+  LobbyInfo[]
+>;
+
+const joinLobbyInternalMutation = require("../_generated/api").internal.gameplay.games.lobby
+  .joinLobbyInternal as MutationFunction<
+  { userId: Id<"users">; lobbyId: Id<"lobbies">; joinCode?: string },
+  {
+    gameId: Id<"games">;
+    lobbyId: Id<"lobbies">;
+    opponentUsername: string;
+    mode: string;
+  }
+>;
+
+const cancelLobbyInternalMutation = require("../_generated/api").internal.gameplay.games.lobby
+  .cancelLobbyInternal as MutationFunction<
+  { userId: Id<"users"> },
+  { lobbyId: Id<"lobbies"> }
+>;
 
 /**
  * POST /api/agents/matchmaking/enter
@@ -48,7 +82,7 @@ export const enter = authHttpAction(async (ctx, request, auth) => {
     if (validation) return validation;
 
     // Create lobby using internal mutation with userId from API key auth
-    const lobby = await ctx.runMutation(internal.gameplay.games.lobby.createLobbyInternal, {
+    const lobby = await ctx.runMutation(createLobbyInternalMutation, {
       userId: auth.userId,
       mode: body.mode,
       isPrivate: body.isPrivate || false,
@@ -148,7 +182,7 @@ export const lobbies = authHttpAction(async (ctx, request, auth) => {
     const mode = (modeParam || "all") as "casual" | "ranked" | "all";
 
     // Get user data for eligibility checks
-    const user = await ctx.runQuery((api as any).core.users.getUser, {
+    const user = await ctx.runQuery(getUserQuery, {
       userId: auth.userId,
     });
 
@@ -163,16 +197,13 @@ export const lobbies = authHttpAction(async (ctx, request, auth) => {
     const userRating = user?.rankedElo || 1000;
 
     // List waiting lobbies
-    const waitingLobbies = await ctx.runQuery(
-      (api as any).gameplay.games.queries.listWaitingLobbies,
-      {
-        mode,
-        userRating,
-      }
-    );
+    const waitingLobbies = await ctx.runQuery(listWaitingLobbiesQuery, {
+      mode,
+      userRating,
+    });
 
     // Format lobby data with eligibility check
-    const formattedLobbies = waitingLobbies.map((lobby: any) => {
+    const formattedLobbies = waitingLobbies.map((lobby) => {
       const eligibility = checkEligibility(user, {
         mode: lobby.mode,
         hostRating: lobby.hostRating,
@@ -197,7 +228,7 @@ export const lobbies = authHttpAction(async (ctx, request, auth) => {
     return successResponse({
       lobbies: formattedLobbies,
       count: formattedLobbies.length,
-      eligibleCount: formattedLobbies.filter((l: any) => l.canJoin).length,
+      eligibleCount: formattedLobbies.filter((l) => l.canJoin).length,
     });
   } catch (error) {
     return errorResponse("FETCH_LOBBIES_FAILED", "Failed to fetch lobbies", 500, {

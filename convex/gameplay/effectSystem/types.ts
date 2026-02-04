@@ -13,11 +13,22 @@ import type { MutationCtx } from "../../_generated/server";
 // ============================================================================
 
 /**
+ * Lingering effect value types
+ */
+export type LingeringEffectValue =
+  | number // For stat modifications (ATK/DEF changes)
+  | {
+      // For complex effects like preventActivation
+      targetType?: "spell" | "trap" | "monster" | "any";
+      condition?: JsonCondition;
+    };
+
+/**
  * Lingering effect that persists for a duration
  */
 export interface LingeringEffect {
   effectType: string; // Type of lingering effect (modifyATK, preventActivation, etc.)
-  value: any; // Effect value (number for stat mods, object for complex effects)
+  value: LingeringEffectValue; // Effect value (number for stat mods, object for complex effects)
   sourceCardId?: Id<"cardDefinitions">; // Card that created this effect
   sourceCardName?: string; // Name of source card for display
   appliedBy: Id<"users">; // Player who applied the effect
@@ -28,7 +39,7 @@ export interface LingeringEffect {
     endPhase?: string; // Specific phase when effect expires
   };
   affectsPlayer?: "host" | "opponent" | "both"; // Which player(s) are affected
-  conditions?: any; // Optional conditions for effect application
+  conditions?: JsonCondition; // Optional conditions for effect application
 }
 
 export type EffectType =
@@ -358,6 +369,17 @@ export interface JsonAbility {
   spellSpeed?: 1 | 2 | 3; // Overall spell speed of the card
 }
 
+/**
+ * Extended ParsedEffect that includes additional fields not in base definition
+ * Used by effect executors that need access to effect-specific parameters
+ */
+export interface ExtendedParsedEffect extends ParsedEffect {
+  // Activation negation specifics (for negateActivation effect type)
+  negateTargetType?: "spell" | "trap" | "monster" | "any";
+  destroyAfterNegation?: boolean;
+  negateAndDestroy?: boolean;
+}
+
 export interface ParsedEffect {
   type: EffectType;
   trigger: TriggerCondition;
@@ -444,3 +466,59 @@ export type EffectExecutor = (
   sourceCardId: Id<"cardDefinitions">,
   targets?: Id<"cardDefinitions">[]
 ) => Promise<EffectResult>;
+
+// ============================================================================
+// GAME STATE TYPES (from schema, for type safety)
+// ============================================================================
+
+/**
+ * Board card representation (monster on field)
+ */
+export interface BoardCard {
+  cardId: Id<"cardDefinitions">;
+  position: number; // 1 = Attack, -1 = Defense
+  attack: number;
+  defense: number;
+  hasAttacked: boolean;
+  isFaceDown: boolean;
+  // Protection flags
+  cannotBeDestroyedByBattle?: boolean;
+  cannotBeDestroyedByEffects?: boolean;
+  cannotBeTargeted?: boolean;
+  // Position change tracking
+  hasChangedPosition?: boolean;
+  turnSummoned?: number;
+  // Equip spell tracking
+  equippedCards?: Id<"cardDefinitions">[];
+  // Token flags
+  isToken?: boolean;
+  tokenData?: {
+    name: string;
+    atk: number;
+    def: number;
+    level?: number;
+    attribute?: string;
+    type?: string;
+  };
+}
+
+/**
+ * Chain link in the current chain stack
+ */
+export interface ChainLink {
+  cardId: Id<"cardDefinitions">;
+  playerId: Id<"users">;
+  spellSpeed: number; // 1, 2, or 3
+  effect: JsonAbility;
+  targets?: Id<"cardDefinitions">[];
+  negated?: boolean;
+  isNegated?: boolean; // Alias for negated
+}
+
+/**
+ * Card with optional ability field (used by various helpers)
+ */
+export interface CardWithAbility {
+  ability?: JsonAbility | string;
+  [key: string]: unknown;
+}

@@ -55,7 +55,7 @@ export const endTurnAction: Action = {
     runtime: IAgentRuntime,
     message: Memory,
     state: State,
-    _options: any,
+    _options: Record<string, unknown>,
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {

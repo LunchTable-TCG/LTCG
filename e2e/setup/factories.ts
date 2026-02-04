@@ -35,13 +35,23 @@ export class TestDataFactory {
     const privyDid = `did:privy:test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const displayName = opts.displayName ?? `TestPlayer_${Date.now()}`;
 
-    // Type assertion needed for internal function references in test context
-    const userId = (await this.client.mutation(internal.testing.seedTestUser.seedTestUser as any, {
-      privyDid,
-      displayName,
-      gold: opts.gold,
-      gems: opts.gems,
-    })) as Id<"users">;
+    // Type assertion for internal function - safe in test context
+    type SeedTestUserFn = (args: {
+      privyDid: string;
+      displayName: string;
+      gold?: number;
+      gems?: number;
+    }) => Promise<Id<"users">>;
+
+    const userId = await this.client.mutation(
+      internal.testing.seedTestUser.seedTestUser as SeedTestUserFn,
+      {
+        privyDid,
+        displayName,
+        gold: opts.gold,
+        gems: opts.gems,
+      }
+    );
 
     this.createdUsers.push(userId);
     return { userId, privyDid, displayName };
@@ -55,12 +65,18 @@ export class TestDataFactory {
    * @returns The created deck ID
    */
   async createDeckForUser(userId: Id<"users">, cardIds: Id<"cardDefinitions">[]) {
-    // Type assertion needed for internal function references in test context
-    return (await this.client.mutation(internal.testing.seedTestDeck.seedTestDeck as any, {
+    // Type assertion for internal function - safe in test context
+    type SeedTestDeckFn = (args: {
+      userId: Id<"users">;
+      name: string;
+      cardIds: Id<"cardDefinitions">[];
+    }) => Promise<Id<"userDecks">>;
+
+    return await this.client.mutation(internal.testing.seedTestDeck.seedTestDeck as SeedTestDeckFn, {
       userId,
       name: `Test Deck ${Date.now()}`,
       cardIds,
-    })) as Id<"userDecks">;
+    });
   }
 
   /**
@@ -70,10 +86,15 @@ export class TestDataFactory {
    * Handles cleanup errors gracefully to allow partial cleanup.
    */
   async cleanup() {
+    // Type assertion for internal function - safe in test context
+    type CleanupTestUserFn = (args: { userId: Id<"users"> }) => Promise<void>;
+
     for (const userId of this.createdUsers) {
       try {
-        // Type assertion needed for internal function references in test context
-        await this.client.mutation(internal.testing.cleanup.cleanupTestUser as any, { userId });
+        await this.client.mutation(
+          internal.testing.cleanup.cleanupTestUser as CleanupTestUserFn,
+          { userId }
+        );
       } catch (e) {
         console.warn(`Failed to cleanup user ${userId}:`, e);
       }

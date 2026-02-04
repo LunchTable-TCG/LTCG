@@ -6,6 +6,7 @@
  */
 
 import { ApiErrorCode } from "../types/api";
+import type { ErrorDetails } from "../types/eliza";
 
 /**
  * Base error class for all LTCG API errors
@@ -13,14 +14,14 @@ import { ApiErrorCode } from "../types/api";
 export class LTCGApiError extends Error {
   public readonly code: string;
   public readonly statusCode: number;
-  public readonly details?: Record<string, any>;
+  public readonly details?: ErrorDetails;
   public readonly timestamp: number;
 
   constructor(
     message: string,
     code: string = ApiErrorCode.INTERNAL_ERROR,
     statusCode = 500,
-    details?: Record<string, any>
+    details?: ErrorDetails
   ) {
     super(message);
     this.name = "LTCGApiError";
@@ -52,7 +53,7 @@ export class LTCGApiError extends Error {
  * Thrown when API key is missing, invalid, or expired
  */
 export class AuthenticationError extends LTCGApiError {
-  constructor(message = "Authentication failed", details?: Record<string, any>) {
+  constructor(message = "Authentication failed", details?: ErrorDetails) {
     super(message, ApiErrorCode.UNAUTHORIZED, 401, details);
     this.name = "AuthenticationError";
   }
@@ -74,7 +75,7 @@ export class RateLimitError extends LTCGApiError {
     remaining = 0,
     limit = 60,
     resetAt?: number,
-    details?: Record<string, any>
+    details?: ErrorDetails
   ) {
     super(message, ApiErrorCode.RATE_LIMIT_EXCEEDED, 429, details);
     this.name = "RateLimitError";
@@ -105,7 +106,7 @@ export class ValidationError extends LTCGApiError {
   constructor(
     message = "Validation failed",
     invalidFields?: string[],
-    details?: Record<string, any>
+    details?: ErrorDetails
   ) {
     super(message, ApiErrorCode.VALIDATION_ERROR, 400, details);
     this.name = "ValidationError";
@@ -130,7 +131,7 @@ export class NetworkError extends LTCGApiError {
   constructor(
     message = "Network request failed",
     originalError?: Error,
-    details?: Record<string, any>
+    details?: ErrorDetails
   ) {
     super(message, ApiErrorCode.NETWORK_ERROR, 0, details);
     this.name = "NetworkError";
@@ -159,7 +160,7 @@ export class GameError extends LTCGApiError {
     code: string,
     statusCode = 400,
     gameId?: string,
-    details?: Record<string, any>
+    details?: ErrorDetails
   ) {
     super(message, code, statusCode, details);
     this.name = "GameError";
@@ -181,7 +182,7 @@ export class GameError extends LTCGApiError {
 /**
  * Parse error response from API and throw appropriate error
  */
-export function parseErrorResponse(statusCode: number, body: any): LTCGApiError {
+export function parseErrorResponse(statusCode: number, body: ErrorDetails): LTCGApiError {
   const errorCode = body?.error?.code || "UNKNOWN_ERROR";
   const errorMessage = body?.error?.message || "An unknown error occurred";
   const errorDetails = body?.error?.details;

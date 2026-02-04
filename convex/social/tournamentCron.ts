@@ -7,10 +7,11 @@
  */
 
 import { internal } from "../_generated/api";
+import { internalAction } from "../_generated/server";
 
 // Module-scope typed helper to avoid TS2589
-const internalAny = internal as any;
-import { internalAction } from "../_generated/server";
+type InternalApi = typeof internal;
+const internalAny = internal as InternalApi;
 
 /**
  * Process tournament phase transitions

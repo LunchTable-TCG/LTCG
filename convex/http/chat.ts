@@ -5,7 +5,6 @@
  * Used by elizaOS agents to participate in Tavern Hall chat.
  */
 
-import { api } from "../_generated/api";
 import { httpAction } from "../_generated/server";
 import { authHttpAction } from "./middleware/auth";
 import {
@@ -15,6 +14,27 @@ import {
   successResponse,
   validateRequiredFields,
 } from "./middleware/responses";
+import type { ChatMessage, MutationFunction, OnlineUser, QueryFunction } from "./lib/apiHelpers";
+import type { Id } from "../_generated/dataModel";
+
+// Type-safe API references to avoid TS2589
+const sendMessageMutation = require("../_generated/api").api.globalChat
+  .sendMessage as MutationFunction<
+  { content: string },
+  Id<"globalChatMessages">
+>;
+
+const getRecentMessagesQuery = require("../_generated/api").api.globalChat
+  .getRecentMessages as QueryFunction<
+  { limit: number },
+  ChatMessage[]
+>;
+
+const getOnlineUsersQuery = require("../_generated/api").api.globalChat
+  .getOnlineUsers as QueryFunction<
+  Record<string, never>,
+  OnlineUser[]
+>;
 
 /**
  * POST /api/agents/chat/send
@@ -58,8 +78,7 @@ export const send = authHttpAction(async (ctx, request, _authData) => {
 
     // Send message via authenticated mutation
     // The globalChat.sendMessage mutation handles rate limiting and validation
-    // @ts-ignore - TS2589: Type instantiation is excessively deep with api references
-    const messageId = await ctx.runMutation(api.globalChat.sendMessage as any, {
+    const messageId = await ctx.runMutation(sendMessageMutation, {
       content: body.content,
     });
 
@@ -129,7 +148,7 @@ export const messages = httpAction(async (ctx, request) => {
     }
 
     // Get recent messages (public query, no auth required)
-    const chatMessages = await ctx.runQuery(api.globalChat.getRecentMessages as any, {
+    const chatMessages = await ctx.runQuery(getRecentMessagesQuery, {
       limit,
     });
 
@@ -165,7 +184,7 @@ export const onlineUsers = httpAction(async (ctx, request) => {
 
   try {
     // Get online users (public query, no auth required)
-    const users = await ctx.runQuery(api.globalChat.getOnlineUsers as any, {});
+    const users = await ctx.runQuery(getOnlineUsersQuery, {});
 
     // Return success with users
     return successResponse({

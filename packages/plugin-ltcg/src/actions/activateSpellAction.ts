@@ -66,7 +66,7 @@ export const activateSpellAction: Action = {
     runtime: IAgentRuntime,
     message: Memory,
     state: State,
-    _options: any,
+    _options: Record<string, unknown>,
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {
@@ -152,7 +152,7 @@ Respond with JSON: { "location": "hand" or "field", "index": <index>, "targets":
         targets: [],
       });
 
-      let selectedCard: any;
+      let selectedCard: CardInHand | undefined;
       let handIndex: number | undefined;
       let boardIndex: number | undefined;
 

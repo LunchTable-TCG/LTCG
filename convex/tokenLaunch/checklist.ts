@@ -291,7 +291,14 @@ export const setupDefaults = mutation({
       return { message: "Checklist already has items", count: existing.length };
     }
 
-    const defaultItems = [
+    type ChecklistCategory = "treasury" | "token" | "marketing" | "technical" | "team";
+
+    const defaultItems: Array<{
+      category: ChecklistCategory;
+      item: string;
+      isRequired: boolean;
+      order: number;
+    }> = [
       // Treasury
       { category: "treasury", item: "Fee collection wallet created", isRequired: true, order: 0 },
       { category: "treasury", item: "Distribution wallet created", isRequired: true, order: 1 },
@@ -332,7 +339,7 @@ export const setupDefaults = mutation({
     let count = 0;
     for (const item of defaultItems) {
       await ctx.db.insert("launchChecklist", {
-        category: item.category as any,
+        category: item.category,
         item: item.item,
         isRequired: item.isRequired,
         isCompleted: false,

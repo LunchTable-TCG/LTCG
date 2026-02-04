@@ -5,9 +5,6 @@
  * Used by elizaOS agents to browse cards and manage decks.
  */
 
-// Import at runtime only (not for type checking) to avoid TS2589
-const api: any = require("../_generated/api").api;
-const internal: any = require("../_generated/api").internal;
 import { authHttpAction } from "./middleware/auth";
 import {
   corsPreflightResponse,
@@ -17,6 +14,62 @@ import {
   successResponse,
   validateRequiredFields,
 } from "./middleware/responses";
+import type {
+  CardDefinition,
+  DeckInfo,
+  DeckSummary,
+  MutationFunction,
+  QueryFunction,
+} from "./lib/apiHelpers";
+import type { Id } from "../_generated/dataModel";
+
+// Type-safe API references to avoid TS2589
+const getUserDecksInternalQuery = require("../_generated/api").internal.core.decks
+  .getUserDecksInternal as QueryFunction<
+  { userId: Id<"users"> },
+  DeckSummary[]
+>;
+
+const getDeckWithCardsQuery = require("../_generated/api").api.core.decks
+  .getDeckWithCards as QueryFunction<
+  { deckId: Id<"decks">; userId: Id<"users"> },
+  DeckInfo | null
+>;
+
+const getStarterDecksQuery = require("../_generated/api").api.agents
+  .getStarterDecks as QueryFunction<
+  Record<string, never>,
+  Array<{ code: string; name: string; archetype: string }>
+>;
+
+const createDeckMutation = require("../_generated/api").api.core.decks
+  .createDeck as MutationFunction<
+  {
+    userId: Id<"users">;
+    name: string;
+    cardDefinitionIds: Id<"cardDefinitions">[];
+    archetype: string;
+  },
+  Id<"decks">
+>;
+
+const getAllCardDefinitionsQuery = require("../_generated/api").api.core.cards
+  .getAllCardDefinitions as QueryFunction<
+  Record<string, never>,
+  CardDefinition[]
+>;
+
+const getCardDefinitionQuery = require("../_generated/api").api.core.cards
+  .getCardDefinition as QueryFunction<
+  { cardDefinitionId: Id<"cardDefinitions"> },
+  CardDefinition | null
+>;
+
+const selectStarterDeckInternalMutation = require("../_generated/api").internal.agents
+  .selectStarterDeckInternal as MutationFunction<
+  { userId: Id<"users">; starterDeckCode: string },
+  { success: boolean; deckId: Id<"decks"> }
+>;
 
 /**
  * GET /api/agents/decks
@@ -35,12 +88,12 @@ export const getUserDecks = authHttpAction(async (ctx, request, auth) => {
 
   try {
     // Get user's decks using internal query (accepts userId directly)
-    const decks = await ctx.runQuery(internal.core.decks.getUserDecksInternal, {
+    const decks = await ctx.runQuery(getUserDecksInternalQuery, {
       userId: auth.userId,
     });
 
     // Format deck data (internal query already returns formatted data)
-    const formattedDecks = decks.map((deck: any) => ({
+    const formattedDecks = decks.map((deck) => ({
       deckId: deck._id,
       name: deck.name,
       archetype: deck.archetype,
@@ -85,8 +138,8 @@ export const getDeck = authHttpAction(async (ctx, request, auth) => {
     }
 
     // Get deck with cards
-    const deck = await ctx.runQuery(api.core.decks.getDeckWithCards, {
-      deckId: deckId as any,
+    const deck = await ctx.runQuery(getDeckWithCardsQuery, {
+      deckId: deckId as Id<"decks">,
       userId: auth.userId,
     });
 
@@ -130,7 +183,7 @@ export const getStarterDecks = authHttpAction(async (ctx, request, _auth) => {
 
   try {
     // Get starter decks
-    const starterDecks = await ctx.runQuery(api.agents.getStarterDecks, {});
+    const starterDecks = await ctx.runQuery(getStarterDecksQuery, {});
 
     return successResponse({
       starterDecks,
@@ -177,10 +230,10 @@ export const createDeck = authHttpAction(async (ctx, request, auth) => {
     }
 
     // Create deck
-    const deckId = await ctx.runMutation(api.core.decks.createDeck, {
+    const deckId = await ctx.runMutation(createDeckMutation, {
       userId: auth.userId,
       name: body.name,
-      cardDefinitionIds: body.cardIds as any,
+      cardDefinitionIds: body.cardIds as Id<"cardDefinitions">[],
       archetype: body.archetype,
     });
 
@@ -234,17 +287,17 @@ export const getAllCards = authHttpAction(async (ctx, request, _auth) => {
     const limitParam = getQueryParam(request, "limit");
 
     // Get all card definitions
-    const cards = await ctx.runQuery(api.core.cards.getAllCardDefinitions, {});
+    const cards = await ctx.runQuery(getAllCardDefinitionsQuery, {});
 
     // Apply filters
     let filteredCards = cards;
 
     if (typeParam) {
-      filteredCards = filteredCards.filter((card: any) => card.type === typeParam);
+      filteredCards = filteredCards.filter((card) => card.type === typeParam);
     }
 
     if (archetypeParam) {
-      filteredCards = filteredCards.filter((card: any) => card.archetype === archetypeParam);
+      filteredCards = filteredCards.filter((card) => card.archetype === archetypeParam);
     }
 
     // Apply limit
@@ -252,18 +305,18 @@ export const getAllCards = authHttpAction(async (ctx, request, _auth) => {
     filteredCards = filteredCards.slice(0, limit);
 
     // Format card data
-    const formattedCards = filteredCards.map((card: any) => ({
+    const formattedCards = filteredCards.map((card) => ({
       cardId: card._id,
       name: card.name,
       type: card.type,
       archetype: card.archetype,
       level: card.level,
-      atk: card.atk,
-      def: card.def,
-      attribute: card.attribute,
+      atk: card.attack,
+      def: card.defense,
+      attribute: card.archetype,
       rarity: card.rarity,
       description: card.description,
-      ability: card.ability, // JSON ability structure
+      ability: card.effectText,
     }));
 
     return successResponse({
@@ -301,8 +354,8 @@ export const getCard = authHttpAction(async (ctx, request, _auth) => {
     }
 
     // Get card definition
-    const card = await ctx.runQuery(api.core.cards.getCardDefinition, {
-      cardDefinitionId: cardId as any,
+    const card = await ctx.runQuery(getCardDefinitionQuery, {
+      cardDefinitionId: cardId as Id<"cardDefinitions">,
     });
 
     if (!card) {
@@ -315,13 +368,13 @@ export const getCard = authHttpAction(async (ctx, request, _auth) => {
       type: card.type,
       archetype: card.archetype,
       level: card.level,
-      atk: card.atk,
-      def: card.def,
-      attribute: card.attribute,
+      atk: card.attack,
+      def: card.defense,
+      attribute: card.archetype,
       rarity: card.rarity,
       description: card.description,
-      ability: card.ability,
-      artworkUrl: card.artworkUrl || null,
+      ability: card.effectText,
+      artworkUrl: card.imageUrl || null,
     });
   } catch (error) {
     return errorResponse("FETCH_CARD_FAILED", "Failed to fetch card", 500, {
@@ -356,7 +409,7 @@ export const selectStarterDeck = authHttpAction(async (ctx, request, auth) => {
     if (validation) return validation;
 
     // Call internal mutation to select starter deck
-    const result = await ctx.runMutation(internal.agents.selectStarterDeckInternal, {
+    const result = await ctx.runMutation(selectStarterDeckInternalMutation, {
       userId: auth.userId,
       starterDeckCode: body.starterDeckCode,
     });

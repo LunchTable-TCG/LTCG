@@ -11,10 +11,11 @@
 
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
 
 // Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-const internalAny = internal as any;
-import type { Doc, Id } from "../_generated/dataModel";
+type InternalApi = typeof internal;
+const internalAny = internal as InternalApi;
 import {
   internalAction,
   internalMutation,

@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import { internalMutation } from "../functions";
 
 /**
@@ -39,7 +40,7 @@ export const seedTestDeck = internalMutation({
     for (const [cardId, quantity] of cardQuantities.entries()) {
       await ctx.db.insert("deckCards", {
         deckId,
-        cardDefinitionId: cardId as any, // Type assertion needed for Map key
+        cardDefinitionId: cardId as Id<"cardDefinitions">, // Map key is string, needs conversion to Id
         quantity,
         position: undefined,
       });

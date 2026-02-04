@@ -7,9 +7,35 @@
  * and transaction history for the LunchMoney page.
  */
 
+import type { Id } from "@convex/_generated/dataModel";
+import type { MarketplaceListing } from "@/types/generated";
 import { typedApi, useTypedMutation, useTypedQuery } from "@/lib/convexTypedHelpers";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
+
+interface TokenListing {
+  _id: Id<"marketplaceListings">;
+  cardDefinitionId: Id<"cardDefinitions">;
+  cardName: string;
+  cardType: string;
+  cardRarity: string;
+  cardImageUrl?: string;
+  quantity: number;
+  tokenPrice: number;
+  status: string;
+  createdAt: number;
+}
+
+interface PendingPurchase {
+  _id: Id<"tokenPurchases">;
+  listingId?: Id<"marketplaceListings">;
+  amount: number;
+  status: string;
+  createdAt: number;
+  expiresAt?: number;
+  transactionSignature?: string;
+  listingCardName: string;
+}
 
 interface UseLunchMoneyReturn {
   // Balances
@@ -27,9 +53,9 @@ interface UseLunchMoneyReturn {
   lastTokenUpdate: number | undefined;
 
   // Listings
-  goldListings: any[];
-  tokenListings: any[];
-  pendingPurchases: any[];
+  goldListings: MarketplaceListing[];
+  tokenListings: TokenListing[];
+  pendingPurchases: PendingPurchase[];
   activeListingsCount: number;
 
   // Market overview

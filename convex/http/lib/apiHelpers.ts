@@ -81,6 +81,73 @@ export interface QueueEntry {
 }
 
 /**
+ * Story mode types
+ */
+export interface StoryChapter {
+  _id: Id<"storyChapters">;
+  chapterId: string;
+  title: string;
+  description: string;
+  isLocked: boolean;
+  totalStages: number;
+  completedStages: number;
+}
+
+export interface StoryStage {
+  _id: Id<"storyStages">;
+  stageNumber: number;
+  title: string;
+  description: string;
+  isCompleted: boolean;
+  isLocked: boolean;
+  difficulty: string;
+}
+
+/**
+ * Lobby and matchmaking types
+ */
+export interface LobbyInfo {
+  _id: Id<"lobbies">;
+  status: string;
+  mode: string;
+  createdAt: number;
+  joinCode?: string;
+  hostUsername?: string;
+  hostRating?: number;
+  maxRatingDiff?: number;
+  deckArchetype?: string;
+}
+
+export interface User {
+  _id: Id<"users">;
+  username: string;
+  rankedElo?: number;
+  isBanned?: boolean;
+  isSuspended?: boolean;
+}
+
+export interface OnlineUser {
+  userId: Id<"users">;
+  username: string;
+  status: string;
+  lastSeen: number;
+}
+
+/**
+ * Deck types
+ */
+export interface DeckCard {
+  cardDefinitionId: Id<"cardDefinitions">;
+  quantity: number;
+  cardData?: CardDefinition;
+}
+
+export interface DeckInfo extends DeckSummary {
+  cardsWithDetails?: DeckCard[];
+  validationErrors?: string[];
+}
+
+/**
  * Type-safe API function reference helpers
  */
 export type QueryFunction<Args = object, Returns = unknown> = FunctionReference<

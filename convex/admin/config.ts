@@ -200,8 +200,8 @@ export const listConfigs = query({
         return {
           ...config,
           updatedByUsername:
-            (updatedByUser as Doc<"users"> | null)?.username ??
-            (updatedByUser as Doc<"users"> | null)?.email ??
+            (updatedByUser satisfies Doc<"users"> | null)?.username ??
+            (updatedByUser satisfies Doc<"users"> | null)?.email ??
             "Unknown",
         };
       })

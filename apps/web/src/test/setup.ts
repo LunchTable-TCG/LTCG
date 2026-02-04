@@ -8,7 +8,10 @@ import React from "react";
 import { vi } from "vitest";
 
 // Make React available globally for JSX
-(global as any).React = React;
+interface GlobalWithReact {
+  React: typeof React;
+}
+(global as GlobalWithReact).React = React;
 
 // Mock Convex React client
 vi.mock("convex/react", () => ({
@@ -81,8 +84,11 @@ vi.mock("framer-motion", () => ({
   motion: new Proxy(
     {},
     {
-      get: (_, prop) => {
-        const Component = ({ children, ...props }: any) => {
+      get: (_target, prop) => {
+        const Component = ({
+          children,
+          ...props
+        }: { children?: React.ReactNode } & Record<string, unknown>) => {
           // Create the appropriate HTML element to maintain semantics
           const Element = String(prop);
           return React.createElement(Element, props, children);

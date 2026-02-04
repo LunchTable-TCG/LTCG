@@ -49,7 +49,7 @@ export const getWalletInfoAction: Action = {
     runtime: IAgentRuntime,
     _message: Memory,
     _state: State,
-    _options: any,
+    _options: Record<string, unknown>,
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {

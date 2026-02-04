@@ -59,7 +59,7 @@ export const createLobbyAction: Action = {
     runtime: IAgentRuntime,
     _message: Memory,
     state: State,
-    _options: any,
+    _options: Record<string, unknown>,
     callback: HandlerCallback
   ): Promise<ActionResult> => {
     try {

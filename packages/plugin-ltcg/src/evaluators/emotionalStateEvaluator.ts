@@ -10,6 +10,7 @@ import { logger } from "@elizaos/core";
 import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
 import { gameStateProvider } from "../providers/gameStateProvider";
 import type { GameStateResponse } from "../types/api";
+import type { LTCGState, BoardAnalysisData, EmotionalState } from "../types/eliza";
 
 export const emotionalStateEvaluator: Evaluator = {
   name: "LTCG_EMOTIONAL_STATE",
@@ -75,16 +76,18 @@ export const emotionalStateEvaluator: Evaluator = {
       const emotionalState = analyzeEmotionalState(gameState, boardAnalysis, state);
 
       // Store emotional state in State object for other actions to use
-      (state.values as any).LTCG_EMOTIONAL_STATE = emotionalState.state;
-      (state.values as any).LTCG_EMOTIONAL_INTENSITY = emotionalState.intensity;
-      (state.values as any).LTCG_FILTERED_ACTIONS = emotionalState.shouldFilter;
+      const ltcgState = state as LTCGState;
+      ltcgState.values.LTCG_EMOTIONAL_STATE = emotionalState.state;
+      ltcgState.values.LTCG_EMOTIONAL_INTENSITY = emotionalState.intensity;
+      ltcgState.values.LTCG_FILTERED_ACTIONS = emotionalState.shouldFilter;
 
       // Get the intended action from message or state
-      const intendedAction = (message.content as any)?.action || (state as any)?.currentAction;
+      const messageContent = message.content as { action?: string; text: string };
+      const intendedAction = messageContent.action || ltcgState.currentAction;
 
       // Check filter status and log
       const shouldAllow = shouldAllowResponse(emotionalState, intendedAction, runtime);
-      (state.values as any).LTCG_EMOTIONAL_ALLOWED = shouldAllow;
+      ltcgState.values.LTCG_EMOTIONAL_ALLOWED = shouldAllow;
 
       if (!shouldAllow) {
         logger.info(
@@ -116,23 +119,13 @@ type EmotionalStateType =
   | "WORRIED";
 
 /**
- * Emotional state analysis result
- */
-interface EmotionalStateAnalysis {
-  state: EmotionalStateType;
-  intensity: number; // 0-10
-  shouldFilter: string[]; // Actions to filter in this state
-  filterReason?: string;
-}
-
-/**
  * Analyze the emotional state based on game situation
  */
 function analyzeEmotionalState(
   gameState: GameStateResponse,
-  boardAnalysis: any,
+  boardAnalysis: BoardAnalysisData,
   state: State
-): EmotionalStateAnalysis {
+): EmotionalState {
   const advantage = boardAnalysis?.advantage || "EVEN";
   // Use new API fields with fallback to legacy hostPlayer/opponentPlayer
   const myLP = gameState.myLifePoints ?? gameState.hostPlayer?.lifePoints ?? 8000;
@@ -142,8 +135,9 @@ function analyzeEmotionalState(
     gameState.opponentBoard?.length ?? gameState.opponentPlayer?.monsterZone?.length ?? 0;
 
   // Check recent events from state
-  const lastAction = (state as any)?.lastAction;
-  const lastResult = (state as any)?.lastActionResult;
+  const ltcgState = state as LTCGState;
+  const lastAction = ltcgState.values.lastAction as string | undefined;
+  const lastResult = ltcgState.values.lastActionResult as string | undefined;
 
   let emotionalState: EmotionalStateType;
   let intensity: number;
@@ -212,7 +206,7 @@ function analyzeEmotionalState(
  * Determine if response should be allowed based on emotional state
  */
 function shouldAllowResponse(
-  emotionalState: EmotionalStateAnalysis,
+  emotionalState: EmotionalState,
   intendedAction: string | undefined,
   runtime: IAgentRuntime
 ): boolean {

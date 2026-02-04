@@ -70,9 +70,9 @@ export interface HookWithError extends BaseHookReturn {
  * }
  * ```
  */
-export interface MutationHookReturn<T = void> {
+export interface MutationHookReturn<T = void, TArgs extends unknown[] = unknown[]> {
   /** Function to execute the mutation */
-  execute: (...args: any[]) => Promise<T>;
+  execute: (...args: TArgs) => Promise<T>;
   /** Indicates if the mutation is currently executing */
   isLoading: boolean;
   /** Error message if the mutation failed */

@@ -15,6 +15,7 @@ import { validateGameActive } from "../../lib/gameValidation";
 import { type ChainEffect, addToChainHelper } from "../chainResolver";
 import { executeCost, validateCost } from "../effectSystem/costValidator";
 import { checkCanActivateOPT, markEffectUsed } from "../effectSystem/optTracker";
+import type { CardWithAbility } from "../effectSystem/types";
 import { recordEventHelper } from "../gameEvents";
 import { scanFieldForTriggers } from "../triggerSystem";
 
@@ -22,8 +23,8 @@ import { scanFieldForTriggers } from "../triggerSystem";
  * Get the effect to use for chain resolution.
  * Returns the JSON ability from the card.
  */
-function getChainEffect(card: { ability?: unknown }): ChainEffect {
-  const jsonAbility = getRawJsonAbility(card as any);
+function getChainEffect(card: CardWithAbility): ChainEffect {
+  const jsonAbility = getRawJsonAbility(card);
   return jsonAbility ?? { effects: [] };
 }
 

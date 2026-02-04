@@ -759,7 +759,7 @@ export const normalSummonInternal = internalMutation({
     }
 
     // 6. Find the card in hand
-    const cardIdAsId = args.cardId as any;
+    const cardIdAsId = args.cardId as Id<"cardDefinitions">;
     if (!hand.includes(cardIdAsId)) {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: "Card not in hand",
@@ -784,13 +784,19 @@ export const normalSummonInternal = internalMutation({
     validateMonsterZone(board, 5);
 
     // 9. Remove card from hand
-    const newHand = hand.filter((c: any) => c !== cardIdAsId);
+    const newHand = hand.filter((c) => c !== cardIdAsId);
 
     // 10. Add card to board
     const positionValue = args.position === "attack" ? 1 : -1;
 
     // Parse ability for protection flags
-    let protectionFlags: any = {};
+    interface ProtectionFlags {
+      cannotBeDestroyedByBattle?: boolean;
+      cannotBeDestroyedByEffects?: boolean;
+      cannotBeTargeted?: boolean;
+    }
+
+    let protectionFlags: ProtectionFlags = {};
     const parsedAbility = getCardAbility(card);
     const firstEffect = parsedAbility?.effects[0];
     if (firstEffect?.protection) {

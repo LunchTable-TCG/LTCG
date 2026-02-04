@@ -35,7 +35,11 @@ export const triggers = new Triggers<DataModel>();
 /**
  * Helper function to extract changed fields from a patch operation
  */
-function getChangedFields(change: any): string[] | undefined {
+function getChangedFields(change: {
+  operation: string;
+  oldDoc?: Record<string, unknown> | null;
+  newDoc?: Record<string, unknown> | null;
+}): string[] | undefined {
   // Note: Convex triggers use "update" but we map it to "patch" for our schema
   if ((change.operation !== "update" && change.operation !== "patch") || !change.newDoc || !change.oldDoc) {
     return undefined;

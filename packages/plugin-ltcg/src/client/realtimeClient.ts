@@ -21,11 +21,19 @@ import type {
  * Interface for ConvexClient methods used by ConvexRealtimeClient.
  * This allows for dependency injection of a mock client in tests.
  */
+import type { ConvexQueryArgs, Unsubscribe } from "../types/eliza";
+
+// Convex function reference type
+export type ConvexFunction = {
+  _functionName: string;
+  [key: string]: unknown;
+};
+
 export interface IConvexClient {
   setAuth(fetchToken: () => Promise<string | null | undefined>): void;
   clearAuth?(): void;
-  onUpdate<T>(query: any, args: any, callback: (result: T) => void): () => void;
-  query<T>(query: any, args: any): Promise<T>;
+  onUpdate<T>(query: ConvexFunction, args: ConvexQueryArgs, callback: (result: T) => void): Unsubscribe;
+  query<T>(query: ConvexFunction, args: ConvexQueryArgs): Promise<T>;
   close(): void;
 }
 
@@ -179,10 +187,13 @@ export class ConvexRealtimeClient {
 
     // Subscribe to game state query
     // Using string paths since we don't have the generated API object
+    const convexQuery: ConvexFunction = {
+      _functionName: "gameplay/games/queries:getGameStateForPlayer",
+    };
     const unsubscribe = this.client.onUpdate(
-      "gameplay/games/queries:getGameStateForPlayer" as any,
+      convexQuery,
       { lobbyId: gameId },
-      (result: any) => {
+      (result: GameStateResponse) => {
         if (this.debug) {
           console.log(`[ConvexRealtimeClient] Game ${gameId} state updated`);
         }
@@ -246,10 +257,13 @@ export class ConvexRealtimeClient {
     }
 
     // Subscribe to active lobby query and check if it's user's turn
+    const lobbyQuery: ConvexFunction = {
+      _functionName: "gameplay/games/queries:getActiveLobby",
+    };
     const unsubscribe = this.client.onUpdate(
-      "gameplay/games/queries:getActiveLobby" as any,
+      lobbyQuery,
       { userId },
-      (result: any) => {
+      (result: { _id: string } | null) => {
         if (this.debug) {
           console.log(`[ConvexRealtimeClient] Active lobby updated for ${userId}`);
         }
@@ -262,11 +276,14 @@ export class ConvexRealtimeClient {
         // Check if it's the user's turn by querying game state
         // Note: In a production implementation, you might want to batch these
         // or have a dedicated query that returns pending turns
+        const gameStateQuery: ConvexFunction = {
+          _functionName: "gameplay/games/queries:getGameStateForPlayer",
+        };
         this.client
-          .query("gameplay/games/queries:getGameStateForPlayer" as any, {
+          .query<GameStateResponse>(gameStateQuery, {
             lobbyId: result._id,
           })
-          .then((gameState: any) => {
+          .then((gameState) => {
             if (gameState && gameState.currentTurnPlayerId === userId) {
               callback([result._id]);
             } else {
@@ -336,10 +353,13 @@ export class ConvexRealtimeClient {
     let lastEventId: string | null = null;
 
     // Subscribe to game state and extract latest event
+    const eventQuery: ConvexFunction = {
+      _functionName: "gameplay/games/queries:getGameStateForPlayer",
+    };
     const unsubscribe = this.client.onUpdate(
-      "gameplay/games/queries:getGameStateForPlayer" as any,
+      eventQuery,
       { lobbyId: gameId },
-      (result: any) => {
+      (result: { gameEvents?: Array<{ eventId: string; eventType: string }> }) => {
         if (!result || !result.gameEvents || result.gameEvents.length === 0) {
           return;
         }
@@ -464,7 +484,7 @@ export class ConvexRealtimeClient {
   /**
    * Format Convex query result to GameStateResponse
    */
-  private formatGameState(result: any): GameStateResponse {
+  private formatGameState(result: GameStateResponse): GameStateResponse {
     // The query returns a comprehensive game state object
     // We map it to the GameStateResponse format
     const isHost = result.isHost ?? true;
