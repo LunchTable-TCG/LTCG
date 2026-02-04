@@ -5,7 +5,7 @@
  * Run once during setup.
  */
 
-import { internalMutation } from "../_generated/server";
+import { internalMutation } from "../functions";
 import { ABYSSAL_DEPTHS_CARDS, INFERNAL_DRAGONS_CARDS } from "../seeds/starterCards";
 
 export const seedStarterCards = internalMutation({

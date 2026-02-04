@@ -5,7 +5,8 @@
  */
 
 import { v } from "convex/values";
-import { internalMutation, query } from "../_generated/server";
+import { query } from "../_generated/server";
+import { internalMutation } from "../functions";
 import { requireAuthQuery } from "../lib/convexAuth";
 import { requireRole } from "../lib/roles";
 

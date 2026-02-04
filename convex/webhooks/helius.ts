@@ -7,8 +7,8 @@
 
 import { v } from "convex/values";
 import { internal as generatedInternal } from "../_generated/api";
-import { httpAction } from "../_generated/server";
-import { internalMutation, internalQuery } from "../_generated/server";
+import { httpAction, internalQuery } from "../_generated/server";
+import { internalMutation } from "../functions";
 import { tokenHolderCounter, tokenTx24hCounter } from "../infrastructure/shardedCounters";
 
 // biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround for new modules

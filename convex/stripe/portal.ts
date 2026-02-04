@@ -1,4 +1,4 @@
-import { mutation } from "../_generated/server";
+import { mutation } from "../functions";
 import { stripe } from "../lib/stripe";
 
 export const createBillingPortalSession = mutation({

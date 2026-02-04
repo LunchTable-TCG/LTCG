@@ -7,8 +7,8 @@
 
 import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
-import { mutation, query } from "../_generated/server";
-import type { QueryCtx } from "../_generated/server";
+import { query } from "../_generated/server";
+import { mutation } from "../functions";
 import { rankedLeaderboardHumans } from "../infrastructure/aggregates";
 import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";

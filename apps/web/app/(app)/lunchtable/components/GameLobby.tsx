@@ -140,7 +140,7 @@ export function GameLobby() {
       })) || [];
 
   const activeGames: GameLobbyEntry[] =
-    activeGamesData?.map((game) => ({
+    activeGamesData?.map((game: any) => ({
       id: game.lobbyId,
       hostName: game.hostUsername,
       hostRank: "Bronze", // Rank not included in query, using default
@@ -463,7 +463,7 @@ export function GameLobby() {
       >
         {activeTab === "join" ? (
           waitingGames.length > 0 ? (
-            waitingGames.map((game) => (
+            waitingGames.map((game: any) => (
               <WaitingGameCard key={game.id} game={game} onJoin={() => handleJoinGame(game)} />
             ))
           ) : (
@@ -478,7 +478,7 @@ export function GameLobby() {
             />
           )
         ) : activeGames.length > 0 ? (
-          activeGames.map((game) => (
+          activeGames.map((game: any) => (
             <ActiveGameCard key={game.id} game={game} onWatch={handleWatchGame} />
           ))
         ) : (

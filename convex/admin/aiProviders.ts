@@ -7,7 +7,8 @@
  */
 
 import { v } from "convex/values";
-import { action, internalAction, mutation, query } from "../_generated/server";
+import { action, internalAction, query } from "../_generated/server";
+import { mutation } from "../functions";
 import { internal } from "../_generated/api";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";

@@ -1,5 +1,5 @@
 import { internal } from "../_generated/api";
-import { internalMutation } from "../_generated/server";
+import { internalMutation } from "../functions";
 
 // Email action references - extracted to module level for consistency
 const emailActions = internal.infrastructure.emailActions;

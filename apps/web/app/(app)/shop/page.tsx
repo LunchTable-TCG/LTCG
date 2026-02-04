@@ -720,14 +720,14 @@ export default function ShopPage() {
         <CardSelectorModal
           isOpen={isCardSelectorOpen}
           onClose={() => setIsCardSelectorOpen(false)}
-          cards={userCards?.map((card) => ({
+          cards={userCards?.map((card: any) => ({
             cardDefinitionId: card.cardDefinitionId,
             playerCardId: card.id as Id<"playerCards">,
             name: card.name,
             rarity: card.rarity,
             quantity: card.owned,
           }))}
-          onSelectCard={(card) => {
+          onSelectCard={(card: any) => {
             // Route to appropriate listing dialog based on currency selection
             if (listingCurrencyType === "token") {
               setTokenListingCard({

@@ -5,7 +5,7 @@
  */
 
 import { v } from "convex/values";
-import { internalMutation } from "../../_generated/server";
+import { internalMutation } from "../../functions";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { cleanupLingeringEffects } from "../effectSystem/lingeringEffects";
 import { recordEventHelper } from "../gameEvents";

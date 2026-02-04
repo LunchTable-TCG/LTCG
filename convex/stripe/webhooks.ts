@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type Stripe from "stripe";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import { internalMutation } from "../_generated/server";
+import { internalMutation } from "../functions";
 
 export const processStripeEvent = internalMutation({
   args: {

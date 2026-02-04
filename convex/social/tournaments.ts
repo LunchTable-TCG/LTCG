@@ -19,8 +19,8 @@
 
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
-import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
-import type { MutationCtx } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
+import { mutation, internalMutation } from "../functions";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAdminMutation, requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";

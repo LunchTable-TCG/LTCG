@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import { mutation } from "../_generated/server";
+import { mutation } from "../functions";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { getRankFromRating } from "../lib/helpers";

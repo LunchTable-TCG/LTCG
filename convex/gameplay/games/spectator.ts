@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "../../_generated/server";
+import { mutation } from "../../functions";
 import { SPECTATOR } from "../../lib/constants";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { spectatorCounter } from "../../infrastructure/shardedCounters";

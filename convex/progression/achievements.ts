@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { type MutationCtx, internalMutation, query } from "../_generated/server";
+import { query, type MutationCtx } from "../_generated/server";
+import { internalMutation } from "../functions";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthQuery } from "../lib/convexAuth";
 import { achievementUnlockedValidator, achievementValidator } from "../lib/returnValidators";

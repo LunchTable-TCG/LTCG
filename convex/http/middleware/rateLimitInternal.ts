@@ -6,7 +6,8 @@
  */
 
 import { v } from "convex/values";
-import { internalMutation, internalQuery } from "../../_generated/server";
+import { internalQuery } from "../../_generated/server";
+import { internalMutation } from "../../functions";
 
 /**
  * Get API request count within a time window

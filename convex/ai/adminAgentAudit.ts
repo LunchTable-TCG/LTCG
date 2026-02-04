@@ -12,7 +12,7 @@
 
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { internalMutation } from "../_generated/server";
+import { internalMutation } from "../functions";
 
 // =============================================================================
 // Internal Mutations for Audit Logging

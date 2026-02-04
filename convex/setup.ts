@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalMutation, mutation } from "./_generated/server";
+import { mutation, internalMutation } from "./functions";
 
 /**
  * Complete system setup - runs all setup functions in correct order

@@ -10,8 +10,7 @@
  *
  * 1. The file convex/functions.ts has already been created with wrapped mutations.
  *
- * 2. Update all mutation files to import from convex/functions.ts instead of _generated/server.
- * Change: import { mutation } from "./_generated/server"
+import { mutation } from "../functions";
  * To: import { mutation } from "./functions"
  *
  * 3. Set up ESLint rule to enforce usage (optional but recommended):

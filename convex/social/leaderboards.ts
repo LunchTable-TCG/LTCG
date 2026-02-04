@@ -14,8 +14,8 @@
 
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { internalMutation, query } from "../_generated/server";
-import type { MutationCtx } from "../_generated/server";
+import { query } from "../_generated/server";
+import { internalMutation } from "../functions";
 import {
   casualLeaderboard,
   casualLeaderboardHumans,

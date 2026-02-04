@@ -45,7 +45,6 @@ export default function BattlePassPage() {
     claimReward,
     claimAllRewards,
     purchasePremium,
-    pendingPurchases,
   } = useBattlePass();
 
   const [showPremiumModal, setShowPremiumModal] = useState(false);

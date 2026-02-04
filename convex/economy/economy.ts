@@ -1,8 +1,8 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { internalMutation, mutation, query } from "../_generated/server";
-import type { MutationCtx } from "../_generated/server";
+import { query } from "../_generated/server";
+import { mutation, internalMutation } from "../functions";
 import { PAGINATION } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";

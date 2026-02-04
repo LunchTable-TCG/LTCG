@@ -5,7 +5,8 @@
  */
 
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "../_generated/server";
+import { query } from "../_generated/server";
+import { mutation, internalMutation } from "../functions";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { checkRateLimitWrapper } from "../lib/rateLimit";

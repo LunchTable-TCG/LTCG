@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation } from "../_generated/server";
+import { internalMutation } from "../functions";
 
 /**
  * Seed a test user for E2E testing

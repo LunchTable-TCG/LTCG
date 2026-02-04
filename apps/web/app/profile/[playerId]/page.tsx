@@ -396,7 +396,7 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {matchHistory.map((match) => (
+                  {matchHistory.map((match: any) => (
                     <div
                       key={match.id}
                       className={cn(

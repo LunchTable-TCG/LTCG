@@ -1,7 +1,8 @@
 import bcrypt from "bcryptjs";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
+import { mutation, internalMutation } from "../functions";
 import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 

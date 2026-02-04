@@ -6,7 +6,8 @@ import type { Id } from "../_generated/dataModel";
 import * as generatedApi from "../_generated/api";
 // biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
 const internal = (generatedApi as any).internal;
-import { mutation, query } from "../_generated/server";
+import { query } from "../_generated/server";
+import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 

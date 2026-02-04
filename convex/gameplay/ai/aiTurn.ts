@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import type { Doc, Id } from "../../_generated/dataModel";
-import { internalMutation, mutation } from "../../_generated/server";
+import { mutation, internalMutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { drawCards } from "../../lib/gameHelpers";

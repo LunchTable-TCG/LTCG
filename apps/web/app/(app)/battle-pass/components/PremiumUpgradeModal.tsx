@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Crown, Gem, Star } from "lucide-react";
 import { toast } from "sonner";

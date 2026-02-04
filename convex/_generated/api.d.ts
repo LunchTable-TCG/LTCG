@@ -159,6 +159,7 @@ import type * as http_middleware_rateLimitInternal from "../http/middleware/rate
 import type * as http_middleware_responses from "../http/middleware/responses.js";
 import type * as http_story from "../http/story.js";
 import type * as http_types from "../http/types.js";
+import type * as infrastructure_actionRetrier from "../infrastructure/actionRetrier.js";
 import type * as infrastructure_aggregates from "../infrastructure/aggregates.js";
 import type * as infrastructure_auditLog from "../infrastructure/auditLog.js";
 import type * as infrastructure_crons from "../infrastructure/crons.js";
@@ -173,6 +174,7 @@ import type * as lib_adminAudit from "../lib/adminAudit.js";
 import type * as lib_cardPropertyHelpers from "../lib/cardPropertyHelpers.js";
 import type * as lib_constants from "../lib/constants.js";
 import type * as lib_convexAuth from "../lib/convexAuth.js";
+import type * as lib_customFunctions from "../lib/customFunctions.js";
 import type * as lib_debug from "../lib/debug.js";
 import type * as lib_debugHelpers from "../lib/debugHelpers.js";
 import type * as lib_deterministicRandom from "../lib/deterministicRandom.js";
@@ -428,6 +430,7 @@ declare const fullApi: ApiFromModules<{
   "http/middleware/responses": typeof http_middleware_responses;
   "http/story": typeof http_story;
   "http/types": typeof http_types;
+  "infrastructure/actionRetrier": typeof infrastructure_actionRetrier;
   "infrastructure/aggregates": typeof infrastructure_aggregates;
   "infrastructure/auditLog": typeof infrastructure_auditLog;
   "infrastructure/crons": typeof infrastructure_crons;
@@ -442,6 +445,7 @@ declare const fullApi: ApiFromModules<{
   "lib/cardPropertyHelpers": typeof lib_cardPropertyHelpers;
   "lib/constants": typeof lib_constants;
   "lib/convexAuth": typeof lib_convexAuth;
+  "lib/customFunctions": typeof lib_customFunctions;
   "lib/debug": typeof lib_debug;
   "lib/debugHelpers": typeof lib_debugHelpers;
   "lib/deterministicRandom": typeof lib_deterministicRandom;
@@ -567,6 +571,53 @@ export declare const internal: FilterApi<
 >;
 
 export declare const components: {
+  actionRetrier: {
+    public: {
+      cancel: FunctionReference<
+        "mutation",
+        "internal",
+        { runId: string },
+        boolean
+      >;
+      cleanup: FunctionReference<
+        "mutation",
+        "internal",
+        { runId: string },
+        any
+      >;
+      start: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          functionArgs: any;
+          functionHandle: string;
+          options: {
+            base: number;
+            initialBackoffMs: number;
+            logLevel: "DEBUG" | "INFO" | "WARN" | "ERROR";
+            maxFailures: number;
+            onComplete?: string;
+            runAfter?: number;
+            runAt?: number;
+          };
+        },
+        string
+      >;
+      status: FunctionReference<
+        "query",
+        "internal",
+        { runId: string },
+        | { type: "inProgress" }
+        | {
+            result:
+              | { returnValue: any; type: "success" }
+              | { error: string; type: "failed" }
+              | { type: "canceled" };
+            type: "completed";
+          }
+      >;
+    };
+  };
   ratelimiter: {
     public: {
       checkRateLimit: FunctionReference<

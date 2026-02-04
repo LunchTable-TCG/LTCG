@@ -4,8 +4,8 @@ import { internal } from "../../_generated/api";
 // Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
 const internalAny = internal as any;
 import type { Id } from "../../_generated/dataModel";
-import { internalAction, internalMutation } from "../../_generated/server";
-import type { MutationCtx } from "../../_generated/server";
+import { internalAction } from "../../_generated/server";
+import { internalMutation } from "../../functions";
 
 // ============================================================================
 // HELPER FUNCTIONS

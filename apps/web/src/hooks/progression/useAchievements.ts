@@ -81,16 +81,16 @@ export function useAchievements(): UseAchievementsReturn {
   );
 
   // Separate achievements by status
-  const unlockedAchievements = achievements?.filter((a) => a.isUnlocked) || [];
-  const lockedAchievements = achievements?.filter((a) => !a.isUnlocked) || [];
+  const unlockedAchievements = achievements?.filter((a: any) => a.isUnlocked) || [];
+  const lockedAchievements = achievements?.filter((a: any) => !a.isUnlocked) || [];
 
   // Filter by category
   const byCategory = (category: string): Achievement[] =>
-    achievements?.filter((a) => a.category === category) || [];
+    achievements?.filter((a: any) => a.category === category) || [];
 
   // Filter by rarity
   const byRarity = (rarity: string): Achievement[] =>
-    achievements?.filter((a) => a.rarity === rarity) || [];
+    achievements?.filter((a: any) => a.rarity === rarity) || [];
 
   // Calculate completion percentage
   const totalAchievements = achievements?.length || 0;

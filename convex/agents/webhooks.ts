@@ -7,7 +7,8 @@
  */
 
 import { v } from "convex/values";
-import { action, internalAction, internalMutation, internalQuery, mutation } from "../_generated/server";
+import { action, internalAction, internalQuery } from "../_generated/server";
+import { mutation, internalMutation } from "../functions";
 import { internal } from "../_generated/api";
 import { internalAny } from "../lib/internalHelpers";
 import { actionRetrier, RetryConfig } from "../infrastructure/actionRetrier";

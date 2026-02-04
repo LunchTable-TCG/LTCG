@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import type { MutationCtx } from "../_generated/server";
-import { internalMutation } from "../_generated/server";
+import { internalMutation } from "../functions";
 
 /**
  * Helper function that performs the actual cleanup logic

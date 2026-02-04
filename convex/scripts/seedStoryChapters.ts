@@ -1,7 +1,7 @@
 // Seed story chapters into the database
 // Run this mutation from the Convex dashboard to populate story chapters
 
-import { mutation } from "../_generated/server";
+import { mutation } from "../functions";
 import { STORY_CHAPTERS } from "../seeds/storyChapters";
 import { getStagesForChapter } from "../seeds/storyStages";
 

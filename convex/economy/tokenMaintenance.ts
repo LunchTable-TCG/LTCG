@@ -11,7 +11,8 @@
 
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import { internalAction, internalMutation, internalQuery } from "../_generated/server";
+import { internalAction, internalQuery } from "../_generated/server";
+import { internalMutation } from "../functions";
 
 // Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
 // biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround

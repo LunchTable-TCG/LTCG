@@ -7,8 +7,8 @@
 
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { mutation, query } from "../_generated/server";
-import type { MutationCtx } from "../_generated/server";
+import { query } from "../_generated/server";
+import { mutation } from "../functions";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";

@@ -337,7 +337,7 @@ function BinderContent() {
   // Load deck cards when selectedDeckData changes
   useEffect(() => {
     if (selectedDeckData?.cards) {
-      const loadedCards: DeckCard[] = selectedDeckData.cards.map((apiCard) => ({
+      const loadedCards: DeckCard[] = selectedDeckData.cards.map((apiCard: any) => ({
         card: {
           id: apiCard.cardDefinitionId,
           cardDefinitionId: apiCard.cardDefinitionId,

@@ -2,7 +2,8 @@ import { Presence } from "@convex-dev/presence";
 import { v } from "convex/values";
 import { components } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
+import { mutation, internalMutation } from "./functions";
 import { requireAuthMutation, requireAuthQuery } from "./lib/convexAuth";
 import { ErrorCode, createError } from "./lib/errorCodes";
 import type { UserStatus } from "./lib/types";
@@ -190,13 +191,13 @@ export const list = query({
     const presenceList = await presence.list(ctx, args.roomToken);
 
     // Transform presence data to include custom metadata
-    // @ts-ignore - Presence component API migration in progress
-    return presenceList.map((p) => ({
+    // Presence component API migration in progress - using any cast for type compatibility
+    return presenceList.map((p: any) => ({
       userId: p.userId,
       sessionId: p.sessionId,
-      username: (p.data as any)?.username ?? "Unknown",
-      status: (p.data as any)?.status ?? "online",
-      lastActiveAt: (p.data as any)?.lastActiveAt ?? Date.now(),
+      username: p.data?.username ?? "Unknown",
+      status: p.data?.status ?? "online",
+      lastActiveAt: p.data?.lastActiveAt ?? Date.now(),
     }));
   },
 });
@@ -221,14 +222,12 @@ export const listUserRooms = query({
 
     const userPresence = await presence.listUser(ctx, userId);
 
-    return userPresence.map((p) => ({
+    // Presence component API migration in progress - using any cast for type compatibility
+    return userPresence.map((p: any) => ({
       roomId: p.roomId,
-      // @ts-expect-error - Presence component API migration in progress
       sessionId: p.sessionId,
-      // @ts-expect-error - Presence component API migration in progress
-      status: (p.data as any)?.status ?? "online",
-      // @ts-expect-error - Presence component API migration in progress
-      lastActiveAt: (p.data as any)?.lastActiveAt ?? Date.now(),
+      status: p.data?.status ?? "online",
+      lastActiveAt: p.data?.lastActiveAt ?? Date.now(),
     }));
   },
 });

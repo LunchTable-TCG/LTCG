@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
-import { internalMutation, mutation } from "../../_generated/server";
 import type { MutationCtx } from "../../_generated/server";
+import { mutation, internalMutation } from "../../functions";
 import { completedGamesCounter } from "../../infrastructure/shardedCounters";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { shuffleArray } from "../../lib/deterministicRandom";

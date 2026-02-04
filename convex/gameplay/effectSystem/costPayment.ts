@@ -13,7 +13,8 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query } from "../../_generated/server";
+import { query } from "../../_generated/server";
+import { mutation } from "../../functions";
 import { requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { validateGameActive } from "../../lib/gameValidation";

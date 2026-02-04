@@ -14,7 +14,8 @@ import {
 } from "@data/cards";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import { internalMutation, internalQuery } from "../_generated/server";
+import { internalQuery } from "../_generated/server";
+import { internalMutation } from "../functions";
 import { migrationsPool } from "../infrastructure/workpools";
 
 export const previewLoad = internalQuery({

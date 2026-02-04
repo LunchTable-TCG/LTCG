@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation } from "../_generated/server";
+import { internalMutation } from "../functions";
 
 /**
  * Internal mutation for seeding test decks in E2E tests.

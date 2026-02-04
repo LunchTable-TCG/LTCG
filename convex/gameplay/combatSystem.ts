@@ -17,8 +17,7 @@
 
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
-import { internalMutation, mutation } from "../_generated/server";
-import type { MutationCtx } from "../_generated/server";
+import { mutation, internalMutation } from "../functions";
 import { getCardAbility, getCardFirstEffect } from "../lib/abilityHelpers";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";

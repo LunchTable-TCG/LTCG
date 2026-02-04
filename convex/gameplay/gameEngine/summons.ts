@@ -8,7 +8,7 @@
  */
 
 import { v } from "convex/values";
-import { internalMutation, mutation } from "../../_generated/server";
+import { mutation, internalMutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
