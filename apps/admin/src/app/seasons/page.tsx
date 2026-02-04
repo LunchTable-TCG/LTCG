@@ -378,7 +378,11 @@ export default function SeasonsPage() {
           <Card>
             <div className="text-center">
               <Text className="text-2xl font-bold text-emerald-500">
-                {seasonStats?.activeSeason?.name ?? "None"}
+                {(seasonStats?.activeSeason as { name?: string } | number | undefined)
+                  ? typeof seasonStats?.activeSeason === "number"
+                    ? `Season ${seasonStats.activeSeason}`
+                    : (seasonStats?.activeSeason as { name?: string })?.name ?? "None"
+                  : "None"}
               </Text>
               <Text className="text-sm text-muted-foreground">Current Season</Text>
             </div>

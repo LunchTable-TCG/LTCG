@@ -339,14 +339,16 @@ export default function StageEditorPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Queries
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const stageData = useConvexQuery(typedApi.admin.story.getStage, {
     stageId: stageId as Id<"storyStages">,
-  });
+  }) as { stage: Stage; chapter: Chapter } | null | undefined;
 
   // Get card definitions for reward selector
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const cardsResult = useConvexQuery(typedApi.admin.cards.listCards, {
     includeInactive: false,
-  });
+  }) as { cards: CardDefinition[] } | undefined;
 
   // Mutations
   const updateStage = useConvexMutation(typedApi.admin.story.updateStage);

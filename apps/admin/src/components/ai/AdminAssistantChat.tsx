@@ -148,7 +148,8 @@ export function AdminAssistantChat({
         role: "assistant",
         content: result.text,
         createdAt: Date.now(),
-        toolCalls: result.toolCalls?.map((tc) => ({
+        // biome-ignore lint/suspicious/noExplicitAny: toolCall type varies by AI provider
+        toolCalls: result.toolCalls?.map((tc: any) => ({
           name: "toolName" in tc ? String(tc.toolName) : "unknown",
           args: "args" in tc ? tc.args : {},
           result: "result" in tc ? tc.result : undefined,

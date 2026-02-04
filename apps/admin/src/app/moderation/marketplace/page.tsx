@@ -528,7 +528,7 @@ export default function MarketplaceModerationPage() {
                         currentBid?: number;
                         status: ListingStatus;
                         _creationTime: number;
-                        quantity: number;
+                        quantity?: number;
                       }) => (
                         <TableRow key={listing._id}>
                           <TableCell>
@@ -538,7 +538,7 @@ export default function MarketplaceModerationPage() {
                                 className={`text-xs capitalize ${RARITY_COLORS[listing.cardRarity] ?? ""}`}
                               >
                                 {listing.cardRarity}
-                                {listing.quantity > 1 && ` (x${listing.quantity})`}
+                                {(listing.quantity ?? 1) > 1 && ` (x${listing.quantity})`}
                               </p>
                             </div>
                           </TableCell>
@@ -967,7 +967,7 @@ export default function MarketplaceModerationPage() {
                     <CommandList>
                       <CommandEmpty>No cards found.</CommandEmpty>
                       <CommandGroup>
-                        {cardsResult?.cards?.map((card: CardDefinition) => (
+                        {cardsResult?.map((card: CardDefinition) => (
                           <CommandItem
                             key={card._id}
                             value={card.name}

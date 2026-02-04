@@ -45,6 +45,7 @@ import { toast } from "sonner";
 // =============================================================================
 
 type QuestType = "daily" | "weekly" | "achievement";
+type RequirementType = "win_games" | "play_games" | "play_cards" | "deal_damage" | "win_with_archetype" | "collect_cards" | "spend_gold" | "complete_story";
 type GameMode = "ranked" | "casual" | "story";
 
 const QUEST_TYPES = [
@@ -121,9 +122,9 @@ export default function QuestEditorPage() {
       setQuestId(existingQuest.questId);
       setName(existingQuest.name);
       setDescription(existingQuest.description);
-      setQuestType(existingQuest.questType);
-      setRequirementType(existingQuest.requirementType);
-      setTargetValue(existingQuest.targetValue.toString());
+      setQuestType(existingQuest.questType as QuestType);
+      setRequirementType(existingQuest.requirementType as RequirementType);
+      setTargetValue(existingQuest.targetValue?.toString() ?? "0");
       setRewardGold(existingQuest.rewards.gold.toString());
       setRewardXp(existingQuest.rewards.xp.toString());
       setRewardGems(existingQuest.rewards.gems?.toString() ?? "");

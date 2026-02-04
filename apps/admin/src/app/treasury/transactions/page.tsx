@@ -120,7 +120,8 @@ export default function TreasuryTransactionsPage() {
   const limit = 20;
 
   // Fetch transactions
-  const { transactions, total } = useQuery(typedApi.treasury.transactions.listTransactions, {
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
+  const { transactions, total } = (useQuery(typedApi.treasury.transactions.listTransactions, {
     status:
       statusFilter !== "all"
         ? (statusFilter as "pending" | "submitted" | "confirmed" | "failed")
@@ -137,10 +138,11 @@ export default function TreasuryTransactionsPage() {
         : undefined,
     limit,
     offset: page * limit,
-  }) ?? { transactions: [], total: 0 };
+  }) as any) ?? { transactions: [], total: 0 };
 
   // Fetch stats
-  const stats = useQuery(typedApi.treasury.transactions.getStats, { daysBack: 30 });
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
+  const stats = useQuery(typedApi.treasury.transactions.getStats, { daysBack: 30 }) as any;
 
   const isLoading = transactions === undefined;
   const totalPages = Math.ceil(total / limit);

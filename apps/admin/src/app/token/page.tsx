@@ -170,7 +170,8 @@ function CountdownDisplay({ targetTime }: { targetTime: number }) {
 
 export default function TokenLaunchPage() {
   // Fetch launch status data
-  const launchStatus = useConvexQuery(typedApi.tokenLaunch.schedule.getStatus);
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incomplete return type
+  const launchStatus = useConvexQuery(typedApi.tokenLaunch.schedule.getStatus) as any;
   const schedule = useConvexQuery(typedApi.tokenLaunch.schedule.getSchedule);
   const checklistSummary = useConvexQuery(typedApi.tokenLaunch.checklist.getSummary) as
     | ChecklistSummary

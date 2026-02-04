@@ -247,9 +247,10 @@ export default function TournamentDetailPage() {
   const [showGrantDialog, setShowGrantDialog] = useState(false);
 
   // Queries and mutations
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incomplete return type
   const tournament = useConvexQuery(typedApi.admin.tournaments.getTournament, {
     tournamentId: tournamentId as TournamentId,
-  });
+  }) as any;
 
   const updateTournament = useConvexMutation(typedApi.admin.tournaments.updateTournament);
   const forceStart = useConvexMutation(typedApi.admin.tournaments.forceStartTournament);

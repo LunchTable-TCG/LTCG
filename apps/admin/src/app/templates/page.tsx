@@ -70,10 +70,14 @@ export default function TemplatesPage() {
   const [duplicateName, setDuplicateName] = useState("");
 
   // Queries
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const templates = useConvexQuery(typedApi.admin.templates.listTemplates, {
     cardType: typeFilter === "all" ? undefined : typeFilter,
-  });
-  const stats = useConvexQuery(typedApi.admin.templates.getTemplateStats, {});
+  }) as TemplateListItem[] | undefined;
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
+  const stats = useConvexQuery(typedApi.admin.templates.getTemplateStats, {}) as
+    | { total: number; active: number; defaults: number; totalBlocks: number; byType: Record<string, number> }
+    | undefined;
 
   // Mutations
   const createTemplate = useConvexMutation(typedApi.admin.templates.createTemplate);

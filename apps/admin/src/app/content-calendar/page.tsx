@@ -27,8 +27,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { api } from "@convex/_generated/api";
 import type { Doc, Id } from "@convex/_generated/dataModel";
+
+// Use api directly - typedApi doesn't have content/email modules yet
+// biome-ignore lint/suspicious/noExplicitAny: New API modules not in TypedAPI
+const contentApi = (api as any).content.scheduledContent;
+// biome-ignore lint/suspicious/noExplicitAny: New API modules not in TypedAPI
+const emailApi = (api as any).email.lists;
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -69,19 +76,19 @@ export default function ContentCalendarPage() {
   }, [currentDate]);
 
   // Queries
-  const contentResult = useConvexQuery(typedApi.content.scheduledContent.getByDateRange, {
+  const contentResult = useConvexQuery(contentApi.getByDateRange, {
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
   });
 
-  const statsResult = useConvexQuery(typedApi.content.scheduledContent.getStats, {});
-  const emailListsResult = useConvexQuery(typedApi.email.lists.listLists, {});
+  const statsResult = useConvexQuery(contentApi.getStats, {});
+  const emailListsResult = useConvexQuery(emailApi.listLists, {});
 
   // Mutations
-  const createContent = useConvexMutation(typedApi.content.scheduledContent.create);
-  const updateContent = useConvexMutation(typedApi.content.scheduledContent.update);
-  const deleteContent = useConvexMutation(typedApi.content.scheduledContent.remove);
-  const duplicateContent = useConvexMutation(typedApi.content.scheduledContent.duplicate);
+  const createContent = useConvexMutation(contentApi.create);
+  const updateContent = useConvexMutation(contentApi.update);
+  const deleteContent = useConvexMutation(contentApi.remove);
+  const duplicateContent = useConvexMutation(contentApi.duplicate);
 
   // Get content for selected day
   const selectedDayContent = useMemo(() => {

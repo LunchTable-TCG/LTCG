@@ -230,15 +230,14 @@ export default function ReportsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reportsData.reports.map(
-                    (report: {
+                  {(reportsData.reports as unknown as Array<{
                       _id: string;
                       reporterUsername: string;
                       reportedUsername: string;
                       reason: string;
                       status: ReportStatus;
                       createdAt: number;
-                    }) => (
+                    }>).map((report) => (
                       <TableRow key={report._id}>
                         <TableCell>
                           <Checkbox

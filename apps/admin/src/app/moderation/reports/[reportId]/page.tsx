@@ -68,10 +68,13 @@ export default function ReportDetailPage() {
   const reportQueryArgs = isAdmin ? { reportId: reportId as Id<"userReports"> } : "skip";
   const report = useTypedQuery(getReportQuery, reportQueryArgs);
 
+  // Cast mutations to any - typedApi has wrong table name (playerReports vs userReports)
   const updateStatusMutation = typedApi.admin.reports.updateReportStatus;
-  const updateStatus = useMutation(updateStatusMutation);
+  // biome-ignore lint/suspicious/noExplicitAny: typedApi has incorrect table name type
+  const updateStatus = useMutation(updateStatusMutation) as any;
   const resolveWithActionMutation = typedApi.admin.reports.resolveReportWithAction;
-  const resolveWithAction = useMutation(resolveWithActionMutation);
+  // biome-ignore lint/suspicious/noExplicitAny: typedApi has incorrect table name type
+  const resolveWithAction = useMutation(resolveWithActionMutation) as any;
 
   const handleStatusChange = async (status: ReportStatus) => {
     try {
@@ -397,7 +400,13 @@ export default function ReportDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {report.moderationHistory.map((action) => (
+                  {report.moderationHistory.map((action: {
+                    _id: string;
+                    actionType: string;
+                    createdAt: number;
+                    reason?: string;
+                    moderatorName?: string;
+                  }) => (
                     <div key={action._id} className="p-2 border rounded-md text-sm">
                       <div className="flex items-center justify-between mb-1">
                         <Badge variant="outline" className="text-xs capitalize">

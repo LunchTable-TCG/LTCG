@@ -255,7 +255,7 @@ function QuestList() {
                 </tr>
               </thead>
               <tbody>
-                {questsResult?.quests.map((quest: Quest) => {
+                {(questsResult?.quests as unknown as Quest[])?.map((quest) => {
                   const typeConfig = QUEST_TYPE_CONFIG[quest.questType as QuestType];
                   return (
                     <tr
@@ -506,7 +506,7 @@ function AchievementList() {
                 </tr>
               </thead>
               <tbody>
-                {achievementsResult?.achievements.map((achievement: Achievement) => (
+                {(achievementsResult?.achievements as unknown as Achievement[])?.map((achievement) => (
                   <tr
                     key={achievement._id}
                     className={`border-b hover:bg-muted/30 ${!achievement.isActive ? "opacity-50" : ""}`}

@@ -48,7 +48,7 @@ interface StripeWebhookEvent {
 interface FailedWebhookEvent {
   _id: string;
   type: string;
-  error: string;
+  error?: string;
   receivedAt: number;
 }
 
@@ -225,7 +225,7 @@ function SubscriptionStats() {
               data={statusData}
               category="value"
               index="name"
-              colors={statusData.map((s: { name: string }) => statusColors[s.name] || "gray")}
+              colors={statusData.map((s: { name: string }) => (statusColors as Record<string, string>)[s.name] || "gray")}
               showLabel
             />
             <div className="space-y-2">
@@ -233,7 +233,7 @@ function SubscriptionStats() {
                 <div key={s.status} className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <div
-                      className={`w-3 h-3 rounded-full bg-${statusColors[s.status] || "gray"}-500`}
+                      className={`w-3 h-3 rounded-full bg-${(statusColors as Record<string, string>)[s.status] || "gray"}-500`}
                     />
                     <Text>{s.status}</Text>
                   </div>
@@ -445,7 +445,7 @@ function WebhookEventsMonitor() {
             </div>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {failedEvents.map((event: FailedWebhookEvent) => (
+              {(failedEvents as FailedWebhookEvent[]).map((event) => (
                 <div
                   key={event._id}
                   className="p-3 rounded-lg border border-rose-200 bg-rose-50/50"

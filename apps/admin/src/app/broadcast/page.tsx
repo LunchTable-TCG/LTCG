@@ -435,7 +435,15 @@ function SystemMessageForm() {
   const [playerIds, setPlayerIds] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const sendSystemMessage = useConvexMutation(typedApi.admin.batchAdmin.sendSystemMessage);
+  // Cast to unknown first to bypass typedApi's incorrect type signature
+  const sendSystemMessageMutation = useConvexMutation(
+    typedApi.admin.batchAdmin.sendSystemMessage
+  ) as unknown as (args: {
+    playerIds: Id<"users">[];
+    title: string;
+    message: string;
+    category?: string;
+  }) => Promise<{ message: string }>;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -457,12 +465,12 @@ function SystemMessageForm() {
 
     setIsLoading(true);
     try {
-      const result = (await sendSystemMessage({
+      const result = await sendSystemMessageMutation({
         playerIds: ids as Id<"users">[],
         title: title.trim(),
         message: message.trim(),
         category,
-      })) as { message: string };
+      });
 
       toast.success(result.message);
 

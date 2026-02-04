@@ -89,7 +89,9 @@ export default function ListingDetailPage() {
 
   const suspendListing = useConvexMutation(typedApi.admin.marketplace.suspendListing);
   const suspendSellerListings = useConvexMutation(typedApi.admin.marketplace.suspendSellerListings);
-  const refundBid = useConvexMutation(typedApi.admin.marketplace.refundBid);
+  const refundBidMut = useConvexMutation(typedApi.admin.marketplace.refundBid);
+  // biome-ignore lint/suspicious/noExplicitAny: typedApi has incorrect arg types for this endpoint
+  const refundBid = refundBidMut as any;
   const setPriceCap = useConvexMutation(typedApi.admin.marketplace.setPriceCap);
 
   const formatGold = (amount: number) => {
@@ -441,15 +443,15 @@ export default function ListingDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {listing.bids.map(
-                      (bid: {
+                    {(listing.bids as Array<{
                         _id: string;
                         bidderId: string;
-                        bidderUsername: string;
-                        bidAmount: number;
-                        bidStatus: string;
+                        bidderUsername?: string;
+                        amount?: number;
+                        bidAmount?: number;
+                        bidStatus?: string;
                         createdAt: number;
-                      }) => (
+                      }>).map((bid) => (
                         <TableRow key={bid._id}>
                           <TableCell>
                             <Link
@@ -460,7 +462,7 @@ export default function ListingDetailPage() {
                             </Link>
                           </TableCell>
                           <TableCell className="font-medium">
-                            {formatGold(bid.bidAmount)} gold
+                            {formatGold(bid.bidAmount ?? bid.amount ?? 0)} gold
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -488,7 +490,7 @@ export default function ListingDetailPage() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() =>
-                                  openRefundDialog(bid._id, bid.bidderUsername, bid.bidAmount)
+                                  openRefundDialog(bid._id, bid.bidderUsername ?? "Unknown", bid.bidAmount ?? bid.amount ?? 0)
                                 }
                               >
                                 <RefreshCw className="mr-1 h-3 w-3" />

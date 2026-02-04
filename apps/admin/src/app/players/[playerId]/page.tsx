@@ -30,7 +30,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
 import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
+import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+
+// Use api directly for queries where typedApi has incorrect arg types
+// biome-ignore lint/suspicious/noExplicitAny: typedApi has incorrect arg types
+const adminApi = (api as any).admin;
 import { Card, Flex, Text, Title } from "@tremor/react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -135,24 +140,24 @@ export default function PlayerDetailPage() {
   const [noteText, setNoteText] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Fetch player data
-  const profile = useQuery(typedApi.admin.admin.getPlayerProfile, { playerId }) as
+  // Fetch player data - use adminApi to bypass typedApi arg type mismatches
+  const profile = useQuery(adminApi.admin.getPlayerProfile, { playerId }) as
     | PlayerProfile
     | undefined;
-  const moderationStatus = useQuery(typedApi.admin.moderation.getPlayerModerationStatus, {
+  const moderationStatus = useQuery(adminApi.moderation.getPlayerModerationStatus, {
     playerId,
   }) as ModerationStatus | undefined;
-  const moderationHistory = useQuery(typedApi.admin.moderation.getModerationHistory, {
+  const moderationHistory = useQuery(adminApi.moderation.getModerationHistory, {
     playerId,
     limit: 20,
   }) as ModerationHistoryEntry[] | undefined;
   // Fetch player engagement data
-  const engagementData = useQuery(typedApi.admin.analytics.getPlayerEngagement, {
+  const engagementData = useQuery(adminApi.analytics.getPlayerEngagement, {
     userId: playerId,
     days: 30,
   }) as EngagementData | undefined;
   // Fetch player inventory
-  const inventory = useQuery(typedApi.admin.admin.getPlayerInventory, { playerId }) as
+  const inventory = useQuery(adminApi.admin.getPlayerInventory, { playerId }) as
     | PlayerInventory
     | undefined;
 

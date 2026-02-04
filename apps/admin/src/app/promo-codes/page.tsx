@@ -63,12 +63,12 @@ interface ShopProduct {
 interface PromoCode {
   _id: Id<"promoCodes">;
   code: string;
-  description: string;
+  description?: string;
   rewardType: RewardType;
-  rewardAmount: number;
+  rewardAmount?: number;
   rewardPackId?: string;
   maxRedemptions?: number;
-  redemptionCount: number;
+  redemptionCount?: number;
   expiresAt?: number;
   isActive: boolean;
   createdAt: number;
@@ -543,10 +543,11 @@ export default function PromoCodesPage() {
 
   const handleToggleActive = async (promoCodeId: Id<"promoCodes">, _code: string) => {
     try {
-      const result = (await toggleActive({ promoCodeId })) as {
-        message: string;
+      const result = (await toggleActive({ promoCodeId })) as unknown as {
+        message?: string;
+        isActive?: boolean;
       };
-      toast.success(result.message);
+      toast.success(result.message ?? `Code ${result.isActive ? "activated" : "deactivated"}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle code status");
     }
@@ -680,11 +681,11 @@ export default function PromoCodesPage() {
                 </tr>
               </thead>
               <tbody>
-                {codesResult?.codes.map((code: PromoCode) => {
+                {(codesResult?.codes as unknown as PromoCode[])?.map((code) => {
                   const rewardConfig = REWARD_TYPE_CONFIG[code.rewardType as RewardType];
                   const isExpired = Boolean(code.expiresAt && code.expiresAt <= now);
                   const isExhausted = Boolean(
-                    code.maxRedemptions && code.redemptionCount >= code.maxRedemptions
+                    code.maxRedemptions && (code.redemptionCount ?? 0) >= code.maxRedemptions
                   );
 
                   return (
@@ -716,7 +717,7 @@ export default function PromoCodesPage() {
                         <Badge color={rewardConfig.color} size="sm">
                           <span className="flex items-center gap-1">
                             {rewardConfig.icon}
-                            {code.rewardAmount.toLocaleString()} {rewardConfig.label}
+                            {(code.rewardAmount ?? 0).toLocaleString()} {rewardConfig.label}
                           </span>
                         </Badge>
                       </td>
@@ -724,7 +725,7 @@ export default function PromoCodesPage() {
                         {code.description || "-"}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        {code.redemptionCount}
+                        {code.redemptionCount ?? 0}
                         {code.maxRedemptions && (
                           <span className="text-muted-foreground"> / {code.maxRedemptions}</span>
                         )}

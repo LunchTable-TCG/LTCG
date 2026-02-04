@@ -26,6 +26,7 @@ import { toast } from "sonner";
 // =============================================================================
 
 interface RarityWeights {
+  [key: string]: number;
   common: number;
   uncommon: number;
   rare: number;
@@ -34,6 +35,7 @@ interface RarityWeights {
 }
 
 interface VariantRates {
+  [key: string]: number;
   standard: number;
   foil: number;
   altArt: number;
@@ -41,6 +43,7 @@ interface VariantRates {
 }
 
 interface PityThresholds {
+  [key: string]: number;
   epic: number;
   legendary: number;
   fullArt: number;
@@ -345,7 +348,7 @@ function PityThresholdsEditor({
 export default function RngConfigPage() {
   const [saving, setSaving] = useState<string | null>(null);
 
-  const configResult = useConvexQuery(typedApi.economy.getRngConfig, {});
+  const configResult = useConvexQuery(typedApi.economy.rngConfig.getRngConfig, {});
   const historyResult = useConvexQuery(typedApi.admin.rngConfig.getRngConfigHistory, { limit: 20 });
 
   const updateRarityWeights = useConvexMutation(typedApi.admin.rngConfig.updateRarityWeights);
@@ -435,7 +438,7 @@ export default function RngConfigPage() {
           <TabsContent value="rarity">
             {config && (
               <RarityWeightsEditor
-                weights={config.rarityWeights}
+                weights={config.rarityWeights as RarityWeights}
                 onSave={handleSaveRarityWeights}
                 isSaving={saving === "rarity"}
               />
@@ -460,7 +463,7 @@ export default function RngConfigPage() {
           <TabsContent value="variants">
             {config && (
               <VariantRatesEditor
-                rates={config.variantRates}
+                rates={config.variantRates as VariantRates}
                 onSave={handleSaveVariantRates}
                 isSaving={saving === "variant"}
               />
@@ -494,7 +497,7 @@ export default function RngConfigPage() {
                             by {log.adminName} at {new Date(log.timestamp).toLocaleString()}
                           </Text>
                         </div>
-                        {log.metadata?.config && (
+                        {"config" in (log.metadata ?? {}) && (
                           <Badge color="gray" className="text-xs">
                             Config updated
                           </Badge>

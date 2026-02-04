@@ -604,15 +604,14 @@ function RecentLargePurchases() {
           <Text className="text-muted-foreground">No large purchases to display</Text>
         ) : (
           <div className="space-y-2 max-h-80 overflow-y-auto">
-            {purchases.map(
-              (p: {
-                _id: string;
-                username: string;
-                packType: string;
-                openedAt: number;
-                currencyUsed: string;
-                amountPaid?: number;
-              }) => (
+            {(purchases as Array<{
+              _id: string;
+              username: string;
+              packType: string;
+              openedAt: number;
+              currencyUsed?: string;
+              amountPaid?: number;
+            }>).map((p) => (
                 <div
                   key={p._id}
                   className="flex items-center justify-between p-2 rounded-lg border"
@@ -627,7 +626,7 @@ function RecentLargePurchases() {
                     <Text
                       className={`font-semibold ${p.currencyUsed === "gold" ? "text-amber-600" : "text-emerald-600"}`}
                     >
-                      {p.amountPaid?.toLocaleString()} {p.currencyUsed}
+                      {p.amountPaid?.toLocaleString()} {p.currencyUsed || "currency"}
                     </Text>
                   </div>
                 </div>

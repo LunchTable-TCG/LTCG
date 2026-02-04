@@ -166,11 +166,15 @@ export default function CardEditorPage() {
     cardId ? { cardId: cardId as CardId } : "skip"
   );
 
-  // Mutations
-  const createCard = useConvexMutation(typedApi.admin.cards.createCard);
+  // Mutations - createCard returns { message, cardId }, not just Id
+  const createCardMutation = useConvexMutation(typedApi.admin.cards.createCard);
+  // biome-ignore lint/suspicious/noExplicitAny: typedApi has incorrect return type for this endpoint
+  const createCard = createCardMutation as any;
   const updateCard = useConvexMutation(typedApi.admin.cards.updateCard);
   const deleteCard = useConvexMutation(typedApi.admin.cards.deleteCard);
-  const duplicateCardMutation = useConvexMutation(typedApi.admin.cards.duplicateCard);
+  const duplicateCardMut = useConvexMutation(typedApi.admin.cards.duplicateCard);
+  // biome-ignore lint/suspicious/noExplicitAny: typedApi has incorrect return type for this endpoint
+  const duplicateCardMutation = duplicateCardMut as any;
 
   // Populate form when card loads
   useEffect(() => {

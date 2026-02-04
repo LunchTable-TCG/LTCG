@@ -310,7 +310,7 @@ export default function ChatModerationPage() {
                         username?: string;
                         message: string;
                         createdAt: number;
-                        isSystem: boolean;
+                        isSystem?: boolean;
                       }) => (
                         <TableRow key={message._id}>
                           <TableCell>

@@ -139,11 +139,11 @@ export default function AchievementEditorPage() {
       setAchievementId(existingAchievement.achievementId);
       setName(existingAchievement.name);
       setDescription(existingAchievement.description);
-      setCategory(existingAchievement.category);
-      setRarity(existingAchievement.rarity);
+      setCategory(existingAchievement.category as AchievementCategory);
+      setRarity(existingAchievement.rarity as Rarity);
       setIcon(existingAchievement.icon);
-      setRequirementType(existingAchievement.requirementType);
-      setTargetValue(existingAchievement.targetValue.toString());
+      setRequirementType(existingAchievement.requirementType as string);
+      setTargetValue(existingAchievement.targetValue?.toString() ?? "0");
       setRewardGold(existingAchievement.rewards?.gold?.toString() ?? "");
       setRewardXp(existingAchievement.rewards?.xp?.toString() ?? "");
       setRewardGems(existingAchievement.rewards?.gems?.toString() ?? "");

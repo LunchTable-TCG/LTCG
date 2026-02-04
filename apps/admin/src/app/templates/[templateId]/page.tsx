@@ -94,9 +94,10 @@ export default function TemplateEditorPage({ params }: TemplateEditorPageProps) 
   const [duplicateName, setDuplicateName] = useState("");
 
   // Queries
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incomplete return type
   const template = useConvexQuery(typedApi.admin.templates.getTemplate, {
     templateId: templateId as TemplateId,
-  });
+  }) as any;
 
   // Mutations
   const updateTemplate = useConvexMutation(typedApi.admin.templates.updateTemplate);

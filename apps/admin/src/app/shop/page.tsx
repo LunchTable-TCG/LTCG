@@ -92,19 +92,29 @@ export default function ShopPage() {
   const [showInactive, setShowInactive] = useState(false);
 
   // Query
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const productsResult = useConvexQuery(typedApi.admin.shop.listProducts, {
     search: search || undefined,
     productType: typeFilter !== "all" ? typeFilter : undefined,
     includeInactive: showInactive,
-  });
+  }) as { products: ShopProduct[]; totalCount: number } | undefined;
 
-  const statsResult = useConvexQuery(typedApi.admin.shop.getShopStats, {});
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
+  const statsResult = useConvexQuery(typedApi.admin.shop.getShopStats, {}) as
+    | {
+        totalProducts: number;
+        activeProducts: number;
+        byType: { pack: number; box: number; currency: number };
+        pricing: { bothPricing: number };
+      }
+    | undefined;
 
   const toggleActive = useConvexMutation(typedApi.admin.shop.toggleProductActive);
 
   const handleToggleActive = async (productDbId: string, _productName: string) => {
     try {
-      const result = (await toggleActive({ productDbId: productDbId as Id<"shopProducts"> })) as {
+      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
+      const result = (await toggleActive({ productDbId: productDbId as Id<"shopProducts"> })) as unknown as {
         message: string;
       };
       toast.success(result.message);

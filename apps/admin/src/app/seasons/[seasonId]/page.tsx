@@ -322,7 +322,7 @@ function RewardsPreview({ seasonId }: RewardsPreviewProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {preview.tierBreakdown.map((tier: TierBreakdown) => (
+          {(preview.tierBreakdown as unknown as TierBreakdown[]).map((tier) => (
             <TableRow key={tier.tier}>
               <TableCell className={TIER_COLORS[tier.tier] || ""}>{tier.tier}</TableCell>
               <TableCell className="text-right">{tier.playerCount}</TableCell>
@@ -386,7 +386,7 @@ function Leaderboard({ seasonId, isEnded }: LeaderboardProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {leaderboard.leaderboard.map((player: SeasonLeaderboardEntry) => (
+          {(leaderboard.leaderboard as unknown as SeasonLeaderboardEntry[]).map((player) => (
             <TableRow key={player.userId}>
               <TableCell className="font-mono">
                 {player.rank <= 3 ? (
@@ -649,13 +649,13 @@ export default function SeasonDetailPage() {
               </>
             )}
 
-            {season.status === "ended" && (season.snapshotStats?.pendingRewards ?? 0) > 0 && (
+            {season.status === "ended" && ((season.snapshotStats as { pendingRewards?: number } | undefined)?.pendingRewards ?? 0) > 0 && (
               <RoleGuard permission="config.edit">
                 <Button onClick={handleDistributeRewards} disabled={isDistributing}>
                   <GiftIcon className="h-4 w-4 mr-2" />
                   {isDistributing
                     ? "Distributing..."
-                    : `Distribute Rewards (${season.snapshotStats?.pendingRewards ?? 0} pending)`}
+                    : `Distribute Rewards (${(season.snapshotStats as { pendingRewards?: number } | undefined)?.pendingRewards ?? 0} pending)`}
                 </Button>
               </RoleGuard>
             )}
@@ -683,7 +683,7 @@ export default function SeasonDetailPage() {
               <CardContent className="pt-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-emerald-500">
-                    {season.snapshotStats.rewardsDistributed}
+                    {(season.snapshotStats as { rewardsDistributed?: number } | undefined)?.rewardsDistributed ?? (season.snapshotStats as { distributedRewards?: number } | undefined)?.distributedRewards ?? 0}
                   </div>
                   <div className="text-sm text-muted-foreground">Rewards Sent</div>
                 </div>
@@ -693,7 +693,7 @@ export default function SeasonDetailPage() {
               <CardContent className="pt-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-500">
-                    {season.snapshotStats.pendingRewards}
+                    {(season.snapshotStats as { pendingRewards?: number } | undefined)?.pendingRewards ?? 0}
                   </div>
                   <div className="text-sm text-muted-foreground">Pending</div>
                 </div>

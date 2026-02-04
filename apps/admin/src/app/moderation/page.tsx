@@ -151,8 +151,8 @@ export default function ModerationPage() {
   const isLoading = bannedPlayers === undefined;
   const isSuspendedLoading = suspendedPlayers === undefined;
 
-  // Transform banned players for table
-  const bannedTableData: BannedPlayerRow[] | undefined = bannedPlayers?.map((p: BannedPlayer) => ({
+  // Transform banned players for table - cast to handle typedApi type mismatch
+  const bannedTableData: BannedPlayerRow[] | undefined = (bannedPlayers as BannedPlayer[] | undefined)?.map((p) => ({
     ...p,
     _id: p.playerId,
   }));

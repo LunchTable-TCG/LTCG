@@ -252,7 +252,7 @@ export default function NewsPage() {
             isLoading={!statsResult}
           />
           <StatCard title="Drafts" value={statsResult?.drafts ?? 0} isLoading={!statsResult} />
-          <StatCard title="Pinned" value={statsResult?.pinned ?? 0} isLoading={!statsResult} />
+          <StatCard title="Pinned" value={(statsResult as { pinned?: number } | undefined)?.pinned ?? 0} isLoading={!statsResult} />
         </StatGrid>
 
         {/* Filters */}

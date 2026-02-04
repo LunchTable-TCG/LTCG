@@ -64,7 +64,8 @@ export default function TreasuryPoliciesPage() {
   });
 
   // Fetch policies
-  const policies = useQuery(typedApi.treasury.policies.listPolicies, { includeInactive: true });
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
+  const policies = useQuery(typedApi.treasury.policies.listPolicies, { includeInactive: true }) as TreasuryPolicy[] | undefined;
 
   // Mutations
   const createPolicy = useMutation(typedApi.treasury.policies.createPolicy);

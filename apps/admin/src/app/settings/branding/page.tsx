@@ -78,13 +78,15 @@ export default function BrandingPage() {
   const updateGuidelines = useConvexMutation(typedApi.admin.branding.updateGuidelines);
 
   // Derived state
-  const folderTree = (folderTreeResult ?? []) as FolderTreeNode[];
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI return type differs from actual
+  const folderTree = (folderTreeResult ?? []) as unknown as FolderTreeNode[];
   const childFolders = (childFoldersResult ?? []) as BrandingFolder[];
   const assets = (assetsResult ?? []) as EnrichedBrandingAsset[];
   const selectedFolder = selectedFolderResult as BrandingFolder | null;
   const selectedAsset = selectedAssetResult as EnrichedBrandingAsset | null;
   const allTags = (allTagsResult ?? []) as string[];
-  const allGuidelines = (guidelinesResult ?? []) as BrandingGuidelines[];
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI return type differs from actual
+  const allGuidelines = (guidelinesResult ?? []) as unknown as BrandingGuidelines[];
 
   const isLoading = folderTreeResult === undefined;
   const hasNoFolders = !isLoading && folderTree.length === 0;
@@ -121,7 +123,8 @@ export default function BrandingPage() {
   const handleInitialize = async () => {
     setIsInitializing(true);
     try {
-      const result = (await initializeBranding({})) as { message: string };
+      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
+      const result = (await initializeBranding({})) as unknown as { message: string };
       toast.success(result.message);
     } catch (_error) {
       toast.error("Failed to initialize branding system");
@@ -201,7 +204,8 @@ export default function BrandingPage() {
   };
 
   const handleSaveGuidelines = async (section: string, data: Partial<BrandingGuidelines>) => {
-    await updateGuidelines({
+    // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg types for this endpoint
+    await (updateGuidelines as any)({
       section,
       structuredData: data.structuredData,
       richTextContent: data.richTextContent,

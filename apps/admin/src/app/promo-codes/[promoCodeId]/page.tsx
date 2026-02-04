@@ -116,8 +116,8 @@ export default function PromoCodeDetailPage() {
   // Populate form with existing data
   useEffect(() => {
     if (promoCode) {
-      setDescription(promoCode.description);
-      setRewardAmount(promoCode.rewardAmount.toString());
+      setDescription(promoCode.description ?? "");
+      setRewardAmount(promoCode.rewardAmount?.toString() ?? "0");
       setRewardPackId(promoCode.rewardPackId ?? "");
       setMaxRedemptions(promoCode.maxRedemptions?.toString() ?? "");
       setIsActive(promoCode.isActive);
@@ -218,7 +218,7 @@ export default function PromoCodeDetailPage() {
   const now = Date.now();
   const isExpired = promoCode.expiresAt && promoCode.expiresAt <= now;
   const isExhausted =
-    promoCode.maxRedemptions && promoCode.redemptionCount >= promoCode.maxRedemptions;
+    promoCode.maxRedemptions && (promoCode.redemptionCount ?? 0) >= promoCode.maxRedemptions;
 
   return (
     <PageWrapper
@@ -396,7 +396,7 @@ export default function PromoCodeDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {promoCode.redemptions.map((redemption: PromoRedemption) => (
+                    {(promoCode.redemptions as unknown as PromoRedemption[]).map((redemption) => (
                       <tr key={redemption._id} className="border-b">
                         <td className="py-2 px-3 font-mono text-xs">
                           <Link

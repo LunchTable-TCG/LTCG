@@ -171,14 +171,32 @@ export default function ShopProductEditorPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Queries and mutations
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg/return types
   const existingProduct = useConvexQuery(
     typedApi.admin.shop.getProduct,
-    isNew ? "skip" : { productDbId: productDbId as Id<"shopProducts"> }
-  );
+    isNew ? "skip" : ({ productDbId: productDbId as Id<"shopProducts"> } as any)
+  ) as
+    | {
+        productId: string;
+        name: string;
+        description?: string;
+        productType: ProductType;
+        goldPrice?: number;
+        gemPrice?: number;
+        isActive: boolean;
+        sortOrder: number;
+        createdAt?: number;
+        packConfig?: { cardCount: number; guaranteedRarity?: string; archetype?: string };
+        boxConfig?: { packProductId: string; packCount: number; bonusCards?: number };
+        currencyConfig?: { currencyType: CurrencyType; amount: number };
+      }
+    | null
+    | undefined;
 
+  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const allProducts = useConvexQuery(typedApi.admin.shop.listProducts, {
     includeInactive: true,
-  });
+  }) as { products: ShopProduct[] } | undefined;
 
   const createProduct = useConvexMutation(typedApi.admin.shop.createProduct);
   const updateProduct = useConvexMutation(typedApi.admin.shop.updateProduct);
@@ -190,7 +208,7 @@ export default function ShopProductEditorPage() {
     if (existingProduct && !isNew) {
       setProductId(existingProduct.productId);
       setName(existingProduct.name);
-      setDescription(existingProduct.description);
+      setDescription(existingProduct.description ?? "");
       setProductType(existingProduct.productType);
       setGoldPrice(existingProduct.goldPrice?.toString() ?? "");
       setGemPrice(existingProduct.gemPrice?.toString() ?? "");
@@ -233,6 +251,7 @@ export default function ShopProductEditorPage() {
     setIsSaving(true);
     try {
       if (isNew) {
+        // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
         const result = (await createProduct({
           productId: productId.trim(),
           name: name.trim(),
@@ -257,7 +276,7 @@ export default function ShopProductEditorPage() {
           currencyAmount: productType === "currency" ? Number.parseInt(currencyAmount) : undefined,
           isActive,
           sortOrder: sortOrder ? Number.parseInt(sortOrder) : undefined,
-        })) as { message: string; productDbId: string };
+        })) as unknown as { message: string; productDbId: string };
         toast.success(result.message);
         router.push(`/shop/${result.productDbId}`);
       } else {

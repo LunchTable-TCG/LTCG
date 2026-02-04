@@ -27,6 +27,15 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
 import { typedApi, useAction, useMutation, useQuery } from "@/lib/convexHelpers";
+import { api } from "@convex/_generated/api";
+
+// Use api directly for endpoints not in typedApi
+// biome-ignore lint/suspicious/noExplicitAny: typedApi missing some endpoints
+const aiConfigApi = (api as any).admin.aiConfig;
+// biome-ignore lint/suspicious/noExplicitAny: typedApi missing some endpoints
+const aiProvidersApi = (api as any).admin.aiProviders;
+// biome-ignore lint/suspicious/noExplicitAny: typedApi missing some endpoints
+const aiUsageApi = (api as any).admin.aiUsage;
 import { Text, Title } from "@tremor/react";
 import {
   AlertCircleIcon,
@@ -648,7 +657,7 @@ export default function AIProvidersPage() {
   // Mutations
   const updateConfig = useMutation(typedApi.admin.aiConfig.updateAIConfig);
   const initializeDefaults = useMutation(typedApi.admin.aiConfig.initializeAIDefaults);
-  const testProvider = useAction(typedApi.admin.aiConfig.testProviderConnection);
+  const testProvider = useAction(aiConfigApi.testProviderConnection);
 
   // API Key management
   const apiKeyStatus = useQuery(typedApi.admin.aiConfig.getAPIKeyStatus, {}) as
@@ -657,20 +666,20 @@ export default function AIProvidersPage() {
   const setAPIKeyMutation = useMutation(typedApi.admin.aiConfig.setAPIKey);
   const clearAPIKeyMutation = useMutation(typedApi.admin.aiConfig.clearAPIKey);
 
-  // Model fetching actions
-  const fetchAllModels = useAction(typedApi.admin.aiProviders.fetchAllModels);
+  // Model fetching actions - use api directly, not in typedApi
+  const fetchAllModels = useAction(aiProvidersApi.fetchAllModels);
 
-  // Usage tracking queries
-  const usageSummary = useQuery(typedApi.admin.aiUsage.getUsageSummary, { days: 30 }) as
+  // Usage tracking queries - use api directly, not in typedApi
+  const usageSummary = useQuery(aiUsageApi.getUsageSummary, { days: 30 }) as
     | UsageSummaryResult
     | undefined;
-  const topModels = useQuery(typedApi.admin.aiUsage.getTopModels, { days: 30, limit: 5 }) as
+  const topModels = useQuery(aiUsageApi.getTopModels, { days: 30, limit: 5 }) as
     | TopModelData[]
     | undefined;
-  const usageByFeature = useQuery(typedApi.admin.aiUsage.getUsageByFeature, { days: 30 }) as
+  const usageByFeature = useQuery(aiUsageApi.getUsageByFeature, { days: 30 }) as
     | FeatureUsageData[]
     | undefined;
-  const recentUsage = useQuery(typedApi.admin.aiUsage.getRecentUsage, { limit: 20 }) as
+  const recentUsage = useQuery(aiUsageApi.getRecentUsage, { limit: 20 }) as
     | RecentUsageData[]
     | undefined;
 
