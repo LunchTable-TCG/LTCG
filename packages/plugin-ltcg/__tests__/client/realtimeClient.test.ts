@@ -162,7 +162,7 @@ describe("ConvexRealtimeClient", () => {
       const unsubscribe = client.subscribeToGame(TEST_GAME_ID, callback);
 
       expect(mockOnUpdate).toHaveBeenCalledWith(
-        "gameplay/games/queries:getGameStateForPlayer",
+        expect.objectContaining({ _functionName: "gameplay/games/queries:getGameStateForPlayer" }),
         { lobbyId: TEST_GAME_ID },
         expect.any(Function)
       );
@@ -270,7 +270,7 @@ describe("ConvexRealtimeClient", () => {
 
       mockOnUpdate.mockReturnValue(() => {});
       mockQuery.mockResolvedValue({
-        currentTurnPlayerId: TEST_USER_ID,
+        currentTurnPlayer: TEST_USER_ID,
       });
     });
 
@@ -280,7 +280,7 @@ describe("ConvexRealtimeClient", () => {
       const unsubscribe = client.subscribeToTurnNotifications(TEST_USER_ID, callback);
 
       expect(mockOnUpdate).toHaveBeenCalledWith(
-        "gameplay/games/queries:getActiveLobby",
+        expect.objectContaining({ _functionName: "gameplay/games/queries:getActiveLobby" }),
         { userId: TEST_USER_ID },
         expect.any(Function)
       );
@@ -314,7 +314,7 @@ describe("ConvexRealtimeClient", () => {
       });
 
       mockQuery.mockResolvedValue({
-        currentTurnPlayerId: TEST_USER_ID,
+        currentTurnPlayer: TEST_USER_ID,
       });
 
       client.subscribeToTurnNotifications(TEST_USER_ID, callback);
@@ -330,9 +330,10 @@ describe("ConvexRealtimeClient", () => {
       // Wait for async query to complete
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      expect(mockQuery).toHaveBeenCalledWith("gameplay/games/queries:getGameStateForPlayer", {
-        lobbyId: TEST_GAME_ID,
-      });
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.objectContaining({ _functionName: "gameplay/games/queries:getGameStateForPlayer" }),
+        { lobbyId: TEST_GAME_ID }
+      );
       expect(callback).toHaveBeenCalledWith([TEST_GAME_ID]);
     });
 
@@ -346,7 +347,7 @@ describe("ConvexRealtimeClient", () => {
       });
 
       mockQuery.mockResolvedValue({
-        currentTurnPlayerId: "other-user-789",
+        currentTurnPlayer: "other-user-789",
       });
 
       client.subscribeToTurnNotifications(TEST_USER_ID, callback);
@@ -417,7 +418,7 @@ describe("ConvexRealtimeClient", () => {
         phase: "main1",
         eventType: "summon",
         playerId: "player-123",
-        description: "Summoned Blue-Eyes White Dragon",
+        description: "Summoned Infernal God Dragon",
         timestamp: Date.now(),
       };
 
@@ -428,7 +429,7 @@ describe("ConvexRealtimeClient", () => {
         phase: "battle",
         eventType: "attack",
         playerId: "player-123",
-        description: "Attacked with Blue-Eyes White Dragon",
+        description: "Attacked with Infernal God Dragon",
         timestamp: Date.now(),
       };
 

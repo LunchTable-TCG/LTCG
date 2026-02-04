@@ -455,7 +455,9 @@ function TransferDialog({
   const [isSending, setIsSending] = useState(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
 
-  const buildTransferTransaction = useAction(typedApi.wallet.tokenTransfer.buildTransferTransaction);
+  const buildTransferTransaction = useAction(
+    typedApi.wallet.tokenTransfer.buildTransferTransaction
+  );
   const { signAndSendTransaction } = useSignAndSendTransaction();
 
   const handleTransfer = async () => {

@@ -8,7 +8,7 @@
 import type { IAgentRuntime, State } from "@elizaos/core";
 import { logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
-import { SERVICE_TYPES, type ITurnOrchestrator } from "../services/types";
+import { type ITurnOrchestrator, SERVICE_TYPES } from "../services/types";
 
 /**
  * Webhook event types sent by the game server
@@ -296,11 +296,9 @@ async function handleChainWaiting(
 
   if (orchestrator) {
     // Fire-and-forget: orchestrator handles chain response asynchronously
-    orchestrator
-      .onChainWaiting(gameId, chainState?.timeoutMs ?? 30000)
-      .catch((error) => {
-        logger.error({ error, gameId }, "TurnOrchestrator error during chain response");
-      });
+    orchestrator.onChainWaiting(gameId, chainState?.timeoutMs ?? 30000).catch((error) => {
+      logger.error({ error, gameId }, "TurnOrchestrator error during chain response");
+    });
 
     logger.info({ gameId }, "TurnOrchestrator triggered for chain response");
 

@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import type { IAgentRuntime, Memory, State } from "@elizaos/core";
+import type { IAgentRuntime, Memory } from "@elizaos/core";
 import { boardAnalysisProvider } from "../../src/providers/boardAnalysisProvider";
 import { gameStateProvider } from "../../src/providers/gameStateProvider";
 import { legalActionsProvider } from "../../src/providers/legalActionsProvider";
 import { strategyEvaluator } from "../../src/evaluators/strategyEvaluator";
+import type { LTCGState } from "../../src/types/eliza";
 
 describe("Strategy Evaluator", () => {
   let mockRuntime: IAgentRuntime;
   let mockMessage: Memory;
-  let mockState: State;
+  let mockState: LTCGState;
 
   beforeEach(() => {
     mockRuntime = {
@@ -16,10 +17,11 @@ describe("Strategy Evaluator", () => {
         if (key === "LTCG_RISK_TOLERANCE") return "medium";
         return null;
       }),
-    } as any;
+    } as IAgentRuntime;
 
     mockMessage = {
       id: "test-message-id",
+      visibleTo: [],
       entityId: "test-entity",
       roomId: "test-room",
       content: {
@@ -31,15 +33,16 @@ describe("Strategy Evaluator", () => {
     } as Memory;
 
     mockState = {
-      values: {},
+      values: {
+        currentAction: "ATTACK",
+        actionParams: {
+          attackerIndex: 0,
+          targetIndex: 0,
+        },
+      },
       data: {},
       text: "",
-      currentAction: "ATTACK",
-      actionParams: {
-        attackerIndex: 0,
-        targetIndex: 0,
-      },
-    } as any;
+    };
   });
 
   describe("Evaluator Structure", () => {
@@ -64,18 +67,50 @@ describe("Strategy Evaluator", () => {
           data: {
             gameState: {
               gameId: "test-game-123",
-              hostPlayer: {
-                lifePoints: 8000,
-                monsterZone: [{ name: "Dragon", atk: 3000, canAttack: true, boardIndex: 0 }],
-                spellTrapZone: [],
-              },
-              opponentPlayer: {
-                lifePoints: 8000,
-                monsterZone: [
-                  { name: "Weak", atk: 1000, position: "attack", boardIndex: 0, faceUp: true },
-                ],
-                spellTrapZone: [],
-              },
+              lobbyId: "lobby-123",
+              status: "active",
+              currentTurn: "host",
+              phase: "battle",
+              turnNumber: 3,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 8000,
+              opponentLifePoints: 8000,
+              myDeckCount: 30,
+              opponentDeckCount: 28,
+              myGraveyardCount: 0,
+              opponentGraveyardCount: 0,
+              opponentHandCount: 4,
+              myBoard: [
+                {
+                  _id: "card-1",
+                  name: "Infernal God Dragon",
+                  cardType: "creature",
+                  attack: 4000,
+                  defense: 3500,
+                  currentAttack: 4000,
+                  currentDefense: 3500,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              opponentBoard: [
+                {
+                  _id: "card-2",
+                  name: "Flame Whelp",
+                  cardType: "creature",
+                  attack: 600,
+                  defense: 400,
+                  currentAttack: 600,
+                  currentDefense: 400,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              hand: [],
+              hasNormalSummoned: true,
             },
           },
         })),
@@ -93,20 +128,21 @@ describe("Strategy Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      const originalLegalActions = (legalActionsProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
-      (legalActionsProvider as any).get = mockLegalActionsProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      const originalLegalActions = legalActionsProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
+      legalActionsProvider.get = mockLegalActionsProvider.get;
 
-      const shouldAllow = await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_STRATEGY_ALLOWED;
 
       expect(shouldAllow).toBe(true);
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
-      (legalActionsProvider as any).get = originalLegalActions;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
+      legalActionsProvider.get = originalLegalActions;
     });
 
     it("should filter bad attack - weaker attacking stronger", async () => {
@@ -115,18 +151,50 @@ describe("Strategy Evaluator", () => {
           data: {
             gameState: {
               gameId: "test-game-123",
-              hostPlayer: {
-                lifePoints: 8000,
-                monsterZone: [{ name: "Weak", atk: 1000, canAttack: true, boardIndex: 0 }],
-                spellTrapZone: [],
-              },
-              opponentPlayer: {
-                lifePoints: 8000,
-                monsterZone: [
-                  { name: "Dragon", atk: 3000, position: "attack", boardIndex: 0, faceUp: true },
-                ],
-                spellTrapZone: [],
-              },
+              lobbyId: "lobby-123",
+              status: "active",
+              currentTurn: "host",
+              phase: "battle",
+              turnNumber: 3,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 8000,
+              opponentLifePoints: 8000,
+              myDeckCount: 30,
+              opponentDeckCount: 28,
+              myGraveyardCount: 0,
+              opponentGraveyardCount: 0,
+              opponentHandCount: 4,
+              myBoard: [
+                {
+                  _id: "card-1",
+                  name: "Flame Whelp",
+                  cardType: "creature",
+                  attack: 600,
+                  defense: 400,
+                  currentAttack: 600,
+                  currentDefense: 400,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              opponentBoard: [
+                {
+                  _id: "card-2",
+                  name: "Infernal God Dragon",
+                  cardType: "creature",
+                  attack: 4000,
+                  defense: 3500,
+                  currentAttack: 4000,
+                  currentDefense: 3500,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              hand: [],
+              hasNormalSummoned: true,
             },
           },
         })),
@@ -144,20 +212,21 @@ describe("Strategy Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      const originalLegalActions = (legalActionsProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
-      (legalActionsProvider as any).get = mockLegalActionsProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      const originalLegalActions = legalActionsProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
+      legalActionsProvider.get = mockLegalActionsProvider.get;
 
-      const shouldAllow = await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_STRATEGY_ALLOWED;
 
       expect(shouldAllow).toBe(false);
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
-      (legalActionsProvider as any).get = originalLegalActions;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
+      legalActionsProvider.get = originalLegalActions;
     });
 
     it("should allow risky attack when desperate", async () => {
@@ -166,18 +235,50 @@ describe("Strategy Evaluator", () => {
           data: {
             gameState: {
               gameId: "test-game-123",
-              hostPlayer: {
-                lifePoints: 1000, // Low LP - desperate
-                monsterZone: [{ name: "Weak", atk: 1000, canAttack: true, boardIndex: 0 }],
-                spellTrapZone: [],
-              },
-              opponentPlayer: {
-                lifePoints: 8000,
-                monsterZone: [
-                  { name: "Dragon", atk: 3000, position: "attack", boardIndex: 0, faceUp: true },
-                ],
-                spellTrapZone: [],
-              },
+              lobbyId: "lobby-123",
+              status: "active",
+              currentTurn: "host",
+              phase: "battle",
+              turnNumber: 8,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 1000,
+              opponentLifePoints: 8000,
+              myDeckCount: 20,
+              opponentDeckCount: 25,
+              myGraveyardCount: 5,
+              opponentGraveyardCount: 2,
+              opponentHandCount: 5,
+              myBoard: [
+                {
+                  _id: "card-1",
+                  name: "Flame Whelp",
+                  cardType: "creature",
+                  attack: 600,
+                  defense: 400,
+                  currentAttack: 600,
+                  currentDefense: 400,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              opponentBoard: [
+                {
+                  _id: "card-2",
+                  name: "Infernal God Dragon",
+                  cardType: "creature",
+                  attack: 4000,
+                  defense: 3500,
+                  currentAttack: 4000,
+                  currentDefense: 3500,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              hand: [],
+              hasNormalSummoned: true,
             },
           },
         })),
@@ -195,26 +296,27 @@ describe("Strategy Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      const originalLegalActions = (legalActionsProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
-      (legalActionsProvider as any).get = mockLegalActionsProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      const originalLegalActions = legalActionsProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
+      legalActionsProvider.get = mockLegalActionsProvider.get;
 
-      const shouldAllow = await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_STRATEGY_ALLOWED;
 
-      expect(shouldAllow).toBe(true); // Allow desperate plays
+      expect(shouldAllow).toBe(true);
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
-      (legalActionsProvider as any).get = originalLegalActions;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
+      legalActionsProvider.get = originalLegalActions;
     });
 
     it("should filter direct attack when opponent has monsters", async () => {
-      mockState.actionParams = {
+      mockState.values.actionParams = {
         attackerIndex: 0,
-        targetIndex: null, // Direct attack
+        targetIndex: null,
       };
 
       const mockGameStateProvider = {
@@ -222,16 +324,50 @@ describe("Strategy Evaluator", () => {
           data: {
             gameState: {
               gameId: "test-game-123",
-              hostPlayer: {
-                lifePoints: 8000,
-                monsterZone: [{ name: "Attacker", atk: 2000, canAttack: true, boardIndex: 0 }],
-                spellTrapZone: [],
-              },
-              opponentPlayer: {
-                lifePoints: 8000,
-                monsterZone: [{ name: "Blocker", atk: 1000, boardIndex: 0 }], // Has monster!
-                spellTrapZone: [],
-              },
+              lobbyId: "lobby-123",
+              status: "active",
+              currentTurn: "host",
+              phase: "battle",
+              turnNumber: 4,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 8000,
+              opponentLifePoints: 8000,
+              myDeckCount: 28,
+              opponentDeckCount: 27,
+              myGraveyardCount: 1,
+              opponentGraveyardCount: 1,
+              opponentHandCount: 4,
+              myBoard: [
+                {
+                  _id: "card-1",
+                  name: "Murky Whale",
+                  cardType: "creature",
+                  attack: 2100,
+                  defense: 1500,
+                  currentAttack: 2100,
+                  currentDefense: 1500,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              opponentBoard: [
+                {
+                  _id: "card-2",
+                  name: "Ember Wyrmling",
+                  cardType: "creature",
+                  attack: 1200,
+                  defense: 800,
+                  currentAttack: 1200,
+                  currentDefense: 800,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              hand: [],
+              hasNormalSummoned: true,
             },
           },
         })),
@@ -249,20 +385,21 @@ describe("Strategy Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      const originalLegalActions = (legalActionsProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
-      (legalActionsProvider as any).get = mockLegalActionsProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      const originalLegalActions = legalActionsProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
+      legalActionsProvider.get = mockLegalActionsProvider.get;
 
-      const shouldAllow = await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_STRATEGY_ALLOWED;
 
       expect(shouldAllow).toBe(false);
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
-      (legalActionsProvider as any).get = originalLegalActions;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
+      legalActionsProvider.get = originalLegalActions;
     });
 
     it("should warn about trap risk with high backrow", async () => {
@@ -271,9 +408,9 @@ describe("Strategy Evaluator", () => {
         return null;
       });
 
-      mockState.actionParams = {
+      mockState.values.actionParams = {
         attackerIndex: 0,
-        targetIndex: null, // Direct attack
+        targetIndex: null,
       };
 
       const mockGameStateProvider = {
@@ -281,16 +418,44 @@ describe("Strategy Evaluator", () => {
           data: {
             gameState: {
               gameId: "test-game-123",
-              hostPlayer: {
-                lifePoints: 8000,
-                monsterZone: [{ name: "Attacker", atk: 2000, canAttack: true, boardIndex: 0 }],
-                spellTrapZone: [],
-              },
+              lobbyId: "lobby-123",
+              status: "active",
+              currentTurn: "host",
+              phase: "battle",
+              turnNumber: 5,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 8000,
+              opponentLifePoints: 8000,
+              myDeckCount: 26,
+              opponentDeckCount: 24,
+              myGraveyardCount: 2,
+              opponentGraveyardCount: 3,
+              opponentHandCount: 3,
+              myBoard: [
+                {
+                  _id: "card-1",
+                  name: "Blazing Drake",
+                  cardType: "creature",
+                  attack: 1600,
+                  defense: 1200,
+                  currentAttack: 1600,
+                  currentDefense: 1200,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              opponentBoard: [],
               opponentPlayer: {
-                lifePoints: 8000,
-                monsterZone: [],
-                spellTrapZone: [{ faceUp: false }, { faceUp: false }, { faceUp: false }], // 3 backrow!
+                spellTrapZone: [
+                  { isFaceDown: true },
+                  { isFaceDown: true },
+                  { isFaceDown: true },
+                ],
               },
+              hand: [],
+              hasNormalSummoned: true,
             },
           },
         })),
@@ -308,28 +473,29 @@ describe("Strategy Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      const originalLegalActions = (legalActionsProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
-      (legalActionsProvider as any).get = mockLegalActionsProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      const originalLegalActions = legalActionsProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
+      legalActionsProvider.get = mockLegalActionsProvider.get;
 
-      const shouldAllow = await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_STRATEGY_ALLOWED;
 
-      expect(shouldAllow).toBe(false); // Low risk tolerance filters high trap risk
+      expect(shouldAllow).toBe(false);
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
-      (legalActionsProvider as any).get = originalLegalActions;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
+      legalActionsProvider.get = originalLegalActions;
     });
   });
 
   describe("Non-Attack Actions", () => {
     it("should allow summon actions", async () => {
       mockMessage.content = { ...mockMessage.content, action: "SUMMON_MONSTER" };
-      mockState.currentAction = "SUMMON_MONSTER";
-      mockState.actionParams = {
+      mockState.values.currentAction = "SUMMON_MONSTER";
+      mockState.values.actionParams = {
         handIndex: 0,
       };
 
@@ -338,10 +504,38 @@ describe("Strategy Evaluator", () => {
           data: {
             gameState: {
               gameId: "test-game-123",
-              hand: [{ type: "monster", atk: 2000, level: 4, handIndex: 0 }],
+              lobbyId: "lobby-123",
+              status: "active",
+              currentTurn: "host",
+              phase: "main1",
+              turnNumber: 2,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 8000,
+              opponentLifePoints: 8000,
+              myDeckCount: 29,
+              opponentDeckCount: 29,
+              myGraveyardCount: 0,
+              opponentGraveyardCount: 0,
+              opponentHandCount: 5,
+              myBoard: [],
+              opponentBoard: [],
+              hand: [
+                {
+                  handIndex: 0,
+                  cardId: "card-blazing-drake",
+                  name: "Blazing Drake",
+                  type: "creature",
+                  cardType: "creature",
+                  cost: 4,
+                  attack: 1600,
+                  defense: 1200,
+                  archetype: "fire",
+                  description: "A dragon wreathed in flames",
+                  abilities: [],
+                },
+              ],
               hasNormalSummoned: false,
-              hostPlayer: { lifePoints: 8000, monsterZone: [] },
-              opponentPlayer: { lifePoints: 8000, monsterZone: [] },
             },
           },
         })),
@@ -359,20 +553,21 @@ describe("Strategy Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      const originalLegalActions = (legalActionsProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
-      (legalActionsProvider as any).get = mockLegalActionsProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      const originalLegalActions = legalActionsProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
+      legalActionsProvider.get = mockLegalActionsProvider.get;
 
-      const shouldAllow = await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_STRATEGY_ALLOWED;
 
       expect(shouldAllow).toBe(true);
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
-      (legalActionsProvider as any).get = originalLegalActions;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
+      legalActionsProvider.get = originalLegalActions;
     });
   });
 
@@ -384,14 +579,15 @@ describe("Strategy Evaluator", () => {
         }),
       };
 
-      const originalProvider = (gameStateProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
+      const originalProvider = gameStateProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
 
-      const shouldAllow = await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      await strategyEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_STRATEGY_ALLOWED;
 
       expect(shouldAllow).toBe(true);
 
-      (gameStateProvider as any).get = originalProvider;
+      gameStateProvider.get = originalProvider;
     });
   });
 });

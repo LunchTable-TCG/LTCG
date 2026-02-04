@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { ModelType, logger } from "@elizaos/core";
 import type { IAgentRuntime } from "@elizaos/core";
 import plugin from "../src/plugin";
-import { createMockRuntime, documentTestResult } from "./utils/core-test-utils";
+import { createMockRuntime, documentTestResult } from "../src/__tests__/utils/core-test-utils";
 
 // Define a simplified version of the GenerateTextParams for testing
 interface TestGenerateParams {

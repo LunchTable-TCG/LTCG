@@ -72,7 +72,7 @@ export const getByDateRange = query({
     // Get author info
     const authorIds = [...new Set(items.map((i) => i.authorId))];
     const authors = await Promise.all(authorIds.map((id) => ctx.db.get(id)));
-    const authorMap = new Map(authors.filter(Boolean).map((a) => [a!._id, a]));
+    const authorMap = new Map(authors.filter(Boolean).map((a) => [a?._id, a]));
 
     return items.map((item) => ({
       ...item,

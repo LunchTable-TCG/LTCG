@@ -425,7 +425,7 @@
   }
 
   .admin-card-interactive {
-    @apply admin-card hover:border-primary/30 hover:shadow-md cursor-pointer;
+    @apply rounded-xl border bg-card p-4 sm:p-6 shadow-sm transition-all hover:border-primary/30 hover:shadow-md cursor-pointer;
   }
 
   /* Stat card styling */
@@ -541,19 +541,19 @@
   }
 
   .admin-alert-warning {
-    @apply admin-alert bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-400;
+    @apply rounded-xl border p-4 sm:p-5 bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-400;
   }
 
   .admin-alert-error {
-    @apply admin-alert bg-destructive/10 border-destructive/30 text-destructive;
+    @apply rounded-xl border p-4 sm:p-5 bg-destructive/10 border-destructive/30 text-destructive;
   }
 
   .admin-alert-success {
-    @apply admin-alert bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400;
+    @apply rounded-xl border p-4 sm:p-5 bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400;
   }
 
   .admin-alert-info {
-    @apply admin-alert bg-primary/10 border-primary/30 text-primary;
+    @apply rounded-xl border p-4 sm:p-5 bg-primary/10 border-primary/30 text-primary;
   }
 
   /* Data list styling */
@@ -579,11 +579,11 @@
   }
 
   .admin-metric-change-positive {
-    @apply admin-metric-change text-green-600 dark:text-green-400;
+    @apply text-sm font-medium text-green-600 dark:text-green-400;
   }
 
   .admin-metric-change-negative {
-    @apply admin-metric-change text-red-600 dark:text-red-400;
+    @apply text-sm font-medium text-red-600 dark:text-red-400;
   }
 
   /* Filter bar */
@@ -617,19 +617,19 @@
   }
 
   .admin-status-dot-active {
-    @apply admin-status-dot bg-green-500;
+    @apply h-2 w-2 rounded-full bg-green-500;
   }
 
   .admin-status-dot-inactive {
-    @apply admin-status-dot bg-muted-foreground;
+    @apply h-2 w-2 rounded-full bg-muted-foreground;
   }
 
   .admin-status-dot-warning {
-    @apply admin-status-dot bg-yellow-500;
+    @apply h-2 w-2 rounded-full bg-yellow-500;
   }
 
   .admin-status-dot-error {
-    @apply admin-status-dot bg-destructive;
+    @apply h-2 w-2 rounded-full bg-destructive;
   }
 }
 

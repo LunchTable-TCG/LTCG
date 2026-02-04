@@ -91,7 +91,7 @@ export function CalendarGrid({
       if (!map.has(key)) {
         map.set(key, []);
       }
-      map.get(key)!.push(item);
+      map.get(key)?.push(item);
     }
     return map;
   }, [content]);

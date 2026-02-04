@@ -2,50 +2,52 @@
  * Advanced Actions Tests
  *
  * Tests for trap activation, chain response, and flip summon actions.
+ * Uses real LTCG card names and correct API schema.
  */
 
-import { describe, expect, it, spyOn } from "bun:test";
+import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import type { IAgentRuntime, Memory, State } from "@elizaos/core";
 import { activateTrapAction } from "../src/actions/activateTrapAction";
 import { chainResponseAction } from "../src/actions/chainResponseAction";
 import { flipSummonAction } from "../src/actions/flipSummonAction";
 import { gameStateProvider } from "../src/providers/gameStateProvider";
+import { handProvider } from "../src/providers/handProvider";
 import type { GameStateResponse } from "../src/types/api";
-import { createMockMessage, createMockRuntime, createMockState } from "./utils/core-test-utils";
-
-// Mock game state data
-const createMockGameState = (overrides?: Partial<GameStateResponse>): GameStateResponse => ({
-  gameId: "test-game-123",
-  status: "active",
-  currentTurn: "host",
-  phase: "main1",
-  turnNumber: 3,
-  hostPlayer: {
-    playerId: "player-1",
-    lifePoints: 4000,
-    deckCount: 35,
-    monsterZone: [],
-    spellTrapZone: [],
-    graveyard: [],
-    banished: [],
-    extraDeck: 0,
-  },
-  opponentPlayer: {
-    playerId: "player-2",
-    lifePoints: 4000,
-    deckCount: 35,
-    monsterZone: [],
-    spellTrapZone: [],
-    graveyard: [],
-    banished: [],
-    extraDeck: 0,
-  },
-  hand: [],
-  hasNormalSummoned: false,
-  canChangePosition: [],
-  ...overrides,
-});
 
 describe("Advanced Actions", () => {
+  let mockRuntime: IAgentRuntime;
+  let mockMessage: Memory;
+  let mockState: State;
+
+  beforeEach(() => {
+    mockRuntime = {
+      getSetting: mock((key: string) => {
+        if (key === "LTCG_API_KEY") return "test-api-key";
+        if (key === "LTCG_API_URL") return "http://localhost:3000";
+        return null;
+      }),
+      getService: mock(),
+    } as IAgentRuntime;
+
+    mockMessage = {
+      id: "test-message-id",
+      visibleTo: [],
+      entityId: "test-entity",
+      roomId: "test-room",
+      content: {
+        text: "Test action",
+        source: "test",
+        gameId: "test-game-123",
+      },
+    } as Memory;
+
+    mockState = {
+      values: {},
+      data: {},
+      text: "",
+    };
+  });
+
   describe("Activate Trap Action", () => {
     it("should have correct structure", () => {
       expect(activateTrapAction).toBeDefined();
@@ -60,64 +62,122 @@ describe("Advanced Actions", () => {
     });
 
     it("should validate false when no traps are set", async () => {
-      const runtime = createMockRuntime();
-      const message = createMockMessage("Activate trap!");
-      const state = createMockState();
-
-      // Mock provider to return game state with no traps
-      const gameState = createMockGameState({
+      // Mock game state with no traps
+      const mockGameState: GameStateResponse = {
+        gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
+        currentTurn: "host",
+        phase: "main1",
+        turnNumber: 3,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
+        myLifePoints: 4000,
+        opponentLifePoints: 4000,
+        myDeckCount: 35,
+        opponentDeckCount: 35,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
+        hand: [],
+        hasNormalSummoned: false,
         hostPlayer: {
-          ...createMockGameState().hostPlayer,
-          spellTrapZone: [],
+          playerId: "player-1",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
+          spellTrapZone: [], // No traps
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
         },
+        opponentPlayer: {
+          playerId: "player-2",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
+          spellTrapZone: [],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+      };
+
+      const spy = spyOn(gameStateProvider, "get").mockResolvedValue({
+        data: { gameState: mockGameState },
+        text: "",
+        values: {},
       });
 
-      // Mock game state provider
-      const originalGet = runtime.getService;
-      runtime.getService = () => ({
-        get: async () => ({
-          data: { gameState },
-        }),
-      });
-
-      const result = await activateTrapAction.validate(runtime, message, state);
+      const result = await activateTrapAction.validate(mockRuntime, mockMessage, mockState);
       expect(result).toBe(false);
 
-      runtime.getService = originalGet;
+      spy.mockRestore();
     });
 
     it("should validate true when traps are set", async () => {
-      const runtime = createMockRuntime();
-      const message = createMockMessage("Activate trap!");
-      const state = createMockState();
-
-      // Mock game state with set traps
-      const gameState = createMockGameState({
+      // Mock game state with set trap
+      const mockGameState: GameStateResponse = {
+        gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
+        currentTurn: "host",
+        phase: "main1",
+        turnNumber: 3,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
+        myLifePoints: 4000,
+        opponentLifePoints: 4000,
+        myDeckCount: 35,
+        opponentDeckCount: 35,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
+        hand: [],
+        hasNormalSummoned: false,
         hostPlayer: {
-          ...createMockGameState().hostPlayer,
+          playerId: "player-1",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
           spellTrapZone: [
             {
               boardIndex: 0,
               cardId: "trap-1",
-              name: "Mirror Force",
+              name: "Ring of Fire",
               faceUp: false,
               type: "trap",
             },
           ],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
         },
-      });
+        opponentPlayer: {
+          playerId: "player-2",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
+          spellTrapZone: [],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+      };
 
-      // Spy on the provider's get method
       const spy = spyOn(gameStateProvider, "get").mockResolvedValue({
-        data: { gameState },
-        text: "Mock game state",
+        data: { gameState: mockGameState },
+        text: "",
         values: {},
       });
 
-      const result = await activateTrapAction.validate(runtime, message, state);
+      const result = await activateTrapAction.validate(mockRuntime, mockMessage, mockState);
       expect(result).toBe(true);
 
-      // Restore original
       spy.mockRestore();
     });
 
@@ -145,55 +205,140 @@ describe("Advanced Actions", () => {
       expect(Array.isArray(chainResponseAction.examples)).toBe(true);
     });
 
-    it("should validate false when not in chain window", async () => {
-      const runtime = createMockRuntime();
-      const message = createMockMessage("Chain response!");
-      const state = createMockState();
+    it("should validate false when no chainable cards available", async () => {
+      // Mock game state with no quick-play spells or traps
+      const mockGameState: GameStateResponse = {
+        gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
+        currentTurn: "host",
+        phase: "main1",
+        turnNumber: 3,
+        currentTurnPlayer: "user-123",
+        isMyTurn: false,
+        myLifePoints: 4000,
+        opponentLifePoints: 4000,
+        myDeckCount: 35,
+        opponentDeckCount: 35,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
+        hand: [],
+        hasNormalSummoned: false,
+        hostPlayer: {
+          playerId: "player-1",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
+          spellTrapZone: [], // No traps
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+        opponentPlayer: {
+          playerId: "player-2",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
+          spellTrapZone: [],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+      };
 
-      // Mock game state with no chain window open
-      const gameState = createMockGameState({
-        phase: "main1", // Normal phase, not chain window
+      const gameStateSpy = spyOn(gameStateProvider, "get").mockResolvedValue({
+        data: { gameState: mockGameState },
+        text: "",
+        values: {},
       });
 
-      const originalGet = runtime.getService;
-      runtime.getService = () => ({
-        get: async () => ({
-          data: { gameState },
-        }),
+      // Mock hand provider with empty hand
+      const handSpy = spyOn(handProvider, "get").mockResolvedValue({
+        data: { hand: [] },
+        text: "",
+        values: {},
       });
 
-      const result = await chainResponseAction.validate(runtime, message, state);
+      const result = await chainResponseAction.validate(mockRuntime, mockMessage, mockState);
       expect(result).toBe(false);
 
-      runtime.getService = originalGet;
+      gameStateSpy.mockRestore();
+      handSpy.mockRestore();
     });
 
-    it("should validate false when no chainable cards available", async () => {
-      const runtime = createMockRuntime();
-      const message = createMockMessage("Chain response!");
-      const state = createMockState();
-
-      // Mock game state with chain window but no quick-play/traps
-      const gameState = createMockGameState({
+    it("should validate true when chainable cards available", async () => {
+      // Mock game state with set trap
+      const mockGameState: GameStateResponse = {
+        gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
+        currentTurn: "host",
         phase: "main1",
-        hostPlayer: {
-          ...createMockGameState().hostPlayer,
-          spellTrapZone: [],
-        },
+        turnNumber: 3,
+        currentTurnPlayer: "user-123",
+        isMyTurn: false,
+        myLifePoints: 4000,
+        opponentLifePoints: 4000,
+        myDeckCount: 35,
+        opponentDeckCount: 35,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
         hand: [],
+        hasNormalSummoned: false,
+        hostPlayer: {
+          playerId: "player-1",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
+          spellTrapZone: [
+            {
+              boardIndex: 0,
+              cardId: "trap-1",
+              name: "Ring of Fire",
+              faceUp: false,
+              type: "trap",
+            },
+          ],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+        opponentPlayer: {
+          playerId: "player-2",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
+          spellTrapZone: [],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+      };
+
+      const gameStateSpy = spyOn(gameStateProvider, "get").mockResolvedValue({
+        data: { gameState: mockGameState },
+        text: "",
+        values: {},
       });
 
-      const originalGet = runtime.getService;
-      runtime.getService = () => ({
-        get: async () => ({
-          data: { gameState, hand: [] },
-        }),
+      // Mock hand provider with no spells
+      const handSpy = spyOn(handProvider, "get").mockResolvedValue({
+        data: { hand: [] },
+        text: "",
+        values: {},
       });
 
-      const result = await chainResponseAction.validate(runtime, message, state);
-      expect(result).toBe(false);
+      const result = await chainResponseAction.validate(mockRuntime, mockMessage, mockState);
+      expect(result).toBe(true);
 
-      runtime.getService = originalGet;
+      gameStateSpy.mockRestore();
+      handSpy.mockRestore();
     });
 
     it("should have meaningful examples", () => {
@@ -221,106 +366,235 @@ describe("Advanced Actions", () => {
     });
 
     it("should validate false when not in Main Phase", async () => {
-      const runtime = createMockRuntime();
-      const message = createMockMessage("Flip summon!");
-      const state = createMockState();
-
-      // Mock game state in wrong phase
-      const gameState = createMockGameState({
+      // Mock game state in battle phase
+      const mockGameState: GameStateResponse = {
+        gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
+        currentTurn: "host",
         phase: "battle", // Not main phase
-      });
-
-      const originalGet = runtime.getService;
-      runtime.getService = () => ({
-        get: async () => ({
-          data: { gameState },
-        }),
-      });
-
-      const result = await flipSummonAction.validate(runtime, message, state);
-      expect(result).toBe(false);
-
-      runtime.getService = originalGet;
-    });
-
-    it("should validate false when no face-down monsters", async () => {
-      const runtime = createMockRuntime();
-      const message = createMockMessage("Flip summon!");
-      const state = createMockState();
-
-      // Mock game state with no face-down monsters
-      const gameState = createMockGameState({
-        phase: "main1",
+        turnNumber: 3,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
+        myLifePoints: 4000,
+        opponentLifePoints: 4000,
+        myDeckCount: 35,
+        opponentDeckCount: 35,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
+        hand: [],
+        hasNormalSummoned: false,
         hostPlayer: {
-          ...createMockGameState().hostPlayer,
+          playerId: "player-1",
+          lifePoints: 4000,
+          deckCount: 35,
           monsterZone: [
             {
               boardIndex: 0,
               cardId: "monster-1",
-              name: "Blue-Eyes White Dragon",
-              position: "attack",
-              atk: 3000,
-              def: 2500,
-              level: 8,
-              canAttack: true,
-              canChangePosition: false,
-              summonedThisTurn: false,
-            },
-          ],
-        },
-      });
-
-      const originalGet = runtime.getService;
-      runtime.getService = () => ({
-        get: async () => ({
-          data: { gameState },
-        }),
-      });
-
-      const result = await flipSummonAction.validate(runtime, message, state);
-      expect(result).toBe(false);
-
-      runtime.getService = originalGet;
-    });
-
-    it("should validate true when face-down monster available", async () => {
-      const runtime = createMockRuntime();
-      const message = createMockMessage("Flip summon!");
-      const state = createMockState();
-
-      // Mock game state with face-down monster
-      const gameState = createMockGameState({
-        phase: "main1",
-        hostPlayer: {
-          ...createMockGameState().hostPlayer,
-          monsterZone: [
-            {
-              boardIndex: 0,
-              cardId: "monster-1",
-              name: "Man-Eater Bug",
+              name: "Flame Whelp",
               position: "facedown",
-              atk: 450,
-              def: 600,
-              level: 2,
+              atk: 600,
+              def: 400,
+              level: 1,
               canAttack: false,
               canChangePosition: false,
               summonedThisTurn: false,
             },
           ],
+          spellTrapZone: [],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
         },
-      });
+        opponentPlayer: {
+          playerId: "player-2",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
+          spellTrapZone: [],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+      };
 
-      // Spy on the provider's get method
       const spy = spyOn(gameStateProvider, "get").mockResolvedValue({
-        data: { gameState },
-        text: "Mock game state",
+        data: { gameState: mockGameState },
+        text: "",
         values: {},
       });
 
-      const result = await flipSummonAction.validate(runtime, message, state);
+      const result = await flipSummonAction.validate(mockRuntime, mockMessage, mockState);
+      expect(result).toBe(false);
+
+      spy.mockRestore();
+    });
+
+    it("should validate false when no face-down monsters", async () => {
+      // Mock game state with only face-up monsters
+      const mockGameState: GameStateResponse = {
+        gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
+        currentTurn: "host",
+        phase: "main1",
+        turnNumber: 3,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
+        myLifePoints: 4000,
+        opponentLifePoints: 4000,
+        myDeckCount: 35,
+        opponentDeckCount: 35,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [
+          {
+            _id: "card-1",
+            name: "Infernal God Dragon",
+            cardType: "creature",
+            attack: 4000,
+            defense: 3500,
+            currentAttack: 4000,
+            currentDefense: 3500,
+            position: 1, // Attack position
+            hasAttacked: false,
+            isFaceDown: false,
+          },
+        ],
+        opponentBoard: [],
+        hand: [],
+        hasNormalSummoned: true,
+        hostPlayer: {
+          playerId: "player-1",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [
+            {
+              boardIndex: 0,
+              cardId: "monster-1",
+              name: "Infernal God Dragon",
+              position: "attack", // Face-up attack position
+              atk: 4000,
+              def: 3500,
+              level: 10,
+              canAttack: true,
+              canChangePosition: false,
+              summonedThisTurn: false,
+            },
+          ],
+          spellTrapZone: [],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+        opponentPlayer: {
+          playerId: "player-2",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
+          spellTrapZone: [],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+      };
+
+      const spy = spyOn(gameStateProvider, "get").mockResolvedValue({
+        data: { gameState: mockGameState },
+        text: "",
+        values: {},
+      });
+
+      const result = await flipSummonAction.validate(mockRuntime, mockMessage, mockState);
+      expect(result).toBe(false);
+
+      spy.mockRestore();
+    });
+
+    it("should validate true when face-down monster available", async () => {
+      // Mock game state with face-down monster
+      const mockGameState: GameStateResponse = {
+        gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
+        currentTurn: "host",
+        phase: "main1",
+        turnNumber: 3,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
+        myLifePoints: 4000,
+        opponentLifePoints: 4000,
+        myDeckCount: 35,
+        opponentDeckCount: 35,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [
+          {
+            _id: "card-1",
+            name: "Flame Whelp",
+            cardType: "creature",
+            attack: 600,
+            defense: 400,
+            currentAttack: 600,
+            currentDefense: 400,
+            position: 0, // Defense position
+            hasAttacked: false,
+            isFaceDown: true,
+          },
+        ],
+        opponentBoard: [],
+        hand: [],
+        hasNormalSummoned: false,
+        hostPlayer: {
+          playerId: "player-1",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [
+            {
+              boardIndex: 0,
+              cardId: "monster-1",
+              name: "Flame Whelp",
+              position: "facedown", // Face-down position
+              atk: 600,
+              def: 400,
+              level: 1,
+              canAttack: false,
+              canChangePosition: false,
+              summonedThisTurn: false,
+            },
+          ],
+          spellTrapZone: [],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+        opponentPlayer: {
+          playerId: "player-2",
+          lifePoints: 4000,
+          deckCount: 35,
+          monsterZone: [],
+          spellTrapZone: [],
+          graveyard: [],
+          banished: [],
+          extraDeck: 0,
+        },
+      };
+
+      const spy = spyOn(gameStateProvider, "get").mockResolvedValue({
+        data: { gameState: mockGameState },
+        text: "",
+        values: {},
+      });
+
+      const result = await flipSummonAction.validate(mockRuntime, mockMessage, mockState);
       expect(result).toBe(true);
 
-      // Restore original
       spy.mockRestore();
     });
 

@@ -69,7 +69,9 @@ export function TokenListingDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWalletConnect, setShowWalletConnect] = useState(false);
 
-  const createTokenListing = useConvexMutation(typedApi.economy.tokenMarketplace.createTokenListing);
+  const createTokenListing = useConvexMutation(
+    typedApi.economy.tokenMarketplace.createTokenListing
+  );
 
   const rarity = card.rarity as Rarity;
 

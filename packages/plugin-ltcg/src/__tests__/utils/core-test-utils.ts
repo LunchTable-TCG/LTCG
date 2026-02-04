@@ -2,7 +2,9 @@ import { mock } from "bun:test";
 import { composeActionExamples, formatActionNames, formatActions } from "@elizaos/core";
 import type { Action, IAgentRuntime, Memory, State } from "@elizaos/core";
 import { logger } from "@elizaos/core";
-import { v4 as uuidv4 } from "uuid";
+// Simple UUID-like generator for tests - no external dependency needed
+const generateTestId = (): string =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 11)}`;
 
 /**
  * Utility functions for reusing core package tests in project-starter tests
@@ -317,8 +319,8 @@ export const documentTestResult = (
  */
 export const createMockMessage = (text: string): Memory => {
   return {
-    entityId: uuidv4(),
-    roomId: uuidv4(),
+    entityId: generateTestId(),
+    roomId: generateTestId(),
     content: {
       text,
       source: "test",

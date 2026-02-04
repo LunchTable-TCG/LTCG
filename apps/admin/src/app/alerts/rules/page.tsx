@@ -151,7 +151,7 @@ export default function AlertRulesPage() {
   });
 
   // Fetch rules
-  const rules = useQuery(typedApi.alerts.rules.getAll, {});
+  const rules = useQuery(typedApi.alerts.rules.getAll, {}) as Doc<"alertRules">[] | undefined;
 
   // Mutations
   const createRule = useMutation(typedApi.alerts.rules.create);
@@ -436,7 +436,7 @@ export default function AlertRulesPage() {
         </div>
       ) : (rules?.length ?? 0) > 0 ? (
         <div className="grid gap-6 md:grid-cols-2">
-          {rules?.map((rule: Doc<"alertRules">) => (
+          {rules?.map((rule) => (
             <Card key={rule._id} className={!rule.isEnabled ? "opacity-60" : ""}>
               <CardHeader>
                 <div className="flex items-center justify-between">

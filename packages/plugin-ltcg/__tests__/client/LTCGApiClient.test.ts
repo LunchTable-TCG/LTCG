@@ -603,12 +603,29 @@ describe("LTCGApiClient", () => {
 
   describe("getGameState", () => {
     it("should get game state with gameId parameter", async () => {
+      // Use new API format with all required fields for normalization
       const gameState = {
         gameId: "game123",
+        lobbyId: "lobby123",
         status: "active",
         currentTurn: "host",
         phase: "main1",
         turnNumber: 3,
+        currentTurnPlayer: "player1",
+        isMyTurn: true,
+        myLifePoints: 8000,
+        opponentLifePoints: 7500,
+        myDeckCount: 35,
+        opponentDeckCount: 33,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
+        hand: [],
+        hasNormalSummoned: false,
+        canChangePosition: [],
+        // Legacy fields for compatibility
         hostPlayer: {
           playerId: "player1",
           lifePoints: 8000,
@@ -629,9 +646,6 @@ describe("LTCGApiClient", () => {
           banished: [],
           extraDeck: 0,
         },
-        hand: [],
-        hasNormalSummoned: false,
-        canChangePosition: [],
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -641,7 +655,11 @@ describe("LTCGApiClient", () => {
 
       const result = await client.getGameState("game123");
 
-      expect(result).toEqual(gameState);
+      // Check that critical fields are present after normalization
+      expect(result.gameId).toEqual("game123");
+      expect(result.phase).toEqual("main1");
+      expect(result.turnNumber).toEqual(3);
+      expect(result.status).toEqual("active");
       expect(mockFetch).toHaveBeenCalledWith(
         `${TEST_BASE_URL}/api/agents/games/state?gameId=game123`,
         expect.objectContaining({
@@ -1136,9 +1154,9 @@ describe("LTCGApiClient", () => {
       const cards = [
         {
           cardId: "card1",
-          name: "Dark Magician",
-          type: "monster",
-          description: "A powerful wizard",
+          name: "Blazing Drake",
+          type: "creature",
+          description: "A fierce fire-breathing creature",
           abilities: [],
         },
       ];
@@ -1184,12 +1202,12 @@ describe("LTCGApiClient", () => {
     it("should get specific card", async () => {
       const card = {
         cardId: "card123",
-        name: "Blue-Eyes White Dragon",
-        type: "monster",
-        level: 8,
-        atk: 3000,
-        def: 2500,
-        description: "Legendary dragon",
+        name: "Infernal God Dragon",
+        type: "creature",
+        cost: 10,
+        attack: 4000,
+        defense: 3500,
+        description: "A legendary dragon of immense power",
         abilities: [],
       };
 

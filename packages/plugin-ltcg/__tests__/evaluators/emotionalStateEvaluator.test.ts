@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import type { IAgentRuntime, Memory, State } from "@elizaos/core";
+import type { IAgentRuntime, Memory } from "@elizaos/core";
 import { boardAnalysisProvider } from "../../src/providers/boardAnalysisProvider";
 import { gameStateProvider } from "../../src/providers/gameStateProvider";
 import { emotionalStateEvaluator } from "../../src/evaluators/emotionalStateEvaluator";
+import type { LTCGState } from "../../src/types/eliza";
 
 describe("Emotional State Evaluator", () => {
   let mockRuntime: IAgentRuntime;
   let mockMessage: Memory;
-  let mockState: State;
+  let mockState: LTCGState;
 
   beforeEach(() => {
     mockRuntime = {
@@ -21,10 +22,11 @@ describe("Emotional State Evaluator", () => {
         name: "TestAgent",
         bio: "Strategic card game player",
       },
-    } as any;
+    } as IAgentRuntime;
 
     mockMessage = {
       id: "test-message-id",
+      visibleTo: [],
       entityId: "test-entity",
       roomId: "test-room",
       content: {
@@ -36,11 +38,12 @@ describe("Emotional State Evaluator", () => {
     } as Memory;
 
     mockState = {
-      values: {},
+      values: {
+        currentAction: "TRASH_TALK",
+      },
       data: {},
       text: "",
-      currentAction: "TRASH_TALK",
-    } as any;
+    };
   });
 
   describe("Evaluator Structure", () => {
@@ -70,15 +73,37 @@ describe("Emotional State Evaluator", () => {
           data: {
             gameState: {
               gameId: "test-game-123",
+              lobbyId: "lobby-123",
               status: "active",
-              hostPlayer: {
-                lifePoints: 8000,
-                monsterZone: [{ name: "Dragon", atk: 3000 }],
-              },
-              opponentPlayer: {
-                lifePoints: 4000,
-                monsterZone: [],
-              },
+              currentTurn: "host",
+              phase: "main1",
+              turnNumber: 5,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 8000,
+              opponentLifePoints: 4000,
+              myDeckCount: 26,
+              opponentDeckCount: 22,
+              myGraveyardCount: 2,
+              opponentGraveyardCount: 5,
+              opponentHandCount: 2,
+              myBoard: [
+                {
+                  _id: "card-1",
+                  name: "Infernal God Dragon",
+                  cardType: "creature",
+                  attack: 4000,
+                  defense: 3500,
+                  currentAttack: 4000,
+                  currentDefense: 3500,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              opponentBoard: [],
+              hand: [],
+              hasNormalSummoned: true,
             },
           },
         })),
@@ -90,21 +115,18 @@ describe("Emotional State Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
 
-      const shouldAllow = await emotionalStateEvaluator.handler(
-        mockRuntime,
-        mockMessage,
-        mockState
-      );
+      await emotionalStateEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_EMOTIONAL_ALLOWED;
 
       expect(shouldAllow).toBe(true);
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
     });
 
     it("should filter trash talk when losing badly", async () => {
@@ -113,18 +135,49 @@ describe("Emotional State Evaluator", () => {
           data: {
             gameState: {
               gameId: "test-game-123",
+              lobbyId: "lobby-123",
               status: "active",
-              hostPlayer: {
-                lifePoints: 1000,
-                monsterZone: [],
-              },
-              opponentPlayer: {
-                lifePoints: 8000,
-                monsterZone: [
-                  { name: "Dragon1", atk: 3000 },
-                  { name: "Dragon2", atk: 2500 },
-                ],
-              },
+              currentTurn: "host",
+              phase: "main1",
+              turnNumber: 7,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 1000,
+              opponentLifePoints: 8000,
+              myDeckCount: 18,
+              opponentDeckCount: 25,
+              myGraveyardCount: 8,
+              opponentGraveyardCount: 2,
+              opponentHandCount: 5,
+              myBoard: [],
+              opponentBoard: [
+                {
+                  _id: "card-1",
+                  name: "Infernal God Dragon",
+                  cardType: "creature",
+                  attack: 4000,
+                  defense: 3500,
+                  currentAttack: 4000,
+                  currentDefense: 3500,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+                {
+                  _id: "card-2",
+                  name: "Murky Whale",
+                  cardType: "creature",
+                  attack: 2100,
+                  defense: 1500,
+                  currentAttack: 2100,
+                  currentDefense: 1500,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              hand: [],
+              hasNormalSummoned: true,
             },
           },
         })),
@@ -136,21 +189,18 @@ describe("Emotional State Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
 
-      const shouldAllow = await emotionalStateEvaluator.handler(
-        mockRuntime,
-        mockMessage,
-        mockState
-      );
+      await emotionalStateEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_EMOTIONAL_ALLOWED;
 
       expect(shouldAllow).toBe(false);
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
     });
 
     it("should allow trash talk for defiant character even when losing", async () => {
@@ -164,9 +214,37 @@ describe("Emotional State Evaluator", () => {
           data: {
             gameState: {
               gameId: "test-game-123",
+              lobbyId: "lobby-123",
               status: "active",
-              hostPlayer: { lifePoints: 1000, monsterZone: [] },
-              opponentPlayer: { lifePoints: 8000, monsterZone: [{ name: "Dragon", atk: 3000 }] },
+              currentTurn: "host",
+              phase: "main1",
+              turnNumber: 8,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 1000,
+              opponentLifePoints: 8000,
+              myDeckCount: 15,
+              opponentDeckCount: 26,
+              myGraveyardCount: 10,
+              opponentGraveyardCount: 1,
+              opponentHandCount: 6,
+              myBoard: [],
+              opponentBoard: [
+                {
+                  _id: "card-1",
+                  name: "Infernal God Dragon",
+                  cardType: "creature",
+                  attack: 4000,
+                  defense: 3500,
+                  currentAttack: 4000,
+                  currentDefense: 3500,
+                  position: 1,
+                  hasAttacked: false,
+                  isFaceDown: false,
+                },
+              ],
+              hand: [],
+              hasNormalSummoned: true,
             },
           },
         })),
@@ -178,35 +256,60 @@ describe("Emotional State Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
 
-      const shouldAllow = await emotionalStateEvaluator.handler(
-        mockRuntime,
-        mockMessage,
-        mockState
-      );
+      await emotionalStateEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_EMOTIONAL_ALLOWED;
 
       expect(shouldAllow).toBe(true);
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
     });
 
     it("should allow non-trash-talk actions when losing", async () => {
       mockMessage.content = { ...mockMessage.content, action: "SUMMON_MONSTER" };
-      mockState.currentAction = "SUMMON_MONSTER";
+      mockState.values.currentAction = "SUMMON_MONSTER";
 
       const mockGameStateProvider = {
         get: mock(async () => ({
           data: {
             gameState: {
               gameId: "test-game-123",
+              lobbyId: "lobby-123",
               status: "active",
-              hostPlayer: { lifePoints: 1000, monsterZone: [] },
-              opponentPlayer: { lifePoints: 8000, monsterZone: [] },
+              currentTurn: "host",
+              phase: "main1",
+              turnNumber: 6,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 1000,
+              opponentLifePoints: 8000,
+              myDeckCount: 20,
+              opponentDeckCount: 27,
+              myGraveyardCount: 6,
+              opponentGraveyardCount: 0,
+              opponentHandCount: 5,
+              myBoard: [],
+              opponentBoard: [],
+              hand: [
+                {
+                  handIndex: 0,
+                  cardId: "card-blazing-drake",
+                  name: "Blazing Drake",
+                  cardType: "creature",
+                  cost: 4,
+                  attack: 1600,
+                  defense: 1200,
+                  archetype: "fire",
+                  description: "A dragon wreathed in flames",
+                  abilities: [],
+                },
+              ],
+              hasNormalSummoned: false,
             },
           },
         })),
@@ -218,21 +321,18 @@ describe("Emotional State Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
 
-      const shouldAllow = await emotionalStateEvaluator.handler(
-        mockRuntime,
-        mockMessage,
-        mockState
-      );
+      await emotionalStateEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_EMOTIONAL_ALLOWED;
 
       expect(shouldAllow).toBe(true);
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
     });
 
     it("should evaluate emotional state without errors", async () => {
@@ -241,9 +341,24 @@ describe("Emotional State Evaluator", () => {
           data: {
             gameState: {
               gameId: "test-game-123",
+              lobbyId: "lobby-123",
               status: "active",
-              hostPlayer: { lifePoints: 8000, monsterZone: [] },
-              opponentPlayer: { lifePoints: 8000, monsterZone: [] },
+              currentTurn: "host",
+              phase: "main1",
+              turnNumber: 2,
+              currentTurnPlayer: "user-123",
+              isMyTurn: true,
+              myLifePoints: 8000,
+              opponentLifePoints: 8000,
+              myDeckCount: 29,
+              opponentDeckCount: 29,
+              myGraveyardCount: 0,
+              opponentGraveyardCount: 0,
+              opponentHandCount: 5,
+              myBoard: [],
+              opponentBoard: [],
+              hand: [],
+              hasNormalSummoned: false,
             },
           },
         })),
@@ -255,22 +370,18 @@ describe("Emotional State Evaluator", () => {
         })),
       };
 
-      const originalGameState = (gameStateProvider as any).get;
-      const originalBoardAnalysis = (boardAnalysisProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
-      (boardAnalysisProvider as any).get = mockBoardAnalysisProvider.get;
+      const originalGameState = gameStateProvider.get;
+      const originalBoardAnalysis = boardAnalysisProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
+      boardAnalysisProvider.get = mockBoardAnalysisProvider.get;
 
-      const shouldAllow = await emotionalStateEvaluator.handler(
-        mockRuntime,
-        mockMessage,
-        mockState
-      );
+      await emotionalStateEvaluator.handler(mockRuntime, mockMessage, mockState);
+      const shouldAllow = mockState.values.LTCG_EMOTIONAL_ALLOWED;
 
-      // Evaluator should return a boolean indicating whether to allow the response
       expect(typeof shouldAllow).toBe("boolean");
 
-      (gameStateProvider as any).get = originalGameState;
-      (boardAnalysisProvider as any).get = originalBoardAnalysis;
+      gameStateProvider.get = originalGameState;
+      boardAnalysisProvider.get = originalBoardAnalysis;
     });
   });
 
@@ -282,18 +393,17 @@ describe("Emotional State Evaluator", () => {
         }),
       };
 
-      const originalProvider = (gameStateProvider as any).get;
-      (gameStateProvider as any).get = mockGameStateProvider.get;
+      const originalProvider = gameStateProvider.get;
+      gameStateProvider.get = mockGameStateProvider.get;
 
-      const shouldAllow = await emotionalStateEvaluator.handler(
-        mockRuntime,
-        mockMessage,
-        mockState
-      );
+      // Should not throw
+      await emotionalStateEvaluator.handler(mockRuntime, mockMessage, mockState);
 
-      expect(shouldAllow).toBe(true);
+      // On error, evaluator returns early without setting value
+      const shouldAllow = mockState.values.LTCG_EMOTIONAL_ALLOWED;
+      expect(shouldAllow).toBeUndefined();
 
-      (gameStateProvider as any).get = originalProvider;
+      gameStateProvider.get = originalProvider;
     });
   });
 });

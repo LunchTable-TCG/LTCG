@@ -434,7 +434,7 @@ export default function BattlePassPage() {
               </div>
               <Button asChild>
                 <Link
-                  href={`/battle-pass/${battlePassResult?.battlePasses.find((bp: BattlePassSeason) => bp.status === "active")?._id}`}
+                  href={`/battle-pass/${battlePassResult?.battlePasses.find((bp) => bp.status === "active")?._id}`}
                 >
                   Manage Active
                 </Link>

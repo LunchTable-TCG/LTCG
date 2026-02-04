@@ -60,12 +60,7 @@ export function MetricsPanel({ agentId }: MetricsPanelProps) {
   }
 
   if (error) {
-    return (
-      <ErrorState
-        message="Failed to load metrics"
-        onRetry={() => refetch()}
-      />
-    );
+    return <ErrorState message="Failed to load metrics" onRetry={() => refetch()} />;
   }
 
   if (!agentStatus) {
@@ -88,9 +83,7 @@ export function MetricsPanel({ agentId }: MetricsPanelProps) {
         <div
           className={cn(
             "px-2 py-1 rounded text-xs font-medium",
-            agentStatus.isRunning
-              ? "bg-green-500/20 text-green-400"
-              : "bg-red-500/20 text-red-400"
+            agentStatus.isRunning ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
           )}
         >
           {agentStatus.isRunning ? "Running" : "Stopped"}
@@ -116,10 +109,7 @@ export function MetricsPanel({ agentId }: MetricsPanelProps) {
             value={agentStatus.autoMatchmaking ? "Enabled" : "Disabled"}
             variant={agentStatus.autoMatchmaking ? "primary" : "default"}
           />
-          <StatCard
-            label="Last Activity"
-            value={formatRelativeTime(agentStatus.lastActivity)}
-          />
+          <StatCard label="Last Activity" value={formatRelativeTime(agentStatus.lastActivity)} />
         </div>
       </div>
 

@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi } from "@/lib/convexHelpers";
+import { useTypedQuery } from "@ltcg/core/react";
 import {
   AreaChart,
   Badge,
@@ -36,31 +37,6 @@ import { useState } from "react";
 // =============================================================================
 // Types
 // =============================================================================
-
-interface EconomyMetric {
-  date: string;
-  goldInCirculation: number;
-  goldGenerated: number;
-  goldSpent: number;
-  netGoldChange: number;
-  dustInCirculation: number;
-  totalCards: number;
-  packsOpened: number;
-  activeListings: number;
-  salesVolume: number;
-  medianPlayerGold: number;
-  top10PercentGold: number;
-}
-
-interface EconomyTrend {
-  date: string;
-  goldGenerated: number;
-  goldSpent: number;
-  netGoldChange: number;
-  packsOpened: number;
-  marketplaceSales: number;
-  marketplaceVolume: number;
-}
 
 interface WealthDistributionItem {
   label: string;
@@ -103,15 +79,15 @@ export default function EconomyAnalyticsPage() {
   const [trendDays, setTrendDays] = useState(14);
 
   // Fetch real data from Convex
-  const snapshot = useConvexQuery(typedApi.admin.analytics.getCurrentEconomySnapshot);
-  const metrics = useConvexQuery(typedApi.admin.analytics.getEconomyMetrics, { days: 14 });
-  const wealth = useConvexQuery(typedApi.admin.analytics.getWealthDistribution);
-  const marketplaceStats = useConvexQuery(typedApi.admin.analytics.getMarketplaceStats, {
+  const snapshot = useTypedQuery(typedApi.admin.analytics.getCurrentEconomySnapshot, {});
+  const metrics = useTypedQuery(typedApi.admin.analytics.getEconomyMetrics, { days: 14 });
+  const wealth = useTypedQuery(typedApi.admin.analytics.getWealthDistribution, {});
+  const marketplaceStats = useTypedQuery(typedApi.admin.analytics.getMarketplaceStats, {
     periodType: "all_time",
   });
 
   // NEW: Economy trends data with configurable period
-  const economyTrends = useConvexQuery(typedApi.admin.analytics.getEconomyTrends, {
+  const economyTrends = useTypedQuery(typedApi.admin.analytics.getEconomyTrends, {
     periodType: trendPeriod,
     days: trendDays,
   });
@@ -119,16 +95,15 @@ export default function EconomyAnalyticsPage() {
   const isLoading = snapshot === undefined || metrics === undefined;
 
   // Transform metrics for chart
-  const currencyFlowData =
-    metrics
-      ?.slice()
-      .reverse()
-      .map((m: EconomyMetric) => ({
-        date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
-        "Gold Generated": m.goldGenerated,
-        "Gold Spent": m.goldSpent,
-        "Net Change": m.netGoldChange,
-      })) ?? [];
+  const currencyFlowData = (metrics ?? [])
+    .slice()
+    .reverse()
+    .map((m) => ({
+      date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
+      "Gold Generated": m.goldGenerated,
+      "Gold Spent": m.goldSpent,
+      "Net Change": m.netGoldChange,
+    }));
 
   // Transform wealth distribution for donut chart
   const wealthDistributionData =
@@ -149,7 +124,7 @@ export default function EconomyAnalyticsPage() {
     metrics
       ?.slice()
       .reverse()
-      .map((m: EconomyMetric) => ({
+      .map((m) => ({
         date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
         "Packs Opened": m.packsOpened,
         "Sales Volume": m.salesVolume,
@@ -161,7 +136,7 @@ export default function EconomyAnalyticsPage() {
     metrics
       ?.slice()
       .reverse()
-      .map((m: EconomyMetric) => ({
+      .map((m) => ({
         date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
         "Total Cards": m.totalCards,
         Dust: Math.round(m.dustInCirculation / 1000), // Show in K for readability
@@ -186,7 +161,7 @@ export default function EconomyAnalyticsPage() {
 
   // Transform economy trends for chart
   const economyTrendsData =
-    economyTrends?.map((t: EconomyTrend) => ({
+    economyTrends?.map((t) => ({
       date: new Date(t.date).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
@@ -200,21 +175,12 @@ export default function EconomyAnalyticsPage() {
   // Calculate trend statistics
   const trendStats = economyTrends
     ? {
-        totalGenerated: economyTrends.reduce(
-          (sum: number, t: EconomyTrend) => sum + t.goldGenerated,
-          0
-        ),
-        totalSpent: economyTrends.reduce((sum: number, t: EconomyTrend) => sum + t.goldSpent, 0),
-        totalNetChange: economyTrends.reduce(
-          (sum: number, t: EconomyTrend) => sum + t.netGoldChange,
-          0
-        ),
-        totalMarketplaceVolume: economyTrends.reduce(
-          (sum: number, t: EconomyTrend) => sum + t.marketplaceVolume,
-          0
-        ),
+        totalGenerated: economyTrends.reduce((sum, t) => sum + t.goldGenerated, 0),
+        totalSpent: economyTrends.reduce((sum, t) => sum + t.goldSpent, 0),
+        totalNetChange: economyTrends.reduce((sum, t) => sum + t.netGoldChange, 0),
+        totalMarketplaceVolume: economyTrends.reduce((sum, t) => sum + t.marketplaceVolume, 0),
         avgPacksOpened:
-          economyTrends.reduce((sum: number, t: EconomyTrend) => sum + t.packsOpened, 0) /
+          economyTrends.reduce((sum, t) => sum + t.packsOpened, 0) /
           Math.max(economyTrends.length, 1),
       }
     : null;

@@ -27,11 +27,12 @@ describe("Summon Action", () => {
           tributeIndices: [],
         });
       }),
-    } as any;
+    } as IAgentRuntime;
 
     // Mock message with game ID
     mockMessage = {
       id: "test-message-id",
+      visibleTo: [],
       entityId: "test-entity",
       roomId: "test-room",
       content: {
@@ -76,12 +77,27 @@ describe("Summon Action", () => {
 
   describe("Validation", () => {
     it("should validate when it is Main Phase and summon available", async () => {
-      // Mock game state provider to return main phase
+      // Mock game state - includes both new API fields and legacy fields for compatibility
       const mockGameState = {
         gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
         phase: "main1",
         currentTurn: "host",
+        turnNumber: 2,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
         hasNormalSummoned: false,
+        myLifePoints: 8000,
+        opponentLifePoints: 8000,
+        myDeckCount: 29,
+        opponentDeckCount: 29,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
+        // Legacy fields needed by current summonAction implementation
         hostPlayer: {
           monsterZone: [],
           spellTrapZone: [],
@@ -94,12 +110,24 @@ describe("Summon Action", () => {
         },
       };
 
-      // Mock hand provider to return summonable monsters
+      // Hand with summonable creature - includes both field naming conventions
       const mockHand = [
-        { type: "monster", level: 4, name: "Test Monster", atk: 1500, def: 1200, handIndex: 0 },
+        {
+          _id: "card-1",
+          handIndex: 0,
+          name: "Blazing Drake",
+          type: "creature", // Legacy field
+          cardType: "creature",
+          level: 4, // Legacy field
+          cost: 4,
+          atk: 1600, // Legacy field
+          attack: 1600,
+          def: 1200, // Legacy field
+          defense: 1200,
+          archetype: "fire",
+        },
       ];
 
-      // Override providers temporarily
       const originalGameStateGet = gameStateProvider.get;
       const originalHandGet = handProvider.get;
 
@@ -117,7 +145,6 @@ describe("Summon Action", () => {
 
       const result = await summonAction.validate(mockRuntime, mockMessage, mockState);
 
-      // Restore providers
       gameStateProvider.get = originalGameStateGet;
       handProvider.get = originalHandGet;
 
@@ -127,9 +154,23 @@ describe("Summon Action", () => {
     it("should not validate when not in Main Phase", async () => {
       const mockGameState = {
         gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
         phase: "battle",
         currentTurn: "host",
+        turnNumber: 3,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
         hasNormalSummoned: false,
+        myLifePoints: 8000,
+        opponentLifePoints: 8000,
+        myDeckCount: 28,
+        opponentDeckCount: 28,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
         hostPlayer: {
           monsterZone: [],
           spellTrapZone: [],
@@ -158,9 +199,23 @@ describe("Summon Action", () => {
     it("should not validate when already summoned this turn", async () => {
       const mockGameState = {
         gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
         phase: "main1",
         currentTurn: "host",
+        turnNumber: 3,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
         hasNormalSummoned: true,
+        myLifePoints: 8000,
+        opponentLifePoints: 8000,
+        myDeckCount: 28,
+        opponentDeckCount: 28,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
         hostPlayer: {
           monsterZone: [],
           spellTrapZone: [],
@@ -174,7 +229,20 @@ describe("Summon Action", () => {
       };
 
       const mockHand = [
-        { type: "monster", level: 4, name: "Test Monster", atk: 1500, def: 1200, handIndex: 0 },
+        {
+          _id: "card-1",
+          handIndex: 0,
+          name: "Murky Whale",
+          type: "creature",
+          cardType: "creature",
+          level: 4,
+          cost: 4,
+          atk: 2100,
+          attack: 2100,
+          def: 1500,
+          defense: 1500,
+          archetype: "water",
+        },
       ];
 
       const originalGameStateGet = gameStateProvider.get;
@@ -203,9 +271,23 @@ describe("Summon Action", () => {
     it("should not validate when no summonable monsters in hand", async () => {
       const mockGameState = {
         gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
         phase: "main1",
         currentTurn: "host",
+        turnNumber: 2,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
         hasNormalSummoned: false,
+        myLifePoints: 8000,
+        opponentLifePoints: 8000,
+        myDeckCount: 29,
+        opponentDeckCount: 29,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
         hostPlayer: {
           monsterZone: [],
           spellTrapZone: [],
@@ -218,9 +300,26 @@ describe("Summon Action", () => {
         },
       };
 
+      // Hand with only spell/trap cards - no creatures
       const mockHand = [
-        { type: "spell", name: "Test Spell", handIndex: 0 },
-        { type: "trap", name: "Test Trap", handIndex: 1 },
+        {
+          _id: "card-1",
+          handIndex: 0,
+          name: "Tidal Surge",
+          type: "spell",
+          cardType: "spell",
+          cost: 2,
+          description: "Destroy one creature",
+        },
+        {
+          _id: "card-2",
+          handIndex: 1,
+          name: "Ring of Fire",
+          type: "trap",
+          cardType: "trap",
+          cost: 1,
+          description: "Deals damage when triggered",
+        },
       ];
 
       const originalGameStateGet = gameStateProvider.get;
@@ -251,9 +350,23 @@ describe("Summon Action", () => {
     it("should summon a Level 4 or lower monster successfully", async () => {
       const mockGameState = {
         gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
         phase: "main1",
         currentTurn: "host",
+        turnNumber: 2,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
         hasNormalSummoned: false,
+        myLifePoints: 8000,
+        opponentLifePoints: 8000,
+        myDeckCount: 29,
+        opponentDeckCount: 29,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
         hostPlayer: {
           monsterZone: [],
           spellTrapZone: [],
@@ -268,16 +381,21 @@ describe("Summon Action", () => {
 
       const mockHand = [
         {
+          _id: "card-1",
           handIndex: 0,
-          type: "monster",
-          level: 4,
-          name: "Blue-Eyes White Dragon",
-          atk: 3000,
-          def: 2500,
+          name: "Ember Wyrmling",
+          type: "creature",
+          cardType: "creature",
+          level: 3,
+          cost: 3,
+          atk: 1200,
+          attack: 1200,
+          def: 800,
+          defense: 800,
+          archetype: "fire",
         },
       ];
 
-      // Mock providers
       const originalGameStateGet = gameStateProvider.get;
       const originalHandGet = handProvider.get;
 
@@ -293,12 +411,13 @@ describe("Summon Action", () => {
         data: { hand: mockHand },
       });
 
-      // Mock API client
+      // Mock API client summon method
       const originalSummon = LTCGApiClient.prototype.summon;
-      LTCGApiClient.prototype.summon = mock(async () => ({
+      const summonMock = mock(async () => ({
         success: true,
         message: "Monster summoned successfully",
-      })) as any;
+      }));
+      LTCGApiClient.prototype.summon = summonMock;
 
       const result = await summonAction.handler(
         mockRuntime,
@@ -308,7 +427,6 @@ describe("Summon Action", () => {
         mockCallback
       );
 
-      // Restore
       gameStateProvider.get = originalGameStateGet;
       handProvider.get = originalHandGet;
       LTCGApiClient.prototype.summon = originalSummon;
@@ -320,9 +438,23 @@ describe("Summon Action", () => {
     it("should handle API errors gracefully", async () => {
       const mockGameState = {
         gameId: "test-game-123",
+        lobbyId: "lobby-123",
+        status: "active",
         phase: "main1",
         currentTurn: "host",
+        turnNumber: 2,
+        currentTurnPlayer: "user-123",
+        isMyTurn: true,
         hasNormalSummoned: false,
+        myLifePoints: 8000,
+        opponentLifePoints: 8000,
+        myDeckCount: 29,
+        opponentDeckCount: 29,
+        myGraveyardCount: 0,
+        opponentGraveyardCount: 0,
+        opponentHandCount: 5,
+        myBoard: [],
+        opponentBoard: [],
         hostPlayer: {
           monsterZone: [],
           spellTrapZone: [],
@@ -336,7 +468,20 @@ describe("Summon Action", () => {
       };
 
       const mockHand = [
-        { handIndex: 0, type: "monster", level: 4, name: "Test Monster", atk: 1500, def: 1200 },
+        {
+          _id: "card-1",
+          handIndex: 0,
+          name: "Tidal Serpent",
+          type: "creature",
+          cardType: "creature",
+          level: 3,
+          cost: 3,
+          atk: 1800,
+          attack: 1800,
+          def: 1000,
+          defense: 1000,
+          archetype: "water",
+        },
       ];
 
       const originalGameStateGet = gameStateProvider.get;
@@ -356,9 +501,10 @@ describe("Summon Action", () => {
 
       // Mock API client to throw error
       const originalSummon = LTCGApiClient.prototype.summon;
-      LTCGApiClient.prototype.summon = mock(async () => {
+      const summonMock = mock(async () => {
         throw new Error("API Error");
-      }) as any;
+      });
+      LTCGApiClient.prototype.summon = summonMock;
 
       const result = await summonAction.handler(
         mockRuntime,

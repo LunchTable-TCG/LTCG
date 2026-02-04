@@ -93,7 +93,7 @@ export default function AlertHistoryPage() {
     limit: 200, // Fetch more for client-side filtering
   }) as EnrichedAlert[] | undefined;
 
-  const rules = useQuery(typedApi.alerts.rules.getAll, {});
+  const rules = useQuery(typedApi.alerts.rules.getAll, {}) as Doc<"alertRules">[] | undefined;
   const stats = useQuery(typedApi.alerts.history.getStats, {});
 
   // Mutations
@@ -236,7 +236,7 @@ export default function AlertHistoryPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Rules</SelectItem>
-                  {rules?.map((rule: Doc<"alertRules">) => (
+                  {rules?.map((rule) => (
                     <SelectItem key={rule._id} value={rule._id}>
                       {rule.name}
                     </SelectItem>

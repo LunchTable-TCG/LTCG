@@ -105,7 +105,9 @@ export function TokenPurchaseFlow({
   const { signAndSendTransaction } = useSignAndSendTransaction();
 
   // Convex mutations
-  const initiatePurchase = useConvexMutation(typedApi.economy.tokenMarketplace.initiateTokenPurchase);
+  const initiatePurchase = useConvexMutation(
+    typedApi.economy.tokenMarketplace.initiateTokenPurchase
+  );
   const submitSignedTransaction = useConvexMutation(
     typedApi.economy.tokenMarketplace.submitSignedTransaction
   );

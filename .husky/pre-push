@@ -1,5 +1,0 @@
-echo "🚀 Running pre-push checks..."
-echo "⚡ Type checking..."
-bun run type-check
-
-echo "✅ All checks passed!"

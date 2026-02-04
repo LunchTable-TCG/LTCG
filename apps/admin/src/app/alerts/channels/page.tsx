@@ -112,7 +112,9 @@ export default function AlertChannelsPage() {
   });
 
   // Fetch channels
-  const channels = useQuery(typedApi.alerts.channels.getAll, {});
+  const channels = useQuery(typedApi.alerts.channels.getAll, {}) as
+    | Doc<"alertChannels">[]
+    | undefined;
 
   // Mutations
   const createChannel = useMutation(typedApi.alerts.channels.create);
@@ -366,7 +368,7 @@ export default function AlertChannelsPage() {
         </div>
       ) : (channels?.length ?? 0) > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {channels?.map((channel: Doc<"alertChannels">) => (
+          {channels?.map((channel) => (
             <Card key={channel._id} className={!channel.isEnabled ? "opacity-60" : ""}>
               <CardHeader>
                 <div className="flex items-center justify-between">

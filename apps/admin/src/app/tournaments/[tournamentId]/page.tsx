@@ -20,9 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { TournamentId, UserId } from "@/lib/convexTypes";
-import { typedApi } from "@convex/_generated/api";
 import { Badge, Card, Text, Title } from "@tremor/react";
 import { format } from "date-fns";
 import {

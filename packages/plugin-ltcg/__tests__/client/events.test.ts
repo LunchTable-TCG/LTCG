@@ -94,7 +94,7 @@ describe("Event Types", () => {
         phase: "main1",
         eventType: "summon",
         playerId: "player-123",
-        description: "Summoned Blue-Eyes White Dragon",
+        description: "Summoned Infernal God Dragon",
         timestamp: Date.now(),
       };
 

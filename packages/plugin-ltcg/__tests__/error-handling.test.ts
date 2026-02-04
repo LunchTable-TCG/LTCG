@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { logger } from "@elizaos/core";
 import type { IAgentRuntime, Memory, State } from "@elizaos/core";
-import { v4 as uuidv4 } from "uuid";
+// Simple test ID generator - no external dependency needed
+const generateTestId = (): string =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 11)}`;
 import plugin from "../src/plugin";
 import { LTCGRealtimeService } from "../src/services/LTCGRealtimeService";
 
@@ -30,8 +32,8 @@ describe("Error Handling", () => {
         } as Partial<IAgentRuntime> as IAgentRuntime;
 
         const mockMessage = {
-          entityId: uuidv4(),
-          roomId: uuidv4(),
+          entityId: generateTestId(),
+          roomId: generateTestId(),
           content: {
             text: "Register agent",
             source: "test",
@@ -132,8 +134,8 @@ describe("Error Handling", () => {
         } as Partial<IAgentRuntime> as IAgentRuntime;
 
         const mockMessage = {
-          entityId: uuidv4(),
-          roomId: uuidv4(),
+          entityId: generateTestId(),
+          roomId: generateTestId(),
           content: {
             text: "Test message",
             source: "test",

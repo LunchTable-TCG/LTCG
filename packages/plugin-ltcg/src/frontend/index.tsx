@@ -74,9 +74,12 @@ function ExampleProvider({ agentId }: { agentId: UUID }) {
 }
 
 // Initialize the application - no router needed for iframe
-const rootElement = document.getElementById("root");
-if (rootElement) {
-  createRoot(rootElement).render(<ExampleRoute />);
+// Only run in browser environment (not in Node/Bun tests)
+if (typeof document !== "undefined") {
+  const rootElement = document.getElementById("root");
+  if (rootElement) {
+    createRoot(rootElement).render(<ExampleRoute />);
+  }
 }
 
 /**

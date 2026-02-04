@@ -114,10 +114,10 @@ export default function ApiKeysPage() {
     const nowTime = Date.now();
     return {
       total: apiKeys.length,
-      active: apiKeys.filter((k: ApiKey) => k.isActive).length,
-      revoked: apiKeys.filter((k: ApiKey) => !k.isActive).length,
+      active: apiKeys.filter((k) => k.isActive).length,
+      revoked: apiKeys.filter((k) => !k.isActive).length,
       recentlyUsed: apiKeys.filter(
-        (k: ApiKey) => k.lastUsedAt && nowTime - k.lastUsedAt < 7 * 24 * 60 * 60 * 1000
+        (k) => k.lastUsedAt && nowTime - k.lastUsedAt < 7 * 24 * 60 * 60 * 1000
       ).length,
     };
   }, [apiKeys]);

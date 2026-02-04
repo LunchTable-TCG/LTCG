@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { AgentActivityIndicator } from "./AgentActivityIndicator";
 import { GameResultScreen } from "./GameResultScreen";
 import { TutorialManager } from "./TutorialManager";
 import { LifePointsBar } from "./board/LifePointsBar";
@@ -34,7 +35,6 @@ import { SummonModal } from "./dialogs/SummonModal";
 import { EffectFeedback, useEffectFeedback } from "./effects/EffectFeedback";
 import { EffectQueueWidget, type QueuedEffect } from "./effects/EffectQueueWidget";
 import { type CardInZone, useGameBoard } from "./hooks/useGameBoard";
-import { AgentActivityIndicator } from "./AgentActivityIndicator";
 
 interface GameBoardProps {
   lobbyId: Id<"gameLobbies">;

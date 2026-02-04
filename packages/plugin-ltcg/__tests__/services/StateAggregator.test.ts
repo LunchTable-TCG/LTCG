@@ -119,13 +119,17 @@ function createMockGameState(overrides: Partial<GameStateResponse> = {}): GameSt
  */
 function getPrivateMembers(service: StateAggregator) {
   return service as unknown as {
-    runtime: IAgentRuntime | null;
+    _lazyRuntime: IAgentRuntime | null;
     pollingService: LTCGPollingService | null;
     orchestrator: TurnOrchestrator | null;
     apiClient: LTCGApiClient | null;
     convexClient: unknown;
     gameStateCache: Map<string, { gameState: GameStateResponse; timestamp: number }>;
-    CACHE_TTL: number;
+    ttlConfig: {
+      gameState: number;
+      matchmaking: number;
+      metrics: number;
+    };
     getPollingService(): LTCGPollingService | null;
     getOrchestrator(): TurnOrchestrator | null;
     transformGameState(gameState: GameStateResponse, gameId: string): unknown;
@@ -151,7 +155,7 @@ describe("StateAggregator - Initialization", () => {
       await aggregator.initialize(mockRuntime);
 
       const privateMethods = getPrivateMembers(aggregator);
-      expect(privateMethods.runtime).toBe(mockRuntime);
+      expect(privateMethods._lazyRuntime).toBe(mockRuntime);
     });
 
     it("should initialize without CONVEX_URL (with warning)", async () => {
@@ -315,7 +319,7 @@ describe("StateAggregator - Caching Behavior", () => {
       const cachedState = createMockGameState({ turnNumber: 3 });
       privateMethods.gameStateCache.set(gameId, {
         gameState: cachedState,
-        timestamp: Date.now() - privateMethods.CACHE_TTL - 1000, // Expired
+        timestamp: Date.now() - privateMethods.ttlConfig.gameState - 1000, // Expired
       });
 
       // Mock fresh state
@@ -341,22 +345,25 @@ describe("StateAggregator - Caching Behavior", () => {
     });
   });
 
-  describe("cache TTL (5 seconds)", () => {
-    it("should have 5 second TTL", () => {
+  describe("cache TTL configuration", () => {
+    it("should have data-type-specific TTLs", () => {
       const privateMethods = getPrivateMembers(aggregator);
 
-      expect(privateMethods.CACHE_TTL).toBe(5000);
+      // Default TTLs: gameState=2000ms, matchmaking=5000ms, metrics=10000ms
+      expect(privateMethods.ttlConfig.gameState).toBe(2000);
+      expect(privateMethods.ttlConfig.matchmaking).toBe(5000);
+      expect(privateMethods.ttlConfig.metrics).toBe(10000);
     });
 
-    it("should respect 5 second TTL boundary", async () => {
+    it("should respect gameState TTL boundary (2 seconds)", async () => {
       const gameId = "test-ttl-boundary";
       const privateMethods = getPrivateMembers(aggregator);
 
-      // Cache with timestamp exactly at TTL boundary
+      // Cache with timestamp just under gameState TTL (2000ms)
       const cachedState = createMockGameState({ turnNumber: 10 });
       privateMethods.gameStateCache.set(gameId, {
         gameState: cachedState,
-        timestamp: Date.now() - 4999, // Just under TTL
+        timestamp: Date.now() - 1999, // Just under 2s TTL
       });
 
       const result = await aggregator.getGameState("test-agent", gameId);
@@ -532,7 +539,7 @@ describe("StateAggregator - Data Aggregation", () => {
         ],
         opponentBoard: [
           { name: "Dark Knight", cardType: "creature" },
-          { name: "Trap Hole", cardType: "trap" },
+          { name: "Ring of Fire", cardType: "trap" },
         ],
         status: "in_progress",
       } as Partial<GameStateResponse>);

@@ -357,7 +357,7 @@ function UserSearchCombobox({
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch player list for search
-  const players = useQuery(typedApi.admin.admins.listPlayers, { limit: 200 }) as
+  const players = useQuery(typedApi.admin.admin.listPlayers, { limit: 200 }) as
     | PlayerOption[]
     | undefined;
 
@@ -935,8 +935,8 @@ function CleanupExpiredButton() {
   const handleCleanup = async () => {
     setIsSubmitting(true);
     try {
-      const result = (await cleanupExpiredRoles({})) as { message: string };
-      toast.success(result.message);
+      const result = (await cleanupExpiredRoles({})) as { removed: number };
+      toast.success(`Cleaned up ${result.removed} expired role(s)`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to cleanup expired roles");
     } finally {

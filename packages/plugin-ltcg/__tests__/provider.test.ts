@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import type { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
 import { logger } from "@elizaos/core";
-import { v4 as uuidv4 } from "uuid";
+// Simple test ID generator - no external dependency needed
+const generateTestId = (): string =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 11)}`;
 import plugin from "../src/plugin";
 
 // Note: Bun automatically loads .env files
@@ -106,11 +108,11 @@ function createRealRuntime(): IAgentRuntime {
 
 // Create realistic memory object
 function createRealMemory(): Memory {
-  const entityId = uuidv4();
-  const roomId = uuidv4();
+  const entityId = generateTestId();
+  const roomId = generateTestId();
 
   return {
-    id: uuidv4(),
+    id: generateTestId(),
     entityId,
     roomId,
     timestamp: Date.now(),
@@ -121,8 +123,8 @@ function createRealMemory(): Memory {
     },
     metadata: {
       type: "custom",
-      sessionId: uuidv4(),
-      conversationId: uuidv4(),
+      sessionId: generateTestId(),
+      conversationId: generateTestId(),
     },
   } as Memory;
 }
@@ -224,7 +226,7 @@ describe("Provider Tests", () => {
         // Create an invalid memory object to simulate an error scenario
         const invalidMemory = {
           // Missing properties that would be required
-          id: uuidv4(),
+          id: generateTestId(),
         } as Partial<Memory> as Memory;
 
         const state = {

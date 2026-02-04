@@ -42,14 +42,11 @@ export function AgentActivityIndicator({ lobbyId, className = "" }: AgentActivit
   const [isVisible, setIsVisible] = useState(false);
 
   // Subscribe to agent events only
-  const agentEvents = useConvexQuery(
-    typedApi.gameplay.gameEvents.subscribeToGameEvents,
-    {
-      lobbyId,
-      eventTypes: ["agent_thinking", "agent_decided", "agent_error"],
-      limit: 5,
-    }
-  ) as AgentEvent[] | undefined;
+  const agentEvents = useConvexQuery(typedApi.gameplay.gameEvents.subscribeToGameEvents, {
+    lobbyId,
+    eventTypes: ["agent_thinking", "agent_decided", "agent_error"],
+    limit: 5,
+  }) as AgentEvent[] | undefined;
 
   // Update latest event when new events arrive
   useEffect(() => {
@@ -132,24 +129,18 @@ export function AgentActivityIndicator({ lobbyId, className = "" }: AgentActivit
     >
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 rounded-lg bg-black/20">
-          {getIcon()}
-        </div>
+        <div className="p-2 rounded-lg bg-black/20">{getIcon()}</div>
         <div>
           <div className="flex items-center gap-2">
             <Bot className="w-4 h-4" />
-            <span className="font-semibold text-sm">
-              {latestEvent.playerUsername}
-            </span>
+            <span className="font-semibold text-sm">{latestEvent.playerUsername}</span>
           </div>
           <span className="text-xs opacity-70">{getStatusText()}</span>
         </div>
       </div>
 
       {/* Description */}
-      <p className="text-sm opacity-90 mb-2">
-        {latestEvent.description}
-      </p>
+      <p className="text-sm opacity-90 mb-2">{latestEvent.description}</p>
 
       {/* Metadata */}
       {latestEvent.metadata && (
@@ -169,12 +160,13 @@ export function AgentActivityIndicator({ lobbyId, className = "" }: AgentActivit
               <span className="font-medium">Time:</span> {latestEvent.metadata.executionTimeMs}ms
             </p>
           )}
-          {latestEvent.metadata.cardsConsidered && latestEvent.metadata.cardsConsidered.length > 0 && (
-            <p>
-              <span className="font-medium">Considering:</span>{" "}
-              {latestEvent.metadata.cardsConsidered.join(", ")}
-            </p>
-          )}
+          {latestEvent.metadata.cardsConsidered &&
+            latestEvent.metadata.cardsConsidered.length > 0 && (
+              <p>
+                <span className="font-medium">Considering:</span>{" "}
+                {latestEvent.metadata.cardsConsidered.join(", ")}
+              </p>
+            )}
           {latestEvent.metadata.error && (
             <p className="text-red-300">
               <span className="font-medium">Error:</span> {latestEvent.metadata.error}

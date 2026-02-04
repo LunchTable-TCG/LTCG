@@ -7,7 +7,7 @@ import {
   createMockState,
   documentTestResult,
   runCoreActionTests,
-} from "./utils/core-test-utils";
+} from "../src/__tests__/utils/core-test-utils";
 
 // Note: Bun automatically loads .env files
 

@@ -59,7 +59,10 @@ export function useAIChat(): UseAIChatReturn {
   const [isAgentTyping, setIsAgentTyping] = useState(false);
 
   // Get the current user from Convex for the userId
-  const currentUser = useConvexQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useConvexQuery(
+    typedApi.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
   const userId = currentUser?._id;
 
   // Get active session
