@@ -59,6 +59,8 @@ function getChannelIcon(type: string) {
   switch (type) {
     case "in_app":
       return "🔔";
+    case "email":
+      return "📧";
     case "slack":
       return "💬";
     case "discord":
@@ -72,6 +74,8 @@ function getChannelLabel(type: string) {
   switch (type) {
     case "in_app":
       return "In-App";
+    case "email":
+      return "Email";
     case "slack":
       return "Slack";
     case "discord":
