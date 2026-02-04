@@ -45,7 +45,7 @@ export const strategyEvaluator: Evaluator = {
     runtime: IAgentRuntime,
     message: Memory,
     state: State,
-    _options?: any
+    _options?: Record<string, unknown>
   ): Promise<void> => {
     try {
       logger.debug("Evaluating strategic decision");
@@ -57,7 +57,7 @@ export const strategyEvaluator: Evaluator = {
       if (!gameState) {
         logger.debug("No game state available for strategy evaluation");
         // Store result in state - allow if we can't evaluate
-        (state.values as any).LTCG_STRATEGY_ALLOWED = true;
+        (state.values as Record<string, unknown>).LTCG_STRATEGY_ALLOWED = true;
         return;
       }
 
@@ -68,12 +68,14 @@ export const strategyEvaluator: Evaluator = {
       const legalActions = legalActionsResult.data;
 
       // Get intended action and parameters
-      const intendedAction = (message.content as any)?.action || (state as any)?.currentAction;
-      const actionParams = (state as any)?.actionParams || {};
+      const messageContent = message.content as Record<string, unknown>;
+      const stateValues = state.values as Record<string, unknown>;
+      const intendedAction = messageContent?.action || stateValues?.currentAction;
+      const actionParams = (stateValues?.actionParams || {}) as ActionParams;
 
       if (!intendedAction) {
         logger.debug("No intended action to evaluate");
-        (state.values as any).LTCG_STRATEGY_ALLOWED = true;
+        (state.values as Record<string, unknown>).LTCG_STRATEGY_ALLOWED = true;
         return;
       }
 
@@ -113,12 +115,12 @@ export const strategyEvaluator: Evaluator = {
       }
 
       // Store evaluation result in state
-      (state.values as any).LTCG_STRATEGY_ALLOWED = !evaluation.shouldFilter;
-      (state.values as any).LTCG_STRATEGY_EVALUATION = evaluation;
+      stateValues.LTCG_STRATEGY_ALLOWED = !evaluation.shouldFilter;
+      stateValues.LTCG_STRATEGY_EVALUATION = evaluation;
     } catch (error) {
       logger.error({ error }, "Error in strategy evaluator");
       // Allow on error to avoid blocking
-      (state.values as any).LTCG_STRATEGY_ALLOWED = true;
+      (state.values as Record<string, unknown>).LTCG_STRATEGY_ALLOWED = true;
     }
   },
 };
@@ -141,14 +143,44 @@ interface StrategicEvaluation {
 }
 
 /**
+ * Action parameters - flexible structure for different action types
+ */
+interface ActionParams {
+  attackerIndex?: number;
+  targetIndex?: number | null;
+  handIndex?: number;
+  [key: string]: unknown;
+}
+
+/**
+ * Board analysis data from provider
+ */
+interface BoardAnalysis {
+  advantage?:
+    | "STRONG_ADVANTAGE"
+    | "SLIGHT_ADVANTAGE"
+    | "EVEN"
+    | "SLIGHT_DISADVANTAGE"
+    | "STRONG_DISADVANTAGE";
+  [key: string]: unknown;
+}
+
+/**
+ * Legal actions data from provider
+ */
+interface LegalActions {
+  [key: string]: unknown;
+}
+
+/**
  * Evaluate the strategic quality of a decision
  */
 function evaluateStrategicDecision(
   action: string,
-  params: any,
+  params: ActionParams,
   gameState: GameStateResponse,
-  boardAnalysis: any,
-  legalActions: any,
+  boardAnalysis: BoardAnalysis,
+  legalActions: LegalActions,
   riskTolerance: string
 ): StrategicEvaluation {
   // Evaluate based on action type
@@ -181,9 +213,9 @@ function evaluateStrategicDecision(
  * Evaluate attack decision
  */
 function evaluateAttack(
-  params: any,
+  params: ActionParams,
   gameState: GameStateResponse,
-  _boardAnalysis: any,
+  _boardAnalysis: BoardAnalysis,
   riskTolerance: string
 ): StrategicEvaluation {
   const attackerIndex = params.attackerIndex;
@@ -301,9 +333,9 @@ function evaluateAttack(
  * Evaluate summon decision
  */
 function evaluateSummon(
-  params: any,
+  params: ActionParams,
   gameState: GameStateResponse,
-  boardAnalysis: any,
+  boardAnalysis: BoardAnalysis,
   _riskTolerance: string
 ): StrategicEvaluation {
   const handIndex = params.handIndex;
@@ -356,9 +388,9 @@ function evaluateSummon(
  * Evaluate spell/trap activation
  */
 function evaluateSpellTrap(
-  params: any,
+  params: ActionParams,
   gameState: GameStateResponse,
-  _boardAnalysis: any,
+  _boardAnalysis: BoardAnalysis,
   _riskTolerance: string
 ): StrategicEvaluation {
   // Basic validation - can be enhanced later
@@ -389,10 +421,10 @@ function evaluateSpellTrap(
  * Evaluate end turn decision
  */
 function evaluateEndTurn(
-  _params: any,
+  _params: ActionParams,
   gameState: GameStateResponse,
-  boardAnalysis: any,
-  _legalActions: any,
+  boardAnalysis: BoardAnalysis,
+  _legalActions: LegalActions,
   _riskTolerance: string
 ): StrategicEvaluation {
   // Check if ending turn without using resources

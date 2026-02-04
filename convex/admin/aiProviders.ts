@@ -7,13 +7,13 @@
  */
 
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import { action, internalAction, query } from "../_generated/server";
 import { mutation } from "../functions";
-import { internal } from "../_generated/api";
+import { RetryConfig, actionRetrier } from "../infrastructure/actionRetrier";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
-import { actionRetrier, RetryConfig } from "../infrastructure/actionRetrier";
 
 // =============================================================================
 // Types
@@ -476,17 +476,34 @@ export const _testProviderConnectionInternal = internalAction({
 });
 
 /**
+ * Result from fetching models from a provider
+ */
+interface FetchModelsResult {
+  success: boolean;
+  models: NormalizedModel[];
+  error?: string;
+}
+
+/**
  * Fetch models from both providers and combine
  */
-export const fetchAllModels: any = action({
+export const fetchAllModels = action({
   args: {
     type: v.optional(v.union(v.literal("language"), v.literal("embedding"), v.literal("image"))),
   },
-  handler: async (_ctx, args): Promise<any> => {
+  handler: async (_ctx, args): Promise<{ success: boolean; models: NormalizedModel[] }> => {
     // Note: This function is simplified to avoid circular type references
     // In production, you would implement the actual model fetching logic here
-    const openrouterResult: any = { success: false, models: [], error: "Not implemented" };
-    const vercelResult: any = { success: false, models: [], error: "Not implemented" };
+    const openrouterResult: FetchModelsResult = {
+      success: false,
+      models: [],
+      error: "Not implemented",
+    };
+    const vercelResult: FetchModelsResult = {
+      success: false,
+      models: [],
+      error: "Not implemented",
+    };
 
     let allModels: NormalizedModel[] = [];
 
