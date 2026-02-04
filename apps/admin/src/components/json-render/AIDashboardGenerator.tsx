@@ -46,7 +46,7 @@ export function AIDashboardGenerator({
   showPreview = true,
 }: AIDashboardGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt);
-  const { generateDashboard, isGenerating, error, lastGenerated, clearError } = useAIDashboard();
+  const { generateDashboard, isGenerating, error, lastGenerated } = useAIDashboard();
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) {

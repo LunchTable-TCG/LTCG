@@ -27,15 +27,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import { api } from "@convex/_generated/api";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 
-// Use api directly - typedApi doesn't have content/email modules yet
-// biome-ignore lint/suspicious/noExplicitAny: New API modules not in TypedAPI
-const contentApi = (api as any).content.scheduledContent;
-// biome-ignore lint/suspicious/noExplicitAny: New API modules not in TypedAPI
-const emailApi = (api as any).email.lists;
+// Use typedApi which has the type bypass built-in
+const contentApi = typedApi.content.scheduledContent;
+const emailApi = typedApi.email.lists;
 import {
   CheckCircleIcon,
   ClockIcon,

@@ -335,8 +335,8 @@ export const listAdmins = query({
     // Fetch user details
     const admins = await Promise.all(
       adminRoles.map(async (adminRole) => {
-        const user = await ctx.db.get(adminRole.userId);
-        const grantedBy = await ctx.db.get(adminRole.grantedBy);
+        const user = (await ctx.db.get(adminRole.userId)) as Doc<"users"> | null;
+        const grantedBy = (await ctx.db.get(adminRole.grantedBy)) as Doc<"users"> | null;
 
         return {
           userId: adminRole.userId,
@@ -392,7 +392,7 @@ export const grantAdminRole = mutation({
       }
 
       // Check if target user exists
-      const targetUser = await ctx.db.get(args.userId);
+      const targetUser = (await ctx.db.get(args.userId)) as Doc<"users"> | null;
       if (!targetUser) {
         throw createError(ErrorCode.NOT_FOUND_USER, {
           userId: args.userId,
@@ -454,7 +454,7 @@ export const grantAdminRole = mutation({
       errorMessage = error instanceof Error ? error.message : String(error);
 
       // Log failed action
-      const targetUser = await ctx.db.get(args.userId);
+      const targetUser = (await ctx.db.get(args.userId)) as Doc<"users"> | null;
       await scheduleAuditLog(ctx, {
         adminId,
         action: "grant_role",
@@ -573,8 +573,10 @@ export const getAuditLog = query({
     // Enrich logs with admin and target user details
     const enrichedLogs = await Promise.all(
       results.map(async (log) => {
-        const admin = await ctx.db.get(log.adminId);
-        const targetUser = log.targetUserId ? await ctx.db.get(log.targetUserId) : null;
+        const admin = (await ctx.db.get(log.adminId)) as Doc<"users"> | null;
+        const targetUser = log.targetUserId
+          ? ((await ctx.db.get(log.targetUserId)) as Doc<"users"> | null)
+          : null;
 
         return {
           ...log,
@@ -638,7 +640,7 @@ export const revokeAdminRole = mutation({
         });
       }
 
-      const targetUser = await ctx.db.get(args.userId);
+      const targetUser = (await ctx.db.get(args.userId)) as Doc<"users"> | null;
 
       // Deactivate role
       await ctx.db.patch(existingRole._id, {
@@ -666,7 +668,7 @@ export const revokeAdminRole = mutation({
       errorMessage = error instanceof Error ? error.message : String(error);
 
       // Log failed action
-      const targetUser = await ctx.db.get(args.userId);
+      const targetUser = (await ctx.db.get(args.userId)) as Doc<"users"> | null;
       await scheduleAuditLog(ctx, {
         adminId,
         action: "revoke_role",
@@ -723,7 +725,7 @@ export const getPlayerProfile = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    const player = await ctx.db.get(playerId);
+    const player = (await ctx.db.get(playerId)) as Doc<"users"> | null;
     if (!player) return null;
 
     // Calculate rank and percentile using the aggregate
@@ -814,7 +816,7 @@ export const getPlayerInventory = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    const player = await ctx.db.get(playerId);
+    const player = (await ctx.db.get(playerId)) as Doc<"users"> | null;
     if (!player) return null;
 
     // Get all player cards

@@ -443,7 +443,8 @@ export default function ListingDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(listing.bids as Array<{
+                    {(
+                      listing.bids as Array<{
                         _id: string;
                         bidderId: string;
                         bidderUsername?: string;
@@ -451,56 +452,60 @@ export default function ListingDetailPage() {
                         bidAmount?: number;
                         bidStatus?: string;
                         createdAt: number;
-                      }>).map((bid) => (
-                        <TableRow key={bid._id}>
-                          <TableCell>
-                            <Link
-                              href={`/players/${bid.bidderId}`}
-                              className="text-primary hover:underline"
-                            >
-                              {bid.bidderUsername}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {formatGold(bid.bidAmount ?? bid.amount ?? 0)} gold
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                bid.bidStatus === "active"
-                                  ? "default"
-                                  : bid.bidStatus === "won"
-                                    ? "secondary"
-                                    : bid.bidStatus === "refunded"
-                                      ? "destructive"
-                                      : "outline"
+                      }>
+                    ).map((bid) => (
+                      <TableRow key={bid._id}>
+                        <TableCell>
+                          <Link
+                            href={`/players/${bid.bidderId}`}
+                            className="text-primary hover:underline"
+                          >
+                            {bid.bidderUsername}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {formatGold(bid.bidAmount ?? bid.amount ?? 0)} gold
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              bid.bidStatus === "active"
+                                ? "default"
+                                : bid.bidStatus === "won"
+                                  ? "secondary"
+                                  : bid.bidStatus === "refunded"
+                                    ? "destructive"
+                                    : "outline"
+                            }
+                          >
+                            {bid.bidStatus ?? "—"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDistanceToNow(new Date(bid.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {bid.bidStatus !== "refunded" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                openRefundDialog(
+                                  bid._id,
+                                  bid.bidderUsername ?? "Unknown",
+                                  bid.bidAmount ?? bid.amount ?? 0
+                                )
                               }
                             >
-                              {bid.bidStatus}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatDistanceToNow(new Date(bid.createdAt), {
-                              addSuffix: true,
-                            })}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {bid.bidStatus !== "refunded" && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  openRefundDialog(bid._id, bid.bidderUsername ?? "Unknown", bid.bidAmount ?? bid.amount ?? 0)
-                                }
-                              >
-                                <RefreshCw className="mr-1 h-3 w-3" />
-                                Refund
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    )}
+                              <RefreshCw className="mr-1 h-3 w-3" />
+                              Refund
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </CardContent>

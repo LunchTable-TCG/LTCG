@@ -128,11 +128,13 @@ export default function CardsPage() {
 
   const statsResult = useQuery(typedApi.admin.cards.getCardStats, {}) as CardStats | undefined;
 
-  const toggleActive = useMutation(typedApi.admin.cards.toggleCardActive);
+  const toggleActive = useMutation(typedApi.admin.cards.toggleCardActive as any);
 
   const handleToggleActive = async (cardId: string, _cardName: string) => {
     try {
       const result = (await toggleActive({ cardId: cardId as Id<"cardDefinitions"> })) as {
+        success: boolean;
+        isActive: boolean;
         message: string;
       };
       toast.success(result.message);

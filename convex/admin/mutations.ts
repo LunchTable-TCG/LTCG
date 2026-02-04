@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -511,10 +511,10 @@ export const getAdminAuditLogs = query({
     // Enrich logs with admin user info
     const enrichedLogs = await Promise.all(
       paginatedLogs.map(async (log) => {
-        const admin = await ctx.db.get(log.adminId);
-        let targetUser = null;
+        const admin = (await ctx.db.get(log.adminId)) as Doc<"users"> | null;
+        let targetUser: Doc<"users"> | null = null;
         if (log.targetUserId) {
-          targetUser = await ctx.db.get(log.targetUserId);
+          targetUser = (await ctx.db.get(log.targetUserId)) as Doc<"users"> | null;
         }
 
         return {

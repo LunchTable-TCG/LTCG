@@ -36,7 +36,10 @@ export const populateShop = mutation({
     }
 
     const now = Date.now();
-    const products = [];
+    const products: Array<
+      // biome-ignore lint/suspicious/noExplicitAny: Complex shop product schema with nested configs
+      Record<string, any>
+    > = [];
 
     // PACKS - Individual card packs
     // Starter Pack - Cheap, guaranteed rare

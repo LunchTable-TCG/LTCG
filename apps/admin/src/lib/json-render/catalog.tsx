@@ -495,10 +495,10 @@ export const adminCatalog: Record<string, ComponentDefinition> = {
     component: TableComponent as ComponentType<Record<string, unknown>>,
   },
   StatCard: {
-    component: StatCard as ComponentType<Record<string, unknown>>,
+    component: StatCard as unknown as ComponentType<Record<string, unknown>>,
   },
   StatGrid: {
-    component: StatGrid as ComponentType<Record<string, unknown>>,
+    component: StatGrid as unknown as ComponentType<Record<string, unknown>>,
     children: true,
   },
 

@@ -21,10 +21,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import { typedApi, useMutation } from "@/lib/convexHelpers";
+import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
-import { useTypedQuery } from "@ltcg/core/react";
-import type { FunctionReference } from "convex/server";
 import { format, formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -63,10 +61,11 @@ export default function ReportDetailPage() {
   const [suspendDuration, setSuspendDuration] = useState(7);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Use useTypedQuery from @ltcg/core/react to avoid TS2589 deep type instantiation
-  const getReportQuery = typedApi.admin.reports.getReport as FunctionReference<"query">;
-  const reportQueryArgs = isAdmin ? { reportId: reportId as Id<"userReports"> } : "skip";
-  const report = useTypedQuery(getReportQuery, reportQueryArgs);
+  // Use native useQuery with skip conditional
+  const report = useQuery(
+    typedApi.admin.reports.getReport,
+    isAdmin ? { reportId: reportId as Id<"userReports"> } : "skip"
+  );
 
   // Cast mutations to any - typedApi has wrong table name (playerReports vs userReports)
   const updateStatusMutation = typedApi.admin.reports.updateReportStatus;

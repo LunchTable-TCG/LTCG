@@ -17,8 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { typedApi } from "@/lib/convexHelpers";
-import { useTypedQuery } from "@ltcg/core/react";
+import { typedApi, useQuery } from "@/lib/convexHelpers";
 import {
   AreaChart,
   Badge,
@@ -79,15 +78,15 @@ export default function EconomyAnalyticsPage() {
   const [trendDays, setTrendDays] = useState(14);
 
   // Fetch real data from Convex
-  const snapshot = useTypedQuery(typedApi.admin.analytics.getCurrentEconomySnapshot, {});
-  const metrics = useTypedQuery(typedApi.admin.analytics.getEconomyMetrics, { days: 14 });
-  const wealth = useTypedQuery(typedApi.admin.analytics.getWealthDistribution, {});
-  const marketplaceStats = useTypedQuery(typedApi.admin.analytics.getMarketplaceStats, {
+  const snapshot = useQuery(typedApi.admin.analytics.getCurrentEconomySnapshot, {});
+  const metrics = useQuery(typedApi.admin.analytics.getEconomyMetrics, { days: 14 });
+  const wealth = useQuery(typedApi.admin.analytics.getWealthDistribution, {});
+  const marketplaceStats = useQuery(typedApi.admin.analytics.getMarketplaceStats, {
     periodType: "all_time",
   });
 
   // NEW: Economy trends data with configurable period
-  const economyTrends = useTypedQuery(typedApi.admin.analytics.getEconomyTrends, {
+  const economyTrends = useQuery(typedApi.admin.analytics.getEconomyTrends, {
     periodType: trendPeriod,
     days: trendDays,
   });
@@ -95,10 +94,12 @@ export default function EconomyAnalyticsPage() {
   const isLoading = snapshot === undefined || metrics === undefined;
 
   // Transform metrics for chart
-  const currencyFlowData = (metrics ?? [])
+  type EconomyMetric = { date: number; goldGenerated: number; goldSpent: number; netGoldChange: number };
+  const metricsArray = (metrics ?? []) as unknown as EconomyMetric[];
+  const currencyFlowData = metricsArray
     .slice()
     .reverse()
-    .map((m) => ({
+    .map((m: EconomyMetric) => ({
       date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
       "Gold Generated": m.goldGenerated,
       "Gold Spent": m.goldSpent,
@@ -120,27 +121,25 @@ export default function EconomyAnalyticsPage() {
     circulationBase > 0 ? ((weeklyChange / circulationBase) * 100).toFixed(1) : "0";
 
   // Marketplace & Activity data
-  const marketplaceActivityData =
-    metrics
-      ?.slice()
-      .reverse()
-      .map((m) => ({
-        date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
-        "Packs Opened": m.packsOpened,
-        "Sales Volume": m.salesVolume,
-        "Active Listings": m.activeListings,
-      })) ?? [];
+  const marketplaceActivityData = metricsArray
+    .slice()
+    .reverse()
+    .map((m: EconomyMetric & { packsOpened?: number; salesVolume?: number; activeListings?: number }) => ({
+      date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
+      "Packs Opened": m.packsOpened ?? 0,
+      "Sales Volume": m.salesVolume ?? 0,
+      "Active Listings": m.activeListings ?? 0,
+    }));
 
   // Card economy data
-  const cardEconomyData =
-    metrics
-      ?.slice()
-      .reverse()
-      .map((m) => ({
-        date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
-        "Total Cards": m.totalCards,
-        Dust: Math.round(m.dustInCirculation / 1000), // Show in K for readability
-      })) ?? [];
+  const cardEconomyData = metricsArray
+    .slice()
+    .reverse()
+    .map((m: EconomyMetric & { totalCards?: number; dustInCirculation?: number }) => ({
+      date: new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
+      "Total Cards": m.totalCards ?? 0,
+      Dust: Math.round((m.dustInCirculation ?? 0) / 1000), // Show in K for readability
+    }));
 
   // Real gold sources/sinks from actual data
   const goldSources = [
@@ -160,28 +159,29 @@ export default function EconomyAnalyticsPage() {
   ];
 
   // Transform economy trends for chart
-  const economyTrendsData =
-    economyTrends?.map((t) => ({
-      date: new Date(t.date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-      "Net Gold Change": t.netGoldChange,
-      "Gold Generated": t.goldGenerated,
-      "Gold Spent": t.goldSpent,
-      "Marketplace Volume": t.marketplaceVolume,
-    })) ?? [];
+  type TrendItem = { date: number; netGoldChange: number; goldGenerated: number; goldSpent: number; marketplaceVolume: number; packsOpened: number };
+  const trendsArray = (economyTrends ?? []) as unknown as TrendItem[];
+  const economyTrendsData = trendsArray.map((t: TrendItem) => ({
+    date: new Date(t.date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    "Net Gold Change": t.netGoldChange,
+    "Gold Generated": t.goldGenerated,
+    "Gold Spent": t.goldSpent,
+    "Marketplace Volume": t.marketplaceVolume,
+  }));
 
   // Calculate trend statistics
-  const trendStats = economyTrends
+  const trendStats = trendsArray.length > 0
     ? {
-        totalGenerated: economyTrends.reduce((sum, t) => sum + t.goldGenerated, 0),
-        totalSpent: economyTrends.reduce((sum, t) => sum + t.goldSpent, 0),
-        totalNetChange: economyTrends.reduce((sum, t) => sum + t.netGoldChange, 0),
-        totalMarketplaceVolume: economyTrends.reduce((sum, t) => sum + t.marketplaceVolume, 0),
+        totalGenerated: trendsArray.reduce((sum: number, t: TrendItem) => sum + t.goldGenerated, 0),
+        totalSpent: trendsArray.reduce((sum: number, t: TrendItem) => sum + t.goldSpent, 0),
+        totalNetChange: trendsArray.reduce((sum: number, t: TrendItem) => sum + t.netGoldChange, 0),
+        totalMarketplaceVolume: trendsArray.reduce((sum: number, t: TrendItem) => sum + t.marketplaceVolume, 0),
         avgPacksOpened:
-          economyTrends.reduce((sum, t) => sum + t.packsOpened, 0) /
-          Math.max(economyTrends.length, 1),
+          trendsArray.reduce((sum: number, t: TrendItem) => sum + t.packsOpened, 0) /
+          Math.max(trendsArray.length, 1),
       }
     : null;
 

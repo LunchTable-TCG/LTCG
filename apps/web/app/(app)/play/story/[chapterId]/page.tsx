@@ -53,9 +53,10 @@ export default function ChapterPage({ params }: ChapterPageProps) {
   // Initialize stage progress when chapter loads
   useEffect(() => {
     if (chapterDetails?._id) {
-      const hasProgress = chapterDetails.stages?.some(
-        (s: { status?: string; timesCompleted?: number }) =>
-          s.status !== "locked" || (s.timesCompleted ?? 0) > 0
+      type StageWithProgress = { status?: string; timesCompleted?: number };
+      const stages = chapterDetails.stages as StageWithProgress[] | undefined;
+      const hasProgress = stages?.some(
+        (s) => s.status !== "locked" || (s.timesCompleted ?? 0) > 0
       );
       if (!hasProgress) {
         initializeStageProgress({ chapterId: chapterDetails._id }).catch(console.error);
@@ -95,14 +96,26 @@ export default function ChapterPage({ params }: ChapterPageProps) {
     );
   }
 
-  const chapter = chapterDetails;
-  const stages = chapter.stages || [];
+  const chapter = chapterDetails as typeof chapterDetails & { archetype?: string };
+  type StageWithProgress = {
+    stageNumber: number;
+    name?: string;
+    description?: string;
+    rewardGold?: number;
+    rewardXp?: number;
+    firstClearBonus?: number | { gold?: number };
+    firstClearClaimed?: boolean;
+    aiDifficulty?: string;
+    status?: string;
+    timesCompleted?: number;
+  };
+  const stages = (chapter.stages || []) as StageWithProgress[];
   const assetName = chapter.archetype || "infernal_dragons";
 
   const completedStages = stages.filter(
-    (s: { status?: string }) => s.status === "starred" || s.status === "completed"
+    (s) => s.status === "starred" || s.status === "completed"
   ).length;
-  const starCount = stages.filter((s: { status?: string }) => s.status === "starred").length;
+  const starCount = stages.filter((s) => s.status === "starred").length;
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
@@ -170,21 +183,7 @@ export default function ChapterPage({ params }: ChapterPageProps) {
         <div className="max-w-7xl mx-auto">
           {stages.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              {stages.map(
-                (
-                  stage: {
-                    stageNumber: number;
-                    name?: string;
-                    description?: string;
-                    rewardGold?: number;
-                    rewardXp?: number;
-                    firstClearBonus?: number | { gold?: number };
-                    firstClearClaimed?: boolean;
-                    aiDifficulty?: string;
-                    status?: string;
-                  },
-                  index: number
-                ) => {
+              {stages.map((stage, index) => {
                   // Normalize firstClearBonus to a number
                   const firstClearBonusValue =
                     typeof stage.firstClearBonus === "number"

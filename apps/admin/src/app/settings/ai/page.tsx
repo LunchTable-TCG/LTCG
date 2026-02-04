@@ -27,15 +27,11 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
 import { typedApi, useAction, useMutation, useQuery } from "@/lib/convexHelpers";
-import { api } from "@convex/_generated/api";
 
-// Use api directly for endpoints not in typedApi
-// biome-ignore lint/suspicious/noExplicitAny: typedApi missing some endpoints
-const aiConfigApi = (api as any).admin.aiConfig;
-// biome-ignore lint/suspicious/noExplicitAny: typedApi missing some endpoints
-const aiProvidersApi = (api as any).admin.aiProviders;
-// biome-ignore lint/suspicious/noExplicitAny: typedApi missing some endpoints
-const aiUsageApi = (api as any).admin.aiUsage;
+// Use typedApi which has the type bypass built-in
+const aiConfigApi = typedApi.admin.aiConfig;
+const aiProvidersApi = typedApi.admin.aiProviders;
+const aiUsageApi = typedApi.admin.aiUsage;
 import { Text, Title } from "@tremor/react";
 import {
   AlertCircleIcon,

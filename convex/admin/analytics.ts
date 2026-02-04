@@ -541,7 +541,15 @@ export const getEconomyTrends = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    const trends = [];
+    const trends: Array<{
+      date: string;
+      goldGenerated: number;
+      goldSpent: number;
+      netGoldChange: number;
+      packsOpened: number;
+      marketplaceSales: number;
+      marketplaceVolume: number;
+    }> = [];
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
     const intervalMs =
@@ -615,7 +623,20 @@ export const getEconomyMetrics = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    const metrics = [];
+    const metrics: Array<{
+      date: string;
+      goldInCirculation: number;
+      goldGenerated: number;
+      goldSpent: number;
+      netGoldChange: number;
+      dustInCirculation: number;
+      totalCards: number;
+      packsOpened: number;
+      activeListings: number;
+      salesVolume: number;
+      medianPlayerGold: number;
+      top10PercentGold: number;
+    }> = [];
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
 
@@ -1130,7 +1151,16 @@ export const getMatchmakingStatsDetailed = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    const stats = [];
+    const stats: Array<{
+      date: string;
+      queueType: string;
+      avgQueueTime: number;
+      avgRatingDiff: number;
+      fairMatches: number;
+      aiFilledMatches: number;
+      totalMatches: number;
+      avgWaitTime: number;
+    }> = [];
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
 
@@ -1462,7 +1492,20 @@ export const getDailyActiveStats = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    const stats = [];
+    const stats: Array<{
+      date: string;
+      dau: number;
+      dauHumans: number;
+      dauAi: number;
+      newUsers: number;
+      returningUsers: number;
+      totalGames: number;
+      rankedGames: number;
+      casualGames: number;
+      day1Retention: number;
+      day7Retention: number;
+      averageGameDuration: number;
+    }> = [];
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
 

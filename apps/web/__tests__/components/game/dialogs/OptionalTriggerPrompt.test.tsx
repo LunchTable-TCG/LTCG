@@ -13,6 +13,13 @@ const mockRespondToTrigger = vi.fn();
 
 // Mock convex helpers
 vi.mock("@/lib/convexHelpers", () => ({
+  typedApi: {
+    gameplay: {
+      triggerSystem: {
+        respondToOptionalTrigger: "respondToOptionalTrigger",
+      },
+    },
+  },
   apiAny: {
     gameplay: {
       triggerSystem: {

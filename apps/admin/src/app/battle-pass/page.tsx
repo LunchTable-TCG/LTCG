@@ -90,7 +90,7 @@ function CreateBattlePassDialog({ open, onOpenChange }: CreateBattlePassDialogPr
   const availableSeasons = useConvexQuery(
     typedApi.admin.battlePass.getAvailableSeasonsForBattlePass,
     {}
-  );
+  ) as Array<{ _id: Id<"seasons">; number: number; name: string }> | undefined;
   const createBattlePass = useConvexMutation(typedApi.admin.battlePass.createBattlePassSeason);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -359,7 +359,9 @@ export default function BattlePassPage() {
 
   const battlePassResult = useConvexQuery(typedApi.admin.battlePass.listBattlePassSeasons, {
     status: statusFilter !== "all" ? (statusFilter as BattlePassStatus) : undefined,
-  });
+  }) as
+    | { battlePasses: Array<BattlePassSeason & { status: BattlePassStatus }>; totalCount: number }
+    | undefined;
 
   const battlePassStats = useConvexQuery(typedApi.admin.battlePass.getBattlePassStats, {});
 

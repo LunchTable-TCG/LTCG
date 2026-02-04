@@ -97,7 +97,9 @@ export default function ApiKeysPage() {
   const [selectedKey, setSelectedKey] = useState<ApiKey | null>(null);
 
   // Fetch API keys
-  const apiKeys = useConvexQuery(typedApi.admin.apiKeys.listApiKeys, { limit: 100 });
+  const apiKeys = useConvexQuery(typedApi.admin.apiKeys.listApiKeys, { limit: 100 }) as
+    | ApiKey[]
+    | undefined;
 
   // Mutations
   const revokeKey = useConvexMutation(typedApi.admin.apiKeys.revokeApiKey);

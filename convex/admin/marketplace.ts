@@ -6,7 +6,7 @@
  */
 
 import { v } from "convex/values";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -298,7 +298,14 @@ async function detectPriceAnomalies(
     byCard.get(cardId)?.push(listing);
   }
 
-  const anomalies = [];
+  const anomalies: Array<{
+    listingId: Id<"marketplaceListings">;
+    cardName: string;
+    price: number;
+    avgPrice: number;
+    deviation: number;
+    sellerUsername: string | undefined;
+  }> = [];
 
   for (const [_cardId, cardListings] of byCard) {
     if (cardListings.length < 2) continue; // Need at least 2 listings to compare

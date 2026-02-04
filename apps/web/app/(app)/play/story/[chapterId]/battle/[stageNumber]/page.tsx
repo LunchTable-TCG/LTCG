@@ -66,7 +66,7 @@ export default function BattlePage({ params }: BattlePageProps) {
   const gameState = useQuery(
     typedApi.gameplay.games.queries.getGameStateForPlayer,
     lobbyId && dialoguePhase === "battle" ? { lobbyId } : "skip"
-  );
+  ) as { myLifePoints: number; opponentLifePoints: number } | null | undefined;
 
   // Get stage information (includes dialogue)
   const stageInfo = useQuery(typedApi.progression.storyQueries.getStageByChapterAndNumber, {

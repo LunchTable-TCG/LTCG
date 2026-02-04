@@ -155,10 +155,10 @@ export default function SettingsPage() {
   // Load preferences when they're available
   useEffect(() => {
     if (preferences) {
-      setNotifications(preferences.notifications);
-      setDisplay(preferences.display);
-      setGame(preferences.game);
-      setPrivacy(preferences.privacy);
+      setNotifications(preferences.notifications as typeof notifications);
+      setDisplay(preferences.display as typeof display);
+      setGame(preferences.game as typeof game);
+      setPrivacy(preferences.privacy as typeof privacy);
     }
   }, [preferences]);
 

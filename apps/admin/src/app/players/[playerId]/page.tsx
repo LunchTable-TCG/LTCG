@@ -30,12 +30,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
 import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
-import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 
-// Use api directly for queries where typedApi has incorrect arg types
-// biome-ignore lint/suspicious/noExplicitAny: typedApi has incorrect arg types
-const adminApi = (api as any).admin;
+// Use typedApi which has the type bypass built-in
+const adminApi = typedApi.admin;
 import { Card, Flex, Text, Title } from "@tremor/react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";

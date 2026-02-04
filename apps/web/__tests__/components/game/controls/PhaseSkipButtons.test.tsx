@@ -9,6 +9,15 @@ const mockSkipToEndPhase = vi.fn();
 const mockSkipMainPhase2 = vi.fn();
 
 vi.mock("@/lib/convexHelpers", () => ({
+  typedApi: {
+    gameplay: {
+      phaseManager: {
+        skipBattlePhase: "skipBattlePhase",
+        skipToEndPhase: "skipToEndPhase",
+        skipMainPhase2: "skipMainPhase2",
+      },
+    },
+  },
   apiAny: {
     gameplay: {
       phaseManager: {

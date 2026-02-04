@@ -473,7 +473,7 @@ export default function RngConfigPage() {
           <TabsContent value="pity">
             {config && (
               <PityThresholdsEditor
-                thresholds={config.pityThresholds}
+                thresholds={config.pityThresholds as PityThresholds}
                 onSave={handleSavePityThresholds}
                 isSaving={saving === "pity"}
               />

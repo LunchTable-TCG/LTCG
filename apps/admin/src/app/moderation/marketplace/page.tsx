@@ -241,8 +241,15 @@ export default function MarketplaceModerationPage() {
   const suspendListing = useConvexMutation(typedApi.admin.marketplace.suspendListing);
   const unsuspendListing = useConvexMutation(typedApi.admin.marketplace.unsuspendListing);
   const setPriceCap = useConvexMutation(typedApi.admin.marketplace.setPriceCap);
-  const removePriceCap = useConvexMutation(typedApi.admin.marketplace.removePriceCap);
-  const refundBid = useConvexMutation(typedApi.admin.marketplace.refundBid);
+  // Cast to bypass incorrect typedApi signature
+  const removePriceCap = useConvexMutation(
+    typedApi.admin.marketplace.removePriceCap
+  ) as unknown as (args: { priceCapId: Id<"marketplacePriceCaps"> }) => Promise<void>;
+  // Cast to bypass incorrect typedApi signature
+  const refundBid = useConvexMutation(typedApi.admin.marketplace.refundBid) as unknown as (args: {
+    bidId: Id<"marketplaceBids">;
+    reason: string;
+  }) => Promise<{ message?: string }>;
 
   const handleSuspend = async () => {
     if (!suspendListingId || !suspendReason) return;
@@ -967,7 +974,7 @@ export default function MarketplaceModerationPage() {
                     <CommandList>
                       <CommandEmpty>No cards found.</CommandEmpty>
                       <CommandGroup>
-                        {cardsResult?.map((card: CardDefinition) => (
+                        {cardsResult?.cards?.map((card: CardDefinition) => (
                           <CommandItem
                             key={card._id}
                             value={card.name}
@@ -1260,7 +1267,7 @@ export default function MarketplaceModerationPage() {
                                     : "outline"
                             }
                           >
-                            {bid.bidStatus}
+                            {bid.bidStatus ?? "—"}
                           </Badge>
                           {bid.bidStatus !== "refunded" && (
                             <Button
@@ -1268,7 +1275,11 @@ export default function MarketplaceModerationPage() {
                               variant="ghost"
                               className="h-7 text-xs"
                               onClick={() =>
-                                openRefundDialog(bid._id, bid.bidderUsername, bid.bidAmount)
+                                openRefundDialog(
+                                  bid._id,
+                                  bid.bidderUsername ?? "Unknown",
+                                  bid.bidAmount
+                                )
                               }
                             >
                               Refund

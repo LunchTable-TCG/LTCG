@@ -233,7 +233,14 @@ export const getBattlePassStats = query({
     const battlePasses = await ctx.db.query("battlePassSeasons").collect();
     const activeBP = battlePasses.find((bp) => bp.status === "active");
 
-    let activeStats = null;
+    let activeStats: {
+      name: string;
+      totalPlayers: number;
+      premiumPlayers: number;
+      averageTier: number;
+      daysRemaining: number;
+      tierDistribution: Record<string, number>;
+    } | null = null;
     if (activeBP) {
       const progress = await ctx.db
         .query("battlePassProgress")
