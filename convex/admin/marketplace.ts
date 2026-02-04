@@ -6,6 +6,7 @@
  */
 
 import { v } from "convex/values";
+import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -88,8 +89,8 @@ export const listListings = query({
         const cardDef = await ctx.db.get(listing.cardDefinitionId);
         return {
           ...listing,
-          cardName: (cardDef as any)?.name ?? "Unknown Card",
-          cardRarity: (cardDef as any)?.rarity ?? "unknown",
+          cardName: (cardDef as Doc<"cardDefinitions"> | null)?.name ?? "Unknown Card",
+          cardRarity: (cardDef as Doc<"cardDefinitions"> | null)?.rarity ?? "unknown",
         };
       })
     );

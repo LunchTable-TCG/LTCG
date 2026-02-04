@@ -6,6 +6,7 @@
  */
 
 import { v } from "convex/values";
+import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -61,7 +62,10 @@ export const listFeatureFlags = query({
         const updater = await ctx.db.get(flag.updatedBy);
         return {
           ...flag,
-          updatedByUsername: (updater as any)?.username || (updater as any)?.name || "Unknown",
+          updatedByUsername:
+            (updater as Doc<"users"> | null)?.username ||
+            (updater as Doc<"users"> | null)?.name ||
+            "Unknown",
         };
       })
     );

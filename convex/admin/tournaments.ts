@@ -8,8 +8,8 @@
 import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
-import { mutation } from "../functions";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
+import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { scheduleAuditLog } from "../lib/internalHelpers";
@@ -109,7 +109,7 @@ export const listTournaments = query({
           createdAt: t.createdAt,
           updatedAt: t.updatedAt,
           // Enriched fields
-          creatorUsername: (creator as any)?.username || "Unknown",
+          creatorUsername: (creator as Doc<"users"> | null)?.username || "Unknown",
           potentialPrize,
           totalPrizeDistributed,
         };
