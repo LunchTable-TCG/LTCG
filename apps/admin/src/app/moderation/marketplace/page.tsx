@@ -1267,7 +1267,7 @@ export default function MarketplaceModerationPage() {
                                     : "outline"
                             }
                           >
-                            {bid.bidStatus ?? "—"}
+                            {bid.bidStatus}
                           </Badge>
                           {bid.bidStatus !== "refunded" && (
                             <Button
@@ -1275,11 +1275,7 @@ export default function MarketplaceModerationPage() {
                               variant="ghost"
                               className="h-7 text-xs"
                               onClick={() =>
-                                openRefundDialog(
-                                  bid._id,
-                                  bid.bidderUsername ?? "Unknown",
-                                  bid.bidAmount
-                                )
+                                openRefundDialog(bid._id, bid.bidderUsername, bid.bidAmount)
                               }
                             >
                               Refund
