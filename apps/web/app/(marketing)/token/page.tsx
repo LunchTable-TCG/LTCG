@@ -184,9 +184,14 @@ export default function TokenPage() {
               <p className="text-sm text-foreground/70">
                 <span className="font-semibold text-foreground">For Developers:</span> Build AI
                 agents that can play LunchTable Chronicles autonomously. Check out our{" "}
-                <Link href="/docs" className="text-primary hover:underline">
+                <a
+                  href="https://agents.lunchtable.cards"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
                   Agent SDK documentation
-                </Link>{" "}
+                </a>{" "}
                 to get started.
               </p>
             </div>

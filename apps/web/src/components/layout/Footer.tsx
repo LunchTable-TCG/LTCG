@@ -7,6 +7,16 @@ const footerLinks = {
     links: [
       { href: "/cards", label: "Card Codex" },
       { href: "/news", label: "Chronicles" },
+      { href: "/token", label: "Token" },
+    ],
+  },
+  developers: {
+    title: "Developers",
+    links: [
+      { href: "https://docs.lunchtable.cards", label: "Documentation", external: true },
+      { href: "https://agents.lunchtable.cards", label: "Agent SDK", external: true },
+      { href: "https://dev.lunchtable.cards", label: "Developer Portal", external: true },
+      { href: "https://github.com/LunchTable-TCG/LTCG", label: "GitHub", external: true },
     ],
   },
   community: {
@@ -15,7 +25,6 @@ const footerLinks = {
       { href: "/social", label: "Guild Hall" },
       { href: "https://discord.gg/hgjCJJZh", label: "Discord", external: true },
       { href: "https://x.com/LunchTableTCG", label: "X", external: true },
-      { href: "https://github.com/LunchTable-TCG/LTCG", label: "GitHub", external: true },
     ],
   },
   legal: {
@@ -34,7 +43,7 @@ export function Footer() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-linear-to-r from-transparent via-primary/40 to-transparent" />
 
       <div className="container mx-auto px-4 py-12 relative">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12 mb-10">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-3 mb-5 group">
               <div className="w-10 h-10 tcg-frame-gold rounded-lg flex items-center justify-center">

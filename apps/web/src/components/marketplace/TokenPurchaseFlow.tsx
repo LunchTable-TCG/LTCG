@@ -523,7 +523,7 @@ export function TokenPurchaseFlow({
                 asChild
                 className="flex-1 bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614] font-bold"
               >
-                <Link href="/collection">
+                <Link href="/binder">
                   <ExternalLink className="w-4 h-4 mr-2" />
                   View Collection
                 </Link>

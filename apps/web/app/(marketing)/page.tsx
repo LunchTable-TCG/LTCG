@@ -9,32 +9,10 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Hero Background Image - Responsive */}
-      <div className="fixed inset-0 z-0">
-        {/* Desktop/Landscape - 1536x1024 */}
-        <Image
-          src="/brand/backgrounds/ltcg-hero-1536x1024.branded.png"
-          alt="Lunchtable TCG Background"
-          fill
-          className="object-cover hidden md:block"
-          priority
-          quality={90}
-        />
-        {/* Mobile/Portrait - 1024x1536 */}
-        <Image
-          src="/brand/backgrounds/ltcg-vertical-1024x1536.png"
-          alt="Lunchtable TCG Background"
-          fill
-          className="object-cover block md:hidden"
-          priority
-          quality={90}
-        />
-      </div>
-
+    <div className="min-h-screen relative overflow-hidden bg-landing">
       {/* Dark tint overlay for readability */}
-      <div className="absolute inset-0 bg-black/60 pointer-events-none z-[1]" />
-      <div className="absolute inset-0 bg-vignette pointer-events-none z-[1]" />
+      <div className="absolute inset-0 bg-black/60 pointer-events-none" />
+      <div className="absolute inset-0 bg-vignette pointer-events-none" />
 
       {/* Ambient particles/lights */}
       <div className="absolute top-20 left-10 w-3 h-3 rounded-full bg-ember/60 blur-sm animate-torch" />
@@ -79,7 +57,7 @@ export default function Home() {
             transition={{ delay: 0.6 }}
             className="flex flex-col sm:flex-row items-center gap-4"
           >
-            <Link href="/play">
+            <Link href="/lunchtable">
               <button
                 type="button"
                 className="tcg-button-primary px-8 py-4 rounded-lg text-lg flex items-center gap-3 group"
@@ -90,13 +68,13 @@ export default function Home() {
               </button>
             </Link>
 
-            <Link href="/about">
+            <Link href="/news">
               <button
                 type="button"
                 className="tcg-button px-8 py-4 rounded-lg text-lg flex items-center gap-3"
               >
                 <Scroll className="w-5 h-5" />
-                <span>Read the Lore</span>
+                <span>Chronicles</span>
               </button>
             </Link>
           </motion.div>

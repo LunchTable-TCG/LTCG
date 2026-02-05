@@ -58,6 +58,7 @@ export {
  */
 // Import api in a separate statement to avoid type evaluation at export
 import { api as convexApi } from "@convex/_generated/api";
+// @ts-ignore TS2589 - Type instantiation is excessively deep
 // biome-ignore lint/suspicious/noExplicitAny: Required to prevent TS2589 type recursion errors
 export const typedApi: any = convexApi;
 
