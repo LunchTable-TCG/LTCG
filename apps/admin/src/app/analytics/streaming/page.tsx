@@ -5,10 +5,10 @@ import { api } from "@convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Video, Users, Clock, TrendingUp, Twitch, Youtube } from "lucide-react";
+import { Video, Twitch, Youtube } from "lucide-react";
 import { MetricTile } from "@/components/analytics/MetricTile";
 import { ChartCard } from "@/components/analytics/ChartCard";
-import { DataGrid } from "@/components/analytics/DataGrid";
+import { DonutChart, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@tremor/react";
 
 export default function StreamingAnalyticsPage() {
   // Get all streaming sessions
@@ -26,15 +26,15 @@ export default function StreamingAnalyticsPage() {
   // Calculate metrics
   const totalStreams = allSessions.length;
   const activeStreamsCount = activeSessions.length;
-  const completedStreams = allSessions.filter((s) => s.status === "ended");
+  const completedStreams = allSessions.filter((s: typeof allSessions[number]) => s.status === "ended");
 
-  const totalDuration = completedStreams.reduce((sum, s) => {
+  const totalDuration = completedStreams.reduce((sum: number, s: typeof completedStreams[number]) => {
     return sum + (s.stats?.duration || 0);
   }, 0);
 
   const avgDuration = completedStreams.length > 0 ? totalDuration / completedStreams.length : 0;
 
-  const totalViewers = completedStreams.reduce((sum, s) => {
+  const totalViewers = completedStreams.reduce((sum: number, s: typeof completedStreams[number]) => {
     return sum + (s.peakViewerCount || 0);
   }, 0);
 
@@ -42,7 +42,7 @@ export default function StreamingAnalyticsPage() {
 
   // Platform breakdown
   const platformStats = allSessions.reduce(
-    (acc, session) => {
+    (acc: { twitch: number; youtube: number; custom: number }, session: typeof allSessions[number]) => {
       if (session.platform === "twitch") acc.twitch++;
       else if (session.platform === "youtube") acc.youtube++;
       else acc.custom++;
@@ -53,7 +53,7 @@ export default function StreamingAnalyticsPage() {
 
   // Stream type breakdown
   const typeStats = allSessions.reduce(
-    (acc, session) => {
+    (acc: { user: number; agent: number }, session: typeof allSessions[number]) => {
       if (session.streamType === "user") acc.user++;
       else acc.agent++;
       return acc;
@@ -62,7 +62,7 @@ export default function StreamingAnalyticsPage() {
   );
 
   // Recent streams for table
-  const recentStreams = allSessions.slice(0, 20).map((session) => ({
+  const recentStreams = allSessions.slice(0, 20).map((session: typeof allSessions[number]) => ({
     id: session._id,
     title: session.streamTitle,
     type: session.streamType,
@@ -92,26 +92,25 @@ export default function StreamingAnalyticsPage() {
         <MetricTile
           title="Total Streams"
           value={totalStreams.toString()}
-          icon={Video}
-          trend={activeStreamsCount > 0 ? "up" : undefined}
+          icon={<span className="text-lg">📹</span>}
         />
         <MetricTile
           title="Active Streams"
           value={activeStreamsCount.toString()}
-          icon={Users}
-          description="Currently live"
+          icon={<span className="text-lg">🔴</span>}
+          subtitle="Currently live"
         />
         <MetricTile
           title="Avg Duration"
           value={`${Math.floor(avgDuration / 60000)}m`}
-          icon={Clock}
-          description="Per completed stream"
+          icon={<span className="text-lg">⏱️</span>}
+          subtitle="Per completed stream"
         />
         <MetricTile
           title="Avg Peak Viewers"
           value={Math.round(avgViewers).toString()}
-          icon={TrendingUp}
-          description="Per completed stream"
+          icon={<span className="text-lg">📈</span>}
+          subtitle="Per completed stream"
         />
       </div>
 
@@ -128,44 +127,40 @@ export default function StreamingAnalyticsPage() {
             <ChartCard
               title="Platform Distribution"
               description="Streams by platform"
-              data={[
-                {
-                  name: "Twitch",
-                  value: platformStats.twitch,
-                  fill: "#9146FF",
-                },
-                {
-                  name: "YouTube",
-                  value: platformStats.youtube,
-                  fill: "#FF0000",
-                },
-                {
-                  name: "Custom RTMP",
-                  value: platformStats.custom,
-                  fill: "#666666",
-                },
-              ]}
-              type="pie"
-            />
+            >
+              <DonutChart
+                className="h-full"
+                data={[
+                  { name: "Twitch", value: platformStats.twitch },
+                  { name: "YouTube", value: platformStats.youtube },
+                  { name: "Custom RTMP", value: platformStats.custom },
+                ]}
+                category="value"
+                index="name"
+                colors={["purple", "red", "gray"]}
+                showAnimation
+                valueFormatter={(v: number) => v.toLocaleString()}
+              />
+            </ChartCard>
 
             {/* Stream Type Distribution */}
             <ChartCard
               title="Stream Type"
               description="User vs AI Agent streams"
-              data={[
-                {
-                  name: "User Streams",
-                  value: typeStats.user,
-                  fill: "#3b82f6",
-                },
-                {
-                  name: "AI Agent Streams",
-                  value: typeStats.agent,
-                  fill: "#8b5cf6",
-                },
-              ]}
-              type="pie"
-            />
+            >
+              <DonutChart
+                className="h-full"
+                data={[
+                  { name: "User Streams", value: typeStats.user },
+                  { name: "AI Agent Streams", value: typeStats.agent },
+                ]}
+                category="value"
+                index="name"
+                colors={["blue", "violet"]}
+                showAnimation
+                valueFormatter={(v: number) => v.toLocaleString()}
+              />
+            </ChartCard>
           </div>
         </TabsContent>
 
@@ -179,7 +174,7 @@ export default function StreamingAnalyticsPage() {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {activeSessions.map((session) => (
+              {activeSessions.map((session: typeof activeSessions[number]) => (
                 <Card key={session._id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -225,18 +220,51 @@ export default function StreamingAnalyticsPage() {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
-          <DataGrid
-            data={recentStreams}
-            columns={[
-              { key: "title", label: "Title" },
-              { key: "type", label: "Type" },
-              { key: "platform", label: "Platform" },
-              { key: "status", label: "Status" },
-              { key: "viewers", label: "Peak Viewers" },
-              { key: "duration", label: "Duration" },
-              { key: "createdAt", label: "Date" },
-            ]}
-          />
+          <Card>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>Title</TableHeaderCell>
+                  <TableHeaderCell>Type</TableHeaderCell>
+                  <TableHeaderCell>Platform</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell>Peak Viewers</TableHeaderCell>
+                  <TableHeaderCell>Duration</TableHeaderCell>
+                  <TableHeaderCell>Date</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {recentStreams.map((stream: typeof recentStreams[number]) => (
+                  <TableRow key={stream.id}>
+                    <TableCell>{stream.title}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {stream.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="capitalize">{stream.platform}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          stream.status === "live"
+                            ? "default"
+                            : stream.status === "ended"
+                              ? "secondary"
+                              : "outline"
+                        }
+                        className="capitalize"
+                      >
+                        {stream.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{stream.viewers}</TableCell>
+                    <TableCell>{stream.duration}</TableCell>
+                    <TableCell>{stream.createdAt}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

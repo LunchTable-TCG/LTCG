@@ -1,5 +1,9 @@
 # LunchTable-TCG OpenClaw Skill
 
+[![ClawHub](https://img.shields.io/badge/ClawHub-Available-green)](https://clawhub.com/skills/lunchtable/lunchtable-tcg)
+[![npm](https://img.shields.io/npm/v/@lunchtable/openclaw-skill-ltcg)](https://www.npmjs.com/package/@lunchtable/openclaw-skill-ltcg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Seamless integration between LunchTable-TCG and OpenClaw AI platforms. This skill enables OpenClaw agents to interact with the LTCG game API, including creating games, joining lobbies, and executing game actions.
 
 ## Features
@@ -168,6 +172,22 @@ MIT
 ## Contributing
 
 We welcome contributions! Please see the main repository's CONTRIBUTING.md for guidelines.
+
+## Publishing to ClawHub
+
+**Want to publish this skill?** It's now a one-liner:
+
+```bash
+./publish.sh
+```
+
+See [QUICKSTART_PUBLISH.md](./QUICKSTART_PUBLISH.md) for instant publishing, or [PUBLISH.md](./PUBLISH.md) for the complete guide.
+
+The script handles:
+- ✅ Validation
+- ✅ Authentication
+- ✅ Submission to ClawHub
+- ✅ Optional npm publishing
 
 ---
 

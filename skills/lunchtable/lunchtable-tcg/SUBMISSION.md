@@ -1,6 +1,18 @@
 # ClawHub Submission Guide
 
-This document outlines how to submit the LunchTable-TCG skill to ClawHub for distribution.
+This document provides a quick reference for submitting the LunchTable-TCG skill to ClawHub.
+
+**For detailed instructions, see [PUBLISH.md](PUBLISH.md)**
+
+## Quick Start
+
+One-command publishing:
+
+```bash
+./publish.sh
+```
+
+That's it! The script handles validation, authentication, and submission automatically.
 
 ## Pre-Submission Checklist
 
@@ -32,105 +44,229 @@ skills/lunchtable/lunchtable-tcg/
     └── advanced-tactics.txt
 ```
 
-## Submission Process
+## Automated Publishing
 
-### 1. Test the Skill Locally
+### Prerequisites
 
-```bash
-# Test installation from local directory
-cd /path/to/ltcg/skills/lunchtable/lunchtable-tcg
-openclaw skill add .
+1. **ClawHub Account**: Sign up at https://clawhub.com/signup
+2. **ClawHub CLI**: `npm install -g @clawhub/cli`
+3. **Authentication**: `clawhub login`
 
-# Verify skill loads correctly
-openclaw skills list | grep lunchtable-tcg
-
-# Test skill invocation
-openclaw run "/lunchtable-tcg"
-```
-
-### 2. Publish to npm (Optional)
-
-If you want to make the skill available via npm:
+### Using the Publish Script
 
 ```bash
 cd skills/lunchtable/lunchtable-tcg
-npm publish --access public
+chmod +x publish.sh
+./publish.sh
 ```
 
-### 3. Submit to ClawHub
+**What the script does:**
 
-#### Option A: Via GitHub
+1. ✓ Validates skill structure with `.validate.sh`
+2. ✓ Checks/installs ClawHub CLI if needed
+3. ✓ Verifies ClawHub authentication
+4. ✓ Shows pre-flight summary (name, version)
+5. ✓ Submits to ClawHub registry
+6. ✓ Optionally publishes to npm
 
-1. Push to GitHub repository:
-```bash
-git add skills/lunchtable/lunchtable-tcg/
-git commit -m "feat: add LunchTable-TCG OpenClaw skill"
-git push origin main
+**Expected output:**
+
+```
+🎴 Publishing LunchTable-TCG to ClawHub...
+
+Step 1/6: Validating skill format...
+✅ Validation passed!
+
+Step 2/6: Checking ClawHub CLI...
+✓ ClawHub CLI found
+
+Step 3/6: Checking ClawHub authentication...
+✓ Logged in as: yourusername
+
+Step 4/6: Pre-flight check...
+  Skill Name: lunchtable-tcg
+  Version: 1.0.0
+
+Continue with submission? [y/N] y
+
+Step 5/6: Submitting to ClawHub...
+✓ Successfully submitted to ClawHub
+
+Step 6/6: Publish to npm (optional)...
+📦 Also publish to npm? [y/N]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Publishing complete!
+
+Next steps:
+  • Track submission: clawhub status lunchtable-tcg
+  • View on ClawHub: https://clawhub.com/skills/lunchtable/lunchtable-tcg
 ```
 
-2. Submit to ClawHub registry:
-- Go to https://clawhub.io/submit
-- Provide repository URL: `https://github.com/lunchtable/ltcg`
-- Specify skill path: `skills/lunchtable/lunchtable-tcg`
-- Submit for review
+### Manual Publishing
 
-#### Option B: Via ClawHub CLI
+If you prefer manual control:
 
 ```bash
-# Install ClawHub CLI
-npm install -g clawhub-cli
+# 1. Validate
+bash .validate.sh
 
-# Authenticate
+# 2. Authenticate
 clawhub login
 
-# Submit skill
-clawhub submit skills/lunchtable/lunchtable-tcg
+# 3. Submit
+clawhub submit .
+
+# 4. Monitor
+clawhub status lunchtable-tcg
 ```
 
-### 4. Verification
+### Automated Publishing via GitHub Actions
 
-After submission, ClawHub will verify:
+On every version tag push:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+GitHub Actions automatically:
+- Validates skill structure
+- Submits to ClawHub
+- Publishes to npm (if configured)
+- Creates GitHub release
+
+**Setup required:**
+1. Add `CLAWHUB_TOKEN` to GitHub Secrets
+2. Add `NPM_TOKEN` to GitHub Secrets (optional)
+
+Generate tokens:
+```bash
+clawhub token create
+npm token create
+```
+
+## Verification Checklist
+
+After submission, ClawHub verifies:
 
 - ✓ Valid SKILL.md with proper YAML frontmatter
-- ✓ Required binaries (curl) are documented
+- ✓ Required binaries (curl) documented
 - ✓ OS compatibility listed
 - ✓ Environment variables documented
 - ✓ Examples are functional
 - ✓ License is specified (MIT)
+- ✓ No security vulnerabilities
 
-## Post-Submission
-
-Once approved, users can install via:
+## Post-Submission Tracking
 
 ```bash
+# Check submission status
+clawhub status lunchtable-tcg
+
+# View detailed logs
+clawhub logs lunchtable-tcg
+
+# Check review comments
+clawhub comments lunchtable-tcg
+```
+
+### Review Timeline
+
+1. **Immediate**: Automated validation (file structure, YAML)
+2. **5-10 min**: Security scan, dependency check
+3. **1-3 days**: Manual review by ClawHub team
+4. **Instant**: Publication after approval
+
+## After Approval
+
+Users can install your skill:
+
+```bash
+# From ClawHub registry
 openclaw skill install lunchtable-tcg
+
+# From npm (if published)
+openclaw skill add @lunchtable/openclaw-skill-ltcg
+
+# From GitHub
+openclaw skill add https://github.com/lunchtable/ltcg/tree/main/skills/lunchtable/lunchtable-tcg
 ```
 
-## Updating the Skill
-
-To release updates:
-
-1. Update version in:
-   - `SKILL.md` frontmatter (`version: 1.x.x`)
-   - `package.json` (`"version": "1.x.x"`)
-   - `.clawhub.json` (`"version": "1.x.x"`)
-
-2. Document changes in CHANGELOG.md (create if needed)
-
-3. Publish update:
+Monitor usage:
 ```bash
-git tag v1.x.x
-git push origin v1.x.x
-clawhub update lunchtable-tcg
+clawhub stats lunchtable-tcg
+clawhub ratings lunchtable-tcg
+clawhub feedback lunchtable-tcg
 ```
+
+## Updating Published Skills
+
+Update and republish:
+
+```bash
+# 1. Update version in SKILL.md, package.json, .clawhub.json
+# 2. Update CHANGELOG.md
+# 3. Republish
+
+./publish.sh
+```
+
+Or create a new tag:
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+# GitHub Actions handles the rest
+```
+
+## Troubleshooting
+
+**Common issues and solutions:**
+
+```bash
+# "clawhub: command not found"
+npm install -g @clawhub/cli
+
+# "Not authenticated"
+clawhub login
+
+# "Skill name already exists"
+# Change name in SKILL.md to: yourusername-lunchtable-tcg
+
+# "Validation failed"
+bash .validate.sh  # See specific errors
+```
+
+**For detailed troubleshooting, see [PUBLISH.md](PUBLISH.md#troubleshooting)**
 
 ## Support
 
-For ClawHub submission issues:
-- Documentation: https://clawhub.io/docs/submission
+**ClawHub Issues:**
+- Docs: https://clawhub.io/docs
 - Support: https://clawhub.io/support
-- Community: https://discord.gg/clawhub
+- Discord: https://discord.gg/clawhub
 
-For LunchTable-TCG skill issues:
-- GitHub Issues: https://github.com/lunchtable/ltcg/issues
+**Skill Issues:**
+- GitHub: https://github.com/lunchtable/ltcg/issues
 - Discord: https://discord.gg/lunchtable-tcg
+
+## Useful Commands
+
+```bash
+# ClawHub
+clawhub login               # Authenticate
+clawhub whoami              # Check user
+clawhub submit .            # Submit skill
+clawhub status SKILL        # Check status
+clawhub update SKILL        # Update published skill
+clawhub logs SKILL          # View logs
+
+# OpenClaw
+openclaw skills list        # List installed
+openclaw skill install NAME # Install from registry
+openclaw skill add PATH     # Install from local/npm/git
+```
+
+---
+
+**For complete publishing guide with screenshots and detailed steps, see [PUBLISH.md](PUBLISH.md)**

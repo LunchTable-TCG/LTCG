@@ -153,6 +153,7 @@ const navigation: NavGroup[] = [
       { title: "Economy", href: "/analytics/economy", icon: "💰" },
       { title: "Cards", href: "/analytics/cards", icon: "🃏" },
       { title: "Marketplace", href: "/analytics/marketplace", icon: "🏪" },
+      { title: "Streaming", href: "/analytics/streaming", icon: "📹" },
     ],
   },
   {
