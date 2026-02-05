@@ -1,14 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Stage, Layer, Image as KonvaImage } from "react-konva";
+import { Stage, Layer, Image as KonvaImage, Text, Transformer } from "react-konva";
 import useImage from "use-image";
 import BackgroundPicker from "./BackgroundPicker";
 
 type CardType = "creature" | "spell" | "trap" | "magic" | "environment";
+
+interface TextField {
+  id: string;
+  dataField: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  color: string;
+  align: string;
+  stroke?: { color: string; width: number };
+  shadow?: { color: string; blur: number; offsetX: number; offsetY: number };
+  letterSpacing: number;
+  lineHeight: number;
+  autoScale: boolean;
+  text: string; // For preview
+}
 
 export default function TemplateDesigner() {
   const [cardType, setCardType] = useState<CardType>("creature");
@@ -16,6 +37,98 @@ export default function TemplateDesigner() {
   const [backgroundId, setBackgroundId] = useState<string | null>(null);
   const [canvasSize] = useState({ width: 750, height: 1050 });
   const [zoom, setZoom] = useState(1);
+  const [textFields, setTextFields] = useState<TextField[]>([]);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+
+  const handleAddTextField = () => {
+    const newField: TextField = {
+      id: `field_${Date.now()}`,
+      dataField: "title",
+      x: 100,
+      y: 100,
+      width: 300,
+      height: 50,
+      rotation: 0,
+      fontFamily: "Arial",
+      fontSize: 24,
+      fontWeight: "normal",
+      color: "#FFFFFF",
+      align: "center",
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      autoScale: false,
+      text: "Sample Text",
+    };
+    setTextFields([...textFields, newField]);
+    setSelectedFieldId(newField.id);
+  };
+
+  function DraggableText({
+    field,
+    isSelected,
+    onSelect,
+    onChange,
+  }: {
+    field: TextField;
+    isSelected: boolean;
+    onSelect: () => void;
+    onChange: (newAttrs: Partial<TextField>) => void;
+  }) {
+    const textRef = useRef<any>(null);
+    const trRef = useRef<any>(null);
+
+    useEffect(() => {
+      if (isSelected && trRef.current && textRef.current) {
+        trRef.current.nodes([textRef.current]);
+        trRef.current.getLayer()?.batchDraw();
+      }
+    }, [isSelected]);
+
+    return (
+      <>
+        <Text
+          ref={textRef}
+          {...field}
+          draggable
+          onClick={onSelect}
+          onTap={onSelect}
+          onDragEnd={(e) => {
+            onChange({
+              x: e.target.x(),
+              y: e.target.y(),
+            });
+          }}
+          onTransformEnd={() => {
+            const node = textRef.current;
+            const scaleX = node.scaleX();
+            const scaleY = node.scaleY();
+
+            node.scaleX(1);
+            node.scaleY(1);
+
+            onChange({
+              x: node.x(),
+              y: node.y(),
+              width: Math.max(5, node.width() * scaleX),
+              height: Math.max(node.height() * scaleY),
+              rotation: node.rotation(),
+            });
+          }}
+        />
+        {isSelected && (
+          <Transformer
+            ref={trRef}
+            boundBoxFunc={(oldBox, newBox) => {
+              if (newBox.width < 5 || newBox.height < 5) {
+                return oldBox;
+              }
+              return newBox;
+            }}
+          />
+        )}
+      </>
+    );
+  }
 
   function BackgroundImage({ url }: { url: string }) {
     const [image] = useImage(url);
@@ -50,7 +163,7 @@ export default function TemplateDesigner() {
             }}
           />
 
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full" onClick={handleAddTextField}>
             Add Text Field
           </Button>
         </Card>
@@ -59,9 +172,33 @@ export default function TemplateDesigner() {
       {/* Center Canvas */}
       <div className="flex items-center justify-center bg-muted/20 p-4">
         <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
-          <Stage width={canvasSize.width} height={canvasSize.height}>
+          <Stage
+            width={canvasSize.width}
+            height={canvasSize.height}
+            onMouseDown={(e) => {
+              const clickedOnEmpty = e.target === e.target.getStage();
+              if (clickedOnEmpty) {
+                setSelectedFieldId(null);
+              }
+            }}
+          >
             <Layer>
               {backgroundUrl && <BackgroundImage url={backgroundUrl} />}
+              {textFields.map((field) => (
+                <DraggableText
+                  key={field.id}
+                  field={field}
+                  isSelected={field.id === selectedFieldId}
+                  onSelect={() => setSelectedFieldId(field.id)}
+                  onChange={(newAttrs) => {
+                    setTextFields(
+                      textFields.map((f) =>
+                        f.id === field.id ? { ...f, ...newAttrs } : f
+                      )
+                    );
+                  }}
+                />
+              ))}
             </Layer>
           </Stage>
         </div>
