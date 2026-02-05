@@ -16,16 +16,10 @@ export function useDMConversations() {
   const { isAuthenticated } = useAuth();
 
   // Get all conversations
-  const conversations = useQuery(
-    api.social.getDMConversations,
-    isAuthenticated ? {} : "skip"
-  );
+  const conversations = useQuery(api.social.getDMConversations, isAuthenticated ? {} : "skip");
 
   // Get total unread count
-  const unreadCount = useQuery(
-    api.social.getDMUnreadCount,
-    isAuthenticated ? {} : "skip"
-  );
+  const unreadCount = useQuery(api.social.getDMUnreadCount, isAuthenticated ? {} : "skip");
 
   // Mutations
   const getOrCreateConversationMutation = useMutation(api.social.getOrCreateConversation);

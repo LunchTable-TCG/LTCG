@@ -116,8 +116,7 @@ export function useTransactionHistory(): UseTransactionHistoryReturn {
     return tx.currencyType === filter;
   });
 
-  const filteredTokenTx =
-    filter === "all" || filter === "token" ? (tokenTransactions ?? []) : [];
+  const filteredTokenTx = filter === "all" || filter === "token" ? (tokenTransactions ?? []) : [];
 
   // Combine and sort all transactions by date
   const allTransactions = [...filteredTransactions, ...filteredTokenTx].sort(

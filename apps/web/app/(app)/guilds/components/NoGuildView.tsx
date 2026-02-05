@@ -6,7 +6,6 @@ import { useGuildDiscovery } from "@/hooks/guilds";
 import { cn } from "@/lib/utils";
 import {
   ArrowRight,
-  Crown,
   Loader2,
   Plus,
   Search,
@@ -23,14 +22,8 @@ import { GuildCard } from "./GuildCard";
 
 export function NoGuildView() {
   const [searchQuery, setSearchQuery] = useState("");
-  const {
-    publicGuilds,
-    searchResults,
-    isLoading,
-    joinPublicGuild,
-    requestToJoin,
-    searchGuilds,
-  } = useGuildDiscovery();
+  const { publicGuilds, searchResults, isLoading, joinPublicGuild, requestToJoin, searchGuilds } =
+    useGuildDiscovery();
 
   const displayGuilds = searchQuery.trim() ? searchResults : publicGuilds;
   const isSearching = searchQuery.trim().length > 0 && isLoading;
@@ -67,8 +60,8 @@ export function NoGuildView() {
               </h1>
 
               <p className="text-[#a89f94] text-lg leading-relaxed">
-                Join forces with fellow champions. Create your guild, recruit members,
-                and dominate the leaderboards as a united force.
+                Join forces with fellow champions. Create your guild, recruit members, and dominate
+                the leaderboards as a united force.
               </p>
 
               <div className="flex flex-wrap gap-4">
@@ -84,7 +77,11 @@ export function NoGuildView() {
                 <Button
                   variant="outline"
                   className="rounded-xl px-6 py-6 text-base border-[#3d2b1f] text-[#e8e0d5] hover:bg-[#d4af37]/10 hover:border-[#d4af37]/50"
-                  onClick={() => document.getElementById("guild-discovery")?.scrollIntoView({ behavior: "smooth" })}
+                  onClick={() =>
+                    document
+                      .getElementById("guild-discovery")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
                 >
                   <Search className="w-5 h-5 mr-2" />
                   Find a Guild
@@ -110,7 +107,9 @@ export function NoGuildView() {
                       <Icon className="w-5 h-5 text-[#d4af37]" />
                     </div>
                     <p className="font-bold text-[#e8e0d5] text-sm">{feature.label}</p>
-                    <p className="text-[10px] text-[#a89f94] uppercase tracking-wider">{feature.desc}</p>
+                    <p className="text-[10px] text-[#a89f94] uppercase tracking-wider">
+                      {feature.desc}
+                    </p>
                   </div>
                 );
               })}
@@ -172,14 +171,9 @@ export function NoGuildView() {
               {searchQuery ? "No guilds found" : "No public guilds yet"}
             </p>
             <p className="text-[#a89f94] mb-6">
-              {searchQuery
-                ? "Try a different search term"
-                : "Be the first to create one!"}
+              {searchQuery ? "Try a different search term" : "Be the first to create one!"}
             </p>
-            <Button
-              asChild
-              className="tcg-button-primary rounded-xl"
-            >
+            <Button asChild className="tcg-button-primary rounded-xl">
               <Link href="/guilds/create">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Guild

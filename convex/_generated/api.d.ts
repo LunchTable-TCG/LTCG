@@ -248,6 +248,8 @@ import type * as progression_storyBattle from "../progression/storyBattle.js";
 import type * as progression_storyQueries from "../progression/storyQueries.js";
 import type * as progression_storyStages from "../progression/storyStages.js";
 import type * as router from "../router.js";
+import type * as scripts_debugCardArchetypes from "../scripts/debugCardArchetypes.js";
+import type * as scripts_debugStoryData from "../scripts/debugStoryData.js";
 import type * as scripts_seedStarterCards from "../scripts/seedStarterCards.js";
 import type * as scripts_seedStoryChapters from "../scripts/seedStoryChapters.js";
 import type * as seedStarterCards from "../seedStarterCards.js";
@@ -555,6 +557,8 @@ declare const fullApi: ApiFromModules<{
   "progression/storyQueries": typeof progression_storyQueries;
   "progression/storyStages": typeof progression_storyStages;
   router: typeof router;
+  "scripts/debugCardArchetypes": typeof scripts_debugCardArchetypes;
+  "scripts/debugStoryData": typeof scripts_debugStoryData;
   "scripts/seedStarterCards": typeof scripts_seedStarterCards;
   "scripts/seedStoryChapters": typeof scripts_seedStoryChapters;
   seedStarterCards: typeof seedStarterCards;

@@ -1,22 +1,30 @@
 "use client";
 
-import { useGlobalChat } from "@/hooks";
+import { useFriends, useGlobalChat } from "@/hooks";
+import { useGuildChat, useMyGuild } from "@/hooks/guilds";
 import { useAIChat } from "@/hooks/social/useAIChat";
+import { useDMChat } from "@/hooks/social/useDMChat";
+import { useDMConversations } from "@/hooks/social/useDMConversations";
 import { sanitizeChatMessage, sanitizeText } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import {
+  ArrowLeft,
   Bot,
+  Circle,
   Flag,
   Gamepad2,
   Loader2,
   MessageSquare,
   Send,
+  Shield,
   Sparkles,
   Swords,
   Trophy,
   User,
+  UserPlus,
   Users,
   VolumeX,
   X,
@@ -41,17 +49,13 @@ interface OnlineUser {
   status: "online" | "in_game" | "idle";
 }
 
-// Removed MOCK_ONLINE_USERS - now using real data from Convex
-
 const STATUS_CONFIG = {
   online: { color: "bg-green-500", label: "Online" },
   in_game: { color: "bg-amber-500", label: "In Game" },
   idle: { color: "bg-gray-500", label: "Idle" },
 };
 
-type ChatMode = "global" | "agent";
-
-// Removed MOCK_MESSAGES and OLDER_MESSAGES - now using real data from Convex
+type ChatMode = "global" | "agent" | "friends" | "dm" | "guild";
 
 function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString("en-US", {
@@ -61,7 +65,7 @@ function formatTime(timestamp: number): string {
 }
 
 export function GlobalChat() {
-  // Use custom hook
+  // Global chat hook
   const {
     messages: convexMessages,
     onlineUsers: convexOnlineUsers,
@@ -70,8 +74,34 @@ export function GlobalChat() {
     loadMore,
   } = useGlobalChat();
 
-  // AI Chat hook for agent mode
+  // AI Chat hook
   const { messages: aiChatMessages, isAgentTyping, sendMessage: sendAIMessage } = useAIChat();
+
+  // Guild hooks
+  const { guild } = useMyGuild();
+  const {
+    messages: guildMessages,
+    sendMessage: sendGuildMessage,
+    isLoading: isGuildChatLoading,
+  } = useGuildChat(guild?._id);
+
+  // DM hooks
+  const { conversations, unreadCount: dmUnreadCount, startConversation } = useDMConversations();
+
+  // Friends hook
+  const { friends, onlineFriends } = useFriends();
+
+  // Active DM state
+  const [activeDMConversationId, setActiveDMConversationId] =
+    useState<Id<"dmConversations"> | null>(null);
+  const [activeDMFriend, setActiveDMFriend] = useState<{ userId: string; username: string } | null>(
+    null
+  );
+
+  // DM Chat hook (only when DM is active)
+  const { messages: dmMessages, sendMessage: sendDMMessage } = useDMChat(
+    activeDMConversationId ?? undefined
+  );
 
   // Challenge mutation
   const sendChallengeMutation = useMutation(api.social.challenges.sendChallenge);
@@ -119,7 +149,7 @@ export function GlobalChat() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const prevScrollHeightRef = useRef<number>(0);
 
-  // Auto-scroll to bottom when NEW messages arrive (not on initial load)
+  // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
@@ -127,7 +157,6 @@ export function GlobalChat() {
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      // Scroll to bottom on initial mount
       messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
       return;
     }
@@ -147,19 +176,17 @@ export function GlobalChat() {
     scrollAgentToBottom();
   }, [scrollAgentToBottom]);
 
-  // Infinite scroll - load more when scrolling near the top
+  // Infinite scroll
   const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container || !canLoadMore || isLoadingMore) return;
 
-    // Load more when scrolled within 100px of the top
     if (container.scrollTop < 100) {
       setIsLoadingMore(true);
       prevScrollHeightRef.current = container.scrollHeight;
 
       loadMore();
 
-      // After loading, maintain scroll position
       requestAnimationFrame(() => {
         if (container) {
           const newScrollHeight = container.scrollHeight;
@@ -185,15 +212,19 @@ export function GlobalChat() {
     return undefined;
   }, [userMenu]);
 
-  // Presence heartbeat is handled by useGlobalChat hook
-
   const handleSend = async () => {
     if (!message.trim() || isSending) return;
 
     setIsSending(true);
 
     try {
-      await sendMessageAction(message.trim());
+      if (chatMode === "global") {
+        await sendMessageAction(message.trim());
+      } else if (chatMode === "guild" && guild) {
+        await sendGuildMessage(message.trim());
+      } else if (chatMode === "dm" && activeDMConversationId) {
+        await sendDMMessage(message.trim());
+      }
       setMessage("");
     } catch (error: unknown) {
       console.error("Failed to send message:", error instanceof Error ? error.message : error);
@@ -205,10 +236,10 @@ export function GlobalChat() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (chatMode === "global") {
-        handleSend();
-      } else {
+      if (chatMode === "agent") {
         handleAgentSend();
+      } else {
+        handleSend();
       }
     }
   };
@@ -240,10 +271,7 @@ export function GlobalChat() {
   };
 
   const handleOpenChallenge = (username: string) => {
-    // Challenge target set
-    setChallengeTarget({
-      username,
-    });
+    setChallengeTarget({ username });
     setUserMenu(null);
   };
 
@@ -263,7 +291,6 @@ export function GlobalChat() {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to send challenge";
       toast.error(errorMessage);
-      console.error("Challenge failed:", error);
     }
   };
 
@@ -283,7 +310,6 @@ export function GlobalChat() {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to submit report";
       toast.error(errorMessage);
-      console.error("Report failed:", error);
       throw error;
     }
   };
@@ -301,6 +327,80 @@ export function GlobalChat() {
     }
   };
 
+  const handleStartDM = async (friendUserId: Id<"users">, friendUsername: string) => {
+    try {
+      const conversationId = await startConversation(friendUserId);
+      setActiveDMConversationId(conversationId);
+      setActiveDMFriend({ userId: friendUserId, username: friendUsername });
+      setChatMode("dm");
+    } catch {
+      toast.error("Failed to start conversation");
+    }
+  };
+
+  const handleBackFromDM = () => {
+    setActiveDMConversationId(null);
+    setActiveDMFriend(null);
+    setChatMode("friends");
+  };
+
+  // Get header config based on mode
+  const getHeaderConfig = () => {
+    switch (chatMode) {
+      case "global":
+        return {
+          icon: MessageSquare,
+          iconClass: "bg-[#d4af37]/20 border-[#d4af37]/30",
+          iconColor: "text-[#d4af37]",
+          title: "Global Chat",
+          subtitle: "Tavern Hall",
+        };
+      case "agent":
+        return {
+          icon: Bot,
+          iconClass: "bg-purple-500/20 border-purple-500/30",
+          iconColor: "text-purple-400",
+          title: "AI Agent",
+          subtitle: "Ask anything",
+        };
+      case "friends":
+        return {
+          icon: Users,
+          iconClass: "bg-blue-500/20 border-blue-500/30",
+          iconColor: "text-blue-400",
+          title: "Friends",
+          subtitle: `${onlineFriends?.length || 0} online`,
+        };
+      case "dm":
+        return {
+          icon: MessageSquare,
+          iconClass: "bg-blue-500/20 border-blue-500/30",
+          iconColor: "text-blue-400",
+          title: activeDMFriend?.username || "Direct Message",
+          subtitle: "Private chat",
+        };
+      case "guild":
+        return {
+          icon: Shield,
+          iconClass: "bg-amber-500/20 border-amber-500/30",
+          iconColor: "text-amber-400",
+          title: guild?.name || "Guild Chat",
+          subtitle: `${guild?.memberCount || 0} members`,
+        };
+      default:
+        return {
+          icon: MessageSquare,
+          iconClass: "bg-[#d4af37]/20 border-[#d4af37]/30",
+          iconColor: "text-[#d4af37]",
+          title: "Chat",
+          subtitle: "",
+        };
+    }
+  };
+
+  const headerConfig = getHeaderConfig();
+  const HeaderIcon = headerConfig.icon;
+
   return (
     <div
       data-testid="global-chat"
@@ -310,53 +410,101 @@ export function GlobalChat() {
       <div className="p-4 border-b border-[#3d2b1f] bg-linear-to-r from-[#1a1614] to-[#261f1c]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {chatMode === "dm" && (
+              <button
+                type="button"
+                onClick={handleBackFromDM}
+                className="p-2 rounded-lg border border-[#3d2b1f] bg-black/30 text-[#a89f94] hover:text-[#e8e0d5] hover:border-[#d4af37]/50 transition-all mr-1"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
             <div
               className={cn(
                 "w-10 h-10 rounded-lg border flex items-center justify-center",
-                chatMode === "global"
-                  ? "bg-[#d4af37]/20 border-[#d4af37]/30"
-                  : "bg-purple-500/20 border-purple-500/30"
+                headerConfig.iconClass
               )}
             >
-              {chatMode === "global" ? (
-                <MessageSquare className="w-5 h-5 text-[#d4af37]" />
-              ) : (
-                <Bot className="w-5 h-5 text-purple-400" />
-              )}
+              <HeaderIcon className={cn("w-5 h-5", headerConfig.iconColor)} />
             </div>
             <div>
               <h3 className="text-sm font-black text-[#e8e0d5] uppercase tracking-wider">
-                {chatMode === "global" ? "Global Chat" : "AI Agent"}
+                {headerConfig.title}
               </h3>
               <p className="text-[10px] text-[#a89f94] uppercase tracking-widest">
-                {chatMode === "global" ? "Tavern Hall" : "Ask anything"}
+                {headerConfig.subtitle}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Agent Chat Toggle */}
+          <div className="flex items-center gap-1">
+            {/* Chat Mode Tabs */}
             <button
               type="button"
-              onClick={() => setChatMode(chatMode === "global" ? "agent" : "global")}
+              onClick={() => setChatMode("global")}
+              className={cn(
+                "p-2 rounded-lg border transition-all",
+                chatMode === "global"
+                  ? "bg-[#d4af37]/20 border-[#d4af37]/50 text-[#d4af37]"
+                  : "bg-black/30 border-[#3d2b1f] text-[#a89f94] hover:border-[#d4af37]/30 hover:text-[#d4af37]"
+              )}
+              title="Global Chat"
+            >
+              <MessageSquare className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setChatMode("friends")}
+              className={cn(
+                "p-2 rounded-lg border transition-all relative",
+                chatMode === "friends" || chatMode === "dm"
+                  ? "bg-blue-500/20 border-blue-500/50 text-blue-400"
+                  : "bg-black/30 border-[#3d2b1f] text-[#a89f94] hover:border-blue-500/30 hover:text-blue-400"
+              )}
+              title="Friends & DMs"
+            >
+              <Users className="w-4 h-4" />
+              {dmUnreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {dmUnreadCount > 9 ? "9+" : dmUnreadCount}
+                </span>
+              )}
+            </button>
+            {guild && (
+              <button
+                type="button"
+                onClick={() => setChatMode("guild")}
+                className={cn(
+                  "p-2 rounded-lg border transition-all",
+                  chatMode === "guild"
+                    ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
+                    : "bg-black/30 border-[#3d2b1f] text-[#a89f94] hover:border-amber-500/30 hover:text-amber-400"
+                )}
+                title="Guild Chat"
+              >
+                <Shield className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setChatMode("agent")}
               className={cn(
                 "p-2 rounded-lg border transition-all",
                 chatMode === "agent"
                   ? "bg-purple-500/20 border-purple-500/50 text-purple-400"
-                  : "bg-black/30 border-[#3d2b1f] text-[#a89f94] hover:border-purple-500/50 hover:text-purple-400"
+                  : "bg-black/30 border-[#3d2b1f] text-[#a89f94] hover:border-purple-500/30 hover:text-purple-400"
               )}
-              title={chatMode === "global" ? "Chat with AI Agent" : "Back to Global Chat"}
+              title="AI Agent"
             >
               <Sparkles className="w-4 h-4" />
             </button>
-            {/* Online Users (only show in global mode) */}
+            {/* Online Users Button (global mode only) */}
             {chatMode === "global" && (
               <button
                 type="button"
                 onClick={() => setIsOnlinePanelOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/30 border border-[#3d2b1f] hover:border-[#d4af37]/50 hover:bg-black/50 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/30 border border-[#3d2b1f] hover:border-[#d4af37]/50 hover:bg-black/50 transition-all cursor-pointer ml-1"
               >
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <Users className="w-3.5 h-3.5 text-[#a89f94]" />
                 <span className="text-xs font-bold text-[#e8e0d5]">{onlineCount}</span>
               </button>
             )}
@@ -371,7 +519,6 @@ export function GlobalChat() {
           onScroll={handleScroll}
           className="flex-1 overflow-y-auto p-4 space-y-3 tcg-scrollbar"
         >
-          {/* Loading indicator at top when fetching more */}
           {isLoadingMore && (
             <div className="flex justify-center py-3">
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30">
@@ -383,7 +530,6 @@ export function GlobalChat() {
             </div>
           )}
 
-          {/* Scroll to top indicator */}
           {canLoadMore && !isLoadingMore && (
             <div className="flex justify-center pb-3">
               <div className="px-4 py-2 text-[10px] font-medium text-[#a89f94]/60 uppercase tracking-widest">
@@ -408,7 +554,6 @@ export function GlobalChat() {
                 </div>
               ) : (
                 <div className="flex gap-3">
-                  {/* Avatar */}
                   <button
                     type="button"
                     onClick={(e) => handleUserClick(e, msg.username)}
@@ -465,8 +610,6 @@ export function GlobalChat() {
               )}
             </div>
           ))}
-
-          {/* Scroll anchor */}
           <div ref={messagesEndRef} />
         </div>
       )}
@@ -474,7 +617,6 @@ export function GlobalChat() {
       {/* Messages - Agent Chat */}
       {chatMode === "agent" && (
         <div className="flex-1 overflow-y-auto p-4 space-y-3 tcg-scrollbar">
-          {/* Welcome message if no messages yet */}
           {aiChatMessages.length === 0 && !isAgentTyping && (
             <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="shrink-0 w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
@@ -503,7 +645,6 @@ export function GlobalChat() {
                 msg.role === "user" ? "flex-row-reverse" : ""
               )}
             >
-              {/* Avatar */}
               <div
                 className={cn(
                   "shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border",
@@ -550,7 +691,6 @@ export function GlobalChat() {
             </div>
           ))}
 
-          {/* Typing indicator */}
           {isAgentTyping && (
             <div className="flex gap-3 animate-in fade-in duration-300">
               <div className="shrink-0 w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
@@ -574,58 +714,304 @@ export function GlobalChat() {
               </div>
             </div>
           )}
-
-          {/* Scroll anchor */}
           <div ref={agentMessagesEndRef} />
         </div>
       )}
 
-      {/* Input */}
-      <div className="p-4 border-t border-[#3d2b1f] bg-linear-to-r from-[#1a1614] to-[#261f1c]">
-        <div className="flex gap-2">
-          <input
-            data-testid="chat-input"
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={chatMode === "global" ? "Type a message..." : "Ask the AI anything..."}
-            disabled={isSending || isAgentTyping}
-            className={cn(
-              "flex-1 px-4 py-3 rounded-xl bg-parchment text-[#2a1f14] placeholder:text-[#2a1f14]/40 border focus:outline-none focus:ring-2 text-sm transition-all disabled:opacity-50",
-              chatMode === "global"
-                ? "border-[#3d2b1f]/20 focus:border-[#d4af37]/50 focus:ring-[#d4af37]/10"
-                : "border-purple-500/20 focus:border-purple-500/50 focus:ring-purple-500/10"
-            )}
-          />
-          <button
-            type="button"
-            onClick={chatMode === "global" ? handleSend : handleAgentSend}
-            disabled={!message.trim() || isSending || isAgentTyping}
-            className={cn(
-              "px-4 py-3 rounded-xl font-bold uppercase tracking-wide transition-all",
-              message.trim() && !isSending && !isAgentTyping
-                ? chatMode === "global"
-                  ? "tcg-button-primary text-white"
-                  : "bg-purple-600 hover:bg-purple-500 text-white"
-                : "bg-[#3d2b1f]/50 text-[#a89f94]/50 cursor-not-allowed"
-            )}
-          >
-            {isSending || isAgentTyping ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : chatMode === "agent" ? (
-              <Sparkles className="w-5 h-5" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </button>
+      {/* Friends List */}
+      {chatMode === "friends" && (
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 tcg-scrollbar">
+          {/* Online Friends */}
+          {onlineFriends && onlineFriends.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Circle className="w-2 h-2 fill-green-500 text-green-500" />
+                <span className="text-xs font-bold text-[#a89f94] uppercase tracking-wider">
+                  Online — {onlineFriends.length}
+                </span>
+              </div>
+              {onlineFriends.map((friend: NonNullable<typeof onlineFriends>[number]) => (
+                <button
+                  key={friend.userId}
+                  type="button"
+                  onClick={() =>
+                    handleStartDM(friend.userId as Id<"users">, friend.username || "Unknown")
+                  }
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-[#3d2b1f]/50 hover:border-blue-500/30 hover:bg-black/30 transition-all text-left"
+                >
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#8b4513] to-[#3d2b1f] flex items-center justify-center border border-[#d4af37]/20">
+                      <span className="text-sm font-black text-[#d4af37]">
+                        {(friend.username || "?")[0]?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-[#1a1614]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-[#e8e0d5] truncate block">
+                      {friend.username}
+                    </span>
+                    <span className="text-xs text-green-400">Online</span>
+                  </div>
+                  <MessageSquare className="w-4 h-4 text-[#a89f94]" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Recent Conversations */}
+          {conversations && conversations.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquare className="w-3 h-3 text-[#a89f94]" />
+                <span className="text-xs font-bold text-[#a89f94] uppercase tracking-wider">
+                  Recent Conversations
+                </span>
+              </div>
+              {conversations.map((conv) => (
+                <button
+                  key={conv._id}
+                  type="button"
+                  onClick={() => {
+                    setActiveDMConversationId(conv._id);
+                    setActiveDMFriend({
+                      userId: conv.otherUserId,
+                      username: conv.otherUsername || "Unknown",
+                    });
+                    setChatMode("dm");
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-[#3d2b1f]/50 hover:border-blue-500/30 hover:bg-black/30 transition-all text-left"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#8b4513] to-[#3d2b1f] flex items-center justify-center border border-[#d4af37]/20">
+                    <span className="text-sm font-black text-[#d4af37]">
+                      {(conv.otherUsername || "?")[0]?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-[#e8e0d5] truncate block">
+                      {conv.otherUsername}
+                    </span>
+                    {conv.lastMessage && (
+                      <span className="text-xs text-[#a89f94] truncate block">
+                        {conv.lastMessage}
+                      </span>
+                    )}
+                  </div>
+                  {conv.unreadCount > 0 && (
+                    <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {conv.unreadCount}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Empty state */}
+          {(!friends || friends.length === 0) && (!conversations || conversations.length === 0) && (
+            <div className="flex flex-col items-center justify-center h-full text-center py-8">
+              <UserPlus className="w-12 h-12 text-[#a89f94]/50 mb-3" />
+              <p className="text-[#a89f94] text-sm">No friends yet</p>
+              <p className="text-[#a89f94]/60 text-xs mt-1">Add friends to start chatting!</p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* DM Conversation */}
+      {chatMode === "dm" && (
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 tcg-scrollbar">
+          {dmMessages.map((msg) => (
+            <div
+              key={msg._id}
+              className={cn(
+                "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300",
+                msg.isOwnMessage ? "flex-row-reverse" : ""
+              )}
+            >
+              <div
+                className={cn(
+                  "shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border",
+                  msg.isOwnMessage
+                    ? "bg-linear-to-br from-[#8b4513] to-[#3d2b1f] border-[#d4af37]/20"
+                    : "bg-blue-500/20 border-blue-500/30"
+                )}
+              >
+                <span
+                  className={cn(
+                    "text-xs font-black",
+                    msg.isOwnMessage ? "text-[#d4af37]" : "text-blue-400"
+                  )}
+                >
+                  {msg.senderUsername[0]?.toUpperCase()}
+                </span>
+              </div>
+
+              <div className={cn("flex-1 min-w-0", msg.isOwnMessage && "flex justify-end")}>
+                <div
+                  className={cn(
+                    "rounded-lg p-3 border max-w-[85%]",
+                    msg.isOwnMessage
+                      ? "bg-[#d4af37]/10 border-[#d4af37]/30"
+                      : "bg-blue-500/10 border-blue-500/30"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span
+                      className={cn(
+                        "text-xs font-black uppercase tracking-wide",
+                        msg.isOwnMessage ? "text-[#d4af37]" : "text-blue-400"
+                      )}
+                    >
+                      {msg.isOwnMessage ? "You" : msg.senderUsername}
+                    </span>
+                    <span className="text-[10px] text-[#a89f94]/60 ml-2">
+                      {formatTime(msg.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-[#e8e0d5] leading-relaxed wrap-break-word">
+                    {msg.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+          {dmMessages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center py-8">
+              <MessageSquare className="w-12 h-12 text-blue-400/50 mb-3" />
+              <p className="text-[#a89f94] text-sm">No messages yet</p>
+              <p className="text-[#a89f94]/60 text-xs mt-1">Say hello!</p>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      {/* Guild Chat */}
+      {chatMode === "guild" && (
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 tcg-scrollbar">
+          {isGuildChatLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+            </div>
+          ) : guildMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-8">
+              <Shield className="w-12 h-12 text-amber-400/50 mb-3" />
+              <p className="text-[#a89f94] text-sm">No messages yet</p>
+              <p className="text-[#a89f94]/60 text-xs mt-1">Start the conversation!</p>
+            </div>
+          ) : (
+            guildMessages.map((msg) => (
+              <div
+                key={msg._id}
+                className={cn(
+                  "group animate-in fade-in slide-in-from-bottom-2 duration-300",
+                  msg.isSystem && "text-center"
+                )}
+              >
+                {msg.isSystem ? (
+                  <div className="py-1">
+                    <span className="inline-block px-3 py-1 rounded-full bg-amber-500/10 text-[10px] text-amber-400 font-medium">
+                      {msg.message}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex gap-3">
+                    <div className="shrink-0 w-8 h-8 rounded-lg bg-linear-to-br from-[#8b4513] to-[#3d2b1f] flex items-center justify-center border border-amber-500/20">
+                      <span className="text-xs font-black text-amber-400">
+                        {msg.username[0]?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="bg-black/20 rounded-lg p-3 border border-[#3d2b1f]/50 hover:border-amber-500/30 transition-colors">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-black uppercase tracking-wide text-amber-400">
+                            {msg.username}
+                          </span>
+                          <span className="text-[10px] text-[#a89f94]/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {formatTime(msg.createdAt)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-[#e8e0d5] leading-relaxed wrap-break-word">
+                          {msg.message}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      {/* Input */}
+      {(chatMode === "global" ||
+        chatMode === "agent" ||
+        chatMode === "dm" ||
+        chatMode === "guild") && (
+        <div className="p-4 border-t border-[#3d2b1f] bg-linear-to-r from-[#1a1614] to-[#261f1c]">
+          <div className="flex gap-2">
+            <input
+              data-testid="chat-input"
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                chatMode === "agent"
+                  ? "Ask the AI anything..."
+                  : chatMode === "dm"
+                    ? `Message ${activeDMFriend?.username || ""}...`
+                    : chatMode === "guild"
+                      ? "Message your guild..."
+                      : "Type a message..."
+              }
+              disabled={isSending || isAgentTyping}
+              className={cn(
+                "flex-1 px-4 py-3 rounded-xl bg-parchment text-[#2a1f14] placeholder:text-[#2a1f14]/40 border focus:outline-none focus:ring-2 text-sm transition-all disabled:opacity-50",
+                chatMode === "global"
+                  ? "border-[#3d2b1f]/20 focus:border-[#d4af37]/50 focus:ring-[#d4af37]/10"
+                  : chatMode === "agent"
+                    ? "border-purple-500/20 focus:border-purple-500/50 focus:ring-purple-500/10"
+                    : chatMode === "guild"
+                      ? "border-amber-500/20 focus:border-amber-500/50 focus:ring-amber-500/10"
+                      : "border-blue-500/20 focus:border-blue-500/50 focus:ring-blue-500/10"
+              )}
+            />
+            <button
+              type="button"
+              onClick={chatMode === "agent" ? handleAgentSend : handleSend}
+              disabled={!message.trim() || isSending || isAgentTyping}
+              className={cn(
+                "px-4 py-3 rounded-xl font-bold uppercase tracking-wide transition-all",
+                message.trim() && !isSending && !isAgentTyping
+                  ? chatMode === "global"
+                    ? "tcg-button-primary text-white"
+                    : chatMode === "agent"
+                      ? "bg-purple-600 hover:bg-purple-500 text-white"
+                      : chatMode === "guild"
+                        ? "bg-amber-600 hover:bg-amber-500 text-white"
+                        : "bg-blue-600 hover:bg-blue-500 text-white"
+                  : "bg-[#3d2b1f]/50 text-[#a89f94]/50 cursor-not-allowed"
+              )}
+            >
+              {isSending || isAgentTyping ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : chatMode === "agent" ? (
+                <Sparkles className="w-5 h-5" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Online Users Off-Canvas Panel */}
       {isOnlinePanelOpen && (
         <>
-          {/* Backdrop */}
           <button
             type="button"
             className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm cursor-default"
@@ -633,9 +1019,7 @@ export function GlobalChat() {
             aria-label="Close online users panel"
           />
 
-          {/* Panel */}
           <div className="fixed top-20 right-0 z-70 h-[calc(100vh-5rem)] w-80 tcg-chat-leather border-l border-t border-[#3d2b1f] rounded-tl-2xl shadow-2xl animate-in slide-in-from-right duration-300">
-            {/* Panel Header */}
             <div className="flex items-center justify-between p-4 border-b border-[#3d2b1f] bg-linear-to-r from-[#1a1614] to-[#261f1c] rounded-tl-2xl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center">
@@ -659,7 +1043,6 @@ export function GlobalChat() {
               </button>
             </div>
 
-            {/* Status Legend */}
             <div className="flex items-center gap-4 px-4 py-3 border-b border-[#3d2b1f]/50 bg-black/20">
               {Object.entries(STATUS_CONFIG).map(([key, config]) => (
                 <div key={key} className="flex items-center gap-1.5">
@@ -671,7 +1054,6 @@ export function GlobalChat() {
               ))}
             </div>
 
-            {/* Users List */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2 max-h-[calc(100vh-220px)] tcg-scrollbar-thin">
               {onlineUsers.map((user) => (
                 <div
@@ -682,7 +1064,6 @@ export function GlobalChat() {
                   }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-[#3d2b1f]/50 hover:border-[#d4af37]/30 hover:bg-black/30 transition-all group text-left cursor-pointer"
                 >
-                  {/* Avatar with Status */}
                   <div className="relative">
                     <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#8b4513] to-[#3d2b1f] flex items-center justify-center border border-[#d4af37]/20 group-hover:border-[#d4af37]/50 transition-colors">
                       <span className="text-sm font-black text-[#d4af37]">
@@ -697,7 +1078,6 @@ export function GlobalChat() {
                     />
                   </div>
 
-                  {/* User Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-[#e8e0d5] text-sm truncate group-hover:text-[#d4af37] transition-colors">
@@ -714,7 +1094,6 @@ export function GlobalChat() {
                     </div>
                   </div>
 
-                  {/* Challenge Button (only for online users) */}
                   {user.status === "online" && (
                     <button
                       type="button"
@@ -737,7 +1116,6 @@ export function GlobalChat() {
       {/* User Context Menu */}
       {userMenu && (
         <>
-          {/* Backdrop to close menu */}
           <button
             type="button"
             className="fixed inset-0 z-90 cursor-default"
@@ -745,7 +1123,6 @@ export function GlobalChat() {
             aria-label="Close menu"
           />
 
-          {/* Menu */}
           <div
             className="fixed z-95 w-44 rounded-xl tcg-chat-leather border border-[#3d2b1f] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
             style={{
@@ -754,7 +1131,6 @@ export function GlobalChat() {
             }}
           >
             <div className="p-1">
-              {/* View Profile */}
               <button
                 type="button"
                 onClick={() => {
@@ -767,7 +1143,6 @@ export function GlobalChat() {
                 View Profile
               </button>
 
-              {/* Challenge */}
               <button
                 type="button"
                 onClick={() => handleOpenChallenge(userMenu.username)}
@@ -779,7 +1154,6 @@ export function GlobalChat() {
 
               <div className="my-1 border-t border-[#3d2b1f]" />
 
-              {/* Mute */}
               <button
                 type="button"
                 onClick={() => handleMuteUser(userMenu.username)}
@@ -794,7 +1168,6 @@ export function GlobalChat() {
                 {mutedUsers.has(userMenu.username) ? "Unmute" : "Mute"}
               </button>
 
-              {/* Report */}
               <button
                 type="button"
                 onClick={() => {
@@ -811,14 +1184,12 @@ export function GlobalChat() {
         </>
       )}
 
-      {/* Player Profile Dialog */}
       <PlayerProfileDialog
         isOpen={!!selectedProfile}
         onClose={() => setSelectedProfile(null)}
         username={selectedProfile || ""}
       />
 
-      {/* Challenge Confirm Dialog */}
       <ChallengeConfirmDialog
         isOpen={!!challengeTarget}
         onClose={() => setChallengeTarget(null)}
@@ -826,7 +1197,6 @@ export function GlobalChat() {
         opponentUsername={challengeTarget?.username || ""}
       />
 
-      {/* Report User Dialog */}
       <ReportUserDialog
         username={reportTarget || ""}
         isOpen={!!reportTarget}

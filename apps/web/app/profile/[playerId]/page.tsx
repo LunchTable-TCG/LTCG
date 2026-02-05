@@ -139,7 +139,7 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
             This player profile does not exist or has been deleted.
           </p>
           <Button asChild>
-            <Link href="/social">Back to Social</Link>
+            <Link href="/guilds">Back to Community</Link>
           </Button>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
             information.
           </p>
           <Button asChild variant="outline" className="border-[#3d2b1f] text-[#a89f94]">
-            <Link href="/social">Back to Social</Link>
+            <Link href="/guilds">Back to Community</Link>
           </Button>
         </div>
       </div>

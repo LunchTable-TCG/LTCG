@@ -18,7 +18,6 @@ import {
   LogOut,
   Map as MapIcon,
   Menu,
-  MessageSquare,
   Settings,
   Sparkles,
   Star,
@@ -105,11 +104,8 @@ const navGroups: NavGroup[] = [
   },
   {
     label: "Community",
-    icon: MessageSquare,
-    links: [
-      { href: "/social", label: "Social", icon: MessageSquare },
-      { href: "/guilds", label: "Guilds", icon: Users, comingSoon: true },
-    ],
+    icon: Users,
+    links: [{ href: "/guilds", label: "Guilds", icon: Users }],
   },
   {
     label: "Economy",
@@ -202,15 +198,18 @@ export function Navbar() {
             <div className="flex items-center gap-3">
               {isAuthenticated ? (
                 <>
-                  <Button
-                    asChild
-                    className="hidden sm:flex tcg-button-primary rounded-lg px-4 py-2 text-sm"
-                  >
-                    <Link href="/lunchtable">
-                      <Swords className="w-3.5 h-3.5 mr-1.5" />
-                      The Table
-                    </Link>
-                  </Button>
+                  {/* Only show "The Table" button on landing page */}
+                  {pathname === "/" && (
+                    <Button
+                      asChild
+                      className="hidden sm:flex tcg-button-primary rounded-lg px-4 py-2 text-sm"
+                    >
+                      <Link href="/lunchtable">
+                        <Swords className="w-3.5 h-3.5 mr-1.5" />
+                        The Table
+                      </Link>
+                    </Button>
+                  )}
 
                   <WalletButton expandable className="hidden sm:flex" />
 

@@ -134,13 +134,17 @@ export const ensureUserHasQuests = mutation({
     // Check if they have recent daily quests (created in the last 24 hours)
     const hasRecentDailyQuests = existingQuests.some((uq) => {
       const oneDayAgo = now - oneDayMs;
-      return uq.startedAt && uq.startedAt > oneDayAgo && uq.expiresAt && uq.expiresAt <= now + oneDayMs;
+      return (
+        uq.startedAt && uq.startedAt > oneDayAgo && uq.expiresAt && uq.expiresAt <= now + oneDayMs
+      );
     });
 
     // Check if they have recent weekly quests
     const hasRecentWeeklyQuests = existingQuests.some((uq) => {
       const oneWeekAgo = now - oneWeekMs;
-      return uq.startedAt && uq.startedAt > oneWeekAgo && uq.expiresAt && uq.expiresAt > now + oneDayMs;
+      return (
+        uq.startedAt && uq.startedAt > oneWeekAgo && uq.expiresAt && uq.expiresAt > now + oneDayMs
+      );
     });
 
     if (hasRecentDailyQuests && hasRecentWeeklyQuests) {

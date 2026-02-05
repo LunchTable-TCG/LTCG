@@ -79,6 +79,8 @@ export async function initializeGameStateHelper(
     aiDeck?: Id<"cardDefinitions">[];
   }
 ): Promise<void> {
+  console.log("[initGameState] Starting with lobbyId:", params.lobbyId, "gameId:", params.gameId);
+
   const {
     lobbyId,
     gameId,
@@ -92,14 +94,17 @@ export async function initializeGameStateHelper(
   } = params;
 
   // Get both players and their decks
+  console.log("[initGameState] Fetching host:", hostId, "and opponent:", opponentId);
   const host = await ctx.db.get(hostId);
   const opponent = await ctx.db.get(opponentId);
+  console.log("[initGameState] Host found:", !!host, "Opponent found:", !!opponent);
 
   if (!host || !opponent) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: "Player not found",
     });
   }
+  console.log("[initGameState] Host activeDeckId:", host.activeDeckId);
 
   // Build host deck
   if (!host.activeDeckId) {
@@ -109,10 +114,12 @@ export async function initializeGameStateHelper(
   }
 
   const hostActiveDeckId = host.activeDeckId;
+  console.log("[initGameState] Loading host deck cards for deckId:", hostActiveDeckId);
   const hostDeckCards = await ctx.db
     .query("deckCards")
     .withIndex("by_deck", (q) => q.eq("deckId", hostActiveDeckId))
     .collect();
+  console.log("[initGameState] Host deck cards found:", hostDeckCards.length);
 
   const hostFullDeck: Id<"cardDefinitions">[] = [];
   for (const deckCard of hostDeckCards) {
@@ -120,11 +127,13 @@ export async function initializeGameStateHelper(
       hostFullDeck.push(deckCard.cardDefinitionId);
     }
   }
+  console.log("[initGameState] Host full deck size:", hostFullDeck.length);
 
   // Build opponent deck - use AI deck if provided (story mode)
   let opponentFullDeck: Id<"cardDefinitions">[];
   if (isAIOpponent && aiDeck) {
     // Story mode: use pre-built AI deck
+    console.log("[initGameState] Using AI deck, size:", aiDeck.length);
     opponentFullDeck = aiDeck;
   } else {
     // PvP mode: load from opponent's active deck

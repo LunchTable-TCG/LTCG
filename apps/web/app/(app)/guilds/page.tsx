@@ -1,7 +1,7 @@
 "use client";
 
-import { useMyGuild } from "@/hooks/guilds";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { useMyGuild } from "@/hooks/guilds";
 import { Loader2, Shield } from "lucide-react";
 import { GuildDashboard } from "./components/GuildDashboard";
 import { NoGuildView } from "./components/NoGuildView";

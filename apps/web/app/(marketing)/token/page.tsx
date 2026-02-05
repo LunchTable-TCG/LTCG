@@ -406,10 +406,7 @@ function StatCard({
   icon: LucideIcon;
 }) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className="mode-card rounded-xl p-4 text-center"
-    >
+    <motion.div whileHover={{ scale: 1.02 }} className="mode-card rounded-xl p-4 text-center">
       <Icon className="w-5 h-5 text-primary mx-auto mb-2" />
       <div className="text-2xl font-bold text-foreground">{value}</div>
       <div className="text-sm text-muted-foreground">{label}</div>
@@ -437,10 +434,7 @@ function UtilityCard({
       viewport={{ once: true }}
       transition={{ delay, duration: 0.5 }}
       whileHover={{ y: -5 }}
-      className={cn(
-        "mode-card rounded-xl p-6 relative group",
-        featured && "tcg-frame-gold"
-      )}
+      className={cn("mode-card rounded-xl p-6 relative group", featured && "tcg-frame-gold")}
     >
       {featured && (
         <>

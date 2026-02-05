@@ -95,17 +95,19 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
   }
 
   const handleFriendAction = async () => {
-    if (!displayData?.username || !userId) return;
+    // Guard: Don't execute actions until playerData is fully loaded
+    // This prevents incorrect actions when using initialData fallback
+    if (!playerData || !userId) return;
     setIsSubmitting(true);
     try {
-      if (playerData?.friendshipStatus === "accepted") {
+      if (playerData.friendshipStatus === "accepted") {
         await removeFriend(userId);
-      } else if (playerData?.friendshipStatus === "pending" && playerData.isSentRequest) {
+      } else if (playerData.friendshipStatus === "pending" && playerData.isSentRequest) {
         await cancelFriendRequest(userId);
-      } else if (playerData?.friendshipStatus === "pending" && !playerData.isSentRequest) {
+      } else if (playerData.friendshipStatus === "pending" && !playerData.isSentRequest) {
         await acceptFriendRequest(userId);
       } else {
-        await sendFriendRequest(displayData.username);
+        await sendFriendRequest(playerData.username);
       }
     } finally {
       setIsSubmitting(false);
