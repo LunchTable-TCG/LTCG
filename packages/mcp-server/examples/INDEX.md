@@ -21,6 +21,8 @@ All three configuration files have the same structure and are ready to copy and 
 | **README.md** | Overview of all clients, quick start guide, and reference |
 | **SETUP.md** | Detailed step-by-step setup instructions for each client |
 | **INDEX.md** | This file - index of all example files |
+| **HTTP_CLIENT_EXAMPLES.md** | HTTP transport client examples and remote server configuration |
+| **http-client-config.json** | Comprehensive HTTP client implementations (TypeScript, Python, cURL, Postman) |
 | **schema.json** | JSON Schema for validating configuration files |
 
 ### Environment Files
@@ -47,9 +49,15 @@ All three configuration files have the same structure and are ready to copy and 
 - See: [README.md](./README.md) (comprehensive reference)
 
 **Specific client?**
-- **Claude Desktop:** [SETUP.md → Claude Desktop section](./SETUP.md#claude-desktop)
+- **Claude Desktop (stdio):** [SETUP.md → Claude Desktop section](./SETUP.md#claude-desktop)
 - **Cline:** [SETUP.md → Cline section](./SETUP.md#cline-vs-code-extension)
 - **VS Code:** [SETUP.md → VS Code section](./SETUP.md#vs-code-mcp-extension)
+- **Remote HTTP Server:** [HTTP_CLIENT_EXAMPLES.md](./HTTP_CLIENT_EXAMPLES.md)
+
+**Deploying remotely?**
+- **HTTP Transport Guide:** [../docs/HTTP_TRANSPORT.md](../docs/HTTP_TRANSPORT.md)
+- **Deployment Guide:** [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)
+- **Client Examples:** [HTTP_CLIENT_EXAMPLES.md](./HTTP_CLIENT_EXAMPLES.md)
 
 ---
 
@@ -131,6 +139,33 @@ JSON Schema for validating MCP configuration files. Can be used by:
 - IDE validation plugins
 - Configuration linters
 - Automated setup tools
+
+### HTTP_CLIENT_EXAMPLES.md
+
+Guide for connecting to remote MCP servers via HTTP transport, including:
+- Quick start with cURL
+- TypeScript/JavaScript client implementation
+- Python client implementation
+- Postman collection setup
+- Troubleshooting remote connections
+- Performance and security best practices
+
+### http-client-config.json
+
+Comprehensive collection of HTTP client examples:
+- Complete TypeScript/JavaScript transport class
+- Python MCP HTTP client
+- cURL command examples for all endpoints
+- Postman collection (ready to import)
+- Browser WebSocket client (future)
+- Load balancer configuration examples
+- Troubleshooting guide and best practices
+
+**Use this when:**
+- Deploying MCP server to cloud (Vercel, Railway, Docker, etc.)
+- Building custom agents that connect remotely
+- Testing production deployments
+- Integrating with multiple clients from different machines
 
 ---
 

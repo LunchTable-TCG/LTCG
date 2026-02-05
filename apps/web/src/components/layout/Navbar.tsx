@@ -27,6 +27,7 @@ import {
   Trophy,
   User,
   Users,
+  Video,
   Wallet,
   X,
 } from "lucide-react";
@@ -139,6 +140,13 @@ export function Navbar() {
     isAuthenticated ? {} : "skip"
   );
 
+  const preferences = useConvexQuery(
+    typedApi.core.userPreferences.getPreferences,
+    isAuthenticated ? {} : "skip"
+  );
+
+  const streamerModeEnabled = preferences?.streaming?.streamerModeEnabled ?? false;
+
   const handleSignOut = async () => {
     await logout();
     window.location.href = "/login";
@@ -207,6 +215,19 @@ export function Navbar() {
                       <Link href="/lunchtable">
                         <Swords className="w-3.5 h-3.5 mr-1.5" />
                         The Table
+                      </Link>
+                    </Button>
+                  )}
+
+                  {/* Go Live button - only show when streamer mode is enabled */}
+                  {streamerModeEnabled && (
+                    <Button
+                      asChild
+                      className="hidden sm:flex bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-lg px-4 py-2 text-sm font-semibold shadow-lg shadow-red-500/20"
+                    >
+                      <Link href="/streaming/live">
+                        <Video className="w-3.5 h-3.5 mr-1.5" />
+                        Go Live
                       </Link>
                     </Button>
                   )}
@@ -339,6 +360,23 @@ export function Navbar() {
                     <span className="text-[11px] text-primary/60">Enter The Table</span>
                   </div>
                 </Link>
+
+                {/* Go Live CTA - Only show when streamer mode enabled */}
+                {streamerModeEnabled && (
+                  <Link
+                    href="/streaming/live"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-red-600/20 to-red-500/5 border border-red-500/30 hover:from-red-600/30 hover:to-red-500/10 transition-all group mb-4"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                      <Video className="w-5 h-5 text-red-400" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="block font-bold text-red-400">Go Live</span>
+                      <span className="text-[11px] text-red-400/60">Stream Your Gameplay</span>
+                    </div>
+                  </Link>
+                )}
 
                 {/* Grouped Navigation */}
                 {navGroups.map((group) => {

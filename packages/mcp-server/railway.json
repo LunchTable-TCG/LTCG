@@ -1,0 +1,43 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "bun run start:http",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "environmentVariables": [
+    {
+      "name": "MCP_TRANSPORT",
+      "value": "http"
+    },
+    {
+      "name": "NODE_ENV",
+      "value": "production"
+    },
+    {
+      "name": "PORT",
+      "value": "3000"
+    },
+    {
+      "name": "LTCG_API_KEY",
+      "description": "API key for LunchTable-TCG backend (required)"
+    },
+    {
+      "name": "LTCG_API_URL",
+      "value": "https://lunchtable.cards",
+      "description": "Base URL for LunchTable-TCG API"
+    },
+    {
+      "name": "MCP_API_KEY",
+      "description": "Optional API key for authenticating MCP clients"
+    },
+    {
+      "name": "ALLOWED_ORIGINS",
+      "value": "*",
+      "description": "Comma-separated list of allowed CORS origins"
+    }
+  ]
+}

@@ -102,21 +102,25 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
         {/* Streamer info */}
         {config.showAgentInfo && session && (
           <div className="top-bar">
-            <StreamerInfoPanel session={session} />
+            <StreamerInfoPanel
+              name={session.streamTitle}
+              streamType={session.streamType}
+              platform={session.platform}
+            />
           </div>
         )}
 
         {/* AI Decisions */}
-        {config.showDecisions && decisions && decisions.length > 0 && (
+        {config.showDecisions && decisions && decisions.length > 0 && session && (
           <div className="decisions-panel">
-            <DecisionPanel decisions={decisions} />
+            <DecisionPanel decisions={decisions} agentName={session.streamTitle} />
           </div>
         )}
 
         {/* Event feed */}
         {config.showEventFeed && (
           <div className="event-feed">
-            <EventFeedTicker sessionId={sessionId} />
+            <EventFeedTicker events={[]} />
           </div>
         )}
       </div>

@@ -35,11 +35,67 @@ bun install
 bun run build
 ```
 
+## Dual-Mode Transport Architecture
+
+The MCP server supports **two transport modes** for maximum flexibility:
+
+| Transport | Use Case | Benefits | Configuration |
+|-----------|----------|----------|---------------|
+| **Stdio** | Local development, Claude Desktop | Zero-latency, no network overhead, simple setup | `MCP_TRANSPORT=stdio` (default) |
+| **HTTP** | Remote deployment, cloud hosting, multiple clients | Scalable, accessible from anywhere, load-balanceable | `MCP_TRANSPORT=http` |
+
+### When to Use Each Mode
+
+**Use Stdio Transport when:**
+- Developing locally with Claude Desktop or Cline
+- Running the MCP server on the same machine as the MCP client
+- You need minimal latency and don't require remote access
+- Testing and debugging locally
+
+**Use HTTP Transport when:**
+- Deploying to cloud platforms (Vercel, Railway, Docker, etc.)
+- Serving multiple MCP clients from a single server
+- Accessing the MCP server from remote machines or different networks
+- Implementing load balancing or horizontal scaling
+- Building production AI agent systems
+
+Configure via the `MCP_TRANSPORT` environment variable. See [docs/HTTP_TRANSPORT.md](./docs/HTTP_TRANSPORT.md) for detailed HTTP transport documentation and [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for deployment guides.
+
 ## Configuration
 
 ### Environment Variables
 
 Create a `.env` file or set these environment variables:
+
+**Required (all modes):**
+```bash
+LTCG_API_KEY=your_ltcg_api_key_here  # API key for LunchTable-TCG backend
+```
+
+**Optional (all modes):**
+```bash
+LTCG_API_URL=https://lunchtable.cards  # Backend API URL
+MCP_TRANSPORT=stdio                     # Transport mode: "stdio" or "http" (default: "stdio")
+```
+
+**HTTP Mode Configuration:**
+```bash
+PORT=3000                              # HTTP server port (default: 3000)
+ALLOWED_ORIGINS=*                      # CORS origins (comma-separated, default: *)
+MCP_API_KEY=your_mcp_api_key_here     # Optional: Require authentication for MCP clients
+```
+
+**Example `.env` for HTTP deployment:**
+```bash
+LTCG_API_KEY=ltcg_live_abc123xyz
+LTCG_API_URL=https://lunchtable.cards
+MCP_TRANSPORT=http
+PORT=8080
+ALLOWED_ORIGINS=https://your-frontend.com,https://app.example.com
+MCP_API_KEY=mcp_secret_key_here
+```
+
+### Legacy Configuration (for reference)
 
 ```bash
 # Required: Convex backend connection
@@ -67,9 +123,19 @@ LTCG_WEBHOOK_SECRET=your_webhook_secret
    - Settings → API Keys → Create Key
    - Store securely - never commit to version control
 
-## Usage with Claude Desktop
+## Usage
 
-### macOS Configuration
+### Stdio Mode (Local Development)
+
+**Start the server:**
+
+```bash
+MCP_TRANSPORT=stdio bun run start:stdio
+# or
+MCP_TRANSPORT=stdio node dist/index.js
+```
+
+**Claude Desktop Configuration (macOS):**
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -77,17 +143,18 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "lunchtable-tcg": {
-      "command": "ltcg-mcp",
+      "command": "node",
+      "args": ["/path/to/packages/mcp-server/dist/index.js"],
       "env": {
-        "CONVEX_URL": "https://your-deployment.convex.cloud",
-        "CONVEX_DEPLOYMENT": "dev:your-deployment"
+        "LTCG_API_KEY": "your_api_key_here",
+        "MCP_TRANSPORT": "stdio"
       }
     }
   }
 }
 ```
 
-### Windows Configuration
+**Claude Desktop Configuration (Windows):**
 
 Edit `%APPDATA%\Claude\claude_desktop_config.json`:
 
@@ -95,19 +162,186 @@ Edit `%APPDATA%\Claude\claude_desktop_config.json`:
 {
   "mcpServers": {
     "lunchtable-tcg": {
-      "command": "ltcg-mcp.cmd",
+      "command": "node",
+      "args": ["C:\\path\\to\\packages\\mcp-server\\dist\\index.js"],
       "env": {
-        "CONVEX_URL": "https://your-deployment.convex.cloud",
-        "CONVEX_DEPLOYMENT": "dev:your-deployment"
+        "LTCG_API_KEY": "your_api_key_here",
+        "MCP_TRANSPORT": "stdio"
       }
     }
   }
 }
 ```
 
-### Restart Claude Desktop
+**Restart Claude Desktop** to load the MCP server.
 
-Close and reopen Claude Desktop to load the MCP server.
+### HTTP Mode (Remote Deployment)
+
+**Start the server:**
+
+```bash
+# Using environment variables
+MCP_TRANSPORT=http PORT=3000 bun run start:http
+
+# Or with .env file
+echo "MCP_TRANSPORT=http" >> .env
+echo "PORT=3000" >> .env
+bun run start:http
+
+# Using Node.js
+MCP_TRANSPORT=http PORT=3000 node dist/index.js
+```
+
+**Server Endpoints:**
+
+| Method | Endpoint | Purpose | Headers Required |
+|--------|----------|---------|------------------|
+| `POST` | `/mcp` | Main MCP JSON-RPC requests | `Content-Type`, `Authorization` (if enabled), `Mcp-Session-Id` (after init) |
+| `DELETE` | `/mcp` | Terminate session | `Mcp-Session-Id` |
+| `GET` | `/health` | Health check | None |
+
+**Making Requests:**
+
+```bash
+# 1. Health check
+curl http://localhost:3000/health
+# Response: {"status":"healthy","transport":"http","sessions":0}
+
+# 2. Initialize MCP session
+curl -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_MCP_API_KEY" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-03-26",
+      "capabilities": {},
+      "clientInfo": {
+        "name": "test-client",
+        "version": "1.0.0"
+      }
+    }
+  }'
+# Response includes: Mcp-Session-Id header (save this for subsequent requests)
+
+# 3. List available tools (using session ID from step 2)
+curl -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_MCP_API_KEY" \
+  -H "Mcp-Session-Id: SESSION_ID_FROM_STEP_2" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/list"
+  }'
+
+# 4. Call a tool
+curl -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_MCP_API_KEY" \
+  -H "Mcp-Session-Id: SESSION_ID_FROM_STEP_2" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "list_lobbies",
+      "arguments": {
+        "mode": "casual"
+      }
+    }
+  }'
+
+# 5. Terminate session when done
+curl -X DELETE http://localhost:3000/mcp \
+  -H "Mcp-Session-Id: SESSION_ID_FROM_STEP_2"
+```
+
+**Client Configuration for Remote MCP Server:**
+
+See [examples/http-client-config.json](./examples/http-client-config.json) for configuration examples for Claude Desktop and other MCP clients.
+
+## Remote Deployment
+
+Deploy the MCP server to cloud platforms for remote access and scalability. Detailed guides available in [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
+
+### Quick Deploy to Vercel
+
+```bash
+# 1. Install Vercel CLI
+npm install -g vercel
+
+# 2. Set environment variables
+vercel env add LTCG_API_KEY
+vercel env add MCP_TRANSPORT (set to "http")
+vercel env add MCP_API_KEY (optional, for authentication)
+
+# 3. Deploy
+vercel --prod
+```
+
+Your MCP server will be available at `https://your-project.vercel.app/mcp`
+
+### Quick Deploy to Railway
+
+```bash
+# 1. Install Railway CLI
+npm install -g railway
+
+# 2. Initialize Railway project
+railway init
+
+# 3. Set environment variables
+railway variables set LTCG_API_KEY=your_key_here
+railway variables set MCP_TRANSPORT=http
+railway variables set PORT=3000
+
+# 4. Deploy
+railway up
+```
+
+Your MCP server will be available at `https://your-project.railway.app/mcp`
+
+### Deploy with Docker
+
+```bash
+# Build the image
+docker build -t ltcg-mcp-server .
+
+# Run with environment variables
+docker run -d \
+  -p 3000:3000 \
+  -e LTCG_API_KEY=your_key_here \
+  -e MCP_TRANSPORT=http \
+  -e PORT=3000 \
+  -e MCP_API_KEY=your_mcp_key \
+  ltcg-mcp-server
+```
+
+### Security Best Practices for HTTP Deployment
+
+1. **Always use HTTPS** - Never deploy HTTP-only in production
+2. **Set MCP_API_KEY** - Require authentication for all MCP clients
+3. **Restrict CORS origins** - Use specific domains instead of `*`
+4. **Use environment variables** - Never hardcode secrets
+5. **Monitor sessions** - Check `/health` endpoint for active session counts
+6. **Implement rate limiting** - Use a reverse proxy (Nginx, Cloudflare) for rate limiting
+7. **Rotate API keys regularly** - Update both LTCG_API_KEY and MCP_API_KEY periodically
+
+**Example production configuration:**
+
+```bash
+# .env.production
+LTCG_API_KEY=ltcg_live_xxxxxxxx
+MCP_TRANSPORT=http
+PORT=8080
+ALLOWED_ORIGINS=https://app.example.com,https://agent.example.com
+MCP_API_KEY=strong_random_secret_here
+```
+
+For comprehensive deployment guides, load balancing, SSL configuration, and monitoring setup, see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
 
 ## Usage with Other MCP Clients
 
@@ -138,7 +372,8 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 const transport = new StdioClientTransport({
   command: "ltcg-mcp",
   env: {
-    CONVEX_URL: "https://your-deployment.convex.cloud",
+    LTCG_API_KEY: "your_api_key_here",
+    MCP_TRANSPORT: "stdio",
   },
 });
 
@@ -149,6 +384,67 @@ const client = new Client({
 
 await client.connect(transport);
 ```
+
+### Generic MCP Client (HTTP transport)
+
+```typescript
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+
+// Custom HTTP transport implementation
+class HttpTransport {
+  private sessionId?: string;
+  private baseUrl: string;
+  private apiKey?: string;
+
+  constructor(baseUrl: string, apiKey?: string) {
+    this.baseUrl = baseUrl;
+    this.apiKey = apiKey;
+  }
+
+  async send(message: JSONRPCMessage): Promise<JSONRPCMessage> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (this.apiKey) {
+      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    }
+
+    if (this.sessionId) {
+      headers["Mcp-Session-Id"] = this.sessionId;
+    }
+
+    const response = await fetch(`${this.baseUrl}/mcp`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(message),
+    });
+
+    // Extract session ID from response
+    const newSessionId = response.headers.get("Mcp-Session-Id");
+    if (newSessionId) {
+      this.sessionId = newSessionId;
+    }
+
+    return await response.json();
+  }
+}
+
+// Connect to remote MCP server
+const transport = new HttpTransport(
+  "https://your-mcp-server.com",
+  "your_mcp_api_key"
+);
+
+const client = new Client({
+  name: "my-remote-agent",
+  version: "1.0.0",
+});
+
+await client.connect(transport);
+```
+
+For complete HTTP client examples and Claude Desktop configuration for remote servers, see [examples/http-client-config.json](./examples/http-client-config.json).
 
 ## Available Prompts
 
@@ -341,15 +637,28 @@ await use_mcp_tool("register_webhook", {
 
 ## Troubleshooting
 
-### Server Not Starting
+### Server Not Starting (Stdio Mode)
 
 **Problem:** Claude Desktop shows "MCP server failed to start"
 
 **Solutions:**
 1. Check command is correct: `ltcg-mcp` (not `ltcg-mcp-server`)
 2. Verify installation: `which ltcg-mcp` or `where ltcg-mcp`
-3. Check environment variables are set correctly
-4. View logs: `~/Library/Logs/Claude/mcp-server-lunchtable-tcg.log`
+3. Check environment variables are set correctly in Claude Desktop config
+4. Ensure `MCP_TRANSPORT=stdio` is set (or omitted, as it's the default)
+5. View logs: `~/Library/Logs/Claude/mcp-server-lunchtable-tcg.log`
+
+### Server Not Starting (HTTP Mode)
+
+**Problem:** HTTP server fails to start or crashes immediately
+
+**Solutions:**
+1. Check if port is already in use: `lsof -i :3000` (macOS/Linux) or `netstat -ano | findstr :3000` (Windows)
+2. Verify `MCP_TRANSPORT=http` is set
+3. Check `LTCG_API_KEY` is configured
+4. Try a different port: `PORT=8080 bun run start:http`
+5. Check console output for specific error messages
+6. Verify Bun is installed: `bun --version`
 
 ### Connection Errors
 
@@ -411,6 +720,41 @@ await use_mcp_tool("register_webhook", {
 4. Review game log: `get_game_events` shows recent actions
 5. Check if waiting for chain resolution: use `pass_priority` or `add_to_chain`
 
+### HTTP Transport Issues
+
+**Problem:** "Unauthorized" or "Invalid API key" errors in HTTP mode
+
+**Solutions:**
+1. Ensure `Authorization: Bearer YOUR_KEY` header is included in requests
+2. Verify `MCP_API_KEY` environment variable matches the key in your request
+3. Check that the key doesn't have extra whitespace or newlines
+4. If MCP_API_KEY is not set, authentication is disabled (public access)
+
+**Problem:** "Invalid session" error
+
+**Solutions:**
+1. Save the `Mcp-Session-Id` header from the `initialize` response
+2. Include it in all subsequent requests: `-H "Mcp-Session-Id: YOUR_SESSION_ID"`
+3. Sessions expire after 1 hour of inactivity - reinitialize if expired
+4. Check session count with `GET /health` endpoint
+
+**Problem:** CORS errors in browser-based clients
+
+**Solutions:**
+1. Configure `ALLOWED_ORIGINS` with your client's origin (e.g., `https://app.example.com`)
+2. Don't use `*` in production - specify exact origins
+3. Ensure your client sends the `Origin` header
+4. Check browser console for specific CORS error messages
+
+**Problem:** Slow HTTP responses or timeouts
+
+**Solutions:**
+1. Deploy closer to your clients geographically
+2. Use a CDN or edge network (Vercel, Cloudflare Workers)
+3. Implement HTTP/2 or HTTP/3 for better performance
+4. Check `/health` endpoint to monitor session count (high count may indicate memory issues)
+5. Consider horizontal scaling with load balancer
+
 ### Performance Issues
 
 **Problem:** Slow tool responses
@@ -421,6 +765,8 @@ await use_mcp_tool("register_webhook", {
 3. Limit card searches with specific filters (type, attribute, race)
 4. Cache game state locally, poll less frequently
 5. Use webhooks instead of polling for game events
+6. In HTTP mode, reuse sessions instead of reinitializing for each request
+7. Deploy MCP server geographically close to your backend API
 
 ## Development
 

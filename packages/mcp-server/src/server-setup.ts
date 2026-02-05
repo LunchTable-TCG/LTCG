@@ -44,7 +44,7 @@ async function makeApiRequest(
 /**
  * Creates and configures an MCP server with all handlers
  */
-export function createMcpServer() {
+export function createMcpServer(): Server {
   const server = new Server(
     {
       name: "LunchTable-TCG MCP Server",

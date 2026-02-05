@@ -1,0 +1,317 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP HTTP Client Configuration Examples",
+  "description": "Configuration examples for connecting MCP clients to remote HTTP-based MCP servers",
+
+  "examples": {
+    "claude_desktop_http_remote": {
+      "description": "Claude Desktop configuration for remote HTTP MCP server",
+      "note": "Claude Desktop doesn't natively support HTTP transport yet. This is a conceptual example.",
+      "config": {
+        "mcpServers": {
+          "lunchtable-tcg-remote": {
+            "transport": "http",
+            "url": "https://your-mcp-server.com/mcp",
+            "headers": {
+              "Authorization": "Bearer YOUR_MCP_API_KEY"
+            },
+            "env": {
+              "LTCG_API_KEY": "your_ltcg_api_key"
+            }
+          }
+        }
+      }
+    },
+
+    "claude_desktop_local_http": {
+      "description": "Claude Desktop configuration for local HTTP MCP server (testing)",
+      "config": {
+        "mcpServers": {
+          "lunchtable-tcg-local": {
+            "command": "bun",
+            "args": ["run", "start:http"],
+            "cwd": "/path/to/packages/mcp-server",
+            "env": {
+              "LTCG_API_KEY": "your_api_key_here",
+              "MCP_TRANSPORT": "http",
+              "PORT": "3000"
+            }
+          }
+        }
+      }
+    },
+
+    "custom_client_typescript": {
+      "description": "TypeScript/JavaScript client connecting to remote HTTP MCP server",
+      "code": "typescript",
+      "example": "import { Client } from '@modelcontextprotocol/sdk/client/index.js';\n\nclass HttpTransport {\n  private sessionId?: string;\n  private baseUrl: string;\n  private apiKey?: string;\n\n  constructor(baseUrl: string, apiKey?: string) {\n    this.baseUrl = baseUrl;\n    this.apiKey = apiKey;\n  }\n\n  async send(message: any): Promise<any> {\n    const headers: Record<string, string> = {\n      'Content-Type': 'application/json',\n    };\n\n    if (this.apiKey) {\n      headers['Authorization'] = `Bearer ${this.apiKey}`;\n    }\n\n    if (this.sessionId) {\n      headers['Mcp-Session-Id'] = this.sessionId;\n    }\n\n    const response = await fetch(`${this.baseUrl}/mcp`, {\n      method: 'POST',\n      headers,\n      body: JSON.stringify(message),\n    });\n\n    // Save session ID from response\n    const newSessionId = response.headers.get('Mcp-Session-Id');\n    if (newSessionId) {\n      this.sessionId = newSessionId;\n    }\n\n    if (!response.ok) {\n      throw new Error(`HTTP ${response.status}: ${await response.text()}`);\n    }\n\n    return await response.json();\n  }\n\n  async close(): Promise<void> {\n    if (!this.sessionId) return;\n\n    await fetch(`${this.baseUrl}/mcp`, {\n      method: 'DELETE',\n      headers: {\n        'Mcp-Session-Id': this.sessionId,\n      },\n    });\n\n    this.sessionId = undefined;\n  }\n}\n\n// Usage\nconst transport = new HttpTransport(\n  'https://your-mcp-server.com',\n  'your_mcp_api_key'\n);\n\nconst client = new Client({\n  name: 'my-agent',\n  version: '1.0.0',\n});\n\nawait client.connect(transport);\n\n// Use the client\nconst tools = await client.listTools();\nconsole.log('Available tools:', tools);\n\n// Clean up\nawait transport.close();"
+    },
+
+    "python_client": {
+      "description": "Python client for HTTP MCP server",
+      "code": "python",
+      "example": "import requests\nimport json\nfrom typing import Optional, Dict, Any\n\nclass McpHttpClient:\n    def __init__(self, base_url: str, api_key: Optional[str] = None):\n        self.base_url = base_url\n        self.api_key = api_key\n        self.session_id: Optional[str] = None\n        self.request_id = 0\n\n    def _make_request(self, method: str, params: Optional[Dict] = None) -> Any:\n        self.request_id += 1\n        \n        headers = {\n            'Content-Type': 'application/json',\n        }\n        \n        if self.api_key:\n            headers['Authorization'] = f'Bearer {self.api_key}'\n        \n        if self.session_id:\n            headers['Mcp-Session-Id'] = self.session_id\n        \n        payload = {\n            'jsonrpc': '2.0',\n            'id': self.request_id,\n            'method': method,\n        }\n        \n        if params:\n            payload['params'] = params\n        \n        response = requests.post(\n            f'{self.base_url}/mcp',\n            headers=headers,\n            json=payload\n        )\n        \n        # Save session ID\n        session_id = response.headers.get('Mcp-Session-Id')\n        if session_id:\n            self.session_id = session_id\n        \n        response.raise_for_status()\n        return response.json()\n\n    def initialize(self):\n        \"\"\"Initialize MCP session\"\"\"\n        return self._make_request('initialize', {\n            'protocolVersion': '2025-03-26',\n            'capabilities': {},\n            'clientInfo': {\n                'name': 'python-mcp-client',\n                'version': '1.0.0'\n            }\n        })\n\n    def list_tools(self):\n        \"\"\"List available tools\"\"\"\n        return self._make_request('tools/list')\n\n    def call_tool(self, tool_name: str, arguments: Dict[str, Any]):\n        \"\"\"Call a tool\"\"\"\n        return self._make_request('tools/call', {\n            'name': tool_name,\n            'arguments': arguments\n        })\n\n    def close(self):\n        \"\"\"Terminate session\"\"\"\n        if not self.session_id:\n            return\n        \n        headers = {'Mcp-Session-Id': self.session_id}\n        requests.delete(f'{self.base_url}/mcp', headers=headers)\n        self.session_id = None\n\n# Usage\nclient = McpHttpClient(\n    base_url='https://your-mcp-server.com',\n    api_key='your_mcp_api_key'\n)\n\n# Initialize\nclient.initialize()\n\n# List tools\ntools = client.list_tools()\nprint('Available tools:', tools)\n\n# Call a tool\nresult = client.call_tool('list_lobbies', {'mode': 'casual'})\nprint('Lobbies:', result)\n\n# Clean up\nclient.close()"
+    },
+
+    "curl_examples": {
+      "description": "cURL examples for testing HTTP MCP server",
+      "examples": [
+        {
+          "name": "Health Check",
+          "command": "curl -X GET https://your-mcp-server.com/health"
+        },
+        {
+          "name": "Initialize Session",
+          "command": "curl -X POST https://your-mcp-server.com/mcp \\\n  -H 'Content-Type: application/json' \\\n  -H 'Authorization: Bearer YOUR_MCP_API_KEY' \\\n  -D headers.txt \\\n  -d '{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 1,\n    \"method\": \"initialize\",\n    \"params\": {\n      \"protocolVersion\": \"2025-03-26\",\n      \"capabilities\": {},\n      \"clientInfo\": {\n        \"name\": \"curl-client\",\n        \"version\": \"1.0.0\"\n      }\n    }\n  }'\n\n# Extract session ID from headers\nSESSION_ID=$(grep -i 'Mcp-Session-Id:' headers.txt | awk '{print $2}' | tr -d '\\r')"
+        },
+        {
+          "name": "List Tools",
+          "command": "curl -X POST https://your-mcp-server.com/mcp \\\n  -H 'Content-Type: application/json' \\\n  -H 'Authorization: Bearer YOUR_MCP_API_KEY' \\\n  -H \"Mcp-Session-Id: $SESSION_ID\" \\\n  -d '{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 2,\n    \"method\": \"tools/list\"\n  }'"
+        },
+        {
+          "name": "Call a Tool",
+          "command": "curl -X POST https://your-mcp-server.com/mcp \\\n  -H 'Content-Type: application/json' \\\n  -H 'Authorization: Bearer YOUR_MCP_API_KEY' \\\n  -H \"Mcp-Session-Id: $SESSION_ID\" \\\n  -d '{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 3,\n    \"method\": \"tools/call\",\n    \"params\": {\n      \"name\": \"list_lobbies\",\n      \"arguments\": {\n        \"mode\": \"casual\"\n      }\n    }\n  }'"
+        },
+        {
+          "name": "Terminate Session",
+          "command": "curl -X DELETE https://your-mcp-server.com/mcp \\\n  -H \"Mcp-Session-Id: $SESSION_ID\""
+        }
+      ]
+    },
+
+    "postman_collection": {
+      "description": "Postman collection for testing HTTP MCP server",
+      "info": {
+        "name": "LunchTable-TCG MCP Server",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+      },
+      "variable": [
+        {
+          "key": "base_url",
+          "value": "https://your-mcp-server.com",
+          "type": "string"
+        },
+        {
+          "key": "api_key",
+          "value": "YOUR_MCP_API_KEY",
+          "type": "string"
+        },
+        {
+          "key": "session_id",
+          "value": "",
+          "type": "string"
+        }
+      ],
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Initialize Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const sessionId = pm.response.headers.get('Mcp-Session-Id');",
+                  "pm.collectionVariables.set('session_id', sessionId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"2025-03-26\",\n    \"capabilities\": {},\n    \"clientInfo\": {\n      \"name\": \"postman\",\n      \"version\": \"1.0.0\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/mcp",
+              "host": ["{{base_url}}"],
+              "path": ["mcp"]
+            }
+          }
+        },
+        {
+          "name": "List Tools",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{session_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 2,\n  \"method\": \"tools/list\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/mcp",
+              "host": ["{{base_url}}"],
+              "path": ["mcp"]
+            }
+          }
+        },
+        {
+          "name": "Call Tool - List Lobbies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{session_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 3,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_lobbies\",\n    \"arguments\": {\n      \"mode\": \"casual\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/mcp",
+              "host": ["{{base_url}}"],
+              "path": ["mcp"]
+            }
+          }
+        },
+        {
+          "name": "Terminate Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{session_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mcp",
+              "host": ["{{base_url}}"],
+              "path": ["mcp"]
+            }
+          }
+        }
+      ]
+    },
+
+    "browser_websocket_alternative": {
+      "description": "Browser-based client using WebSocket (if SSE is implemented)",
+      "note": "Current implementation doesn't support SSE/WebSocket. This is for future reference.",
+      "code": "javascript",
+      "example": "class McpWebSocketClient {\n  constructor(url, apiKey) {\n    this.url = url;\n    this.apiKey = apiKey;\n    this.ws = null;\n    this.requestId = 0;\n    this.pendingRequests = new Map();\n  }\n\n  async connect() {\n    return new Promise((resolve, reject) => {\n      const wsUrl = this.url.replace('https://', 'wss://').replace('http://', 'ws://');\n      this.ws = new WebSocket(`${wsUrl}/mcp`);\n\n      this.ws.onopen = () => {\n        this.initialize().then(resolve).catch(reject);\n      };\n\n      this.ws.onmessage = (event) => {\n        const response = JSON.parse(event.data);\n        const pending = this.pendingRequests.get(response.id);\n        if (pending) {\n          pending.resolve(response);\n          this.pendingRequests.delete(response.id);\n        }\n      };\n\n      this.ws.onerror = (error) => {\n        reject(error);\n      };\n    });\n  }\n\n  async send(method, params) {\n    return new Promise((resolve, reject) => {\n      this.requestId++;\n      const id = this.requestId;\n\n      this.pendingRequests.set(id, { resolve, reject });\n\n      this.ws.send(JSON.stringify({\n        jsonrpc: '2.0',\n        id,\n        method,\n        params,\n      }));\n\n      // Timeout after 30 seconds\n      setTimeout(() => {\n        if (this.pendingRequests.has(id)) {\n          this.pendingRequests.delete(id);\n          reject(new Error('Request timeout'));\n        }\n      }, 30000);\n    });\n  }\n\n  async initialize() {\n    return this.send('initialize', {\n      protocolVersion: '2025-03-26',\n      capabilities: {},\n      clientInfo: {\n        name: 'browser-ws-client',\n        version: '1.0.0',\n      },\n    });\n  }\n\n  async listTools() {\n    return this.send('tools/list');\n  }\n\n  async callTool(name, arguments) {\n    return this.send('tools/call', { name, arguments });\n  }\n\n  close() {\n    if (this.ws) {\n      this.ws.close();\n      this.ws = null;\n    }\n  }\n}\n\n// Usage\nconst client = new McpWebSocketClient(\n  'https://your-mcp-server.com',\n  'your_mcp_api_key'\n);\n\nawait client.connect();\nconst tools = await client.listTools();\nconsole.log('Available tools:', tools);\n\nclient.close();"
+    },
+
+    "load_balancer_config": {
+      "description": "Example load balancer configuration for multiple MCP server instances",
+      "haproxy": {
+        "config": "frontend mcp_frontend\n    bind *:443 ssl crt /etc/haproxy/certs/\n    mode http\n    \n    # Session affinity based on session ID\n    acl has_session_id hdr(Mcp-Session-Id) -m found\n    use_backend mcp_backend_sticky if has_session_id\n    default_backend mcp_backend_roundrobin\n\nbackend mcp_backend_sticky\n    mode http\n    balance source  # Sticky sessions by source IP\n    hash-type consistent\n    \n    # Health check\n    option httpchk GET /health\n    http-check expect status 200\n    \n    server mcp1 10.0.1.10:3000 check\n    server mcp2 10.0.1.11:3000 check\n    server mcp3 10.0.1.12:3000 check\n\nbackend mcp_backend_roundrobin\n    mode http\n    balance roundrobin\n    \n    option httpchk GET /health\n    http-check expect status 200\n    \n    server mcp1 10.0.1.10:3000 check\n    server mcp2 10.0.1.11:3000 check\n    server mcp3 10.0.1.12:3000 check"
+      }
+    }
+  },
+
+  "troubleshooting": {
+    "connection_refused": {
+      "problem": "Connection refused when connecting to remote MCP server",
+      "solutions": [
+        "Verify server is running: curl https://your-mcp-server.com/health",
+        "Check firewall rules allow HTTPS traffic",
+        "Verify DNS resolves correctly: nslookup your-mcp-server.com",
+        "Check SSL certificate is valid",
+        "Ensure MCP_TRANSPORT=http is set on server"
+      ]
+    },
+    "unauthorized": {
+      "problem": "401 Unauthorized error",
+      "solutions": [
+        "Verify MCP_API_KEY is set correctly in Authorization header",
+        "Check API key format: 'Bearer YOUR_KEY'",
+        "Ensure no extra whitespace or newlines in API key",
+        "Confirm server has MCP_API_KEY environment variable set",
+        "Try without authentication if testing (remove MCP_API_KEY from server)"
+      ]
+    },
+    "invalid_session": {
+      "problem": "Invalid session error on subsequent requests",
+      "solutions": [
+        "Save Mcp-Session-Id header from initialize response",
+        "Include Mcp-Session-Id in all subsequent requests",
+        "Check session hasn't expired (1 hour timeout)",
+        "Verify session ID format is correct UUID",
+        "Reinitialize if session expired"
+      ]
+    },
+    "cors_error": {
+      "problem": "CORS error in browser",
+      "solutions": [
+        "Set ALLOWED_ORIGINS on server to include your origin",
+        "Ensure server sends Access-Control-Allow-Origin header",
+        "Check preflight OPTIONS request succeeds",
+        "Verify Origin header is sent by browser",
+        "Use same protocol (http/https) as specified in ALLOWED_ORIGINS"
+      ]
+    }
+  },
+
+  "best_practices": {
+    "session_management": [
+      "Store session ID securely (not in localStorage if sensitive)",
+      "Implement automatic session renewal before expiry",
+      "Handle session expiry gracefully (reinitialize)",
+      "Close sessions when done to free server resources"
+    ],
+    "error_handling": [
+      "Check response.ok before parsing JSON",
+      "Implement retry logic with exponential backoff",
+      "Log errors with correlation IDs",
+      "Handle network timeouts gracefully"
+    ],
+    "performance": [
+      "Reuse HTTP connections with keep-alive",
+      "Batch multiple requests when possible",
+      "Cache tool/prompt lists locally",
+      "Use connection pooling for multiple concurrent requests"
+    ],
+    "security": [
+      "Always use HTTPS in production",
+      "Store API keys in environment variables",
+      "Validate server SSL certificate",
+      "Implement request timeout to prevent hanging",
+      "Don't log API keys or session IDs"
+    ]
+  }
+}

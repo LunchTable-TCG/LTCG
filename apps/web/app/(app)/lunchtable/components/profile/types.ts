@@ -81,4 +81,5 @@ export interface PlayerProfile {
   }>;
   joinedAt: number;
   status: "online" | "in_game" | "idle" | "offline";
+  streamerModeEnabled?: boolean;
 }

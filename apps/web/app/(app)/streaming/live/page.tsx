@@ -5,12 +5,10 @@ import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { LiveStreamingRoom } from "@/components/streaming/LiveStreamingRoom";
 import { useStreamNotifications } from "@/components/streaming/StreamNotifications";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, Video } from "lucide-react";
 import Link from "next/link";
 
 export default function LiveStreamingPage() {
-  const router = useRouter();
   const { isAuthenticated } = useAuth();
   const currentUser = useConvexQuery(
     typedApi.core.users.currentUser,
@@ -27,7 +25,7 @@ export default function LiveStreamingPage() {
     return null;
   }
 
-  const handleStreamStarted = (sessionId: string) => {
+  const handleStreamStarted = (_sessionId: string) => {
     setIsStreaming(true);
     notifyStreamStarted(platform);
   };

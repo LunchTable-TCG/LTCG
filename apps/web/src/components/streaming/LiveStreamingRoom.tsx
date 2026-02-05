@@ -29,7 +29,6 @@ export function LiveStreamingRoom({
 }: LiveStreamingRoomProps) {
   const [token, setToken] = useState<string>("");
   const [livekitUrl, setLivekitUrl] = useState<string>("");
-  const [sessionId, setSessionId] = useState<string>("");
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 
   const handlePreJoinSubmit = async (values: { username: string }) => {
@@ -58,7 +57,6 @@ export function LiveStreamingRoom({
 
       setToken(data.token);
       setLivekitUrl(data.livekitUrl);
-      setSessionId(data.sessionId);
 
       onStreamStarted?.(data.sessionId);
     } catch (err) {

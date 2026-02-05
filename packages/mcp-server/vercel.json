@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/http-server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/http-server.js"
+    }
+  ],
+  "env": {
+    "MCP_TRANSPORT": "http",
+    "NODE_ENV": "production"
+  },
+  "envVars": {
+    "LTCG_API_KEY": {
+      "description": "API key for LunchTable-TCG backend (required)",
+      "type": "string"
+    },
+    "LTCG_API_URL": {
+      "description": "Base URL for LunchTable-TCG API",
+      "type": "string",
+      "default": "https://lunchtable.cards"
+    },
+    "MCP_API_KEY": {
+      "description": "Optional API key for authenticating MCP clients",
+      "type": "string"
+    },
+    "ALLOWED_ORIGINS": {
+      "description": "Comma-separated list of allowed CORS origins",
+      "type": "string",
+      "default": "*"
+    }
+  }
+}

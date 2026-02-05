@@ -1,0 +1,41 @@
+# Source files (only dist/ is shipped)
+src/
+tsconfig.json
+
+# Development and testing
+node_modules/
+*.test.ts
+*.spec.ts
+tests/
+examples/
+
+# Build and tooling files
+.DS_Store
+.env
+.env.local
+.env.*.local
+.git
+.gitignore
+.dockerignore
+.vercelignore
+Dockerfile
+vercel.json
+railway.json
+
+# Documentation (included in dist)
+EXAMPLE_USAGE.md
+IMPLEMENTATION_SUMMARY.md
+PROMPTS.md
+QUICKSTART.md
+
+# IDE and system files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/

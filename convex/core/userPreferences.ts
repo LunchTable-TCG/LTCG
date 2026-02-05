@@ -41,6 +41,9 @@ const DEFAULT_PREFERENCES = {
     allowFriendRequests: true,
     showMatchHistory: true,
   },
+  streaming: {
+    streamerModeEnabled: false,
+  },
 };
 
 // Validators
@@ -77,6 +80,10 @@ const privacyValidator = v.object({
   showMatchHistory: v.boolean(),
 });
 
+const streamingValidator = v.object({
+  streamerModeEnabled: v.boolean(),
+});
+
 /**
  * Get user preferences
  * Returns default preferences if none exist yet
@@ -88,6 +95,7 @@ export const getPreferences = query({
     display: displayValidator,
     game: gameValidator,
     privacy: privacyValidator,
+    streaming: streamingValidator,
   }),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
@@ -104,6 +112,7 @@ export const getPreferences = query({
         display: existing.display,
         game: existing.game,
         privacy: existing.privacy,
+        streaming: existing.streaming ?? DEFAULT_PREFERENCES.streaming,
       };
     }
 
@@ -122,6 +131,7 @@ export const updatePreferences = mutation({
     display: v.optional(displayValidator),
     game: v.optional(gameValidator),
     privacy: v.optional(privacyValidator),
+    streaming: v.optional(streamingValidator),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -140,6 +150,7 @@ export const updatePreferences = mutation({
         display: args.display ?? existing.display,
         game: args.game ?? existing.game,
         privacy: args.privacy ?? existing.privacy,
+        streaming: args.streaming ?? existing.streaming ?? DEFAULT_PREFERENCES.streaming,
         updatedAt: Date.now(),
       });
     } else {
@@ -150,6 +161,7 @@ export const updatePreferences = mutation({
         display: args.display ?? DEFAULT_PREFERENCES.display,
         game: args.game ?? DEFAULT_PREFERENCES.game,
         privacy: args.privacy ?? DEFAULT_PREFERENCES.privacy,
+        streaming: args.streaming ?? DEFAULT_PREFERENCES.streaming,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });

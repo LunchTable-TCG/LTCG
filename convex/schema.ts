@@ -305,6 +305,11 @@ export default defineSchema({
       allowFriendRequests: v.boolean(),
       showMatchHistory: v.boolean(),
     }),
+    streaming: v.optional(
+      v.object({
+        streamerModeEnabled: v.boolean(),
+      })
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),

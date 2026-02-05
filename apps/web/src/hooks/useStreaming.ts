@@ -33,6 +33,12 @@ interface StreamSession {
   peakViewerCount?: number;
   startedAt?: number;
   endedAt?: number;
+  createdAt: number;
+  stats?: {
+    duration: number;
+    decisionsLogged: number;
+    eventsRecorded: number;
+  };
 }
 
 export function useStreaming() {

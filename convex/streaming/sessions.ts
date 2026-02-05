@@ -247,6 +247,21 @@ export const getUserSessions = query({
 });
 
 /**
+ * Get all streaming sessions (admin only)
+ */
+export const getAllSessions = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("streamingSessions")
+      .order("desc")
+      .take(args.limit || 100);
+  },
+});
+
+/**
  * Alias for getActiveSessions (for backward compatibility)
  */
 export const getActiveStreams = getActiveSessions;

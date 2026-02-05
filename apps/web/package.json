@@ -12,6 +12,7 @@
     "@elizaos/core": "^1.7.2",
     "@elizaos/plugin-openrouter": "^1.5.17",
     "@livekit/components-react": "^2.9.19",
+    "@livekit/components-styles": "^1.2.0",
     "@ltcg/core": "workspace:*",
     "@privy-io/react-auth": "^3.12.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",

@@ -26,6 +26,7 @@ import {
   Shield,
   Trash2,
   User,
+  Video,
   Volume2,
   VolumeX,
   Wallet,
@@ -34,7 +35,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-type SettingsTab = "account" | "wallet" | "notifications" | "display" | "game" | "privacy";
+type SettingsTab = "account" | "wallet" | "notifications" | "display" | "game" | "privacy" | "streaming";
 
 interface ToggleProps {
   enabled: boolean;
@@ -149,6 +150,11 @@ export default function SettingsPage() {
     showMatchHistory: true,
   });
 
+  // Streaming settings
+  const [streaming, setStreaming] = useState({
+    streamerModeEnabled: false,
+  });
+
   // Track if settings have been modified (dirty state)
   const [isDirty, setIsDirty] = useState(false);
 
@@ -159,6 +165,7 @@ export default function SettingsPage() {
       setDisplay(preferences.display as typeof display);
       setGame(preferences.game as typeof game);
       setPrivacy(preferences.privacy as typeof privacy);
+      setStreaming(preferences.streaming as typeof streaming);
     }
   }, [preferences]);
 
@@ -170,6 +177,7 @@ export default function SettingsPage() {
       JSON.stringify(display) !== JSON.stringify(preferences.display) ||
       JSON.stringify(game) !== JSON.stringify(preferences.game) ||
       JSON.stringify(privacy) !== JSON.stringify(preferences.privacy) ||
+      JSON.stringify(streaming) !== JSON.stringify(preferences.streaming) ||
       username !== (currentUser?.username || "") ||
       bio !== (currentUser?.bio || "");
     setIsDirty(hasChanges);
@@ -178,6 +186,7 @@ export default function SettingsPage() {
     display,
     game,
     privacy,
+    streaming,
     username,
     bio,
     preferences,
@@ -231,6 +240,7 @@ export default function SettingsPage() {
         display,
         game,
         privacy,
+        streaming,
       });
 
       setSaveSuccess(true);
@@ -295,6 +305,7 @@ export default function SettingsPage() {
     { id: "display", label: "Display", icon: Palette },
     { id: "game", label: "Game", icon: Gamepad2 },
     { id: "privacy", label: "Privacy", icon: Shield },
+    { id: "streaming", label: "Streaming", icon: Video },
   ];
 
   if (!isAuthenticated || !currentUser || preferences === undefined) {
@@ -1026,6 +1037,66 @@ export default function SettingsPage() {
                         }
                       />
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Streaming Settings */}
+              {activeTab === "streaming" && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-[#e8e0d5] mb-4">Streaming Settings</h2>
+                    <p className="text-[#a89f94] text-sm mb-6">
+                      Configure streaming features and live broadcast options
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 rounded-lg bg-black/20 border border-[#3d2b1f]">
+                      <div className="flex items-center gap-3">
+                        <Video className="w-5 h-5 text-[#d4af37]" />
+                        <div>
+                          <p className="font-medium text-[#e8e0d5]">Enable Streamer Mode</p>
+                          <p className="text-sm text-[#a89f94]">
+                            Show streaming options and &quot;Go Live&quot; button in navigation
+                          </p>
+                        </div>
+                      </div>
+                      <Toggle
+                        enabled={streaming.streamerModeEnabled}
+                        onChange={(enabled) =>
+                          setStreaming({ ...streaming, streamerModeEnabled: enabled })
+                        }
+                      />
+                    </div>
+
+                    {streaming.streamerModeEnabled && (
+                      <div className="p-4 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30">
+                        <p className="text-sm text-[#e8e0d5] font-medium mb-2">
+                          ✨ Streamer Mode Active
+                        </p>
+                        <p className="text-sm text-[#a89f94] mb-3">
+                          You now have access to streaming features:
+                        </p>
+                        <ul className="text-sm text-[#a89f94] space-y-1 list-disc list-inside ml-2">
+                          <li>&quot;Go Live&quot; button in main navigation</li>
+                          <li>Stream to Twitch or YouTube</li>
+                          <li>Screen sharing with webcam overlay</li>
+                          <li>Customizable stream layouts</li>
+                          <li>AI agent auto-streaming capabilities</li>
+                        </ul>
+                      </div>
+                    )}
+
+                    {!streaming.streamerModeEnabled && (
+                      <div className="p-4 rounded-lg bg-black/20 border border-[#3d2b1f]">
+                        <p className="text-sm text-[#a89f94]">
+                          Enable Streamer Mode to unlock live streaming features. Stream your
+                          gameplay directly to Twitch or YouTube with screen sharing, webcam
+                          support, and customizable overlays.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Monitor, Camera, Mic, MicOff, VideoOff } from "lucide-react";
+import { Monitor, Camera, Mic, MicOff } from "lucide-react";
 
 export interface CapturedMedia {
   screenStream: MediaStream | null;
