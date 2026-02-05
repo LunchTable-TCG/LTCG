@@ -12,9 +12,9 @@ import { initializeGameStateHelper } from "../gameplay/games/lifecycle";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { DIFFICULTY_UNLOCK_LEVELS } from "../lib/storyConstants";
+import { checkRetryLimit, formatTimeUntilReset } from "../lib/storyHelpers";
 import { getPlayerXP } from "../lib/xpHelpers";
 import { STORY_CHAPTERS } from "../seeds/storyChapters";
-import { checkRetryLimit, formatTimeUntilReset } from "../lib/storyHelpers";
 
 // Difficulty type for story mode unlock gates
 type StoryDifficulty = "normal" | "hard" | "legendary";
@@ -410,9 +410,7 @@ export const initializeStoryBattle = mutation({
     const stageNumber = args.stageNumber || 1;
     const stage = await ctx.db
       .query("storyStages")
-      .withIndex("by_chapter", (q) =>
-        q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber)
-      )
+      .withIndex("by_chapter", (q) => q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber))
       .first();
 
     if (!stage) {

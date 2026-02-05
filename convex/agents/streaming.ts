@@ -5,8 +5,8 @@
  */
 
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "../_generated/server";
 import { internal } from "../_generated/api";
+import { internalMutation, mutation, query } from "../_generated/server";
 
 /**
  * Configure streaming settings for an agent
@@ -87,16 +87,12 @@ export const autoStartAgentStream = internalMutation({
 
     // Trigger streaming via HTTP endpoint
     // This is done via scheduler to avoid blocking the game start
-    await ctx.scheduler.runAfter(
-      0,
-      internal.agents.streaming.triggerAgentStreamStart,
-      {
-        agentId: args.agentId,
-        lobbyId: args.lobbyId,
-        platform: agent.streamingPlatform,
-        streamKeyHash: agent.streamingKeyHash,
-      }
-    );
+    await ctx.scheduler.runAfter(0, internal.agents.streaming.triggerAgentStreamStart, {
+      agentId: args.agentId,
+      lobbyId: args.lobbyId,
+      platform: agent.streamingPlatform,
+      streamKeyHash: agent.streamingKeyHash,
+    });
 
     return { started: true };
   },
@@ -138,9 +134,7 @@ export const autoStopAgentStream = internalMutation({
     // Find active streaming session for this agent and lobby
     const session = await ctx.db
       .query("streamingSessions")
-      .withIndex("by_agent_status", (q) =>
-        q.eq("agentId", args.agentId).eq("status", "live")
-      )
+      .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId).eq("status", "live"))
       .filter((q) => q.eq(q.field("currentLobbyId"), args.lobbyId))
       .first();
 
@@ -149,13 +143,9 @@ export const autoStopAgentStream = internalMutation({
     }
 
     // Trigger stop via scheduler
-    await ctx.scheduler.runAfter(
-      0,
-      internal.agents.streaming.triggerAgentStreamStop,
-      {
-        sessionId: session._id,
-      }
-    );
+    await ctx.scheduler.runAfter(0, internal.agents.streaming.triggerAgentStreamStop, {
+      sessionId: session._id,
+    });
 
     return { stopped: true };
   },

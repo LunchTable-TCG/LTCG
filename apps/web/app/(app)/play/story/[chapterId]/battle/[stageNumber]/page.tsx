@@ -150,7 +150,10 @@ export default function BattlePage({ params }: BattlePageProps) {
             setInitError(
               "You need to select an active deck before starting a battle. Go to Collection → Decks and select a deck."
             );
-          } else if (errorCode === "AUTH_1001" || errorMessage.includes("Authentication required")) {
+          } else if (
+            errorCode === "AUTH_1001" ||
+            errorMessage.includes("Authentication required")
+          ) {
             setInitError("Please sign in to play story mode.");
           } else {
             setInitError(errorMessage);

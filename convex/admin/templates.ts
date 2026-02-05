@@ -65,7 +65,7 @@ export const listTemplates = query({
     cardType: v.optional(cardTypeValidator),
     activeOnly: v.optional(v.boolean()),
   },
-returns: v.array(v.any()), // Use v.any() to avoid validation errors when schema fields change
+  returns: v.array(v.any()), // Use v.any() to avoid validation errors when schema fields change
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "admin");

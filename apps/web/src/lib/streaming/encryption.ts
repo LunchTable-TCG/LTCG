@@ -38,11 +38,7 @@ export function decryptStreamKey(encryptedKey: string): string {
   }
 
   const key = Buffer.from(encryptionKey, "hex");
-  const decipher = createDecipheriv(
-    ALGORITHM,
-    key,
-    Buffer.from(ivHex, "hex")
-  );
+  const decipher = createDecipheriv(ALGORITHM, key, Buffer.from(ivHex, "hex"));
   decipher.setAuthTag(Buffer.from(authTagHex, "hex"));
 
   let decrypted = decipher.update(encrypted, "hex", "utf8");
@@ -68,9 +64,7 @@ export function buildRtmpUrl(
       if (!customRtmpUrl) {
         throw new Error("Custom RTMP URL required for custom platform");
       }
-      return customRtmpUrl.includes(streamKey)
-        ? customRtmpUrl
-        : `${customRtmpUrl}/${streamKey}`;
+      return customRtmpUrl.includes(streamKey) ? customRtmpUrl : `${customRtmpUrl}/${streamKey}`;
     default:
       throw new Error(`Unsupported platform: ${platform}`);
   }

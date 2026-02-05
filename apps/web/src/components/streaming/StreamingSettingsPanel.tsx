@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { useQuery } from "convex/react";
+import { useState } from "react";
 
 interface StreamingSettingsPanelProps {
   userId: string;
@@ -82,9 +82,7 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
   return (
     <div className="streaming-settings">
       <h2>Stream Your Gameplay</h2>
-      <p className="subtitle">
-        Broadcast your LTCG matches live to Twitch or YouTube
-      </p>
+      <p className="subtitle">Broadcast your LTCG matches live to Twitch or YouTube</p>
 
       {error && (
         <div className="error-message">
@@ -149,7 +147,7 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
                   <a
                     href="https://dashboard.twitch.tv/settings/stream"
                     target="_blank"
-                    rel="noopener"
+                    rel="noreferrer noopener"
                   >
                     Twitch Dashboard
                   </a>
@@ -157,11 +155,7 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
               ) : (
                 <>
                   Get your stream key from{" "}
-                  <a
-                    href="https://studio.youtube.com/"
-                    target="_blank"
-                    rel="noopener"
-                  >
+                  <a href="https://studio.youtube.com/" target="_blank" rel="noreferrer noopener">
                     YouTube Studio
                   </a>
                 </>
@@ -169,11 +163,7 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
             </p>
           </div>
 
-          <button
-            onClick={startStream}
-            disabled={!streamKey || isStreaming}
-            className="btn-start"
-          >
+          <button onClick={startStream} disabled={!streamKey || isStreaming} className="btn-start">
             {isStreaming ? "Starting..." : "Go Live"}
           </button>
         </div>
@@ -185,16 +175,12 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
           <ul>
             {sessions.slice(0, 5).map((session) => (
               <li key={session._id}>
-                <span className="platform-icon">
-                  {session.platform === "twitch" ? "🟣" : "🔴"}
-                </span>
+                <span className="platform-icon">{session.platform === "twitch" ? "🟣" : "🔴"}</span>
                 <span className="session-info">
                   {new Date(session.createdAt).toLocaleDateString()}
                   {session.stats && ` • ${formatDuration(session.stats.duration)}`}
                 </span>
-                <span className={`status-badge status-${session.status}`}>
-                  {session.status}
-                </span>
+                <span className={`status-badge status-${session.status}`}>{session.status}</span>
               </li>
             ))}
           </ul>

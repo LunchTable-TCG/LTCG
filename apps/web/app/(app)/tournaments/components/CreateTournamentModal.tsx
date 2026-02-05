@@ -8,17 +8,7 @@ import {
 } from "@/hooks/social/useUserTournaments";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
-import {
-  AlertTriangle,
-  Coins,
-  Copy,
-  Eye,
-  EyeOff,
-  Loader2,
-  Trophy,
-  Users,
-  X,
-} from "lucide-react";
+import { AlertTriangle, Coins, Copy, Eye, EyeOff, Loader2, Trophy, Users, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
@@ -239,7 +229,10 @@ export function CreateTournamentModal({
         <div className="p-5 space-y-5">
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+            <label
+              htmlFor="name"
+              className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+            >
               Tournament Name *
             </label>
             <input
@@ -256,7 +249,10 @@ export function CreateTournamentModal({
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+            <label
+              htmlFor="description"
+              className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+            >
               Description (optional)
             </label>
             <textarea
@@ -274,7 +270,10 @@ export function CreateTournamentModal({
           <div className="grid grid-cols-2 gap-4">
             {/* Size */}
             <div>
-              <label htmlFor="size" className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+              <label
+                htmlFor="size"
+                className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+              >
                 <Users className="w-3 h-3 inline mr-1" />
                 Tournament Size
               </label>
@@ -299,7 +298,10 @@ export function CreateTournamentModal({
 
             {/* Visibility */}
             <div>
-              <label htmlFor="visibility" className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+              <label
+                htmlFor="visibility"
+                className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+              >
                 Visibility
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -340,7 +342,10 @@ export function CreateTournamentModal({
 
           {/* Mode */}
           <div>
-            <label htmlFor="mode" className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+            <label
+              htmlFor="mode"
+              className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+            >
               <Trophy className="w-3 h-3 inline mr-1" />
               Game Mode
             </label>
@@ -374,7 +379,10 @@ export function CreateTournamentModal({
 
           {/* Buy-in */}
           <div>
-            <label htmlFor="buyIn" className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+            <label
+              htmlFor="buyIn"
+              className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+            >
               <Coins className="w-3 h-3 inline mr-1" />
               Entry Fee (Gold)
             </label>
@@ -454,7 +462,8 @@ export function CreateTournamentModal({
           {insufficientGold && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
               <p className="text-sm text-red-400">
-                You need {(buyIn - userGoldBalance).toLocaleString()} more gold to create this tournament.
+                You need {(buyIn - userGoldBalance).toLocaleString()} more gold to create this
+                tournament.
               </p>
             </div>
           )}

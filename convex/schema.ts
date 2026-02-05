@@ -3639,4 +3639,16 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_agent", ["agentId"])
     .index("by_user_platform", ["userId", "platform"]),
+
+  webhooks: defineTable({
+    agentId: v.id("agents"),
+    events: v.array(v.string()),
+    url: v.string(),
+    secret: v.optional(v.string()),
+    isActive: v.boolean(),
+    lastTriggered: v.optional(v.number()),
+    failureCount: v.number(),
+  })
+    .index("by_agent", ["agentId"])
+    .index("by_active", ["isActive"]),
 });

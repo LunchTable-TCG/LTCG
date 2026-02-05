@@ -1,6 +1,6 @@
+import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { literals } from "convex-helpers/validators";
 
 // Overlay config validator (reused across functions)
 const overlayConfigValidator = v.object({
@@ -37,9 +37,7 @@ export const createSession = mutation({
       args.streamType === "user"
         ? ctx.db
             .query("streamingSessions")
-            .withIndex("by_user_status", (q) =>
-              q.eq("userId", args.userId!).eq("status", "live")
-            )
+            .withIndex("by_user_status", (q) => q.eq("userId", args.userId!).eq("status", "live"))
         : ctx.db
             .query("streamingSessions")
             .withIndex("by_agent_status", (q) =>
@@ -74,9 +72,7 @@ export const updateSession = mutation({
   args: {
     sessionId: v.id("streamingSessions"),
     updates: v.object({
-      status: v.optional(
-        literals("initializing", "pending", "live", "ended", "error")
-      ),
+      status: v.optional(literals("initializing", "pending", "live", "ended", "error")),
       egressId: v.optional(v.string()),
       overlayUrl: v.optional(v.string()),
       currentLobbyId: v.optional(v.id("gameLobbies")),
@@ -249,6 +245,11 @@ export const getUserSessions = query({
       .take(args.limit || 10);
   },
 });
+
+/**
+ * Alias for getActiveSessions (for backward compatibility)
+ */
+export const getActiveStreams = getActiveSessions;
 
 /**
  * Link a game lobby to an active streaming session

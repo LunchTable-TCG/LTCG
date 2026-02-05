@@ -27,7 +27,8 @@ export function JoinByCodeModal({
   const { joinByCode, isJoining } = useJoinUserTournament();
 
   const insufficientGold = tournament ? tournament.entryFee > userGoldBalance : false;
-  const canJoin = isValid && tournament && tournament.status === "registration" && !insufficientGold;
+  const canJoin =
+    isValid && tournament && tournament.status === "registration" && !insufficientGold;
 
   const resetForm = useCallback(() => {
     setCode("");
@@ -48,7 +49,10 @@ export function JoinByCodeModal({
 
   const handleCodeChange = (value: string) => {
     // Allow only alphanumeric, convert to uppercase, max 6 characters
-    const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    const cleaned = value
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 6);
     setCode(cleaned);
     setError(null);
   };
@@ -113,7 +117,10 @@ export function JoinByCodeModal({
         <div className="p-5 space-y-4">
           {/* Code Input */}
           <div>
-            <label htmlFor="code" className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+            <label
+              htmlFor="code"
+              className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+            >
               Tournament Code
             </label>
             <input
@@ -131,9 +138,7 @@ export function JoinByCodeModal({
                 }
               }}
             />
-            <p className="text-xs text-[#6b5d52] mt-1 text-center">
-              {code.length}/6 characters
-            </p>
+            <p className="text-xs text-[#6b5d52] mt-1 text-center">{code.length}/6 characters</p>
           </div>
 
           {/* Loading State */}
@@ -175,8 +180,15 @@ export function JoinByCodeModal({
                     <Coins className="w-3 h-3 text-amber-400" />
                     <span className="text-[10px] text-[#a89f94] uppercase">Entry</span>
                   </div>
-                  <p className={cn("font-bold text-sm", tournament.entryFee > 0 ? "text-amber-400" : "text-green-400")}>
-                    {tournament.entryFee > 0 ? `${tournament.entryFee.toLocaleString()} Gold` : "Free"}
+                  <p
+                    className={cn(
+                      "font-bold text-sm",
+                      tournament.entryFee > 0 ? "text-amber-400" : "text-green-400"
+                    )}
+                  >
+                    {tournament.entryFee > 0
+                      ? `${tournament.entryFee.toLocaleString()} Gold`
+                      : "Free"}
                   </p>
                 </div>
               </div>
@@ -184,7 +196,9 @@ export function JoinByCodeModal({
               {/* Prize Preview */}
               {tournament.entryFee > 0 && (
                 <div className="p-2 rounded bg-[#d4af37]/10 border border-[#d4af37]/20">
-                  <p className="text-[10px] text-[#a89f94] uppercase mb-1">Prize Pool (when full)</p>
+                  <p className="text-[10px] text-[#a89f94] uppercase mb-1">
+                    Prize Pool (when full)
+                  </p>
                   <div className="flex justify-between text-xs">
                     <span>
                       <span className="text-[#a89f94]">1st:</span>{" "}
@@ -235,7 +249,8 @@ export function JoinByCodeModal({
                 <div>
                   <p className="text-sm text-red-400 font-bold">Insufficient Gold</p>
                   <p className="text-xs text-red-400/80 mt-0.5">
-                    You need {(tournament.entryFee - userGoldBalance).toLocaleString()} more gold to join.
+                    You need {(tournament.entryFee - userGoldBalance).toLocaleString()} more gold to
+                    join.
                   </p>
                 </div>
               </div>

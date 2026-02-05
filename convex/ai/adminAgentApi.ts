@@ -32,7 +32,8 @@ async function loadDatabaseApiKeys(ctx: ActionCtx) {
 
   // Set the keys for provider use
   setDatabaseApiKeys({
-    openrouter: typeof openrouterKey === "string" && openrouterKey.length > 0 ? openrouterKey : undefined,
+    openrouter:
+      typeof openrouterKey === "string" && openrouterKey.length > 0 ? openrouterKey : undefined,
     gateway: typeof gatewayKey === "string" && gatewayKey.length > 0 ? gatewayKey : undefined,
   });
 }

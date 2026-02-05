@@ -31,9 +31,7 @@ export async function generateOverlayToken(
 /**
  * Verify and decode an overlay access token
  */
-export async function verifyOverlayToken(
-  token: string
-): Promise<{
+export async function verifyOverlayToken(token: string): Promise<{
   sessionId: string;
   streamType: "user" | "agent";
   entityId: string;

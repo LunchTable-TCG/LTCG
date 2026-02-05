@@ -45,9 +45,7 @@ export function GameBoardSpectator({ gameState }: GameBoardSpectatorProps) {
       {/* Turn indicator */}
       <div className="game-spectator__turn">
         <span className="game-spectator__turn-label">Turn {turnNumber}</span>
-        <span className="game-spectator__phase">
-          {phaseLabels[currentPhase] || currentPhase}
-        </span>
+        <span className="game-spectator__phase">{phaseLabels[currentPhase] || currentPhase}</span>
       </div>
 
       {/* Opponent side */}

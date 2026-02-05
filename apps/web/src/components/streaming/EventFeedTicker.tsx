@@ -38,18 +38,11 @@ export function EventFeedTicker({ events }: EventFeedTickerProps) {
       <div className="event-ticker__scroll" ref={tickerRef}>
         <div className="event-ticker__content">
           {events.map((event, idx) => (
-            <span
-              key={event.eventId || event._id || idx}
-              className="event-ticker__event"
-            >
+            <span key={event.eventId || event._id || idx} className="event-ticker__event">
               {event.playerUsername && (
-                <span className="event-ticker__player">
-                  {event.playerUsername}
-                </span>
+                <span className="event-ticker__player">{event.playerUsername}</span>
               )}
-              <span className="event-ticker__description">
-                {event.description}
-              </span>
+              <span className="event-ticker__description">{event.description}</span>
             </span>
           ))}
         </div>

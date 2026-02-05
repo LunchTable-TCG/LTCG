@@ -1,25 +1,25 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Sparkles,
-  Bug,
-  Camera,
-  Video,
-  Coins,
-  Users,
-  Gamepad2,
-  Globe,
-  Rocket,
-  ChevronRight,
-  Crown,
-  Swords,
-  Trophy,
-  Star,
-  Layers,
   Award,
   Bot,
+  Bug,
+  Camera,
+  ChevronRight,
+  Coins,
+  Crown,
+  Gamepad2,
+  Globe,
+  Layers,
+  Rocket,
+  Sparkles,
+  Star,
+  Swords,
+  Trophy,
+  Users,
+  Video,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -46,19 +46,19 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
           </motion.div>
 
           <div className="space-y-3">
-            <h2 className="text-3xl font-bold text-[#d4af37]">
-              Welcome, Pioneer
-            </h2>
+            <h2 className="text-3xl font-bold text-[#d4af37]">Welcome, Pioneer</h2>
             <p className="text-[#c4b5a0] text-lg leading-relaxed max-w-md mx-auto">
-              You've joined LunchTable in its <span className="text-[#d4af37] font-semibold">Early Alpha</span> —
-              a rare honor reserved for those who shape the future.
+              You've joined LunchTable in its{" "}
+              <span className="text-[#d4af37] font-semibold">Early Alpha</span> — a rare honor
+              reserved for those who shape the future.
             </p>
           </div>
 
           <div className="bg-[#2a1f14]/50 rounded-xl p-4 border border-[#3d2b1f]">
             <p className="text-[#a89f94] text-sm leading-relaxed">
-              As an early adopter, you're not just playing a game — you're helping build it.
-              Things may break, features will evolve, and your feedback directly influences what comes next.
+              As an early adopter, you're not just playing a game — you're helping build it. Things
+              may break, features will evolve, and your feedback directly influences what comes
+              next.
               <span className="block mt-2 text-[#d4af37] font-semibold">
                 This is your table. Help us set it.
               </span>
@@ -83,9 +83,7 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
           </motion.div>
 
           <div className="space-y-3">
-            <h2 className="text-3xl font-bold text-[#d4af37]">
-              Your Voice Matters
-            </h2>
+            <h2 className="text-3xl font-bold text-[#d4af37]">Your Voice Matters</h2>
             <p className="text-[#c4b5a0] text-lg leading-relaxed max-w-md mx-auto">
               Found a bug? Have an idea? We've built a powerful feedback tool just for you.
             </p>
@@ -93,7 +91,9 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
 
           <div className="bg-[#2a1f14]/50 rounded-xl p-5 border border-[#3d2b1f] space-y-4">
             <p className="text-[#a89f94] text-sm">
-              Look for the <span className="text-purple-400 font-semibold">floating feedback button</span> in the corner of your screen.
+              Look for the{" "}
+              <span className="text-purple-400 font-semibold">floating feedback button</span> in the
+              corner of your screen.
             </p>
 
             <div className="grid grid-cols-2 gap-3 text-left">
@@ -157,9 +157,7 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
           </motion.div>
 
           <div className="space-y-3">
-            <h2 className="text-3xl font-bold text-[#d4af37]">
-              The $LUNCH Token
-            </h2>
+            <h2 className="text-3xl font-bold text-[#d4af37]">The $LUNCH Token</h2>
             <p className="text-[#c4b5a0] text-lg leading-relaxed max-w-md mx-auto">
               More than currency — it's your stake in the LunchTable universe.
             </p>
@@ -205,8 +203,12 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
                   <Star className="w-5 h-5 text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-[#c4b5a0] text-sm font-semibold">Battle Pass & Premium — <span className="text-purple-400">$4.20/mo</span></p>
-                  <p className="text-[#8b7355] text-xs">Exclusive cosmetics, rewards & early access</p>
+                  <p className="text-[#c4b5a0] text-sm font-semibold">
+                    Battle Pass & Premium — <span className="text-purple-400">$4.20/mo</span>
+                  </p>
+                  <p className="text-[#8b7355] text-xs">
+                    Exclusive cosmetics, rewards & early access
+                  </p>
                 </div>
               </div>
             </div>
@@ -230,9 +232,7 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
           </motion.div>
 
           <div className="space-y-3">
-            <h2 className="text-3xl font-bold text-[#d4af37]">
-              What's Coming
-            </h2>
+            <h2 className="text-3xl font-bold text-[#d4af37]">What's Coming</h2>
             <p className="text-[#c4b5a0] text-lg leading-relaxed max-w-md mx-auto">
               This is just the beginning. The LunchTable universe is expanding.
             </p>
@@ -249,7 +249,9 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
                 <Layers className="w-8 h-8 text-emerald-400" />
                 <div>
                   <p className="text-[#c4b5a0] font-bold">New Cards Incoming</p>
-                  <p className="text-[#8b7355] text-xs">Fresh cards dropping soon — keep your eyes peeled</p>
+                  <p className="text-[#8b7355] text-xs">
+                    Fresh cards dropping soon — keep your eyes peeled
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -264,7 +266,9 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
                 <Users className="w-8 h-8 text-purple-400" />
                 <div>
                   <p className="text-[#c4b5a0] font-bold">Agent Betting</p>
-                  <p className="text-[#8b7355] text-xs">Stake $LUNCH on AI agents battling for glory</p>
+                  <p className="text-[#8b7355] text-xs">
+                    Stake $LUNCH on AI agents battling for glory
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -279,7 +283,9 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
                 <Award className="w-8 h-8 text-amber-400" />
                 <div>
                   <p className="text-[#c4b5a0] font-bold">Battle Pass Seasons</p>
-                  <p className="text-[#8b7355] text-xs">Seasonal rewards, exclusive unlocks & progression</p>
+                  <p className="text-[#8b7355] text-xs">
+                    Seasonal rewards, exclusive unlocks & progression
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -294,7 +300,9 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
                 <Bot className="w-8 h-8 text-rose-400" />
                 <div>
                   <p className="text-[#c4b5a0] font-bold">More Agents</p>
-                  <p className="text-[#8b7355] text-xs">A massive roster of AI opponents with unique strategies</p>
+                  <p className="text-[#8b7355] text-xs">
+                    A massive roster of AI opponents with unique strategies
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -309,7 +317,9 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
                 <Globe className="w-8 h-8 text-cyan-400" />
                 <div>
                   <p className="text-[#c4b5a0] font-bold">Table Top Mode</p>
-                  <p className="text-[#8b7355] text-xs">An immersive 3D world experience like no other</p>
+                  <p className="text-[#8b7355] text-xs">
+                    An immersive 3D world experience like no other
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -333,9 +343,7 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
           </motion.div>
 
           <div className="space-y-3">
-            <h2 className="text-3xl font-bold text-[#d4af37]">
-              Your Seat Awaits
-            </h2>
+            <h2 className="text-3xl font-bold text-[#d4af37]">Your Seat Awaits</h2>
             <p className="text-[#c4b5a0] text-lg leading-relaxed max-w-md mx-auto">
               The cards are shuffled. The table is set.
               <span className="block mt-2 text-[#d4af37] font-semibold text-xl">
@@ -346,8 +354,7 @@ export function WelcomePopup({ onComplete }: WelcomePopupProps) {
 
           <div className="bg-gradient-to-r from-[#d4af37]/20 via-[#d4af37]/10 to-[#d4af37]/20 rounded-xl p-4 border border-[#d4af37]/30">
             <p className="text-[#c4b5a0] text-sm italic">
-              "Every legend starts with a single card drawn.
-              Today, you draw yours."
+              "Every legend starts with a single card drawn. Today, you draw yours."
             </p>
           </div>
         </div>

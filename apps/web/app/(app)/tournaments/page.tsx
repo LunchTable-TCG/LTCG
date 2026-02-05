@@ -122,7 +122,11 @@ export default function TournamentsPage() {
                   ? "bg-linear-to-r from-[#d4af37] to-amber-500 hover:from-amber-500 hover:to-[#d4af37] text-[#1a1614] shadow-lg"
                   : "bg-[#3d2b1f] text-[#6b5d52] cursor-not-allowed"
               )}
-              title={canCreateTournament ? "Create a tournament" : "You already have an active tournament"}
+              title={
+                canCreateTournament
+                  ? "Create a tournament"
+                  : "You already have an active tournament"
+              }
             >
               <Plus className="w-4 h-4" />
               Create Tournament
@@ -139,7 +143,9 @@ export default function TournamentsPage() {
                   <Trophy className="w-5 h-5 text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-purple-400 uppercase tracking-wider">Your Tournament</p>
+                  <p className="text-xs text-purple-400 uppercase tracking-wider">
+                    Your Tournament
+                  </p>
                   <p className="font-bold text-[#e8e0d5]">{myHostedTournament.name}</p>
                 </div>
               </div>

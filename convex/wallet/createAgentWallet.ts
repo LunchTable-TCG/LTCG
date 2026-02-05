@@ -28,14 +28,6 @@ import { PrivyClient } from "@privy-io/node";
 // Types are defined inline to avoid module resolution issues with @privy-io/node in Convex
 // When Privy updates their SDK, these may need adjustment
 
-/** Linked account type for custom JWT auth */
-interface LinkedAccountCustomJwtInput {
-  type: "custom_auth";
-  custom_user_id: string;
-}
-
-/** Privy wallet chain types */
-type WalletChainType = "ethereum" | "solana";
 import { v } from "convex/values";
 import { internalAction } from "../_generated/server";
 
@@ -53,19 +45,6 @@ interface WalletCreationResult {
   walletIndex?: number;
   walletId?: string;
   privyUserId?: string;
-}
-
-// Type for pregenerate wallets request body parameters
-interface PregenerateWalletConfig {
-  chain_type: WalletChainType;
-}
-
-// Type for user creation request body parameters
-interface CreateUserConfig {
-  linked_accounts: LinkedAccountCustomJwtInput[];
-  wallets: Array<{
-    chain_type: WalletChainType;
-  }>;
 }
 
 /**
@@ -105,12 +84,13 @@ export const createWalletForUserAgent = internalAction({
 
       // Create an additional HD wallet for the agent
       // Privy assigns the next available index automatically
-      const pregenerateConfig: PregenerateWalletConfig = {
-        chain_type: "solana",
-      };
-
+      // NOTE: Do NOT include wallet_index - Privy auto-assigns it
       const updatedUser = await privy.users().pregenerateWallets(args.privyUserId, {
-        wallets: [pregenerateConfig],
+        wallets: [
+          {
+            chain_type: "solana" as const,
+          },
+        ],
       });
 
       // Find the newly created wallet
@@ -191,22 +171,21 @@ export const createSolanaWallet = internalAction({
 
       // Create a Privy user for the agent with a pregenerated HD embedded wallet
       // This is NON-CUSTODIAL - keys are sharded and we never have access
-      // HD derivation path for Solana: m/44'/501'/0/0' (wallet_index = 0)
-      const customAuthAccount: LinkedAccountCustomJwtInput = {
-        type: "custom_auth",
-        custom_user_id: args.ownerUserId,
-      };
-
-      const walletConfig: PregenerateWalletConfig = {
-        chain_type: "solana",
-      };
-
-      const createUserConfig: CreateUserConfig = {
-        linked_accounts: [customAuthAccount],
-        wallets: [walletConfig],
-      };
-
-      const agentUser = await privy.users().create(createUserConfig);
+      // HD derivation path for Solana: m/44'/501'/0/0' (Privy auto-assigns wallet_index = 0)
+      // NOTE: Do NOT include wallet_index in the request - Privy auto-assigns it
+      const agentUser = await privy.users().create({
+        linked_accounts: [
+          {
+            type: "custom_auth" as const,
+            custom_user_id: args.ownerUserId,
+          },
+        ],
+        wallets: [
+          {
+            chain_type: "solana" as const,
+          },
+        ],
+      });
 
       // Extract the wallet from the created user
       const solanaWallet = agentUser.linked_accounts.find(

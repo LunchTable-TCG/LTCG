@@ -54,17 +54,14 @@ export async function startWebEgress(params: {
     },
   };
 
-  const response = await fetch(
-    `${getApiUrl()}/twirp/livekit.Egress/StartWebEgress`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(egressRequest),
-    }
-  );
+  const response = await fetch(`${getApiUrl()}/twirp/livekit.Egress/StartWebEgress`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(egressRequest),
+  });
 
   if (!response.ok) {
     const error = await response.text();
@@ -81,17 +78,14 @@ export async function startWebEgress(params: {
 export async function stopWebEgress(egressId: string): Promise<void> {
   const token = await generateEgressToken();
 
-  const response = await fetch(
-    `${getApiUrl()}/twirp/livekit.Egress/StopEgress`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ egress_id: egressId }),
-    }
-  );
+  const response = await fetch(`${getApiUrl()}/twirp/livekit.Egress/StopEgress`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ egress_id: egressId }),
+  });
 
   if (!response.ok) {
     const error = await response.text();
@@ -109,21 +103,18 @@ export async function updateStreamUrls(params: {
 }): Promise<void> {
   const token = await generateEgressToken();
 
-  const response = await fetch(
-    `${getApiUrl()}/twirp/livekit.Egress/UpdateStream`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        egress_id: params.egressId,
-        add_output_urls: params.addUrls,
-        remove_output_urls: params.removeUrls,
-      }),
-    }
-  );
+  const response = await fetch(`${getApiUrl()}/twirp/livekit.Egress/UpdateStream`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      egress_id: params.egressId,
+      add_output_urls: params.addUrls,
+      remove_output_urls: params.removeUrls,
+    }),
+  });
 
   if (!response.ok) {
     const error = await response.text();

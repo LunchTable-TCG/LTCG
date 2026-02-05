@@ -7,17 +7,13 @@ interface StreamerInfoPanelProps {
   platform: string;
 }
 
-export function StreamerInfoPanel({
-  name,
-  avatar,
-  streamType,
-  platform,
-}: StreamerInfoPanelProps) {
-  const platformIcon = {
-    twitch: "🟣",
-    youtube: "🔴",
-    custom: "📡",
-  }[platform] || "📺";
+export function StreamerInfoPanel({ name, avatar, streamType, platform }: StreamerInfoPanelProps) {
+  const platformIcon =
+    {
+      twitch: "🟣",
+      youtube: "🔴",
+      custom: "📡",
+    }[platform] || "📺";
 
   return (
     <div className="streamer-info">

@@ -40,15 +40,11 @@ export function DecisionPanel({ decisions, agentName }: DecisionPanelProps) {
                 style={{ animationDelay: `${idx * 0.1}s` }}
               >
                 {decision.turnNumber && (
-                  <div className="decision-panel__turn">
-                    Turn {decision.turnNumber}
-                  </div>
+                  <div className="decision-panel__turn">Turn {decision.turnNumber}</div>
                 )}
                 <div className="decision-panel__action">{decision.action}</div>
                 {decision.reasoning && (
-                  <div className="decision-panel__reasoning">
-                    {decision.reasoning}
-                  </div>
+                  <div className="decision-panel__reasoning">{decision.reasoning}</div>
                 )}
               </li>
             ))}

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { ConvexHttpClient } from "convex/browser";
+import { type NextRequest, NextResponse } from "next/server";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -10,10 +10,7 @@ export async function GET(req: NextRequest) {
     const sessionId = req.nextUrl.searchParams.get("sessionId");
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: "Missing sessionId parameter" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing sessionId parameter" }, { status: 400 });
     }
 
     const session = await convex.query(api.streaming.sessions.getSession, {
@@ -21,10 +18,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // Calculate duration if live

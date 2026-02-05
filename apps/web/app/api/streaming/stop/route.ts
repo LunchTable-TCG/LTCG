@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@convex/_generated/api";
 import { stopWebEgress } from "@/lib/streaming/livekit";
+import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { ConvexHttpClient } from "convex/browser";
+import { type NextRequest, NextResponse } from "next/server";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -11,10 +11,7 @@ export async function POST(req: NextRequest) {
     const { sessionId, reason } = await req.json();
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: "Missing sessionId" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
     }
 
     // Get session to find egress ID
@@ -23,10 +20,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // Stop LiveKit egress if active

@@ -3,14 +3,12 @@
  * Set to false to disable streaming in production
  */
 
-export const STREAMING_ENABLED = process.env.NEXT_PUBLIC_STREAMING_ENABLED === 'true';
+export const STREAMING_ENABLED = process.env.NEXT_PUBLIC_STREAMING_ENABLED === "true";
 
 export function isStreamingAvailable(): boolean {
   // Check if LiveKit is configured
   const hasLiveKit = Boolean(
-    process.env.LIVEKIT_URL &&
-    process.env.LIVEKIT_API_KEY &&
-    process.env.LIVEKIT_API_SECRET
+    process.env.LIVEKIT_URL && process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET
   );
 
   // Check if encryption is configured

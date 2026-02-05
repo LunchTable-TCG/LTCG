@@ -99,7 +99,12 @@ export function UserTournamentCard({
 
         {/* Entry Fee */}
         <div className="flex items-center gap-1.5">
-          <Coins className={cn("w-3.5 h-3.5", tournament.entryFee > 0 ? "text-amber-400" : "text-green-400")} />
+          <Coins
+            className={cn(
+              "w-3.5 h-3.5",
+              tournament.entryFee > 0 ? "text-amber-400" : "text-green-400"
+            )}
+          />
           <span
             className={cn(
               "text-sm font-bold",

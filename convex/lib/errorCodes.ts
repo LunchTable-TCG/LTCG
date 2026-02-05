@@ -422,7 +422,10 @@ export const ErrorMessages: Record<ErrorCode, string> = {
  * @example
  * throw createError(ErrorCode.ECONOMY_INSUFFICIENT_GOLD, { required: 100, available: 50 });
  */
-export function createError(code: ErrorCode, details?: Record<string, unknown>): ConvexError<string> {
+export function createError(
+  code: ErrorCode,
+  details?: Record<string, unknown>
+): ConvexError<string> {
   // Use details.reason if provided, otherwise fall back to static message
   const message = (details?.["reason"] as string) || ErrorMessages[code];
   // Include code in message for easy extraction on client

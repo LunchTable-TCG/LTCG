@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
-import { StreamerInfoPanel } from "@/components/streaming/StreamerInfoPanel";
 import { DecisionPanel } from "@/components/streaming/DecisionPanel";
 import { EventFeedTicker } from "@/components/streaming/EventFeedTicker";
 import { GameBoardSpectator } from "@/components/streaming/GameBoardSpectator";
+import { StreamerInfoPanel } from "@/components/streaming/StreamerInfoPanel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
 // Declare window.startRecording for LiveKit
 declare global {
@@ -38,9 +38,7 @@ function StreamOverlayContent() {
   // Get recent game events
   const events = useQuery(
     api.gameplay.gameEvents.subscribeToGameEvents,
-    session?.currentLobbyId
-      ? { lobbyId: session.currentLobbyId, limit: 10 }
-      : "skip"
+    session?.currentLobbyId ? { lobbyId: session.currentLobbyId, limit: 10 } : "skip"
   );
 
   // Get agent decisions (for agent streams)
@@ -116,18 +114,13 @@ function StreamOverlayContent() {
         {/* Right: Decision panel (agent streams only) */}
         {config.showDecisions && session.agentId && (
           <div className="stream-overlay__sidebar">
-            <DecisionPanel
-              decisions={decisions || []}
-              agentName={session.entityName}
-            />
+            <DecisionPanel decisions={decisions || []} agentName={session.entityName} />
           </div>
         )}
       </div>
 
       {/* Bottom: Event ticker */}
-      {config.showEventFeed && (
-        <EventFeedTicker events={events || []} />
-      )}
+      {config.showEventFeed && <EventFeedTicker events={events || []} />}
 
       <style jsx global>{`
         * {

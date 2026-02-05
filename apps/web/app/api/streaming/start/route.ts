@@ -1,30 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@convex/_generated/api";
-import { encryptStreamKey, buildRtmpUrl } from "@/lib/streaming/encryption";
+import { buildRtmpUrl, encryptStreamKey } from "@/lib/streaming/encryption";
+import { isLiveKitConfigured, startWebEgress } from "@/lib/streaming/livekit";
 import { generateOverlayToken } from "@/lib/streaming/tokens";
-import { startWebEgress, isLiveKitConfigured } from "@/lib/streaming/livekit";
+import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { ConvexHttpClient } from "convex/browser";
+import { type NextRequest, NextResponse } from "next/server";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(req: NextRequest) {
   try {
     // Feature flag check
-    const streamingEnabled = process.env.NEXT_PUBLIC_STREAMING_ENABLED === 'true';
+    const streamingEnabled = process.env.NEXT_PUBLIC_STREAMING_ENABLED === "true";
     if (!streamingEnabled) {
-      return NextResponse.json(
-        { error: "Streaming feature is not enabled" },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: "Streaming feature is not enabled" }, { status: 503 });
     }
 
     // Check if LiveKit is configured
     if (!isLiveKitConfigured()) {
-      return NextResponse.json(
-        { error: "LiveKit is not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "LiveKit is not configured" }, { status: 500 });
     }
 
     const body = await req.json();
@@ -48,17 +42,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (streamType === "user" && !userId) {
-      return NextResponse.json(
-        { error: "userId required for user streams" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "userId required for user streams" }, { status: 400 });
     }
 
     if (streamType === "agent" && !agentId) {
-      return NextResponse.json(
-        { error: "agentId required for agent streams" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "agentId required for agent streams" }, { status: 400 });
     }
 
     // Default overlay config
@@ -132,10 +120,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      return NextResponse.json(
-        { error: errorMessage, sessionId },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: errorMessage, sessionId }, { status: 500 });
     }
   } catch (error) {
     console.error("Error starting stream:", error);

@@ -65,10 +65,7 @@ function calculatePrizeDistribution(buyIn: number, participantCount: number) {
 /**
  * Check if user already has an active hosted tournament
  */
-async function hasActiveHostedTournament(
-  ctx: MutationCtx,
-  userId: Id<"users">
-): Promise<boolean> {
+async function hasActiveHostedTournament(ctx: MutationCtx, userId: Id<"users">): Promise<boolean> {
   const activeTournament = await ctx.db
     .query("tournaments")
     .withIndex("by_creator", (q) => q.eq("createdBy", userId).eq("status", "registration"))
@@ -114,7 +111,10 @@ export const createUserTournament = mutation({
     }
 
     // Validate buy-in
-    if (args.buyIn < USER_TOURNAMENT_LIMITS.MIN_BUY_IN || args.buyIn > USER_TOURNAMENT_LIMITS.MAX_BUY_IN) {
+    if (
+      args.buyIn < USER_TOURNAMENT_LIMITS.MIN_BUY_IN ||
+      args.buyIn > USER_TOURNAMENT_LIMITS.MAX_BUY_IN
+    ) {
       throw createError(ErrorCode.TOURNAMENT_INVALID_BUY_IN);
     }
 
@@ -203,7 +203,8 @@ export const createUserTournament = mutation({
     }
 
     // Get user's rating for seeding
-    const seedRating = args.mode === "ranked" ? (user.rankedElo ?? 1000) : (user.casualRating ?? 1000);
+    const seedRating =
+      args.mode === "ranked" ? (user.rankedElo ?? 1000) : (user.casualRating ?? 1000);
 
     // Auto-register creator as first participant
     await ctx.db.insert("tournamentParticipants", {
@@ -224,9 +225,10 @@ export const createUserTournament = mutation({
     return {
       tournamentId,
       joinCode,
-      message: args.visibility === "private"
-        ? `Tournament created! Share code: ${joinCode}`
-        : "Tournament created! Waiting for players to join.",
+      message:
+        args.visibility === "private"
+          ? `Tournament created! Share code: ${joinCode}`
+          : "Tournament created! Waiting for players to join.",
     };
   },
 });
@@ -334,7 +336,8 @@ export const joinUserTournament = mutation({
     }
 
     // Get user's rating for seeding
-    const seedRating = tournament.mode === "ranked" ? (user.rankedElo ?? 1000) : (user.casualRating ?? 1000);
+    const seedRating =
+      tournament.mode === "ranked" ? (user.rankedElo ?? 1000) : (user.casualRating ?? 1000);
 
     // Register participant
     await ctx.db.insert("tournamentParticipants", {
@@ -634,9 +637,7 @@ export const getMyHostedTournament = query({
 
     const tournament = await ctx.db
       .query("tournaments")
-      .withIndex("by_creator", (q) =>
-        q.eq("createdBy", auth.userId).eq("status", "registration")
-      )
+      .withIndex("by_creator", (q) => q.eq("createdBy", auth.userId).eq("status", "registration"))
       .first();
 
     if (!tournament || tournament.creatorType !== "user") {
