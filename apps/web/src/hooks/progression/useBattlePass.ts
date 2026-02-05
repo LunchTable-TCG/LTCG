@@ -1,6 +1,6 @@
 "use client";
 
-import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexAction, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError } from "@/lib/errorHandling";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
@@ -36,8 +36,6 @@ interface BattlePassStatus {
   status: "upcoming" | "active" | "ended";
   totalTiers: number;
   xpPerTier: number;
-  premiumPrice: number;
-  tokenPrice?: number;
   startDate: number;
   endDate: number;
   currentXP: number;
@@ -60,26 +58,14 @@ interface ClaimRewardResult {
 }
 
 interface PurchasePremiumResult {
-  success: boolean;
-  message: string;
-  unlockedRewards: number;
+  checkoutUrl: string;
+  sessionId: string;
 }
 
 interface ClaimAllResult {
   success: boolean;
   claimedFree: number;
   claimedPremium: number;
-}
-
-interface PendingPremiumPurchase {
-  _id: string;
-  battlePassId?: string;
-  battlePassName: string;
-  amount: number;
-  status: string;
-  createdAt: number;
-  expiresAt: number;
-  transactionSignature?: string;
 }
 
 interface UseBattlePassReturn {
@@ -102,13 +88,14 @@ interface UseBattlePassReturn {
   claimablePremiumCount: number;
   totalClaimableCount: number;
 
+  // Subscription status
+  hasActiveSubscription: boolean;
+  isSubscriptionLoading: boolean;
+
   // Actions
   claimReward: (tier: number, track: "free" | "premium") => Promise<ClaimRewardResult>;
   claimAllRewards: () => Promise<ClaimAllResult>;
-  purchasePremium: () => Promise<PurchasePremiumResult>;
-
-  // Token purchase (for premium pass)
-  pendingPurchases: PendingPremiumPurchase[];
+  purchasePremium: (planInterval: "month" | "year") => Promise<PurchasePremiumResult>;
 }
 
 /**
@@ -174,15 +161,17 @@ export function useBattlePass(): UseBattlePassReturn {
   const claimAllMutation = useConvexMutation(
     typedApi.progression.battlePass.claimAllAvailableRewards
   ) as (args: Record<string, never>) => Promise<ClaimAllResult>;
-  const purchasePremiumMutation = useConvexMutation(
-    typedApi.progression.battlePass.purchasePremiumPass
-  ) as (args: Record<string, never>) => Promise<PurchasePremiumResult>;
 
-  // Query pending premium purchases
-  const pendingPurchases = useConvexQuery(
-    typedApi.progression.battlePass.getUserPendingPremiumPurchases,
+  // Action for creating Stripe checkout session
+  const createCheckoutSession = useConvexAction(
+    typedApi.stripe.checkout.createCheckoutSession
+  ) as (args: { planInterval: "month" | "year" }) => Promise<PurchasePremiumResult>;
+
+  // Query subscription status
+  const hasSubscription = useConvexQuery(
+    typedApi.stripe.queries.hasActiveSubscription,
     isAuthenticated ? {} : "skip"
-  ) as PendingPremiumPurchase[] | undefined;
+  ) as boolean | undefined;
 
   // Claim individual reward
   const claimReward = async (tier: number, track: "free" | "premium") => {
@@ -224,16 +213,17 @@ export function useBattlePass(): UseBattlePassReturn {
     }
   };
 
-  // Purchase premium pass
-  const purchasePremium = async () => {
+  // Purchase premium pass via Stripe checkout
+  const purchasePremium = async (planInterval: "month" | "year" = "month") => {
     if (!isAuthenticated) throw new Error("Not authenticated");
 
     try {
-      const result = await purchasePremiumMutation({});
-      toast.success(result.message);
+      const result = await createCheckoutSession({ planInterval });
+      // Redirect to Stripe checkout
+      window.location.href = result.checkoutUrl;
       return result;
     } catch (error) {
-      const message = handleHookError(error, "Failed to purchase premium pass");
+      const message = handleHookError(error, "Failed to start checkout");
       toast.error(message);
       throw error;
     }
@@ -271,12 +261,13 @@ export function useBattlePass(): UseBattlePassReturn {
     claimablePremiumCount,
     totalClaimableCount,
 
+    // Subscription status
+    hasActiveSubscription: hasSubscription ?? false,
+    isSubscriptionLoading: hasSubscription === undefined,
+
     // Actions
     claimReward,
     claimAllRewards,
     purchasePremium,
-
-    // Token purchase
-    pendingPurchases: pendingPurchases ?? [],
   };
 }

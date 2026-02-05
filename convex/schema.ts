@@ -2232,6 +2232,146 @@ export default defineSchema({
     .index("by_user_created", ["userId", "createdAt"]),
 
   // ============================================================================
+  // GUILDS SYSTEM
+  // ============================================================================
+
+  // Guilds - Player-created communities
+  guilds: defineTable({
+    // Basic Info
+    name: v.string(), // Unique guild name (3-32 chars)
+    description: v.optional(v.string()), // Guild description (max 500 chars)
+
+    // Media (Convex file storage IDs)
+    profileImageId: v.optional(v.id("_storage")), // Profile image (square, max 2MB)
+    bannerImageId: v.optional(v.id("_storage")), // Banner image (wide, max 5MB)
+
+    // Settings
+    visibility: v.union(v.literal("public"), v.literal("private")),
+
+    // Ownership
+    ownerId: v.id("users"), // Guild owner (has full control)
+
+    // Stats (denormalized for efficient queries)
+    memberCount: v.number(), // Current member count (max 50)
+
+    // Timestamps
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_name", ["name"])
+    .index("by_owner", ["ownerId"])
+    .index("by_visibility", ["visibility"])
+    .index("by_member_count", ["memberCount"])
+    .index("by_created", ["createdAt"])
+    .searchIndex("search_name", { searchField: "name" }),
+
+  // Guild members - Tracks membership in guilds
+  guildMembers: defineTable({
+    guildId: v.id("guilds"),
+    userId: v.id("users"),
+    role: v.union(v.literal("owner"), v.literal("member")),
+    joinedAt: v.number(),
+    lastActiveAt: v.optional(v.number()),
+  })
+    .index("by_guild", ["guildId"])
+    .index("by_user", ["userId"])
+    .index("by_guild_user", ["guildId", "userId"])
+    .index("by_guild_role", ["guildId", "role"])
+    .index("by_joined", ["guildId", "joinedAt"]),
+
+  // Guild invites - Invitations to join guilds (for private guilds)
+  guildInvites: defineTable({
+    guildId: v.id("guilds"),
+    invitedUserId: v.id("users"), // User being invited
+    invitedBy: v.id("users"), // User who sent the invite (must be owner)
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("expired")
+    ),
+    createdAt: v.number(),
+    expiresAt: v.number(), // Invites expire after 7 days
+    respondedAt: v.optional(v.number()),
+  })
+    .index("by_guild", ["guildId", "status"])
+    .index("by_invited_user", ["invitedUserId", "status"])
+    .index("by_guild_invited", ["guildId", "invitedUserId"])
+    .index("by_expires", ["expiresAt"])
+    .index("by_inviter", ["invitedBy"]),
+
+  // Guild join requests - Requests to join private guilds
+  guildJoinRequests: defineTable({
+    guildId: v.id("guilds"),
+    userId: v.id("users"), // User requesting to join
+    message: v.optional(v.string()), // Optional message with request (max 200 chars)
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("cancelled")
+    ),
+    createdAt: v.number(),
+    respondedAt: v.optional(v.number()),
+    respondedBy: v.optional(v.id("users")), // Owner who responded
+  })
+    .index("by_guild", ["guildId", "status"])
+    .index("by_user", ["userId", "status"])
+    .index("by_guild_user", ["guildId", "userId"])
+    .index("by_created", ["createdAt"]),
+
+  // Guild messages - Persistent guild chat
+  guildMessages: defineTable({
+    guildId: v.id("guilds"),
+    userId: v.id("users"),
+    username: v.string(), // Denormalized for display
+    message: v.string(), // Max 500 chars
+    createdAt: v.number(),
+    isSystem: v.boolean(), // System messages (join/leave/etc)
+  })
+    .index("by_guild_created", ["guildId", "createdAt"])
+    .index("by_user", ["userId"])
+    .index("by_created", ["createdAt"]),
+
+  // ============================================================================
+  // DIRECT MESSAGING SYSTEM
+  // ============================================================================
+
+  // DM conversations - Tracks 1-on-1 conversations between friends
+  dmConversations: defineTable({
+    // Participants (sorted: smaller ID first to ensure uniqueness)
+    participant1Id: v.id("users"),
+    participant2Id: v.id("users"),
+    // Timestamps
+    createdAt: v.number(),
+    lastMessageAt: v.number(),
+    messageCount: v.number(),
+    // Per-participant read tracking
+    participant1LastRead: v.optional(v.number()),
+    participant2LastRead: v.optional(v.number()),
+    // Soft archive (user can "leave" without deleting messages)
+    participant1Archived: v.optional(v.boolean()),
+    participant2Archived: v.optional(v.boolean()),
+  })
+    .index("by_participants", ["participant1Id", "participant2Id"])
+    .index("by_participant1", ["participant1Id", "lastMessageAt"])
+    .index("by_participant2", ["participant2Id", "lastMessageAt"])
+    .index("by_last_message", ["lastMessageAt"]),
+
+  // Direct messages - Individual DM messages
+  directMessages: defineTable({
+    conversationId: v.id("dmConversations"),
+    senderId: v.id("users"),
+    senderUsername: v.string(), // Denormalized for display
+    message: v.string(), // Max 500 chars
+    createdAt: v.number(),
+    isSystem: v.optional(v.boolean()), // For system messages like "conversation started"
+  })
+    .index("by_conversation", ["conversationId", "createdAt"])
+    .index("by_sender", ["senderId"])
+    .index("by_created", ["createdAt"]),
+
+  // ============================================================================
   // SEASONS SYSTEM
   // ============================================================================
 

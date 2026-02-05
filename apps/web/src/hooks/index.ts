@@ -48,6 +48,7 @@ export { usePresence } from "./social/usePresence";
 export { useLeaderboard } from "./social/useLeaderboard";
 export { useProfile } from "./social/useProfile";
 export { useFriends, useSearchUsers } from "./social/useFriends";
+export { usePlayerCard } from "./social/usePlayerCard";
 export { useTournaments, useTournament, useTournamentHistory } from "./social/useTournament";
 export type {
   TournamentStatus,

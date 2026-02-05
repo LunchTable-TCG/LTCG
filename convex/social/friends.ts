@@ -673,6 +673,92 @@ export const getBlockedUsers = query({
  * @param limit - Maximum number of results to return (default: 20)
  * @returns Array of users matching the query with friendship status and details
  */
+/**
+ * Gets player card data for displaying in a modal.
+ * Returns user profile data combined with friendship status relative to the viewer.
+ * Works for unauthenticated users (no friendship data) and authenticated users.
+ *
+ * @param targetUserId - The ID of the user to get data for
+ * @returns Player profile data with friendship status, or null if user not found
+ */
+export const getPlayerCardData = query({
+  args: {
+    targetUserId: v.id("users"),
+  },
+  returns: v.union(
+    v.null(),
+    v.object({
+      userId: v.id("users"),
+      username: v.optional(v.string()),
+      bio: v.optional(v.string()),
+      createdAt: v.optional(v.number()),
+      level: v.number(),
+      rankedElo: v.number(),
+      casualRating: v.number(),
+      totalWins: v.number(),
+      totalLosses: v.number(),
+      isAiAgent: v.boolean(),
+      friendshipStatus: v.union(
+        v.null(),
+        v.literal("pending"),
+        v.literal("accepted"),
+        v.literal("blocked")
+      ),
+      isSentRequest: v.boolean(),
+      isCurrentUser: v.boolean(),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.targetUserId);
+    if (!user) return null;
+
+    // Check if authenticated for friendship status
+    const identity = await ctx.auth.getUserIdentity();
+    let friendshipStatus: "pending" | "accepted" | "blocked" | null = null;
+    let isSentRequest = false;
+    let isCurrentUser = false;
+
+    if (identity) {
+      const currentUser = await ctx.db
+        .query("users")
+        .withIndex("privyId", (q) => q.eq("privyId", identity.subject))
+        .first();
+
+      if (currentUser) {
+        isCurrentUser = currentUser._id === args.targetUserId;
+
+        if (!isCurrentUser) {
+          const friendship = await ctx.db
+            .query("friendships")
+            .withIndex("by_user_friend", (q) =>
+              q.eq("userId", currentUser._id).eq("friendId", args.targetUserId)
+            )
+            .first();
+
+          friendshipStatus = friendship?.status || null;
+          isSentRequest = friendship?.requestedBy === currentUser._id;
+        }
+      }
+    }
+
+    return {
+      userId: user._id,
+      username: user.username,
+      bio: user.bio,
+      createdAt: user.createdAt,
+      level: user.level ?? 1,
+      rankedElo: user.rankedElo ?? 1000,
+      casualRating: user.casualRating ?? 1000,
+      totalWins: user.totalWins ?? 0,
+      totalLosses: user.totalLosses ?? 0,
+      isAiAgent: user.isAiAgent ?? false,
+      friendshipStatus,
+      isSentRequest,
+      isCurrentUser,
+    };
+  },
+});
+
 export const searchUsers = query({
   args: {
     query: v.string(),

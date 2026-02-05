@@ -387,6 +387,7 @@ export const initializeStoryBattle = mutation({
     const { userId, username } = await requireAuthMutation(ctx);
     const difficulty = args.difficulty ?? "normal";
 
+    try {
     // Check difficulty access
     const access = await checkDifficultyAccess(ctx, userId, difficulty);
     if (!access.allowed) {
@@ -528,6 +529,17 @@ export const initializeStoryBattle = mutation({
       chapterTitle: chapter.title,
       aiOpponentName: `AI - ${chapter.title}`,
     };
+    } catch (error) {
+      // Re-throw ConvexErrors as-is
+      if (error instanceof Error && error.name === "ConvexError") {
+        throw error;
+      }
+      // Wrap unknown errors with more context
+      console.error("initializeStoryBattle failed:", error);
+      throw createError(ErrorCode.SYSTEM_INTERNAL_ERROR, {
+        reason: error instanceof Error ? error.message : "Unknown error initializing story battle",
+      });
+    }
   },
 });
 

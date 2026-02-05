@@ -90,6 +90,30 @@ export const ErrorCode = {
   SOCIAL_USER_BLOCKED: "SOCIAL_7003",
   SOCIAL_CANNOT_SELF_FRIEND: "SOCIAL_7004",
 
+  // Guild Errors (7xxx - Social Related)
+  GUILD_NOT_FOUND: "GUILD_7101",
+  GUILD_NAME_TAKEN: "GUILD_7102",
+  GUILD_NAME_INVALID: "GUILD_7103",
+  GUILD_FULL: "GUILD_7104",
+  GUILD_NOT_A_MEMBER: "GUILD_7105",
+  GUILD_OWNER_REQUIRED: "GUILD_7106",
+  GUILD_ALREADY_MEMBER: "GUILD_7107",
+  GUILD_ALREADY_IN_GUILD: "GUILD_7108",
+  GUILD_CANNOT_LEAVE_AS_OWNER: "GUILD_7109",
+  GUILD_INVITE_NOT_FOUND: "GUILD_7110",
+  GUILD_INVITE_EXPIRED: "GUILD_7111",
+  GUILD_REQUEST_NOT_FOUND: "GUILD_7112",
+  GUILD_REQUEST_ALREADY_PENDING: "GUILD_7113",
+  GUILD_INVITE_ALREADY_PENDING: "GUILD_7114",
+  GUILD_CANNOT_INVITE_SELF: "GUILD_7115",
+  GUILD_CANNOT_KICK_OWNER: "GUILD_7116",
+  GUILD_CANNOT_KICK_SELF: "GUILD_7117",
+
+  // DM Errors (7xxx - Social Related)
+  DM_NOT_FRIENDS: "DM_7201",
+  DM_CONVERSATION_NOT_FOUND: "DM_7202",
+  DM_NOT_PARTICIPANT: "DM_7203",
+
   // Game Errors (8xxx)
   GAME_LOBBY_FULL: "GAME_8001",
   GAME_ALREADY_IN_GAME: "GAME_8002",
@@ -250,6 +274,30 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   SOCIAL_7002: "Friend request already sent",
   SOCIAL_7003: "Cannot send friend request to this user",
   SOCIAL_7004: "You cannot send a friend request to yourself",
+
+  // Guild
+  GUILD_7101: "Guild not found",
+  GUILD_7102: "A guild with this name already exists",
+  GUILD_7103: "Guild name must be 3-32 characters (letters, numbers, spaces)",
+  GUILD_7104: "Guild is full (max 50 members)",
+  GUILD_7105: "You are not a member of this guild",
+  GUILD_7106: "Only the guild owner can perform this action",
+  GUILD_7107: "User is already a member of this guild",
+  GUILD_7108: "You are already in a guild. Leave your current guild first",
+  GUILD_7109: "Guild owner cannot leave. Transfer ownership or delete the guild",
+  GUILD_7110: "Guild invite not found",
+  GUILD_7111: "Guild invite has expired",
+  GUILD_7112: "Join request not found",
+  GUILD_7113: "You already have a pending request to join this guild",
+  GUILD_7114: "This user has already been invited",
+  GUILD_7115: "You cannot invite yourself to a guild",
+  GUILD_7116: "Cannot kick the guild owner",
+  GUILD_7117: "Cannot kick yourself. Use leave guild instead",
+
+  // DM
+  DM_7201: "You can only message friends",
+  DM_7202: "Conversation not found",
+  DM_7203: "You are not a participant in this conversation",
 
   // Game
   GAME_8001: "Game lobby is full",

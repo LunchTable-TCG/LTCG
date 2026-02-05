@@ -5,6 +5,7 @@ import type { Quest, QuestRewardResult } from "@/types";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
@@ -67,12 +68,46 @@ interface UseQuestsReturn {
  */
 export function useQuests(): UseQuestsReturn {
   const { isAuthenticated } = useAuth();
+  const hasEnsuredQuests = useRef(false);
 
   // Query for user's quests
   const quests = useQuery(api.progression.quests.getUserQuests, isAuthenticated ? {} : "skip");
 
+  // Mutation to ensure user has quests
+  const ensureQuestsMutation = useMutation(api.progression.quests.ensureUserHasQuests);
+
   // Mutation to claim quest rewards
   const claimRewardMutation = useMutation(api.progression.quests.claimQuestReward);
+
+  // Auto-generate quests if user has none
+  useEffect(() => {
+    const ensureQuests = async () => {
+      // Only run once per session, when authenticated and quests query has resolved
+      if (!isAuthenticated || quests === undefined || hasEnsuredQuests.current) {
+        return;
+      }
+
+      // If user has no quests, generate them
+      if (quests.length === 0) {
+        hasEnsuredQuests.current = true;
+        try {
+          const result = await ensureQuestsMutation({});
+          if (result.dailyGenerated > 0 || result.weeklyGenerated > 0) {
+            toast.success(
+              `Generated ${result.dailyGenerated} daily and ${result.weeklyGenerated} weekly quests!`
+            );
+          }
+        } catch (error) {
+          console.error("Failed to ensure quests:", error);
+        }
+      } else {
+        // User already has quests, mark as done
+        hasEnsuredQuests.current = true;
+      }
+    };
+
+    ensureQuests();
+  }, [isAuthenticated, quests, ensureQuestsMutation]);
 
   // Action to claim quest reward
   const claimQuestReward = async (questRecordId: Id<"userQuests">) => {

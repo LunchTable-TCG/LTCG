@@ -105,6 +105,118 @@ export const getUserQuests = query({
 });
 
 /**
+ * Ensure the user has quests - generates daily/weekly quests if none exist.
+ * Called when a user visits the quests page to ensure they have quests to complete.
+ * This is idempotent - calling multiple times won't create duplicate quests.
+ *
+ * @returns Success status and counts of quests generated
+ */
+export const ensureUserHasQuests = mutation({
+  args: {},
+  returns: v.object({
+    success: v.boolean(),
+    dailyGenerated: v.number(),
+    weeklyGenerated: v.number(),
+    alreadyHadQuests: v.boolean(),
+  }),
+  handler: async (ctx) => {
+    const { userId } = await requireAuthMutation(ctx);
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+
+    // Check if user already has active quests
+    const existingQuests = await ctx.db
+      .query("userQuests")
+      .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", "active"))
+      .collect();
+
+    // Check if they have recent daily quests (created in the last 24 hours)
+    const hasRecentDailyQuests = existingQuests.some((uq) => {
+      const oneDayAgo = now - oneDayMs;
+      return uq.startedAt && uq.startedAt > oneDayAgo && uq.expiresAt && uq.expiresAt <= now + oneDayMs;
+    });
+
+    // Check if they have recent weekly quests
+    const hasRecentWeeklyQuests = existingQuests.some((uq) => {
+      const oneWeekAgo = now - oneWeekMs;
+      return uq.startedAt && uq.startedAt > oneWeekAgo && uq.expiresAt && uq.expiresAt > now + oneDayMs;
+    });
+
+    if (hasRecentDailyQuests && hasRecentWeeklyQuests) {
+      return {
+        success: true,
+        dailyGenerated: 0,
+        weeklyGenerated: 0,
+        alreadyHadQuests: true,
+      };
+    }
+
+    let dailyGenerated = 0;
+    let weeklyGenerated = 0;
+
+    // Generate daily quests if needed
+    if (!hasRecentDailyQuests) {
+      const dailyQuests = await ctx.db
+        .query("questDefinitions")
+        .withIndex("by_type", (q) => q.eq("questType", "daily"))
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .collect();
+
+      // Use deterministic randomness
+      const dateString = new Date(now).toISOString().split("T")[0];
+      const seed = `${userId}-${dateString}`;
+      const selectedDaily = shuffleArray(dailyQuests, seed).slice(0, 3);
+
+      for (const quest of selectedDaily) {
+        await ctx.db.insert("userQuests", {
+          userId,
+          questId: quest.questId,
+          currentProgress: 0,
+          status: "active",
+          startedAt: now,
+          expiresAt: now + oneDayMs,
+        });
+        dailyGenerated++;
+      }
+    }
+
+    // Generate weekly quests if needed
+    if (!hasRecentWeeklyQuests) {
+      const weeklyQuests = await ctx.db
+        .query("questDefinitions")
+        .withIndex("by_type", (q) => q.eq("questType", "weekly"))
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .collect();
+
+      // Use deterministic randomness
+      const weekNumber = Math.floor(now / oneWeekMs);
+      const seed = `${userId}-week-${weekNumber}`;
+      const selectedWeekly = shuffleArray(weeklyQuests, seed).slice(0, 2);
+
+      for (const quest of selectedWeekly) {
+        await ctx.db.insert("userQuests", {
+          userId,
+          questId: quest.questId,
+          currentProgress: 0,
+          status: "active",
+          startedAt: now,
+          expiresAt: now + oneWeekMs,
+        });
+        weeklyGenerated++;
+      }
+    }
+
+    return {
+      success: true,
+      dailyGenerated,
+      weeklyGenerated,
+      alreadyHadQuests: false,
+    };
+  },
+});
+
+/**
  * Claims rewards for a completed quest and updates quest status to claimed.
  * Awards gold, gems, and XP according to the quest's reward definition.
  * Uses internal currency adjustment helper to maintain transaction ledger.

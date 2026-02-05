@@ -9,16 +9,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Crown, Gem, Star } from "lucide-react";
+import { Check, Crown, Star } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 interface PremiumUpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  premiumPrice?: number;
   unlockedPremiumRewards: number;
-  onPurchase?: () => Promise<unknown>;
+  onPurchase?: (planInterval: "month" | "year") => Promise<unknown>;
 }
 
 const premiumBenefits = [
@@ -29,22 +30,43 @@ const premiumBenefits = [
   "Premium player badge and profile flair",
 ];
 
+const plans = [
+  {
+    id: "month" as const,
+    name: "Monthly",
+    price: "$9.99",
+    period: "/month",
+    description: "Cancel anytime",
+  },
+  {
+    id: "year" as const,
+    name: "Yearly",
+    price: "$99.99",
+    period: "/year",
+    description: "Save 17%",
+    badge: "Best Value",
+  },
+];
+
 export function PremiumUpgradeModal({
   isOpen,
   onClose,
-  premiumPrice,
   unlockedPremiumRewards,
   onPurchase,
 }: PremiumUpgradeModalProps) {
+  const [selectedPlan, setSelectedPlan] = useState<"month" | "year">("month");
+  const [isLoading, setIsLoading] = useState(false);
+
   const handlePurchase = async () => {
     if (!onPurchase) return;
 
+    setIsLoading(true);
     try {
-      await onPurchase();
-      toast.success("Premium pass purchased!");
-      onClose();
+      await onPurchase(selectedPlan);
+      // The function redirects to Stripe, so we don't need to close the modal
     } catch (_err) {
-      toast.error("Purchase failed. Please try again.");
+      toast.error("Failed to start checkout. Please try again.");
+      setIsLoading(false);
     }
   };
 
@@ -93,44 +115,75 @@ export function PremiumUpgradeModal({
           ))}
         </motion.div>
 
-        {/* Price Display */}
+        {/* Plan Selection */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="mt-6 p-4 rounded-xl bg-violet-500/10 border border-violet-500/30"
+          className="mt-6 grid grid-cols-2 gap-3"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-[#a89f94]">Price</span>
-            <div className="flex items-center gap-2">
-              <Gem className="w-5 h-5 text-blue-400" />
-              <span className="text-2xl font-black text-blue-400">
-                {premiumPrice?.toLocaleString() ?? 0}
-              </span>
-            </div>
-          </div>
-          {unlockedPremiumRewards > 0 && (
-            <p className="text-xs text-violet-400 mt-2">
-              {unlockedPremiumRewards} premium rewards ready to claim!
-            </p>
-          )}
+          {plans.map((plan) => (
+            <button
+              type="button"
+              key={plan.id}
+              onClick={() => setSelectedPlan(plan.id)}
+              className={cn(
+                "relative p-4 rounded-xl border-2 transition-all text-left",
+                selectedPlan === plan.id
+                  ? "border-violet-500 bg-violet-500/10"
+                  : "border-[#3d2b1f] bg-black/20 hover:border-violet-500/50"
+              )}
+            >
+              {plan.badge && (
+                <span className="absolute -top-2 -right-2 px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full">
+                  {plan.badge}
+                </span>
+              )}
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-[#e8e0d5]">{plan.name}</span>
+                {selectedPlan === plan.id && (
+                  <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl font-black text-violet-400">{plan.price}</span>
+                <span className="text-xs text-[#a89f94]">{plan.period}</span>
+              </div>
+              <p className="text-xs text-[#a89f94] mt-1">{plan.description}</p>
+            </button>
+          ))}
         </motion.div>
+
+        {unlockedPremiumRewards > 0 && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="text-xs text-violet-400 text-center mt-2"
+          >
+            {unlockedPremiumRewards} premium rewards ready to claim!
+          </motion.p>
+        )}
 
         <DialogFooter className="mt-6">
           <div className="flex gap-3 w-full">
             <Button
               variant="outline"
               onClick={onClose}
+              disabled={isLoading}
               className="flex-1 border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5]"
             >
               Cancel
             </Button>
             <Button
               onClick={handlePurchase}
+              disabled={isLoading}
               className="flex-1 bg-gradient-to-r from-violet-600 via-violet-500 to-violet-600 hover:from-violet-500 hover:via-violet-400 hover:to-violet-500 text-white font-bold"
             >
               <Crown className="w-5 h-5 mr-2" />
-              Purchase
+              {isLoading ? "Starting checkout..." : "Subscribe"}
             </Button>
           </div>
         </DialogFooter>

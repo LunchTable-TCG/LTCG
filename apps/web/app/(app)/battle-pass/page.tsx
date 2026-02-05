@@ -220,7 +220,6 @@ export default function BattlePassPage() {
       <PremiumUpgradeModal
         isOpen={showPremiumModal}
         onClose={() => setShowPremiumModal(false)}
-        premiumPrice={status.premiumPrice}
         unlockedPremiumRewards={unlockedPremiumRewards}
         onPurchase={purchasePremium}
       />

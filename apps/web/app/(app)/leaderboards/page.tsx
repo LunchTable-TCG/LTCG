@@ -1,8 +1,10 @@
 "use client";
 
+import { PlayerCardModal } from "@/components/social/PlayerCardModal";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLeaderboard, useProfile } from "@/hooks";
 import { cn } from "@/lib/utils";
+import type { Id } from "@convex/_generated/dataModel";
 import {
   Bot,
   Crown,
@@ -38,6 +40,46 @@ export default function LeaderboardsPage() {
 
   const [activeType, setActiveType] = useState<LeaderboardType>("ranked");
   const [activeSegment, setActiveSegment] = useState<PlayerSegment>("all");
+  const [selectedPlayer, setSelectedPlayer] = useState<{
+    userId: Id<"users">;
+    username: string;
+    rating: number;
+    rank: number;
+    wins: number;
+    losses: number;
+    winRate: number;
+    level: number;
+    isAiAgent?: boolean;
+  } | null>(null);
+
+  const handlePlayerClick = (player: (typeof rankings)[number]) => {
+    if (player.userId === currentUser._id) return; // Don't open modal for self
+    setSelectedPlayer({
+      userId: player.userId,
+      username: player.username || "Unknown",
+      rating: player.rating,
+      rank: player.rank,
+      wins: player.wins,
+      losses: player.losses,
+      winRate: player.winRate,
+      level: player.level,
+      isAiAgent: player.isAiAgent,
+    });
+  };
+
+  const handleOpponentClick = (match: (typeof battleHistory)[number]) => {
+    if (match.opponentId === currentUser._id) return; // Don't open modal for self
+    setSelectedPlayer({
+      userId: match.opponentId,
+      username: match.opponentUsername,
+      rating: match.ratingAfter, // Use their rating from the match
+      rank: 0, // Unknown from battle history
+      wins: 0, // Unknown from battle history
+      losses: 0,
+      winRate: 0,
+      level: 1, // Unknown from battle history - will be fetched by modal
+    });
+  };
 
   // Use leaderboard hook with filters
   const leaderboardData = useLeaderboard(activeType, activeSegment);
@@ -215,10 +257,20 @@ export default function LeaderboardsPage() {
                       {player.username?.[0] || "?"}
                     </AvatarFallback>
                   </Avatar>
-                  <p className="font-bold text-[#e8e0d5] text-center truncate w-full">
-                    {player.username || "Unknown"}
-                    {isCurrentUser && <span className="text-xs ml-1">(You)</span>}
-                  </p>
+                  {isCurrentUser ? (
+                    <p className="font-bold text-[#e8e0d5] text-center truncate w-full">
+                      {player.username || "Unknown"}
+                      <span className="text-xs ml-1">(You)</span>
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      className="font-bold text-[#e8e0d5] hover:text-[#d4af37] text-center truncate w-full"
+                      onClick={() => handlePlayerClick(player)}
+                    >
+                      {player.username || "Unknown"}
+                    </button>
+                  )}
                   <p
                     className={cn(
                       "text-lg font-black",
@@ -299,15 +351,20 @@ export default function LeaderboardsPage() {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p
-                              className={cn(
-                                "font-medium",
-                                isCurrentUser ? "text-[#d4af37]" : "text-[#e8e0d5]"
-                              )}
-                            >
-                              {player.username}
-                              {isCurrentUser && <span className="text-xs ml-1">(You)</span>}
-                            </p>
+                            {isCurrentUser ? (
+                              <p className="font-medium text-[#d4af37]">
+                                {player.username}
+                                <span className="text-xs ml-1">(You)</span>
+                              </p>
+                            ) : (
+                              <button
+                                type="button"
+                                className="font-medium text-[#e8e0d5] hover:text-[#d4af37] text-left"
+                                onClick={() => handlePlayerClick(player)}
+                              >
+                                {player.username}
+                              </button>
+                            )}
                             {player.isAiAgent && (
                               <p className="text-xs text-blue-400 flex items-center gap-1">
                                 <Bot className="w-3 h-3" /> AI
@@ -363,15 +420,20 @@ export default function LeaderboardsPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p
-                            className={cn(
-                              "font-medium truncate",
-                              isCurrentUser ? "text-[#d4af37]" : "text-[#e8e0d5]"
-                            )}
-                          >
-                            {player.username}
-                            {isCurrentUser && <span className="ml-2 text-xs">(You)</span>}
-                          </p>
+                          {isCurrentUser ? (
+                            <p className="font-medium truncate text-[#d4af37]">
+                              {player.username}
+                              <span className="ml-2 text-xs">(You)</span>
+                            </p>
+                          ) : (
+                            <button
+                              type="button"
+                              className="font-medium truncate text-[#e8e0d5] hover:text-[#d4af37] text-left"
+                              onClick={() => handlePlayerClick(player)}
+                            >
+                              {player.username}
+                            </button>
+                          )}
                           {player.isAiAgent && (
                             <p className="text-xs text-blue-400 flex items-center gap-1">
                               <Bot className="w-3 h-3" /> AI Agent
@@ -527,7 +589,13 @@ export default function LeaderboardsPage() {
                                 {match.opponentUsername[0]}
                               </AvatarFallback>
                             </Avatar>
-                            <p className="font-medium text-[#e8e0d5]">{match.opponentUsername}</p>
+                            <button
+                              type="button"
+                              className="font-medium text-[#e8e0d5] hover:text-[#d4af37]"
+                              onClick={() => handleOpponentClick(match)}
+                            >
+                              {match.opponentUsername}
+                            </button>
                           </div>
                           <span className="text-xs text-[#a89f94]">
                             {new Date(match.completedAt).toLocaleDateString(undefined, {
@@ -596,9 +664,13 @@ export default function LeaderboardsPage() {
                               {match.opponentUsername[0]}
                             </AvatarFallback>
                           </Avatar>
-                          <p className="font-medium text-[#e8e0d5] truncate">
+                          <button
+                            type="button"
+                            className="font-medium text-[#e8e0d5] hover:text-[#d4af37] truncate text-left"
+                            onClick={() => handleOpponentClick(match)}
+                          >
                             {match.opponentUsername}
-                          </p>
+                          </button>
                         </div>
 
                         {/* Rating Change */}
@@ -664,6 +736,14 @@ export default function LeaderboardsPage() {
           <p className="mt-1">Rankings update every 5 minutes</p>
         </div>
       </div>
+
+      {/* Player Card Modal */}
+      <PlayerCardModal
+        userId={selectedPlayer?.userId ?? null}
+        isOpen={selectedPlayer !== null}
+        onClose={() => setSelectedPlayer(null)}
+        initialData={selectedPlayer ?? undefined}
+      />
     </div>
   );
 }
