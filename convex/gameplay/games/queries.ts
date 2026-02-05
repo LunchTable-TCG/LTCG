@@ -1187,6 +1187,36 @@ export const getCurrentPhaseInfo = query({
 });
 
 /**
+ * Get game state by gameId (public query for API endpoints)
+ *
+ * Looks up the game state by gameId string and returns minimal info needed
+ * for API endpoints to call mutations with lobbyId.
+ *
+ * @param gameId - The game ID string
+ * @returns Game state with lobbyId or null if not found
+ */
+export const getGameStateByGameId = query({
+  args: {
+    gameId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_game_id", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (!gameState) {
+      return null;
+    }
+
+    return {
+      lobbyId: gameState.lobbyId,
+      gameId: gameState.gameId,
+    };
+  },
+});
+
+/**
  * Get game state by gameId string (internal - for API key auth)
  * Looks up the game by gameId string instead of lobbyId
  */

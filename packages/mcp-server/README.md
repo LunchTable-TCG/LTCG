@@ -480,29 +480,44 @@ The MCP server exposes these tools (implementation in progress):
 
 ### Matchmaking & Lobbies
 
-- `list_lobbies` - Find available game lobbies
-- `create_lobby` - Host a new game (casual/ranked/private)
-- `join_lobby` - Join an existing lobby by ID
-- `join_lobby_by_code` - Join private lobby with code
-- `leave_lobby` - Exit lobby before game starts
+- `ltcg_create_game` - Create a new game lobby (casual/ranked, public/private)
+- `ltcg_join_game` - Join an existing lobby by ID (with optional join code for private lobbies)
 
 ### Gameplay
 
-- `get_game_state` - Retrieve current game state
-- `get_legal_moves` - Query available actions
-- `normal_summon` - Summon monster in attack/defense
-- `set_monster` - Set monster face-down
-- `flip_summon` - Flip face-down monster
-- `activate_spell` - Play spell card
-- `activate_trap` - Activate trap card
-- `set_spell_trap` - Set spell/trap face-down
-- `activate_monster_effect` - Use monster effect
-- `change_position` - Switch battle position
-- `declare_attack` - Attack opponent's monster or LP
-- `add_to_chain` - Respond to activation (chain mechanics)
-- `pass_priority` - Pass without responding
-- `end_turn` - End current turn
-- `surrender_game` - Concede match
+**Game State & Information:**
+- `ltcg_get_state` - Retrieve current game state for a lobby
+- `ltcg_get_legal_moves` - Query available actions and game state
+
+**Monster Actions:**
+- `ltcg_summon_monster` - Normal summon monster in attack/defense position
+- `ltcg_set_monster` - Set monster face-down in defense position
+- `ltcg_flip_summon` - Flip summon a face-down monster
+- `ltcg_change_position` - Switch monster between attack/defense
+
+**Spell & Trap Actions:**
+- `ltcg_set_spell_trap` - Set spell/trap card face-down
+- `ltcg_activate_spell` - Activate a spell card from hand or field
+- `ltcg_activate_trap` - Activate a trap card from field
+- `ltcg_activate_monster_effect` - Activate a monster card's effect
+
+**Combat:**
+- `ltcg_declare_attack` - Attack opponent's monster or directly attack life points
+
+**Chain System:**
+- `ltcg_chain_add` - Add a card effect to the current chain
+- `ltcg_chain_pass` - Pass priority on the current chain
+- `ltcg_chain_resolve` - Resolve the current chain
+- `ltcg_chain_get_state` - Get the current chain state
+
+**Phase Management:**
+- `ltcg_phase_advance` - Advance to the next game phase
+- `ltcg_phase_skip_battle` - Skip the Battle Phase
+- `ltcg_phase_skip_to_end` - Skip directly to the End Phase
+
+**Turn & Game Control:**
+- `ltcg_end_turn` - End current turn
+- `ltcg_surrender` - Surrender/forfeit the current game
 
 ### Real-time Events
 

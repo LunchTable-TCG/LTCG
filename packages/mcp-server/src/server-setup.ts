@@ -409,6 +409,330 @@ Please start by checking the current state of the game and providing your first 
           required: ["gameId"],
         },
       },
+      {
+        name: "ltcg_set_monster",
+        description: "Set a monster card face-down in Defense Position",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID",
+            },
+            cardId: {
+              type: "string",
+              description: "The card ID to set from hand",
+            },
+            tributeCardIds: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "Optional array of card IDs to tribute for levels 5+",
+            },
+          },
+          required: ["gameId", "cardId"],
+        },
+      },
+      {
+        name: "ltcg_flip_summon",
+        description: "Flip Summon a face-down monster to face-up position",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID",
+            },
+            cardId: {
+              type: "string",
+              description: "The face-down card ID to flip",
+            },
+            newPosition: {
+              type: "string",
+              enum: ["attack", "defense"],
+              description: "Position after flip (attack or defense)",
+            },
+          },
+          required: ["gameId", "cardId", "newPosition"],
+        },
+      },
+      {
+        name: "ltcg_change_position",
+        description: "Change a monster's battle position (Attack ↔ Defense)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID",
+            },
+            cardId: {
+              type: "string",
+              description: "The card ID to change position",
+            },
+          },
+          required: ["gameId", "cardId"],
+        },
+      },
+      {
+        name: "ltcg_set_spell_trap",
+        description: "Set a Spell or Trap card face-down",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID",
+            },
+            cardId: {
+              type: "string",
+              description: "The Spell/Trap card ID to set",
+            },
+          },
+          required: ["gameId", "cardId"],
+        },
+      },
+      {
+        name: "ltcg_activate_spell",
+        description: "Activate a Spell card from hand or field",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID",
+            },
+            cardId: {
+              type: "string",
+              description: "The Spell card ID to activate",
+            },
+            targets: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "Optional array of target card IDs",
+            },
+            costTargets: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "Optional array of cards to pay cost",
+            },
+            effectIndex: {
+              type: "number",
+              description: "Optional effect index for multi-effect cards",
+            },
+          },
+          required: ["gameId", "cardId"],
+        },
+      },
+      {
+        name: "ltcg_activate_trap",
+        description: "Activate a Trap card from field",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID",
+            },
+            cardId: {
+              type: "string",
+              description: "The Trap card ID to activate",
+            },
+            targets: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "Optional array of target card IDs",
+            },
+            costTargets: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "Optional array of cards to pay cost",
+            },
+            effectIndex: {
+              type: "number",
+              description: "Optional effect index for multi-effect cards",
+            },
+          },
+          required: ["gameId", "cardId"],
+        },
+      },
+      {
+        name: "ltcg_activate_monster_effect",
+        description: "Activate a monster card's effect",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID",
+            },
+            cardId: {
+              type: "string",
+              description: "The monster card ID",
+            },
+            effectIndex: {
+              type: "number",
+              description: "Which effect to activate (0-based index)",
+            },
+            targets: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "Optional array of target card IDs",
+            },
+            costTargets: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "Optional array of cards to pay cost",
+            },
+          },
+          required: ["gameId", "cardId", "effectIndex"],
+        },
+      },
+      {
+        name: "ltcg_surrender",
+        description: "Surrender/forfeit the current game",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID to surrender",
+            },
+          },
+          required: ["gameId"],
+        },
+      },
+      {
+        name: "ltcg_chain_add",
+        description: "Add a card effect to the current chain",
+        inputSchema: {
+          type: "object",
+          properties: {
+            lobbyId: {
+              type: "string",
+              description: "The lobby ID",
+            },
+            cardId: {
+              type: "string",
+              description: "The card being activated",
+            },
+            spellSpeed: {
+              type: "number",
+              enum: [1, 2, 3],
+              description: "Spell speed (1 = Normal, 2 = Quick, 3 = Counter)",
+            },
+            effect: {
+              type: "object",
+              description: "Effect to execute (JsonAbility format)",
+            },
+            targets: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "Optional array of target card IDs",
+            },
+          },
+          required: ["lobbyId", "cardId", "spellSpeed", "effect"],
+        },
+      },
+      {
+        name: "ltcg_chain_pass",
+        description: "Pass priority on the current chain",
+        inputSchema: {
+          type: "object",
+          properties: {
+            lobbyId: {
+              type: "string",
+              description: "The lobby ID",
+            },
+          },
+          required: ["lobbyId"],
+        },
+      },
+      {
+        name: "ltcg_chain_resolve",
+        description: "Resolve the current chain",
+        inputSchema: {
+          type: "object",
+          properties: {
+            lobbyId: {
+              type: "string",
+              description: "The lobby ID",
+            },
+          },
+          required: ["lobbyId"],
+        },
+      },
+      {
+        name: "ltcg_chain_get_state",
+        description: "Get the current chain state",
+        inputSchema: {
+          type: "object",
+          properties: {
+            lobbyId: {
+              type: "string",
+              description: "The lobby ID",
+            },
+          },
+          required: ["lobbyId"],
+        },
+      },
+      {
+        name: "ltcg_phase_advance",
+        description: "Advance to the next game phase",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID",
+            },
+          },
+          required: ["gameId"],
+        },
+      },
+      {
+        name: "ltcg_phase_skip_battle",
+        description: "Skip the Battle Phase",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID",
+            },
+          },
+          required: ["gameId"],
+        },
+      },
+      {
+        name: "ltcg_phase_skip_to_end",
+        description: "Skip directly to the End Phase",
+        inputSchema: {
+          type: "object",
+          properties: {
+            gameId: {
+              type: "string",
+              description: "The game ID",
+            },
+          },
+          required: ["gameId"],
+        },
+      },
     ],
   }));
 
@@ -523,6 +847,289 @@ Please start by checking the current state of the game and providing your first 
         case "ltcg_end_turn": {
           const { gameId } = args as { gameId: string };
           const result = await makeApiRequest("/api/game/end-turn", "POST", {
+            gameId,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_set_monster": {
+          const { gameId, cardId, tributeCardIds } = args as {
+            gameId: string;
+            cardId: string;
+            tributeCardIds?: string[];
+          };
+          const result = await makeApiRequest("/api/game/set-monster", "POST", {
+            gameId,
+            cardId,
+            tributeCardIds,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_flip_summon": {
+          const { gameId, cardId, newPosition } = args as {
+            gameId: string;
+            cardId: string;
+            newPosition: string;
+          };
+          const result = await makeApiRequest("/api/game/flip-summon", "POST", {
+            gameId,
+            cardId,
+            newPosition,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_change_position": {
+          const { gameId, cardId } = args as {
+            gameId: string;
+            cardId: string;
+          };
+          const result = await makeApiRequest("/api/game/change-position", "POST", {
+            gameId,
+            cardId,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_set_spell_trap": {
+          const { gameId, cardId } = args as {
+            gameId: string;
+            cardId: string;
+          };
+          const result = await makeApiRequest("/api/game/set-spell-trap", "POST", {
+            gameId,
+            cardId,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_activate_spell": {
+          const { gameId, cardId, targets, costTargets, effectIndex } = args as {
+            gameId: string;
+            cardId: string;
+            targets?: string[];
+            costTargets?: string[];
+            effectIndex?: number;
+          };
+          const result = await makeApiRequest("/api/game/activate-spell", "POST", {
+            gameId,
+            cardId,
+            targets,
+            costTargets,
+            effectIndex,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_activate_trap": {
+          const { gameId, cardId, targets, costTargets, effectIndex } = args as {
+            gameId: string;
+            cardId: string;
+            targets?: string[];
+            costTargets?: string[];
+            effectIndex?: number;
+          };
+          const result = await makeApiRequest("/api/game/activate-trap", "POST", {
+            gameId,
+            cardId,
+            targets,
+            costTargets,
+            effectIndex,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_activate_monster_effect": {
+          const { gameId, cardId, effectIndex, targets, costTargets } = args as {
+            gameId: string;
+            cardId: string;
+            effectIndex: number;
+            targets?: string[];
+            costTargets?: string[];
+          };
+          const result = await makeApiRequest("/api/game/activate-effect", "POST", {
+            gameId,
+            cardId,
+            effectIndex,
+            targets,
+            costTargets,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_surrender": {
+          const { gameId } = args as { gameId: string };
+          const result = await makeApiRequest("/api/game/surrender", "POST", {
+            gameId,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_chain_add": {
+          const { lobbyId, cardId, spellSpeed, effect, targets } = args as {
+            lobbyId: string;
+            cardId: string;
+            spellSpeed: number;
+            effect: unknown;
+            targets?: string[];
+          };
+          const result = await makeApiRequest("/api/game/chain/add", "POST", {
+            lobbyId,
+            cardId,
+            spellSpeed,
+            effect,
+            targets,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_chain_pass": {
+          const { lobbyId } = args as { lobbyId: string };
+          const result = await makeApiRequest("/api/game/chain/pass", "POST", {
+            lobbyId,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_chain_resolve": {
+          const { lobbyId } = args as { lobbyId: string };
+          const result = await makeApiRequest("/api/game/chain/resolve", "POST", {
+            lobbyId,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_chain_get_state": {
+          const { lobbyId } = args as { lobbyId: string };
+          const result = await makeApiRequest(`/api/game/chain/state?lobbyId=${lobbyId}`, "GET");
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_phase_advance": {
+          const { gameId } = args as { gameId: string };
+          const result = await makeApiRequest("/api/game/phase/advance", "POST", {
+            gameId,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_phase_skip_battle": {
+          const { gameId } = args as { gameId: string };
+          const result = await makeApiRequest("/api/game/phase/skip-battle", "POST", {
+            gameId,
+          });
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "ltcg_phase_skip_to_end": {
+          const { gameId } = args as { gameId: string };
+          const result = await makeApiRequest("/api/game/phase/skip-to-end", "POST", {
             gameId,
           });
           return {

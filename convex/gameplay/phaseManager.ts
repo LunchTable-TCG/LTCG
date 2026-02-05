@@ -9,7 +9,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
-import { mutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 import { getCardAbility } from "../lib/abilityHelpers";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
@@ -1018,5 +1018,352 @@ export const initializeTurnPhase = mutation({
       args.playerId,
       args.turnNumber
     );
+  },
+});
+
+/**
+ * Advance Phase (Internal)
+ *
+ * Internal mutation for API-based phase advancement.
+ * Accepts gameId string for story mode support.
+ */
+export const advancePhaseInternal = internalMutation({
+  args: {
+    gameId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // 1. Find game state by gameId
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_game_id", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (!gameState) {
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game not found",
+        gameId: args.gameId,
+      });
+    }
+
+    // 2. Get lobby
+    const lobby = await ctx.db.get(gameState.lobbyId);
+    if (!lobby) {
+      throw createError(ErrorCode.NOT_FOUND_LOBBY);
+    }
+
+    // 3. Validate it's the current player's turn
+    if (gameState.currentTurnPlayerId !== args.userId) {
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN, {
+        reason: "Not your turn",
+        currentTurnPlayerId: gameState.currentTurnPlayerId,
+        userId: args.userId,
+      });
+    }
+
+    // 4. Get current phase (default to draw if not set)
+    let currentPhase: GamePhase = gameState.currentPhase || "draw";
+    let nextPhase = getNextPhase(currentPhase);
+
+    if (!nextPhase) {
+      throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
+        reason: "Cannot advance from End Phase - use endTurn instead",
+        currentPhase,
+      });
+    }
+
+    // 5. Auto-advance through non-interactive phases
+    const phasesVisited: GamePhase[] = [nextPhase];
+
+    while (nextPhase && shouldAutoAdvancePhase(nextPhase)) {
+      // Update game state
+      await ctx.db.patch(gameState._id, {
+        currentPhase: nextPhase,
+      });
+
+      // Record phase change
+      await recordEventHelper(ctx, {
+        lobbyId: gameState.lobbyId,
+        gameId: args.gameId,
+        turnNumber: gameState.turnNumber || 0,
+        eventType: "phase_changed",
+        playerId: args.userId,
+        playerUsername: (await ctx.db.get(args.userId))?.username || "Unknown",
+        description: `${(await ctx.db.get(args.userId))?.username} entered ${getPhaseDisplayName(nextPhase)}`,
+        metadata: {
+          previousPhase: currentPhase,
+          newPhase: nextPhase,
+          autoAdvanced: true,
+        },
+      });
+
+      // Execute phase logic
+      await executePhaseLogic(
+        ctx,
+        gameState.lobbyId,
+        gameState._id,
+        nextPhase,
+        args.userId,
+        gameState.turnNumber || 0
+      );
+
+      // Move to next phase
+      currentPhase = nextPhase;
+      const tempNext = getNextPhase(currentPhase);
+      if (!tempNext) break;
+
+      nextPhase = tempNext;
+      phasesVisited.push(nextPhase);
+
+      // Refresh game state after updates
+      const updatedState = await ctx.db.get(gameState._id);
+      if (updatedState) {
+        Object.assign(gameState, updatedState);
+      }
+
+      // Safety: prevent infinite loops
+      if (phasesVisited.length > 10) break;
+    }
+
+    // 6. Update to final phase
+    await ctx.db.patch(gameState._id, {
+      currentPhase: nextPhase,
+    });
+
+    // 7. Record final phase change if not already recorded
+    if (!shouldAutoAdvancePhase(nextPhase)) {
+      await recordEventHelper(ctx, {
+        lobbyId: gameState.lobbyId,
+        gameId: args.gameId,
+        turnNumber: gameState.turnNumber || 0,
+        eventType: "phase_changed",
+        playerId: args.userId,
+        playerUsername: (await ctx.db.get(args.userId))?.username || "Unknown",
+        description: `${(await ctx.db.get(args.userId))?.username} entered ${getPhaseDisplayName(nextPhase)}`,
+        metadata: {
+          previousPhase: currentPhase,
+          newPhase: nextPhase,
+          autoAdvanced: false,
+        },
+      });
+    }
+
+    // 8. Execute final phase logic
+    await executePhaseLogic(
+      ctx,
+      gameState.lobbyId,
+      gameState._id,
+      nextPhase,
+      args.userId,
+      gameState.turnNumber || 0
+    );
+
+    // 9. Run state-based action checks after phase transition
+    const sbaResult = await checkStateBasedActions(ctx, gameState.lobbyId, {
+      skipHandLimit: nextPhase !== "end",
+      turnNumber: gameState.turnNumber || 0,
+    });
+
+    return {
+      newPhase: nextPhase,
+      phasesVisited,
+      availableActions: await getAvailableActionsForPhase(nextPhase, gameState),
+      gameEnded: sbaResult.gameEnded,
+      winnerId: sbaResult.winnerId,
+    };
+  },
+});
+
+/**
+ * Skip Battle Phase (Internal)
+ *
+ * Internal mutation for API-based battle phase skip.
+ * Allows the turn player to skip the Battle Phase entirely.
+ */
+export const skipBattlePhaseInternal = internalMutation({
+  args: {
+    gameId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // 1. Find game state by gameId
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_game_id", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (!gameState) {
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game not found",
+        gameId: args.gameId,
+      });
+    }
+
+    // 2. Get lobby
+    const lobby = await ctx.db.get(gameState.lobbyId);
+    if (!lobby) {
+      throw createError(ErrorCode.NOT_FOUND_LOBBY);
+    }
+
+    // 3. Verify it's the player's turn
+    if (gameState.currentTurnPlayerId !== args.userId) {
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN, {
+        reason: "Not your turn",
+        currentTurnPlayerId: gameState.currentTurnPlayerId,
+        userId: args.userId,
+      });
+    }
+
+    // 4. Validate current phase
+    const currentPhase: GamePhase = gameState.currentPhase || "main1";
+
+    // Can only skip battle from main1 or during battle phases
+    if (!["main1", "battle_start", "battle", "battle_end"].includes(currentPhase)) {
+      throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
+        reason: "Can only skip Battle Phase from Main Phase 1 or during Battle Phase",
+        currentPhase,
+      });
+    }
+
+    // 5. Calculate skipped phases
+    const skippedPhases = getSkippedPhases(currentPhase, "main2");
+
+    // 6. Update phase to main2
+    await ctx.db.patch(gameState._id, {
+      currentPhase: "main2",
+    });
+
+    // 7. Record event
+    await recordEventHelper(ctx, {
+      lobbyId: gameState.lobbyId,
+      gameId: args.gameId,
+      turnNumber: gameState.turnNumber || 0,
+      eventType: "phase_changed",
+      playerId: args.userId,
+      playerUsername: (await ctx.db.get(args.userId))?.username || "Unknown",
+      description: `${(await ctx.db.get(args.userId))?.username} skipped Battle Phase`,
+      metadata: {
+        skipped: true,
+        fromPhase: currentPhase,
+        toPhase: "main2",
+        skippedPhases,
+      },
+    });
+
+    return {
+      success: true,
+      newPhase: "main2" as GamePhase,
+      skippedPhases,
+    };
+  },
+});
+
+/**
+ * Skip to End Phase (Internal)
+ *
+ * Internal mutation for API-based end phase skip.
+ * Allows the turn player to skip all remaining phases and proceed to End Phase.
+ */
+export const skipToEndPhaseInternal = internalMutation({
+  args: {
+    gameId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // 1. Find game state by gameId
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_game_id", (q) => q.eq("gameId", args.gameId))
+      .first();
+
+    if (!gameState) {
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+        reason: "Game not found",
+        gameId: args.gameId,
+      });
+    }
+
+    // 2. Get lobby
+    const lobby = await ctx.db.get(gameState.lobbyId);
+    if (!lobby) {
+      throw createError(ErrorCode.NOT_FOUND_LOBBY);
+    }
+
+    // 3. Verify it's the player's turn
+    if (gameState.currentTurnPlayerId !== args.userId) {
+      throw createError(ErrorCode.GAME_NOT_YOUR_TURN, {
+        reason: "Not your turn",
+        currentTurnPlayerId: gameState.currentTurnPlayerId,
+        userId: args.userId,
+      });
+    }
+
+    // 4. Validate current phase
+    const currentPhase: GamePhase = gameState.currentPhase || "draw";
+
+    // Cannot skip from end phase (already there)
+    if (currentPhase === "end") {
+      throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
+        reason: "Already in End Phase",
+        currentPhase,
+      });
+    }
+
+    // Cannot skip from draw or standby (mandatory phases)
+    if (currentPhase === "draw" || currentPhase === "standby") {
+      throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
+        reason: "Cannot skip Draw Phase or Standby Phase",
+        currentPhase,
+      });
+    }
+
+    // 5. Calculate skipped phases
+    const skippedPhases = getSkippedPhases(currentPhase, "end");
+
+    // 6. Update phase to end
+    await ctx.db.patch(gameState._id, {
+      currentPhase: "end",
+    });
+
+    // 7. Record event
+    await recordEventHelper(ctx, {
+      lobbyId: gameState.lobbyId,
+      gameId: args.gameId,
+      turnNumber: gameState.turnNumber || 0,
+      eventType: "phase_changed",
+      playerId: args.userId,
+      playerUsername: (await ctx.db.get(args.userId))?.username || "Unknown",
+      description: `${(await ctx.db.get(args.userId))?.username} skipped to End Phase`,
+      metadata: {
+        skipped: true,
+        fromPhase: currentPhase,
+        toPhase: "end",
+        skippedPhases,
+      },
+    });
+
+    // 8. Execute End Phase logic
+    await executePhaseLogic(
+      ctx,
+      gameState.lobbyId,
+      gameState._id,
+      "end",
+      args.userId,
+      gameState.turnNumber || 0
+    );
+
+    // 9. Run state-based action checks (enforce hand limit at end phase)
+    const sbaResult = await checkStateBasedActions(ctx, gameState.lobbyId, {
+      skipHandLimit: false,
+      turnNumber: gameState.turnNumber || 0,
+    });
+
+    return {
+      success: true,
+      newPhase: "end" as GamePhase,
+      skippedPhases,
+      gameEnded: sbaResult.gameEnded,
+      winnerId: sbaResult.winnerId,
+    };
   },
 });
