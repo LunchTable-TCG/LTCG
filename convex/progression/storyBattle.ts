@@ -476,7 +476,9 @@ export const initializeStoryBattle = mutation({
       }
 
       // Build AI deck from archetype cards
-      const aiDeck = await buildAIDeck(ctx, chapter.archetype ?? "neutral");
+      // Use aiOpponentDeckCode (lowercase) which maps to actual card archetypes in DB
+      const deckArchetype = (chapter.aiOpponentDeckCode ?? chapterDef.aiOpponentDeckCode ?? "infernal_dragons").toLowerCase();
+      const aiDeck = await buildAIDeck(ctx, deckArchetype);
 
       // Create or get AI user
       const aiUserId = await getOrCreateAIUser(ctx);
@@ -907,7 +909,9 @@ export const initializeStoryBattleInternal = internalMutation({
     }
 
     // Build AI deck from archetype cards
-    const aiDeck = await buildAIDeck(ctx, chapter.archetype ?? "neutral");
+    // Use aiOpponentDeckCode (lowercase) which maps to actual card archetypes
+    const deckArchetype = (chapter.aiOpponentDeckCode ?? "infernal_dragons").toLowerCase();
+    const aiDeck = await buildAIDeck(ctx, deckArchetype);
 
     // Create or get AI user
     const aiUserId = await getOrCreateAIUser(ctx);
@@ -1116,7 +1120,9 @@ export const quickPlayStoryInternal = internalMutation({
     }
 
     // Build AI deck from archetype cards
-    const aiDeck = await buildAIDeck(ctx, chapter.archetype ?? "neutral");
+    // Use aiOpponentDeckCode (lowercase) which maps to actual card archetypes
+    const deckArchetype = (chapter.aiOpponentDeckCode ?? "infernal_dragons").toLowerCase();
+    const aiDeck = await buildAIDeck(ctx, deckArchetype);
 
     // Create or get AI user
     const aiUserId = await getOrCreateAIUser(ctx);
