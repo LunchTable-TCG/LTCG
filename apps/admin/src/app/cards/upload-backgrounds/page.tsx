@@ -12,8 +12,26 @@ export default function UploadBackgroundsPage() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, filename: "" });
   const [results, setResults] = useState<any[]>([]);
+  const [cardBackAdded, setCardBackAdded] = useState(false);
 
   const createBackground = useMutation((typedApi as any).cardBackgrounds.create);
+
+  const handleAddCardBack = async () => {
+    try {
+      await createBackground({
+        filename: "card-back.png",
+        blobUrl: "https://vuussqnjyqkpj1mb.public.blob.vercel-storage.com/card-back/card-back.png",
+        width: 1063,
+        height: 1063,
+        tags: ["card-back"],
+      });
+      setCardBackAdded(true);
+      alert("Card back added successfully!");
+    } catch (error) {
+      console.error("Failed to add card back:", error);
+      alert("Failed to add card back. Check console for details.");
+    }
+  };
 
   const handleUpload = async () => {
     setUploading(true);
@@ -59,9 +77,19 @@ export default function UploadBackgroundsPage() {
             Upload all card backgrounds from /Users/home/Downloads/cards-raw to Vercel Blob
           </p>
 
-          <Button onClick={handleUpload} disabled={uploading}>
-            {uploading ? "Uploading..." : "Start Upload"}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleUpload} disabled={uploading}>
+              {uploading ? "Uploading..." : "Start Upload"}
+            </Button>
+
+            <Button
+              onClick={handleAddCardBack}
+              disabled={uploading || cardBackAdded}
+              variant="secondary"
+            >
+              {cardBackAdded ? "Card Back Added ✓" : "Add Card Back"}
+            </Button>
+          </div>
 
           {uploading && (
             <div className="space-y-2">
