@@ -6,7 +6,7 @@
  * Paginated transaction history for gold/gems and tokens.
  */
 
-import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi } from "@/lib/convexHelpers";
 import { usePaginatedQuery } from "convex/react";
 import { useState } from "react";
 import { useAuth } from "../auth/useConvexAuthHook";
@@ -99,10 +99,15 @@ export function useTransactionHistory(): UseTransactionHistoryReturn {
     { initialNumItems: 20 }
   );
 
-  // Token transactions - using cursor-based pagination
-  const tokenTxData = useConvexQuery(
+  // Token transactions - using Convex pagination
+  const {
+    results: tokenTransactions,
+    status: tokenStatus,
+    loadMore: loadMoreTokens,
+  } = usePaginatedQuery(
     typedApi.economy.tokenMarketplace.getTokenTransactionHistory,
-    isAuthenticated ? { limit: 50 } : "skip"
+    isAuthenticated ? {} : "skip",
+    { initialNumItems: 20 }
   );
 
   // Filter transactions based on selected filter
@@ -112,7 +117,7 @@ export function useTransactionHistory(): UseTransactionHistoryReturn {
   });
 
   const filteredTokenTx =
-    filter === "all" || filter === "token" ? (tokenTxData?.transactions ?? []) : [];
+    filter === "all" || filter === "token" ? (tokenTransactions ?? []) : [];
 
   // Combine and sort all transactions by date
   const allTransactions = [...filteredTransactions, ...filteredTokenTx].sort(
@@ -128,12 +133,9 @@ export function useTransactionHistory(): UseTransactionHistoryReturn {
 
     // Token
     tokenTransactions: filteredTokenTx,
-    tokenHasMore: tokenTxData?.hasMore ?? false,
-    loadMoreTokens: () => {
-      // For token transactions, we'd need to implement cursor-based loading
-      // This is a simplified version
-    },
-    isTokenLoading: tokenTxData === undefined,
+    tokenHasMore: tokenStatus === "CanLoadMore",
+    loadMoreTokens: () => loadMoreTokens(20),
+    isTokenLoading: tokenStatus === "LoadingFirstPage",
 
     // Combined
     allTransactions,
