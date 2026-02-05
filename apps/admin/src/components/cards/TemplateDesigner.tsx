@@ -4,12 +4,23 @@ import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Stage, Layer, Image as KonvaImage } from "react-konva";
+import useImage from "use-image";
+import BackgroundPicker from "./BackgroundPicker";
 
 type CardType = "creature" | "spell" | "trap" | "magic" | "environment";
 
 export default function TemplateDesigner() {
   const [cardType, setCardType] = useState<CardType>("creature");
-  const [selectedBackground, setSelectedBackground] = useState<string | null>(null);
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
+  const [backgroundId, setBackgroundId] = useState<string | null>(null);
+  const [canvasSize] = useState({ width: 750, height: 1050 });
+  const [zoom, setZoom] = useState(1);
+
+  function BackgroundImage({ url }: { url: string }) {
+    const [image] = useImage(url);
+    return <KonvaImage image={image} width={750} height={1050} />;
+  }
 
   return (
     <div className="h-full grid grid-cols-[300px_1fr_300px] gap-4 p-4">
@@ -32,9 +43,12 @@ export default function TemplateDesigner() {
             </Select>
           </div>
 
-          <Button variant="outline" className="w-full">
-            Select Background
-          </Button>
+          <BackgroundPicker
+            onSelect={(id, url) => {
+              setBackgroundId(id);
+              setBackgroundUrl(url);
+            }}
+          />
 
           <Button variant="outline" className="w-full">
             Add Text Field
@@ -43,8 +57,14 @@ export default function TemplateDesigner() {
       </div>
 
       {/* Center Canvas */}
-      <div className="flex items-center justify-center bg-muted/20">
-        <div className="text-muted-foreground">Canvas will go here</div>
+      <div className="flex items-center justify-center bg-muted/20 p-4">
+        <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
+          <Stage width={canvasSize.width} height={canvasSize.height}>
+            <Layer>
+              {backgroundUrl && <BackgroundImage url={backgroundUrl} />}
+            </Layer>
+          </Stage>
+        </div>
       </div>
 
       {/* Right Panel */}
