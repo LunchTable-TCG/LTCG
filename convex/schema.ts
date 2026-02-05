@@ -2671,7 +2671,7 @@ export default defineSchema({
 
     // Tournament configuration
     format: v.literal("single_elimination"), // Future: "double_elimination", "swiss", "round_robin"
-    maxPlayers: v.union(v.literal(8), v.literal(16), v.literal(32)),
+    maxPlayers: v.union(v.literal(4), v.literal(8), v.literal(16), v.literal(32)),
     entryFee: v.number(), // Gold required to enter (0 for free)
     mode: v.union(v.literal("ranked"), v.literal("casual")), // Game mode for matches
 
@@ -2716,11 +2716,21 @@ export default defineSchema({
     createdBy: v.id("users"),
     createdAt: v.number(),
     updatedAt: v.number(),
+
+    // User-created tournament fields
+    creatorType: v.optional(v.union(v.literal("admin"), v.literal("user"))), // Default: "admin"
+    visibility: v.optional(v.union(v.literal("public"), v.literal("private"))), // Default: "public"
+    joinCode: v.optional(v.string()), // 6-char code for private tournaments
+    autoStartOnFull: v.optional(v.boolean()), // Start immediately when full
+    expiresAt: v.optional(v.number()), // Auto-cancel if not filled by this time
   })
     .index("by_status", ["status"])
     .index("by_scheduled_start", ["scheduledStartAt"])
     .index("by_registration_start", ["registrationStartsAt"])
-    .index("by_created", ["createdAt"]),
+    .index("by_created", ["createdAt"])
+    .index("by_join_code", ["joinCode"])
+    .index("by_visibility_status", ["visibility", "status"])
+    .index("by_creator", ["createdBy", "status"]),
 
   // Tournament participants (registered players)
   tournamentParticipants: defineTable({

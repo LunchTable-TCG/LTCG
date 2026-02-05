@@ -114,6 +114,21 @@ export const ErrorCode = {
   DM_CONVERSATION_NOT_FOUND: "DM_7202",
   DM_NOT_PARTICIPANT: "DM_7203",
 
+  // User Tournament Errors (73xx - Social Related)
+  TOURNAMENT_NOT_FOUND: "TOURNAMENT_7301",
+  TOURNAMENT_FULL: "TOURNAMENT_7302",
+  TOURNAMENT_NOT_IN_REGISTRATION: "TOURNAMENT_7303",
+  TOURNAMENT_ALREADY_REGISTERED: "TOURNAMENT_7304",
+  TOURNAMENT_NOT_REGISTERED: "TOURNAMENT_7305",
+  TOURNAMENT_ALREADY_HOSTING: "TOURNAMENT_7306",
+  TOURNAMENT_NOT_HOST: "TOURNAMENT_7307",
+  TOURNAMENT_HOST_CANNOT_LEAVE: "TOURNAMENT_7308",
+  TOURNAMENT_INVALID_BUY_IN: "TOURNAMENT_7309",
+  TOURNAMENT_CODE_NOT_FOUND: "TOURNAMENT_7310",
+  TOURNAMENT_PRIVATE_REQUIRES_CODE: "TOURNAMENT_7311",
+  TOURNAMENT_EXPIRED: "TOURNAMENT_7312",
+  TOURNAMENT_NO_ACTIVE_DECK: "TOURNAMENT_7313",
+
   // Game Errors (8xxx)
   GAME_LOBBY_FULL: "GAME_8001",
   GAME_ALREADY_IN_GAME: "GAME_8002",
@@ -298,6 +313,21 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   DM_7201: "You can only message friends",
   DM_7202: "Conversation not found",
   DM_7203: "You are not a participant in this conversation",
+
+  // User Tournaments
+  TOURNAMENT_7301: "Tournament not found",
+  TOURNAMENT_7302: "Tournament is full",
+  TOURNAMENT_7303: "Tournament is not accepting registrations",
+  TOURNAMENT_7304: "You are already registered for this tournament",
+  TOURNAMENT_7305: "You are not registered for this tournament",
+  TOURNAMENT_7306: "You already have an active hosted tournament",
+  TOURNAMENT_7307: "Only the tournament host can perform this action",
+  TOURNAMENT_7308: "Tournament host cannot leave their own tournament",
+  TOURNAMENT_7309: "Buy-in must be between 0 and 100,000 gold",
+  TOURNAMENT_7310: "Invalid tournament code",
+  TOURNAMENT_7311: "This is a private tournament. Please enter the join code",
+  TOURNAMENT_7312: "This tournament has expired",
+  TOURNAMENT_7313: "You must have an active deck to join tournaments",
 
   // Game
   GAME_8001: "Game lobby is full",

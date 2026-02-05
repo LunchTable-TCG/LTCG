@@ -113,13 +113,20 @@ interface UseInboxReturn {
 export function useInbox(): UseInboxReturn {
   const { isAuthenticated } = useAuth();
 
+  // Check if user record exists in Convex (handles new signup race condition)
+  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+
+  // Only fetch inbox data if user record exists (not just authenticated)
+  // This prevents errors during signup when Privy auth is valid but user record isn't created yet
+  const userExists = isAuthenticated && currentUser !== undefined && currentUser !== null;
+
   // Queries
   const messages = useQuery(
     api.social.inbox.getInboxMessages,
-    isAuthenticated ? { limit: 100 } : "skip"
+    userExists ? { limit: 100 } : "skip"
   ) as InboxMessage[] | undefined;
 
-  const unreadCountQuery = useQuery(api.social.inbox.getUnreadCount, isAuthenticated ? {} : "skip");
+  const unreadCountQuery = useQuery(api.social.inbox.getUnreadCount, userExists ? {} : "skip");
 
   // Mutations
   const markAsReadMutation = useMutation(api.social.inbox.markAsRead);

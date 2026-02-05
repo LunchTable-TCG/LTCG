@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
-import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
+import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 
 // ============================================================================
@@ -41,7 +41,24 @@ export const getInboxMessages = query({
     unreadOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuthQuery(ctx);
+    // Use direct auth check instead of requireAuthQuery to gracefully handle new users
+    // whose DB record hasn't been created yet (race condition during signup)
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return []; // Not authenticated
+    }
+
+    const privyId = identity.subject;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("privyId", (q) => q.eq("privyId", privyId))
+      .first();
+
+    if (!user) {
+      return []; // User record not yet created (new signup in progress)
+    }
+
+    const userId = user._id;
     const limit = Math.min(args.limit ?? 50, 100);
     const now = Date.now();
 
@@ -86,7 +103,23 @@ export const getInboxMessages = query({
 export const getUnreadCount = query({
   args: {},
   handler: async (ctx) => {
-    const { userId } = await requireAuthQuery(ctx);
+    // Use direct auth check to gracefully handle new users
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return 0;
+    }
+
+    const privyId = identity.subject;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("privyId", (q) => q.eq("privyId", privyId))
+      .first();
+
+    if (!user) {
+      return 0; // User record not yet created
+    }
+
+    const userId = user._id;
     const now = Date.now();
 
     const unreadMessages = await ctx.db
@@ -108,10 +141,24 @@ export const getMessage = query({
     messageId: v.id("userInbox"),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuthQuery(ctx);
+    // Use direct auth check to gracefully handle new users
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+
+    const privyId = identity.subject;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("privyId", (q) => q.eq("privyId", privyId))
+      .first();
+
+    if (!user) {
+      return null;
+    }
 
     const message = await ctx.db.get(args.messageId);
-    if (!message || message.userId !== userId || message.deletedAt) {
+    if (!message || message.userId !== user._id || message.deletedAt) {
       return null;
     }
 

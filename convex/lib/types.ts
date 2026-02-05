@@ -99,7 +99,10 @@ export type TransactionType =
   | "auction_refund"
   | "wager"
   | "wager_payout"
-  | "wager_refund";
+  | "wager_refund"
+  | "tournament_entry"
+  | "tournament_refund"
+  | "tournament_prize";
 
 /**
  * Transaction metadata with discriminated union for type safety

@@ -178,7 +178,10 @@ export const currencyTransactionValidator = v.object({
     v.literal("auction_refund"),
     v.literal("wager"),
     v.literal("wager_payout"),
-    v.literal("wager_refund")
+    v.literal("wager_refund"),
+    v.literal("tournament_entry"),
+    v.literal("tournament_refund"),
+    v.literal("tournament_prize")
   ),
   currencyType: v.union(v.literal("gold"), v.literal("gems")),
   amount: v.number(),

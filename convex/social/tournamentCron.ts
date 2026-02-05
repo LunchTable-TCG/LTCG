@@ -81,3 +81,26 @@ export const processNoShowForfeits = internalAction({
     }
   },
 });
+
+/**
+ * Expire unfilled user tournaments
+ * Called every hour to cancel user tournaments that haven't filled within 24 hours
+ */
+export const expireUnfilledUserTournaments = internalAction({
+  handler: async (ctx) => {
+    // Get expired user tournaments
+    const expiredTournaments = await ctx.runQuery(
+      internalAny.social.userTournaments.getExpiredTournaments
+    );
+
+    for (const tournamentId of expiredTournaments) {
+      try {
+        await ctx.runMutation(internalAny.social.userTournaments.expireTournament, {
+          tournamentId,
+        });
+      } catch (error) {
+        console.error(`Failed to expire tournament ${tournamentId}:`, error);
+      }
+    }
+  },
+});

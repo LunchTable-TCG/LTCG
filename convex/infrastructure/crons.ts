@@ -154,4 +154,13 @@ crons.interval(
   internalAny.social.tournamentCron.processNoShowForfeits
 );
 
+// Expire unfilled user tournaments every hour
+// - Cancel user tournaments that haven't filled within 24 hours
+// - Refund all participants their entry fees
+crons.interval(
+  "expire-unfilled-user-tournaments",
+  { hours: 1 },
+  internalAny.social.tournamentCron.expireUnfilledUserTournaments
+);
+
 export default crons;
