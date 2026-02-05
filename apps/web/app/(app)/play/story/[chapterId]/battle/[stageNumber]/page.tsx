@@ -118,13 +118,40 @@ export default function BattlePage({ params }: BattlePageProps) {
         }
       } catch (error) {
         console.error("Failed to initialize story battle:", error);
+
         if (mounted) {
-          // Parse Convex error for better messages
-          const errorMessage = error instanceof Error ? error.message : "Failed to start battle";
-          if (errorMessage.includes("active deck")) {
+          // Extract error message from ConvexError or plain Error
+          let errorMessage = "Failed to start battle";
+          let errorCode = "";
+
+          // ConvexError.data is now a string in format "[CODE] Message"
+          const convexData = (error as { data?: string })?.data;
+          if (typeof convexData === "string") {
+            console.log("ConvexError data:", convexData);
+            // Parse format: "[CODE] Message"
+            const match = convexData.match(/^\[([^\]]+)\]\s*(.*)$/);
+            if (match) {
+              errorCode = match[1] ?? "";
+              errorMessage = match[2] ?? convexData;
+            } else {
+              errorMessage = convexData;
+            }
+          } else if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+
+          console.log("Parsed error - Code:", errorCode, "Message:", errorMessage);
+
+          // Provide helpful message for common errors
+          if (
+            errorMessage.includes("active deck") ||
+            errorMessage.includes("must have an active deck")
+          ) {
             setInitError(
               "You need to select an active deck before starting a battle. Go to Collection → Decks and select a deck."
             );
+          } else if (errorCode === "AUTH_1001" || errorMessage.includes("Authentication required")) {
+            setInitError("Please sign in to play story mode.");
           } else {
             setInitError(errorMessage);
           }

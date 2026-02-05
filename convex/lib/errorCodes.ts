@@ -7,7 +7,12 @@
  * - Better error tracking and monitoring
  * - Consistent error messages
  * - Internationalization support
+ *
+ * IMPORTANT: Uses ConvexError to ensure error messages are visible on the client.
+ * Plain JavaScript Error objects get masked as "Server Error" by Convex for security.
  */
+
+import { ConvexError } from "convex/values";
 
 export const ErrorCode = {
   // Authentication Errors (1xxx)
@@ -407,30 +412,60 @@ export const ErrorMessages: Record<ErrorCode, string> = {
 /**
  * Create a structured error with code and message
  *
+ * Uses ConvexError to ensure error details are visible on the client.
+ * Plain JavaScript Error objects get masked as "Server Error" by Convex for security.
+ *
  * @param code - Error code from ErrorCode enum
  * @param details - Optional additional details
- * @returns Error with structured message
+ * @returns ConvexError with structured data
  *
  * @example
  * throw createError(ErrorCode.ECONOMY_INSUFFICIENT_GOLD, { required: 100, available: 50 });
  */
-export function createError(code: ErrorCode, details?: Record<string, unknown>): Error {
+export function createError(code: ErrorCode, details?: Record<string, unknown>): ConvexError<string> {
   // Use details.reason if provided, otherwise fall back to static message
   const message = (details?.["reason"] as string) || ErrorMessages[code];
-  const error = new Error(message) as Error & {
-    code: ErrorCode;
-    details?: Record<string, unknown>;
-  };
-  error.code = code;
-  if (details) {
-    error.details = details;
-  }
-  return error;
+  // Include code in message for easy extraction on client
+  const fullMessage = `[${code}] ${message}`;
+  return new ConvexError(fullMessage);
 }
 
 /**
- * Type guard to check if error has a code
+ * Type guard to check if error is a ConvexError
  */
-export function hasErrorCode(error: unknown): error is Error & { code: ErrorCode } {
-  return error instanceof Error && "code" in error && typeof error.code === "string";
+export function isConvexError(error: unknown): error is ConvexError<string> {
+  return error instanceof ConvexError;
+}
+
+/**
+ * Extract error code and message from a ConvexError
+ * Error format: "[CODE] Message"
+ */
+export function parseConvexError(error: unknown): {
+  code: string;
+  message: string;
+} | null {
+  if (!isConvexError(error) || typeof error.data !== "string") {
+    return null;
+  }
+  // Parse format: "[CODE] Message"
+  const match = error.data.match(/^\[([^\]]+)\]\s*(.*)$/);
+  if (match) {
+    return { code: match[1] ?? "", message: match[2] ?? "" };
+  }
+  return { code: "", message: error.data };
+}
+
+/**
+ * @deprecated Use isConvexError and parseConvexError instead
+ */
+export function hasErrorCode(error: unknown): boolean {
+  return isConvexError(error);
+}
+
+/**
+ * @deprecated Use parseConvexError instead
+ */
+export function getErrorData(error: unknown): { code: string; message: string } | null {
+  return parseConvexError(error);
 }

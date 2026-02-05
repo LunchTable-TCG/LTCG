@@ -245,6 +245,7 @@ import type * as progression_notifications from "../progression/notifications.js
 import type * as progression_quests from "../progression/quests.js";
 import type * as progression_story from "../progression/story.js";
 import type * as progression_storyBattle from "../progression/storyBattle.js";
+import type * as progression_storyDiagnostic from "../progression/storyDiagnostic.js";
 import type * as progression_storyQueries from "../progression/storyQueries.js";
 import type * as progression_storyStages from "../progression/storyStages.js";
 import type * as router from "../router.js";
@@ -557,6 +558,7 @@ declare const fullApi: ApiFromModules<{
   "progression/quests": typeof progression_quests;
   "progression/story": typeof progression_story;
   "progression/storyBattle": typeof progression_storyBattle;
+  "progression/storyDiagnostic": typeof progression_storyDiagnostic;
   "progression/storyQueries": typeof progression_storyQueries;
   "progression/storyStages": typeof progression_storyStages;
   router: typeof router;

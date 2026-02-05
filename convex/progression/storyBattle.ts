@@ -7,14 +7,14 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { internalQuery, query } from "../_generated/server";
-import { internalMutation, mutation } from "../functions";
+import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
 import { initializeGameStateHelper } from "../gameplay/games/lifecycle";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { DIFFICULTY_UNLOCK_LEVELS } from "../lib/storyConstants";
 import { getPlayerXP } from "../lib/xpHelpers";
 import { STORY_CHAPTERS } from "../seeds/storyChapters";
+import { checkRetryLimit, formatTimeUntilReset } from "../lib/storyHelpers";
 
 // Difficulty type for story mode unlock gates
 type StoryDifficulty = "normal" | "hard" | "legendary";
@@ -381,169 +381,119 @@ export const initializeStoryBattle = mutation({
   args: {
     chapterId: v.string(), // e.g., "1-1", "1-2", etc.
     stageNumber: v.optional(v.number()), // 1-10, defaults to 1 if not provided
-    difficulty: v.optional(v.union(v.literal("normal"), v.literal("hard"), v.literal("legendary"))), // defaults to "normal"
   },
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
-    const difficulty = args.difficulty ?? "normal";
 
-    try {
-      // Check difficulty access
-      const access = await checkDifficultyAccess(ctx, userId, difficulty);
-      if (!access.allowed) {
-        throw createError(ErrorCode.AUTHZ_INSUFFICIENT_PERMISSIONS, {
-          reason: `Requires level ${access.requiredLevel} to play on ${difficulty} mode`,
-          requiredLevel: access.requiredLevel,
-          currentLevel: access.currentLevel,
-        });
-      }
+    // Parse chapter ID (e.g., "1-1" -> act 1, chapter 1)
+    const [actNum, chapNum] = args.chapterId.split("-").map(Number);
 
-      // Check retry limits
-      const { checkRetryLimit, formatTimeUntilReset } = await import("../lib/storyHelpers");
-      const retryLimit = await checkRetryLimit(ctx, userId, difficulty);
-
-      if (!retryLimit.allowed) {
-        const timeUntilReset = formatTimeUntilReset(retryLimit.timeUntilReset);
-        const difficultyName = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
-        throw createError(ErrorCode.RATE_LIMIT_EXCEEDED, {
-          reason: `You've used all ${retryLimit.maxAttempts} attempts for ${difficultyName} mode. Resets in ${timeUntilReset}`,
-          limit: retryLimit.maxAttempts,
-          attemptsUsed: retryLimit.attemptsUsed,
-          resetsAt: retryLimit.resetsAt,
-        });
-      }
-
-      // Parse chapter ID (e.g., "1-1" -> act 1, chapter 1)
-      const [actNum, chapNum] = args.chapterId.split("-").map(Number);
-
-      if (!actNum || !chapNum || actNum < 1 || chapNum < 1 || chapNum > 10) {
-        throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-          reason: "Invalid chapter ID format. Expected format: '1-1'",
-        });
-      }
-
-      // Get chapter from database
-      const chapter = await ctx.db
-        .query("storyChapters")
-        .withIndex("by_act_chapter", (q) => q.eq("actNumber", actNum).eq("chapterNumber", chapNum))
-        .first();
-
-      if (!chapter) {
-        throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-          reason: "Chapter not found",
-        });
-      }
-      // Check if chapter is unlocked for this player
-      const unlockResult = await checkChapterUnlocked(ctx, userId, chapter);
-      if (!unlockResult.unlocked) {
-        throw createError(ErrorCode.AUTHZ_INSUFFICIENT_PERMISSIONS, {
-          reason: unlockResult.reason ?? "Chapter is locked",
-          requirements: unlockResult.requirements,
-        });
-      }
-
-      // Get the specific stage for this battle
-      const stageNumber = args.stageNumber || 1;
-      const stage = await ctx.db
-        .query("storyStages")
-        .withIndex("by_chapter", (q) =>
-          q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber)
-        )
-        .first();
-
-      if (!stage) {
-        throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-          reason: `Stage ${stageNumber} not found for this chapter`,
-        });
-      }
-      // Get chapter definition from seeds for AI deck (fallback)
-      const chapterDef = STORY_CHAPTERS.find(
-        (c) => c.actNumber === actNum && c.chapterNumber === chapNum
-      );
-
-      if (!chapterDef) {
-        throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-          reason: "Chapter definition not found in seeds",
-        });
-      }
-
-      // Verify user has an active deck
-      const user = await ctx.db.get(userId);
-      if (!user?.activeDeckId) {
-        throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-          reason: "You must have an active deck to start a battle",
-        });
-      }
-
-      // Build AI deck from archetype cards
-      // Use aiOpponentDeckCode (lowercase) which maps to actual card archetypes in DB
-      const deckArchetype = (chapter.aiOpponentDeckCode ?? chapterDef.aiOpponentDeckCode ?? "infernal_dragons").toLowerCase();
-      const aiDeck = await buildAIDeck(ctx, deckArchetype);
-
-      // Create or get AI user
-      const aiUserId = await getOrCreateAIUser(ctx);
-
-      // Create game lobby for story mode
-      const gameId = `story_${userId}_${Date.now()}`;
-      const now = Date.now();
-
-      // Create lobby (matchmaking info only - turn state is in gameStates)
-      const lobbyId = await ctx.db.insert("gameLobbies", {
-        gameId,
-        hostId: userId,
-        hostUsername: username,
-        hostRank: "Unranked", // Story mode doesn't use ranked system
-        hostRating: 1000, // Default rating
-        deckArchetype: "mixed", // Story mode uses mixed deck
-        opponentId: aiUserId,
-        opponentUsername: `AI - ${chapter.title}`,
-        mode: "story",
-        status: "active",
-        isPrivate: true, // Story games are private
-        joinCode: `story-${gameId}`,
-        // Turn state is initialized in gameStates via initializeGameStateHelper
-        lastMoveAt: now, // Keep for timeout tracking
-        createdAt: now,
-        startedAt: now,
-        allowSpectators: false,
-        spectatorCount: 0,
-        maxSpectators: 0,
-        // Story mode tracking
-        stageId: stage._id,
-      });
-
-      // Initialize game state with AI opponent
-      await initializeGameStateHelper(ctx, {
-        lobbyId,
-        gameId,
-        hostId: userId,
-        opponentId: aiUserId,
-        currentTurnPlayerId: userId,
-        gameMode: "story",
-        isAIOpponent: true,
-        aiDifficulty: stage.aiDifficulty ?? stage.difficulty, // Use stage's difficulty (easy, medium, hard, boss)
-        aiDeck,
-      });
-
-      return {
-        gameId,
-        lobbyId,
-        chapterTitle: chapter.title,
-        aiOpponentName: `AI - ${chapter.title}`,
-      };
-    } catch (error) {
-      // Re-throw ConvexErrors as-is
-      if (error instanceof Error && error.name === "ConvexError") {
-        throw error;
-      }
-      // Wrap unknown errors with more context
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error initializing story battle";
-      console.error("[StoryBattle] Error:", errorMessage);
-      throw createError(ErrorCode.SYSTEM_INTERNAL_ERROR, {
-        reason: errorMessage,
+    if (!actNum || !chapNum || actNum < 1 || chapNum < 1 || chapNum > 10) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Invalid chapter ID format. Expected format: '1-1'",
       });
     }
+
+    // Get chapter from database
+    const chapter = await ctx.db
+      .query("storyChapters")
+      .withIndex("by_act_chapter", (q) => q.eq("actNumber", actNum).eq("chapterNumber", chapNum))
+      .first();
+
+    if (!chapter) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Chapter not found",
+      });
+    }
+
+    // Get the specific stage for this battle
+    const stageNumber = args.stageNumber || 1;
+    const stage = await ctx.db
+      .query("storyStages")
+      .withIndex("by_chapter", (q) =>
+        q.eq("chapterId", chapter._id).eq("stageNumber", stageNumber)
+      )
+      .first();
+
+    if (!stage) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: `Stage ${stageNumber} not found for this chapter`,
+      });
+    }
+
+    // Get chapter definition from seeds for AI deck (fallback)
+    const chapterDef = STORY_CHAPTERS.find(
+      (c) => c.actNumber === actNum && c.chapterNumber === chapNum
+    );
+
+    if (!chapterDef) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Chapter definition not found in seeds",
+      });
+    }
+
+    // Verify user has an active deck
+    const user = await ctx.db.get(userId);
+    if (!user?.activeDeckId) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "You must have an active deck to start a battle",
+      });
+    }
+
+    // Build AI deck from archetype cards
+    // Use aiOpponentDeckCode (lowercase) which maps to actual card archetypes in DB
+    const deckArchetype = (chapter.aiOpponentDeckCode ?? "infernal_dragons").toLowerCase();
+    const aiDeck = await buildAIDeck(ctx, deckArchetype);
+
+    // Create or get AI user
+    const aiUserId = await getOrCreateAIUser(ctx);
+
+    // Create game lobby for story mode
+    const gameId = `story_${userId}_${Date.now()}`;
+    const now = Date.now();
+
+    // Create lobby (matchmaking info only - turn state is in gameStates)
+    const lobbyId = await ctx.db.insert("gameLobbies", {
+      gameId,
+      hostId: userId,
+      hostUsername: username,
+      hostRank: "Unranked", // Story mode doesn't use ranked system
+      hostRating: 1000, // Default rating
+      deckArchetype: "mixed", // Story mode uses mixed deck
+      opponentId: aiUserId,
+      opponentUsername: `AI - ${chapter.title}`,
+      mode: "story",
+      status: "active",
+      isPrivate: true, // Story games are private
+      joinCode: `story-${gameId}`,
+      // Turn state is initialized in gameStates via initializeGameStateHelper
+      lastMoveAt: now, // Keep for timeout tracking
+      createdAt: now,
+      startedAt: now,
+      allowSpectators: false,
+      spectatorCount: 0,
+      maxSpectators: 0,
+    });
+
+    // Initialize game state with AI opponent
+    await initializeGameStateHelper(ctx, {
+      lobbyId,
+      gameId,
+      hostId: userId,
+      opponentId: aiUserId,
+      currentTurnPlayerId: userId,
+      gameMode: "story",
+      isAIOpponent: true,
+      aiDifficulty: stage.aiDifficulty ?? stage.difficulty, // Use stage's difficulty (easy, medium, hard, boss)
+      aiDeck,
+    });
+
+    return {
+      gameId,
+      lobbyId,
+      chapterTitle: chapter.title,
+      aiOpponentName: `AI - ${chapter.title}`,
+    };
   },
 });
 
@@ -810,7 +760,6 @@ export const initializeStoryBattleInternal = internalMutation({
     }
 
     // Check retry limits
-    const { checkRetryLimit, formatTimeUntilReset } = await import("../lib/storyHelpers");
     const retryLimit = await checkRetryLimit(ctx, args.userId, difficulty);
 
     if (!retryLimit.allowed) {
