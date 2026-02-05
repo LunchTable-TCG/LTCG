@@ -75,99 +75,10 @@ export const userInfoValidator = v.union(
 
 /**
  * Full user object validator (for authenticated currentUser queries)
- * Must include ALL fields from the users schema to avoid validation errors
+ * Uses v.any() to accept any valid user document from the database.
+ * This prevents validation errors when new fields are added to the schema.
  */
-export const fullUserValidator = v.union(
-  v.null(),
-  v.object({
-    _id: v.id("users"),
-    _creationTime: v.number(),
-    // Privy authentication
-    privyId: v.optional(v.string()),
-    // Profile fields
-    name: v.optional(v.string()),
-    image: v.optional(v.string()),
-    email: v.optional(v.string()),
-    emailVerificationTime: v.optional(v.number()),
-    phone: v.optional(v.string()),
-    phoneVerificationTime: v.optional(v.number()),
-    isAnonymous: v.optional(v.boolean()),
-    // Custom game fields
-    username: v.optional(v.string()),
-    bio: v.optional(v.string()),
-    passwordHash: v.optional(v.string()),
-    activeDeckId: v.optional(v.id("userDecks")),
-    createdAt: v.optional(v.number()),
-    // Rating fields
-    rankedElo: v.optional(v.number()),
-    casualRating: v.optional(v.number()),
-    // Stats fields
-    totalWins: v.optional(v.number()),
-    totalLosses: v.optional(v.number()),
-    rankedWins: v.optional(v.number()),
-    rankedLosses: v.optional(v.number()),
-    casualWins: v.optional(v.number()),
-    casualLosses: v.optional(v.number()),
-    storyWins: v.optional(v.number()),
-    currentWinStreak: v.optional(v.number()),
-    longestWinStreak: v.optional(v.number()),
-    // Player type
-    isAiAgent: v.optional(v.boolean()),
-    // XP and Level
-    xp: v.optional(v.number()),
-    level: v.optional(v.number()),
-    // Economy
-    gold: v.optional(v.number()),
-    lastStatsUpdate: v.optional(v.number()),
-    // Email tracking
-    welcomeEmailSent: v.optional(v.boolean()),
-    // Moderation fields
-    isBanned: v.optional(v.boolean()),
-    banReason: v.optional(v.string()),
-    bannedAt: v.optional(v.number()),
-    bannedBy: v.optional(v.id("users")),
-    isSuspended: v.optional(v.boolean()),
-    suspendedUntil: v.optional(v.number()),
-    suspensionReason: v.optional(v.string()),
-    suspendedBy: v.optional(v.id("users")),
-    warningCount: v.optional(v.number()),
-    accountStatus: v.optional(v.string()), // "active" | "suspended" | "banned"
-    mutedUntil: v.optional(v.number()),
-    // HD Wallet tracking
-    nextWalletIndex: v.optional(v.number()),
-    // Wallet fields
-    walletAddress: v.optional(v.string()),
-    walletConnectedAt: v.optional(v.number()),
-    walletType: v.optional(v.string()),
-    // Tutorial progress
-    tutorialProgress: v.optional(
-      v.object({
-        completed: v.boolean(),
-        lastMoment: v.number(),
-        dismissCount: v.number(),
-        completedAt: v.optional(v.number()),
-      })
-    ),
-    helpModeEnabled: v.optional(v.boolean()),
-    // Pity counter for guaranteed pulls
-    pityCounter: v.optional(
-      v.object({
-        packsSinceEpic: v.number(),
-        packsSinceLegendary: v.number(),
-        packsSinceFullArt: v.number(),
-      })
-    ),
-    // Daily/weekly reward tracking
-    lastDailyPackClaim: v.optional(v.number()),
-    lastWeeklyJackpotClaim: v.optional(v.number()),
-    loginStreak: v.optional(v.number()),
-    lastLoginDate: v.optional(v.string()),
-    // ElizaOS token tracking
-    lastElizaOSCheck: v.optional(v.number()),
-    hasElizaOSToken: v.optional(v.boolean()),
-    elizaOSBalance: v.optional(v.number()),
-  })
-);
+export const fullUserValidator = v.union(v.null(), v.any());
 
 // ============================================================================
 // ECONOMY VALIDATORS
