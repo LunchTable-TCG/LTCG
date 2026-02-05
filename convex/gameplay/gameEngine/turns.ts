@@ -6,6 +6,7 @@
  */
 
 import { v } from "convex/values";
+import { api } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { internalMutation, mutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
@@ -238,6 +239,18 @@ export const endTurn = mutation({
       },
     });
 
+    // Trigger turn_start webhooks
+    await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+      event: "turn_start",
+      gameId: lobby.gameId ?? "",
+      lobbyId: args.lobbyId,
+      turnNumber: nextTurnNumber,
+      playerId: nextPlayerId,
+      additionalData: {
+        playerUsername: nextPlayer?.username || "Unknown",
+      },
+    });
+
     // 12.5. Reset OPT/HOPT effects for the new turn player
     // OPT resets at the start of the turn player's turn
     // HOPT expires based on the resetOnTurn field (player's next turn)
@@ -461,6 +474,18 @@ export const endTurnInternal = internalMutation({
       description: `${nextPlayer?.username || "AI Opponent"}'s turn ${nextTurnNumber}`,
       metadata: {
         turnNumber: nextTurnNumber,
+      },
+    });
+
+    // Trigger turn_start webhooks
+    await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+      event: "turn_start",
+      gameId: args.gameId,
+      lobbyId: gameState.lobbyId,
+      turnNumber: nextTurnNumber,
+      playerId: nextPlayerId,
+      additionalData: {
+        playerUsername: nextPlayer?.username || "AI Opponent",
       },
     });
 

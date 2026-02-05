@@ -6,6 +6,7 @@
  */
 
 import { v } from "convex/values";
+import { api } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
@@ -433,6 +434,21 @@ export async function recordGameEndHelper(
       loserUsername: params.loserUsername,
     },
     timestamp: Date.now(),
+  });
+
+  // Trigger game_end webhooks
+  await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+    event: "game_end",
+    gameId: params.gameId,
+    lobbyId: params.lobbyId,
+    turnNumber: params.turnNumber,
+    playerId: params.winnerId,
+    additionalData: {
+      winnerId: params.winnerId,
+      winnerUsername: params.winnerUsername,
+      loserId: params.loserId,
+      loserUsername: params.loserUsername,
+    },
   });
 }
 

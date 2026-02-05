@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { api } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../../economy/economy";
@@ -481,6 +482,22 @@ export const joinLobby = mutation({
         opponentUsername: username,
       });
 
+      // Trigger game_start webhooks
+      await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+        event: "game_start",
+        gameId,
+        lobbyId: args.lobbyId,
+        turnNumber: 1,
+        playerId: goesFirst,
+        additionalData: {
+          hostId: lobby.hostId,
+          hostUsername: lobby.hostUsername,
+          opponentId: userId,
+          opponentUsername: username,
+          mode: lobby.mode,
+        },
+      });
+
       logMatchmaking("lobby_join_success", userId, { ...traceCtx, gameId, hostId: lobby.hostId });
       logger.info("Game started successfully", {
         ...traceCtx,
@@ -607,6 +624,22 @@ export const joinLobbyByCode = mutation({
       hostUsername: lobby.hostUsername,
       opponentId: userId,
       opponentUsername: username,
+    });
+
+    // Trigger game_start webhooks
+    await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+      event: "game_start",
+      gameId,
+      lobbyId: lobby._id,
+      turnNumber: 1,
+      playerId: goesFirst,
+      additionalData: {
+        hostId: lobby.hostId,
+        hostUsername: lobby.hostUsername,
+        opponentId: userId,
+        opponentUsername: username,
+        mode: lobby.mode,
+      },
     });
 
     return {
@@ -1054,6 +1087,22 @@ export const joinLobbyInternal = internalMutation({
         hostUsername: lobby.hostUsername,
         opponentId: args.userId,
         opponentUsername: username,
+      });
+
+      // Trigger game_start webhooks
+      await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+        event: "game_start",
+        gameId,
+        lobbyId: args.lobbyId,
+        turnNumber: 1,
+        playerId: goesFirst,
+        additionalData: {
+          hostId: lobby.hostId,
+          hostUsername: lobby.hostUsername,
+          opponentId: args.userId,
+          opponentUsername: username,
+          mode: lobby.mode,
+        },
       });
 
       logMatchmaking("lobby_join_success", args.userId, {
