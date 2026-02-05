@@ -148,6 +148,24 @@ export const fullUserValidator = v.union(
         completedAt: v.optional(v.number()),
       })
     ),
+    helpModeEnabled: v.optional(v.boolean()),
+    // Pity counter for guaranteed pulls
+    pityCounter: v.optional(
+      v.object({
+        packsSinceEpic: v.number(),
+        packsSinceLegendary: v.number(),
+        packsSinceFullArt: v.number(),
+      })
+    ),
+    // Daily/weekly reward tracking
+    lastDailyPackClaim: v.optional(v.number()),
+    lastWeeklyJackpotClaim: v.optional(v.number()),
+    loginStreak: v.optional(v.number()),
+    lastLoginDate: v.optional(v.string()),
+    // ElizaOS token tracking
+    lastElizaOSCheck: v.optional(v.number()),
+    hasElizaOSToken: v.optional(v.boolean()),
+    elizaOSBalance: v.optional(v.number()),
   })
 );
 
