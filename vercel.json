@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "bun run turbo run build --filter=@ltcg/web",
+  "devCommand": "bun run dev:web",
+  "installCommand": "bun install",
+  "framework": "nextjs",
+  "outputDirectory": "apps/web/.next"
+}
