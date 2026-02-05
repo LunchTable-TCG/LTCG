@@ -36,7 +36,6 @@ export default function TemplateDesigner() {
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
   const [backgroundId, setBackgroundId] = useState<string | null>(null);
   const [canvasSize] = useState({ width: 750, height: 1050 });
-  const [zoom, setZoom] = useState(1);
   const [textFields, setTextFields] = useState<TextField[]>([]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
 
@@ -74,8 +73,8 @@ export default function TemplateDesigner() {
     onSelect: () => void;
     onChange: (newAttrs: Partial<TextField>) => void;
   }) {
-    const textRef = useRef<any>(null);
-    const trRef = useRef<any>(null);
+    const textRef = useRef<typeof Text | null>(null);
+    const trRef = useRef<typeof Transformer | null>(null);
 
     useEffect(() => {
       if (isSelected && trRef.current && textRef.current) {
@@ -140,10 +139,10 @@ export default function TemplateDesigner() {
       {/* Left Panel */}
       <div className="space-y-4 overflow-y-auto">
         <Card className="p-4 space-y-4">
-          <div>
-            <label className="text-sm font-medium">Card Type</label>
+          <div className="space-y-2">
+            <label htmlFor="card-type-select" className="text-sm font-medium">Card Type</label>
             <Select value={cardType} onValueChange={(v) => setCardType(v as CardType)}>
-              <SelectTrigger>
+              <SelectTrigger id="card-type-select">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -171,37 +170,35 @@ export default function TemplateDesigner() {
 
       {/* Center Canvas */}
       <div className="flex items-center justify-center bg-muted/20 p-4">
-        <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
-          <Stage
-            width={canvasSize.width}
-            height={canvasSize.height}
-            onMouseDown={(e) => {
-              const clickedOnEmpty = e.target === e.target.getStage();
-              if (clickedOnEmpty) {
-                setSelectedFieldId(null);
-              }
-            }}
-          >
-            <Layer>
-              {backgroundUrl && <BackgroundImage url={backgroundUrl} />}
-              {textFields.map((field) => (
-                <DraggableText
-                  key={field.id}
-                  field={field}
-                  isSelected={field.id === selectedFieldId}
-                  onSelect={() => setSelectedFieldId(field.id)}
-                  onChange={(newAttrs) => {
-                    setTextFields(
-                      textFields.map((f) =>
-                        f.id === field.id ? { ...f, ...newAttrs } : f
-                      )
-                    );
-                  }}
-                />
-              ))}
-            </Layer>
-          </Stage>
-        </div>
+        <Stage
+          width={canvasSize.width}
+          height={canvasSize.height}
+          onMouseDown={(e) => {
+            const clickedOnEmpty = e.target === e.target.getStage();
+            if (clickedOnEmpty) {
+              setSelectedFieldId(null);
+            }
+          }}
+        >
+          <Layer>
+            {backgroundUrl && <BackgroundImage url={backgroundUrl} />}
+            {textFields.map((field) => (
+              <DraggableText
+                key={field.id}
+                field={field}
+                isSelected={field.id === selectedFieldId}
+                onSelect={() => setSelectedFieldId(field.id)}
+                onChange={(newAttrs) => {
+                  setTextFields(
+                    textFields.map((f) =>
+                      f.id === field.id ? { ...f, ...newAttrs } : f
+                    )
+                  );
+                }}
+              />
+            ))}
+          </Layer>
+        </Stage>
       </div>
 
       {/* Right Panel */}
