@@ -8,7 +8,11 @@ import { authenticateRequest, isAuthError } from "../middleware/auth";
 const { api } = require("@convex/_generated/api");
 
 // Initialize Convex HTTP client for server-side mutations
-const convex = new ConvexHttpClient(process.env["NEXT_PUBLIC_CONVEX_URL"]!);
+const convexUrl = process.env["NEXT_PUBLIC_CONVEX_URL"];
+if (!convexUrl) {
+  throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is not set");
+}
+const convex = new ConvexHttpClient(convexUrl);
 
 /**
  * POST /api/game/join
@@ -87,7 +91,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(response, { status: 400 });
     }
 
-    let result;
+    let result: { gameId: string; lobbyId: string; opponentUsername: string; mode: string };
 
     // Call appropriate mutation based on what was provided
     if (lobbyId) {
