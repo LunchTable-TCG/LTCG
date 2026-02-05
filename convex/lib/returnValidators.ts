@@ -131,12 +131,23 @@ export const fullUserValidator = v.union(
     suspensionReason: v.optional(v.string()),
     suspendedBy: v.optional(v.id("users")),
     warningCount: v.optional(v.number()),
+    accountStatus: v.optional(v.string()), // "active" | "suspended" | "banned"
+    mutedUntil: v.optional(v.number()),
     // HD Wallet tracking
     nextWalletIndex: v.optional(v.number()),
     // Wallet fields
     walletAddress: v.optional(v.string()),
     walletConnectedAt: v.optional(v.number()),
     walletType: v.optional(v.string()),
+    // Tutorial progress
+    tutorialProgress: v.optional(
+      v.object({
+        completed: v.boolean(),
+        lastMoment: v.number(),
+        dismissCount: v.number(),
+        completedAt: v.optional(v.number()),
+      })
+    ),
   })
 );
 
@@ -1177,7 +1188,7 @@ export const tournamentSummaryValidator = v.object({
   name: v.string(),
   description: v.optional(v.string()),
   format: v.literal("single_elimination"),
-  maxPlayers: v.union(v.literal(8), v.literal(16), v.literal(32)),
+  maxPlayers: v.union(v.literal(4), v.literal(8), v.literal(16), v.literal(32)),
   entryFee: v.number(),
   mode: v.union(v.literal("ranked"), v.literal("casual")),
   prizePool: tournamentPrizePoolValidator,
@@ -1201,7 +1212,7 @@ export const tournamentDetailsValidator = v.object({
   name: v.string(),
   description: v.optional(v.string()),
   format: v.literal("single_elimination"),
-  maxPlayers: v.union(v.literal(8), v.literal(16), v.literal(32)),
+  maxPlayers: v.union(v.literal(4), v.literal(8), v.literal(16), v.literal(32)),
   entryFee: v.number(),
   mode: v.union(v.literal("ranked"), v.literal("casual")),
   prizePool: tournamentPrizePoolValidator,

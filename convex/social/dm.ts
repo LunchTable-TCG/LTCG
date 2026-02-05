@@ -96,7 +96,24 @@ export const getConversations = query({
     })
   ),
   handler: async (ctx) => {
-    const auth = await requireAuthQuery(ctx);
+    // Use direct auth check to gracefully handle new users
+    // whose DB record hasn't been created yet (race condition during signup)
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return []; // Not authenticated
+    }
+
+    const privyId = identity.subject;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("privyId", (q) => q.eq("privyId", privyId))
+      .first();
+
+    if (!user) {
+      return []; // User record not yet created (new signup in progress)
+    }
+
+    const auth = { userId: user._id };
 
     // Get conversations where user is participant1
     const asParticipant1 = await ctx.db
@@ -508,7 +525,23 @@ export const getTotalUnreadCount = query({
   args: {},
   returns: v.number(),
   handler: async (ctx) => {
-    const auth = await requireAuthQuery(ctx);
+    // Use direct auth check to gracefully handle new users
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return 0; // Not authenticated
+    }
+
+    const privyId = identity.subject;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("privyId", (q) => q.eq("privyId", privyId))
+      .first();
+
+    if (!user) {
+      return 0; // User record not yet created
+    }
+
+    const auth = { userId: user._id };
 
     // Get all conversations
     const asParticipant1 = await ctx.db

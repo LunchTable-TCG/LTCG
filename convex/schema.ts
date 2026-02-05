@@ -1300,7 +1300,10 @@ export default defineSchema({
       "auction_refund",
       "wager",
       "wager_payout",
-      "wager_refund"
+      "wager_refund",
+      "tournament_entry",
+      "tournament_refund",
+      "tournament_prize"
     ),
     currencyType: literals("gold", "gems"),
     amount: v.number(),

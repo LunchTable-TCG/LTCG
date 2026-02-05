@@ -86,11 +86,18 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
             <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  "inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm",
+                  "inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm border",
                   archetypeTheme.borderColor
                 )}
               >
-                <span>{archetypeTheme.icon}</span>
+                <Image
+                  src={archetypeTheme.iconPath}
+                  alt={chapter.archetype}
+                  width={16}
+                  height={16}
+                  className="rounded-sm"
+                  unoptimized
+                />
                 <span>Chapter {chapter.order}</span>
               </span>
               {isUnlocked && (

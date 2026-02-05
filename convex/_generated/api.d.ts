@@ -281,6 +281,7 @@ import type * as social_matchmaking from "../social/matchmaking.js";
 import type * as social_reports from "../social/reports.js";
 import type * as social_tournamentCron from "../social/tournamentCron.js";
 import type * as social_tournaments from "../social/tournaments.js";
+import type * as social_userTournaments from "../social/userTournaments.js";
 import type * as storage_cards from "../storage/cards.js";
 import type * as storage_images from "../storage/images.js";
 import type * as story from "../story.js";
@@ -591,6 +592,7 @@ declare const fullApi: ApiFromModules<{
   "social/reports": typeof social_reports;
   "social/tournamentCron": typeof social_tournamentCron;
   "social/tournaments": typeof social_tournaments;
+  "social/userTournaments": typeof social_userTournaments;
   "storage/cards": typeof storage_cards;
   "storage/images": typeof storage_images;
   story: typeof story;

@@ -9,8 +9,10 @@
 export interface ArchetypeTheme {
   /** Tailwind gradient classes (e.g., "from-red-500 to-orange-500") */
   gradient: string;
-  /** Emoji or icon character */
+  /** Emoji or icon character (fallback) */
   icon: string;
+  /** Path to the archetype PNG icon */
+  iconPath: string;
   /** Primary color name for Tailwind classes */
   color: string;
   /** Border/accent color class */
@@ -30,6 +32,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
   infernal_dragons: {
     gradient: "from-red-600 via-orange-500 to-yellow-500",
     icon: "🔥",
+    iconPath: "/brand/icons/archetypes/infernal_dragons.png",
     color: "red",
     borderColor: "border-red-500/50",
     glowColor: "shadow-red-500/30",
@@ -39,6 +42,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
   abyssal_horrors: {
     gradient: "from-blue-900 via-blue-600 to-cyan-500",
     icon: "🌊",
+    iconPath: "/brand/icons/archetypes/abyssal_horrors.png",
     color: "blue",
     borderColor: "border-blue-500/50",
     glowColor: "shadow-blue-500/30",
@@ -48,6 +52,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
   nature_spirits: {
     gradient: "from-green-700 via-emerald-500 to-lime-400",
     icon: "🌿",
+    iconPath: "/brand/icons/archetypes/nature_spirits.png",
     color: "green",
     borderColor: "border-green-500/50",
     glowColor: "shadow-green-500/30",
@@ -57,6 +62,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
   storm_elementals: {
     gradient: "from-purple-600 via-indigo-500 to-sky-400",
     icon: "⚡",
+    iconPath: "/brand/icons/archetypes/storm_elementals.png",
     color: "purple",
     borderColor: "border-purple-500/50",
     glowColor: "shadow-purple-500/30",
@@ -66,6 +72,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
   shadow_assassins: {
     gradient: "from-gray-900 via-slate-700 to-gray-600",
     icon: "🗡️",
+    iconPath: "/brand/icons/archetypes/shadow_assassins.png",
     color: "gray",
     borderColor: "border-gray-500/50",
     glowColor: "shadow-gray-500/30",
@@ -75,6 +82,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
   celestial_guardians: {
     gradient: "from-yellow-400 via-amber-300 to-white",
     icon: "✨",
+    iconPath: "/brand/icons/archetypes/celestial_guardians.png",
     color: "yellow",
     borderColor: "border-yellow-400/50",
     glowColor: "shadow-yellow-400/30",
@@ -84,6 +92,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
   undead_legion: {
     gradient: "from-gray-800 via-purple-900 to-green-800",
     icon: "💀",
+    iconPath: "/brand/icons/archetypes/undead_legion.png",
     color: "purple",
     borderColor: "border-purple-700/50",
     glowColor: "shadow-purple-700/30",
@@ -93,6 +102,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
   divine_knights: {
     gradient: "from-amber-500 via-yellow-400 to-orange-400",
     icon: "⚔️",
+    iconPath: "/brand/icons/archetypes/divine_knights.png",
     color: "amber",
     borderColor: "border-amber-500/50",
     glowColor: "shadow-amber-500/30",
@@ -102,6 +112,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
   arcane_mages: {
     gradient: "from-violet-600 via-fuchsia-500 to-pink-500",
     icon: "🔮",
+    iconPath: "/brand/icons/archetypes/arcane_mages.png",
     color: "violet",
     borderColor: "border-violet-500/50",
     glowColor: "shadow-violet-500/30",
@@ -111,6 +122,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
   mechanical_constructs: {
     gradient: "from-slate-600 via-zinc-500 to-amber-600",
     icon: "⚙️",
+    iconPath: "/brand/icons/archetypes/mechanical_constructs.png",
     color: "zinc",
     borderColor: "border-zinc-500/50",
     glowColor: "shadow-zinc-500/30",
@@ -123,6 +135,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
 export const DEFAULT_ARCHETYPE_THEME: ArchetypeTheme = {
   gradient: "from-purple-600 via-indigo-500 to-blue-500",
   icon: "🎴",
+  iconPath: "/brand/icons/archetypes/celestial_guardians.png",
   color: "purple",
   borderColor: "border-purple-500/50",
   glowColor: "shadow-purple-500/30",

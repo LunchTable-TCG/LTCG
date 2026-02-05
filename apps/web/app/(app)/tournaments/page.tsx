@@ -1,14 +1,26 @@
 "use client";
 
+import { useCurrency } from "@/hooks/economy/useCurrency";
 import { useTournament, useTournamentHistory, useTournaments } from "@/hooks/social/useTournament";
+import {
+  useJoinUserTournament,
+  useMyHostedTournament,
+  usePublicUserTournaments,
+} from "@/hooks/social/useUserTournaments";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
-import { Crown, History, Loader2, Medal, Trophy } from "lucide-react";
+import { Crown, Hash, History, Loader2, Medal, Plus, Trophy, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { RegisterModal, TournamentCard } from "./components";
+import {
+  CreateTournamentModal,
+  JoinByCodeModal,
+  RegisterModal,
+  TournamentCard,
+  UserTournamentCard,
+} from "./components";
 
-type TabType = "active" | "history";
+type TabType = "active" | "community" | "history";
 
 function getOrdinalSuffix(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -29,10 +41,17 @@ export default function TournamentsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("active");
   const [registeringForTournament, setRegisteringForTournament] =
     useState<Id<"tournaments"> | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showJoinCodeModal, setShowJoinCodeModal] = useState(false);
 
   // Hooks
   const { tournaments, isLoading: tournamentsLoading } = useTournaments();
   const { history, stats, isLoading: historyLoading } = useTournamentHistory();
+  const { tournaments: communityTournaments, isLoading: communityLoading } =
+    usePublicUserTournaments();
+  const { tournament: myHostedTournament, isLoading: hostedLoading } = useMyHostedTournament();
+  const { joinById } = useJoinUserTournament();
+  const { gold } = useCurrency();
 
   // For registration modal - get the selected tournament details
   const { tournament: selectedTournament, register } = useTournament(
@@ -51,9 +70,19 @@ export default function TournamentsPage() {
     }
   };
 
+  const handleJoinCommunityTournament = async (tournamentId: Id<"tournaments">) => {
+    try {
+      await joinById(tournamentId);
+    } catch {
+      // Error handled by hook
+    }
+  };
+
   const activeTournaments = tournaments.filter(
     (t) => t.status === "registration" || t.status === "checkin" || t.status === "active"
   );
+
+  const canCreateTournament = !myHostedTournament;
 
   return (
     <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden">
@@ -62,15 +91,77 @@ export default function TournamentsPage() {
 
       <div className="container mx-auto px-4 pt-28 pb-16 relative z-10">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Trophy className="w-8 h-8 text-[#d4af37]" />
-            <h1 className="text-3xl font-bold text-[#e8e0d5]">Tournaments</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Trophy className="w-8 h-8 text-[#d4af37]" />
+              <h1 className="text-3xl font-bold text-[#e8e0d5]">Tournaments</h1>
+            </div>
+            <p className="text-[#a89f94]">
+              Compete in single-elimination tournaments for glory and prizes
+            </p>
           </div>
-          <p className="text-[#a89f94]">
-            Compete in single-elimination tournaments for glory and prizes
-          </p>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowJoinCodeModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500/20 border border-purple-500/30 hover:bg-purple-500/30 text-purple-400 font-bold text-sm uppercase tracking-wider transition-all"
+            >
+              <Hash className="w-4 h-4" />
+              Join by Code
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              disabled={!canCreateTournament}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider transition-all",
+                canCreateTournament
+                  ? "bg-linear-to-r from-[#d4af37] to-amber-500 hover:from-amber-500 hover:to-[#d4af37] text-[#1a1614] shadow-lg"
+                  : "bg-[#3d2b1f] text-[#6b5d52] cursor-not-allowed"
+              )}
+              title={canCreateTournament ? "Create a tournament" : "You already have an active tournament"}
+            >
+              <Plus className="w-4 h-4" />
+              Create Tournament
+            </button>
+          </div>
         </div>
+
+        {/* My Hosted Tournament Banner */}
+        {myHostedTournament && (
+          <div className="mb-6 p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-purple-400 uppercase tracking-wider">Your Tournament</p>
+                  <p className="font-bold text-[#e8e0d5]">{myHostedTournament.name}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-sm">
+                  <span className="text-[#a89f94]">Players: </span>
+                  <span className="text-[#e8e0d5] font-bold">
+                    {myHostedTournament.registeredCount}/{myHostedTournament.maxPlayers}
+                  </span>
+                </div>
+                {myHostedTournament.joinCode && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/30 border border-purple-500/30">
+                    <span className="text-xs text-[#a89f94]">Code:</span>
+                    <span className="font-mono font-bold text-purple-400">
+                      {myHostedTournament.joinCode}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Bar (if user has tournament history) */}
         {stats && stats.tournamentsPlayed > 0 && (
@@ -125,7 +216,7 @@ export default function TournamentsPage() {
             )}
           >
             <Trophy className="w-4 h-4" />
-            <span>Active Tournaments</span>
+            <span>Official</span>
             {activeTournaments.length > 0 && (
               <span
                 className={cn(
@@ -141,6 +232,31 @@ export default function TournamentsPage() {
           </button>
           <button
             type="button"
+            onClick={() => setActiveTab("community")}
+            className={cn(
+              "flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all",
+              activeTab === "community"
+                ? "bg-[#d4af37] text-[#1a1614]"
+                : "text-[#a89f94] hover:text-[#e8e0d5] hover:bg-white/5"
+            )}
+          >
+            <Users className="w-4 h-4" />
+            <span>Community</span>
+            {communityTournaments.length > 0 && (
+              <span
+                className={cn(
+                  "px-2 py-0.5 rounded-full text-xs font-bold",
+                  activeTab === "community"
+                    ? "bg-[#1a1614]/20 text-[#1a1614]"
+                    : "bg-purple-500/20 text-purple-400"
+                )}
+              >
+                {communityTournaments.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab("history")}
             className={cn(
               "flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all",
@@ -150,7 +266,7 @@ export default function TournamentsPage() {
             )}
           >
             <History className="w-4 h-4" />
-            <span>Past Tournaments</span>
+            <span>History</span>
           </button>
         </div>
 
@@ -174,8 +290,45 @@ export default function TournamentsPage() {
             ) : (
               <EmptyState
                 icon={Trophy}
-                title="No Active Tournaments"
-                description="Check back later for upcoming tournaments!"
+                title="No Official Tournaments"
+                description="Check back later for upcoming official tournaments!"
+              />
+            )}
+          </div>
+        ) : activeTab === "community" ? (
+          <div>
+            {communityLoading || hostedLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
+              </div>
+            ) : communityTournaments.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {communityTournaments.map((tournament) => (
+                  <UserTournamentCard
+                    key={tournament._id}
+                    tournament={tournament}
+                    onJoin={handleJoinCommunityTournament}
+                    showJoinCode={tournament._id === myHostedTournament?._id}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Users}
+                title="No Community Tournaments"
+                description="Be the first to create a community tournament!"
+                action={
+                  canCreateTournament ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateModal(true)}
+                      className="mt-4 flex items-center gap-2 px-5 py-3 rounded-lg bg-linear-to-r from-[#d4af37] to-amber-500 hover:from-amber-500 hover:to-[#d4af37] text-[#1a1614] font-bold text-sm uppercase tracking-wider shadow-lg transition-all"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Tournament
+                    </button>
+                  ) : null
+                }
               />
             )}
           </div>
@@ -324,7 +477,7 @@ export default function TournamentsPage() {
         )}
       </div>
 
-      {/* Register Modal */}
+      {/* Register Modal (for official tournaments) */}
       {selectedTournament && (
         <RegisterModal
           tournament={selectedTournament}
@@ -333,6 +486,20 @@ export default function TournamentsPage() {
           onConfirm={handleRegister}
         />
       )}
+
+      {/* Create Tournament Modal */}
+      <CreateTournamentModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        userGoldBalance={gold}
+      />
+
+      {/* Join by Code Modal */}
+      <JoinByCodeModal
+        isOpen={showJoinCodeModal}
+        onClose={() => setShowJoinCodeModal(false)}
+        userGoldBalance={gold}
+      />
     </div>
   );
 }
@@ -341,10 +508,12 @@ function EmptyState({
   icon: Icon,
   title,
   description,
+  action,
 }: {
   icon: typeof Trophy;
   title: string;
   description: string;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -353,6 +522,7 @@ function EmptyState({
       </div>
       <h4 className="text-lg font-black text-[#e8e0d5] uppercase tracking-wide mb-1">{title}</h4>
       <p className="text-sm text-[#a89f94]">{description}</p>
+      {action}
     </div>
   );
 }

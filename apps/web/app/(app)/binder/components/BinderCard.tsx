@@ -298,7 +298,17 @@ export function BinderCard({
         <div className="flex items-center gap-3 text-xs text-[#a89f94]">
           <span className="capitalize">{card.cardType}</span>
           <span>•</span>
-          <span className={element.color}>{card.element}</span>
+          <div className="flex items-center gap-1">
+            <Image
+              src={getArchetypeIcon(card.element)}
+              alt={`${card.element} archetype`}
+              width={14}
+              height={14}
+              className="rounded-sm"
+              unoptimized
+            />
+            <span className={element.color}>{card.element}</span>
+          </div>
           {card.attack !== undefined && (
             <>
               <span>•</span>

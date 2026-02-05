@@ -1115,6 +1115,8 @@ async function distributePrizesInternal(ctx: MutationCtx, tournamentId: Id<"tour
   const tournament = await ctx.db.get(tournamentId);
   if (!tournament) return;
 
+  const isUserTournament = tournament.creatorType === "user";
+
   const participants = await ctx.db
     .query("tournamentParticipants")
     .withIndex("by_tournament", (q) => q.eq("tournamentId", tournamentId))
@@ -1123,6 +1125,9 @@ async function distributePrizesInternal(ctx: MutationCtx, tournamentId: Id<"tour
   for (const participant of participants) {
     const placement = participant.finalPlacement;
     if (!placement) continue;
+
+    // User tournaments only pay 1st and 2nd place (60/30 split, 10% to treasury)
+    if (isUserTournament && placement > 2) continue;
 
     let prize = 0;
     if (placement === 1) {
@@ -1137,7 +1142,7 @@ async function distributePrizesInternal(ctx: MutationCtx, tournamentId: Id<"tour
       await adjustPlayerCurrencyHelper(ctx, {
         userId: participant.userId,
         goldDelta: prize,
-        transactionType: "reward",
+        transactionType: isUserTournament ? "tournament_prize" : "reward",
         description: `Tournament prize (${getPlacementString(placement)}): ${tournament.name}`,
         referenceId: tournamentId,
       });
