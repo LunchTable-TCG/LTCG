@@ -58,7 +58,6 @@ interface WalletCreationResult {
 // Type for pregenerate wallets request body parameters
 interface PregenerateWalletConfig {
   chain_type: WalletChainType;
-  wallet_index: number;
 }
 
 // Type for user creation request body parameters
@@ -66,7 +65,6 @@ interface CreateUserConfig {
   linked_accounts: LinkedAccountCustomJwtInput[];
   wallets: Array<{
     chain_type: WalletChainType;
-    wallet_index: number;
   }>;
 }
 
@@ -105,11 +103,10 @@ export const createWalletForUserAgent = internalAction({
       );
       const walletIndex = indexResult.nextIndex as number;
 
-      // Create an additional HD wallet for the agent at the next index
-      // This is derived from the user's master seed at path m/44'/501'/walletIndex/0'
+      // Create an additional HD wallet for the agent
+      // Privy assigns the next available index automatically
       const pregenerateConfig: PregenerateWalletConfig = {
         chain_type: "solana",
-        wallet_index: walletIndex,
       };
 
       const updatedUser = await privy.users().pregenerateWallets(args.privyUserId, {
@@ -121,14 +118,15 @@ export const createWalletForUserAgent = internalAction({
         (account: any) => account.type === "wallet" && account.chain_type === "solana"
       ) as any[];
 
-      // Get the wallet at the correct index (it should be the last one added)
-      const agentWallet =
-        solanaWallets?.find((w: any) => w.wallet_index === walletIndex) ||
-        solanaWallets?.[solanaWallets.length - 1];
+      // Get the newly created wallet (last one in the array)
+      const agentWallet = solanaWallets?.[solanaWallets.length - 1];
 
       if (!agentWallet?.address) {
-        throw new Error(`Failed to create HD wallet at index ${walletIndex}`);
+        throw new Error("Failed to create HD wallet for agent");
       }
+
+      // Use wallet_index from Privy's response (it's a read-only field assigned by Privy)
+      const actualWalletIndex = agentWallet.wallet_index ?? walletIndex;
 
       // Update the agent record with wallet info
       await ctx.runMutation(getInternalApi().wallet.updateAgentWallet.updateWallet, {
@@ -136,14 +134,14 @@ export const createWalletForUserAgent = internalAction({
         walletId: args.privyUserId, // User's Privy ID owns all wallets
         walletAddress: agentWallet.address,
         walletChainType: "solana",
-        walletIndex: walletIndex,
+        walletIndex: actualWalletIndex,
         privyUserId: args.privyUserId,
       });
 
       return {
         success: true,
         walletAddress: agentWallet.address,
-        walletIndex: walletIndex,
+        walletIndex: actualWalletIndex,
         privyUserId: args.privyUserId,
       };
     } catch (error) {
@@ -201,7 +199,6 @@ export const createSolanaWallet = internalAction({
 
       const walletConfig: PregenerateWalletConfig = {
         chain_type: "solana",
-        wallet_index: 0, // First HD wallet at derivation path m/44'/501'/0/0'
       };
 
       const createUserConfig: CreateUserConfig = {

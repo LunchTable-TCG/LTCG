@@ -8,8 +8,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StarterDeckStep } from "./components/StarterDeckStep";
 import { UsernameStep } from "./components/UsernameStep";
+import { WelcomePopup } from "./components/WelcomePopup";
 
-type OnboardingStep = "loading" | "username" | "deck" | "complete";
+type OnboardingStep = "loading" | "username" | "deck" | "welcome" | "complete";
 
 /**
  * Unified onboarding page that handles:
@@ -74,6 +75,10 @@ export default function OnboardingPage() {
   };
 
   const handleDeckComplete = () => {
+    setCurrentStep("welcome");
+  };
+
+  const handleWelcomeComplete = () => {
     setCurrentStep("complete");
     router.push("/lunchtable");
   };
@@ -121,11 +126,20 @@ export default function OnboardingPage() {
             currentStep === "deck" ? "bg-[#d4af37]" : "bg-[#d4af37]/30"
           }`}
         />
+        <div className="w-8 h-0.5 bg-[#3d2b1f]" />
+        <div
+          className={`w-2.5 h-2.5 rounded-full transition-colors ${
+            currentStep === "welcome" ? "bg-[#d4af37]" : "bg-[#d4af37]/30"
+          }`}
+        />
       </div>
 
       {/* Step content */}
       {currentStep === "username" && <UsernameStep onComplete={handleUsernameComplete} />}
       {currentStep === "deck" && <StarterDeckStep onComplete={handleDeckComplete} />}
+
+      {/* Welcome popup overlay */}
+      {currentStep === "welcome" && <WelcomePopup onComplete={handleWelcomeComplete} />}
     </div>
   );
 }

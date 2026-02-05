@@ -6,8 +6,35 @@
  */
 
 import { v } from "convex/values";
-import { internalQuery } from "../_generated/server";
+import { query, internalQuery } from "../_generated/server";
 import { internalMutation } from "../functions";
+
+/**
+ * Get recent decisions for streaming overlay (public query)
+ * Used by the streaming overlay to display agent decision reasoning
+ */
+export const getRecentDecisionsForStream = query({
+  args: {
+    agentId: v.id("agents"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 3;
+    const decisions = await ctx.db
+      .query("agentDecisions")
+      .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))
+      .order("desc")
+      .take(limit);
+
+    // Return only necessary fields for streaming display
+    return decisions.map((d) => ({
+      turnNumber: d.turnNumber,
+      action: d.action,
+      reasoning: d.reasoning,
+      timestamp: d.createdAt,
+    }));
+  },
+});
 
 /**
  * Save an agent decision to the database

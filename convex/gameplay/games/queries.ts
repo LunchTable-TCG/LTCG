@@ -101,20 +101,31 @@ export const getActiveLobby = query({
     // Use provided userId or get from auth context
     const userId = args.userId ?? (await requireAuthQuery(ctx)).userId;
 
-    // Find user's lobby where they are the host
+    // Find user's lobby where they are the host (exclude story mode)
     const hostLobby = await ctx.db
       .query("gameLobbies")
       .withIndex("by_host", (q) => q.eq("hostId", userId))
-      .filter((q) => q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")))
+      .filter((q) =>
+        q.and(
+          q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")),
+          q.neq(q.field("mode"), "story") // Exclude story mode games
+        )
+      )
       .first();
 
     if (hostLobby) return hostLobby;
 
     // Also check if user is the opponent (was challenged or joined a lobby)
+    // Exclude story mode games
     const opponentLobby = await ctx.db
       .query("gameLobbies")
       .withIndex("by_opponent", (q) => q.eq("opponentId", userId))
-      .filter((q) => q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")))
+      .filter((q) =>
+        q.and(
+          q.or(q.eq(q.field("status"), "waiting"), q.eq(q.field("status"), "active")),
+          q.neq(q.field("mode"), "story") // Exclude story mode games
+        )
+      )
       .first();
 
     return opponentLobby;

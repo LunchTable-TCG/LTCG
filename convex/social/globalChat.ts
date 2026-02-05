@@ -159,14 +159,19 @@ export const getOnlineUsers = query({
         const user = await ctx.db.get(p.userId);
         // Exclude AI agents (story mode NPCs)
         if (user?.isAiAgent) return null;
+        // Skip if user record doesn't exist
+        if (!user) return null;
 
         // Get user's ranked ELO and calculate rank
-        const rankedElo = user?.rankedElo ?? 1000;
+        const rankedElo = user.rankedElo ?? 1000;
         const rank = getRankFromRating(rankedElo);
+
+        // Use presence username, fallback to user record, then "Unknown"
+        const username = p.username || user.username || user.name || "Unknown";
 
         return {
           userId: p.userId,
-          username: p.username,
+          username,
           status: p.status,
           lastActiveAt: p.lastActiveAt,
           rank,

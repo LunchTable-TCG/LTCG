@@ -335,6 +335,13 @@ export default defineSchema({
     walletStatus: v.optional(literals("pending", "created", "failed")), // Wallet creation status
     walletErrorMessage: v.optional(v.string()), // Error message if wallet creation failed
 
+    // Streaming configuration for agent gameplay broadcasts
+    streamingEnabled: v.optional(v.boolean()), // Whether agent can stream their games
+    streamingPlatform: v.optional(literals("twitch", "youtube")), // Platform to stream to
+    streamingKeyHash: v.optional(v.string()), // Encrypted stream key (AES-256-GCM)
+    streamingAutoStart: v.optional(v.boolean()), // Auto-start streaming when game begins
+    lastStreamAt: v.optional(v.number()), // Last streaming session timestamp
+
     // Webhook callback configuration for real-time notifications
     callbackUrl: v.optional(v.string()), // Agent's public URL for receiving webhooks
     webhookSecret: v.optional(v.string()), // Shared secret for signing webhooks (hashed)
@@ -3539,4 +3546,97 @@ export default defineSchema({
     .index("by_user", ["userId", "timestamp"])
     .index("by_operation", ["operation", "timestamp"])
     .index("by_timestamp", ["timestamp"]),
+
+  // ============================================================================
+  // STREAMING
+  // ============================================================================
+
+  // Streaming session tracking for user and agent streams
+  streamingSessions: defineTable({
+    // Identity - either user or agent
+    userId: v.optional(v.id("users")),
+    agentId: v.optional(v.id("agents")),
+    streamType: literals("user", "agent"),
+
+    // Platform configuration
+    platform: literals("twitch", "youtube", "custom"),
+    streamTitle: v.string(),
+
+    // Status tracking
+    status: literals("initializing", "pending", "live", "ended", "error"),
+
+    // LiveKit egress
+    egressId: v.optional(v.string()),
+    overlayUrl: v.optional(v.string()),
+
+    // Current game context
+    currentLobbyId: v.optional(v.id("gameLobbies")),
+
+    // Encrypted stream credentials
+    streamKeyHash: v.optional(v.string()),
+
+    // Overlay configuration
+    overlayConfig: v.object({
+      showDecisions: v.boolean(),
+      showAgentInfo: v.boolean(),
+      showEventFeed: v.boolean(),
+      showPlayerCam: v.boolean(),
+      theme: literals("dark", "light"),
+    }),
+
+    // Metrics
+    viewerCount: v.optional(v.number()),
+    peakViewerCount: v.optional(v.number()),
+
+    // Lifecycle timestamps
+    createdAt: v.number(),
+    startedAt: v.optional(v.number()),
+    endedAt: v.optional(v.number()),
+    endReason: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+
+    // Final stats (populated on end)
+    stats: v.optional(
+      v.object({
+        duration: v.number(),
+        decisionsLogged: v.number(),
+        eventsRecorded: v.number(),
+      })
+    ),
+  })
+    .index("by_user", ["userId"])
+    .index("by_agent", ["agentId"])
+    .index("by_status", ["status"])
+    .index("by_user_status", ["userId", "status"])
+    .index("by_agent_status", ["agentId", "status"])
+    .index("by_lobby", ["currentLobbyId"])
+    .index("by_egress", ["egressId"]),
+
+  // Persistent platform credentials for streaming
+  streamingPlatforms: defineTable({
+    userId: v.id("users"),
+    agentId: v.optional(v.id("agents")),
+    platform: literals("twitch", "youtube", "custom"),
+
+    // Encrypted credentials
+    streamKeyHash: v.string(),
+    rtmpUrl: v.optional(v.string()),
+
+    // Platform metadata
+    channelName: v.optional(v.string()),
+
+    // Settings
+    autoStart: v.boolean(), // Auto-start streaming on game start
+    enabled: v.boolean(),
+
+    // Usage tracking
+    totalStreams: v.number(),
+    totalDuration: v.number(),
+
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_agent", ["agentId"])
+    .index("by_user_platform", ["userId", "platform"]),
 });
