@@ -92,37 +92,41 @@ export function generateStagesForChapter(
 
 /**
  * All stage definitions for all 10 chapters
+ * Cycles through 4 archetypes with increasing difficulty
  */
 export const ALL_STORY_STAGES = {
+  // ACT 1: The Four Factions
   // Chapter 1: Infernal Dragons
   chapter1: generateStagesForChapter(1, "The First Flame", ARCHETYPES.INFERNAL_DRAGONS),
 
-  // Chapter 2: Abyssal Horrors
-  chapter2: generateStagesForChapter(2, "Tides of the Deep", ARCHETYPES.ABYSSAL_HORRORS),
+  // Chapter 2: Abyssal Depths
+  chapter2: generateStagesForChapter(2, "Tides of the Deep", ARCHETYPES.ABYSSAL_DEPTHS),
 
-  // Chapter 3: Nature Spirits
-  chapter3: generateStagesForChapter(3, "Whispers of the Forest", ARCHETYPES.NATURE_SPIRITS),
+  // Chapter 3: Iron Legion
+  chapter3: generateStagesForChapter(3, "Steel and Honor", ARCHETYPES.IRON_LEGION),
 
-  // Chapter 4: Storm Elementals
-  chapter4: generateStagesForChapter(4, "Eye of the Tempest", ARCHETYPES.STORM_ELEMENTALS),
+  // Chapter 4: Necro Empire
+  chapter4: generateStagesForChapter(4, "Empire of the Damned", ARCHETYPES.NECRO_EMPIRE),
 
-  // Chapter 5: Shadow Assassins
-  chapter5: generateStagesForChapter(5, "Blades in the Dark", ARCHETYPES.SHADOW_ASSASSINS),
+  // ACT 2: Rising Challenges
+  // Chapter 5: Infernal Dragons - Advanced
+  chapter5: generateStagesForChapter(5, "Inferno Unleashed", ARCHETYPES.INFERNAL_DRAGONS),
 
-  // Chapter 6: Celestial Guardians
-  chapter6: generateStagesForChapter(6, "Starlight Sentinels", ARCHETYPES.CELESTIAL_GUARDIANS),
+  // Chapter 6: Abyssal Depths - Advanced
+  chapter6: generateStagesForChapter(6, "The Sunken Throne", ARCHETYPES.ABYSSAL_DEPTHS),
 
-  // Chapter 7: Undead Legion
-  chapter7: generateStagesForChapter(7, "March of the Damned", ARCHETYPES.UNDEAD_LEGION),
+  // Chapter 7: Iron Legion - Advanced
+  chapter7: generateStagesForChapter(7, "The Siege Eternal", ARCHETYPES.IRON_LEGION),
 
-  // Chapter 8: Divine Knights
-  chapter8: generateStagesForChapter(8, "Oath of the Righteous", ARCHETYPES.DIVINE_KNIGHTS),
+  // Chapter 8: Necro Empire - Advanced
+  chapter8: generateStagesForChapter(8, "The Lich King's Domain", ARCHETYPES.NECRO_EMPIRE),
 
-  // Chapter 9: Arcane Mages
-  chapter9: generateStagesForChapter(9, "Arcane Convergence", ARCHETYPES.ARCANE_MAGES),
+  // ACT 3: The Final Challenge
+  // Chapter 9: Combined Forces
+  chapter9: generateStagesForChapter(9, "Alliance of Darkness", ARCHETYPES.NECRO_EMPIRE),
 
-  // Chapter 10: Mechanical Constructs
-  chapter10: generateStagesForChapter(10, "Age of Automation", ARCHETYPES.MECHANICAL_CONSTRUCTS),
+  // Chapter 10: The Final Boss
+  chapter10: generateStagesForChapter(10, "The Eternal Champion", ARCHETYPES.INFERNAL_DRAGONS),
 };
 
 /**

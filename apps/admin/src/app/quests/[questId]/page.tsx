@@ -88,8 +88,11 @@ const GAME_MODES = [
 export default function QuestEditorPage() {
   const params = useParams<{ questId: string }>();
   const router = useRouter();
-  const questDbId = params.questId as QuestId | "new";
-  const isNew = questDbId === "new";
+  const questIdParam = params.questId;
+
+  // Guard against empty or invalid questId
+  const isNew = questIdParam === "new";
+  const questDbId = questIdParam && questIdParam !== "new" ? (questIdParam as QuestId) : null;
 
   // Form state
   const [questId, setQuestId] = useState("");
@@ -116,7 +119,7 @@ export default function QuestEditorPage() {
   // Queries and mutations
   const existingQuest = useConvexQuery(
     typedApi.admin.quests.getQuest,
-    isNew ? "skip" : { questDbId: questDbId as QuestId }
+    isNew || !questDbId ? "skip" : { questDbId }
   );
 
   const createQuest = useConvexMutation(typedApi.admin.quests.createQuest);
@@ -176,8 +179,12 @@ export default function QuestEditorPage() {
         toast.success(result.message);
         router.push(`/quests/${result.questDbId}`);
       } else {
+        if (!questDbId) {
+          toast.error("Invalid quest ID");
+          return;
+        }
         const result = (await updateQuest({
-          questDbId: questDbId as QuestId,
+          questDbId,
           name: name.trim(),
           description: description.trim(),
           requirementType,
@@ -199,9 +206,13 @@ export default function QuestEditorPage() {
   };
 
   const handleDelete = async () => {
+    if (!questDbId) {
+      toast.error("Invalid quest ID");
+      return;
+    }
     setIsDeleting(true);
     try {
-      const result = (await deleteQuest({ questDbId: questDbId as QuestId })) as {
+      const result = (await deleteQuest({ questDbId })) as {
         message: string;
       };
       toast.success(result.message);
@@ -214,6 +225,10 @@ export default function QuestEditorPage() {
   };
 
   const handleDuplicate = async () => {
+    if (!questDbId) {
+      toast.error("Invalid quest ID");
+      return;
+    }
     if (!duplicateQuestId.trim() || !duplicateName.trim()) {
       toast.error("Quest ID and name are required");
       return;
@@ -221,7 +236,7 @@ export default function QuestEditorPage() {
 
     try {
       const result = (await duplicateQuest({
-        questDbId: questDbId as QuestId,
+        questDbId,
         newQuestId: duplicateQuestId.trim(),
         newName: duplicateName.trim(),
       })) as { message: string; questDbId: string };
@@ -232,6 +247,22 @@ export default function QuestEditorPage() {
       toast.error(error instanceof Error ? error.message : "Failed to duplicate quest");
     }
   };
+
+  // Handle invalid quest ID parameter
+  if (!isNew && !questDbId) {
+    return (
+      <PageWrapper title="Invalid Quest" description="Invalid quest ID">
+        <Card>
+          <div className="text-center py-12">
+            <Text className="text-lg font-semibold">Invalid Quest ID</Text>
+            <Button asChild className="mt-4">
+              <Link href="/quests">Back to Quests</Link>
+            </Button>
+          </div>
+        </Card>
+      </PageWrapper>
+    );
+  }
 
   if (!isNew && existingQuest === undefined) {
     return (

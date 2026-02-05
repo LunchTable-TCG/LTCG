@@ -1,17 +1,13 @@
 // Story Mode Constants
 // Archetypes, XP progression, retry limits, and reward multipliers
 
+// Primary archetypes that have cards in the database
+// Story chapters cycle through these 4 archetypes
 export const ARCHETYPES = {
   INFERNAL_DRAGONS: "infernal_dragons",
-  ABYSSAL_HORRORS: "abyssal_horrors",
-  NATURE_SPIRITS: "nature_spirits",
-  STORM_ELEMENTALS: "storm_elementals",
-  SHADOW_ASSASSINS: "shadow_assassins",
-  CELESTIAL_GUARDIANS: "celestial_guardians",
-  UNDEAD_LEGION: "undead_legion",
-  DIVINE_KNIGHTS: "divine_knights",
-  ARCANE_MAGES: "arcane_mages",
-  MECHANICAL_CONSTRUCTS: "mechanical_constructs",
+  ABYSSAL_DEPTHS: "abyssal_depths",
+  IRON_LEGION: "iron_legion",
+  NECRO_EMPIRE: "necro_empire",
 } as const;
 
 export type ArchetypeKey = (typeof ARCHETYPES)[keyof typeof ARCHETYPES];
@@ -178,8 +174,9 @@ export const LEVEL_MILESTONES = [
 ] as const;
 
 // Act definitions
-// Simplified 2-act structure for 10-chapter system
+// 3-act structure cycling through 4 archetypes with increasing difficulty
 export const ACTS = {
-  1: { name: "Primal Forces", theme: "Master the elemental archetypes", chapterCount: 5 },
-  2: { name: "Advanced Powers", theme: "Face divine, undead, and arcane forces", chapterCount: 5 },
+  1: { name: "The Four Factions", theme: "Master each faction's unique power", chapterCount: 4 },
+  2: { name: "Rising Challenges", theme: "Face advanced versions of each faction", chapterCount: 4 },
+  3: { name: "The Final Challenge", theme: "Unite all powers and face the ultimate enemy", chapterCount: 2 },
 } as const;

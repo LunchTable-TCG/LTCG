@@ -93,10 +93,16 @@ const ICONS = ["🏆", "⭐", "🎮", "⚔️", "🛡️", "🎯", "🔥", "💎
 // =============================================================================
 
 export default function AchievementEditorPage() {
-  const params = useParams();
+  const params = useParams<{ achievementId: string }>();
   const router = useRouter();
-  const achievementDbId = params.achievementId as string;
-  const isNew = achievementDbId === "new";
+  const achievementIdParam = params.achievementId;
+
+  // Guard against empty or invalid achievementId
+  const isNew = achievementIdParam === "new";
+  const achievementDbId =
+    achievementIdParam && achievementIdParam !== "new"
+      ? (achievementIdParam as Id<"achievementDefinitions">)
+      : null;
 
   // Form state
   const [achievementId, setAchievementId] = useState("");
@@ -125,7 +131,7 @@ export default function AchievementEditorPage() {
   // Queries and mutations
   const existingAchievement = useConvexQuery(
     typedApi.admin.achievements.getAchievement,
-    isNew ? "skip" : { achievementDbId: achievementDbId as Id<"achievementDefinitions"> }
+    isNew || !achievementDbId ? "skip" : { achievementDbId }
   );
 
   const createAchievement = useConvexMutation(typedApi.admin.achievements.createAchievement);
@@ -189,8 +195,12 @@ export default function AchievementEditorPage() {
         toast.success(result.message);
         router.push(`/quests/achievement/${result.achievementDbId}`);
       } else {
+        if (!achievementDbId) {
+          toast.error("Invalid achievement ID");
+          return;
+        }
         const result = (await updateAchievement({
-          achievementDbId: achievementDbId as Id<"achievementDefinitions">,
+          achievementDbId,
           name: name.trim(),
           description: description.trim(),
           category,
@@ -216,10 +226,14 @@ export default function AchievementEditorPage() {
   };
 
   const handleDelete = async () => {
+    if (!achievementDbId) {
+      toast.error("Invalid achievement ID");
+      return;
+    }
     setIsDeleting(true);
     try {
       const result = (await deleteAchievement({
-        achievementDbId: achievementDbId as Id<"achievementDefinitions">,
+        achievementDbId,
       })) as { message: string };
       toast.success(result.message);
       router.push("/quests");
@@ -231,6 +245,10 @@ export default function AchievementEditorPage() {
   };
 
   const handleDuplicate = async () => {
+    if (!achievementDbId) {
+      toast.error("Invalid achievement ID");
+      return;
+    }
     if (!duplicateAchievementId.trim() || !duplicateName.trim()) {
       toast.error("Achievement ID and name are required");
       return;
@@ -238,7 +256,7 @@ export default function AchievementEditorPage() {
 
     try {
       const result = (await duplicateAchievement({
-        achievementDbId: achievementDbId as Id<"achievementDefinitions">,
+        achievementDbId,
         newAchievementId: duplicateAchievementId.trim(),
         newName: duplicateName.trim(),
       })) as { message: string; achievementDbId: string };
@@ -251,6 +269,22 @@ export default function AchievementEditorPage() {
   };
 
   const rarityConfig = RARITIES.find((r) => r.value === rarity);
+
+  // Handle invalid achievement ID parameter
+  if (!isNew && !achievementDbId) {
+    return (
+      <PageWrapper title="Invalid Achievement" description="Invalid achievement ID">
+        <Card>
+          <div className="text-center py-12">
+            <Text className="text-lg font-semibold">Invalid Achievement ID</Text>
+            <Button asChild className="mt-4">
+              <Link href="/quests">Back to Quests</Link>
+            </Button>
+          </div>
+        </Card>
+      </PageWrapper>
+    );
+  }
 
   if (!isNew && existingAchievement === undefined) {
     return (
