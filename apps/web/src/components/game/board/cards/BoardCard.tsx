@@ -111,10 +111,14 @@ export function BoardCard({
       )}
     >
       {isFaceDown ? (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-4 h-4 rounded-full bg-indigo-500/30 flex items-center justify-center">
-            <Sparkles className="w-2.5 h-2.5 text-indigo-300" />
-          </div>
+        <div className="absolute inset-0 rounded overflow-hidden">
+          <Image
+            src="/card-back.png"
+            alt="Card Back"
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 40px, 56px"
+          />
         </div>
       ) : (
         <>
