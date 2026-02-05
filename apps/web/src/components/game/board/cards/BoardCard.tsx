@@ -245,7 +245,8 @@ export function BoardCard({
       )}
 
       {canAttack && !card.hasAttacked && !isFaceDown && onAttack && (
-        <div
+        <button
+          type="button"
           className="absolute inset-0 bg-linear-to-t from-red-600/90 via-red-500/80 to-transparent rounded flex items-center justify-center"
           onClick={(e) => {
             e.stopPropagation();
@@ -258,7 +259,7 @@ export function BoardCard({
               Attack
             </span>
           </div>
-        </div>
+        </button>
       )}
     </motion.button>
   );
