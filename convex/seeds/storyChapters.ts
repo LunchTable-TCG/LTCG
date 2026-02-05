@@ -68,7 +68,7 @@ export const STORY_CHAPTERS: readonly StoryChapterSeed[] = [
       "The ocean's depths hide terrors beyond imagination. Darkness and pressure create monsters of legend. Survive 10 battles in the frozen abyss to emerge victorious.",
     loreText:
       "Abyssal Horrors evolved in crushing depths where light never reaches, masters of freeze and manipulation. They control the currents and command the cold.",
-    aiOpponentDeckCode: "ABYSSAL_HORRORS",
+    aiOpponentDeckCode: "ABYSSAL_DEPTHS",
     aiDifficulty: { normal: 5, hard: 7, legendary: 9 },
     battleCount: 10,
     baseRewards: { gold: 500, xp: 1000 },
@@ -134,7 +134,7 @@ export const STORY_CHAPTERS: readonly StoryChapterSeed[] = [
       "In the void between light and dark, shadows take form and strike without warning. Face 10 trials where death lurks in every corner.",
     loreText:
       "Shadow Assassins are masters of stealth, deception, and swift execution. They move unseen, strike with precision, and vanish before retaliation.",
-    aiOpponentDeckCode: "INFERNAL_DRAGONS",
+    aiOpponentDeckCode: "SHADOW_ASSASSINS",
     aiDifficulty: { normal: 5, hard: 7, legendary: 9 },
     battleCount: 10,
     baseRewards: { gold: 500, xp: 1000 },
@@ -156,7 +156,7 @@ export const STORY_CHAPTERS: readonly StoryChapterSeed[] = [
       "Beyond the mortal realm, stars themselves take form as guardians of the heavens. Their light pierces all darkness. Face 10 celestial trials to earn their blessing.",
     loreText:
       "Celestial Guardians are beings of pure starlight, protectors of cosmic balance and enforcers of divine law. They wield holy power and healing light.",
-    aiOpponentDeckCode: "NATURE_SPIRITS",
+    aiOpponentDeckCode: "CELESTIAL_GUARDIANS",
     aiDifficulty: { normal: 6, hard: 8, legendary: 10 },
     battleCount: 10,
     baseRewards: { gold: 600, xp: 1200 },
@@ -178,7 +178,7 @@ export const STORY_CHAPTERS: readonly StoryChapterSeed[] = [
       "Death is not the end—it is merely a transformation. The Undead Legion rises, endless and unstoppable. Survive 10 waves of the eternal army.",
     loreText:
       "The Undead Legion consists of fallen warriors, necromantic constructs, and cursed souls bound to eternal service. They know no fear, feel no pain.",
-    aiOpponentDeckCode: "ABYSSAL_HORRORS",
+    aiOpponentDeckCode: "UNDEAD_LEGION",
     aiDifficulty: { normal: 6, hard: 8, legendary: 10 },
     battleCount: 10,
     baseRewards: { gold: 600, xp: 1200 },
@@ -200,7 +200,7 @@ export const STORY_CHAPTERS: readonly StoryChapterSeed[] = [
       "Clad in blessed armor and wielding sacred steel, the Divine Knights stand as paragons of righteousness. Their faith is unbreakable. Challenge 10 champions to test your resolve.",
     loreText:
       "Divine Knights are mortal warriors elevated by divine purpose. They combine martial prowess with holy magic, defending the innocent and smiting evil.",
-    aiOpponentDeckCode: "STORM_ELEMENTALS",
+    aiOpponentDeckCode: "DIVINE_KNIGHTS",
     aiDifficulty: { normal: 6, hard: 8, legendary: 10 },
     battleCount: 10,
     baseRewards: { gold: 600, xp: 1200 },
@@ -222,7 +222,7 @@ export const STORY_CHAPTERS: readonly StoryChapterSeed[] = [
       "Magic flows through everything, waiting to be shaped by those with knowledge and will. The Arcane Mages have studied for centuries. Face 10 archmages to prove your magical mastery.",
     loreText:
       "Arcane Mages dedicate their lives to understanding the fundamental forces of reality. They manipulate energy, bend space, and rewrite the rules of existence itself.",
-    aiOpponentDeckCode: "NATURE_SPIRITS",
+    aiOpponentDeckCode: "ARCANE_MAGES",
     aiDifficulty: { normal: 7, hard: 9, legendary: 11 },
     battleCount: 10,
     baseRewards: { gold: 700, xp: 1400 },
@@ -244,7 +244,7 @@ export const STORY_CHAPTERS: readonly StoryChapterSeed[] = [
       "Gears turn, pistons pump, and arcane cores glow with power. The Mechanical Constructs represent the pinnacle of magical engineering. Overcome 10 battles against tireless machines.",
     loreText:
       "Mechanical Constructs blend arcane magic with precise engineering, creating beings that never tire, never falter, and execute their programming with absolute efficiency.",
-    aiOpponentDeckCode: "STORM_ELEMENTALS",
+    aiOpponentDeckCode: "MECHANICAL_CONSTRUCTS",
     aiDifficulty: { normal: 7, hard: 9, legendary: 11 },
     battleCount: 10,
     baseRewards: { gold: 700, xp: 1400 },
