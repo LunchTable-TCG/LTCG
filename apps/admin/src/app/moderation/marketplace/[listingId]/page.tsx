@@ -460,7 +460,7 @@ export default function ListingDetailPage() {
                             href={`/players/${bid.bidderId}`}
                             className="text-primary hover:underline"
                           >
-                            {bid.bidderUsername}
+                            {bid.bidderUsername ?? "Unknown"}
                           </Link>
                         </TableCell>
                         <TableCell className="font-medium">

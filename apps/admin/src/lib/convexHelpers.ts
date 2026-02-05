@@ -53,13 +53,13 @@ export {
  * - Cast results to expected types where needed: useQuery(...) as ResultType
  * - For mutations, use the wrapper hooks or cast results
  *
- * NOTE: We use require() to prevent TypeScript from analyzing the deeply nested types.
- * This is the only reliable way to avoid TS2589 with Convex's complex API types.
+ * NOTE: The explicit `any` type annotation prevents TypeScript from analyzing
+ * the deeply nested Convex types that cause TS2589 errors.
  */
+// Import api in a separate statement to avoid type evaluation at export
+import { api as convexApi } from "@convex/_generated/api";
 // biome-ignore lint/suspicious/noExplicitAny: Required to prevent TS2589 type recursion errors
-// biome-ignore lint/style/noVar: Using var for module-level declaration
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-export const typedApi: any = require("@convex/_generated/api").api;
+export const typedApi: any = convexApi;
 
 // Legacy aliases for backward compatibility - use typedApi instead
 export { useQuery as useConvexQuery } from "convex/react";

@@ -29,10 +29,6 @@ import { Button } from "@/components/ui/button";
 import { RoleGuard } from "@/contexts/AdminContext";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Doc, Id } from "@convex/_generated/dataModel";
-
-// Use typedApi which has the type bypass built-in
-const contentApi = typedApi.content.scheduledContent;
-const emailApi = typedApi.email.lists;
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -72,20 +68,20 @@ export default function ContentCalendarPage() {
     return { startDate, endDate };
   }, [currentDate]);
 
-  // Queries
-  const contentResult = useConvexQuery(contentApi.getByDateRange, {
+  // Queries - access typedApi inside component to avoid module-level evaluation crash
+  const contentResult = useConvexQuery(typedApi.content.scheduledContent.getByDateRange, {
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
   });
 
-  const statsResult = useConvexQuery(contentApi.getStats, {});
-  const emailListsResult = useConvexQuery(emailApi.listLists, {});
+  const statsResult = useConvexQuery(typedApi.content.scheduledContent.getStats, {});
+  const emailListsResult = useConvexQuery(typedApi.email.lists.listLists, {});
 
   // Mutations
-  const createContent = useConvexMutation(contentApi.create);
-  const updateContent = useConvexMutation(contentApi.update);
-  const deleteContent = useConvexMutation(contentApi.remove);
-  const duplicateContent = useConvexMutation(contentApi.duplicate);
+  const createContent = useConvexMutation(typedApi.content.scheduledContent.create);
+  const updateContent = useConvexMutation(typedApi.content.scheduledContent.update);
+  const deleteContent = useConvexMutation(typedApi.content.scheduledContent.remove);
+  const duplicateContent = useConvexMutation(typedApi.content.scheduledContent.duplicate);
 
   // Get content for selected day
   const selectedDayContent = useMemo(() => {
