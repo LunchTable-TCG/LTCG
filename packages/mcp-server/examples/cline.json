@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "lunchtable-tcg": {
+      "command": "node",
+      "args": [
+        "/path/to/@lunchtable/mcp-server/dist/index.js"
+      ],
+      "env": {
+        "LTCG_API_KEY": "your-api-key-here",
+        "LTCG_API_URL": "https://lunchtable.cards"
+      }
+    }
+  }
+}

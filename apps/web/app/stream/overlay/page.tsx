@@ -4,11 +4,14 @@ import { DecisionPanel } from "@/components/streaming/DecisionPanel";
 import { EventFeedTicker } from "@/components/streaming/EventFeedTicker";
 import { GameBoardSpectator } from "@/components/streaming/GameBoardSpectator";
 import { StreamerInfoPanel } from "@/components/streaming/StreamerInfoPanel";
+import { StreamCompositeView } from "@/components/streaming/StreamCompositeView";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { LiveKitRoom } from "@livekit/components-react";
+import "@livekit/components-styles";
 
 // Declare window.startRecording for LiveKit
 declare global {
@@ -21,6 +24,8 @@ function StreamOverlayContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId");
   const token = searchParams.get("token");
+  const roomName = searchParams.get("roomName");
+  const livekitUrl = searchParams.get("livekitUrl");
   const [isReady, setIsReady] = useState(false);
 
   // Get streaming session
@@ -28,6 +33,9 @@ function StreamOverlayContent() {
     api.streaming.sessions.getSession,
     sessionId ? { sessionId: sessionId as Id<"streamingSessions"> } : "skip"
   );
+
+  // If roomName is provided, use LiveKit composite mode
+  const useLiveKitComposite = Boolean(roomName && livekitUrl && token);
 
   // Get game state if there's an active game
   const gameState = useQuery(
@@ -83,6 +91,16 @@ function StreamOverlayContent() {
   const config = session.overlayConfig;
   const theme = config.theme || "dark";
 
+  // LiveKit composite mode - for user streams with screen share + webcam
+  if (useLiveKitComposite && roomName && livekitUrl && token && sessionId) {
+    return (
+      <LiveKitRoom token={token} serverUrl={livekitUrl} connect={true}>
+        <StreamCompositeView sessionId={sessionId} />
+      </LiveKitRoom>
+    );
+  }
+
+  // Standard overlay mode - for AI agents or game-only streams
   return (
     <div className={`stream-overlay stream-overlay--${theme}`}>
       {/* Top: Streamer/Agent info bar */}

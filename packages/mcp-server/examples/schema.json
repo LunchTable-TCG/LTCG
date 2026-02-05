@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP Server Configuration Schema",
+  "description": "Schema for MCP server configuration files used by Claude Desktop, Cline, and VS Code",
+  "type": "object",
+  "properties": {
+    "mcpServers": {
+      "type": "object",
+      "description": "Map of MCP server configurations by server name",
+      "additionalProperties": {
+        "type": "object",
+        "description": "Configuration for a single MCP server",
+        "required": ["command"],
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "Command to run the MCP server. Examples: 'node', 'python', 'bash', 'npx'",
+            "examples": ["node", "python", "bash", "npx", "bun"]
+          },
+          "args": {
+            "type": "array",
+            "description": "Arguments to pass to the command",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              ["/path/to/dist/index.js"],
+              ["/path/to/script.py"],
+              ["@lunchtable/mcp-server"]
+            ]
+          },
+          "env": {
+            "type": "object",
+            "description": "Environment variables to pass to the server process",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "examples": [
+              {
+                "LTCG_API_KEY": "sk-xxx",
+                "LTCG_API_URL": "https://lunchtable.cards"
+              }
+            ]
+          },
+          "disabled": {
+            "type": "boolean",
+            "description": "If true, this server will be disabled and not started",
+            "default": false
+          }
+        }
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "description": "Global MCP configuration (VS Code)",
+      "properties": {
+        "servers": {
+          "type": "object",
+          "description": "MCP server configurations",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string"
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

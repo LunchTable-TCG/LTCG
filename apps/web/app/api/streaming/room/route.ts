@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { generateRoomToken, generateRoomName, getLiveKitUrl } from "@/lib/streaming/livekitRoom";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
 
 /**
  * Create a LiveKit room for streaming
@@ -54,32 +54,79 @@ export async function POST(req: NextRequest) {
 
     // Generate access token for user
     const participantIdentity = streamType === "user" ? userId : agentId;
-    const token = await generateRoomToken({
+    const userToken = await generateRoomToken({
       roomName,
       participantIdentity,
       participantName: `${streamType}-${participantIdentity}`,
       metadata: JSON.stringify({ sessionId, streamType }),
     });
 
-    // Update session with room info
-    await convex.mutation(api.streaming.sessions.updateSession, {
-      sessionId: sessionId as Id<"streamingSessions">,
-      updates: {
-        streamKeyHash: streamKey, // Will be encrypted by mutation
-        status: "pending",
-      },
+    // Generate access token for overlay to join room
+    const overlayToken = await generateRoomToken({
+      roomName,
+      participantIdentity: `overlay-${sessionId}`,
+      participantName: "Stream Overlay",
+      metadata: JSON.stringify({ sessionId, isOverlay: true }),
     });
 
     const livekitUrl = getLiveKitUrl();
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    return NextResponse.json({
-      success: true,
-      sessionId,
-      roomName,
-      token,
-      livekitUrl,
-      message: "Room created. Join to start streaming.",
-    });
+    // Create overlay URL with room info for LiveKit composite mode
+    const overlayUrl = `${baseUrl}/stream/overlay?sessionId=${sessionId}&token=${overlayToken}&roomName=${encodeURIComponent(roomName)}&livekitUrl=${encodeURIComponent(livekitUrl)}`;
+
+    // Start Web Egress to capture the composite overlay
+    const { startWebEgress } = await import("@/lib/streaming/livekit");
+    const { buildRtmpUrl } = await import("@/lib/streaming/encryption");
+
+    const rtmpUrl = buildRtmpUrl(platform, streamKey);
+
+    try {
+      const { egressId } = await startWebEgress({
+        overlayUrl,
+        rtmpUrl,
+        sessionId,
+      });
+
+      // Update session with room and egress info
+      await convex.mutation(api.streaming.sessions.updateSession, {
+        sessionId: sessionId as Id<"streamingSessions">,
+        updates: {
+          egressId,
+          overlayUrl,
+          status: "pending",
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        sessionId,
+        roomName,
+        token: userToken,
+        livekitUrl,
+        message: "Room created. Join to start streaming.",
+      });
+    } catch (egressError) {
+      console.error("Failed to start egress:", egressError);
+
+      // Still return success for room creation, but log egress failure
+      await convex.mutation(api.streaming.sessions.updateSession, {
+        sessionId: sessionId as Id<"streamingSessions">,
+        updates: {
+          status: "error",
+          errorMessage: "Failed to start egress",
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        sessionId,
+        roomName,
+        token: userToken,
+        livekitUrl,
+        warning: "Room created but egress failed to start",
+      });
+    }
   } catch (error) {
     console.error("Error creating streaming room:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
