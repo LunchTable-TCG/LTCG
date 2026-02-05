@@ -8,6 +8,7 @@ import { Stage, Layer, Image as KonvaImage, Text, Transformer } from "react-konv
 import useImage from "use-image";
 import BackgroundPicker from "./BackgroundPicker";
 import TextFieldEditor from "./TextFieldEditor";
+import CardDataPanel from "./CardDataPanel";
 
 type CardType = "creature" | "spell" | "trap" | "magic" | "environment";
 
@@ -39,6 +40,7 @@ export default function TemplateDesigner() {
   const [canvasSize] = useState({ width: 750, height: 1050 });
   const [textFields, setTextFields] = useState<TextField[]>([]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [previewCard, setPreviewCard] = useState<any>(null);
 
   const handleAddTextField = () => {
     const newField: TextField = {
@@ -62,6 +64,37 @@ export default function TemplateDesigner() {
     setTextFields([...textFields, newField]);
     setSelectedFieldId(newField.id);
   };
+
+  useEffect(() => {
+    if (previewCard) {
+      setTextFields(
+        textFields.map((field) => {
+          let text = "Sample Text";
+          switch (field.dataField) {
+            case "title":
+              text = previewCard.name;
+              break;
+            case "cardType":
+              text = previewCard.cardType;
+              break;
+            case "manaCost":
+              text = String(previewCard.cost);
+              break;
+            case "atk":
+              text = String(previewCard.attack || "");
+              break;
+            case "def":
+              text = String(previewCard.defense || "");
+              break;
+            case "effect":
+              text = previewCard.effect || previewCard.flavorText || "";
+              break;
+          }
+          return { ...field, text };
+        })
+      );
+    }
+  }, [previewCard]);
 
   function DraggableText({
     field,
@@ -224,10 +257,12 @@ export default function TemplateDesigner() {
 
       {/* Right Panel */}
       <div className="space-y-4 overflow-y-auto">
+        <CardDataPanel cardType={cardType} onCardSelect={setPreviewCard} />
+
         <Card className="p-4">
-          <h3 className="font-semibold mb-2">Preview</h3>
-          <div className="aspect-[750/1050] bg-muted/20 rounded flex items-center justify-center text-muted-foreground text-sm">
-            Preview
+          <h3 className="font-semibold mb-2">Actions</h3>
+          <div className="space-y-2">
+            <Button className="w-full">Save Template</Button>
           </div>
         </Card>
       </div>
