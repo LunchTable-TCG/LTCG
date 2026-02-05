@@ -151,6 +151,7 @@ export const getIncomingChallenge = query({
       hostRank: challenge.hostRank,
       mode: challenge.mode,
       createdAt: challenge.createdAt,
+      wagerAmount: challenge.wagerAmount,
     };
   },
 });

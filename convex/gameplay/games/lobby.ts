@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
+import { adjustPlayerCurrencyHelper } from "../../economy/economy";
 import { internalMutation, mutation } from "../../functions";
 import { totalGamesCounter } from "../../infrastructure/shardedCounters";
 import { requireAuthMutation } from "../../lib/convexAuth";
@@ -418,6 +419,26 @@ export const joinLobby = mutation({
         });
       }
 
+      // Handle wager payment for challenge lobbies
+      // If the lobby has a wager, debit the joining player's gold
+      if (lobbyRecheck.wagerAmount && lobbyRecheck.wagerAmount > 0) {
+        logger.info("Processing wager for challenge lobby", {
+          ...traceCtx,
+          wagerAmount: lobbyRecheck.wagerAmount,
+        });
+        await adjustPlayerCurrencyHelper(ctx, {
+          userId,
+          goldDelta: -lobbyRecheck.wagerAmount,
+          transactionType: "wager",
+          description: `Wager for challenge against ${lobbyRecheck.hostUsername}`,
+          metadata: {
+            lobbyId: args.lobbyId,
+            opponentUsername: lobbyRecheck.hostUsername,
+            mode: lobbyRecheck.mode,
+          },
+        });
+      }
+
       // Update lobby with opponent info and start game
       logger.dbOperation("patch", "gameLobbies", { ...traceCtx, gameId });
       await ctx.db.patch(args.lobbyId, {
@@ -621,6 +642,20 @@ export const cancelLobby = mutation({
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
         reason: "No active lobby to cancel",
+      });
+    }
+
+    // Refund wager if lobby had one
+    if (lobby.wagerAmount && lobby.wagerAmount > 0) {
+      await adjustPlayerCurrencyHelper(ctx, {
+        userId,
+        goldDelta: lobby.wagerAmount,
+        transactionType: "wager_refund",
+        description: "Challenge cancelled - wager refunded",
+        metadata: {
+          lobbyId: lobby._id,
+          reason: "lobby_cancelled",
+        },
       });
     }
 
@@ -1059,6 +1094,20 @@ export const cancelLobbyInternal = internalMutation({
     if (!lobby) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
         reason: "No active lobby to cancel",
+      });
+    }
+
+    // Refund wager if lobby had one
+    if (lobby.wagerAmount && lobby.wagerAmount > 0) {
+      await adjustPlayerCurrencyHelper(ctx, {
+        userId: args.userId,
+        goldDelta: lobby.wagerAmount,
+        transactionType: "wager_refund",
+        description: "Challenge cancelled - wager refunded",
+        metadata: {
+          lobbyId: lobby._id,
+          reason: "lobby_cancelled_internal",
+        },
       });
     }
 

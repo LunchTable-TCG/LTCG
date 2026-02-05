@@ -7,6 +7,12 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+// Module-scope references to avoid TS2589
+const createGuildMutationRef = api.social.guilds.core.createGuild;
+const setProfileImageMutationRef = api.social.guilds.core.setProfileImage;
+const setBannerImageMutationRef = api.social.guilds.core.setBannerImage;
+const generateUploadUrlMutationRef = api.storage.images.generateUploadUrl;
+
 interface CreateGuildData {
   name: string;
   description?: string;
@@ -15,18 +21,16 @@ interface CreateGuildData {
 
 /**
  * Hook for creating a new guild with image uploads
- *
- * @returns Guild creation form state and actions
  */
 export function useCreateGuild() {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mutations
-  const createGuildMutation = useMutation(api.social.guilds.createGuild);
-  const setProfileImageMutation = useMutation(api.social.guilds.setProfileImage);
-  const setBannerImageMutation = useMutation(api.social.guilds.setBannerImage);
-  const generateUploadUrl = useMutation(api.core.storage.generateUploadUrl);
+  // Mutations (not using toast wrapper since we handle success/error in createGuild)
+  const createGuildMutation = useMutation(createGuildMutationRef);
+  const setProfileImageMutation = useMutation(setProfileImageMutationRef);
+  const setBannerImageMutation = useMutation(setBannerImageMutationRef);
+  const generateUploadUrl = useMutation(generateUploadUrlMutationRef);
 
   // Upload a file to Convex storage
   const uploadFile = async (file: File): Promise<Id<"_storage">> => {
@@ -64,7 +68,6 @@ export function useCreateGuild() {
           await setProfileImageMutation({ guildId, storageId });
         } catch (uploadError) {
           console.error("Failed to upload profile image:", uploadError);
-          // Don't fail the whole operation for image upload failures
           toast.warning("Guild created but profile image upload failed");
         }
       }
@@ -82,11 +85,11 @@ export function useCreateGuild() {
 
       toast.success("Guild created successfully!");
       return guildId;
-    } catch (error) {
-      const message = handleHookError(error, "Failed to create guild");
+    } catch (err) {
+      const message = handleHookError(err, "Failed to create guild");
       setError(message);
       toast.error(message);
-      throw error;
+      throw err;
     } finally {
       setIsCreating(false);
     }
@@ -95,6 +98,7 @@ export function useCreateGuild() {
   return {
     createGuild,
     uploadFile,
+    generateUploadUrl,
     isCreating,
     error,
     clearError: () => setError(null),

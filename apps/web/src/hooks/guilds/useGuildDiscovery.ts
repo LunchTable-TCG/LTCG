@@ -1,70 +1,52 @@
 "use client";
 
-import { handleHookError } from "@/lib/errorHandling";
+import { useConvexQuery } from "@/lib/convexHelpers";
+import { useMutationWithToast } from "@/lib/useMutationWithToast";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
-import { toast } from "sonner";
+
+// Module-scope references to avoid TS2589
+const getFeaturedGuildsQuery = api.social.guilds.discovery.getFeaturedGuilds;
+const searchGuildsQuery = api.social.guilds.discovery.searchGuilds;
+const getPublicGuildsQuery = api.social.guilds.discovery.getPublicGuilds;
+const joinPublicGuildMutation = api.social.guilds.members.joinPublicGuild;
+const requestToJoinMutation = api.social.guilds.requests.requestToJoin;
 
 /**
  * Hook for discovering and joining guilds
- *
- * @returns Featured guilds, search functionality, and join actions
  */
 export function useGuildDiscovery() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"members" | "recent" | "name">("members");
 
-  // Featured guilds for the discovery page
-  const featuredGuilds = useQuery(api.social.guilds.getFeaturedGuilds, { limit: 6 });
-
-  // Search results (only when there's a query)
-  const searchResults = useQuery(
-    api.social.guilds.searchGuilds,
+  // Queries
+  const featuredGuilds = useConvexQuery(getFeaturedGuildsQuery, { limit: 6 });
+  const searchResults = useConvexQuery(
+    searchGuildsQuery,
     searchQuery.length >= 2 ? { query: searchQuery, limit: 20 } : "skip"
   );
+  const publicGuilds = useConvexQuery(getPublicGuildsQuery, { limit: 20, sortBy });
 
-  // Browse all public guilds
-  const publicGuilds = useQuery(api.social.guilds.getPublicGuilds, {
-    limit: 20,
-    sortBy,
+  // Mutations with toast handling
+  const joinPublicGuild = useMutationWithToast(joinPublicGuildMutation, {
+    success: "Joined guild!",
+    error: "Failed to join guild",
   });
 
-  // Mutations
-  const joinPublicGuildMutation = useMutation(api.social.guilds.joinPublicGuild);
-  const requestToJoinMutation = useMutation(api.social.guilds.requestToJoin);
+  const requestToJoin = useMutationWithToast(requestToJoinMutation, {
+    success: "Join request sent!",
+    error: "Failed to send join request",
+  });
 
   // Actions
-  const joinPublicGuild = async (guildId: Id<"guilds">) => {
-    try {
-      await joinPublicGuildMutation({ guildId });
-      toast.success("Joined guild!");
-    } catch (error) {
-      const message = handleHookError(error, "Failed to join guild");
-      toast.error(message);
-      throw error;
-    }
-  };
+  const search = (query: string) => setSearchQuery(query);
+  const clearSearch = () => setSearchQuery("");
 
-  const requestToJoin = async (guildId: Id<"guilds">, message?: string) => {
-    try {
-      await requestToJoinMutation({ guildId, message });
-      toast.success("Join request sent!");
-    } catch (error) {
-      const errorMsg = handleHookError(error, "Failed to send join request");
-      toast.error(errorMsg);
-      throw error;
-    }
-  };
-
-  const search = (query: string) => {
-    setSearchQuery(query);
-  };
-
-  const clearSearch = () => {
-    setSearchQuery("");
-  };
+  // Convenience wrappers
+  const handleJoinPublicGuild = (guildId: Id<"guilds">) => joinPublicGuild({ guildId });
+  const handleRequestToJoin = (guildId: Id<"guilds">, message?: string) =>
+    requestToJoin({ guildId, message });
 
   return {
     // Data
@@ -82,7 +64,7 @@ export function useGuildDiscovery() {
     search,
     clearSearch,
     setSortBy,
-    joinPublicGuild,
-    requestToJoin,
+    joinPublicGuild: handleJoinPublicGuild,
+    requestToJoin: handleRequestToJoin,
   };
 }

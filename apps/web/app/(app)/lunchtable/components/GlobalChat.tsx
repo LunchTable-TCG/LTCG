@@ -1,6 +1,6 @@
 "use client";
 
-import { useFriends, useGlobalChat } from "@/hooks";
+import { useCurrency, useFriends, useGlobalChat } from "@/hooks";
 import { useGuildChat, useMyGuild } from "@/hooks/guilds";
 import { useAIChat } from "@/hooks/social/useAIChat";
 import { useDMChat } from "@/hooks/social/useDMChat";
@@ -90,6 +90,9 @@ export function GlobalChat() {
 
   // Friends hook
   const { friends, onlineFriends } = useFriends();
+
+  // Currency hook for wager challenges
+  const { gold } = useCurrency();
 
   // Active DM state
   const [activeDMConversationId, setActiveDMConversationId] =
@@ -275,16 +278,18 @@ export function GlobalChat() {
     setUserMenu(null);
   };
 
-  const handleChallengeConfirm = async (mode: "casual" | "ranked") => {
+  const handleChallengeConfirm = async (mode: "casual" | "ranked", wagerAmount?: number) => {
     if (!challengeTarget) return;
 
     try {
       await sendChallengeMutation({
         opponentUsername: challengeTarget.username,
         mode,
+        wagerAmount,
       });
 
-      toast.success(`Challenge sent to ${challengeTarget.username}!`, {
+      const wagerText = wagerAmount ? ` with a ${wagerAmount.toLocaleString()} gold wager` : "";
+      toast.success(`Challenge sent to ${challengeTarget.username}${wagerText}!`, {
         description: "Lobby created. They will be notified to join.",
       });
       setChallengeTarget(null);
@@ -1195,6 +1200,7 @@ export function GlobalChat() {
         onClose={() => setChallengeTarget(null)}
         onConfirm={handleChallengeConfirm}
         opponentUsername={challengeTarget?.username || ""}
+        playerGold={gold}
       />
 
       <ReportUserDialog

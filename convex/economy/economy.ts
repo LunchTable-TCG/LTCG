@@ -195,7 +195,10 @@ export const adjustPlayerCurrency = internalMutation({
       v.literal("conversion"),
       v.literal("marketplace_fee"),
       v.literal("auction_bid"),
-      v.literal("auction_refund")
+      v.literal("auction_refund"),
+      v.literal("wager"),
+      v.literal("wager_payout"),
+      v.literal("wager_refund")
     ),
     description: v.string(),
     referenceId: v.optional(v.string()),

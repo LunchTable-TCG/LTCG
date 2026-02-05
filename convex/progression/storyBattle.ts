@@ -388,7 +388,6 @@ export const initializeStoryBattle = mutation({
     const difficulty = args.difficulty ?? "normal";
 
     try {
-      console.log("[StoryBattle] Step 1: Auth passed, userId:", userId, "difficulty:", difficulty);
 
       // Check difficulty access
       const access = await checkDifficultyAccess(ctx, userId, difficulty);
@@ -435,20 +434,8 @@ export const initializeStoryBattle = mutation({
           reason: "Chapter not found",
         });
       }
-      console.log(
-        "[StoryBattle] Step 2: Chapter found:",
-        chapter.title,
-        "archetype:",
-        chapter.archetype
-      );
-
       // Check if chapter is unlocked for this player
       const unlockResult = await checkChapterUnlocked(ctx, userId, chapter);
-      console.log(
-        "[StoryBattle] Step 3: Unlock check result:",
-        unlockResult.unlocked,
-        unlockResult.reason
-      );
       if (!unlockResult.unlocked) {
         throw createError(ErrorCode.AUTHZ_INSUFFICIENT_PERMISSIONS, {
           reason: unlockResult.reason ?? "Chapter is locked",
@@ -470,13 +457,6 @@ export const initializeStoryBattle = mutation({
           reason: `Stage ${stageNumber} not found for this chapter`,
         });
       }
-      console.log(
-        "[StoryBattle] Step 4: Stage found:",
-        stage.name,
-        "difficulty:",
-        stage.aiDifficulty ?? stage.difficulty
-      );
-
       // Get chapter definition from seeds for AI deck (fallback)
       const chapterDef = STORY_CHAPTERS.find(
         (c) => c.actNumber === actNum && c.chapterNumber === chapNum
@@ -490,12 +470,6 @@ export const initializeStoryBattle = mutation({
 
       // Verify user has an active deck
       const user = await ctx.db.get(userId);
-      console.log(
-        "[StoryBattle] Step 5: User data:",
-        user?.username,
-        "activeDeckId:",
-        user?.activeDeckId
-      );
       if (!user?.activeDeckId) {
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
           reason: "You must have an active deck to start a battle",
@@ -503,24 +477,16 @@ export const initializeStoryBattle = mutation({
       }
 
       // Build AI deck from archetype cards
-      console.log(
-        "[StoryBattle] Step 6: Building AI deck for archetype:",
-        chapter.archetype ?? "neutral"
-      );
       const aiDeck = await buildAIDeck(ctx, chapter.archetype ?? "neutral");
-      console.log("[StoryBattle] Step 7: AI deck built, cards:", aiDeck.length);
 
       // Create or get AI user
-      console.log("[StoryBattle] Step 8: Getting/creating AI user");
       const aiUserId = await getOrCreateAIUser(ctx);
-      console.log("[StoryBattle] Step 9: AI user ID:", aiUserId);
 
       // Create game lobby for story mode
       const gameId = `story_${userId}_${Date.now()}`;
       const now = Date.now();
 
       // Create lobby (matchmaking info only - turn state is in gameStates)
-      console.log("[StoryBattle] Step 10: Creating lobby");
       const lobbyId = await ctx.db.insert("gameLobbies", {
         gameId,
         hostId: userId,
@@ -546,7 +512,6 @@ export const initializeStoryBattle = mutation({
       });
 
       // Initialize game state with AI opponent
-      console.log("[StoryBattle] Step 11: Initializing game state with lobbyId:", lobbyId);
       await initializeGameStateHelper(ctx, {
         lobbyId,
         gameId,
@@ -558,7 +523,6 @@ export const initializeStoryBattle = mutation({
         aiDifficulty: stage.aiDifficulty ?? stage.difficulty, // Use stage's difficulty (easy, medium, hard, boss)
         aiDeck,
       });
-      console.log("[StoryBattle] Step 12: Game state initialized successfully!");
 
       return {
         gameId,
@@ -567,26 +531,14 @@ export const initializeStoryBattle = mutation({
         aiOpponentName: `AI - ${chapter.title}`,
       };
     } catch (error) {
-      console.error("[StoryBattle] ERROR caught:", error);
-      console.error(
-        "[StoryBattle] Error type:",
-        error instanceof Error ? error.constructor.name : typeof error
-      );
-      console.error("[StoryBattle] Error name:", error instanceof Error ? error.name : "N/A");
-      console.error(
-        "[StoryBattle] Error message:",
-        error instanceof Error ? error.message : String(error)
-      );
-
       // Re-throw ConvexErrors as-is
       if (error instanceof Error && error.name === "ConvexError") {
-        console.log("[StoryBattle] Re-throwing ConvexError");
         throw error;
       }
       // Wrap unknown errors with more context
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error initializing story battle";
-      console.error("[StoryBattle] Wrapping as SYSTEM_INTERNAL_ERROR:", errorMessage);
+      console.error("[StoryBattle] Error:", errorMessage);
       throw createError(ErrorCode.SYSTEM_INTERNAL_ERROR, {
         reason: errorMessage,
       });

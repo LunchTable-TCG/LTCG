@@ -1,11 +1,18 @@
 "use client";
 
-import { handleHookError } from "@/lib/errorHandling";
+import { useConvexQuery } from "@/lib/convexHelpers";
+import { useMutationWithToast } from "@/lib/useMutationWithToast";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
-import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
+
+// Module-scope references to avoid TS2589
+const getMyInvitesQuery = api.social.guilds.invites.getMyInvites;
+const getGuildPendingInvitesQuery = api.social.guilds.invites.getGuildPendingInvites;
+const sendInviteMutation = api.social.guilds.invites.sendInvite;
+const acceptInviteMutation = api.social.guilds.invites.acceptInvite;
+const declineInviteMutation = api.social.guilds.invites.declineInvite;
+const cancelInviteMutation = api.social.guilds.invites.cancelInvite;
 
 /**
  * Hook for managing guild invites (both sent and received)
@@ -16,65 +23,49 @@ import { useAuth } from "../auth/useConvexAuthHook";
 export function useGuildInvites(guildId?: Id<"guilds">) {
   const { isAuthenticated } = useAuth();
 
-  // User's pending invites (invites they've received)
-  const myInvites = useQuery(api.social.guilds.getMyInvites, isAuthenticated ? {} : "skip");
-
-  // Guild's pending invites (owner only)
-  const guildPendingInvites = useQuery(
-    api.social.guilds.getGuildPendingInvites,
+  // Queries
+  const myInvites = useConvexQuery(getMyInvitesQuery, isAuthenticated ? {} : "skip");
+  const guildPendingInvites = useConvexQuery(
+    getGuildPendingInvitesQuery,
     guildId ? { guildId } : "skip"
   );
 
-  // Mutations
-  const sendInviteMutation = useMutation(api.social.guilds.sendInvite);
-  const acceptInviteMutation = useMutation(api.social.guilds.acceptInvite);
-  const declineInviteMutation = useMutation(api.social.guilds.declineInvite);
-  const cancelInviteMutation = useMutation(api.social.guilds.cancelInvite);
+  // Mutations with toast handling
+  const sendInviteRaw = useMutationWithToast(sendInviteMutation, {
+    error: "Failed to send invite",
+  });
 
-  // Actions
+  const acceptInvite = useMutationWithToast(acceptInviteMutation, {
+    success: "Joined guild!",
+    error: "Failed to accept invite",
+  });
+
+  const declineInvite = useMutationWithToast(declineInviteMutation, {
+    success: "Invite declined",
+    error: "Failed to decline invite",
+  });
+
+  const cancelInvite = useMutationWithToast(cancelInviteMutation, {
+    success: "Invite cancelled",
+    error: "Failed to cancel invite",
+  });
+
+  // Convenience wrappers
   const sendInvite = async (targetGuildId: Id<"guilds">, username: string) => {
-    try {
-      await sendInviteMutation({ guildId: targetGuildId, username });
-      toast.success(`Invite sent to ${username}`);
-    } catch (error) {
-      const message = handleHookError(error, "Failed to send invite");
-      toast.error(message);
-      throw error;
-    }
+    await sendInviteRaw({ guildId: targetGuildId, username });
+    // Custom success message with username
+    const { toast } = await import("sonner");
+    toast.success(`Invite sent to ${username}`);
   };
 
-  const acceptInvite = async (inviteId: Id<"guildInvites">) => {
-    try {
-      await acceptInviteMutation({ inviteId });
-      toast.success("Joined guild!");
-    } catch (error) {
-      const message = handleHookError(error, "Failed to accept invite");
-      toast.error(message);
-      throw error;
-    }
-  };
+  const handleAcceptInvite = (inviteId: Id<"guildInvites">) =>
+    acceptInvite({ inviteId });
 
-  const declineInvite = async (inviteId: Id<"guildInvites">) => {
-    try {
-      await declineInviteMutation({ inviteId });
-      toast.success("Invite declined");
-    } catch (error) {
-      const message = handleHookError(error, "Failed to decline invite");
-      toast.error(message);
-      throw error;
-    }
-  };
+  const handleDeclineInvite = (inviteId: Id<"guildInvites">) =>
+    declineInvite({ inviteId });
 
-  const cancelInvite = async (inviteId: Id<"guildInvites">) => {
-    try {
-      await cancelInviteMutation({ inviteId });
-      toast.success("Invite cancelled");
-    } catch (error) {
-      const message = handleHookError(error, "Failed to cancel invite");
-      toast.error(message);
-      throw error;
-    }
-  };
+  const handleCancelInvite = (inviteId: Id<"guildInvites">) =>
+    cancelInvite({ inviteId });
 
   return {
     // Data
@@ -84,8 +75,8 @@ export function useGuildInvites(guildId?: Id<"guilds">) {
     isLoading: myInvites === undefined,
     // Actions
     sendInvite,
-    acceptInvite,
-    declineInvite,
-    cancelInvite,
+    acceptInvite: handleAcceptInvite,
+    declineInvite: handleDeclineInvite,
+    cancelInvite: handleCancelInvite,
   };
 }

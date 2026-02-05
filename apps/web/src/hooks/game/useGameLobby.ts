@@ -59,6 +59,7 @@ interface IncomingChallenge {
   hostRank: string;
   mode: string;
   createdAt: number;
+  wagerAmount?: number;
 }
 
 interface UseGameLobbyReturn {

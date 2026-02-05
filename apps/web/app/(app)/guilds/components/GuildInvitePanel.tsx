@@ -155,6 +155,7 @@ export function GuildInvitePanel({ guildId }: GuildInvitePanelProps) {
                     size="sm"
                     variant="ghost"
                     className="text-[#a89f94] hover:text-red-400 hover:bg-red-500/10"
+                    aria-label={`Cancel invite to ${invite.invitedUsername || "user"}`}
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -196,6 +197,7 @@ export function GuildInvitePanel({ guildId }: GuildInvitePanelProps) {
                       onClick={() => handleApprove(request._id, request.username || "Unknown")}
                       size="sm"
                       className="bg-green-600 hover:bg-green-500 text-white rounded-lg"
+                      aria-label={`Approve ${request.username || "user"}'s join request`}
                     >
                       <Check className="w-4 h-4" />
                     </Button>
@@ -204,6 +206,7 @@ export function GuildInvitePanel({ guildId }: GuildInvitePanelProps) {
                       size="sm"
                       variant="outline"
                       className="border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-lg"
+                      aria-label={`Reject ${request.username || "user"}'s join request`}
                     >
                       <X className="w-4 h-4" />
                     </Button>

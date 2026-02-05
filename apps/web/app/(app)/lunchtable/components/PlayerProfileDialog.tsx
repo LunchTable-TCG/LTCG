@@ -1,9 +1,10 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useCurrency } from "@/hooks";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { Loader2, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { ChallengeConfirmDialog } from "./ChallengeConfirmDialog";
 
 import { AgentsTab } from "./profile/AgentsTab";
@@ -51,17 +52,35 @@ export function PlayerProfileDialog({ isOpen, onClose, username }: PlayerProfile
   const [selectedDetail, setSelectedDetail] = useState<DetailItem | null>(null);
   const [showChallengeDialog, setShowChallengeDialog] = useState(false);
 
+  // Currency hook for wager challenges
+  const { gold } = useCurrency();
+
+  // Challenge mutation
+  const sendChallengeMutation = useConvexMutation(typedApi.social.challenges.sendChallenge);
+
   // Fetch comprehensive user profile
-  const userData = useQuery(api.core.users.getUserProfile, { username });
+  const userData = useConvexQuery(typedApi.core.users.getUserProfile, { username });
 
   // Fetch user's unlocked achievements
-  const unlockedAchievements = useQuery(api.progression.achievements.getUnlockedAchievements, {
-    username,
-  });
+  const unlockedAchievements = useConvexQuery(
+    typedApi.progression.achievements.getUnlockedAchievements,
+    { username }
+  );
 
-  const handleChallengeConfirm = (mode: "casual" | "ranked") => {
-    console.log(`Challenging ${username} to ${mode} match`);
-    setShowChallengeDialog(false);
+  const handleChallengeConfirm = async (mode: "casual" | "ranked", wagerAmount?: number) => {
+    try {
+      await sendChallengeMutation({
+        opponentUsername: username,
+        mode,
+        wagerAmount,
+      });
+      const wagerText = wagerAmount ? ` with a ${wagerAmount.toLocaleString()} gold wager` : "";
+      toast.success(`Challenge sent to ${username}${wagerText}!`);
+      setShowChallengeDialog(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to send challenge";
+      toast.error(errorMessage);
+    }
   };
 
   const openCardDetail = (
@@ -279,6 +298,7 @@ export function PlayerProfileDialog({ isOpen, onClose, username }: PlayerProfile
           onConfirm={handleChallengeConfirm}
           opponentUsername={username}
           opponentRank={profile.rank.ranked.tier}
+          playerGold={gold}
         />
       )}
     </>

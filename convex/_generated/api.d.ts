@@ -252,6 +252,7 @@ import type * as scripts_debugCardArchetypes from "../scripts/debugCardArchetype
 import type * as scripts_debugStoryData from "../scripts/debugStoryData.js";
 import type * as scripts_seedStarterCards from "../scripts/seedStarterCards.js";
 import type * as scripts_seedStoryChapters from "../scripts/seedStoryChapters.js";
+import type * as scripts_testStoryBattle from "../scripts/testStoryBattle.js";
 import type * as seedStarterCards from "../seedStarterCards.js";
 import type * as seeds_starterCards from "../seeds/starterCards.js";
 import type * as seeds_starterDecks from "../seeds/starterDecks.js";
@@ -561,6 +562,7 @@ declare const fullApi: ApiFromModules<{
   "scripts/debugStoryData": typeof scripts_debugStoryData;
   "scripts/seedStarterCards": typeof scripts_seedStarterCards;
   "scripts/seedStoryChapters": typeof scripts_seedStoryChapters;
+  "scripts/testStoryBattle": typeof scripts_testStoryBattle;
   seedStarterCards: typeof seedStarterCards;
   "seeds/starterCards": typeof seeds_starterCards;
   "seeds/starterDecks": typeof seeds_starterDecks;

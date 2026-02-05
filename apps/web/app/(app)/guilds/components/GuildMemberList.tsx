@@ -267,6 +267,8 @@ function MemberCard({
             "text-[#a89f94] hover:text-[#e8e0d5]",
             isActionOpen && "bg-[#d4af37]/10 text-[#d4af37]"
           )}
+          aria-label={`Member actions for ${member.username}`}
+          aria-expanded={isActionOpen}
         >
           <MoreVertical className="w-4 h-4" />
         </Button>

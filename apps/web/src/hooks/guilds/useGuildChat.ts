@@ -7,6 +7,10 @@ import { useMutation, usePaginatedQuery } from "convex/react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
+// Module-scope references to avoid TS2589
+const getPaginatedMessagesQuery = api.social.guilds.chat.getPaginatedMessages;
+const sendMessageMutation = api.social.guilds.chat.sendMessage;
+
 /**
  * Hook for guild chat functionality
  *
@@ -22,21 +26,23 @@ export function useGuildChat(guildId: Id<"guilds"> | null) {
     status: paginationStatus,
     loadMore,
   } = usePaginatedQuery(
-    api.social.guilds.getPaginatedGuildMessages,
+    getPaginatedMessagesQuery,
     guildId ? { guildId } : "skip",
     { initialNumItems: 50 }
   );
 
   // Send message mutation
-  const sendMessageMutation = useMutation(api.social.guilds.sendMessage);
+  const sendMessageRaw = useMutation(sendMessageMutation);
 
   // Actions
   const sendMessage = async (message: string) => {
     if (!guildId || !isAuthenticated) return;
-    if (message.trim().length === 0) return;
+
+    const trimmed = message.trim();
+    if (trimmed.length === 0) return;
 
     try {
-      await sendMessageMutation({ guildId, message: message.trim() });
+      await sendMessageRaw({ guildId, message: trimmed });
     } catch (error) {
       const errorMsg = handleHookError(error, "Failed to send message");
       toast.error(errorMsg);

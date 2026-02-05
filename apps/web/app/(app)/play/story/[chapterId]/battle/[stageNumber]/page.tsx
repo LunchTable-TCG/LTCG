@@ -87,6 +87,22 @@ export default function BattlePage({ params }: BattlePageProps) {
     let mounted = true;
 
     async function initialize() {
+      // Pre-flight check: ensure user has an active deck
+      if (currentUser && !currentUser.activeDeckId) {
+        if (mounted) {
+          setInitError(
+            "You need to select an active deck before starting a battle. Go to Collection → Decks and select a deck."
+          );
+          setIsInitializing(false);
+        }
+        return;
+      }
+
+      // Wait for user data to load
+      if (!currentUser) {
+        return;
+      }
+
       console.log("Initializing story battle for chapter:", chapterId, "stage:", stageNumber);
       try {
         const result = await initializeStoryBattle({
@@ -103,7 +119,15 @@ export default function BattlePage({ params }: BattlePageProps) {
       } catch (error) {
         console.error("Failed to initialize story battle:", error);
         if (mounted) {
-          setInitError(error instanceof Error ? error.message : "Failed to start battle");
+          // Parse Convex error for better messages
+          const errorMessage = error instanceof Error ? error.message : "Failed to start battle";
+          if (errorMessage.includes("active deck")) {
+            setInitError(
+              "You need to select an active deck before starting a battle. Go to Collection → Decks and select a deck."
+            );
+          } else {
+            setInitError(errorMessage);
+          }
           setIsInitializing(false);
         }
       }
@@ -114,7 +138,7 @@ export default function BattlePage({ params }: BattlePageProps) {
     return () => {
       mounted = false;
     };
-  }, [chapterId, stageNumber, initializeStoryBattle]);
+  }, [chapterId, stageNumber, initializeStoryBattle, currentUser]);
 
   // Once stage info loads, determine initial dialogue phase
   useEffect(() => {
@@ -235,20 +259,38 @@ export default function BattlePage({ params }: BattlePageProps) {
   }
 
   // Show error state
+  const needsDeck = initError?.includes("active deck");
   if (initError || !gameId || !lobbyId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-b from-[#1a1510] to-[#0f0a08] p-8">
         <div className="tcg-chat-leather rounded-2xl p-8 border border-[#3d2b1f] max-w-md text-center">
-          <h1 className="text-3xl font-bold text-red-500 mb-4">Battle Failed</h1>
+          <h1 className="text-3xl font-bold text-red-500 mb-4">
+            {needsDeck ? "No Deck Selected" : "Battle Failed"}
+          </h1>
           <p className="text-[#a89f94] mb-6">
             {initError || "Failed to initialize battle. Please try again."}
           </p>
-          <Button
-            onClick={() => router.push(`/play/story/${chapterId}`)}
-            className="bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]"
-          >
-            Back to Chapter
-          </Button>
+          <div className="flex flex-col gap-3">
+            {needsDeck && (
+              <Button
+                onClick={() => router.push("/collection/decks")}
+                className="bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]"
+              >
+                Go to Deck Selection
+              </Button>
+            )}
+            <Button
+              onClick={() => router.push(`/play/story/${chapterId}`)}
+              variant={needsDeck ? "outline" : "default"}
+              className={
+                needsDeck
+                  ? "border-[#3d2b1f] text-[#a89f94]"
+                  : "bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]"
+              }
+            >
+              Back to Chapter
+            </Button>
+          </div>
         </div>
       </div>
     );

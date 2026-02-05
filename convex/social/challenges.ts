@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
+import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { mutation } from "../functions";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
@@ -26,9 +27,11 @@ export const sendChallenge = mutation({
   args: {
     opponentUsername: v.string(),
     mode: v.union(v.literal("casual"), v.literal("ranked")),
+    wagerAmount: v.optional(v.number()), // Gold to wager (0 or undefined = no wager)
   },
   returns: v.id("gameLobbies"),
   handler: async (ctx, args) => {
+    const wagerAmount = args.wagerAmount ?? 0;
     // Validate authentication
     const user = await requireAuthMutation(ctx);
 
@@ -68,6 +71,27 @@ export const sendChallenge = mutation({
       });
     }
 
+    // Validate wager amount
+    if (wagerAmount < 0) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Wager amount cannot be negative",
+      });
+    }
+
+    // If there's a wager, debit the challenger's gold
+    if (wagerAmount > 0) {
+      await adjustPlayerCurrencyHelper(ctx, {
+        userId: user.userId,
+        goldDelta: -wagerAmount,
+        transactionType: "wager",
+        description: `Wager for challenge against ${args.opponentUsername}`,
+        metadata: {
+          opponentUsername: args.opponentUsername,
+          mode: args.mode,
+        },
+      });
+    }
+
     // Get host's deck info for lobby metadata
     const hostUser = await ctx.db.get(user.userId);
     const hostDeck = hostUser?.activeDeckId ? await ctx.db.get(hostUser.activeDeckId) : null;
@@ -98,20 +122,26 @@ export const sendChallenge = mutation({
       maxSpectators: 10,
       spectatorCount: 0,
       createdAt: now,
+      // Wager system
+      wagerAmount: wagerAmount > 0 ? wagerAmount : undefined,
+      wagerPaid: false,
     });
 
     // Send inbox notification to challenged player
     const senderName = user.username || "Player";
+    const wagerText =
+      wagerAmount > 0 ? ` with a ${wagerAmount.toLocaleString()} gold wager!` : "!";
     await ctx.scheduler.runAfter(0, internal.social.inbox.createInboxMessage, {
       userId: opponent._id,
       type: "challenge" as const,
-      title: "Game Challenge!",
-      message: `${senderName} has challenged you to a ${args.mode} match!`,
+      title: wagerAmount > 0 ? "Wager Challenge!" : "Game Challenge!",
+      message: `${senderName} has challenged you to a ${args.mode} match${wagerText}`,
       data: {
         challengerId: user.userId,
         challengerUsername: senderName,
         lobbyId,
         mode: args.mode,
+        wagerAmount: wagerAmount > 0 ? wagerAmount : undefined,
       },
       senderId: user.userId,
       senderUsername: senderName,

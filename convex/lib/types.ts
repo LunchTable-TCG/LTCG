@@ -92,10 +92,14 @@ export type TransactionType =
   | "sale"
   | "gift"
   | "refund"
+  | "admin_refund"
   | "conversion"
   | "marketplace_fee"
   | "auction_bid"
-  | "auction_refund";
+  | "auction_refund"
+  | "wager"
+  | "wager_payout"
+  | "wager_refund";
 
 /**
  * Transaction metadata with discriminated union for type safety

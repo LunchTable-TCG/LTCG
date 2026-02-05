@@ -478,6 +478,10 @@ export default defineSchema({
     spectatorCount: v.optional(v.number()), // default: 0
     allowSpectators: v.optional(v.boolean()), // default: true
     maxSpectators: v.optional(v.number()), // default: 100
+
+    // Wager system (gold bet on challenge matches)
+    wagerAmount: v.optional(v.number()), // Amount each player wagers (0 = no wager)
+    wagerPaid: v.optional(v.boolean()), // Whether wager payout has been processed
   })
     .index("by_status", ["status"])
     .index("by_mode_status", ["mode", "status"])
@@ -1293,7 +1297,10 @@ export default defineSchema({
       "conversion",
       "marketplace_fee",
       "auction_bid",
-      "auction_refund"
+      "auction_refund",
+      "wager",
+      "wager_payout",
+      "wager_refund"
     ),
     currencyType: literals("gold", "gems"),
     amount: v.number(),

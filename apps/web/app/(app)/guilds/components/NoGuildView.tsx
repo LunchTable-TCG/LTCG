@@ -22,7 +22,7 @@ import { GuildCard } from "./GuildCard";
 
 export function NoGuildView() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { publicGuilds, searchResults, isLoading, joinPublicGuild, requestToJoin, searchGuilds } =
+  const { publicGuilds, searchResults, isLoading, joinPublicGuild, requestToJoin, search } =
     useGuildDiscovery();
 
   const displayGuilds = searchQuery.trim() ? searchResults : publicGuilds;
@@ -31,7 +31,7 @@ export function NoGuildView() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      searchGuilds(searchQuery.trim());
+      search(searchQuery.trim());
     }
   };
 

@@ -1,15 +1,16 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Gamepad2, Swords, Trophy, X } from "lucide-react";
+import { Coins, Gamepad2, Swords, Trophy, X } from "lucide-react";
 import { useState } from "react";
 
 interface ChallengeConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (mode: "casual" | "ranked") => void;
+  onConfirm: (mode: "casual" | "ranked", wagerAmount?: number) => void;
   opponentUsername: string;
   opponentRank?: string;
+  playerGold?: number;
 }
 
 const RANK_COLORS: Record<string, string> = {
@@ -28,17 +29,36 @@ export function ChallengeConfirmDialog({
   onConfirm,
   opponentUsername,
   opponentRank = "Gold",
+  playerGold = 0,
 }: ChallengeConfirmDialogProps) {
   const [selectedMode, setSelectedMode] = useState<"casual" | "ranked">("casual");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [wagerAmount, setWagerAmount] = useState<number>(0);
+  const [wagerError, setWagerError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
+  const handleWagerChange = (value: string) => {
+    const amount = Number.parseInt(value, 10) || 0;
+    setWagerAmount(amount);
+    if (amount > playerGold) {
+      setWagerError(`Insufficient gold (you have ${playerGold.toLocaleString()})`);
+    } else if (amount < 0) {
+      setWagerError("Wager cannot be negative");
+    } else {
+      setWagerError(null);
+    }
+  };
+
   const handleConfirm = () => {
+    if (wagerAmount > playerGold) {
+      setWagerError(`Insufficient gold (you have ${playerGold.toLocaleString()})`);
+      return;
+    }
     setIsSubmitting(true);
-    // Simulate sending challenge
+    // Call onConfirm with the wager amount
     setTimeout(() => {
-      onConfirm(selectedMode);
+      onConfirm(selectedMode, wagerAmount > 0 ? wagerAmount : undefined);
       setIsSubmitting(false);
     }, 500);
   };
@@ -171,10 +191,47 @@ export function ChallengeConfirmDialog({
               </div>
             </div>
 
+            {/* Wager Section */}
+            <div className="mb-6">
+              <p className="text-xs font-bold text-[#a89f94] uppercase tracking-wider mb-3">
+                Gold Wager (Optional)
+              </p>
+              <div className="p-4 rounded-xl bg-black/30 border border-[#3d2b1f]">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-2 flex-1">
+                    <Coins className="w-5 h-5 text-[#d4af37]" />
+                    <input
+                      type="number"
+                      min="0"
+                      max={playerGold}
+                      value={wagerAmount || ""}
+                      onChange={(e) => handleWagerChange(e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-black/50 border border-[#3d2b1f] rounded-lg px-3 py-2 text-[#e8e0d5] font-bold placeholder:text-[#a89f94]/50 focus:outline-none focus:border-[#d4af37]/50"
+                    />
+                  </div>
+                  <span className="text-xs text-[#a89f94]">Gold</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#a89f94]">Your balance:</span>
+                  <span className="text-[#d4af37] font-bold">{playerGold.toLocaleString()} Gold</span>
+                </div>
+                {wagerError && (
+                  <p className="text-xs text-red-400 mt-2">{wagerError}</p>
+                )}
+                {wagerAmount > 0 && !wagerError && (
+                  <p className="text-xs text-amber-400 mt-2">
+                    Winner takes 90% ({Math.floor(wagerAmount * 2 * 0.9).toLocaleString()} gold). 10% platform fee.
+                  </p>
+                )}
+              </div>
+            </div>
+
             {/* Info Text */}
             <p className="text-xs text-[#a89f94] text-center mb-6">
-              {opponentUsername} will receive a challenge notification. They have 60 seconds to
-              accept.
+              {opponentUsername} will receive a challenge notification
+              {wagerAmount > 0 && ` with a ${wagerAmount.toLocaleString()} gold wager`}.
+              They have 60 seconds to accept.
             </p>
 
             {/* Actions */}

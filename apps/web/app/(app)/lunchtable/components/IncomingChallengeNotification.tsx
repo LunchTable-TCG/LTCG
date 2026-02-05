@@ -4,7 +4,7 @@ import { useGameLobby } from "@/hooks/game/useGameLobby";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
-import { Check, Loader2, Swords, X } from "lucide-react";
+import { Check, Coins, Loader2, Swords, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -84,7 +84,7 @@ export function IncomingChallengeNotification() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-[#d4af37] uppercase tracking-wider">
-                Challenge Received!
+                {incomingChallenge.wagerAmount ? "Wager Challenge!" : "Challenge Received!"}
               </span>
               <span
                 className={cn(
@@ -96,13 +96,23 @@ export function IncomingChallengeNotification() {
               >
                 {modeLabel}
               </span>
+              {incomingChallenge.wagerAmount && incomingChallenge.wagerAmount > 0 && (
+                <span className="flex items-center gap-1 text-xs font-bold uppercase px-2 py-0.5 rounded bg-[#d4af37]/20 text-[#d4af37]">
+                  <Coins className="w-3 h-3" />
+                  {incomingChallenge.wagerAmount.toLocaleString()}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[#e8e0d5] font-bold">{incomingChallenge.hostUsername}</span>
               <span className={cn("text-sm font-semibold", rankColor)}>
                 ({incomingChallenge.hostRank})
               </span>
-              <span className="text-[#a89f94] text-sm">challenges you to battle!</span>
+              <span className="text-[#a89f94] text-sm">
+                {incomingChallenge.wagerAmount && incomingChallenge.wagerAmount > 0
+                  ? `wagers ${incomingChallenge.wagerAmount.toLocaleString()} gold!`
+                  : "challenges you to battle!"}
+              </span>
             </div>
           </div>
 

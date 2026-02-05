@@ -1,11 +1,23 @@
 "use client";
 
-import { handleHookError } from "@/lib/errorHandling";
+import { useConvexQuery } from "@/lib/convexHelpers";
+import { useMutationWithToast } from "@/lib/useMutationWithToast";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
-import { toast } from "sonner";
-import { useAuth } from "../auth/useConvexAuthHook";
+
+// Module-scope references to avoid TS2589
+const getGuildQuery = api.social.guilds.core.getGuild;
+const getGuildMembersQuery = api.social.guilds.members.getGuildMembers;
+const getOnlineMemberCountQuery = api.social.guilds.members.getOnlineMemberCount;
+const getGuildJoinRequestsQuery = api.social.guilds.requests.getGuildJoinRequests;
+const updateGuildMutation = api.social.guilds.core.updateGuild;
+const deleteGuildMutation = api.social.guilds.core.deleteGuild;
+const setProfileImageMutation = api.social.guilds.core.setProfileImage;
+const setBannerImageMutation = api.social.guilds.core.setBannerImage;
+const transferOwnershipMutation = api.social.guilds.core.transferOwnership;
+const kickMemberMutation = api.social.guilds.members.kickMember;
+const approveRequestMutation = api.social.guilds.requests.approveRequest;
+const rejectRequestMutation = api.social.guilds.requests.rejectRequest;
 
 /**
  * Hook for viewing and managing a specific guild
@@ -14,109 +26,113 @@ import { useAuth } from "../auth/useConvexAuthHook";
  * @returns Guild data, members, and management actions
  */
 export function useGuild(guildId: Id<"guilds"> | null) {
-  const { isAuthenticated } = useAuth();
-
-  // Guild data
-  const guild = useQuery(api.social.guilds.getGuild, guildId ? { guildId } : "skip");
-
-  // Members (only if we have a guildId)
-  const members = useQuery(api.social.guilds.getGuildMembers, guildId ? { guildId } : "skip");
-
-  const onlineMemberCount = useQuery(
-    api.social.guilds.getOnlineMemberCount,
+  // Queries
+  const guild = useConvexQuery(getGuildQuery, guildId ? { guildId } : "skip");
+  const members = useConvexQuery(getGuildMembersQuery, guildId ? { guildId } : "skip");
+  const onlineMemberCount = useConvexQuery(
+    getOnlineMemberCountQuery,
+    guildId ? { guildId } : "skip"
+  );
+  const joinRequests = useConvexQuery(
+    getGuildJoinRequestsQuery,
     guildId ? { guildId } : "skip"
   );
 
-  // Mutations
-  const updateGuildMutation = useMutation(api.social.guilds.updateGuild);
-  const deleteGuildMutation = useMutation(api.social.guilds.deleteGuild);
-  const setProfileImageMutation = useMutation(api.social.guilds.setProfileImage);
-  const setBannerImageMutation = useMutation(api.social.guilds.setBannerImage);
-  const transferOwnershipMutation = useMutation(api.social.guilds.transferOwnership);
-  const kickMemberMutation = useMutation(api.social.guilds.kickMember);
+  // Mutations with toast handling
+  const updateGuildRaw = useMutationWithToast(updateGuildMutation, {
+    success: "Guild updated",
+    error: "Failed to update guild",
+  });
 
-  // Actions
-  const updateGuild = async (data: {
+  const deleteGuildRaw = useMutationWithToast(deleteGuildMutation, {
+    success: "Guild deleted",
+    error: "Failed to delete guild",
+  });
+
+  const setProfileImageRaw = useMutationWithToast(setProfileImageMutation, {
+    success: "Profile image updated",
+    error: "Failed to update profile image",
+  });
+
+  const setBannerImageRaw = useMutationWithToast(setBannerImageMutation, {
+    success: "Banner image updated",
+    error: "Failed to update banner image",
+  });
+
+  const transferOwnershipRaw = useMutationWithToast(transferOwnershipMutation, {
+    success: "Ownership transferred",
+    error: "Failed to transfer ownership",
+  });
+
+  const kickMemberRaw = useMutationWithToast(kickMemberMutation, {
+    success: "Member removed",
+    error: "Failed to remove member",
+  });
+
+  const approveRequestRaw = useMutationWithToast(approveRequestMutation, {
+    success: "Request approved",
+    error: "Failed to approve request",
+  });
+
+  const rejectRequestRaw = useMutationWithToast(rejectRequestMutation, {
+    success: "Request rejected",
+    error: "Failed to reject request",
+  });
+
+  // Convenience wrappers that include guildId
+  const updateGuild = (data: {
     name?: string;
     description?: string;
     visibility?: "public" | "private";
   }) => {
-    if (!guildId) return;
-    try {
-      await updateGuildMutation({ guildId, ...data });
-      toast.success("Guild updated");
-    } catch (error) {
-      const message = handleHookError(error, "Failed to update guild");
-      toast.error(message);
-      throw error;
-    }
+    if (!guildId) return Promise.resolve();
+    return updateGuildRaw({ guildId, ...data });
   };
 
-  const deleteGuild = async () => {
-    if (!guildId) return;
-    try {
-      await deleteGuildMutation({ guildId });
-      toast.success("Guild deleted");
-    } catch (error) {
-      const message = handleHookError(error, "Failed to delete guild");
-      toast.error(message);
-      throw error;
-    }
+  const deleteGuild = () => {
+    if (!guildId) return Promise.resolve();
+    return deleteGuildRaw({ guildId });
   };
 
-  const setProfileImage = async (storageId: Id<"_storage">) => {
-    if (!guildId) return;
-    try {
-      await setProfileImageMutation({ guildId, storageId });
-      toast.success("Profile image updated");
-    } catch (error) {
-      const message = handleHookError(error, "Failed to update profile image");
-      toast.error(message);
-      throw error;
-    }
+  const setProfileImage = (storageId: Id<"_storage">) => {
+    if (!guildId) return Promise.resolve();
+    return setProfileImageRaw({ guildId, storageId });
   };
 
-  const setBannerImage = async (storageId: Id<"_storage">) => {
-    if (!guildId) return;
-    try {
-      await setBannerImageMutation({ guildId, storageId });
-      toast.success("Banner image updated");
-    } catch (error) {
-      const message = handleHookError(error, "Failed to update banner image");
-      toast.error(message);
-      throw error;
-    }
+  const setBannerImage = (storageId: Id<"_storage">) => {
+    if (!guildId) return Promise.resolve();
+    return setBannerImageRaw({ guildId, storageId });
   };
 
-  const transferOwnership = async (newOwnerId: Id<"users">) => {
-    if (!guildId) return;
-    try {
-      await transferOwnershipMutation({ guildId, newOwnerId });
-      toast.success("Ownership transferred");
-    } catch (error) {
-      const message = handleHookError(error, "Failed to transfer ownership");
-      toast.error(message);
-      throw error;
-    }
+  const transferOwnership = (newOwnerId: Id<"users">) => {
+    if (!guildId) return Promise.resolve();
+    return transferOwnershipRaw({ guildId, newOwnerId });
   };
 
-  const kickMember = async (userId: Id<"users">) => {
-    if (!guildId) return;
-    try {
-      await kickMemberMutation({ guildId, userId });
-      toast.success("Member removed");
-    } catch (error) {
-      const message = handleHookError(error, "Failed to remove member");
-      toast.error(message);
-      throw error;
-    }
+  const kickMember = (userId: Id<"users">) => {
+    if (!guildId) return Promise.resolve();
+    return kickMemberRaw({ guildId, userId });
   };
+
+  const approveRequest = (requestId: Id<"guildJoinRequests">) =>
+    approveRequestRaw({ requestId });
+
+  const rejectRequest = (requestId: Id<"guildJoinRequests">) =>
+    rejectRequestRaw({ requestId });
 
   return {
+    // Data
     guild: guild ?? null,
     members: members ?? [],
     onlineMemberCount: onlineMemberCount ?? 0,
+    joinRequests: joinRequests ?? [],
+    // Loading states
     isLoading: guild === undefined,
+    isFullyLoaded:
+      guild !== undefined &&
+      members !== undefined &&
+      onlineMemberCount !== undefined &&
+      joinRequests !== undefined,
     // Actions
     updateGuild,
     deleteGuild,
@@ -124,5 +140,7 @@ export function useGuild(guildId: Id<"guilds"> | null) {
     setBannerImage,
     transferOwnership,
     kickMember,
+    approveRequest,
+    rejectRequest,
   };
 }

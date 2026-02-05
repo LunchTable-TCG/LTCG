@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
+import { adjustPlayerCurrencyHelper } from "../../economy/economy";
 import { internalMutation, mutation } from "../../functions";
 import { completedGamesCounter } from "../../infrastructure/shardedCounters";
 import { requireAuthMutation } from "../../lib/convexAuth";
@@ -8,6 +9,60 @@ import { shuffleArray } from "../../lib/deterministicRandom";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
 import { updateAgentStatsAfterGame, updatePlayerStatsAfterGame } from "./stats";
+
+// ============================================================================
+// WAGER SYSTEM CONSTANTS
+// ============================================================================
+
+const WAGER_WINNER_PERCENTAGE = 0.9; // 90% to winner, 10% to treasury
+
+/**
+ * Process wager payout after a game ends
+ * Winner receives 90% of the total pot, 10% goes to treasury
+ *
+ * @param ctx - Mutation context
+ * @param lobbyId - The lobby ID
+ * @param wagerAmount - Amount each player wagered
+ * @param winnerId - The winner's user ID
+ * @param loserId - The loser's user ID
+ */
+async function processWagerPayout(
+  ctx: MutationCtx,
+  lobbyId: Id<"gameLobbies">,
+  wagerAmount: number,
+  winnerId: Id<"users">,
+  loserId: Id<"users">
+): Promise<void> {
+  if (wagerAmount <= 0) return;
+
+  const totalPot = wagerAmount * 2; // Both players wagered the same amount
+  const winnerPayout = Math.floor(totalPot * WAGER_WINNER_PERCENTAGE);
+  const treasuryFee = totalPot - winnerPayout; // Remainder goes to treasury (10%)
+
+  // Pay the winner their share (90%)
+  await adjustPlayerCurrencyHelper(ctx, {
+    userId: winnerId,
+    goldDelta: winnerPayout,
+    transactionType: "wager_payout",
+    description: `Won ${winnerPayout.toLocaleString()} gold from wager match`,
+    metadata: {
+      lobbyId,
+      totalPot,
+      treasuryFee,
+      opponentId: loserId,
+    },
+  });
+
+  // Treasury fee is simply not paid out - it stays in the system
+  // The loser's wager was already deducted when they accepted the challenge
+  // We could optionally track this in a separate transaction for auditing:
+  // await recordTransaction(ctx, "treasury", "wager_fee", "gold", treasuryFee, treasuryFee, "Wager platform fee");
+
+  // Mark wager as paid on the lobby
+  await ctx.db.patch(lobbyId, {
+    wagerPaid: true,
+  });
+}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -79,8 +134,6 @@ export async function initializeGameStateHelper(
     aiDeck?: Id<"cardDefinitions">[];
   }
 ): Promise<void> {
-  console.log("[initGameState] Starting with lobbyId:", params.lobbyId, "gameId:", params.gameId);
-
   const {
     lobbyId,
     gameId,
@@ -94,17 +147,14 @@ export async function initializeGameStateHelper(
   } = params;
 
   // Get both players and their decks
-  console.log("[initGameState] Fetching host:", hostId, "and opponent:", opponentId);
   const host = await ctx.db.get(hostId);
   const opponent = await ctx.db.get(opponentId);
-  console.log("[initGameState] Host found:", !!host, "Opponent found:", !!opponent);
 
   if (!host || !opponent) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: "Player not found",
     });
   }
-  console.log("[initGameState] Host activeDeckId:", host.activeDeckId);
 
   // Build host deck
   if (!host.activeDeckId) {
@@ -114,12 +164,10 @@ export async function initializeGameStateHelper(
   }
 
   const hostActiveDeckId = host.activeDeckId;
-  console.log("[initGameState] Loading host deck cards for deckId:", hostActiveDeckId);
   const hostDeckCards = await ctx.db
     .query("deckCards")
     .withIndex("by_deck", (q) => q.eq("deckId", hostActiveDeckId))
     .collect();
-  console.log("[initGameState] Host deck cards found:", hostDeckCards.length);
 
   const hostFullDeck: Id<"cardDefinitions">[] = [];
   for (const deckCard of hostDeckCards) {
@@ -127,13 +175,11 @@ export async function initializeGameStateHelper(
       hostFullDeck.push(deckCard.cardDefinitionId);
     }
   }
-  console.log("[initGameState] Host full deck size:", hostFullDeck.length);
 
   // Build opponent deck - use AI deck if provided (story mode)
   let opponentFullDeck: Id<"cardDefinitions">[];
   if (isAIOpponent && aiDeck) {
     // Story mode: use pre-built AI deck
-    console.log("[initGameState] Using AI deck, size:", aiDeck.length);
     opponentFullDeck = aiDeck;
   } else {
     // PvP mode: load from opponent's active deck
@@ -331,6 +377,11 @@ export const surrenderGame = mutation({
       const gameMode = lobby.mode as "ranked" | "casual";
       await updatePlayerStatsAfterGame(ctx, winnerId, userId, gameMode);
 
+      // Process wager payout if applicable (surrendering player loses their wager)
+      if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.wagerPaid) {
+        await processWagerPayout(ctx, args.lobbyId, lobby.wagerAmount, winnerId, userId);
+      }
+
       // Check if players are agents and update agent stats
       const winnerAgent = await ctx.db
         .query("agents")
@@ -479,6 +530,17 @@ export const forfeitGame = internalMutation({
       const gameMode = lobby.mode as "ranked" | "casual";
       await updatePlayerStatsAfterGame(ctx, winnerId, args.forfeitingPlayerId, gameMode);
 
+      // Process wager payout if applicable (forfeiting player loses their wager)
+      if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.wagerPaid) {
+        await processWagerPayout(
+          ctx,
+          args.lobbyId,
+          lobby.wagerAmount,
+          winnerId,
+          args.forfeitingPlayerId
+        );
+      }
+
       // Check if players are agents and update agent stats
       const winnerAgent = await ctx.db
         .query("agents")
@@ -554,6 +616,11 @@ export const completeGame = internalMutation({
       const loserId = args.winnerId === lobby.hostId ? lobby.opponentId : lobby.hostId;
       const gameMode = lobby.mode as "ranked" | "casual";
       await updatePlayerStatsAfterGame(ctx, args.winnerId, loserId, gameMode);
+
+      // Process wager payout if applicable
+      if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.wagerPaid) {
+        await processWagerPayout(ctx, args.lobbyId, lobby.wagerAmount, args.winnerId, loserId);
+      }
 
       // Check if players are agents and update agent stats
       const winnerAgent = await ctx.db

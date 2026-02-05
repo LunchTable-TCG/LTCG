@@ -30,7 +30,7 @@ export default function CreateGuildPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { guild } = useMyGuild();
-  const { createGuild, generateUploadUrl, isCreating } = useCreateGuild();
+  const { createGuild, isCreating } = useCreateGuild();
 
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState("");
@@ -96,19 +96,6 @@ export default function CreateGuildPage() {
     reader.readAsDataURL(file);
   };
 
-  const uploadImage = async (file: File): Promise<string> => {
-    const uploadUrl = await generateUploadUrl();
-    const response = await fetch(uploadUrl, {
-      method: "POST",
-      headers: { "Content-Type": file.type },
-      body: file,
-    });
-
-    if (!response.ok) throw new Error("Upload failed");
-    const { storageId } = await response.json();
-    return storageId;
-  };
-
   const handleCreate = async () => {
     if (!name.trim()) {
       toast.error("Guild name is required");
@@ -117,29 +104,19 @@ export default function CreateGuildPage() {
 
     setIsUploading(true);
     try {
-      // Upload images if selected
-      let profileImageId: string | undefined;
-      let bannerImageId: string | undefined;
+      // Create the guild with images (hook handles upload)
+      await createGuild(
+        {
+          name: name.trim(),
+          description: description.trim() || undefined,
+          visibility,
+        },
+        profileImage ?? undefined,
+        bannerImage ?? undefined
+      );
 
-      if (profileImage) {
-        profileImageId = await uploadImage(profileImage);
-      }
-      if (bannerImage) {
-        bannerImageId = await uploadImage(bannerImage);
-      }
-
-      // Create the guild
-      const guildId = await createGuild({
-        name: name.trim(),
-        description: description.trim() || undefined,
-        visibility,
-        profileImageId,
-        bannerImageId,
-      });
-
-      toast.success("Guild created successfully!");
       router.push("/guilds");
-    } catch (error) {
+    } catch {
       // Error handled by hook
     } finally {
       setIsUploading(false);
@@ -148,7 +125,6 @@ export default function CreateGuildPage() {
 
   const isNameValid = name.trim().length >= 3 && name.trim().length <= 32;
   const canProceedStep1 = isNameValid;
-  const canProceedStep2 = true; // Images are optional
   const canCreate = canProceedStep1;
 
   return (
