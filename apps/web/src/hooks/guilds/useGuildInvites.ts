@@ -58,14 +58,11 @@ export function useGuildInvites(guildId?: Id<"guilds">) {
     toast.success(`Invite sent to ${username}`);
   };
 
-  const handleAcceptInvite = (inviteId: Id<"guildInvites">) =>
-    acceptInvite({ inviteId });
+  const handleAcceptInvite = (inviteId: Id<"guildInvites">) => acceptInvite({ inviteId });
 
-  const handleDeclineInvite = (inviteId: Id<"guildInvites">) =>
-    declineInvite({ inviteId });
+  const handleDeclineInvite = (inviteId: Id<"guildInvites">) => declineInvite({ inviteId });
 
-  const handleCancelInvite = (inviteId: Id<"guildInvites">) =>
-    cancelInvite({ inviteId });
+  const handleCancelInvite = (inviteId: Id<"guildInvites">) => cancelInvite({ inviteId });
 
   return {
     // Data

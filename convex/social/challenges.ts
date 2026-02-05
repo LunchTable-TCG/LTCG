@@ -129,8 +129,7 @@ export const sendChallenge = mutation({
 
     // Send inbox notification to challenged player
     const senderName = user.username || "Player";
-    const wagerText =
-      wagerAmount > 0 ? ` with a ${wagerAmount.toLocaleString()} gold wager!` : "!";
+    const wagerText = wagerAmount > 0 ? ` with a ${wagerAmount.toLocaleString()} gold wager!` : "!";
     await ctx.scheduler.runAfter(0, internal.social.inbox.createInboxMessage, {
       userId: opponent._id,
       type: "challenge" as const,
@@ -145,8 +144,8 @@ export const sendChallenge = mutation({
       },
       senderId: user.userId,
       senderUsername: senderName,
-      // Challenge expires in 24 hours
-      expiresAt: now + 24 * 60 * 60 * 1000,
+      // Challenge expires in 60 seconds (matches lobby expiration)
+      expiresAt: now + 60 * 1000,
     });
 
     return lobbyId;

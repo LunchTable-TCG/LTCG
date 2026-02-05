@@ -25,11 +25,9 @@ export function useGuildChat(guildId: Id<"guilds"> | null) {
     results: messages,
     status: paginationStatus,
     loadMore,
-  } = usePaginatedQuery(
-    getPaginatedMessagesQuery,
-    guildId ? { guildId } : "skip",
-    { initialNumItems: 50 }
-  );
+  } = usePaginatedQuery(getPaginatedMessagesQuery, guildId ? { guildId } : "skip", {
+    initialNumItems: 50,
+  });
 
   // Send message mutation
   const sendMessageRaw = useMutation(sendMessageMutation);

@@ -15,6 +15,14 @@ crons.interval(
   internal.games.cleanupStaleGames
 );
 
+// Cleanup expired challenge lobbies and refund wagers every minute
+// Challenges expire after 60 seconds if not accepted
+crons.interval(
+  "cleanup expired challenges",
+  { minutes: 1 },
+  internal.games.cleanupExpiredChallenges
+);
+
 // Refresh leaderboard snapshots every 5 minutes
 crons.interval(
   "refresh leaderboards",

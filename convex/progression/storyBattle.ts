@@ -388,7 +388,6 @@ export const initializeStoryBattle = mutation({
     const difficulty = args.difficulty ?? "normal";
 
     try {
-
       // Check difficulty access
       const access = await checkDifficultyAccess(ctx, userId, difficulty);
       if (!access.allowed) {

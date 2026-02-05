@@ -214,14 +214,15 @@ export function ChallengeConfirmDialog({
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#a89f94]">Your balance:</span>
-                  <span className="text-[#d4af37] font-bold">{playerGold.toLocaleString()} Gold</span>
+                  <span className="text-[#d4af37] font-bold">
+                    {playerGold.toLocaleString()} Gold
+                  </span>
                 </div>
-                {wagerError && (
-                  <p className="text-xs text-red-400 mt-2">{wagerError}</p>
-                )}
+                {wagerError && <p className="text-xs text-red-400 mt-2">{wagerError}</p>}
                 {wagerAmount > 0 && !wagerError && (
                   <p className="text-xs text-amber-400 mt-2">
-                    Winner takes 90% ({Math.floor(wagerAmount * 2 * 0.9).toLocaleString()} gold). 10% platform fee.
+                    Winner takes 90% ({Math.floor(wagerAmount * 2 * 0.9).toLocaleString()} gold).
+                    10% platform fee.
                   </p>
                 )}
               </div>
@@ -230,8 +231,8 @@ export function ChallengeConfirmDialog({
             {/* Info Text */}
             <p className="text-xs text-[#a89f94] text-center mb-6">
               {opponentUsername} will receive a challenge notification
-              {wagerAmount > 0 && ` with a ${wagerAmount.toLocaleString()} gold wager`}.
-              They have 60 seconds to accept.
+              {wagerAmount > 0 && ` with a ${wagerAmount.toLocaleString()} gold wager`}. They have
+              60 seconds to accept.
             </p>
 
             {/* Actions */}

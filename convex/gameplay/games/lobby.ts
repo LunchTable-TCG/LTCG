@@ -717,15 +717,40 @@ export const leaveLobby = mutation({
 
     // If user is host
     if (lobby.hostId === userId) {
+      // Refund wager if lobby had one
+      if (lobby.wagerAmount && lobby.wagerAmount > 0) {
+        await adjustPlayerCurrencyHelper(ctx, {
+          userId,
+          goldDelta: lobby.wagerAmount,
+          transactionType: "wager_refund",
+          description: "Lobby cancelled - wager refunded",
+          metadata: {
+            lobbyId: lobby._id,
+            reason: "host_left",
+          },
+        });
+      }
       await ctx.db.patch(lobby._id, {
         status: "cancelled",
       });
     } else if (lobby.opponentId === userId) {
-      // If user is opponent, remove them from lobby
+      // If user is opponent declining a challenge, refund host's wager and cancel lobby
+      if (lobby.wagerAmount && lobby.wagerAmount > 0) {
+        await adjustPlayerCurrencyHelper(ctx, {
+          userId: lobby.hostId,
+          goldDelta: lobby.wagerAmount,
+          transactionType: "wager_refund",
+          description: "Challenge declined - wager refunded",
+          metadata: {
+            lobbyId: lobby._id,
+            opponentUsername: username,
+            reason: "challenge_declined",
+          },
+        });
+      }
+      // Cancel the lobby entirely since it was a challenge (pre-assigned opponent)
       await ctx.db.patch(lobby._id, {
-        opponentId: undefined,
-        opponentUsername: undefined,
-        opponentRank: undefined,
+        status: "cancelled",
       });
     }
 
@@ -1120,5 +1145,95 @@ export const cancelLobbyInternal = internalMutation({
     await updatePresenceInternal(ctx, args.userId, username, "online");
 
     return { success: true, lobbyId: lobby._id };
+  },
+});
+
+// ============================================================================
+// CLEANUP MUTATIONS (scheduled jobs)
+// ============================================================================
+
+/**
+ * Challenge expiration time in milliseconds (60 seconds)
+ */
+const CHALLENGE_EXPIRATION_MS = 60 * 1000;
+
+/**
+ * Cleanup expired challenge lobbies and refund wagers.
+ * Challenge lobbies are private lobbies with a pre-assigned opponent (opponentId set).
+ * If they're still waiting after 60 seconds, the challenge expired.
+ *
+ * This should be scheduled to run periodically (e.g., every minute).
+ */
+export const cleanupExpiredChallenges = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const expirationThreshold = now - CHALLENGE_EXPIRATION_MS;
+
+    // Find waiting challenge lobbies that have expired
+    // Challenge lobbies are identified by having opponentId set (pre-assigned opponent)
+    // and being private
+    const expiredLobbies = await ctx.db
+      .query("gameLobbies")
+      .withIndex("by_status", (q) => q.eq("status", "waiting"))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("isPrivate"), true),
+          q.neq(q.field("opponentId"), undefined),
+          q.lt(q.field("createdAt"), expirationThreshold)
+        )
+      )
+      .take(50);
+
+    let refunded = 0;
+    let cancelled = 0;
+
+    for (const lobby of expiredLobbies) {
+      // Refund wager to host if there was one
+      if (lobby.wagerAmount && lobby.wagerAmount > 0) {
+        await adjustPlayerCurrencyHelper(ctx, {
+          userId: lobby.hostId,
+          goldDelta: lobby.wagerAmount,
+          transactionType: "wager_refund",
+          description: "Challenge expired - wager refunded",
+          metadata: {
+            lobbyId: lobby._id,
+            opponentUsername: lobby.opponentUsername,
+            reason: "challenge_expired",
+          },
+        });
+        refunded++;
+      }
+
+      // Cancel the lobby
+      await ctx.db.patch(lobby._id, {
+        status: "cancelled",
+      });
+      cancelled++;
+
+      // Update host presence to online (if they're not in another game)
+      const hostPresence = await ctx.db
+        .query("userPresence")
+        .withIndex("by_user", (q) => q.eq("userId", lobby.hostId))
+        .first();
+
+      if (hostPresence?.status === "in_game") {
+        // Check if host is in any other active lobby
+        const otherActiveLobby = await ctx.db
+          .query("gameLobbies")
+          .withIndex("by_host", (q) => q.eq("hostId", lobby.hostId))
+          .filter((q) => q.and(q.neq(q.field("_id"), lobby._id), q.eq(q.field("status"), "active")))
+          .first();
+
+        if (!otherActiveLobby) {
+          await ctx.db.patch(hostPresence._id, {
+            status: "online",
+            lastActiveAt: now,
+          });
+        }
+      }
+    }
+
+    return { refunded, cancelled };
   },
 });

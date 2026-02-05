@@ -33,10 +33,7 @@ export function useGuild(guildId: Id<"guilds"> | null) {
     getOnlineMemberCountQuery,
     guildId ? { guildId } : "skip"
   );
-  const joinRequests = useConvexQuery(
-    getGuildJoinRequestsQuery,
-    guildId ? { guildId } : "skip"
-  );
+  const joinRequests = useConvexQuery(getGuildJoinRequestsQuery, guildId ? { guildId } : "skip");
 
   // Mutations with toast handling
   const updateGuildRaw = useMutationWithToast(updateGuildMutation, {
@@ -114,11 +111,9 @@ export function useGuild(guildId: Id<"guilds"> | null) {
     return kickMemberRaw({ guildId, userId });
   };
 
-  const approveRequest = (requestId: Id<"guildJoinRequests">) =>
-    approveRequestRaw({ requestId });
+  const approveRequest = (requestId: Id<"guildJoinRequests">) => approveRequestRaw({ requestId });
 
-  const rejectRequest = (requestId: Id<"guildJoinRequests">) =>
-    rejectRequestRaw({ requestId });
+  const rejectRequest = (requestId: Id<"guildJoinRequests">) => rejectRequestRaw({ requestId });
 
   return {
     // Data

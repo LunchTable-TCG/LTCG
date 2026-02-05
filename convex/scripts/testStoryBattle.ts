@@ -4,11 +4,11 @@
  * Run this from the Convex dashboard or CLI to verify story mode works end-to-end
  */
 
+import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { initializeGameStateHelper } from "../gameplay/games/lifecycle";
-import { v } from "convex/values";
 
 /**
  * Check if a user is ready for story battle
@@ -136,7 +136,11 @@ export const testStoryBattleFlow = mutation({
           (u) => u.username !== "StoryModeAI" && !u.username?.startsWith("AI -")
         );
         if (!nonAiUser) {
-          steps.push({ step: "1. Find test user", status: "fail", detail: "No non-AI users found" });
+          steps.push({
+            step: "1. Find test user",
+            status: "fail",
+            detail: "No non-AI users found",
+          });
           return { success: false, steps };
         }
         userId = nonAiUser._id;
