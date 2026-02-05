@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Stage, Layer, Image as KonvaImage, Text, Transformer } from "react-konva";
 import useImage from "use-image";
 import BackgroundPicker from "./BackgroundPicker";
+import TextFieldEditor from "./TextFieldEditor";
 
 type CardType = "creature" | "spell" | "trap" | "magic" | "environment";
 
@@ -166,6 +167,26 @@ export default function TemplateDesigner() {
             Add Text Field
           </Button>
         </Card>
+
+        {selectedFieldId && (() => {
+          const selectedField = textFields.find((f) => f.id === selectedFieldId);
+          if (!selectedField) return null;
+
+          return (
+            <TextFieldEditor
+              field={selectedField}
+              onChange={(updates) => {
+                setTextFields(
+                  textFields.map((f) => (f.id === selectedFieldId ? { ...f, ...updates } : f))
+                );
+              }}
+              onDelete={() => {
+                setTextFields(textFields.filter((f) => f.id !== selectedFieldId));
+                setSelectedFieldId(null);
+              }}
+            />
+          );
+        })()}
       </div>
 
       {/* Center Canvas */}
