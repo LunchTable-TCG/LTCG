@@ -1052,6 +1052,62 @@ export default defineSchema({
   // Card Template Designer
   // =============================================================================
 
+  // Card background images - uploaded to Vercel Blob for use in templates
+  cardBackgrounds: defineTable({
+    filename: v.string(),
+    blobUrl: v.string(),
+    width: v.number(),
+    height: v.number(),
+    uploadedAt: v.number(),
+    tags: v.optional(v.array(v.string())),
+  }).index("by_filename", ["filename"]),
+
+  // Card type templates - defines text field positions/styles for card rendering
+  cardTypeTemplates: defineTable({
+    cardType: v.string(), // "creature" | "spell" | "trap" | "magic" | "environment"
+    name: v.string(),
+    backgroundId: v.id("cardBackgrounds"),
+    canvasWidth: v.number(),
+    canvasHeight: v.number(),
+    textFields: v.array(
+      v.object({
+        id: v.string(),
+        dataField: v.string(), // "title" | "effect" | "cardType" | "manaCost" | "atk" | "def"
+        x: v.number(),
+        y: v.number(),
+        width: v.number(),
+        height: v.number(),
+        rotation: v.number(),
+        fontFamily: v.string(),
+        fontSize: v.number(),
+        fontWeight: v.string(),
+        color: v.string(),
+        align: v.string(),
+        stroke: v.optional(
+          v.object({
+            color: v.string(),
+            width: v.number(),
+          })
+        ),
+        shadow: v.optional(
+          v.object({
+            color: v.string(),
+            blur: v.number(),
+            offsetX: v.number(),
+            offsetY: v.number(),
+          })
+        ),
+        letterSpacing: v.number(),
+        lineHeight: v.number(),
+        autoScale: v.boolean(),
+      })
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_card_type", ["cardType"])
+    .index("by_created_at", ["createdAt"]),
+
   // Card visual templates - defines layout for card rendering
   cardTemplates: defineTable({
     name: v.string(),
