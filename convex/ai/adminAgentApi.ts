@@ -10,9 +10,32 @@
 import { v } from "convex/values";
 import { api, components } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
+import type { ActionCtx } from "../_generated/server";
 import { action } from "../_generated/server";
 import { internalAny } from "../lib/internalHelpers";
 import { adminAgent } from "./adminAgent";
+import { setDatabaseApiKeys } from "./providers";
+
+/**
+ * Load API keys from database and set them for provider use
+ */
+async function loadDatabaseApiKeys(ctx: ActionCtx) {
+  // Get OpenRouter key from database
+  const openrouterKey = await ctx.runQuery(api.admin.aiConfig.getAIConfigValue, {
+    key: "ai.apikey.openrouter",
+  });
+
+  // Get Vercel/Gateway key from database
+  const gatewayKey = await ctx.runQuery(api.admin.aiConfig.getAIConfigValue, {
+    key: "ai.apikey.vercel",
+  });
+
+  // Set the keys for provider use
+  setDatabaseApiKeys({
+    openrouter: typeof openrouterKey === "string" && openrouterKey.length > 0 ? openrouterKey : undefined,
+    gateway: typeof gatewayKey === "string" && gatewayKey.length > 0 ? gatewayKey : undefined,
+  });
+}
 
 // Type for thread data returned from the agent component
 // Note: userId is stored as string (not Id<"users">) in the agent component
@@ -224,6 +247,9 @@ export const sendMessage = action({
     message: v.string(),
   },
   handler: async (ctx, args) => {
+    // Load API keys from database first
+    await loadDatabaseApiKeys(ctx);
+
     // Verify authentication using currentUser query
     const user = await ctx.runQuery(api.core.users.currentUser, {});
 
@@ -290,6 +316,9 @@ export const streamMessage = action({
     message: v.string(),
   },
   handler: async (ctx, args) => {
+    // Load API keys from database first
+    await loadDatabaseApiKeys(ctx);
+
     // Verify authentication using currentUser query
     const user = await ctx.runQuery(api.core.users.currentUser, {});
 

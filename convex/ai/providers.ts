@@ -2,12 +2,12 @@
  * AI Model Provider Configuration
  *
  * Centralized configuration for AI providers using:
- * - Vercel AI Gateway: Primary provider with access to OpenAI, Anthropic, Google, etc.
- * - OpenRouter: 400+ models with automatic fallbacks and model routing
+ * - OpenRouter: Primary provider with 400+ models and automatic fallbacks
+ * - Vercel AI Gateway: Fallback provider with unified access to major providers
  *
- * Environment Variables:
- * - AI_GATEWAY_API_KEY: Vercel AI Gateway key (or falls back to OPENAI_API_KEY)
- * - OPENROUTER_API_KEY: OpenRouter API key
+ * API Key Sources (checked in order):
+ * 1. Database (systemConfig table) - set via admin panel
+ * 2. Environment variables - OPENROUTER_API_KEY, AI_GATEWAY_API_KEY
  *
  * Usage:
  * - Use `getLanguageModel()` to get the configured language model
@@ -16,45 +16,67 @@
  */
 
 import { createGateway } from "@ai-sdk/gateway";
-import { openai } from "@ai-sdk/openai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
 // =============================================================================
-// Provider Instances
+// API Key Cache (populated from database on first use)
+// =============================================================================
+
+// Cache for database API keys (set by setDatabaseApiKeys)
+let cachedOpenRouterKey: string | undefined;
+let cachedGatewayKey: string | undefined;
+
+/**
+ * Set API keys from database (called by admin agent before use)
+ */
+export function setDatabaseApiKeys(keys: { openrouter?: string; gateway?: string }) {
+  if (keys.openrouter) cachedOpenRouterKey = keys.openrouter;
+  if (keys.gateway) cachedGatewayKey = keys.gateway;
+}
+
+/**
+ * Get the effective OpenRouter API key (database first, then env var)
+ */
+function getOpenRouterApiKey(): string | undefined {
+  return cachedOpenRouterKey || process.env["OPENROUTER_API_KEY"];
+}
+
+/**
+ * Get the effective Gateway API key (database first, then env var)
+ */
+function getGatewayApiKey(): string | undefined {
+  return cachedGatewayKey || process.env["AI_GATEWAY_API_KEY"];
+}
+
+// =============================================================================
+// Provider Factories (create fresh instances with current keys)
 // =============================================================================
 
 /**
- * OpenRouter provider instance
- * Access 400+ models through a single API with automatic fallbacks
- *
- * Model format: "provider/model-name"
- * Examples:
- * - "anthropic/claude-3.5-sonnet"
- * - "openai/gpt-4o"
- * - "google/gemini-2.0-flash"
- * - "meta-llama/llama-3.3-70b-instruct"
+ * Create OpenRouter provider instance with current API key
  */
-export const openrouter = createOpenRouter({
-  apiKey: process.env["OPENROUTER_API_KEY"],
-  headers: {
-    "HTTP-Referer": process.env["APP_URL"] || "https://ltcg.app",
-    "X-Title": "LTCG Admin",
-  },
-});
+export function createOpenRouterProvider() {
+  const apiKey = getOpenRouterApiKey();
+  return createOpenRouter({
+    apiKey,
+    headers: {
+      "HTTP-Referer": process.env["APP_URL"] || "https://ltcg.app",
+      "X-Title": "LTCG Admin",
+    },
+  });
+}
 
 /**
- * Vercel AI Gateway provider instance
- * Unified access to major providers with Vercel's infrastructure
- *
- * Model format: "provider/model-name"
- * Examples:
- * - "openai/gpt-4o"
- * - "anthropic/claude-sonnet-4"
- * - "google/gemini-2.0-flash"
+ * Create Vercel AI Gateway provider instance with current API key
  */
-export const gateway = createGateway({
-  apiKey: process.env["AI_GATEWAY_API_KEY"] || process.env["OPENAI_API_KEY"],
-});
+export function createGatewayProvider() {
+  const apiKey = getGatewayApiKey();
+  return createGateway({ apiKey });
+}
+
+// Legacy exports for backwards compatibility (uses env vars only)
+export const openrouter = createOpenRouterProvider();
+export const gateway = createGatewayProvider();
 
 // =============================================================================
 // Model Configurations
@@ -63,38 +85,33 @@ export const gateway = createGateway({
 /**
  * Available language models by use case
  *
- * Each model is available through multiple providers for redundancy
+ * Each model is available through OpenRouter and Vercel AI Gateway
  */
 export const LANGUAGE_MODELS = {
   // Fast, cost-effective models for simple tasks
   fast: {
     openrouter: "openai/gpt-4o-mini",
     gateway: "openai/gpt-4o-mini",
-    openai: "gpt-4o-mini",
   },
   // Balanced models for general use
   balanced: {
     openrouter: "anthropic/claude-3.5-sonnet",
     gateway: "anthropic/claude-sonnet-4",
-    openai: "gpt-4o",
   },
   // Most capable models for complex tasks
   powerful: {
     openrouter: "anthropic/claude-3.5-sonnet",
     gateway: "anthropic/claude-sonnet-4",
-    openai: "gpt-4o",
   },
   // Reasoning-focused models
   reasoning: {
     openrouter: "openai/o1-mini",
     gateway: "openai/o1-mini",
-    openai: "o1-mini",
   },
   // Long context models (128k+ tokens)
   longContext: {
     openrouter: "anthropic/claude-3.5-sonnet",
     gateway: "anthropic/claude-sonnet-4",
-    openai: "gpt-4o",
   },
 } as const;
 
@@ -102,15 +119,15 @@ export const LANGUAGE_MODELS = {
  * Available embedding models
  */
 export const EMBEDDING_MODELS = {
-  // OpenAI's latest small embedding model (1536 dimensions)
+  // Small embedding model (1536 dimensions)
   small: {
-    openai: "text-embedding-3-small",
     openrouter: "openai/text-embedding-3-small",
+    gateway: "openai/text-embedding-3-small",
   },
-  // OpenAI's large embedding model (3072 dimensions)
+  // Large embedding model (3072 dimensions)
   large: {
-    openai: "text-embedding-3-large",
     openrouter: "openai/text-embedding-3-large",
+    gateway: "openai/text-embedding-3-large",
   },
 } as const;
 
@@ -118,26 +135,22 @@ export const EMBEDDING_MODELS = {
 // Provider Selection
 // =============================================================================
 
-type Provider = "openrouter" | "gateway" | "openai";
+type Provider = "openrouter" | "gateway";
 type ModelTier = keyof typeof LANGUAGE_MODELS;
 type EmbeddingTier = keyof typeof EMBEDDING_MODELS;
 
 /**
- * Get the preferred provider based on environment configuration
- * Falls back through providers if API keys are missing
+ * Get the preferred provider based on available API keys
+ * Checks database keys first, then environment variables
  */
 export function getPreferredProvider(): Provider {
   // Check OpenRouter first (most models, best fallback support)
-  if (process.env["OPENROUTER_API_KEY"]) {
+  if (getOpenRouterApiKey()) {
     return "openrouter";
   }
-  // Then Vercel AI Gateway
-  if (process.env["AI_GATEWAY_API_KEY"]) {
+  // Fall back to Vercel AI Gateway
+  if (getGatewayApiKey()) {
     return "gateway";
-  }
-  // Finally direct OpenAI
-  if (process.env["OPENAI_API_KEY"]) {
-    return "openai";
   }
   // Default to openrouter (will fail gracefully if no key)
   return "openrouter";
@@ -145,6 +158,7 @@ export function getPreferredProvider(): Provider {
 
 /**
  * Get a language model instance based on tier and provider preference
+ * Creates a fresh provider instance to pick up any database-stored API keys
  *
  * @param tier - Model capability tier (fast, balanced, powerful, reasoning, longContext)
  * @param provider - Optional provider override
@@ -161,39 +175,31 @@ export function getLanguageModel(tier: ModelTier = "balanced", provider?: Provid
   const selectedProvider = provider || getPreferredProvider();
   const modelConfig = LANGUAGE_MODELS[tier];
 
-  switch (selectedProvider) {
-    case "openrouter":
-      return openrouter.chat(modelConfig.openrouter);
-    case "gateway":
-      return gateway.languageModel(modelConfig.gateway);
-    default:
-      return openai.chat(modelConfig.openai);
+  if (selectedProvider === "gateway") {
+    return createGatewayProvider().languageModel(modelConfig.gateway);
   }
+  return createOpenRouterProvider().chat(modelConfig.openrouter);
 }
 
 /**
  * Get an embedding model instance
+ * Creates a fresh provider instance to pick up any database-stored API keys
  *
  * @param tier - Embedding size tier (small, large)
- * @param provider - Optional provider override (openai or openrouter)
+ * @param provider - Optional provider override
  * @returns Embedding model instance
  *
  * @example
  * const embedder = getEmbeddingModel("small");
  */
-export function getEmbeddingModel(
-  tier: EmbeddingTier = "small",
-  provider?: "openai" | "openrouter"
-) {
+export function getEmbeddingModel(tier: EmbeddingTier = "small", provider?: Provider) {
+  const selectedProvider = provider || getPreferredProvider();
   const modelConfig = EMBEDDING_MODELS[tier];
 
-  // Prefer OpenAI for embeddings (most reliable)
-  if (provider === "openrouter" && process.env["OPENROUTER_API_KEY"]) {
-    return openrouter.embedding(modelConfig.openrouter);
+  if (selectedProvider === "gateway") {
+    return createGatewayProvider().textEmbeddingModel(modelConfig.gateway);
   }
-
-  // Default to OpenAI embeddings
-  return openai.embedding(modelConfig.openai);
+  return createOpenRouterProvider().embedding(modelConfig.openrouter);
 }
 
 // =============================================================================
@@ -312,7 +318,6 @@ export function getProviderStatus() {
   return {
     openrouter: !!process.env["OPENROUTER_API_KEY"],
     gateway: !!process.env["AI_GATEWAY_API_KEY"],
-    openai: !!process.env["OPENAI_API_KEY"],
     preferred: getPreferredProvider(),
   };
 }

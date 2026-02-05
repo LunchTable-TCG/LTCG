@@ -262,6 +262,7 @@ import type * as seeds_types from "../seeds/types.js";
 import type * as setup from "../setup.js";
 import type * as setupSystem from "../setupSystem.js";
 import type * as shop from "../shop.js";
+import type * as social from "../social.js";
 import type * as social_aiChat from "../social/aiChat.js";
 import type * as social_challenges from "../social/challenges.js";
 import type * as social_dm from "../social/dm.js";
@@ -573,6 +574,7 @@ declare const fullApi: ApiFromModules<{
   setup: typeof setup;
   setupSystem: typeof setupSystem;
   shop: typeof shop;
+  social: typeof social;
   "social/aiChat": typeof social_aiChat;
   "social/challenges": typeof social_challenges;
   "social/dm": typeof social_dm;
