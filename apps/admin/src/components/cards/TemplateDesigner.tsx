@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Stage, Layer, Image as KonvaImage, Text, Transformer } from "react-konva";
 import useImage from "use-image";
+import { useMutation } from "convex/react";
+import { apiAny } from "@/lib/convexHelpers";
 import BackgroundPicker from "./BackgroundPicker";
 import TextFieldEditor from "./TextFieldEditor";
 import CardDataPanel from "./CardDataPanel";
@@ -41,6 +43,30 @@ export default function TemplateDesigner() {
   const [textFields, setTextFields] = useState<TextField[]>([]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [previewCard, setPreviewCard] = useState<any>(null);
+
+  const saveTemplate = useMutation(apiAny.cardTypeTemplates.upsert);
+
+  const handleSaveTemplate = async () => {
+    if (!backgroundId) {
+      alert("Please select a background first");
+      return;
+    }
+
+    try {
+      await saveTemplate({
+        cardType,
+        name: `${cardType.charAt(0).toUpperCase() + cardType.slice(1)} Template`,
+        backgroundId,
+        canvasWidth: canvasSize.width,
+        canvasHeight: canvasSize.height,
+        textFields: textFields.map(({ text, ...field }) => field), // Remove preview text
+      });
+      alert("Template saved successfully!");
+    } catch (error) {
+      console.error("Failed to save template:", error);
+      alert("Failed to save template");
+    }
+  };
 
   const handleAddTextField = () => {
     const newField: TextField = {
@@ -262,7 +288,7 @@ export default function TemplateDesigner() {
         <Card className="p-4">
           <h3 className="font-semibold mb-2">Actions</h3>
           <div className="space-y-2">
-            <Button className="w-full">Save Template</Button>
+            <Button className="w-full" onClick={handleSaveTemplate}>Save Template</Button>
           </div>
         </Card>
       </div>
