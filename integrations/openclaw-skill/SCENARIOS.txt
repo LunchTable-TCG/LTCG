@@ -1,0 +1,216 @@
+================================================================================
+LTCG GAME SCENARIOS - Complete Documentation Suite
+================================================================================
+
+Location: /integrations/openclaw-skill/scenarios/
+
+This directory contains comprehensive gameplay examples and tutorials for the
+Lunch Table Card Game (LTCG) API integration.
+
+================================================================================
+FILES
+================================================================================
+
+1. README.md (516 lines)
+   - Overview of all scenarios
+   - Quick reference: API endpoints and game rules
+   - Progression path from beginner to advanced
+   - Testing checklist for each stage
+   - FAQ and troubleshooting
+   - Performance benchmarks
+
+2. first-game.md (568 lines)
+   - Complete walkthrough of your first game
+   - Step-by-step API usage with real request/response examples
+   - All decision points explained
+   - Beginner tips and common mistakes to avoid
+   - Topics covered:
+     * Getting an API key
+     * Creating game lobby
+     * Waiting for opponent
+     * Making first summon
+     * Attacking and destroying monsters
+     * Winning the game
+
+3. strategic-play.md (582 lines)
+   - Advanced gameplay concepts and tactics
+   - Board state analysis framework
+   - Decision-making for every situation
+   - Topics covered:
+     * Game phases and what's legal in each
+     * Summon strategy and resource management
+     * Tribute calculation and high-level monsters
+     * Board control metrics
+     * Attack decision frameworks
+     * Spell/trap strategy
+     * Position management (attack vs defense)
+     * Multi-monster combat mathematics
+     * Deck fatigue management
+     * Real scenario analysis with solutions
+
+4. webhook-setup.md (613 lines)
+   - Real-time game notifications setup
+   - Complete webhook server implementation (Node.js)
+   - Testing with webhook.site and ngrok
+   - Production deployment guide
+   - Topics covered:
+     * Why webhooks beat polling
+     * Event types (turn_start, turn_end, game_end)
+     * HMAC signature verification
+     * Building a webhook listener
+     * Exposing local servers to internet
+     * Testing frameworks
+     * Reliability and retry logic
+     * Error handling
+     * Production best practices
+
+5. tournament-bot.md (931 lines)
+   - Building a competitive autonomous bot
+   - Complete architecture and implementation
+   - Topics covered:
+     * Game loop and webhook handling
+     * Board state evaluation system
+     * Move scoring and ranking
+     * Strategy selection (aggressive/defensive/all-in)
+     * Multi-component decision engine
+     * Analytics and performance tracking
+     * ELO rating management
+     * Continuous improvement strategies
+     * Production monitoring
+     * Deployment checklist
+
+================================================================================
+STATISTICS
+================================================================================
+
+Total lines of documentation: 3,210
+Total file size: 92 KB
+
+Document breakdown:
+  - Architecture & infrastructure: 25% (webhooks, bot architecture)
+  - Gameplay mechanics & strategy: 40% (first game, advanced play)
+  - Implementation & code: 25% (webhook server, bot classes)
+  - Reference & checklist: 10% (API docs, checklists)
+
+Code examples: 50+
+Real-world scenarios: 15+
+API endpoint examples: 30+
+Decision frameworks: 8
+
+================================================================================
+RECOMMENDED READING ORDER
+================================================================================
+
+For Beginners:
+  1. README.md (overview)
+  2. first-game.md (learn the game)
+  3. strategic-play.md (improve tactics)
+
+For Agent Developers:
+  1. README.md (overview)
+  2. first-game.md (basics)
+  3. webhook-setup.md (automation)
+  4. tournament-bot.md (advanced AI)
+
+For Tournament Competitors:
+  1. strategic-play.md (tactics)
+  2. webhook-setup.md (real-time play)
+  3. tournament-bot.md (optimization)
+
+================================================================================
+KEY CONCEPTS COVERED
+================================================================================
+
+Game Mechanics:
+  - Turn structure (Draw → Standby → Main1 → Battle → Main2 → End)
+  - Summon system (1 normal summon per turn, tributes for levels 5+)
+  - Attack resolution (direct vs monster, ATK vs DEF calculations)
+  - Position management (attack vs defense)
+  - Spell/trap system
+  - Victory conditions (0 LP, deck-out)
+
+Strategy:
+  - Board state evaluation (ATK, DEF, threats)
+  - Decision frameworks (aggressive, defensive, balanced)
+  - Resource management (deck fatigue, LP preservation)
+  - Multi-monster combat
+  - Position management
+  - Probability and information theory
+
+Technical:
+  - API authentication (Bearer tokens, API keys)
+  - REST endpoints (create, join, summon, attack, end-turn)
+  - Webhooks (registration, events, signatures)
+  - Event-driven architecture
+  - Move evaluation and scoring
+  - Analytics and performance tracking
+  - ELO rating calculations
+
+================================================================================
+QUICK START
+================================================================================
+
+1. Read README.md (10 minutes)
+2. Follow first-game.md (30 minutes reading + 10 minutes playing)
+3. Study strategic-play.md (45 minutes)
+4. Set up webhooks (webhook-setup.md, 60 minutes + setup)
+5. Build tournament bot (tournament-bot.md, 120+ minutes)
+
+Total time investment: 4-5 hours for complete learning path
+
+================================================================================
+TESTING COVERAGE
+================================================================================
+
+Each scenario includes testing guidance:
+
+First Game:
+  - Can create lobby
+  - Can summon monster
+  - Can attack opponent
+  - Can complete game
+
+Strategic Play:
+  - Multi-turn gameplay
+  - Board evaluation accuracy
+  - Move scoring correctness
+
+Webhook Setup:
+  - Endpoint accessibility
+  - Signature verification
+  - Event receipt and processing
+  - Error handling
+
+Tournament Bot:
+  - Move evaluation
+  - Strategy selection
+  - API integration
+  - Analytics tracking
+  - ELO calculation
+
+================================================================================
+INTEGRATION POINTS
+================================================================================
+
+These scenarios integrate with:
+
+- /docs/plans/2026-02-05-agent-api-design.md (architecture)
+- /convex/ (game engine)
+- /apps/web/app/api/game/* (API endpoints)
+- /packages/mcp-server/ (MCP integration)
+
+================================================================================
+MAINTENANCE & UPDATES
+================================================================================
+
+These documents should be updated when:
+  - Game rules change
+  - API endpoints change
+  - Performance benchmarks change
+  - New strategies are discovered
+
+Version: 1.0
+Last updated: 2026-02-05
+Estimated review period: Quarterly
+
+================================================================================

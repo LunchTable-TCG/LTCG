@@ -1,0 +1,102 @@
+{
+  "name": "@ltcg/openclaw-skill",
+  "version": "1.0.0",
+  "description": "OpenClaw AI skill for LunchTable-TCG game integration. Enable AI agents to create games, join lobbies, and execute game actions.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "INSTALLATION.md",
+    "QUICKSTART.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "dev": "tsc --watch --noEmit",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check --write .",
+    "prepublishOnly": "npm run build && npm run test && npm run lint",
+    "verify": "npm run type-check && npm run lint && npm run test"
+  },
+  "keywords": [
+    "openclaw",
+    "ltcg",
+    "lunchtable-tcg",
+    "card-game",
+    "ai-skill",
+    "game-integration",
+    "api",
+    "agent",
+    "ai",
+    "multiplayer-game"
+  ],
+  "author": {
+    "name": "LTCG Team",
+    "url": "https://lunchtable.cards"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LTCG/openclaw-skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LTCG/openclaw-skill/issues",
+    "email": "support@lunchtable.cards"
+  },
+  "homepage": "https://github.com/LTCG/openclaw-skill#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "peerDependencies": {
+    "openclaw": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.0.18"
+  },
+  "optionalDependencies": {},
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "funding": {
+    "type": "individual",
+    "url": "https://lunchtable.cards/support"
+  },
+  "maintainers": [
+    {
+      "name": "LTCG Team",
+      "email": "dev@lunchtable.cards",
+      "url": "https://lunchtable.cards"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "LTCG Development Team"
+    }
+  ]
+}
