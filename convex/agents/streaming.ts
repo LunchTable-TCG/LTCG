@@ -15,7 +15,7 @@ export const configureAgentStreaming = mutation({
   args: {
     agentId: v.id("agents"),
     enabled: v.boolean(),
-    platform: v.optional(v.union(v.literal("twitch"), v.literal("youtube"))),
+    platform: v.optional(v.union(v.literal("twitch"), v.literal("youtube"), v.literal("custom"))),
     streamKeyHash: v.optional(v.string()),
     autoStart: v.optional(v.boolean()),
   },

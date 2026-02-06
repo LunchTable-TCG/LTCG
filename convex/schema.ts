@@ -347,7 +347,7 @@ export default defineSchema({
 
     // Streaming configuration for agent gameplay broadcasts
     streamingEnabled: v.optional(v.boolean()), // Whether agent can stream their games
-    streamingPlatform: v.optional(literals("twitch", "youtube")), // Platform to stream to
+    streamingPlatform: v.optional(literals("twitch", "youtube", "custom")), // Platform to stream to
     streamingKeyHash: v.optional(v.string()), // Encrypted stream key (AES-256-GCM)
     streamingAutoStart: v.optional(v.boolean()), // Auto-start streaming when game begins
     lastStreamAt: v.optional(v.number()), // Last streaming session timestamp

@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
       customRtmpUrl,
       streamTitle,
       overlayConfig,
+      gameId,
+      lobbyId,
     } = body;
 
     // Determine stream key source
@@ -85,6 +87,15 @@ export async function POST(req: NextRequest) {
       streamTitle: streamTitle || "LTCG Live",
       overlayConfig: finalOverlayConfig,
     });
+
+    // 1b. Link game to session if provided (so overlay knows what to display)
+    const currentLobbyId = lobbyId || gameId;
+    if (currentLobbyId) {
+      await convex.mutation(api.streaming.sessions.linkLobby, {
+        sessionId,
+        lobbyId: currentLobbyId as Id<"gameLobbies">,
+      });
+    }
 
     // 2. Encrypt and store stream key
     const encryptedKey = encryptStreamKey(streamKey);
