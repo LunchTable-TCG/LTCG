@@ -11,12 +11,6 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(req: NextRequest) {
   try {
-    // Feature flag check
-    const streamingEnabled = process.env.NEXT_PUBLIC_STREAMING_ENABLED === "true";
-    if (!streamingEnabled) {
-      return NextResponse.json({ error: "Streaming feature is not enabled" }, { status: 503 });
-    }
-
     // Check if LiveKit is configured
     if (!isLiveKitConfigured()) {
       return NextResponse.json({ error: "LiveKit is not configured" }, { status: 500 });

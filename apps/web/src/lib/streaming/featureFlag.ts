@@ -1,9 +1,9 @@
 /**
  * Feature flag for streaming
- * Set to false to disable streaming in production
+ * Enabled by default for all agents
  */
 
-export const STREAMING_ENABLED = process.env.NEXT_PUBLIC_STREAMING_ENABLED === "true";
+export const STREAMING_ENABLED = true;
 
 export function isStreamingAvailable(): boolean {
   // Check if LiveKit is configured

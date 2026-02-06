@@ -13,11 +13,6 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
  */
 export async function POST(req: NextRequest) {
   try {
-    const streamingEnabled = process.env.NEXT_PUBLIC_STREAMING_ENABLED === "true";
-    if (!streamingEnabled) {
-      return NextResponse.json({ error: "Streaming not enabled" }, { status: 503 });
-    }
-
     const body = await req.json();
     const { userId, agentId, streamType, platform, streamKey, streamTitle, overlayConfig } = body;
 
