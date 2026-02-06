@@ -114,8 +114,8 @@ export async function POST(req: NextRequest) {
     const overlayUrl = `${baseUrl}/stream/overlay?sessionId=${sessionId}&code=${accessCode}`;
 
     // Generate overlay token separately (for client storage, not in URL)
-    const entityId = streamType === "user" ? userId : agentId;
-    const token = await generateOverlayToken(sessionId, streamType, entityId);
+    const entityId = streamType === "user" ? userId : (agentId || "external_agent");
+    const token = await generateOverlayToken(sessionId, streamType, entityId!);
 
     // 4. Build RTMP URL
     const rtmpUrl = buildRtmpUrl(platform, streamKey, customRtmpUrl);
