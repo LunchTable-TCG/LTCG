@@ -28,29 +28,40 @@ export const createSession = mutation({
     if (args.streamType === "user" && !args.userId) {
       throw new Error("userId required for user streams");
     }
-    if (args.streamType === "agent" && !args.agentId) {
-      throw new Error("agentId required for agent streams");
-    }
+    // Note: agentId is optional for external agents (e.g., ElizaOS agents)
+    // that aren't registered in the LTCG system
 
     // Check for any active, pending, or initializing sessions
-    const existingQuery =
-      args.streamType === "user"
-        ? ctx.db
-            .query("streamingSessions")
-            .withIndex("by_user_status", (q) => q.eq("userId", args.userId!))
-        : ctx.db
-            .query("streamingSessions")
-            .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId!));
+    let activeSessions = [];
+    if (args.streamType === "user" && args.userId) {
+      const existingQuery = ctx.db
+        .query("streamingSessions")
+        .withIndex("by_user_status", (q) => q.eq("userId", args.userId!));
 
-    const activeSessions = await existingQuery
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "live"),
-          q.eq(q.field("status"), "pending"),
-          q.eq(q.field("status"), "initializing")
+      activeSessions = await existingQuery
+        .filter((q) =>
+          q.or(
+            q.eq(q.field("status"), "live"),
+            q.eq(q.field("status"), "pending"),
+            q.eq(q.field("status"), "initializing")
+          )
         )
-      )
-      .collect();
+        .collect();
+    } else if (args.streamType === "agent" && args.agentId) {
+      const existingQuery = ctx.db
+        .query("streamingSessions")
+        .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId!));
+
+      activeSessions = await existingQuery
+        .filter((q) =>
+          q.or(
+            q.eq(q.field("status"), "live"),
+            q.eq(q.field("status"), "pending"),
+            q.eq(q.field("status"), "initializing")
+          )
+        )
+        .collect();
+    }
 
     if (activeSessions.length > 0) {
       throw new Error(
