@@ -124,23 +124,34 @@ export const startRetakeStreamAction: Action = {
       });
 
       // Notify LTCG backend to enable streaming
-      // This would trigger the LiveKit egress to start
-      const ltcgApiUrl = process.env.LTCG_API_URL || "https://lunchtable.cards";
+      // This triggers the LiveKit egress to capture overlay and stream to Retake
+      const ltcgApiUrl = process.env.LTCG_API_URL || "https://www.lunchtable.cards";
+      const ltcgApiKey = process.env.LTCG_API_KEY;
 
       try {
-        await fetch(`${ltcgApiUrl}/api/streaming/start`, {
+        const streamingResponse = await fetch(`${ltcgApiUrl}/api/streaming/start`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${ltcgApiKey}`,
           },
           body: JSON.stringify({
             agentId: runtime.agentId,
-            platform: "retake",
-            retakeAccessToken: accessToken,
-            retakeUserDbId: userDbId,
+            streamType: "agent",
+            platform: "custom",
+            customRtmpUrl: rtmpData.url,
+            streamKey: rtmpData.key,
             streamTitle: `${runtime.character.name} plays LTCG`,
           }),
         });
+
+        if (!streamingResponse.ok) {
+          const errorText = await streamingResponse.text();
+          logger.warn("LTCG streaming API error", { error: errorText });
+        } else {
+          const streamData = await streamingResponse.json();
+          logger.info("LTCG streaming started", { sessionId: streamData.sessionId });
+        }
       } catch (error) {
         logger.warn("Failed to notify LTCG backend", error);
         // Continue anyway - stream is started on Retake side
