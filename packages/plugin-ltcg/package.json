@@ -1,5 +1,5 @@
 {
-  "name": "plugin-ltcg",
+  "name": "@elizaos/plugin-ltcg",
   "description": "LTCG ElizaOS Plugin - enables AI agents to play the Legendary Trading Card Game",
   "version": "1.0.0",
   "type": "module",
