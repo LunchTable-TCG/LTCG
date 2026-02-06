@@ -1,5 +1,6 @@
 import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
+import type { Doc } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 
 // Overlay config validator (reused across functions)
@@ -32,7 +33,7 @@ export const createSession = mutation({
     // that aren't registered in the LTCG system
 
     // Check for any active, pending, or initializing sessions
-    let activeSessions = [];
+    let activeSessions: Doc<"streamingSessions">[] = [];
     if (args.streamType === "user" && args.userId) {
       const existingQuery = ctx.db
         .query("streamingSessions")
