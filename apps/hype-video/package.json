@@ -1,0 +1,30 @@
+{
+  "name": "@ltcg/hype-video",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "remotion studio",
+    "build": "remotion render",
+    "upgrade": "remotion upgrade",
+    "render": "remotion render HypeVideo out/hype-video.mp4"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.273",
+    "@remotion/cli": "^4.0.273",
+    "@remotion/gif": "^4.0.273",
+    "@remotion/light-leaks": "^4.0.273",
+    "@remotion/media-utils": "^4.0.273",
+    "@remotion/player": "^4.0.273",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.273"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config": "^4.0.273",
+    "@types/react": "^19.0.0",
+    "@types/web": "^0.0.209",
+    "eslint": "^9.0.0",
+    "prettier": "^3.4.1",
+    "typescript": "^5.8.0"
+  }
+}

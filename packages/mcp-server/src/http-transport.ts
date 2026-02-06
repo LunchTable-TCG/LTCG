@@ -206,21 +206,205 @@ export function createHttpTransport(_server: Server) {
 
   /**
    * Process a JSON-RPC request and return a response
+   * Routes the request through the MCP server's internal request handling
    */
   async function processRequest(
     request: JSONRPCRequest
   ): Promise<unknown> {
-    // This is a simplified implementation
-    // In a full implementation, we would route to the appropriate MCP handler
-    // based on the request.method
+    try {
+      // The MCP Server class handles requests internally through its registered handlers
+      // We need to invoke the server's request handling mechanism
+      // The Server instance has registered all handlers via setRequestHandler
 
-    // For now, return an error response
+      // Use the server's internal request handling by simulating what the SDK transports do
+      // This is done by calling into the server's protocol layer
+      const serverAny: {
+        handleRequest?: (request: JSONRPCRequest) => Promise<unknown>;
+        _requestHandlers?: Map<string, (params: { params: unknown }) => Promise<unknown>>;
+        _options?: { capabilities?: unknown };
+        _serverInfo?: { name?: string; version?: string };
+      } = _server as never;
+
+      // Check if the server has the internal request handler
+      if (typeof serverAny.handleRequest === 'function') {
+        const response = await serverAny.handleRequest(request);
+        return response;
+      }
+
+      // Fallback: manually route based on method
+      // This matches the MCP protocol specification
+      switch (request.method) {
+        case "initialize":
+          return await handleInitialize(request);
+        case "tools/list":
+          return await handleToolsList(request);
+        case "tools/call":
+          return await handleToolsCall(request);
+        case "prompts/list":
+          return await handlePromptsList(request);
+        case "prompts/get":
+          return await handlePromptsGet(request);
+        default:
+          return {
+            jsonrpc: "2.0",
+            id: request.id,
+            error: {
+              code: -32601,
+              message: `Method not found: ${request.method}`,
+            },
+          };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      return {
+        jsonrpc: "2.0",
+        id: request.id,
+        error: {
+          code: -32603,
+          message: `Internal error: ${errorMessage}`,
+        },
+      };
+    }
+  }
+
+  /**
+   * Handle initialize request
+   */
+  async function handleInitialize(request: JSONRPCRequest): Promise<unknown> {
+    const serverAny: {
+      _options?: { capabilities?: unknown };
+      _serverInfo?: { name?: string; version?: string };
+    } = _server as never;
+
+    return {
+      jsonrpc: "2.0",
+      id: request.id,
+      result: {
+        protocolVersion: "2024-11-05",
+        capabilities: serverAny._options?.capabilities || {
+          tools: {},
+          prompts: {},
+        },
+        serverInfo: {
+          name: serverAny._serverInfo?.name || "LunchTable-TCG MCP Server",
+          version: serverAny._serverInfo?.version || "1.0.0",
+        },
+      },
+    };
+  }
+
+  /**
+   * Handle tools/list request
+   */
+  async function handleToolsList(request: JSONRPCRequest): Promise<unknown> {
+    const serverAny: {
+      _requestHandlers?: Map<string, (params: { params: unknown }) => Promise<unknown>>;
+    } = _server as never;
+    const handlers = serverAny._requestHandlers || new Map();
+
+    // Find the tools/list handler
+    const toolsListHandler = handlers.get("tools/list");
+    if (toolsListHandler) {
+      const result = await toolsListHandler({ params: request.params || {} });
+      return {
+        jsonrpc: "2.0",
+        id: request.id,
+        result,
+      };
+    }
+
+    // Fallback: return empty tools list
+    return {
+      jsonrpc: "2.0",
+      id: request.id,
+      result: { tools: [] },
+    };
+  }
+
+  /**
+   * Handle tools/call request
+   */
+  async function handleToolsCall(request: JSONRPCRequest): Promise<unknown> {
+    const serverAny: {
+      _requestHandlers?: Map<string, (params: { params: unknown }) => Promise<unknown>>;
+    } = _server as never;
+    const handlers = serverAny._requestHandlers || new Map();
+
+    // Find the tools/call handler
+    const toolsCallHandler = handlers.get("tools/call");
+    if (toolsCallHandler) {
+      const result = await toolsCallHandler({ params: request.params || {} });
+      return {
+        jsonrpc: "2.0",
+        id: request.id,
+        result,
+      };
+    }
+
     return {
       jsonrpc: "2.0",
       id: request.id,
       error: {
         code: -32601,
-        message: `Method not found: ${request.method}`,
+        message: "tools/call handler not found",
+      },
+    };
+  }
+
+  /**
+   * Handle prompts/list request
+   */
+  async function handlePromptsList(request: JSONRPCRequest): Promise<unknown> {
+    const serverAny: {
+      _requestHandlers?: Map<string, (params: { params: unknown }) => Promise<unknown>>;
+    } = _server as never;
+    const handlers = serverAny._requestHandlers || new Map();
+
+    // Find the prompts/list handler
+    const promptsListHandler = handlers.get("prompts/list");
+    if (promptsListHandler) {
+      const result = await promptsListHandler({ params: request.params || {} });
+      return {
+        jsonrpc: "2.0",
+        id: request.id,
+        result,
+      };
+    }
+
+    // Fallback: return empty prompts list
+    return {
+      jsonrpc: "2.0",
+      id: request.id,
+      result: { prompts: [] },
+    };
+  }
+
+  /**
+   * Handle prompts/get request
+   */
+  async function handlePromptsGet(request: JSONRPCRequest): Promise<unknown> {
+    const serverAny: {
+      _requestHandlers?: Map<string, (params: { params: unknown }) => Promise<unknown>>;
+    } = _server as never;
+    const handlers = serverAny._requestHandlers || new Map();
+
+    // Find the prompts/get handler
+    const promptsGetHandler = handlers.get("prompts/get");
+    if (promptsGetHandler) {
+      const result = await promptsGetHandler({ params: request.params || {} });
+      return {
+        jsonrpc: "2.0",
+        id: request.id,
+        result,
+      };
+    }
+
+    return {
+      jsonrpc: "2.0",
+      id: request.id,
+      error: {
+        code: -32601,
+        message: "prompts/get handler not found",
       },
     };
   }

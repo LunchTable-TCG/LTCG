@@ -52,6 +52,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "./convexAuth";
+import { ErrorCode, createError } from "./errorCodes";
 import { requireRole } from "./roles";
 import { createRLSRules } from "./rowLevelSecurity";
 
@@ -100,7 +101,7 @@ const authenticatedQueryCtx = customCtx(query, {
     // Get full user document
     const user = await ctx.db.get(userId);
     if (!user) {
-      throw new Error("User not found in database");
+      throw createError(ErrorCode.NOT_FOUND_USER);
     }
 
     return {
@@ -124,7 +125,7 @@ const authenticatedMutationCtx = customCtx(mutation, {
     // Get full user document
     const user = await ctx.db.get(userId);
     if (!user) {
-      throw new Error("User not found in database");
+      throw createError(ErrorCode.NOT_FOUND_USER);
     }
 
     return {
@@ -202,7 +203,7 @@ const adminQueryCtx = customCtx(query, {
     // Get full user document
     const user = await ctx.db.get(userId);
     if (!user) {
-      throw new Error("User not found in database");
+      throw createError(ErrorCode.NOT_FOUND_USER);
     }
 
     // Require admin role (throws if not admin)
@@ -216,12 +217,12 @@ const adminQueryCtx = customCtx(query, {
       .first();
 
     if (!adminRole) {
-      throw new Error("Admin role not found");
+      throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
     }
 
     // Check if role has expired
     if (adminRole.expiresAt && adminRole.expiresAt < Date.now()) {
-      throw new Error("Admin role has expired");
+      throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
     }
 
     return {
@@ -247,7 +248,7 @@ const adminMutationCtx = customCtx(mutation, {
     // Get full user document
     const user = await ctx.db.get(userId);
     if (!user) {
-      throw new Error("User not found in database");
+      throw createError(ErrorCode.NOT_FOUND_USER);
     }
 
     // Require admin role (throws if not admin)
@@ -261,12 +262,12 @@ const adminMutationCtx = customCtx(mutation, {
       .first();
 
     if (!adminRole) {
-      throw new Error("Admin role not found");
+      throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
     }
 
     // Check if role has expired
     if (adminRole.expiresAt && adminRole.expiresAt < Date.now()) {
-      throw new Error("Admin role has expired");
+      throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
     }
 
     return {
@@ -360,7 +361,7 @@ const rlsQueryCtx = customCtx(query, {
     // Get full user document
     const user = await ctx.db.get(userId);
     if (!user) {
-      throw new Error("User not found in database");
+      throw createError(ErrorCode.NOT_FOUND_USER);
     }
 
     return {
@@ -375,7 +376,7 @@ const rlsQueryCtx = customCtx(query, {
     const { userId } = await requireAuthQuery(ctx);
     const user = await ctx.db.get(userId);
     if (!user) {
-      throw new Error("User not found in database");
+      throw createError(ErrorCode.NOT_FOUND_USER);
     }
 
     // Create RLS rules for this user
@@ -405,7 +406,7 @@ const rlsMutationCtx = customCtx(mutation, {
     // Get full user document
     const user = await ctx.db.get(userId);
     if (!user) {
-      throw new Error("User not found in database");
+      throw createError(ErrorCode.NOT_FOUND_USER);
     }
 
     return {
@@ -420,7 +421,7 @@ const rlsMutationCtx = customCtx(mutation, {
     const { userId } = await requireAuthMutation(ctx);
     const user = await ctx.db.get(userId);
     if (!user) {
-      throw new Error("User not found in database");
+      throw createError(ErrorCode.NOT_FOUND_USER);
     }
 
     // Create RLS rules for this user

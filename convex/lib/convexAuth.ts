@@ -32,9 +32,17 @@ export async function getCurrentUser(
     return null;
   }
 
+  // Generate a default username if none exists
+  // Format: Player_{last8CharOfPrivyId}
+  let username = user.username || user.name;
+  if (!username || username.trim() === "") {
+    const privyIdSuffix = privyId.slice(-8);
+    username = `Player_${privyIdSuffix}`;
+  }
+
   return {
     userId: user._id,
-    username: user.username || user.name || "",
+    username,
     privyId, // Include Privy DID for wallet operations
   };
 }

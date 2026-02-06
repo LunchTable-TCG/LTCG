@@ -625,6 +625,49 @@ export const createTournament = mutation({
   },
 });
 
+/**
+ * Update tournament registration times (admin only)
+ * Useful for testing or adjusting tournament schedules
+ */
+export const updateTournamentTimes = mutation({
+  args: {
+    tournamentId: v.id("tournaments"),
+    registrationStartsAt: v.optional(v.number()),
+    registrationEndsAt: v.optional(v.number()),
+    scheduledStartAt: v.optional(v.number()),
+  },
+  returns: v.object({ success: v.boolean() }),
+  handler: async (ctx, args) => {
+    await requireAdminMutation(ctx);
+    const now = Date.now();
+
+    const tournament = await ctx.db.get(args.tournamentId);
+    if (!tournament) {
+      throw createError(ErrorCode.NOT_FOUND_GENERAL, { entity: "Tournament" });
+    }
+
+    const updates: Partial<Doc<"tournaments">> = {
+      updatedAt: now,
+    };
+
+    if (args.registrationStartsAt !== undefined) {
+      updates.registrationStartsAt = args.registrationStartsAt;
+    }
+    if (args.registrationEndsAt !== undefined) {
+      updates.registrationEndsAt = args.registrationEndsAt;
+      updates.checkInStartsAt = args.registrationEndsAt;
+    }
+    if (args.scheduledStartAt !== undefined) {
+      updates.scheduledStartAt = args.scheduledStartAt;
+      updates.checkInEndsAt = args.scheduledStartAt - TOURNAMENT.BRACKET_GENERATION_BUFFER_MS;
+    }
+
+    await ctx.db.patch(args.tournamentId, updates);
+
+    return { success: true };
+  },
+});
+
 // ============================================================================
 // INTERNAL MUTATIONS (Called by cron jobs and game end handlers)
 // ============================================================================
