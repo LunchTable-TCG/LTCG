@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
+import { internal } from "../../_generated/api";
 import { adjustPlayerCurrencyHelper } from "../../economy/economy";
 import { internalMutation, mutation } from "../../functions";
 import { completedGamesCounter } from "../../infrastructure/shardedCounters";
@@ -94,6 +95,37 @@ async function updatePresenceInternal(
       status,
       lastActiveAt: Date.now(),
     });
+  }
+}
+
+/**
+ * Stop agent streams for players in the game
+ * Called when game ends to clean up streaming sessions
+ */
+async function stopAgentStreamsForGame(
+  ctx: MutationCtx,
+  lobbyId: Id<"gameLobbies">,
+  hostId: Id<"users">,
+  opponentId: Id<"users"> | undefined
+): Promise<void> {
+  // Check both players for active agents
+  const playerIds = [hostId, opponentId].filter((id): id is Id<"users"> => id !== undefined);
+
+  for (const playerId of playerIds) {
+    // Find agent for this player
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_user", (q) => q.eq("userId", playerId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .first();
+
+    if (agent && agent.streamingEnabled) {
+      // Schedule stop for agent stream (async, non-blocking)
+      await ctx.scheduler.runAfter(0, internal.agents.streaming.autoStopAgentStream, {
+        agentId: agent._id,
+        lobbyId,
+      });
+    }
   }
 }
 
@@ -400,6 +432,9 @@ export const surrenderGame = mutation({
       }
     }
 
+    // Stop agent streams if active
+    await stopAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, lobby.opponentId);
+
     // Clean up game state (no longer needed after game ends)
     const gameState = await ctx.db
       .query("gameStates")
@@ -559,6 +594,9 @@ export const forfeitGame = internalMutation({
       }
     }
 
+    // Stop agent streams if active
+    await stopAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, lobby.opponentId);
+
     // Clean up game state (no longer needed after game ends)
     const gameState = await ctx.db
       .query("gameStates")
@@ -656,6 +694,9 @@ export const completeGame = internalMutation({
         }
       }
     }
+
+    // Stop agent streams if active
+    await stopAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, lobby.opponentId);
 
     // Clean up game state (no longer needed after game ends)
     const gameState = await ctx.db

@@ -188,9 +188,14 @@ export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: Feedback
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-lg overflow-y-auto">
         {!feedback ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
+          <>
+            <SheetHeader className="sr-only">
+              <SheetTitle>Loading feedback details</SheetTitle>
+            </SheetHeader>
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          </>
         ) : (
           <>
             <SheetHeader>
@@ -292,7 +297,7 @@ export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: Feedback
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Status</Label>
-                  <Select value={status} onValueChange={handleStatusChange}>
+                  <Select value={status ?? feedback.status} onValueChange={handleStatusChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
@@ -308,7 +313,7 @@ export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: Feedback
 
                 <div className="space-y-2">
                   <Label>Priority</Label>
-                  <Select value={priority || ""} onValueChange={handlePriorityChange}>
+                  <Select value={priority ?? feedback.priority ?? ""} onValueChange={handlePriorityChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="Set priority" />
                     </SelectTrigger>

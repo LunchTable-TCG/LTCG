@@ -51,7 +51,7 @@ export function decryptStreamKey(encryptedKey: string): string {
  * Build RTMP URL for a given platform and stream key
  */
 export function buildRtmpUrl(
-  platform: "twitch" | "youtube" | "custom",
+  platform: "twitch" | "youtube" | "custom" | "retake",
   streamKey: string,
   customRtmpUrl?: string
 ): string {
@@ -60,6 +60,9 @@ export function buildRtmpUrl(
       return `rtmp://live.twitch.tv/app/${streamKey}`;
     case "youtube":
       return `rtmp://a.rtmp.youtube.com/live2/${streamKey}`;
+    case "retake":
+      // Retake uses rtmps:// (secure RTMP) with Mux
+      return `rtmps://global-live.mux.com:443/app/${streamKey}`;
     case "custom":
       if (!customRtmpUrl) {
         throw new Error("Custom RTMP URL required for custom platform");

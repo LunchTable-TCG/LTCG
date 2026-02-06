@@ -5,3 +5,4 @@ export * from "./useGuildDiscovery";
 export * from "./useCreateGuild";
 export * from "./useGuildChat";
 export * from "./useGuildInvites";
+export * from "./useGuildInviteLink";

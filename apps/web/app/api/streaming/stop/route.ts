@@ -9,6 +9,14 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(req: NextRequest) {
   try {
+    // Verify internal auth when called from Convex actions
+    const internalAuth = req.headers.get("X-Internal-Auth");
+    if (internalAuth) {
+      if (internalAuth !== process.env.INTERNAL_API_SECRET) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
+
     const { sessionId, reason } = await req.json();
 
     if (!sessionId) {
@@ -22,6 +30,16 @@ export async function POST(req: NextRequest) {
 
     if (!session) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    // Check if already ended (idempotent)
+    if (session.status === "ended") {
+      return NextResponse.json({
+        success: true,
+        message: "Session already ended",
+        sessionId,
+        alreadyEnded: true,
+      });
     }
 
     // Stop LiveKit egress if active

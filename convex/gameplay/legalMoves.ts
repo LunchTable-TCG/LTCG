@@ -156,7 +156,7 @@ export const getLegalMoves = query({
           // Check each monster card in hand
           for (const cardId of myHand) {
             const card = await ctx.db.get(cardId);
-            if (!card || card.cardType !== "monster") continue;
+            if (!card || card.cardType !== "creature") continue;
 
             const level = card.level || 0;
             let requiresTributes = 0;
@@ -281,8 +281,8 @@ export const getLegalMoves = query({
         if (!card || card.cardType !== "spell") continue;
 
         // Check spell type
-        const spellType = card.ability?.spellType || "normal";
-        const isQuickPlay = spellType === "quick-play";
+        const spellType = card.spellType || "normal";
+        const isQuickPlay = spellType === "quick_play";
 
         // Normal spells and Quick-Play spells can be activated from hand
         if (spellType === "normal" || isQuickPlay) {

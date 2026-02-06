@@ -1,4 +1,4 @@
-import { buildRtmpUrl, encryptStreamKey } from "@/lib/streaming/encryption";
+import { buildRtmpUrl, decryptStreamKey, encryptStreamKey } from "@/lib/streaming/encryption";
 import { isLiveKitConfigured, startWebEgress } from "@/lib/streaming/livekit";
 import { generateOverlayToken } from "@/lib/streaming/tokens";
 import { logError } from "@/lib/streaming/logging";
@@ -22,24 +22,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "LiveKit is not configured" }, { status: 500 });
     }
 
+    // Check internal auth header for agent requests
+    const internalAuth = req.headers.get("X-Internal-Auth");
+    const isInternalRequest = internalAuth === process.env.INTERNAL_API_SECRET;
+
     const body = await req.json();
     const {
       userId,
       agentId,
       streamType = "user",
       platform,
-      streamKey,
+      streamKey: plainStreamKey,
+      streamKeyHash,
       customRtmpUrl,
       streamTitle,
       overlayConfig,
     } = body;
 
+    // Determine stream key source
+    let streamKey: string;
+    if (streamKeyHash) {
+      // Agent request with encrypted key
+      if (!isInternalRequest) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      streamKey = decryptStreamKey(streamKeyHash);
+    } else if (plainStreamKey) {
+      // User request with plain key
+      streamKey = plainStreamKey;
+    } else {
+      return NextResponse.json({ error: "Missing stream key" }, { status: 400 });
+    }
+
     // Validate required fields
-    if (!platform || !streamKey) {
-      return NextResponse.json(
-        { error: "Missing required fields: platform, streamKey" },
-        { status: 400 }
-      );
+    if (!platform) {
+      return NextResponse.json({ error: "Missing required field: platform" }, { status: 400 });
     }
 
     if (streamType === "user" && !userId) {
@@ -70,17 +87,30 @@ export async function POST(req: NextRequest) {
     });
 
     // 2. Encrypt and store stream key
-    const streamKeyHash = encryptStreamKey(streamKey);
+    const encryptedKey = encryptStreamKey(streamKey);
     await convex.mutation(api.streaming.sessions.updateSession, {
       sessionId,
-      updates: { streamKeyHash },
+      updates: { streamKeyHash: encryptedKey },
     });
 
-    // 3. Generate overlay URL with JWT token
+    // 3. Generate secure access code for overlay URL
+    const crypto = await import("crypto");
+    const accessCode = crypto.randomBytes(16).toString("hex");
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+    // Create access code in database
+    await convex.mutation(api.streaming.sessions.createOverlayAccess, {
+      sessionId,
+      accessCode,
+      expiresAt,
+    });
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const overlayUrl = `${baseUrl}/stream/overlay?sessionId=${sessionId}&code=${accessCode}`;
+
+    // Generate overlay token separately (for client storage, not in URL)
     const entityId = streamType === "user" ? userId : agentId;
     const token = await generateOverlayToken(sessionId, streamType, entityId);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const overlayUrl = `${baseUrl}/stream/overlay?sessionId=${sessionId}&token=${token}`;
 
     // 4. Build RTMP URL
     const rtmpUrl = buildRtmpUrl(platform, streamKey, customRtmpUrl);
@@ -108,6 +138,7 @@ export async function POST(req: NextRequest) {
         sessionId,
         status: "pending",
         overlayUrl,
+        overlayToken: token, // Token separate for client storage
         message: "Stream starting... It may take a few seconds to go live.",
       });
     } catch (liveKitError) {

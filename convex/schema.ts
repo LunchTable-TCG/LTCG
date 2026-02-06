@@ -190,6 +190,11 @@ export default defineSchema({
     lastElizaOSCheck: v.optional(v.number()), // Last time we checked their wallet
     hasElizaOSToken: v.optional(v.boolean()), // Whether they hold ElizaOS tokens
     elizaOSBalance: v.optional(v.number()), // Their ElizaOS token balance (smallest unit)
+
+    // Referral tracking
+    referralSource: v.optional(v.string()), // "guild_invite", "direct", etc.
+    referralGuildInviteCode: v.optional(v.string()), // The invite code used
+    referralGuildId: v.optional(v.id("guilds")), // The guild they were invited to
   })
     .index("privyId", ["privyId"])
     .index("walletAddress", ["walletAddress"])
@@ -1207,6 +1212,48 @@ export default defineSchema({
   })
     .index("by_template", ["templateId"])
     .index("by_template_zIndex", ["templateId", "zIndex"]),
+
+  // Freeform card designs - simple drag-and-drop canvas editor
+  freeformDesigns: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    width: v.number(), // default 750
+    height: v.number(), // default 1050
+    thumbnailUrl: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdBy: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_active", ["isActive"])
+    .index("by_created_at", ["createdAt"]),
+
+  // Elements within a freeform design (images and text)
+  freeformElements: defineTable({
+    designId: v.id("freeformDesigns"),
+    type: v.union(v.literal("image"), v.literal("text")),
+    // Position & dimensions (pixels)
+    x: v.number(),
+    y: v.number(),
+    width: v.number(),
+    height: v.number(),
+    rotation: v.number(), // degrees, default 0
+    opacity: v.number(), // 0-1, default 1
+    zIndex: v.number(),
+    // Image-specific props
+    imageUrl: v.optional(v.string()),
+    objectFit: v.optional(v.string()), // "cover" | "contain" | "fill"
+    // Text-specific props
+    text: v.optional(v.string()),
+    fontSize: v.optional(v.number()),
+    fontFamily: v.optional(v.string()),
+    fontWeight: v.optional(v.string()), // "normal" | "bold"
+    fontStyle: v.optional(v.string()), // "normal" | "italic"
+    fill: v.optional(v.string()), // text color
+    align: v.optional(v.string()), // "left" | "center" | "right"
+  })
+    .index("by_design", ["designId"])
+    .index("by_design_zIndex", ["designId", "zIndex"]),
 
   // Player's card inventory - tracks owned cards and quantities
   // NOTE: Each unique (card + variant) combination is a separate row
@@ -2377,6 +2424,21 @@ export default defineSchema({
     .index("by_guild_invited", ["guildId", "invitedUserId"])
     .index("by_expires", ["expiresAt"])
     .index("by_inviter", ["invitedBy"]),
+
+  // Guild invite links - Shareable invite codes for guild recruitment
+  guildInviteLinks: defineTable({
+    guildId: v.id("guilds"),
+    code: v.string(), // Short unique code (e.g. "AbCdEf12")
+    createdBy: v.id("users"), // Any member who generated the link
+    uses: v.number(), // How many times the link was used
+    maxUses: v.optional(v.number()), // Optional cap (null = unlimited)
+    expiresAt: v.number(), // 7-day expiry
+    isActive: v.boolean(), // Soft delete / deactivation
+    createdAt: v.number(),
+  })
+    .index("by_code", ["code"])
+    .index("by_guild", ["guildId", "isActive"])
+    .index("by_creator", ["createdBy"]),
 
   // Guild join requests - Requests to join private guilds
   guildJoinRequests: defineTable({
@@ -3620,7 +3682,7 @@ export default defineSchema({
     streamType: literals("user", "agent"),
 
     // Platform configuration
-    platform: literals("twitch", "youtube", "custom"),
+    platform: literals("twitch", "youtube", "custom", "retake"),
     streamTitle: v.string(),
 
     // Status tracking
@@ -3635,6 +3697,10 @@ export default defineSchema({
 
     // Encrypted stream credentials
     streamKeyHash: v.optional(v.string()),
+
+    // Retake.tv specific fields
+    retakeAccessToken: v.optional(v.string()), // Encrypted Retake.tv access token
+    retakeUserDbId: v.optional(v.string()), // Retake.tv user database ID
 
     // Overlay configuration
     overlayConfig: v.object({
@@ -3673,15 +3739,30 @@ export default defineSchema({
     .index("by_lobby", ["currentLobbyId"])
     .index("by_egress", ["egressId"]),
 
+  // Overlay access codes for secure overlay URL validation
+  overlayAccessCodes: defineTable({
+    sessionId: v.id("streamingSessions"),
+    code: v.string(),
+    expiresAt: v.number(),
+    used: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_session_code", ["sessionId", "code"])
+    .index("by_expiry", ["expiresAt"]),
+
   // Persistent platform credentials for streaming
   streamingPlatforms: defineTable({
     userId: v.id("users"),
     agentId: v.optional(v.id("agents")),
-    platform: literals("twitch", "youtube", "custom"),
+    platform: literals("twitch", "youtube", "custom", "retake"),
 
     // Encrypted credentials
     streamKeyHash: v.string(),
     rtmpUrl: v.optional(v.string()),
+
+    // Retake.tv specific
+    retakeAccessToken: v.optional(v.string()), // Encrypted
+    retakeUserDbId: v.optional(v.string()),
 
     // Platform metadata
     channelName: v.optional(v.string()),

@@ -103,11 +103,29 @@ export function AuthGuard({
       ) {
         syncInProgress.current = true;
         try {
+          // Read referral data from sessionStorage (set by invite landing page)
+          let referralSource: string | undefined;
+          let referralGuildInviteCode: string | undefined;
+          try {
+            const referralData = sessionStorage.getItem("referral");
+            if (referralData) {
+              const parsed = JSON.parse(referralData);
+              referralSource = parsed.source;
+              referralGuildInviteCode = parsed.code;
+              // Clear after reading so it's only used once
+              sessionStorage.removeItem("referral");
+            }
+          } catch {
+            // Ignore sessionStorage errors
+          }
+
           // Auto-sync wallet during user creation
           await createOrGetUser({
             email: privyUser?.email?.address,
             walletAddress: embeddedWallet?.address,
             walletType: embeddedWallet ? "privy_embedded" : undefined,
+            referralSource,
+            referralGuildInviteCode,
           });
           syncCompleted.current = true;
         } catch (error) {

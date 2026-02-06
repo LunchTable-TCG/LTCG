@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "convex/react";
-import { apiAny } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +20,7 @@ interface BackgroundPickerProps {
 
 export default function BackgroundPicker({ onSelect, trigger }: BackgroundPickerProps) {
   const [open, setOpen] = useState(false);
-  const backgrounds = useQuery(apiAny.cardBackgrounds.list);
+  const backgrounds = useConvexQuery(typedApi.cardBackgrounds.list);
 
   const handleSelect = (id: string, url: string) => {
     onSelect(id, url);
@@ -29,7 +28,7 @@ export default function BackgroundPicker({ onSelect, trigger }: BackgroundPicker
   };
 
   return (
-    <Dialog open={open} onValueChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || <Button variant="outline">Select Background</Button>}
       </DialogTrigger>
@@ -39,7 +38,7 @@ export default function BackgroundPicker({ onSelect, trigger }: BackgroundPicker
         </DialogHeader>
         <ScrollArea className="h-[600px]">
           <div className="grid grid-cols-3 gap-4 p-4">
-            {backgrounds?.map((bg) => (
+            {backgrounds?.map((bg: any) => (
               <button
                 key={bg._id}
                 onClick={() => handleSelect(bg._id, bg.blobUrl)}

@@ -6,7 +6,7 @@
 
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import { internalMutation, mutation, query } from "../_generated/server";
+import { internalAction, internalMutation, mutation, query } from "../_generated/server";
 
 /**
  * Configure streaming settings for an agent
@@ -101,26 +101,70 @@ export const autoStartAgentStream = internalMutation({
 /**
  * Internal action to trigger stream start via HTTP API
  */
-export const triggerAgentStreamStart = internalMutation({
+export const triggerAgentStreamStart = internalAction({
   args: {
     agentId: v.id("agents"),
     lobbyId: v.id("gameLobbies"),
-    platform: v.union(v.literal("twitch"), v.literal("youtube")),
+    platform: v.union(v.literal("twitch"), v.literal("youtube"), v.literal("custom")),
     streamKeyHash: v.string(),
   },
-  handler: async (_ctx, args) => {
-    // This will be implemented to call the streaming API
-    // For now, just log the intent
-    console.log("Would start stream for agent:", args.agentId, "in lobby:", args.lobbyId);
+  handler: async (ctx, args) => {
+    // 1. Get agent info
+    const internalApi = getInternalApi();
+    const agent = await ctx.runQuery(internalApi.agents.agents.getAgentByIdInternal, {
+      agentId: args.agentId,
+    });
 
-    // In production, this would:
-    // 1. Decrypt the stream key
-    // 2. Call /api/streaming/start with agent credentials
-    // 3. Link the session to the lobby
+    if (!agent) {
+      throw new Error("Agent not found");
+    }
 
-    return { success: true };
+    // 2. Call streaming API
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+    try {
+      const response = await fetch(`${baseUrl}/api/streaming/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Internal-Auth": process.env.INTERNAL_API_SECRET!,
+        },
+        body: JSON.stringify({
+          agentId: args.agentId,
+          streamType: "agent",
+          platform: args.platform,
+          streamKeyHash: args.streamKeyHash, // API will decrypt
+          streamTitle: `${agent.name} - LTCG Tournament`,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error("Failed to start agent stream:", error);
+        throw new Error(`Failed to start agent stream: ${error}`);
+      }
+
+      const { sessionId } = await response.json();
+
+      // 3. Link session to lobby
+      await ctx.runMutation(internal.streaming.sessions.linkLobby, {
+        sessionId,
+        lobbyId: args.lobbyId,
+      });
+
+      return { success: true, sessionId };
+    } catch (error) {
+      console.error("Error starting agent stream:", error);
+      throw error;
+    }
   },
 });
+
+// Helper to get internal API without triggering TS2589
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+function getInternalApi() {
+  return require("../_generated/api").internal;
+}
 
 /**
  * Stop agent stream when game ends
@@ -154,17 +198,37 @@ export const autoStopAgentStream = internalMutation({
 /**
  * Internal action to trigger stream stop via HTTP API
  */
-export const triggerAgentStreamStop = internalMutation({
+export const triggerAgentStreamStop = internalAction({
   args: {
     sessionId: v.id("streamingSessions"),
   },
   handler: async (_ctx, args) => {
-    console.log("Would stop stream session:", args.sessionId);
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    // In production, this would:
-    // 1. Call /api/streaming/stop with session ID
-    // 2. Update session status
+    try {
+      const response = await fetch(`${baseUrl}/api/streaming/stop`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Internal-Auth": process.env.INTERNAL_API_SECRET!,
+        },
+        body: JSON.stringify({
+          sessionId: args.sessionId,
+        }),
+      });
 
-    return { success: true };
+      if (!response.ok) {
+        const error = await response.text();
+        console.error("Failed to stop agent stream:", error);
+        // Don't throw - game should continue even if stream stop fails
+        return { success: false, error };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error stopping agent stream:", error);
+      // Don't throw - allow game to continue
+      return { success: false, error: String(error) };
+    }
   },
 });

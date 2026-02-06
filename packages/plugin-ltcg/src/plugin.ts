@@ -41,6 +41,7 @@ import { z } from "zod";
 
 // Import LTCG actions, providers, and evaluators
 import { ltcgActions } from "./actions";
+import { controlRoutes } from "./api/controlRoutes";
 import { panelRoutes } from "./api/routes";
 import { ltcgEvaluators } from "./evaluators";
 import { panels } from "./frontend";
@@ -101,6 +102,18 @@ const configSchema = z.object({
     .string()
     .transform((val) => val === "true")
     .optional(),
+  LTCG_CONTROL_API_KEY: z
+    .string()
+    .min(16, "LTCG_CONTROL_API_KEY should be at least 16 characters")
+    .optional()
+    .transform((val) => {
+      if (!val) {
+        console.warn(
+          "Warning: LTCG_CONTROL_API_KEY not provided - external control API disabled (not secured)"
+        );
+      }
+      return val;
+    }),
 });
 
 const plugin: LTCGPlugin = {
@@ -114,6 +127,7 @@ const plugin: LTCGPlugin = {
     LTCG_WEBHOOK_SECRET: process.env.LTCG_WEBHOOK_SECRET,
     LTCG_AUTO_MATCHMAKING: process.env.LTCG_AUTO_MATCHMAKING,
     LTCG_DEBUG_MODE: process.env.LTCG_DEBUG_MODE,
+    LTCG_CONTROL_API_KEY: process.env.LTCG_CONTROL_API_KEY,
   },
   async init(config: Record<string, string>) {
     logger.info("*** Initializing LTCG plugin ***");
@@ -151,7 +165,7 @@ const plugin: LTCGPlugin = {
     // Health check endpoint
     {
       name: "ltcg-health",
-      path: "/ltcg/health",
+      path: "/health",
       type: "GET" as const,
       handler: async (_req: RouteRequest, res: RouteResponse) => {
         res.json({
@@ -166,6 +180,8 @@ const plugin: LTCGPlugin = {
     ...webhookRoutes,
     // Panel API routes for UI dashboards
     ...panelRoutes,
+    // External control API routes
+    ...controlRoutes,
   ],
   events: {
     // Event handlers for debugging - only log in debug mode

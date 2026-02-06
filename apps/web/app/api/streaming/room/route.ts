@@ -70,11 +70,23 @@ export async function POST(req: NextRequest) {
       metadata: JSON.stringify({ sessionId, isOverlay: true }),
     });
 
+    // Generate secure access code for overlay URL
+    const crypto = await import("crypto");
+    const accessCode = crypto.randomBytes(16).toString("hex");
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+    // Create access code in database
+    await convex.mutation(api.streaming.sessions.createOverlayAccess, {
+      sessionId: sessionId as Id<"streamingSessions">,
+      accessCode,
+      expiresAt,
+    });
+
     const livekitUrl = getLiveKitUrl();
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    // Create overlay URL with room info for LiveKit composite mode
-    const overlayUrl = `${baseUrl}/stream/overlay?sessionId=${sessionId}&token=${overlayToken}&roomName=${encodeURIComponent(roomName)}&livekitUrl=${encodeURIComponent(livekitUrl)}`;
+    // Create overlay URL with access code instead of token
+    const overlayUrl = `${baseUrl}/stream/overlay?sessionId=${sessionId}&code=${accessCode}&roomName=${encodeURIComponent(roomName)}&livekitUrl=${encodeURIComponent(livekitUrl)}`;
 
     // Start Web Egress to capture the composite overlay
     const { startWebEgress } = await import("@/lib/streaming/livekit");
@@ -104,6 +116,7 @@ export async function POST(req: NextRequest) {
         sessionId,
         roomName,
         token: userToken,
+        overlayToken: overlayToken, // Separate token for client storage
         livekitUrl,
         message: "Room created. Join to start streaming.",
       });
@@ -124,6 +137,7 @@ export async function POST(req: NextRequest) {
         sessionId,
         roomName,
         token: userToken,
+        overlayToken: overlayToken, // Separate token for client storage
         livekitUrl,
         warning: "Room created but egress failed to start",
       });

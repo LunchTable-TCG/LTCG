@@ -186,7 +186,7 @@ export default function TextFieldEditor({ field, onChange, onDelete }: TextField
             value={[field.shadow?.blur || 0]}
             onValueChange={([v]) =>
               onChange({
-                shadow: { ...field.shadow, blur: v, color: field.shadow?.color || "#000000" },
+                shadow: { offsetX: 0, offsetY: 0, ...field.shadow, blur: v, color: field.shadow?.color || "#000000" },
               })
             }
             min={0}
@@ -201,7 +201,7 @@ export default function TextFieldEditor({ field, onChange, onDelete }: TextField
               value={[field.shadow?.offsetX || 0]}
               onValueChange={([v]) =>
                 onChange({
-                  shadow: { ...field.shadow, offsetX: v, color: field.shadow?.color || "#000000" },
+                  shadow: { offsetY: 0, blur: 0, ...field.shadow, offsetX: v, color: field.shadow?.color || "#000000" },
                 })
               }
               min={-20}
@@ -215,7 +215,7 @@ export default function TextFieldEditor({ field, onChange, onDelete }: TextField
               value={[field.shadow?.offsetY || 0]}
               onValueChange={([v]) =>
                 onChange({
-                  shadow: { ...field.shadow, offsetY: v, color: field.shadow?.color || "#000000" },
+                  shadow: { offsetX: 0, blur: 0, ...field.shadow, offsetY: v, color: field.shadow?.color || "#000000" },
                 })
               }
               min={-20}

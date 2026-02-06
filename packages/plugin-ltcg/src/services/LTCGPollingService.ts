@@ -168,29 +168,29 @@ export class LTCGPollingService extends Service {
   }
 
   static async start(runtime: IAgentRuntime): Promise<Service> {
-    const callbackUrl = runtime.getSetting("LTCG_CALLBACK_URL");
-    const debugMode = runtime.getSetting("LTCG_DEBUG_MODE") === "true";
-    // LTCG_AUTO_MATCHMAKING is already transformed to boolean by config schema
-    const autoMatchmaking = runtime.getSetting("LTCG_AUTO_MATCHMAKING") === "true";
+    // Read from process.env (set by plugin init)
+    const callbackUrl = process.env.LTCG_CALLBACK_URL;
+    const debugMode = process.env.LTCG_DEBUG_MODE === "true";
+    const autoMatchmaking = process.env.LTCG_AUTO_MATCHMAKING === "true";
 
     // Load polling intervals from environment variables
-    const pollIntervalMs =
-      Number.parseInt(runtime.getSetting("LTCG_POLL_INTERVAL_MS") as string) || 1500;
-    const discoveryIntervalMs =
-      Number.parseInt(runtime.getSetting("LTCG_DISCOVERY_INTERVAL_MS") as string) || 5000;
-    const matchmakingIntervalMs =
-      Number.parseInt(runtime.getSetting("LTCG_MATCHMAKING_INTERVAL_MS") as string) || 10000;
-    const adaptivePolling = runtime.getSetting("LTCG_ADAPTIVE_POLLING") !== "false";
-    const idleTimeoutMs =
-      Number.parseInt(runtime.getSetting("LTCG_IDLE_TIMEOUT_MS") as string) || 30000;
-    const idleMultiplier =
-      Number.parseFloat(runtime.getSetting("LTCG_IDLE_MULTIPLIER") as string) || 1.5;
-    const maxIntervalMultiplier =
-      Number.parseInt(runtime.getSetting("LTCG_MAX_INTERVAL_MULTIPLIER") as string) || 5;
+    const pollIntervalMs = Number.parseInt(process.env.LTCG_POLL_INTERVAL_MS || "1500");
+    const discoveryIntervalMs = Number.parseInt(
+      process.env.LTCG_DISCOVERY_INTERVAL_MS || "5000"
+    );
+    const matchmakingIntervalMs = Number.parseInt(
+      process.env.LTCG_MATCHMAKING_INTERVAL_MS || "10000"
+    );
+    const adaptivePolling = process.env.LTCG_ADAPTIVE_POLLING !== "false";
+    const idleTimeoutMs = Number.parseInt(process.env.LTCG_IDLE_TIMEOUT_MS || "30000");
+    const idleMultiplier = Number.parseFloat(process.env.LTCG_IDLE_MULTIPLIER || "1.5");
+    const maxIntervalMultiplier = Number.parseInt(
+      process.env.LTCG_MAX_INTERVAL_MULTIPLIER || "5"
+    );
 
     logger.debug(
       {
-        autoMatchmakingSetting: runtime.getSetting("LTCG_AUTO_MATCHMAKING"),
+        autoMatchmakingSetting: process.env.LTCG_AUTO_MATCHMAKING,
         parsed: autoMatchmaking,
       },
       "Matchmaking config"
@@ -217,9 +217,9 @@ export class LTCGPollingService extends Service {
       maxIntervalMultiplier,
     });
 
-    // Initialize API client
-    const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
-    const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
+    // Initialize API client (read from process.env set by plugin init)
+    const apiKey = process.env.LTCG_API_KEY;
+    const apiUrl = process.env.LTCG_API_URL;
 
     if (apiKey && apiUrl) {
       service.client = new LTCGApiClient({

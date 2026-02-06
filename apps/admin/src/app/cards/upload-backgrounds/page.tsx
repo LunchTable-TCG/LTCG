@@ -4,13 +4,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { uploadCardBackgrounds } from "@/lib/utils/uploadCardBackgrounds";
 import { useMutation } from "convex/react";
 import { typedApi } from "@/lib/convexHelpers";
+import { runUploadBackgrounds } from "./actions";
 
 export default function UploadBackgroundsPage() {
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0, filename: "" });
+  const [progress] = useState({ current: 0, total: 0, filename: "" });
   const [results, setResults] = useState<any[]>([]);
   const [cardBackAdded, setCardBackAdded] = useState(false);
 
@@ -38,12 +38,7 @@ export default function UploadBackgroundsPage() {
     setResults([]);
 
     try {
-      const uploadResults = await uploadCardBackgrounds(
-        "/Users/home/Downloads/cards-raw",
-        (current, total, filename) => {
-          setProgress({ current, total, filename });
-        }
-      );
+      const uploadResults = await runUploadBackgrounds("/Users/home/Downloads/cards-raw");
 
       // Save to Convex
       for (const result of uploadResults) {

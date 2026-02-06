@@ -78,15 +78,15 @@ export class TurnOrchestrator extends Service {
 
     const service = new TurnOrchestrator(runtime);
 
-    // Initialize API client
-    const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
-    const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
+    // Initialize API client (read from process.env set by plugin init)
+    const apiKey = process.env.LTCG_API_KEY;
+    const apiUrl = process.env.LTCG_API_URL;
 
     if (apiKey && apiUrl) {
       service.client = new LTCGApiClient({
         apiKey,
         baseUrl: apiUrl,
-        debug: runtime.getSetting("LTCG_DEBUG_MODE") === "true",
+        debug: process.env.LTCG_DEBUG_MODE === "true",
       });
       logger.info("Turn orchestrator initialized with API client");
     } else {
@@ -808,10 +808,10 @@ export class TurnOrchestrator extends Service {
   // ============================================================================
 
   /**
-   * Get the agent's display name from runtime settings
+   * Get the agent's display name from process.env
    */
   private getAgentName(): string {
-    return (this.runtime.getSetting("LTCG_AGENT_NAME") as string) || "AI Agent";
+    return process.env.LTCG_AGENT_NAME || this.runtime.character?.name || "AI Agent";
   }
 
   /**

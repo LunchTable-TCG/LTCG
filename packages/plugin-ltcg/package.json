@@ -6,8 +6,10 @@
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "packageType": "plugin",
   "keywords": [
     "elizaos",
+    "plugin",
     "ltcg",
     "card-game",
     "ai-agent",

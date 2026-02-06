@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { api } from "../../_generated/api";
+import { api, internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../../economy/economy";
@@ -71,6 +71,42 @@ async function updatePresenceInternal(
       status,
       lastActiveAt: Date.now(),
     });
+  }
+}
+
+/**
+ * Start agent streams for players in the game
+ * Called when game starts to auto-start streaming for agents with streaming enabled
+ */
+async function startAgentStreamsForGame(
+  ctx: MutationCtx,
+  lobbyId: Id<"gameLobbies">,
+  hostId: Id<"users">,
+  opponentId: Id<"users">
+): Promise<void> {
+  // Check both players for agents with auto-streaming enabled
+  const playerIds = [hostId, opponentId];
+
+  for (const playerId of playerIds) {
+    // Find agent for this player
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_user", (q) => q.eq("userId", playerId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .first();
+
+    if (
+      agent &&
+      agent.streamingEnabled &&
+      agent.streamingAutoStart &&
+      agent.streamingKeyHash
+    ) {
+      // Schedule start for agent stream (async, non-blocking)
+      await ctx.scheduler.runAfter(0, internal.agents.streaming.autoStartAgentStream, {
+        agentId: agent._id,
+        lobbyId,
+      });
+    }
   }
 }
 
@@ -498,6 +534,9 @@ export const joinLobby = mutation({
         },
       });
 
+      // Start agent streams for players with auto-streaming enabled
+      await startAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, userId);
+
       logMatchmaking("lobby_join_success", userId, { ...traceCtx, gameId, hostId: lobby.hostId });
       logger.info("Game started successfully", {
         ...traceCtx,
@@ -641,6 +680,9 @@ export const joinLobbyByCode = mutation({
         mode: lobby.mode,
       },
     });
+
+    // Start agent streams for players with auto-streaming enabled
+    await startAgentStreamsForGame(ctx, lobby._id, lobby.hostId, userId);
 
     return {
       gameId,
@@ -1104,6 +1146,9 @@ export const joinLobbyInternal = internalMutation({
           mode: lobby.mode,
         },
       });
+
+      // Start agent streams for players with auto-streaming enabled
+      await startAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, args.userId);
 
       logMatchmaking("lobby_join_success", args.userId, {
         ...traceCtx,

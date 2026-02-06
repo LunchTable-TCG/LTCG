@@ -55,7 +55,21 @@ export async function POST(req: NextRequest) {
 
     if (!session) {
       logWarn("No session found for egress", { egressId });
-      return NextResponse.json({ received: true, warning: "Session not found" });
+      // Return 404 to trigger LiveKit retry mechanism
+      return NextResponse.json(
+        { error: "Session not found", egressId },
+        { status: 404 }
+      );
+    }
+
+    // Add idempotency check for already-ended sessions
+    if (session.status === "ended" && event.event !== "egress_ended") {
+      logInfo("Session already ended, ignoring event", { sessionId: session._id, event: event.event });
+      return NextResponse.json({
+        received: true,
+        note: "Session already ended",
+        egressId,
+      });
     }
 
     // Handle different event types

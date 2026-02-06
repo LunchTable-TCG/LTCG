@@ -1,6 +1,7 @@
 import { get } from "@vercel/edge-config";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
 /**
  * Protected routes that require authentication
@@ -35,12 +36,64 @@ interface FeatureFlags {
 }
 
 /**
+ * Verify JWT token for stream overlay access
+ */
+async function verifyOverlayToken(token: string) {
+  const secret = process.env.STREAMING_JWT_SECRET;
+  if (!secret) {
+    console.error("STREAMING_JWT_SECRET not configured");
+    return null;
+  }
+
+  try {
+    const secretKey = new TextEncoder().encode(secret);
+    const { payload } = await jwtVerify(token, secretKey);
+
+    return {
+      sessionId: payload.sessionId as string,
+      streamType: payload.streamType as "user" | "agent",
+      entityId: payload.entityId as string,
+    };
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return null;
+  }
+}
+
+/**
  * Middleware for route protection and Edge Config features
  * - Checks maintenance mode from Edge Config
+ * - Validates JWT tokens for stream overlay pages
  * - Checks for Privy auth token cookie and redirects to login if not present
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Validate JWT token for stream overlay pages
+  if (pathname.startsWith("/stream/overlay")) {
+    const token = request.nextUrl.searchParams.get("token");
+    const sessionId = request.nextUrl.searchParams.get("sessionId");
+
+    if (!token || !sessionId) {
+      const unauthorizedUrl = new URL("/unauthorized", request.url);
+      unauthorizedUrl.searchParams.set("reason", "missing_credentials");
+      return NextResponse.redirect(unauthorizedUrl);
+    }
+
+    try {
+      const verified = await verifyOverlayToken(token);
+
+      if (!verified || verified.sessionId !== sessionId) {
+        const unauthorizedUrl = new URL("/unauthorized", request.url);
+        unauthorizedUrl.searchParams.set("reason", "invalid_token");
+        return NextResponse.redirect(unauthorizedUrl);
+      }
+    } catch (error) {
+      const unauthorizedUrl = new URL("/unauthorized", request.url);
+      unauthorizedUrl.searchParams.set("reason", "verification_failed");
+      return NextResponse.redirect(unauthorizedUrl);
+    }
+  }
 
   // Skip Edge Config checks for static assets and API routes
   const shouldCheckEdgeConfig = !pathname.startsWith("/_next") && !pathname.includes(".");

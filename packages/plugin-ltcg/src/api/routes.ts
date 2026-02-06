@@ -225,31 +225,31 @@ export async function handleMetrics(req: RouteRequest, res: RouteResponse) {
 export const panelRoutes = [
   {
     name: "ltcg-status",
-    path: "/ltcg/status",
+    path: "/status",
     type: "GET" as const,
     handler: handleAgentStatus,
   },
   {
     name: "ltcg-matchmaking",
-    path: "/ltcg/matchmaking",
+    path: "/matchmaking",
     type: "GET" as const,
     handler: handleMatchmakingStatus,
   },
   {
     name: "ltcg-game",
-    path: "/ltcg/game",
+    path: "/game",
     type: "GET" as const,
     handler: handleGameState,
   },
   {
     name: "ltcg-decisions",
-    path: "/ltcg/decisions",
+    path: "/decisions",
     type: "GET" as const,
     handler: handleDecisionHistory,
   },
   {
     name: "ltcg-metrics",
-    path: "/ltcg/metrics",
+    path: "/metrics",
     type: "GET" as const,
     handler: handleMetrics,
   },

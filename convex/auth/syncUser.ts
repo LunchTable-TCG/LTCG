@@ -12,6 +12,9 @@ export const createOrGetUser = mutation({
     email: v.optional(v.string()),
     walletAddress: v.optional(v.string()),
     walletType: v.optional(v.union(v.literal("privy_embedded"), v.literal("external"))),
+    // Referral tracking
+    referralSource: v.optional(v.string()),
+    referralGuildInviteCode: v.optional(v.string()),
   },
   async handler(ctx, args) {
     const identity = await ctx.auth.getUserIdentity();
@@ -65,6 +68,18 @@ export const createOrGetUser = mutation({
       walletAddress: args.walletAddress,
       walletType: args.walletType,
       walletConnectedAt: args.walletAddress ? Date.now() : undefined,
+      // Referral tracking - resolve guild ID from invite code if provided
+      referralSource: args.referralSource,
+      referralGuildInviteCode: args.referralGuildInviteCode,
+      referralGuildId: await (async () => {
+        const code = args.referralGuildInviteCode;
+        if (!code) return undefined;
+        const link = await ctx.db
+          .query("guildInviteLinks")
+          .withIndex("by_code", (q) => q.eq("code", code))
+          .first();
+        return link?.guildId;
+      })(),
       // Game defaults
       gold: 500,
       xp: 0,

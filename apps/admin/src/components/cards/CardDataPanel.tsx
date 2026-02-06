@@ -4,8 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 import { useState } from "react";
-import { useQuery } from "convex/react";
-import { apiAny } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CardData {
@@ -28,10 +27,10 @@ export default function CardDataPanel({ cardType, onCardSelect }: CardDataPanelP
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const cards = useQuery(apiAny.cardDefinitions.list);
-  const filteredCards = cards?.filter((c: any) => c.cardType === cardType) || [];
+  const cards = useConvexQuery(typedApi.cardDefinitions.list);
+  const filteredCards = cards?.filter((c: CardData) => c.cardType === cardType) || [];
 
-  const selectedCard = filteredCards.find((c: any) => c._id === selectedCardId);
+  const selectedCard = filteredCards.find((c: CardData) => c._id === selectedCardId);
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -41,7 +40,7 @@ export default function CardDataPanel({ cardType, onCardSelect }: CardDataPanelP
 
   const handleCardChange = (cardId: string) => {
     setSelectedCardId(cardId);
-    const card = filteredCards.find((c: any) => c._id === cardId);
+    const card = filteredCards.find((c: CardData) => c._id === cardId);
     if (card) {
       onCardSelect(card);
     }
@@ -58,7 +57,7 @@ export default function CardDataPanel({ cardType, onCardSelect }: CardDataPanelP
             <SelectValue placeholder="Select a card" />
           </SelectTrigger>
           <SelectContent>
-            {filteredCards.map((card: any) => (
+            {filteredCards.map((card: CardData) => (
               <SelectItem key={card._id} value={card._id}>
                 {card.name}
               </SelectItem>

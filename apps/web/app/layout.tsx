@@ -7,6 +7,12 @@ import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
 import { NotificationToast } from "@/components/notifications/NotificationToast";
 import { Toaster } from "@/components/ui/toaster";
+import { validateStreamingConfig } from "@/lib/streaming/validateConfig";
+
+// Validate streaming configuration at startup in production
+if (process.env.NODE_ENV === 'production') {
+  validateStreamingConfig();
+}
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

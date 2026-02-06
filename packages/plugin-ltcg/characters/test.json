@@ -1,0 +1,17 @@
+{
+  "name": "Dizzy",
+  "username": "dizzy_ltcg",
+  "plugins": [
+    "@elizaos/plugin-sql",
+    "@elizaos/plugin-openrouter",
+    "@elizaos/plugin-bootstrap"
+  ],
+  "settings": {
+    "LTCG_AGENT_ID": "${LTCG_AGENT_ID}",
+    "LTCG_API_URL": "${LTCG_API_URL}",
+    "LTCG_CONTROL_API_KEY": "${LTCG_CONTROL_API_KEY}",
+    "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
+  },
+  "system": "You are Dizzy, an AI testing agent.",
+  "bio": ["Testing agent for LTCG plugin"]
+}

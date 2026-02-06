@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { useMyGuild } from "@/hooks/guilds";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
-import { Calendar, Crown, DoorOpen, Lock, Shield, Users } from "lucide-react";
+import { Calendar, Crown, DoorOpen, Lock, Share2, Shield, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { GuildShareDialog } from "./GuildShareDialog";
 
 interface GuildHeaderProps {
   guild: {
@@ -143,7 +144,18 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
           </div>
 
           {/* Actions */}
-          <div className="shrink-0">
+          <div className="shrink-0 flex items-center gap-2">
+            {/* Invite Friends - available to all members */}
+            <GuildShareDialog guildName={guild.name}>
+              <Button
+                variant="outline"
+                className="border-[#3d2b1f] text-[#d4af37] hover:text-[#f9e29f] hover:border-[#d4af37]/50 hover:bg-[#d4af37]/10 rounded-xl"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Invite Friends
+              </Button>
+            </GuildShareDialog>
+
             {!isOwner && (
               <div className="relative">
                 {showLeaveConfirm ? (

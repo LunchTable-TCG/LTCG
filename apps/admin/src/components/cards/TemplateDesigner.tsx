@@ -5,9 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Stage, Layer, Image as KonvaImage, Text, Transformer } from "react-konva";
+import type Konva from "konva";
 import useImage from "use-image";
-import { useMutation } from "convex/react";
-import { apiAny } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import BackgroundPicker from "./BackgroundPicker";
 import TextFieldEditor from "./TextFieldEditor";
 import CardDataPanel from "./CardDataPanel";
@@ -42,9 +42,17 @@ export default function TemplateDesigner() {
   const [canvasSize] = useState({ width: 750, height: 1050 });
   const [textFields, setTextFields] = useState<TextField[]>([]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
-  const [previewCard, setPreviewCard] = useState<any>(null);
+  const [previewCard, setPreviewCard] = useState<{
+    name: string;
+    cardType: string;
+    cost: number;
+    attack?: number;
+    defense?: number;
+    effect?: string;
+    flavorText?: string;
+  } | null>(null);
 
-  const saveTemplate = useMutation(apiAny.cardTypeTemplates.upsert);
+  const saveTemplate = useConvexMutation(typedApi.cardTypeTemplates.upsert);
 
   const handleSaveTemplate = async () => {
     if (!backgroundId) {
@@ -133,8 +141,8 @@ export default function TemplateDesigner() {
     onSelect: () => void;
     onChange: (newAttrs: Partial<TextField>) => void;
   }) {
-    const textRef = useRef<typeof Text | null>(null);
-    const trRef = useRef<typeof Transformer | null>(null);
+    const textRef = useRef<Konva.Text>(null);
+    const trRef = useRef<Konva.Transformer>(null);
 
     useEffect(() => {
       if (isSelected && trRef.current && textRef.current) {
@@ -147,7 +155,14 @@ export default function TemplateDesigner() {
       <>
         <Text
           ref={textRef}
-          {...field}
+          {...(() => {
+            const { stroke, shadow, ...rest } = field;
+            return {
+              ...rest,
+              ...(stroke ? { stroke: stroke.color, strokeWidth: stroke.width } : {}),
+              ...(shadow ? { shadowColor: shadow.color, shadowBlur: shadow.blur, shadowOffsetX: shadow.offsetX, shadowOffsetY: shadow.offsetY } : {}),
+            };
+          })()}
           draggable
           onClick={onSelect}
           onTap={onSelect}
@@ -159,6 +174,7 @@ export default function TemplateDesigner() {
           }}
           onTransformEnd={() => {
             const node = textRef.current;
+            if (!node) return;
             const scaleX = node.scaleX();
             const scaleY = node.scaleY();
 
@@ -169,7 +185,7 @@ export default function TemplateDesigner() {
               x: node.x(),
               y: node.y(),
               width: Math.max(5, node.width() * scaleX),
-              height: Math.max(node.height() * scaleY),
+              height: Math.max(5, node.height() * scaleY),
               rotation: node.rotation(),
             });
           }}

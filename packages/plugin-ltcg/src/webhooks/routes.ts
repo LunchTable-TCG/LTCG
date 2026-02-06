@@ -20,7 +20,7 @@ import {
 export const webhookRoutes = [
   {
     name: "ltcg-game-webhook",
-    path: "/ltcg/webhook/game",
+    path: "/webhook/game",
     type: "POST" as const,
     handler: async (req: RouteRequest, res: RouteResponse) => {
       try {
@@ -92,7 +92,7 @@ export const webhookRoutes = [
   },
   {
     name: "ltcg-webhook-health",
-    path: "/ltcg/webhook/health",
+    path: "/webhook/health",
     type: "GET" as const,
     handler: async (_req: RouteRequest, res: RouteResponse) => {
       res.status(200).json({

@@ -272,10 +272,11 @@ export function BatchUploadDialog({
       handleUpdateFile(fileData.id, { status: "uploading" });
 
       try {
-        // Upload to Vercel Blob
+        // Upload to Vercel Blob (route lives on the web app, not admin app)
+        const webAppUrl = process.env["NEXT_PUBLIC_WEB_APP_URL"] || "http://localhost:3000";
         const blob = await upload(fileData.file.name, fileData.file, {
           access: "public",
-          handleUploadUrl: "/api/admin/upload",
+          handleUploadUrl: `${webAppUrl}/api/admin/upload`,
           clientPayload: JSON.stringify({
             category: mode === "branding" ? "branding" : fileData.category,
             description: fileData.description,

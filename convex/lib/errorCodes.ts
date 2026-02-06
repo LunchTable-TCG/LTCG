@@ -113,6 +113,9 @@ export const ErrorCode = {
   GUILD_CANNOT_INVITE_SELF: "GUILD_7115",
   GUILD_CANNOT_KICK_OWNER: "GUILD_7116",
   GUILD_CANNOT_KICK_SELF: "GUILD_7117",
+  GUILD_INVITE_LINK_NOT_FOUND: "GUILD_7118",
+  GUILD_INVITE_LINK_EXPIRED: "GUILD_7119",
+  GUILD_INVITE_LINK_MAX_USES: "GUILD_7120",
 
   // DM Errors (7xxx - Social Related)
   DM_NOT_FRIENDS: "DM_7201",
@@ -313,6 +316,9 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   GUILD_7115: "You cannot invite yourself to a guild",
   GUILD_7116: "Cannot kick the guild owner",
   GUILD_7117: "Cannot kick yourself. Use leave guild instead",
+  GUILD_7118: "Invite link not found or inactive",
+  GUILD_7119: "This invite link has expired",
+  GUILD_7120: "This invite link has reached its maximum number of uses",
 
   // DM
   DM_7201: "You can only message friends",

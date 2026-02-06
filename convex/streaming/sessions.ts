@@ -32,21 +32,30 @@ export const createSession = mutation({
       throw new Error("agentId required for agent streams");
     }
 
-    // Check for existing active session
+    // Check for any active, pending, or initializing sessions
     const existingQuery =
       args.streamType === "user"
         ? ctx.db
             .query("streamingSessions")
-            .withIndex("by_user_status", (q) => q.eq("userId", args.userId!).eq("status", "live"))
+            .withIndex("by_user_status", (q) => q.eq("userId", args.userId!))
         : ctx.db
             .query("streamingSessions")
-            .withIndex("by_agent_status", (q) =>
-              q.eq("agentId", args.agentId!).eq("status", "live")
-            );
+            .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId!));
 
-    const existing = await existingQuery.first();
-    if (existing) {
-      throw new Error("Already has an active streaming session");
+    const activeSessions = await existingQuery
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("status"), "live"),
+          q.eq(q.field("status"), "pending"),
+          q.eq(q.field("status"), "initializing")
+        )
+      )
+      .collect();
+
+    if (activeSessions.length > 0) {
+      throw new Error(
+        `Already has an active streaming session (status: ${activeSessions[0].status})`
+      );
     }
 
     // Create the session
@@ -278,5 +287,72 @@ export const linkLobby = mutation({
     await ctx.db.patch(args.sessionId, {
       currentLobbyId: args.lobbyId,
     });
+  },
+});
+
+/**
+ * Create an overlay access code for a streaming session
+ * Used to generate secure, short-lived codes for overlay URLs
+ */
+export const createOverlayAccess = mutation({
+  args: {
+    sessionId: v.id("streamingSessions"),
+    accessCode: v.string(),
+    expiresAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Verify session exists
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) {
+      throw new Error("Session not found");
+    }
+
+    // Create access code entry
+    await ctx.db.insert("overlayAccessCodes", {
+      sessionId: args.sessionId,
+      code: args.accessCode,
+      expiresAt: args.expiresAt,
+      used: false,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Validate and consume an overlay access code
+ * Returns session ID if valid, throws error if invalid/expired/used
+ */
+export const validateOverlayAccess = mutation({
+  args: {
+    sessionId: v.id("streamingSessions"),
+    code: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Find access code
+    const access = await ctx.db
+      .query("overlayAccessCodes")
+      .withIndex("by_session_code", (q) =>
+        q.eq("sessionId", args.sessionId).eq("code", args.code)
+      )
+      .first();
+
+    // Validate access code
+    if (!access) {
+      throw new Error("Invalid access code");
+    }
+
+    if (access.used) {
+      throw new Error("Access code already used");
+    }
+
+    if (access.expiresAt < Date.now()) {
+      throw new Error("Access code expired");
+    }
+
+    // Mark as used
+    await ctx.db.patch(access._id, { used: true });
+
+    // Return session validation
+    return { valid: true, sessionId: args.sessionId };
   },
 });

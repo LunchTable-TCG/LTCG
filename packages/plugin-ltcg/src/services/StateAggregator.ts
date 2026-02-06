@@ -78,8 +78,8 @@ export class StateAggregator extends Service {
         `matchmaking: ${this.ttlConfig.matchmaking}ms, metrics: ${this.ttlConfig.metrics}ms`
     );
 
-    // Initialize Convex client
-    const convexUrl = runtime.getSetting("CONVEX_URL") as string | undefined;
+    // Initialize Convex client (read from process.env)
+    const convexUrl = process.env.CONVEX_URL;
     if (convexUrl) {
       this.convexClient = new ConvexHttpClient(convexUrl);
       logger.info("Convex client initialized for State Aggregator");
@@ -111,11 +111,9 @@ export class StateAggregator extends Service {
    */
   private initializeTTLConfig(runtime: IAgentRuntime): DataTypeTTLConfig {
     return {
-      gameState:
-        Number.parseInt(runtime.getSetting("LTCG_CACHE_TTL_GAME_STATE_MS") as string) || 2000,
-      matchmaking:
-        Number.parseInt(runtime.getSetting("LTCG_CACHE_TTL_MATCHMAKING_MS") as string) || 5000,
-      metrics: Number.parseInt(runtime.getSetting("LTCG_CACHE_TTL_METRICS_MS") as string) || 10000,
+      gameState: Number.parseInt(process.env.LTCG_CACHE_TTL_GAME_STATE_MS || "2000"),
+      matchmaking: Number.parseInt(process.env.LTCG_CACHE_TTL_MATCHMAKING_MS || "5000"),
+      metrics: Number.parseInt(process.env.LTCG_CACHE_TTL_METRICS_MS || "10000"),
     };
   }
 

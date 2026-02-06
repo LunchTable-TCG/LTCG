@@ -23,10 +23,14 @@ declare global {
 function StreamOverlayContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId");
+  const code = searchParams.get("code");
   const token = searchParams.get("token");
   const roomName = searchParams.get("roomName");
   const livekitUrl = searchParams.get("livekitUrl");
   const [isReady, setIsReady] = useState(false);
+  const [isValidating, setIsValidating] = useState(true);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [validatedToken, setValidatedToken] = useState<string | null>(null);
 
   // Get streaming session
   const session = useQuery(
@@ -55,9 +59,49 @@ function StreamOverlayContent() {
     session?.agentId ? { agentId: session.agentId, limit: 3 } : "skip"
   );
 
+  // Validate access code on mount
+  useEffect(() => {
+    const validateAccess = async () => {
+      if (!sessionId || !code) {
+        setValidationError("Missing session ID or access code");
+        setIsValidating(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/streaming/validate-overlay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, code }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.valid) {
+          setValidationError(data.error || "Invalid or expired access code");
+          setIsValidating(false);
+          return;
+        }
+
+        // Access code is valid - store token if provided
+        if (token) {
+          setValidatedToken(token);
+        }
+
+        setIsValidating(false);
+      } catch (error) {
+        console.error("Failed to validate access:", error);
+        setValidationError("Failed to validate access");
+        setIsValidating(false);
+      }
+    };
+
+    validateAccess();
+  }, [sessionId, code, token]);
+
   // Signal LiveKit when overlay is ready
   useEffect(() => {
-    if (session && !isReady) {
+    if (session && !isReady && !isValidating && !validationError) {
       setIsReady(true);
       // Wait a brief moment for rendering to complete
       setTimeout(() => {
@@ -67,14 +111,32 @@ function StreamOverlayContent() {
         }
       }, 1000);
     }
-  }, [session, isReady]);
+  }, [session, isReady, isValidating, validationError]);
 
-  // Token validation would happen server-side in production
-  if (!sessionId || !token) {
+  // Show validation status
+  if (isValidating) {
+    return (
+      <div className="stream-overlay-loading">
+        <div className="spinner" />
+        <p>Validating access...</p>
+      </div>
+    );
+  }
+
+  if (validationError) {
+    return (
+      <div className="stream-overlay-error">
+        <h1>Access Denied</h1>
+        <p>{validationError}</p>
+      </div>
+    );
+  }
+
+  if (!sessionId) {
     return (
       <div className="stream-overlay-error">
         <h1>Invalid Stream Access</h1>
-        <p>Missing session or token parameters.</p>
+        <p>Missing session ID.</p>
       </div>
     );
   }
@@ -92,9 +154,9 @@ function StreamOverlayContent() {
   const theme = config.theme || "dark";
 
   // LiveKit composite mode - for user streams with screen share + webcam
-  if (useLiveKitComposite && roomName && livekitUrl && token && sessionId) {
+  if (useLiveKitComposite && roomName && livekitUrl && validatedToken && sessionId) {
     return (
-      <LiveKitRoom token={token} serverUrl={livekitUrl} connect={true}>
+      <LiveKitRoom token={validatedToken} serverUrl={livekitUrl} connect={true}>
         <StreamCompositeView sessionId={sessionId} />
       </LiveKitRoom>
     );
