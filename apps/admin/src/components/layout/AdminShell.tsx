@@ -3,7 +3,7 @@
 /**
  * AdminShell Component
  *
- * Main layout wrapper that combines sidebar, header, and content.
+ * Main layout wrapper that combines sidebar, header, command palette, and content.
  * Handles loading state, authentication, and unauthorized access.
  */
 
@@ -14,9 +14,10 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdmin } from "@/contexts/AdminContext";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { AdminHeader } from "./AdminHeader";
 import { AdminSidebar } from "./AdminSidebar";
+import { CommandPalette } from "./CommandPalette";
 
 // =============================================================================
 // Types
@@ -24,10 +25,6 @@ import { AdminSidebar } from "./AdminSidebar";
 
 interface AdminShellProps {
   children: ReactNode;
-  /** Page title for breadcrumb */
-  title?: string;
-  /** Additional breadcrumb segments */
-  breadcrumb?: ReactNode;
 }
 
 // =============================================================================
@@ -54,7 +51,6 @@ function UnauthorizedShell() {
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background">
       <Card className="max-w-md p-6 text-center">
-        <div className="mb-4 text-4xl">🚫</div>
         <h1 className="mb-2 text-xl font-semibold">Access Denied</h1>
         <p className="text-muted-foreground">
           You don&apos;t have permission to access the admin dashboard. Please contact a super admin
@@ -69,9 +65,22 @@ function UnauthorizedShell() {
 // Main Component
 // =============================================================================
 
-export function AdminShell({ children, title, breadcrumb }: AdminShellProps) {
+export function AdminShell({ children }: AdminShellProps) {
   const { isLoading, isAuthenticated, isAdmin } = useAdmin();
   const pathname = usePathname();
+  const [commandOpen, setCommandOpen] = useState(false);
+
+  // Cmd+K keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandOpen((prev) => !prev);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Don't show floating chat on the dedicated AI assistant page
   const showFloatingChat = pathname !== "/ai-assistant";
@@ -91,27 +100,14 @@ export function AdminShell({ children, title, breadcrumb }: AdminShellProps) {
     return <UnauthorizedShell />;
   }
 
-  // Build breadcrumb
-  const breadcrumbContent = (
-    <>
-      <span className="font-medium text-foreground">Admin</span>
-      {title && (
-        <>
-          <span>/</span>
-          <span>{title}</span>
-        </>
-      )}
-      {breadcrumb}
-    </>
-  );
-
   return (
     <SidebarProvider>
       <AdminSidebar />
       <SidebarInset>
-        <AdminHeader breadcrumb={breadcrumbContent} />
+        <AdminHeader onCommandPaletteOpen={() => setCommandOpen(true)} />
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </SidebarInset>
+      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
       {/* Floating AI Assistant Chat */}
       {showFloatingChat && <AdminAssistantChat />}
     </SidebarProvider>

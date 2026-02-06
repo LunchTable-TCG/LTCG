@@ -3,225 +3,374 @@
 /**
  * AdminSidebar Component
  *
- * Main navigation sidebar with role-based menu items.
+ * Hierarchical navigation sidebar with collapsible sections,
+ * sub-groups, favorites, inline search, and Lucide icons.
  */
 
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
+  SidebarInput,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useAdmin } from "@/contexts/AdminContext";
+import { useFavorites } from "@/hooks/use-favorites";
+import { ChevronRight, Star } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
+import {
+  FOOTER_NAVIGATION,
+  MAIN_NAVIGATION,
+  getAllNavItems,
+  isPathInSection,
+  isPathInSubGroup,
+} from "./navigation";
+import type { NavItem, NavSection, NavSubGroup } from "./navigation";
 
 // =============================================================================
-// Navigation Items
+// Helpers
 // =============================================================================
 
-interface NavItem {
-  title: string;
-  href: string;
-  icon: string;
-  permission?: string;
+function isActive(href: string, pathname: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-interface NavGroup {
-  title: string;
-  items: NavItem[];
+// =============================================================================
+// NavItemRow — single menu item with favorite star
+// =============================================================================
+
+function NavItemRow({
+  item,
+  pathname,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  item: NavItem;
+  pathname: string;
+  isFavorite: boolean;
+  onToggleFavorite: (href: string) => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={isActive(item.href, pathname)}>
+        <Link href={item.href}>
+          <Icon className="size-4" />
+          <span>{item.title}</span>
+        </Link>
+      </SidebarMenuButton>
+      <SidebarMenuAction
+        className="opacity-0 group-hover/menu-item:opacity-100 data-[active=true]:opacity-100"
+        data-active={isFavorite || undefined}
+        onClick={() => onToggleFavorite(item.href)}
+        title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+      >
+        <Star className={`size-3 ${isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
+      </SidebarMenuAction>
+    </SidebarMenuItem>
+  );
 }
 
-const navigation: NavGroup[] = [
-  {
-    title: "Overview",
-    items: [
-      { title: "Dashboard", href: "/", icon: "📊" },
-      { title: "Audit Log", href: "/audit", icon: "📜", permission: "admin.audit.view" },
-    ],
-  },
-  {
-    title: "Token",
-    items: [
-      { title: "Launch Control", href: "/token", icon: "🚀", permission: "admin.manage" },
-      { title: "Configuration", href: "/token/config", icon: "⚙️", permission: "admin.manage" },
-      { title: "Analytics", href: "/analytics/token", icon: "📈", permission: "admin.manage" },
-      { title: "Alerts", href: "/alerts", icon: "🔔", permission: "admin.manage" },
-    ],
-  },
-  {
-    title: "Treasury",
-    items: [
-      { title: "Overview", href: "/treasury", icon: "🏦", permission: "admin.manage" },
-      { title: "Wallets", href: "/treasury/wallets", icon: "💳", permission: "admin.manage" },
-      {
-        title: "Transactions",
-        href: "/treasury/transactions",
-        icon: "📋",
-        permission: "admin.manage",
-      },
-      { title: "Policies", href: "/treasury/policies", icon: "📜", permission: "admin.manage" },
-    ],
-  },
-  {
-    title: "Players",
-    items: [
-      { title: "All Players", href: "/players", icon: "👥", permission: "player.view" },
-      { title: "Moderation", href: "/moderation", icon: "🛡️", permission: "player.view" },
-      { title: "Reports", href: "/moderation/reports", icon: "📋", permission: "player.view" },
-      { title: "Feedback", href: "/feedback", icon: "💬", permission: "player.view" },
-      { title: "Chat", href: "/moderation/chat", icon: "💭", permission: "player.view" },
-      {
-        title: "Marketplace",
-        href: "/moderation/marketplace",
-        icon: "🏪",
-        permission: "player.view",
-      },
-      {
-        title: "Suspicious Activity",
-        href: "/moderation/suspicious",
-        icon: "⚠️",
-        permission: "admin.audit.view",
-      },
-    ],
-  },
-  {
-    title: "Content",
-    items: [
-      {
-        title: "Content Calendar",
-        href: "/content-calendar",
-        icon: "📅",
-        permission: "config.edit",
-      },
-      { title: "News", href: "/news", icon: "📰", permission: "config.edit" },
-      { title: "Broadcast", href: "/broadcast", icon: "📢", permission: "batch.operations" },
-      { title: "Assets", href: "/assets", icon: "🖼️", permission: "config.edit" },
-      { title: "Cards", href: "/cards", icon: "🃏", permission: "config.edit" },
-      { title: "Templates", href: "/templates", icon: "📐", permission: "config.edit" },
-      { title: "Batch Render", href: "/cards/batch-render", icon: "🖨️", permission: "config.edit" },
-      { title: "Shop", href: "/shop", icon: "🛒", permission: "config.edit" },
-      { title: "Promo Codes", href: "/promo-codes", icon: "🎁", permission: "config.edit" },
-      { title: "Quests", href: "/quests", icon: "🎯", permission: "config.edit" },
-      { title: "Story", href: "/story", icon: "📖", permission: "config.edit" },
-      { title: "Seasons", href: "/seasons", icon: "🏆", permission: "config.edit" },
-      { title: "Tournaments", href: "/tournaments", icon: "🏁", permission: "player.view" },
-      { title: "Battle Pass", href: "/battle-pass", icon: "🎖️", permission: "config.edit" },
-    ],
-  },
-  {
-    title: "Management",
-    items: [
-      { title: "Admins", href: "/admins", icon: "👑", permission: "admin.manage" },
-      { title: "API Keys", href: "/api-keys", icon: "🔑", permission: "player.view" },
-      { title: "Batch Operations", href: "/batch", icon: "📦", permission: "batch.operations" },
-      { title: "Maintenance", href: "/maintenance", icon: "🔧", permission: "admin.manage" },
-    ],
-  },
-  {
-    title: "AI",
-    items: [
-      { title: "AI Assistant", href: "/ai-assistant", icon: "🧠", permission: "player.view" },
-      { title: "Dashboard Builder", href: "/ai-dashboard", icon: "✨", permission: "player.view" },
-    ],
-  },
-  {
-    title: "Settings",
-    items: [
-      {
-        title: "Feature Flags",
-        href: "/settings/features",
-        icon: "🚩",
-        permission: "admin.manage",
-      },
-      { title: "Configuration", href: "/settings/config", icon: "⚙️", permission: "admin.manage" },
-      { title: "AI Providers", href: "/settings/ai", icon: "🤖", permission: "admin.manage" },
-    ],
-  },
-  {
-    title: "Analytics",
-    items: [
-      { title: "Overview", href: "/analytics", icon: "📈" },
-      { title: "Players", href: "/analytics/players", icon: "👤" },
-      { title: "Games", href: "/analytics/games", icon: "🎮" },
-      { title: "Economy", href: "/analytics/economy", icon: "💰" },
-      { title: "Cards", href: "/analytics/cards", icon: "🃏" },
-      { title: "Marketplace", href: "/analytics/marketplace", icon: "🏪" },
-      { title: "Streaming", href: "/analytics/streaming", icon: "📹" },
-    ],
-  },
-  {
-    title: "Documentation",
-    items: [
-      { title: "API Docs", href: "/docs", icon: "📚" },
-      { title: "Endpoints", href: "/docs/endpoints", icon: "🔗" },
-      { title: "Rate Limits", href: "/docs/rate-limits", icon: "⏱️" },
-      { title: "Webhooks", href: "/docs/webhooks", icon: "🔔" },
-      { title: "Error Codes", href: "/docs/errors", icon: "⚠️" },
-    ],
-  },
-];
+// =============================================================================
+// SubGroupSection — collapsible sub-group
+// =============================================================================
+
+function SubGroupSection({
+  subGroup,
+  pathname,
+}: {
+  subGroup: NavSubGroup;
+  pathname: string;
+}) {
+  return (
+    <Collapsible defaultOpen={isPathInSubGroup(subGroup, pathname)}>
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton className="font-medium text-muted-foreground">
+            <ChevronRight className="size-3 transition-transform duration-200 [[data-state=open]>&]:rotate-90" />
+            <span>{subGroup.title}</span>
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {subGroup.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <SidebarMenuSubItem key={item.href} className="group/sub-item">
+                  <SidebarMenuSubButton asChild isActive={isActive(item.href, pathname)}>
+                    <Link href={item.href}>
+                      <Icon className="size-3.5" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              );
+            })}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
 
 // =============================================================================
-// Component
+// SectionGroup — collapsible top-level section
+// =============================================================================
+
+function SectionGroup({
+  section,
+  pathname,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  section: NavSection;
+  pathname: string;
+  isFavorite: (href: string) => boolean;
+  onToggleFavorite: (href: string) => void;
+}) {
+  const SectionIcon = section.icon;
+
+  return (
+    <Collapsible defaultOpen={isPathInSection(section, pathname)} className="group/collapsible">
+      <SidebarGroup>
+        <CollapsibleTrigger asChild>
+          <SidebarGroupLabel className="cursor-pointer hover:text-foreground transition-colors">
+            <SectionIcon className="mr-1.5 size-3.5" />
+            <span>{section.title}</span>
+            <ChevronRight className="ml-auto size-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+          </SidebarGroupLabel>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {section.items.map((item) => (
+                <NavItemRow
+                  key={item.href}
+                  item={item}
+                  pathname={pathname}
+                  isFavorite={isFavorite(item.href)}
+                  onToggleFavorite={onToggleFavorite}
+                />
+              ))}
+              {section.subGroups?.map((sub) => (
+                <SubGroupSection
+                  key={sub.title}
+                  subGroup={sub}
+                  pathname={pathname}
+                />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
+  );
+}
+
+// =============================================================================
+// Main Component
 // =============================================================================
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const { hasPermission, isAdmin } = useAdmin();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const [search, setSearch] = useState("");
 
-  // Filter items by permission
-  const filterItems = (items: NavItem[]): NavItem[] => {
-    if (!isAdmin) return [];
-    return items.filter((item) => !item.permission || hasPermission(item.permission));
-  };
+  // All items flattened (for search + favorites resolution)
+  const allItems = useMemo(
+    () => [...getAllNavItems(MAIN_NAVIGATION), ...FOOTER_NAVIGATION.items],
+    []
+  );
+
+  // Permission filter
+  const filterByPermission = useCallback(
+    (items: NavItem[]) => {
+      if (!isAdmin) return [];
+      return items.filter((item) => !item.permission || hasPermission(item.permission));
+    },
+    [isAdmin, hasPermission]
+  );
+
+  // Filtered navigation
+  const filteredSections = useMemo(() => {
+    const filterSection = (section: NavSection): NavSection | null => {
+      const filteredItems = filterByPermission(section.items);
+      const filteredSubGroups = section.subGroups
+        ?.map((sub) => ({ ...sub, items: filterByPermission(sub.items) }))
+        .filter((sub) => sub.items.length > 0);
+
+      if (filteredItems.length === 0 && (!filteredSubGroups || filteredSubGroups.length === 0)) {
+        return null;
+      }
+
+      return { ...section, items: filteredItems, subGroups: filteredSubGroups };
+    };
+
+    return MAIN_NAVIGATION.map(filterSection).filter(Boolean) as NavSection[];
+  }, [filterByPermission]);
+
+  const filteredFooter = useMemo(
+    () => filterByPermission(FOOTER_NAVIGATION.items),
+    [filterByPermission]
+  );
+
+  // Resolve favorites to NavItem data
+  const favoriteItems = useMemo(() => {
+    const itemMap = new Map(allItems.map((item) => [item.href, item]));
+    return favorites
+      .map((href) => itemMap.get(href))
+      .filter((item): item is NavItem => item !== undefined)
+      .filter((item) => !item.permission || hasPermission(item.permission));
+  }, [favorites, allItems, hasPermission]);
+
+  // Search filter
+  const searchLower = search.toLowerCase().trim();
+  const searchResults = useMemo(() => {
+    if (!searchLower) return null;
+    return filterByPermission(allItems).filter((item) => {
+      const haystack = [item.title, ...(item.keywords ?? [])].join(" ").toLowerCase();
+      return haystack.includes(searchLower);
+    });
+  }, [searchLower, allItems, filterByPermission]);
 
   return (
     <Sidebar>
+      {/* ── Header ── */}
       <SidebarHeader className="border-b p-4">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold">🎴</span>
+          <span className="text-xl font-bold">LT</span>
           <span className="font-semibold">Lunchtable Admin</span>
         </Link>
+        <SidebarInput
+          placeholder="Search pages..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="mt-2"
+        />
       </SidebarHeader>
 
       <SidebarContent>
-        {navigation.map((group) => {
-          const filteredItems = filterItems(group.items);
-          if (filteredItems.length === 0) return null;
+        {/* ── Search Results ── */}
+        {searchResults ? (
+          <SidebarGroup>
+            <SidebarGroupLabel>Search Results</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {searchResults.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-muted-foreground">No pages found.</p>
+                ) : (
+                  searchResults.map((item) => (
+                    <NavItemRow
+                      key={item.href}
+                      item={item}
+                      pathname={pathname}
+                      isFavorite={isFavorite(item.href)}
+                      onToggleFavorite={toggleFavorite}
+                    />
+                  ))
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : (
+          <>
+            {/* ── Favorites ── */}
+            {favoriteItems.length > 0 && (
+              <>
+                <SidebarGroup>
+                  <SidebarGroupLabel>
+                    <Star className="mr-1.5 size-3.5 fill-yellow-400 text-yellow-400" />
+                    Favorites
+                  </SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {favoriteItems.map((item) => (
+                        <NavItemRow
+                          key={item.href}
+                          item={item}
+                          pathname={pathname}
+                          isFavorite
+                          onToggleFavorite={toggleFavorite}
+                        />
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+                <SidebarSeparator />
+              </>
+            )}
 
-          return (
-            <SidebarGroup key={group.title}>
-              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {filteredItems.map((item) => {
-                    const isActive =
-                      item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-
-                    return (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton asChild isActive={isActive}>
-                          <Link href={item.href}>
-                            <span>{item.icon}</span>
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          );
-        })}
+            {/* ── Main Sections ── */}
+            {filteredSections.map((section) => (
+              <SectionGroup
+                key={section.title}
+                section={section}
+                pathname={pathname}
+                isFavorite={isFavorite}
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+          </>
+        )}
       </SidebarContent>
+
+      {/* ── Footer: Documentation ── */}
+      {filteredFooter.length > 0 && !searchResults && (
+        <SidebarFooter>
+          <SidebarSeparator />
+          <Collapsible>
+            <SidebarGroup>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="cursor-pointer hover:text-foreground transition-colors">
+                  <FOOTER_NAVIGATION.icon className="mr-1.5 size-3.5" />
+                  <span>{FOOTER_NAVIGATION.title}</span>
+                  <ChevronRight className="ml-auto size-3.5 transition-transform duration-200 [[data-state=open]>&]:rotate-90" />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {filteredFooter.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <SidebarMenuItem key={item.href}>
+                          <SidebarMenuButton asChild isActive={isActive(item.href, pathname)}>
+                            <Link href={item.href}>
+                              <Icon className="size-4" />
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        </SidebarFooter>
+      )}
 
       <SidebarRail />
     </Sidebar>

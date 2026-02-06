@@ -4,8 +4,7 @@
   "plugins": [
     "@elizaos/plugin-sql",
     "@elizaos/plugin-openrouter",
-    "@elizaos/plugin-bootstrap",
-    "@elizaos/plugin-ltcg"
+    "@elizaos/plugin-bootstrap"
   ],
   "settings": {
     "LTCG_AGENT_ID": "${LTCG_AGENT_ID}",

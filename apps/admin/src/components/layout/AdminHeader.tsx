@@ -3,11 +3,19 @@
 /**
  * AdminHeader Component
  *
- * Top navigation header with user info and quick actions.
+ * Top navigation header with auto-breadcrumbs, Cmd+K trigger, and user menu.
  */
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,28 +28,36 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAdmin } from "@/contexts/AdminContext";
+import { SearchIcon } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Fragment } from "react";
+import { getBreadcrumbs } from "./navigation";
 
 // =============================================================================
 // Types
 // =============================================================================
 
 interface AdminHeaderProps {
-  /** Optional breadcrumb content */
-  breadcrumb?: React.ReactNode;
+  onCommandPaletteOpen?: () => void;
 }
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export function AdminHeader({ breadcrumb }: AdminHeaderProps) {
+export function AdminHeader({ onCommandPaletteOpen }: AdminHeaderProps) {
   const { role, isAdmin, isLoading } = useAdmin();
+  const pathname = usePathname();
+
+  // Auto-generate breadcrumbs from route map
+  const crumbs = getBreadcrumbs(pathname);
 
   // Role badge colors
   const roleBadgeVariant = (
-    role: string | null
+    r: string | null
   ): "default" | "secondary" | "destructive" | "outline" => {
-    switch (role) {
+    switch (r) {
       case "super_admin":
         return "destructive";
       case "admin":
@@ -57,9 +73,45 @@ export function AdminHeader({ breadcrumb }: AdminHeaderProps) {
     <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
       <SidebarTrigger className="-ml-1" />
 
-      {/* Breadcrumb */}
-      {breadcrumb && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">{breadcrumb}</div>
+      {/* Auto Breadcrumbs */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          {crumbs.map((crumb, i) => {
+            const isLast = i === crumbs.length - 1;
+            return (
+              <Fragment key={crumb.label}>
+                {i > 0 && <BreadcrumbSeparator />}
+                <BreadcrumbItem>
+                  {isLast ? (
+                    <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                  ) : crumb.href ? (
+                    <BreadcrumbLink asChild>
+                      <Link href={crumb.href}>{crumb.label}</Link>
+                    </BreadcrumbLink>
+                  ) : (
+                    <span className="text-muted-foreground">{crumb.label}</span>
+                  )}
+                </BreadcrumbItem>
+              </Fragment>
+            );
+          })}
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      {/* Cmd+K Search Trigger */}
+      {onCommandPaletteOpen && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-2 hidden gap-2 text-muted-foreground sm:flex"
+          onClick={onCommandPaletteOpen}
+        >
+          <SearchIcon className="size-3.5" />
+          <span className="text-xs">Search...</span>
+          <kbd className="pointer-events-none ml-2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+            <span className="text-xs">&#8984;</span>K
+          </kbd>
+        </Button>
       )}
 
       {/* Spacer */}
