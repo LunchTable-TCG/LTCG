@@ -304,6 +304,19 @@ export const getAgent = query({
  * Internal query to get agent by ID for HTTP handlers.
  * Accepts agentId directly (for API key auth contexts).
  */
+export const listAllAgents = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const agents = await ctx.db.query("agents").collect();
+    return agents.map(agent => ({
+      agentId: agent._id,
+      userId: agent.userId,
+      name: agent.name,
+      isActive: agent.isActive,
+    }));
+  },
+});
+
 export const getAgentByIdInternal = internalQuery({
   args: {
     agentId: v.id("agents"),
