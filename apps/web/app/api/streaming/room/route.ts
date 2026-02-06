@@ -3,6 +3,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { generateRoomToken, generateRoomName, getLiveKitUrl } from "@/lib/streaming/livekitRoom";
+import { logError, logInfo } from "@/lib/streaming/logging";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
 
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
         message: "Room created. Join to start streaming.",
       });
     } catch (egressError) {
-      console.error("Failed to start egress:", egressError);
+      logError("Failed to start egress", { error: egressError instanceof Error ? egressError.message : String(egressError) });
 
       // Still return success for room creation, but log egress failure
       await convex.mutation(api.streaming.sessions.updateSession, {
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
       });
     }
   } catch (error) {
-    console.error("Error creating streaming room:", error);
+    logError("Error creating streaming room", { error: error instanceof Error ? error.message : String(error) });
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

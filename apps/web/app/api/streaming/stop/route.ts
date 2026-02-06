@@ -1,4 +1,5 @@
 import { stopWebEgress } from "@/lib/streaming/livekit";
+import { logError, logWarn } from "@/lib/streaming/logging";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { ConvexHttpClient } from "convex/browser";
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
         await stopWebEgress(session.egressId);
       } catch (error) {
         // Log but don't fail - egress might already be stopped
-        console.warn("Error stopping egress:", error);
+        logWarn("Error stopping egress", { error: error instanceof Error ? error.message : String(error) });
       }
     }
 
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
       stats,
     });
   } catch (error) {
-    console.error("Error stopping stream:", error);
+    logError("Error stopping stream", { error: error instanceof Error ? error.message : String(error) });
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

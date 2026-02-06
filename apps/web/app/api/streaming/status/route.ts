@@ -1,6 +1,7 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { ConvexHttpClient } from "convex/browser";
+import { logError } from "@/lib/streaming/logging";
 import { type NextRequest, NextResponse } from "next/server";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
       errorMessage: session.errorMessage,
     });
   } catch (error) {
-    console.error("Error getting stream status:", error);
+    logError("Error getting stream status", { error: error instanceof Error ? error.message : String(error) });
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

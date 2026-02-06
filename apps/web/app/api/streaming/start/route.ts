@@ -1,6 +1,7 @@
 import { buildRtmpUrl, encryptStreamKey } from "@/lib/streaming/encryption";
 import { isLiveKitConfigured, startWebEgress } from "@/lib/streaming/livekit";
 import { generateOverlayToken } from "@/lib/streaming/tokens";
+import { logError } from "@/lib/streaming/logging";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { ConvexHttpClient } from "convex/browser";
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errorMessage, sessionId }, { status: 500 });
     }
   } catch (error) {
-    console.error("Error starting stream:", error);
+    logError("Error starting stream", { error: error instanceof Error ? error.message : String(error) });
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

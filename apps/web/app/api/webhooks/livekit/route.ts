@@ -1,6 +1,8 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { ConvexHttpClient } from "convex/browser";
+import { WebhookReceiver } from "livekit-server-sdk";
+import { logError, logWarn, logInfo } from "@/lib/streaming/logging";
 import { type NextRequest, NextResponse } from "next/server";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -10,13 +12,38 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
  * Configure webhook URL in LiveKit dashboard: https://your-domain.com/api/webhooks/livekit
  */
 export async function POST(req: NextRequest) {
-  try {
-    const event = await req.json();
+  const webhookSecret = process.env.LIVEKIT_WEBHOOK_SECRET;
 
-    console.log("LiveKit webhook received:", event.event, event.egress_info?.egress_id);
+  if (!webhookSecret) {
+    logError("LIVEKIT_WEBHOOK_SECRET not configured");
+    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
+  }
+
+  // Read request body as text for signature verification
+  const body = await req.text();
+  const authHeader = req.headers.get("authorization");
+
+  if (!authHeader) {
+    return NextResponse.json({ error: "Missing authorization header" }, { status: 401 });
+  }
+
+  // Verify webhook signature
+  const receiver = new WebhookReceiver(process.env.LIVEKIT_API_KEY!, webhookSecret);
+
+  let event;
+  try {
+    event = await receiver.receive(body, authHeader);
+  } catch (error) {
+    logError("Invalid webhook signature", { error: error instanceof Error ? error.message : String(error) });
+    return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+  }
+
+  try {
+
+    logInfo("LiveKit webhook received", { event: event.event, egressId: event.egressInfo?.egressId });
 
     // Get egress ID from the event
-    const egressId = event.egress_info?.egress_id;
+    const egressId = event.egressInfo?.egressId;
     if (!egressId) {
       return NextResponse.json({ error: "No egress ID in event" }, { status: 400 });
     }
@@ -27,7 +54,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session) {
-      console.warn("No session found for egress:", egressId);
+      logWarn("No session found for egress", { egressId });
       return NextResponse.json({ received: true, warning: "Session not found" });
     }
 
@@ -41,7 +68,7 @@ export async function POST(req: NextRequest) {
             startedAt: Date.now(),
           },
         });
-        console.log("Stream started:", session._id);
+        logInfo("Stream started", { sessionId: session._id });
         break;
 
       case "egress_updated":
@@ -54,10 +81,10 @@ export async function POST(req: NextRequest) {
           updates: {
             status: "ended",
             endedAt: Date.now(),
-            endReason: event.egress_info?.status || "egress_ended",
+            endReason: event.egressInfo?.status || "egress_ended",
           },
         });
-        console.log("Stream ended:", session._id);
+        logInfo("Stream ended", { sessionId: session._id });
         break;
 
       case "egress_error":
@@ -65,19 +92,19 @@ export async function POST(req: NextRequest) {
           sessionId: session._id as Id<"streamingSessions">,
           updates: {
             status: "error",
-            errorMessage: event.egress_info?.error || "Unknown egress error",
+            errorMessage: event.egressInfo?.error || "Unknown egress error",
           },
         });
-        console.error("Stream error:", session._id, event.egress_info?.error);
+        logError("Stream error", { sessionId: session._id, error: event.egressInfo?.error });
         break;
 
       default:
-        console.log("Unhandled LiveKit event:", event.event);
+        logInfo("Unhandled LiveKit event", { event: event.event });
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Error processing LiveKit webhook:", error);
+    logError("Error processing LiveKit webhook", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
 }
