@@ -501,6 +501,20 @@ async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime:
 
     logger.info("Control API: Start stream trigger received");
 
+    // Get polling service to check for active game
+    const pollingService = runtime.getService(
+      SERVICE_TYPES.POLLING
+    ) as unknown as IPollingService | null;
+
+    if (!pollingService) {
+      return sendError(res, 503, "Polling service not available");
+    }
+
+    const currentGameId = pollingService.getCurrentGameId();
+    if (!currentGameId) {
+      return sendError(res, 400, "No active game - start a game first before streaming");
+    }
+
     // Get Retake credentials
     const accessToken =
       process.env.DIZZY_RETAKE_ACCESS_TOKEN ||
@@ -557,6 +571,7 @@ async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime:
       },
       body: JSON.stringify({
         agentId: agentId || "agent_dizzy",
+        gameId: currentGameId, // CRITICAL: Include gameId so overlay knows what to display
         streamType: "agent",
         platform: "custom", // Retake.tv is custom RTMP
         streamKey: rtmpData.key,
