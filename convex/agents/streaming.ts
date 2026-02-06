@@ -120,14 +120,14 @@ export const triggerAgentStreamStart = internalAction({
     }
 
     // 2. Call streaming API
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3000";
 
     try {
       const response = await fetch(`${baseUrl}/api/streaming/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-Auth": process.env.INTERNAL_API_SECRET!,
+          "X-Internal-Auth": process.env["INTERNAL_API_SECRET"]!,
         },
         body: JSON.stringify({
           agentId: args.agentId,
@@ -203,14 +203,14 @@ export const triggerAgentStreamStop = internalAction({
     sessionId: v.id("streamingSessions"),
   },
   handler: async (_ctx, args) => {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3000";
 
     try {
       const response = await fetch(`${baseUrl}/api/streaming/stop`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-Auth": process.env.INTERNAL_API_SECRET!,
+          "X-Internal-Auth": process.env["INTERNAL_API_SECRET"]!,
         },
         body: JSON.stringify({
           sessionId: args.sessionId,

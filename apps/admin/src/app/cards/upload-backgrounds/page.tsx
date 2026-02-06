@@ -1,20 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { useMutation } from "convex/react";
-import { typedApi } from "@/lib/convexHelpers";
+import { typedApi, useMutation } from "@/lib/convexHelpers";
 import { runUploadBackgrounds } from "./actions";
+
+interface UploadResult {
+  filename: string;
+  success: boolean;
+  blobUrl: string;
+  width: number;
+  height: number;
+  error?: string;
+}
 
 export default function UploadBackgroundsPage() {
   const [uploading, setUploading] = useState(false);
-  const [progress] = useState({ current: 0, total: 0, filename: "" });
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<UploadResult[]>([]);
   const [cardBackAdded, setCardBackAdded] = useState(false);
 
-  const createBackground = useMutation((typedApi as any).cardBackgrounds.create);
+  const createBackground = useMutation(typedApi.cardBackgrounds.create);
 
   const handleAddCardBack = async () => {
     try {
@@ -82,18 +89,14 @@ export default function UploadBackgroundsPage() {
               disabled={uploading || cardBackAdded}
               variant="secondary"
             >
-              {cardBackAdded ? "Card Back Added ✓" : "Add Card Back"}
+              {cardBackAdded ? "Card Back Added" : "Add Card Back"}
             </Button>
           </div>
 
           {uploading && (
-            <div className="space-y-2">
-              <Progress
-                value={(progress.current / progress.total) * 100}
-              />
-              <p className="text-sm">
-                {progress.current} / {progress.total}: {progress.filename}
-              </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Uploading backgrounds...</span>
             </div>
           )}
 
@@ -101,12 +104,12 @@ export default function UploadBackgroundsPage() {
             <div className="space-y-2">
               <h3 className="font-semibold">Results:</h3>
               <div className="space-y-1 max-h-96 overflow-y-auto">
-                {results.map((r, i) => (
+                {results.map((r) => (
                   <div
-                    key={i}
+                    key={r.filename}
                     className={`text-sm ${r.success ? "text-green-600" : "text-red-600"}`}
                   >
-                    {r.filename}: {r.success ? "✓ Success" : `✗ ${r.error}`}
+                    {r.filename}: {r.success ? "Success" : `${r.error}`}
                   </div>
                 ))}
               </div>

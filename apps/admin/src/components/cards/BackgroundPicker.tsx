@@ -13,6 +13,15 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 
+interface Background {
+  _id: string;
+  filename: string;
+  blobUrl: string;
+  width: number;
+  height: number;
+  tags: string[];
+}
+
 interface BackgroundPickerProps {
   onSelect: (backgroundId: string, blobUrl: string) => void;
   trigger?: React.ReactNode;
@@ -38,8 +47,9 @@ export default function BackgroundPicker({ onSelect, trigger }: BackgroundPicker
         </DialogHeader>
         <ScrollArea className="h-[600px]">
           <div className="grid grid-cols-3 gap-4 p-4">
-            {backgrounds?.map((bg: any) => (
+            {backgrounds?.map((bg: Background) => (
               <button
+                type="button"
                 key={bg._id}
                 onClick={() => handleSelect(bg._id, bg.blobUrl)}
                 className="relative aspect-[750/1050] rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors"

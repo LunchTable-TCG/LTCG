@@ -119,7 +119,7 @@ async function stopAgentStreamsForGame(
       .filter((q) => q.eq(q.field("isActive"), true))
       .first();
 
-    if (agent && agent.streamingEnabled) {
+    if (agent?.streamingEnabled) {
       // Schedule stop for agent stream (async, non-blocking)
       await ctx.scheduler.runAfter(0, internal.agents.streaming.autoStopAgentStream, {
         agentId: agent._id,
@@ -400,13 +400,13 @@ export const surrenderGame = mutation({
     // Update both players' presence to online
     await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
 
-    if (lobby.opponentId && lobby.opponentUsername) {
+    if (lobby.opponentId && lobby.opponentUsername && lobby.mode !== "story") {
       await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
     }
 
     // Update player stats and ratings (surrender counts as a loss)
     if (lobby.opponentId) {
-      const gameMode = lobby.mode as "ranked" | "casual";
+      const gameMode = lobby.mode as "ranked" | "casual" | "story";
       await updatePlayerStatsAfterGame(ctx, winnerId, userId, gameMode);
 
       // Process wager payout if applicable (surrendering player loses their wager)
@@ -556,13 +556,13 @@ export const forfeitGame = internalMutation({
     // Update both players' presence to online
     await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
 
-    if (lobby.opponentId && lobby.opponentUsername) {
+    if (lobby.opponentId && lobby.opponentUsername && lobby.mode !== "story") {
       await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
     }
 
     // Update player stats and ratings (forfeit counts as a loss)
     if (lobby.opponentId) {
-      const gameMode = lobby.mode as "ranked" | "casual";
+      const gameMode = lobby.mode as "ranked" | "casual" | "story";
       await updatePlayerStatsAfterGame(ctx, winnerId, args.forfeitingPlayerId, gameMode);
 
       // Process wager payout if applicable (forfeiting player loses their wager)
@@ -642,7 +642,7 @@ export const completeGame = internalMutation({
       await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
     }
 
-    if (lobby.opponentId) {
+    if (lobby.opponentId && lobby.mode !== "story") {
       const opponentUser = await ctx.db.get(lobby.opponentId);
       if (opponentUser && lobby.opponentUsername) {
         await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
@@ -652,7 +652,7 @@ export const completeGame = internalMutation({
     // Update player stats and ratings
     if (lobby.opponentId) {
       const loserId = args.winnerId === lobby.hostId ? lobby.opponentId : lobby.hostId;
-      const gameMode = lobby.mode as "ranked" | "casual";
+      const gameMode = lobby.mode as "ranked" | "casual" | "story";
       await updatePlayerStatsAfterGame(ctx, args.winnerId, loserId, gameMode);
 
       // Process wager payout if applicable
