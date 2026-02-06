@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     const sessionId = await convex.mutation(api.streaming.sessions.createSession, {
       streamType,
       userId: userId ? (userId as Id<"users">) : undefined,
-      agentId: agentId ? (agentId as Id<"agents">) : undefined,
+      agentId: agentId && agentId.startsWith("j") ? (agentId as Id<"agents">) : undefined, // Only use if it's a Convex ID
       platform,
       streamTitle: streamTitle || "LTCG Live",
       overlayConfig: finalOverlayConfig,
