@@ -103,6 +103,8 @@ web_modules/
 
 # Convex
 .convex/
+
+# Root-level symlinks (Convex dev creates these)
 /_generated/
 /schema.ts
 /test.setup.ts
