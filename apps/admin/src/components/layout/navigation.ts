@@ -34,7 +34,6 @@ import {
   Palette,
   Printer,
   Receipt,
-  Rocket,
   Scroll,
   Settings,
   Shield,
@@ -168,14 +167,6 @@ export const MAIN_NAVIGATION: NavSection[] = [
     icon: DollarSign,
     items: [],
     subGroups: [
-      {
-        title: "Token",
-        items: [
-          { title: "Launch Control", href: "/token", icon: Rocket, permission: "admin.manage", keywords: ["crypto", "launch"] },
-          { title: "Configuration", href: "/token/config", icon: Settings, permission: "admin.manage", keywords: ["tokenomics"] },
-          { title: "Launch Checklist", href: "/token/launch", icon: ClipboardList, permission: "admin.manage", keywords: ["approvals", "go-live"] },
-        ],
-      },
       {
         title: "Treasury",
         items: [
@@ -330,9 +321,6 @@ export const ROUTE_MAP: Record<string, { label: string; parent?: string }> = {
   "/broadcast": { label: "Broadcast", parent: "/live-ops" },
 
   // Finance
-  "/token": { label: "Launch Control", parent: "/finance" },
-  "/token/config": { label: "Configuration", parent: "/token" },
-  "/token/launch": { label: "Launch Checklist", parent: "/token" },
   "/treasury": { label: "Overview", parent: "/finance-treasury" },
   "/treasury/wallets": { label: "Wallets", parent: "/treasury" },
   "/treasury/transactions": { label: "Transactions", parent: "/treasury" },

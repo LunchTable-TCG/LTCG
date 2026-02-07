@@ -424,7 +424,7 @@ export type AnyApi = ApiModuleBase &
     readonly stripe: ApiModule;
     readonly testing: ApiModule;
     readonly tokenAnalytics: ApiModule;
-    readonly tokenLaunch: ApiModule;
+
     readonly treasury: TreasuryApiModule;
     readonly tutorial: ApiModule;
     readonly wallet: ApiModule;

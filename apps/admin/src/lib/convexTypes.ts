@@ -60,8 +60,6 @@ export type BattlePassId = Id<"battlePassSeasons">;
 export type ChapterId = Id<"storyChapters">;
 export type StageId = Id<"storyStages">;
 export type FeatureFlagId = Id<"featureFlags">;
-export type LaunchChecklistItemId = Id<"launchChecklist">;
-
 // Analytics query result types
 export interface CardWinRateStat {
   cardId: CardId;

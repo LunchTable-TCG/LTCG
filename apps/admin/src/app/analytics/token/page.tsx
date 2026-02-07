@@ -280,9 +280,6 @@ export default function TokenAnalyticsPage() {
             <Link href="/analytics">Back to Overview</Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/token">Token Launch</Link>
-          </Button>
-          <Button variant="outline" asChild>
             <Link href="/treasury">Treasury</Link>
           </Button>
         </div>
