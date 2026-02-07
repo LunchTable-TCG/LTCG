@@ -9,7 +9,7 @@ export async function generateOverlayToken(
   streamType: "user" | "agent",
   entityId: string
 ): Promise<string> {
-  const secret = process.env.STREAMING_JWT_SECRET;
+  const secret = process.env.STREAMING_JWT_SECRET?.trim();
   if (!secret) {
     throw new Error("STREAMING_JWT_SECRET not configured");
   }
@@ -36,7 +36,7 @@ export async function verifyOverlayToken(token: string): Promise<{
   streamType: "user" | "agent";
   entityId: string;
 } | null> {
-  const secret = process.env.STREAMING_JWT_SECRET;
+  const secret = process.env.STREAMING_JWT_SECRET?.trim();
   if (!secret) {
     console.error("STREAMING_JWT_SECRET not configured");
     return null;
@@ -53,6 +53,8 @@ export async function verifyOverlayToken(token: string): Promise<{
     };
   } catch (error) {
     console.error("Token verification failed:", error);
+    console.error("Secret length:", secret?.length);
+    console.error("Has trailing newline:", secret?.endsWith('\\n'));
     return null;
   }
 }
@@ -65,7 +67,7 @@ export async function generateStreamingApiToken(
   userId: string,
   permissions: string[] = ["read", "write"]
 ): Promise<string> {
-  const secret = process.env.STREAMING_JWT_SECRET;
+  const secret = process.env.STREAMING_JWT_SECRET?.trim();
   if (!secret) {
     throw new Error("STREAMING_JWT_SECRET not configured");
   }

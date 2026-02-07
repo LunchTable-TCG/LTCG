@@ -83,6 +83,16 @@ export async function middleware(request: NextRequest) {
     try {
       const verified = await verifyOverlayToken(token);
 
+      // Diagnostic logging
+      console.log("[Middleware] Token validation:", {
+        hasToken: !!token,
+        hasSessionId: !!sessionId,
+        verified: !!verified,
+        tokenSessionId: verified?.sessionId,
+        urlSessionId: sessionId,
+        match: verified?.sessionId === sessionId
+      });
+
       if (!verified || verified.sessionId !== sessionId) {
         const unauthorizedUrl = new URL("/unauthorized", request.url);
         unauthorizedUrl.searchParams.set("reason", "invalid_token");
