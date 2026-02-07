@@ -13,7 +13,8 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalAction, internalMutation, internalQuery } from "../_generated/server";
-import { ELIZAOS_TOKEN, SOLANA } from "../lib/constants";
+import { ELIZAOS_TOKEN } from "../lib/constants";
+import { elizaOSBalanceCache } from "../infrastructure/actionCaches";
 
 // =============================================================================
 // Types
@@ -204,8 +205,9 @@ export const checkUserWallet = internalAction({
     }
 
     try {
-      // Fetch token balance from Solana RPC
-      const balance = await fetchElizaOSBalance(args.walletAddress);
+      // Fetch token balance via action cache (deduplicates RPC calls within TTL)
+      const result = await elizaOSBalanceCache.fetch(ctx, { walletAddress: args.walletAddress });
+      const balance = result.balance;
 
       // Record the check
       await ctx.runMutation(internal.economy.elizaOSMonitor.recordWalletCheck, {
@@ -308,53 +310,3 @@ export const checkOnWalletConnect = internalAction({
   },
 });
 
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-/**
- * Fetch ElizaOS token balance for a wallet address
- */
-async function fetchElizaOSBalance(walletAddress: string): Promise<number> {
-  const rpcUrl = SOLANA.RPC_URL;
-
-  try {
-    // Get token accounts for the wallet
-    const response = await fetch(rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "getTokenAccountsByOwner",
-        params: [walletAddress, { mint: ELIZAOS_TOKEN.MINT_ADDRESS }, { encoding: "jsonParsed" }],
-      }),
-    });
-
-    const data = await response.json();
-
-    if (data.error) {
-      throw new Error(data.error.message);
-    }
-
-    const accounts = data.result?.value ?? [];
-
-    if (accounts.length === 0) {
-      return 0;
-    }
-
-    // Sum balances from all token accounts (usually just one)
-    let totalBalance = 0;
-    for (const account of accounts) {
-      const tokenAmount = account.account?.data?.parsed?.info?.tokenAmount;
-      if (tokenAmount) {
-        totalBalance += Number(tokenAmount.amount);
-      }
-    }
-
-    return totalBalance;
-  } catch (error) {
-    console.error(`[ElizaOS Monitor] RPC error for ${walletAddress}:`, error);
-    throw error;
-  }
-}

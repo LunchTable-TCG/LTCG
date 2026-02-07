@@ -1,8 +1,11 @@
 /**
  * Load all cards from JSON data into the database
  *
- * Cards are now defined in data/cards/*.json
- * This migration can be run to sync the database with the JSON source.
+ * Cards are defined in data/cards/*.json
+ * This is a data import (not a table migration), so it uses a standalone mutation.
+ *
+ * Run with: npx convex run migrations/loadAllCards:loadAllCards
+ * Preview: npx convex run migrations/loadAllCards:previewLoad
  */
 
 import {
@@ -13,10 +16,8 @@ import {
   STORM_ELEMENTALS_CARDS,
 } from "@data/cards";
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
 import { internalQuery } from "../_generated/server";
 import { internalMutation } from "../functions";
-import { migrationsPool } from "../infrastructure/workpools";
 
 export const previewLoad = internalQuery({
   args: {},
@@ -54,89 +55,56 @@ export const loadAllCards = internalMutation({
       console.log(`Cleared ${existing.length} existing cards`);
     }
 
-    console.log(`Starting migration: loadAllCards (${ALL_CARDS.length} cards)`);
+    console.log(`Starting card import: ${ALL_CARDS.length} cards`);
 
-    // Get existing cards by name
+    // Get existing cards by name for upsert
     const existingCards = await ctx.db.query("cardDefinitions").collect();
     const cardsByName = new Map(existingCards.map((c) => [c.name, c]));
 
-    let enqueuedCount = 0;
+    let created = 0;
+    let updated = 0;
 
-    // Enqueue upsert jobs for each card
     for (const rawCard of ALL_CARDS) {
-      const existingCardId = cardsByName.get(rawCard.name)?._id;
-
-      await migrationsPool.enqueueMutation(ctx, internal.migrations.loadAllCards.upsertCard, {
-        cardData: rawCard,
-        existingCardId: existingCardId ?? null,
-      });
-
-      enqueuedCount++;
-    }
-
-    console.log(`Migration jobs enqueued: ${enqueuedCount} cards to upsert`);
-
-    return {
-      success: true,
-      total: ALL_CARDS.length,
-      enqueued: enqueuedCount,
-      message: `Enqueued ${enqueuedCount} card upsert jobs. Check workpool status for progress.`,
-    };
-  },
-});
-
-/**
- * Worker mutation: Upsert a single card
- */
-export const upsertCard = internalMutation({
-  args: {
-    cardData: v.any(),
-    existingCardId: v.union(v.id("cardDefinitions"), v.null()),
-  },
-  handler: async (ctx, { cardData, existingCardId }) => {
-    try {
-      // Convert to database format
-      const card: Record<string, unknown> = {
-        name: cardData.name,
-        rarity: cardData.rarity,
-        archetype: cardData.archetype,
-        cardType: cardData.cardType,
-        cost: cardData.cost,
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic card schema from external source
+      const card: Record<string, any> = {
+        name: rawCard.name,
+        rarity: rawCard.rarity,
+        archetype: rawCard.archetype,
+        cardType: rawCard.cardType,
+        cost: rawCard.cost,
         isActive: true,
         createdAt: Date.now(),
       };
 
       // Handle creature stats
-      if (cardData.cardType === "creature") {
-        card["attack"] = cardData.attack;
-        card["defense"] = cardData.defense;
+      if (rawCard.cardType === "creature") {
+        card["attack"] = rawCard.attack;
+        card["defense"] = rawCard.defense;
       }
 
-      // Handle flavor text
-      if (cardData.flavorText) {
-        card["flavorText"] = cardData.flavorText;
-      }
+      // Handle optional fields
+      if (rawCard.flavorText) card["flavorText"] = rawCard.flavorText;
+      if (rawCard.imageUrl) card["imageUrl"] = rawCard.imageUrl;
 
-      // Handle image URL
-      if (cardData.imageUrl) {
-        card["imageUrl"] = cardData.imageUrl;
+      const existingCard = cardsByName.get(rawCard.name);
+      if (existingCard) {
+        // biome-ignore lint/suspicious/noExplicitAny: Dynamic card data
+        await ctx.db.patch(existingCard._id, card as any);
+        updated++;
+      } else {
+        // biome-ignore lint/suspicious/noExplicitAny: Dynamic card data
+        await ctx.db.insert("cardDefinitions", card as any);
+        created++;
       }
-
-      // Upsert card
-      if (existingCardId) {
-        // biome-ignore lint/suspicious/noExplicitAny: Dynamic card schema from external source
-        await ctx.db.patch(existingCardId, card as any);
-        console.log(`[Migration Worker] Updated card: ${cardData.name}`);
-        return { success: true, updated: true };
-      }
-
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic card schema from external source
-      await ctx.db.insert("cardDefinitions", card as any);
-      console.log(`[Migration Worker] Created card: ${cardData.name}`);
-      return { success: true, created: true };
-    } catch (error) {
-      console.error(`[Migration Worker] Failed to upsert card ${cardData.name}:`, error);
-      return { success: false, error: String(error) };
     }
+
+    console.log(`Card import complete: ${created} created, ${updated} updated`);
+
+    return {
+      success: true,
+      total: ALL_CARDS.length,
+      created,
+      updated,
+    };
   },
 });

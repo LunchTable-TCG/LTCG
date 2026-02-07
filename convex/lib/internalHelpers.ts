@@ -301,7 +301,6 @@ interface InternalApiPaths {
       createMatchedGame: InternalMutationFn;
     };
     tournaments: {
-      getTournamentsNeedingTransition: InternalQueryFn;
       transitionToCheckIn: InternalMutationFn;
       startTournament: InternalMutationFn;
       getTimedOutMatches: InternalQueryFn;

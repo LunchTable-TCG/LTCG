@@ -18,6 +18,7 @@
  */
 
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { internalQuery, query } from "../_generated/server";
@@ -36,6 +37,9 @@ import {
   tournamentSummaryValidator,
   userTournamentStatsValidator,
 } from "../lib/returnValidators";
+
+// TS2589 workaround for deep Convex internal types
+const internalAny = internal as any;
 
 // ============================================================================
 // CONSTANTS
@@ -642,6 +646,13 @@ export const createTournament = mutation({
       updatedAt: now,
     });
 
+    // Schedule phase transition: registration -> check-in at registrationEndsAt
+    await ctx.scheduler.runAt(
+      args.registrationEndsAt,
+      internalAny.social.tournaments.transitionToCheckIn,
+      { tournamentId }
+    );
+
     return tournamentId;
   },
 });
@@ -695,7 +706,7 @@ export const updateTournamentTimes = mutation({
 
 /**
  * Transition tournament from registration to check-in phase
- * Called by cron when registrationEndsAt is reached
+ * Called by ctx.scheduler.runAt when registrationEndsAt is reached
  */
 export const transitionToCheckIn = internalMutation({
   args: {
@@ -721,12 +732,19 @@ export const transitionToCheckIn = internalMutation({
       status: "checkin",
       updatedAt: now,
     });
+
+    // Schedule tournament start at exact check-in end time
+    await ctx.scheduler.runAt(
+      tournament.checkInEndsAt,
+      internalAny.social.tournaments.startTournament,
+      { tournamentId }
+    );
   },
 });
 
 /**
  * Start tournament - generate bracket and create first round matches
- * Called by cron when checkInEndsAt is reached
+ * Called by ctx.scheduler.runAt when checkInEndsAt is reached
  */
 export const startTournament = internalMutation({
   args: {
@@ -871,35 +889,6 @@ export const forfeitNoShowMatch = internalMutation({
     if (!winnerId) return; // Both players missing?
 
     await completeMatchInternal(ctx, matchId, winnerId, noShowPlayerId, "opponent_no_show");
-  },
-});
-
-/**
- * Get tournaments that need status transitions
- * Called by cron to find tournaments needing phase changes
- */
-export const getTournamentsNeedingTransition = internalQuery({
-  handler: async (ctx) => {
-    const now = Date.now();
-
-    // Find registration tournaments that need to transition to check-in
-    const needCheckIn = await ctx.db
-      .query("tournaments")
-      .withIndex("by_status", (q) => q.eq("status", "registration"))
-      .filter((q) => q.lte(q.field("registrationEndsAt"), now))
-      .collect();
-
-    // Find check-in tournaments that need to start
-    const needStart = await ctx.db
-      .query("tournaments")
-      .withIndex("by_status", (q) => q.eq("status", "checkin"))
-      .filter((q) => q.lte(q.field("checkInEndsAt"), now))
-      .collect();
-
-    return {
-      needCheckIn: needCheckIn.map((t) => t._id),
-      needStart: needStart.map((t) => t._id),
-    };
   },
 });
 

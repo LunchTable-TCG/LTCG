@@ -3,11 +3,8 @@
  * Each ability is carefully written based on the card's effect description
  */
 
-import { v } from "convex/values";
-import { internal } from "../_generated/api";
-import { internalMutation } from "../functions";
 import type { JsonAbility } from "../gameplay/effectSystem/types";
-import { migrationsPool } from "../infrastructure/workpools";
+import { migrations } from "./index";
 
 // Map of card name -> proper JSON ability
 const MANUAL_ABILITIES: Record<string, JsonAbility> = {
@@ -878,84 +875,14 @@ const MANUAL_ABILITIES: Record<string, JsonAbility> = {
   },
 };
 
-// Update cards with manual abilities
-export const applyManualAbilities = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    console.log("Starting migration: applyManualAbilities");
-
-    let enqueuedCount = 0;
-    let notFoundCount = 0;
-
-    // Enqueue update jobs for each card
-    for (const [cardName, ability] of Object.entries(MANUAL_ABILITIES)) {
-      // Find card by name
-      const card = await ctx.db
-        .query("cardDefinitions")
-        .withIndex("by_name", (q) => q.eq("name", cardName))
-        .first();
-
-      if (!card) {
-        notFoundCount++;
-        console.warn(`[Migration] Card not found: ${cardName}`);
-        continue;
-      }
-
-      await migrationsPool.enqueueMutation(
-        ctx,
-        internal.migrations.manualAbilities.updateCardAbility,
-        {
-          cardId: card._id,
-          cardName,
-          ability,
-        }
-      );
-
-      enqueuedCount++;
-    }
-
-    console.log(
-      `Migration jobs enqueued: ${enqueuedCount} cards to update, ${notFoundCount} cards not found`
-    );
-
-    return {
-      success: true,
-      total: Object.keys(MANUAL_ABILITIES).length,
-      enqueued: enqueuedCount,
-      notFound: notFoundCount,
-      message: `Enqueued ${enqueuedCount} ability update jobs. Check workpool status for progress.`,
-    };
-  },
-});
-
-/**
- * Worker mutation: Update a single card's ability
- */
-export const updateCardAbility = internalMutation({
-  args: {
-    cardId: v.id("cardDefinitions"),
-    cardName: v.string(),
-    ability: v.any(),
-  },
-  handler: async (ctx, { cardId, cardName, ability }) => {
-    try {
-      const card = await ctx.db.get(cardId);
-
-      if (!card) {
-        console.error(`[Migration Worker] Card not found: ${cardId}`);
-        return { success: false, error: "Card not found" };
-      }
-
-      // Update with proper ability
-      await ctx.db.patch(cardId, {
-        ability,
-      });
-
-      console.log(`[Migration Worker] Updated ability for card: ${cardName}`);
-      return { success: true, updated: true };
-    } catch (error) {
-      console.error(`[Migration Worker] Failed to update card ${cardName}:`, error);
-      return { success: false, error: String(error) };
-    }
+export default migrations.define({
+  table: "cardDefinitions",
+  migrateOne: async (_ctx, card) => {
+    const ability = MANUAL_ABILITIES[card.name];
+    if (!ability) return; // No manual ability for this card
+    // Skip if already identical (idempotent)
+    if (JSON.stringify(card.ability) === JSON.stringify(ability)) return;
+    console.log(`[Migration] Updated ability for card: ${card.name}`);
+    return { ability };
   },
 });

@@ -123,28 +123,8 @@ crons.interval(
 );
 
 // ============================================================================
-// CONTENT CALENDAR PUBLISHING
-// ============================================================================
-
-// Check and publish scheduled content every 5 minutes
-crons.interval(
-  "publish-scheduled-content",
-  { minutes: 5 },
-  internalAny.content.publishing.checkAndPublishDue
-);
-
-// ============================================================================
 // TOURNAMENT SYSTEM MAINTENANCE
 // ============================================================================
-
-// Check for tournament phase transitions every minute
-// - Transition from registration to check-in when registrationEndsAt is reached
-// - Start tournaments when checkInEndsAt is reached
-crons.interval(
-  "tournament-phase-transitions",
-  { minutes: 1 },
-  internalAny.social.tournamentCron.processPhaseTransitions
-);
 
 // Check for no-show forfeits every minute
 // - Forfeit players who don't join their tournament match within timeout
@@ -154,14 +134,9 @@ crons.interval(
   internalAny.social.tournamentCron.processNoShowForfeits
 );
 
-// Expire unfilled user tournaments every hour
-// - Cancel user tournaments that haven't filled within 24 hours
-// - Refund all participants their entry fees
-crons.interval(
-  "expire-unfilled-user-tournaments",
-  { hours: 1 },
-  internalAny.social.tournamentCron.expireUnfilledUserTournaments
-);
+// Note: Content publishing and tournament phase transitions are now
+// scheduled per-item via ctx.scheduler.runAt() in their respective mutations.
+// User tournament expiry is also scheduled per-tournament at creation time.
 
 // ============================================================================
 // STREAMING SESSION CLEANUP

@@ -20,39 +20,6 @@ import { requireRole } from "../lib/roles";
  */
 
 // ============================================================================
-// CRON JOB HANDLER
-// ============================================================================
-
-// Check and publish due content (called by cron every 5 minutes)
-export const checkAndPublishDue = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const now = Date.now();
-
-    // Find all scheduled content that is due
-    // Query by status first (more selective), then filter by time
-    const dueContent = await ctx.db
-      .query("scheduledContent")
-      .withIndex("by_status", (q) => q.eq("status", "scheduled"))
-      .filter((q) => q.lte(q.field("scheduledFor"), now))
-      .collect();
-
-    if (dueContent.length === 0) {
-      return { processed: 0 };
-    }
-
-    // Schedule publishing for each item
-    for (const content of dueContent) {
-      await ctx.scheduler.runAfter(0, internal.content.publishing.publishContent, {
-        contentId: content._id,
-      });
-    }
-
-    return { processed: dueContent.length };
-  },
-});
-
-// ============================================================================
 // PUBLISHING ACTION
 // ============================================================================
 

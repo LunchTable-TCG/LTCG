@@ -16,74 +16,46 @@
  * - users.xp and users.level fields should be marked as deprecated
  * - Eventually remove users.xp and users.level field definitions
  *
- * Run with: bun convex run migrations/syncXPToPlayerXP
+ * Run with: npx convex run migrations/index:run '{fn: "migrations/syncXPToPlayerXP"}'
  */
 
-import { internalMutation } from "../_generated/server";
+import { migrations } from "./index";
 
-export default internalMutation({
-  handler: async (ctx) => {
-    console.log("Starting users.xp/users.level → playerXP migration...");
+export default migrations.define({
+  table: "users",
+  migrateOne: async (ctx, user) => {
+    // Check if playerXP record exists
+    const existing = await ctx.db
+      .query("playerXP")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .first();
 
-    // Get all users
-    const users = await ctx.db.query("users").collect();
+    // Access deprecated fields with type assertion
+    // biome-ignore lint/suspicious/noExplicitAny: Accessing removed fields for migration
+    const userXP = (user as any).xp ?? 0;
+    // biome-ignore lint/suspicious/noExplicitAny: Accessing removed fields for migration
+    const userLevel = (user as any).level ?? 1;
 
-    console.log(`Found ${users.length} users to process`);
-
-    let created = 0;
-    let synced = 0;
-    let skipped = 0;
-
-    for (const user of users) {
-      // Check if playerXP record exists
-      const existing = await ctx.db
-        .query("playerXP")
-        .withIndex("by_user", (q) => q.eq("userId", user._id))
-        .first();
-
-      // Access deprecated fields with type assertion
-      // biome-ignore lint/suspicious/noExplicitAny: Accessing removed fields for migration
-      const userXP = (user as any).xp ?? 0;
-      // biome-ignore lint/suspicious/noExplicitAny: Accessing removed fields for migration
-      const userLevel = (user as any).level ?? 1;
-
-      if (!existing) {
-        // Create new playerXP record from users.xp and users.level
-        await ctx.db.insert("playerXP", {
-          userId: user._id,
-          currentXP: userXP,
-          currentLevel: userLevel,
-          lifetimeXP: userXP, // Assume current XP is lifetime XP (best estimate)
-          lastUpdatedAt: Date.now(),
-        });
-        created++;
-      } else if (userXP > existing.currentXP || userLevel > existing.currentLevel) {
-        // Sync if users.xp or users.level is higher (edge case from legacy code)
-        // This handles cases where old code wrote to users.xp/level but not playerXP
-        await ctx.db.patch(existing._id, {
-          currentXP: Math.max(existing.currentXP, userXP),
-          currentLevel: Math.max(existing.currentLevel, userLevel),
-          lifetimeXP: Math.max(existing.lifetimeXP, userXP),
-          lastUpdatedAt: Date.now(),
-        });
-        synced++;
-      } else {
-        // playerXP exists and is up-to-date
-        skipped++;
-      }
+    if (!existing) {
+      // Create new playerXP record from users.xp and users.level
+      await ctx.db.insert("playerXP", {
+        userId: user._id,
+        currentXP: userXP,
+        currentLevel: userLevel,
+        lifetimeXP: userXP, // Assume current XP is lifetime XP (best estimate)
+        lastUpdatedAt: Date.now(),
+      });
+      console.log(`[Migration] Created playerXP for user ${user._id}`);
+    } else if (userXP > existing.currentXP || userLevel > existing.currentLevel) {
+      // Sync if users.xp or users.level is higher (edge case from legacy code)
+      await ctx.db.patch(existing._id, {
+        currentXP: Math.max(existing.currentXP, userXP),
+        currentLevel: Math.max(existing.currentLevel, userLevel),
+        lifetimeXP: Math.max(existing.lifetimeXP, userXP),
+        lastUpdatedAt: Date.now(),
+      });
+      console.log(`[Migration] Synced XP for user ${user._id}`);
     }
-
-    console.log(
-      `Migration complete: ${created} created, ${synced} synced, ${skipped} skipped (already up-to-date)`
-    );
-
-    return {
-      success: true,
-      totalUsers: users.length,
-      created,
-      synced,
-      skipped,
-      message: `Migrated ${created + synced} user XP records`,
-    };
+    // Don't return patch for the users table itself
   },
 });

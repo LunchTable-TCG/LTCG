@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
+import { internalMutation, mutation, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { tournamentRateLimiter } from "../infrastructure/rateLimiters";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -818,32 +818,8 @@ export const getMyRegisteredTournaments = query({
 // ============================================================================
 
 /**
- * Get expired user tournaments that need to be cancelled
- * Called by cron job to find tournaments past their expiry time
- */
-export const getExpiredTournaments = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    const now = Date.now();
-
-    // Find all user tournaments in registration that have expired
-    const tournaments = await ctx.db
-      .query("tournaments")
-      .withIndex("by_status", (q) => q.eq("status", "registration"))
-      .collect();
-
-    // Filter to user tournaments that have expired
-    const expiredIds = tournaments
-      .filter((t) => t.creatorType === "user" && t.expiresAt && t.expiresAt < now)
-      .map((t) => t._id);
-
-    return expiredIds;
-  },
-});
-
-/**
  * Expire a user tournament and refund all participants
- * Called by cron job for tournaments that didn't fill in time
+ * Called via ctx.scheduler.runAt() when tournament reaches its expiry time
  */
 export const expireTournament = internalMutation({
   args: {

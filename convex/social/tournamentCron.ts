@@ -2,8 +2,11 @@
  * Tournament Cron Jobs
  *
  * Internal actions called by cron jobs to handle:
- * - Phase transitions (registration -> check-in -> active)
  * - No-show forfeit processing
+ *
+ * Note: Phase transitions (registration -> check-in -> active) are now
+ * scheduled per-tournament via ctx.scheduler.runAt() in createTournament.
+ * User tournament expiry is also scheduled per-tournament at creation time.
  */
 
 import { internal } from "../_generated/api";
@@ -12,43 +15,6 @@ import { internalAction } from "../_generated/server";
 // Module-scope typed helper to avoid TS2589
 type InternalApi = typeof internal;
 const internalAny = internal as InternalApi;
-
-/**
- * Process tournament phase transitions
- * Called every minute to check for tournaments that need to:
- * - Transition from registration to check-in
- * - Start (transition from check-in to active)
- */
-export const processPhaseTransitions = internalAction({
-  handler: async (ctx) => {
-    // Get tournaments needing transitions
-    const transitions = await ctx.runQuery(
-      internalAny.social.tournaments.getTournamentsNeedingTransition
-    );
-
-    // Process registration -> check-in transitions
-    for (const tournamentId of transitions.needCheckIn) {
-      try {
-        await ctx.runMutation(internalAny.social.tournaments.transitionToCheckIn, {
-          tournamentId,
-        });
-      } catch (error) {
-        console.error(`Failed to transition tournament ${tournamentId} to check-in:`, error);
-      }
-    }
-
-    // Process check-in -> active transitions (start tournaments)
-    for (const tournamentId of transitions.needStart) {
-      try {
-        await ctx.runMutation(internalAny.social.tournaments.startTournament, {
-          tournamentId,
-        });
-      } catch (error) {
-        console.error(`Failed to start tournament ${tournamentId}:`, error);
-      }
-    }
-  },
-});
 
 /**
  * Process no-show forfeits
@@ -82,25 +48,3 @@ export const processNoShowForfeits = internalAction({
   },
 });
 
-/**
- * Expire unfilled user tournaments
- * Called every hour to cancel user tournaments that haven't filled within 24 hours
- */
-export const expireUnfilledUserTournaments = internalAction({
-  handler: async (ctx) => {
-    // Get expired user tournaments
-    const expiredTournaments = await ctx.runQuery(
-      internalAny.social.userTournaments.getExpiredTournaments
-    );
-
-    for (const tournamentId of expiredTournaments) {
-      try {
-        await ctx.runMutation(internalAny.social.userTournaments.expireTournament, {
-          tournamentId,
-        });
-      } catch (error) {
-        console.error(`Failed to expire tournament ${tournamentId}:`, error);
-      }
-    }
-  },
-});

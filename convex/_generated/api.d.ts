@@ -183,15 +183,18 @@ import type * as http_shop from "../http/shop.js";
 import type * as http_story from "../http/story.js";
 import type * as http_types from "../http/types.js";
 import type * as http_wellknown from "../http/wellknown.js";
+import type * as infrastructure_actionCaches from "../infrastructure/actionCaches.js";
 import type * as infrastructure_actionRetrier from "../infrastructure/actionRetrier.js";
 import type * as infrastructure_aggregates from "../infrastructure/aggregates.js";
 import type * as infrastructure_auditLog from "../infrastructure/auditLog.js";
 import type * as infrastructure_crons from "../infrastructure/crons.js";
+import type * as infrastructure_dynamicCrons from "../infrastructure/dynamicCrons.js";
 import type * as infrastructure_emailActions from "../infrastructure/emailActions.js";
 import type * as infrastructure_rateLimiters from "../infrastructure/rateLimiters.js";
 import type * as infrastructure_shardedCounters from "../infrastructure/shardedCounters.js";
 import type * as infrastructure_triggers from "../infrastructure/triggers.js";
 import type * as infrastructure_welcomeEmails from "../infrastructure/welcomeEmails.js";
+import type * as infrastructure_workflows from "../infrastructure/workflows.js";
 import type * as infrastructure_workpoolMonitoring from "../infrastructure/workpoolMonitoring.js";
 import type * as infrastructure_workpools from "../infrastructure/workpools.js";
 import type * as leaderboards from "../leaderboards.js";
@@ -218,6 +221,7 @@ import type * as lib_returnValidators from "../lib/returnValidators.js";
 import type * as lib_roles from "../lib/roles.js";
 import type * as lib_rowLevelSecurity from "../lib/rowLevelSecurity.js";
 import type * as lib_schemaValidators from "../lib/schemaValidators.js";
+import type * as lib_solana_cachedActions from "../lib/solana/cachedActions.js";
 import type * as lib_solana_connection from "../lib/solana/connection.js";
 import type * as lib_solana_index from "../lib/solana/index.js";
 import type * as lib_solana_tokenBalance from "../lib/solana/tokenBalance.js";
@@ -243,8 +247,8 @@ import type * as livekit_public_queries from "../livekit/public/queries.js";
 import type * as livekit_public_tokens from "../livekit/public/tokens.js";
 import type * as marketplace from "../marketplace.js";
 import type * as matchmaking from "../matchmaking.js";
-import type * as migrations from "../migrations.js";
 import type * as migrations_addLeaderboardFields from "../migrations/addLeaderboardFields.js";
+import type * as migrations_index from "../migrations/index.js";
 import type * as migrations_loadAllCards from "../migrations/loadAllCards.js";
 import type * as migrations_manualAbilities from "../migrations/manualAbilities.js";
 import type * as migrations_mergeMarketplaceBids from "../migrations/mergeMarketplaceBids.js";
@@ -321,10 +325,6 @@ import type * as tokenAnalytics_holders from "../tokenAnalytics/holders.js";
 import type * as tokenAnalytics_metrics from "../tokenAnalytics/metrics.js";
 import type * as tokenAnalytics_rollup from "../tokenAnalytics/rollup.js";
 import type * as tokenAnalytics_trades from "../tokenAnalytics/trades.js";
-import type * as tokenLaunch_approvals from "../tokenLaunch/approvals.js";
-import type * as tokenLaunch_checklist from "../tokenLaunch/checklist.js";
-import type * as tokenLaunch_config from "../tokenLaunch/config.js";
-import type * as tokenLaunch_schedule from "../tokenLaunch/schedule.js";
 import type * as treasury_policies from "../treasury/policies.js";
 import type * as treasury_transactions from "../treasury/transactions.js";
 import type * as treasury_wallets from "../treasury/wallets.js";
@@ -518,15 +518,18 @@ declare const fullApi: ApiFromModules<{
   "http/story": typeof http_story;
   "http/types": typeof http_types;
   "http/wellknown": typeof http_wellknown;
+  "infrastructure/actionCaches": typeof infrastructure_actionCaches;
   "infrastructure/actionRetrier": typeof infrastructure_actionRetrier;
   "infrastructure/aggregates": typeof infrastructure_aggregates;
   "infrastructure/auditLog": typeof infrastructure_auditLog;
   "infrastructure/crons": typeof infrastructure_crons;
+  "infrastructure/dynamicCrons": typeof infrastructure_dynamicCrons;
   "infrastructure/emailActions": typeof infrastructure_emailActions;
   "infrastructure/rateLimiters": typeof infrastructure_rateLimiters;
   "infrastructure/shardedCounters": typeof infrastructure_shardedCounters;
   "infrastructure/triggers": typeof infrastructure_triggers;
   "infrastructure/welcomeEmails": typeof infrastructure_welcomeEmails;
+  "infrastructure/workflows": typeof infrastructure_workflows;
   "infrastructure/workpoolMonitoring": typeof infrastructure_workpoolMonitoring;
   "infrastructure/workpools": typeof infrastructure_workpools;
   leaderboards: typeof leaderboards;
@@ -553,6 +556,7 @@ declare const fullApi: ApiFromModules<{
   "lib/roles": typeof lib_roles;
   "lib/rowLevelSecurity": typeof lib_rowLevelSecurity;
   "lib/schemaValidators": typeof lib_schemaValidators;
+  "lib/solana/cachedActions": typeof lib_solana_cachedActions;
   "lib/solana/connection": typeof lib_solana_connection;
   "lib/solana/index": typeof lib_solana_index;
   "lib/solana/tokenBalance": typeof lib_solana_tokenBalance;
@@ -578,8 +582,8 @@ declare const fullApi: ApiFromModules<{
   "livekit/public/tokens": typeof livekit_public_tokens;
   marketplace: typeof marketplace;
   matchmaking: typeof matchmaking;
-  migrations: typeof migrations;
   "migrations/addLeaderboardFields": typeof migrations_addLeaderboardFields;
+  "migrations/index": typeof migrations_index;
   "migrations/loadAllCards": typeof migrations_loadAllCards;
   "migrations/manualAbilities": typeof migrations_manualAbilities;
   "migrations/mergeMarketplaceBids": typeof migrations_mergeMarketplaceBids;
@@ -656,10 +660,6 @@ declare const fullApi: ApiFromModules<{
   "tokenAnalytics/metrics": typeof tokenAnalytics_metrics;
   "tokenAnalytics/rollup": typeof tokenAnalytics_rollup;
   "tokenAnalytics/trades": typeof tokenAnalytics_trades;
-  "tokenLaunch/approvals": typeof tokenLaunch_approvals;
-  "tokenLaunch/checklist": typeof tokenLaunch_checklist;
-  "tokenLaunch/config": typeof tokenLaunch_config;
-  "tokenLaunch/schedule": typeof tokenLaunch_schedule;
   "treasury/policies": typeof treasury_policies;
   "treasury/transactions": typeof treasury_transactions;
   "treasury/wallets": typeof treasury_wallets;
@@ -699,6 +699,48 @@ export declare const internal: FilterApi<
 >;
 
 export declare const components: {
+  actionCache: {
+    crons: {
+      purge: FunctionReference<
+        "mutation",
+        "internal",
+        { expiresAt?: number },
+        null
+      >;
+    };
+    lib: {
+      get: FunctionReference<
+        "query",
+        "internal",
+        { args: any; name: string; ttl: number | null },
+        { kind: "hit"; value: any } | { expiredEntry?: string; kind: "miss" }
+      >;
+      put: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          args: any;
+          expiredEntry?: string;
+          name: string;
+          ttl: number | null;
+          value: any;
+        },
+        { cacheHit: boolean; deletedExpiredEntry: boolean }
+      >;
+      remove: FunctionReference<
+        "mutation",
+        "internal",
+        { args: any; name: string },
+        null
+      >;
+      removeAll: FunctionReference<
+        "mutation",
+        "internal",
+        { batchSize?: number; before?: number; name?: string },
+        null
+      >;
+    };
+  };
   actionRetrier: {
     public: {
       cancel: FunctionReference<
@@ -999,6 +1041,143 @@ export declare const components: {
           value: any;
         },
         any
+      >;
+    };
+  };
+  crons: {
+    public: {
+      del: FunctionReference<
+        "mutation",
+        "internal",
+        { identifier: { id: string } | { name: string } },
+        null
+      >;
+      get: FunctionReference<
+        "query",
+        "internal",
+        { identifier: { id: string } | { name: string } },
+        {
+          args: Record<string, any>;
+          functionHandle: string;
+          id: string;
+          name?: string;
+          schedule:
+            | { kind: "interval"; ms: number }
+            | { cronspec: string; kind: "cron"; tz?: string };
+        } | null
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        {},
+        Array<{
+          args: Record<string, any>;
+          functionHandle: string;
+          id: string;
+          name?: string;
+          schedule:
+            | { kind: "interval"; ms: number }
+            | { cronspec: string; kind: "cron"; tz?: string };
+        }>
+      >;
+      register: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          args: Record<string, any>;
+          functionHandle: string;
+          name?: string;
+          schedule:
+            | { kind: "interval"; ms: number }
+            | { cronspec: string; kind: "cron"; tz?: string };
+        },
+        string
+      >;
+    };
+  };
+  migrations: {
+    lib: {
+      cancel: FunctionReference<
+        "mutation",
+        "internal",
+        { name: string },
+        {
+          batchSize?: number;
+          cursor?: string | null;
+          error?: string;
+          isDone: boolean;
+          latestEnd?: number;
+          latestStart: number;
+          name: string;
+          next?: Array<string>;
+          processed: number;
+          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
+        }
+      >;
+      cancelAll: FunctionReference<
+        "mutation",
+        "internal",
+        { sinceTs?: number },
+        Array<{
+          batchSize?: number;
+          cursor?: string | null;
+          error?: string;
+          isDone: boolean;
+          latestEnd?: number;
+          latestStart: number;
+          name: string;
+          next?: Array<string>;
+          processed: number;
+          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
+        }>
+      >;
+      clearAll: FunctionReference<
+        "mutation",
+        "internal",
+        { before?: number },
+        null
+      >;
+      getStatus: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; names?: Array<string> },
+        Array<{
+          batchSize?: number;
+          cursor?: string | null;
+          error?: string;
+          isDone: boolean;
+          latestEnd?: number;
+          latestStart: number;
+          name: string;
+          next?: Array<string>;
+          processed: number;
+          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
+        }>
+      >;
+      migrate: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          batchSize?: number;
+          cursor?: string | null;
+          dryRun: boolean;
+          fnHandle: string;
+          name: string;
+          next?: Array<{ fnHandle: string; name: string }>;
+          oneBatchOnly?: boolean;
+        },
+        {
+          batchSize?: number;
+          cursor?: string | null;
+          error?: string;
+          isDone: boolean;
+          latestEnd?: number;
+          latestStart: number;
+          name: string;
+          next?: Array<string>;
+          processed: number;
+          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
+        }
       >;
     };
   };
@@ -4430,6 +4609,460 @@ export declare const components: {
           | { previousAttempts: number; state: "running" }
           | { state: "finished" }
         >
+      >;
+    };
+  };
+  workflow: {
+    event: {
+      create: FunctionReference<
+        "mutation",
+        "internal",
+        { name: string; workflowId: string },
+        string
+      >;
+      send: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          eventId?: string;
+          name?: string;
+          result:
+            | { kind: "success"; returnValue: any }
+            | { error: string; kind: "failed" }
+            | { kind: "canceled" };
+          workflowId?: string;
+          workpoolOptions?: {
+            defaultRetryBehavior?: {
+              base: number;
+              initialBackoffMs: number;
+              maxAttempts: number;
+            };
+            logLevel?: "DEBUG" | "TRACE" | "INFO" | "REPORT" | "WARN" | "ERROR";
+            maxParallelism?: number;
+            retryActionsByDefault?: boolean;
+          };
+        },
+        string
+      >;
+    };
+    journal: {
+      load: FunctionReference<
+        "query",
+        "internal",
+        { shortCircuit?: boolean; workflowId: string },
+        {
+          blocked?: boolean;
+          journalEntries: Array<{
+            _creationTime: number;
+            _id: string;
+            step:
+              | {
+                  args: any;
+                  argsSize: number;
+                  completedAt?: number;
+                  functionType: "query" | "mutation" | "action";
+                  handle: string;
+                  inProgress: boolean;
+                  kind?: "function";
+                  name: string;
+                  runResult?:
+                    | { kind: "success"; returnValue: any }
+                    | { error: string; kind: "failed" }
+                    | { kind: "canceled" };
+                  startedAt: number;
+                  workId?: string;
+                }
+              | {
+                  args: any;
+                  argsSize: number;
+                  completedAt?: number;
+                  handle: string;
+                  inProgress: boolean;
+                  kind: "workflow";
+                  name: string;
+                  runResult?:
+                    | { kind: "success"; returnValue: any }
+                    | { error: string; kind: "failed" }
+                    | { kind: "canceled" };
+                  startedAt: number;
+                  workflowId?: string;
+                }
+              | {
+                  args: { eventId?: string };
+                  argsSize: number;
+                  completedAt?: number;
+                  eventId?: string;
+                  inProgress: boolean;
+                  kind: "event";
+                  name: string;
+                  runResult?:
+                    | { kind: "success"; returnValue: any }
+                    | { error: string; kind: "failed" }
+                    | { kind: "canceled" };
+                  startedAt: number;
+                };
+            stepNumber: number;
+            workflowId: string;
+          }>;
+          logLevel: "DEBUG" | "TRACE" | "INFO" | "REPORT" | "WARN" | "ERROR";
+          ok: boolean;
+          workflow: {
+            _creationTime: number;
+            _id: string;
+            args: any;
+            generationNumber: number;
+            logLevel?: any;
+            name?: string;
+            onComplete?: { context?: any; fnHandle: string };
+            runResult?:
+              | { kind: "success"; returnValue: any }
+              | { error: string; kind: "failed" }
+              | { kind: "canceled" };
+            startedAt?: any;
+            state?: any;
+            workflowHandle: string;
+          };
+        }
+      >;
+      startSteps: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          generationNumber: number;
+          steps: Array<{
+            retry?:
+              | boolean
+              | { base: number; initialBackoffMs: number; maxAttempts: number };
+            schedulerOptions?: { runAt?: number } | { runAfter?: number };
+            step:
+              | {
+                  args: any;
+                  argsSize: number;
+                  completedAt?: number;
+                  functionType: "query" | "mutation" | "action";
+                  handle: string;
+                  inProgress: boolean;
+                  kind?: "function";
+                  name: string;
+                  runResult?:
+                    | { kind: "success"; returnValue: any }
+                    | { error: string; kind: "failed" }
+                    | { kind: "canceled" };
+                  startedAt: number;
+                  workId?: string;
+                }
+              | {
+                  args: any;
+                  argsSize: number;
+                  completedAt?: number;
+                  handle: string;
+                  inProgress: boolean;
+                  kind: "workflow";
+                  name: string;
+                  runResult?:
+                    | { kind: "success"; returnValue: any }
+                    | { error: string; kind: "failed" }
+                    | { kind: "canceled" };
+                  startedAt: number;
+                  workflowId?: string;
+                }
+              | {
+                  args: { eventId?: string };
+                  argsSize: number;
+                  completedAt?: number;
+                  eventId?: string;
+                  inProgress: boolean;
+                  kind: "event";
+                  name: string;
+                  runResult?:
+                    | { kind: "success"; returnValue: any }
+                    | { error: string; kind: "failed" }
+                    | { kind: "canceled" };
+                  startedAt: number;
+                };
+          }>;
+          workflowId: string;
+          workpoolOptions?: {
+            defaultRetryBehavior?: {
+              base: number;
+              initialBackoffMs: number;
+              maxAttempts: number;
+            };
+            logLevel?: "DEBUG" | "TRACE" | "INFO" | "REPORT" | "WARN" | "ERROR";
+            maxParallelism?: number;
+            retryActionsByDefault?: boolean;
+          };
+        },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          step:
+            | {
+                args: any;
+                argsSize: number;
+                completedAt?: number;
+                functionType: "query" | "mutation" | "action";
+                handle: string;
+                inProgress: boolean;
+                kind?: "function";
+                name: string;
+                runResult?:
+                  | { kind: "success"; returnValue: any }
+                  | { error: string; kind: "failed" }
+                  | { kind: "canceled" };
+                startedAt: number;
+                workId?: string;
+              }
+            | {
+                args: any;
+                argsSize: number;
+                completedAt?: number;
+                handle: string;
+                inProgress: boolean;
+                kind: "workflow";
+                name: string;
+                runResult?:
+                  | { kind: "success"; returnValue: any }
+                  | { error: string; kind: "failed" }
+                  | { kind: "canceled" };
+                startedAt: number;
+                workflowId?: string;
+              }
+            | {
+                args: { eventId?: string };
+                argsSize: number;
+                completedAt?: number;
+                eventId?: string;
+                inProgress: boolean;
+                kind: "event";
+                name: string;
+                runResult?:
+                  | { kind: "success"; returnValue: any }
+                  | { error: string; kind: "failed" }
+                  | { kind: "canceled" };
+                startedAt: number;
+              };
+          stepNumber: number;
+          workflowId: string;
+        }>
+      >;
+    };
+    workflow: {
+      cancel: FunctionReference<
+        "mutation",
+        "internal",
+        { workflowId: string },
+        null
+      >;
+      cleanup: FunctionReference<
+        "mutation",
+        "internal",
+        { workflowId: string },
+        boolean
+      >;
+      complete: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          generationNumber: number;
+          runResult:
+            | { kind: "success"; returnValue: any }
+            | { error: string; kind: "failed" }
+            | { kind: "canceled" };
+          workflowId: string;
+        },
+        null
+      >;
+      create: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          maxParallelism?: number;
+          onComplete?: { context?: any; fnHandle: string };
+          startAsync?: boolean;
+          workflowArgs: any;
+          workflowHandle: string;
+          workflowName: string;
+        },
+        string
+      >;
+      getStatus: FunctionReference<
+        "query",
+        "internal",
+        { workflowId: string },
+        {
+          inProgress: Array<{
+            _creationTime: number;
+            _id: string;
+            step:
+              | {
+                  args: any;
+                  argsSize: number;
+                  completedAt?: number;
+                  functionType: "query" | "mutation" | "action";
+                  handle: string;
+                  inProgress: boolean;
+                  kind?: "function";
+                  name: string;
+                  runResult?:
+                    | { kind: "success"; returnValue: any }
+                    | { error: string; kind: "failed" }
+                    | { kind: "canceled" };
+                  startedAt: number;
+                  workId?: string;
+                }
+              | {
+                  args: any;
+                  argsSize: number;
+                  completedAt?: number;
+                  handle: string;
+                  inProgress: boolean;
+                  kind: "workflow";
+                  name: string;
+                  runResult?:
+                    | { kind: "success"; returnValue: any }
+                    | { error: string; kind: "failed" }
+                    | { kind: "canceled" };
+                  startedAt: number;
+                  workflowId?: string;
+                }
+              | {
+                  args: { eventId?: string };
+                  argsSize: number;
+                  completedAt?: number;
+                  eventId?: string;
+                  inProgress: boolean;
+                  kind: "event";
+                  name: string;
+                  runResult?:
+                    | { kind: "success"; returnValue: any }
+                    | { error: string; kind: "failed" }
+                    | { kind: "canceled" };
+                  startedAt: number;
+                };
+            stepNumber: number;
+            workflowId: string;
+          }>;
+          logLevel: "DEBUG" | "TRACE" | "INFO" | "REPORT" | "WARN" | "ERROR";
+          workflow: {
+            _creationTime: number;
+            _id: string;
+            args: any;
+            generationNumber: number;
+            logLevel?: any;
+            name?: string;
+            onComplete?: { context?: any; fnHandle: string };
+            runResult?:
+              | { kind: "success"; returnValue: any }
+              | { error: string; kind: "failed" }
+              | { kind: "canceled" };
+            startedAt?: any;
+            state?: any;
+            workflowHandle: string;
+          };
+        }
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        {
+          order: "asc" | "desc";
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            args: any;
+            context?: any;
+            name?: string;
+            runResult?:
+              | { kind: "success"; returnValue: any }
+              | { error: string; kind: "failed" }
+              | { kind: "canceled" };
+            workflowId: string;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
+      >;
+      listByName: FunctionReference<
+        "query",
+        "internal",
+        {
+          name: string;
+          order: "asc" | "desc";
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            args: any;
+            context?: any;
+            name?: string;
+            runResult?:
+              | { kind: "success"; returnValue: any }
+              | { error: string; kind: "failed" }
+              | { kind: "canceled" };
+            workflowId: string;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
+      >;
+      listSteps: FunctionReference<
+        "query",
+        "internal",
+        {
+          order: "asc" | "desc";
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+          workflowId: string;
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            args: any;
+            completedAt?: number;
+            eventId?: string;
+            kind: "function" | "workflow" | "event";
+            name: string;
+            nestedWorkflowId?: string;
+            runResult?:
+              | { kind: "success"; returnValue: any }
+              | { error: string; kind: "failed" }
+              | { kind: "canceled" };
+            startedAt: number;
+            stepId: string;
+            stepNumber: number;
+            workId?: string;
+            workflowId: string;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
       >;
     };
   };
