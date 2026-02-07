@@ -185,7 +185,7 @@ function StreamOverlayContent() {
           ) : (
             <div className="stream-overlay__waiting">
               <div className="stream-overlay__waiting-content">
-                <h2>{session.entityName}</h2>
+                <h2>{session.entityName || "AI Agent"}</h2>
                 <p>Waiting for game to start...</p>
                 <div className="pulse-ring" />
               </div>
