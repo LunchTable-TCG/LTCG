@@ -1,8 +1,9 @@
 import { EgressClient, EncodingOptionsPreset, StreamProtocol } from "livekit-server-sdk";
 
-const LIVEKIT_URL = process.env.LIVEKIT_URL!;
-const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY!;
-const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET!;
+// Strip any trailing newlines from environment variables (Vercel CLI bug adds \n)
+const LIVEKIT_URL = process.env.LIVEKIT_URL?.trim() || "";
+const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY?.trim() || "";
+const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET?.trim() || "";
 
 /**
  * Get the LiveKit API base URL (convert wss:// to https://)
