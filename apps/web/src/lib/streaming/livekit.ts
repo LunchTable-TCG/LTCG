@@ -15,7 +15,14 @@ function getApiUrl(): string {
  * Get or create EgressClient instance
  */
 function getEgressClient(): EgressClient {
-  return new EgressClient(getApiUrl(), LIVEKIT_API_KEY, LIVEKIT_API_SECRET);
+  const url = getApiUrl();
+  console.log("[LiveKit] Creating EgressClient:", {
+    url,
+    apiKeyLength: LIVEKIT_API_KEY?.length || 0,
+    apiSecretLength: LIVEKIT_API_SECRET?.length || 0,
+    apiKeyPrefix: LIVEKIT_API_KEY?.substring(0, 10),
+  });
+  return new EgressClient(url, LIVEKIT_API_KEY, LIVEKIT_API_SECRET);
 }
 
 /**
