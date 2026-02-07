@@ -6,7 +6,7 @@
  */
 
 import { v } from "convex/values";
-import { api } from "../../_generated/api";
+import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { internalMutation, mutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
@@ -240,7 +240,7 @@ export const endTurn = mutation({
     });
 
     // Trigger turn_start webhooks
-    await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+    await ctx.runMutation(internal.gameplay.webhooks.triggerWebhooks, {
       event: "turn_start",
       gameId: lobby.gameId ?? "",
       lobbyId: args.lobbyId,
@@ -478,7 +478,7 @@ export const endTurnInternal = internalMutation({
     });
 
     // Trigger turn_start webhooks
-    await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+    await ctx.runMutation(internal.gameplay.webhooks.triggerWebhooks, {
       event: "turn_start",
       gameId: args.gameId,
       lobbyId: gameState.lobbyId,

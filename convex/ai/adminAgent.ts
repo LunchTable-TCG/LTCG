@@ -37,7 +37,7 @@ interface PlayerProfile {
   type?: string;
   eloRating?: number;
   seasonRating?: number;
-  rank?: string;
+  rank?: number;
   percentile?: number;
   peakRating?: number;
   stats?: Record<string, unknown>;
@@ -124,7 +124,8 @@ const searchPlayers = createTool({
     limit: z.number().optional().default(10).describe("Maximum results to return"),
   }),
   handler: async (ctx: ToolCtx, args: { query: string; limit: number }) => {
-    const players = (await ctx.runQuery(api.admin.admin.listPlayers, {
+    // biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround for TS2589
+    const players = (await ctx.runQuery((api as any).admin.admin.listPlayers, {
       limit: args.limit,
     })) as PlayerListItem[];
 
@@ -367,7 +368,7 @@ const recommendBanPlayer = createTool({
     // Get recent audit logs for this player
     const auditLogs = (await ctx.runQuery(api.admin.admin.getAuditLog, {
       limit: 20,
-      targetUserId: args.playerId,
+      targetUserId: args.playerId as Id<"users">,
     })) as AuditLogResult;
 
     // Analyze behavior patterns
@@ -457,7 +458,7 @@ const recommendGrantCurrency = createTool({
     const recentGrants = (await ctx.runQuery(api.admin.admin.getAuditLog, {
       limit: 50,
       action: "grant_currency",
-      targetUserId: args.playerId,
+      targetUserId: args.playerId as Id<"users">,
     })) as AuditLogResult;
 
     const grantsLast30Days = recentGrants.logs.filter(

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { api, internal } from "../../_generated/api";
+import { internal } from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../../economy/economy";
@@ -328,7 +328,7 @@ async function startGameFromLobby(
   });
 
   // Trigger game_start webhooks
-  await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+  await ctx.runMutation(internal.gameplay.webhooks.triggerWebhooks, {
     event: "game_start",
     gameId,
     lobbyId,

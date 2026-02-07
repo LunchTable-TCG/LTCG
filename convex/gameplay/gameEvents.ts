@@ -6,7 +6,7 @@
  */
 
 import { v } from "convex/values";
-import { api } from "../_generated/api";
+import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
@@ -437,7 +437,7 @@ export async function recordGameEndHelper(
   });
 
   // Trigger game_end webhooks
-  await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+  await ctx.runMutation(internal.gameplay.webhooks.triggerWebhooks, {
     event: "game_end",
     gameId: params.gameId,
     lobbyId: params.lobbyId,
