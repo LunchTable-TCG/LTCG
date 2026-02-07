@@ -16,15 +16,26 @@ import { internalMutation } from "../functions";
 export const getRecentDecisionsForStream = query({
   args: {
     agentId: v.id("agents"),
+    gameId: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const limit = args.limit ?? 3;
-    const decisions = await ctx.db
-      .query("agentDecisions")
-      .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))
-      .order("desc")
-      .take(limit);
+    const limit = args.limit ?? 5;
+
+    // If gameId provided, filter to current game only (prevents stale decisions)
+    const decisions = args.gameId
+      ? await ctx.db
+          .query("agentDecisions")
+          .withIndex("by_agent_game", (q) =>
+            q.eq("agentId", args.agentId).eq("gameId", args.gameId as string)
+          )
+          .order("desc")
+          .take(limit)
+      : await ctx.db
+          .query("agentDecisions")
+          .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))
+          .order("desc")
+          .take(limit);
 
     // Return only necessary fields for streaming display
     return decisions.map((d) => ({

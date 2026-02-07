@@ -71,10 +71,13 @@ function StreamOverlayContent() {
     session?.currentLobbyId && !isStoryGame ? { lobbyId: session.currentLobbyId as Id<"gameLobbies">, limit: 10 } : "skip"
   );
 
-  // Get agent decisions (for agent streams)
+  // Get agent decisions (for agent streams) — filter by current game to avoid stale decisions
+  const currentGameId = gameState?.gameId;
   const decisions = useQuery(
     api.agents.decisions.getRecentDecisionsForStream,
-    session?.agentId ? { agentId: session.agentId, limit: 3 } : "skip"
+    session?.agentId
+      ? { agentId: session.agentId, gameId: currentGameId || undefined, limit: 5 }
+      : "skip"
   );
 
   // Validate access code on mount
