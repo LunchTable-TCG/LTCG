@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { api, internal } from "../../_generated/api";
-import type { Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../../economy/economy";
 import { internalMutation, mutation } from "../../functions";
@@ -226,6 +226,133 @@ async function validateUserCanCreateGameInternal(
   };
 }
 
+/**
+ * Start a game from a validated lobby join.
+ * Shared logic used by joinLobby, joinLobbyByCode, and joinLobbyInternal.
+ *
+ * Handles: opponent rank calculation, game ID generation, first player determination,
+ * race condition recheck, wager processing, lobby activation, presence updates,
+ * game state initialization, event recording, webhooks, and agent stream starts.
+ */
+async function startGameFromLobby(
+  ctx: MutationCtx,
+  params: {
+    lobbyId: Id<"gameLobbies">;
+    lobby: Doc<"gameLobbies">;
+    userId: Id<"users">;
+    username: string;
+    rankedElo: number;
+    casualRating: number;
+  }
+) {
+  const { lobbyId, lobby, userId, username, rankedElo, casualRating } = params;
+
+  // Calculate opponent rank based on game mode
+  const opponentRating = lobby.mode === "ranked" ? rankedElo : casualRating;
+  const opponentRank = getRankFromRating(opponentRating);
+
+  // Generate game ID
+  const gameId = crypto.randomUUID();
+
+  // Deterministically decide who goes first based on game ID
+  // This ensures consistent results if the mutation is retried
+  const seed = `${gameId}-first-turn`;
+  const hash = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const goesFirst = hash % 2 === 0 ? lobby.hostId : userId;
+  const now = Date.now();
+
+  // CRITICAL: Re-check lobby hasn't been claimed by another player
+  // Prevents race condition where two players pass validation simultaneously
+  // For challenge lobbies, opponentId is pre-set — allow the designated opponent to join
+  const lobbyRecheck = await ctx.db.get(lobbyId);
+  if (
+    !lobbyRecheck ||
+    lobbyRecheck.status !== "waiting" ||
+    (lobbyRecheck.opponentId && lobbyRecheck.opponentId !== userId)
+  ) {
+    throw createError(ErrorCode.GAME_LOBBY_FULL, {
+      reason: "This lobby is no longer available",
+    });
+  }
+
+  // Handle wager payment for challenge lobbies
+  if (lobbyRecheck.wagerAmount && lobbyRecheck.wagerAmount > 0) {
+    await adjustPlayerCurrencyHelper(ctx, {
+      userId,
+      goldDelta: -lobbyRecheck.wagerAmount,
+      transactionType: "wager",
+      description: `Wager for challenge against ${lobbyRecheck.hostUsername}`,
+      metadata: {
+        lobbyId,
+        opponentUsername: lobbyRecheck.hostUsername,
+        mode: lobbyRecheck.mode,
+      },
+    });
+  }
+
+  // Update lobby with opponent info and start game
+  await ctx.db.patch(lobbyId, {
+    opponentId: userId,
+    opponentUsername: username,
+    opponentRank,
+    status: "active",
+    startedAt: now,
+    gameId,
+    currentTurnPlayerId: goesFirst,
+    turnStartedAt: now,
+    lastMoveAt: now,
+    turnNumber: 1,
+  });
+
+  // Update both players' presence to in_game
+  await updatePresenceInternal(ctx, userId, username, "in_game");
+  await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "in_game");
+
+  // Initialize game state for reconnection
+  await initializeGameStateHelper(ctx, {
+    lobbyId,
+    gameId,
+    hostId: lobby.hostId,
+    opponentId: userId,
+    currentTurnPlayerId: goesFirst,
+  });
+
+  // Record game start event for spectators
+  await recordGameStartHelper(ctx, {
+    lobbyId,
+    gameId,
+    hostId: lobby.hostId,
+    hostUsername: lobby.hostUsername,
+    opponentId: userId,
+    opponentUsername: username,
+  });
+
+  // Trigger game_start webhooks
+  await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
+    event: "game_start",
+    gameId,
+    lobbyId,
+    turnNumber: 1,
+    playerId: goesFirst,
+    additionalData: {
+      hostId: lobby.hostId,
+      hostUsername: lobby.hostUsername,
+      opponentId: userId,
+      opponentUsername: username,
+      mode: lobby.mode,
+    },
+  });
+
+  // Start agent streams for players with auto-streaming enabled
+  await startAgentStreamsForGame(ctx, lobbyId, lobby.hostId, userId);
+
+  return {
+    gameId,
+    lobbyId,
+    opponentUsername: lobby.hostUsername,
+  };
+}
+
 // ============================================================================
 // LOBBY MUTATIONS
 // ============================================================================
@@ -439,140 +566,27 @@ export const joinLobby = mutation({
         }
       }
 
-      // Calculate opponent rank
-      const opponentRating = lobby.mode === "ranked" ? rankedElo : casualRating;
-      const opponentRank = getRankFromRating(opponentRating);
-
-      // Generate game ID
-      const gameId = crypto.randomUUID();
-      logger.info("Generated game ID", { ...traceCtx, gameId });
-
-      // Deterministically decide who goes first based on game ID
-      // This ensures consistent results if the mutation is retried
-      const seed = `${gameId}-first-turn`;
-      const hash = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const goesFirst = hash % 2 === 0 ? lobby.hostId : userId;
-      const now = Date.now();
-
-      logger.info("Determined first player", {
-        ...traceCtx,
-        gameId,
-        goesFirst,
-        isHost: goesFirst === lobby.hostId,
-      });
-
-      // CRITICAL: Re-check lobby hasn't been claimed by another player
-      // This prevents race condition where two players pass validation simultaneously
-      // Convex OCC will retry if concurrent writes, but we need this check for sequential writes
-      // For challenge lobbies, opponentId is pre-set - allow the designated opponent to join
-      const lobbyRecheck = await ctx.db.get(args.lobbyId);
-      if (
-        !lobbyRecheck ||
-        lobbyRecheck.status !== "waiting" ||
-        (lobbyRecheck.opponentId && lobbyRecheck.opponentId !== userId)
-      ) {
-        logger.warn("Lobby no longer available (claimed by another player)", traceCtx);
-        throw createError(ErrorCode.GAME_LOBBY_FULL, {
-          reason: "This lobby is no longer available",
-        });
-      }
-
-      // Handle wager payment for challenge lobbies
-      // If the lobby has a wager, debit the joining player's gold
-      if (lobbyRecheck.wagerAmount && lobbyRecheck.wagerAmount > 0) {
-        logger.info("Processing wager for challenge lobby", {
-          ...traceCtx,
-          wagerAmount: lobbyRecheck.wagerAmount,
-        });
-        await adjustPlayerCurrencyHelper(ctx, {
-          userId,
-          goldDelta: -lobbyRecheck.wagerAmount,
-          transactionType: "wager",
-          description: `Wager for challenge against ${lobbyRecheck.hostUsername}`,
-          metadata: {
-            lobbyId: args.lobbyId,
-            opponentUsername: lobbyRecheck.hostUsername,
-            mode: lobbyRecheck.mode,
-          },
-        });
-      }
-
-      // Update lobby with opponent info and start game
-      logger.dbOperation("patch", "gameLobbies", { ...traceCtx, gameId });
-      await ctx.db.patch(args.lobbyId, {
-        opponentId: userId,
-        opponentUsername: username,
-        opponentRank,
-        status: "active",
-        startedAt: now,
-        gameId,
-        currentTurnPlayerId: goesFirst,
-        turnStartedAt: now,
-        lastMoveAt: now,
-        turnNumber: 1,
-      });
-
-      logger.info("Lobby updated to active status", { ...traceCtx, gameId });
-
-      // Update both players' presence to in_game
-      await updatePresenceInternal(ctx, userId, username, "in_game");
-      await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "in_game");
-      logger.debug("Updated player presence for both players", traceCtx);
-
-      // Initialize game state for reconnection
-      logger.debug("Initializing game state", { ...traceCtx, gameId });
-      await initializeGameStateHelper(ctx, {
+      // Start game using shared helper
+      const result = await startGameFromLobby(ctx, {
         lobbyId: args.lobbyId,
-        gameId,
-        hostId: lobby.hostId,
-        opponentId: userId,
-        currentTurnPlayerId: goesFirst,
+        lobby,
+        userId,
+        username,
+        rankedElo,
+        casualRating,
       });
 
-      // Record game start event for spectators
-      await recordGameStartHelper(ctx, {
-        lobbyId: args.lobbyId,
-        gameId,
-        hostId: lobby.hostId,
-        hostUsername: lobby.hostUsername,
-        opponentId: userId,
-        opponentUsername: username,
-      });
-
-      // Trigger game_start webhooks
-      await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
-        event: "game_start",
-        gameId,
-        lobbyId: args.lobbyId,
-        turnNumber: 1,
-        playerId: goesFirst,
-        additionalData: {
-          hostId: lobby.hostId,
-          hostUsername: lobby.hostUsername,
-          opponentId: userId,
-          opponentUsername: username,
-          mode: lobby.mode,
-        },
-      });
-
-      // Start agent streams for players with auto-streaming enabled
-      await startAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, userId);
-
-      logMatchmaking("lobby_join_success", userId, { ...traceCtx, gameId, hostId: lobby.hostId });
+      logMatchmaking("lobby_join_success", userId, { ...traceCtx, gameId: result.gameId, hostId: lobby.hostId });
       logger.info("Game started successfully", {
         ...traceCtx,
-        gameId,
+        gameId: result.gameId,
         hostId: lobby.hostId,
         opponentId: userId,
       });
 
-      performance.end(opId, { userId, lobbyId: args.lobbyId, gameId });
+      performance.end(opId, { userId, lobbyId: args.lobbyId, gameId: result.gameId });
 
-      return {
-        gameId,
-        lobbyId: args.lobbyId,
-        opponentUsername: lobby.hostUsername,
-      };
+      return result;
     } catch (error) {
       logger.error("Failed to join lobby", error as Error, { userId, lobbyId: args.lobbyId });
       logMatchmaking("lobby_join_failed", userId, {
@@ -618,15 +632,12 @@ export const joinLobbyByCode = mutation({
       });
     }
 
-    // Use joinLobby logic
-    // Re-validate and join
-    const {
-      userId,
-      username,
-      deckArchetype: _deckArchetype,
-      rankedElo,
-      casualRating,
-    } = await validateUserCanCreateGame(ctx);
+    // Validate lobby status and capacity
+    validateLobbyStatus(lobby, ["waiting"]);
+    validateLobbyCapacity(lobby, 2);
+
+    // Validate user
+    const { userId, username, rankedElo, casualRating } = await validateUserCanCreateGame(ctx);
 
     // SECURITY: Rate limit lobby joins to prevent spam
     await checkRateLimitWrapper(ctx, "JOIN_LOBBY", userId as string);
@@ -638,88 +649,25 @@ export const joinLobbyByCode = mutation({
       });
     }
 
-    // Check lobby doesn't already have opponent
-    if (lobby.opponentId) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "This lobby is no longer available",
-      });
+    // Validate rating for ranked matches
+    if (lobby.mode === "ranked" && lobby.maxRatingDiff) {
+      const ratingDiff = Math.abs(lobby.hostRating - rankedElo);
+      if (ratingDiff > lobby.maxRatingDiff) {
+        throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+          reason: "Your rating is too far from the host's rating for ranked match",
+        });
+      }
     }
 
-    // Calculate opponent rank
-    const opponentRating = lobby.mode === "ranked" ? rankedElo : casualRating;
-    const opponentRank = getRankFromRating(opponentRating);
-
-    // Generate game ID
-    const gameId = crypto.randomUUID();
-
-    // Deterministically decide who goes first based on game ID
-    // This ensures consistent results if the mutation is retried
-    const seed = `${gameId}-first-turn`;
-    const hash = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const goesFirst = hash % 2 === 0 ? lobby.hostId : userId;
-    const now = Date.now();
-
-    // Update lobby
-    await ctx.db.patch(lobby._id, {
-      opponentId: userId,
-      opponentUsername: username,
-      opponentRank,
-      status: "active",
-      startedAt: now,
-      gameId,
-      currentTurnPlayerId: goesFirst,
-      turnStartedAt: now,
-      lastMoveAt: now,
-      turnNumber: 1,
-    });
-
-    // Update both players' presence
-    await updatePresenceInternal(ctx, userId, username, "in_game");
-    await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "in_game");
-
-    // Initialize game state for reconnection
-    await initializeGameStateHelper(ctx, {
+    // Start game using shared helper
+    return startGameFromLobby(ctx, {
       lobbyId: lobby._id,
-      gameId,
-      hostId: lobby.hostId,
-      opponentId: userId,
-      currentTurnPlayerId: goesFirst,
+      lobby,
+      userId,
+      username,
+      rankedElo,
+      casualRating,
     });
-
-    // Record game start event for spectators
-    await recordGameStartHelper(ctx, {
-      lobbyId: lobby._id,
-      gameId,
-      hostId: lobby.hostId,
-      hostUsername: lobby.hostUsername,
-      opponentId: userId,
-      opponentUsername: username,
-    });
-
-    // Trigger game_start webhooks
-    await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
-      event: "game_start",
-      gameId,
-      lobbyId: lobby._id,
-      turnNumber: 1,
-      playerId: goesFirst,
-      additionalData: {
-        hostId: lobby.hostId,
-        hostUsername: lobby.hostUsername,
-        opponentId: userId,
-        opponentUsername: username,
-        mode: lobby.mode,
-      },
-    });
-
-    // Start agent streams for players with auto-streaming enabled
-    await startAgentStreamsForGame(ctx, lobby._id, lobby.hostId, userId);
-
-    return {
-      gameId,
-      lobbyId: lobby._id,
-      opponentUsername: lobby.hostUsername,
-    };
   },
 });
 
@@ -1090,121 +1038,32 @@ export const joinLobbyInternal = internalMutation({
         }
       }
 
-      // Calculate opponent rank
-      const opponentRating = lobby.mode === "ranked" ? rankedElo : casualRating;
-      const opponentRank = getRankFromRating(opponentRating);
-
-      // Generate game ID
-      const gameId = crypto.randomUUID();
-      logger.info("Generated game ID", { ...traceCtx, gameId });
-
-      // Deterministically decide who goes first based on game ID
-      const seed = `${gameId}-first-turn`;
-      const hash = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const goesFirst = hash % 2 === 0 ? lobby.hostId : args.userId;
-      const now = Date.now();
-
-      logger.info("Determined first player", {
-        ...traceCtx,
-        gameId,
-        goesFirst,
-        isHost: goesFirst === lobby.hostId,
-      });
-
-      // CRITICAL: Re-check lobby hasn't been claimed by another player
-      // This prevents race condition where two players pass validation simultaneously
-      // For challenge lobbies, opponentId is pre-set - allow the designated opponent to join
-      const lobbyRecheck = await ctx.db.get(args.lobbyId);
-      if (
-        !lobbyRecheck ||
-        lobbyRecheck.status !== "waiting" ||
-        (lobbyRecheck.opponentId && lobbyRecheck.opponentId !== args.userId)
-      ) {
-        logger.warn("Lobby no longer available (claimed by another player)", traceCtx);
-        throw createError(ErrorCode.GAME_LOBBY_FULL, {
-          reason: "This lobby is no longer available",
-        });
-      }
-
-      // Update lobby with opponent info and start game
-      logger.dbOperation("patch", "gameLobbies", { ...traceCtx, gameId });
-      await ctx.db.patch(args.lobbyId, {
-        opponentId: args.userId,
-        opponentUsername: username,
-        opponentRank,
-        status: "active",
-        startedAt: now,
-        gameId,
-        currentTurnPlayerId: goesFirst,
-        turnStartedAt: now,
-        lastMoveAt: now,
-        turnNumber: 1,
-      });
-
-      logger.info("Lobby updated to active status", { ...traceCtx, gameId });
-
-      // Update both players' presence to in_game
-      await updatePresenceInternal(ctx, args.userId, username, "in_game");
-      await updatePresenceInternal(ctx, lobbyRecheck.hostId, lobbyRecheck.hostUsername, "in_game");
-      logger.debug("Updated player presence for both players", traceCtx);
-
-      // Initialize game state for reconnection
-      logger.debug("Initializing game state", { ...traceCtx, gameId });
-      await initializeGameStateHelper(ctx, {
+      // Start game using shared helper
+      const result = await startGameFromLobby(ctx, {
         lobbyId: args.lobbyId,
-        gameId,
-        hostId: lobby.hostId,
-        opponentId: args.userId,
-        currentTurnPlayerId: goesFirst,
+        lobby,
+        userId: args.userId,
+        username,
+        rankedElo,
+        casualRating,
       });
-
-      // Record game start event for spectators
-      await recordGameStartHelper(ctx, {
-        lobbyId: args.lobbyId,
-        gameId,
-        hostId: lobby.hostId,
-        hostUsername: lobby.hostUsername,
-        opponentId: args.userId,
-        opponentUsername: username,
-      });
-
-      // Trigger game_start webhooks
-      await ctx.runMutation(api.gameplay.webhooks.triggerWebhooks, {
-        event: "game_start",
-        gameId,
-        lobbyId: args.lobbyId,
-        turnNumber: 1,
-        playerId: goesFirst,
-        additionalData: {
-          hostId: lobby.hostId,
-          hostUsername: lobby.hostUsername,
-          opponentId: args.userId,
-          opponentUsername: username,
-          mode: lobby.mode,
-        },
-      });
-
-      // Start agent streams for players with auto-streaming enabled
-      await startAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, args.userId);
 
       logMatchmaking("lobby_join_success", args.userId, {
         ...traceCtx,
-        gameId,
+        gameId: result.gameId,
         hostId: lobby.hostId,
       });
       logger.info("Game started successfully", {
         ...traceCtx,
-        gameId,
+        gameId: result.gameId,
         hostId: lobby.hostId,
         opponentId: args.userId,
       });
 
-      performance.end(opId, { userId: args.userId, lobbyId: args.lobbyId, gameId });
+      performance.end(opId, { userId: args.userId, lobbyId: args.lobbyId, gameId: result.gameId });
 
       return {
-        gameId,
-        lobbyId: args.lobbyId,
-        opponentUsername: lobby.hostUsername,
+        ...result,
         mode: lobby.mode,
       };
     } catch (error) {

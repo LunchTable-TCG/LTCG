@@ -151,6 +151,7 @@ async function canUseSale(
  */
 export const getActiveSales = query({
   args: {},
+  returns: v.array(v.any()),
   handler: async (ctx) => {
     const now = Date.now();
 
@@ -172,6 +173,7 @@ export const getSalesForProduct = query({
   args: {
     productId: v.string(),
   },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     const now = Date.now();
 
@@ -199,6 +201,20 @@ export const getDiscountedPrice = query({
   args: {
     productId: v.string(),
   },
+  returns: v.union(
+    v.null(),
+    v.object({
+      originalGold: v.optional(v.number()),
+      originalGems: v.optional(v.number()),
+      discountedGold: v.optional(v.number()),
+      discountedGems: v.optional(v.number()),
+      discountPercent: v.number(),
+      saleId: v.string(),
+      saleName: v.string(),
+      bonusCards: v.optional(v.number()),
+      bonusGems: v.optional(v.number()),
+    })
+  ),
   handler: async (ctx, args): Promise<DiscountedPrice | null> => {
     // Get the product
     const product = await ctx.db
@@ -254,6 +270,7 @@ export const getDiscountedPrice = query({
  */
 export const getAvailableSalesForUser = query({
   args: {},
+  returns: v.array(v.any()),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     const now = Date.now();
@@ -284,6 +301,7 @@ export const getSaleUsageHistory = query({
   args: {
     limit: v.optional(v.number()),
   },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     const limit = args.limit ?? 20;
@@ -312,6 +330,7 @@ export const recordSaleUsage = mutation({
     originalPrice: v.number(),
     discountedPrice: v.number(),
   },
+  returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
 

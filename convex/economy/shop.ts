@@ -31,6 +31,7 @@ import { adjustPlayerCurrencyHelper } from "./economy";
  */
 export const getShopProducts = query({
   args: {},
+  returns: v.array(v.any()),
   handler: async (ctx) => {
     const products = await ctx.db
       .query("shopProducts")
@@ -55,6 +56,13 @@ export const getPackOpeningHistory = query({
   args: {
     page: v.optional(v.number()),
   },
+  returns: v.object({
+    history: v.array(v.any()),
+    page: v.number(),
+    pageSize: v.number(),
+    total: v.number(),
+    hasMore: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     const page = args.page ?? 1;

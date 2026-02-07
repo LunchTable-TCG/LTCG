@@ -103,6 +103,11 @@ async function fetchTokenPriceFromOracle(): Promise<number> {
  */
 export const getTokenPrice = action({
   args: {},
+  returns: v.object({
+    usdCents: v.number(),
+    cachedAt: v.number(),
+    fresh: v.boolean(),
+  }),
   handler: async () => {
     const now = Date.now();
 
@@ -137,6 +142,22 @@ export const getTokenPrice = action({
  */
 export const getGemPackages = query({
   args: {},
+  returns: v.array(
+    v.object({
+      packageId: v.optional(v.string()),
+      name: v.string(),
+      gems: v.number(),
+      usdCents: v.optional(v.number()),
+      usdPrice: v.optional(v.number()),
+      elizaOSPrice: v.number(),
+      elizaOSDiscountPercent: v.number(),
+      bonusPercent: v.optional(v.number()),
+      isActive: v.boolean(),
+      sortOrder: v.number(),
+      _id: v.optional(v.id("gemPackages")),
+      _creationTime: v.optional(v.number()),
+    })
+  ),
   handler: async (ctx) => {
     // Get packages from database if seeded, otherwise use constants
     const dbPackages = await ctx.db
@@ -178,6 +199,7 @@ export const getGemPurchaseHistory = query({
   args: {
     limit: v.optional(v.number()),
   },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     const limit = args.limit ?? 20;
@@ -195,6 +217,7 @@ export const getGemPurchaseHistory = query({
  */
 export const getPendingPurchases = query({
   args: {},
+  returns: v.array(v.any()),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
@@ -221,6 +244,11 @@ export const createPendingPurchase = mutation({
     tokenPriceUsd: v.number(),
     expectedSignature: v.optional(v.string()),
   },
+  returns: v.object({
+    purchaseId: v.id("tokenGemPurchases"),
+    gemsToReceive: v.number(),
+    expiresAt: v.number(),
+  }),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
 
@@ -273,6 +301,9 @@ export const updatePurchaseSignature = mutation({
     purchaseId: v.id("tokenGemPurchases"),
     solanaSignature: v.string(),
   },
+  returns: v.object({
+    success: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
 

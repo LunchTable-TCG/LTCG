@@ -452,7 +452,7 @@ export const generateDailyQuestsForAll = internalMutation({
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
     // Get all users (we'll filter by recent activity)
-    const allUsers = await ctx.db.query("users").collect();
+    const allUsers = await ctx.db.query("users").take(10000);
 
     // Filter to active users only
     const activeUsers = allUsers.filter((user) => {
@@ -548,7 +548,7 @@ export const generateWeeklyQuestsForAll = internalMutation({
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
     // Get all users
-    const allUsers = await ctx.db.query("users").collect();
+    const allUsers = await ctx.db.query("users").take(10000);
 
     // Filter to active users only
     const activeUsers = allUsers.filter((user) => {

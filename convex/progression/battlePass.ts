@@ -549,7 +549,7 @@ export const claimAllAvailableRewards = mutation({
     const progress = await getOrCreateBattlePassProgress(ctx, userId, battlePass._id);
 
     // Live subscription check to prevent claiming after cancellation
-    const isPremium = progress.isPremium || await hasActiveSubscription(ctx, userId);
+    const isPremium = await hasActiveSubscription(ctx, userId);
 
     // Get all tiers
     const tiers = await ctx.db
@@ -573,11 +573,7 @@ export const claimAllAvailableRewards = mutation({
       }
 
       // Claim premium reward if available and user is premium
-      if (
-        isPremium &&
-        tier.premiumReward &&
-        !progress.claimedPremiumTiers.includes(tier.tier)
-      ) {
+      if (isPremium && tier.premiumReward && !progress.claimedPremiumTiers.includes(tier.tier)) {
         await grantReward(ctx, userId, tier.premiumReward, tier.tier, true);
         newClaimedPremiumTiers.push(tier.tier);
         claimedPremium++;

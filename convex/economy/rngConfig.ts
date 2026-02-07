@@ -12,6 +12,7 @@
  * - rng:pityThresholds - Pity system thresholds
  */
 
+import { v } from "convex/values";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { query } from "../_generated/server";
 import { PITY_THRESHOLDS, RARITY_WEIGHTS, VARIANT_CONFIG } from "../lib/constants";
@@ -202,6 +203,52 @@ export async function getFullRngConfig(ctx: QueryCtx | MutationCtx): Promise<Rng
  */
 export const getRngConfig = query({
   args: {},
+  returns: v.object({
+    current: v.object({
+      rarityWeights: v.object({
+        common: v.number(),
+        uncommon: v.number(),
+        rare: v.number(),
+        epic: v.number(),
+        legendary: v.number(),
+      }),
+      variantRates: v.object({
+        standard: v.number(),
+        foil: v.number(),
+        altArt: v.number(),
+        fullArt: v.number(),
+      }),
+      packMultipliers: v.any(),
+      goldPackMultipliers: v.any(),
+      pityThresholds: v.object({
+        epic: v.number(),
+        legendary: v.number(),
+        fullArt: v.number(),
+      }),
+    }),
+    defaults: v.object({
+      rarityWeights: v.object({
+        common: v.number(),
+        uncommon: v.number(),
+        rare: v.number(),
+        epic: v.number(),
+        legendary: v.number(),
+      }),
+      variantRates: v.object({
+        standard: v.number(),
+        foil: v.number(),
+        altArt: v.number(),
+        fullArt: v.number(),
+      }),
+      packMultipliers: v.any(),
+      goldPackMultipliers: v.any(),
+      pityThresholds: v.object({
+        epic: v.number(),
+        legendary: v.number(),
+        fullArt: v.number(),
+      }),
+    }),
+  }),
   handler: async (ctx) => {
     const current = await getFullRngConfig(ctx);
 

@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 const ALGORITHM = "aes-256-gcm";
 
@@ -61,10 +61,9 @@ export function buildRtmpUrl(
     case "youtube":
       return `rtmp://a.rtmp.youtube.com/live2/${streamKey}`;
     case "retake":
-      return `rtmp://ingest.retake.tv/live/${streamKey}`;
     case "x":
     case "pumpfun":
-      // Both require user-provided RTMP URL (no fixed ingest endpoint)
+      // These platforms provide dynamic RTMP URLs via their APIs
       if (!customRtmpUrl) {
         throw new Error(`RTMP URL required for ${platform} platform`);
       }

@@ -72,6 +72,41 @@ export const getTokenListings = query({
       )
     ),
   },
+  returns: v.object({
+    listings: v.array(
+      v.object({
+        _id: v.id("marketplaceListings"),
+        sellerId: v.id("users"),
+        sellerUsername: v.optional(v.string()),
+        cardDefinitionId: v.id("cardDefinitions"),
+        cardName: v.string(),
+        cardType: v.union(
+          v.literal("creature"),
+          v.literal("spell"),
+          v.literal("trap"),
+          v.literal("equipment")
+        ),
+        cardRarity: v.union(
+          v.literal("common"),
+          v.literal("uncommon"),
+          v.literal("rare"),
+          v.literal("epic"),
+          v.literal("legendary")
+        ),
+        cardArchetype: v.string(),
+        cardImageUrl: v.optional(v.string()),
+        cardAttack: v.optional(v.number()),
+        cardDefense: v.optional(v.number()),
+        cardCost: v.optional(v.number()),
+        quantity: v.number(),
+        tokenPrice: v.number(),
+        currencyType: v.union(v.literal("gold"), v.literal("token")),
+        createdAt: v.number(),
+      })
+    ),
+    nextCursor: v.optional(v.string()),
+    hasMore: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? PAGINATION.MARKETPLACE_PAGE_SIZE, 100);
     const cursorTimestamp = args.cursor ? Number.parseInt(args.cursor, 10) : undefined;
@@ -335,6 +370,7 @@ export const cancelTokenListing = mutation({
  */
 export const getUserTokenListings = query({
   args: {},
+  returns: v.array(v.any()),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
@@ -658,6 +694,24 @@ export const cancelPendingPurchase = mutation({
  */
 export const getUserPendingPurchases = query({
   args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("pendingTokenPurchases"),
+      listingId: v.optional(v.id("marketplaceListings")),
+      amount: v.number(),
+      status: v.union(
+        v.literal("awaiting_signature"),
+        v.literal("submitted"),
+        v.literal("confirmed"),
+        v.literal("failed"),
+        v.literal("expired")
+      ),
+      createdAt: v.number(),
+      expiresAt: v.number(),
+      transactionSignature: v.optional(v.string()),
+      listingCardName: v.string(),
+    })
+  ),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
@@ -1058,6 +1112,26 @@ export const getTokenTransactionHistory = query({
   args: {
     paginationOpts: paginationOptsValidator,
   },
+  returns: v.object({
+    page: v.array(
+      v.object({
+        _id: v.id("tokenTransactions"),
+        transactionType: v.string(),
+        amount: v.number(),
+        signature: v.optional(v.string()),
+        status: v.union(
+          v.literal("pending"),
+          v.literal("confirmed"),
+          v.literal("failed")
+        ),
+        description: v.optional(v.string()),
+        createdAt: v.number(),
+        confirmedAt: v.optional(v.number()),
+      })
+    ),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
 

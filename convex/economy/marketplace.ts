@@ -56,6 +56,13 @@ export const getMarketplaceListings = query({
     ),
     page: v.optional(v.number()),
   },
+  returns: v.object({
+    listings: v.array(v.any()),
+    page: v.number(),
+    pageSize: v.number(),
+    total: v.number(),
+    hasMore: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const page = args.page ?? 1;
     const pageSize = PAGINATION.MARKETPLACE_PAGE_SIZE;
@@ -153,6 +160,7 @@ export const getMarketplaceListings = query({
  */
 export const getUserListings = query({
   args: {},
+  returns: v.array(v.any()),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
@@ -400,6 +408,12 @@ export const buyNow = mutation({
   args: {
     listingId: v.id("marketplaceListings"),
   },
+  returns: v.object({
+    success: v.boolean(),
+    price: v.number(),
+    platformFee: v.number(),
+    totalCost: v.number(),
+  }),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
 
@@ -505,6 +519,11 @@ export const placeBid = mutation({
     listingId: v.id("marketplaceListings"),
     bidAmount: v.number(),
   },
+  returns: v.object({
+    success: v.boolean(),
+    bidAmount: v.number(),
+    currentBid: v.number(),
+  }),
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
 
@@ -654,6 +673,11 @@ export const claimAuctionWin = mutation({
   args: {
     listingId: v.id("marketplaceListings"),
   },
+  returns: v.object({
+    success: v.boolean(),
+    finalPrice: v.number(),
+    platformFee: v.number(),
+  }),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
 

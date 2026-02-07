@@ -32,7 +32,9 @@ export const createOrGetUser = mutation({
 
     if (existingUser) {
       // Sync any missing data (email, wallet) for existing users
-      const updates: Record<string, unknown> = {};
+      const updates: Record<string, unknown> = {
+        lastActiveAt: Date.now(),
+      };
 
       // Backfill email if not stored but now available
       if (args.email && !existingUser.email) {
@@ -46,9 +48,7 @@ export const createOrGetUser = mutation({
         updates["walletConnectedAt"] = Date.now();
       }
 
-      if (Object.keys(updates).length > 0) {
-        await ctx.db.patch(existingUser._id, updates);
-      }
+      await ctx.db.patch(existingUser._id, updates);
 
       return {
         userId: existingUser._id,
@@ -81,6 +81,8 @@ export const createOrGetUser = mutation({
           .first();
         return link?.guildId;
       })(),
+      // Activity tracking
+      lastActiveAt: now,
       // Game defaults
       rankedElo: 1000,
       casualRating: 1000,

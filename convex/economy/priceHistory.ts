@@ -29,6 +29,17 @@ export const getCardPriceHistory = query({
     ),
     currencyType: v.optional(v.union(v.literal("gold"), v.literal("token"))),
   },
+  returns: v.array(
+    v.object({
+      date: v.string(),
+      avgPrice: v.number(),
+      minPrice: v.number(),
+      maxPrice: v.number(),
+      volume: v.number(),
+      goldSales: v.number(),
+      tokenSales: v.number(),
+    })
+  ),
   handler: async (ctx, args) => {
     const timeRange = args.timeRange ?? "30d";
     const now = Date.now();
@@ -125,6 +136,19 @@ export const getTopTradedCards = query({
       v.union(v.literal("7d"), v.literal("30d"), v.literal("90d"), v.literal("all"))
     ),
   },
+  returns: v.array(
+    v.object({
+      cardDefinitionId: v.string(),
+      name: v.string(),
+      rarity: v.string(),
+      archetype: v.string(),
+      imageUrl: v.optional(v.string()),
+      volume: v.number(),
+      totalValue: v.number(),
+      avgPrice: v.number(),
+      sales: v.number(),
+    })
+  ),
   handler: async (ctx, args) => {
     const limit = args.limit ?? 20;
     const timeRange = args.timeRange ?? "30d";
@@ -191,6 +215,15 @@ export const getTopTradedCards = query({
  */
 export const getMarketOverview = query({
   args: {},
+  returns: v.object({
+    activeListings: v.number(),
+    totalSold: v.number(),
+    volumeToday: v.number(),
+    volumeThisWeek: v.number(),
+    goldVolumeToday: v.number(),
+    tokenVolumeToday: v.number(),
+    averageListingPrice: v.number(),
+  }),
   handler: async (ctx) => {
     const now = Date.now();
     const oneDayAgo = now - 24 * 60 * 60 * 1000;

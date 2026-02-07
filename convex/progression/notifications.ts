@@ -23,6 +23,7 @@ export type NotificationType =
  */
 export const getUnreadNotifications = query({
   args: {},
+  returns: v.array(v.any()),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -56,6 +57,7 @@ export const getAllNotifications = query({
   args: {
     limit: v.optional(v.number()),
   },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {

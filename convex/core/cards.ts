@@ -19,6 +19,7 @@ import { cardWithOwnershipValidator } from "../lib/returnValidators";
  */
 export const getAllCardDefinitions = query({
   args: {},
+  returns: v.array(v.any()),
   handler: async (ctx) => {
     return await ctx.db
       .query("cardDefinitions")
@@ -35,6 +36,7 @@ export const getAllCardDefinitions = query({
  */
 export const getCardDefinition = query({
   args: { cardId: v.id("cardDefinitions") },
+  returns: v.union(v.null(), v.any()),
   handler: async (ctx, args) => {
     return await ctx.db.get(args.cardId);
   },
