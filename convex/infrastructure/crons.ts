@@ -164,6 +164,21 @@ crons.interval(
 );
 
 // ============================================================================
+// STREAMING SESSION CLEANUP
+// ============================================================================
+
+// Cleanup stale streaming sessions every 10 minutes
+// - Ends sessions stuck in initializing/pending for >1 hour
+// - Ends sessions stuck in error status for >1 hour
+// - Safety-ends live sessions >12 hours old
+// - Removes expired overlay access codes
+crons.interval(
+  "cleanup-stale-streaming-sessions",
+  { minutes: 10 },
+  internalAny.streaming.sessions.cleanupStaleSessions
+);
+
+// ============================================================================
 // DATA INTEGRITY MONITORING
 // ============================================================================
 

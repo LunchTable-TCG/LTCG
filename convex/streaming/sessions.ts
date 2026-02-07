@@ -1,7 +1,7 @@
 import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
-import { mutation, query } from "../_generated/server";
+import { internalMutation, mutation, query } from "../_generated/server";
 
 // Overlay config validator (reused across functions)
 const overlayConfigValidator = v.object({
@@ -367,5 +367,90 @@ export const validateOverlayAccess = mutation({
 
     // Return session validation
     return { valid: true, sessionId: args.sessionId };
+  },
+});
+
+/**
+ * Cleanup stale streaming sessions.
+ * - Ends sessions stuck in "initializing" or "pending" for over 1 hour
+ * - Ends sessions stuck in "live" for over 12 hours (safety limit)
+ * - Cleans up expired overlay access codes older than 1 hour
+ */
+export const cleanupStaleSessions = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const ONE_HOUR = 60 * 60 * 1000;
+    const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+
+    let cleaned = 0;
+
+    // Find and end stale "initializing" or "pending" sessions (>1 hour old)
+    const stalePending = await ctx.db
+      .query("streamingSessions")
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("status"), "initializing"),
+          q.eq(q.field("status"), "pending")
+        )
+      )
+      .collect();
+
+    for (const session of stalePending) {
+      if (now - session.createdAt > ONE_HOUR) {
+        await ctx.db.patch(session._id, {
+          status: "ended",
+          endedAt: now,
+          endReason: "auto-cleanup: stale session",
+        });
+        cleaned++;
+      }
+    }
+
+    // Find and end stale "error" sessions (just mark them ended)
+    const staleError = await ctx.db
+      .query("streamingSessions")
+      .filter((q) => q.eq(q.field("status"), "error"))
+      .collect();
+
+    for (const session of staleError) {
+      if (now - session.createdAt > ONE_HOUR) {
+        await ctx.db.patch(session._id, {
+          status: "ended",
+          endedAt: now,
+          endReason: "auto-cleanup: error session",
+        });
+        cleaned++;
+      }
+    }
+
+    // Safety: end "live" sessions older than 12 hours
+    const staleLive = await ctx.db
+      .query("streamingSessions")
+      .withIndex("by_status", (q) => q.eq("status", "live"))
+      .collect();
+
+    for (const session of staleLive) {
+      if (now - session.createdAt > TWELVE_HOURS) {
+        await ctx.db.patch(session._id, {
+          status: "ended",
+          endedAt: now,
+          endReason: "auto-cleanup: exceeded max duration",
+        });
+        cleaned++;
+      }
+    }
+
+    // Cleanup expired overlay access codes (>1 hour past expiry)
+    const expiredCodes = await ctx.db
+      .query("overlayAccessCodes")
+      .filter((q) => q.lt(q.field("expiresAt"), now - ONE_HOUR))
+      .collect();
+
+    for (const code of expiredCodes) {
+      await ctx.db.delete(code._id);
+    }
+
+    return { cleanedSessions: cleaned, cleanedCodes: expiredCodes.length };
   },
 });

@@ -1,4 +1,4 @@
-import { EgressClient, EncodingOptionsPreset, StreamProtocol } from "livekit-server-sdk";
+import { EgressClient, EncodingOptions, StreamProtocol } from "livekit-server-sdk";
 
 // Strip any trailing newlines from environment variables (Vercel CLI bug adds \n)
 const LIVEKIT_URL = process.env.LIVEKIT_URL?.trim() || "";
@@ -45,8 +45,13 @@ export async function startWebEgress(params: {
       urls: [params.rtmpUrl],
     },
     {
-      // WebOptions
-      preset: EncodingOptionsPreset.H264_1080P_30,
+      // WebOptions — use custom encoding for higher quality stream
+      encodingOptions: new EncodingOptions({
+        width: 1920,
+        height: 1080,
+        framerate: 30,
+        videoBitrate: 6000, // 6 Mbps (default 4.5 is low for 1080p)
+      }),
     }
   );
 

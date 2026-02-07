@@ -237,8 +237,8 @@ function StreamOverlayContent() {
         }
 
         .stream-overlay {
-          width: 1920px;
-          height: 1080px;
+          width: 100vw;
+          height: 100vh;
           display: flex;
           flex-direction: column;
           font-family: var(--font-crimson), serif;
@@ -436,8 +436,8 @@ function StreamOverlayContent() {
 
         .stream-overlay-loading,
         .stream-overlay-error {
-          width: 1920px;
-          height: 1080px;
+          width: 100vw;
+          height: 100vh;
           display: flex;
           flex-direction: column;
           align-items: center;
