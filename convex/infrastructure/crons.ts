@@ -163,4 +163,16 @@ crons.interval(
   internalAny.social.tournamentCron.expireUnfilledUserTournaments
 );
 
+// ============================================================================
+// DATA INTEGRITY MONITORING
+// ============================================================================
+
+// Run integrity checks every 5 minutes
+// Detects negative balances, currency conservation violations, duplicate rewards, etc.
+crons.interval(
+  "integrity checks",
+  { minutes: 5 },
+  internalAny.monitoring.integrity.runIntegrityChecks
+);
+
 export default crons;

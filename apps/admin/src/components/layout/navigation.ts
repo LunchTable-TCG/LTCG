@@ -234,6 +234,7 @@ export const MAIN_NAVIGATION: NavSection[] = [
       { title: "Streaming", href: "/analytics/streaming", icon: Video, keywords: ["viewers", "streams"] },
       { title: "Token", href: "/analytics/token", icon: Coins, keywords: ["price", "holders"] },
       { title: "Feedback", href: "/analytics/feedback", icon: MessageSquare, keywords: ["sentiment", "nps"] },
+      { title: "Integrity", href: "/analytics/integrity", icon: Shield, keywords: ["health", "race condition", "monitoring"] },
     ],
     subGroups: [
       {
@@ -361,6 +362,7 @@ export const ROUTE_MAP: Record<string, { label: string; parent?: string }> = {
   "/analytics/streaming": { label: "Streaming", parent: "/analytics" },
   "/analytics/token": { label: "Token", parent: "/analytics" },
   "/analytics/feedback": { label: "Feedback", parent: "/analytics" },
+  "/analytics/integrity": { label: "Integrity", parent: "/analytics" },
   "/analytics/behavior": { label: "User Behavior", parent: "/analytics-section" },
   "/analytics/behavior/sessions": { label: "Sessions", parent: "/analytics-behavior" },
   "/analytics/behavior/errors": { label: "Errors", parent: "/analytics-behavior" },
