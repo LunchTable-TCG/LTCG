@@ -1,5 +1,14 @@
 "use client";
 
+const PLATFORM_BADGE: Record<string, { label: string; color: string; icon: string }> = {
+  twitch: { label: "Twitch", color: "#9146FF", icon: "\uD83D\uDFE3" },
+  youtube: { label: "YouTube", color: "#FF0000", icon: "\uD83D\uDD34" },
+  retake: { label: "Retake.tv", color: "#00D4AA", icon: "\uD83D\uDCFA" },
+  x: { label: "X", color: "#1DA1F2", icon: "\u2715" },
+  pumpfun: { label: "Pump.fun", color: "#00E676", icon: "\uD83D\uDCA7" },
+  custom: { label: "RTMP", color: "#888888", icon: "\u2699\uFE0F" },
+};
+
 interface StreamerInfoPanelProps {
   name: string;
   avatar?: string;
@@ -9,6 +18,7 @@ interface StreamerInfoPanelProps {
 
 export function StreamerInfoPanel({ name, avatar, streamType, platform }: StreamerInfoPanelProps) {
   const displayName = name || (streamType === "agent" ? "AI Agent" : "Player");
+  const badge = PLATFORM_BADGE[platform];
 
   return (
     <div className="streamer-info">
@@ -22,6 +32,14 @@ export function StreamerInfoPanel({ name, avatar, streamType, platform }: Stream
       </div>
 
       <div className="streamer-info__right">
+        {badge && (
+          <span
+            className="streamer-info__platform"
+            style={{ borderColor: `${badge.color}66`, color: badge.color }}
+          >
+            {badge.icon} {badge.label}
+          </span>
+        )}
         <span className="streamer-info__live">
           <span className="live-dot" />
           <span className="live-text">LIVE</span>
@@ -71,6 +89,19 @@ export function StreamerInfoPanel({ name, avatar, streamType, platform }: Stream
         .streamer-info__right {
           display: flex;
           align-items: center;
+          gap: 12px;
+        }
+
+        .streamer-info__platform {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          border: 1px solid;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
         }
 
         .streamer-info__live {

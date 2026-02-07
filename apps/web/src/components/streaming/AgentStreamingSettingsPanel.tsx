@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { encryptStreamKey } from "@/lib/streaming/encryption";
 
 interface AgentStreamingSettingsPanelProps {
   agentId: string;
@@ -14,13 +13,42 @@ interface AgentStreamingSettingsPanelProps {
  * Agent owner panel for configuring agent streaming settings
  * Allows agent owners to enable auto-streaming for their AI agents
  */
+type StreamingPlatform = "twitch" | "youtube" | "custom" | "retake" | "x" | "pumpfun";
+
+const PLATFORM_NEEDS_RTMP_URL: Record<string, boolean> = {
+  x: true,
+  pumpfun: true,
+  custom: true,
+};
+
+const PLATFORM_LABELS: Record<StreamingPlatform, string> = {
+  twitch: "Twitch",
+  youtube: "YouTube",
+  retake: "Retake.tv",
+  x: "X (Twitter)",
+  pumpfun: "Pump.fun",
+  custom: "Custom RTMP",
+};
+
+const PLATFORM_ICONS: Record<StreamingPlatform, string> = {
+  twitch: "\uD83D\uDFE3",
+  youtube: "\uD83D\uDD34",
+  retake: "\uD83D\uDCFA",
+  x: "\u2715",
+  pumpfun: "\uD83D\uDCA7",
+  custom: "\u2699\uFE0F",
+};
+
 export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsPanelProps) {
-  const [platform, setPlatform] = useState<"twitch" | "youtube">("twitch");
+  const [platform, setPlatform] = useState<StreamingPlatform>("twitch");
   const [streamKey, setStreamKey] = useState("");
+  const [rtmpUrl, setRtmpUrl] = useState("");
   const [autoStart, setAutoStart] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const needsRtmpUrl = PLATFORM_NEEDS_RTMP_URL[platform] || false;
 
   // Get current config
   const config = useQuery(api.agents.streaming.getAgentStreamingConfig, {
@@ -32,8 +60,6 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
     agentId: agentId as Id<"agents">,
     limit: 5,
   });
-
-  const configureStreaming = useMutation(api.agents.streaming.configureAgentStreaming);
 
   const activeSession = sessions?.find((s) => s.status === "live" || s.status === "pending");
 
@@ -48,20 +74,28 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
         throw new Error("Stream key is required to enable streaming");
       }
 
-      // Encrypt stream key if provided
-      let streamKeyHash: string | undefined;
-      if (streamKey) {
-        streamKeyHash = encryptStreamKey(streamKey);
+      if (needsRtmpUrl && !rtmpUrl && !config?.hasRtmpUrl) {
+        throw new Error("RTMP URL is required for this platform");
       }
 
-      // Save config
-      await configureStreaming({
-        agentId: agentId as Id<"agents">,
-        enabled: true,
-        platform,
-        streamKeyHash,
-        autoStart,
+      // Save config via server API (encryption happens server-side)
+      const response = await fetch("/api/streaming/configure-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId,
+          enabled: true,
+          platform,
+          streamKey: streamKey || undefined,
+          rtmpUrl: needsRtmpUrl ? rtmpUrl : undefined,
+          autoStart,
+        }),
       });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to save settings");
+      }
 
       setSuccess(true);
       setStreamKey(""); // Clear for security
@@ -78,11 +112,20 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
     setError(null);
 
     try {
-      await configureStreaming({
-        agentId: agentId as Id<"agents">,
-        enabled: false,
-        autoStart: false,
+      const response = await fetch("/api/streaming/configure-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId,
+          enabled: false,
+          autoStart: false,
+        }),
       });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to disable streaming");
+      }
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -157,22 +200,47 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
             <div className="platform-selector">
               <label>Streaming Platform</label>
               <div className="platform-buttons">
-                <button
-                  className={currentPlatform === "twitch" ? "active" : ""}
-                  onClick={() => setPlatform("twitch")}
-                  disabled={isSaving}
-                >
-                  🟣 Twitch
-                </button>
-                <button
-                  className={currentPlatform === "youtube" ? "active" : ""}
-                  onClick={() => setPlatform("youtube")}
-                  disabled={isSaving}
-                >
-                  🔴 YouTube
-                </button>
+                {(["twitch", "youtube", "x", "pumpfun", "retake", "custom"] as StreamingPlatform[]).map((p) => (
+                  <button
+                    key={p}
+                    className={currentPlatform === p ? "active" : ""}
+                    onClick={() => setPlatform(p)}
+                    disabled={isSaving}
+                  >
+                    {PLATFORM_ICONS[p]} {PLATFORM_LABELS[p]}
+                  </button>
+                ))}
               </div>
             </div>
+
+            {needsRtmpUrl && (
+              <div className="stream-key-section">
+                <label>
+                  RTMP URL {config?.hasRtmpUrl && <span className="saved-badge">Saved</span>}
+                </label>
+                <input
+                  type="text"
+                  placeholder={
+                    config?.hasRtmpUrl
+                      ? "Enter new URL to update"
+                      : platform === "x"
+                        ? "rtmp://... from Media Studio > Producer"
+                        : platform === "pumpfun"
+                          ? "rtmp://... from your coin page > Start Livestream"
+                          : "rtmp://your-server.com/live"
+                  }
+                  value={rtmpUrl}
+                  onChange={(e) => setRtmpUrl(e.target.value)}
+                  disabled={isSaving}
+                />
+                <p className="help-text">
+                  {platform === "x" && "Go to Media Studio > Producer > Create RTMP Source > Copy URL"}
+                  {platform === "pumpfun" && "Go to your coin page > Start Livestream > Select RTMP > Copy URL"}
+                  {platform === "custom" && "Enter your custom RTMP ingest URL"}
+                  {config?.hasRtmpUrl && " • RTMP URL saved"}
+                </p>
+              </div>
+            )}
 
             <div className="stream-key-section">
               <label>
@@ -185,14 +253,20 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
                     ? "Enter new key to update"
                     : platform === "twitch"
                       ? "Get from twitch.tv/dashboard/settings/stream"
-                      : "Get from studio.youtube.com"
+                      : platform === "youtube"
+                        ? "Get from studio.youtube.com"
+                        : platform === "x"
+                          ? "Get from Media Studio > Producer"
+                          : platform === "pumpfun"
+                            ? "Get from your coin page > Start Livestream"
+                            : "Enter your stream key"
                 }
                 value={streamKey}
                 onChange={(e) => setStreamKey(e.target.value)}
                 disabled={isSaving}
               />
               <p className="help-text">
-                {platform === "twitch" ? (
+                {platform === "twitch" && (
                   <>
                     Get from{" "}
                     <a
@@ -203,7 +277,8 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
                       Twitch Dashboard
                     </a>
                   </>
-                ) : (
+                )}
+                {platform === "youtube" && (
                   <>
                     Get from{" "}
                     <a
@@ -215,6 +290,10 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
                     </a>
                   </>
                 )}
+                {platform === "x" && "Copy stream key from Media Studio. Requires X Premium."}
+                {platform === "pumpfun" && "Copy stream key from livestream settings. Must be token creator."}
+                {platform === "retake" && "Stream key is provided via Retake.tv integration."}
+                {platform === "custom" && "Enter the stream key for your RTMP server."}
                 {config?.hasStreamKey && " • Stream key is encrypted and secure"}
               </p>
             </div>
@@ -262,7 +341,7 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
 
             <button
               onClick={handleSave}
-              disabled={isSaving || (!streamKey && !config?.hasStreamKey)}
+              disabled={isSaving || (!streamKey && !config?.hasStreamKey) || (needsRtmpUrl && !rtmpUrl && !config?.hasRtmpUrl)}
               className="btn-save"
             >
               {isSaving ? "Saving..." : "Save Settings"}
@@ -278,7 +357,7 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
             {sessions.slice(0, 5).map((session) => (
               <li key={session._id}>
                 <span className="platform-icon">
-                  {session.platform === "twitch" ? "🟣" : "🔴"}
+                  {PLATFORM_ICONS[session.platform as StreamingPlatform] || "📺"}
                 </span>
                 <span className="session-info">
                   {new Date(session.createdAt).toLocaleDateString()}
@@ -413,11 +492,13 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
 
         .platform-buttons {
           display: flex;
+          flex-wrap: wrap;
           gap: 12px;
         }
 
         .platform-buttons button {
-          flex: 1;
+          flex: 1 1 calc(33% - 8px);
+          min-width: 120px;
           padding: 12px;
           background: rgba(255, 255, 255, 0.05);
           border: 2px solid rgba(255, 255, 255, 0.1);

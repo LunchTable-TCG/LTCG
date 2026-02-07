@@ -12,12 +12,41 @@ interface StreamingSettingsPanelProps {
  * User-facing panel for configuring streaming settings
  * Allows users to connect their Twitch/YouTube accounts and manage streams
  */
+type StreamingPlatform = "twitch" | "youtube" | "custom" | "retake" | "x" | "pumpfun";
+
+const PLATFORM_NEEDS_RTMP_URL: Record<string, boolean> = {
+  x: true,
+  pumpfun: true,
+  custom: true,
+};
+
+const PLATFORM_LABELS: Record<StreamingPlatform, string> = {
+  twitch: "Twitch",
+  youtube: "YouTube",
+  retake: "Retake.tv",
+  x: "X (Twitter)",
+  pumpfun: "Pump.fun",
+  custom: "Custom RTMP",
+};
+
+const PLATFORM_ICONS: Record<StreamingPlatform, string> = {
+  twitch: "\uD83D\uDFE3",
+  youtube: "\uD83D\uDD34",
+  retake: "\uD83D\uDCFA",
+  x: "\u2715",
+  pumpfun: "\uD83D\uDCA7",
+  custom: "\u2699\uFE0F",
+};
+
 export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) {
-  const [platform, setPlatform] = useState<"twitch" | "youtube">("twitch");
+  const [platform, setPlatform] = useState<StreamingPlatform>("twitch");
   const [streamKey, setStreamKey] = useState("");
+  const [customRtmpUrl, setCustomRtmpUrl] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const needsRtmpUrl = PLATFORM_NEEDS_RTMP_URL[platform] || false;
 
   // Get user's streaming sessions
   const sessions = useQuery(api.streaming.sessions.getUserSessions, {
@@ -40,7 +69,8 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
           streamType: "user",
           platform,
           streamKey,
-          streamTitle: `${platform === "twitch" ? "Twitch" : "YouTube"} Stream`,
+          customRtmpUrl: needsRtmpUrl ? customRtmpUrl : undefined,
+          streamTitle: `${PLATFORM_LABELS[platform]} Stream`,
         }),
       });
 
@@ -82,7 +112,7 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
   return (
     <div className="streaming-settings">
       <h2>Stream Your Gameplay</h2>
-      <p className="subtitle">Broadcast your LTCG matches live to Twitch or YouTube</p>
+      <p className="subtitle">Broadcast your LTCG matches live to Twitch, YouTube, X, Pump.fun, and more</p>
 
       {error && (
         <div className="error-message">
@@ -113,20 +143,40 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
           <div className="platform-selector">
             <label>Platform</label>
             <div className="platform-buttons">
-              <button
-                className={platform === "twitch" ? "active" : ""}
-                onClick={() => setPlatform("twitch")}
-              >
-                🟣 Twitch
-              </button>
-              <button
-                className={platform === "youtube" ? "active" : ""}
-                onClick={() => setPlatform("youtube")}
-              >
-                🔴 YouTube
-              </button>
+              {(["twitch", "youtube", "x", "pumpfun", "retake", "custom"] as StreamingPlatform[]).map((p) => (
+                <button
+                  key={p}
+                  className={platform === p ? "active" : ""}
+                  onClick={() => setPlatform(p)}
+                >
+                  {PLATFORM_ICONS[p]} {PLATFORM_LABELS[p]}
+                </button>
+              ))}
             </div>
           </div>
+
+          {needsRtmpUrl && (
+            <div className="stream-key-input">
+              <label>RTMP URL</label>
+              <input
+                type="text"
+                placeholder={
+                  platform === "x"
+                    ? "rtmp://... from Media Studio > Producer"
+                    : platform === "pumpfun"
+                      ? "rtmp://... from your coin page > Start Livestream"
+                      : "rtmp://your-server.com/live"
+                }
+                value={customRtmpUrl}
+                onChange={(e) => setCustomRtmpUrl(e.target.value)}
+              />
+              <p className="help-text">
+                {platform === "x" && "Go to Media Studio > Producer > Create RTMP Source > Copy URL"}
+                {platform === "pumpfun" && "Go to your coin page > Start Livestream > Select RTMP > Copy URL"}
+                {platform === "custom" && "Enter your custom RTMP ingest URL"}
+              </p>
+            </div>
+          )}
 
           <div className="stream-key-input">
             <label>Stream Key</label>
@@ -135,13 +185,19 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
               placeholder={
                 platform === "twitch"
                   ? "Get from twitch.tv/dashboard/settings/stream"
-                  : "Get from studio.youtube.com"
+                  : platform === "youtube"
+                    ? "Get from studio.youtube.com"
+                    : platform === "x"
+                      ? "Get from Media Studio > Producer"
+                      : platform === "pumpfun"
+                        ? "Get from your coin page > Start Livestream"
+                        : "Enter your stream key"
               }
               value={streamKey}
               onChange={(e) => setStreamKey(e.target.value)}
             />
             <p className="help-text">
-              {platform === "twitch" ? (
+              {platform === "twitch" && (
                 <>
                   Get your stream key from{" "}
                   <a
@@ -152,7 +208,8 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
                     Twitch Dashboard
                   </a>
                 </>
-              ) : (
+              )}
+              {platform === "youtube" && (
                 <>
                   Get your stream key from{" "}
                   <a href="https://studio.youtube.com/" target="_blank" rel="noreferrer noopener">
@@ -160,10 +217,18 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
                   </a>
                 </>
               )}
+              {platform === "x" && "Copy the stream key from your RTMP source in Media Studio. Requires X Premium."}
+              {platform === "pumpfun" && "Copy the stream key from your livestream settings. Must be the token creator."}
+              {platform === "retake" && "Stream key is provided via Retake.tv integration."}
+              {platform === "custom" && "Enter the stream key for your RTMP server."}
             </p>
           </div>
 
-          <button onClick={startStream} disabled={!streamKey || isStreaming} className="btn-start">
+          <button
+            onClick={startStream}
+            disabled={!streamKey || isStreaming || (needsRtmpUrl && !customRtmpUrl)}
+            className="btn-start"
+          >
             {isStreaming ? "Starting..." : "Go Live"}
           </button>
         </div>
@@ -175,7 +240,7 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
           <ul>
             {sessions.slice(0, 5).map((session) => (
               <li key={session._id}>
-                <span className="platform-icon">{session.platform === "twitch" ? "🟣" : "🔴"}</span>
+                <span className="platform-icon">{PLATFORM_ICONS[session.platform as StreamingPlatform] || "📺"}</span>
                 <span className="session-info">
                   {new Date(session.createdAt).toLocaleDateString()}
                   {session.stats && ` • ${formatDuration(session.stats.duration)}`}
@@ -261,11 +326,13 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
 
         .platform-buttons {
           display: flex;
+          flex-wrap: wrap;
           gap: 12px;
         }
 
         .platform-buttons button {
-          flex: 1;
+          flex: 1 1 calc(33% - 8px);
+          min-width: 120px;
           padding: 12px;
           background: rgba(255, 255, 255, 0.05);
           border: 2px solid rgba(255, 255, 255, 0.1);

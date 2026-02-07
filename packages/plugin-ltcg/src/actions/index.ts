@@ -29,6 +29,8 @@ import { trashTalkAction } from "./trashTalkAction";
 import startRetakeStreamAction from "./startRetakeStreamAction";
 import stopRetakeStreamAction from "./stopRetakeStreamAction";
 import respondToRetakeChatAction from "./respondToRetakeChatAction";
+import startXStreamAction from "./startXStreamAction";
+import startPumpfunStreamAction from "./startPumpfunStreamAction";
 
 /**
  * All LTCG game actions
@@ -94,10 +96,12 @@ export const ltcgActions = [
   ggAction,
   sendChatMessageAction,
 
-  // Retake.tv Streaming Actions
+  // Streaming Actions
   startRetakeStreamAction,
   stopRetakeStreamAction,
   respondToRetakeChatAction,
+  startXStreamAction,
+  startPumpfunStreamAction,
 ];
 
 // Export individual actions for convenience
@@ -128,8 +132,10 @@ export {
   reactToPlayAction,
   ggAction,
   sendChatMessageAction,
-  // Retake.tv Streaming
+  // Streaming
   startRetakeStreamAction,
   stopRetakeStreamAction,
   respondToRetakeChatAction,
+  startXStreamAction,
+  startPumpfunStreamAction,
 };

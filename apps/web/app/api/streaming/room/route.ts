@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     try {
       const { egressId } = await startWebEgress({
         overlayUrl,
-        rtmpUrl,
+        rtmpUrls: [rtmpUrl],
         sessionId,
       });
 

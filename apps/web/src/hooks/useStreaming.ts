@@ -5,14 +5,23 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { useCallback, useState } from "react";
 
+type StreamingPlatform = "twitch" | "youtube" | "custom" | "retake" | "x" | "pumpfun";
+
+interface StreamDestination {
+  platform: StreamingPlatform;
+  streamKey: string;
+  customRtmpUrl?: string;
+}
+
 interface StartStreamOptions {
   userId?: string;
   agentId?: string;
   streamType: "user" | "agent";
-  platform: "twitch" | "youtube" | "custom";
+  platform: StreamingPlatform;
   streamKey: string;
   customRtmpUrl?: string;
   streamTitle?: string;
+  destinations?: StreamDestination[];
   overlayConfig?: {
     showDecisions?: boolean;
     showAgentInfo?: boolean;
@@ -112,9 +121,63 @@ export function useStreaming() {
     [sessionId]
   );
 
+  const addDestination = useCallback(
+    async (targetSessionId: string, destination: StreamDestination) => {
+      try {
+        const response = await fetch("/api/streaming/update-destinations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: targetSessionId,
+            addDestinations: [destination],
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to add destination");
+        }
+        return { success: true };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to add destination";
+        setError(message);
+        return { success: false, error: message };
+      }
+    },
+    []
+  );
+
+  const removeDestination = useCallback(
+    async (targetSessionId: string, platform: StreamingPlatform) => {
+      try {
+        const response = await fetch("/api/streaming/update-destinations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: targetSessionId,
+            removeDestinations: [{ platform }],
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to remove destination");
+        }
+        return { success: true };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to remove destination";
+        setError(message);
+        return { success: false, error: message };
+      }
+    },
+    []
+  );
+
   return {
     startStream,
     stopStream,
+    addDestination,
+    removeDestination,
     isStarting,
     isStopping,
     error,
@@ -177,5 +240,17 @@ export function useAllActiveStreams() {
     streams: streams as StreamSession[] | undefined,
     count: streams?.length || 0,
     isLoading: streams === undefined,
+  };
+}
+
+export function useSessionDestinations(sessionId?: string) {
+  const destinations = useQuery(
+    api.streaming.sessions.getSessionDestinations,
+    sessionId ? { sessionId: sessionId as Id<"streamingSessions"> } : "skip"
+  );
+
+  return {
+    destinations,
+    isLoading: destinations === undefined,
   };
 }

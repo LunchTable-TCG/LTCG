@@ -4,9 +4,12 @@
  * Handles auto-streaming for AI agents when they play games
  */
 
+import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalAction, internalMutation, mutation, query } from "../_generated/server";
+
+const streamingPlatformValidator = literals("twitch", "youtube", "custom", "retake", "x", "pumpfun");
 
 /**
  * Configure streaming settings for an agent
@@ -15,8 +18,9 @@ export const configureAgentStreaming = mutation({
   args: {
     agentId: v.id("agents"),
     enabled: v.boolean(),
-    platform: v.optional(v.union(v.literal("twitch"), v.literal("youtube"), v.literal("custom"))),
+    platform: v.optional(streamingPlatformValidator),
     streamKeyHash: v.optional(v.string()),
+    rtmpUrl: v.optional(v.string()),
     autoStart: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -30,6 +34,7 @@ export const configureAgentStreaming = mutation({
       streamingEnabled: args.enabled,
       streamingPlatform: args.platform,
       streamingKeyHash: args.streamKeyHash,
+      streamingRtmpUrl: args.rtmpUrl,
       streamingAutoStart: args.autoStart ?? true,
     });
 
@@ -51,6 +56,7 @@ export const getAgentStreamingConfig = query({
       platform: agent.streamingPlatform,
       autoStart: agent.streamingAutoStart ?? false,
       hasStreamKey: Boolean(agent.streamingKeyHash),
+      hasRtmpUrl: Boolean(agent.streamingRtmpUrl),
     };
   },
 });
@@ -85,6 +91,12 @@ export const autoStartAgentStream = internalMutation({
       return { started: false, reason: "not_configured" };
     }
 
+    // X and Pump.fun require a custom RTMP URL
+    if ((agent.streamingPlatform === "x" || agent.streamingPlatform === "pumpfun") && !agent.streamingRtmpUrl) {
+      console.warn("Agent streaming requires RTMP URL for platform:", agent.streamingPlatform);
+      return { started: false, reason: "rtmp_url_required" };
+    }
+
     // Trigger streaming via HTTP endpoint
     // This is done via scheduler to avoid blocking the game start
     await ctx.scheduler.runAfter(0, internal.agents.streaming.triggerAgentStreamStart, {
@@ -92,6 +104,7 @@ export const autoStartAgentStream = internalMutation({
       lobbyId: args.lobbyId,
       platform: agent.streamingPlatform,
       streamKeyHash: agent.streamingKeyHash,
+      customRtmpUrl: agent.streamingRtmpUrl,
     });
 
     return { started: true };
@@ -105,8 +118,9 @@ export const triggerAgentStreamStart = internalAction({
   args: {
     agentId: v.id("agents"),
     lobbyId: v.id("gameLobbies"),
-    platform: v.union(v.literal("twitch"), v.literal("youtube"), v.literal("custom")),
+    platform: streamingPlatformValidator,
     streamKeyHash: v.string(),
+    customRtmpUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // 1. Get agent info
@@ -134,6 +148,7 @@ export const triggerAgentStreamStart = internalAction({
           streamType: "agent",
           platform: args.platform,
           streamKeyHash: args.streamKeyHash, // API will decrypt
+          customRtmpUrl: args.customRtmpUrl,
           streamTitle: `${agent.name} - LTCG Tournament`,
         }),
       });
@@ -146,8 +161,8 @@ export const triggerAgentStreamStart = internalAction({
 
       const { sessionId } = await response.json();
 
-      // 3. Link session to lobby
-      await ctx.runMutation(internal.streaming.sessions.linkLobby, {
+      // 3. Link session to lobby (uses internal variant since this is an internalAction)
+      await ctx.runMutation(internalApi.streaming.sessions.linkLobbyInternal, {
         sessionId,
         lobbyId: args.lobbyId,
       });
