@@ -1,3 +1,4 @@
+// @ts-nocheck — Bun-only test file, not deployed to Convex
 /**
  * Test setup for convex-test
  *

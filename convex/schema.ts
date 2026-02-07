@@ -197,6 +197,8 @@ export default defineSchema({
     referralSource: v.optional(v.string()), // "guild_invite", "direct", etc.
     referralGuildInviteCode: v.optional(v.string()), // The invite code used
     referralGuildId: v.optional(v.id("guilds")), // The guild they were invited to
+    // Activity tracking for optimized queries (e.g., quest generation)
+    lastActiveAt: v.optional(v.number()),
   })
     .index("privyId", ["privyId"])
     .index("walletAddress", ["walletAddress"])
@@ -214,7 +216,9 @@ export default defineSchema({
     // Composite indexes for segmented leaderboards
     .index("rankedElo_byType", ["isAiAgent", "rankedElo"])
     .index("casualRating_byType", ["isAiAgent", "casualRating"])
-    .index("xp_byType", ["isAiAgent", "xp"]), // @deprecated - use playerXP table queries
+    .index("xp_byType", ["isAiAgent", "xp"]) // @deprecated - use playerXP table queries
+    .index("by_lastActiveAt", ["lastActiveAt"])
+    .searchIndex("search_username", { searchField: "username" }),
 
   // Admin roles for protected operations with role hierarchy
   adminRoles: defineTable({
@@ -349,8 +353,9 @@ export default defineSchema({
 
     // Streaming configuration for agent gameplay broadcasts
     streamingEnabled: v.optional(v.boolean()), // Whether agent can stream their games
-    streamingPlatform: v.optional(literals("twitch", "youtube", "custom")), // Platform to stream to
+    streamingPlatform: v.optional(literals("twitch", "youtube", "custom", "retake", "x", "pumpfun")), // Platform to stream to
     streamingKeyHash: v.optional(v.string()), // Encrypted stream key (AES-256-GCM)
+    streamingRtmpUrl: v.optional(v.string()), // Custom RTMP URL (required for x/pumpfun)
     streamingAutoStart: v.optional(v.boolean()), // Auto-start streaming when game begins
     lastStreamAt: v.optional(v.number()), // Last streaming session timestamp
 
@@ -3703,7 +3708,7 @@ export default defineSchema({
     streamType: literals("user", "agent"),
 
     // Platform configuration
-    platform: literals("twitch", "youtube", "custom", "retake"),
+    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
     streamTitle: v.string(),
 
     // Status tracking
@@ -3722,6 +3727,9 @@ export default defineSchema({
     // Retake.tv specific fields
     retakeAccessToken: v.optional(v.string()), // Encrypted Retake.tv access token
     retakeUserDbId: v.optional(v.string()), // Retake.tv user database ID
+
+    // Pump.fun specific fields
+    pumpfunMintAddress: v.optional(v.string()), // Solana token mint address
 
     // Overlay configuration
     overlayConfig: v.object({
@@ -3775,7 +3783,7 @@ export default defineSchema({
   streamingPlatforms: defineTable({
     userId: v.id("users"),
     agentId: v.optional(v.id("agents")),
-    platform: literals("twitch", "youtube", "custom", "retake"),
+    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
 
     // Encrypted credentials
     streamKeyHash: v.string(),
@@ -3803,6 +3811,20 @@ export default defineSchema({
     .index("by_agent", ["agentId"])
     .index("by_user_platform", ["userId", "platform"]),
 
+  // Multi-destination streaming — tracks individual RTMP destinations per session
+  streamingDestinations: defineTable({
+    sessionId: v.id("streamingSessions"),
+    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
+    rtmpUrl: v.string(),
+    streamKeyHash: v.string(),
+    status: literals("active", "failed", "removed"),
+    addedAt: v.number(),
+    removedAt: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_session_status", ["sessionId", "status"]),
+
   webhooks: defineTable({
     agentId: v.id("agents"),
     events: v.array(v.string()),
@@ -3814,4 +3836,25 @@ export default defineSchema({
   })
     .index("by_agent", ["agentId"])
     .index("by_active", ["isActive"]),
+
+  // ============================================================================
+  // ANALYTICS SNAPSHOTS (Periodic Trend Data)
+  // ============================================================================
+
+  // Point-in-time snapshots of key game health metrics for trend analysis
+  analyticsSnapshots: defineTable({
+    timestamp: v.number(),
+    period: v.union(v.literal("hourly"), v.literal("daily"), v.literal("weekly")),
+    metrics: v.object({
+      totalUsers: v.number(),
+      dailyActiveUsers: v.number(),
+      totalGoldInCirculation: v.number(),
+      totalGemsInCirculation: v.number(),
+      gamesPlayedLast24h: v.number(),
+      activeMarketplaceListings: v.number(),
+      playersInMatchmakingQueue: v.number(),
+    }),
+  })
+    .index("by_timestamp", ["timestamp"])
+    .index("by_period_timestamp", ["period", "timestamp"]),
 });

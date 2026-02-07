@@ -6,25 +6,11 @@
  * Results visible at /analytics/integrity in the admin dashboard.
  */
 
-import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internalMutation, query } from "../_generated/server";
 import { requireAuthQuery } from "../lib/convexAuth";
 import { requireRole } from "../lib/roles";
-
-// =============================================================================
-// Types
-// =============================================================================
-
-type CheckResult = {
-  name: string;
-  severity: "critical" | "warning" | "info";
-  status: "ok" | "anomaly";
-  count: number;
-  details: string;
-  items: Array<{ id: string; info: string }>;
-};
 
 // =============================================================================
 // Individual Checks

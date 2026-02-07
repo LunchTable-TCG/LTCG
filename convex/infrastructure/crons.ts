@@ -190,4 +190,23 @@ crons.interval(
   internalAny.monitoring.integrity.runIntegrityChecks
 );
 
+// ============================================================================
+// ANALYTICS SNAPSHOTS
+// ============================================================================
+
+// Capture analytics snapshot every hour for trend analysis
+crons.interval(
+  "analytics-snapshot",
+  { hours: 1 },
+  internalAny.admin.analyticsSnapshots.captureSnapshot
+);
+
+// Cleanup old analytics snapshots daily at 3 AM UTC
+// Keeps: hourly for 7 days, daily for 90 days
+crons.daily(
+  "cleanup-analytics-snapshots",
+  { hourUTC: 3, minuteUTC: 0 },
+  internalAny.admin.analyticsSnapshots.cleanupOldSnapshots
+);
+
 export default crons;

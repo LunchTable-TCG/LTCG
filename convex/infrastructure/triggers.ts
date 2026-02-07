@@ -131,6 +131,49 @@ triggers.register("moderationActions", async (ctx, change) => {
 });
 
 // ============================================================================
+// PLAYER CURRENCY TABLE TRIGGERS
+// ============================================================================
+
+triggers.register("playerCurrency", async (ctx, change) => {
+  const userId = change.newDoc?.userId ?? change.oldDoc?.userId;
+
+  // Calculate currency deltas for audit clarity
+  const oldDoc = change.oldDoc as unknown as Record<string, number> | null;
+  const newDoc = change.newDoc as unknown as Record<string, number> | null;
+  const goldDelta =
+    change.operation === "update" && oldDoc && newDoc
+      ? newDoc["gold"] - oldDoc["gold"]
+      : undefined;
+  const gemsDelta =
+    change.operation === "update" && oldDoc && newDoc
+      ? newDoc["gems"] - oldDoc["gems"]
+      : undefined;
+
+  await ctx.db.insert("auditLog", {
+    table: "playerCurrency",
+    operation: normalizeOperation(change.operation),
+    documentId: change.id,
+    userId,
+    timestamp: Date.now(),
+    changedFields: getChangedFields(change),
+    oldValue: change.oldDoc
+      ? {
+          gold: (change.oldDoc as Record<string, unknown>)["gold"],
+          gems: (change.oldDoc as Record<string, unknown>)["gems"],
+          ...(goldDelta !== undefined ? { _goldDelta: goldDelta } : {}),
+          ...(gemsDelta !== undefined ? { _gemsDelta: gemsDelta } : {}),
+        }
+      : undefined,
+    newValue: change.newDoc
+      ? {
+          gold: (change.newDoc as Record<string, unknown>)["gold"],
+          gems: (change.newDoc as Record<string, unknown>)["gems"],
+        }
+      : undefined,
+  });
+});
+
+// ============================================================================
 // ADDITIONAL TRIGGER EXAMPLES (commented out)
 // ============================================================================
 

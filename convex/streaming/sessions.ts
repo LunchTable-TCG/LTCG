@@ -13,14 +13,14 @@ const overlayConfigValidator = v.object({
 });
 
 /**
- * Create a new streaming session
+ * Create a new streaming session (supports retake, x, pumpfun platforms)
  */
 export const createSession = mutation({
   args: {
     streamType: literals("user", "agent"),
     userId: v.optional(v.id("users")),
     agentId: v.optional(v.id("agents")),
-    platform: literals("twitch", "youtube", "custom"),
+    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
     streamTitle: v.string(),
     overlayConfig: overlayConfigValidator,
   },
@@ -304,6 +304,22 @@ export const linkLobby = mutation({
 });
 
 /**
+ * Internal variant of linkLobby for use from internalAction/internalMutation.
+ * Public mutations are not accessible via the `internal` API reference.
+ */
+export const linkLobbyInternal = internalMutation({
+  args: {
+    sessionId: v.id("streamingSessions"),
+    lobbyId: v.union(v.id("gameLobbies"), v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.sessionId, {
+      currentLobbyId: args.lobbyId,
+    });
+  },
+});
+
+/**
  * Create an overlay access code for a streaming session
  * Used to generate secure, short-lived codes for overlay URLs
  */
@@ -452,5 +468,81 @@ export const cleanupStaleSessions = internalMutation({
     }
 
     return { cleanedSessions: cleaned, cleanedCodes: expiredCodes.length };
+  },
+});
+
+// ============================================================================
+// MULTI-DESTINATION MUTATIONS
+// ============================================================================
+
+/**
+ * Add a streaming destination to a session
+ */
+export const addDestination = mutation({
+  args: {
+    sessionId: v.id("streamingSessions"),
+    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
+    rtmpUrl: v.string(),
+    streamKeyHash: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) {
+      throw new Error("Session not found");
+    }
+
+    return await ctx.db.insert("streamingDestinations", {
+      sessionId: args.sessionId,
+      platform: args.platform,
+      rtmpUrl: args.rtmpUrl,
+      streamKeyHash: args.streamKeyHash,
+      status: "active",
+      addedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Remove a streaming destination from a session (mark as removed)
+ */
+export const removeDestination = mutation({
+  args: {
+    sessionId: v.id("streamingSessions"),
+    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
+  },
+  handler: async (ctx, args) => {
+    const dest = await ctx.db
+      .query("streamingDestinations")
+      .withIndex("by_session_status", (q) =>
+        q.eq("sessionId", args.sessionId).eq("status", "active")
+      )
+      .filter((q) => q.eq(q.field("platform"), args.platform))
+      .first();
+
+    if (!dest) {
+      throw new Error("Active destination not found");
+    }
+
+    await ctx.db.patch(dest._id, {
+      status: "removed",
+      removedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Get all active destinations for a session
+ */
+export const getSessionDestinations = query({
+  args: {
+    sessionId: v.id("streamingSessions"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("streamingDestinations")
+      .withIndex("by_session_status", (q) =>
+        q.eq("sessionId", args.sessionId).eq("status", "active")
+      )
+      .collect();
   },
 });

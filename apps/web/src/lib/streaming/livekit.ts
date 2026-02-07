@@ -1,4 +1,4 @@
-import { EgressClient, EncodingOptions, EncodingOptionsPreset, StreamProtocol } from "livekit-server-sdk";
+import { EgressClient, EncodingOptionsPreset, StreamProtocol } from "livekit-server-sdk";
 
 // Strip any trailing newlines from environment variables (Vercel CLI bug adds \n)
 const LIVEKIT_URL = process.env.LIVEKIT_URL?.trim() || "";
@@ -31,7 +31,7 @@ function getEgressClient(): EgressClient {
  */
 export async function startWebEgress(params: {
   overlayUrl: string;
-  rtmpUrl: string;
+  rtmpUrls: string[];
   sessionId?: string;
 }): Promise<{ egressId: string }> {
   const client = getEgressClient();
@@ -40,9 +40,9 @@ export async function startWebEgress(params: {
   const result = await client.startWebEgress(
     params.overlayUrl, // URL to capture
     {
-      // StreamOutput
+      // StreamOutput — supports multiple RTMP destinations
       protocol: StreamProtocol.RTMP,
-      urls: [params.rtmpUrl],
+      urls: params.rtmpUrls,
     },
     {
       // WebOptions — 1080p30 encoding (4.5 Mbps)
@@ -76,7 +76,7 @@ export async function updateStreamUrls(params: {
 }): Promise<void> {
   const client = getEgressClient();
 
-  await client.updateStream(egressId, {
+  await client.updateStream(params.egressId, {
     addOutputUrls: params.addUrls,
     removeOutputUrls: params.removeUrls,
   });

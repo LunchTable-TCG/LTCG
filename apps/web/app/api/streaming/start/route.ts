@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
       gameId,
       lobbyId,
       baseUrl: customBaseUrl,
+      // Multi-destination support
+      destinations,
     } = body;
 
     // Determine stream key source
@@ -119,14 +121,23 @@ export async function POST(req: NextRequest) {
 
     const overlayUrl = `${baseUrl}/stream/overlay?sessionId=${sessionId}&code=${accessCode}&token=${overlayToken}`;
 
-    // 4. Build RTMP URL
-    const rtmpUrl = buildRtmpUrl(platform, streamKey, customRtmpUrl);
+    // 4. Build RTMP URL(s) — supports multi-destination
+    let rtmpUrls: string[];
+    if (destinations && Array.isArray(destinations) && destinations.length > 0) {
+      // Multi-destination mode
+      rtmpUrls = destinations.map((dest: { platform: string; streamKey: string; customRtmpUrl?: string }) =>
+        buildRtmpUrl(dest.platform as any, dest.streamKey, dest.customRtmpUrl)
+      );
+    } else {
+      // Single destination (backward-compatible)
+      rtmpUrls = [buildRtmpUrl(platform, streamKey, customRtmpUrl)];
+    }
 
     // 5. Start LiveKit egress
     try {
       const { egressId } = await startWebEgress({
         overlayUrl,
-        rtmpUrl,
+        rtmpUrls,
         sessionId,
       });
 
@@ -139,6 +150,20 @@ export async function POST(req: NextRequest) {
           status: "pending",
         },
       });
+
+      // 6b. Track individual destinations for multi-destination streams
+      if (destinations && Array.isArray(destinations) && destinations.length > 0) {
+        for (const dest of destinations) {
+          const destStreamKey = dest.streamKey;
+          const destRtmpUrl = buildRtmpUrl(dest.platform as any, destStreamKey, dest.customRtmpUrl);
+          await convex.mutation(api.streaming.sessions.addDestination, {
+            sessionId,
+            platform: dest.platform,
+            rtmpUrl: destRtmpUrl,
+            streamKeyHash: encryptStreamKey(destStreamKey),
+          });
+        }
+      }
 
       return NextResponse.json({
         success: true,
