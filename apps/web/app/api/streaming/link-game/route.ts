@@ -3,7 +3,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL ?? "");
 
 /**
  * Link a game lobby to an active streaming session
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const authHeader = req.headers.get("Authorization");
     const apiKey = authHeader?.replace("Bearer ", "");
 
-    if (!apiKey || apiKey !== process.env.LTCG_API_KEY) {
+    if (!apiKey || apiKey !== process.env.LTCG_API_KEY?.trim()) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
