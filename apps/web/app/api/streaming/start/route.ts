@@ -111,11 +111,12 @@ export async function POST(req: NextRequest) {
     });
 
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").trim();
-    const overlayUrl = `${baseUrl}/stream/overlay?sessionId=${sessionId}&code=${accessCode}`;
 
-    // Generate overlay token separately (for client storage, not in URL)
+    // Generate overlay token BEFORE building URL (needed for middleware auth)
     const entityId = streamType === "user" ? userId : (agentId || "external_agent");
-    const token = await generateOverlayToken(sessionId, streamType, entityId!);
+    const overlayToken = await generateOverlayToken(sessionId, streamType, entityId!);
+
+    const overlayUrl = `${baseUrl}/stream/overlay?sessionId=${sessionId}&code=${accessCode}&token=${overlayToken}`;
 
     // 4. Build RTMP URL
     const rtmpUrl = buildRtmpUrl(platform, streamKey, customRtmpUrl);
@@ -143,7 +144,7 @@ export async function POST(req: NextRequest) {
         sessionId,
         status: "pending",
         overlayUrl,
-        overlayToken: token, // Token separate for client storage
+        overlayToken, // Token for client storage and middleware auth
         message: "Stream starting... It may take a few seconds to go live.",
       });
     } catch (liveKitError) {

@@ -81,8 +81,8 @@ export async function getRetakeRTMPCredentials(
   const data = await response.json();
 
   return {
-    url: data.url, // Already includes rtmps://
-    key: data.key,
+    url: data.rtmp_url, // Already includes rtmps://
+    key: data.stream_key,
   };
 }
 
