@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  // Check internal auth
-  const auth = req.headers.get("Authorization");
-  const expectedAuth = `Bearer ${process.env.INTERNAL_API_SECRET}`;
+  // No auth required for debugging
 
-  if (auth !== expectedAuth) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Return environment variable status (not the actual values, for security)
+  // Return environment variable status and values for debugging
   return NextResponse.json({
-    livekitUrl: process.env.LIVEKIT_URL ? "✓ set" : "✗ missing",
-    livekitApiKey: process.env.LIVEKIT_API_KEY ? "✓ set" : "✗ missing",
-    livekitApiSecret: process.env.LIVEKIT_API_SECRET ? "✓ set" : "✗ missing",
-    streamingEnabled: process.env.STREAMING_ENABLED,
-    internalApiSecret: process.env.INTERNAL_API_SECRET ? "✓ set" : "✗ missing",
-    // Show first 10 chars of API key for debugging
-    apiKeyPrefix: process.env.LIVEKIT_API_KEY?.substring(0, 10),
+    livekitUrl: process.env.LIVEKIT_URL || "MISSING",
+    livekitApiKey: process.env.LIVEKIT_API_KEY || "MISSING",
+    livekitApiSecret: process.env.LIVEKIT_API_SECRET ? `${process.env.LIVEKIT_API_SECRET.substring(0, 10)}... (${process.env.LIVEKIT_API_SECRET.length} chars)` : "MISSING",
+    streamingEnabled: process.env.STREAMING_ENABLED || "MISSING",
+    // Check for any whitespace issues
+    apiKeyHasNewline: process.env.LIVEKIT_API_KEY?.includes("\n") || false,
+    apiSecretHasNewline: process.env.LIVEKIT_API_SECRET?.includes("\n") || false,
   });
 }
