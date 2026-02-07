@@ -39,7 +39,7 @@ interface FeatureFlags {
  * Verify JWT token for stream overlay access
  */
 async function verifyOverlayToken(token: string) {
-  const secret = process.env.STREAMING_JWT_SECRET;
+  const secret = process.env.STREAMING_JWT_SECRET?.trim();
   if (!secret) {
     console.error("STREAMING_JWT_SECRET not configured");
     return null;
