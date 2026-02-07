@@ -41,16 +41,34 @@ function StreamOverlayContent() {
   // If roomName is provided, use LiveKit composite mode
   const useLiveKitComposite = Boolean(roomName && livekitUrl && token);
 
-  // Get game state if there's an active game
-  const gameState = useQuery(
+  // Check if current lobby is a story game (story games don't have lobby entries)
+  const isStoryGame = session?.currentLobbyId && typeof session.currentLobbyId === "string" && session.currentLobbyId.startsWith("story_");
+
+  // Get game state for multiplayer games (via lobby ID)
+  const multiplayerGameState = useQuery(
     api.gameplay.games.queries.getGameSpectatorView,
-    session?.currentLobbyId ? { lobbyId: session.currentLobbyId } : "skip"
+    session?.currentLobbyId && !isStoryGame ? { lobbyId: session.currentLobbyId as Id<"gameLobbies"> } : "skip"
   );
 
-  // Get recent game events
+  // Get lobby ID for story games (via game ID)
+  const storyGameLookup = useQuery(
+    api.gameplay.games.queries.getGameStateByGameId,
+    session?.currentLobbyId && isStoryGame ? { gameId: session.currentLobbyId } : "skip"
+  );
+
+  // Get full game state for story games (via lobby ID from lookup)
+  const storyGameState = useQuery(
+    api.gameplay.games.queries.getGameSpectatorView,
+    storyGameLookup?.lobbyId ? { lobbyId: storyGameLookup.lobbyId } : "skip"
+  );
+
+  // Use the appropriate game state
+  const gameState = isStoryGame ? storyGameState : multiplayerGameState;
+
+  // Get recent game events (only for multiplayer games)
   const events = useQuery(
     api.gameplay.gameEvents.subscribeToGameEvents,
-    session?.currentLobbyId ? { lobbyId: session.currentLobbyId, limit: 10 } : "skip"
+    session?.currentLobbyId && !isStoryGame ? { lobbyId: session.currentLobbyId as Id<"gameLobbies">, limit: 10 } : "skip"
   );
 
   // Get agent decisions (for agent streams)
