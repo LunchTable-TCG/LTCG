@@ -8,6 +8,7 @@ import { ELIZAOS_TOKEN } from "../lib/constants";
 import { requireAuthQuery } from "../lib/convexAuth";
 import { addCardsToInventory } from "../lib/helpers";
 import { achievementUnlockedValidator, achievementValidator } from "../lib/returnValidators";
+import { addXP } from "../lib/xpHelpers";
 
 // Type definitions matching schema
 type AchievementCategory =
@@ -257,14 +258,11 @@ export const updateAchievementProgress = internalMutation({
             });
           }
 
-          // Award XP
+          // Award XP (uses playerXP table, not users.xp)
           if (definition.rewards.xp) {
-            const user = await ctx.db.get(args.userId);
-            if (user) {
-              await ctx.db.patch(args.userId, {
-                xp: (user.xp || 0) + definition.rewards.xp,
-              });
-            }
+            await addXP(ctx, args.userId, definition.rewards.xp, {
+              source: "achievement",
+            });
           }
 
           // Award card if any (for special achievements like ElizaOS holder)

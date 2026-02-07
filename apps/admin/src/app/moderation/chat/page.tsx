@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { PageWrapper } from "@/components/layout";
 import { useAdmin } from "@/contexts/AdminContext";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
@@ -181,13 +182,7 @@ export default function ChatModerationPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Chat Moderation</h1>
-        <p className="text-muted-foreground">Monitor and moderate global chat messages</p>
-      </div>
-
+    <PageWrapper title="Chat Moderation" description="Monitor and moderate global chat messages">
       {/* Stats Overview */}
       {stats && (
         <div className="grid gap-4 md:grid-cols-5">
@@ -502,6 +497,6 @@ export default function ChatModerationPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 }

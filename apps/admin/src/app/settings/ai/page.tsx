@@ -26,7 +26,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { typedApi, useAction, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexAction, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 
 // Use typedApi which has the type bypass built-in
 const aiConfigApi = typedApi.admin.aiConfig;
@@ -646,36 +646,36 @@ export default function AIProvidersPage() {
   useAdmin(); // Auth check
 
   // Queries
-  const configsResult = useQuery(typedApi.admin.aiConfig.getAIConfigs, {}) as
+  const configsResult = useConvexQuery(typedApi.admin.aiConfig.getAIConfigs, {}) as
     | AIConfigsResult
     | undefined;
 
   // Mutations
-  const updateConfig = useMutation(typedApi.admin.aiConfig.updateAIConfig);
-  const initializeDefaults = useMutation(typedApi.admin.aiConfig.initializeAIDefaults);
-  const testProvider = useAction(aiConfigApi.testProviderConnection);
+  const updateConfig = useConvexMutation(typedApi.admin.aiConfig.updateAIConfig);
+  const initializeDefaults = useConvexMutation(typedApi.admin.aiConfig.initializeAIDefaults);
+  const testProvider = useConvexAction(aiConfigApi.testProviderConnection);
 
   // API Key management
-  const apiKeyStatus = useQuery(typedApi.admin.aiConfig.getAPIKeyStatus, {}) as
+  const apiKeyStatus = useConvexQuery(typedApi.admin.aiConfig.getAPIKeyStatus, {}) as
     | APIKeyStatusResult
     | undefined;
-  const setAPIKeyMutation = useMutation(typedApi.admin.aiConfig.setAPIKey);
-  const clearAPIKeyMutation = useMutation(typedApi.admin.aiConfig.clearAPIKey);
+  const setAPIKeyMutation = useConvexMutation(typedApi.admin.aiConfig.setAPIKey);
+  const clearAPIKeyMutation = useConvexMutation(typedApi.admin.aiConfig.clearAPIKey);
 
   // Model fetching actions - use api directly, not in typedApi
-  const fetchAllModels = useAction(aiProvidersApi.fetchAllModels);
+  const fetchAllModels = useConvexAction(aiProvidersApi.fetchAllModels);
 
   // Usage tracking queries - use api directly, not in typedApi
-  const usageSummary = useQuery(aiUsageApi.getUsageSummary, { days: 30 }) as
+  const usageSummary = useConvexQuery(aiUsageApi.getUsageSummary, { days: 30 }) as
     | UsageSummaryResult
     | undefined;
-  const topModels = useQuery(aiUsageApi.getTopModels, { days: 30, limit: 5 }) as
+  const topModels = useConvexQuery(aiUsageApi.getTopModels, { days: 30, limit: 5 }) as
     | TopModelData[]
     | undefined;
-  const usageByFeature = useQuery(aiUsageApi.getUsageByFeature, { days: 30 }) as
+  const usageByFeature = useConvexQuery(aiUsageApi.getUsageByFeature, { days: 30 }) as
     | FeatureUsageData[]
     | undefined;
-  const recentUsage = useQuery(aiUsageApi.getRecentUsage, { limit: 20 }) as
+  const recentUsage = useConvexQuery(aiUsageApi.getRecentUsage, { limit: 20 }) as
     | RecentUsageData[]
     | undefined;
 

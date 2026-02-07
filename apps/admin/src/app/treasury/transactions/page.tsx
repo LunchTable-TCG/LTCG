@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { typedApi, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import type { Doc } from "@convex/_generated/dataModel";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
@@ -121,7 +121,7 @@ export default function TreasuryTransactionsPage() {
 
   // Fetch transactions
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-  const { transactions, total } = (useQuery(typedApi.treasury.transactions.listTransactions, {
+  const { transactions, total } = (useConvexQuery(typedApi.treasury.transactions.listTransactions, {
     status:
       statusFilter !== "all"
         ? (statusFilter as "pending" | "submitted" | "confirmed" | "failed")
@@ -142,7 +142,7 @@ export default function TreasuryTransactionsPage() {
 
   // Fetch stats
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-  const stats = useQuery(typedApi.treasury.transactions.getStats, { daysBack: 30 }) as any;
+  const stats = useConvexQuery(typedApi.treasury.transactions.getStats, { daysBack: 30 }) as any;
 
   const isLoading = transactions === undefined;
   const totalPages = Math.ceil(total / limit);

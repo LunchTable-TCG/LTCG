@@ -1,10 +1,12 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { NotificationToast } from "@/components/notifications/NotificationToast";
+import { Toaster } from "@/components/ui/toaster";
 import { Footer } from "./Footer";
 import { Navbar, SidebarProvider } from "./Navbar";
 
-const FULL_SCREEN_ROUTES = ["/play/", "/game/", "/onboarding", "/login", "/signup"];
+const FULL_SCREEN_ROUTES = ["/play/", "/game/", "/onboarding", "/login", "/signup", "/stream/overlay"];
 // Dashboard/app routes should not show the footer
 const NO_FOOTER_ROUTES = ["/lunchtable", "/binder", "/profile", "/quests", "/decks", "/shop"];
 
@@ -27,11 +29,13 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
+      <NotificationToast />
       <div className="relative flex min-h-screen flex-col">
         <Navbar />
         <main className="flex-1">{children}</main>
         {!hideFooter && <Footer />}
       </div>
+      <Toaster />
     </SidebarProvider>
   );
 }

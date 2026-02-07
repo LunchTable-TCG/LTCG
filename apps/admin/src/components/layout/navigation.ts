@@ -95,6 +95,16 @@ export const MAIN_NAVIGATION: NavSection[] = [
       { title: "Dashboard", href: "/", icon: LayoutDashboard, keywords: ["home", "overview"] },
       { title: "Alerts", href: "/alerts", icon: Bell, permission: "admin.manage", keywords: ["notifications"] },
     ],
+    subGroups: [
+      {
+        title: "Alert Management",
+        items: [
+          { title: "Rules", href: "/alerts/rules", icon: ClipboardList, permission: "admin.manage", keywords: ["alert rules", "triggers"] },
+          { title: "Channels", href: "/alerts/channels", icon: Megaphone, permission: "admin.manage", keywords: ["notification channels", "slack"] },
+          { title: "History", href: "/alerts/history", icon: Clock, permission: "admin.manage", keywords: ["alert log", "past"] },
+        ],
+      },
+    ],
   },
 
   // ── 2. Game Content ──
@@ -114,6 +124,7 @@ export const MAIN_NAVIGATION: NavSection[] = [
           { title: "Template Designer", href: "/cards/template-designer", icon: Paintbrush, permission: "config.edit", keywords: ["templates", "design"] },
           { title: "Batch Render", href: "/cards/batch-render", icon: Printer, permission: "config.edit", keywords: ["generate", "bulk"] },
           { title: "Upload Backgrounds", href: "/cards/upload-backgrounds", icon: Upload, permission: "config.edit", keywords: ["images", "bg"] },
+          { title: "Design Gallery", href: "/templates", icon: Palette, permission: "config.edit", keywords: ["freeform", "canvas", "designs"] },
         ],
       },
     ],
@@ -162,6 +173,7 @@ export const MAIN_NAVIGATION: NavSection[] = [
         items: [
           { title: "Launch Control", href: "/token", icon: Rocket, permission: "admin.manage", keywords: ["crypto", "launch"] },
           { title: "Configuration", href: "/token/config", icon: Settings, permission: "admin.manage", keywords: ["tokenomics"] },
+          { title: "Launch Checklist", href: "/token/launch", icon: ClipboardList, permission: "admin.manage", keywords: ["approvals", "go-live"] },
         ],
       },
       {
@@ -176,6 +188,7 @@ export const MAIN_NAVIGATION: NavSection[] = [
       {
         title: "Economy",
         items: [
+          { title: "Economy Hub", href: "/economy", icon: Coins, permission: "admin.manage", keywords: ["overview", "monetization"] },
           { title: "Revenue", href: "/economy/revenue", icon: TrendingUp, permission: "admin.manage", keywords: ["income", "earnings"] },
           { title: "RNG Config", href: "/economy/rng", icon: Coins, permission: "admin.manage", keywords: ["random", "loot", "drops"] },
           { title: "Sales", href: "/economy/sales", icon: CreditCard, permission: "admin.manage", keywords: ["purchases"] },
@@ -226,6 +239,7 @@ export const MAIN_NAVIGATION: NavSection[] = [
       {
         title: "User Behavior",
         items: [
+          { title: "Overview", href: "/analytics/behavior", icon: BarChart3, keywords: ["posthog", "behavior"] },
           { title: "Sessions", href: "/analytics/behavior/sessions", icon: Clock, keywords: ["activity", "time"] },
           { title: "Errors", href: "/analytics/behavior/errors", icon: AlertCircle, keywords: ["bugs", "crashes"] },
           { title: "Funnels", href: "/analytics/behavior/funnels", icon: Filter, keywords: ["conversion", "drop-off"] },
@@ -289,6 +303,9 @@ export const FOOTER_NAVIGATION: FooterSection = {
 export const ROUTE_MAP: Record<string, { label: string; parent?: string }> = {
   "/": { label: "Dashboard" },
   "/alerts": { label: "Alerts" },
+  "/alerts/rules": { label: "Rules", parent: "/alerts" },
+  "/alerts/channels": { label: "Channels", parent: "/alerts" },
+  "/alerts/history": { label: "History", parent: "/alerts" },
 
   // Game Content
   "/cards": { label: "Cards", parent: "/game-content" },
@@ -298,6 +315,8 @@ export const ROUTE_MAP: Record<string, { label: string; parent?: string }> = {
   "/assets": { label: "Assets", parent: "/game-content" },
   "/story": { label: "Story Mode", parent: "/game-content" },
   "/quests": { label: "Quests", parent: "/game-content" },
+  "/templates": { label: "Design Gallery", parent: "/game-content" },
+  "/templates/[templateId]": { label: "Design Editor", parent: "/templates" },
 
   // Live Operations
   "/seasons": { label: "Seasons", parent: "/live-ops" },
@@ -312,10 +331,12 @@ export const ROUTE_MAP: Record<string, { label: string; parent?: string }> = {
   // Finance
   "/token": { label: "Launch Control", parent: "/finance" },
   "/token/config": { label: "Configuration", parent: "/token" },
+  "/token/launch": { label: "Launch Checklist", parent: "/token" },
   "/treasury": { label: "Overview", parent: "/finance-treasury" },
   "/treasury/wallets": { label: "Wallets", parent: "/treasury" },
   "/treasury/transactions": { label: "Transactions", parent: "/treasury" },
   "/treasury/policies": { label: "Policies", parent: "/treasury" },
+  "/economy": { label: "Economy Hub", parent: "/finance-economy" },
   "/economy/revenue": { label: "Revenue", parent: "/finance-economy" },
   "/economy/rng": { label: "RNG Config", parent: "/finance-economy" },
   "/economy/sales": { label: "Sales", parent: "/finance-economy" },
@@ -340,6 +361,7 @@ export const ROUTE_MAP: Record<string, { label: string; parent?: string }> = {
   "/analytics/streaming": { label: "Streaming", parent: "/analytics" },
   "/analytics/token": { label: "Token", parent: "/analytics" },
   "/analytics/feedback": { label: "Feedback", parent: "/analytics" },
+  "/analytics/behavior": { label: "User Behavior", parent: "/analytics-section" },
   "/analytics/behavior/sessions": { label: "Sessions", parent: "/analytics-behavior" },
   "/analytics/behavior/errors": { label: "Errors", parent: "/analytics-behavior" },
   "/analytics/behavior/funnels": { label: "Funnels", parent: "/analytics-behavior" },
@@ -363,6 +385,20 @@ export const ROUTE_MAP: Record<string, { label: string; parent?: string }> = {
   "/docs/rate-limits": { label: "Rate Limits", parent: "/docs" },
   "/docs/webhooks": { label: "Webhooks", parent: "/docs" },
   "/docs/errors": { label: "Error Codes", parent: "/docs" },
+
+  // Dynamic route patterns (for getBreadcrumbs pattern matching)
+  "/battle-pass/[seasonId]": { label: "Season Details", parent: "/battle-pass" },
+  "/battle-pass/[seasonId]/tiers": { label: "Tiers", parent: "/battle-pass/[seasonId]" },
+  "/cards/[cardId]": { label: "Card Details", parent: "/cards" },
+  "/players/[playerId]": { label: "Player Details", parent: "/players" },
+  "/promo-codes/[promoCodeId]": { label: "Promo Code Details", parent: "/promo-codes" },
+  "/quests/[questId]": { label: "Quest Details", parent: "/quests" },
+  "/quests/achievement/[achievementId]": { label: "Achievement", parent: "/quests" },
+  "/seasons/[seasonId]": { label: "Season Details", parent: "/seasons" },
+  "/shop/[productId]": { label: "Product Details", parent: "/shop" },
+  "/story/[chapterId]": { label: "Chapter", parent: "/story" },
+  "/story/[chapterId]/stage/[stageId]": { label: "Stage", parent: "/story/[chapterId]" },
+  "/tournaments/[tournamentId]": { label: "Tournament Details", parent: "/tournaments" },
 
   // Virtual parents for breadcrumb hierarchy
   "/game-content": { label: "Game Content" },
@@ -418,22 +454,43 @@ export function isPathInSubGroup(subGroup: NavSubGroup, pathname: string) {
   return subGroup.items.some((item) => pathname.startsWith(item.href));
 }
 
-/** Build breadcrumb chain from ROUTE_MAP */
+/** Try to match a pathname against ROUTE_MAP patterns with bracket segments */
+function resolveRoutePattern(pathname: string): string | undefined {
+  if (ROUTE_MAP[pathname]) return pathname;
+  for (const pattern of Object.keys(ROUTE_MAP)) {
+    if (!pattern.includes("[")) continue;
+    const regex = new RegExp(
+      "^" + pattern.replace(/\[[\w]+\]/g, "[^/]+") + "$"
+    );
+    if (regex.test(pathname)) return pattern;
+  }
+  return undefined;
+}
+
+/** Build breadcrumb chain from ROUTE_MAP (supports dynamic routes) */
 export function getBreadcrumbs(pathname: string): { label: string; href?: string }[] {
   const crumbs: { label: string; href?: string }[] = [];
-  let current: { label: string; parent?: string } | undefined = ROUTE_MAP[pathname];
+  const resolved = resolveRoutePattern(pathname);
+  let current: { label: string; parent?: string } | undefined = resolved
+    ? ROUTE_MAP[resolved]
+    : undefined;
   if (!current) return [{ label: "Admin" }];
 
   // Walk up the parent chain
   const visited = new Set<string>();
-  let path: string | undefined = pathname;
+  let path: string | undefined = resolved;
+  let isFirst = true;
 
   while (current && path && !visited.has(path)) {
     visited.add(path);
-    crumbs.unshift({
-      label: current.label,
-      href: path.startsWith("/") && !path.includes("-") ? path : undefined,
-    });
+    // Use the actual pathname for the current page, pattern key for parents
+    const href = isFirst
+      ? pathname
+      : path.startsWith("/") && !path.includes("-") && !path.includes("[")
+        ? path
+        : undefined;
+    crumbs.unshift({ label: current.label, href });
+    isFirst = false;
     path = current.parent;
     current = path ? ROUTE_MAP[path] : undefined;
   }

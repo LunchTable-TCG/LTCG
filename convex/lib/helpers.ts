@@ -296,6 +296,15 @@ export async function adjustCardInventory(
   cardDefinitionId: Id<"cardDefinitions">,
   quantityDelta: number
 ) {
+  // CRITICAL: Verify card definition exists before any inventory operations
+  const cardDef = await ctx.db.get(cardDefinitionId);
+  if (!cardDef) {
+    throw createError(ErrorCode.NOT_FOUND_CARD, {
+      cardDefinitionId,
+      reason: "Card definition not found - cannot adjust inventory for non-existent card",
+    });
+  }
+
   const playerCard = await ctx.db
     .query("playerCards")
     .withIndex("by_user_card", (q) =>
@@ -479,6 +488,39 @@ export async function openPack(
   // Fetch dynamic RNG config from database (with fallback to constants)
   const rngConfig = await getFullRngConfig(ctx);
 
+  // ============================================================================
+  // ATOMIC PITY COUNTER LOGIC (prevents race condition)
+  // ============================================================================
+  // 1. Get or create pity state
+  const pityState = await ctx.db
+    .query("packOpeningPityState")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .first();
+
+  const currentPity = pityState?.packsSinceLastLegendary ?? 0;
+
+  // 2. Atomic increment FIRST (before checking threshold)
+  // This reserves the pity counter value for this pack opening
+  // Convex OCC will handle concurrent pack openings - each will get a unique counter value
+  let pityStateId: Id<"packOpeningPityState">;
+  if (pityState) {
+    await ctx.db.patch(pityState._id, {
+      packsSinceLastLegendary: currentPity + 1,
+    });
+    pityStateId = pityState._id;
+  } else {
+    pityStateId = await ctx.db.insert("packOpeningPityState", {
+      userId,
+      packsSinceLastLegendary: 1,
+      lastLegendaryAt: undefined,
+    });
+  }
+
+  // 3. Check if pity triggered (after increment)
+  const PITY_THRESHOLD = 50; // Adjust based on game design (50 packs = guaranteed legendary)
+  const triggeredPity = (currentPity + 1) >= PITY_THRESHOLD;
+  // ============================================================================
+
   let gotEpic = false;
   let gotLegendary = false;
   let gotFullArt = false;
@@ -487,8 +529,12 @@ export async function openPack(
     const isLastCard = i === cardCount - 1;
     let rarity: Rarity;
 
-    // Last card gets guaranteed rarity
-    if (isLastCard && guaranteedRarity) {
+    // 4. If pity triggered, force legendary drop on last card
+    if (isLastCard && triggeredPity) {
+      rarity = "legendary";
+      gotLegendary = true;
+    } else if (isLastCard && guaranteedRarity) {
+      // Last card gets guaranteed rarity
       rarity = guaranteedRarity;
     } else {
       rarity = weightedRandomRarity(rngConfig.rarityWeights);
@@ -519,6 +565,14 @@ export async function openPack(
       cost: card.cost,
       imageUrl: card.imageUrl,
       variant,
+    });
+  }
+
+  // 5. Reset pity counter if legendary was pulled (including pity-triggered legendary)
+  if (gotLegendary) {
+    await ctx.db.patch(pityStateId, {
+      packsSinceLastLegendary: 0,
+      lastLegendaryAt: Date.now(),
     });
   }
 

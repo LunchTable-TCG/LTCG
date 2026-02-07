@@ -339,6 +339,169 @@ const listAdmins = createTool({
   },
 });
 
+/**
+ * Tool to ban a player (REQUIRES CONFIRMATION)
+ *
+ * SECURITY: This tool provides recommendations only. The actual ban action
+ * must be executed by the admin through the admin dashboard with explicit confirmation.
+ */
+const recommendBanPlayer = createTool({
+  description:
+    "Analyze a player's behavior and recommend whether to ban them. This tool DOES NOT execute the ban - it only provides analysis and recommendations for the admin to review.",
+  args: z.object({
+    playerId: z.string().describe("The player's ID"),
+    reason: z
+      .string()
+      .describe("Reason for considering a ban (e.g., 'repeated harassment', 'cheating')"),
+  }),
+  handler: async (ctx: ToolCtx, args: { playerId: string; reason: string }) => {
+    // Get player profile
+    const profile = (await ctx.runQuery(api.admin.admin.getPlayerProfile, {
+      playerId: args.playerId as Id<"users">,
+    })) as PlayerProfile | null;
+
+    if (!profile) {
+      return { error: "Player not found" };
+    }
+
+    // Get recent audit logs for this player
+    const auditLogs = (await ctx.runQuery(api.admin.admin.getAuditLog, {
+      limit: 20,
+      targetUserId: args.playerId,
+    })) as AuditLogResult;
+
+    // Analyze behavior patterns
+    const previousWarnings = auditLogs.logs.filter((log) => log.action === "warn_player").length;
+    const previousBans = auditLogs.logs.filter((log) => log.action === "ban_player").length;
+    const previousSuspensions = auditLogs.logs.filter((log) => log.action === "suspend_player")
+      .length;
+
+    // Recommendation logic
+    const warningThreshold = 3;
+    const recommendBan = previousWarnings >= warningThreshold || previousSuspensions >= 2;
+
+    return {
+      analysis: {
+        playerId: args.playerId,
+        username: profile.username,
+        reason: args.reason,
+        accountAge: profile.createdAt
+          ? `${Math.floor((Date.now() - profile.createdAt) / (1000 * 60 * 60 * 24))} days`
+          : "unknown",
+        previousWarnings,
+        previousSuspensions,
+        previousBans,
+        lastActive: profile.lastActiveAt
+          ? new Date(profile.lastActiveAt).toISOString()
+          : "unknown",
+      },
+      recommendation: {
+        action: recommendBan ? "ban" : previousWarnings > 0 ? "suspend" : "warn",
+        confidence: recommendBan ? "high" : previousWarnings > 0 ? "medium" : "low",
+        reasoning: recommendBan
+          ? `Player has ${previousWarnings} warnings and ${previousSuspensions} suspensions. Pattern indicates repeated violations.`
+          : previousWarnings > 0
+            ? `Player has ${previousWarnings} previous warnings. Consider suspension before ban.`
+            : "First offense. Consider warning before escalating to ban.",
+        suggestedDuration: recommendBan ? "permanent" : previousWarnings > 0 ? "7 days" : "24 hours",
+      },
+      nextSteps: [
+        "1. Review evidence carefully (screenshots, match history, chat logs)",
+        "2. Verify reports are from multiple independent sources",
+        "3. Check for any mitigating circumstances",
+        "4. If proceeding, use admin dashboard to execute action with proper documentation",
+        "5. Notify player with clear explanation and appeal process",
+      ],
+      warning:
+        "⚠️ IMPORTANT: This is a RECOMMENDATION only. You must manually execute the ban through the admin dashboard after reviewing all evidence.",
+    };
+  },
+});
+
+/**
+ * Tool to grant currency to a player (REQUIRES CONFIRMATION)
+ *
+ * SECURITY: This tool provides recommendations only. The actual currency grant
+ * must be executed by the admin through the admin dashboard with explicit confirmation.
+ */
+const recommendGrantCurrency = createTool({
+  description:
+    "Analyze a currency grant request and recommend amount/conditions. This tool DOES NOT execute the grant - it only provides analysis and recommendations.",
+  args: z.object({
+    playerId: z.string().describe("The player's ID"),
+    amount: z.number().describe("Requested amount of gold to grant"),
+    reason: z
+      .string()
+      .describe("Reason for grant (e.g., 'compensation for bug', 'event reward')"),
+  }),
+  handler: async (ctx: ToolCtx, args: { playerId: string; amount: number; reason: string }) => {
+    // Get player profile
+    const profile = (await ctx.runQuery(api.admin.admin.getPlayerProfile, {
+      playerId: args.playerId as Id<"users">,
+    })) as PlayerProfile | null;
+
+    if (!profile) {
+      return { error: "Player not found" };
+    }
+
+    // Get player inventory for context
+    const inventory = (await ctx.runQuery(api.admin.admin.getPlayerInventory, {
+      playerId: args.playerId as Id<"users">,
+    })) as PlayerInventory | null;
+
+    // Validate amount (reasonable limits)
+    const MAX_GRANT_AMOUNT = 100000; // 100k gold max
+    const isAmountReasonable = args.amount > 0 && args.amount <= MAX_GRANT_AMOUNT;
+
+    // Check for suspicious patterns (multiple grants to same player)
+    const recentGrants = (await ctx.runQuery(api.admin.admin.getAuditLog, {
+      limit: 50,
+      action: "grant_currency",
+      targetUserId: args.playerId,
+    })) as AuditLogResult;
+
+    const grantsLast30Days = recentGrants.logs.filter(
+      (log) => log.timestamp > Date.now() - 30 * 24 * 60 * 60 * 1000
+    ).length;
+
+    const suspiciousActivity = grantsLast30Days > 3; // More than 3 grants in 30 days is suspicious
+
+    return {
+      analysis: {
+        playerId: args.playerId,
+        username: profile.username,
+        requestedAmount: args.amount,
+        reason: args.reason,
+        currentGold: inventory?.gold ?? 0,
+        totalCards: inventory?.totalCards ?? 0,
+        accountAge: profile.createdAt
+          ? `${Math.floor((Date.now() - profile.createdAt) / (1000 * 60 * 60 * 24))} days`
+          : "unknown",
+        recentGrantsCount: grantsLast30Days,
+      },
+      recommendation: {
+        approved: isAmountReasonable && !suspiciousActivity,
+        confidence: isAmountReasonable && !suspiciousActivity ? "high" : "low",
+        reasoning: !isAmountReasonable
+          ? `Amount ${args.amount} exceeds maximum grant limit of ${MAX_GRANT_AMOUNT}`
+          : suspiciousActivity
+            ? `Player has received ${grantsLast30Days} grants in last 30 days. Verify legitimacy.`
+            : "Request appears legitimate and within normal parameters.",
+        suggestedAmount: isAmountReasonable ? args.amount : Math.min(args.amount, MAX_GRANT_AMOUNT),
+      },
+      nextSteps: [
+        "1. Verify the reason for grant (bug report, compensation claim, etc.)",
+        "2. Check if similar grants were made to other affected players",
+        "3. Document the specific incident/reason in grant description",
+        "4. If approved, use admin dashboard to execute grant",
+        "5. Monitor player activity post-grant for unusual patterns",
+      ],
+      warning:
+        "⚠️ IMPORTANT: This is a RECOMMENDATION only. You must manually execute the currency grant through the admin dashboard with proper documentation.",
+    };
+  },
+});
+
 // =============================================================================
 // Agent Definition
 // =============================================================================
@@ -359,6 +522,8 @@ export const adminAgent = new Agent(components.agent, {
 - View player inventories and card collections with getPlayerInventory
 - Analyze moderation history through audit logs
 - Identify suspicious patterns using getSuspiciousActivity
+- **NEW**: Analyze ban decisions with recommendBanPlayer (provides recommendations only - admin must execute)
+- **NEW**: Analyze currency grants with recommendGrantCurrency (provides recommendations only - admin must execute)
 
 **System Overview:**
 - Check system statistics with getSystemStats (player counts, game activity, API usage)
@@ -374,16 +539,19 @@ export const adminAgent = new Agent(components.agent, {
 
 1. **Always verify before acting** - When asked about a player, search first to confirm you have the right person
 2. **Explain your reasoning** - When suggesting moderation actions, explain why based on the data
-3. **Request confirmation** - Before any write operations, ask the admin to confirm
-4. **Respect permissions** - Only suggest actions the admin can perform based on their role
-5. **Be concise but thorough** - Provide relevant details without overwhelming
-6. **Reference specific data** - When making recommendations, cite the evidence
+3. **CRITICAL: You can only RECOMMEND actions** - The recommendBanPlayer and recommendGrantCurrency tools provide analysis and recommendations. The admin must manually execute these actions through the dashboard.
+4. **Request confirmation** - Always make it clear that recommendations require manual admin approval
+5. **Respect permissions** - Only suggest actions the admin can perform based on their role
+6. **Be concise but thorough** - Provide relevant details without overwhelming
+7. **Reference specific data** - When making recommendations, cite the evidence
+8. **Security first** - For sensitive actions (bans, currency grants), emphasize the need for proper documentation and evidence
 
 **Response Format:**
 - Use structured responses with clear sections
 - Include relevant numbers and dates
 - Highlight any concerning patterns or anomalies
-- Suggest next steps when appropriate`,
+- Suggest next steps when appropriate
+- For ban/grant recommendations, clearly state this is analysis only and requires manual execution`,
 
   tools: {
     searchPlayers,
@@ -393,6 +561,8 @@ export const adminAgent = new Agent(components.agent, {
     getSuspiciousActivity,
     getAuditLogs,
     listAdmins,
+    recommendBanPlayer,
+    recommendGrantCurrency,
   },
 
   contextOptions: {

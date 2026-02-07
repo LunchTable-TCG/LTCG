@@ -132,7 +132,7 @@ export const getListing = query({
 
     // Get bid history
     const bids = await ctx.db
-      .query("marketplaceBids")
+      .query("auctionBids")
       .withIndex("by_listing", (q) => q.eq("listingId", listingId))
       .order("desc")
       .take(20);
@@ -512,7 +512,7 @@ export const setPriceCap = mutation({
  */
 export const refundBid = mutation({
   args: {
-    bidId: v.id("marketplaceBids"),
+    bidId: v.id("auctionBids"),
     reason: v.string(),
   },
   handler: async (ctx, args) => {
@@ -623,7 +623,7 @@ export const getSellerHistory = query({
 
     // Get recent bids by this user (buying activity)
     const bids = await ctx.db
-      .query("marketplaceBids")
+      .query("auctionBids")
       .withIndex("by_bidder", (q) => q.eq("bidderId", sellerId))
       .order("desc")
       .take(50);

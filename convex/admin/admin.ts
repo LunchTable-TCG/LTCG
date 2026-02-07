@@ -819,6 +819,12 @@ export const getPlayerInventory = query({
     const player = (await ctx.db.get(playerId)) as Doc<"users"> | null;
     if (!player) return null;
 
+    // Get player currency (source of truth for gold)
+    const currency = await ctx.db
+      .query("playerCurrency")
+      .withIndex("by_user", (q) => q.eq("userId", playerId))
+      .first();
+
     // Get all player cards
     const playerCards = await ctx.db
       .query("playerCards")
@@ -884,7 +890,7 @@ export const getPlayerInventory = query({
     return {
       playerId,
       playerName: player.username || "Unknown",
-      gold: player.gold || 0,
+      gold: currency?.gold ?? 0, // Read from playerCurrency, fallback to default
       totalCards,
       uniqueCards,
       byRarity,

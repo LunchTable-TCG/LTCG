@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 
 // Use typedApi which has the type bypass built-in
@@ -139,23 +139,23 @@ export default function PlayerDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Fetch player data - use adminApi to bypass typedApi arg type mismatches
-  const profile = useQuery(adminApi.admin.getPlayerProfile, { playerId }) as
+  const profile = useConvexQuery(adminApi.admin.getPlayerProfile, { playerId }) as
     | PlayerProfile
     | undefined;
-  const moderationStatus = useQuery(adminApi.moderation.getPlayerModerationStatus, {
+  const moderationStatus = useConvexQuery(adminApi.moderation.getPlayerModerationStatus, {
     playerId,
   }) as ModerationStatus | undefined;
-  const moderationHistory = useQuery(adminApi.moderation.getModerationHistory, {
+  const moderationHistory = useConvexQuery(adminApi.moderation.getModerationHistory, {
     playerId,
     limit: 20,
   }) as ModerationHistoryEntry[] | undefined;
   // Fetch player engagement data
-  const engagementData = useQuery(adminApi.analytics.getPlayerEngagement, {
+  const engagementData = useConvexQuery(adminApi.analytics.getPlayerEngagement, {
     userId: playerId,
     days: 30,
   }) as EngagementData | undefined;
   // Fetch player inventory
-  const inventory = useQuery(adminApi.admin.getPlayerInventory, { playerId }) as
+  const inventory = useConvexQuery(adminApi.admin.getPlayerInventory, { playerId }) as
     | PlayerInventory
     | undefined;
 
@@ -180,8 +180,8 @@ export default function PlayerDetailPage() {
     : undefined;
 
   // Mutations
-  const updateUsernameMutation = useMutation(typedApi.core.users.adminUpdateUsername);
-  const addModerationNote = useMutation(typedApi.admin.moderation.addModerationNote);
+  const updateUsernameMutation = useConvexMutation(typedApi.core.users.adminUpdateUsername);
+  const addModerationNote = useConvexMutation(typedApi.admin.moderation.addModerationNote);
 
   const updatePlayerName = async (newName: string) => {
     await updateUsernameMutation({ userId: playerId, newUsername: newName });

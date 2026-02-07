@@ -19,5 +19,6 @@ app.use(rag);
 app.use(presence);
 app.use(workpool);
 app.use(stripe);
+// Note: crons are defined in crons.ts and referenced in HTTP router, not a component
 
 export default app;

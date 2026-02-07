@@ -18,7 +18,7 @@ export function DecisionPanel({ decisions, agentName }: DecisionPanelProps) {
     <div className="decision-panel">
       <div className="decision-panel__header">
         <span className="decision-panel__icon">🧠</span>
-        <h3 className="decision-panel__title">{agentName}'s Thinking</h3>
+        <h3 className="decision-panel__title">{agentName || "Agent"}'s Thinking</h3>
       </div>
 
       <div className="decision-panel__content">

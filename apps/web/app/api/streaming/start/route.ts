@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       overlayConfig,
       gameId,
       lobbyId,
+      baseUrl: customBaseUrl,
     } = body;
 
     // Determine stream key source
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
     const sessionId = await convex.mutation(api.streaming.sessions.createSession, {
       streamType,
       userId: userId ? (userId as Id<"users">) : undefined,
-      agentId: agentId && agentId.startsWith("j") ? (agentId as Id<"agents">) : undefined, // Only use if it's a Convex ID
+      agentId: agentId ? (agentId as Id<"agents">) : undefined,
       platform,
       streamTitle: streamTitle || "LTCG Live",
       overlayConfig: finalOverlayConfig,
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
       expiresAt,
     });
 
-    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").trim();
+    const baseUrl = (customBaseUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").trim();
 
     // Generate overlay token BEFORE building URL (needed for middleware auth)
     const entityId = streamType === "user" ? userId : (agentId || "external_agent");

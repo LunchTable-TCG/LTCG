@@ -54,7 +54,7 @@ export async function verifyOverlayToken(token: string): Promise<{
   } catch (error) {
     console.error("Token verification failed:", error);
     console.error("Secret length:", secret?.length);
-    console.error("Has trailing newline:", secret?.endsWith('\\n'));
+    console.error("Has trailing newline:", secret?.endsWith("\\n"));
     return null;
   }
 }

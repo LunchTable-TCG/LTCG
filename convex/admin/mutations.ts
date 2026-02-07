@@ -9,11 +9,13 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
+import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
+import { getOrCreatePlayerCurrency } from "../lib/validators";
 
 /**
  * Delete a user by email (admin operation)
@@ -278,6 +280,8 @@ export const getAllTestUsers = query({
 /**
  * Add gold to current user (dev operation)
  * For development and testing purposes
+ *
+ * UPDATED: Now uses playerCurrency table (source of truth)
  */
 export const addGoldToCurrentUser = mutation({
   args: {
@@ -286,11 +290,8 @@ export const addGoldToCurrentUser = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
 
-    let currentGold = 0;
-    let newGold = 0;
-
     try {
-      // Get or create user's gold field
+      // Get user for audit log
       const user = await ctx.db.get(userId);
       if (!user) {
         throw createError(ErrorCode.NOT_FOUND_USER, {
@@ -298,12 +299,23 @@ export const addGoldToCurrentUser = mutation({
         });
       }
 
-      // Update user's gold field
-      currentGold = user.gold ?? 0;
-      newGold = currentGold + args.amount;
-      await ctx.db.patch(userId, {
-        gold: newGold,
+      // Get current currency balance
+      const currency = await getOrCreatePlayerCurrency(ctx, userId);
+      const currentGold = currency.gold;
+
+      // Use proper currency adjustment (updates playerCurrency + transaction log)
+      const result = await adjustPlayerCurrencyHelper(ctx, {
+        userId,
+        goldDelta: args.amount,
+        transactionType: "gift",
+        description: "Admin: dev gold addition",
+        metadata: {
+          adminAction: "add_gold_to_self",
+          devOperation: true,
+        },
       });
+
+      const newGold = result.gold;
 
       // Log successful gold addition
       await scheduleAuditLog(ctx, {

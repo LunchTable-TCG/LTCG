@@ -158,6 +158,7 @@
     "convex-test": "^0.0.41",
     "critters": "^0.0.25",
     "happy-dom": "^20.4.0",
+    "livekit-server-sdk": "^2.15.0",
     "postcss": "^8.4.0",
     "tailwindcss": "4",
     "turbo": "^2.7.5",

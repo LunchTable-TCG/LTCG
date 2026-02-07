@@ -8,37 +8,23 @@ interface StreamerInfoPanelProps {
 }
 
 export function StreamerInfoPanel({ name, avatar, streamType, platform }: StreamerInfoPanelProps) {
-  const platformIcon =
-    {
-      twitch: "🟣",
-      youtube: "🔴",
-      custom: "📡",
-    }[platform] || "📺";
+  const displayName = name || (streamType === "agent" ? "AI Agent" : "Player");
 
   return (
     <div className="streamer-info">
       <div className="streamer-info__left">
-        {avatar ? (
-          <img src={avatar} alt={name} className="streamer-info__avatar" />
-        ) : (
-          <div className="streamer-info__avatar streamer-info__avatar--placeholder">
-            {streamType === "agent" ? "🤖" : "👤"}
-          </div>
+        {avatar && (
+          <img src={avatar} alt={displayName} className="streamer-info__avatar" />
         )}
         <div className="streamer-info__details">
-          <h1 className="streamer-info__name">{name}</h1>
-          <span className="streamer-info__badge">
-            {streamType === "agent" ? "🤖 AI Agent" : "🎮 Live Player"}
-          </span>
+          <h1 className="streamer-info__name">{displayName}</h1>
         </div>
       </div>
 
       <div className="streamer-info__right">
-        <span className="streamer-info__platform">
-          {platformIcon} {platform.charAt(0).toUpperCase() + platform.slice(1)}
-        </span>
         <span className="streamer-info__live">
-          <span className="live-dot" /> LIVE
+          <span className="live-dot" />
+          <span className="live-text">LIVE</span>
         </span>
       </div>
 
@@ -47,9 +33,10 @@ export function StreamerInfoPanel({ name, avatar, streamType, platform }: Stream
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 16px 24px;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(10px);
+          padding: 16px 32px;
+          background: linear-gradient(180deg, rgba(38, 31, 28, 0.95) 0%, rgba(26, 22, 20, 0.98) 100%);
+          border-bottom: 2px solid rgba(139, 69, 19, 0.4);
+          box-shadow: inset 0 1px 0 rgba(212, 175, 55, 0.1), 0 4px 20px rgba(0, 0, 0, 0.6);
         }
 
         .streamer-info__left {
@@ -59,74 +46,69 @@ export function StreamerInfoPanel({ name, avatar, streamType, platform }: Stream
         }
 
         .streamer-info__avatar {
-          width: 64px;
-          height: 64px;
-          border-radius: 50%;
+          width: 48px;
+          height: 48px;
+          border-radius: 8px;
           object-fit: cover;
-          border: 3px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .streamer-info__avatar--placeholder {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 32px;
-          background: rgba(255, 255, 255, 0.1);
+          border: 2px solid #d4af37;
+          box-shadow: 0 0 12px rgba(212, 175, 55, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         .streamer-info__details {
           display: flex;
           flex-direction: column;
-          gap: 4px;
         }
 
         .streamer-info__name {
           font-size: 28px;
           font-weight: 700;
           margin: 0;
-        }
-
-        .streamer-info__badge {
-          font-size: 16px;
-          opacity: 0.8;
+          color: #e8e0d5;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.2);
+          font-family: var(--font-cinzel), serif;
         }
 
         .streamer-info__right {
           display: flex;
           align-items: center;
-          gap: 24px;
-        }
-
-        .streamer-info__platform {
-          font-size: 18px;
-          opacity: 0.8;
         }
 
         .streamer-info__live {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 8px 16px;
-          background: #e91e63;
-          border-radius: 8px;
-          font-weight: 700;
-          font-size: 18px;
+          padding: 6px 12px;
+          background: linear-gradient(180deg, rgba(139, 0, 0, 0.2) 0%, rgba(139, 0, 0, 0.3) 100%);
+          border: 1px solid rgba(239, 68, 68, 0.4);
+          border-radius: 4px;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 12px rgba(239, 68, 68, 0.2);
         }
 
         .live-dot {
-          width: 10px;
-          height: 10px;
-          background: white;
+          width: 8px;
+          height: 8px;
+          background: #ef4444;
           border-radius: 50%;
-          animation: blink 1s ease-in-out infinite;
+          box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+          animation: pulse 2s ease-in-out infinite;
         }
 
-        @keyframes blink {
+        .live-text {
+          font-size: 12px;
+          font-weight: 700;
+          color: #ef4444;
+          text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+          letter-spacing: 1px;
+        }
+
+        @keyframes pulse {
           0%, 100% {
             opacity: 1;
+            transform: scale(1);
           }
           50% {
-            opacity: 0.5;
+            opacity: 0.7;
+            transform: scale(1.1);
           }
         }
       `}</style>

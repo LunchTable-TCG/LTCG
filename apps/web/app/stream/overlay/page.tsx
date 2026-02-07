@@ -198,14 +198,16 @@ function StreamOverlayContent() {
       <div className="stream-overlay__content">
         {/* Main game area */}
         <div className="stream-overlay__game">
-          {gameState ? (
-            <GameBoardSpectator gameState={gameState} />
+          {gameState?.boardState ? (
+            <GameBoardSpectator gameState={gameState.boardState} />
           ) : (
             <div className="stream-overlay__waiting">
               <div className="stream-overlay__waiting-content">
                 <h2>{session.entityName || "AI Agent"}</h2>
                 <p>Waiting for game to start...</p>
-                <div className="pulse-ring" />
+                <div className="pulse-ring">
+                  <div className="inner-ring" />
+                </div>
               </div>
             </div>
           )}
@@ -239,12 +241,26 @@ function StreamOverlayContent() {
           height: 1080px;
           display: flex;
           flex-direction: column;
-          font-family: system-ui, -apple-system, sans-serif;
-          color: white;
+          font-family: var(--font-crimson), serif;
+          color: #e8e0d5;
         }
 
         .stream-overlay--dark {
-          background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+          background-image: url('/assets/backgrounds/arena_grimoire.png');
+          background-size: cover;
+          background-position: center;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .stream-overlay--dark::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: radial-gradient(ellipse at center, transparent 0%, rgba(10, 5, 3, 0.3) 60%, rgba(10, 5, 3, 0.7) 100%);
         }
 
         .stream-overlay--light {
@@ -255,8 +271,10 @@ function StreamOverlayContent() {
         .stream-overlay__content {
           flex: 1;
           display: flex;
-          gap: 20px;
-          padding: 20px;
+          gap: 24px;
+          padding: 24px;
+          position: relative;
+          z-index: 1;
         }
 
         .stream-overlay__game {
@@ -264,14 +282,45 @@ function StreamOverlayContent() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(0, 0, 0, 0.3);
+          background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.03) 0%, transparent 60%),
+            linear-gradient(180deg, rgba(15, 12, 10, 0.92) 0%, rgba(8, 5, 3, 0.88) 100%);
           border-radius: 12px;
+          border: 2px solid rgba(139, 69, 19, 0.4);
+          box-shadow:
+            inset 0 1px 0 rgba(212, 175, 55, 0.1),
+            inset 0 0 60px rgba(0, 0, 0, 0.7),
+            0 8px 32px rgba(0, 0, 0, 0.8);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .stream-overlay__game::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(
+            45deg,
+            transparent 40%,
+            rgba(212, 175, 55, 0.03) 50%,
+            transparent 60%
+          );
+          animation: shine 12s ease-in-out infinite;
+        }
+
+        @keyframes shine {
+          0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+          50% { transform: translate(-40%, -40%) rotate(180deg); }
         }
 
         .stream-overlay__sidebar {
-          width: 400px;
+          width: 420px;
           display: flex;
           flex-direction: column;
+          position: relative;
+          z-index: 1;
         }
 
         .stream-overlay__waiting {
@@ -279,35 +328,109 @@ function StreamOverlayContent() {
           align-items: center;
           justify-content: center;
           text-align: center;
+          width: 100%;
+          height: 100%;
+          position: relative;
+          z-index: 2;
+        }
+
+        .stream-overlay__waiting-content {
+          position: relative;
         }
 
         .stream-overlay__waiting-content h2 {
-          font-size: 48px;
-          margin-bottom: 16px;
+          font-size: 72px;
+          margin-bottom: 24px;
+          font-weight: 800;
+          background: linear-gradient(180deg, #f0d77a 0%, #d4af37 40%, #8b6914 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.4)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8));
+          animation: titleGlow 3s ease-in-out infinite;
+          letter-spacing: 3px;
+          font-family: var(--font-cinzel), serif;
+        }
+
+        @keyframes titleGlow {
+          0%, 100% { filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.4)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8)); }
+          50% { filter: drop-shadow(0 0 40px rgba(212, 175, 55, 0.6)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8)); }
         }
 
         .stream-overlay__waiting-content p {
-          font-size: 24px;
-          opacity: 0.7;
+          font-size: 28px;
+          opacity: 0.85;
+          font-weight: 500;
+          margin-bottom: 48px;
+          color: #a89f94;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
         }
 
         .pulse-ring {
-          width: 100px;
-          height: 100px;
-          margin: 40px auto 0;
-          border: 3px solid rgba(255, 255, 255, 0.3);
-          border-radius: 50%;
-          animation: pulse 2s ease-in-out infinite;
+          width: 180px;
+          height: 180px;
+          margin: 0 auto;
+          position: relative;
         }
 
-        @keyframes pulse {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 0.3;
+        .pulse-ring::before,
+        .pulse-ring::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          border: 2px solid;
+        }
+
+        .pulse-ring::before {
+          border-color: rgba(212, 175, 55, 0.5);
+          animation: pulseOuter 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        .pulse-ring::after {
+          border-color: rgba(139, 69, 19, 0.4);
+          animation: pulseOuter 3s cubic-bezier(0.4, 0, 0.2, 1) infinite 0.6s;
+        }
+
+        .pulse-ring .inner-ring {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 60%;
+          height: 60%;
+          background: radial-gradient(circle, rgba(212, 175, 55, 0.2) 0%, transparent 70%);
+          border-radius: 50%;
+          animation: pulseInner 2.5s ease-in-out infinite;
+          box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+        }
+
+        @keyframes pulseOuter {
+          0% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.8;
           }
           50% {
-            transform: scale(1.2);
+            opacity: 0.4;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(1.5);
+            opacity: 0;
+          }
+        }
+
+        @keyframes pulseInner {
+          0%, 100% {
+            transform: translate(-50%, -50%) scale(1);
             opacity: 0.6;
+          }
+          50% {
+            transform: translate(-50%, -50%) scale(1.2);
+            opacity: 0.9;
           }
         }
 
@@ -319,17 +442,19 @@ function StreamOverlayContent() {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          background: #0f0f23;
-          color: white;
+          background: #1a1614;
+          color: #e8e0d5;
+          font-family: var(--font-crimson), serif;
         }
 
         .spinner {
           width: 50px;
           height: 50px;
-          border: 4px solid rgba(255, 255, 255, 0.2);
-          border-top-color: white;
+          border: 4px solid rgba(139, 69, 19, 0.3);
+          border-top-color: #d4af37;
           border-radius: 50%;
           animation: spin 1s linear infinite;
+          box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
         }
 
         @keyframes spin {

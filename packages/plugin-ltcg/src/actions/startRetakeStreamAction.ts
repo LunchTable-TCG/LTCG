@@ -120,27 +120,39 @@ export const startRetakeStreamAction: Action = {
 
       const rtmpData = await rtmpResponse.json();
       logger.info("Retake.tv stream started successfully", {
-        rtmpUrl: rtmpData.url,
+        rtmpUrl: rtmpData.rtmp_url,
+        streamKey: rtmpData.stream_key,
       });
 
       // Notify LTCG backend to enable streaming
       // This triggers the LiveKit egress to capture overlay and stream to Retake
-      const ltcgApiUrl = process.env.LTCG_API_URL || "https://www.lunchtable.cards";
+      // Use LTCG_STREAMING_API_URL for streaming endpoints (Next.js app)
+      // Falls back to LTCG_APP_URL, then LTCG_API_URL, then production
+      const ltcgStreamingUrl =
+        process.env.LTCG_STREAMING_API_URL ||
+        process.env.LTCG_APP_URL ||
+        process.env.LTCG_API_URL ||
+        "https://www.lunchtable.cards";
       const ltcgApiKey = process.env.LTCG_API_KEY;
 
       try {
-        const streamingResponse = await fetch(`${ltcgApiUrl}/api/streaming/start`, {
+        // Get LTCG agent ID from settings (registered via registerAgentAction)
+        const ltcgAgentId =
+          runtime.getSetting("LTCG_AGENT_ID") ||
+          process.env.LTCG_AGENT_ID;
+
+        const streamingResponse = await fetch(`${ltcgStreamingUrl}/api/streaming/start`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${ltcgApiKey}`,
           },
           body: JSON.stringify({
-            agentId: runtime.agentId,
+            agentId: ltcgAgentId,
             streamType: "agent",
             platform: "custom",
-            customRtmpUrl: rtmpData.url,
-            streamKey: rtmpData.key,
+            customRtmpUrl: rtmpData.rtmp_url,
+            streamKey: rtmpData.stream_key,
             streamTitle: `${runtime.character.name} plays LTCG`,
           }),
         });
@@ -173,8 +185,8 @@ Ready to start a game and show everyone what I've learned! 🎮⚔️`,
           status: "live",
           accessToken, // For internal use
           userDbId,
-          rtmpUrl: rtmpData.url,
-          rtmpKey: rtmpData.key,
+          rtmpUrl: rtmpData.rtmp_url,
+          rtmpKey: rtmpData.stream_key,
         },
       };
     } catch (error) {

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
+import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
@@ -271,8 +272,12 @@ export const claimReward = mutation({
 
     // Grant rewards based on type
     if (data.rewardType === "gold" && data.gold) {
-      await ctx.db.patch(userId, {
-        gold: (user.gold || 0) + data.gold,
+      await adjustPlayerCurrencyHelper(ctx, {
+        userId,
+        goldDelta: data.gold,
+        transactionType: "reward",
+        description: "Inbox reward claimed",
+        metadata: { messageId: args.messageId },
       });
       rewards.gold = data.gold;
     }

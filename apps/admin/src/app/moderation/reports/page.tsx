@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageWrapper } from "@/components/layout";
 import { useAdmin } from "@/contexts/AdminContext";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
@@ -109,13 +110,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">User Reports</h1>
-        <p className="text-muted-foreground">Review and resolve player reports</p>
-      </div>
-
+    <PageWrapper title="User Reports" description="Review and resolve player reports">
       {/* Stats Overview */}
       {stats && (
         <div className="grid gap-4 md:grid-cols-5">
@@ -287,6 +282,6 @@ export default function ReportsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageWrapper>
   );
 }

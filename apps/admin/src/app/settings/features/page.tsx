@@ -33,7 +33,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RoleGuard, useAdmin } from "@/contexts/AdminContext";
-import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { FeatureFlagId } from "@/lib/convexTypes";
 import {
   AlertTriangleIcon,
@@ -112,7 +112,7 @@ function CreateFeatureFlagDialog({ onCreated }: { onCreated?: () => void }) {
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createFlag = useMutation(typedApi.admin.features.createFeatureFlag);
+  const createFlag = useConvexMutation(typedApi.admin.features.createFeatureFlag);
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -330,7 +330,7 @@ function EditFeatureFlagDialog({
   const [targetRoles, setTargetRoles] = useState<string[]>(flag.targetRoles || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateFlag = useMutation(typedApi.admin.features.updateFeatureFlag);
+  const updateFlag = useConvexMutation(typedApi.admin.features.updateFeatureFlag);
 
   const handleSubmit = async () => {
     if (!displayName.trim()) {
@@ -515,7 +515,7 @@ function DeleteFeatureFlagDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const deleteFlag = useMutation(typedApi.admin.features.deleteFeatureFlag);
+  const deleteFlag = useConvexMutation(typedApi.admin.features.deleteFeatureFlag);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -574,7 +574,7 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { hasPermission } = useAdmin();
 
-  const toggleFlag = useMutation(typedApi.admin.features.toggleFeatureFlag);
+  const toggleFlag = useConvexMutation(typedApi.admin.features.toggleFeatureFlag);
 
   const handleToggle = async () => {
     try {
@@ -676,12 +676,12 @@ export default function FeatureFlagsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-  const flagsResult = useQuery(typedApi.admin.features.listFeatureFlags, {
+  const flagsResult = useConvexQuery(typedApi.admin.features.listFeatureFlags, {
     category: categoryFilter === "all" ? undefined : categoryFilter,
   }) as { flags: FeatureFlag[] } | undefined;
 
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-  const statsResult = useQuery(typedApi.admin.features.getFeatureFlagStats, {}) as
+  const statsResult = useConvexQuery(typedApi.admin.features.getFeatureFlagStats, {}) as
     | {
         totalFlags: number;
         enabledFlags: number;

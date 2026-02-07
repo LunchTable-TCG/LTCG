@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Text, Title } from "@tremor/react";
 import Link from "next/link";
@@ -65,15 +65,15 @@ export default function TreasuryPoliciesPage() {
 
   // Fetch policies
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-  const policies = useQuery(typedApi.treasury.policies.listPolicies, { includeInactive: true }) as
+  const policies = useConvexQuery(typedApi.treasury.policies.listPolicies, { includeInactive: true }) as
     | TreasuryPolicy[]
     | undefined;
 
   // Mutations
-  const createPolicy = useMutation(typedApi.treasury.policies.createPolicy);
-  const updatePolicy = useMutation(typedApi.treasury.policies.updatePolicy);
+  const createPolicy = useConvexMutation(typedApi.treasury.policies.createPolicy);
+  const updatePolicy = useConvexMutation(typedApi.treasury.policies.updatePolicy);
   // deletePolicy will be used when delete UI is implemented
-  const setupDefaults = useMutation(typedApi.treasury.policies.setupDefaultPolicies);
+  const setupDefaults = useConvexMutation(typedApi.treasury.policies.setupDefaultPolicies);
 
   const isLoading = policies === undefined;
 

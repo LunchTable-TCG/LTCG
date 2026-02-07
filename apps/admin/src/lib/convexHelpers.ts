@@ -8,9 +8,6 @@
  * Never use raw `api` - it lacks type safety.
  */
 
-// Re-export Convex React hooks directly for full type inference
-export { useAction, useMutation, useQuery } from "convex/react";
-
 // Re-export types from core
 export type {
   Expand,

@@ -3,10 +3,7 @@ import { Cinzel, Crimson_Text, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { PrivyAuthProvider } from "@/components/PrivyAuthProvider";
-import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
-import { NotificationToast } from "@/components/notifications/NotificationToast";
-import { Toaster } from "@/components/ui/toaster";
 import { validateStreamingConfig } from "@/lib/streaming/validateConfig";
 
 // Validate streaming configuration at startup in production
@@ -75,10 +72,7 @@ export default function RootLayout({
       >
         <PrivyAuthProvider>
           <ConvexClientProvider>
-            <NotificationToast />
             <LayoutWrapper>{children}</LayoutWrapper>
-            <Toaster />
-            <FeedbackWidget />
           </ConvexClientProvider>
         </PrivyAuthProvider>
       </body>

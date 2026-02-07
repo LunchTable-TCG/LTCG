@@ -127,6 +127,12 @@ export const getUserProfile = query({
 
     if (!user) return null;
 
+    // Get XP/level from playerXP table (source of truth)
+    const playerXP = await ctx.db
+      .query("playerXP")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .first();
+
     return {
       _id: user._id,
       username: user.username,
@@ -143,9 +149,9 @@ export const getUserProfile = query({
       // Ratings
       rankedElo: user.rankedElo ?? 1000,
       casualRating: user.casualRating ?? 1000,
-      // Progression
-      xp: user.xp ?? 0,
-      level: user.level ?? 1,
+      // Progression (read from playerXP table)
+      xp: playerXP?.currentXP ?? 0,
+      level: playerXP?.currentLevel ?? 1,
       // Player type
       isAiAgent: user.isAiAgent ?? false,
     };
@@ -171,6 +177,12 @@ export const getUserStats = query({
 
     if (!user) return null;
 
+    // Get XP/level from playerXP table (source of truth)
+    const playerXP = await ctx.db
+      .query("playerXP")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+
     return {
       _id: user._id,
       username: user.username,
@@ -187,9 +199,9 @@ export const getUserStats = query({
       // Ratings
       rankedElo: user.rankedElo ?? 1000,
       casualRating: user.casualRating ?? 1000,
-      // Progression
-      xp: user.xp ?? 0,
-      level: user.level ?? 1,
+      // Progression (read from playerXP table)
+      xp: playerXP?.currentXP ?? 0,
+      level: playerXP?.currentLevel ?? 1,
       // Player type
       isAiAgent: user.isAiAgent ?? false,
     };

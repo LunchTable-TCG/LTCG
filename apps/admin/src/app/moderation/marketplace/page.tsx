@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { PageWrapper } from "@/components/layout";
 import { useAdmin } from "@/contexts/AdminContext";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
@@ -247,7 +248,7 @@ export default function MarketplaceModerationPage() {
   ) as unknown as (args: { priceCapId: Id<"marketplacePriceCaps"> }) => Promise<void>;
   // Cast to bypass incorrect typedApi signature
   const refundBid = useConvexMutation(typedApi.admin.marketplace.refundBid) as unknown as (args: {
-    bidId: Id<"marketplaceBids">;
+    bidId: Id<"auctionBids">;
     reason: string;
   }) => Promise<{ message?: string }>;
 
@@ -339,7 +340,7 @@ export default function MarketplaceModerationPage() {
     setIsSubmitting(true);
     try {
       const result = (await refundBid({
-        bidId: refundBidId as Id<"marketplaceBids">,
+        bidId: refundBidId as Id<"auctionBids">,
         reason: refundReason,
       })) as { message?: string };
       toast.success(result.message || "Bid refunded successfully");
@@ -379,15 +380,7 @@ export default function MarketplaceModerationPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Marketplace Moderation</h1>
-        <p className="text-muted-foreground">
-          Monitor listings, detect anomalies, and take action on suspicious activity
-        </p>
-      </div>
-
+    <PageWrapper title="Marketplace Moderation" description="Monitor listings, detect anomalies, and take action on suspicious activity">
       {/* Stats Overview */}
       {stats && (
         <div className="grid gap-4 md:grid-cols-6">
@@ -1291,6 +1284,6 @@ export default function MarketplaceModerationPage() {
           )}
         </SheetContent>
       </Sheet>
-    </div>
+    </PageWrapper>
   );
 }

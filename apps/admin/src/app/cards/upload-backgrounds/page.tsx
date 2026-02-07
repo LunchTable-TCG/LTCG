@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { typedApi, useMutation } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import { runUploadBackgrounds } from "./actions";
 
 interface UploadResult {
@@ -21,7 +21,7 @@ export default function UploadBackgroundsPage() {
   const [results, setResults] = useState<UploadResult[]>([]);
   const [cardBackAdded, setCardBackAdded] = useState(false);
 
-  const createBackground = useMutation(typedApi.cardBackgrounds.create);
+  const createBackground = useConvexMutation(typedApi.cardBackgrounds.create);
 
   const handleAddCardBack = async () => {
     try {

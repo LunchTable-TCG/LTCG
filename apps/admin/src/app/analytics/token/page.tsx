@@ -34,7 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { typedApi, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { AreaChart, BarChart, DonutChart, Flex, Text, Title } from "@tremor/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -198,34 +198,34 @@ export default function TokenAnalyticsPage() {
   const [volumePeriod, setVolumePeriod] = useState<VolumePeriod>("24h");
 
   // Fetch data from Convex (with type assertions for proper typing)
-  const latestMetrics = useQuery(typedApi.tokenAnalytics.metrics.getLatest, {}) as
+  const latestMetrics = useConvexQuery(typedApi.tokenAnalytics.metrics.getLatest, {}) as
     | TokenMetrics
     | undefined;
-  const priceChart = useQuery(typedApi.tokenAnalytics.metrics.getPriceChart, {
+  const priceChart = useConvexQuery(typedApi.tokenAnalytics.metrics.getPriceChart, {
     period: pricePeriod,
   }) as PriceChartPoint[] | undefined;
-  const bondingProgress = useQuery(typedApi.tokenAnalytics.metrics.getBondingCurveProgress, {}) as
+  const bondingProgress = useConvexQuery(typedApi.tokenAnalytics.metrics.getBondingCurveProgress, {}) as
     | BondingProgress
     | undefined;
 
-  const topHolders = useQuery(typedApi.tokenAnalytics.holders.getTop, { limit: 10 }) as
+  const topHolders = useConvexQuery(typedApi.tokenAnalytics.holders.getTop, { limit: 10 }) as
     | TokenHolder[]
     | undefined;
-  const holderDistribution = useQuery(typedApi.tokenAnalytics.holders.getDistribution, {}) as
+  const holderDistribution = useConvexQuery(typedApi.tokenAnalytics.holders.getDistribution, {}) as
     | HolderDistributionResponse
     | undefined;
 
-  const recentTrades = useQuery(typedApi.tokenAnalytics.trades.getRecent, { limit: 20 }) as
+  const recentTrades = useConvexQuery(typedApi.tokenAnalytics.trades.getRecent, { limit: 20 }) as
     | TokenTrade[]
     | undefined;
-  const tradeStats = useQuery(typedApi.tokenAnalytics.trades.getStats, { period: "24h" }) as
+  const tradeStats = useConvexQuery(typedApi.tokenAnalytics.trades.getStats, { period: "24h" }) as
     | TradeStats
     | undefined;
-  const volumeChart = useQuery(typedApi.tokenAnalytics.trades.getVolumeChart, {
+  const volumeChart = useConvexQuery(typedApi.tokenAnalytics.trades.getVolumeChart, {
     period: volumePeriod,
   }) as VolumeChartPoint[] | undefined;
 
-  const summary = useQuery(typedApi.tokenAnalytics.rollup.getSummary, {}) as
+  const summary = useConvexQuery(typedApi.tokenAnalytics.rollup.getSummary, {}) as
     | TokenSummary
     | undefined;
 

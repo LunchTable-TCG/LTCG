@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Text, Title } from "@tremor/react";
 import Link from "next/link";
@@ -144,16 +144,16 @@ export default function TreasuryWalletsPage() {
 
   // Fetch wallets
   // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-  const wallets = useQuery(typedApi.treasury.wallets.listWallets, {}) as
+  const wallets = useConvexQuery(typedApi.treasury.wallets.listWallets, {}) as
     | TreasuryWallet[]
     | undefined;
   // policies query will be used when policy assignment UI is implemented
 
   // Mutations
-  const createWallet = useMutation(typedApi.treasury.wallets.createWallet);
-  const syncBalance = useMutation(typedApi.treasury.wallets.syncBalance);
-  const updateWallet = useMutation(typedApi.treasury.wallets.updateWallet);
-  const retryWalletCreation = useMutation(typedApi.treasury.wallets.retryWalletCreation);
+  const createWallet = useConvexMutation(typedApi.treasury.wallets.createWallet);
+  const syncBalance = useConvexMutation(typedApi.treasury.wallets.syncBalance);
+  const updateWallet = useConvexMutation(typedApi.treasury.wallets.updateWallet);
+  const retryWalletCreation = useConvexMutation(typedApi.treasury.wallets.retryWalletCreation);
 
   const isLoading = wallets === undefined;
 

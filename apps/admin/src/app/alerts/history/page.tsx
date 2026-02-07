@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge } from "@tremor/react";
 import Link from "next/link";
@@ -89,16 +89,16 @@ export default function AlertHistoryPage() {
   const limit = 20;
 
   // Fetch alerts (backend returns enriched array with ruleName)
-  const allAlerts = useQuery(typedApi.alerts.history.getRecent, {
+  const allAlerts = useConvexQuery(typedApi.alerts.history.getRecent, {
     limit: 200, // Fetch more for client-side filtering
   }) as EnrichedAlert[] | undefined;
 
-  const rules = useQuery(typedApi.alerts.rules.getAll, {}) as Doc<"alertRules">[] | undefined;
-  const stats = useQuery(typedApi.alerts.history.getStats, {});
+  const rules = useConvexQuery(typedApi.alerts.rules.getAll, {}) as Doc<"alertRules">[] | undefined;
+  const stats = useConvexQuery(typedApi.alerts.history.getStats, {});
 
   // Mutations
-  const acknowledge = useMutation(typedApi.alerts.history.acknowledge);
-  const acknowledgeAll = useMutation(typedApi.alerts.history.acknowledgeAll);
+  const acknowledge = useConvexMutation(typedApi.alerts.history.acknowledge);
+  const acknowledgeAll = useConvexMutation(typedApi.alerts.history.acknowledgeAll);
 
   // Client-side filtering (backend doesn't support these filters yet)
   const filteredAlerts = useMemo(() => {

@@ -19,6 +19,7 @@ import {
   battlePassTierValidator,
   claimBattlePassRewardValidator,
 } from "../lib/returnValidators";
+import { addXP } from "../lib/xpHelpers";
 
 // ============================================================================
 // Types
@@ -162,14 +163,12 @@ async function grantReward(
       break;
 
     case "xp":
-      // Award player XP directly (not battle pass XP)
+      // Award player XP (uses playerXP table, not users.xp)
       if (reward.amount && reward.amount > 0) {
-        const user = await ctx.db.get(userId);
-        if (user) {
-          await ctx.db.patch(userId, {
-            xp: (user.xp || 0) + reward.amount,
-          });
-        }
+        await addXP(ctx, userId, reward.amount, {
+          source: "battlepass_reward",
+          skipBattlePass: true, // Prevent infinite loop
+        });
       }
       break;
 

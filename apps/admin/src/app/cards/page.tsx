@@ -19,7 +19,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { RoleGuard } from "@/contexts/AdminContext";
-import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { CardArchetype } from "@/lib/convexTypes";
 import type { Doc, Id } from "@convex/_generated/dataModel";
 import { Badge, Card, Text, Title } from "@tremor/react";
@@ -117,7 +117,7 @@ export default function CardsPage() {
   const [showInactive, setShowInactive] = useState(false);
 
   // Query
-  const cardsResult = useQuery(typedApi.admin.cards.listCards, {
+  const cardsResult = useConvexQuery(typedApi.admin.cards.listCards, {
     search: search || undefined,
     rarity: rarityFilter !== "all" ? (rarityFilter as Rarity) : undefined,
     cardType: typeFilter !== "all" ? (typeFilter as CardType) : undefined,
@@ -126,9 +126,9 @@ export default function CardsPage() {
     limit: 100,
   }) as CardsListResult | undefined;
 
-  const statsResult = useQuery(typedApi.admin.cards.getCardStats, {}) as CardStats | undefined;
+  const statsResult = useConvexQuery(typedApi.admin.cards.getCardStats, {}) as CardStats | undefined;
 
-  const toggleActive = useMutation(typedApi.admin.cards.toggleCardActive as any);
+  const toggleActive = useConvexMutation(typedApi.admin.cards.toggleCardActive as any);
 
   const handleToggleActive = async (cardId: string, _cardName: string) => {
     try {

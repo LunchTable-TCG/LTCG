@@ -54,6 +54,7 @@ export * from "./webhooks";
 
 // Services - Real-time updates and autonomous gameplay
 export { LTCGPollingService } from "./services/LTCGPollingService";
+export { RetakeChatService } from "./services/retakeChatService";
 export { TurnOrchestrator } from "./services/TurnOrchestrator";
 export { StateAggregator } from "./services/StateAggregator";
 

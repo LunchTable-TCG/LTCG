@@ -3,6 +3,7 @@ import { rateLimitTables } from "convex-helpers/server/rateLimit";
 import { literals } from "convex-helpers/validators";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { livekitTables } from "./livekit/schema";
 import type { Infer } from "convex/values";
 import { jsonAbilityValidator } from "./gameplay/effectSystem/jsonEffectValidators";
 
@@ -87,6 +88,7 @@ export type EmailRecipientType = Infer<typeof emailRecipientTypeValidator>;
 export default defineSchema({
   migrations: migrationsTable,
   ...rateLimitTables,
+  ...livekitTables,
   users: defineTable({
     // Privy authentication (optional during migration from old auth system)
     privyId: v.optional(v.string()), // Privy DID (did:privy:xxx)
@@ -125,12 +127,12 @@ export default defineSchema({
     // Leaderboard: Player type
     isAiAgent: v.optional(v.boolean()), // default: false
 
-    // XP and Level (denormalized for quick access)
-    xp: v.optional(v.number()), // default: 0
-    level: v.optional(v.number()), // default: 1
-
-    // Economy
-    gold: v.optional(v.number()), // default: 500
+    // @deprecated Use playerXP table - migrations completed, keeping for old code paths
+    xp: v.optional(v.number()),
+    // @deprecated Use playerXP table - migrations completed, keeping for old code paths
+    level: v.optional(v.number()),
+    // @deprecated Use playerCurrency table - migrations completed, keeping for old code paths
+    gold: v.optional(v.number()),
 
     lastStatsUpdate: v.optional(v.number()),
 
@@ -208,11 +210,11 @@ export default defineSchema({
     .index("rankedElo", ["rankedElo"])
     .index("casualRating", ["casualRating"])
     .index("totalWins", ["totalWins"])
-    .index("xp", ["xp"])
+    .index("xp", ["xp"]) // @deprecated - use playerXP table queries
     // Composite indexes for segmented leaderboards
     .index("rankedElo_byType", ["isAiAgent", "rankedElo"])
     .index("casualRating_byType", ["isAiAgent", "casualRating"])
-    .index("xp_byType", ["isAiAgent", "xp"]),
+    .index("xp_byType", ["isAiAgent", "xp"]), // @deprecated - use playerXP table queries
 
   // Admin roles for protected operations with role hierarchy
   adminRoles: defineTable({
@@ -1545,6 +1547,14 @@ export default defineSchema({
     .index("by_user_time", ["userId", "openedAt"])
     .index("by_time", ["openedAt"]),
 
+  // Pack opening pity state (per user)
+  // Tracks packs since last legendary for pity system
+  packOpeningPityState: defineTable({
+    userId: v.id("users"),
+    packsSinceLastLegendary: v.number(),
+    lastLegendaryAt: v.optional(v.number()),
+  }).index("by_user", ["userId"]),
+
   // ============================================================================
   // MARKETPLACE
   // ============================================================================
@@ -1572,6 +1582,8 @@ export default defineSchema({
     // Token payment support
     currencyType: v.optional(literals("gold", "token")),
     tokenPrice: v.optional(v.number()),
+    // Idempotency flag to prevent double claims
+    claimed: v.optional(v.boolean()),
   })
     .index("by_status", ["status", "createdAt"])
     .index("by_seller", ["sellerId", "status"])
@@ -1581,6 +1593,7 @@ export default defineSchema({
     .index("by_status_listingType_endsAt", ["status", "listingType", "endsAt"]),
 
   // Auction bid history
+  // CANONICAL TABLE: Use this for all bid operations
   auctionBids: defineTable({
     listingId: v.id("marketplaceListings"),
     bidderId: v.id("users"),
@@ -1588,12 +1601,17 @@ export default defineSchema({
     bidAmount: v.number(),
     bidStatus: literals("active", "outbid", "won", "refunded", "cancelled"),
     refundedAt: v.optional(v.number()),
+    // Idempotency flag to prevent double refunds
+    refunded: v.optional(v.boolean()),
     createdAt: v.number(),
   })
     .index("by_listing", ["listingId", "createdAt"])
     .index("by_bidder", ["bidderId", "bidStatus"]),
 
-  // Marketplace bids (admin view of auction bids)
+  // DEPRECATED: Duplicate of auctionBids table
+  // TODO: Remove after migration (migrations/mergeMarketplaceBids.ts) is complete
+  // This table was an exact duplicate with same structure and indexes.
+  // All code has been updated to use auctionBids instead.
   marketplaceBids: defineTable({
     listingId: v.id("marketplaceListings"),
     bidderId: v.id("users"),
@@ -3396,7 +3414,8 @@ export default defineSchema({
       v.literal("bonding_progress"), // Graduation proximity
       v.literal("treasury_balance"), // Low balance warning
       v.literal("transaction_failed"), // Failed tx alert
-      v.literal("graduation") // Token graduated!
+      v.literal("graduation"), // Token graduated!
+      v.literal("integrity_violation") // Data integrity anomaly detected
     ),
     conditions: v.object({
       threshold: v.optional(v.number()),
@@ -3692,8 +3711,8 @@ export default defineSchema({
     egressId: v.optional(v.string()),
     overlayUrl: v.optional(v.string()),
 
-    // Current game context
-    currentLobbyId: v.optional(v.id("gameLobbies")),
+    // Current game context (can be gameLobbies ID or story game string ID)
+    currentLobbyId: v.optional(v.union(v.id("gameLobbies"), v.string())),
 
     // Encrypted stream credentials
     streamKeyHash: v.optional(v.string()),

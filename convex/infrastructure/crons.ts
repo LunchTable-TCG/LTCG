@@ -12,7 +12,7 @@ const crons = cronJobs();
 crons.interval(
   "cleanup stale games",
   { minutes: 1 }, // Run every 1 minute
-  internal.games.cleanupStaleGames
+  internalAny.gameplay.games.cleanup.cleanupStaleGames
 );
 
 // Cleanup expired challenge lobbies and refund wagers every minute
@@ -20,7 +20,7 @@ crons.interval(
 crons.interval(
   "cleanup expired challenges",
   { minutes: 1 },
-  internal.games.cleanupExpiredChallenges
+  internalAny.gameplay.games.lobby.cleanupExpiredChallenges
 );
 
 // Refresh leaderboard snapshots every 5 minutes

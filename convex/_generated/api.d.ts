@@ -8,11 +8,6 @@
  * @module
  */
 
-import type * as __tests___fixtures_decks from "../__tests__/fixtures/decks.js";
-import type * as __tests___fixtures_users from "../__tests__/fixtures/users.js";
-import type * as __tests___helpers_index from "../__tests__/helpers/index.js";
-import type * as __tests___helpers_mockPrivyJwt from "../__tests__/helpers/mockPrivyJwt.js";
-import type * as __tests___helpers_testAuth from "../__tests__/helpers/testAuth.js";
 import type * as admin_CRUD_EXAMPLES from "../admin/CRUD_EXAMPLES.js";
 import type * as admin_achievements from "../admin/achievements.js";
 import type * as admin_admin from "../admin/admin.js";
@@ -79,6 +74,7 @@ import type * as core_index from "../core/index.js";
 import type * as core_tutorial from "../core/tutorial.js";
 import type * as core_userPreferences from "../core/userPreferences.js";
 import type * as core_users from "../core/users.js";
+import type * as crons from "../crons.js";
 import type * as decks from "../decks.js";
 import type * as economy from "../economy.js";
 import type * as economy_dailyRewards from "../economy/dailyRewards.js";
@@ -190,9 +186,11 @@ import type * as infrastructure_aggregates from "../infrastructure/aggregates.js
 import type * as infrastructure_auditLog from "../infrastructure/auditLog.js";
 import type * as infrastructure_crons from "../infrastructure/crons.js";
 import type * as infrastructure_emailActions from "../infrastructure/emailActions.js";
+import type * as infrastructure_rateLimiters from "../infrastructure/rateLimiters.js";
 import type * as infrastructure_shardedCounters from "../infrastructure/shardedCounters.js";
 import type * as infrastructure_triggers from "../infrastructure/triggers.js";
 import type * as infrastructure_welcomeEmails from "../infrastructure/welcomeEmails.js";
+import type * as infrastructure_workpoolMonitoring from "../infrastructure/workpoolMonitoring.js";
 import type * as infrastructure_workpools from "../infrastructure/workpools.js";
 import type * as leaderboards from "../leaderboards.js";
 import type * as lib_abilityHelpers from "../lib/abilityHelpers.js";
@@ -233,13 +231,21 @@ import type * as lib_x402_facilitator from "../lib/x402/facilitator.js";
 import type * as lib_x402_queries from "../lib/x402/queries.js";
 import type * as lib_x402_types from "../lib/x402/types.js";
 import type * as lib_xpHelpers from "../lib/xpHelpers.js";
+import type * as livekit_http_webhook from "../livekit/http/webhook.js";
+import type * as livekit_internal_dedupe from "../livekit/internal/dedupe.js";
+import type * as livekit_internal_mutations from "../livekit/internal/mutations.js";
+import type * as livekit_public_queries from "../livekit/public/queries.js";
+import type * as livekit_public_tokens from "../livekit/public/tokens.js";
 import type * as marketplace from "../marketplace.js";
 import type * as matchmaking from "../matchmaking.js";
 import type * as migrations from "../migrations.js";
 import type * as migrations_addLeaderboardFields from "../migrations/addLeaderboardFields.js";
 import type * as migrations_loadAllCards from "../migrations/loadAllCards.js";
 import type * as migrations_manualAbilities from "../migrations/manualAbilities.js";
+import type * as migrations_mergeMarketplaceBids from "../migrations/mergeMarketplaceBids.js";
 import type * as migrations_migrateAdminRoles from "../migrations/migrateAdminRoles.js";
+import type * as migrations_syncGoldToPlayerCurrency from "../migrations/syncGoldToPlayerCurrency.js";
+import type * as migrations_syncXPToPlayerXP from "../migrations/syncXPToPlayerXP.js";
 import type * as migrations_updateArchetypes from "../migrations/updateArchetypes.js";
 import type * as migrations_updateShopProducts from "../migrations/updateShopProducts.js";
 import type * as presence from "../presence.js";
@@ -294,6 +300,7 @@ import type * as social_userTournaments from "../social/userTournaments.js";
 import type * as storage_cards from "../storage/cards.js";
 import type * as storage_images from "../storage/images.js";
 import type * as story from "../story.js";
+import type * as streaming_http from "../streaming/http.js";
 import type * as streaming_livekit from "../streaming/livekit.js";
 import type * as streaming_sessions from "../streaming/sessions.js";
 import type * as stripe_battlePassSync from "../stripe/battlePassSync.js";
@@ -330,11 +337,6 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "__tests__/fixtures/decks": typeof __tests___fixtures_decks;
-  "__tests__/fixtures/users": typeof __tests___fixtures_users;
-  "__tests__/helpers/index": typeof __tests___helpers_index;
-  "__tests__/helpers/mockPrivyJwt": typeof __tests___helpers_mockPrivyJwt;
-  "__tests__/helpers/testAuth": typeof __tests___helpers_testAuth;
   "admin/CRUD_EXAMPLES": typeof admin_CRUD_EXAMPLES;
   "admin/achievements": typeof admin_achievements;
   "admin/admin": typeof admin_admin;
@@ -401,6 +403,7 @@ declare const fullApi: ApiFromModules<{
   "core/tutorial": typeof core_tutorial;
   "core/userPreferences": typeof core_userPreferences;
   "core/users": typeof core_users;
+  crons: typeof crons;
   decks: typeof decks;
   economy: typeof economy;
   "economy/dailyRewards": typeof economy_dailyRewards;
@@ -512,9 +515,11 @@ declare const fullApi: ApiFromModules<{
   "infrastructure/auditLog": typeof infrastructure_auditLog;
   "infrastructure/crons": typeof infrastructure_crons;
   "infrastructure/emailActions": typeof infrastructure_emailActions;
+  "infrastructure/rateLimiters": typeof infrastructure_rateLimiters;
   "infrastructure/shardedCounters": typeof infrastructure_shardedCounters;
   "infrastructure/triggers": typeof infrastructure_triggers;
   "infrastructure/welcomeEmails": typeof infrastructure_welcomeEmails;
+  "infrastructure/workpoolMonitoring": typeof infrastructure_workpoolMonitoring;
   "infrastructure/workpools": typeof infrastructure_workpools;
   leaderboards: typeof leaderboards;
   "lib/abilityHelpers": typeof lib_abilityHelpers;
@@ -555,13 +560,21 @@ declare const fullApi: ApiFromModules<{
   "lib/x402/queries": typeof lib_x402_queries;
   "lib/x402/types": typeof lib_x402_types;
   "lib/xpHelpers": typeof lib_xpHelpers;
+  "livekit/http/webhook": typeof livekit_http_webhook;
+  "livekit/internal/dedupe": typeof livekit_internal_dedupe;
+  "livekit/internal/mutations": typeof livekit_internal_mutations;
+  "livekit/public/queries": typeof livekit_public_queries;
+  "livekit/public/tokens": typeof livekit_public_tokens;
   marketplace: typeof marketplace;
   matchmaking: typeof matchmaking;
   migrations: typeof migrations;
   "migrations/addLeaderboardFields": typeof migrations_addLeaderboardFields;
   "migrations/loadAllCards": typeof migrations_loadAllCards;
   "migrations/manualAbilities": typeof migrations_manualAbilities;
+  "migrations/mergeMarketplaceBids": typeof migrations_mergeMarketplaceBids;
   "migrations/migrateAdminRoles": typeof migrations_migrateAdminRoles;
+  "migrations/syncGoldToPlayerCurrency": typeof migrations_syncGoldToPlayerCurrency;
+  "migrations/syncXPToPlayerXP": typeof migrations_syncXPToPlayerXP;
   "migrations/updateArchetypes": typeof migrations_updateArchetypes;
   "migrations/updateShopProducts": typeof migrations_updateShopProducts;
   presence: typeof presence;
@@ -616,6 +629,7 @@ declare const fullApi: ApiFromModules<{
   "storage/cards": typeof storage_cards;
   "storage/images": typeof storage_images;
   story: typeof story;
+  "streaming/http": typeof streaming_http;
   "streaming/livekit": typeof streaming_livekit;
   "streaming/sessions": typeof streaming_sessions;
   "stripe/battlePassSync": typeof stripe_battlePassSync;

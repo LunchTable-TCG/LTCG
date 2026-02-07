@@ -12,7 +12,7 @@ import { PageWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import type { Doc } from "@convex/_generated/dataModel";
 import { Badge } from "@tremor/react";
@@ -79,16 +79,16 @@ function formatTimeAgo(timestamp: number) {
 export default function AlertsDashboardPage() {
   // Fetch alerts data - extract queries to avoid TS2589 deep type instantiation
   const getStatsQuery = typedApi.alerts.history.getStats;
-  const stats = useQuery(getStatsQuery, {});
+  const stats = useConvexQuery(getStatsQuery, {});
   const getRecentQuery = typedApi.alerts.history.getRecent;
-  const recentAlerts = useQuery(getRecentQuery, { limit: 10 }) as EnrichedAlert[] | undefined;
+  const recentAlerts = useConvexQuery(getRecentQuery, { limit: 10 }) as EnrichedAlert[] | undefined;
   const getUnreadCountQuery = typedApi.alerts.notifications.getUnreadCount;
-  const unreadCount = useQuery(getUnreadCountQuery, {});
+  const unreadCount = useConvexQuery(getUnreadCountQuery, {});
 
   // Mutations
-  const acknowledge = useMutation(typedApi.alerts.history.acknowledge);
-  const acknowledgeAll = useMutation(typedApi.alerts.history.acknowledgeAll);
-  const markAllAsRead = useMutation(typedApi.alerts.notifications.markAllAsRead);
+  const acknowledge = useConvexMutation(typedApi.alerts.history.acknowledge);
+  const acknowledgeAll = useConvexMutation(typedApi.alerts.history.acknowledgeAll);
+  const markAllAsRead = useConvexMutation(typedApi.alerts.notifications.markAllAsRead);
 
   const isLoading = stats === undefined;
 

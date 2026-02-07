@@ -587,6 +587,15 @@ export const completeChapter = mutation({
       });
     }
 
+    // Prevent duplicate completion: progress must be in_progress
+    // This guards against concurrent completeChapter calls for the same attempt
+    // granting rewards multiple times (Convex OCC will retry and hit this check)
+    if (progress.status !== "in_progress") {
+      throw createError(ErrorCode.INVALID_OPERATION, {
+        reason: "This chapter is not currently in progress",
+      });
+    }
+
     const newBadges: Array<{ badgeId: string; displayName: string; description: string }> = [];
     let leveledUp = false;
     let newLevel = 1;

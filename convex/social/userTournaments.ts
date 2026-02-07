@@ -4,6 +4,7 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
+import { tournamentRateLimiter } from "../infrastructure/rateLimiters";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 
@@ -97,6 +98,9 @@ export const createUserTournament = mutation({
   },
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
+
+    // Rate limit: 1 tournament creation per minute
+    await tournamentRateLimiter.limit(ctx, "createUserTournament", { key: userId });
     const now = Date.now();
 
     // Validate name

@@ -64,13 +64,6 @@ export const seedTestUser = mutation({
       // Leaderboard: Player type
       isAiAgent: false,
 
-      // XP and Level
-      xp: 0,
-      level: 1,
-
-      // Economy (use provided values or defaults)
-      gold: args.gold ?? 1000,
-
       // Moderation fields (defaults)
       isBanned: false,
       isSuspended: false,
@@ -81,6 +74,27 @@ export const seedTestUser = mutation({
 
       // Email tracking
       welcomeEmailSent: false,
+    });
+
+    // Create playerCurrency record (source of truth for gold/gems)
+    await ctx.db.insert("playerCurrency", {
+      userId,
+      gold: args.gold ?? 1000,
+      gems: args.gems ?? 0,
+      lifetimeGoldEarned: args.gold ?? 1000,
+      lifetimeGoldSpent: 0,
+      lifetimeGemsEarned: args.gems ?? 0,
+      lifetimeGemsSpent: 0,
+      lastUpdatedAt: now,
+    });
+
+    // Create playerXP record (source of truth for XP/level)
+    await ctx.db.insert("playerXP", {
+      userId,
+      currentXP: 0,
+      currentLevel: 1,
+      lifetimeXP: 0,
+      lastUpdatedAt: now,
     });
 
     return userId;

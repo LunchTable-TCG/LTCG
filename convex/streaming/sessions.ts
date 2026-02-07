@@ -96,7 +96,7 @@ export const updateSession = mutation({
       status: v.optional(literals("initializing", "pending", "live", "ended", "error")),
       egressId: v.optional(v.string()),
       overlayUrl: v.optional(v.string()),
-      currentLobbyId: v.optional(v.id("gameLobbies")),
+      currentLobbyId: v.optional(v.union(v.id("gameLobbies"), v.string())),
       streamKeyHash: v.optional(v.string()),
       viewerCount: v.optional(v.number()),
       peakViewerCount: v.optional(v.number()),
@@ -289,11 +289,12 @@ export const getActiveStreams = getActiveSessions;
 
 /**
  * Link a game lobby to an active streaming session
+ * Accepts both gameLobbies IDs and story game string IDs
  */
 export const linkLobby = mutation({
   args: {
     sessionId: v.id("streamingSessions"),
-    lobbyId: v.id("gameLobbies"),
+    lobbyId: v.union(v.id("gameLobbies"), v.string()),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.sessionId, {

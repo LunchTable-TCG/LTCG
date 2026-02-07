@@ -144,7 +144,7 @@ export default function ListingDetailPage() {
     setIsSubmitting(true);
     try {
       const result = (await refundBid({
-        bidId: refundBidId as Id<"marketplaceBids">,
+        bidId: refundBidId as Id<"auctionBids">,
         reason: refundReason,
       })) as { message?: string };
       toast.success(result.message || "Bid refunded successfully");

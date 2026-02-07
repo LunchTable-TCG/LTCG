@@ -6,6 +6,8 @@ import router from "./router";
 
 // Webhooks
 import * as heliusWebhook from "./webhooks/helius";
+import * as livekitWebhook from "./livekit/http/webhook";
+import * as streamingHttp from "./streaming/http";
 
 // Privy handles auth externally - no auth routes needed here
 const http = router;
@@ -72,6 +74,28 @@ http.route({
   path: "/webhooks/helius/health",
   method: "GET",
   handler: heliusWebhook.healthCheck,
+});
+
+// ============================================================================
+// LiveKit Webhook
+// ============================================================================
+
+// POST /livekit/webhook - Receive LiveKit room/participant/track events
+http.route({
+  path: "/livekit/webhook",
+  method: "POST",
+  handler: livekitWebhook.livekitWebhook,
+});
+
+// ============================================================================
+// Streaming API
+// ============================================================================
+
+// POST /api/streaming/start - Start streaming session
+http.route({
+  path: "/api/streaming/start",
+  method: "POST",
+  handler: streamingHttp.startStreaming,
 });
 
 export default http;

@@ -11,6 +11,7 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
+import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import {
@@ -128,11 +129,21 @@ export const batchGrantGold = mutation({
           continue;
         }
 
-        const currentGold = player.gold || 0;
+        // Get current gold from playerCurrency (source of truth)
+        const currency = await ctx.db
+          .query("playerCurrency")
+          .withIndex("by_user", (q) => q.eq("userId", playerId))
+          .first();
+        const currentGold = currency?.gold || 0;
         const newGold = currentGold + amount;
 
-        await ctx.db.patch(playerId, {
-          gold: newGold,
+        // Use proper currency adjustment helper
+        await adjustPlayerCurrencyHelper(ctx, {
+          userId: playerId,
+          goldDelta: amount,
+          transactionType: "gift",
+          description: reason || `Admin batch gold grant: ${amount}`,
+          metadata: { adminBatch: true, adminId },
         });
 
         // Send inbox notification
@@ -989,12 +1000,24 @@ export const broadcastAnnouncement = mutation({
     // Collect users (with limit for safety)
     const allUsers = await usersQuery.take(10000);
 
+    // Get playerXP data for level filtering (if needed)
+    const playerXPMap = new Map<string, number>();
+    if (filterByMinLevel) {
+      const allPlayerXP = await ctx.db.query("playerXP").collect();
+      for (const xp of allPlayerXP) {
+        playerXPMap.set(xp.userId, xp.currentLevel);
+      }
+    }
+
     // Apply filters
     const now = Date.now();
     const filteredUsers = allUsers.filter((user) => {
-      // Filter by minimum level
-      if (filterByMinLevel && (user.level || 1) < filterByMinLevel) {
-        return false;
+      // Filter by minimum level (read from playerXP table)
+      if (filterByMinLevel) {
+        const level = playerXPMap.get(user._id) ?? 1;
+        if (level < filterByMinLevel) {
+          return false;
+        }
       }
       // Filter by activity (using lastActiveAt from presence tracking)
       if (filterByActiveInDays) {
@@ -1153,7 +1176,13 @@ export const previewBatchGrantGold = query({
         continue;
       }
 
-      const currentGold = player.gold || 0;
+      // Get current gold from playerCurrency (source of truth)
+      const currency = await ctx.db
+        .query("playerCurrency")
+        .withIndex("by_user", (q) => q.eq("userId", playerId))
+        .first();
+      const currentGold = currency?.gold || 0;
+
       preview.push({
         playerId,
         username: player.username,

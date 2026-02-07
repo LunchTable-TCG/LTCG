@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { Badge, Text } from "@tremor/react";
 import { AlertCircle, CheckCircle2, Eye, Loader2, Play } from "lucide-react";
@@ -251,8 +251,8 @@ export function GrantGoldForm({ onSuccess }: BatchOperationFormProps) {
     amount: number;
   } | null>(null);
 
-  const batchGrantGold = useMutation(typedApi.admin.batchAdmin.batchGrantGold);
-  const previewData = useQuery(
+  const batchGrantGold = useConvexMutation(typedApi.admin.batchAdmin.batchGrantGold);
+  const previewData = useConvexQuery(
     typedApi.admin.batchAdmin.previewBatchGrantGold,
     previewArgs ?? "skip"
   );
@@ -466,8 +466,8 @@ export function ResetRatingsForm({ onSuccess }: BatchOperationFormProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [previewArgs, setPreviewArgs] = useState<{ playerIds: Id<"users">[] } | null>(null);
 
-  const batchResetRatings = useMutation(typedApi.admin.batchAdmin.batchResetRatings);
-  const previewData = useQuery(
+  const batchResetRatings = useConvexMutation(typedApi.admin.batchAdmin.batchResetRatings);
+  const previewData = useConvexQuery(
     typedApi.admin.batchAdmin.previewBatchResetRatings,
     previewArgs ?? "skip"
   );
@@ -629,8 +629,8 @@ export function GrantPacksForm({ onSuccess }: BatchOperationFormProps) {
     quantity: number;
   } | null>(null);
 
-  const batchGrantPacks = useMutation(typedApi.admin.batchAdmin.batchGrantPacks);
-  const previewData = useQuery(
+  const batchGrantPacks = useConvexMutation(typedApi.admin.batchAdmin.batchGrantPacks);
+  const previewData = useConvexQuery(
     typedApi.admin.batchAdmin.previewBatchGrantPacks,
     previewArgs ?? "skip"
   );
@@ -801,7 +801,7 @@ export function GrantCardsForm({ onSuccess }: BatchOperationFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const grantCards = useMutation(typedApi.admin.batchAdmin.grantCardsToPlayer);
+  const grantCards = useConvexMutation(typedApi.admin.batchAdmin.grantCardsToPlayer);
 
   const addCardGrant = () => {
     setCardGrants([...cardGrants, { cardId: "", quantity: 1 }]);
@@ -996,7 +996,7 @@ export function RemoveCardsForm({ onSuccess }: BatchOperationFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const removeCards = useMutation(typedApi.admin.batchAdmin.removeCardsFromPlayer);
+  const removeCards = useConvexMutation(typedApi.admin.batchAdmin.removeCardsFromPlayer);
 
   const addCardRemoval = () => {
     setCardRemovals([...cardRemovals, { cardId: "", quantity: 1 }]);
@@ -1215,8 +1215,8 @@ export function BatchGrantCardsForm({ onSuccess }: BatchOperationFormProps) {
     cardIds: Id<"cardDefinitions">[];
   } | null>(null);
 
-  const batchGrantCards = useMutation(typedApi.admin.batchAdmin.batchGrantCards);
-  const previewData = useQuery(
+  const batchGrantCards = useConvexMutation(typedApi.admin.batchAdmin.batchGrantCards);
+  const previewData = useConvexQuery(
     typedApi.admin.batchAdmin.previewBatchGrantCards,
     previewArgs ?? "skip"
   );

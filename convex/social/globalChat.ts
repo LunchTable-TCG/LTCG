@@ -1,10 +1,9 @@
-import { RateLimiter } from "@convex-dev/ratelimiter";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { components } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { type MutationCtx, query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
+import { chatRateLimiter } from "../infrastructure/rateLimiters";
 import { globalChatMessageCounter } from "../infrastructure/shardedCounters";
 import { CHAT } from "../lib/constants";
 import { requireAuthMutation } from "../lib/convexAuth";
@@ -19,7 +18,7 @@ import type { UserStatus } from "../lib/types";
  *
  * Features:
  * - Real-time message synchronization via reactive queries
- * - Rate limiting (1 message per 2 seconds)
+ * - Rate limiting (5 messages per 10 seconds)
  * - Online user presence tracking
  * - System message support
  * - Public read access, authenticated write access
@@ -34,16 +33,6 @@ import type { UserStatus } from "../lib/types";
 
 const MAX_MESSAGE_LENGTH = 500;
 const DEFAULT_MESSAGE_LIMIT = 50;
-
-// Rate limiter for chat messages: max 5 messages per 10 seconds per user
-const rateLimiter = new RateLimiter(components.ratelimiter, {
-  sendMessage: {
-    kind: "token bucket",
-    rate: CHAT.RATE_LIMIT_MAX_MESSAGES, // 5 messages
-    period: CHAT.RATE_LIMIT_WINDOW_MS, // per 10 seconds
-    capacity: CHAT.RATE_LIMIT_MAX_MESSAGES, // no burst capacity
-  },
-});
 
 // =============================================================================
 // Validators
@@ -265,7 +254,7 @@ export const sendMessage = mutation({
 
     // Rate limiting using Convex's official rate limiter
     // This is transactional, fair, and prevents race conditions
-    const { ok, retryAfter } = await rateLimiter.limit(ctx, "sendMessage", {
+    const { ok, retryAfter } = await chatRateLimiter.limit(ctx, "sendMessage", {
       key: userId,
     });
 

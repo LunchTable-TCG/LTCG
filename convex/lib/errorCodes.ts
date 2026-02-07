@@ -88,6 +88,7 @@ export const ErrorCode = {
 
   // Marketplace Errors (6xxx - Economy Related)
   MARKETPLACE_BID_TOO_LOW: "MARKETPLACE_6007",
+  MARKETPLACE_ALREADY_CLAIMED: "MARKETPLACE_6012",
 
   // Social Errors (7xxx)
   SOCIAL_ALREADY_FRIENDS: "SOCIAL_7001",
@@ -291,6 +292,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
 
   // Marketplace
   MARKETPLACE_6007: "Bid amount is too low",
+  MARKETPLACE_6012: "This auction has already been claimed",
 
   // Social
   SOCIAL_7001: "You are already friends with this user",

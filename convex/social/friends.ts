@@ -7,6 +7,7 @@ import * as generatedApi from "../_generated/api";
 const internal = (generatedApi as any).internal;
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
+import { socialRateLimiter } from "../infrastructure/rateLimiters";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 
@@ -39,6 +40,9 @@ export const sendFriendRequest = mutation({
   returns: friendOperationValidator,
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
+
+    // Rate limit: 5 friend requests per minute
+    await socialRateLimiter.limit(ctx, "sendFriendRequest", { key: userId });
 
     // Find the friend by username
     const friend = await ctx.db
@@ -712,6 +716,12 @@ export const getPlayerCardData = query({
     const user = await ctx.db.get(args.targetUserId);
     if (!user) return null;
 
+    // Get level from playerXP table (source of truth)
+    const playerXP = await ctx.db
+      .query("playerXP")
+      .withIndex("by_user", (q) => q.eq("userId", args.targetUserId))
+      .first();
+
     // Check if authenticated for friendship status
     const identity = await ctx.auth.getUserIdentity();
     let friendshipStatus: "pending" | "accepted" | "blocked" | null = null;
@@ -746,7 +756,7 @@ export const getPlayerCardData = query({
       username: user.username,
       bio: user.bio,
       createdAt: user.createdAt,
-      level: user.level ?? 1,
+      level: playerXP?.currentLevel ?? 1, // Read from playerXP, fallback to default
       rankedElo: user.rankedElo ?? 1000,
       casualRating: user.casualRating ?? 1000,
       totalWins: user.totalWins ?? 0,
@@ -797,18 +807,24 @@ export const searchUsers = query({
       )
       .slice(0, limit);
 
-    // Get friendship status for each user
+    // Get friendship status and level for each user
     const results = await Promise.all(
       matchingUsers.map(async (user) => {
-        const friendship = await ctx.db
-          .query("friendships")
-          .withIndex("by_user_friend", (q) => q.eq("userId", userId).eq("friendId", user._id))
-          .first();
+        const [friendship, playerXP] = await Promise.all([
+          ctx.db
+            .query("friendships")
+            .withIndex("by_user_friend", (q) => q.eq("userId", userId).eq("friendId", user._id))
+            .first(),
+          ctx.db
+            .query("playerXP")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .first(),
+        ]);
 
         return {
           userId: user._id,
           username: user.username,
-          level: user.level || 1,
+          level: playerXP?.currentLevel ?? 1, // Read from playerXP, fallback to default
           rankedElo: user.rankedElo || 1000,
           friendshipStatus: friendship?.status || null,
           isSentRequest: friendship?.requestedBy === userId,

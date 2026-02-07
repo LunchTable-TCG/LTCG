@@ -21,7 +21,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdmin } from "@/contexts/AdminContext";
-import { typedApi, useMutation, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 import { format, formatDistanceToNow } from "date-fns";
 import Link from "next/link";
@@ -62,7 +62,7 @@ export default function ReportDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Use native useQuery with skip conditional
-  const report = useQuery(
+  const report = useConvexQuery(
     typedApi.admin.reports.getReport,
     isAdmin ? { reportId: reportId as Id<"userReports"> } : "skip"
   );
@@ -70,10 +70,10 @@ export default function ReportDetailPage() {
   // Cast mutations to any - typedApi has wrong table name (playerReports vs userReports)
   const updateStatusMutation = typedApi.admin.reports.updateReportStatus;
   // biome-ignore lint/suspicious/noExplicitAny: typedApi has incorrect table name type
-  const updateStatus = useMutation(updateStatusMutation) as any;
+  const updateStatus = useConvexMutation(updateStatusMutation) as any;
   const resolveWithActionMutation = typedApi.admin.reports.resolveReportWithAction;
   // biome-ignore lint/suspicious/noExplicitAny: typedApi has incorrect table name type
-  const resolveWithAction = useMutation(resolveWithActionMutation) as any;
+  const resolveWithAction = useConvexMutation(resolveWithActionMutation) as any;
 
   const handleStatusChange = async (status: ReportStatus) => {
     try {

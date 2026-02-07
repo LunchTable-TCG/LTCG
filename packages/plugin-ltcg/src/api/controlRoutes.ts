@@ -559,7 +559,7 @@ async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime:
     }
 
     const rtmpData = await rtmpResponse.json();
-    logger.info("Got Retake.tv RTMP credentials", { url: rtmpData.url });
+    logger.info("Got Retake.tv RTMP credentials", { url: rtmpData.rtmp_url, key: rtmpData.stream_key });
 
     // 3. Start LTCG streaming system with LiveKit egress
     const appUrl = process.env.LTCG_APP_URL || "https://lunchtable.cards";
@@ -571,11 +571,11 @@ async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime:
       },
       body: JSON.stringify({
         agentId: agentId || "agent_dizzy",
-        gameId: currentGameId, // CRITICAL: Include gameId so overlay knows what to display
+        gameId: currentGameId, // Include gameId for overlay (now supports story game IDs)
         streamType: "agent",
         platform: "custom", // Retake.tv is custom RTMP
-        streamKey: rtmpData.key,
-        customRtmpUrl: rtmpData.url,
+        streamKey: rtmpData.stream_key,
+        customRtmpUrl: rtmpData.rtmp_url,
         streamTitle: "Dizzy plays LTCG",
         overlayConfig: {
           showDecisions: true,

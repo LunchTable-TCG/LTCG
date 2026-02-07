@@ -543,6 +543,31 @@ export const saveDeck = mutation({
     // Validate card ownership
     await validateCardOwnership(ctx, userId, args.cards);
 
+    // Build map of card quantities needed for this deck
+    const cardCounts = new Map<Id<"cardDefinitions">, number>();
+    for (const card of args.cards) {
+      cardCounts.set(card.cardDefinitionId, card.quantity);
+    }
+
+    // Validate ownership for each unique card
+    for (const [cardDefId, requiredQty] of cardCounts) {
+      const playerCard = await ctx.db
+        .query("playerCards")
+        .withIndex("by_user_card", (q) =>
+          q.eq("userId", userId).eq("cardDefinitionId", cardDefId))
+        .first();
+
+      if (!playerCard || playerCard.quantity < requiredQty) {
+        const cardDef = await ctx.db.get(cardDefId);
+        throw createError(ErrorCode.AUTHZ_RESOURCE_FORBIDDEN, {
+          reason: `You need ${requiredQty} copies of "${cardDef?.name ?? 'this card'}" but only own ${playerCard?.quantity ?? 0}`,
+          cardId: cardDefId,
+          required: requiredQty,
+          owned: playerCard?.quantity ?? 0,
+        });
+      }
+    }
+
     // Batch fetch all card definitions for copy limit validation
     const cardDefIds = [...new Set(args.cards.map((c) => c.cardDefinitionId))];
     const cardDefs = await Promise.all(cardDefIds.map((id) => ctx.db.get(id)));

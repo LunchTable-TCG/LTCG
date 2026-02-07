@@ -47,6 +47,7 @@ import { ltcgEvaluators } from "./evaluators";
 import { panels } from "./frontend";
 import { ltcgProviders } from "./providers";
 import { LTCGPollingService } from "./services/LTCGPollingService";
+import { RetakeChatService } from "./services/retakeChatService";
 import { StateAggregator } from "./services/StateAggregator";
 import { TurnOrchestrator } from "./services/TurnOrchestrator";
 import { webhookRoutes } from "./webhooks";
@@ -202,7 +203,8 @@ const plugin: LTCGPlugin = {
   // - TurnOrchestrator: Makes LLM-driven gameplay decisions
   // - LTCGPollingService: Polls for updates when no webhook URL is configured
   // - StateAggregator: Aggregates service state for panel APIs
-  services: [TurnOrchestrator, LTCGPollingService, StateAggregator],
+  // - RetakeChatService: Polls Retake.tv chat and processes viewer messages
+  services: [TurnOrchestrator, LTCGPollingService, StateAggregator, RetakeChatService],
   actions: ltcgActions,
   providers: ltcgProviders,
   evaluators: ltcgEvaluators,

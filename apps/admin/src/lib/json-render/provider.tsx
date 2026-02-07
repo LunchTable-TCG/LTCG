@@ -105,8 +105,8 @@ export function AdminJsonRenderProvider({ children }: AdminJsonRenderProviderPro
   const [data, setData] = useState<Record<string, unknown>>({});
 
   // Handle actions from rendered components
-  const handleAction = useCallback((action: string, payload?: unknown) => {
-    console.log("[JsonRender] Action triggered:", action, payload);
+  const handleAction = useCallback((_action: string, _payload?: unknown) => {
+    // Action handler - extend as needed
   }, []);
 
   // Render function using the catalog

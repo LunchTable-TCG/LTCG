@@ -723,7 +723,7 @@ export interface AdminMarketplaceListingDetail extends AdminMarketplaceListing {
     archetype: string;
   } | null;
   bids: Array<{
-    _id: Id<"marketplaceBids">;
+    _id: Id<"auctionBids">;
     bidderId: Id<"users">;
     bidderUsername?: string;
     amount: number;

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { typedApi, useQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import type { ColumnDef, PlayerType } from "@/types";
 import type { Id } from "@convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
@@ -112,7 +112,7 @@ export default function PlayersPage() {
   // Fetch players using admin listPlayers (doesn't rely on aggregates)
   // Extract query to avoid TS2589 deep type instantiation
   const listPlayersQuery = typedApi.admin.admin.listPlayers;
-  const playersData = useQuery(listPlayersQuery, {
+  const playersData = useConvexQuery(listPlayersQuery, {
     limit: 200,
   });
 

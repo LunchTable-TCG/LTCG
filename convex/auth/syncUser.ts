@@ -60,14 +60,15 @@ export const createOrGetUser = mutation({
     }
 
     // Create new user with game defaults + wallet if provided
+    const now = Date.now();
     const userId = await ctx.db.insert("users", {
       privyId,
       email: args.email,
-      createdAt: Date.now(),
+      createdAt: now,
       // Auto-connect wallet if provided
       walletAddress: args.walletAddress,
       walletType: args.walletType,
-      walletConnectedAt: args.walletAddress ? Date.now() : undefined,
+      walletConnectedAt: args.walletAddress ? now : undefined,
       // Referral tracking - resolve guild ID from invite code if provided
       referralSource: args.referralSource,
       referralGuildInviteCode: args.referralGuildInviteCode,
@@ -81,9 +82,6 @@ export const createOrGetUser = mutation({
         return link?.guildId;
       })(),
       // Game defaults
-      gold: 500,
-      xp: 0,
-      level: 1,
       rankedElo: 1000,
       casualRating: 1000,
       totalWins: 0,
@@ -99,6 +97,27 @@ export const createOrGetUser = mutation({
       isBanned: false,
       isSuspended: false,
       warningCount: 0,
+    });
+
+    // Create playerCurrency record (source of truth for gold/gems)
+    await ctx.db.insert("playerCurrency", {
+      userId,
+      gold: 500,
+      gems: 0,
+      lifetimeGoldEarned: 500,
+      lifetimeGoldSpent: 0,
+      lifetimeGemsEarned: 0,
+      lifetimeGemsSpent: 0,
+      lastUpdatedAt: now,
+    });
+
+    // Create playerXP record (source of truth for XP/level)
+    await ctx.db.insert("playerXP", {
+      userId,
+      currentXP: 0,
+      currentLevel: 1,
+      lifetimeXP: 0,
+      lastUpdatedAt: now,
     });
 
     return {
@@ -203,6 +222,8 @@ export const setUsername = mutation({
 /**
  * Get the current user's profile.
  * Returns null if not authenticated or user not found.
+ *
+ * UPDATED: Now reads gold from playerCurrency table (source of truth)
  */
 export const getCurrentUserProfile = mutation({
   args: {},
@@ -223,14 +244,26 @@ export const getCurrentUserProfile = mutation({
       return null;
     }
 
+    // Get currency from playerCurrency table (source of truth)
+    const currency = await ctx.db
+      .query("playerCurrency")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .first();
+
+    // Get XP/level from playerXP table (source of truth)
+    const playerXP = await ctx.db
+      .query("playerXP")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .first();
+
     return {
       userId: user._id,
       username: user.username,
       name: user.name,
       email: user.email,
-      gold: user.gold ?? 500,
-      xp: user.xp ?? 0,
-      level: user.level ?? 1,
+      gold: currency?.gold ?? 500, // Read from playerCurrency, fallback to default
+      xp: playerXP?.currentXP ?? 0, // Read from playerXP, fallback to default
+      level: playerXP?.currentLevel ?? 1, // Read from playerXP, fallback to default
       hasUsername: !!user.username,
     };
   },

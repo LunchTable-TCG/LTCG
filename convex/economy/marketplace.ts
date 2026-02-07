@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { api } from "../_generated/api";
 import { query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
+import { marketplaceRateLimiter } from "../infrastructure/rateLimiters";
 import { MARKETPLACE, PAGINATION } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
@@ -236,6 +237,9 @@ export const createListing = mutation({
   }),
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
+
+    // Rate limit: 5 listings per minute
+    await marketplaceRateLimiter.limit(ctx, "createListing", { key: userId });
 
     // Validate inputs
     if (args.quantity <= 0) {
@@ -504,6 +508,9 @@ export const placeBid = mutation({
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
 
+    // Rate limit: 3 bids per 10 seconds
+    await marketplaceRateLimiter.limit(ctx, "placeBid", { key: userId });
+
     const listing = await ctx.db.get(args.listingId);
     if (!listing) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
@@ -558,14 +565,6 @@ export const placeBid = mutation({
 
     // Refund previous highest bidder if exists
     if (listing.highestBidderId && listing.currentBid) {
-      await adjustPlayerCurrencyHelper(ctx, {
-        userId: listing.highestBidderId,
-        goldDelta: listing.currentBid,
-        transactionType: "auction_refund",
-        description: `Outbid on auction #${args.listingId}`,
-        referenceId: args.listingId,
-      });
-
       // Update previous bid status (should only be one active bid at a time)
       const previousBid = await ctx.db
         .query("auctionBids")
@@ -573,10 +572,20 @@ export const placeBid = mutation({
         .filter((q) => q.eq(q.field("bidStatus"), "active"))
         .first();
 
-      if (previousBid) {
+      // Only refund if not already refunded (idempotency check)
+      if (previousBid && !previousBid.refunded) {
+        await adjustPlayerCurrencyHelper(ctx, {
+          userId: listing.highestBidderId,
+          goldDelta: listing.currentBid,
+          transactionType: "auction_refund",
+          description: `Outbid on auction #${args.listingId}`,
+          referenceId: args.listingId,
+        });
+
         await ctx.db.patch(previousBid._id, {
           bidStatus: "outbid",
           refundedAt: Date.now(),
+          refunded: true, // Mark as refunded to prevent double refunds
         });
 
         // Send outbid notification
@@ -612,6 +621,10 @@ export const placeBid = mutation({
     });
 
     // Update listing
+    // NOTE: Race condition protection via Convex OCC (Optimistic Concurrency Control)
+    // If the listing was modified between the read (line 514) and this patch,
+    // Convex will automatically retry this entire mutation from the beginning.
+    // This prevents bypassing the minimum bid increment check.
     await ctx.db.patch(args.listingId, {
       currentBid: args.bidAmount,
       highestBidderId: userId,
@@ -648,6 +661,13 @@ export const claimAuctionWin = mutation({
     if (!listing) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
         reason: "Listing not found",
+      });
+    }
+
+    // Idempotency: prevent double claims
+    if (listing.claimed) {
+      throw createError(ErrorCode.MARKETPLACE_ALREADY_CLAIMED, {
+        reason: "This auction has already been claimed",
       });
     }
 
@@ -712,6 +732,7 @@ export const claimAuctionWin = mutation({
       soldFor: listing.currentBid,
       soldAt: Date.now(),
       platformFee,
+      claimed: true, // Mark as claimed to prevent double claims
       updatedAt: Date.now(),
     });
 

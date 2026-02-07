@@ -23,6 +23,7 @@ import type { MutationCtx } from "../_generated/server";
 import { internalQuery, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { internalMutation, mutation } from "../functions";
+import { tournamentRateLimiter } from "../infrastructure/rateLimiters";
 import { requireAdminMutation, requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { getRankFromRating } from "../lib/helpers";
@@ -345,6 +346,10 @@ export const registerForTournament = mutation({
   returns: tournamentRegistrationResponseValidator,
   handler: async (ctx, { tournamentId }) => {
     const { userId, username } = await requireAuthMutation(ctx);
+
+    // Rate limit: 2 registrations per 30 seconds
+    await tournamentRateLimiter.limit(ctx, "registerForTournament", { key: userId });
+
     const now = Date.now();
 
     // Get tournament
@@ -420,6 +425,13 @@ export const registerForTournament = mutation({
     const rating =
       tournament.mode === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
 
+    // Atomic increment FIRST to reserve spot (prevents race condition)
+    // Convex's OCC will retry the entire transaction if tournament was modified
+    await ctx.db.patch(tournamentId, {
+      registeredCount: tournament.registeredCount + 1,
+      updatedAt: now,
+    });
+
     // Create participant record
     const participantId = await ctx.db.insert("tournamentParticipants", {
       tournamentId,
@@ -430,11 +442,20 @@ export const registerForTournament = mutation({
       status: "registered",
     });
 
-    // Update tournament count
-    await ctx.db.patch(tournamentId, {
-      registeredCount: tournament.registeredCount + 1,
-      updatedAt: now,
-    });
+    // Re-verify capacity after increment (Convex OCC handles concurrent registrations)
+    // If multiple users registered simultaneously, one will succeed and others will retry
+    const recheckTournament = await ctx.db.get(tournamentId);
+    if (recheckTournament && recheckTournament.registeredCount > recheckTournament.maxPlayers) {
+      // Rollback - remove participant and decrement count
+      await ctx.db.delete(participantId);
+      await ctx.db.patch(tournamentId, {
+        registeredCount: recheckTournament.registeredCount - 1,
+        updatedAt: now,
+      });
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Tournament filled up during registration",
+      });
+    }
 
     return {
       success: true,

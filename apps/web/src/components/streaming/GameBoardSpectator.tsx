@@ -3,8 +3,8 @@
 interface GameState {
   hostBoard?: any[];
   opponentBoard?: any[];
-  hostLifePoints?: number;
-  opponentLifePoints?: number;
+  hostLifePoints?: number | null;
+  opponentLifePoints?: number | null;
   currentPhase?: string;
   turnNumber?: number;
   hostUsername?: string;
@@ -21,8 +21,8 @@ interface GameBoardSpectatorProps {
  */
 export function GameBoardSpectator({ gameState }: GameBoardSpectatorProps) {
   const {
-    hostLifePoints = 8000,
-    opponentLifePoints = 8000,
+    hostLifePoints: rawHostLP,
+    opponentLifePoints: rawOpponentLP,
     currentPhase = "main1",
     turnNumber = 1,
     hostUsername = "Player 1",
@@ -30,6 +30,10 @@ export function GameBoardSpectator({ gameState }: GameBoardSpectatorProps) {
     hostBoard = [],
     opponentBoard = [],
   } = gameState;
+
+  // Ensure life points are numbers (handle null/undefined from game state)
+  const hostLifePoints = typeof rawHostLP === "number" ? rawHostLP : 8000;
+  const opponentLifePoints = typeof rawOpponentLP === "number" ? rawOpponentLP : 8000;
 
   const phaseLabels: Record<string, string> = {
     draw: "Draw Phase",

@@ -33,7 +33,7 @@ export const dizzy: Character = {
     "@elizaos/plugin-sql",
 
     // LTCG Game Plugin - enables card game playing and streaming
-    ltcgPlugin as unknown as string,
+    ltcgPlugin,
 
     // LLM providers (OpenRouter preferred for Dizzy)
     ...(process.env.OPENROUTER_API_KEY?.trim() ? ["@elizaos/plugin-openrouter"] : []),

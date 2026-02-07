@@ -1,10 +1,10 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
+import { PageWrapper } from "@/components/layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { Video, Twitch, Youtube } from "lucide-react";
 import { MetricTile } from "@/components/analytics/MetricTile";
 import { ChartCard } from "@/components/analytics/ChartCard";
@@ -12,8 +12,8 @@ import { DonutChart, Table, TableBody, TableCell, TableHead, TableHeaderCell, Ta
 
 export default function StreamingAnalyticsPage() {
   // Get all streaming sessions
-  const allSessions = useQuery(api.streaming.sessions.getAllSessions, { limit: 100 });
-  const activeSessions = useQuery(api.streaming.sessions.getActiveStreams);
+  const allSessions = useConvexQuery(typedApi.streaming.sessions.getAllSessions, { limit: 100 });
+  const activeSessions = useConvexQuery(typedApi.streaming.sessions.getActiveStreams);
 
   if (allSessions === undefined || activeSessions === undefined) {
     return (
@@ -76,17 +76,15 @@ export default function StreamingAnalyticsPage() {
   }));
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Streaming Analytics</h1>
-          <p className="text-muted-foreground">Monitor live streams and analyze performance</p>
-        </div>
+    <PageWrapper
+      title="Streaming Analytics"
+      description="Monitor live streams and analyze performance"
+      actions={
         <Badge variant={activeStreamsCount > 0 ? "default" : "secondary"} className="text-lg px-4 py-2">
           {activeStreamsCount} Live
         </Badge>
-      </div>
-
+      }
+    >
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricTile
@@ -267,6 +265,6 @@ export default function StreamingAnalyticsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageWrapper>
   );
 }

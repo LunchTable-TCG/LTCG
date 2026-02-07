@@ -354,6 +354,40 @@ export const getAgentByIdInternal = internalQuery({
  * Validate an API key (public endpoint)
  * Returns agent information if the key is valid
  */
+/**
+ * Validate API key and return agent info (read-only query version)
+ * Used by HTTP API endpoints that need to authenticate agents
+ */
+export const validateApiKeyQuery = query({
+  args: {
+    apiKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const result = await validateApiKeyInternal(ctx, args.apiKey);
+
+    if (!result) {
+      return null;
+    }
+
+    // Get full agent details from agents table
+    const agent = await ctx.db
+      .query("agents")
+      .filter((q) => q.eq(q.field("_id"), result.agentId))
+      .first();
+
+    if (!agent || !agent.isActive) {
+      return null;
+    }
+
+    return {
+      agentId: agent._id,
+      name: agent.name,
+      userId: agent.userId,
+      starterDeckCode: agent.starterDeckCode,
+    };
+  },
+});
+
 export const validateApiKey = mutation({
   args: {
     apiKey: v.string(),
