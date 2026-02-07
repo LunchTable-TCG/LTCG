@@ -111,6 +111,7 @@ export const getTopCardsByWinRate = query({
     limit: v.number(),
     minGames: v.optional(v.number()),
   },
+  returns: v.any(),
   handler: async (ctx, { periodType, limit, minGames = 5 }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -123,7 +124,7 @@ export const getTopCardsByWinRate = query({
       .filter((q) =>
         q.and(q.eq(q.field("status"), "completed"), q.gte(q.field("createdAt"), cutoff))
       )
-      .collect();
+      .take(10000);
 
     // Get game states for completed games to analyze card usage
     const cardStats = new Map<
@@ -222,6 +223,7 @@ export const getTopCardsByPlayRate = query({
     ),
     limit: v.number(),
   },
+  returns: v.any(),
   handler: async (ctx, { periodType, limit }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -237,7 +239,7 @@ export const getTopCardsByPlayRate = query({
           q.gte(q.field("createdAt"), cutoff)
         )
       )
-      .collect();
+      .take(10000);
 
     const totalGames = games.length;
     if (totalGames === 0) return [];
@@ -320,6 +322,7 @@ export const getCardStatsByArchetype = query({
       v.literal("all_time")
     ),
   },
+  returns: v.any(),
   handler: async (ctx, { archetype, periodType }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -342,7 +345,7 @@ export const getCardStatsByArchetype = query({
       .filter((q) =>
         q.and(q.eq(q.field("status"), "completed"), q.gte(q.field("createdAt"), cutoff))
       )
-      .collect();
+      .take(10000);
 
     // Track stats for each card
     const cardStats = new Map<
@@ -438,12 +441,13 @@ export const getCardStatsByArchetype = query({
  */
 export const getCurrentEconomySnapshot = query({
   args: {},
+  returns: v.any(),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
     // Get all users
-    const users = await ctx.db.query("users").collect();
+    const users = await ctx.db.query("users").take(10000);
     const humanUsers = users.filter((u) => !u.isAiAgent);
 
     // Calculate gold in circulation
@@ -460,12 +464,12 @@ export const getCurrentEconomySnapshot = query({
     const top1Gold = sortedGold.slice(0, top1Count).reduce((sum, g) => sum + g, 0);
 
     // Get player currency data for gems
-    const currencies = await ctx.db.query("playerCurrency").collect();
+    const currencies = await ctx.db.query("playerCurrency").take(10000);
     const totalGems = currencies.reduce((sum, c) => sum + (c.gems || 0), 0);
     const averageGems = currencies.length > 0 ? totalGems / currencies.length : 0;
 
     // Get card counts
-    const playerCards = await ctx.db.query("playerCards").collect();
+    const playerCards = await ctx.db.query("playerCards").take(10000);
     const totalCards = playerCards.reduce((sum, pc) => sum + pc.quantity, 0);
 
     // Get pack opening count (last 7 days for context)
@@ -487,7 +491,7 @@ export const getCurrentEconomySnapshot = query({
       .filter((q) =>
         q.and(q.eq(q.field("currencyType"), "gold"), q.gte(q.field("createdAt"), weekAgo))
       )
-      .collect();
+      .take(10000);
 
     let weeklyGoldGenerated = 0;
     let weeklyGoldSpent = 0;
@@ -537,6 +541,7 @@ export const getEconomyTrends = query({
     periodType: v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly")),
     days: v.number(),
   },
+  returns: v.any(),
   handler: async (ctx, { periodType, days }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -565,7 +570,7 @@ export const getEconomyTrends = query({
         .filter((q) =>
           q.and(q.gte(q.field("createdAt"), periodStart), q.lt(q.field("createdAt"), periodEnd))
         )
-        .collect();
+        .take(10000);
 
       let goldGenerated = 0;
       let goldSpent = 0;
@@ -582,7 +587,7 @@ export const getEconomyTrends = query({
         .filter((q) =>
           q.and(q.gte(q.field("openedAt"), periodStart), q.lt(q.field("openedAt"), periodEnd))
         )
-        .collect();
+        .take(10000);
 
       // Get marketplace sales in period
       const sales = await ctx.db
@@ -594,7 +599,7 @@ export const getEconomyTrends = query({
             q.lt(q.field("soldAt"), periodEnd)
           )
         )
-        .collect();
+        .take(10000);
 
       trends.push({
         date: new Date(periodEnd).toISOString(),
@@ -619,6 +624,7 @@ export const getEconomyMetrics = query({
   args: {
     days: v.number(),
   },
+  returns: v.any(),
   handler: async (ctx, { days }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -651,7 +657,7 @@ export const getEconomyMetrics = query({
         .filter((q) =>
           q.and(q.gte(q.field("createdAt"), dayStart), q.lt(q.field("createdAt"), dayEnd))
         )
-        .collect();
+        .take(10000);
 
       let goldGenerated = 0;
       let goldSpent = 0;
@@ -668,7 +674,7 @@ export const getEconomyMetrics = query({
         .filter((q) =>
           q.and(q.gte(q.field("openedAt"), dayStart), q.lt(q.field("openedAt"), dayEnd))
         )
-        .collect();
+        .take(10000);
 
       // Get marketplace data
       const activeListings = await ctx.db
@@ -685,10 +691,10 @@ export const getEconomyMetrics = query({
             q.lt(q.field("soldAt"), dayEnd)
           )
         )
-        .collect();
+        .take(10000);
 
       // Get user gold stats (snapshot estimation)
-      const users = await ctx.db.query("users").collect();
+      const users = await ctx.db.query("users").take(10000);
       const humanUsers = users.filter((u) => !u.isAiAgent);
       const goldValues = humanUsers.map((u) => u.gold || 0);
       const totalGold = goldValues.reduce((sum, g) => sum + g, 0);
@@ -698,7 +704,7 @@ export const getEconomyMetrics = query({
       const top10Gold = sortedGold.slice(0, top10Count).reduce((sum, g) => sum + g, 0);
 
       // Get card count
-      const playerCards = await ctx.db.query("playerCards").collect();
+      const playerCards = await ctx.db.query("playerCards").take(10000);
       const totalCards = playerCards.reduce((sum, pc) => sum + pc.quantity, 0);
 
       metrics.push({
@@ -727,12 +733,13 @@ export const getEconomyMetrics = query({
  */
 export const getWealthDistribution = query({
   args: {},
+  returns: v.any(),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
     // Get all human users
-    const users = await ctx.db.query("users").collect();
+    const users = await ctx.db.query("users").take(10000);
     const humanUsers = users.filter((u) => !u.isAiAgent);
 
     if (humanUsers.length === 0) {
@@ -797,17 +804,18 @@ export const getWealthDistribution = query({
  */
 export const getPlayerDistribution = query({
   args: {},
+  returns: v.any(),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    const users = await ctx.db.query("users").collect();
+    const users = await ctx.db.query("users").take(10000);
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
     const weekMs = 7 * dayMs;
 
     // Get user presence for activity tracking
-    const presences = await ctx.db.query("userPresence").collect();
+    const presences = await ctx.db.query("userPresence").take(10000);
     const presenceMap = new Map(presences.map((p) => [p.userId.toString(), p]));
 
     // Calculate active players (active in last 7 days)
@@ -843,6 +851,7 @@ export const getPlayerRetention = query({
   args: {
     periodType: v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly")),
   },
+  returns: v.any(),
   handler: async (ctx, { periodType }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -855,7 +864,7 @@ export const getPlayerRetention = query({
     const analysisCutoff = now - analysisWindowDays * dayMs;
 
     // Get users created before the analysis window
-    const users = await ctx.db.query("users").collect();
+    const users = await ctx.db.query("users").take(10000);
     const cohortUsers = users.filter((u) => {
       const createdAt = u.createdAt || u._creationTime;
       return createdAt < analysisCutoff;
@@ -951,6 +960,7 @@ export const getGameStats = query({
       v.literal("all_time")
     ),
   },
+  returns: v.any(),
   handler: async (ctx, { periodType }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -961,7 +971,7 @@ export const getGameStats = query({
     const lobbies = await ctx.db
       .query("gameLobbies")
       .filter((q) => q.gte(q.field("createdAt"), cutoff))
-      .collect();
+      .take(10000);
 
     const completedGames = lobbies.filter((l) => l.status === "completed");
     const activeGames = lobbies.filter((l) => l.status === "active" || l.status === "waiting");
@@ -1003,12 +1013,13 @@ export const getGameStats = query({
  */
 export const getMatchmakingStats = query({
   args: {},
+  returns: v.any(),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
     // Get current queue
-    const queue = await ctx.db.query("matchmakingQueue").collect();
+    const queue = await ctx.db.query("matchmakingQueue").take(10000);
 
     // Calculate average queue time
     const now = Date.now();
@@ -1024,7 +1035,7 @@ export const getMatchmakingStats = query({
     const recentGames = await ctx.db
       .query("gameLobbies")
       .filter((q) => q.gte(q.field("createdAt"), dayAgo))
-      .collect();
+      .take(10000);
 
     const completedGames = recentGames.filter((g) => g.status === "completed");
     const matchSuccessRate =
@@ -1044,6 +1055,7 @@ export const getMatchmakingStats = query({
  */
 export const getMatchmakingHealth = query({
   args: {},
+  returns: v.any(),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1052,7 +1064,7 @@ export const getMatchmakingHealth = query({
     const dayAgo = now - 24 * 60 * 60 * 1000;
 
     // Get queue entries
-    const queue = await ctx.db.query("matchmakingQueue").collect();
+    const queue = await ctx.db.query("matchmakingQueue").take(10000);
     const rankedQueue = queue.filter((q) => q.mode === "ranked");
     const casualQueue = queue.filter((q) => q.mode === "casual");
 
@@ -1067,7 +1079,7 @@ export const getMatchmakingHealth = query({
     const todayGames = await ctx.db
       .query("gameLobbies")
       .filter((q) => q.gte(q.field("createdAt"), dayAgo))
-      .collect();
+      .take(10000);
 
     const rankedGames = todayGames.filter((g) => g.mode === "ranked");
     const casualGames = todayGames.filter((g) => g.mode === "casual");
@@ -1076,7 +1088,7 @@ export const getMatchmakingHealth = query({
     const todayMatches = await ctx.db
       .query("matchHistory")
       .filter((q) => q.gte(q.field("completedAt"), dayAgo))
-      .collect();
+      .take(10000);
 
     const rankedMatches = todayMatches.filter((m) => m.gameType === "ranked");
     let totalRatingDiff = 0;
@@ -1087,7 +1099,7 @@ export const getMatchmakingHealth = query({
       rankedMatches.length > 0 ? Math.round(totalRatingDiff / rankedMatches.length) : 0;
 
     // Calculate tier distribution
-    const users = await ctx.db.query("users").collect();
+    const users = await ctx.db.query("users").take(10000);
     const tierCounts = { bronze: 0, silver: 0, gold: 0, platinum: 0, diamond: 0 };
     for (const user of users) {
       const tier = getRankTier(user.rankedElo || 1000);
@@ -1147,6 +1159,7 @@ export const getMatchmakingStatsDetailed = query({
   args: {
     days: v.number(),
   },
+  returns: v.any(),
   handler: async (ctx, { days }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1175,7 +1188,7 @@ export const getMatchmakingStatsDetailed = query({
         .filter((q) =>
           q.and(q.gte(q.field("createdAt"), dayStart), q.lt(q.field("createdAt"), dayEnd))
         )
-        .collect();
+        .take(10000);
 
       // Get match history for rating diffs
       const matches = await ctx.db
@@ -1183,7 +1196,7 @@ export const getMatchmakingStatsDetailed = query({
         .filter((q) =>
           q.and(q.gte(q.field("completedAt"), dayStart), q.lt(q.field("completedAt"), dayEnd))
         )
-        .collect();
+        .take(10000);
 
       const rankedGames = games.filter((g) => g.mode === "ranked");
       const casualGames = games.filter((g) => g.mode === "casual");
@@ -1248,12 +1261,13 @@ export const getSkillDistribution = query({
   args: {
     ratingType: v.string(),
   },
+  returns: v.any(),
   handler: async (ctx, { ratingType }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
     // Get all users
-    const users = await ctx.db.query("users").collect();
+    const users = await ctx.db.query("users").take(10000);
     const humanUsers = users.filter((u) => !u.isAiAgent);
 
     // Get ratings based on type
@@ -1323,6 +1337,7 @@ export const getSkillDistribution = query({
  */
 export const getRetentionOverview = query({
   args: {},
+  returns: v.any(),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1331,7 +1346,7 @@ export const getRetentionOverview = query({
     const dayMs = 24 * 60 * 60 * 1000;
 
     // Get all users for cohort analysis
-    const users = await ctx.db.query("users").collect();
+    const users = await ctx.db.query("users").take(10000);
 
     // Filter to users created at least 30 days ago for complete analysis
     const cohortCutoff = now - 30 * dayMs;
@@ -1427,6 +1442,7 @@ export const getTopEngagedPlayers = query({
     days: v.number(),
     limit: v.number(),
   },
+  returns: v.any(),
   handler: async (ctx, { days, limit }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1434,7 +1450,7 @@ export const getTopEngagedPlayers = query({
     const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
 
     // Get all human users
-    const users = await ctx.db.query("users").collect();
+    const users = await ctx.db.query("users").take(10000);
     const humanUsers = users.filter((u) => !u.isAiAgent);
 
     // Calculate engagement for each user
@@ -1449,7 +1465,7 @@ export const getTopEngagedPlayers = query({
               q.gte(q.field("createdAt"), cutoff)
             )
           )
-          .collect();
+          .take(10000);
 
         // Calculate unique days active
         const activeDays = new Set(games.map((g) => new Date(g.createdAt).toDateString())).size;
@@ -1488,6 +1504,7 @@ export const getDailyActiveStats = query({
   args: {
     days: v.number(),
   },
+  returns: v.any(),
   handler: async (ctx, { days }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1520,7 +1537,7 @@ export const getDailyActiveStats = query({
         .filter((q) =>
           q.and(q.gte(q.field("createdAt"), dayStart), q.lt(q.field("createdAt"), dayEnd))
         )
-        .collect();
+        .take(10000);
 
       // Get unique active users
       const activeUserIds = new Set<string>();
@@ -1548,7 +1565,7 @@ export const getDailyActiveStats = query({
         .filter((q) =>
           q.and(q.gte(q.field("_creationTime"), dayStart), q.lt(q.field("_creationTime"), dayEnd))
         )
-        .collect();
+        .take(10000);
 
       // Calculate returning users (active but not new)
       const newUserIds = new Set(newUsers.map((u) => u._id.toString()));
@@ -1607,6 +1624,7 @@ export const getMarketplaceStats = query({
       v.literal("all_time")
     ),
   },
+  returns: v.any(),
   handler: async (ctx, { periodType }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1619,7 +1637,7 @@ export const getMarketplaceStats = query({
     const allListings = await ctx.db
       .query("marketplaceListings")
       .filter((q) => q.gte(q.field("createdAt"), cutoff))
-      .collect();
+      .take(10000);
 
     // Active listings (current state)
     const activeListings = await ctx.db
@@ -1665,6 +1683,7 @@ export const getPlayerEngagement = query({
     userId: v.id("users"),
     days: v.number(),
   },
+  returns: v.any(),
   handler: async (ctx, { userId, days }) => {
     const { userId: adminId } = await requireAuthQuery(ctx);
     await requireRole(ctx, adminId, "moderator");
@@ -1686,7 +1705,7 @@ export const getPlayerEngagement = query({
           q.gte(q.field("_creationTime"), cutoffTime)
         )
       )
-      .collect();
+      .take(10000);
 
     // Calculate engagement metrics
     const totalGames = recentGames.length;

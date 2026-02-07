@@ -330,13 +330,25 @@ export const updateQuestProgress = internalMutation({
       .withIndex("by_user_status", (q) => q.eq("userId", args.userId).eq("status", "active"))
       .collect();
 
+    // Batch fetch all quest definitions in parallel
+    const questIds = [...new Set(userQuests.map((uq) => uq.questId))];
+    const questDefResults = await Promise.all(
+      questIds.map((questId) =>
+        ctx.db
+          .query("questDefinitions")
+          .withIndex("by_quest_id", (q) => q.eq("questId", questId))
+          .first()
+      )
+    );
+    const questDefMap = new Map(
+      questIds
+        .map((id, i) => [id, questDefResults[i]] as const)
+        .filter((entry): entry is [string, NonNullable<(typeof questDefResults)[number]>] => entry[1] !== null)
+    );
+
     // Update progress for matching quests
     for (const userQuest of userQuests) {
-      const definition = await ctx.db
-        .query("questDefinitions")
-        .withIndex("by_quest_id", (q) => q.eq("questId", userQuest.questId))
-        .first();
-
+      const definition = questDefMap.get(userQuest.questId);
       if (!definition) continue;
 
       // Check if event matches quest requirements

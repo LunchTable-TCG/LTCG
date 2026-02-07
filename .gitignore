@@ -103,6 +103,9 @@ web_modules/
 
 # Convex
 .convex/
+/_generated/
+/schema.ts
+/test.setup.ts
 
 # TypeScript
 *.tsbuildinfo

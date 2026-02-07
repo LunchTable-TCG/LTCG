@@ -33,7 +33,9 @@ export const { checkRateLimit, rateLimit, resetRateLimit } = defineRateLimits({
 
   // Social operations
   FRIEND_REQUEST: { kind: "token bucket", rate: 10, period: 5 * MINUTE, capacity: 10 }, // 10 per 5 min
+  SOCIAL_ACTION: { kind: "token bucket", rate: 20, period: MINUTE, capacity: 20 }, // 20 per minute
   GLOBAL_CHAT: { kind: "token bucket", rate: 20, period: MINUTE, capacity: 20 }, // 20 per minute
+  TOURNAMENT_ACTION: { kind: "token bucket", rate: 10, period: MINUTE, capacity: 10 }, // 10 per minute
 
   // Game operations
   CREATE_LOBBY: { kind: "token bucket", rate: 10, period: MINUTE, capacity: 10 }, // 10 per minute
@@ -72,7 +74,9 @@ export async function checkRateLimitWrapper(
     | "MARKETPLACE_LIST"
     | "MARKETPLACE_BID"
     | "FRIEND_REQUEST"
+    | "SOCIAL_ACTION"
     | "GLOBAL_CHAT"
+    | "TOURNAMENT_ACTION"
     | "CREATE_LOBBY"
     | "JOIN_LOBBY"
     | "LOBBY_ACTION"
@@ -128,7 +132,9 @@ export async function resetRateLimitWrapper(
     | "MARKETPLACE_LIST"
     | "MARKETPLACE_BID"
     | "FRIEND_REQUEST"
+    | "SOCIAL_ACTION"
     | "GLOBAL_CHAT"
+    | "TOURNAMENT_ACTION"
     | "CREATE_LOBBY"
     | "JOIN_LOBBY"
     | "LOBBY_ACTION"

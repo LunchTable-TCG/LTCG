@@ -7,6 +7,7 @@ import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { tournamentRateLimiter } from "../infrastructure/rateLimiters";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { checkRateLimitWrapper } from "../lib/rateLimit";
 
 // ============================================================================
 // Constants
@@ -96,6 +97,11 @@ export const createUserTournament = mutation({
     mode: v.union(v.literal("ranked"), v.literal("casual")),
     visibility: v.union(v.literal("public"), v.literal("private")),
   },
+  returns: v.object({
+    tournamentId: v.id("tournaments"),
+    joinCode: v.optional(v.string()),
+    message: v.string(),
+  }),
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
 
@@ -245,8 +251,17 @@ export const joinUserTournament = mutation({
     tournamentId: v.optional(v.id("tournaments")),
     joinCode: v.optional(v.string()),
   },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+    isFull: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const { userId, username } = await requireAuthMutation(ctx);
+
+    // SECURITY: Rate limit tournament actions to prevent spam
+    await checkRateLimitWrapper(ctx, "TOURNAMENT_ACTION", userId as string);
+
     const now = Date.now();
 
     // Must provide either tournamentId or joinCode
@@ -385,8 +400,16 @@ export const leaveUserTournament = mutation({
   args: {
     tournamentId: v.id("tournaments"),
   },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+  }),
   handler: async (ctx, { tournamentId }) => {
     const { userId } = await requireAuthMutation(ctx);
+
+    // SECURITY: Rate limit tournament actions to prevent spam
+    await checkRateLimitWrapper(ctx, "TOURNAMENT_ACTION", userId as string);
+
     const now = Date.now();
 
     const tournament = await ctx.db.get(tournamentId);
@@ -463,6 +486,10 @@ export const cancelUserTournament = mutation({
   args: {
     tournamentId: v.id("tournaments"),
   },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+  }),
   handler: async (ctx, { tournamentId }) => {
     const { userId } = await requireAuthMutation(ctx);
     const now = Date.now();
@@ -602,6 +629,7 @@ export const getPublicUserTournaments = query({
   args: {
     limit: v.optional(v.number()),
   },
+  returns: v.any(),
   handler: async (ctx, args) => {
     const limit = args.limit ?? 20;
 
@@ -613,19 +641,26 @@ export const getPublicUserTournaments = query({
       .order("desc")
       .take(limit);
 
-    // Filter to only user tournaments and enrich with creator info
-    const userTournaments = [];
-    for (const t of tournaments) {
-      if (t.creatorType !== "user") continue;
+    // Filter to only user tournaments
+    const userOnly = tournaments.filter((t) => t.creatorType === "user");
 
-      const creator = await ctx.db.get(t.createdBy);
-      userTournaments.push({
+    // Batch fetch all creators in parallel
+    const creatorIds = [...new Set(userOnly.map((t) => t.createdBy))];
+    const creators = await Promise.all(creatorIds.map((id) => ctx.db.get(id)));
+    const creatorMap = new Map(
+      creatorIds.map((id, i) => [id, creators[i]])
+    );
+
+    // Enrich with creator info
+    const userTournaments = userOnly.map((t) => {
+      const creator = creatorMap.get(t.createdBy);
+      return {
         ...t,
         creatorUsername: creator?.username ?? "Unknown",
         slotsRemaining: t.maxPlayers - t.registeredCount,
         prizeBreakdown: calculatePrizeDistribution(t.entryFee, t.maxPlayers),
-      });
-    }
+      };
+    });
 
     return userTournaments;
   },
@@ -636,6 +671,7 @@ export const getPublicUserTournaments = query({
  */
 export const getMyHostedTournament = query({
   args: {},
+  returns: v.any(),
   handler: async (ctx) => {
     const auth = await requireAuthQuery(ctx);
 
@@ -672,6 +708,7 @@ export const getTournamentByCode = query({
   args: {
     joinCode: v.string(),
   },
+  returns: v.any(),
   handler: async (ctx, { joinCode }) => {
     const normalizedCode = joinCode.toUpperCase().trim();
 
@@ -708,6 +745,7 @@ export const getTournamentByCode = query({
  */
 export const getMyRegisteredTournaments = query({
   args: {},
+  returns: v.any(),
   handler: async (ctx) => {
     const auth = await requireAuthQuery(ctx);
 
@@ -716,17 +754,38 @@ export const getMyRegisteredTournaments = query({
       .withIndex("by_user", (q) => q.eq("userId", auth.userId))
       .collect();
 
-    const tournaments = [];
-    for (const p of participations) {
-      const tournament = await ctx.db.get(p.tournamentId);
-      if (!tournament) continue;
+    // Batch fetch all tournaments in parallel
+    const allTournaments = await Promise.all(
+      participations.map((p) => ctx.db.get(p.tournamentId))
+    );
 
-      // Only include user tournaments that are still active
-      if (tournament.creatorType !== "user") continue;
-      if (tournament.status === "cancelled" || tournament.status === "completed") continue;
+    // Filter to active user tournaments with type narrowing
+    const activePairs: Array<{
+      participation: (typeof participations)[number];
+      tournament: NonNullable<(typeof allTournaments)[number]>;
+    }> = [];
+    for (let i = 0; i < participations.length; i++) {
+      const tournament = allTournaments[i];
+      if (
+        tournament &&
+        tournament.creatorType === "user" &&
+        tournament.status !== "cancelled" &&
+        tournament.status !== "completed"
+      ) {
+        activePairs.push({ participation: participations[i], tournament });
+      }
+    }
 
-      const creator = await ctx.db.get(tournament.createdBy);
-      tournaments.push({
+    // Batch fetch all creators in parallel
+    const creatorIds = [...new Set(activePairs.map(({ tournament }) => tournament.createdBy))];
+    const creators = await Promise.all(creatorIds.map((id) => ctx.db.get(id)));
+    const creatorMap = new Map(
+      creatorIds.map((id, i) => [id, creators[i]])
+    );
+
+    const tournaments = activePairs.map(({ participation: p, tournament }) => {
+      const creator = creatorMap.get(tournament.createdBy);
+      return {
         _id: tournament._id,
         name: tournament.name,
         maxPlayers: tournament.maxPlayers,
@@ -739,8 +798,8 @@ export const getMyRegisteredTournaments = query({
         joinCode: tournament.createdBy === auth.userId ? tournament.joinCode : undefined,
         registeredAt: p.registeredAt,
         participantStatus: p.status,
-      });
-    }
+      };
+    });
 
     return tournaments;
   },

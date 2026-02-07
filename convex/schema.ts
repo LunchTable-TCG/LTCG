@@ -1053,7 +1053,8 @@ export default defineSchema({
     .index("by_rarity", ["rarity"])
     .index("by_archetype", ["archetype"])
     .index("by_type", ["cardType"])
-    .index("by_name", ["name"]),
+    .index("by_name", ["name"])
+    .index("by_active_rarity", ["isActive", "rarity"]),
 
   // =============================================================================
   // Card Template Designer
@@ -2313,7 +2314,8 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_unlocked", ["userId", "isUnlocked"])
-    .index("by_achievement", ["achievementId"]),
+    .index("by_achievement", ["achievementId"])
+    .index("by_user_achievement", ["userId", "achievementId"]),
 
   // ============================================================================
   // NEWS & ANNOUNCEMENTS SYSTEM

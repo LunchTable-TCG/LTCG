@@ -119,6 +119,8 @@ async function validateUserCanCreateGame(ctx: MutationCtx): Promise<{
   username: string;
   deckId: Id<"userDecks">;
   deckArchetype: string;
+  rankedElo: number;
+  casualRating: number;
 }> {
   // Validate session
   const { userId, username } = await requireAuthMutation(ctx);
@@ -138,6 +140,8 @@ async function validateUserCanCreateGameInternal(
   username: string;
   deckId: Id<"userDecks">;
   deckArchetype: string;
+  rankedElo: number;
+  casualRating: number;
 }> {
   // Get user and active deck
   const user = await ctx.db.get(userId);
@@ -217,6 +221,8 @@ async function validateUserCanCreateGameInternal(
     username,
     deckId: activeDeckId,
     deckArchetype: deck.deckArchetype || "unknown",
+    rankedElo: user.rankedElo ?? RATING_DEFAULTS.DEFAULT_RATING,
+    casualRating: user.casualRating ?? RATING_DEFAULTS.DEFAULT_RATING,
   };
 }
 
@@ -240,6 +246,10 @@ export const createLobby = mutation({
     allowSpectators: v.optional(v.boolean()), // default: true
     maxSpectators: v.optional(v.number()), // default: 100
   },
+  returns: v.object({
+    lobbyId: v.id("gameLobbies"),
+    joinCode: v.optional(v.string()),
+  }),
   handler: async (ctx, args) => {
     const opId = `createLobby_${Date.now()}`;
     performance.start(opId);
@@ -251,7 +261,10 @@ export const createLobby = mutation({
     try {
       // Validate user can create game
       logger.debug("Validating user can create game");
-      const { userId, username, deckArchetype } = await validateUserCanCreateGame(ctx);
+      const { userId, username, deckArchetype, rankedElo, casualRating } = await validateUserCanCreateGame(ctx);
+
+      // SECURITY: Rate limit lobby creation to prevent spam
+      await checkRateLimitWrapper(ctx, "CREATE_LOBBY", userId as string);
 
       const traceCtx = createTraceContext("createLobby", { userId, username, mode: args.mode });
       logMatchmaking("lobby_create_start", userId, traceCtx);
@@ -263,7 +276,7 @@ export const createLobby = mutation({
       }
 
       // Calculate rank
-      const rating = RATING_DEFAULTS.DEFAULT_RATING;
+      const rating = args.mode === "ranked" ? rankedElo : casualRating;
       const rank = getRankFromRating(rating);
 
       // Set max rating diff for ranked matches
@@ -329,12 +342,20 @@ export const joinLobby = mutation({
     lobbyId: v.id("gameLobbies"),
     joinCode: v.optional(v.string()),
   },
+  returns: v.object({
+    gameId: v.string(),
+    lobbyId: v.id("gameLobbies"),
+    opponentUsername: v.string(),
+  }),
   handler: async (ctx, args) => {
     const opId = `joinLobby_${Date.now()}`;
     performance.start(opId);
 
     // Validate session first (light check)
     const { userId } = await requireAuthMutation(ctx);
+
+    // SECURITY: Rate limit lobby joins to prevent spam
+    await checkRateLimitWrapper(ctx, "JOIN_LOBBY", userId as string);
 
     logger.mutation("joinLobby", userId, { lobbyId: args.lobbyId, hasJoinCode: !!args.joinCode });
 
@@ -375,7 +396,7 @@ export const joinLobby = mutation({
 
       // Now do full validation
       logger.debug("Validating user can join game", traceCtx);
-      const { username } = await validateUserCanCreateGame(ctx);
+      const { username, rankedElo, casualRating } = await validateUserCanCreateGame(ctx);
 
       // Validate join code for private lobbies
       if (lobby.isPrivate) {
@@ -397,7 +418,7 @@ export const joinLobby = mutation({
 
       // Validate rating for ranked matches
       if (lobby.mode === "ranked" && lobby.maxRatingDiff) {
-        const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
+        const opponentRating = lobby.mode === "ranked" ? rankedElo : casualRating;
         const ratingDiff = Math.abs(lobby.hostRating - opponentRating);
         logger.debug("Validating rating difference", {
           ...traceCtx,
@@ -419,7 +440,7 @@ export const joinLobby = mutation({
       }
 
       // Calculate opponent rank
-      const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
+      const opponentRating = lobby.mode === "ranked" ? rankedElo : casualRating;
       const opponentRank = getRankFromRating(opponentRating);
 
       // Generate game ID
@@ -575,6 +596,11 @@ export const joinLobbyByCode = mutation({
   args: {
     joinCode: v.string(),
   },
+  returns: v.object({
+    gameId: v.string(),
+    lobbyId: v.id("gameLobbies"),
+    opponentUsername: v.string(),
+  }),
   handler: async (ctx, args) => {
     // Normalize join code
     const normalizedCode = args.joinCode.trim().toUpperCase();
@@ -598,7 +624,12 @@ export const joinLobbyByCode = mutation({
       userId,
       username,
       deckArchetype: _deckArchetype,
+      rankedElo,
+      casualRating,
     } = await validateUserCanCreateGame(ctx);
+
+    // SECURITY: Rate limit lobby joins to prevent spam
+    await checkRateLimitWrapper(ctx, "JOIN_LOBBY", userId as string);
 
     // Check user is not the host
     if (lobby.hostId === userId) {
@@ -615,7 +646,7 @@ export const joinLobbyByCode = mutation({
     }
 
     // Calculate opponent rank
-    const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
+    const opponentRating = lobby.mode === "ranked" ? rankedElo : casualRating;
     const opponentRank = getRankFromRating(opponentRating);
 
     // Generate game ID
@@ -700,6 +731,9 @@ export const joinLobbyByCode = mutation({
  */
 export const cancelLobby = mutation({
   args: {},
+  returns: v.object({
+    success: v.boolean(),
+  }),
   handler: async (ctx) => {
     const { userId, username } = await requireAuthMutation(ctx);
 
@@ -754,6 +788,9 @@ export const cancelLobby = mutation({
  */
 export const leaveLobby = mutation({
   args: {},
+  returns: v.object({
+    success: v.boolean(),
+  }),
   handler: async (ctx) => {
     const { userId, username } = await requireAuthMutation(ctx);
 
@@ -874,7 +911,7 @@ export const createLobbyInternal = internalMutation({
 
       // Validate user can create game (without auth check)
       logger.debug("Validating user can create game");
-      const { deckArchetype } = await validateUserCanCreateGameInternal(ctx, args.userId, username);
+      const { deckArchetype, rankedElo, casualRating } = await validateUserCanCreateGameInternal(ctx, args.userId, username);
 
       const traceCtx = createTraceContext("createLobbyInternal", {
         userId: args.userId,
@@ -890,7 +927,7 @@ export const createLobbyInternal = internalMutation({
       }
 
       // Calculate rank
-      const rating = RATING_DEFAULTS.DEFAULT_RATING;
+      const rating = args.mode === "ranked" ? rankedElo : casualRating;
       const rank = getRankFromRating(rating);
 
       // Set max rating diff for ranked matches
@@ -1010,7 +1047,7 @@ export const joinLobbyInternal = internalMutation({
 
       // Now do full validation
       logger.debug("Validating user can join game", traceCtx);
-      await validateUserCanCreateGameInternal(ctx, args.userId, username);
+      const { rankedElo, casualRating } = await validateUserCanCreateGameInternal(ctx, args.userId, username);
 
       // Validate join code for private lobbies
       if (lobby.isPrivate) {
@@ -1032,7 +1069,7 @@ export const joinLobbyInternal = internalMutation({
 
       // Validate rating for ranked matches
       if (lobby.mode === "ranked" && lobby.maxRatingDiff) {
-        const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
+        const opponentRating = lobby.mode === "ranked" ? rankedElo : casualRating;
         const ratingDiff = Math.abs(lobby.hostRating - opponentRating);
         logger.debug("Validating rating difference", {
           ...traceCtx,
@@ -1054,7 +1091,7 @@ export const joinLobbyInternal = internalMutation({
       }
 
       // Calculate opponent rank
-      const opponentRating = RATING_DEFAULTS.DEFAULT_RATING;
+      const opponentRating = lobby.mode === "ranked" ? rankedElo : casualRating;
       const opponentRank = getRankFromRating(opponentRating);
 
       // Generate game ID

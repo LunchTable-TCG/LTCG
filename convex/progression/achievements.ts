@@ -192,11 +192,12 @@ export const updateAchievementProgress = internalMutation({
       // Check if event matches achievement requirements
       if (definition.requirementType !== args.event.type) continue;
 
-      // Get or create user achievement progress
+      // Get or create user achievement progress (compound index avoids full scan)
       const userAchievement = await ctx.db
         .query("userAchievements")
-        .withIndex("by_user", (q) => q.eq("userId", args.userId))
-        .filter((q) => q.eq(q.field("achievementId"), definition.achievementId))
+        .withIndex("by_user_achievement", (q) =>
+          q.eq("userId", args.userId).eq("achievementId", definition.achievementId)
+        )
         .first();
 
       if (!userAchievement) {

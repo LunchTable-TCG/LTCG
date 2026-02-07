@@ -10,6 +10,7 @@ import { mutation } from "../functions";
 import { socialRateLimiter } from "../infrastructure/rateLimiters";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { checkRateLimitWrapper } from "../lib/rateLimit";
 
 // Email action references - extracted to module level for consistency
 const emailActions = internal.infrastructure.emailActions;
@@ -174,6 +175,9 @@ export const acceptFriendRequest = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
 
+    // SECURITY: Rate limit social actions to prevent spam
+    await checkRateLimitWrapper(ctx, "SOCIAL_ACTION", userId as string);
+
     // Find the pending friendship
     const friendship = await ctx.db
       .query("friendships")
@@ -233,6 +237,9 @@ export const declineFriendRequest = mutation({
   returns: successResponseValidator,
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
+
+    // SECURITY: Rate limit social actions to prevent spam
+    await checkRateLimitWrapper(ctx, "SOCIAL_ACTION", userId as string);
 
     // Find the pending friendship
     const friendship = await ctx.db
@@ -378,6 +385,9 @@ export const blockUser = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
 
+    // SECURITY: Rate limit social actions to prevent spam
+    await checkRateLimitWrapper(ctx, "SOCIAL_ACTION", userId as string);
+
     if (args.friendId === userId) {
       throw createError(ErrorCode.SOCIAL_CANNOT_SELF_FRIEND);
     }
@@ -434,6 +444,9 @@ export const unblockUser = mutation({
   returns: successResponseValidator,
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
+
+    // SECURITY: Rate limit social actions to prevent spam
+    await checkRateLimitWrapper(ctx, "SOCIAL_ACTION", userId as string);
 
     const friendship = await ctx.db
       .query("friendships")

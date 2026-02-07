@@ -160,36 +160,22 @@ export async function getRandomCard(
   rarity: Rarity,
   archetype?: Archetype
 ): Promise<CardDefinition> {
-  const query = ctx.db
+  // Use compound index instead of full table scan + filter
+  const cards = await ctx.db
     .query("cardDefinitions")
-    .filter((q) => q.eq(q.field("isActive"), true))
-    .filter((q) => q.eq(q.field("rarity"), rarity));
+    .withIndex("by_active_rarity", (q) => q.eq("isActive", true).eq("rarity", rarity))
+    .collect();
 
   if (archetype && archetype !== "neutral") {
-    const allCards = await query.collect();
-    const archetypeCards = allCards.filter((card) => card.archetype === archetype);
+    const archetypeCards = cards.filter((card) => card.archetype === archetype);
 
-    if (archetypeCards.length === 0) {
-      // Fallback to any archetype if no cards found
-      const cards = await query.collect();
-      if (cards.length === 0) {
-        throw createError(ErrorCode.LIBRARY_NO_CARDS_FOUND, { rarity });
-      }
-      const fallbackCard = cards[Math.floor(Math.random() * cards.length)];
-      if (!fallbackCard) {
-        throw createError(ErrorCode.LIBRARY_CARD_SELECTION_FAILED, { rarity, context: "fallback" });
-      }
-      return fallbackCard;
+    if (archetypeCards.length > 0) {
+      const archetypeCard = archetypeCards[Math.floor(Math.random() * archetypeCards.length)];
+      if (archetypeCard) return archetypeCard;
     }
-
-    const archetypeCard = archetypeCards[Math.floor(Math.random() * archetypeCards.length)];
-    if (!archetypeCard) {
-      throw createError(ErrorCode.LIBRARY_CARD_SELECTION_FAILED, { rarity, archetype });
-    }
-    return archetypeCard;
+    // Fallback to any archetype if no cards found for the requested one
   }
 
-  const cards = await query.collect();
   if (cards.length === 0) {
     throw createError(ErrorCode.LIBRARY_NO_CARDS_FOUND, { rarity });
   }

@@ -248,6 +248,7 @@ import type * as migrations_syncGoldToPlayerCurrency from "../migrations/syncGol
 import type * as migrations_syncXPToPlayerXP from "../migrations/syncXPToPlayerXP.js";
 import type * as migrations_updateArchetypes from "../migrations/updateArchetypes.js";
 import type * as migrations_updateShopProducts from "../migrations/updateShopProducts.js";
+import type * as monitoring_integrity from "../monitoring/integrity.js";
 import type * as presence from "../presence.js";
 import type * as progression_achievements from "../progression/achievements.js";
 import type * as progression_battlePass from "../progression/battlePass.js";
@@ -577,6 +578,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/syncXPToPlayerXP": typeof migrations_syncXPToPlayerXP;
   "migrations/updateArchetypes": typeof migrations_updateArchetypes;
   "migrations/updateShopProducts": typeof migrations_updateShopProducts;
+  "monitoring/integrity": typeof monitoring_integrity;
   presence: typeof presence;
   "progression/achievements": typeof progression_achievements;
   "progression/battlePass": typeof progression_battlePass;
