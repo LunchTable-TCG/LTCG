@@ -7,7 +7,7 @@ const ALGORITHM = "aes-256-gcm";
  * Format: iv:authTag:encrypted (all hex encoded)
  */
 export function encryptStreamKey(plainKey: string): string {
-  const encryptionKey = process.env.STREAM_KEY_ENCRYPTION_KEY;
+  const encryptionKey = process.env.STREAM_KEY_ENCRYPTION_KEY?.trim();
   if (!encryptionKey) {
     throw new Error("STREAM_KEY_ENCRYPTION_KEY not configured");
   }
@@ -27,7 +27,7 @@ export function encryptStreamKey(plainKey: string): string {
  * Decrypt a stream key from storage
  */
 export function decryptStreamKey(encryptedKey: string): string {
-  const encryptionKey = process.env.STREAM_KEY_ENCRYPTION_KEY;
+  const encryptionKey = process.env.STREAM_KEY_ENCRYPTION_KEY?.trim();
   if (!encryptionKey) {
     throw new Error("STREAM_KEY_ENCRYPTION_KEY not configured");
   }

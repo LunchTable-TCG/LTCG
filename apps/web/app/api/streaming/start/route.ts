@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     // Check internal auth header for agent requests
     const internalAuth = req.headers.get("X-Internal-Auth");
-    const isInternalRequest = internalAuth === process.env.INTERNAL_API_SECRET;
+    const isInternalRequest = internalAuth === process.env.INTERNAL_API_SECRET?.trim();
 
     const body = await req.json();
     const {

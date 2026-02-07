@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     // Verify internal auth when called from Convex actions
     const internalAuth = req.headers.get("X-Internal-Auth");
     if (internalAuth) {
-      if (internalAuth !== process.env.INTERNAL_API_SECRET) {
+      if (internalAuth !== process.env.INTERNAL_API_SECRET?.trim()) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }
