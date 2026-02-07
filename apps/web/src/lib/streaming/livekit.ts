@@ -28,16 +28,19 @@ export async function startWebEgress(params: {
 }): Promise<{ egressId: string }> {
   const client = getEgressClient();
 
-  const result = await client.startWebEgress({
-    url: params.overlayUrl,
-    streamOutputs: [
-      {
-        protocol: StreamProtocol.RTMP,
-        urls: [params.rtmpUrl],
-      },
-    ],
-    preset: EncodingOptionsPreset.H264_1080P_30,
-  });
+  // startWebEgress takes 3 params: url, output, opts
+  const result = await client.startWebEgress(
+    params.overlayUrl, // URL to capture
+    {
+      // StreamOutput
+      protocol: StreamProtocol.RTMP,
+      urls: [params.rtmpUrl],
+    },
+    {
+      // WebOptions
+      preset: EncodingOptionsPreset.H264_1080P_30,
+    }
+  );
 
   return { egressId: result.egressId };
 }
