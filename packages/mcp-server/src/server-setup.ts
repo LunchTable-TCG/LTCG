@@ -744,9 +744,8 @@ Please start by checking the current state of the game and providing your first 
       switch (name) {
         case "ltcg_create_game": {
           const { mode, isPrivate } = args as { mode: string; isPrivate: boolean };
-          const result = await makeApiRequest("/api/game/create", "POST", {
+          const result = await makeApiRequest("/api/agents/matchmaking/enter", "POST", {
             mode,
-            isPrivate,
           });
           return {
             content: [
@@ -760,9 +759,8 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_join_game": {
           const { lobbyId, joinCode } = args as { lobbyId: string; joinCode?: string };
-          const result = await makeApiRequest("/api/game/join", "POST", {
+          const result = await makeApiRequest("/api/agents/matchmaking/join", "POST", {
             lobbyId,
-            joinCode,
           });
           return {
             content: [
@@ -776,7 +774,7 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_get_state": {
           const { lobbyId } = args as { lobbyId: string };
-          const result = await makeApiRequest(`/api/game/state?lobbyId=${lobbyId}`, "GET");
+          const result = await makeApiRequest(`/api/agents/games/state?gameId=${lobbyId}`, "GET");
           return {
             content: [
               {
@@ -789,7 +787,7 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_get_legal_moves": {
           const { gameId } = args as { gameId: string };
-          const result = await makeApiRequest(`/api/game/legal-moves?gameId=${gameId}`, "GET");
+          const result = await makeApiRequest(`/api/agents/games/available-actions?gameId=${gameId}`, "GET");
           return {
             content: [
               {
@@ -807,7 +805,7 @@ Please start by checking the current state of the game and providing your first 
             position: string;
             tributeCardIds?: string[];
           };
-          const result = await makeApiRequest("/api/game/summon", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/summon", "POST", {
             gameId,
             cardId,
             position,
@@ -829,7 +827,7 @@ Please start by checking the current state of the game and providing your first 
             attackerCardId: string;
             targetCardId?: string;
           };
-          const result = await makeApiRequest("/api/game/attack", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/attack", "POST", {
             gameId,
             attackerCardId,
             targetCardId,
@@ -846,7 +844,7 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_end_turn": {
           const { gameId } = args as { gameId: string };
-          const result = await makeApiRequest("/api/game/end-turn", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/end-turn", "POST", {
             gameId,
           });
           return {
@@ -865,7 +863,7 @@ Please start by checking the current state of the game and providing your first 
             cardId: string;
             tributeCardIds?: string[];
           };
-          const result = await makeApiRequest("/api/game/set-monster", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/set-card", "POST", {
             gameId,
             cardId,
             tributeCardIds,
@@ -886,7 +884,7 @@ Please start by checking the current state of the game and providing your first 
             cardId: string;
             newPosition: string;
           };
-          const result = await makeApiRequest("/api/game/flip-summon", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/flip-summon", "POST", {
             gameId,
             cardId,
             newPosition,
@@ -906,7 +904,7 @@ Please start by checking the current state of the game and providing your first 
             gameId: string;
             cardId: string;
           };
-          const result = await makeApiRequest("/api/game/change-position", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/change-position", "POST", {
             gameId,
             cardId,
           });
@@ -925,7 +923,7 @@ Please start by checking the current state of the game and providing your first 
             gameId: string;
             cardId: string;
           };
-          const result = await makeApiRequest("/api/game/set-spell-trap", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/set-spell-trap", "POST", {
             gameId,
             cardId,
           });
@@ -947,7 +945,7 @@ Please start by checking the current state of the game and providing your first 
             costTargets?: string[];
             effectIndex?: number;
           };
-          const result = await makeApiRequest("/api/game/activate-spell", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/activate-spell", "POST", {
             gameId,
             cardId,
             targets,
@@ -972,7 +970,7 @@ Please start by checking the current state of the game and providing your first 
             costTargets?: string[];
             effectIndex?: number;
           };
-          const result = await makeApiRequest("/api/game/activate-trap", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/activate-trap", "POST", {
             gameId,
             cardId,
             targets,
@@ -997,7 +995,7 @@ Please start by checking the current state of the game and providing your first 
             targets?: string[];
             costTargets?: string[];
           };
-          const result = await makeApiRequest("/api/game/activate-effect", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/activate-effect", "POST", {
             gameId,
             cardId,
             effectIndex,
@@ -1016,7 +1014,7 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_surrender": {
           const { gameId } = args as { gameId: string };
-          const result = await makeApiRequest("/api/game/surrender", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/surrender", "POST", {
             gameId,
           });
           return {
@@ -1037,7 +1035,7 @@ Please start by checking the current state of the game and providing your first 
             effect: unknown;
             targets?: string[];
           };
-          const result = await makeApiRequest("/api/game/chain/add", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/chain-add", "POST", {
             lobbyId,
             cardId,
             spellSpeed,
@@ -1056,7 +1054,7 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_chain_pass": {
           const { lobbyId } = args as { lobbyId: string };
-          const result = await makeApiRequest("/api/game/chain/pass", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/chain-response", "POST", {
             lobbyId,
           });
           return {
@@ -1071,7 +1069,7 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_chain_resolve": {
           const { lobbyId } = args as { lobbyId: string };
-          const result = await makeApiRequest("/api/game/chain/resolve", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/chain-resolve", "POST", {
             lobbyId,
           });
           return {
@@ -1086,7 +1084,7 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_chain_get_state": {
           const { lobbyId } = args as { lobbyId: string };
-          const result = await makeApiRequest(`/api/game/chain/state?lobbyId=${lobbyId}`, "GET");
+          const result = await makeApiRequest(`/api/agents/games/chain-state?lobbyId=${lobbyId}`, "GET");
           return {
             content: [
               {
@@ -1099,7 +1097,7 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_phase_advance": {
           const { gameId } = args as { gameId: string };
-          const result = await makeApiRequest("/api/game/phase/advance", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/phase-advance", "POST", {
             gameId,
           });
           return {
@@ -1114,7 +1112,7 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_phase_skip_battle": {
           const { gameId } = args as { gameId: string };
-          const result = await makeApiRequest("/api/game/phase/skip-battle", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/phase-skip-battle", "POST", {
             gameId,
           });
           return {
@@ -1129,7 +1127,7 @@ Please start by checking the current state of the game and providing your first 
 
         case "ltcg_phase_skip_to_end": {
           const { gameId } = args as { gameId: string };
-          const result = await makeApiRequest("/api/game/phase/skip-to-end", "POST", {
+          const result = await makeApiRequest("/api/agents/games/actions/phase-skip-to-end", "POST", {
             gameId,
           });
           return {

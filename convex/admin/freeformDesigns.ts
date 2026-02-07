@@ -438,7 +438,7 @@ export const reorderElements = mutation({
 
     // Update zIndex for each element in order
     for (let i = 0; i < args.elementIds.length; i++) {
-      await ctx.db.patch(args.elementIds[i], { zIndex: i });
+      await ctx.db.patch(args.elementIds[i]!, { zIndex: i });
     }
 
     await ctx.db.patch(args.designId, { updatedAt: Date.now() });

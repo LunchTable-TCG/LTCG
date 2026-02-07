@@ -13,10 +13,10 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalAction, internalQuery } from "../_generated/server";
 import { internalMutation } from "../functions";
+import { tokenBalanceCache } from "../infrastructure/actionCaches";
 
-// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround
-const internalAny = internal as any;
+// @ts-ignore TS2589 workaround for deep type instantiation
+const internalAny: any = internal;
 
 // ============================================================================
 // INTERNAL MUTATIONS (called by crons)
@@ -102,12 +102,21 @@ export const refreshActiveBalances = internalAction({
       ...recentTransactionUsers,
     ]);
 
-    // Refresh balance for each active user
+    // Get wallet addresses for active users
+    const walletInfo = await ctx.runQuery(
+      internalAny.economy.tokenMaintenance.getUserWalletAddresses,
+      { userIds: [...activeUserIds] }
+    );
+
+    // Refresh balance using action cache (deduplicates RPC calls within 5-min TTL)
     let refreshedCount = 0;
-    for (const userId of activeUserIds) {
+    for (const { userId, walletAddress } of walletInfo) {
       try {
-        await ctx.runMutation(internalAny.economy.tokenMaintenance.scheduleBalanceRefresh, {
+        const result = await tokenBalanceCache.fetch(ctx, { walletAddress });
+        // Update DB cache for UI queries
+        await ctx.runMutation(internalAny.economy.tokenMaintenance.storeRefreshedBalance, {
           userId,
+          balance: result.balance,
         });
         refreshedCount++;
       } catch (error) {
@@ -181,6 +190,51 @@ export const getRecentTokenTransactionUsers = internalQuery({
       .take(100);
 
     return [...new Set(recentTransactions.map((t) => t.userId))];
+  },
+});
+
+/**
+ * Get wallet addresses for a list of user IDs
+ * Used by refreshActiveBalances to look up wallets for cache fetches
+ */
+export const getUserWalletAddresses = internalQuery({
+  args: {
+    userIds: v.array(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    const results = [];
+    for (const userId of args.userIds) {
+      const user = await ctx.db.get(userId);
+      if (user?.walletAddress) {
+        results.push({ userId, walletAddress: user.walletAddress });
+      }
+    }
+    return results;
+  },
+});
+
+/**
+ * Store a refreshed token balance result in the DB cache
+ * Called after tokenBalanceCache.fetch() to update the UI-facing cache
+ */
+export const storeRefreshedBalance = internalMutation({
+  args: {
+    userId: v.id("users"),
+    balance: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("tokenBalanceCache")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+
+    const now = Date.now();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        balance: args.balance,
+        lastVerifiedAt: now,
+      });
+    }
   },
 });
 

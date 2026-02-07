@@ -5,11 +5,14 @@ import { internal } from "../../_generated/api";
 import { adjustPlayerCurrencyHelper } from "../../economy/economy";
 import { internalMutation, mutation } from "../../functions";
 import { completedGamesCounter } from "../../infrastructure/shardedCounters";
-import { requireAuthMutation } from "../../lib/convexAuth";
+import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../../lib/convexAuth";
 import { shuffleArray } from "../../lib/deterministicRandom";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
 import { updateAgentStatsAfterGame, updatePlayerStatsAfterGame } from "./stats";
+
+// @ts-ignore TS2589 workaround for deep type instantiation
+const internalAny: any = internal;
 
 // ============================================================================
 // WAGER SYSTEM CONSTANTS
@@ -121,7 +124,7 @@ async function stopAgentStreamsForGame(
 
     if (agent?.streamingEnabled) {
       // Schedule stop for agent stream (async, non-blocking)
-      await ctx.scheduler.runAfter(0, internal.agents.streaming.autoStopAgentStream, {
+      await ctx.scheduler.runAfter(0, internalAny.agents.streaming.autoStopAgentStream, {
         agentId: agent._id,
         lobbyId,
       });
@@ -353,99 +356,120 @@ export const initializeGameState = internalMutation({
 /**
  * Surrender/forfeit the current game (user-initiated)
  */
+async function surrenderGameHandler(
+  ctx: MutationCtx,
+  args: { lobbyId: Id<"gameLobbies"> },
+  user: AuthenticatedUser
+) {
+  const userId = user.userId;
+
+  // Get lobby
+  const lobby = await ctx.db.get(args.lobbyId);
+  if (!lobby) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: "Game not found",
+    });
+  }
+
+  // Verify game is active
+  if (lobby.status !== "active") {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: "Game is not active",
+    });
+  }
+
+  // Verify user is in this game
+  if (lobby.hostId !== userId && lobby.opponentId !== userId) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: "You are not in this game",
+    });
+  }
+
+  // Determine winner (the player who didn't surrender)
+  const winnerId = userId === lobby.hostId ? lobby.opponentId : lobby.hostId;
+
+  if (!winnerId) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: "Cannot determine winner",
+    });
+  }
+
+  // Update lobby
+  await ctx.db.patch(args.lobbyId, {
+    status: "forfeited",
+    winnerId,
+  });
+
+  // Update both players' presence to online
+  await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
+
+  if (lobby.opponentId && lobby.opponentUsername && lobby.mode !== "story") {
+    await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
+  }
+
+  // Update player stats and ratings (surrender counts as a loss)
+  if (lobby.opponentId) {
+    const gameMode = lobby.mode as "ranked" | "casual" | "story";
+    await updatePlayerStatsAfterGame(ctx, winnerId, userId, gameMode);
+
+    // Process wager payout if applicable (surrendering player loses their wager)
+    if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.wagerPaid) {
+      await processWagerPayout(ctx, args.lobbyId, lobby.wagerAmount, winnerId, userId);
+    }
+
+    // Check if players are agents and update agent stats
+    const winnerAgent = await ctx.db
+      .query("agents")
+      .withIndex("by_user", (q) => q.eq("userId", winnerId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .first();
+
+    const loserAgent = await ctx.db
+      .query("agents")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .first();
+
+    if (winnerAgent || loserAgent) {
+      await updateAgentStatsAfterGame(ctx, winnerAgent, loserAgent);
+    }
+  }
+
+  // Stop agent streams if active
+  await stopAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, lobby.opponentId);
+
+  // Clean up game state (no longer needed after game ends)
+  const gameState = await ctx.db
+    .query("gameStates")
+    .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+    .first();
+
+  if (gameState) {
+    await ctx.db.delete(gameState._id);
+  }
+
+  return { success: true };
+}
+
 export const surrenderGame = mutation({
   args: {
     lobbyId: v.id("gameLobbies"),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuthMutation(ctx);
+    const user = await requireAuthMutation(ctx);
+    return surrenderGameHandler(ctx, args, user);
+  },
+});
 
-    // Get lobby
-    const lobby = await ctx.db.get(args.lobbyId);
-    if (!lobby) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Game not found",
-      });
-    }
-
-    // Verify game is active
-    if (lobby.status !== "active") {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Game is not active",
-      });
-    }
-
-    // Verify user is in this game
-    if (lobby.hostId !== userId && lobby.opponentId !== userId) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "You are not in this game",
-      });
-    }
-
-    // Determine winner (the player who didn't surrender)
-    const winnerId = userId === lobby.hostId ? lobby.opponentId : lobby.hostId;
-
-    if (!winnerId) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Cannot determine winner",
-      });
-    }
-
-    // Update lobby
-    await ctx.db.patch(args.lobbyId, {
-      status: "forfeited",
-      winnerId,
-    });
-
-    // Update both players' presence to online
-    await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
-
-    if (lobby.opponentId && lobby.opponentUsername && lobby.mode !== "story") {
-      await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
-    }
-
-    // Update player stats and ratings (surrender counts as a loss)
-    if (lobby.opponentId) {
-      const gameMode = lobby.mode as "ranked" | "casual" | "story";
-      await updatePlayerStatsAfterGame(ctx, winnerId, userId, gameMode);
-
-      // Process wager payout if applicable (surrendering player loses their wager)
-      if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.wagerPaid) {
-        await processWagerPayout(ctx, args.lobbyId, lobby.wagerAmount, winnerId, userId);
-      }
-
-      // Check if players are agents and update agent stats
-      const winnerAgent = await ctx.db
-        .query("agents")
-        .withIndex("by_user", (q) => q.eq("userId", winnerId))
-        .filter((q) => q.eq(q.field("isActive"), true))
-        .first();
-
-      const loserAgent = await ctx.db
-        .query("agents")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
-        .filter((q) => q.eq(q.field("isActive"), true))
-        .first();
-
-      if (winnerAgent || loserAgent) {
-        await updateAgentStatsAfterGame(ctx, winnerAgent, loserAgent);
-      }
-    }
-
-    // Stop agent streams if active
-    await stopAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, lobby.opponentId);
-
-    // Clean up game state (no longer needed after game ends)
-    const gameState = await ctx.db
-      .query("gameStates")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-      .first();
-
-    if (gameState) {
-      await ctx.db.delete(gameState._id);
-    }
-
-    return { success: true };
+export const surrenderGameInternal = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const { userId, ...gameArgs } = args;
+    const user = await getAuthForUser(ctx, userId);
+    return surrenderGameHandler(ctx, gameArgs, user);
   },
 });
 

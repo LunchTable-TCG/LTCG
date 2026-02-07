@@ -1,4 +1,8 @@
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
+
+// @ts-ignore TS2589 workaround for deep type instantiation
+const internalAny: any = internal;
 import { mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { requireRole } from "../lib/roles";
@@ -207,7 +211,7 @@ export const create = mutation({
     await requireRole(ctx, userId, "admin");
 
     const now = Date.now();
-    return await ctx.db.insert("scheduledContent", {
+    const contentId = await ctx.db.insert("scheduledContent", {
       type: args.type,
       title: args.title,
       content: args.content,
@@ -218,6 +222,17 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    // If initially scheduled, schedule publication at exact time
+    if (args.status === "scheduled") {
+      await ctx.scheduler.runAt(
+        args.scheduledFor,
+        internalAny.content.publishing.publishContent,
+        { contentId }
+      );
+    }
+
+    return contentId;
   },
 });
 
@@ -280,11 +295,20 @@ export const schedule = mutation({
     const content = await ctx.db.get(args.id);
     if (!content) throw new Error("Content not found");
 
+    const publishAt = args.scheduledFor ?? content.scheduledFor;
+
     await ctx.db.patch(args.id, {
       status: "scheduled",
-      scheduledFor: args.scheduledFor ?? content.scheduledFor,
+      scheduledFor: publishAt,
       updatedAt: Date.now(),
     });
+
+    // Schedule publication at exact time (replaces polling cron)
+    await ctx.scheduler.runAt(
+      publishAt,
+      internalAny.content.publishing.publishContent,
+      { contentId: args.id }
+    );
 
     return { success: true };
   },
@@ -300,14 +324,19 @@ export const publishNow = mutation({
     const content = await ctx.db.get(args.id);
     if (!content) throw new Error("Content not found");
 
-    // Mark as scheduled for immediate publishing
     await ctx.db.patch(args.id, {
       status: "scheduled",
-      scheduledFor: Date.now(), // Set to now for immediate processing by cron
+      scheduledFor: Date.now(),
       updatedAt: Date.now(),
     });
 
-    // The cron job will pick this up and publish it
+    // Schedule immediate publication (replaces cron polling)
+    await ctx.scheduler.runAfter(
+      0,
+      internalAny.content.publishing.publishContent,
+      { contentId: args.id }
+    );
+
     return { success: true };
   },
 });

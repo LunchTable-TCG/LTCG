@@ -48,6 +48,32 @@ export async function getCurrentUser(
 }
 
 /**
+ * Get authenticated user by userId (for internal mutations called from httpActions)
+ * Constructs AuthenticatedUser from a known userId without requiring Privy session auth.
+ * Use this when the caller has already verified the user's identity (e.g., via API key).
+ */
+export async function getAuthForUser(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">
+): Promise<AuthenticatedUser> {
+  const user = await ctx.db.get(userId);
+  if (!user) {
+    throw createError(ErrorCode.AUTH_REQUIRED);
+  }
+
+  let username = user.username || user.name;
+  if (!username || username.trim() === "") {
+    username = `Player_${userId.slice(-8)}`;
+  }
+
+  return {
+    userId,
+    username,
+    privyId: user.privyId || "",
+  };
+}
+
+/**
  * Require authentication in a query
  * Throws an error if not authenticated
  */

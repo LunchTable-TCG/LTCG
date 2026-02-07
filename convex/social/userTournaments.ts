@@ -232,6 +232,14 @@ export const createUserTournament = mutation({
       updatedAt: now,
     });
 
+    // Schedule automatic expiry at the expiry time
+    // expireTournament is idempotent — it checks status === "registration" before acting
+    await ctx.scheduler.runAt(
+      expiresAt,
+      internal.social.userTournaments.expireTournament,
+      { tournamentId }
+    );
+
     return {
       tournamentId,
       joinCode,
@@ -772,7 +780,7 @@ export const getMyRegisteredTournaments = query({
         tournament.status !== "cancelled" &&
         tournament.status !== "completed"
       ) {
-        activePairs.push({ participation: participations[i], tournament });
+        activePairs.push({ participation: participations[i]!, tournament });
       }
     }
 

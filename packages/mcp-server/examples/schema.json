@@ -38,7 +38,7 @@
             "examples": [
               {
                 "LTCG_API_KEY": "sk-xxx",
-                "LTCG_API_URL": "https://lunchtable.cards"
+                "CONVEX_SITE_URL": "https://your-deployment.convex.site"
               }
             ]
           },

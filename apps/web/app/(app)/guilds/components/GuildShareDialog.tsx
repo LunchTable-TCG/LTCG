@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useGuildInviteLink } from "@/hooks/guilds";
-import { Check, Copy, Link2, Loader2, MessageCircle, Share2 } from "lucide-react";
+import { Check, Copy, Link2, Loader2, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 

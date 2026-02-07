@@ -26,9 +26,9 @@
       "description": "API key for LunchTable-TCG backend (required)"
     },
     {
-      "name": "LTCG_API_URL",
-      "value": "https://lunchtable.cards",
-      "description": "Base URL for LunchTable-TCG API"
+      "name": "CONVEX_SITE_URL",
+      "value": "https://lunchtable.convex.site",
+      "description": "Base URL for Convex HTTP actions"
     },
     {
       "name": "MCP_API_KEY",

@@ -19,7 +19,6 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 // Module-scope references to avoid TS2589
 const getGuildByInviteCodeQuery = api.social.guilds.inviteLinks.getGuildByInviteCode;

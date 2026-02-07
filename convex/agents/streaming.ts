@@ -9,6 +9,9 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalAction, internalMutation, mutation, query } from "../_generated/server";
 
+// @ts-ignore TS2589 workaround for deep type instantiation
+const internalAny: any = internal;
+
 const streamingPlatformValidator = literals("twitch", "youtube", "custom", "retake", "x", "pumpfun");
 
 /**
@@ -99,7 +102,7 @@ export const autoStartAgentStream = internalMutation({
 
     // Trigger streaming via HTTP endpoint
     // This is done via scheduler to avoid blocking the game start
-    await ctx.scheduler.runAfter(0, internal.agents.streaming.triggerAgentStreamStart, {
+    await ctx.scheduler.runAfter(0, internalAny.agents.streaming.triggerAgentStreamStart, {
       agentId: args.agentId,
       lobbyId: args.lobbyId,
       platform: agent.streamingPlatform,

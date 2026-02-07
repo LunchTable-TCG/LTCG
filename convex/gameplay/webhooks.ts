@@ -302,14 +302,14 @@ async function deliverWebhook(
 
       // Wait before retry (except on last attempt)
       if (attempt < retryDelays.length - 1) {
-        await sleep(retryDelays[attempt]);
+        await sleep(retryDelays[attempt] ?? 0);
       }
     } catch (error) {
       console.error(`Webhook ${webhook._id} delivery error on attempt ${attempt + 1}:`, error);
 
       // Wait before retry (except on last attempt)
       if (attempt < retryDelays.length - 1) {
-        await sleep(retryDelays[attempt]);
+        await sleep(retryDelays[attempt] ?? 0);
       }
     }
   }

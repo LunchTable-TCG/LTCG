@@ -7,7 +7,7 @@
       ],
       "env": {
         "LTCG_API_KEY": "your-api-key-here",
-        "LTCG_API_URL": "https://lunchtable.cards"
+        "CONVEX_SITE_URL": "https://your-deployment.convex.site"
       }
     }
   }

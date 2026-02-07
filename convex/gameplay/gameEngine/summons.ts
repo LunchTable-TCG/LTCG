@@ -9,9 +9,10 @@
 
 import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
+import type { MutationCtx } from "../../_generated/server";
 import { internalMutation, mutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
-import { requireAuthMutation } from "../../lib/convexAuth";
+import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { moveCard } from "../../lib/gameHelpers";
 import { validateGameActive } from "../../lib/gameValidation";
@@ -360,6 +361,164 @@ export const normalSummon = mutation({
  * @param tributeCardIds - Optional array of monster card IDs to tribute
  * @returns Success status with tributes used
  */
+async function setMonsterHandler(
+  ctx: MutationCtx,
+  args: { lobbyId: Id<"gameLobbies">; cardId: Id<"cardDefinitions">; tributeCardIds?: Id<"cardDefinitions">[] },
+  user: AuthenticatedUser
+) {
+  // 2. Validate game is active
+  await validateGameActive(ctx.db, args.lobbyId);
+
+  // 3. Get lobby (for gameId/status only - turn state is in gameStates)
+  const lobby = await ctx.db.get(args.lobbyId);
+  if (!lobby) {
+    throw createError(ErrorCode.NOT_FOUND_LOBBY);
+  }
+
+  // 4. Get game state (single source of truth for turn state)
+  const gameState = await ctx.db
+    .query("gameStates")
+    .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+    .first();
+
+  if (!gameState) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: "Game state not found",
+    });
+  }
+
+  // 3.5. Validate game is active
+  if (!lobby.gameId || gameState.turnNumber === undefined) {
+    throw createError(ErrorCode.GAME_NOT_STARTED);
+  }
+
+  // 4. Validate it's the current player's turn
+  if (gameState.currentTurnPlayerId !== user.userId) {
+    throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
+  }
+
+  // 4.5. Check if set is prevented by lingering effects
+  const preventionCheck = isActionPrevented(gameState, "summon_monster", user.userId);
+  if (preventionCheck.prevented) {
+    throw createError(ErrorCode.GAME_INVALID_MOVE, {
+      reason: preventionCheck.reason || "Cannot set monsters",
+    });
+  }
+
+  // 5. Validate set (uses same validation as normal summon)
+  const validation = await validateSetMonster(
+    ctx,
+    gameState,
+    user.userId,
+    args.cardId,
+    args.tributeCardIds
+  );
+
+  if (!validation.valid) {
+    throw createError(ErrorCode.GAME_INVALID_MOVE, {
+      reason: validation.error,
+    });
+  }
+
+  const isHost = user.userId === gameState.hostId;
+  const hand = isHost ? gameState.hostHand : gameState.opponentHand;
+  const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
+
+  // 5.5. Validate monster zone has space (max 5 monsters)
+  validateMonsterZone(board, 5);
+
+  // 6. Get card details
+  const card = await ctx.db.get(args.cardId);
+  if (!card) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: "Card not found",
+      cardId: args.cardId,
+    });
+  }
+
+  // 7. Process tributes (if any)
+  const tributeCount = args.tributeCardIds?.length || 0;
+  if (tributeCount > 0 && args.tributeCardIds) {
+    await recordEventHelper(ctx, {
+      lobbyId: args.lobbyId,
+      gameId: lobby.gameId,
+      turnNumber: gameState.turnNumber,
+      eventType: "tribute_paid",
+      playerId: user.userId,
+      playerUsername: user.username,
+      description: `${user.username} tributed ${tributeCount} monster(s)`,
+      metadata: {
+        tributeCards: args.tributeCardIds,
+        forCard: args.cardId,
+      },
+    });
+
+    for (const tributeId of args.tributeCardIds) {
+      await moveCard(
+        ctx,
+        gameState,
+        tributeId,
+        "board",
+        "graveyard",
+        user.userId,
+        gameState.turnNumber
+      );
+
+      const updatedBoard = board.filter((bc) => bc.cardId !== tributeId);
+      await ctx.db.patch(gameState._id, {
+        [isHost ? "hostBoard" : "opponentBoard"]: updatedBoard,
+      });
+    }
+  }
+
+  // 8. Remove card from hand
+  const newHand = hand.filter((c) => c !== args.cardId);
+
+  // 9. Add card to board (face-down defense position)
+  const newBoardCard = {
+    cardId: args.cardId,
+    position: -1, // -1 = Defense
+    attack: card.attack || 0,
+    defense: card.defense || 0,
+    hasAttacked: false,
+    isFaceDown: true, // Set monsters are face-down
+    hasChangedPosition: false,
+    turnSummoned: gameState.turnNumber,
+  };
+
+  const newBoard = [...board, newBoardCard];
+
+  // 10. Mark player as having normal summoned/set this turn
+  await ctx.db.patch(gameState._id, {
+    [isHost ? "hostHand" : "opponentHand"]: newHand,
+    [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
+    [isHost ? "hostNormalSummonedThisTurn" : "opponentNormalSummonedThisTurn"]: true,
+  });
+
+  // 11. Record monster_set event
+  await recordEventHelper(ctx, {
+    lobbyId: args.lobbyId,
+    gameId: lobby.gameId,
+    turnNumber: gameState.turnNumber,
+    eventType: "monster_set",
+    playerId: user.userId,
+    playerUsername: user.username,
+    description: `${user.username} Set a monster face-down`,
+    metadata: {
+      cardId: args.cardId,
+      // Don't reveal card name for face-down cards
+      tributeCount,
+    },
+  });
+
+  // 12. Return success
+  return {
+    success: true,
+    cardSet: "face-down",
+    tributesUsed: tributeCount,
+  };
+}
+
 export const setMonster = mutation({
   args: {
     lobbyId: v.id("gameLobbies"),
@@ -367,160 +526,22 @@ export const setMonster = mutation({
     tributeCardIds: v.optional(v.array(v.id("cardDefinitions"))),
   },
   handler: async (ctx, args) => {
-    // 1. Validate session
     const user = await requireAuthMutation(ctx);
+    return setMonsterHandler(ctx, args, user);
+  },
+});
 
-    // 2. Validate game is active
-    await validateGameActive(ctx.db, args.lobbyId);
-
-    // 3. Get lobby (for gameId/status only - turn state is in gameStates)
-    const lobby = await ctx.db.get(args.lobbyId);
-    if (!lobby) {
-      throw createError(ErrorCode.NOT_FOUND_LOBBY);
-    }
-
-    // 4. Get game state (single source of truth for turn state)
-    const gameState = await ctx.db
-      .query("gameStates")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-      .first();
-
-    if (!gameState) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Game state not found",
-      });
-    }
-
-    // 3.5. Validate game is active
-    if (!lobby.gameId || gameState.turnNumber === undefined) {
-      throw createError(ErrorCode.GAME_NOT_STARTED);
-    }
-
-    // 4. Validate it's the current player's turn
-    if (gameState.currentTurnPlayerId !== user.userId) {
-      throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
-    }
-
-    // 4.5. Check if set is prevented by lingering effects
-    const preventionCheck = isActionPrevented(gameState, "summon_monster", user.userId);
-    if (preventionCheck.prevented) {
-      throw createError(ErrorCode.GAME_INVALID_MOVE, {
-        reason: preventionCheck.reason || "Cannot set monsters",
-      });
-    }
-
-    // 5. Validate set (uses same validation as normal summon)
-    const validation = await validateSetMonster(
-      ctx,
-      gameState,
-      user.userId,
-      args.cardId,
-      args.tributeCardIds
-    );
-
-    if (!validation.valid) {
-      throw createError(ErrorCode.GAME_INVALID_MOVE, {
-        reason: validation.error,
-      });
-    }
-
-    const isHost = user.userId === gameState.hostId;
-    const hand = isHost ? gameState.hostHand : gameState.opponentHand;
-    const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
-
-    // 5.5. Validate monster zone has space (max 5 monsters)
-    validateMonsterZone(board, 5);
-
-    // 6. Get card details
-    const card = await ctx.db.get(args.cardId);
-    if (!card) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Card not found",
-        cardId: args.cardId,
-      });
-    }
-
-    // 7. Process tributes (if any)
-    const tributeCount = args.tributeCardIds?.length || 0;
-    if (tributeCount > 0 && args.tributeCardIds) {
-      await recordEventHelper(ctx, {
-        lobbyId: args.lobbyId,
-        gameId: lobby.gameId,
-        turnNumber: gameState.turnNumber,
-        eventType: "tribute_paid",
-        playerId: user.userId,
-        playerUsername: user.username,
-        description: `${user.username} tributed ${tributeCount} monster(s)`,
-        metadata: {
-          tributeCards: args.tributeCardIds,
-          forCard: args.cardId,
-        },
-      });
-
-      for (const tributeId of args.tributeCardIds) {
-        await moveCard(
-          ctx,
-          gameState,
-          tributeId,
-          "board",
-          "graveyard",
-          user.userId,
-          gameState.turnNumber
-        );
-
-        const updatedBoard = board.filter((bc) => bc.cardId !== tributeId);
-        await ctx.db.patch(gameState._id, {
-          [isHost ? "hostBoard" : "opponentBoard"]: updatedBoard,
-        });
-      }
-    }
-
-    // 8. Remove card from hand
-    const newHand = hand.filter((c) => c !== args.cardId);
-
-    // 9. Add card to board (face-down defense position)
-    const newBoardCard = {
-      cardId: args.cardId,
-      position: -1, // -1 = Defense
-      attack: card.attack || 0,
-      defense: card.defense || 0,
-      hasAttacked: false,
-      isFaceDown: true, // Set monsters are face-down
-      hasChangedPosition: false,
-      turnSummoned: gameState.turnNumber,
-    };
-
-    const newBoard = [...board, newBoardCard];
-
-    // 10. Mark player as having normal summoned/set this turn
-    await ctx.db.patch(gameState._id, {
-      [isHost ? "hostHand" : "opponentHand"]: newHand,
-      [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
-      [isHost ? "hostNormalSummonedThisTurn" : "opponentNormalSummonedThisTurn"]: true,
-    });
-
-    // 11. Record monster_set event
-    await recordEventHelper(ctx, {
-      lobbyId: args.lobbyId,
-      gameId: lobby.gameId,
-      turnNumber: gameState.turnNumber,
-      eventType: "monster_set",
-      playerId: user.userId,
-      playerUsername: user.username,
-      description: `${user.username} Set a monster face-down`,
-      metadata: {
-        cardId: args.cardId,
-        // Don't reveal card name for face-down cards
-        tributeCount,
-      },
-    });
-
-    // 12. Return success
-    return {
-      success: true,
-      cardSet: "face-down",
-      tributesUsed: tributeCount,
-    };
+export const setMonsterInternal = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    cardId: v.id("cardDefinitions"),
+    tributeCardIds: v.optional(v.array(v.id("cardDefinitions"))),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const { userId, ...gameArgs } = args;
+    const user = await getAuthForUser(ctx, userId);
+    return setMonsterHandler(ctx, gameArgs, user);
   },
 });
 
@@ -542,6 +563,156 @@ export const setMonster = mutation({
  * @param newPosition - "attack" for Attack Position or "defense" for Defense Position
  * @returns Success status with card name, position, and flip effect message
  */
+async function flipSummonHandler(
+  ctx: MutationCtx,
+  args: { lobbyId: Id<"gameLobbies">; cardId: Id<"cardDefinitions">; newPosition: "attack" | "defense" },
+  user: AuthenticatedUser
+) {
+  // 2. Validate game is active
+  await validateGameActive(ctx.db, args.lobbyId);
+
+  // 3. Get lobby (for gameId/status only - turn state is in gameStates)
+  const lobby = await ctx.db.get(args.lobbyId);
+  if (!lobby) {
+    throw createError(ErrorCode.NOT_FOUND_LOBBY);
+  }
+
+  // 4. Get game state (single source of truth for turn state)
+  const gameState = await ctx.db
+    .query("gameStates")
+    .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+    .first();
+
+  if (!gameState) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: "Game state not found",
+    });
+  }
+
+  // 3.5. Validate game is active
+  if (!lobby.gameId || gameState.turnNumber === undefined) {
+    throw createError(ErrorCode.GAME_NOT_STARTED);
+  }
+
+  // 4. Validate it's the current player's turn
+  if (gameState.currentTurnPlayerId !== user.userId) {
+    throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
+  }
+
+  // 5. Validate flip summon
+  const validation = await validateFlipSummon(ctx, gameState, user.userId, args.cardId);
+
+  if (!validation.valid) {
+    throw createError(ErrorCode.GAME_INVALID_MOVE, {
+      reason: validation.error,
+    });
+  }
+
+  const isHost = user.userId === gameState.hostId;
+  const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
+
+  // 6. Find card on board and flip it
+  const cardIndex = board.findIndex((bc) => bc.cardId === args.cardId);
+  if (cardIndex === -1) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: "Card not found on board",
+      cardId: args.cardId,
+    });
+  }
+
+  const card = await ctx.db.get(args.cardId);
+  if (!card) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: "Card not found",
+      cardId: args.cardId,
+    });
+  }
+
+  // 7. Update card to face-up
+  const positionValue = args.newPosition === "attack" ? 1 : -1; // 1 = ATK, -1 = DEF
+  const newBoard = [...board];
+  const currentCard = newBoard[cardIndex];
+  if (!currentCard) {
+    throw createError(ErrorCode.GAME_CARD_NOT_FOUND);
+  }
+  newBoard[cardIndex] = {
+    ...currentCard,
+    position: positionValue,
+    isFaceDown: false, // Flip to face-up
+  };
+
+  await ctx.db.patch(gameState._id, {
+    [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
+  });
+
+  // 8. Record flip_summon event
+  await recordEventHelper(ctx, {
+    lobbyId: args.lobbyId,
+    gameId: lobby.gameId,
+    turnNumber: gameState.turnNumber,
+    eventType: "flip_summon",
+    playerId: user.userId,
+    playerUsername: user.username,
+    description: `${user.username} Flip Summoned ${card.name} in ${args.newPosition} position`,
+    metadata: {
+      cardId: args.cardId,
+      cardName: card.name,
+      position: args.newPosition,
+      attack: card.attack,
+      defense: card.defense,
+    },
+  });
+
+  // 9. Trigger FLIP effect if exists (scan ALL effects, not just first)
+  let flipEffectResult = { success: true, message: "No FLIP effect" };
+
+  const flipAbility = getCardAbility(card);
+  if (flipAbility) {
+    for (const flipEffect of flipAbility.effects) {
+      if (flipEffect.trigger !== "on_flip") continue;
+
+      const refreshedState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+        .first();
+
+      if (refreshedState) {
+        flipEffectResult = await executeEffect(
+          ctx,
+          refreshedState,
+          args.lobbyId,
+          flipEffect,
+          user.userId,
+          args.cardId,
+          [] // No targets for auto-trigger effects for now
+        );
+
+        if (flipEffectResult.success) {
+          // Record FLIP effect activation
+          await recordEventHelper(ctx, {
+            lobbyId: args.lobbyId,
+            gameId: lobby.gameId,
+            turnNumber: gameState.turnNumber,
+            eventType: "effect_activated",
+            playerId: user.userId,
+            playerUsername: user.username,
+            description: `FLIP: ${card.name} effect: ${flipEffectResult.message}`,
+            metadata: { cardId: args.cardId, trigger: "on_flip" },
+          });
+        }
+      }
+    }
+  }
+
+  // 10. Return success
+  return {
+    success: true,
+    cardFlipped: card.name,
+    position: args.newPosition,
+    flipEffect: flipEffectResult.message,
+  };
+}
+
 export const flipSummon = mutation({
   args: {
     lobbyId: v.id("gameLobbies"),
@@ -549,152 +720,22 @@ export const flipSummon = mutation({
     newPosition: v.union(v.literal("attack"), v.literal("defense")),
   },
   handler: async (ctx, args) => {
-    // 1. Validate session
     const user = await requireAuthMutation(ctx);
+    return flipSummonHandler(ctx, args, user);
+  },
+});
 
-    // 2. Validate game is active
-    await validateGameActive(ctx.db, args.lobbyId);
-
-    // 3. Get lobby (for gameId/status only - turn state is in gameStates)
-    const lobby = await ctx.db.get(args.lobbyId);
-    if (!lobby) {
-      throw createError(ErrorCode.NOT_FOUND_LOBBY);
-    }
-
-    // 4. Get game state (single source of truth for turn state)
-    const gameState = await ctx.db
-      .query("gameStates")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-      .first();
-
-    if (!gameState) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Game state not found",
-      });
-    }
-
-    // 3.5. Validate game is active
-    if (!lobby.gameId || gameState.turnNumber === undefined) {
-      throw createError(ErrorCode.GAME_NOT_STARTED);
-    }
-
-    // 4. Validate it's the current player's turn
-    if (gameState.currentTurnPlayerId !== user.userId) {
-      throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
-    }
-
-    // 5. Validate flip summon
-    const validation = await validateFlipSummon(ctx, gameState, user.userId, args.cardId);
-
-    if (!validation.valid) {
-      throw createError(ErrorCode.GAME_INVALID_MOVE, {
-        reason: validation.error,
-      });
-    }
-
-    const isHost = user.userId === gameState.hostId;
-    const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
-
-    // 6. Find card on board and flip it
-    const cardIndex = board.findIndex((bc) => bc.cardId === args.cardId);
-    if (cardIndex === -1) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Card not found on board",
-        cardId: args.cardId,
-      });
-    }
-
-    const card = await ctx.db.get(args.cardId);
-    if (!card) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Card not found",
-        cardId: args.cardId,
-      });
-    }
-
-    // 7. Update card to face-up
-    const positionValue = args.newPosition === "attack" ? 1 : -1; // 1 = ATK, -1 = DEF
-    const newBoard = [...board];
-    const currentCard = newBoard[cardIndex];
-    if (!currentCard) {
-      throw createError(ErrorCode.GAME_CARD_NOT_FOUND);
-    }
-    newBoard[cardIndex] = {
-      ...currentCard,
-      position: positionValue,
-      isFaceDown: false, // Flip to face-up
-    };
-
-    await ctx.db.patch(gameState._id, {
-      [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
-    });
-
-    // 8. Record flip_summon event
-    await recordEventHelper(ctx, {
-      lobbyId: args.lobbyId,
-      gameId: lobby.gameId,
-      turnNumber: gameState.turnNumber,
-      eventType: "flip_summon",
-      playerId: user.userId,
-      playerUsername: user.username,
-      description: `${user.username} Flip Summoned ${card.name} in ${args.newPosition} position`,
-      metadata: {
-        cardId: args.cardId,
-        cardName: card.name,
-        position: args.newPosition,
-        attack: card.attack,
-        defense: card.defense,
-      },
-    });
-
-    // 9. Trigger FLIP effect if exists (scan ALL effects, not just first)
-    let flipEffectResult = { success: true, message: "No FLIP effect" };
-
-    const flipAbility = getCardAbility(card);
-    if (flipAbility) {
-      for (const flipEffect of flipAbility.effects) {
-        if (flipEffect.trigger !== "on_flip") continue;
-
-        const refreshedState = await ctx.db
-          .query("gameStates")
-          .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-          .first();
-
-        if (refreshedState) {
-          flipEffectResult = await executeEffect(
-            ctx,
-            refreshedState,
-            args.lobbyId,
-            flipEffect,
-            user.userId,
-            args.cardId,
-            [] // No targets for auto-trigger effects for now
-          );
-
-          if (flipEffectResult.success) {
-            // Record FLIP effect activation
-            await recordEventHelper(ctx, {
-              lobbyId: args.lobbyId,
-              gameId: lobby.gameId,
-              turnNumber: gameState.turnNumber,
-              eventType: "effect_activated",
-              playerId: user.userId,
-              playerUsername: user.username,
-              description: `FLIP: ${card.name} effect: ${flipEffectResult.message}`,
-              metadata: { cardId: args.cardId, trigger: "on_flip" },
-            });
-          }
-        }
-      }
-    }
-
-    // 10. Return success
-    return {
-      success: true,
-      cardFlipped: card.name,
-      position: args.newPosition,
-      flipEffect: flipEffectResult.message,
-    };
+export const flipSummonInternal = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    cardId: v.id("cardDefinitions"),
+    newPosition: v.union(v.literal("attack"), v.literal("defense")),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const { userId, ...gameArgs } = args;
+    const user = await getAuthForUser(ctx, userId);
+    return flipSummonHandler(ctx, gameArgs, user);
   },
 });
 

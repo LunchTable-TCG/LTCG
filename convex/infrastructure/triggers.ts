@@ -142,11 +142,11 @@ triggers.register("playerCurrency", async (ctx, change) => {
   const newDoc = change.newDoc as unknown as Record<string, number> | null;
   const goldDelta =
     change.operation === "update" && oldDoc && newDoc
-      ? newDoc["gold"] - oldDoc["gold"]
+      ? (newDoc["gold"] ?? 0) - (oldDoc["gold"] ?? 0)
       : undefined;
   const gemsDelta =
     change.operation === "update" && oldDoc && newDoc
-      ? newDoc["gems"] - oldDoc["gems"]
+      ? (newDoc["gems"] ?? 0) - (oldDoc["gems"] ?? 0)
       : undefined;
 
   await ctx.db.insert("auditLog", {

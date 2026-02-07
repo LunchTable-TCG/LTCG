@@ -66,7 +66,7 @@ export const createSession = mutation({
 
     if (activeSessions.length > 0) {
       throw new Error(
-        `Already has an active streaming session (status: ${activeSessions[0].status})`
+        `Already has an active streaming session (status: ${activeSessions[0]!.status})`
       );
     }
 

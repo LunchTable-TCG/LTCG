@@ -10,6 +10,11 @@
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { type HttpActionCtx, authHttpAction } from "./middleware/auth";
+
+// @ts-ignore TS2589 workaround for deep type instantiation
+const apiAny: any = api;
+// @ts-ignore TS2589 workaround for deep type instantiation
+const internalAny: any = internal;
 import {
   corsPreflightResponse,
   errorResponse,
@@ -55,13 +60,13 @@ type QueryPath =
 function getQueryFromPath(path: QueryPath) {
   switch (path) {
     case "gameplay.games.queries.getActiveLobby":
-      return api.gameplay.games.queries.getActiveLobby;
+      return apiAny.gameplay.games.queries.getActiveLobby;
     case "gameplay.games.queries.getGameStateForPlayer":
-      return api.gameplay.games.queries.getGameStateForPlayer;
+      return apiAny.gameplay.games.queries.getGameStateForPlayer;
     case "gameplay.gameEvents.getGameEvents":
-      return api.gameplay.gameEvents.getGameEvents;
+      return apiAny.gameplay.gameEvents.getGameEvents;
     case "gameplay.games.queries.getGameStateForPlayerInternal":
-      return internal.gameplay.games.queries.getGameStateForPlayerInternal;
+      return internalAny.gameplay.games.queries.getGameStateForPlayerInternal;
     default:
       throw new Error(`Query not found: ${path}`);
   }
@@ -542,7 +547,7 @@ export const summonMonster = authHttpAction(async (ctx, request, auth) => {
  * Set a monster face-down in Defense Position.
  * Requires API key authentication.
  */
-export const setCard = authHttpAction(async (ctx, request, _auth) => {
+export const setCard = authHttpAction(async (ctx, request, auth) => {
   if (request.method === "OPTIONS") {
     return corsPreflightResponse();
   }
@@ -565,11 +570,12 @@ export const setCard = authHttpAction(async (ctx, request, _auth) => {
     }
 
     const result: SetCardMutationResult = await ctx.runMutation(
-      api.gameplay.gameEngine.summons.setMonster,
+      internal.gameplay.gameEngine.summons.setMonsterInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
         tributeCardIds: body.tributeCardIds as Id<"cardDefinitions">[] | undefined,
+        userId: auth.userId,
       }
     );
 
@@ -610,7 +616,7 @@ export const setCard = authHttpAction(async (ctx, request, _auth) => {
  * Flip a face-down monster to face-up position.
  * Requires API key authentication.
  */
-export const flipSummonMonster = authHttpAction(async (ctx, request, _auth) => {
+export const flipSummonMonster = authHttpAction(async (ctx, request, auth) => {
   if (request.method === "OPTIONS") {
     return corsPreflightResponse();
   }
@@ -639,11 +645,12 @@ export const flipSummonMonster = authHttpAction(async (ctx, request, _auth) => {
     }
 
     const result: FlipSummonMutationResult = await ctx.runMutation(
-      api.gameplay.gameEngine.summons.flipSummon,
+      internal.gameplay.gameEngine.summons.flipSummonInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
         newPosition: body.newPosition,
+        userId: auth.userId,
       }
     );
 
@@ -682,7 +689,7 @@ export const flipSummonMonster = authHttpAction(async (ctx, request, _auth) => {
  * Change monster position (Attack <-> Defense).
  * Requires API key authentication.
  */
-export const changeMonsterPosition = authHttpAction(async (ctx, request, _auth) => {
+export const changeMonsterPosition = authHttpAction(async (ctx, request, auth) => {
   if (request.method === "OPTIONS") {
     return corsPreflightResponse();
   }
@@ -704,10 +711,11 @@ export const changeMonsterPosition = authHttpAction(async (ctx, request, _auth) 
     }
 
     const result: ChangePositionResult = await ctx.runMutation(
-      api.gameplay.gameEngine.positions.changePosition,
+      internal.gameplay.gameEngine.positions.changePositionInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
+        userId: auth.userId,
       }
     );
 
@@ -755,7 +763,7 @@ export const changeMonsterPosition = authHttpAction(async (ctx, request, _auth) 
  * Set a Spell or Trap card face-down.
  * Requires API key authentication.
  */
-export const setSpellTrapCard = authHttpAction(async (ctx, request, _auth) => {
+export const setSpellTrapCard = authHttpAction(async (ctx, request, auth) => {
   if (request.method === "OPTIONS") {
     return corsPreflightResponse();
   }
@@ -776,10 +784,11 @@ export const setSpellTrapCard = authHttpAction(async (ctx, request, _auth) => {
     }
 
     const result: SetSpellTrapResult = await ctx.runMutation(
-      api.gameplay.gameEngine.spellsTraps.setSpellTrap,
+      internal.gameplay.gameEngine.spellsTraps.setSpellTrapInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
+        userId: auth.userId,
       }
     );
 
@@ -812,7 +821,7 @@ export const setSpellTrapCard = authHttpAction(async (ctx, request, _auth) => {
  * Activate a Spell card from hand or field.
  * Requires API key authentication.
  */
-export const activateSpellCard = authHttpAction(async (ctx, request, _auth) => {
+export const activateSpellCard = authHttpAction(async (ctx, request, auth) => {
   if (request.method === "OPTIONS") {
     return corsPreflightResponse();
   }
@@ -837,11 +846,12 @@ export const activateSpellCard = authHttpAction(async (ctx, request, _auth) => {
     }
 
     const result: ActivateSpellResult = await ctx.runMutation(
-      api.gameplay.gameEngine.spellsTraps.activateSpell,
+      internal.gameplay.gameEngine.spellsTraps.activateSpellInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
         targets: body.targets as Id<"cardDefinitions">[] | undefined,
+        userId: auth.userId,
       }
     );
 
@@ -889,7 +899,7 @@ export const activateSpellCard = authHttpAction(async (ctx, request, _auth) => {
  * Activate a face-down Trap card from field.
  * Requires API key authentication.
  */
-export const activateTrapCard = authHttpAction(async (ctx, request, _auth) => {
+export const activateTrapCard = authHttpAction(async (ctx, request, auth) => {
   if (request.method === "OPTIONS") {
     return corsPreflightResponse();
   }
@@ -914,11 +924,12 @@ export const activateTrapCard = authHttpAction(async (ctx, request, _auth) => {
     }
 
     const result: ActivateTrapResult = await ctx.runMutation(
-      api.gameplay.gameEngine.spellsTraps.activateTrap,
+      internal.gameplay.gameEngine.spellsTraps.activateTrapInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
         targets: body.targets as Id<"cardDefinitions">[] | undefined,
+        userId: auth.userId,
       }
     );
 
@@ -965,7 +976,7 @@ export const activateTrapCard = authHttpAction(async (ctx, request, _auth) => {
  * Respond to chain by passing priority or adding a card.
  * Requires API key authentication.
  */
-export const chainResponse = authHttpAction(async (ctx, request, _auth) => {
+export const chainResponse = authHttpAction(async (ctx, request, auth) => {
   if (request.method === "OPTIONS") {
     return corsPreflightResponse();
   }
@@ -989,9 +1000,10 @@ export const chainResponse = authHttpAction(async (ctx, request, _auth) => {
       }
 
       const result: PassPriorityResult = await ctx.runMutation(
-        api.gameplay.chainResolver.passPriority,
+        internal.gameplay.chainResolver.passPriorityInternal,
         {
           lobbyId: body.gameId as Id<"gameLobbies">,
+          userId: auth.userId,
         }
       );
 
@@ -1309,7 +1321,7 @@ export const endPlayerTurn = authHttpAction(async (ctx, request, auth) => {
  * Surrender the game (forfeit).
  * Requires API key authentication.
  */
-export const surrenderGame = authHttpAction(async (ctx, request, _auth) => {
+export const surrenderGame = authHttpAction(async (ctx, request, auth) => {
   if (request.method === "OPTIONS") {
     return corsPreflightResponse();
   }
@@ -1326,8 +1338,9 @@ export const surrenderGame = authHttpAction(async (ctx, request, _auth) => {
     if (validation) return validation;
 
     // Execute surrender via game lifecycle
-    await ctx.runMutation(api.gameplay.games.lifecycle.surrenderGame, {
+    await ctx.runMutation(internal.gameplay.games.lifecycle.surrenderGameInternal, {
       lobbyId: body.gameId as Id<"gameLobbies">,
+      userId: auth.userId,
     });
 
     return successResponse({
@@ -1345,6 +1358,337 @@ export const surrenderGame = authHttpAction(async (ctx, request, _auth) => {
     }
 
     return errorResponse("SURRENDER_FAILED", "Failed to surrender game", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// =============================================================================
+// Game Action Endpoints - Effects, Chain, Phase Management
+// =============================================================================
+
+/**
+ * POST /api/agents/games/actions/activate-effect
+ *
+ * Activate a monster's effect on the field.
+ * Requires API key authentication.
+ */
+export const activateMonsterEffect = authHttpAction(async (ctx, request, auth) => {
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+
+  try {
+    const body = await parseJsonBody<Record<string, unknown>>(request);
+    if (body instanceof Response) return body;
+
+    const validation = validateRequiredFields(body, ["gameId", "cardId"]);
+    if (validation) return validation;
+
+    const result = await ctx.runMutation(
+      internal.gameplay.gameEngine.monsterEffects.activateMonsterEffectInternal,
+      {
+        lobbyId: body["gameId"] as Id<"gameLobbies">,
+        cardId: body["cardId"] as Id<"cardDefinitions">,
+        effectIndex: body["effectIndex"] as number | undefined,
+        targets: body["targets"] as Id<"cardDefinitions">[] | undefined,
+        costTargets: body["costTargets"] as Id<"cardDefinitions">[] | undefined,
+        userId: auth.userId,
+      }
+    );
+
+    return successResponse(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("not your turn")) {
+        return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
+      }
+      if (error.message.includes("not on your field")) {
+        return errorResponse("CARD_NOT_ON_FIELD", "Card is not on your field", 400);
+      }
+      if (error.message.includes("has no effects")) {
+        return errorResponse("NO_EFFECTS", "This monster has no effects", 400);
+      }
+    }
+
+    return errorResponse("ACTIVATE_EFFECT_FAILED", "Failed to activate monster effect", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+/**
+ * POST /api/agents/games/actions/chain-add
+ *
+ * Add a card to the current chain.
+ * Requires API key authentication.
+ */
+export const chainAdd = authHttpAction(async (ctx, request, auth) => {
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+
+  try {
+    const body = await parseJsonBody<Record<string, unknown>>(request);
+    if (body instanceof Response) return body;
+
+    const validation = validateRequiredFields(body, ["lobbyId", "cardId", "spellSpeed", "effect"]);
+    if (validation) return validation;
+
+    const result = await ctx.runMutation(
+      internal.gameplay.chainResolver.addToChainInternal,
+      {
+        lobbyId: body["lobbyId"] as Id<"gameLobbies">,
+        cardId: body["cardId"] as Id<"cardDefinitions">,
+        spellSpeed: body["spellSpeed"] as number,
+        effect: body["effect"] as string,
+        targets: body["targets"] as Id<"cardDefinitions">[] | undefined,
+        userId: auth.userId,
+      }
+    );
+
+    return successResponse(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("No chain")) {
+        return errorResponse("GAME_NO_CHAIN", "No active chain to add to", 400);
+      }
+      if (error.message.includes("Spell speed")) {
+        return errorResponse("INVALID_SPELL_SPEED", "Invalid spell speed for chain", 400);
+      }
+    }
+
+    return errorResponse("CHAIN_ADD_FAILED", "Failed to add to chain", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+/**
+ * POST /api/agents/games/actions/chain-resolve
+ *
+ * Resolve the current chain.
+ * Requires API key authentication.
+ */
+export const chainResolve = authHttpAction(async (ctx, request, _auth) => {
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+
+  try {
+    const body = await parseJsonBody<Record<string, unknown>>(request);
+    if (body instanceof Response) return body;
+
+    const validation = validateRequiredFields(body, ["lobbyId"]);
+    if (validation) return validation;
+
+    const result = await ctx.runMutation(
+      internal.gameplay.chainResolver.resolveChainInternal,
+      {
+        lobbyId: body["lobbyId"] as Id<"gameLobbies">,
+      }
+    );
+
+    return successResponse(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("No chain to resolve")) {
+        return errorResponse("GAME_NO_CHAIN", "No chain to resolve", 400);
+      }
+    }
+
+    return errorResponse("CHAIN_RESOLVE_FAILED", "Failed to resolve chain", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+/**
+ * GET /api/agents/games/chain-state?lobbyId={id}
+ *
+ * Get the current chain state for a game.
+ * Requires API key authentication.
+ */
+export const chainGetState = authHttpAction(async (ctx, request, _auth) => {
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "GET") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only GET method is allowed", 405);
+  }
+
+  try {
+    const lobbyId = getQueryParam(request, "lobbyId");
+
+    if (!lobbyId) {
+      return errorResponse("MISSING_LOBBY_ID", "lobbyId query parameter is required", 400);
+    }
+
+    const result = await ctx.runQuery(api.gameplay.chainResolver.getCurrentChain, {
+      lobbyId: lobbyId as Id<"gameLobbies">,
+    });
+
+    if (!result) {
+      return errorResponse("NOT_FOUND", "No chain found for this game", 404);
+    }
+
+    return successResponse(result);
+  } catch (error) {
+    return errorResponse("CHAIN_STATE_FAILED", "Failed to get chain state", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+/**
+ * POST /api/agents/games/actions/phase-advance
+ *
+ * Advance to the next game phase.
+ * Requires API key authentication.
+ */
+export const phaseAdvance = authHttpAction(async (ctx, request, auth) => {
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+
+  try {
+    const body = await parseJsonBody<GameIdRequest>(request);
+    if (body instanceof Response) return body;
+
+    const validation = validateRequiredFields(body, ["gameId"]);
+    if (validation) return validation;
+
+    const result = await ctx.runMutation(
+      internal.gameplay.phaseManager.advancePhaseInternal,
+      {
+        gameId: body.gameId,
+        userId: auth.userId,
+      }
+    );
+
+    return successResponse(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("not your turn")) {
+        return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
+      }
+      if (error.message.includes("Cannot advance from End Phase")) {
+        return errorResponse("CANNOT_ADVANCE_PHASE", "Cannot advance from End Phase", 400);
+      }
+    }
+
+    return errorResponse("PHASE_ADVANCE_FAILED", "Failed to advance phase", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+/**
+ * POST /api/agents/games/actions/phase-skip-battle
+ *
+ * Skip the Battle Phase (go directly to Main Phase 2).
+ * Requires API key authentication.
+ */
+export const phaseSkipBattle = authHttpAction(async (ctx, request, auth) => {
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+
+  try {
+    const body = await parseJsonBody<GameIdRequest>(request);
+    if (body instanceof Response) return body;
+
+    const validation = validateRequiredFields(body, ["gameId"]);
+    if (validation) return validation;
+
+    const result = await ctx.runMutation(
+      internal.gameplay.phaseManager.skipBattlePhaseInternal,
+      {
+        gameId: body.gameId,
+        userId: auth.userId,
+      }
+    );
+
+    return successResponse(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("not your turn")) {
+        return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
+      }
+      if (error.message.includes("Can only skip Battle Phase")) {
+        return errorResponse("INVALID_PHASE", "Can only skip Battle Phase from Main Phase 1", 400);
+      }
+    }
+
+    return errorResponse("PHASE_SKIP_BATTLE_FAILED", "Failed to skip battle phase", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+/**
+ * POST /api/agents/games/actions/phase-skip-to-end
+ *
+ * Skip directly to the End Phase.
+ * Requires API key authentication.
+ */
+export const phaseSkipToEnd = authHttpAction(async (ctx, request, auth) => {
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+
+  try {
+    const body = await parseJsonBody<GameIdRequest>(request);
+    if (body instanceof Response) return body;
+
+    const validation = validateRequiredFields(body, ["gameId"]);
+    if (validation) return validation;
+
+    const result = await ctx.runMutation(
+      internal.gameplay.phaseManager.skipToEndPhaseInternal,
+      {
+        gameId: body.gameId,
+        userId: auth.userId,
+      }
+    );
+
+    return successResponse(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("not your turn")) {
+        return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
+      }
+      if (error.message.includes("Already in End Phase") || error.message.includes("Cannot skip")) {
+        return errorResponse("INVALID_PHASE", "Cannot skip to End Phase from current phase", 400);
+      }
+    }
+
+    return errorResponse("PHASE_SKIP_TO_END_FAILED", "Failed to skip to end phase", 500, {
       error: error instanceof Error ? error.message : String(error),
     });
   }

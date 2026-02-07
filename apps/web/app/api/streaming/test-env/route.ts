@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   // No auth required for debugging
 
   // Return environment variable status and values for debugging

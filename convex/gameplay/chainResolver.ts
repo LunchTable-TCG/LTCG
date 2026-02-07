@@ -15,8 +15,8 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
-import { mutation } from "../functions";
-import { requireAuthMutation } from "../lib/convexAuth";
+import { internalMutation, mutation } from "../functions";
+import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { type JsonAbility, executeEffect, parseJsonAbility } from "./effectSystem/index";
 import { jsonAbilityValidator } from "./effectSystem/jsonEffectValidators";
@@ -299,6 +299,29 @@ export const addToChain = mutation({
     const user = await requireAuthMutation(ctx);
 
     // 2. Call helper with validated user info
+    return await addToChainHelper(ctx, {
+      lobbyId: args.lobbyId,
+      cardId: args.cardId,
+      playerId: user.userId,
+      playerUsername: user.username,
+      spellSpeed: args.spellSpeed as 1 | 2 | 3,
+      effect: args.effect,
+      targets: args.targets,
+    });
+  },
+});
+
+export const addToChainInternal = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    cardId: v.id("cardDefinitions"),
+    spellSpeed: v.number(),
+    effect: jsonAbilityValidator,
+    targets: v.optional(v.array(v.id("cardDefinitions"))),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthForUser(ctx, args.userId);
     return await addToChainHelper(ctx, {
       lobbyId: args.lobbyId,
       cardId: args.cardId,
@@ -721,80 +744,107 @@ export const resolveChain = mutation({
   },
 });
 
+export const resolveChainInternal = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, args) => {
+    return await resolveChainHelper(ctx, args);
+  },
+});
+
 /**
  * Pass priority
  *
  * Player declines to respond to the current chain.
  * If both players pass, resolves the chain.
  */
+async function passPriorityHandler(
+  ctx: MutationCtx,
+  args: { lobbyId: Id<"gameLobbies"> },
+  user: AuthenticatedUser
+) {
+  // 2. Get lobby
+  const lobby = await ctx.db.get(args.lobbyId);
+  if (!lobby) {
+    throw createError(ErrorCode.NOT_FOUND_LOBBY, {
+      reason: "Lobby not found",
+      lobbyId: args.lobbyId,
+    });
+  }
+
+  // 3. Get game state
+  const gameState = await ctx.db
+    .query("gameStates")
+    .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+    .first();
+
+  if (!gameState) {
+    throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+      reason: "Game state not found",
+      lobbyId: args.lobbyId,
+    });
+  }
+
+  // 4. Check if there's a chain to respond to
+  const currentChain: ChainLink[] = gameState.currentChain || [];
+
+  if (currentChain.length === 0) {
+    throw createError(ErrorCode.GAME_NO_CHAIN, {
+      reason: "No chain to respond to",
+      lobbyId: args.lobbyId,
+    });
+  }
+
+  // 5. Pass priority to opponent
+  const opponentId = user.userId === gameState.hostId ? gameState.opponentId : gameState.hostId;
+
+  // Simplified priority system:
+  // If current priority player passes, give priority to opponent
+  // If opponent also passes, resolve chain
+
+  if (gameState.currentPriorityPlayer === user.userId) {
+    // This player passed, give priority to opponent
+    await ctx.db.patch(gameState._id, {
+      currentPriorityPlayer: opponentId,
+    });
+
+    return {
+      success: true,
+      priorityPassedTo: "opponent",
+    };
+  }
+  // Both players passed - resolve chain
+  await resolveChainHelper(ctx, {
+    lobbyId: args.lobbyId,
+  });
+
+  return {
+    success: true,
+    priorityPassedTo: "none",
+    chainResolved: true,
+  };
+}
+
 export const passPriority = mutation({
   args: {
     lobbyId: v.id("gameLobbies"),
   },
   handler: async (ctx, args) => {
-    // 1. Validate session
     const user = await requireAuthMutation(ctx);
+    return passPriorityHandler(ctx, args, user);
+  },
+});
 
-    // 2. Get lobby
-    const lobby = await ctx.db.get(args.lobbyId);
-    if (!lobby) {
-      throw createError(ErrorCode.NOT_FOUND_LOBBY, {
-        reason: "Lobby not found",
-        lobbyId: args.lobbyId,
-      });
-    }
-
-    // 3. Get game state
-    const gameState = await ctx.db
-      .query("gameStates")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-      .first();
-
-    if (!gameState) {
-      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
-        reason: "Game state not found",
-        lobbyId: args.lobbyId,
-      });
-    }
-
-    // 4. Check if there's a chain to respond to
-    const currentChain: ChainLink[] = gameState.currentChain || [];
-
-    if (currentChain.length === 0) {
-      throw createError(ErrorCode.GAME_NO_CHAIN, {
-        reason: "No chain to respond to",
-        lobbyId: args.lobbyId,
-      });
-    }
-
-    // 5. Pass priority to opponent
-    const opponentId = user.userId === gameState.hostId ? gameState.opponentId : gameState.hostId;
-
-    // Simplified priority system:
-    // If current priority player passes, give priority to opponent
-    // If opponent also passes, resolve chain
-
-    if (gameState.currentPriorityPlayer === user.userId) {
-      // This player passed, give priority to opponent
-      await ctx.db.patch(gameState._id, {
-        currentPriorityPlayer: opponentId,
-      });
-
-      return {
-        success: true,
-        priorityPassedTo: "opponent",
-      };
-    }
-    // Both players passed - resolve chain
-    await resolveChainHelper(ctx, {
-      lobbyId: args.lobbyId,
-    });
-
-    return {
-      success: true,
-      priorityPassedTo: "none",
-      chainResolved: true,
-    };
+export const passPriorityInternal = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const { userId, ...gameArgs } = args;
+    const user = await getAuthForUser(ctx, userId);
+    return passPriorityHandler(ctx, gameArgs, user);
   },
 });
 

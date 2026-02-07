@@ -6,7 +6,7 @@
  * Environment variables:
  * - PORT: HTTP server port (default: 3000)
  * - LTCG_API_KEY: API key for LunchTable-TCG backend (required)
- * - LTCG_API_URL: Base URL for LunchTable-TCG API (default: https://lunchtable.cards)
+ * - CONVEX_SITE_URL: Base URL for Convex HTTP actions (default: https://lunchtable.convex.site)
  * - MCP_API_KEY: Optional API key for authenticating MCP clients
  * - ALLOWED_ORIGINS: Comma-separated list of allowed CORS origins (default: *)
  */

@@ -3,7 +3,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { generateRoomToken, generateRoomName, getLiveKitUrl } from "@/lib/streaming/livekitRoom";
-import { logError, logInfo } from "@/lib/streaming/logging";
+import { logError } from "@/lib/streaming/logging";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
 

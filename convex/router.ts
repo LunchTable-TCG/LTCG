@@ -226,6 +226,59 @@ http.route({
 });
 
 // ============================================================================
+// Game Action Endpoints - Effects, Chain, Phase Management
+// ============================================================================
+
+// POST /api/agents/games/actions/activate-effect - Activate monster effect
+http.route({
+  path: "/api/agents/games/actions/activate-effect",
+  method: "POST",
+  handler: games.activateMonsterEffect,
+});
+
+// POST /api/agents/games/actions/chain-add - Add card to chain
+http.route({
+  path: "/api/agents/games/actions/chain-add",
+  method: "POST",
+  handler: games.chainAdd,
+});
+
+// POST /api/agents/games/actions/chain-resolve - Resolve chain
+http.route({
+  path: "/api/agents/games/actions/chain-resolve",
+  method: "POST",
+  handler: games.chainResolve,
+});
+
+// GET /api/agents/games/chain-state - Get current chain state
+http.route({
+  path: "/api/agents/games/chain-state",
+  method: "GET",
+  handler: games.chainGetState,
+});
+
+// POST /api/agents/games/actions/phase-advance - Advance to next phase
+http.route({
+  path: "/api/agents/games/actions/phase-advance",
+  method: "POST",
+  handler: games.phaseAdvance,
+});
+
+// POST /api/agents/games/actions/phase-skip-battle - Skip battle phase
+http.route({
+  path: "/api/agents/games/actions/phase-skip-battle",
+  method: "POST",
+  handler: games.phaseSkipBattle,
+});
+
+// POST /api/agents/games/actions/phase-skip-to-end - Skip to end phase
+http.route({
+  path: "/api/agents/games/actions/phase-skip-to-end",
+  method: "POST",
+  handler: games.phaseSkipToEnd,
+});
+
+// ============================================================================
 // Matchmaking Endpoints
 // ============================================================================
 

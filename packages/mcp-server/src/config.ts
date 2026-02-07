@@ -19,7 +19,7 @@ export interface Config {
  * - LTCG_API_KEY: API key for authenticating with the LunchTable-TCG backend
  *
  * Optional variables:
- * - LTCG_API_URL: Base URL for the LunchTable-TCG API (defaults to "https://lunchtable.cards")
+ * - CONVEX_SITE_URL: Base URL for the Convex HTTP actions (e.g., "https://your-deployment.convex.site")
  * - MCP_TRANSPORT: Transport mode ("stdio" or "http", defaults to "stdio")
  * - PORT: HTTP server port (defaults to 3000, only used in http mode)
  * - ALLOWED_ORIGINS: Comma-separated list of allowed CORS origins (defaults to "*")
@@ -37,7 +37,7 @@ export function getConfig(): Config {
     );
   }
 
-  const apiUrl = process.env.LTCG_API_URL || "https://lunchtable.cards";
+  const apiUrl = process.env.CONVEX_SITE_URL || "https://lunchtable.convex.site";
 
   const transport = (process.env.MCP_TRANSPORT || "stdio") as "stdio" | "http";
   if (transport !== "stdio" && transport !== "http") {
