@@ -19,12 +19,16 @@ interface StreamNotificationsContextType {
 
 const StreamNotificationsContext = createContext<StreamNotificationsContextType | null>(null);
 
+const noopNotifications: StreamNotificationsContextType = {
+  notify: () => {},
+  notifyStreamStarted: () => {},
+  notifyStreamEnded: () => {},
+  notifyStreamError: () => {},
+};
+
 export function useStreamNotifications() {
   const context = useContext(StreamNotificationsContext);
-  if (!context) {
-    throw new Error("useStreamNotifications must be used within StreamNotificationsProvider");
-  }
-  return context;
+  return context ?? noopNotifications;
 }
 
 export function StreamNotificationsProvider({ children }: { children: ReactNode }) {
