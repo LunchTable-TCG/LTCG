@@ -1,10 +1,10 @@
-import { typedApi } from "@/lib/convexHelpers";
+import { api } from "@/lib/convexApiWrapper";
 import { resolveStreamingAuth } from "@/lib/streaming/serverAuth";
 import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 
 // Module-scope reference to avoid TS2589
-const getActiveSessionsQuery = typedApi.streaming.sessions.getActiveSessions;
+const getActiveSessionsQuery = api.streaming.sessions.getActiveSessions;
 
 function createConvexClient() {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.trim();
