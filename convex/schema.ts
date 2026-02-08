@@ -132,6 +132,13 @@ export default defineSchema({
     // Leaderboard: Player type
     isAiAgent: v.optional(v.boolean()), // default: false
 
+    // @deprecated Use playerXP table - keeping for existing data compatibility
+    xp: v.optional(v.number()),
+    // @deprecated Use playerXP table - keeping for existing data compatibility
+    level: v.optional(v.number()),
+    // @deprecated Use playerCurrency table - keeping for existing data compatibility
+    gold: v.optional(v.number()),
+
     lastStatsUpdate: v.optional(v.number()),
 
     // Email tracking
@@ -3750,13 +3757,13 @@ export default defineSchema({
       showAgentInfo: v.boolean(),
       showEventFeed: v.boolean(),
       showPlayerCam: v.boolean(),
-      webcamPosition: literals("top-left", "top-right", "bottom-left", "bottom-right"),
-      webcamSize: literals("small", "medium", "large"),
+      webcamPosition: v.optional(literals("top-left", "top-right", "bottom-left", "bottom-right")),
+      webcamSize: v.optional(literals("small", "medium", "large")),
       playerVisualMode: v.optional(literals("webcam", "profile-picture")),
       profilePictureUrl: v.optional(v.string()),
-      matchOverHoldMs: v.number(),
-      showSceneLabel: v.boolean(),
-      sceneTransitions: v.boolean(),
+      matchOverHoldMs: v.optional(v.number()),
+      showSceneLabel: v.optional(v.boolean()),
+      sceneTransitions: v.optional(v.boolean()),
       voiceTrackUrl: v.optional(v.string()),
       voiceVolume: v.optional(v.number()),
       voiceLoop: v.optional(v.boolean()),
