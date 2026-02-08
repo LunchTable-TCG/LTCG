@@ -658,7 +658,7 @@ export default function PromoCodesPage() {
 
         {isLoading ? (
           <div className="space-y-2">
-            {[...Array(10)].map((_, i) => (
+            {Array.from({ length: 10 }, (_, i) => i).map((i) => (
               <Skeleton key={i} className="h-16 w-full" />
             ))}
           </div>

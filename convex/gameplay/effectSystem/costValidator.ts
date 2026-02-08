@@ -341,10 +341,46 @@ export async function executeCost(
       // Add to graveyard
       const newGraveyard = [...graveyard, ...costTargets.slice(0, costValue)];
 
-      await ctx.db.patch(gameState._id, {
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
+      const tributeUpdates: Record<string, any> = {
         [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
         [isHost ? "hostGraveyard" : "opponentGraveyard"]: newGraveyard,
-      });
+      };
+
+      // Clean up equip spells on tributed monsters
+      for (const bc of board) {
+        if (!tributeSet.has(bc.cardId)) continue;
+        if (!bc.equippedCards || bc.equippedCards.length === 0) continue;
+
+        const equippedIds = bc.equippedCards;
+        // Check both players' spell/trap zones for equip spells
+        const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
+          equippedIds.includes(st.cardId)
+        );
+        if (hostEquips.length > 0) {
+          tributeUpdates["hostSpellTrapZone"] = (
+            tributeUpdates["hostSpellTrapZone"] ?? gameState.hostSpellTrapZone
+          ).filter((st: { cardId: Id<"cardDefinitions"> }) => !equippedIds.includes(st.cardId));
+          tributeUpdates["hostGraveyard"] = [
+            ...(tributeUpdates["hostGraveyard"] ?? gameState.hostGraveyard),
+            ...hostEquips.map((st) => st.cardId),
+          ];
+        }
+        const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
+          equippedIds.includes(st.cardId)
+        );
+        if (opponentEquips.length > 0) {
+          tributeUpdates["opponentSpellTrapZone"] = (
+            tributeUpdates["opponentSpellTrapZone"] ?? gameState.opponentSpellTrapZone
+          ).filter((st: { cardId: Id<"cardDefinitions"> }) => !equippedIds.includes(st.cardId));
+          tributeUpdates["opponentGraveyard"] = [
+            ...(tributeUpdates["opponentGraveyard"] ?? gameState.opponentGraveyard),
+            ...opponentEquips.map((st) => st.cardId),
+          ];
+        }
+      }
+
+      await ctx.db.patch(gameState._id, tributeUpdates);
 
       logger.info("Cost paid: tribute", { playerId, count: costValue });
 

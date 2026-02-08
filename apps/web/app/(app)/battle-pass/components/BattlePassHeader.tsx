@@ -142,6 +142,7 @@ export function BattlePassHeader({
           {/* Premium Upgrade Button (if not premium) */}
           {!isPremium && (
             <button
+              type="button"
               onClick={onUpgradeClick}
               className="px-6 py-3 rounded-lg bg-gradient-to-r from-violet-600 via-violet-500 to-violet-600 hover:from-violet-500 hover:via-violet-400 hover:to-violet-500 text-white font-bold transition-all flex items-center gap-2 shadow-lg shadow-violet-500/25"
             >

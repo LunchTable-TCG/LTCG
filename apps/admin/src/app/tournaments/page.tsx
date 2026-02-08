@@ -119,7 +119,6 @@ function CreateTournamentDialog({ open, onOpenChange }: CreateTournamentDialogPr
     setIsSubmitting(true);
 
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
       const result = (await createTournament({
         name: name.trim(),
         description: description.trim() || undefined,
@@ -392,7 +391,6 @@ function TournamentActions({ tournament }: TournamentActionsProps) {
     }
     setIsCancelling(true);
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
       const result = (await cancelTournament({
         tournamentId: tournament._id as Id<"tournaments">,
         reason: cancelReason.trim(),
@@ -482,18 +480,39 @@ export default function TournamentsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const tournamentsResult = useConvexQuery(typedApi.admin.tournaments.listTournaments, {
     status: statusFilter !== "all" ? (statusFilter as TournamentStatus) : undefined,
     limit: 50,
     offset: 0,
-  }) as any;
+  }) as
+    | {
+        tournaments: Array<{
+          _id: Id<"tournaments">;
+          name: string;
+          status: TournamentStatus;
+          scheduledStartAt: number;
+          description?: string;
+          format: string;
+          mode: string;
+          registeredCount: number;
+          maxPlayers: number;
+          entryFee: number;
+          potentialPrize: number;
+          creatorUsername: string;
+          totalPrizeDistributed: number;
+        }>;
+        totalCount: number;
+      }
+    | undefined;
 
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg types
-  const tournamentStats = useConvexQuery(
-    typedApi.admin.tournaments.getTournamentStats,
-    {} as any
-  ) as any;
+  const tournamentStats = useConvexQuery(typedApi.admin.tournaments.getTournamentStats, {}) as
+    | {
+        totalTournaments: number;
+        activeTournaments: number;
+        completedTournaments: number;
+        totalPrizeDistributed: number;
+      }
+    | undefined;
 
   const isLoading = tournamentsResult === undefined;
 
@@ -573,7 +592,7 @@ export default function TournamentsPage() {
 
           {isLoading ? (
             <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
+              {Array.from({ length: 5 }, (_, i) => i).map((i) => (
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>

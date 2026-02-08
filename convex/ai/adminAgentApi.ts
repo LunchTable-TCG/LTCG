@@ -8,7 +8,10 @@
  */
 
 import { v } from "convex/values";
-import { api, components } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
+import { components } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { action } from "../_generated/server";
@@ -21,12 +24,12 @@ import { setDatabaseApiKeys } from "./providers";
  */
 async function loadDatabaseApiKeys(ctx: ActionCtx) {
   // Get OpenRouter key from database
-  const openrouterKey = await ctx.runQuery(api.admin.aiConfig.getAIConfigValue, {
+  const openrouterKey = await ctx.runQuery(apiAny.admin.aiConfig.getAIConfigValue, {
     key: "ai.apikey.openrouter",
   });
 
   // Get Vercel/Gateway key from database
-  const gatewayKey = await ctx.runQuery(api.admin.aiConfig.getAIConfigValue, {
+  const gatewayKey = await ctx.runQuery(apiAny.admin.aiConfig.getAIConfigValue, {
     key: "ai.apikey.vercel",
   });
 
@@ -70,14 +73,14 @@ export const getOrCreateThread = action({
     isNew: boolean;
   }> => {
     // Verify admin authentication using currentUser query
-    const currentUser: Doc<"users"> | null = await ctx.runQuery(api.core.users.currentUser, {});
+    const currentUser: Doc<"users"> | null = await ctx.runQuery(apiAny.core.users.currentUser, {});
 
     if (!currentUser) {
       throw new Error("Authentication required");
     }
 
     // Verify moderator role or higher
-    const adminRole = await ctx.runQuery(api.admin.admin.getMyAdminRole, {});
+    const adminRole = await ctx.runQuery(apiAny.admin.admin.getMyAdminRole, {});
     if (!adminRole) {
       throw new Error("Admin role required");
     }
@@ -126,14 +129,14 @@ export const getThreadHistory = action({
   },
   handler: async (ctx, args) => {
     // Verify authentication
-    const user = await ctx.runQuery(api.core.users.currentUser, {});
+    const user = await ctx.runQuery(apiAny.core.users.currentUser, {});
 
     if (!user) {
       throw new Error("Authentication required");
     }
 
     // Verify admin role
-    const adminRole = await ctx.runQuery(api.admin.admin.getMyAdminRole, {});
+    const adminRole = await ctx.runQuery(apiAny.admin.admin.getMyAdminRole, {});
     if (!adminRole) {
       throw new Error("Admin role required");
     }
@@ -197,14 +200,14 @@ export const listThreads = action({
     hasMore: boolean;
   }> => {
     // Verify authentication
-    const currentUser: Doc<"users"> | null = await ctx.runQuery(api.core.users.currentUser, {});
+    const currentUser: Doc<"users"> | null = await ctx.runQuery(apiAny.core.users.currentUser, {});
 
     if (!currentUser) {
       throw new Error("Authentication required");
     }
 
     // Verify admin role
-    const adminRole = await ctx.runQuery(api.admin.admin.getMyAdminRole, {});
+    const adminRole = await ctx.runQuery(apiAny.admin.admin.getMyAdminRole, {});
     if (!adminRole) {
       throw new Error("Admin role required");
     }
@@ -252,14 +255,14 @@ export const sendMessage = action({
     await loadDatabaseApiKeys(ctx);
 
     // Verify authentication using currentUser query
-    const user = await ctx.runQuery(api.core.users.currentUser, {});
+    const user = await ctx.runQuery(apiAny.core.users.currentUser, {});
 
     if (!user) {
       throw new Error("Authentication required");
     }
 
     // Verify admin role
-    const adminRole = await ctx.runQuery(api.admin.admin.getMyAdminRole, {});
+    const adminRole = await ctx.runQuery(apiAny.admin.admin.getMyAdminRole, {});
     if (!adminRole) {
       throw new Error("Admin role required");
     }
@@ -321,14 +324,14 @@ export const streamMessage = action({
     await loadDatabaseApiKeys(ctx);
 
     // Verify authentication using currentUser query
-    const user = await ctx.runQuery(api.core.users.currentUser, {});
+    const user = await ctx.runQuery(apiAny.core.users.currentUser, {});
 
     if (!user) {
       throw new Error("Authentication required");
     }
 
     // Verify admin role
-    const adminRole = await ctx.runQuery(api.admin.admin.getMyAdminRole, {});
+    const adminRole = await ctx.runQuery(apiAny.admin.admin.getMyAdminRole, {});
     if (!adminRole) {
       throw new Error("Admin role required");
     }
@@ -393,14 +396,14 @@ export const deleteThread = action({
   },
   handler: async (ctx, args) => {
     // Verify authentication
-    const user = await ctx.runQuery(api.core.users.currentUser, {});
+    const user = await ctx.runQuery(apiAny.core.users.currentUser, {});
 
     if (!user) {
       throw new Error("Authentication required");
     }
 
     // Verify admin role
-    const adminRole = await ctx.runQuery(api.admin.admin.getMyAdminRole, {});
+    const adminRole = await ctx.runQuery(apiAny.admin.admin.getMyAdminRole, {});
     if (!adminRole) {
       throw new Error("Admin role required");
     }
@@ -432,14 +435,14 @@ export const clearAllThreads = action({
   args: {},
   handler: async (ctx) => {
     // Verify authentication
-    const user = await ctx.runQuery(api.core.users.currentUser, {});
+    const user = await ctx.runQuery(apiAny.core.users.currentUser, {});
 
     if (!user) {
       throw new Error("Authentication required");
     }
 
     // Verify full admin role for bulk delete
-    const adminRole = await ctx.runQuery(api.admin.admin.getMyAdminRole, {});
+    const adminRole = await ctx.runQuery(apiAny.admin.admin.getMyAdminRole, {});
     if (!adminRole || adminRole.role === "moderator") {
       throw new Error("Full admin role required for bulk delete");
     }
@@ -475,14 +478,14 @@ export const getStreamDeltas = action({
   },
   handler: async (ctx, args) => {
     // Verify authentication
-    const user = await ctx.runQuery(api.core.users.currentUser, {});
+    const user = await ctx.runQuery(apiAny.core.users.currentUser, {});
 
     if (!user) {
       throw new Error("Authentication required");
     }
 
     // Verify admin role
-    const adminRole = await ctx.runQuery(api.admin.admin.getMyAdminRole, {});
+    const adminRole = await ctx.runQuery(apiAny.admin.admin.getMyAdminRole, {});
     if (!adminRole) {
       throw new Error("Admin role required");
     }

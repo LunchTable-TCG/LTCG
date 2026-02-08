@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query } from "../../_generated/server";
 import { mutation } from "../../functions";
+import { ELO_SYSTEM } from "../../lib/constants";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import {
@@ -32,6 +33,7 @@ export const getGuildMembers = query({
     v.object({
       userId: v.id("users"),
       username: v.optional(v.string()),
+      image: v.optional(v.string()),
       role: v.union(v.literal("owner"), v.literal("member")),
       joinedAt: v.number(),
       isOnline: v.boolean(),
@@ -56,10 +58,14 @@ export const getGuildMembers = query({
     const now = Date.now();
     const results = await Promise.all(
       members.map(async (member) => {
-        const [user, presence] = await Promise.all([
+        const [user, presence, xpRecord] = await Promise.all([
           ctx.db.get(member.userId),
           ctx.db
             .query("userPresence")
+            .withIndex("by_user", (q) => q.eq("userId", member.userId))
+            .first(),
+          ctx.db
+            .query("playerXP")
             .withIndex("by_user", (q) => q.eq("userId", member.userId))
             .first(),
         ]);
@@ -69,12 +75,13 @@ export const getGuildMembers = query({
         return {
           userId: member.userId,
           username: user?.username,
+          image: user?.image,
           role: member.role,
           joinedAt: member.joinedAt,
           isOnline,
           status: (presence?.status ?? "idle") as "online" | "in_game" | "idle",
-          rankedElo: user?.rankedElo ?? 1000,
-          level: user?.level ?? 1,
+          rankedElo: user?.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING,
+          level: xpRecord?.currentLevel ?? 1,
           isAiAgent: user?.isAiAgent ?? false,
         };
       })

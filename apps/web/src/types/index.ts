@@ -15,12 +15,15 @@ export type {
   MutationHookReturn,
   ActionResult,
   PaginationState,
+  MatchMode,
   LobbyMode,
   DatabaseGameMode,
   LeaderboardType,
   GameMode, // @deprecated - use specific types
   PlayerStatus,
   SortOption,
+  Visibility,
+  TournamentStatus,
 } from "./common";
 
 export {
@@ -95,6 +98,22 @@ export {
   isLeaderboardEntry,
   isFriend,
 } from "./social";
+
+// Card types
+export type {
+  Rarity,
+  Element,
+  ElementWithNeutral,
+  CardType,
+} from "./cards";
+
+// Economy types
+export type {
+  Currency,
+  RewardType,
+  TransactionFilter,
+  ProductType,
+} from "./economy";
 
 // Game types
 export type {

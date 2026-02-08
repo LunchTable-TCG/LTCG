@@ -5,8 +5,11 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
@@ -457,7 +460,7 @@ export const completeStage = mutation({
 
     // Update quest progress for story stage completion
     // @ts-ignore - Type instantiation depth limitation with Convex internal API
-    await ctx.scheduler.runAfter(0, internal.progression.quests.updateQuestProgress, {
+    await ctx.scheduler.runAfter(0, internalAny.progression.quests.updateQuestProgress, {
       userId,
       event: {
         type: "complete_stage",
@@ -649,7 +652,7 @@ export const completeStageInternal = internalMutation({
 
     // Update quest progress for story stage completion
     // @ts-ignore - Type instantiation depth limitation with Convex internal API
-    await ctx.scheduler.runAfter(0, internal.progression.quests.updateQuestProgress, {
+    await ctx.scheduler.runAfter(0, internalAny.progression.quests.updateQuestProgress, {
       userId: args.userId,
       event: {
         type: "complete_stage",

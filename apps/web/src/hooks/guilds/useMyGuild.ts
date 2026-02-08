@@ -1,15 +1,14 @@
 "use client";
 
-import { useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError } from "@/lib/errorHandling";
-import { api } from "@convex/_generated/api";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 // Module-scope references to avoid TS2589
-const getMyGuildQuery = api.social.guilds.core.getMyGuild;
-const hasGuildQuery = api.social.guilds.core.hasGuild;
-const leaveGuildMutationRef = api.social.guilds.members.leaveGuild;
+const getMyGuildQuery = typedApi.social.guilds.core.getMyGuild;
+const hasGuildQuery = typedApi.social.guilds.core.hasGuild;
+const leaveGuildMutationRef = typedApi.social.guilds.members.leaveGuild;
 
 /**
  * Hook for getting the current user's guild membership

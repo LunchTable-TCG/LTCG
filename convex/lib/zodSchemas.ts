@@ -125,11 +125,7 @@ export const marketplaceListingSchema = z
     cardId: z.string(),
     listingType: z.enum(["fixed", "auction"]),
     price: z.number().int().positive(),
-    duration: z
-      .number()
-      .int()
-      .min(MIN_LISTING_DURATION_MS)
-      .max(MAX_LISTING_DURATION_MS),
+    duration: z.number().int().min(MIN_LISTING_DURATION_MS).max(MAX_LISTING_DURATION_MS),
   })
   .refine(
     (data) => {
@@ -190,12 +186,9 @@ export const tradeOfferSchema = z
   .refine((data) => data.offeredCardIds.length > 0 || data.offeredGold > 0, {
     message: "Must offer at least one item or gold",
   })
-  .refine(
-    (data) => data.requestedCardIds.length > 0 || data.requestedGold > 0,
-    {
-      message: "Must request at least one item or gold",
-    }
-  );
+  .refine((data) => data.requestedCardIds.length > 0 || data.requestedGold > 0, {
+    message: "Must request at least one item or gold",
+  });
 
 // ============================================================================
 // TYPE EXPORTS

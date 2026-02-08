@@ -52,7 +52,7 @@ export const startStreaming = httpAction(async (_ctx, request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         agentId,

@@ -25,9 +25,9 @@ export function DecisionPanel({ decisions, agentName }: DecisionPanelProps) {
         {decisions.length === 0 ? (
           <div className="decision-panel__thinking">
             <div className="thinking-dots">
-              <span></span>
-              <span></span>
-              <span></span>
+              <span />
+              <span />
+              <span />
             </div>
             <p>Analyzing the board...</p>
           </div>

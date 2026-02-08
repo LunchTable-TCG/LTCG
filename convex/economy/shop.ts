@@ -1,3 +1,4 @@
+import { literals } from "convex-helpers/validators";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { query } from "../_generated/server";
@@ -31,7 +32,71 @@ import { adjustPlayerCurrencyHelper } from "./economy";
  */
 export const getShopProducts = query({
   args: {},
-  returns: v.array(v.any()),
+  returns: v.array(
+    v.object({
+      _id: v.id("shopProducts"),
+      _creationTime: v.number(),
+      productId: v.string(),
+      name: v.string(),
+      description: v.string(),
+      productType: literals("pack", "box", "currency"),
+      goldPrice: v.optional(v.number()),
+      gemPrice: v.optional(v.number()),
+      packConfig: v.optional(
+        v.object({
+          cardCount: v.number(),
+          guaranteedRarity: v.optional(literals("common", "uncommon", "rare", "epic", "legendary")),
+          guaranteedCount: v.optional(v.number()),
+          allRareOrBetter: v.optional(v.boolean()),
+          archetype: v.optional(
+            literals(
+              "infernal_dragons",
+              "abyssal_depths",
+              "iron_legion",
+              "necro_empire",
+              "abyssal_horrors",
+              "nature_spirits",
+              "storm_elementals",
+              "shadow_assassins",
+              "celestial_guardians",
+              "undead_legion",
+              "divine_knights",
+              "arcane_mages",
+              "mechanical_constructs",
+              "neutral",
+              "fire",
+              "water",
+              "earth",
+              "wind"
+            )
+          ),
+          variantMultipliers: v.optional(
+            v.object({
+              foil: v.number(),
+              altArt: v.number(),
+              fullArt: v.number(),
+            })
+          ),
+        })
+      ),
+      boxConfig: v.optional(
+        v.object({
+          packProductId: v.string(),
+          packCount: v.number(),
+          bonusCards: v.optional(v.number()),
+        })
+      ),
+      currencyConfig: v.optional(
+        v.object({
+          currencyType: literals("gold", "gems"),
+          amount: v.number(),
+        })
+      ),
+      isActive: v.boolean(),
+      sortOrder: v.number(),
+      createdAt: v.number(),
+    })
+  ),
   handler: async (ctx) => {
     const products = await ctx.db
       .query("shopProducts")
@@ -241,6 +306,10 @@ export const purchaseBox = mutation({
   }),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthMutation(ctx);
+
+    // SECURITY: Rate limit box purchases to prevent spam/abuse
+    // Shares the same rate limit as pack purchases
+    await checkRateLimitWrapper(ctx, "PACK_PURCHASE", userId);
 
     // Get product
     const product = await ctx.db

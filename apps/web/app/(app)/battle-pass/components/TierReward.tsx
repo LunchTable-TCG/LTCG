@@ -2,9 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { Check, Crown, Lock } from "lucide-react";
+import type { RewardType } from "@/types/economy";
 import { MilestoneIcon, RewardIcon } from "./RewardIcon";
-
-type RewardType = "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
 
 interface BattlePassReward {
   type: RewardType;
@@ -63,6 +62,7 @@ export function TierReward({
 
       {/* Reward card */}
       <button
+        type="button"
         onClick={showClaim ? onClaim : undefined}
         disabled={!showClaim}
         className={cn(

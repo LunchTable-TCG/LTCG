@@ -154,7 +154,16 @@ export interface PaginationState {
  * const lobbies = await getLobbies(mode);
  * ```
  */
-export type LobbyMode = "ranked" | "casual" | "all";
+/** Visibility setting (guilds, tournaments, etc). */
+export type Visibility = "public" | "private";
+
+/** Tournament lifecycle status. */
+export type TournamentStatus = "registration" | "checkin" | "active" | "completed" | "cancelled";
+
+/** Actual game match mode (no filter option). */
+export type MatchMode = "casual" | "ranked";
+
+export type LobbyMode = MatchMode | "all";
 
 /**
  * Database game mode field (indicates PvP vs Story).

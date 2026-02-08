@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { TransactionFilter } from "@/types/economy";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -40,8 +41,8 @@ interface TransactionHistoryProps {
   hasMore: boolean;
   loadMore: () => void;
   isLoading: boolean;
-  filter: "all" | "gold" | "gems" | "token";
-  setFilter: (filter: "all" | "gold" | "gems" | "token") => void;
+  filter: TransactionFilter;
+  setFilter: (filter: TransactionFilter) => void;
 }
 
 const TRANSACTION_TYPE_LABELS: Record<string, string> = {
@@ -128,6 +129,7 @@ export function TransactionHistory({
       <div className="flex gap-2 flex-wrap">
         {(["all", "gold", "gems", "token"] as const).map((f) => (
           <button
+            type="button"
             key={f}
             onClick={() => setFilter(f)}
             className={cn(

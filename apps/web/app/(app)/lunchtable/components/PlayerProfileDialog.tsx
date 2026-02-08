@@ -2,6 +2,8 @@
 
 import { useCurrency } from "@/hooks";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { MatchMode } from "@/types/common";
+import type { WagerCurrency } from "@/lib/wagerTiers";
 import { Loader2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -17,6 +19,7 @@ import { ProfileTabs } from "./profile/ProfileTabs";
 import { StatsTab } from "./profile/StatsTab";
 
 // Import types
+import type { Element, Rarity } from "@/types/cards";
 import type { DetailItem, PlayerProfile } from "./profile/types";
 
 interface PlayerProfileDialogProps {
@@ -67,12 +70,19 @@ export function PlayerProfileDialog({ isOpen, onClose, username }: PlayerProfile
     { username }
   );
 
-  const handleChallengeConfirm = async (mode: "casual" | "ranked", wagerAmount?: number) => {
+  const handleChallengeConfirm = async (
+    mode: MatchMode,
+    wagerAmount?: number,
+    cryptoWagerCurrency?: WagerCurrency,
+    cryptoWagerTier?: number,
+  ) => {
     try {
       await sendChallengeMutation({
         opponentUsername: username,
         mode,
         wagerAmount,
+        cryptoWagerCurrency,
+        cryptoWagerTier,
       });
       const wagerText = wagerAmount ? ` with a ${wagerAmount.toLocaleString()} gold wager` : "";
       toast.success(`Challenge sent to ${username}${wagerText}!`);
@@ -87,8 +97,8 @@ export function PlayerProfileDialog({ isOpen, onClose, username }: PlayerProfile
     card: {
       id: string;
       name: string;
-      element: "fire" | "water" | "earth" | "wind";
-      rarity?: "common" | "rare" | "epic" | "legendary";
+      element: Element;
+      rarity?: Rarity;
       timesPlayed?: number;
       attack?: number;
       defense?: number;
@@ -122,7 +132,7 @@ export function PlayerProfileDialog({ isOpen, onClose, username }: PlayerProfile
     description: string;
     icon: string;
     earnedAt: number;
-    rarity?: "common" | "rare" | "epic" | "legendary";
+    rarity?: Rarity;
     howToEarn?: string;
   }) => {
     setSelectedDetail({

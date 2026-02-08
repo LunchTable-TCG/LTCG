@@ -14,6 +14,9 @@
  */
 
 import { v } from "convex/values";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { mutation } from "../functions";
@@ -254,28 +257,6 @@ export function hasTriggeredEffect(
 }
 
 /**
- * Check if a card has any optional triggered effects with a specific trigger
- */
-export function hasOptionalTriggeredEffect(
-  card: Doc<"cardDefinitions"> | null | undefined,
-  trigger: TriggerCondition
-): boolean {
-  const effects = getTriggeredEffects(card, trigger);
-  return effects.some((effect) => effect.isOptional);
-}
-
-/**
- * Check if a card has any mandatory triggered effects with a specific trigger
- */
-export function hasMandatoryTriggeredEffect(
-  card: Doc<"cardDefinitions"> | null | undefined,
-  trigger: TriggerCondition
-): boolean {
-  const effects = getTriggeredEffects(card, trigger);
-  return effects.some((effect) => !effect.isOptional);
-}
-
-/**
  * Scan all cards on field for a specific trigger and execute matching effects
  * using SEGOC (Simultaneous Effects Go On Chain) ordering.
  *
@@ -342,6 +323,9 @@ export async function buildSegocQueue(
   const lobby = await ctx.db.get(lobbyId);
   if (!lobby?.gameId) return;
 
+  // Clear the miss-timing tracker when building a new SEGOC queue
+  await ctx.db.patch(gameState._id, { lastResolvedEventType: undefined });
+
   // Collect all cards on field with their owner information
   const allBoardCards = [
     ...gameState.hostBoard.map((bc) => ({ ...bc, ownerId: gameState.hostId })),
@@ -373,6 +357,12 @@ export async function buildSegocQueue(
       // - Explicitly marked as optional
       // - NOT explicitly marked as mandatory defaults to mandatory for triggers
       const isOptional = effect.isOptional === true && effect.isMandatory !== true;
+
+      // Miss timing: optional "when" effects with canMissTiming can't activate
+      // if another effect resolved after their trigger event (lastResolvedEventType is set)
+      if (effect.canMissTiming && isOptional && gameState.lastResolvedEventType) {
+        continue;
+      }
 
       // Calculate SEGOC order: 1-4 based on player + mandatory/optional
       let segocOrder: number;
@@ -478,6 +468,17 @@ export async function processNextSegocItem(
         ],
         segocQueue: remaining,
       });
+
+      // Schedule AI auto-response for optional triggers in story mode
+      if (lobby?.mode === "story" && nextItem.playerId === gameState.opponentId && lobby.gameId) {
+        await ctx.scheduler.runAfter(
+          200,
+          internalAny.gameplay.ai.aiTurn.executeAIOptionalTriggerResponse,
+          {
+            gameId: lobby.gameId,
+          }
+        );
+      }
     } else {
       // Already pending, just remove from queue
       await ctx.db.patch(gameState._id, { segocQueue: remaining });
@@ -523,35 +524,6 @@ export async function processNextSegocItem(
   }
 
   return { processed: true, remaining: remaining.length };
-}
-
-/**
- * Clear the SEGOC queue
- *
- * Should be called when transitioning phases or when the chain resolves.
- */
-export async function clearSegocQueue(
-  ctx: MutationCtx,
-  gameState: Doc<"gameStates">
-): Promise<void> {
-  await ctx.db.patch(gameState._id, {
-    segocQueue: [],
-  });
-}
-
-/**
- * Get the current SEGOC queue for display or debugging
- */
-export function getSegocQueue(gameState: Doc<"gameStates">): SegocQueueItem[] {
-  return gameState.segocQueue || [];
-}
-
-/**
- * Check if there are pending SEGOC items
- */
-export function hasSegocItems(gameState: Doc<"gameStates">): boolean {
-  const queue = gameState.segocQueue || [];
-  return queue.length > 0;
 }
 
 // ============================================================================
@@ -730,40 +702,3 @@ export const respondToOptionalTrigger = mutation({
     };
   },
 });
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Clear skipped optional triggers at end of turn
- *
- * Call this during end phase to reset skipped triggers for the next turn.
- */
-export async function clearSkippedOptionalTriggers(
-  ctx: MutationCtx,
-  gameStateId: Id<"gameStates">
-): Promise<void> {
-  await ctx.db.patch(gameStateId, {
-    skippedOptionalTriggers: [],
-  });
-}
-
-/**
- * Get all pending optional triggers for a player
- *
- * Useful for UI to display prompts for optional triggers.
- */
-export function getPendingOptionalTriggersForPlayer(
-  gameState: Doc<"gameStates">,
-  playerId: Id<"users">
-): Array<{
-  cardId: Id<"cardDefinitions">;
-  cardName: string;
-  effectIndex: number;
-  trigger: string;
-  addedAt: number;
-}> {
-  const pending = gameState.pendingOptionalTriggers || [];
-  return pending.filter((pt) => pt.playerId === playerId);
-}

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Scroll, Sparkles, Swords } from "lucide-react";
+import { ChevronRight, Link2, Loader2, Scroll, Sparkles, Swords } from "lucide-react";
 
 // Only show interactive phases that players actually stop at
 const PHASES = [
@@ -30,6 +30,9 @@ interface PhaseBarProps {
   canAdvancePhase: boolean;
   onAdvancePhase: () => void;
   onEndTurn: () => void;
+  battleSubPhase?: "battle_step" | "damage_step";
+  isChainResolving?: boolean;
+  isOpponentResponding?: boolean;
 }
 
 export function PhaseBar({
@@ -39,6 +42,9 @@ export function PhaseBar({
   canAdvancePhase,
   onAdvancePhase,
   onEndTurn,
+  battleSubPhase,
+  isChainResolving,
+  isOpponentResponding,
 }: PhaseBarProps) {
   // Map current phase to display phase
   const displayPhase = PHASE_MAPPING[currentPhase] || currentPhase;
@@ -54,6 +60,20 @@ export function PhaseBar({
 
   // Get phase hint based on current phase
   const getPhaseHint = () => {
+    if (isOpponentResponding) {
+      return {
+        icon: Loader2,
+        text: "Opponent is deciding whether to activate a card...",
+        color: "text-orange-400",
+      };
+    }
+    if (isChainResolving) {
+      return {
+        icon: Link2,
+        text: "Chain is resolving — effects execute in reverse order",
+        color: "text-cyan-400",
+      };
+    }
     if (!isPlayerTurn) return null;
 
     switch (currentPhase) {
@@ -70,7 +90,12 @@ export function PhaseBar({
       case "battle_end":
         return {
           icon: Swords,
-          text: "Attack with your monsters",
+          text:
+            battleSubPhase === "battle_step"
+              ? "Battle Step — Respond to attack declaration"
+              : battleSubPhase === "damage_step"
+                ? "Damage Step — Modify ATK/DEF before calculation"
+                : "Attack with your monsters",
           color: "text-red-400",
         };
       case "main2":
@@ -140,13 +165,25 @@ export function PhaseBar({
           </Button>
         )}
 
-        {/* Turn indicator */}
-        {!isPlayerTurn && (
+        {/* Turn / status indicator */}
+        {isOpponentResponding ? (
+          <div className="ml-auto px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 text-[8px] sm:text-[10px] font-medium flex items-center gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            <span className="hidden sm:inline">Opponent Responding...</span>
+            <span className="sm:hidden">Responding...</span>
+          </div>
+        ) : isChainResolving ? (
+          <div className="ml-auto px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 text-[8px] sm:text-[10px] font-medium flex items-center gap-1">
+            <Link2 className="h-3 w-3 animate-pulse" />
+            <span className="hidden sm:inline">Chain Resolving</span>
+            <span className="sm:hidden">Chain</span>
+          </div>
+        ) : !isPlayerTurn ? (
           <div className="ml-auto px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-600 text-[8px] sm:text-[10px] font-medium">
             <span className="hidden sm:inline">Opponent&apos;s Turn</span>
             <span className="sm:hidden">Opp Turn</span>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Phase Hint */}

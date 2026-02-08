@@ -10,12 +10,11 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 
-// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-type InternalApi = typeof internal;
-const internalAny = internal as InternalApi;
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import {
   internalAction,
   internalMutation,
@@ -25,6 +24,7 @@ import {
 } from "../_generated/server";
 import type { ActionCtx, MutationCtx } from "../_generated/server";
 import { recordGameStartHelper } from "../gameplay/gameEvents";
+import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { getRankFromRating } from "../lib/helpers";
@@ -188,7 +188,10 @@ export const joinQueue = mutation({
 
     const deckArchetype = deck.deckArchetype || "fire"; // Default to fire if not set
 
-    const rating = mode === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
+    const rating =
+      mode === "ranked"
+        ? user.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+        : user.casualRating || ELO_SYSTEM.DEFAULT_RATING;
 
     // CRITICAL: Re-check for existing entry right before insert to prevent race condition
     // If another concurrent request inserted since our first check, OCC will catch it
@@ -259,7 +262,7 @@ export const leaveQueue = mutation({
  */
 export const findMatches = internalAction({
   handler: async (ctx) => {
-    const queueEntries = await ctx.runQuery(internal.social.matchmaking.getQueueEntries);
+    const queueEntries = await ctx.runQuery(internalAny.social.matchmaking.getQueueEntries);
 
     // Group by mode
     type QueueEntry = (typeof queueEntries)[number];
@@ -381,12 +384,19 @@ export const createMatchedGame = internalMutation({
     // Create game lobby
     const gameId = crypto.randomUUID();
     const now = Date.now();
-    const goesFirst = Math.random() < 0.5 ? player1Id : player2Id;
+    // Use deterministic randomness (gameId as seed) so mutation retries are consistent
+    const seed = `${gameId}-first-turn`;
+    const hash = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const goesFirst = hash % 2 === 0 ? player1Id : player2Id;
 
     const player1Rating =
-      mode === "ranked" ? player1.rankedElo || 1000 : player1.casualRating || 1000;
+      mode === "ranked"
+        ? player1.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+        : player1.casualRating || ELO_SYSTEM.DEFAULT_RATING;
     const player2Rating =
-      mode === "ranked" ? player2.rankedElo || 1000 : player2.casualRating || 1000;
+      mode === "ranked"
+        ? player2.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+        : player2.casualRating || ELO_SYSTEM.DEFAULT_RATING;
 
     const lobbyId = await ctx.db.insert("gameLobbies", {
       hostId: player1Id,
@@ -420,7 +430,7 @@ export const createMatchedGame = internalMutation({
     await updatePresenceInternal(ctx, player2Id, player2Username, "in_game");
 
     // Initialize game state with decks
-    await ctx.runMutation(internal.games.initializeGameState, {
+    await ctx.runMutation(internalAny.games.initializeGameState, {
       lobbyId,
       gameId,
       hostId: player1Id,

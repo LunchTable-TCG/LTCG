@@ -163,6 +163,9 @@ export const XP_SYSTEM = {
 
   /** XP awarded for story mode loss (no penalty) */
   STORY_LOSS_XP: 0,
+
+  /** XP awarded for daily login, scales with streak day (1-7) */
+  DAILY_LOGIN_XP: [25, 30, 30, 35, 35, 40, 50] as const,
 } as const;
 
 /**

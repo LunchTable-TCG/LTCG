@@ -121,6 +121,8 @@ export function GameBoard({
     attackOptions,
     pendingAction,
     chainResponses,
+    responseWindow,
+    battleSubPhase,
     // Computed
     isLoading,
     isPlayerTurn,
@@ -144,6 +146,7 @@ export function GameBoard({
     activateTrap,
     activateMonsterEffect,
     respondToChain,
+    passResponseWindow,
   } = useGameBoard(lobbyId, playerId ?? ("" as Id<"users">));
 
   // UI State
@@ -231,12 +234,44 @@ export function GameBoard({
         const cardName = event.metadata?.cardName as string | undefined;
         const description = event.description || "Effect activated";
 
+        // Distinct toast for AI optional trigger activations
+        if (event.metadata?.trigger === "optional_ai") {
+          toast.info(`Opponent triggered ${cardName || "a card"}`, {
+            description: "Optional effect activated",
+            duration: 3000,
+          });
+          return;
+        }
+
         // Use enhanced toast with categorization
         categorizeEffect(description);
         showEffectActivated(cardName || "Card Effect", description);
       }
     );
   }, [gameEvents]);
+
+  // Track AI chain responses — toast when opponent adds a chain link
+  const prevChainLength = useRef(0);
+  useEffect(() => {
+    const chain = chainResponses?.chain;
+    if (!chain || chain.length === 0) {
+      prevChainLength.current = 0;
+      return;
+    }
+    if (chain.length > prevChainLength.current) {
+      // New chain link(s) added — check if any are from the opponent
+      for (let i = prevChainLength.current; i < chain.length; i++) {
+        const link = chain[i] as ChainLink | undefined;
+        if (link && link.playerId !== playerId) {
+          toast.info(`Opponent activated ${link.cardName || "a card"}`, {
+            description: `Chain Link ${link.chainLink || i + 1}`,
+            duration: 3000,
+          });
+        }
+      }
+    }
+    prevChainLength.current = chain.length;
+  }, [chainResponses?.chain, playerId]);
 
   const attackableAttackers = useMemo(() => {
     if (!attackOptions) return new Set<Id<"cardDefinitions">>();
@@ -544,11 +579,16 @@ export function GameBoard({
         title: result.selectionPrompt?.split(":")[0] || "Select Cards",
         description: result.selectionPrompt || "Select a card",
         callback: async (selectedIds) => {
+          const selectedCardId = selectedIds[0];
+          if (!selectedCardId) {
+            toast.error("No card selected");
+            return;
+          }
           try {
             await completeSearchEffect({
               lobbyId,
               sourceCardId: selectedHandCard.cardId,
-              selectedCardId: selectedIds[0]!,
+              selectedCardId,
             });
             toast.success("Card added to hand!");
             setSelectedHandCard(null);
@@ -701,11 +741,16 @@ export function GameBoard({
           title: result.selectionPrompt?.split(":")[0] || "Select Cards",
           description: result.selectionPrompt || "Select a card",
           callback: async (selectedIds) => {
+            const selectedCardId = selectedIds[0];
+            if (!selectedCardId) {
+              toast.error("No card selected");
+              return;
+            }
             try {
               await completeSearchEffect({
                 lobbyId,
                 sourceCardId: selectedCard.cardId,
-                selectedCardId: selectedIds[0]!,
+                selectedCardId,
               });
               toast.success("Card added to hand!");
               setSelectedBackrowCard(null);
@@ -753,6 +798,10 @@ export function GameBoard({
     await respondToChain("pass");
   }, [respondToChain]);
 
+  const handlePassResponseWindow = useCallback(async () => {
+    await passResponseWindow();
+  }, [passResponseWindow]);
+
   const responseCards = useMemo(() => {
     if (!chainResponses || !chainResponses.chain || !player) return [];
 
@@ -770,6 +819,41 @@ export function GameBoard({
       };
     });
   }, [chainResponses, player]);
+
+  // Battle response window detection — show prompt when it's this player's turn
+  const showBattleResponseWindow = useMemo(() => {
+    if (!responseWindow) return false;
+    const isBattleWindow =
+      responseWindow.type === "attack_declaration" || responseWindow.type === "damage_calculation";
+    return (
+      isBattleWindow && responseWindow.canRespond && responseWindow.activePlayerId === playerId
+    );
+  }, [responseWindow, playerId]);
+
+  const battleResponseActionType = useMemo(() => {
+    if (!responseWindow) return "chain_response";
+    if (responseWindow.type === "attack_declaration") return "attack_response";
+    if (responseWindow.type === "damage_calculation") return "damage_response";
+    return "chain_response";
+  }, [responseWindow]);
+
+  // Get activatable cards for battle response windows (spell speed 2+ from backrow)
+  const battleResponseCards = useMemo(() => {
+    if (!showBattleResponseWindow || !player) return [];
+    return player.backrow
+      .filter((card) => {
+        // Traps and quick-play spells can respond during battle
+        // Face-down traps and quick-play spells are activatable
+        return card.cardType === "trap" || card.cardType === "spell";
+      })
+      .map((card) => ({
+        cardId: card.instanceId,
+        effectName: card.name || "Activate",
+        effectIndex: 0,
+        speed: 2 as 1 | 2 | 3,
+        card,
+      }));
+  }, [showBattleResponseWindow, player]);
 
   // Player ID check - MUST happen after all hooks are called
   if (!playerId) {
@@ -939,27 +1023,19 @@ export function GameBoard({
         </div>
 
         {/* Opponent Hand */}
-        <div
-          className="shrink-0"
-          role="region"
-          aria-label={`Opponent's hand: ${opponent.handCount} cards`}
-        >
+        <section className="shrink-0" aria-label={`Opponent's hand: ${opponent.handCount} cards`}>
           <PlayerHand cards={[]} handCount={opponent.handCount} isOpponent />
-        </div>
+        </section>
 
         {/* Opponent Board */}
-        <div
-          className="border-b border-slate-700/50 shrink-0"
-          role="region"
-          aria-label="Opponent's field"
-        >
+        <section className="border-b border-slate-700/50 shrink-0" aria-label="Opponent's field">
           <OpponentBoard
             board={opponent}
             selectedCard={selectedFieldCard?.instanceId}
             targetableCards={targetableCards}
             onCardClick={handleFieldCardClick}
           />
-        </div>
+        </section>
 
         {/* Phase Bar (Center) */}
         <div className="px-2 py-1 border-y border-white/5 bg-black/40 backdrop-blur-sm shrink-0">
@@ -970,11 +1046,16 @@ export function GameBoard({
             canAdvancePhase={validActions?.canAdvancePhase ?? false}
             onAdvancePhase={handleAdvancePhase}
             onEndTurn={handleEndTurn}
+            battleSubPhase={battleSubPhase}
+            isChainResolving={
+              (chainResponses?.chain?.length ?? 0) > 0 && !chainResponses?.canRespond
+            }
+            isOpponentResponding={!!responseWindow && responseWindow.activePlayerId !== playerId}
           />
         </div>
 
         {/* Player Board */}
-        <div className="border-b border-white/5 shrink-0" role="region" aria-label="Your field">
+        <section className="border-b border-white/5 shrink-0" aria-label="Your field">
           <PlayerBoard
             board={player}
             selectedCard={selectedFieldCard?.instanceId}
@@ -987,12 +1068,11 @@ export function GameBoard({
             activatableBackrowCards={activatableBackrowCards}
             onBackrowCardClick={handleBackrowCardClick}
           />
-        </div>
+        </section>
 
         {/* Player Hand - flexible, takes remaining space */}
-        <div
+        <section
           className="flex-1 min-h-0 border-b border-white/5 bg-black/20 overflow-visible relative"
-          role="region"
           aria-label={`Your hand: ${player.hand.length} cards`}
         >
           <div className="absolute inset-0 bg-linear-to-t from-primary/5 to-transparent pointer-events-none" />
@@ -1003,12 +1083,11 @@ export function GameBoard({
             selectedCard={selectedHandCard?.instanceId}
             onCardClick={handleHandCardClick}
           />
-        </div>
+        </section>
 
         {/* Player Life Points & Actions */}
-        <div
+        <section
           className="px-2 py-1.5 flex items-center justify-between gap-2 shrink-0"
-          role="region"
           aria-label="Your status and actions"
         >
           <LifePointsBar
@@ -1040,7 +1119,7 @@ export function GameBoard({
               }}
             />
           </div>
-        </div>
+        </section>
 
         {/* Modals */}
         <SummonModal
@@ -1119,13 +1198,23 @@ export function GameBoard({
         />
 
         <ResponsePrompt
-          isOpen={!!pendingAction && responseCards.length > 0}
-          actionType="chain_response"
-          responseCards={responseCards}
-          timeRemaining={30000}
+          isOpen={showBattleResponseWindow || (!!pendingAction && responseCards.length > 0)}
+          actionType={showBattleResponseWindow ? battleResponseActionType : "chain_response"}
+          responseCards={showBattleResponseWindow ? battleResponseCards : responseCards}
+          timeRemaining={
+            responseWindow?.expiresAt ? Math.max(0, responseWindow.expiresAt - Date.now()) : 30000
+          }
           onActivate={handleChainResponse}
-          onPass={handlePassChain}
+          onPass={showBattleResponseWindow ? handlePassResponseWindow : handlePassChain}
         />
+
+        {/* Opponent responding indicator — shown when AI has priority in response window */}
+        {responseWindow && responseWindow.activePlayerId !== playerId && (
+          <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-lg bg-black/80 border border-orange-500/40 backdrop-blur-sm flex items-center gap-2 shadow-lg shadow-orange-500/10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="h-2 w-2 rounded-full bg-orange-400 animate-pulse" />
+            <span className="text-sm font-medium text-orange-300">Opponent is responding...</span>
+          </div>
+        )}
 
         <CardInspectorModal
           isOpen={showCardInspector}

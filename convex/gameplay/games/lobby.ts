@@ -1,10 +1,13 @@
 import { v } from "convex/values";
-import { internal } from "../../_generated/api";
+import * as generatedApi from "../../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internal = (generatedApi as any).internal;
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../../economy/economy";
 import { internalMutation, mutation } from "../../functions";
 import { totalGamesCounter } from "../../infrastructure/shardedCounters";
+import { ELO_SYSTEM } from "../../lib/constants";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { createTraceContext, logMatchmaking, logger, performance } from "../../lib/debug";
 import { ErrorCode, createError } from "../../lib/errorCodes";
@@ -18,10 +21,7 @@ import { initializeGameStateHelper } from "./lifecycle";
 // CONSTANTS
 // ============================================================================
 
-const RATING_DEFAULTS = {
-  DEFAULT_RATING: 1000,
-  RANKED_RATING_WINDOW: 200,
-} as const;
+const RANKED_RATING_WINDOW = 200;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -95,12 +95,7 @@ async function startAgentStreamsForGame(
       .filter((q) => q.eq(q.field("isActive"), true))
       .first();
 
-    if (
-      agent &&
-      agent.streamingEnabled &&
-      agent.streamingAutoStart &&
-      agent.streamingKeyHash
-    ) {
+    if (agent?.streamingEnabled && agent.streamingAutoStart && agent.streamingKeyHash) {
       // Schedule start for agent stream (async, non-blocking)
       await ctx.scheduler.runAfter(0, internal.agents.streaming.autoStartAgentStream, {
         agentId: agent._id,
@@ -221,8 +216,8 @@ async function validateUserCanCreateGameInternal(
     username,
     deckId: activeDeckId,
     deckArchetype: deck.deckArchetype || "unknown",
-    rankedElo: user.rankedElo ?? RATING_DEFAULTS.DEFAULT_RATING,
-    casualRating: user.casualRating ?? RATING_DEFAULTS.DEFAULT_RATING,
+    rankedElo: user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING,
+    casualRating: user.casualRating ?? ELO_SYSTEM.DEFAULT_RATING,
   };
 }
 
@@ -276,7 +271,12 @@ async function startGameFromLobby(
   }
 
   // Handle wager payment for challenge lobbies
-  if (lobbyRecheck.wagerAmount && lobbyRecheck.wagerAmount > 0) {
+  // Skip gold deduction for crypto wager lobbies (payment handled externally via x402)
+  if (
+    lobbyRecheck.wagerAmount &&
+    lobbyRecheck.wagerAmount > 0 &&
+    !lobbyRecheck.cryptoWagerCurrency
+  ) {
     await adjustPlayerCurrencyHelper(ctx, {
       userId,
       goldDelta: -lobbyRecheck.wagerAmount,
@@ -288,6 +288,15 @@ async function startGameFromLobby(
         mode: lobbyRecheck.mode,
       },
     });
+  }
+
+  // Guard: crypto wager lobbies require both deposits before game can start
+  if (lobbyRecheck.cryptoWagerCurrency && lobbyRecheck.cryptoWagerTier) {
+    if (!lobbyRecheck.cryptoHostDeposited || !lobbyRecheck.cryptoOpponentDeposited) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Both players must deposit crypto wager before game can start",
+      });
+    }
   }
 
   // Update lobby with opponent info and start game
@@ -388,7 +397,8 @@ export const createLobby = mutation({
     try {
       // Validate user can create game
       logger.debug("Validating user can create game");
-      const { userId, username, deckArchetype, rankedElo, casualRating } = await validateUserCanCreateGame(ctx);
+      const { userId, username, deckArchetype, rankedElo, casualRating } =
+        await validateUserCanCreateGame(ctx);
 
       // SECURITY: Rate limit lobby creation to prevent spam
       await checkRateLimitWrapper(ctx, "CREATE_LOBBY", userId as string);
@@ -407,8 +417,7 @@ export const createLobby = mutation({
       const rank = getRankFromRating(rating);
 
       // Set max rating diff for ranked matches
-      const maxRatingDiff =
-        args.mode === "ranked" ? RATING_DEFAULTS.RANKED_RATING_WINDOW : undefined;
+      const maxRatingDiff = args.mode === "ranked" ? RANKED_RATING_WINDOW : undefined;
 
       // Create lobby
       logger.dbOperation("insert", "gameLobbies", traceCtx);
@@ -576,7 +585,11 @@ export const joinLobby = mutation({
         casualRating,
       });
 
-      logMatchmaking("lobby_join_success", userId, { ...traceCtx, gameId: result.gameId, hostId: lobby.hostId });
+      logMatchmaking("lobby_join_success", userId, {
+        ...traceCtx,
+        gameId: result.gameId,
+        hostId: lobby.hostId,
+      });
       logger.info("Game started successfully", {
         ...traceCtx,
         gameId: result.gameId,
@@ -702,8 +715,8 @@ export const cancelLobby = mutation({
       });
     }
 
-    // Refund wager if lobby had one
-    if (lobby.wagerAmount && lobby.wagerAmount > 0) {
+    // Refund gold wager if lobby had one (skip for crypto — no deposits at creation)
+    if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.cryptoWagerCurrency) {
       await adjustPlayerCurrencyHelper(ctx, {
         userId,
         goldDelta: lobby.wagerAmount,
@@ -777,8 +790,8 @@ export const leaveLobby = mutation({
 
     // If user is host
     if (lobby.hostId === userId) {
-      // Refund wager if lobby had one
-      if (lobby.wagerAmount && lobby.wagerAmount > 0) {
+      // Refund gold wager if lobby had one (skip for crypto — no deposits at creation)
+      if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.cryptoWagerCurrency) {
         await adjustPlayerCurrencyHelper(ctx, {
           userId,
           goldDelta: lobby.wagerAmount,
@@ -794,8 +807,8 @@ export const leaveLobby = mutation({
         status: "cancelled",
       });
     } else if (lobby.opponentId === userId) {
-      // If user is opponent declining a challenge, refund host's wager and cancel lobby
-      if (lobby.wagerAmount && lobby.wagerAmount > 0) {
+      // If user is opponent declining a challenge, refund host's gold wager and cancel lobby
+      if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.cryptoWagerCurrency) {
         await adjustPlayerCurrencyHelper(ctx, {
           userId: lobby.hostId,
           goldDelta: lobby.wagerAmount,
@@ -834,6 +847,9 @@ export const createLobbyInternal = internalMutation({
     userId: v.id("users"),
     mode: v.union(v.literal("casual"), v.literal("ranked")),
     isPrivate: v.optional(v.boolean()),
+    // Crypto wager fields (optional — omit for gold/free lobbies)
+    cryptoWagerCurrency: v.optional(v.union(v.literal("sol"), v.literal("usdc"))),
+    cryptoWagerTier: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const opId = `createLobbyInternal_${Date.now()}`;
@@ -859,7 +875,11 @@ export const createLobbyInternal = internalMutation({
 
       // Validate user can create game (without auth check)
       logger.debug("Validating user can create game");
-      const { deckArchetype, rankedElo, casualRating } = await validateUserCanCreateGameInternal(ctx, args.userId, username);
+      const { deckArchetype, rankedElo, casualRating } = await validateUserCanCreateGameInternal(
+        ctx,
+        args.userId,
+        username
+      );
 
       const traceCtx = createTraceContext("createLobbyInternal", {
         userId: args.userId,
@@ -879,8 +899,27 @@ export const createLobbyInternal = internalMutation({
       const rank = getRankFromRating(rating);
 
       // Set max rating diff for ranked matches
-      const maxRatingDiff =
-        args.mode === "ranked" ? RATING_DEFAULTS.RANKED_RATING_WINDOW : undefined;
+      const maxRatingDiff = args.mode === "ranked" ? RANKED_RATING_WINDOW : undefined;
+
+      // Resolve crypto wager fields if present
+      const isCryptoWager = !!args.cryptoWagerCurrency && !!args.cryptoWagerTier;
+
+      if (isCryptoWager && !user?.walletAddress) {
+        throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+          reason: "Wallet address required for crypto wagers",
+        });
+      }
+
+      const cryptoFields = isCryptoWager
+        ? {
+            cryptoWagerCurrency: args.cryptoWagerCurrency,
+            cryptoWagerTier: args.cryptoWagerTier,
+            cryptoHostWallet: user?.walletAddress,
+            cryptoHostDeposited: false,
+            cryptoOpponentDeposited: false,
+            cryptoSettled: false,
+          }
+        : {};
 
       // Create lobby
       logger.dbOperation("insert", "gameLobbies", traceCtx);
@@ -897,6 +936,7 @@ export const createLobbyInternal = internalMutation({
         joinCode,
         maxRatingDiff,
         createdAt: Date.now(),
+        ...cryptoFields,
       });
 
       logger.info("Lobby created successfully", { ...traceCtx, lobbyId, rank, rating });
@@ -995,7 +1035,11 @@ export const joinLobbyInternal = internalMutation({
 
       // Now do full validation
       logger.debug("Validating user can join game", traceCtx);
-      const { rankedElo, casualRating } = await validateUserCanCreateGameInternal(ctx, args.userId, username);
+      const { rankedElo, casualRating } = await validateUserCanCreateGameInternal(
+        ctx,
+        args.userId,
+        username
+      );
 
       // Validate join code for private lobbies
       if (lobby.isPrivate) {
@@ -1112,8 +1156,8 @@ export const cancelLobbyInternal = internalMutation({
       });
     }
 
-    // Refund wager if lobby had one
-    if (lobby.wagerAmount && lobby.wagerAmount > 0) {
+    // Refund gold wager if lobby had one (skip for crypto — no deposits at creation)
+    if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.cryptoWagerCurrency) {
       await adjustPlayerCurrencyHelper(ctx, {
         userId: args.userId,
         goldDelta: lobby.wagerAmount,
@@ -1135,6 +1179,26 @@ export const cancelLobbyInternal = internalMutation({
     await updatePresenceInternal(ctx, args.userId, username, "online");
 
     return { success: true, lobbyId: lobby._id };
+  },
+});
+
+/**
+ * Generic lobby patch (internal only)
+ * Used by httpAction handlers to update crypto wager fields.
+ */
+export const patchLobbyInternal = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    patch: v.any(),
+  },
+  handler: async (ctx, args) => {
+    const lobby = await ctx.db.get(args.lobbyId);
+    if (!lobby) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Lobby not found",
+      });
+    }
+    await ctx.db.patch(args.lobbyId, args.patch);
   },
 });
 
@@ -1179,8 +1243,8 @@ export const cleanupExpiredChallenges = internalMutation({
     let cancelled = 0;
 
     for (const lobby of expiredLobbies) {
-      // Refund wager to host if there was one
-      if (lobby.wagerAmount && lobby.wagerAmount > 0) {
+      // Refund gold wager to host if there was one (skip for crypto — no deposits at creation)
+      if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.cryptoWagerCurrency) {
         await adjustPlayerCurrencyHelper(ctx, {
           userId: lobby.hostId,
           goldDelta: lobby.wagerAmount,

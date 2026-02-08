@@ -2,7 +2,7 @@
 
 import { LogoutConfirmDialog } from "@/components/dialogs/LogoutConfirmDialog";
 import { InboxDropdown } from "@/components/inbox/InboxDropdown";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet";
 import { useAuth, useLogout } from "@/hooks/auth/useConvexAuthHook";
@@ -15,6 +15,7 @@ import {
   Coins,
   Crown,
   Gamepad2,
+  Heart,
   LogOut,
   Map as MapIcon,
   Menu,
@@ -106,7 +107,10 @@ const navGroups: NavGroup[] = [
   {
     label: "Community",
     icon: Users,
-    links: [{ href: "/guilds", label: "Guilds", icon: Users }],
+    links: [
+      { href: "/friends", label: "Friends", icon: Heart },
+      { href: "/guilds", label: "Guilds", icon: Users },
+    ],
   },
   {
     label: "Economy",
@@ -240,6 +244,12 @@ export function Navbar() {
                     <div className="relative">
                       <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
                       <Avatar className="relative w-10 h-10 border-2 border-border group-hover:border-primary/50 transition-colors">
+                        {currentUser?.image && (
+                          <AvatarImage
+                            src={currentUser.image}
+                            alt={currentUser.username || "User"}
+                          />
+                        )}
                         <AvatarFallback className="bg-secondary text-primary text-sm font-bold">
                           {currentUser === undefined
                             ? "..."
@@ -271,7 +281,6 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop click is supplementary to close button */}
       <div
         className={cn(
           "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm transition-opacity duration-300",
@@ -324,6 +333,9 @@ export function Navbar() {
                 <div className="flex items-center gap-3">
                   <Link href="/profile" onClick={() => setIsOpen(false)} className="shrink-0">
                     <Avatar className="w-10 h-10 border-2 border-primary/30 hover:border-primary/50 transition-colors">
+                      {currentUser?.image && (
+                        <AvatarImage src={currentUser.image} alt={currentUser.username || "User"} />
+                      )}
                       <AvatarFallback className="bg-secondary text-primary text-sm font-bold">
                         {currentUser === undefined
                           ? "..."

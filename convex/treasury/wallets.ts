@@ -6,9 +6,11 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Doc } from "../_generated/dataModel";
-import { internalAction, query } from "../_generated/server";
+import { internalAction, internalQuery, query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
@@ -100,6 +102,24 @@ export const getWalletByAddress = query({
       .query("treasuryWallets")
       .withIndex("by_address", (q) => q.eq("address", address))
       .first();
+  },
+});
+
+/**
+ * Get the active fee collection wallet (internal - no auth required)
+ * Used by crypto wager escrow to get the treasury authority
+ */
+export const getActiveFeeCollectionWallet = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    // Find the active fee collection wallet
+    const wallet = await ctx.db
+      .query("treasuryWallets")
+      .withIndex("by_purpose", (q) => q.eq("purpose", "fee_collection"))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .first();
+
+    return wallet;
   },
 });
 
@@ -200,7 +220,7 @@ export const createWallet = mutation({
     });
 
     // Schedule the Privy API call
-    await ctx.scheduler.runAfter(0, internal.treasury.wallets.createPrivyWallet, {
+    await ctx.scheduler.runAfter(0, internalAny.treasury.wallets.createPrivyWallet, {
       walletDbId: walletId,
       policyId: args.policyId,
     });
@@ -279,7 +299,7 @@ export const syncBalance = mutation({
     }
 
     // Schedule the balance sync action
-    await ctx.scheduler.runAfter(0, internal.treasury.wallets.syncWalletBalance, {
+    await ctx.scheduler.runAfter(0, internalAny.treasury.wallets.syncWalletBalance, {
       walletDbId: walletId,
       address: wallet.address,
     });
@@ -324,7 +344,7 @@ export const retryWalletCreation = mutation({
     });
 
     // Schedule new creation attempt
-    await ctx.scheduler.runAfter(0, internal.treasury.wallets.createPrivyWallet, {
+    await ctx.scheduler.runAfter(0, internalAny.treasury.wallets.createPrivyWallet, {
       walletDbId: walletId,
       policyId: wallet.policyId,
     });
@@ -434,7 +454,7 @@ export const createPrivyWallet = internalAction({
   },
   handler: async (ctx, args) => {
     // Mark wallet as creating
-    await ctx.runMutation(internal.treasury.wallets.updateWalletCreating, {
+    await ctx.runMutation(internalAny.treasury.wallets.updateWalletCreating, {
       walletDbId: args.walletDbId,
     });
 
@@ -444,7 +464,7 @@ export const createPrivyWallet = internalAction({
     if (!PRIVY_APP_ID || !PRIVY_APP_SECRET) {
       const errorMessage = "Privy credentials not configured";
       console.error(errorMessage);
-      await ctx.runMutation(internal.treasury.wallets.updateWalletFailed, {
+      await ctx.runMutation(internalAny.treasury.wallets.updateWalletFailed, {
         walletDbId: args.walletDbId,
         errorMessage,
       });
@@ -472,7 +492,7 @@ export const createPrivyWallet = internalAction({
         const errorText = await response.text();
         const errorMessage = `Privy API error (${response.status}): ${errorText}`;
         console.error(errorMessage);
-        await ctx.runMutation(internal.treasury.wallets.updateWalletFailed, {
+        await ctx.runMutation(internalAny.treasury.wallets.updateWalletFailed, {
           walletDbId: args.walletDbId,
           errorMessage,
         });
@@ -482,7 +502,7 @@ export const createPrivyWallet = internalAction({
       const wallet = await response.json();
 
       // Update the database with Privy data
-      await ctx.runMutation(internal.treasury.wallets.updateWithPrivyData, {
+      await ctx.runMutation(internalAny.treasury.wallets.updateWithPrivyData, {
         walletDbId: args.walletDbId,
         privyWalletId: wallet.id,
         address: wallet.address,
@@ -494,7 +514,7 @@ export const createPrivyWallet = internalAction({
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error creating Privy wallet";
       console.error("Failed to create Privy wallet:", error);
-      await ctx.runMutation(internal.treasury.wallets.updateWalletFailed, {
+      await ctx.runMutation(internalAny.treasury.wallets.updateWalletFailed, {
         walletDbId: args.walletDbId,
         errorMessage,
       });
@@ -534,7 +554,7 @@ export const syncWalletBalance = internalAction({
       }
 
       // Update database
-      await ctx.runMutation(internal.treasury.wallets.updateBalance, {
+      await ctx.runMutation(internalAny.treasury.wallets.updateBalance, {
         walletDbId: args.walletDbId,
         balance: solBalance,
         tokenBalance,
@@ -629,7 +649,7 @@ export const setupX402TreasuryWallets = mutation({
     });
 
     // Schedule Privy wallet creation
-    await ctx.scheduler.runAfter(0, internal.treasury.wallets.createPrivyWallet, {
+    await ctx.scheduler.runAfter(0, internalAny.treasury.wallets.createPrivyWallet, {
       walletDbId: walletId,
       policyId: undefined,
     });

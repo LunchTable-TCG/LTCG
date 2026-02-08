@@ -197,6 +197,13 @@ http.route({
   handler: games.attackMonster,
 });
 
+// POST /api/agents/games/actions/pass-response-window - Pass priority in response window
+http.route({
+  path: "/api/agents/games/actions/pass-response-window",
+  method: "POST",
+  handler: games.passResponseWindow,
+});
+
 // POST /api/agents/games/actions/enter-battle - Enter Battle Phase
 http.route({
   path: "/api/agents/games/actions/enter-battle",
@@ -308,6 +315,34 @@ http.route({
   path: "/api/agents/matchmaking/leave",
   method: "POST",
   handler: matchmaking.leave,
+});
+
+// POST /api/agents/matchmaking/wager-enter - Create crypto wager lobby (auth only)
+http.route({
+  path: "/api/agents/matchmaking/wager-enter",
+  method: "POST",
+  handler: matchmaking.wagerEnter,
+});
+
+// POST /api/agents/matchmaking/wager-join - Join crypto wager lobby (auth + x402 payment)
+http.route({
+  path: "/api/agents/matchmaking/wager-join",
+  method: "POST",
+  handler: matchmaking.wagerJoin,
+});
+
+// OPTIONS /api/agents/matchmaking/wager-join - CORS preflight for x402
+http.route({
+  path: "/api/agents/matchmaking/wager-join",
+  method: "OPTIONS",
+  handler: matchmaking.wagerJoin,
+});
+
+// POST /api/agents/matchmaking/heartbeat - Send heartbeat during crypto wager games
+http.route({
+  path: "/api/agents/matchmaking/heartbeat",
+  method: "POST",
+  handler: matchmaking.heartbeat,
 });
 
 // ============================================================================

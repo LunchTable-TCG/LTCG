@@ -41,7 +41,7 @@ export const activateSpellAction: Action = {
       const handResult = await handProvider.get(runtime, message, state);
       const hand = handResult.data?.hand as CardInHand[];
 
-      const spellsInHand = hand?.filter((card) => card.type === "spell") || [];
+      const spellsInHand = hand?.filter((card) => card.cardType === "spell") || [];
 
       // Check field for face-up spells that can be activated
       const spellsOnField = gameState.hostPlayer.spellTrapZone.filter(
@@ -98,7 +98,7 @@ export const activateSpellAction: Action = {
       });
 
       // Get activatable spells
-      const spellsInHand = hand.filter((card) => card.type === "spell");
+      const spellsInHand = hand.filter((card) => card.cardType === "spell");
       const spellsOnField = gameState.hostPlayer.spellTrapZone.filter(
         (card) => card.cardType === "spell" && card.faceUp
       );
@@ -120,10 +120,10 @@ export const activateSpellAction: Action = {
 
       const boardContext = `
 Game State:
-- Your LP: ${gameState.hostPlayer.lifePoints}
-- Opponent LP: ${gameState.opponentPlayer.lifePoints}
-- Your monsters: ${gameState.hostPlayer.monsterZone.length}
-- Opponent monsters: ${gameState.opponentPlayer.monsterZone.length}
+- Your LP: ${gameState.myLifePoints}
+- Opponent LP: ${gameState.opponentLifePoints}
+- Your monsters: ${gameState.myBoard.length}
+- Opponent monsters: ${gameState.opponentBoard.length}
 `;
 
       const prompt = `${boardContext}
@@ -153,15 +153,11 @@ Respond with JSON: { "location": "hand" or "field", "index": <index>, "targets":
       });
 
       let selectedCard: CardInHand | SpellTrapCard | undefined;
-      let handIndex: number | undefined;
-      let boardIndex: number | undefined;
 
       if (parsed.location === "hand") {
         selectedCard = spellsInHand[parsed.index];
-        handIndex = (selectedCard as CardInHand)?.handIndex;
       } else {
         selectedCard = spellsOnField[parsed.index];
-        boardIndex = parsed.index;
       }
 
       if (!selectedCard) {
@@ -169,11 +165,13 @@ Respond with JSON: { "location": "hand" or "field", "index": <index>, "targets":
       }
 
       // Make API call
+      const cardId = parsed.location === "hand"
+        ? (selectedCard as CardInHand)._id
+        : (selectedCard as SpellTrapCard).cardId;
       const result = await client.activateSpell({
         gameId: gameState.gameId,
-        handIndex,
-        boardIndex,
-        targets: parsed.targets,
+        cardId,
+        targets: parsed.targets?.map((t: any) => typeof t === 'string' ? t : String(t)),
       });
 
       // Callback to user

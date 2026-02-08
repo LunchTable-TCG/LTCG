@@ -1,14 +1,18 @@
 "use client";
 
-import { useTracks } from "@livekit/components-react";
-import { Track } from "livekit-client";
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
+import type { OverlayConfig } from "@/lib/streaming/types";
+import * as generatedApi from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { RoomAudioRenderer, useTracks } from "@livekit/components-react";
+import { useQuery } from "convex/react";
+import { Track } from "livekit-client";
+import { useEffect } from "react";
 import { DecisionPanel } from "./DecisionPanel";
 import { EventFeedTicker } from "./EventFeedTicker";
-import { StreamerInfoPanel } from "./StreamerInfoPanel";
 import { GameBoardSpectator } from "./GameBoardSpectator";
+import { StreamerInfoPanel } from "./StreamerInfoPanel";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
 
 interface StreamCompositeViewProps {
   sessionId: string;
@@ -22,7 +26,7 @@ interface StreamCompositeViewProps {
  */
 export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
   // Get session info
-  const session = useQuery(api.streaming.sessions.getSession, {
+  const session = useQuery(apiAny.streaming.sessions.getSessionPublic, {
     sessionId: sessionId as Id<"streamingSessions">,
   });
 
@@ -40,26 +44,96 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
 
   // Get game state if in a lobby
   const gameState = useQuery(
-    api.gameplay.games.queries.getGameSpectatorView,
-    session?.currentLobbyId ? { lobbyId: session.currentLobbyId } : "skip"
+    apiAny.gameplay.games.queries.getGameSpectatorView,
+    session?.currentLobbyId ? { lobbyId: session.currentLobbyId as Id<"gameLobbies"> } : "skip"
+  );
+
+  const events = useQuery(
+    apiAny.gameplay.gameEvents.subscribeToGameEvents,
+    session?.currentLobbyId
+      ? { lobbyId: session.currentLobbyId as Id<"gameLobbies">, limit: 10 }
+      : "skip"
   );
 
   // Get agent decisions if agent stream
   const decisions = useQuery(
-    api.agents.decisions.getRecentDecisionsForStream,
-    session?.agentId ? { agentId: session.agentId, limit: 3 } : "skip"
+    apiAny.agents.decisions.getRecentDecisionsForStream,
+    session?.agentId
+      ? { agentId: session.agentId, gameId: gameState?.gameId || undefined, limit: 3 }
+      : "skip"
   );
 
-  const config = session?.overlayConfig || {
+  const config: OverlayConfig = session?.overlayConfig || {
     showDecisions: false,
     showAgentInfo: false,
     showEventFeed: true,
     showPlayerCam: true,
-    theme: "dark" as const,
+    webcamPosition: "bottom-right",
+    webcamSize: "medium",
+    playerVisualMode: "webcam",
+    profilePictureUrl: undefined,
+    voiceTrackUrl: undefined,
+    voiceVolume: undefined,
+    voiceLoop: false,
+    theme: "dark",
+    matchOverHoldMs: 45000,
+    showSceneLabel: true,
+    sceneTransitions: true,
   };
+  const hasRecentMatchSummary = Boolean(
+    session?.lastMatchEndedAt &&
+      Date.now() - session.lastMatchEndedAt < 60 * 60 * 1000 &&
+      !gameState
+  );
+  const visualMode = config.playerVisualMode === "profile-picture" ? "profile-picture" : "webcam";
+  const profilePictureUrl = config.profilePictureUrl?.trim() || session?.entityAvatar?.trim() || "";
+  const shouldShowProfilePip =
+    config.showPlayerCam &&
+    profilePictureUrl.length > 0 &&
+    (visualMode === "profile-picture" || !cameraTrack);
+
+  useEffect(() => {
+    if (!session || typeof window === "undefined") {
+      return;
+    }
+
+    const overlayWindow = window as Window & { startRecording?: () => void };
+    overlayWindow.startRecording?.();
+  }, [session]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const voiceTrackUrl = config.voiceTrackUrl?.trim();
+    if (!voiceTrackUrl) {
+      return;
+    }
+
+    const voiceVolume =
+      typeof config.voiceVolume === "number" && !Number.isNaN(config.voiceVolume)
+        ? Math.max(0, Math.min(1, config.voiceVolume))
+        : 0.9;
+    const audio = new Audio(voiceTrackUrl);
+    audio.crossOrigin = "anonymous";
+    audio.loop = config.voiceLoop ?? false;
+    audio.volume = voiceVolume;
+    audio.muted = false;
+
+    void audio.play().catch((error) => {
+      console.warn("Composite voice track playback failed:", error);
+    });
+
+    return () => {
+      audio.pause();
+      audio.src = "";
+    };
+  }, [config.voiceTrackUrl, config.voiceVolume, config.voiceLoop]);
 
   return (
-    <div className="stream-composite">
+    <div
+      className={`stream-composite ${config.showPlayerCam ? "" : "stream-composite--no-webcam"}`}
+    >
       {/* Main content - Screen share or game board */}
       <div className="main-content">
         {screenTrack ? (
@@ -73,16 +147,31 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
             autoPlay
             playsInline
             className="screen-video"
-          />
+          >
+            <track kind="captions" />
+          </video>
+        ) : // No screen share - show game board or waiting state
+        gameState ? (
+          <GameBoardSpectator gameState={gameState} />
+        ) : hasRecentMatchSummary ? (
+          <div className="waiting-state">
+            <h2>Match Over</h2>
+            <p>{session?.lastMatchSummary || "The last match has ended."}</p>
+            <p className="waiting-sub">Looping stream in lobby mode until the next game starts.</p>
+          </div>
         ) : (
-          // No screen share - show game board
-          gameState && <GameBoardSpectator gameState={gameState} />
+          <div className="waiting-state">
+            <h2>Lobby / Chat Scene</h2>
+            <p>Live stream remains active while waiting for the next match or screen share.</p>
+          </div>
         )}
       </div>
 
       {/* Webcam - Picture in Picture */}
-      {cameraTrack && config.showPlayerCam && (
-        <div className="webcam-pip">
+      {cameraTrack && config.showPlayerCam && visualMode === "webcam" && (
+        <div
+          className={`webcam-pip webcam-pip--${config.webcamPosition} webcam-pip--${config.webcamSize}`}
+        >
           <video
             ref={(el) => {
               if (el && cameraTrack.publication.track) {
@@ -93,12 +182,23 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
             playsInline
             muted
             className="webcam-video"
-          />
+          >
+            <track kind="captions" />
+          </video>
+        </div>
+      )}
+      {shouldShowProfilePip && (
+        <div
+          className={`webcam-pip webcam-pip--${config.webcamPosition} webcam-pip--${config.webcamSize}`}
+        >
+          <img src={profilePictureUrl} alt="Profile" className="webcam-video" />
         </div>
       )}
 
       {/* Overlay UI Elements */}
       <div className="overlay-ui">
+        <RoomAudioRenderer />
+
         {/* Streamer info */}
         {config.showAgentInfo && session && (
           <div className="top-bar">
@@ -120,23 +220,10 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
         {/* Event feed */}
         {config.showEventFeed && (
           <div className="event-feed">
-            <EventFeedTicker events={[]} />
+            <EventFeedTicker events={events || []} />
           </div>
         )}
       </div>
-
-      {/* Signal that overlay is ready for egress capture */}
-      {session && typeof window !== "undefined" && (
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if (window.startRecording) {
-                window.startRecording();
-              }
-            `,
-          }}
-        />
-      )}
 
       <style jsx>{`
         .stream-composite {
@@ -153,6 +240,9 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
           display: flex;
           align-items: center;
           justify-content: center;
+          background: radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.06), transparent 35%),
+            radial-gradient(circle at 80% 10%, rgba(59, 130, 246, 0.05), transparent 30%),
+            #000;
         }
 
         .screen-video {
@@ -163,15 +253,46 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
 
         .webcam-pip {
           position: absolute;
-          bottom: 24px;
-          right: 24px;
-          width: 320px;
-          height: 180px;
           border-radius: 12px;
           overflow: hidden;
           border: 2px solid rgba(212, 175, 55, 0.5);
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
           z-index: 10;
+        }
+
+        .webcam-pip--small {
+          width: 260px;
+          height: 146px;
+        }
+
+        .webcam-pip--medium {
+          width: 320px;
+          height: 180px;
+        }
+
+        .webcam-pip--large {
+          width: 380px;
+          height: 214px;
+        }
+
+        .webcam-pip--bottom-right {
+          right: 24px;
+          bottom: 24px;
+        }
+
+        .webcam-pip--bottom-left {
+          left: 24px;
+          bottom: 24px;
+        }
+
+        .webcam-pip--top-right {
+          right: 24px;
+          top: 24px;
+        }
+
+        .webcam-pip--top-left {
+          left: 24px;
+          top: 24px;
         }
 
         .webcam-video {
@@ -209,6 +330,38 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
           left: 24px;
           right: 360px;
           pointer-events: auto;
+        }
+
+        .stream-composite--no-webcam .event-feed {
+          right: 24px;
+        }
+
+        .waiting-state {
+          width: min(720px, 92vw);
+          border-radius: 16px;
+          border: 1px solid rgba(212, 175, 55, 0.4);
+          background: linear-gradient(180deg, rgba(30, 24, 21, 0.88), rgba(10, 8, 7, 0.92));
+          box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+          padding: 28px;
+          text-align: center;
+        }
+
+        .waiting-state h2 {
+          margin: 0 0 10px;
+          font-size: 28px;
+          color: #f3e0b6;
+        }
+
+        .waiting-state p {
+          margin: 0;
+          color: #bda88f;
+          font-size: 15px;
+        }
+
+        .waiting-sub {
+          margin-top: 10px;
+          font-size: 13px;
+          color: #9f927f;
         }
 
         @media (max-width: 1920px) {

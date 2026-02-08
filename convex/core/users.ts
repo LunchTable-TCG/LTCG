@@ -1,6 +1,7 @@
 import { v } from "convex/values";
-import { query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
+import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation } from "../lib/convexAuth";
 import {
   fullUserValidator,
@@ -67,6 +68,7 @@ export const getUser = query({
     return {
       _id: user._id,
       username: user.username,
+      image: user.image,
       bio: user.bio,
       createdAt: user.createdAt,
     };
@@ -98,6 +100,7 @@ export const getUserByUsername = query({
     return {
       _id: user._id,
       username: user.username,
+      image: user.image,
       bio: user.bio,
       createdAt: user.createdAt,
     };
@@ -147,8 +150,8 @@ export const getUserProfile = query({
       casualLosses: user.casualLosses ?? 0,
       storyWins: user.storyWins ?? 0,
       // Ratings
-      rankedElo: user.rankedElo ?? 1000,
-      casualRating: user.casualRating ?? 1000,
+      rankedElo: user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING,
+      casualRating: user.casualRating ?? ELO_SYSTEM.DEFAULT_RATING,
       // Progression (read from playerXP table)
       xp: playerXP?.currentXP ?? 0,
       level: playerXP?.currentLevel ?? 1,
@@ -197,8 +200,8 @@ export const getUserStats = query({
       casualLosses: user.casualLosses ?? 0,
       storyWins: user.storyWins ?? 0,
       // Ratings
-      rankedElo: user.rankedElo ?? 1000,
-      casualRating: user.casualRating ?? 1000,
+      rankedElo: user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING,
+      casualRating: user.casualRating ?? ELO_SYSTEM.DEFAULT_RATING,
       // Progression (read from playerXP table)
       xp: playerXP?.currentXP ?? 0,
       level: playerXP?.currentLevel ?? 1,
@@ -288,5 +291,16 @@ export const adminUpdateUsername = mutation({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Get user by ID (internal - no auth required)
+ * Used by internal mutations/actions that need user data
+ */
+export const getUserInternal = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.userId);
   },
 });

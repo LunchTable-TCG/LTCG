@@ -191,8 +191,8 @@ export function isAttackPosition(position: unknown): position is "attack" | 1 {
 /**
  * Check if a monster is in defense position
  */
-export function isDefensePosition(position: unknown): position is "defense" | 0 {
-  return position === "defense" || position === 0;
+export function isDefensePosition(position: unknown): position is "defense" | 2 {
+  return position === "defense" || position === 2;
 }
 
 /**

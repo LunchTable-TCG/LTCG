@@ -110,7 +110,8 @@ function isEffectExpired(
 
     case "until_turn_end":
       // Effect expires at the end of the turn it was applied
-      return currentTurn > effect.appliedTurn;
+      // Cleanup runs during end phase, so >= catches the current turn's end
+      return currentTurn >= effect.appliedTurn;
 
     case "until_next_turn":
       // Effect lasts through the next full turn
@@ -226,77 +227,4 @@ export function isActionPrevented(
   }
 
   return { prevented: false };
-}
-
-/**
- * Get all lingering stat modifications for a specific card
- *
- * @param gameState - Current game state
- * @param cardId - Card to get stat modifications for
- * @returns Object with total ATK and DEF bonuses
- */
-export function getLingeringStatModifications(
-  gameState: Doc<"gameStates">,
-  cardId: Id<"cardDefinitions">
-): { atkBonus: number; defBonus: number } {
-  const effects = gameState.lingeringEffects || [];
-  let atkBonus = 0;
-  let defBonus = 0;
-
-  for (const effect of effects) {
-    // Check for ATK modification effects
-    if (effect.effectType === "modifyATK") {
-      // Check if this effect applies to the specific card or all matching cards
-      if (shouldEffectApplyToCard(effect, cardId)) {
-        atkBonus += typeof effect.value === "number" ? effect.value : 0;
-      }
-    }
-
-    // Check for DEF modification effects
-    if (effect.effectType === "modifyDEF") {
-      if (shouldEffectApplyToCard(effect, cardId)) {
-        defBonus += typeof effect.value === "number" ? effect.value : 0;
-      }
-    }
-  }
-
-  return { atkBonus, defBonus };
-}
-
-/**
- * Check if a lingering effect should apply to a specific card
- *
- * @param effect - The lingering effect
- * @param cardId - Card to check
- * @returns true if effect applies to this card
- */
-function shouldEffectApplyToCard(effect: LingeringEffect, cardId: Id<"cardDefinitions">): boolean {
-  // If effect specifies a source card and has conditions, check if card matches
-  if (effect.conditions && typeof effect.conditions === "object") {
-    const conditions = effect.conditions as {
-      targetAll?: boolean;
-      targetSelf?: boolean;
-      targetArchetype?: string;
-      targetCardId?: Id<"cardDefinitions">;
-    };
-
-    // Specific card target
-    if (conditions.targetCardId) {
-      return conditions.targetCardId === cardId;
-    }
-
-    // All matching cards
-    if (conditions.targetAll) {
-      // Additional filtering could go here (archetype, type, etc.)
-      return true;
-    }
-
-    // Self-target only
-    if (conditions.targetSelf && effect.sourceCardId) {
-      return effect.sourceCardId === cardId;
-    }
-  }
-
-  // Default: effect applies to all cards
-  return true;
 }

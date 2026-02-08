@@ -64,7 +64,6 @@ export default function TreasuryPoliciesPage() {
   });
 
   // Fetch policies
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const policies = useConvexQuery(typedApi.treasury.policies.listPolicies, { includeInactive: true }) as
     | TreasuryPolicy[]
     | undefined;

@@ -1,7 +1,7 @@
 "use client";
 
 import type Konva from "konva";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
@@ -226,10 +226,15 @@ export function FreeformEditor({ design }: FreeformEditorProps) {
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+    (e: KeyboardEvent) => {
       if (e.key === "Delete" || e.key === "Backspace") {
         // Don't delete if user is typing in an input
-        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
+        if (
+          e.target instanceof HTMLElement &&
+          (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
+        ) {
+          return;
+        }
         handleDelete();
       }
       if (e.key === "Escape") {
@@ -239,12 +244,13 @@ export function FreeformEditor({ design }: FreeformEditorProps) {
     [handleDelete, clearSelection]
   );
 
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
   return (
-    <div
-      className="relative flex-1 flex flex-col overflow-hidden"
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-    >
+    <div className="relative flex-1 flex flex-col overflow-hidden">
       <FloatingToolbar
         hasSelection={!!selectedElementId}
         zoom={zoom}

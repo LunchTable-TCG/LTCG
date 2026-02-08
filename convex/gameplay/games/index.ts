@@ -12,6 +12,7 @@ export {
   getActiveLobby,
   getIncomingChallenge,
   getLobbyDetails,
+  getLobbyInternal,
   getMyPrivateLobby,
   listActiveGames,
   getGameSpectatorView,
@@ -31,7 +32,13 @@ export {
   joinLobbyByCode,
   cancelLobby,
   leaveLobby,
+  patchLobbyInternal,
 } from "./lobby";
+
+// ============================================================================
+// HEARTBEAT (crypto wager DC detection)
+// ============================================================================
+export { heartbeat, heartbeatInternal } from "./heartbeat";
 
 // ============================================================================
 // GAME LIFECYCLE MUTATIONS

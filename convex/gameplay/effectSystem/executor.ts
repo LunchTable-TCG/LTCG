@@ -13,7 +13,7 @@ import { executeCost, validateCost } from "./costValidator";
 import { checkCanActivateOPT, markEffectUsed } from "./optTracker";
 import type { EffectResult, ParsedAbility, ParsedEffect } from "./types";
 
-import { checkStateBasedActions } from "../gameEngine/stateBasedActions";
+import { checkDeckOutCondition, checkStateBasedActions } from "../gameEngine/stateBasedActions";
 // Import all effect executors (organized by category)
 import { executeBanish } from "./executors/cardMovement/banish";
 import { executeDiscard } from "./executors/cardMovement/discard";
@@ -171,6 +171,13 @@ export async function executeEffect(
           message: `${card?.name || "Card"} cannot be targeted`,
         };
       }
+      // Face-down monsters cannot be targeted by card effects
+      if (targetCard?.isFaceDown) {
+        return {
+          success: false,
+          message: "Face-down cards cannot be targeted",
+        };
+      }
     }
 
     // Validation 2: Target count matches requirement
@@ -261,6 +268,15 @@ export async function executeEffect(
       cardName,
       paidCost: costExecution.paidCost,
     });
+
+    // Re-read gameState after cost payment to avoid stale state
+    const refreshedAfterCost = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+      .first();
+    if (refreshedAfterCost) {
+      gameState = refreshedAfterCost;
+    }
   }
 
   // Execute the effect and capture result
@@ -274,6 +290,18 @@ export async function executeEffect(
         result = { success: false, message: "Invalid draw count" };
       } else {
         result = await executeDraw(ctx, gameState, playerId, drawValue);
+        // Check for deck-out: if draw failed because deck is empty, player loses
+        if (!result.success && result.message.includes("deck out")) {
+          const deckOutResult = await checkDeckOutCondition(
+            ctx,
+            lobbyId,
+            playerId,
+            gameState.turnNumber ?? 0
+          );
+          if (deckOutResult.gameEnded) {
+            result.message += " (Game ended: deck out)";
+          }
+        }
       }
       break;
     }
@@ -311,9 +339,12 @@ export async function executeEffect(
             const destroyedCard = await ctx.db.get(destroyResult.destroyedCardId);
             const parsedAbility = getCardAbility(destroyedCard);
             if (parsedAbility) {
-              // Find on_destroy triggered effects
+              // Find on_destroy / on_destroy_by_effect triggered effects
               for (const parsedEffect of parsedAbility.effects) {
-                if (parsedEffect.trigger === "on_destroy") {
+                if (
+                  parsedEffect.trigger === "on_destroy" ||
+                  parsedEffect.trigger === "on_destroy_by_effect"
+                ) {
                   // Refresh game state
                   const refreshedState = await ctx.db
                     .query("gameStates")
@@ -374,9 +405,12 @@ export async function executeEffect(
             const destroyedCard = await ctx.db.get(destroyResult.destroyedCardId);
             const parsedAbility = getCardAbility(destroyedCard);
             if (parsedAbility) {
-              // Find on_destroy triggered effects
+              // Find on_destroy / on_destroy_by_effect triggered effects
               for (const parsedEffect of parsedAbility.effects) {
-                if (parsedEffect.trigger === "on_destroy") {
+                if (
+                  parsedEffect.trigger === "on_destroy" ||
+                  parsedEffect.trigger === "on_destroy_by_effect"
+                ) {
                   // Refresh game state before executing trigger
                   const refreshedState = await ctx.db
                     .query("gameStates")
@@ -755,6 +789,11 @@ export async function executeEffect(
 
   performance.end(opId, { cardId, effectType: effect.type, success: result.success });
 
+  // Track last resolved effect type for miss-timing logic
+  if (result.success) {
+    await ctx.db.patch(gameState._id, { lastResolvedEventType: effect.type });
+  }
+
   return result;
 }
 
@@ -798,6 +837,7 @@ export async function executeMultiPartAbility(
   const messages: string[] = [];
   let effectsExecuted = 0;
   let anySuccess = false;
+  let currentState = gameState;
 
   for (let effectIndex = 0; effectIndex < parsedAbility.effects.length; effectIndex++) {
     const effect = parsedAbility.effects[effectIndex];
@@ -819,7 +859,7 @@ export async function executeMultiPartAbility(
     // Execute triggered or manual effects with correct effectIndex for OPT/HOPT tracking
     const result = await executeEffect(
       ctx,
-      gameState,
+      currentState,
       lobbyId,
       effect,
       playerId,
@@ -830,6 +870,14 @@ export async function executeMultiPartAbility(
     if (result.success) {
       anySuccess = true;
       effectsExecuted++;
+
+      // Re-read gameState after each successful effect to avoid stale state
+      const refreshedState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+        .first();
+      if (!refreshedState) break;
+      currentState = refreshedState;
     }
     messages.push(result.message);
   }

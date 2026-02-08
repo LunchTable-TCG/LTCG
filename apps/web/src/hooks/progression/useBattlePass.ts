@@ -2,12 +2,13 @@
 
 import { typedApi, useConvexAction, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError } from "@/lib/errorHandling";
+import type { RewardType } from "@/types/economy";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 // Types inferred from backend validators
 interface BattlePassReward {
-  type: "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
+  type: RewardType;
   amount?: number;
   cardId?: string;
   packProductId?: string;

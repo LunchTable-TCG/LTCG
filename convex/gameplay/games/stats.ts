@@ -1,4 +1,4 @@
-import { internal } from "../../_generated/api";
+import * as generatedApi from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { ELO_SYSTEM, XP_SYSTEM } from "../../lib/constants";
@@ -6,9 +6,8 @@ import { ErrorCode, createError } from "../../lib/errorCodes";
 import { calculateEloChange } from "../../lib/helpers";
 import { addXP } from "../../lib/xpHelpers";
 
-// Type boundary to prevent TS2589 with deeply nested Convex types
-// biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
-const internalAny = internal as any;
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 
 /**
  * Update player stats and ratings after game completion
@@ -71,6 +70,7 @@ export async function updatePlayerStatsAfterGame(
   await addXP(ctx, winnerId, xpReward, { source: xpSource });
 
   // Update winner stats
+  const newWinStreak = (winner.currentWinStreak || 0) + 1;
   await ctx.db.patch(winnerId, {
     // Update ratings
     ...(isRanked && { rankedElo: winnerRatingAfter }),
@@ -81,6 +81,10 @@ export async function updatePlayerStatsAfterGame(
     ...(isRanked && { rankedWins: (winner.rankedWins || 0) + 1 }),
     ...(isCasual && { casualWins: (winner.casualWins || 0) + 1 }),
     ...(isStory && { storyWins: (winner.storyWins || 0) + 1 }),
+
+    // Update win streak
+    currentWinStreak: newWinStreak,
+    longestWinStreak: Math.max(newWinStreak, winner.longestWinStreak || 0),
 
     lastStatsUpdate: Date.now(),
   });
@@ -95,6 +99,10 @@ export async function updatePlayerStatsAfterGame(
     totalLosses: (loser.totalLosses || 0) + 1,
     ...(isRanked && { rankedLosses: (loser.rankedLosses || 0) + 1 }),
     ...(isCasual && { casualLosses: (loser.casualLosses || 0) + 1 }),
+    ...(isStory && { storyLosses: (loser.storyLosses || 0) + 1 }),
+
+    // Reset win streak on loss
+    currentWinStreak: 0,
 
     lastStatsUpdate: Date.now(),
   });

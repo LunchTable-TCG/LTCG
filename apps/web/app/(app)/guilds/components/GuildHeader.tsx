@@ -2,9 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { useMyGuild } from "@/hooks/guilds";
+import { useGuild } from "@/hooks/guilds/useGuild";
 import { cn } from "@/lib/utils";
+import type { Visibility } from "@/types/common";
 import type { Id } from "@convex/_generated/dataModel";
-import { Calendar, Crown, DoorOpen, Lock, Share2, Shield, Users } from "lucide-react";
+import { Calendar, Circle, Crown, DoorOpen, Lock, Share2, Shield, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { GuildShareDialog } from "./GuildShareDialog";
@@ -16,7 +18,7 @@ interface GuildHeaderProps {
     description?: string;
     profileImageUrl?: string;
     bannerImageUrl?: string;
-    visibility: "public" | "private";
+    visibility: Visibility;
     ownerUsername?: string;
     memberCount: number;
     createdAt: number;
@@ -26,6 +28,7 @@ interface GuildHeaderProps {
 
 export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
   const { leaveGuild } = useMyGuild();
+  const { onlineMemberCount } = useGuild(guild._id);
   const [isLeaving, setIsLeaving] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
@@ -44,7 +47,7 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
     try {
       await leaveGuild();
       toast.success("You have left the guild");
-    } catch (error) {
+    } catch {
       toast.error("Failed to leave guild");
     } finally {
       setIsLeaving(false);
@@ -126,6 +129,13 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
                   <span className="text-[#a89f94]">/50 members</span>
                 </span>
               </div>
+
+              {onlineMemberCount != null && onlineMemberCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <Circle className="w-3 h-3 fill-green-400 text-green-400" />
+                  <span className="text-green-400 font-medium">{onlineMemberCount} online</span>
+                </div>
+              )}
 
               {guild.ownerUsername && (
                 <div className="flex items-center gap-2">

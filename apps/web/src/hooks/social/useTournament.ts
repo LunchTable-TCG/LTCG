@@ -8,7 +8,8 @@ import { useAuth } from "../auth/useConvexAuthHook";
 // TYPES
 // ============================================================================
 
-export type TournamentStatus = "registration" | "checkin" | "active" | "completed" | "cancelled";
+import type { TournamentStatus } from "@/types/common";
+export type { TournamentStatus } from "@/types/common";
 export type TournamentMode = "ranked" | "casual";
 export type ParticipantStatus =
   | "registered"

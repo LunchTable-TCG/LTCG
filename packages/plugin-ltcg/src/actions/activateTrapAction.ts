@@ -40,7 +40,7 @@ export const activateTrapAction: Action = {
 
       // Must have at least one set trap
       const setTraps = gameState.hostPlayer.spellTrapZone.filter(
-        (card) => card.type === "trap" && !card.faceUp
+        (card) => card.cardType === "trap" && !card.faceUp
       );
 
       if (setTraps.length === 0) {
@@ -97,7 +97,7 @@ export const activateTrapAction: Action = {
 
       // Get set traps
       const setTraps = gameState.hostPlayer.spellTrapZone.filter(
-        (card) => card.type === "trap" && !card.faceUp
+        (card) => card.cardType === "trap" && !card.faceUp
       );
 
       if (setTraps.length === 0) {
@@ -122,13 +122,13 @@ export const activateTrapAction: Action = {
 
       // Format trap options
       const trapOptions = setTraps
-        .map((card, idx) => `${idx + 1}. ${card.name} (Set at board position ${card.boardIndex})`)
+        .map((card, idx) => `${idx + 1}. ${card.name} (Set) [cardId: ${card.cardId}]`)
         .join("\n");
 
       const boardContext = `
 Game Context:
-- Your LP: ${gameState.hostPlayer.lifePoints}
-- Opponent LP: ${gameState.opponentPlayer.lifePoints}
+- Your LP: ${gameState.myLifePoints}
+- Opponent LP: ${gameState.opponentLifePoints}
 - Current Phase: ${gameState.phase}
 - Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
 - Threat Level: ${boardAnalysis?.threatLevel || "UNKNOWN"}
@@ -137,8 +137,7 @@ Recent Events:
 ${recentContext}
 
 Opponent's Field:
-- Monsters: ${gameState.opponentPlayer.monsterZone.length}
-- Backrow: ${gameState.opponentPlayer.spellTrapZone.length}
+- Monsters: ${gameState.opponentBoard.length}
 `;
 
       const prompt = `${boardContext}
@@ -202,8 +201,8 @@ Respond with JSON: { "shouldActivate": true/false, "trapIndex": <index if activa
       // Make API call
       const result = await client.activateTrap({
         gameId: gameState.gameId,
-        boardIndex: selectedTrap.boardIndex,
-        targets: parsed.targets,
+        cardId: selectedTrap.cardId,
+        targets: parsed.targets?.map((t: any) => typeof t === 'string' ? t : String(t)),
       });
 
       // Callback to user

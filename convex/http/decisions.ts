@@ -7,7 +7,9 @@
  * @module http/decisions
  */
 
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Id } from "../_generated/dataModel";
 import { authHttpAction } from "./middleware/auth";
 import {
@@ -24,13 +26,6 @@ import {
   SaveDecisionRequestSchema,
   formatValidationErrors,
 } from "./types";
-
-// =============================================================================
-// Module-scope typed helpers to avoid TS2589 "Type instantiation is excessively deep"
-// =============================================================================
-
-// biome-ignore lint/suspicious/noExplicitAny: Required to break TS2589 deep type instantiation
-const internalAny: any = internal;
 
 // =============================================================================
 // Endpoints

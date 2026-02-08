@@ -8,6 +8,7 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
+import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
@@ -540,26 +541,18 @@ export const refundBid = mutation({
       refundedAt: Date.now(),
     });
 
-    // Refund the gold to the bidder
-    await ctx.db.patch(bid.bidderId, {
-      gold: (bidder.gold ?? 0) + bid.bidAmount,
-    });
-
-    // Record transaction
-    await ctx.db.insert("currencyTransactions", {
+    // Refund the gold to the bidder via playerCurrency (single source of truth)
+    await adjustPlayerCurrencyHelper(ctx, {
       userId: bid.bidderId,
-      currencyType: "gold",
-      amount: bid.bidAmount,
-      balanceAfter: (bidder.gold ?? 0) + bid.bidAmount,
+      goldDelta: bid.bidAmount,
       transactionType: "admin_refund",
-      referenceId: args.bidId,
       description: `Admin refund: ${args.reason}`,
+      referenceId: args.bidId,
       metadata: {
         adminId,
         originalBidId: args.bidId,
         reason: args.reason,
       },
-      createdAt: Date.now(),
     });
 
     await scheduleAuditLog(ctx, {

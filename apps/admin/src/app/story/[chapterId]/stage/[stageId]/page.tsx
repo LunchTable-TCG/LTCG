@@ -144,9 +144,11 @@ function DialogueEditor({
     if (newIndex < 0 || newIndex >= dialogue.length) return;
 
     const updated = [...dialogue];
-    const temp = updated[index]!;
-    updated[index] = updated[newIndex]!;
-    updated[newIndex] = temp;
+    const currentLine = updated[index];
+    const targetLine = updated[newIndex];
+    if (!currentLine || !targetLine) return;
+    updated[index] = targetLine;
+    updated[newIndex] = currentLine;
     onChange(updated);
   };
 
@@ -167,8 +169,10 @@ function DialogueEditor({
           </div>
         ) : (
           <div className="space-y-3">
-            {dialogue.map((line, index) => (
-              <div key={index} className="p-3 border rounded-lg bg-muted/30 space-y-2">
+            {dialogue.map((line, index) => {
+              const lineBaseKey = `${line.speaker}|${line.text}|${"imageUrl" in line ? (line.imageUrl ?? "") : ""}`;
+              return (
+                <div key={lineBaseKey} className="p-3 border rounded-lg bg-muted/30 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground font-mono">Line {index + 1}</span>
                   {!disabled && (
@@ -236,7 +240,8 @@ function DialogueEditor({
                   />
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -339,13 +344,11 @@ export default function StageEditorPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Queries
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const stageData = useConvexQuery(typedApi.admin.story.getStage, {
     stageId: stageId as Id<"storyStages">,
   }) as { stage: Stage; chapter: Chapter } | null | undefined;
 
   // Get card definitions for reward selector
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const cardsResult = useConvexQuery(typedApi.admin.cards.listCards, {
     includeInactive: false,
   }) as { cards: CardDefinition[] } | undefined;
@@ -818,8 +821,8 @@ export default function StageEditorPage() {
                   <div className="space-y-2">
                     <Text className="font-medium">Pre-Match Dialogue Preview</Text>
                     <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
-                      {preMatchDialogue.slice(0, 3).map((line, i) => (
-                        <div key={i} className="flex gap-3">
+                      {preMatchDialogue.slice(0, 3).map((line) => (
+                        <div key={`${line.speaker}|${line.text}`} className="flex gap-3">
                           <div className="font-medium text-primary min-w-[80px]">
                             {line.speaker}:
                           </div>

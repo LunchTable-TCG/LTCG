@@ -9,7 +9,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
-import { DAILY_REWARDS, VARIANT_CONFIG } from "../lib/constants";
+import { DAILY_REWARDS, VARIANT_CONFIG, XP_SYSTEM } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import {
@@ -321,6 +321,11 @@ export const claimLoginStreak = mutation({
       transactionType: "reward",
       description: `Login streak day ${newStreak}`,
     });
+
+    // Award battle pass XP based on streak day
+    const { addXP } = await import("../lib/xpHelpers");
+    const dailyXP = XP_SYSTEM.DAILY_LOGIN_XP[Math.min(newStreak - 1, 6)] ?? 25;
+    await addXP(ctx, userId, dailyXP, { source: "daily_login" });
 
     // Record the claim
     await ctx.db.insert("dailyRewards", {

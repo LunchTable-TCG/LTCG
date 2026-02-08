@@ -117,7 +117,7 @@ export function BrandingSidebar({
     return (
       <div className="w-64 border-r bg-card p-4 space-y-2">
         <Skeleton className="h-6 w-32 mb-4" />
-        {[...Array(9)].map((_, i) => (
+        {Array.from({ length: 9 }, (_, i) => i).map((i) => (
           <Skeleton key={i} className="h-8 w-full" />
         ))}
       </div>

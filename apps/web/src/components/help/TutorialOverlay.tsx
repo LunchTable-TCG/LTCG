@@ -150,6 +150,7 @@ export function TutorialOverlay({
         {/* Actions */}
         <div className="flex items-center justify-between">
           <button
+            type="button"
             onClick={handleSkip}
             className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-1"
           >
@@ -158,6 +159,7 @@ export function TutorialOverlay({
           </button>
 
           <button
+            type="button"
             onClick={handleGotIt}
             className={cn(
               "px-6 py-2 rounded-lg font-semibold transition-all",
@@ -219,12 +221,14 @@ export function TutorialResumePrompt({
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={onResume}
             className="flex-1 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-lg font-medium text-sm transition-colors"
           >
             Resume Tutorial
           </button>
           <button
+            type="button"
             onClick={onDismiss}
             className="px-4 py-2 text-slate-400 hover:text-white text-sm transition-colors"
           >

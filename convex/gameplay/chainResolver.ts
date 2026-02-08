@@ -12,6 +12,9 @@
  */
 
 import { v } from "convex/values";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
@@ -138,7 +141,8 @@ export async function addToChainHelper(
   // unless it has a different effect type (for cards with multiple effects)
   const cardAlreadyInChain = currentChain.some(
     (link) =>
-      link.cardId === args.cardId && link.effect.effects[0]?.type === args.effect.effects[0]?.type
+      link.cardId === args.cardId &&
+      JSON.stringify(link.effect.effects) === JSON.stringify(args.effect.effects)
   );
 
   if (cardAlreadyInChain) {
@@ -266,7 +270,30 @@ export async function addToChainHelper(
     gameState.turnNumber || 1
   );
 
-  // 10. Return chain state
+  // 10. Trigger chain_waiting webhooks (opponent now has priority to respond)
+  if (opponentId) {
+    await ctx.runMutation(internalAny.gameplay.webhooks.triggerWebhooks, {
+      event: "chain_waiting",
+      gameId: lobby.gameId ?? "",
+      lobbyId: args.lobbyId,
+      turnNumber: gameState.turnNumber,
+      playerId: opponentId,
+      additionalData: {
+        chainLength: updatedChain.length,
+        lastCardName: card?.name,
+        lastSpellSpeed: args.spellSpeed,
+      },
+    });
+  }
+
+  // 11. Schedule AI chain response if opponent is AI (story mode)
+  if (lobby.mode === "story" && opponentId === gameState.opponentId && lobby.gameId) {
+    await ctx.scheduler.runAfter(200, internalAny.gameplay.ai.aiTurn.executeAIChainResponse, {
+      gameId: lobby.gameId,
+    });
+  }
+
+  // 12. Return chain state
   return {
     success: true,
     chainLinkNumber: updatedChain.length,
@@ -588,6 +615,18 @@ export async function resolveChainHelper(
               ? currentState.hostSpellTrapZone
               : currentState.opponentSpellTrapZone;
 
+            // Check zone limit before placing equip spell
+            if (spellTrapZone.length >= 5) {
+              // Zone is full — equip spell goes to graveyard instead
+              const graveyard = isHost
+                ? currentState.hostGraveyard
+                : currentState.opponentGraveyard;
+              await ctx.db.patch(currentState._id, {
+                [isHost ? "hostGraveyard" : "opponentGraveyard"]: [...graveyard, chainLink.cardId],
+              });
+              continue;
+            }
+
             // Add equip spell to spell/trap zone
             const newSpellTrapZone = [
               ...spellTrapZone,
@@ -611,7 +650,23 @@ export async function resolveChainHelper(
             const hostMonsterIdx = hostBoard.findIndex((m) => m.cardId === equipTarget);
             const opponentMonsterIdx = opponentBoard.findIndex((m) => m.cardId === equipTarget);
 
-            if (hostMonsterIdx !== -1 && hostBoard[hostMonsterIdx]) {
+            // Find target monster and validate it can still be equipped
+            const foundOnHost = hostMonsterIdx !== -1 && hostBoard[hostMonsterIdx];
+            const foundOnOpponent = opponentMonsterIdx !== -1 && opponentBoard[opponentMonsterIdx];
+            const targetMonster = foundOnHost
+              ? hostBoard[hostMonsterIdx]
+              : foundOnOpponent
+                ? opponentBoard[opponentMonsterIdx]
+                : undefined;
+
+            // Re-validate target: face-down or protected monsters can't be equipped
+            const targetInvalid =
+              !targetMonster ||
+              targetMonster.isFaceDown ||
+              targetMonster.position === 0 ||
+              targetMonster.cannotBeTargeted;
+
+            if (foundOnHost && !targetInvalid) {
               const monster = hostBoard[hostMonsterIdx];
               const updatedMonster = {
                 ...monster,
@@ -622,7 +677,7 @@ export async function resolveChainHelper(
               await ctx.db.patch(currentState._id, {
                 hostBoard: updatedBoard,
               });
-            } else if (opponentMonsterIdx !== -1 && opponentBoard[opponentMonsterIdx]) {
+            } else if (foundOnOpponent && !targetInvalid) {
               const monster = opponentBoard[opponentMonsterIdx];
               const updatedMonster = {
                 ...monster,
@@ -632,6 +687,17 @@ export async function resolveChainHelper(
               updatedBoard[opponentMonsterIdx] = updatedMonster;
               await ctx.db.patch(currentState._id, {
                 opponentBoard: updatedBoard,
+              });
+            } else {
+              // Target no longer on field (destroyed during chain) — send equip to graveyard
+              const graveyard = isHost
+                ? currentState.hostGraveyard
+                : currentState.opponentGraveyard;
+              // Also remove the equip spell we just added to the spell/trap zone
+              const updatedZone = newSpellTrapZone.filter((st) => st.cardId !== chainLink.cardId);
+              await ctx.db.patch(currentState._id, {
+                [isHost ? "hostSpellTrapZone" : "opponentSpellTrapZone"]: updatedZone,
+                [isHost ? "hostGraveyard" : "opponentGraveyard"]: [...graveyard, chainLink.cardId],
               });
             }
           }
@@ -796,33 +862,49 @@ async function passPriorityHandler(
     });
   }
 
-  // 5. Pass priority to opponent
+  // 5. Validate caller has priority
+  if (gameState.currentPriorityPlayer !== user.userId) {
+    throw createError(ErrorCode.GAME_NOT_YOUR_TURN, {
+      reason: "You don't have chain priority",
+    });
+  }
+
   const opponentId = user.userId === gameState.hostId ? gameState.opponentId : gameState.hostId;
 
-  // Simplified priority system:
-  // If current priority player passes, give priority to opponent
-  // If opponent also passes, resolve chain
+  // 6. Determine if both players have now passed (chain should resolve)
+  //
+  // After a chain link is added, priority goes to the opponent of the adder.
+  // If the opponent passes → priority goes to the adder.
+  // If the adder ALSO passes → both have passed → resolve chain.
+  //
+  // Detection: if the passer is the player who added the last chain link,
+  // it means the opponent already passed (that's how priority returned to
+  // the adder), so both have now passed consecutively.
+  const lastChainLink = currentChain[currentChain.length - 1];
 
-  if (gameState.currentPriorityPlayer === user.userId) {
-    // This player passed, give priority to opponent
-    await ctx.db.patch(gameState._id, {
-      currentPriorityPlayer: opponentId,
+  if (lastChainLink && lastChainLink.playerId === user.userId) {
+    // I added the last chain link, opponent already passed (that's how
+    // priority came back to me), and now I'm also passing → resolve
+    await resolveChainHelper(ctx, {
+      lobbyId: args.lobbyId,
     });
 
     return {
       success: true,
-      priorityPassedTo: "opponent",
+      priorityPassedTo: "none",
+      chainResolved: true,
     };
   }
-  // Both players passed - resolve chain
-  await resolveChainHelper(ctx, {
-    lobbyId: args.lobbyId,
+
+  // First pass: opponent of the last chain link adder is declining to respond
+  // Give priority to the chain link adder so they can also pass (or add more)
+  await ctx.db.patch(gameState._id, {
+    currentPriorityPlayer: opponentId,
   });
 
   return {
     success: true,
-    priorityPassedTo: "none",
-    chainResolved: true,
+    priorityPassedTo: "opponent",
   };
 }
 

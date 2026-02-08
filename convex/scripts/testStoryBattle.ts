@@ -91,9 +91,10 @@ export const checkUserReadyForStory = query({
         result.issues.push("Active deck not found in database");
         result.ready = false;
       } else {
+        const { activeDeckId } = user;
         const deckCards = await ctx.db
           .query("deckCards")
-          .withIndex("by_deck", (q) => q.eq("deckId", user.activeDeckId!))
+          .withIndex("by_deck", (q) => q.eq("deckId", activeDeckId))
           .collect();
 
         const totalCards = deckCards.reduce((sum, dc) => sum + dc.quantity, 0);
@@ -219,10 +220,11 @@ export const testStoryBattleFlow = mutation({
         steps.push({ step: "3. Check deck cards", status: "fail", detail: "No active deck" });
         return { success: false, steps };
       }
+      const activeDeckId = updatedUser.activeDeckId;
 
       const deckCards = await ctx.db
         .query("deckCards")
-        .withIndex("by_deck", (q) => q.eq("deckId", updatedUser.activeDeckId!))
+        .withIndex("by_deck", (q) => q.eq("deckId", activeDeckId))
         .collect();
 
       const totalCards = deckCards.reduce((sum, dc) => sum + dc.quantity, 0);
@@ -389,7 +391,7 @@ export const testStoryBattleFlow = mutation({
         hostRank: "Unranked",
         hostRating: 1000,
         deckArchetype: "mixed",
-        opponentId: aiUser!._id,
+        opponentId: aiUser?._id,
         opponentUsername: `AI - ${chapter.title}`,
         mode: "story",
         status: "active",
@@ -411,9 +413,19 @@ export const testStoryBattleFlow = mutation({
       });
 
       // Step 10: Load player deck cards
+      const activeDeckIdForPlayer = updatedUser.activeDeckId;
+      if (!activeDeckIdForPlayer) {
+        steps.push({
+          step: "10. Load player deck",
+          status: "fail",
+          detail: "No active deck selected after lobby creation",
+        });
+        await ctx.db.delete(lobbyId);
+        return { success: false, steps, suggestion: "Select an active deck and retry" };
+      }
       const playerDeckCards = await ctx.db
         .query("deckCards")
-        .withIndex("by_deck", (q) => q.eq("deckId", updatedUser.activeDeckId!))
+        .withIndex("by_deck", (q) => q.eq("deckId", activeDeckIdForPlayer))
         .collect();
 
       const playerFullDeck: Id<"cardDefinitions">[] = [];
@@ -465,12 +477,18 @@ export const testStoryBattleFlow = mutation({
       const hostDeck = shuffledPlayerDeck.slice(5);
       const opponentDeck = shuffledAiDeck.slice(5);
 
+      if (!aiUser) {
+        steps.push({ step: "11. Create game state", status: "fail", detail: "AI user not found" });
+        await ctx.db.delete(lobbyId);
+        return { success: false, steps, suggestion: "AI user creation failed" };
+      }
+
       try {
         await ctx.db.insert("gameStates", {
           lobbyId,
           gameId,
           hostId: userId,
-          opponentId: aiUser!._id,
+          opponentId: aiUser._id,
           hostHand,
           opponentHand,
           hostBoard: [],

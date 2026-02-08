@@ -163,3 +163,26 @@ If using `@typescript-eslint/explicit-function-return-type`, configure it to all
 ## Additional Project Standards
 
 See `apps/web/CLAUDE.md` for Bun-specific tooling instructions.
+
+---
+
+## Engineering Memory Loop
+
+Use the project memory system in `docs/engineering` to continuously improve execution quality.
+
+### Required cadence for substantial tasks
+
+1. Review current memory before implementation:
+   - `bun run eng:review`
+2. Log at least one observation or decision after implementation:
+   - `bun run eng:log -- observation "<title>" "<details>"`
+   - `bun run eng:log -- decision "<title>" "<details>" "<impact>"`
+3. If anything went wrong, log a mistake with explicit prevention:
+   - `bun run eng:log -- mistake "<title>" "<what went wrong>" "<prevention rule>"`
+
+### Memory files
+
+- `docs/engineering/observations.md`
+- `docs/engineering/mistakes.md`
+- `docs/engineering/decisions.md`
+- `docs/engineering/action-queue.md`

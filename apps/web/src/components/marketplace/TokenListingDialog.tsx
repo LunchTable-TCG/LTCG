@@ -17,13 +17,12 @@ import type { Id } from "@convex/_generated/dataModel";
 import { AlertCircle, Check, Coins, Loader2, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import type { Rarity } from "@/types/cards";
 
 // Constants
 const TOKEN_DECIMALS = 6;
 const MIN_PRICE_TOKENS = 1; // Minimum 1 token
 const PLATFORM_FEE_PERCENT = 0.05; // 5%
-
-type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 
 const RARITY_COLORS: Record<Rarity, string> = {
   common: "text-gray-400",

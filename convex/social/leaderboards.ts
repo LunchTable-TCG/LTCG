@@ -25,7 +25,7 @@ import {
   rankedLeaderboardHumans,
   storyLeaderboard,
 } from "../infrastructure/aggregates";
-import { LEADERBOARD } from "../lib/constants";
+import { ELO_SYSTEM, LEADERBOARD } from "../lib/constants";
 import { requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { calculateWinRate } from "../lib/helpers";
@@ -162,6 +162,18 @@ export const getLeaderboard = query({
       aggregateItems.map((item) => item.id as Id<"users">)
     );
 
+    // Step 2b: Batch fetch playerXP for actual levels
+    const playerXPRecords = await Promise.all(
+      players.map((player) =>
+        player
+          ? ctx.db
+              .query("playerXP")
+              .withIndex("by_user", (q) => q.eq("userId", player._id))
+              .first()
+          : null
+      )
+    );
+
     // Step 3: Build results
     const results: Array<{
       userId: Id<"users">;
@@ -178,7 +190,10 @@ export const getLeaderboard = query({
       const player = players[i];
       if (!player) continue;
 
-      const rating = type === "ranked" ? player.rankedElo || 1000 : player.casualRating || 1000;
+      const rating =
+        type === "ranked"
+          ? player.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+          : player.casualRating || ELO_SYSTEM.DEFAULT_RATING;
       const wins = type === "ranked" ? player.rankedWins || 0 : player.casualWins || 0;
       const losses = type === "ranked" ? player.rankedLosses || 0 : player.casualLosses || 0;
 
@@ -187,7 +202,7 @@ export const getLeaderboard = query({
         username: player.username,
         rank: i + 1,
         rating,
-        level: 1, // Level not used for ranked/casual
+        level: playerXPRecords[i]?.currentLevel ?? 1,
         wins,
         losses,
         winRate: calculateWinRate(player, type),
@@ -298,7 +313,16 @@ export const getUserRank = query({
 
     const aggregate = type === "ranked" ? rankedLeaderboardHumans : casualLeaderboardHumans;
 
-    const userRating = type === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
+    const userRating =
+      type === "ranked"
+        ? user.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+        : user.casualRating || ELO_SYSTEM.DEFAULT_RATING;
+
+    // Fetch actual level from playerXP table
+    const userXP = await ctx.db
+      .query("playerXP")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
 
     // Use aggregate for O(log n) rank lookup
     // Pass the negative key (matching our sortKey) and namespace
@@ -311,7 +335,7 @@ export const getUserRank = query({
     return {
       rank,
       rating: userRating,
-      level: 1, // Level not used for ranked/casual
+      level: userXP?.currentLevel ?? 1,
       totalPlayers,
       percentile: totalPlayers > 0 ? Math.round((rank / totalPlayers) * 100) : 100,
     };
@@ -532,7 +556,10 @@ async function getLeaderboardRankings(
 
   // Format rankings
   return players.map((player, index) => {
-    const rating = type === "ranked" ? player.rankedElo || 1000 : player.casualRating || 1000;
+    const rating =
+      type === "ranked"
+        ? player.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+        : player.casualRating || ELO_SYSTEM.DEFAULT_RATING;
 
     const wins = type === "ranked" ? player.rankedWins || 0 : player.casualWins || 0;
 

@@ -7,8 +7,13 @@ import { type NextRequest, NextResponse } from "next/server";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { api } = require("@convex/_generated/api");
 
-// Initialize Convex HTTP client for server-side mutations
-const convex = new ConvexHttpClient(process.env["NEXT_PUBLIC_CONVEX_URL"]!);
+function createConvexClient() {
+  const convexUrl = process.env["NEXT_PUBLIC_CONVEX_URL"]?.trim();
+  if (!convexUrl) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+  }
+  return new ConvexHttpClient(convexUrl);
+}
 
 /**
  * POST /api/ai-chat
@@ -25,6 +30,8 @@ const convex = new ConvexHttpClient(process.env["NEXT_PUBLIC_CONVEX_URL"]!);
  */
 export async function POST(req: NextRequest) {
   try {
+    const convex = createConvexClient();
+
     // Parse request body
     const body = await req.json();
     const { message, sessionId, userId, authToken } = body;

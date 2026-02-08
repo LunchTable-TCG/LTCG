@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
 
 interface StreamNotification {
   id: string;
@@ -88,10 +88,7 @@ export function StreamNotificationsProvider({ children }: { children: ReactNode 
       value={{ notify, notifyStreamStarted, notifyStreamEnded, notifyStreamError }}
     >
       {children}
-      <StreamNotificationsDisplay
-        notifications={notifications}
-        onRemove={removeNotification}
-      />
+      <StreamNotificationsDisplay notifications={notifications} onRemove={removeNotification} />
     </StreamNotificationsContext.Provider>
   );
 }
@@ -170,7 +167,6 @@ function StreamNotificationToast({
         return "❌";
       case "warning":
         return "⚠️";
-      case "info":
       default:
         return "ℹ️";
     }
@@ -196,7 +192,6 @@ function StreamNotificationToast({
           border: "rgba(251, 191, 36, 0.4)",
           text: "#fcd34d",
         };
-      case "info":
       default:
         return {
           bg: "rgba(59, 130, 246, 0.1)",
@@ -215,7 +210,7 @@ function StreamNotificationToast({
         <div className="notification-title">{notification.title}</div>
         <div className="notification-message">{notification.message}</div>
       </div>
-      <button onClick={handleClose} className="notification-close">
+      <button type="button" onClick={handleClose} className="notification-close">
         ×
       </button>
       <style jsx>{`

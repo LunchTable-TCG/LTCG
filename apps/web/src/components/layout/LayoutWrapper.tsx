@@ -1,12 +1,19 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { NotificationToast } from "@/components/notifications/NotificationToast";
 import { Toaster } from "@/components/ui/toaster";
+import { usePathname } from "next/navigation";
 import { Footer } from "./Footer";
 import { Navbar, SidebarProvider } from "./Navbar";
 
-const FULL_SCREEN_ROUTES = ["/play/", "/game/", "/onboarding", "/login", "/signup", "/stream/overlay"];
+const FULL_SCREEN_ROUTES = [
+  "/play/",
+  "/game/",
+  "/onboarding",
+  "/login",
+  "/signup",
+  "/stream/overlay",
+];
 // Dashboard/app routes should not show the footer
 const NO_FOOTER_ROUTES = ["/lunchtable", "/binder", "/profile", "/quests", "/decks", "/shop"];
 

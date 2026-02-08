@@ -2,6 +2,7 @@
 
 import { useGameLobby, useMatchmaking, useSpectator } from "@/hooks";
 import { logError } from "@/lib/errorHandling";
+import type { MatchMode } from "@/types/common";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { Element } from "@/types/cards";
 import { CreateGameModal } from "./CreateGameModal";
 import { JoinConfirmDialog } from "./JoinConfirmDialog";
 
@@ -46,8 +48,8 @@ interface GameLobbyEntry {
   hostName: string;
   hostRank: string;
   hostAvatar?: string;
-  deckArchetype: "fire" | "water" | "earth" | "wind";
-  mode: "casual" | "ranked";
+  deckArchetype: Element;
+  mode: MatchMode;
   createdAt: number;
   status: GameStatus;
   opponentName?: string;
@@ -107,7 +109,7 @@ export function GameLobby() {
   const [modeFilter, setModeFilter] = useState<GameMode>("all");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [joiningGame, setJoiningGame] = useState<GameLobbyEntry | null>(null);
-  const [quickMatchMode, setQuickMatchMode] = useState<"casual" | "ranked">("casual");
+  const [quickMatchMode, setQuickMatchMode] = useState<MatchMode>("casual");
 
   // Use custom hooks
   const {
@@ -134,7 +136,7 @@ export function GameLobby() {
         hostName: lobby.hostUsername,
         hostRank: lobby.hostRank,
         deckArchetype: lobby.deckArchetype as "fire" | "water" | "earth" | "wind",
-        mode: lobby.mode as "casual" | "ranked",
+        mode: lobby.mode as MatchMode,
         createdAt: lobby.createdAt,
         status: "waiting" as const,
       })) || [];
@@ -156,7 +158,7 @@ export function GameLobby() {
       hostName: game.hostUsername,
       hostRank: "Bronze", // Rank not included in query, using default
       deckArchetype: game.deckArchetype as "fire" | "water" | "earth" | "wind",
-      mode: game.mode as "casual" | "ranked",
+      mode: game.mode as MatchMode,
       createdAt: game.startedAt || 0,
       status: "active" as const,
       opponentName: game.opponentUsername,
@@ -165,7 +167,7 @@ export function GameLobby() {
     })) || [];
 
   const handleCreateGame = async (data: {
-    mode: "casual" | "ranked";
+    mode: MatchMode;
     isPrivate?: boolean;
     allowSpectators?: boolean;
   }) => {

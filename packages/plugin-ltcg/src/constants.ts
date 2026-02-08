@@ -59,9 +59,11 @@ export const API_ENDPOINTS = {
 
   // Matchmaking
   MATCHMAKING_ENTER: "/api/agents/matchmaking/enter",
+  MATCHMAKING_WAGER_ENTER: "/api/agents/matchmaking/wager-enter",
   MATCHMAKING_LOBBIES: "/api/agents/matchmaking/lobbies",
   MATCHMAKING_JOIN: "/api/agents/matchmaking/join",
   MATCHMAKING_LEAVE: "/api/agents/matchmaking/leave",
+  MATCHMAKING_HEARTBEAT: "/api/agents/matchmaking/heartbeat",
 
   // Story Mode (Instant AI Battles)
   STORY_CHAPTERS: "/api/agents/story/chapters",

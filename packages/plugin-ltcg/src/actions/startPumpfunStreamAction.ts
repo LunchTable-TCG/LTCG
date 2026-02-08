@@ -5,24 +5,20 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
 import { logger } from "../utils/logger";
+import { resolveStreamingCredentials, startStreamFromBackend } from "../utils/streamingConfig";
 
 /**
  * Start streaming to Pump.fun
  *
  * This action initiates a live stream to Pump.fun via RTMP.
- * Users must manually configure RTMP credentials from their Pump.fun coin page.
+ * Users must manually configure RTMP credentials from their Pump.fun coin page,
+ * either in the web UI (AgentStreamingSettingsPanel) or via env/character secrets.
  *
- * Prerequisites:
- * - PUMPFUN_RTMP_URL must be set in environment/secrets
- * - PUMPFUN_STREAM_KEY must be set
- * - Must be the token creator on Pump.fun
- * - Wallet-based auth (Solana)
- *
- * Flow:
- * 1. Validate Pump.fun RTMP credentials
- * 2. Call LTCG streaming API with custom RTMP URL
- * 3. Return stream status to user
+ * Credential resolution order:
+ * 1. Backend (UI-configured settings saved to agents table)
+ * 2. Character secrets / environment variables (PUMPFUN_RTMP_URL, PUMPFUN_STREAM_KEY)
  */
 export const startPumpfunStreamAction: Action = {
   name: "START_PUMPFUN_STREAM",
@@ -37,7 +33,7 @@ export const startPumpfunStreamAction: Action = {
   ],
 
   validate: async (runtime: IAgentRuntime, message: Memory) => {
-    const text = message.content.text.toLowerCase();
+    const text = (message.content.text ?? "").toLowerCase();
 
     const streamKeywords = ["stream", "go live", "broadcast"];
     const platformKeywords = ["pump", "pumpfun", "pump.fun"];
@@ -49,13 +45,17 @@ export const startPumpfunStreamAction: Action = {
       return false;
     }
 
-    const rtmpUrl =
-      runtime.getSetting("PUMPFUN_RTMP_URL") || process.env.PUMPFUN_RTMP_URL;
-    const streamKey =
-      runtime.getSetting("PUMPFUN_STREAM_KEY") || process.env.PUMPFUN_STREAM_KEY;
+    // Check backend config first, then env
+    const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+    const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
+    let apiClient: LTCGApiClient | null = null;
+    if (apiKey && apiUrl) {
+      apiClient = new LTCGApiClient({ apiKey, baseUrl: apiUrl });
+    }
 
-    if (!rtmpUrl || !streamKey) {
-      logger.warn("Pump.fun streaming credentials not configured");
+    const config = await resolveStreamingCredentials(runtime, apiClient, "pumpfun");
+    if (!config) {
+      logger.warn("Pump.fun streaming credentials not configured (checked backend + env)");
       return false;
     }
 
@@ -70,53 +70,65 @@ export const startPumpfunStreamAction: Action = {
     callback: HandlerCallback
   ) => {
     try {
-      const rtmpUrl =
-        runtime.getSetting("PUMPFUN_RTMP_URL") || process.env.PUMPFUN_RTMP_URL;
-      const streamKey =
-        runtime.getSetting("PUMPFUN_STREAM_KEY") || process.env.PUMPFUN_STREAM_KEY;
+      const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
+      let apiClient: LTCGApiClient | null = null;
+      if (apiKey && apiUrl) {
+        apiClient = new LTCGApiClient({ apiKey, baseUrl: apiUrl });
+      }
 
-      if (!rtmpUrl || !streamKey) {
+      const config = await resolveStreamingCredentials(runtime, apiClient, "pumpfun");
+      if (!config) {
         await callback({
-          text: "Pump.fun streaming credentials not configured. I need PUMPFUN_RTMP_URL and PUMPFUN_STREAM_KEY from your coin page > Start Livestream > RTMP.",
+          text: "Pump.fun streaming credentials not configured. Set them in the agent streaming settings UI, or add PUMPFUN_RTMP_URL and PUMPFUN_STREAM_KEY to your character secrets.",
           error: true,
         });
         return { success: false, error: "Missing Pump.fun credentials" };
       }
 
-      logger.info("Starting Pump.fun stream...");
+      logger.info(`Starting Pump.fun stream (source: ${config.source})...`);
 
-      const ltcgStreamingUrl =
-        process.env.LTCG_STREAMING_API_URL ||
-        process.env.LTCG_APP_URL ||
-        process.env.LTCG_API_URL ||
-        "https://www.lunchtable.cards";
-      const ltcgApiKey = process.env.LTCG_API_KEY;
-      const ltcgAgentId =
-        runtime.getSetting("LTCG_AGENT_ID") || process.env.LTCG_AGENT_ID;
+      let streamData: { sessionId?: string };
 
-      const response = await fetch(`${ltcgStreamingUrl}/api/streaming/start`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${ltcgApiKey}`,
-        },
-        body: JSON.stringify({
-          agentId: ltcgAgentId,
-          streamType: "agent",
-          platform: "pumpfun",
-          customRtmpUrl: rtmpUrl,
-          streamKey,
-          streamTitle: `${runtime.character.name} plays LTCG`,
-        }),
-      });
+      if (config.source === "backend" && apiClient) {
+        // Use stored credentials — server decrypts key
+        streamData = await startStreamFromBackend(apiClient, runtime, "pumpfun");
+      } else {
+        // Use env credentials — send plaintext key to server
+        const ltcgStreamingUrl =
+          process.env.LTCG_STREAMING_API_URL ||
+          process.env.LTCG_APP_URL ||
+          process.env.LTCG_API_URL ||
+          "https://www.lunchtable.cards";
+        const ltcgApiKey = process.env.LTCG_API_KEY;
+        const ltcgAgentId =
+          runtime.getSetting("LTCG_AGENT_ID") || process.env.LTCG_AGENT_ID;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`LTCG streaming API error: ${errorText}`);
+        const response = await fetch(`${ltcgStreamingUrl}/api/streaming/start`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${ltcgApiKey}`,
+          },
+          body: JSON.stringify({
+            agentId: ltcgAgentId,
+            streamType: "agent",
+            platform: "pumpfun",
+            customRtmpUrl: config.customRtmpUrl,
+            streamKey: config.streamKey,
+            streamTitle: `${runtime.character.name} plays LTCG`,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`LTCG streaming API error: ${errorText}`);
+        }
+
+        streamData = await response.json();
       }
 
-      const streamData = await response.json();
-      logger.info("Pump.fun stream started", { sessionId: streamData.sessionId });
+      logger.info(`Pump.fun stream started (sessionId: ${streamData.sessionId})`);
 
       await callback({
         text: `Stream is LIVE on Pump.fun!
@@ -139,7 +151,7 @@ Ready to play!`,
       await callback({
         text: `Failed to start Pump.fun stream: ${error instanceof Error ? error.message : "Unknown error"}
 
-Make sure PUMPFUN_RTMP_URL and PUMPFUN_STREAM_KEY are configured from your coin page.`,
+Configure credentials in the agent streaming settings UI, or set PUMPFUN_RTMP_URL and PUMPFUN_STREAM_KEY.`,
         error: true,
       });
 

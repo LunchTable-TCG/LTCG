@@ -41,25 +41,6 @@ export function getCardAbility(
 }
 
 /**
- * Check if card has an ability defined
- *
- * @param card - The card definition document
- * @returns true if the card has an ability defined
- *
- * @example
- * ```typescript
- * const card = await ctx.db.get(cardId);
- * if (hasAbility(card)) {
- *   // Card has an ability to process
- * }
- * ```
- */
-export function hasAbility(card: Doc<"cardDefinitions"> | null | undefined): boolean {
-  if (!card) return false;
-  return !!card.ability;
-}
-
-/**
  * Get the raw JSON ability from a card, if it exists
  *
  * @param card - The card definition document or a card-like object with ability

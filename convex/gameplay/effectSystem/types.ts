@@ -66,6 +66,8 @@ export type TriggerCondition =
   | "on_summon" // When this card is summoned
   | "on_opponent_summon" // When opponent summons a monster
   | "on_destroy" // When this card is destroyed
+  | "on_destroy_by_battle" // When destroyed by battle specifically
+  | "on_destroy_by_effect" // When destroyed by card effect specifically
   | "on_flip" // When this card is flipped
   | "on_battle_damage" // When this card inflicts battle damage
   | "on_battle_destroy" // When this card destroys a monster by battle
@@ -398,6 +400,7 @@ export interface ParsedEffect {
   // Optional vs Mandatory trigger distinction
   isOptional?: boolean; // Player can choose to activate (optional trigger)
   isMandatory?: boolean; // Must activate if conditions met (default for triggers)
+  canMissTiming?: boolean; // Optional "when" effects that miss timing if not the last thing to happen
   // Cost field for effects that require payment
   cost?: {
     type: "discard" | "pay_lp" | "tribute" | "banish";

@@ -10,13 +10,13 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import { internalAction, internalQuery } from "../_generated/server";
 import { internalMutation } from "../functions";
 import { tokenBalanceCache } from "../infrastructure/actionCaches";
 
-// @ts-ignore TS2589 workaround for deep type instantiation
-const internalAny: any = internal;
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 
 // ============================================================================
 // INTERNAL MUTATIONS (called by crons)

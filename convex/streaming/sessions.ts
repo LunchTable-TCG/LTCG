@@ -1,32 +1,179 @@
 import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
-import type { Doc } from "../_generated/dataModel";
-import { internalMutation, mutation, query } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
+import {
+  type MutationCtx,
+  type QueryCtx,
+  internalMutation,
+  mutation,
+  query,
+} from "../_generated/server";
+import { getCurrentUser, requireAuthMutation } from "../lib/convexAuth";
+import { streamingPlatformValidator } from "../lib/streamingPlatforms";
 
-// Overlay config validator (reused across functions)
+// Overlay config validator (reused across functions).
+// Keep in sync with OverlayConfig in apps/web/src/lib/streaming/types.ts.
 const overlayConfigValidator = v.object({
   showDecisions: v.boolean(),
   showAgentInfo: v.boolean(),
   showEventFeed: v.boolean(),
   showPlayerCam: v.boolean(),
+  webcamPosition: literals("top-left", "top-right", "bottom-left", "bottom-right"),
+  webcamSize: literals("small", "medium", "large"),
+  playerVisualMode: v.optional(literals("webcam", "profile-picture")),
+  profilePictureUrl: v.optional(v.string()),
+  matchOverHoldMs: v.number(),
+  showSceneLabel: v.boolean(),
+  sceneTransitions: v.boolean(),
+  voiceTrackUrl: v.optional(v.string()),
+  voiceVolume: v.optional(v.number()),
+  voiceLoop: v.optional(v.boolean()),
   theme: literals("dark", "light"),
 });
 
+type StreamWriteAccess = { kind: "internal" } | { kind: "user"; userId: Id<"users"> };
+
+function hasValidInternalAuth(internalAuth?: string): boolean {
+  const expectedSecret = process.env["INTERNAL_API_SECRET"]?.trim();
+  const providedSecret = internalAuth?.trim();
+  if (!expectedSecret || !providedSecret) {
+    return false;
+  }
+  return providedSecret === expectedSecret;
+}
+
+async function resolveWriteAccess(
+  ctx: MutationCtx,
+  internalAuth?: string
+): Promise<StreamWriteAccess> {
+  if (hasValidInternalAuth(internalAuth)) {
+    return { kind: "internal" };
+  }
+
+  const auth = await requireAuthMutation(ctx);
+  return { kind: "user", userId: auth.userId };
+}
+
+async function assertSessionWriteAccess(
+  ctx: MutationCtx,
+  sessionId: Id<"streamingSessions">,
+  access: StreamWriteAccess
+) {
+  const session = await ctx.db.get(sessionId);
+  if (!session) {
+    throw new Error("Session not found");
+  }
+
+  if (access.kind === "user") {
+    if (!session.userId || session.userId !== access.userId) {
+      throw new Error("Unauthorized");
+    }
+  }
+
+  return session;
+}
+
+async function assertSessionReadAccess(
+  ctx: QueryCtx,
+  sessionId: Id<"streamingSessions">,
+  internalAuth?: string
+) {
+  const session = await ctx.db.get(sessionId);
+  if (!session) {
+    return null;
+  }
+
+  if (hasValidInternalAuth(internalAuth)) {
+    return session;
+  }
+
+  const auth = await getCurrentUser(ctx);
+  if (!auth || !session.userId || session.userId !== auth.userId) {
+    throw new Error("Unauthorized");
+  }
+
+  return session;
+}
+
+async function enrichSessionEntity(ctx: QueryCtx | MutationCtx, session: Doc<"streamingSessions">) {
+  let entityName = "";
+  let entityAvatar = "";
+
+  if (session.agentId) {
+    const agent = await ctx.db.get(session.agentId);
+    entityName = agent?.name || "Unknown Agent";
+    entityAvatar = agent?.profilePictureUrl || "";
+  } else if (session.userId) {
+    const user = await ctx.db.get(session.userId);
+    entityName = user?.username || user?.name || "Unknown User";
+    entityAvatar = user?.image || "";
+  }
+
+  return { entityName, entityAvatar };
+}
+
+async function toPublicSession(ctx: QueryCtx, session: Doc<"streamingSessions">) {
+  const { entityName, entityAvatar } = await enrichSessionEntity(ctx, session);
+  return {
+    _id: session._id,
+    streamType: session.streamType,
+    userId: session.userId,
+    agentId: session.agentId,
+    platform: session.platform,
+    streamTitle: session.streamTitle,
+    status: session.status,
+    overlayConfig: session.overlayConfig,
+    currentLobbyId: session.currentLobbyId,
+    lastMatchEndedAt: session.lastMatchEndedAt,
+    lastMatchResult: session.lastMatchResult,
+    lastMatchReason: session.lastMatchReason,
+    lastMatchSummary: session.lastMatchSummary,
+    viewerCount: session.viewerCount,
+    peakViewerCount: session.peakViewerCount,
+    startedAt: session.startedAt,
+    endedAt: session.endedAt,
+    createdAt: session.createdAt,
+    errorMessage: session.errorMessage,
+    stats: session.stats,
+    entityName,
+    entityAvatar,
+  };
+}
+
 /**
- * Create a new streaming session (supports retake, x, pumpfun platforms)
+ * Create a new streaming session (supports twitch/youtube/kick and custom RTMP providers)
  */
 export const createSession = mutation({
   args: {
     streamType: literals("user", "agent"),
     userId: v.optional(v.id("users")),
     agentId: v.optional(v.id("agents")),
-    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
+    platform: streamingPlatformValidator,
     streamTitle: v.string(),
     overlayConfig: overlayConfigValidator,
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const access = await resolveWriteAccess(ctx, args.internalAuth);
+
+    if (args.streamType === "agent" && access.kind !== "internal") {
+      throw new Error("Unauthorized");
+    }
+
+    let resolvedUserId = args.userId;
+    if (args.streamType === "user") {
+      if (access.kind === "user") {
+        if (resolvedUserId && resolvedUserId !== access.userId) {
+          throw new Error("Unauthorized");
+        }
+        resolvedUserId = access.userId;
+      } else if (!resolvedUserId) {
+        throw new Error("userId required for user streams");
+      }
+    }
+
     // Validate that we have the right identity for the stream type
-    if (args.streamType === "user" && !args.userId) {
+    if (args.streamType === "user" && !resolvedUserId) {
       throw new Error("userId required for user streams");
     }
     // Note: agentId is optional for external agents (e.g., ElizaOS agents)
@@ -34,10 +181,10 @@ export const createSession = mutation({
 
     // Check for any active, pending, or initializing sessions
     let activeSessions: Doc<"streamingSessions">[] = [];
-    if (args.streamType === "user" && args.userId) {
+    if (args.streamType === "user" && resolvedUserId) {
       const existingQuery = ctx.db
         .query("streamingSessions")
-        .withIndex("by_user_status", (q) => q.eq("userId", args.userId!));
+        .withIndex("by_user_status", (q) => q.eq("userId", resolvedUserId));
 
       activeSessions = await existingQuery
         .filter((q) =>
@@ -49,9 +196,10 @@ export const createSession = mutation({
         )
         .collect();
     } else if (args.streamType === "agent" && args.agentId) {
+      const { agentId } = args;
       const existingQuery = ctx.db
         .query("streamingSessions")
-        .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId!));
+        .withIndex("by_agent_status", (q) => q.eq("agentId", agentId));
 
       activeSessions = await existingQuery
         .filter((q) =>
@@ -66,14 +214,14 @@ export const createSession = mutation({
 
     if (activeSessions.length > 0) {
       throw new Error(
-        `Already has an active streaming session (status: ${activeSessions[0]!.status})`
+        `Already has an active streaming session (status: ${activeSessions[0]?.status})`
       );
     }
 
     // Create the session
     const sessionId = await ctx.db.insert("streamingSessions", {
       streamType: args.streamType,
-      userId: args.userId,
+      userId: resolvedUserId,
       agentId: args.agentId,
       platform: args.platform,
       streamTitle: args.streamTitle,
@@ -92,6 +240,7 @@ export const createSession = mutation({
 export const updateSession = mutation({
   args: {
     sessionId: v.id("streamingSessions"),
+    internalAuth: v.optional(v.string()),
     updates: v.object({
       status: v.optional(literals("initializing", "pending", "live", "ended", "error")),
       egressId: v.optional(v.string()),
@@ -104,13 +253,15 @@ export const updateSession = mutation({
       endedAt: v.optional(v.number()),
       endReason: v.optional(v.string()),
       errorMessage: v.optional(v.string()),
+      lastMatchEndedAt: v.optional(v.number()),
+      lastMatchResult: v.optional(literals("win", "loss", "draw", "unknown")),
+      lastMatchReason: v.optional(v.string()),
+      lastMatchSummary: v.optional(v.string()),
     }),
   },
   handler: async (ctx, args) => {
-    const session = await ctx.db.get(args.sessionId);
-    if (!session) {
-      throw new Error("Session not found");
-    }
+    const access = await resolveWriteAccess(ctx, args.internalAuth);
+    const session = await assertSessionWriteAccess(ctx, args.sessionId, access);
 
     // Track peak viewers - auto-update if viewerCount is provided
     const updates = { ...args.updates };
@@ -130,12 +281,11 @@ export const endSession = mutation({
   args: {
     sessionId: v.id("streamingSessions"),
     reason: v.optional(v.string()),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const session = await ctx.db.get(args.sessionId);
-    if (!session) {
-      throw new Error("Session not found");
-    }
+    const access = await resolveWriteAccess(ctx, args.internalAuth);
+    const session = await assertSessionWriteAccess(ctx, args.sessionId, access);
 
     const duration = Date.now() - session.createdAt;
 
@@ -169,26 +319,29 @@ export const endSession = mutation({
  * Get a streaming session with enriched entity info
  */
 export const getSession = query({
+  args: {
+    sessionId: v.id("streamingSessions"),
+    internalAuth: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const session = await assertSessionReadAccess(ctx, args.sessionId, args.internalAuth);
+    if (!session) {
+      return null;
+    }
+    const { entityName, entityAvatar } = await enrichSessionEntity(ctx, session);
+    return { ...session, entityName, entityAvatar };
+  },
+});
+
+/**
+ * Public-safe session view for overlays/spectators/status pages.
+ */
+export const getSessionPublic = query({
   args: { sessionId: v.id("streamingSessions") },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
     if (!session) return null;
-
-    // Enrich with entity info
-    let entityName = "";
-    let entityAvatar = "";
-
-    if (session.agentId) {
-      const agent = await ctx.db.get(session.agentId);
-      entityName = agent?.name || "Unknown Agent";
-      entityAvatar = agent?.profilePictureUrl || "";
-    } else if (session.userId) {
-      const user = await ctx.db.get(session.userId);
-      entityName = user?.username || user?.name || "Unknown User";
-      entityAvatar = user?.image || "";
-    }
-
-    return { ...session, entityName, entityAvatar };
+    return await toPublicSession(ctx, session);
   },
 });
 
@@ -196,8 +349,15 @@ export const getSession = query({
  * Get session by egress ID (for webhooks)
  */
 export const getByEgressId = query({
-  args: { egressId: v.string() },
+  args: {
+    egressId: v.string(),
+    internalAuth: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    if (!hasValidInternalAuth(args.internalAuth)) {
+      throw new Error("Unauthorized");
+    }
+
     return await ctx.db
       .query("streamingSessions")
       .withIndex("by_egress", (q) => q.eq("egressId", args.egressId))
@@ -209,27 +369,27 @@ export const getByEgressId = query({
  * Get all currently active streaming sessions
  */
 export const getActiveSessions = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    internalAuth: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
     const sessions = await ctx.db
       .query("streamingSessions")
       .withIndex("by_status", (q) => q.eq("status", "live"))
       .collect();
 
-    // Enrich with entity names
-    return Promise.all(
-      sessions.map(async (session) => {
-        let entityName = "";
-        if (session.agentId) {
-          const agent = await ctx.db.get(session.agentId);
-          entityName = agent?.name || "Unknown Agent";
-        } else if (session.userId) {
-          const user = await ctx.db.get(session.userId);
-          entityName = user?.username || user?.name || "Unknown User";
-        }
-        return { ...session, entityName };
-      })
-    );
+    // Internal callers get full docs (e.g., cleanup route needs egressId)
+    if (hasValidInternalAuth(args.internalAuth)) {
+      return Promise.all(
+        sessions.map(async (session) => {
+          const { entityName } = await enrichSessionEntity(ctx, session);
+          return { ...session, entityName };
+        })
+      );
+    }
+
+    // Public callers get safe projection only
+    return Promise.all(sessions.map((session) => toPublicSession(ctx, session)));
   },
 });
 
@@ -242,11 +402,12 @@ export const getAgentSessions = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const sessions = await ctx.db
       .query("streamingSessions")
       .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))
       .order("desc")
       .take(args.limit || 10);
+    return Promise.all(sessions.map((s) => toPublicSession(ctx, s)));
   },
 });
 
@@ -259,11 +420,12 @@ export const getUserSessions = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const sessions = await ctx.db
       .query("streamingSessions")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(args.limit || 10);
+    return Promise.all(sessions.map((s) => toPublicSession(ctx, s)));
   },
 });
 
@@ -273,8 +435,13 @@ export const getUserSessions = query({
 export const getAllSessions = query({
   args: {
     limit: v.optional(v.number()),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (!hasValidInternalAuth(args.internalAuth)) {
+      throw new Error("Unauthorized");
+    }
+
     return await ctx.db
       .query("streamingSessions")
       .order("desc")
@@ -295,11 +462,28 @@ export const linkLobby = mutation({
   args: {
     sessionId: v.id("streamingSessions"),
     lobbyId: v.union(v.id("gameLobbies"), v.string()),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const access = await resolveWriteAccess(ctx, args.internalAuth);
+    await assertSessionWriteAccess(ctx, args.sessionId, access);
+
     await ctx.db.patch(args.sessionId, {
       currentLobbyId: args.lobbyId,
     });
+    // Make the lobby spectatable when linked to a stream
+    const lobbyDocId = args.lobbyId as Id<"gameLobbies">;
+    try {
+      const lobby = await ctx.db.get(lobbyDocId);
+      if (lobby) {
+        await ctx.db.patch(lobbyDocId, {
+          isPrivate: false,
+          allowSpectators: true,
+        });
+      }
+    } catch {
+      // lobbyId may be a string game ID, not a document ID
+    }
   },
 });
 
@@ -316,6 +500,19 @@ export const linkLobbyInternal = internalMutation({
     await ctx.db.patch(args.sessionId, {
       currentLobbyId: args.lobbyId,
     });
+    // Make the lobby spectatable when linked to a stream
+    const lobbyDocId = args.lobbyId as Id<"gameLobbies">;
+    try {
+      const lobby = await ctx.db.get(lobbyDocId);
+      if (lobby) {
+        await ctx.db.patch(lobbyDocId, {
+          isPrivate: false,
+          allowSpectators: true,
+        });
+      }
+    } catch {
+      // lobbyId may be a string game ID, not a document ID
+    }
   },
 });
 
@@ -328,13 +525,11 @@ export const createOverlayAccess = mutation({
     sessionId: v.id("streamingSessions"),
     accessCode: v.string(),
     expiresAt: v.number(),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Verify session exists
-    const session = await ctx.db.get(args.sessionId);
-    if (!session) {
-      throw new Error("Session not found");
-    }
+    const access = await resolveWriteAccess(ctx, args.internalAuth);
+    await assertSessionWriteAccess(ctx, args.sessionId, access);
 
     // Create access code entry
     await ctx.db.insert("overlayAccessCodes", {
@@ -360,9 +555,7 @@ export const validateOverlayAccess = mutation({
     // Find access code
     const access = await ctx.db
       .query("overlayAccessCodes")
-      .withIndex("by_session_code", (q) =>
-        q.eq("sessionId", args.sessionId).eq("code", args.code)
-      )
+      .withIndex("by_session_code", (q) => q.eq("sessionId", args.sessionId).eq("code", args.code))
       .first();
 
     // Validate access code
@@ -405,10 +598,7 @@ export const cleanupStaleSessions = internalMutation({
     const stalePending = await ctx.db
       .query("streamingSessions")
       .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "initializing"),
-          q.eq(q.field("status"), "pending")
-        )
+        q.or(q.eq(q.field("status"), "initializing"), q.eq(q.field("status"), "pending"))
       )
       .collect();
 
@@ -481,23 +671,25 @@ export const cleanupStaleSessions = internalMutation({
 export const addDestination = mutation({
   args: {
     sessionId: v.id("streamingSessions"),
-    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
+    platform: streamingPlatformValidator,
     rtmpUrl: v.string(),
     streamKeyHash: v.string(),
+    status: v.optional(literals("active", "failed", "removed")),
+    errorMessage: v.optional(v.string()),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const session = await ctx.db.get(args.sessionId);
-    if (!session) {
-      throw new Error("Session not found");
-    }
+    const access = await resolveWriteAccess(ctx, args.internalAuth);
+    await assertSessionWriteAccess(ctx, args.sessionId, access);
 
     return await ctx.db.insert("streamingDestinations", {
       sessionId: args.sessionId,
       platform: args.platform,
       rtmpUrl: args.rtmpUrl,
       streamKeyHash: args.streamKeyHash,
-      status: "active",
+      status: args.status ?? "active",
       addedAt: Date.now(),
+      errorMessage: args.errorMessage,
     });
   },
 });
@@ -508,9 +700,13 @@ export const addDestination = mutation({
 export const removeDestination = mutation({
   args: {
     sessionId: v.id("streamingSessions"),
-    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
+    platform: streamingPlatformValidator,
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const access = await resolveWriteAccess(ctx, args.internalAuth);
+    await assertSessionWriteAccess(ctx, args.sessionId, access);
+
     const dest = await ctx.db
       .query("streamingDestinations")
       .withIndex("by_session_status", (q) =>
@@ -531,18 +727,22 @@ export const removeDestination = mutation({
 });
 
 /**
- * Get all active destinations for a session
+ * Get all destinations for a session (active, failed, removed)
  */
 export const getSessionDestinations = query({
   args: {
     sessionId: v.id("streamingSessions"),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const session = await assertSessionReadAccess(ctx, args.sessionId, args.internalAuth);
+    if (!session) {
+      throw new Error("Session not found");
+    }
+
     return await ctx.db
       .query("streamingDestinations")
-      .withIndex("by_session_status", (q) =>
-        q.eq("sessionId", args.sessionId).eq("status", "active")
-      )
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
       .collect();
   },
 });

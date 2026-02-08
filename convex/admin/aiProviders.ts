@@ -1,4 +1,3 @@
-// @ts-nocheck - ActionRetrier circular type issues - TODO: Add explicit return types
 /**
  * AI Provider Management
  *
@@ -7,7 +6,9 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internal = (generatedApi as any).internal;
 import { action, internalAction, query } from "../_generated/server";
 import { mutation } from "../functions";
 import { RetryConfig, actionRetrier } from "../infrastructure/actionRetrier";
@@ -505,7 +506,7 @@ export const fetchAllModels = action({
   args: {
     type: v.optional(v.union(v.literal("language"), v.literal("embedding"), v.literal("image"))),
   },
-  handler: async (_ctx, args): Promise<{ success: boolean; models: NormalizedModel[] }> => {
+  handler: async (_ctx, args) => {
     // Note: This function is simplified to avoid circular type references
     // In production, you would implement the actual model fetching logic here
     const openrouterResult: FetchModelsResult = {

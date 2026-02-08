@@ -143,7 +143,6 @@ export default function TreasuryWalletsPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   // Fetch wallets
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const wallets = useConvexQuery(typedApi.treasury.wallets.listWallets, {}) as
     | TreasuryWallet[]
     | undefined;

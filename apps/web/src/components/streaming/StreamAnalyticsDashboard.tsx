@@ -1,6 +1,6 @@
 "use client";
 
-import { useUserStreams, useAgentStreams } from "@/hooks/useStreaming";
+import { useAgentStreams, useUserStreams } from "@/hooks/useStreaming";
 
 interface StreamAnalyticsDashboardProps {
   userId?: string;
@@ -133,9 +133,7 @@ export function StreamAnalyticsDashboard({
                     <span className="stat-chip">👁️ {session.peakViewerCount} peak</span>
                   )}
                   {agentId && session.stats?.decisionsLogged && (
-                    <span className="stat-chip">
-                      🧠 {session.stats.decisionsLogged} decisions
-                    </span>
+                    <span className="stat-chip">🧠 {session.stats.decisionsLogged} decisions</span>
                   )}
                 </div>
                 {session.errorMessage && (

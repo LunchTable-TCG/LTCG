@@ -20,16 +20,18 @@ export const list = query({
 
     // Build query based on filters
     if (args.category && args.activeOnly !== false) {
+      const { category } = args;
       return await ctx.db
         .query("emailTemplates")
-        .withIndex("by_category", (q) => q.eq("category", args.category!).eq("isActive", true))
+        .withIndex("by_category", (q) => q.eq("category", category).eq("isActive", true))
         .collect();
     }
 
     if (args.category) {
+      const { category } = args;
       return await ctx.db
         .query("emailTemplates")
-        .withIndex("by_category", (q) => q.eq("category", args.category!))
+        .withIndex("by_category", (q) => q.eq("category", category))
         .collect();
     }
 
@@ -123,12 +125,13 @@ export const extractVariables = query({
   handler: async (_ctx, args) => {
     const regex = /\{\{(\w+)\}\}/g;
     const variables: string[] = [];
-    let match: RegExpExecArray | null;
-    while ((match = regex.exec(args.body)) !== null) {
+    let match = regex.exec(args.body);
+    while (match !== null) {
       const variable = match[1];
       if (variable && !variables.includes(variable)) {
         variables.push(variable);
       }
+      match = regex.exec(args.body);
     }
     return variables;
   },

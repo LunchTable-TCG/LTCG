@@ -20,96 +20,6 @@ import { ErrorCode, createError } from "./errorCodes";
 // Deck validation constants - keep in sync with convex/core/decks.ts
 const MIN_DECK_SIZE = 30;
 const MAX_DECK_SIZE = 60;
-const MAX_COPIES_PER_CARD = 3;
-const MAX_LEGENDARY_COPIES = 1;
-
-/**
- * Deck validation result
- */
-export interface DeckValidationResult {
-  valid: boolean;
-  errors: string[];
-}
-
-/**
- * Card definition info needed for validation
- */
-export interface CardDefInfo {
-  id: Id<"cardDefinitions">;
-  name: string;
-  rarity: string;
-}
-
-/**
- * Validate a deck's card list against game rules.
- * Returns validation result with all errors found.
- *
- * Validates:
- * - Minimum 30 cards in main deck
- * - Maximum 60 cards in main deck (standard TCG limit)
- * - Maximum 3 copies of any single card (by card definition ID)
- * - Maximum 1 copy of legendary cards
- *
- * @param cards - Array of card definition IDs in the deck (with duplicates representing multiple copies)
- * @param cardDefLookup - Optional function to get card definition info for better error messages
- * @returns Validation result with valid boolean and errors array
- *
- * @example
- * // Simple validation with just IDs
- * const result = validateDeckCards(cardIds);
- * if (!result.valid) {
- *   console.log(result.errors);
- * }
- *
- * @example
- * // With card info for better error messages
- * const result = validateDeckCards(cardIds, (id) => cardMap.get(id));
- */
-export function validateDeckCards(
-  cards: Id<"cardDefinitions">[],
-  cardDefLookup?: (id: Id<"cardDefinitions">) => CardDefInfo | undefined
-): DeckValidationResult {
-  const errors: string[] = [];
-  const deckSize = cards.length;
-
-  // Check minimum deck size
-  if (deckSize < MIN_DECK_SIZE) {
-    errors.push(`Deck needs at least ${MIN_DECK_SIZE} cards. Currently has ${deckSize}.`);
-  }
-
-  // Check maximum deck size
-  if (deckSize > MAX_DECK_SIZE) {
-    errors.push(`Deck cannot exceed ${MAX_DECK_SIZE} cards. Currently has ${deckSize}.`);
-  }
-
-  // Count copies of each card
-  const cardCounts = new Map<string, number>();
-  for (const cardId of cards) {
-    const count = cardCounts.get(cardId) || 0;
-    cardCounts.set(cardId, count + 1);
-  }
-
-  // Check copy limits
-  for (const [cardId, quantity] of Array.from(cardCounts.entries())) {
-    const cardDef = cardDefLookup?.(cardId as Id<"cardDefinitions">);
-    const cardName = cardDef?.name || `Card ${cardId}`;
-    const rarity = cardDef?.rarity || "unknown";
-
-    // Check legendary limit (max 1)
-    if (rarity === "legendary" && quantity > MAX_LEGENDARY_COPIES) {
-      errors.push(`${cardName}: Legendary cards limited to ${MAX_LEGENDARY_COPIES} copy`);
-    }
-    // Check standard limit (max 3)
-    else if (quantity > MAX_COPIES_PER_CARD) {
-      errors.push(`${cardName}: Limited to ${MAX_COPIES_PER_CARD} copies per deck`);
-    }
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
-}
 
 /**
  * Validate deck size is within allowed range
@@ -236,37 +146,6 @@ export function validateMonsterZone(
       reason: "Monster zone is full",
       currentSize: zone.length,
       maxSize,
-    });
-  }
-}
-
-/**
- * Validate life points are within allowed range
- *
- * @param lp - Life points value to validate
- * @param min - Minimum allowed life points (default: 0)
- * @param max - Maximum allowed life points (default: 8000)
- * @throws VALIDATION_INVALID_INPUT if life points out of range
- *
- * @example
- * validateLifePoints(2000) // Valid: 0-8000 default range
- * validateLifePoints(-100) // Throws: below minimum
- * validateLifePoints(10000) // Throws: above maximum
- */
-export function validateLifePoints(lp: number, min = 0, max = 8000) {
-  if (lp < min) {
-    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-      reason: `Life points cannot be below ${min}`,
-      value: lp,
-      min,
-    });
-  }
-
-  if (lp > max) {
-    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-      reason: `Life points cannot exceed ${max}`,
-      value: lp,
-      max,
     });
   }
 }
@@ -424,33 +303,6 @@ export function validateLobbyStatus(lobby: Doc<"gameLobbies">, allowedStatuses: 
 // ============================================================================
 
 /**
- * Validate number is within allowed range
- *
- * Generic number range validation for any use case.
- *
- * @param value - Number to validate
- * @param min - Minimum allowed value
- * @param max - Maximum allowed value
- * @param fieldName - Name of field for error messages (default: "Value")
- * @throws VALIDATION_INVALID_INPUT if value out of range
- *
- * @example
- * validateRange(5, 1, 10, "Level") // Valid
- * validateRange(15, 1, 10, "Level") // Throws: Level must be between 1 and 10
- */
-export function validateRange(value: number, min: number, max: number, fieldName = "Value") {
-  if (value < min || value > max) {
-    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-      reason: `${fieldName} must be between ${min} and ${max}`,
-      value,
-      min,
-      max,
-      field: fieldName,
-    });
-  }
-}
-
-/**
  * Validate string length is within allowed range
  *
  * Used for username, deck names, chat messages, etc.
@@ -489,44 +341,6 @@ export function validateStringLength(value: string, min = 1, max = 1000, fieldNa
 }
 
 /**
- * Validate array has items within allowed range
- *
- * @param array - Array to validate
- * @param min - Minimum length (default: 1)
- * @param max - Maximum length (default: Infinity)
- * @param fieldName - Name of field for error messages (default: "Array")
- * @throws VALIDATION_INVALID_INPUT if array length out of range
- *
- * @example
- * validateArrayLength([1, 2, 3], 1, 5, "Cards") // Valid
- * validateArrayLength([], 1, 5, "Cards") // Throws: empty array
- */
-export function validateArrayLength<T>(
-  array: T[],
-  min = 1,
-  max: number = Number.POSITIVE_INFINITY,
-  fieldName = "Array"
-) {
-  if (array.length < min) {
-    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-      reason: `${fieldName} must contain at least ${min} ${min === 1 ? "item" : "items"}`,
-      currentLength: array.length,
-      min,
-      field: fieldName,
-    });
-  }
-
-  if (array.length > max) {
-    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-      reason: `${fieldName} cannot contain more than ${max} items`,
-      currentLength: array.length,
-      max,
-      field: fieldName,
-    });
-  }
-}
-
-/**
  * Validate value is positive number
  *
  * @param value - Number to validate
@@ -542,28 +356,6 @@ export function validatePositive(value: number, fieldName = "Value") {
   if (value <= 0) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: `${fieldName} must be positive`,
-      value,
-      field: fieldName,
-    });
-  }
-}
-
-/**
- * Validate value is non-negative number
- *
- * @param value - Number to validate
- * @param fieldName - Name of field for error messages (default: "Value")
- * @throws VALIDATION_INVALID_INPUT if value is negative
- *
- * @example
- * validateNonNegative(0, "Quantity") // Valid
- * validateNonNegative(5, "Quantity") // Valid
- * validateNonNegative(-1, "Quantity") // Throws: Quantity cannot be negative
- */
-export function validateNonNegative(value: number, fieldName = "Value") {
-  if (value < 0) {
-    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-      reason: `${fieldName} cannot be negative`,
       value,
       field: fieldName,
     });

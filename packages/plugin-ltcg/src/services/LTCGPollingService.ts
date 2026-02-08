@@ -11,6 +11,7 @@
 
 import { type IAgentRuntime, Service, logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
+import { LTCGEventType, emitLTCGEvent } from "../events/types";
 import type { MatchmakingEvent, MatchmakingStatus } from "../frontend/types/panel";
 import type { GameStateResponse } from "../types/api";
 import {
@@ -731,6 +732,11 @@ export class LTCGPollingService extends Service {
     // Update last scan timestamp
     this.matchmakingStats.lastScanAt = Date.now();
 
+    // Emit matchmaking scanning event
+    await emitLTCGEvent(this.runtime, LTCGEventType.MATCHMAKING_SCANNING, {
+      lobbiesFound: lobbies.length,
+    });
+
     logger.debug({ count: lobbies.length }, "Checked for available lobbies");
 
     if (lobbies.length > 0) {
@@ -769,6 +775,13 @@ export class LTCGPollingService extends Service {
         },
         "✅ Successfully joined lobby - game starting!"
       );
+
+      // Emit matchmaking joined event
+      await emitLTCGEvent(this.runtime, LTCGEventType.MATCHMAKING_JOINED, {
+        gameId: joinResult.gameId,
+        lobbyId: lobby.lobbyId,
+        opponent: lobby.hostPlayerName,
+      });
 
       // Record activity
       this.recordActivity("matchmaking");

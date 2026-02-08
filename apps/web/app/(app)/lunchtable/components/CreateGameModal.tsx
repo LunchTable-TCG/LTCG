@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import type { MatchMode } from "@/types/common";
 import { Check, Eye, EyeOff, Gamepad2, Trophy, X } from "lucide-react";
 import { useState } from "react";
 
@@ -8,14 +9,14 @@ interface CreateGameModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: {
-    mode: "casual" | "ranked";
+    mode: MatchMode;
     isPrivate?: boolean;
     allowSpectators?: boolean;
   }) => void;
 }
 
 export function CreateGameModal({ isOpen, onClose, onSubmit }: CreateGameModalProps) {
-  const [mode, setMode] = useState<"casual" | "ranked">("casual");
+  const [mode, setMode] = useState<MatchMode>("casual");
   const [isPrivate, setIsPrivate] = useState(false);
   const [allowSpectators, setAllowSpectators] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);

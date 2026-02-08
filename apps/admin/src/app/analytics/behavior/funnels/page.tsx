@@ -71,8 +71,12 @@ export default function FunnelsPage() {
   const [events, setEvents] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [configured, setConfigured] = useState(true);
+  const defaultFunnel = PREDEFINED_FUNNELS[0];
+  if (!defaultFunnel) {
+    throw new Error("No predefined funnels configured");
+  }
   const [selectedFunnel, setSelectedFunnel] = useState<(typeof PREDEFINED_FUNNELS)[number]>(
-    PREDEFINED_FUNNELS[0]!
+    defaultFunnel
   );
 
   useEffect(() => {
@@ -228,6 +232,7 @@ export default function FunnelsPage() {
 
             return (
               <button
+                type="button"
                 key={funnel.name}
                 onClick={() => setSelectedFunnel(funnel)}
                 className={`p-4 rounded-lg border text-left transition-all ${
@@ -460,6 +465,13 @@ export default function FunnelsPage() {
                     key={funnel.name}
                     className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
                     onClick={() => setSelectedFunnel(funnel)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedFunnel(funnel);
+                      }
+                    }}
+                    tabIndex={0}
                   >
                     <td className="py-3 px-3">
                       <Text className="font-medium">{funnel.name}</Text>

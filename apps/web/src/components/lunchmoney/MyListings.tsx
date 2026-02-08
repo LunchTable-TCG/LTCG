@@ -26,7 +26,7 @@ interface Listing {
 interface MyListingsProps {
   goldListings: Listing[];
   tokenListings: Listing[];
-  pendingPurchases: any[];
+  pendingPurchases: unknown[];
   onCancelGoldListing: (listingId: string) => Promise<void>;
   onCancelTokenListing: (listingId: string) => Promise<void>;
   isLoading?: boolean;

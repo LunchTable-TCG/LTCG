@@ -5,7 +5,7 @@
  * Docs: https://retake.tv/skill.md
  */
 
-const RETAKE_BASE_URL = 'https://chat.retake.tv';
+const RETAKE_BASE_URL = "https://chat.retake.tv";
 
 export interface RetakeRegistration {
   agent_name: string;
@@ -30,6 +30,10 @@ export interface RetakeStreamStatus {
   uptime?: number;
 }
 
+export interface RetakeComment {
+  [key: string]: unknown;
+}
+
 /**
  * Register a new agent on Retake.tv
  * Store the returned access_token and userDbId - they don't expire
@@ -38,8 +42,8 @@ export async function registerRetakeAgent(
   registration: RetakeRegistration
 ): Promise<RetakeCredentials> {
   const response = await fetch(`${RETAKE_BASE_URL}/api/agent/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(registration),
   });
 
@@ -51,7 +55,7 @@ export async function registerRetakeAgent(
   const data = await response.json();
 
   if (!data.access_token || !data.userDbId) {
-    throw new Error('Retake.tv registration incomplete: missing credentials');
+    throw new Error("Retake.tv registration incomplete: missing credentials");
   }
 
   return {
@@ -64,12 +68,10 @@ export async function registerRetakeAgent(
  * Get RTMP streaming credentials for an agent
  * Returns URL and stream key
  */
-export async function getRetakeRTMPCredentials(
-  accessToken: string
-): Promise<RetakeRTMPConfig> {
+export async function getRetakeRTMPCredentials(accessToken: string): Promise<RetakeRTMPConfig> {
   const response = await fetch(`${RETAKE_BASE_URL}/api/agent/rtmp`, {
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
 
@@ -78,12 +80,43 @@ export async function getRetakeRTMPCredentials(
     throw new Error(`Failed to get Retake.tv RTMP credentials: ${error}`);
   }
 
-  const data = await response.json();
+  const data = (await response.json()) as Record<string, unknown>;
+  const nested =
+    data.data && typeof data.data === "object" && !Array.isArray(data.data)
+      ? (data.data as Record<string, unknown>)
+      : null;
 
-  return {
-    url: data.rtmp_url, // Already includes rtmps://
-    key: data.stream_key,
+  const firstNonEmpty = (...values: unknown[]): string | undefined => {
+    for (const value of values) {
+      if (typeof value === "string" && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return undefined;
   };
+
+  const url = firstNonEmpty(
+    data.url,
+    data.rtmp_url,
+    data.rtmpUrl,
+    nested?.url,
+    nested?.rtmp_url,
+    nested?.rtmpUrl
+  );
+  const key = firstNonEmpty(
+    data.key,
+    data.stream_key,
+    data.streamKey,
+    nested?.key,
+    nested?.stream_key,
+    nested?.streamKey
+  );
+
+  if (!url || !key) {
+    throw new Error("Retake.tv RTMP credentials response missing url/key");
+  }
+
+  return { url, key };
 }
 
 /**
@@ -101,10 +134,10 @@ export function buildRetakeRTMPUrl(streamKey: string): string {
  */
 export async function startRetakeStream(accessToken: string): Promise<void> {
   const response = await fetch(`${RETAKE_BASE_URL}/api/agent/stream/start`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
   });
 
@@ -119,10 +152,10 @@ export async function startRetakeStream(accessToken: string): Promise<void> {
  */
 export async function stopRetakeStream(accessToken: string): Promise<void> {
   const response = await fetch(`${RETAKE_BASE_URL}/api/agent/stream/stop`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
   });
 
@@ -136,12 +169,10 @@ export async function stopRetakeStream(accessToken: string): Promise<void> {
  * Get current stream status
  * Use to verify stream is live after starting
  */
-export async function getRetakeStreamStatus(
-  accessToken: string
-): Promise<RetakeStreamStatus> {
+export async function getRetakeStreamStatus(accessToken: string): Promise<RetakeStreamStatus> {
   const response = await fetch(`${RETAKE_BASE_URL}/api/agent/stream/status`, {
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
 
@@ -162,10 +193,10 @@ export async function sendRetakeChat(
   message: string
 ): Promise<void> {
   const response = await fetch(`${RETAKE_BASE_URL}/api/agent/chat/send`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       userDbId,
@@ -185,12 +216,12 @@ export async function sendRetakeChat(
 export async function getRetakeComments(
   accessToken: string,
   userDbId: string
-): Promise<any[]> {
+): Promise<RetakeComment[]> {
   const response = await fetch(
     `${RETAKE_BASE_URL}/api/agent/stream/comments?userDbId=${userDbId}`,
     {
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     }
   );

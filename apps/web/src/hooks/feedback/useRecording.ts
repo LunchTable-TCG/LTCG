@@ -185,7 +185,11 @@ export function useRecording(): UseRecordingReturn {
     }
 
     return new Promise<Blob | null>((resolve) => {
-      const mediaRecorder = mediaRecorderRef.current!;
+      const mediaRecorder = mediaRecorderRef.current;
+      if (!mediaRecorder) {
+        resolve(null);
+        return;
+      }
 
       mediaRecorder.onstop = () => {
         setIsRecording(false);

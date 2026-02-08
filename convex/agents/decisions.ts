@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import { internalQuery, query } from "../_generated/server";
-import { internalMutation } from "../functions";
+import { internalMutation, mutation } from "../functions";
 
 /**
  * Get recent decisions for streaming overlay (public query)
@@ -49,8 +49,9 @@ export const getRecentDecisionsForStream = query({
 
 /**
  * Save an agent decision to the database
+ * Called from HTTP API endpoints (auth handled by caller)
  */
-export const saveDecision = internalMutation({
+export const saveDecision = mutation({
   args: {
     agentId: v.id("agents"),
     gameId: v.string(),
@@ -73,8 +74,9 @@ export const saveDecision = internalMutation({
 
 /**
  * Get decisions for a specific game
+ * Called from HTTP API endpoints (auth handled by caller)
  */
-export const getGameDecisions = internalQuery({
+export const getGameDecisions = query({
   args: {
     gameId: v.string(),
     limit: v.optional(v.number()),
@@ -92,8 +94,9 @@ export const getGameDecisions = internalQuery({
 
 /**
  * Get recent decisions for an agent
+ * Called from HTTP API endpoints (auth handled by caller)
  */
-export const getAgentDecisions = internalQuery({
+export const getAgentDecisions = query({
   args: {
     agentId: v.id("agents"),
     limit: v.optional(v.number()),

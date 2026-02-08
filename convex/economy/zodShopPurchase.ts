@@ -27,9 +27,9 @@
  */
 
 import { z } from "zod/v4";
-import { zMutation } from "../lib/zFunctions";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { zMutation } from "../lib/zFunctions";
 
 /**
  * Purchase a shop product with Zod-validated inputs.

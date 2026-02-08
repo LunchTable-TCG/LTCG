@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "packageManager": "bun@1.3.5",
+  "engines": {
+    "node": ">=20.0.0",
+    "bun": ">=1.3.5"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -59,6 +63,8 @@
     "test:e2e:story": "playwright test e2e/story.spec.ts",
     "test:e2e:social": "playwright test e2e/social.spec.ts",
     "test:e2e:realtime": "playwright test e2e/realtime.spec.ts",
+    "test:e2e:overlay-visual": "OVERLAY_VISUAL_SNAPSHOTS=1 E2E_SKIP_CONVEX_CHECK=1 BASE_URL=http://localhost:3333 playwright test e2e/streaming-overlay.smoke.spec.ts --project=smoke",
+    "test:e2e:overlay-visual:update": "OVERLAY_VISUAL_SNAPSHOTS=1 E2E_SKIP_CONVEX_CHECK=1 BASE_URL=http://localhost:3333 playwright test e2e/streaming-overlay.smoke.spec.ts --project=smoke --update-snapshots",
     "type-check": "cd packages/core && bun run build && cd ../.. && tsc --noEmit && tsc --project apps/web/tsconfig.json --noEmit && tsc --project apps/admin/tsconfig.json --noEmit && tsc --project packages/plugin-ltcg/tsconfig.json --noEmit",
     "type-check:watch": "tsc --noEmit --watch",
     "type-check:root": "tsc --noEmit",
@@ -84,7 +90,10 @@
     "seed:story": "convex run scripts/seedStoryChapters:seedStoryChapters --prod",
     "seed:configs": "convex run admin/config:seedDefaultConfigs --prod",
     "migrate:admins": "convex run migrations/migrateAdminRoles:migrateAdminRoles --prod",
-    "migrate:treasury": "convex run treasury/wallets:migrateExistingWallets --prod"
+    "migrate:treasury": "convex run treasury/wallets:migrateExistingWallets --prod",
+    "eng:log": "bash scripts/eng-log.sh",
+    "eng:review": "bash scripts/eng-review.sh",
+    "eng:start": "bash scripts/eng-start.sh"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.35",

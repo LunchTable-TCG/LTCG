@@ -24,7 +24,7 @@ export async function executeSendToGraveyard(
   lobbyId: Id<"gameLobbies">,
   targetCardId: Id<"cardDefinitions">,
   playerId: Id<"users">,
-  fromLocation: "board" | "hand" | "deck" = "board"
+  fromLocation: "board" | "hand" | "deck" | "spell_trap" = "board"
 ): Promise<{ success: boolean; message: string }> {
   const isHost = playerId === gameState.hostId;
 
@@ -53,16 +53,73 @@ export async function executeSendToGraveyard(
 
     // Remove from board
     const board = targetIsHost ? gameState.hostBoard : gameState.opponentBoard;
+    const boardCard = board.find((bc) => bc.cardId === targetCardId);
+
+    // Tokens cease to exist when leaving the field — don't send to graveyard
+    if (boardCard?.isToken) {
+      const newBoard = board.filter((bc) => bc.cardId !== targetCardId);
+      await ctx.db.patch(gameState._id, {
+        [sourceField]: newBoard,
+      });
+
+      const tokenName = boardCard.tokenData?.name || "Token";
+      const lobby = await ctx.db.get(lobbyId);
+      const user = await ctx.db.get(playerId);
+      await recordEventHelper(ctx, {
+        lobbyId,
+        gameId: lobby?.gameId || "",
+        turnNumber: lobby?.turnNumber || 0,
+        eventType: "card_to_graveyard",
+        playerId,
+        playerUsername: user?.username || "Unknown",
+        description: `${tokenName} was removed from play (token)`,
+        metadata: { cardId: targetCardId, fromLocation, isToken: true },
+      });
+      return { success: true, message: `${tokenName} removed from play (token)` };
+    }
+
     const newBoard = board.filter((bc) => bc.cardId !== targetCardId);
 
     // Add to graveyard
     const graveyard = targetIsHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
     const newGraveyard = [...graveyard, targetCardId];
 
-    await ctx.db.patch(gameState._id, {
+    // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
+    const updates: Record<string, any> = {
       [sourceField]: newBoard,
       [graveyardField]: newGraveyard,
-    });
+    };
+
+    // Destroy equipped spells when monster leaves the board
+    if (boardCard?.equippedCards && boardCard.equippedCards.length > 0) {
+      const equippedIds = boardCard.equippedCards;
+      const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
+      if (hostEquips.length > 0) {
+        updates["hostSpellTrapZone"] = gameState.hostSpellTrapZone.filter(
+          (st) => !equippedIds.includes(st.cardId)
+        );
+        updates["hostGraveyard"] = [
+          ...(updates["hostGraveyard"] ?? gameState.hostGraveyard),
+          ...hostEquips.map((st) => st.cardId),
+        ];
+      }
+      const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
+      if (opponentEquips.length > 0) {
+        updates["opponentSpellTrapZone"] = gameState.opponentSpellTrapZone.filter(
+          (st) => !equippedIds.includes(st.cardId)
+        );
+        updates["opponentGraveyard"] = [
+          ...(updates["opponentGraveyard"] ?? gameState.opponentGraveyard),
+          ...opponentEquips.map((st) => st.cardId),
+        ];
+      }
+    }
+
+    await ctx.db.patch(gameState._id, updates);
   } else if (fromLocation === "hand") {
     const inHostHand = gameState.hostHand.includes(targetCardId);
     const inOpponentHand = gameState.opponentHand.includes(targetCardId);
@@ -85,6 +142,27 @@ export async function executeSendToGraveyard(
 
     await ctx.db.patch(gameState._id, {
       [sourceField]: newHand,
+      [graveyardField]: newGraveyard,
+    });
+  } else if (fromLocation === "spell_trap") {
+    const inHostZone = gameState.hostSpellTrapZone.some((sc) => sc.cardId === targetCardId);
+    const inOpponentZone = gameState.opponentSpellTrapZone.some((sc) => sc.cardId === targetCardId);
+
+    if (!inHostZone && !inOpponentZone) {
+      return { success: false, message: "Card not found in spell/trap zone" };
+    }
+
+    targetIsHost = inHostZone;
+    sourceField = targetIsHost ? "hostSpellTrapZone" : "opponentSpellTrapZone";
+    graveyardField = targetIsHost ? "hostGraveyard" : "opponentGraveyard";
+
+    const zone = targetIsHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
+    const newZone = zone.filter((sc) => sc.cardId !== targetCardId);
+    const graveyard = targetIsHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
+    const newGraveyard = [...graveyard, targetCardId];
+
+    await ctx.db.patch(gameState._id, {
+      [sourceField]: newZone,
       [graveyardField]: newGraveyard,
     });
   } else {

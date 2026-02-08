@@ -1,5 +1,7 @@
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import * as generatedApi from "./_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation } from "./functions";
@@ -145,8 +147,8 @@ export const createSystemUser = internalMutation({
  */
 // Extract references to avoid TS2589 "Type instantiation is excessively deep"
 // These are typed internally by Convex based on the actual function signatures
-const seedQuestsRef = internal.progression.quests.seedQuests;
-const seedAchievementsRef = internal.progression.achievements.seedAchievements;
+const seedQuestsRef = internalAny.progression.quests.seedQuests;
+const seedAchievementsRef = internalAny.progression.achievements.seedAchievements;
 
 export const initializeProgressionSystem = internalMutation({
   args: {},

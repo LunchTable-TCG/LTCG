@@ -4,12 +4,26 @@
  * Handles real-time notifications for achievements, level ups, and quest completions
  */
 
+import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
 import { query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { checkRateLimitWrapper } from "../lib/rateLimit";
+
+const notificationDocValidator = v.object({
+  _id: v.id("playerNotifications"),
+  _creationTime: v.number(),
+  userId: v.id("users"),
+  type: literals("achievement_unlocked", "level_up", "quest_completed", "badge_earned"),
+  title: v.string(),
+  message: v.string(),
+  data: v.optional(v.any()), // Polymorphic payload varies by notification type
+  isRead: v.boolean(),
+  readAt: v.optional(v.number()),
+  createdAt: v.number(),
+});
 
 export type NotificationType =
   | "achievement_unlocked"
@@ -23,7 +37,7 @@ export type NotificationType =
  */
 export const getUnreadNotifications = query({
   args: {},
-  returns: v.array(v.any()),
+  returns: v.array(notificationDocValidator),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -57,7 +71,7 @@ export const getAllNotifications = query({
   args: {
     limit: v.optional(v.number()),
   },
-  returns: v.array(v.any()),
+  returns: v.array(notificationDocValidator),
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {

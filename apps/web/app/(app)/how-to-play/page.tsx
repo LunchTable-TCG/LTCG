@@ -174,6 +174,7 @@ function ExpandableSection({
   return (
     <div id={id} className="border border-slate-700 rounded-lg mb-4 overflow-hidden">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-4 bg-slate-800/50 hover:bg-slate-800 transition-colors text-left"
       >

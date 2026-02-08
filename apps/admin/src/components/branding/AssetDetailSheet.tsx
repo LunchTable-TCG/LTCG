@@ -172,10 +172,14 @@ export function AssetDetailSheet({
                 className="w-full max-h-64 object-contain"
               />
             ) : isVideo && asset.fileMetadata?.blobUrl ? (
-              <video src={asset.fileMetadata.blobUrl} controls className="w-full max-h-64" />
+              <video src={asset.fileMetadata.blobUrl} controls className="w-full max-h-64">
+                <track kind="captions" />
+              </video>
             ) : isAudio && asset.fileMetadata?.blobUrl ? (
               <div className="p-8">
-                <audio src={asset.fileMetadata.blobUrl} controls className="w-full" />
+                <audio src={asset.fileMetadata.blobUrl} controls className="w-full">
+                  <track kind="captions" />
+                </audio>
               </div>
             ) : (
               <div className="p-8 flex flex-col items-center justify-center">
@@ -227,6 +231,7 @@ export function AssetDetailSheet({
                 <Badge key={tag} variant="secondary">
                   {tag}
                   <button
+                    type="button"
                     onClick={() => handleRemoveTag(tag)}
                     className="ml-1 hover:text-destructive"
                   >
@@ -270,13 +275,16 @@ export function AssetDetailSheet({
             <Label>Usage Context</Label>
             <div className="grid grid-cols-2 gap-2">
               {USAGE_CONTEXTS.map((ctx) => (
-                <label key={ctx.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                <div key={ctx.value} className="flex items-center gap-2 text-sm">
                   <Checkbox
+                    id={`usage-context-${ctx.value}`}
                     checked={usageContext.includes(ctx.value)}
                     onCheckedChange={() => handleToggleContext(ctx.value)}
                   />
-                  {ctx.label}
-                </label>
+                  <Label htmlFor={`usage-context-${ctx.value}`} className="cursor-pointer">
+                    {ctx.label}
+                  </Label>
+                </div>
               ))}
             </div>
           </div>

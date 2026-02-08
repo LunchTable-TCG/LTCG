@@ -38,6 +38,15 @@ export async function validateNormalSummon(
 ): Promise<ValidationResult> {
   const isHost = playerId === gameState.hostId;
 
+  // 0. Check phase — summons only allowed during Main Phase 1 or Main Phase 2
+  const phase = gameState.currentPhase;
+  if (phase !== "main1" && phase !== "main2") {
+    return {
+      valid: false,
+      error: "You can only Normal Summon during Main Phase 1 or Main Phase 2.",
+    };
+  }
+
   // 1. Check if player already normal summoned this turn
   const hasNormalSummoned = isHost
     ? gameState.hostNormalSummonedThisTurn
@@ -117,84 +126,23 @@ export async function validateNormalSummon(
   // 6. If tributes required, validate tribute cards
   if (requiredTributes > 0 && tributeCardIds) {
     for (const tributeId of tributeCardIds) {
-      // Check if tribute card is on player's board
-      const isOnBoard = board.some((boardCard) => boardCard.cardId === tributeId);
-      if (!isOnBoard) {
+      // Check if tribute card is on player's board and face-up
+      const boardCard = board.find((bc) => bc.cardId === tributeId);
+      if (!boardCard) {
         return {
           valid: false,
           error:
             "You can only tribute monsters that are on your field. The selected monster is not on your field.",
         };
       }
+      if (boardCard.isFaceDown) {
+        return {
+          valid: false,
+          error: "You cannot tribute face-down monsters.",
+        };
+      }
     }
   }
-
-  return { valid: true };
-}
-
-/**
- * Validate Special Summon
- *
- * Requirements:
- * - Monster zone has space (max 5 monsters)
- * - Card-specific summon conditions met (checked separately)
- * - For Extra Deck summons: validate materials and requirements
- *
- * Note: This is a simplified version - full implementation would need
- * card-specific summon condition logic.
- *
- * @param ctx - Query context
- * @param gameState - Current game state
- * @param playerId - Player attempting special summon
- * @param cardId - Card being special summoned
- * @param summonType - Type of special summon (fusion, ritual, synchro, xyz, pendulum, link)
- * @returns Validation result with error message if invalid
- * @example
- * await validateSpecialSummon(ctx, gameState, playerId, fusionMonster, "fusion")
- */
-export async function validateSpecialSummon(
-  ctx: QueryCtx,
-  gameState: Doc<"gameStates">,
-  playerId: Id<"users">,
-  cardId: Id<"cardDefinitions">,
-  _summonType: "fusion" | "ritual" | "synchro" | "xyz" | "pendulum" | "link"
-): Promise<ValidationResult> {
-  const isHost = playerId === gameState.hostId;
-
-  // 1. Check monster zone space (max 5 monsters)
-  const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
-  const MONSTER_ZONE_LIMIT = 5;
-
-  if (board.length >= MONSTER_ZONE_LIMIT) {
-    return {
-      valid: false,
-      error: "Monster Zone is full (max 5 monsters)",
-    };
-  }
-
-  // 2. Get card details
-  const card = await ctx.db.get(cardId);
-  if (!card) {
-    return {
-      valid: false,
-      error: "Card not found",
-    };
-  }
-
-  if (card.cardType !== "creature") {
-    return {
-      valid: false,
-      error: "Card is not a creature card",
-    };
-  }
-
-  // 3. Validate summon type matches card type
-  // Note: This would require additional card metadata to fully validate
-  // For MVP, we'll allow any special summon with proper materials
-
-  // 4. Check if card can be special summoned
-  // (Some cards have restrictions like "Cannot be Special Summoned")
-  // Note: This would require parsing card text, deferred to Phase 2
 
   return { valid: true };
 }
@@ -223,6 +171,15 @@ export async function validateFlipSummon(
   const isHost = playerId === gameState.hostId;
   const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
+  // 0. Check phase — flip summons only allowed during Main Phase 1 or Main Phase 2
+  const phase = gameState.currentPhase;
+  if (phase !== "main1" && phase !== "main2") {
+    return {
+      valid: false,
+      error: "You can only Flip Summon during Main Phase 1 or Main Phase 2.",
+    };
+  }
+
   // 1. Find card on board
   const boardCard = board.find((card) => card.cardId === cardId);
   if (!boardCard) {
@@ -233,20 +190,20 @@ export async function validateFlipSummon(
   }
 
   // 2. Check if card is face-down
-  // Note: Current schema doesn't have isFaceDown field on board cards
-  // This would need to be added to schema in future
-  // For now, we'll assume position -1 = face-down defense
-  if (boardCard.position >= 0) {
+  if (boardCard.isFaceDown !== true && boardCard.position >= 0) {
     return {
       valid: false,
       error: "Card is already face-up",
     };
   }
 
-  // 3. Check if card was set this turn
-  // Note: This would require tracking when cards were set
-  // For MVP, we'll skip this check and allow immediate flip summons
-  // This will be implemented when we add cardsSetThisTurn tracking
+  // 3. Check if card was set this turn (cannot flip summon same turn it was set)
+  if (boardCard.turnSummoned === gameState.turnNumber) {
+    return {
+      valid: false,
+      error: "Cannot Flip Summon a monster the same turn it was Set.",
+    };
+  }
 
   return { valid: true };
 }

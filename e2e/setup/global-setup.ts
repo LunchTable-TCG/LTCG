@@ -3,27 +3,33 @@ import { TEST_ENV, validateTestEnv } from "./env";
 
 async function globalSetup(_config: FullConfig) {
   console.log("🚀 Starting E2E test setup...");
+  const skipConvexCheck = process.env.E2E_SKIP_CONVEX_CHECK === "1";
 
   // Validate environment
   validateTestEnv();
 
-  // Verify Convex backend is running
-  console.log("  Checking Convex backend...");
   const maxRetries = 30;
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const response = await fetch(`${TEST_ENV.CONVEX_URL}/version`);
-      if (response.ok) {
-        console.log("  ✓ Convex backend is running");
-        break;
+
+  // Verify Convex backend is running unless explicitly skipped.
+  if (skipConvexCheck) {
+    console.log("  ⚠ Skipping Convex backend check (E2E_SKIP_CONVEX_CHECK=1)");
+  } else {
+    console.log("  Checking Convex backend...");
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const response = await fetch(`${TEST_ENV.CONVEX_URL}/version`);
+        if (response.ok) {
+          console.log("  ✓ Convex backend is running");
+          break;
+        }
+      } catch {
+        if (i === maxRetries - 1) {
+          throw new Error(
+            `Convex backend not available at ${TEST_ENV.CONVEX_URL}. Run: bunx convex dev`
+          );
+        }
+        await new Promise((r) => setTimeout(r, 1000));
       }
-    } catch {
-      if (i === maxRetries - 1) {
-        throw new Error(
-          `Convex backend not available at ${TEST_ENV.CONVEX_URL}. Run: bunx convex dev`
-        );
-      }
-      await new Promise((r) => setTimeout(r, 1000));
     }
   }
 

@@ -27,7 +27,6 @@ export { isSortOption, isGameMode, isPlayerStatus } from "@/types";
 
 // Game Hooks
 export { useGameLobby } from "./game/useGameLobby";
-export { useGameState } from "./game/useGameState";
 export { useSpectator } from "./game/useSpectator";
 export { useMatchmaking } from "./game/useMatchmaking";
 
@@ -44,7 +43,6 @@ export { useTokenBalance } from "./economy/useTokenBalance";
 
 // Social Hooks
 export { useGlobalChat } from "./social/useGlobalChat";
-export { usePresence } from "./social/usePresence";
 export { useLeaderboard } from "./social/useLeaderboard";
 export { useProfile } from "./social/useProfile";
 export { useFriends, useSearchUsers } from "./social/useFriends";
@@ -65,11 +63,6 @@ export type {
   TournamentHistoryEntry,
   UserTournamentStats,
 } from "./social/useTournament";
-
-// Story Hooks
-export { useStoryProgress } from "./story/useStoryProgress";
-export { usePlayerXP } from "./story/usePlayerXP";
-export { useBadges } from "./story/useBadges";
 
 // Progression Hooks
 export { useQuests } from "./progression/useQuests";

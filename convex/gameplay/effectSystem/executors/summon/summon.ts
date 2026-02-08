@@ -33,6 +33,8 @@ export async function executeSpecialSummon(
     sourceZone = isHost ? gameState.hostHand : gameState.opponentHand;
   } else if (fromLocation === "graveyard") {
     sourceZone = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
+  } else if (fromLocation === "banished") {
+    sourceZone = isHost ? gameState.hostBanished : gameState.opponentBanished;
   } else {
     return { success: false, message: `Cannot summon from ${fromLocation}` };
   }
@@ -62,9 +64,13 @@ export async function executeSpecialSummon(
       ? isHost
         ? "hostHand"
         : "opponentHand"
-      : isHost
-        ? "hostGraveyard"
-        : "opponentGraveyard"]: newSourceZone,
+      : fromLocation === "graveyard"
+        ? isHost
+          ? "hostGraveyard"
+          : "opponentGraveyard"
+        : isHost
+          ? "hostBanished"
+          : "opponentBanished"]: newSourceZone,
   });
 
   return { success: true, message: `Special Summoned ${card.name} from ${fromLocation}` };

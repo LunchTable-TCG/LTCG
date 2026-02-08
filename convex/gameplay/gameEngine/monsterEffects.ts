@@ -166,7 +166,22 @@ async function activateMonsterEffectHandler(
     // Full implementation would check chain state and priority windows
   }
 
-  // 12. Check and execute cost payment
+  // 12. Check OPT/HOPT restrictions (BEFORE cost payment to avoid losing cost resources)
+  if (effect.isOPT || effect.isHOPT) {
+    const isHOPT = effect.isHOPT ?? false;
+    const optCheck = checkCanActivateOPT(gameState, args.cardId, effectIndex, user.userId, isHOPT);
+
+    if (!optCheck.canActivate) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: optCheck.reason ?? "Effect already used this turn",
+      });
+    }
+
+    // Mark effect as used
+    await markEffectUsed(ctx, gameState, args.cardId, effectIndex, user.userId, isHOPT);
+  }
+
+  // 13. Check and execute cost payment
   if (effect.cost) {
     // Validate cost can be paid
     const validation = await validateCost(ctx, gameState, user.userId, effect, args.costTargets);
@@ -195,27 +210,6 @@ async function activateMonsterEffectHandler(
         reason: costResult.message,
       });
     }
-  }
-
-  // 13. Check OPT/HOPT restrictions
-  if (effect.isOPT || effect.isHOPT) {
-    const isHOPT = effect.isHOPT ?? false;
-    const optCheck = checkCanActivateOPT(
-      gameState,
-      args.cardId,
-      effectIndex,
-      user.userId,
-      isHOPT
-    );
-
-    if (!optCheck.canActivate) {
-      throw createError(ErrorCode.GAME_INVALID_MOVE, {
-        reason: optCheck.reason ?? "Effect already used this turn",
-      });
-    }
-
-    // Mark effect as used
-    await markEffectUsed(ctx, gameState, args.cardId, effectIndex, user.userId, isHOPT);
   }
 
   // 14. Record monster_effect_activated event

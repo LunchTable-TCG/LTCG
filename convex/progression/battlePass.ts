@@ -292,7 +292,7 @@ export const getBattlePassStatus = query({
       // User progress
       currentXP: progress?.currentXP ?? 0,
       currentTier: progress?.currentTier ?? 0,
-      isPremium: progress?.isPremium ?? false,
+      isPremium: progress ? await hasActiveSubscription(ctx, userId) : false,
       claimedFreeTiers: progress?.claimedFreeTiers ?? [],
       claimedPremiumTiers: progress?.claimedPremiumTiers ?? [],
       // Calculate XP to next tier
@@ -343,6 +343,9 @@ export const getBattlePassTiers = query({
     // Sort by tier number
     tiers.sort((a, b) => a.tier - b.tier);
 
+    // Live subscription check for premium status
+    const isPremium = progress ? await hasActiveSubscription(ctx, userId) : false;
+
     // Enrich with user progress info
     return tiers.map((tier) => ({
       tier: tier.tier,
@@ -358,7 +361,8 @@ export const getBattlePassTiers = query({
         !progress.claimedFreeTiers.includes(tier.tier) &&
         tier.freeReward !== undefined,
       canClaimPremium:
-        !!progress?.isPremium &&
+        isPremium &&
+        !!progress &&
         progress.currentTier >= tier.tier &&
         !progress.claimedPremiumTiers.includes(tier.tier) &&
         tier.premiumReward !== undefined,
@@ -670,8 +674,53 @@ export const addBattlePassXP = internalMutation({
  */
 export const getCurrentBattlePass = query({
   args: {},
-  returns: v.any(),
   handler: async (ctx) => {
     return await getActiveBattlePass(ctx);
+  },
+});
+
+/**
+ * Battle Pass Season Lifecycle
+ *
+ * Runs daily via cron. Auto-activates upcoming passes at startDate,
+ * auto-ends active passes at endDate.
+ */
+export const checkBattlePassLifecycle = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    // Auto-activate upcoming battle passes whose startDate has passed
+    const upcoming = await ctx.db
+      .query("battlePassSeasons")
+      .withIndex("by_status", (q) => q.eq("status", "upcoming"))
+      .collect();
+
+    for (const bp of upcoming) {
+      if (bp.startDate <= now) {
+        // Only activate if no other active battle pass exists
+        const active = await ctx.db
+          .query("battlePassSeasons")
+          .withIndex("by_status", (q) => q.eq("status", "active"))
+          .first();
+        if (!active) {
+          await ctx.db.patch(bp._id, { status: "active", updatedAt: now });
+          console.log(`Auto-activated battle pass: ${bp.name}`);
+        }
+      }
+    }
+
+    // Auto-end active battle passes whose endDate has passed
+    const active = await ctx.db
+      .query("battlePassSeasons")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+
+    for (const bp of active) {
+      if (bp.endDate <= now) {
+        await ctx.db.patch(bp._id, { status: "ended", updatedAt: now });
+        console.log(`Auto-ended battle pass: ${bp.name}`);
+      }
+    }
   },
 });

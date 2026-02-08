@@ -171,10 +171,9 @@ export default function ShopProductEditorPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Queries and mutations
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg/return types
   const existingProduct = useConvexQuery(
     typedApi.admin.shop.getProduct,
-    isNew ? "skip" : ({ productDbId: productDbId as Id<"shopProducts"> } as any)
+    isNew ? "skip" : { productDbId: productDbId as Id<"shopProducts"> }
   ) as
     | {
         productId: string;
@@ -193,7 +192,6 @@ export default function ShopProductEditorPage() {
     | null
     | undefined;
 
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const allProducts = useConvexQuery(typedApi.admin.shop.listProducts, {
     includeInactive: true,
   }) as { products: ShopProduct[] } | undefined;
@@ -251,7 +249,6 @@ export default function ShopProductEditorPage() {
     setIsSaving(true);
     try {
       if (isNew) {
-        // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
         const result = (await createProduct({
           productId: productId.trim(),
           name: name.trim(),

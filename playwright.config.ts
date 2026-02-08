@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
  * - Full suite with browser matrix for main branch
  *
  * Prerequisites:
- * - Run `bun run dev` to start the Next.js app on port 3000
+ * - Run `bun run dev` to start the Next.js app on port 3333
  * - Run `bun run dev:convex` to start the Convex backend
  * - Ensure NODE_ENV=test for test-specific behaviors
  *
@@ -40,7 +40,7 @@ export default defineConfig({
   globalTeardown: "./e2e/setup/global-teardown.ts",
 
   use: {
-    baseURL: process.env["BASE_URL"] || "http://localhost:3000",
+    baseURL: process.env["BASE_URL"] || "http://localhost:3333",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
@@ -91,7 +91,7 @@ export default defineConfig({
     ? undefined
     : {
         command: "bun run dev",
-        url: "http://localhost:3000",
+        url: "http://localhost:3333",
         reuseExistingServer: true,
         timeout: 120000,
       },

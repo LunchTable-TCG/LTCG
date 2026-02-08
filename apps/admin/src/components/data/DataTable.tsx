@@ -187,7 +187,7 @@ export function DataTable<T extends object>({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Array.from({ length: 5 }).map((_, i) => (
+              {Array.from({ length: 5  }, (_, i) => i).map((i) => (
                 <TableRow key={i}>
                   {columns.map((column) => (
                     <TableCell key={String(column.id)}>

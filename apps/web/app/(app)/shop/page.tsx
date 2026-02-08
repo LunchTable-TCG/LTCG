@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { useCurrency, useMarketplace, useProfile, useShop } from "@/hooks";
 import { getAssetUrl } from "@/lib/blob";
 import { cn } from "@/lib/utils";
+import type { Rarity } from "@/types/cards";
+import type { ProductType } from "@/types/economy";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -38,20 +40,19 @@ import { useCallback, useMemo, useState } from "react";
 
 type TabType = "shop" | "marketplace" | "myListings";
 type ListingType = "fixed" | "auction";
-type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 
 // Shop item types
 interface ShopItem {
   id: string;
   name: string;
   description: string;
-  type: "pack" | "box" | "currency";
+  type: ProductType;
   goldPrice?: number;
   gemPrice?: number;
   contents?: string;
   quantity?: number;
   productId: string;
-  productType: "pack" | "box" | "currency";
+  productType: ProductType;
 }
 
 // Marketplace listing types
@@ -197,7 +198,7 @@ export default function ShopPage() {
         productId: string;
         name: string;
         description: string;
-        productType: "pack" | "box" | "currency";
+        productType: ProductType;
         goldPrice?: number;
         gemPrice?: number;
         packConfig?: { cardCount: number };
@@ -233,7 +234,7 @@ export default function ShopPage() {
 
   const handleShopPurchase = useCallback(
     async (
-      item: { productId: string; productType: "pack" | "box" | "currency" },
+      item: { productId: string; productType: ProductType },
       useGems: boolean
     ) => {
       setIsProcessing(true);

@@ -103,13 +103,11 @@ export default function BattlePage({ params }: BattlePageProps) {
         return;
       }
 
-      console.log("Initializing story battle for chapter:", chapterId, "stage:", stageNumber);
       try {
         const result = await initializeStoryBattle({
           chapterId,
           stageNumber: Number.parseInt(stageNumber),
         });
-        console.log("Battle initialized successfully:", result);
 
         if (mounted) {
           setGameId(result.gameId);
@@ -127,7 +125,6 @@ export default function BattlePage({ params }: BattlePageProps) {
           // ConvexError.data is now a string in format "[CODE] Message"
           const convexData = (error as { data?: string })?.data;
           if (typeof convexData === "string") {
-            console.log("ConvexError data:", convexData);
             // Parse format: "[CODE] Message"
             const match = convexData.match(/^\[([^\]]+)\]\s*(.*)$/);
             if (match) {
@@ -139,8 +136,6 @@ export default function BattlePage({ params }: BattlePageProps) {
           } else if (error instanceof Error) {
             errorMessage = error.message;
           }
-
-          console.log("Parsed error - Code:", errorCode, "Message:", errorMessage);
 
           // Provide helpful message for common errors
           if (

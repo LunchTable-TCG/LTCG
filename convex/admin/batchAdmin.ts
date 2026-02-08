@@ -6,12 +6,14 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
-import { mutation } from "../functions";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
+import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import {
@@ -41,7 +43,7 @@ async function sendRewardNotification(
 ) {
   // TODO: Re-enable when inbox.createInboxMessage is fully implemented
   // For now, rewards are granted directly without inbox notification
-  // await ctx.scheduler.runAfter(0, internal.social.inbox.createInboxMessage, {
+  // await ctx.scheduler.runAfter(0, internalAny.social.inbox.createInboxMessage, {
   //   userId,
   //   type: "reward",
   //   title,
@@ -946,7 +948,11 @@ export const sendAnnouncement = mutation({
       expiresAt,
     };
     // @ts-ignore TS2589 - Non-deterministic type depth error (only occurs in full monorepo type check, not in isolated convex check)
-    await ctx.scheduler.runAfter(0, internal.social.inbox.createBroadcastMessages, broadcastArgs);
+    await ctx.scheduler.runAfter(
+      0,
+      internalAny.social.inbox.createBroadcastMessages,
+      broadcastArgs
+    );
 
     // Log action
     await scheduleAuditLog(ctx, {
@@ -1049,7 +1055,11 @@ export const broadcastAnnouncement = mutation({
       senderUsername: adminUsername || "Admin",
       expiresAt,
     };
-    await ctx.scheduler.runAfter(0, internal.social.inbox.createBroadcastMessages, broadcastArgs);
+    await ctx.scheduler.runAfter(
+      0,
+      internalAny.social.inbox.createBroadcastMessages,
+      broadcastArgs
+    );
 
     // Log action
     await scheduleAuditLog(ctx, {
@@ -1108,7 +1118,7 @@ export const sendSystemMessage = mutation({
     };
     await ctx.scheduler.runAfter(
       0,
-      internal.social.inbox.createBroadcastMessages,
+      internalAny.social.inbox.createBroadcastMessages,
       systemMessageArgs
     );
 

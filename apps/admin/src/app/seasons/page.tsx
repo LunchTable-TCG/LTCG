@@ -440,7 +440,7 @@ export default function SeasonsPage() {
 
           {isLoading ? (
             <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
+              {Array.from({ length: 5 }, (_, i) => i).map((i) => (
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>

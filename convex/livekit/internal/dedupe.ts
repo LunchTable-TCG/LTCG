@@ -8,11 +8,11 @@ export async function createDedupeKey(params: {
   participantIdentity?: string;
   trackSid?: string;
   createdAt?: number;
-  payload: any;
+  payload: Record<string, unknown> | null | undefined;
 }): Promise<string> {
   // Prefer event.id if available (LiveKit may provide this)
-  if (params.payload?.id) {
-    return `lk_event_${params.payload.id}`;
+  if (params.payload?.["id"]) {
+    return `lk_event_${params.payload["id"]}`;
   }
 
   // Otherwise, create a stable hash from event details using Web Crypto API
@@ -29,7 +29,7 @@ export async function createDedupeKey(params: {
   const data = encoder.encode(parts.join("|"));
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 
   return `lk_${hashHex.slice(0, 32)}`;
 }

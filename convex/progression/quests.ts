@@ -1,11 +1,15 @@
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import { query } from "../_generated/server";
+
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { shuffleArray } from "../lib/deterministicRandom";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { getNotificationSetting } from "../lib/preferenceHelpers";
 import { questClaimValidator, userQuestValidator } from "../lib/returnValidators";
 import { addXP } from "../lib/xpHelpers";
 
@@ -211,6 +215,31 @@ export const ensureUserHasQuests = mutation({
       }
     }
 
+    // Assign achievement quests (permanent, no expiry) if user doesn't have them yet
+    const achievementDefs = await ctx.db
+      .query("questDefinitions")
+      .withIndex("by_type", (q) => q.eq("questType", "achievement"))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    for (const quest of achievementDefs) {
+      const existing = await ctx.db
+        .query("userQuests")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .filter((q) => q.eq(q.field("questId"), quest.questId))
+        .first();
+
+      if (!existing) {
+        await ctx.db.insert("userQuests", {
+          userId,
+          questId: quest.questId,
+          currentProgress: 0,
+          status: "active",
+          startedAt: now,
+        });
+      }
+    }
+
     return {
       success: true,
       dailyGenerated,
@@ -343,7 +372,10 @@ export const updateQuestProgress = internalMutation({
     const questDefMap = new Map(
       questIds
         .map((id, i) => [id, questDefResults[i]] as const)
-        .filter((entry): entry is [string, NonNullable<(typeof questDefResults)[number]>] => entry[1] !== null)
+        .filter(
+          (entry): entry is [string, NonNullable<(typeof questDefResults)[number]>] =>
+            entry[1] !== null
+        )
     );
 
     // Update progress for matching quests
@@ -377,17 +409,20 @@ export const updateQuestProgress = internalMutation({
         completedAt: newProgress >= definition.targetValue ? Date.now() : undefined,
       });
 
-      // Create quest completion notification if just completed
+      // Create quest completion notification if just completed (and user has questComplete notifications enabled)
       if (justCompleted) {
-        await ctx.scheduler.runAfter(
-          0,
-          internal.progression.notifications.createQuestCompletedNotification,
-          {
-            userId: args.userId,
-            questName: definition.name,
-            questType: definition.questType,
-          }
-        );
+        const wantsQuestNotifs = await getNotificationSetting(ctx, args.userId, "questComplete");
+        if (wantsQuestNotifs) {
+          await ctx.scheduler.runAfter(
+            0,
+            internalAny.progression.notifications.createQuestCompletedNotification,
+            {
+              userId: args.userId,
+              questName: definition.name,
+              questType: definition.questType,
+            }
+          );
+        }
       }
     }
   },
@@ -479,7 +514,7 @@ export const generateDailyQuestsForAll = internalMutation({
 
       // Only generate if user doesn't have today's quests yet
       if (!hasTodaysQuests) {
-        await ctx.scheduler.runAfter(0, internal.progression.quests.generateDailyQuests, {
+        await ctx.scheduler.runAfter(0, internalAny.progression.quests.generateDailyQuests, {
           userId: user._id,
         });
       }
@@ -576,7 +611,7 @@ export const generateWeeklyQuestsForAll = internalMutation({
 
       // Only generate if user doesn't have this week's quests yet
       if (!hasThisWeeksQuests) {
-        await ctx.scheduler.runAfter(0, internal.progression.quests.generateWeeklyQuests, {
+        await ctx.scheduler.runAfter(0, internalAny.progression.quests.generateWeeklyQuests, {
           userId: user._id,
         });
       }

@@ -11,10 +11,13 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import { internalAction, internalMutation, internalQuery } from "../_generated/server";
-import { ELIZAOS_TOKEN } from "../lib/constants";
+
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { elizaOSBalanceCache } from "../infrastructure/actionCaches";
+import { ELIZAOS_TOKEN } from "../lib/constants";
 
 // =============================================================================
 // Types
@@ -158,13 +161,17 @@ export const unlockElizaOSAchievement = internalMutation({
 
     // Unlock the achievement using the standard progress system
     // This will trigger all the reward granting logic including the Agent Card
-    await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
-      userId: args.userId,
-      event: {
-        type: "hold_elizaos_token",
-        value: 1,
-      },
-    });
+    await ctx.scheduler.runAfter(
+      0,
+      internalAny.progression.achievements.updateAchievementProgress,
+      {
+        userId: args.userId,
+        event: {
+          type: "hold_elizaos_token",
+          value: 1,
+        },
+      }
+    );
 
     // Update user record
     await ctx.db.patch(args.userId, {
@@ -194,7 +201,7 @@ export const checkUserWallet = internalAction({
   handler: async (ctx, args) => {
     // Check if user already has achievement
     const hasAchievement = await ctx.runQuery(
-      internal.economy.elizaOSMonitor.hasElizaOSAchievement,
+      internalAny.economy.elizaOSMonitor.hasElizaOSAchievement,
       {
         userId: args.userId,
       }
@@ -210,7 +217,7 @@ export const checkUserWallet = internalAction({
       const balance = result.balance;
 
       // Record the check
-      await ctx.runMutation(internal.economy.elizaOSMonitor.recordWalletCheck, {
+      await ctx.runMutation(internalAny.economy.elizaOSMonitor.recordWalletCheck, {
         userId: args.userId,
         hasToken: balance >= ELIZAOS_TOKEN.HOLDER_THRESHOLD,
         balance,
@@ -218,7 +225,7 @@ export const checkUserWallet = internalAction({
 
       // If they have enough tokens, unlock the achievement
       if (balance >= ELIZAOS_TOKEN.HOLDER_THRESHOLD) {
-        await ctx.runMutation(internal.economy.elizaOSMonitor.unlockElizaOSAchievement, {
+        await ctx.runMutation(internalAny.economy.elizaOSMonitor.unlockElizaOSAchievement, {
           userId: args.userId,
           balance,
         });
@@ -252,7 +259,7 @@ export const batchCheckWallets = internalAction({
   args: {},
   handler: async (ctx) => {
     // Get users to check
-    const usersToCheck = await ctx.runQuery(internal.economy.elizaOSMonitor.getUsersToCheck, {
+    const usersToCheck = await ctx.runQuery(internalAny.economy.elizaOSMonitor.getUsersToCheck, {
       limit: 50, // Process 50 users per cron run
     });
 
@@ -268,7 +275,7 @@ export const batchCheckWallets = internalAction({
       if (!user.walletAddress) continue;
 
       try {
-        const result = await ctx.runAction(internal.economy.elizaOSMonitor.checkUserWallet, {
+        const result = await ctx.runAction(internalAny.economy.elizaOSMonitor.checkUserWallet, {
           userId: user.userId,
           walletAddress: user.walletAddress,
         });
@@ -302,11 +309,10 @@ export const checkOnWalletConnect = internalAction({
     walletAddress: v.string(),
   },
   handler: async (ctx, args): Promise<WalletCheckResult> => {
-    const result = await ctx.runAction(internal.economy.elizaOSMonitor.checkUserWallet, {
+    const result = await ctx.runAction(internalAny.economy.elizaOSMonitor.checkUserWallet, {
       userId: args.userId,
       walletAddress: args.walletAddress,
     });
     return result as WalletCheckResult;
   },
 });
-

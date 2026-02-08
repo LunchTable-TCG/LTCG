@@ -22,8 +22,8 @@ export const dizzy: Character = {
   settings: {
     secrets: {
       // Retake.tv credentials (stored encrypted in database)
-      RETAKE_ACCESS_TOKEN: process.env.DIZZY_RETAKE_ACCESS_TOKEN,
-      RETAKE_USER_DB_ID: process.env.DIZZY_RETAKE_USER_DB_ID,
+      ...(process.env.DIZZY_RETAKE_ACCESS_TOKEN && { RETAKE_ACCESS_TOKEN: process.env.DIZZY_RETAKE_ACCESS_TOKEN }),
+      ...(process.env.DIZZY_RETAKE_USER_DB_ID && { RETAKE_USER_DB_ID: process.env.DIZZY_RETAKE_USER_DB_ID }),
     },
     avatar: "https://lunchtable.cards/logo.png",
   },
@@ -33,7 +33,8 @@ export const dizzy: Character = {
     "@elizaos/plugin-sql",
 
     // LTCG Game Plugin - enables card game playing and streaming
-    ltcgPlugin,
+    // Cast: Character.plugins expects string[] but runtime addAgents accepts Plugin | string
+    ltcgPlugin as unknown as string,
 
     // LLM providers (OpenRouter preferred for Dizzy)
     ...(process.env.OPENROUTER_API_KEY?.trim() ? ["@elizaos/plugin-openrouter"] : []),

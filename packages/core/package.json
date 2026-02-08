@@ -1,7 +1,7 @@
 {
   "name": "@ltcg/core",
   "version": "0.1.0",
-  "description": "Shared types, utilities, and validators for LTCG",
+  "description": "Shared types, utilities, and UI constants for LTCG",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -27,14 +27,6 @@
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.js"
     },
-    "./validators": {
-      "types": "./dist/validators/index.d.ts",
-      "import": "./dist/validators/index.js"
-    },
-    "./config": {
-      "types": "./dist/config/index.d.ts",
-      "import": "./dist/config/index.js"
-    },
     "./react": {
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react/index.js"
@@ -42,9 +34,7 @@
     "./ui": {
       "types": "./dist/ui/index.d.ts",
       "import": "./dist/ui/index.js"
-    },
-    "./config/tsconfig.base.json": "./src/config/tsconfig.base.json",
-    "./config/tsconfig.nextjs.json": "./src/config/tsconfig.nextjs.json"
+    }
   },
   "scripts": {
     "build": "tsc",
@@ -54,9 +44,8 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
-    "convex": "^1.18.2",
-    "tailwind-merge": "^3.0.0",
-    "zod": "^3.24.1"
+    "convex": "^1.31.6",
+    "tailwind-merge": "^3.4.0"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0"

@@ -1,6 +1,7 @@
-// @ts-nocheck - Internal helpers have circular type inference issues
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internal = (generatedApi as any).internal;
 import { internalAction, internalMutation, mutation } from "../_generated/server";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { requireRole } from "../lib/roles";
@@ -258,12 +259,15 @@ export const _getPlayersQuery = internalMutation({
       .filter((q) => q.neq(q.field("email"), undefined))
       .take(10000);
 
-    return users
-      .filter((u) => u.email)
-      .map((u) => ({
-        email: u.email!,
-        name: u.username ?? u.name ?? "Player",
-      }));
+    return users.flatMap((u) => {
+      if (!u.email) return [];
+      return [
+        {
+          email: u.email,
+          name: u.username ?? u.name ?? "Player",
+        },
+      ];
+    });
   },
 });
 

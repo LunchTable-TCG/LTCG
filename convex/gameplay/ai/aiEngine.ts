@@ -9,11 +9,34 @@ import type { Doc, Id } from "../../_generated/dataModel";
 import { handleBattlePhase, handleMainPhase } from "./aiDifficulty";
 
 export interface AIAction {
-  type: "summon" | "set" | "attack" | "activate_spell" | "end_phase" | "pass";
+  type:
+    | "summon"
+    | "set"
+    | "flip_summon"
+    | "attack"
+    | "activate_spell"
+    | "set_spell_trap"
+    | "play_field_spell"
+    | "activate_trap"
+    | "end_phase"
+    | "pass";
   cardId?: Id<"cardDefinitions">;
   tributeIds?: Id<"cardDefinitions">[];
   position?: "attack" | "defense";
   targetId?: Id<"cardDefinitions">;
+}
+
+export interface SpellTrapCard {
+  cardId: Id<"cardDefinitions">;
+  isFaceDown: boolean;
+  isActivated: boolean;
+  turnSet?: number;
+  equippedTo?: Id<"cardDefinitions">;
+}
+
+export interface FieldSpell {
+  cardId: Id<"cardDefinitions">;
+  isActive: boolean;
 }
 
 /**
@@ -30,8 +53,8 @@ export function evaluateBoard(gameState: Doc<"gameStates">, aiPlayerId: Id<"user
   return {
     myBoardSize: myBoard.length,
     oppBoardSize: oppBoard.length,
-    myTotalATK: myBoard.reduce((sum, card) => sum + card.attack, 0),
-    oppTotalATK: oppBoard.reduce((sum, card) => sum + card.attack, 0),
+    myTotalATK: myBoard.reduce((sum, card) => sum + (card.isFaceDown ? 0 : card.attack), 0),
+    oppTotalATK: oppBoard.reduce((sum, card) => sum + (card.isFaceDown ? 0 : card.attack), 0),
     myLP,
     oppLP,
     myHandSize: myHand.length,
@@ -98,42 +121,6 @@ export function canSummonWithoutTribute(card: Doc<"cardDefinitions">): boolean {
 }
 
 /**
- * Determines if AI should attack with a specific monster
- */
-export function shouldAttack(
-  myMonster: { attack: number; hasAttacked: boolean; position: number },
-  oppBoard: Array<{ attack: number; defense: number; position: number; isFaceDown: boolean }>
-): { shouldAttack: boolean; targetId?: string; directAttack?: boolean } {
-  // Already attacked
-  if (myMonster.hasAttacked) {
-    return { shouldAttack: false };
-  }
-
-  // Not in attack position
-  if (myMonster.position !== 1) {
-    return { shouldAttack: false };
-  }
-
-  // Opponent has no monsters - direct attack
-  if (oppBoard.length === 0) {
-    return { shouldAttack: true, directAttack: true };
-  }
-
-  // Find best target (prioritize monsters we can destroy)
-  for (const oppMonster of oppBoard) {
-    const targetDEF = oppMonster.position === -1 ? oppMonster.defense : oppMonster.attack;
-
-    // Can destroy opponent's monster
-    if (myMonster.attack > targetDEF) {
-      return { shouldAttack: true };
-    }
-  }
-
-  // Don't attack if we can't win any battle
-  return { shouldAttack: false };
-}
-
-/**
  * Main AI decision function for Normal difficulty
  *
  * Strategy:
@@ -155,6 +142,12 @@ export async function makeAIDecision(
   const hasNormalSummoned = isHost
     ? gameState.hostNormalSummonedThisTurn || false
     : gameState.opponentNormalSummonedThisTurn || false;
+  const mySpellTrapZone = ((isHost
+    ? gameState.hostSpellTrapZone
+    : gameState.opponentSpellTrapZone) || []) as SpellTrapCard[];
+  const myFieldSpell = (isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell) as
+    | FieldSpell
+    | undefined;
 
   const evaluation = evaluateBoard(gameState, aiPlayerId);
 
@@ -167,37 +160,34 @@ export async function makeAIDecision(
       myHand,
       myBoard,
       oppBoard,
-      cardData
+      cardData,
+      gameState.turnNumber ?? 1,
+      mySpellTrapZone,
+      myFieldSpell
     );
   }
 
   // BATTLE PHASE
   if (phase === "battle") {
-    return handleBattlePhase(difficulty, myBoard, oppBoard);
+    return handleBattlePhase(difficulty, myBoard, oppBoard, gameState.turnNumber ?? 1);
   }
 
   // MAIN PHASE 2
   if (phase === "main2") {
-    // Set remaining cards if hand is too full
-    if (myHand.length > 4 && evaluation.hasMonsterZoneSpace) {
-      const setableCards = myHand.filter((cardId) => {
-        const card = cardData.get(cardId);
-        return (
-          card &&
-          (card.cardType === "creature" || card.cardType === "spell" || card.cardType === "trap")
-        );
-      });
-
-      if (setableCards.length > 0) {
-        return {
-          type: "set",
-          cardId: setableCards[0],
-        };
-      }
-    }
-
-    // Otherwise pass
-    return { type: "pass" };
+    // Reuse Main Phase logic for flip_summon, spells, and set
+    // (normal summon check is enforced by executeAction, so a second summon/set is rejected)
+    return handleMainPhase(
+      difficulty,
+      hasNormalSummoned,
+      evaluation,
+      myHand,
+      myBoard,
+      oppBoard,
+      cardData,
+      gameState.turnNumber ?? 1,
+      mySpellTrapZone,
+      myFieldSpell
+    );
   }
 
   // END PHASE - always end turn

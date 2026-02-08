@@ -44,6 +44,7 @@ import { ltcgActions } from "./actions";
 import { controlRoutes } from "./api/controlRoutes";
 import { panelRoutes } from "./api/routes";
 import { ltcgEvaluators } from "./evaluators";
+import { ltcgEvents } from "./events";
 import { panels } from "./frontend";
 import { ltcgProviders } from "./providers";
 import { LTCGPollingService } from "./services/LTCGPollingService";
@@ -184,21 +185,7 @@ const plugin: LTCGPlugin = {
     // External control API routes
     ...controlRoutes,
   ],
-  events: {
-    // Event handlers for debugging - only log in debug mode
-    MESSAGE_RECEIVED: [
-      async (_params) => {
-        if (process.env.LTCG_DEBUG_MODE === "true") {
-          logger.debug("LTCG: MESSAGE_RECEIVED event");
-        }
-      },
-    ],
-    WORLD_CONNECTED: [
-      async (_params) => {
-        logger.info("LTCG: Connected to world");
-      },
-    ],
-  },
+  events: ltcgEvents,
   // Services for autonomous gameplay:
   // - TurnOrchestrator: Makes LLM-driven gameplay decisions
   // - LTCGPollingService: Polls for updates when no webhook URL is configured

@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCreateGuild } from "@/hooks/guilds/useCreateGuild";
 import { useGuild } from "@/hooks/guilds/useGuild";
 import { cn } from "@/lib/utils";
+import type { Visibility } from "@/types/common";
 import type { Id } from "@convex/_generated/dataModel";
 import {
   AlertTriangle,
@@ -33,7 +34,7 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
 
   const [name, setName] = useState(guild?.name || "");
   const [description, setDescription] = useState(guild?.description || "");
-  const [visibility, setVisibility] = useState<"public" | "private">(guild?.visibility || "public");
+  const [visibility, setVisibility] = useState<Visibility>(guild?.visibility || "public");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -60,7 +61,7 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
         visibility: visibility !== guild?.visibility ? visibility : undefined,
       });
       toast.success("Guild settings updated");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update settings");
     } finally {
       setIsSaving(false);
@@ -78,7 +79,7 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
       await deleteGuild();
       toast.success("Guild deleted");
       router.push("/guilds");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to delete guild");
       setIsDeleting(false);
     }
@@ -104,7 +105,7 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
       await setImage(storageId);
 
       toast.success(`${type === "profile" ? "Profile" : "Banner"} image updated`);
-    } catch (error) {
+    } catch (_error) {
       toast.error(`Failed to upload ${type} image`);
     } finally {
       setUploading(false);
@@ -125,8 +126,11 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
         <div className="space-y-4">
           {/* Name */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[#a89f94]">Guild Name</label>
+            <label htmlFor="guild-name" className="text-sm font-medium text-[#a89f94]">
+              Guild Name
+            </label>
             <Input
+              id="guild-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter guild name"
@@ -140,8 +144,11 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
 
           {/* Description */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[#a89f94]">Description</label>
+            <label htmlFor="guild-description" className="text-sm font-medium text-[#a89f94]">
+              Description
+            </label>
             <Textarea
+              id="guild-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Tell others about your guild..."
@@ -154,7 +161,7 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
 
           {/* Visibility */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-[#a89f94]">Visibility</label>
+            <p className="text-sm font-medium text-[#a89f94]">Visibility</p>
             <div className="flex gap-3">
               {[
                 { value: "public" as const, icon: Eye, label: "Public", desc: "Anyone can join" },
@@ -229,8 +236,11 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
         <div className="grid md:grid-cols-2 gap-6">
           {/* Profile Image */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-[#a89f94]">Profile Image</label>
-            <div
+            <label htmlFor="guild-profile-image" className="text-sm font-medium text-[#a89f94]">
+              Profile Image
+            </label>
+            <button
+              type="button"
               onClick={() => profileInputRef.current?.click()}
               className="relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-[#3d2b1f] hover:border-[#d4af37]/50 cursor-pointer transition-colors group"
             >
@@ -252,8 +262,9 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
                   <Camera className="w-8 h-8 text-white" />
                 )}
               </div>
-            </div>
+            </button>
             <input
+              id="guild-profile-image"
               ref={profileInputRef}
               type="file"
               accept="image/*"
@@ -267,8 +278,11 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
 
           {/* Banner Image */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-[#a89f94]">Banner Image</label>
-            <div
+            <label htmlFor="guild-banner-image" className="text-sm font-medium text-[#a89f94]">
+              Banner Image
+            </label>
+            <button
+              type="button"
               onClick={() => bannerInputRef.current?.click()}
               className="relative aspect-[16/9] rounded-xl overflow-hidden border-2 border-dashed border-[#3d2b1f] hover:border-[#d4af37]/50 cursor-pointer transition-colors group"
             >
@@ -290,8 +304,9 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
                   <ImageIcon className="w-8 h-8 text-white" />
                 )}
               </div>
-            </div>
+            </button>
             <input
+              id="guild-banner-image"
               ref={bannerInputRef}
               type="file"
               accept="image/*"

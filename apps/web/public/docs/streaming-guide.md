@@ -1,6 +1,8 @@
 # LTCG Streaming Guide
 
-Stream your LTCG gameplay live to Twitch or YouTube!
+Stream your LTCG gameplay live to Twitch, YouTube, Kick, X, Pump.fun, or custom RTMP.
+
+Note: `Retake.tv` is reserved for agent streams.
 
 ## For Players
 
@@ -17,10 +19,24 @@ Stream your LTCG gameplay live to Twitch or YouTube!
    - Go to "Go Live" → "Stream"
    - Copy your "Stream key"
 
+   **For Kick:**
+   - Visit [Kick Dashboard](https://help.kick.com/en/articles/12273234-how-to-stream-on-kick-com)
+   - Copy your stream key from creator settings
+   - Stream URL is optional in LTCG (default Kick ingest is used if omitted)
+
+   **For X / Pump.fun / Custom RTMP:**
+   - Copy both RTMP base URL and stream key from your provider
+   - Enter both values in LTCG streaming setup
+
+   **Optional advanced overrides:**
+   - Twitch: set a custom RTMP URL only if you need non-default ingest
+   - Kick: set a custom RTMP URL only if you need non-default ingest
+
 2. **Configure Streaming in LTCG**
    - Go to Settings → Streaming
-   - Select your platform (Twitch or YouTube)
+   - Select your platform
    - Paste your stream key
+   - If required, paste RTMP URL
    - Click "Go Live"
 
 3. **Start Playing**
@@ -36,8 +52,8 @@ Your stream includes:
 - ✅ Life point changes
 - ✅ Turn phases
 - ✅ Game events ticker
-- ❌ Your webcam (coming soon)
-- ❌ Your voice (configure in Twitch/YouTube)
+- ✅ Optional webcam picture-in-picture window
+- ✅ Optional voice track mix (manual URL or ElevenLabs-generated)
 
 ### Privacy & Security
 
@@ -49,7 +65,7 @@ Your stream includes:
 ### Stream Quality
 
 - **Resolution:** 1080p (1920x1080)
-- **Framerate:** 30 FPS
+- **Framerate:** 60 FPS
 - **Bitrate:** Auto-adjusted by LiveKit
 - **Latency:** 3-5 seconds delay typical
 
@@ -127,17 +143,34 @@ Execution: 1.2s
 ```typescript
 {
   "enabled": true,           // Enable streaming
-  "platform": "twitch",      // Or "youtube"
+      "platform": "twitch",      // Or "youtube" | "kick" | "retake" | "x" | "pumpfun" | "custom"
   "streamKey": "...",        // Your platform key
   "autoStart": true,         // Auto-stream every game
   "overlayConfig": {
     "showDecisions": true,   // Show AI reasoning
     "showAgentInfo": true,   // Show agent name/avatar
     "showEventFeed": true,   // Show game events
+    "voiceTrackUrl": "https://cdn.example.com/voice.mp3", // Optional voice/TTS track
+    "voiceVolume": 0.9,      // Optional 0..1 mix level
+    "voiceLoop": false,      // Optional: loop audio
     "theme": "dark"          // Or "light"
   }
 }
 ```
+
+### ElevenLabs Voice Generation
+
+If `ELEVENLABS_API_KEY` is configured on the server, you can generate stream-ready voice audio:
+
+```bash
+POST /api/streaming/voice/elevenlabs
+{
+  "text": "Welcome to the arena.",
+  "returnDataUrl": true
+}
+```
+
+Use the returned `dataUrl` as `overlayConfig.voiceTrackUrl`, or host the audio and pass its URL.
 
 ### API Integration
 
@@ -202,7 +235,7 @@ https://lunchtable.cards/stream/overlay?sessionId={id}&token={jwt}
 ## FAQ
 
 **Q: Can I stream to multiple platforms at once?**
-A: Currently one platform at a time. Multi-streaming coming soon.
+A: Yes. Use multiple destinations or agent multistream actions.
 
 **Q: Does streaming affect game performance?**
 A: No - streaming happens server-side, not on your device.

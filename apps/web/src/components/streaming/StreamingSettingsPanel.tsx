@@ -1,56 +1,59 @@
 "use client";
 
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
+import {
+  STREAMING_PLATFORMS,
+  STREAMING_PLATFORM_META,
+  type StreamingPlatform,
+  requiresCustomRtmpUrl,
+} from "@/lib/streaming/platforms";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { usePrivy } from "@privy-io/react-auth";
 import { useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface StreamingSettingsPanelProps {
   userId: string;
 }
 
-/**
- * User-facing panel for configuring streaming settings
- * Allows users to connect their Twitch/YouTube accounts and manage streams
- */
-type StreamingPlatform = "twitch" | "youtube" | "custom" | "retake" | "x" | "pumpfun";
-
-const PLATFORM_NEEDS_RTMP_URL: Record<string, boolean> = {
-  x: true,
-  pumpfun: true,
-  custom: true,
-};
-
-const PLATFORM_LABELS: Record<StreamingPlatform, string> = {
-  twitch: "Twitch",
-  youtube: "YouTube",
-  retake: "Retake.tv",
-  x: "X (Twitter)",
-  pumpfun: "Pump.fun",
-  custom: "Custom RTMP",
-};
-
-const PLATFORM_ICONS: Record<StreamingPlatform, string> = {
-  twitch: "\uD83D\uDFE3",
-  youtube: "\uD83D\uDD34",
-  retake: "\uD83D\uDCFA",
-  x: "\u2715",
-  pumpfun: "\uD83D\uDCA7",
-  custom: "\u2699\uFE0F",
-};
-
 export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) {
+  const { getAccessToken } = usePrivy();
   const [platform, setPlatform] = useState<StreamingPlatform>("twitch");
   const [streamKey, setStreamKey] = useState("");
   const [customRtmpUrl, setCustomRtmpUrl] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [useStoredCreds, setUseStoredCreds] = useState(false);
 
-  const needsRtmpUrl = PLATFORM_NEEDS_RTMP_URL[platform] || false;
+  const needsRtmpUrl = requiresCustomRtmpUrl(platform);
+  const supportsOptionalRtmpOverride =
+    platform === "twitch" || platform === "kick" || platform === "youtube";
+  const showRtmpInput = needsRtmpUrl || supportsOptionalRtmpOverride;
+
+  // Load saved streaming config
+  const streamingConfig = useConvexQuery(typedApi.core.userPreferences.getUserStreamingConfig, {});
+
+  // Pre-fill from saved config
+  useEffect(() => {
+    if (streamingConfig?.platform) {
+      const savedPlatform = streamingConfig.platform as StreamingPlatform;
+      if (STREAMING_PLATFORM_META[savedPlatform]) {
+        setPlatform(savedPlatform);
+      }
+      if (streamingConfig.hasStreamKey) {
+        setUseStoredCreds(true);
+      }
+      if (streamingConfig.rtmpUrl) {
+        setCustomRtmpUrl(streamingConfig.rtmpUrl);
+      }
+    }
+  }, [streamingConfig]);
 
   // Get user's streaming sessions
   const sessions = useQuery(api.streaming.sessions.getUserSessions, {
-    userId: userId as any,
+    userId: userId as Id<"users">,
     limit: 5,
   });
 
@@ -63,14 +66,24 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
     try {
       const response = await fetch("/api/streaming/start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await (async () => {
+            const token = await getAccessToken();
+            return token ? { Authorization: `Bearer ${token}` } : {};
+          })()),
+        },
         body: JSON.stringify({
           userId,
           streamType: "user",
           platform,
-          streamKey,
-          customRtmpUrl: needsRtmpUrl ? customRtmpUrl : undefined,
-          streamTitle: `${PLATFORM_LABELS[platform]} Stream`,
+          ...(useStoredCreds
+            ? { useStoredCredentials: true }
+            : {
+                streamKey,
+                customRtmpUrl: customRtmpUrl.trim() ? customRtmpUrl.trim() : undefined,
+              }),
+          streamTitle: `${STREAMING_PLATFORM_META[platform].label} Stream`,
         }),
       });
 
@@ -94,7 +107,13 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
     try {
       await fetch("/api/streaming/stop", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await (async () => {
+            const token = await getAccessToken();
+            return token ? { Authorization: `Bearer ${token}` } : {};
+          })()),
+        },
         body: JSON.stringify({
           sessionId: sessionId || activeSession?._id,
         }),
@@ -112,7 +131,10 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
   return (
     <div className="streaming-settings">
       <h2>Stream Your Gameplay</h2>
-      <p className="subtitle">Broadcast your LTCG matches live to Twitch, YouTube, X, Pump.fun, and more</p>
+      <p className="subtitle">
+        Broadcast your LTCG matches live to Twitch, YouTube, Kick, X, Pump.fun, and more
+      </p>
+      <p className="subtitle">Retake is available for agent streams only.</p>
 
       {error && (
         <div className="error-message">
@@ -134,99 +156,165 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
             <br />
             Viewers: {activeSession?.viewerCount || 0}
           </p>
-          <button onClick={stopStream} className="btn-stop">
+          <button type="button" onClick={stopStream} className="btn-stop">
             Stop Streaming
           </button>
         </div>
       ) : (
         <div className="stream-setup">
           <div className="platform-selector">
-            <label>Platform</label>
+            <p>Platform</p>
             <div className="platform-buttons">
-              {(["twitch", "youtube", "x", "pumpfun", "retake", "custom"] as StreamingPlatform[]).map((p) => (
+              {STREAMING_PLATFORMS.filter((p) => p !== "retake").map((p) => (
                 <button
                   key={p}
+                  type="button"
                   className={platform === p ? "active" : ""}
                   onClick={() => setPlatform(p)}
                 >
-                  {PLATFORM_ICONS[p]} {PLATFORM_LABELS[p]}
+                  {STREAMING_PLATFORM_META[p].icon} {STREAMING_PLATFORM_META[p].label}
                 </button>
               ))}
             </div>
           </div>
 
-          {needsRtmpUrl && (
+          {showRtmpInput && (
             <div className="stream-key-input">
-              <label>RTMP URL</label>
+              <label htmlFor="streaming-rtmp-url">
+                RTMP URL {supportsOptionalRtmpOverride && !needsRtmpUrl && "(optional override)"}
+              </label>
               <input
+                id="streaming-rtmp-url"
                 type="text"
                 placeholder={
                   platform === "x"
                     ? "rtmp://... from Media Studio > Producer"
                     : platform === "pumpfun"
                       ? "rtmp://... from your coin page > Start Livestream"
-                      : "rtmp://your-server.com/live"
+                      : platform === "retake"
+                        ? "rtmps://... from Retake agent RTMP API"
+                        : platform === "twitch"
+                          ? "rtmps://live.twitch.tv/app (optional)"
+                          : platform === "kick"
+                            ? "rtmps://...kick ingest.../app (optional)"
+                            : "rtmp://your-server.com/live"
                 }
                 value={customRtmpUrl}
                 onChange={(e) => setCustomRtmpUrl(e.target.value)}
               />
               <p className="help-text">
-                {platform === "x" && "Go to Media Studio > Producer > Create RTMP Source > Copy URL"}
-                {platform === "pumpfun" && "Go to your coin page > Start Livestream > Select RTMP > Copy URL"}
+                {platform === "x" &&
+                  "Go to Media Studio > Producer > Create RTMP Source > Copy URL"}
+                {platform === "pumpfun" &&
+                  "Go to your coin page > Start Livestream > Select RTMP > Copy URL"}
+                {platform === "retake" && "Use RTMP URL returned by Retake.tv API"}
+                {platform === "twitch" && "Optional: override default Twitch ingest if needed."}
+                {platform === "kick" && "Optional: override default Kick ingest if needed."}
                 {platform === "custom" && "Enter your custom RTMP ingest URL"}
               </p>
             </div>
           )}
 
           <div className="stream-key-input">
-            <label>Stream Key</label>
-            <input
-              type="password"
-              placeholder={
-                platform === "twitch"
-                  ? "Get from twitch.tv/dashboard/settings/stream"
-                  : platform === "youtube"
-                    ? "Get from studio.youtube.com"
-                    : platform === "x"
-                      ? "Get from Media Studio > Producer"
-                      : platform === "pumpfun"
-                        ? "Get from your coin page > Start Livestream"
-                        : "Enter your stream key"
-              }
-              value={streamKey}
-              onChange={(e) => setStreamKey(e.target.value)}
-            />
-            <p className="help-text">
-              {platform === "twitch" && (
-                <>
-                  Get your stream key from{" "}
-                  <a
-                    href="https://dashboard.twitch.tv/settings/stream"
-                    target="_blank"
-                    rel="noreferrer noopener"
+            <label htmlFor="streaming-stream-key">Stream Key</label>
+            {useStoredCreds ? (
+              <div className="saved-creds-indicator">
+                <span className="saved-badge">Using saved credentials</span>
+                <button
+                  type="button"
+                  className="switch-manual"
+                  onClick={() => setUseStoredCreds(false)}
+                >
+                  Enter manually
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  id="streaming-stream-key"
+                  type="password"
+                  placeholder={
+                    platform === "twitch"
+                      ? "Get from twitch.tv/dashboard/settings/stream"
+                      : platform === "youtube"
+                        ? "Get from studio.youtube.com"
+                        : platform === "kick"
+                          ? "Get from Kick Dashboard > Stream URL & Key"
+                          : platform === "x"
+                            ? "Get from Media Studio > Producer"
+                            : platform === "pumpfun"
+                              ? "Get from your coin page > Start Livestream"
+                              : "Enter your stream key"
+                  }
+                  value={streamKey}
+                  onChange={(e) => setStreamKey(e.target.value)}
+                />
+                {streamingConfig?.hasStreamKey && (
+                  <button
+                    type="button"
+                    className="switch-saved"
+                    onClick={() => {
+                      setUseStoredCreds(true);
+                      setStreamKey("");
+                    }}
                   >
-                    Twitch Dashboard
-                  </a>
-                </>
-              )}
-              {platform === "youtube" && (
-                <>
-                  Get your stream key from{" "}
-                  <a href="https://studio.youtube.com/" target="_blank" rel="noreferrer noopener">
-                    YouTube Studio
-                  </a>
-                </>
-              )}
-              {platform === "x" && "Copy the stream key from your RTMP source in Media Studio. Requires X Premium."}
-              {platform === "pumpfun" && "Copy the stream key from your livestream settings. Must be the token creator."}
-              {platform === "retake" && "Stream key is provided via Retake.tv integration."}
-              {platform === "custom" && "Enter the stream key for your RTMP server."}
-            </p>
+                    Use saved credentials instead
+                  </button>
+                )}
+                <p className="help-text">
+                  {platform === "twitch" && (
+                    <>
+                      Get your stream key from{" "}
+                      <a
+                        href="https://dashboard.twitch.tv/settings/stream"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        Twitch Dashboard
+                      </a>
+                    </>
+                  )}
+                  {platform === "youtube" && (
+                    <>
+                      Get your stream key from{" "}
+                      <a
+                        href="https://studio.youtube.com/"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        YouTube Studio
+                      </a>
+                    </>
+                  )}
+                  {platform === "kick" && (
+                    <>
+                      Get your stream key from{" "}
+                      <a
+                        href="https://help.kick.com/en/articles/12273234-how-to-stream-on-kick-com"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        Kick Creator Dashboard
+                      </a>
+                    </>
+                  )}
+                  {platform === "x" &&
+                    "Copy the stream key from your RTMP source in Media Studio. Requires X Premium."}
+                  {platform === "pumpfun" &&
+                    "Copy the stream key from your livestream settings. Must be the token creator."}
+                  {platform === "retake" && "Stream key is provided via Retake.tv integration."}
+                  {platform === "custom" && "Enter the stream key for your RTMP server."}
+                </p>
+              </>
+            )}
           </div>
 
           <button
+            type="button"
             onClick={startStream}
-            disabled={!streamKey || isStreaming || (needsRtmpUrl && !customRtmpUrl)}
+            disabled={
+              (!useStoredCreds && !streamKey) || isStreaming || (needsRtmpUrl && !customRtmpUrl)
+            }
             className="btn-start"
           >
             {isStreaming ? "Starting..." : "Go Live"}
@@ -240,7 +328,9 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
           <ul>
             {sessions.slice(0, 5).map((session) => (
               <li key={session._id}>
-                <span className="platform-icon">{PLATFORM_ICONS[session.platform as StreamingPlatform] || "📺"}</span>
+                <span className="platform-icon">
+                  {STREAMING_PLATFORM_META[session.platform as StreamingPlatform]?.icon || "TV"}
+                </span>
                 <span className="session-info">
                   {new Date(session.createdAt).toLocaleDateString()}
                   {session.stats && ` • ${formatDuration(session.stats.duration)}`}
@@ -385,6 +475,43 @@ export function StreamingSettingsPanel({ userId }: StreamingSettingsPanelProps) 
 
         .help-text a:hover {
           text-decoration: underline;
+        }
+
+        .saved-creds-indicator {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px;
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          border-radius: 8px;
+        }
+
+        .saved-badge {
+          color: #6ee7b7;
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .switch-manual,
+        .switch-saved {
+          background: none;
+          border: none;
+          color: #60a5fa;
+          font-size: 12px;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0;
+        }
+
+        .switch-manual:hover,
+        .switch-saved:hover {
+          color: #93c5fd;
+        }
+
+        .switch-saved {
+          display: block;
+          margin-top: 8px;
         }
 
         .btn-start,

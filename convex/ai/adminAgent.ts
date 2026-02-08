@@ -14,7 +14,11 @@
 
 import { Agent, type ToolCtx, createTool } from "@convex-dev/agent";
 import { z } from "zod";
-import { api, components } from "../_generated/api";
+import { components } from "../_generated/api";
+// Workaround for TS2589 (excessively deep type instantiation)
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround for TS2589
+const apiAny = (generatedApi as any).api;
 import type { Id } from "../_generated/dataModel";
 import { getAdminAgentModel, getStandardEmbeddingModel } from "./providers";
 
@@ -124,8 +128,7 @@ const searchPlayers = createTool({
     limit: z.number().optional().default(10).describe("Maximum results to return"),
   }),
   handler: async (ctx: ToolCtx, args: { query: string; limit: number }) => {
-    // biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround for TS2589
-    const players = (await ctx.runQuery((api as any).admin.admin.listPlayers, {
+    const players = (await ctx.runQuery(apiAny.admin.admin.listPlayers, {
       limit: args.limit,
     })) as PlayerListItem[];
 
@@ -159,7 +162,7 @@ const getPlayerProfile = createTool({
     playerId: z.string().describe("The player's ID (from search results)"),
   }),
   handler: async (ctx: ToolCtx, args: { playerId: string }) => {
-    const profile = (await ctx.runQuery(api.admin.admin.getPlayerProfile, {
+    const profile = (await ctx.runQuery(apiAny.admin.admin.getPlayerProfile, {
       playerId: args.playerId as Id<"users">,
     })) as PlayerProfile | null;
 
@@ -194,7 +197,7 @@ const getPlayerInventory = createTool({
     playerId: z.string().describe("The player's ID"),
   }),
   handler: async (ctx: ToolCtx, args: { playerId: string }) => {
-    const inventory = (await ctx.runQuery(api.admin.admin.getPlayerInventory, {
+    const inventory = (await ctx.runQuery(apiAny.admin.admin.getPlayerInventory, {
       playerId: args.playerId as Id<"users">,
     })) as PlayerInventory | null;
 
@@ -227,7 +230,7 @@ const getSystemStats = createTool({
     "Get current system statistics including player counts, game stats, and API key usage.",
   args: z.object({}),
   handler: async (ctx: ToolCtx) => {
-    const stats = (await ctx.runQuery(api.admin.admin.getSystemStats, {})) as SystemStats;
+    const stats = (await ctx.runQuery(apiAny.admin.admin.getSystemStats, {})) as SystemStats;
 
     return {
       players: {
@@ -261,7 +264,7 @@ const getSuspiciousActivity = createTool({
     lookbackDays: z.number().optional().default(7).describe("Number of days to analyze"),
   }),
   handler: async (ctx: ToolCtx, args: { lookbackDays: number }) => {
-    const report = (await ctx.runQuery(api.admin.admin.getSuspiciousActivityReport, {
+    const report = (await ctx.runQuery(apiAny.admin.admin.getSuspiciousActivityReport, {
       lookbackDays: args.lookbackDays,
     })) as SuspiciousReport;
 
@@ -290,7 +293,7 @@ const getAuditLogs = createTool({
       .describe("Filter by action type (e.g., 'ban_player', 'grant_role')"),
   }),
   handler: async (ctx: ToolCtx, args: { limit: number; action?: string }) => {
-    const result = (await ctx.runQuery(api.admin.admin.getAuditLog, {
+    const result = (await ctx.runQuery(apiAny.admin.admin.getAuditLog, {
       limit: args.limit,
       action: args.action,
     })) as AuditLogResult;
@@ -322,7 +325,7 @@ const listAdmins = createTool({
       .describe("Filter by specific role"),
   }),
   handler: async (ctx: ToolCtx, args: { role?: "moderator" | "admin" | "superadmin" }) => {
-    const admins = (await ctx.runQuery(api.admin.admin.listAdmins, {
+    const admins = (await ctx.runQuery(apiAny.admin.admin.listAdmins, {
       role: args.role,
     })) as AdminUser[];
 
@@ -357,7 +360,7 @@ const recommendBanPlayer = createTool({
   }),
   handler: async (ctx: ToolCtx, args: { playerId: string; reason: string }) => {
     // Get player profile
-    const profile = (await ctx.runQuery(api.admin.admin.getPlayerProfile, {
+    const profile = (await ctx.runQuery(apiAny.admin.admin.getPlayerProfile, {
       playerId: args.playerId as Id<"users">,
     })) as PlayerProfile | null;
 
@@ -366,7 +369,7 @@ const recommendBanPlayer = createTool({
     }
 
     // Get recent audit logs for this player
-    const auditLogs = (await ctx.runQuery(api.admin.admin.getAuditLog, {
+    const auditLogs = (await ctx.runQuery(apiAny.admin.admin.getAuditLog, {
       limit: 20,
       targetUserId: args.playerId as Id<"users">,
     })) as AuditLogResult;
@@ -374,8 +377,9 @@ const recommendBanPlayer = createTool({
     // Analyze behavior patterns
     const previousWarnings = auditLogs.logs.filter((log) => log.action === "warn_player").length;
     const previousBans = auditLogs.logs.filter((log) => log.action === "ban_player").length;
-    const previousSuspensions = auditLogs.logs.filter((log) => log.action === "suspend_player")
-      .length;
+    const previousSuspensions = auditLogs.logs.filter(
+      (log) => log.action === "suspend_player"
+    ).length;
 
     // Recommendation logic
     const warningThreshold = 3;
@@ -392,9 +396,7 @@ const recommendBanPlayer = createTool({
         previousWarnings,
         previousSuspensions,
         previousBans,
-        lastActive: profile.lastActiveAt
-          ? new Date(profile.lastActiveAt).toISOString()
-          : "unknown",
+        lastActive: profile.lastActiveAt ? new Date(profile.lastActiveAt).toISOString() : "unknown",
       },
       recommendation: {
         action: recommendBan ? "ban" : previousWarnings > 0 ? "suspend" : "warn",
@@ -404,7 +406,11 @@ const recommendBanPlayer = createTool({
           : previousWarnings > 0
             ? `Player has ${previousWarnings} previous warnings. Consider suspension before ban.`
             : "First offense. Consider warning before escalating to ban.",
-        suggestedDuration: recommendBan ? "permanent" : previousWarnings > 0 ? "7 days" : "24 hours",
+        suggestedDuration: recommendBan
+          ? "permanent"
+          : previousWarnings > 0
+            ? "7 days"
+            : "24 hours",
       },
       nextSteps: [
         "1. Review evidence carefully (screenshots, match history, chat logs)",
@@ -431,13 +437,11 @@ const recommendGrantCurrency = createTool({
   args: z.object({
     playerId: z.string().describe("The player's ID"),
     amount: z.number().describe("Requested amount of gold to grant"),
-    reason: z
-      .string()
-      .describe("Reason for grant (e.g., 'compensation for bug', 'event reward')"),
+    reason: z.string().describe("Reason for grant (e.g., 'compensation for bug', 'event reward')"),
   }),
   handler: async (ctx: ToolCtx, args: { playerId: string; amount: number; reason: string }) => {
     // Get player profile
-    const profile = (await ctx.runQuery(api.admin.admin.getPlayerProfile, {
+    const profile = (await ctx.runQuery(apiAny.admin.admin.getPlayerProfile, {
       playerId: args.playerId as Id<"users">,
     })) as PlayerProfile | null;
 
@@ -446,7 +450,7 @@ const recommendGrantCurrency = createTool({
     }
 
     // Get player inventory for context
-    const inventory = (await ctx.runQuery(api.admin.admin.getPlayerInventory, {
+    const inventory = (await ctx.runQuery(apiAny.admin.admin.getPlayerInventory, {
       playerId: args.playerId as Id<"users">,
     })) as PlayerInventory | null;
 
@@ -455,7 +459,7 @@ const recommendGrantCurrency = createTool({
     const isAmountReasonable = args.amount > 0 && args.amount <= MAX_GRANT_AMOUNT;
 
     // Check for suspicious patterns (multiple grants to same player)
-    const recentGrants = (await ctx.runQuery(api.admin.admin.getAuditLog, {
+    const recentGrants = (await ctx.runQuery(apiAny.admin.admin.getAuditLog, {
       limit: 50,
       action: "grant_currency",
       targetUserId: args.playerId as Id<"users">,

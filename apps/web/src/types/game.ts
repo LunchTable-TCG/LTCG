@@ -10,6 +10,7 @@
 
 import type { Id } from "@convex/_generated/dataModel";
 import type { JsonAbility } from "../lib/cardHelpers";
+import type { CardType } from "./cards";
 
 /**
  * Card representation in the player's hand.
@@ -55,7 +56,7 @@ export interface HandCard {
   /** URL to card artwork (optional) */
   imageUrl?: string;
   /** Type of card (matches Convex schema) */
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: CardType;
   /** Attack points (creature cards only) */
   attack?: number;
   /** Defense points (creature cards only) */
@@ -120,7 +121,7 @@ export interface BoardCard {
   /** URL to card artwork (optional) */
   imageUrl?: string;
   /** Type of card (matches Convex schema) */
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: CardType;
   /** Attack points (creature cards only) */
   attack?: number;
   /** Defense points (creature cards only) */

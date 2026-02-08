@@ -109,11 +109,9 @@ export function GuildShareDialog({ guildName, children }: GuildShareDialogProps)
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="bg-[#1a1614] border-[#3d2b1f] text-[#e8e0d5] max-w-md">
+      <DialogContent className="bg-[#1a1614] border-[#3d2b1f] text-[#e8e0d5] max-w-md overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="text-xl font-black text-[#e8e0d5]">
-            Invite Friends
-          </DialogTitle>
+          <DialogTitle className="text-xl font-black text-[#e8e0d5]">Invite Friends</DialogTitle>
           <DialogDescription className="text-[#a89f94]">
             Share this link to invite players to {guildName}
           </DialogDescription>
@@ -128,9 +126,9 @@ export function GuildShareDialog({ guildName, children }: GuildShareDialogProps)
           ) : inviteUrl ? (
             <div className="space-y-3">
               {/* Link display + copy */}
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-black/40 border border-[#3d2b1f]">
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-black/40 border border-[#3d2b1f] min-w-0">
                 <Link2 className="w-4 h-4 text-[#d4af37] shrink-0" />
-                <span className="text-sm text-[#a89f94] truncate flex-1 font-mono">
+                <span className="text-sm text-[#a89f94] truncate flex-1 min-w-0 font-mono">
                   {inviteUrl}
                 </span>
                 <Button
@@ -150,7 +148,8 @@ export function GuildShareDialog({ guildName, children }: GuildShareDialogProps)
               {/* Expiry info */}
               {myInviteLink?.expiresAt && (
                 <p className="text-xs text-[#a89f94]/60 text-center">
-                  Expires {new Date(myInviteLink.expiresAt).toLocaleDateString("en-US", {
+                  Expires{" "}
+                  {new Date(myInviteLink.expiresAt).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
@@ -164,7 +163,7 @@ export function GuildShareDialog({ guildName, children }: GuildShareDialogProps)
               )}
 
               {/* Share buttons */}
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button
                   type="button"
                   onClick={handleShareX}
@@ -233,9 +232,7 @@ export function GuildShareDialog({ guildName, children }: GuildShareDialogProps)
               </div>
               <div>
                 <p className="text-[#e8e0d5] font-medium">No active invite link</p>
-                <p className="text-sm text-[#a89f94] mt-1">
-                  Generate a link to share with friends
-                </p>
+                <p className="text-sm text-[#a89f94] mt-1">Generate a link to share with friends</p>
               </div>
               <Button
                 onClick={handleGenerate}

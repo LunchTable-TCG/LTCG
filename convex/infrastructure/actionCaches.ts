@@ -6,8 +6,10 @@
  */
 
 import { ActionCache } from "@convex-dev/action-cache";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import { components } from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 
 /**
  * Type assertion required: components.actionCache may not be in generated types yet
@@ -15,10 +17,6 @@ import { components } from "../_generated/api";
  */
 // biome-ignore lint/suspicious/noExplicitAny: Convex component type workaround
 const actionCacheComponent = (components as any).actionCache;
-
-// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround
-const internalAny = internal as any;
 
 /**
  * Cache for SPL token balance lookups

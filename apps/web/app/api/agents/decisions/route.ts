@@ -1,9 +1,18 @@
-import { api } from "@convex/_generated/api";
+import * as generatedApi from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
+
+function createConvexClient() {
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.trim();
+  if (!convexUrl) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+  }
+  return new ConvexHttpClient(convexUrl);
+}
 
 /**
  * POST /api/agents/decisions
@@ -11,6 +20,8 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
  */
 export async function POST(req: NextRequest) {
   try {
+    const convex = createConvexClient();
+
     // Authenticate via API key
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -20,7 +31,7 @@ export async function POST(req: NextRequest) {
     const apiKey = authHeader.substring(7);
 
     // Validate API key and get agent
-    const agent = await convex.query(api.agents.agents.validateApiKeyQuery, {
+    const agent = await convex.query(apiAny.agents.agents.validateApiKeyQuery, {
       apiKey,
     });
 
@@ -43,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Save decision to Convex
-    const decisionId = await convex.mutation(api.agents.decisions.saveDecision, {
+    const decisionId = await convex.mutation(apiAny.agents.decisions.saveDecision, {
       agentId: agent.agentId as Id<"agents">,
       gameId,
       turnNumber,
@@ -72,6 +83,8 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
   try {
+    const convex = createConvexClient();
+
     // Authenticate via API key
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -81,7 +94,7 @@ export async function GET(req: NextRequest) {
     const apiKey = authHeader.substring(7);
 
     // Validate API key and get agent
-    const agent = await convex.query(api.agents.agents.validateApiKeyQuery, {
+    const agent = await convex.query(apiAny.agents.agents.validateApiKeyQuery, {
       apiKey,
     });
 
@@ -91,21 +104,18 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const gameId = searchParams.get("gameId");
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const limit = Number.parseInt(searchParams.get("limit") || "50", 10);
 
     // Get decisions
-    let decisions;
-    if (gameId) {
-      decisions = await convex.query(api.agents.decisions.getGameDecisions, {
-        gameId,
-        limit,
-      });
-    } else {
-      decisions = await convex.query(api.agents.decisions.getAgentDecisions, {
-        agentId: agent.agentId as Id<"agents">,
-        limit,
-      });
-    }
+    const decisions = gameId
+      ? await convex.query(apiAny.agents.decisions.getGameDecisions, {
+          gameId,
+          limit,
+        })
+      : await convex.query(apiAny.agents.decisions.getAgentDecisions, {
+          agentId: agent.agentId as Id<"agents">,
+          limit,
+        });
 
     return NextResponse.json({
       decisions,

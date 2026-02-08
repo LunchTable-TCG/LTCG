@@ -70,7 +70,7 @@ export function DataGrid({
         <Skeleton className="h-6 w-32" />
         {description && <Skeleton className="mt-1 h-4 w-48" />}
         <div className={`mt-4 grid gap-4 ${gridCols[columns]}`}>
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 6  }, (_, i) => i).map((i) => (
             <div key={i} className="p-3 rounded-lg bg-muted/50 space-y-2">
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-6 w-16" />
@@ -162,7 +162,7 @@ export function LeaderboardGrid({
       <div className={className}>
         <Skeleton className="h-6 w-32" />
         <div className="mt-4 space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 5  }, (_, i) => i).map((i) => (
             <div key={i} className="flex items-center gap-3">
               <Skeleton className="h-6 w-6 rounded-full" />
               <Skeleton className="h-4 flex-1" />

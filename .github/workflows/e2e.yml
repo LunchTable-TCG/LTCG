@@ -47,7 +47,7 @@ jobs:
       - name: Start dev server
         run: |
           bun run dev &
-          bunx wait-on http://localhost:3000 --timeout 60000
+          bunx wait-on http://localhost:3333 --timeout 60000
 
       - name: Run smoke tests
         run: bunx playwright test --project=smoke
@@ -102,7 +102,7 @@ jobs:
       - name: Start dev server
         run: |
           bun run dev &
-          bunx wait-on http://localhost:3000 --timeout 60000
+          bunx wait-on http://localhost:3333 --timeout 60000
 
       - name: Run E2E tests (shard ${{ matrix.shard }}/4)
         run: bunx playwright test --shard=${{ matrix.shard }}/4

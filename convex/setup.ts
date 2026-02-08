@@ -6,7 +6,9 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import * as generatedApi from "./_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { internalMutation, mutation } from "./functions";
 
 /**
@@ -49,7 +51,7 @@ export const setupX402TreasuryWallet = internalMutation({
     });
 
     // Schedule Privy wallet creation
-    await ctx.scheduler.runAfter(0, internal.treasury.wallets.createPrivyWallet, {
+    await ctx.scheduler.runAfter(0, internalAny.treasury.wallets.createPrivyWallet, {
       walletDbId: walletId,
       policyId: undefined,
     });
@@ -77,7 +79,7 @@ export const setupComplete = internalMutation({
     try {
       // Step 1: Create system user
       results.steps.push({ name: "System User", success: true, message: "Starting..." });
-      await ctx.runMutation(internal.setupSystem.createSystemUser, {});
+      await ctx.runMutation(internalAny.setupSystem.createSystemUser, {});
       const step1 = results.steps[results.steps.length - 1];
       if (step1) step1.message = "System user created";
 
@@ -93,7 +95,7 @@ export const setupComplete = internalMutation({
 
       // Step 2: Seed default configurations
       results.steps.push({ name: "Default Configs", success: true, message: "Starting..." });
-      await ctx.runMutation(internal.admin.config.seedDefaultConfigs, {
+      await ctx.runMutation(internalAny.admin.config.seedDefaultConfigs, {
         adminId: systemUser._id,
       });
       const step2 = results.steps[results.steps.length - 1];
@@ -101,7 +103,7 @@ export const setupComplete = internalMutation({
 
       // Step 3: Seed AI configurations
       results.steps.push({ name: "AI Configs", success: true, message: "Starting..." });
-      await ctx.runMutation(internal.admin.aiConfig.seedAIDefaultConfigs, {
+      await ctx.runMutation(internalAny.admin.aiConfig.seedAIDefaultConfigs, {
         adminId: systemUser._id,
       });
       const step3 = results.steps[results.steps.length - 1];
@@ -109,19 +111,19 @@ export const setupComplete = internalMutation({
 
       // Step 4: Seed starter cards
       results.steps.push({ name: "Starter Cards", success: true, message: "Starting..." });
-      await ctx.runMutation(internal.scripts.seedStarterCards.seedStarterCards, {});
+      await ctx.runMutation(internalAny.scripts.seedStarterCards.seedStarterCards, {});
       const lastStep = results.steps[results.steps.length - 1];
       if (lastStep) lastStep.message = "Starter cards seeded";
 
       // Step 5: Initialize progression system
       results.steps.push({ name: "Progression System", success: true, message: "Starting..." });
-      await ctx.runMutation(internal.setupSystem.initializeProgressionSystem, {});
+      await ctx.runMutation(internalAny.setupSystem.initializeProgressionSystem, {});
       const lastStep5 = results.steps[results.steps.length - 1];
       if (lastStep5) lastStep5.message = "Quests and achievements seeded";
 
       // Step 6: Setup x402 treasury wallet
       results.steps.push({ name: "Treasury Wallet", success: true, message: "Starting..." });
-      await ctx.runMutation(internal.setup.setupX402TreasuryWallet, {});
+      await ctx.runMutation(internalAny.setup.setupX402TreasuryWallet, {});
       const lastStep6 = results.steps[results.steps.length - 1];
       if (lastStep6) lastStep6.message = "x402 fee collection wallet created";
 
@@ -167,7 +169,7 @@ export const setupSuperadmin = internalMutation({
   handler: async (ctx, args) => {
     console.log(`🔐 Creating superadmin for Privy user: ${args.privyUserId}`);
 
-    await ctx.runMutation(internal.setupSystem.bootstrapSuperadmin, {
+    await ctx.runMutation(internalAny.setupSystem.bootstrapSuperadmin, {
       privyId: args.privyUserId,
     });
 
@@ -185,7 +187,7 @@ export const setupQuick = internalMutation({
     console.log("⚡ Running quick setup (essential data only)...");
 
     // System user
-    await ctx.runMutation(internal.setupSystem.createSystemUser, {});
+    await ctx.runMutation(internalAny.setupSystem.createSystemUser, {});
 
     // Get system user ID
     const systemUser = await ctx.db
@@ -198,15 +200,15 @@ export const setupQuick = internalMutation({
     }
 
     // Configs
-    await ctx.runMutation(internal.admin.config.seedDefaultConfigs, {
+    await ctx.runMutation(internalAny.admin.config.seedDefaultConfigs, {
       adminId: systemUser._id,
     });
-    await ctx.runMutation(internal.admin.aiConfig.seedAIDefaultConfigs, {
+    await ctx.runMutation(internalAny.admin.aiConfig.seedAIDefaultConfigs, {
       adminId: systemUser._id,
     });
 
     // Cards (needed for decks)
-    await ctx.runMutation(internal.scripts.seedStarterCards.seedStarterCards, {});
+    await ctx.runMutation(internalAny.scripts.seedStarterCards.seedStarterCards, {});
 
     console.log("✅ Quick setup complete");
     return { success: true, mode: "quick" };

@@ -53,7 +53,9 @@ export const listTracks = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("tracks")
-      .withIndex("by_roomName_state", (q) => q.eq("roomName", args.roomName).eq("state", "published"))
+      .withIndex("by_roomName_state", (q) =>
+        q.eq("roomName", args.roomName).eq("state", "published")
+      )
       .collect();
   },
 });

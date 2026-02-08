@@ -192,7 +192,8 @@ export function useLunchMoney(): UseLunchMoneyReturn {
   const allGoldListings: Listing[] = goldListingsData ?? [];
 
   // Transform raw token listings to match Listing interface
-  const rawTokenListings: RawTokenListing[] = tokenListingsData?.listings ?? [];
+  const rawTokenListings: RawTokenListing[] =
+    (tokenListingsData as RawTokenListing[] | undefined) ?? [];
   const allTokenListings: Listing[] = rawTokenListings.map((t) => ({
     _id: t._id,
     listingType: "fixed" as const,
@@ -208,14 +209,19 @@ export function useLunchMoney(): UseLunchMoneyReturn {
   }));
   const allPendingPurchases: PendingPurchase[] = pendingPurchasesData ?? [];
 
+  // Extract nested lifetime stats from backend response
+  const lifetimeStats = (balance as Record<string, unknown> | undefined)?.lifetimeStats as
+    | { goldEarned: number; goldSpent: number; gemsEarned: number; gemsSpent: number }
+    | undefined;
+
   return {
     // Balances
     gold: balance?.gold ?? 0,
     gems: balance?.gems ?? 0,
-    lifetimeGoldEarned: balance?.lifetimeGoldEarned ?? 0,
-    lifetimeGoldSpent: balance?.lifetimeGoldSpent ?? 0,
-    lifetimeGemsEarned: balance?.lifetimeGemsEarned ?? 0,
-    lifetimeGemsSpent: balance?.lifetimeGemsSpent ?? 0,
+    lifetimeGoldEarned: lifetimeStats?.goldEarned ?? 0,
+    lifetimeGoldSpent: lifetimeStats?.goldSpent ?? 0,
+    lifetimeGemsEarned: lifetimeStats?.gemsEarned ?? 0,
+    lifetimeGemsSpent: lifetimeStats?.gemsSpent ?? 0,
 
     // Token
     tokenBalance: tokenData?.balance ?? 0,

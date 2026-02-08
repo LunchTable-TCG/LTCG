@@ -277,7 +277,7 @@ function RewardsPreview({ seasonId }: RewardsPreviewProps) {
   if (!preview) {
     return (
       <div className="space-y-2">
-        {[...Array(3)].map((_, i) => (
+        {Array.from({ length: 3 }, (_, i) => i).map((i) => (
           <Skeleton key={i} className="h-12 w-full" />
         ))}
       </div>
@@ -355,7 +355,7 @@ function Leaderboard({ seasonId, isEnded }: LeaderboardProps) {
   if (!leaderboard) {
     return (
       <div className="space-y-2">
-        {[...Array(10)].map((_, i) => (
+        {Array.from({ length: 10 }, (_, i) => i).map((i) => (
           <Skeleton key={i} className="h-10 w-full" />
         ))}
       </div>

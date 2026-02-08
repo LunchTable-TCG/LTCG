@@ -124,6 +124,7 @@ export interface User {
   rankedElo?: number;
   isBanned?: boolean;
   isSuspended?: boolean;
+  walletAddress?: string;
 }
 
 export interface OnlineUser {

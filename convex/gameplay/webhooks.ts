@@ -146,9 +146,7 @@ export const triggerWebhooks = internalMutation({
       .withIndex("by_active", (q) => q.eq("isActive", true))
       .collect();
 
-    const subscribedWebhooks = allWebhooks.filter((webhook) =>
-      webhook.events.includes(args.event)
-    );
+    const subscribedWebhooks = allWebhooks.filter((webhook) => webhook.events.includes(args.event));
 
     if (subscribedWebhooks.length === 0) {
       return {
@@ -291,9 +289,7 @@ async function deliverWebhook(
       }
 
       // Log non-2xx responses
-      console.warn(
-        `Webhook ${webhook._id} returned ${response.status} on attempt ${attempt + 1}`
-      );
+      console.warn(`Webhook ${webhook._id} returned ${response.status} on attempt ${attempt + 1}`);
 
       // Don't retry on client errors (4xx), only on server errors (5xx)
       if (response.status >= 400 && response.status < 500) {
@@ -329,9 +325,13 @@ async function generateHmacSignature(payload: string, secret: string): Promise<s
   const keyData = encoder.encode(secret);
   const data = encoder.encode(payload);
 
-  const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, [
-    "sign",
-  ]);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
 
   const signatureBuffer = await crypto.subtle.sign("HMAC", key, data);
   const signature = Array.from(new Uint8Array(signatureBuffer))

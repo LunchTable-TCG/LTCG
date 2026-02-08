@@ -140,7 +140,7 @@ export function BoardCard({
             )}
           </div>
 
-          {card.cardType && card.cardType !== "monster" && (
+          {card.cardType && card.cardType !== "monster" && card.cardType !== "creature" && (
             <div
               className={cn(
                 "absolute top-0 left-0 px-0.5 rounded text-[6px] font-bold uppercase",
@@ -175,7 +175,6 @@ export function BoardCard({
           {card.monsterStats?.level && (
             <div className="absolute top-0 right-0 flex gap-px">
               {Array.from({ length: Math.min(card.monsterStats.level, 3) }).map((_, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: Static level stars don't reorder
                 <div key={`level-star-${i}`} className="w-1 h-1 rounded-full bg-yellow-400" />
               ))}
               {card.monsterStats.level > 3 && (

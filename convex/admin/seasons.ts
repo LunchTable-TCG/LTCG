@@ -11,6 +11,7 @@ import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { mutation } from "../functions";
+import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { scheduleAuditLog } from "../lib/internalHelpers";
 import { requireRole } from "../lib/roles";
@@ -36,9 +37,6 @@ const rewardTierValidator = v.object({
   exclusiveCardId: v.optional(v.id("cardDefinitions")),
   titleReward: v.optional(v.string()),
 });
-
-// Default ELO rating
-const DEFAULT_ELO = 1000;
 
 // Default tier configuration
 const DEFAULT_REWARDS = [
@@ -295,13 +293,16 @@ export const getSeasonLeaderboard = query({
     // Filter to users with ranked games and sort by ELO
     const rankedUsers = users
       .filter((u) => (u.rankedWins ?? 0) + (u.rankedLosses ?? 0) > 0)
-      .sort((a, b) => (b.rankedElo ?? DEFAULT_ELO) - (a.rankedElo ?? DEFAULT_ELO));
+      .sort(
+        (a, b) =>
+          (b.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING) - (a.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING)
+      );
 
     const paginated = rankedUsers.slice(offset, offset + limit);
 
     return {
       leaderboard: paginated.map((u, index) => {
-        const elo = u.rankedElo ?? DEFAULT_ELO;
+        const elo = u.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING;
         const wins = u.rankedWins ?? 0;
         const losses = u.rankedLosses ?? 0;
         const gamesPlayed = wins + losses;
@@ -351,7 +352,10 @@ export const previewSeasonRewards = query({
 
     const rankedUsers = users
       .filter((u) => (u.rankedWins ?? 0) + (u.rankedLosses ?? 0) > 0)
-      .sort((a, b) => (b.rankedElo ?? DEFAULT_ELO) - (a.rankedElo ?? DEFAULT_ELO));
+      .sort(
+        (a, b) =>
+          (b.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING) - (a.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING)
+      );
 
     // Calculate rewards per tier
     const tierStats: Record<
@@ -363,7 +367,7 @@ export const previewSeasonRewards = query({
     let totalPacks = 0;
 
     for (const user of rankedUsers) {
-      const elo = user.rankedElo ?? DEFAULT_ELO;
+      const elo = user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING;
       const tierInfo = getTierForElo(elo, rewards);
 
       if (!tierStats[tierInfo.tier]) {
@@ -791,7 +795,10 @@ async function createSeasonSnapshots(
 
   const rankedUsers = users
     .filter((u) => (u.rankedWins ?? 0) + (u.rankedLosses ?? 0) > 0)
-    .sort((a, b) => (b.rankedElo ?? DEFAULT_ELO) - (a.rankedElo ?? DEFAULT_ELO));
+    .sort(
+      (a, b) =>
+        (b.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING) - (a.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING)
+    );
 
   const now = Date.now();
   let count = 0;
@@ -801,7 +808,7 @@ async function createSeasonSnapshots(
     if (!user) {
       continue;
     }
-    const elo = user.rankedElo ?? DEFAULT_ELO;
+    const elo = user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING;
     const wins = user.rankedWins ?? 0;
     const losses = user.rankedLosses ?? 0;
     const tierInfo = getTierForElo(elo, rewards.length > 0 ? rewards : DEFAULT_REWARDS);
@@ -892,14 +899,14 @@ async function applyRankReset(
     .collect();
 
   for (const user of users) {
-    const currentElo = user.rankedElo ?? DEFAULT_ELO;
-    let newElo = DEFAULT_ELO;
+    const currentElo = user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING;
+    let newElo = ELO_SYSTEM.DEFAULT_RATING;
 
     if (resetType === "soft" && softResetPercentage !== undefined) {
       // Soft reset: keep a percentage of ELO above/below baseline
-      const eloDiff = currentElo - DEFAULT_ELO;
+      const eloDiff = currentElo - ELO_SYSTEM.DEFAULT_RATING;
       const keepAmount = eloDiff * (softResetPercentage / 100);
-      newElo = DEFAULT_ELO + Math.round(keepAmount);
+      newElo = ELO_SYSTEM.DEFAULT_RATING + Math.round(keepAmount);
     }
 
     await ctx.db.patch(user._id, {

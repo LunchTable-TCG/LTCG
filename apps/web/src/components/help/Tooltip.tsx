@@ -125,6 +125,7 @@ export function Tooltip({
 
               {/* Close button */}
               <button
+                type="button"
                 onClick={handleClose}
                 className="absolute top-2 right-2 text-slate-400 hover:text-white"
                 aria-label="Close tooltip"

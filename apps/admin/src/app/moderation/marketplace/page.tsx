@@ -594,9 +594,9 @@ export default function MarketplaceModerationPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() =>
-                                  (window.location.href = `/moderation/marketplace/${listing._id}`)
-                                }
+                                onClick={() => {
+                                  window.location.href = `/moderation/marketplace/${listing._id}`;
+                                }}
                               >
                                 View
                               </Button>
@@ -722,7 +722,7 @@ export default function MarketplaceModerationPage() {
                                   size="sm"
                                   variant="ghost"
                                   className="h-6 w-6 p-0"
-                                  onClick={() => openSellerHistory(anomaly.sellerId!)}
+                                  onClick={() => { if (anomaly.sellerId) openSellerHistory(anomaly.sellerId); }}
                                   title="View seller history"
                                 >
                                   <History className="h-3 w-3" />
@@ -744,9 +744,9 @@ export default function MarketplaceModerationPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() =>
-                                  (window.location.href = `/moderation/marketplace/${anomaly.listingId}`)
-                                }
+                                onClick={() => {
+                                  window.location.href = `/moderation/marketplace/${anomaly.listingId}`;
+                                }}
                               >
                                 View
                               </Button>
@@ -755,7 +755,7 @@ export default function MarketplaceModerationPage() {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => {
-                                    setSelectedCardId(anomaly.cardDefinitionId!);
+                                    setSelectedCardId(anomaly.cardDefinitionId ?? null);
                                     setSelectedCardName(anomaly.cardName);
                                     setPriceCapAmount(String(Math.round(anomaly.avgPrice * 2)));
                                     setPriceCapDialogOpen(true);
@@ -949,7 +949,6 @@ export default function MarketplaceModerationPage() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    role="combobox"
                     aria-expanded={cardSearchOpen}
                     className="w-full justify-between mt-1"
                   >

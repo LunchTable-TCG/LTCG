@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useMyGuild } from "@/hooks/guilds";
 import { useGuild } from "@/hooks/guilds/useGuild";
@@ -27,7 +27,7 @@ export function GuildMemberList({ guildId }: GuildMemberListProps) {
     try {
       await kickMember(userId);
       toast.success(`${username} has been removed from the guild`);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to remove member");
     }
     setConfirmAction(null);
@@ -38,7 +38,7 @@ export function GuildMemberList({ guildId }: GuildMemberListProps) {
     try {
       await transferOwnership(userId);
       toast.success(`Ownership transferred to ${username}`);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to transfer ownership");
     }
     setConfirmAction(null);
@@ -191,6 +191,7 @@ interface MemberCardProps {
   member: {
     userId: string;
     username: string;
+    image?: string;
     role: "owner" | "member";
     joinedAt: number;
     isOnline?: boolean;
@@ -225,6 +226,7 @@ function MemberCard({
       {/* Avatar */}
       <div className="relative">
         <Avatar className="w-12 h-12 border-2 border-[#3d2b1f]">
+          {member.image && <AvatarImage src={member.image} alt={member.username || "Member"} />}
           <AvatarFallback
             className={cn(
               "font-bold",

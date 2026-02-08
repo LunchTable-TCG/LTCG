@@ -26,7 +26,6 @@ export function PlayerHand({
       <div className="flex items-center justify-center py-1">
         <div className="flex items-center gap-0.5">
           {Array.from({ length: handCount }).map((_, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: Static opponent hand cards don't reorder
             <OpponentHandCard key={`opponent-hand-${index}`} index={index} totalCards={handCount} />
           ))}
         </div>

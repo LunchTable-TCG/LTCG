@@ -1,14 +1,16 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import type { MatchMode } from "@/types/common";
+import type { Element } from "@/types/cards";
 import { Flame, Gamepad2, Shield, Swords, Trophy, Waves, X, Zap } from "lucide-react";
 
 interface GameLobbyEntry {
   id: string;
   hostName: string;
   hostRank: string;
-  deckArchetype: "fire" | "water" | "earth" | "wind";
-  mode: "casual" | "ranked";
+  deckArchetype: Element;
+  mode: MatchMode;
 }
 
 interface JoinConfirmDialogProps {

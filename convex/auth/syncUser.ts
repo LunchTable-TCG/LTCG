@@ -15,6 +15,7 @@ export const createOrGetUser = mutation({
     // Referral tracking
     referralSource: v.optional(v.string()),
     referralGuildInviteCode: v.optional(v.string()),
+    referralCode: v.optional(v.string()), // User referral code
   },
   async handler(ctx, args) {
     const identity = await ctx.auth.getUserIdentity();
@@ -70,8 +71,9 @@ export const createOrGetUser = mutation({
       walletType: args.walletType,
       walletConnectedAt: args.walletAddress ? now : undefined,
       // Referral tracking - resolve guild ID from invite code if provided
-      referralSource: args.referralSource,
+      referralSource: args.referralCode ? "user_referral" : args.referralSource,
       referralGuildInviteCode: args.referralGuildInviteCode,
+      referralCode: args.referralCode,
       referralGuildId: await (async () => {
         const code = args.referralGuildInviteCode;
         if (!code) return undefined;
@@ -121,6 +123,34 @@ export const createOrGetUser = mutation({
       lifetimeXP: 0,
       lastUpdatedAt: now,
     });
+
+    // Record user referral if a referral code was provided
+    const refCode = args.referralCode;
+    if (refCode) {
+      const referralLink = await ctx.db
+        .query("userReferralLinks")
+        .withIndex("by_code", (q) => q.eq("code", refCode))
+        .first();
+
+      if (referralLink?.isActive && referralLink.userId !== userId) {
+        // Check not already referred
+        const existing = await ctx.db
+          .query("referrals")
+          .withIndex("by_referred", (q) => q.eq("referredUserId", userId))
+          .first();
+
+        if (!existing) {
+          await ctx.db.insert("referrals", {
+            referrerId: referralLink.userId,
+            referredUserId: userId,
+            referralCode: refCode,
+            createdAt: now,
+          });
+          await ctx.db.patch(referralLink._id, { uses: referralLink.uses + 1 });
+          await ctx.db.patch(userId, { referredBy: referralLink.userId });
+        }
+      }
+    }
 
     return {
       userId,

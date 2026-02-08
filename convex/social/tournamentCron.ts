@@ -9,12 +9,11 @@
  * User tournament expiry is also scheduled per-tournament at creation time.
  */
 
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import { internalAction } from "../_generated/server";
 
-// Module-scope typed helper to avoid TS2589
-type InternalApi = typeof internal;
-const internalAny = internal as InternalApi;
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 
 /**
  * Process no-show forfeits
@@ -47,4 +46,3 @@ export const processNoShowForfeits = internalAction({
     }
   },
 });
-

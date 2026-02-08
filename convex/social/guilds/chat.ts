@@ -2,6 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { query } from "../../_generated/server";
 import { mutation } from "../../functions";
+import { chatRateLimiter } from "../../infrastructure/rateLimiters";
 import { requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { requireGuildMembership } from "./core";
@@ -97,8 +98,9 @@ export const getMessageCount = query({
       .query("guildMessages")
       .withIndex("by_guild_created", (q) => q.eq("guildId", args.guildId));
 
-    if (args.since) {
-      query = query.filter((q) => q.gte(q.field("createdAt"), args.since!));
+    if (args.since !== undefined) {
+      const since = args.since;
+      query = query.filter((q) => q.gte(q.field("createdAt"), since));
     }
 
     const messages = await query.collect();
@@ -140,7 +142,18 @@ export const sendMessage = mutation({
       throw createError(ErrorCode.CHAT_MESSAGE_TOO_LONG);
     }
 
-    // TODO: Add rate limiting (reuse pattern from globalChat.ts)
+    // Rate limiting to prevent spam
+    const { ok, retryAfter } = await chatRateLimiter.limit(ctx, "sendGuildMessage", {
+      key: userId,
+    });
+
+    if (!ok) {
+      const waitSeconds = Math.ceil(retryAfter / 1000);
+      throw createError(ErrorCode.RATE_LIMIT_CHAT_MESSAGE, {
+        retryAfter,
+        waitSeconds,
+      });
+    }
 
     const now = Date.now();
 

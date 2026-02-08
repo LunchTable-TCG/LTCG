@@ -26,7 +26,7 @@ export const stopRetakeStreamAction: Action = {
   ],
 
   validate: async (runtime: IAgentRuntime, message: Memory) => {
-    const text = message.content.text.toLowerCase();
+    const text = (message.content.text ?? "").toLowerCase();
 
     // Check if user wants to stop streaming
     const streamKeywords = ["stream", "broadcast", "retake", "live"];

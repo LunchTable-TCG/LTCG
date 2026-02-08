@@ -6,3 +6,6 @@
 
 export { useGameWallet } from "./useGameWallet";
 export type { UseGameWalletReturn, WalletType } from "./useGameWallet";
+
+export { useCryptoBalance } from "./useCryptoBalance";
+export { useCryptoWagerJoin } from "./useCryptoWagerJoin";

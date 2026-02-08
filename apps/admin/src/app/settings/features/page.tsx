@@ -331,6 +331,17 @@ function EditFeatureFlagDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateFlag = useConvexMutation(typedApi.admin.features.updateFeatureFlag);
+  const updateFlagUnsafe = updateFlag as unknown as (args: {
+    featureFlagId: FeatureFlagId;
+    displayName: string;
+    description: string;
+    category: Category;
+    enabled: boolean;
+    rolloutPercentage?: number;
+    clearRolloutPercentage?: boolean;
+    targetRoles?: string[];
+    clearTargetRoles?: boolean;
+  }) => Promise<unknown>;
 
   const handleSubmit = async () => {
     if (!displayName.trim()) {
@@ -344,8 +355,7 @@ function EditFeatureFlagDialog({
 
     setIsSubmitting(true);
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg types
-      await (updateFlag as any)({
+      await updateFlagUnsafe({
         featureFlagId: flag._id as FeatureFlagId,
         displayName: displayName.trim(),
         description: description.trim(),
@@ -575,13 +585,13 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
   const { hasPermission } = useAdmin();
 
   const toggleFlag = useConvexMutation(typedApi.admin.features.toggleFeatureFlag);
+  const toggleFlagUnsafe = toggleFlag as unknown as (args: {
+    featureFlagId: FeatureFlagId;
+  }) => Promise<{ message: string }>;
 
   const handleToggle = async () => {
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg/return types
-      const result = (await (toggleFlag as any)({ featureFlagId: flag._id as FeatureFlagId })) as {
-        message: string;
-      };
+      const result = await toggleFlagUnsafe({ featureFlagId: flag._id as FeatureFlagId });
       toast.success(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to toggle feature flag");
@@ -675,12 +685,10 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
 export default function FeatureFlagsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const flagsResult = useConvexQuery(typedApi.admin.features.listFeatureFlags, {
     category: categoryFilter === "all" ? undefined : categoryFilter,
   }) as { flags: FeatureFlag[] } | undefined;
 
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const statsResult = useConvexQuery(typedApi.admin.features.getFeatureFlagStats, {}) as
     | {
         totalFlags: number;
@@ -799,7 +807,7 @@ export default function FeatureFlagsPage() {
       {/* Feature Flags List */}
       {isLoading ? (
         <div className="space-y-4">
-          {[...Array(6)].map((_, i) => (
+          {Array.from({ length: 6 }, (_, i) => i).map((i) => (
             <Skeleton key={i} className="h-32 w-full" />
           ))}
         </div>

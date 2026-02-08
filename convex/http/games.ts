@@ -7,14 +7,13 @@
  * @module http/games
  */
 
-import { api, internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Id } from "../_generated/dataModel";
 import { type HttpActionCtx, authHttpAction } from "./middleware/auth";
-
-// @ts-ignore TS2589 workaround for deep type instantiation
-const apiAny: any = api;
-// @ts-ignore TS2589 workaround for deep type instantiation
-const internalAny: any = internal;
 import {
   corsPreflightResponse,
   errorResponse,
@@ -494,15 +493,8 @@ export const summonMonster = authHttpAction(async (ctx, request, auth) => {
     }
 
     // Execute summon via internal mutation that accepts gameId string
-    interface SummonMutationResult {
-      cardSummoned: Id<"cardDefinitions">;
-      position: string;
-      tributesUsed?: number;
-      triggerEffect?: boolean;
-    }
-
-    const result: SummonMutationResult = await ctx.runMutation(
-      internal.gameplay.gameEngine.summons.normalSummonInternal,
+    const result = await ctx.runMutation(
+      internalAny.gameplay.gameEngine.summons.normalSummonInternal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -570,7 +562,7 @@ export const setCard = authHttpAction(async (ctx, request, auth) => {
     }
 
     const result: SetCardMutationResult = await ctx.runMutation(
-      internal.gameplay.gameEngine.summons.setMonsterInternal,
+      internalAny.gameplay.gameEngine.summons.setMonsterInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
@@ -645,7 +637,7 @@ export const flipSummonMonster = authHttpAction(async (ctx, request, auth) => {
     }
 
     const result: FlipSummonMutationResult = await ctx.runMutation(
-      internal.gameplay.gameEngine.summons.flipSummonInternal,
+      internalAny.gameplay.gameEngine.summons.flipSummonInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
@@ -711,7 +703,7 @@ export const changeMonsterPosition = authHttpAction(async (ctx, request, auth) =
     }
 
     const result: ChangePositionResult = await ctx.runMutation(
-      internal.gameplay.gameEngine.positions.changePositionInternal,
+      internalAny.gameplay.gameEngine.positions.changePositionInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
@@ -784,7 +776,7 @@ export const setSpellTrapCard = authHttpAction(async (ctx, request, auth) => {
     }
 
     const result: SetSpellTrapResult = await ctx.runMutation(
-      internal.gameplay.gameEngine.spellsTraps.setSpellTrapInternal,
+      internalAny.gameplay.gameEngine.spellsTraps.setSpellTrapInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
@@ -846,7 +838,7 @@ export const activateSpellCard = authHttpAction(async (ctx, request, auth) => {
     }
 
     const result: ActivateSpellResult = await ctx.runMutation(
-      internal.gameplay.gameEngine.spellsTraps.activateSpellInternal,
+      internalAny.gameplay.gameEngine.spellsTraps.activateSpellInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
@@ -924,7 +916,7 @@ export const activateTrapCard = authHttpAction(async (ctx, request, auth) => {
     }
 
     const result: ActivateTrapResult = await ctx.runMutation(
-      internal.gameplay.gameEngine.spellsTraps.activateTrapInternal,
+      internalAny.gameplay.gameEngine.spellsTraps.activateTrapInternal,
       {
         lobbyId: body.gameId as Id<"gameLobbies">,
         cardId: body.cardId as Id<"cardDefinitions">,
@@ -1000,7 +992,7 @@ export const chainResponse = authHttpAction(async (ctx, request, auth) => {
       }
 
       const result: PassPriorityResult = await ctx.runMutation(
-        internal.gameplay.chainResolver.passPriorityInternal,
+        internalAny.gameplay.chainResolver.passPriorityInternal,
         {
           lobbyId: body.gameId as Id<"gameLobbies">,
           userId: auth.userId,
@@ -1066,27 +1058,12 @@ export const attackMonster = authHttpAction(async (ctx, request, auth) => {
     const validation = validateRequiredFields(body, ["gameId", "attackerCardId"]);
     if (validation) return validation;
 
-    interface AttackResult {
-      attackType: string;
-      attackerName: string;
-      targetName?: string;
-      damage: number;
-      destroyed?: string[];
-      newLifePoints?: {
-        attacker: number;
-        defender: number;
-      };
-    }
-
-    const result: AttackResult = await ctx.runMutation(
-      internal.gameplay.combatSystem.declareAttackInternal,
-      {
-        gameId: body.gameId,
-        userId: auth.userId,
-        attackerCardId: body.attackerCardId,
-        targetCardId: body.targetCardId,
-      }
-    );
+    const result = await ctx.runMutation(internalAny.gameplay.combatSystem.declareAttackInternal, {
+      gameId: body.gameId,
+      userId: auth.userId,
+      attackerCardId: body.attackerCardId,
+      targetCardId: body.targetCardId,
+    });
 
     return successResponse({
       success: true,
@@ -1121,6 +1098,67 @@ export const attackMonster = authHttpAction(async (ctx, request, auth) => {
     }
 
     return errorResponse("ATTACK_FAILED", "Failed to declare attack", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+/**
+ * POST /api/agents/games/actions/pass-response-window
+ *
+ * Pass priority in a response window (Battle Step / Damage Step flow).
+ * When both players pass, the battle transitions to the next step.
+ * Requires API key authentication.
+ */
+export const passResponseWindow = authHttpAction(async (ctx, request, auth) => {
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+
+  try {
+    const body = await parseJsonBody<GameIdRequest>(request);
+    if (body instanceof Response) return body;
+
+    const validation = validateRequiredFields(body, ["gameId"]);
+    if (validation) return validation;
+
+    // Look up game state to get lobbyId
+    const state = await runGameQuery<InternalGameState | null>(
+      ctx,
+      "gameplay.games.queries.getGameStateForPlayerInternal",
+      { gameId: body.gameId, userId: auth.userId }
+    );
+
+    if (!state) {
+      return errorResponse("GAME_NOT_FOUND", "Game not found", 404);
+    }
+
+    const result = await ctx.runMutation(
+      internalAny.gameplay.combatSystem.passResponseWindowPriorityInternal,
+      {
+        lobbyId: state.lobbyId,
+        userId: auth.userId,
+      }
+    );
+
+    return successResponse({
+      success: true,
+      resolved: result.resolved,
+      battleTransition: result.battleTransition,
+      chainResolved: result.chainResolved,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("No response window")) {
+        return errorResponse("NO_RESPONSE_WINDOW", "No response window active", 400);
+      }
+    }
+
+    return errorResponse("PASS_RESPONSE_FAILED", "Failed to pass response window priority", 500, {
       error: error instanceof Error ? error.message : String(error),
     });
   }
@@ -1170,7 +1208,7 @@ export const enterBattlePhase = authHttpAction(async (ctx, request, auth) => {
     }
 
     // Update phase to battle
-    await ctx.runMutation(internal.gameplay.gameEngine.phases.advanceToBattlePhaseInternal, {
+    await ctx.runMutation(internalAny.gameplay.gameEngine.phases.advanceToBattlePhaseInternal, {
       gameId: body.gameId,
       userId: auth.userId,
     });
@@ -1231,7 +1269,7 @@ export const enterMain2 = authHttpAction(async (ctx, request, auth) => {
     }
 
     // Update phase to main2
-    await ctx.runMutation(internal.gameplay.gameEngine.phases.advanceToMainPhase2Internal, {
+    await ctx.runMutation(internalAny.gameplay.gameEngine.phases.advanceToMainPhase2Internal, {
       gameId: body.gameId,
       userId: auth.userId,
     });
@@ -1278,7 +1316,7 @@ export const endPlayerTurn = authHttpAction(async (ctx, request, auth) => {
     }
 
     const result: EndTurnResult = await ctx.runMutation(
-      internal.gameplay.gameEngine.turns.endTurnInternal,
+      internalAny.gameplay.gameEngine.turns.endTurnInternal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -1338,7 +1376,7 @@ export const surrenderGame = authHttpAction(async (ctx, request, auth) => {
     if (validation) return validation;
 
     // Execute surrender via game lifecycle
-    await ctx.runMutation(internal.gameplay.games.lifecycle.surrenderGameInternal, {
+    await ctx.runMutation(internalAny.gameplay.games.lifecycle.surrenderGameInternal, {
       lobbyId: body.gameId as Id<"gameLobbies">,
       userId: auth.userId,
     });
@@ -1390,7 +1428,7 @@ export const activateMonsterEffect = authHttpAction(async (ctx, request, auth) =
     if (validation) return validation;
 
     const result = await ctx.runMutation(
-      internal.gameplay.gameEngine.monsterEffects.activateMonsterEffectInternal,
+      internalAny.gameplay.gameEngine.monsterEffects.activateMonsterEffectInternal,
       {
         lobbyId: body["gameId"] as Id<"gameLobbies">,
         cardId: body["cardId"] as Id<"cardDefinitions">,
@@ -1443,17 +1481,14 @@ export const chainAdd = authHttpAction(async (ctx, request, auth) => {
     const validation = validateRequiredFields(body, ["lobbyId", "cardId", "spellSpeed", "effect"]);
     if (validation) return validation;
 
-    const result = await ctx.runMutation(
-      internal.gameplay.chainResolver.addToChainInternal,
-      {
-        lobbyId: body["lobbyId"] as Id<"gameLobbies">,
-        cardId: body["cardId"] as Id<"cardDefinitions">,
-        spellSpeed: body["spellSpeed"] as number,
-        effect: body["effect"] as string,
-        targets: body["targets"] as Id<"cardDefinitions">[] | undefined,
-        userId: auth.userId,
-      }
-    );
+    const result = await ctx.runMutation(internalAny.gameplay.chainResolver.addToChainInternal, {
+      lobbyId: body["lobbyId"] as Id<"gameLobbies">,
+      cardId: body["cardId"] as Id<"cardDefinitions">,
+      spellSpeed: body["spellSpeed"] as number,
+      effect: body["effect"],
+      targets: body["targets"] as Id<"cardDefinitions">[] | undefined,
+      userId: auth.userId,
+    });
 
     return successResponse(result);
   } catch (error) {
@@ -1494,12 +1529,9 @@ export const chainResolve = authHttpAction(async (ctx, request, _auth) => {
     const validation = validateRequiredFields(body, ["lobbyId"]);
     if (validation) return validation;
 
-    const result = await ctx.runMutation(
-      internal.gameplay.chainResolver.resolveChainInternal,
-      {
-        lobbyId: body["lobbyId"] as Id<"gameLobbies">,
-      }
-    );
+    const result = await ctx.runMutation(internalAny.gameplay.chainResolver.resolveChainInternal, {
+      lobbyId: body["lobbyId"] as Id<"gameLobbies">,
+    });
 
     return successResponse(result);
   } catch (error) {
@@ -1537,7 +1569,7 @@ export const chainGetState = authHttpAction(async (ctx, request, _auth) => {
       return errorResponse("MISSING_LOBBY_ID", "lobbyId query parameter is required", 400);
     }
 
-    const result = await ctx.runQuery(api.gameplay.chainResolver.getCurrentChain, {
+    const result = await ctx.runQuery(apiAny.gameplay.chainResolver.getCurrentChain, {
       lobbyId: lobbyId as Id<"gameLobbies">,
     });
 
@@ -1575,13 +1607,10 @@ export const phaseAdvance = authHttpAction(async (ctx, request, auth) => {
     const validation = validateRequiredFields(body, ["gameId"]);
     if (validation) return validation;
 
-    const result = await ctx.runMutation(
-      internal.gameplay.phaseManager.advancePhaseInternal,
-      {
-        gameId: body.gameId,
-        userId: auth.userId,
-      }
-    );
+    const result = await ctx.runMutation(internalAny.gameplay.phaseManager.advancePhaseInternal, {
+      gameId: body.gameId,
+      userId: auth.userId,
+    });
 
     return successResponse(result);
   } catch (error) {
@@ -1623,7 +1652,7 @@ export const phaseSkipBattle = authHttpAction(async (ctx, request, auth) => {
     if (validation) return validation;
 
     const result = await ctx.runMutation(
-      internal.gameplay.phaseManager.skipBattlePhaseInternal,
+      internalAny.gameplay.phaseManager.skipBattlePhaseInternal,
       {
         gameId: body.gameId,
         userId: auth.userId,
@@ -1669,13 +1698,10 @@ export const phaseSkipToEnd = authHttpAction(async (ctx, request, auth) => {
     const validation = validateRequiredFields(body, ["gameId"]);
     if (validation) return validation;
 
-    const result = await ctx.runMutation(
-      internal.gameplay.phaseManager.skipToEndPhaseInternal,
-      {
-        gameId: body.gameId,
-        userId: auth.userId,
-      }
-    );
+    const result = await ctx.runMutation(internalAny.gameplay.phaseManager.skipToEndPhaseInternal, {
+      gameId: body.gameId,
+      userId: auth.userId,
+    });
 
     return successResponse(result);
   } catch (error) {

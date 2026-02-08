@@ -104,18 +104,18 @@ export const legalActionsProvider: Provider = {
 
       // Structured values for template substitution
       const values = {
-        gameId: availableActions.gameId,
+        gameId: gameState.gameId,
         phase: availableActions.phase,
         actionCount: availableActions.actions.length,
         hasLethal,
         criticalActionCount: criticalActions.length,
-        canSummon: availableActions.actions.some((a) => a.type === "summon"),
-        canSet: availableActions.actions.some((a) => a.type === "set"),
-        canActivateSpell: availableActions.actions.some((a) => a.type === "activate_spell"),
-        canActivateTrap: availableActions.actions.some((a) => a.type === "activate_trap"),
-        canAttack: availableActions.actions.some((a) => a.type === "attack"),
-        canChangePosition: availableActions.actions.some((a) => a.type === "change_position"),
-        canEndTurn: availableActions.actions.some((a) => a.type === "end_turn"),
+        canSummon: availableActions.actions.some((a) => a.action === "summon"),
+        canSet: availableActions.actions.some((a) => a.action === "set"),
+        canActivateSpell: availableActions.actions.some((a) => a.action === "activate_spell"),
+        canActivateTrap: availableActions.actions.some((a) => a.action === "activate_trap"),
+        canAttack: availableActions.actions.some((a) => a.action === "attack"),
+        canChangePosition: availableActions.actions.some((a) => a.action === "change_position"),
+        canEndTurn: availableActions.actions.some((a) => a.action === "end_turn"),
         opponentLP: gameState.opponentLifePoints,
         myLP: gameState.myLifePoints,
         opponentBackrowCount: gameState.opponentPlayer?.spellTrapZone?.length || 0,
@@ -129,7 +129,7 @@ export const legalActionsProvider: Provider = {
           opponentLP: gameState.opponentLifePoints,
           myLP: gameState.myLifePoints,
           opponentBackrow: gameState.opponentPlayer?.spellTrapZone?.length || 0,
-          opponentMonsters: gameState.opponentPlayer?.monsterZone?.length || 0,
+          opponentMonsters: gameState.opponentBoard?.length || 0,
         },
       };
 
@@ -159,13 +159,13 @@ function enhanceActionsWithStrategy(
   const opponentLP = gameState.opponentLifePoints;
   const _myLP = gameState.myLifePoints;
   const opponentBackrow = gameState.opponentPlayer?.spellTrapZone?.length || 0;
-  const opponentMonsters = gameState.opponentPlayer?.monsterZone || [];
-  const _myMonsters = gameState.hostPlayer?.monsterZone || [];
+  const opponentMonsters = gameState.opponentBoard || [];
+  const _myMonsters = gameState.myBoard || [];
 
   return actions.map((action) => {
     const enhanced: EnhancedAction = { ...action };
 
-    switch (action.type) {
+    switch (action.action) {
       case "attack": {
         // Calculate attack opportunities and battle outcomes
         interface AttackerData {
@@ -409,7 +409,7 @@ function formatEnhancedAction(action: EnhancedAction): string {
     chain_response: "CHAIN_RESPONSE",
   };
 
-  const actionName = actionNameMap[action.type] || action.type.toUpperCase();
+  const actionName = actionNameMap[action.action] || action.action.toUpperCase();
   const lines: string[] = [];
 
   // Action header with priority indicator
@@ -459,11 +459,12 @@ function formatEnhancedAction(action: EnhancedAction): string {
 
   // Original parameters
   if (action.parameters) {
-    if (action.type === "summon") {
+    if (action.action === "summon") {
       interface SummonCard {
         name?: string;
         level?: number;
         atk?: number;
+        _id?: string;
         handIndex?: number;
         [key: string]: number | string | undefined;
       }
@@ -473,15 +474,17 @@ function formatEnhancedAction(action: EnhancedAction): string {
         cards.forEach((card: SummonCard) => {
           const tributeText =
             (card.level || 0) > 6 ? " (2 tributes)" : (card.level || 0) >= 5 ? " (1 tribute)" : "";
+          const id = card._id ?? card.handIndex;
           lines.push(
-            `     - ${card.name} (Lv${card.level}, ${card.atk} ATK)${tributeText} [handIndex: ${card.handIndex}]`
+            `     - ${card.name} (Lv${card.level}, ${card.atk} ATK)${tributeText} [cardId: ${id}]`
           );
         });
       }
-    } else if (action.type === "attack") {
+    } else if (action.action === "attack") {
       interface AttackerCard {
         name?: string;
         atk?: number;
+        _id?: string;
         boardIndex?: number;
         [key: string]: number | string | undefined;
       }
@@ -489,18 +492,20 @@ function formatEnhancedAction(action: EnhancedAction): string {
       if (attackers && attackers.length > 0) {
         lines.push("   Attackers:");
         attackers.forEach((attacker: AttackerCard) => {
+          const id = attacker._id ?? attacker.boardIndex;
           lines.push(
-            `     - ${attacker.name} (${attacker.atk} ATK) [boardIndex: ${attacker.boardIndex}]`
+            `     - ${attacker.name} (${attacker.atk} ATK) [cardId: ${id}]`
           );
         });
       }
       if (action.parameters.canDirectAttack) {
-        lines.push("   ✅ Direct attack available (no targetBoardIndex needed)");
+        lines.push("   ✅ Direct attack available (omit targetCardId for direct attack)");
       }
-    } else if (action.type === "activate_spell" || action.type === "activate_trap") {
+    } else if (action.action === "activate_spell" || action.action === "activate_trap") {
       interface ActivatableSpellTrap {
         name?: string;
         description?: string;
+        _id?: string;
         handIndex?: number;
         boardIndex?: number;
         [key: string]: number | string | undefined;
@@ -509,8 +514,9 @@ function formatEnhancedAction(action: EnhancedAction): string {
       if (cards && cards.length > 0) {
         lines.push("   Cards:");
         cards.forEach((card: ActivatableSpellTrap) => {
+          const id = card._id ?? card.handIndex ?? card.boardIndex;
           lines.push(
-            `     - ${card.name} [handIndex: ${card.handIndex ?? "N/A"}, boardIndex: ${card.boardIndex ?? "N/A"}]`
+            `     - ${card.name} [cardId: ${id}]`
           );
         });
       }
@@ -527,10 +533,10 @@ function groupActionsByType(actions: EnhancedAction[]): Record<string, EnhancedA
   const grouped: Record<string, EnhancedAction[]> = {};
 
   actions.forEach((action) => {
-    if (!grouped[action.type]) {
-      grouped[action.type] = [];
+    if (!grouped[action.action]) {
+      grouped[action.action] = [];
     }
-    grouped[action.type]?.push(action);
+    grouped[action.action]?.push(action);
   });
 
   return grouped;

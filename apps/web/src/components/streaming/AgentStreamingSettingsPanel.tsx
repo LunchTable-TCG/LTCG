@@ -1,67 +1,105 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
+import {
+  STREAMING_PLATFORMS,
+  STREAMING_PLATFORM_META,
+  type StreamingPlatform,
+  requiresCustomRtmpUrl,
+} from "@/lib/streaming/platforms";
+import type { AgentStreamingConfig } from "@/lib/streaming/types";
+import * as generatedApi from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { usePrivy } from "@privy-io/react-auth";
+import { useQuery } from "convex/react";
+import { useEffect, useState } from "react";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
 
 interface AgentStreamingSettingsPanelProps {
   agentId: string;
 }
 
-/**
- * Agent owner panel for configuring agent streaming settings
- * Allows agent owners to enable auto-streaming for their AI agents
- */
-type StreamingPlatform = "twitch" | "youtube" | "custom" | "retake" | "x" | "pumpfun";
-
-const PLATFORM_NEEDS_RTMP_URL: Record<string, boolean> = {
-  x: true,
-  pumpfun: true,
-  custom: true,
-};
-
-const PLATFORM_LABELS: Record<StreamingPlatform, string> = {
-  twitch: "Twitch",
-  youtube: "YouTube",
-  retake: "Retake.tv",
-  x: "X (Twitter)",
-  pumpfun: "Pump.fun",
-  custom: "Custom RTMP",
-};
-
-const PLATFORM_ICONS: Record<StreamingPlatform, string> = {
-  twitch: "\uD83D\uDFE3",
-  youtube: "\uD83D\uDD34",
-  retake: "\uD83D\uDCFA",
-  x: "\u2715",
-  pumpfun: "\uD83D\uDCA7",
-  custom: "\u2699\uFE0F",
-};
-
 export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsPanelProps) {
+  const { getAccessToken } = usePrivy();
   const [platform, setPlatform] = useState<StreamingPlatform>("twitch");
   const [streamKey, setStreamKey] = useState("");
   const [rtmpUrl, setRtmpUrl] = useState("");
   const [autoStart, setAutoStart] = useState(true);
+  const [keepAlive, setKeepAlive] = useState(true);
+  const [visualMode, setVisualMode] = useState<"webcam" | "profile-picture">("profile-picture");
+  const [profilePictureUrl, setProfilePictureUrl] = useState("");
+  const [voiceTrackUrl, setVoiceTrackUrl] = useState("");
+  const [voiceVolume, setVoiceVolume] = useState("0.9");
+  const [voiceLoop, setVoiceLoop] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const needsRtmpUrl = PLATFORM_NEEDS_RTMP_URL[platform] || false;
+  const needsRtmpUrl = requiresCustomRtmpUrl(platform);
+  const supportsOptionalRtmpOverride =
+    platform === "twitch" || platform === "kick" || platform === "youtube";
+  const showRtmpInput = needsRtmpUrl || supportsOptionalRtmpOverride;
 
   // Get current config
-  const config = useQuery(api.agents.streaming.getAgentStreamingConfig, {
-    agentId: agentId as Id<"agents">,
-  });
+  const config = useQuery(
+    apiAny.agents.streaming.getAgentStreamingConfig as never,
+    {
+      agentId: agentId as Id<"agents">,
+    } as never
+  ) as AgentStreamingConfig | null | undefined;
 
   // Get agent sessions
-  const sessions = useQuery(api.streaming.sessions.getAgentSessions, {
-    agentId: agentId as Id<"agents">,
-    limit: 5,
-  });
+  const sessions = useQuery(
+    apiAny.streaming.sessions.getAgentSessions as never,
+    {
+      agentId: agentId as Id<"agents">,
+      limit: 5,
+    } as never
+  ) as
+    | Array<{
+        _id: string;
+        status: string;
+        platform: string;
+        createdAt: number;
+        viewerCount?: number;
+        stats?: {
+          duration?: number;
+          decisionsLogged?: number;
+          eventsRecorded?: number;
+        };
+      }>
+    | undefined;
 
   const activeSession = sessions?.find((s) => s.status === "live" || s.status === "pending");
+
+  useEffect(() => {
+    if (!config) {
+      return;
+    }
+    if (config.platform) {
+      setPlatform(config.platform as StreamingPlatform);
+    }
+    if (config.rtmpUrl) {
+      setRtmpUrl(config.rtmpUrl);
+    }
+    if (typeof config.autoStart === "boolean") {
+      setAutoStart(config.autoStart);
+    }
+    if (typeof config.keepAlive === "boolean") {
+      setKeepAlive(config.keepAlive);
+    }
+    if (config.visualMode) {
+      setVisualMode(config.visualMode);
+    }
+    setProfilePictureUrl(config.profilePictureUrl || "");
+    setVoiceTrackUrl(config.voiceTrackUrl || "");
+    if (typeof config.voiceVolume === "number") {
+      setVoiceVolume(config.voiceVolume.toFixed(2));
+    }
+    if (typeof config.voiceLoop === "boolean") {
+      setVoiceLoop(config.voiceLoop);
+    }
+  }, [config]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -74,21 +112,38 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
         throw new Error("Stream key is required to enable streaming");
       }
 
-      if (needsRtmpUrl && !rtmpUrl && !config?.hasRtmpUrl) {
+      if (needsRtmpUrl && !rtmpUrl && !config?.rtmpUrl) {
         throw new Error("RTMP URL is required for this platform");
       }
+
+      const parsedVoiceVolume = Number.parseFloat(voiceVolume);
+      const normalizedVoiceVolume = Number.isFinite(parsedVoiceVolume)
+        ? Math.max(0, Math.min(1, parsedVoiceVolume))
+        : undefined;
 
       // Save config via server API (encryption happens server-side)
       const response = await fetch("/api/streaming/configure-agent", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await (async () => {
+            const token = await getAccessToken();
+            return token ? { Authorization: `Bearer ${token}` } : {};
+          })()),
+        },
         body: JSON.stringify({
           agentId,
           enabled: true,
           platform,
           streamKey: streamKey || undefined,
-          rtmpUrl: needsRtmpUrl ? rtmpUrl : undefined,
+          rtmpUrl: rtmpUrl.trim() ? rtmpUrl.trim() : undefined,
           autoStart,
+          keepAlive,
+          visualMode,
+          profilePictureUrl: profilePictureUrl.trim(),
+          voiceTrackUrl: voiceTrackUrl.trim(),
+          voiceVolume: normalizedVoiceVolume,
+          voiceLoop,
         }),
       });
 
@@ -114,7 +169,13 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
     try {
       const response = await fetch("/api/streaming/configure-agent", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await (async () => {
+            const token = await getAccessToken();
+            return token ? { Authorization: `Bearer ${token}` } : {};
+          })()),
+        },
         body: JSON.stringify({
           agentId,
           enabled: false,
@@ -198,55 +259,70 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
         {isEnabled && (
           <>
             <div className="platform-selector">
-              <label>Streaming Platform</label>
+              <p>Streaming Platform</p>
               <div className="platform-buttons">
-                {(["twitch", "youtube", "x", "pumpfun", "retake", "custom"] as StreamingPlatform[]).map((p) => (
+                {STREAMING_PLATFORMS.map((p) => (
                   <button
                     key={p}
+                    type="button"
                     className={currentPlatform === p ? "active" : ""}
                     onClick={() => setPlatform(p)}
                     disabled={isSaving}
                   >
-                    {PLATFORM_ICONS[p]} {PLATFORM_LABELS[p]}
+                    {STREAMING_PLATFORM_META[p].icon} {STREAMING_PLATFORM_META[p].label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {needsRtmpUrl && (
+            {showRtmpInput && (
               <div className="stream-key-section">
-                <label>
-                  RTMP URL {config?.hasRtmpUrl && <span className="saved-badge">Saved</span>}
+                <label htmlFor="agent-streaming-rtmp-url">
+                  RTMP URL {supportsOptionalRtmpOverride && !needsRtmpUrl && "(optional override)"}{" "}
+                  {config?.rtmpUrl && <span className="saved-badge">Saved</span>}
                 </label>
                 <input
+                  id="agent-streaming-rtmp-url"
                   type="text"
                   placeholder={
-                    config?.hasRtmpUrl
+                    config?.rtmpUrl
                       ? "Enter new URL to update"
                       : platform === "x"
                         ? "rtmp://... from Media Studio > Producer"
                         : platform === "pumpfun"
                           ? "rtmp://... from your coin page > Start Livestream"
-                          : "rtmp://your-server.com/live"
+                          : platform === "retake"
+                            ? "rtmps://... from Retake agent RTMP API"
+                            : platform === "twitch"
+                              ? "rtmps://live.twitch.tv/app (optional)"
+                              : platform === "kick"
+                                ? "rtmps://...kick ingest.../app (optional)"
+                                : "rtmp://your-server.com/live"
                   }
                   value={rtmpUrl}
                   onChange={(e) => setRtmpUrl(e.target.value)}
                   disabled={isSaving}
                 />
                 <p className="help-text">
-                  {platform === "x" && "Go to Media Studio > Producer > Create RTMP Source > Copy URL"}
-                  {platform === "pumpfun" && "Go to your coin page > Start Livestream > Select RTMP > Copy URL"}
+                  {platform === "x" &&
+                    "Go to Media Studio > Producer > Create RTMP Source > Copy URL"}
+                  {platform === "pumpfun" &&
+                    "Go to your coin page > Start Livestream > Select RTMP > Copy URL"}
+                  {platform === "retake" && "Use RTMP URL returned by Retake.tv API"}
+                  {platform === "twitch" && "Optional: override default Twitch ingest if needed."}
+                  {platform === "kick" && "Optional: override default Kick ingest if needed."}
                   {platform === "custom" && "Enter your custom RTMP ingest URL"}
-                  {config?.hasRtmpUrl && " • RTMP URL saved"}
+                  {config?.rtmpUrl && " • RTMP URL saved"}
                 </p>
               </div>
             )}
 
             <div className="stream-key-section">
-              <label>
+              <label htmlFor="agent-streaming-stream-key">
                 Stream Key {config?.hasStreamKey && <span className="saved-badge">Saved</span>}
               </label>
               <input
+                id="agent-streaming-stream-key"
                 type="password"
                 placeholder={
                   config?.hasStreamKey
@@ -255,11 +331,13 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
                       ? "Get from twitch.tv/dashboard/settings/stream"
                       : platform === "youtube"
                         ? "Get from studio.youtube.com"
-                        : platform === "x"
-                          ? "Get from Media Studio > Producer"
-                          : platform === "pumpfun"
-                            ? "Get from your coin page > Start Livestream"
-                            : "Enter your stream key"
+                        : platform === "kick"
+                          ? "Get from Kick Dashboard > Stream URL & Key"
+                          : platform === "x"
+                            ? "Get from Media Studio > Producer"
+                            : platform === "pumpfun"
+                              ? "Get from your coin page > Start Livestream"
+                              : "Enter your stream key"
                 }
                 value={streamKey}
                 onChange={(e) => setStreamKey(e.target.value)}
@@ -281,20 +359,122 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
                 {platform === "youtube" && (
                   <>
                     Get from{" "}
-                    <a
-                      href="https://studio.youtube.com/"
-                      target="_blank"
-                      rel="noreferrer noopener"
-                    >
+                    <a href="https://studio.youtube.com/" target="_blank" rel="noreferrer noopener">
                       YouTube Studio
                     </a>
                   </>
                 )}
+                {platform === "kick" && (
+                  <>
+                    Get from{" "}
+                    <a
+                      href="https://help.kick.com/en/articles/12273234-how-to-stream-on-kick-com"
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      Kick Creator Dashboard
+                    </a>
+                  </>
+                )}
                 {platform === "x" && "Copy stream key from Media Studio. Requires X Premium."}
-                {platform === "pumpfun" && "Copy stream key from livestream settings. Must be token creator."}
+                {platform === "pumpfun" &&
+                  "Copy stream key from livestream settings. Must be token creator."}
                 {platform === "retake" && "Stream key is provided via Retake.tv integration."}
                 {platform === "custom" && "Enter the stream key for your RTMP server."}
                 {config?.hasStreamKey && " • Stream key is encrypted and secure"}
+              </p>
+            </div>
+
+            <div className="auto-start-section">
+              <p className="mb-2 block">Agent PiP Source</p>
+              <div className="platform-buttons">
+                <button
+                  type="button"
+                  className={visualMode === "profile-picture" ? "active" : ""}
+                  onClick={() => setVisualMode("profile-picture")}
+                  disabled={isSaving}
+                >
+                  🖼️ Profile Picture
+                </button>
+                <button
+                  type="button"
+                  className={visualMode === "webcam" ? "active" : ""}
+                  onClick={() => setVisualMode("webcam")}
+                  disabled={isSaving}
+                >
+                  📷 Webcam
+                </button>
+              </div>
+              <p className="help-text">
+                Agents typically use profile-picture PiP. Webcam mode is available if your agent
+                publishes a camera track.
+              </p>
+            </div>
+
+            {visualMode === "profile-picture" && (
+              <div className="auto-start-section">
+                <label htmlFor="agent-streaming-profile-picture-url">
+                  Profile Picture URL (optional override)
+                </label>
+                <input
+                  id="agent-streaming-profile-picture-url"
+                  type="url"
+                  placeholder="https://.../agent-profile.png"
+                  value={profilePictureUrl}
+                  onChange={(e) => setProfilePictureUrl(e.target.value)}
+                  disabled={isSaving}
+                />
+                <p className="help-text">
+                  Leave empty to use the agent profile picture from registration.
+                </p>
+              </div>
+            )}
+
+            <div className="auto-start-section">
+              <label htmlFor="agent-streaming-voice-url">Voice Track URL (optional)</label>
+              <input
+                id="agent-streaming-voice-url"
+                type="url"
+                placeholder="https://... (ElevenLabs or hosted TTS audio)"
+                value={voiceTrackUrl}
+                onChange={(e) => setVoiceTrackUrl(e.target.value)}
+                disabled={isSaving}
+              />
+              <p className="help-text">
+                Optional always-on voice channel for agent streams. Supports ElevenLabs-hosted files
+                or any public audio URL.
+              </p>
+            </div>
+
+            <div className="auto-start-section">
+              <label htmlFor="agent-streaming-voice-volume">Voice Volume (0 to 1)</label>
+              <input
+                id="agent-streaming-voice-volume"
+                type="number"
+                min="0"
+                max="1"
+                step="0.05"
+                value={voiceVolume}
+                onChange={(e) => setVoiceVolume(e.target.value)}
+                disabled={isSaving}
+              />
+              <p className="help-text">
+                Controls the mix level for the voice track in the outgoing stream.
+              </p>
+            </div>
+
+            <div className="auto-start-section">
+              <label className="toggle-label">
+                <input
+                  type="checkbox"
+                  checked={voiceLoop}
+                  onChange={(e) => setVoiceLoop(e.target.checked)}
+                  disabled={isSaving}
+                />
+                <span>Loop voice track continuously</span>
+              </label>
+              <p className="help-text">
+                Enable for ambient voice loops. Disable for one-shot intros or announcements.
               </p>
             </div>
 
@@ -310,6 +490,22 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
               </label>
               <p className="help-text">
                 Agent will automatically go live when it joins a game lobby
+              </p>
+            </div>
+
+            <div className="auto-start-section">
+              <label className="toggle-label">
+                <input
+                  type="checkbox"
+                  checked={keepAlive}
+                  onChange={(e) => setKeepAlive(e.target.checked)}
+                  disabled={isSaving}
+                />
+                <span>Keep stream live between matches (lobby/chat mode)</span>
+              </label>
+              <p className="help-text">
+                When enabled, the stream does not stop on game end and loops match-over then lobby
+                mode.
               </p>
             </div>
 
@@ -340,8 +536,13 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
             </div>
 
             <button
+              type="button"
               onClick={handleSave}
-              disabled={isSaving || (!streamKey && !config?.hasStreamKey) || (needsRtmpUrl && !rtmpUrl && !config?.hasRtmpUrl)}
+              disabled={
+                isSaving ||
+                (!streamKey && !config?.hasStreamKey) ||
+                (needsRtmpUrl && !rtmpUrl && !config?.rtmpUrl)
+              }
               className="btn-save"
             >
               {isSaving ? "Saving..." : "Save Settings"}
@@ -357,7 +558,7 @@ export function AgentStreamingSettingsPanel({ agentId }: AgentStreamingSettingsP
             {sessions.slice(0, 5).map((session) => (
               <li key={session._id}>
                 <span className="platform-icon">
-                  {PLATFORM_ICONS[session.platform as StreamingPlatform] || "📺"}
+                  {STREAMING_PLATFORM_META[session.platform as StreamingPlatform]?.icon || "TV"}
                 </span>
                 <span className="session-info">
                   {new Date(session.createdAt).toLocaleDateString()}

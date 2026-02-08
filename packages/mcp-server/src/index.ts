@@ -35,8 +35,8 @@ async function main() {
     // Create MCP server instance
     const server = createMcpServer();
 
-    // Create HTTP transport
-    const app = createHttpTransport(server);
+    // Create HTTP transport (async — connects SDK transport to server)
+    const app = await createHttpTransport(server);
 
     // Start Bun server
     const bunServer = Bun.serve({

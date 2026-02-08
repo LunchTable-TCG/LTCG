@@ -6,9 +6,8 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Crown, Gift, Loader2, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import type { RewardType } from "@/types/economy";
 import { RewardIcon } from "./RewardIcon";
-
-type RewardType = "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
 
 interface BattlePassReward {
   type: RewardType;
@@ -95,7 +94,7 @@ export function RewardClaimModal({
         <AnimatePresence>
           {showParticles && (
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              {[...Array(30)].map((_, i) => (
+              {Array.from({ length: 30 }, (_, i) => i).map((i) => (
                 <motion.div
                   key={i}
                   className="absolute w-2 h-2 rounded-full"

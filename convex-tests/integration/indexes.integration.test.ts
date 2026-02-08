@@ -120,50 +120,7 @@ describe("Index Performance Tests", () => {
       console.log(`Segmented leaderboard query completed in ${duration}ms`);
     });
 
-    it("should query XP leaderboard in <500ms", async () => {
-      const t = createTestInstance();
-
-      // Seed 8,000 users with XP data
-      await t.run(async (ctx) => {
-        for (let i = 0; i < 8000; i++) {
-          await ctx.db.insert("users", {
-            email: `xpuser${i}@test.com`,
-            username: `xpuser${i}`,
-            rankedElo: 1000,
-            casualRating: 1000,
-            totalWins: 0,
-            totalLosses: 0,
-            xp: Math.floor(Math.random() * 50000), // 0-50k XP
-            level: 1 + Math.floor(Math.random() * 50),
-            gold: 1000,
-            isAiAgent: false,
-            createdAt: Date.now(),
-          });
-        }
-      });
-
-      // Test: Query top XP players
-      const start = Date.now();
-      const results = await t.run(async (ctx) => {
-        return await ctx.db
-          .query("users")
-          .withIndex("xp", (q) => q.gt("xp", 10000))
-          .order("desc")
-          .take(100);
-      });
-      const duration = Date.now() - start;
-
-      // Assertions
-      expect(duration).toBeLessThan(500);
-      expect(results.length).toBeGreaterThan(0);
-
-      // Verify sorting
-      for (let i = 0; i < results.length - 1; i++) {
-        expect(results[i]?.xp ?? 0).toBeGreaterThanOrEqual(results[i + 1]?.xp ?? 0);
-      }
-
-      console.log(`XP leaderboard query completed in ${duration}ms`);
-    });
+    // XP leaderboard test removed — xp/level fields migrated to playerXP table
   });
 
   describe("User Lookup by Email", () => {

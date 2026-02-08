@@ -32,7 +32,7 @@ export const respondToRetakeChatAction: Action = {
   ],
 
   validate: async (runtime: IAgentRuntime, message: Memory) => {
-    const text = message.content.text.toLowerCase();
+    const text = (message.content.text ?? "").toLowerCase();
 
     // Check if this is a chat/viewer engagement context
     const chatKeywords = [
@@ -55,12 +55,7 @@ export const respondToRetakeChatAction: Action = {
     }
 
     // If message mentions chat/viewers, this might be a good action
-    const hasKeyword = chatKeywords.some((kw) => text.includes(kw));
-
-    // Also validate if we're in a "streaming context" from state
-    const isStreaming = state?.isStreaming || state?.streamingActive;
-
-    return hasKeyword || isStreaming;
+    return chatKeywords.some((kw) => text.includes(kw));
   },
 
   handler: async (
@@ -89,12 +84,10 @@ export const respondToRetakeChatAction: Action = {
 
       // Extract the message to send to chat
       // This would typically be the agent's response to a viewer question
-      const chatMessage = message.content.text;
+      const chatMessage = message.content.text ?? "";
 
       // Send message to Retake.tv chat
-      logger.info("Sending message to Retake chat", {
-        messageLength: chatMessage.length,
-      });
+      logger.info(`Sending message to Retake chat (${chatMessage.length} chars)`);
 
       const response = await fetch("https://chat.retake.tv/api/agent/chat/send", {
         method: "POST",

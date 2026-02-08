@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
   Bot,
+  Camera,
   Check,
   Copy,
   ExternalLink,
@@ -25,6 +26,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 export interface Agent {
@@ -74,8 +76,11 @@ export function AgentCard({ agent, onDeleted }: AgentCardProps) {
 
   const regenerateApiKey = useConvexMutation(typedApi.agents.agents.regenerateApiKey);
   const deleteAgent = useConvexMutation(typedApi.agents.agents.deleteAgent);
+  const generateUploadUrl = useConvexMutation(typedApi.storage.images.generateUploadUrl);
+  const setAgentProfileImage = useConvexMutation(typedApi.agents.agents.setAgentProfileImage);
   const retryWalletCreation = useConvexMutation(typedApi.agents.agents.retryWalletCreation);
   const [isRetryingWallet, setIsRetryingWallet] = useState(false);
+  const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
 
   const DeckIcon = DECK_ICONS[agent.starterDeckCode] || Shield;
   const deckColor = DECK_COLORS[agent.starterDeckCode] || "text-slate-400";
@@ -126,6 +131,48 @@ export function AgentCard({ agent, onDeleted }: AgentCardProps) {
       console.error("Failed to retry wallet creation:", err);
     } finally {
       setIsRetryingWallet(false);
+    }
+  };
+
+  const handleProfileImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image is too large. Maximum size is 5MB.");
+      return;
+    }
+
+    setIsUploadingProfileImage(true);
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload profile image");
+      }
+
+      const { storageId } = (await uploadResponse.json()) as { storageId?: Id<"_storage"> };
+      if (!storageId) {
+        throw new Error("Upload did not return a storage ID");
+      }
+
+      await setAgentProfileImage({
+        agentId: agent._id,
+        storageId,
+      });
+
+      toast.success(`${sanitizeText(agent.name)} picture updated`);
+    } catch (error) {
+      console.error("Agent profile picture upload failed:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update agent picture");
+    } finally {
+      setIsUploadingProfileImage(false);
     }
   };
 
@@ -305,6 +352,34 @@ export function AgentCard({ agent, onDeleted }: AgentCardProps) {
         </div>
       ) : (
         <div className="flex items-center gap-2">
+          <label className="inline-flex">
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                  void handleProfileImageUpload(file);
+                }
+                event.target.value = "";
+              }}
+            />
+            <span
+              className={cn(
+                "inline-flex items-center justify-center h-8 px-3 text-xs border rounded-md transition-colors cursor-pointer",
+                "border-[#3d2b1f] text-[#a89f94] hover:text-[#d4af37] bg-transparent",
+                isUploadingProfileImage && "opacity-60 cursor-not-allowed"
+              )}
+            >
+              {isUploadingProfileImage ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+              ) : (
+                <Camera className="w-3.5 h-3.5 mr-1" />
+              )}
+              {isUploadingProfileImage ? "Uploading" : "Photo"}
+            </span>
+          </label>
           <Button
             size="sm"
             variant="outline"

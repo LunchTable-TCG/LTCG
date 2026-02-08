@@ -225,8 +225,7 @@ export interface CardInHand {
 /**
  * Card on the board (monster zone) - new API format
  *
- * Note: This uses numeric position (0/1) while MonsterCard uses string position.
- * When normalizing, convert: 0 = "defense", 1 = "attack"
+ * Position values: 1 = attack, 2 = defense (matches server FieldMonster)
  */
 export interface BoardCard {
   /** Unique card instance ID */
@@ -243,12 +242,14 @@ export interface BoardCard {
   currentAttack?: number;
   /** Current defense (after modifications) */
   currentDefense?: number;
-  /** Battle position: 0 = defense, 1 = attack */
-  position: 0 | 1;
+  /** Battle position: 1 = attack, 2 = defense */
+  position: 1 | 2;
   /** Whether monster has attacked this turn */
   hasAttacked: boolean;
   /** Whether card is face-down */
   isFaceDown: boolean;
+  /** Whether monster has changed position this turn */
+  hasChangedPosition?: boolean;
   /** Card element */
   element?: string;
   /** Card cost */
@@ -291,41 +292,46 @@ export interface CardInGraveyard {
 
 /**
  * Action parameters - covers all action types in the game
+ * Uses cardId-based params matching the Convex HTTP API
  */
 export interface ActionParameters {
-  handIndex?: number;
-  boardIndex?: number;
-  position?: "attack" | "defense";
-  tributeIndices?: number[];
-  targetIndex?: number;
-  targetBoardIndex?: number;
-  attackerIndex?: number;
   cardId?: string;
-  zone?: "monster" | "spellTrap";
-  targets?: Target[];
-  respond?: boolean;
-  [key: string]: number | number[] | string | string[] | Target[] | boolean | undefined;
+  position?: "attack" | "defense";
+  tributeCardIds?: string[];
+  attackerCardId?: string;
+  targetCardId?: string;
+  targets?: string[];
+  pass?: boolean;
+  newPosition?: "attack" | "defense";
+  [key: string]: number | number[] | string | string[] | boolean | undefined;
 }
 
+/**
+ * Available action from /api/agents/games/available-actions
+ * Note: Server uses `action` field, not `type`
+ */
 export interface AvailableAction {
-  type:
-    | "summon"
-    | "set"
-    | "activate_spell"
-    | "activate_trap"
-    | "attack"
-    | "change_position"
-    | "end_turn"
-    | "chain_response";
+  /** Action identifier (e.g., "summon", "attack", "end_turn") */
+  action: string;
   description: string;
-  /** Action parameters structure */
-  parameters?: ActionParameters;
+  /** Card IDs that can perform this action */
+  availableCards?: string[];
+  /** Number of available monsters for this action */
+  availableMonsters?: number;
+  /** Number of attackable monsters */
+  attackableMonsters?: number;
+  /** Chain link number (for chain responses) */
+  chainLink?: number;
+  /** Action-specific parameters from the server */
+  parameters?: Record<string, unknown>;
 }
 
 export interface AvailableActionsResponse {
-  gameId: string;
   phase: string;
+  turnNumber: number;
   actions: AvailableAction[];
+  /** Present when actions array is empty (e.g. "Not your turn") */
+  reason?: string;
 }
 
 // ============================================================================
@@ -334,15 +340,15 @@ export interface AvailableActionsResponse {
 
 export interface SummonRequest {
   gameId: string;
-  handIndex: number;
+  cardId: string;
   position: "attack" | "defense";
-  tributeIndices?: number[];
+  tributeCardIds?: string[];
 }
 
 export interface SetCardRequest {
   gameId: string;
-  handIndex: number;
-  zone: "monster" | "spellTrap";
+  cardId: string;
+  tributeCardIds?: string[];
 }
 
 export interface SetSpellTrapRequest {
@@ -352,40 +358,38 @@ export interface SetSpellTrapRequest {
 
 export interface ActivateSpellRequest {
   gameId: string;
-  handIndex?: number;
-  boardIndex?: number;
-  targets?: Target[];
+  cardId: string;
+  targets?: string[];
 }
 
 export interface ActivateTrapRequest {
   gameId: string;
-  boardIndex: number;
-  targets?: Target[];
+  cardId: string;
+  targets?: string[];
 }
 
 export interface AttackRequest {
   gameId: string;
-  attackerBoardIndex: number;
-  targetBoardIndex?: number; // Omit for direct attack
+  attackerCardId: string;
+  targetCardId?: string; // Omit for direct attack
 }
 
 export interface ChangePositionRequest {
   gameId: string;
-  boardIndex: number;
-  newPosition: "attack" | "defense";
+  cardId: string;
 }
 
 export interface FlipSummonRequest {
   gameId: string;
-  boardIndex: number;
+  cardId: string;
+  newPosition: "attack" | "defense";
 }
 
 export interface ChainResponseRequest {
   gameId: string;
-  respond: boolean;
-  handIndex?: number;
-  boardIndex?: number;
-  targets?: Target[];
+  pass: boolean;
+  cardId?: string;
+  targets?: string[];
 }
 
 export interface EndTurnRequest {
@@ -394,12 +398,6 @@ export interface EndTurnRequest {
 
 export interface SurrenderRequest {
   gameId: string;
-}
-
-export interface Target {
-  type: "monster" | "spell_trap";
-  owner: "self" | "opponent";
-  index: number;
 }
 
 // ============================================================================

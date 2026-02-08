@@ -106,13 +106,13 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
 
             <div className="mt-6 flex gap-3">
-              <button
+              <button type="button"
                 onClick={this.handleReset}
                 className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
                 Try Again
               </button>
-              <button
+              <button type="button"
                 onClick={() => window.location.reload()}
                 className="flex-1 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors"
               >
@@ -160,7 +160,10 @@ export function GameErrorBoundary({ children }: { children: ReactNode }) {
               The game encountered an error. Your progress has been saved.
             </p>
             <button
-              onClick={() => (window.location.href = "/lunchtable")}
+              type="button"
+              onClick={() => {
+                window.location.href = "/lunchtable";
+              }}
               className="px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
             >
               Return to Lobby

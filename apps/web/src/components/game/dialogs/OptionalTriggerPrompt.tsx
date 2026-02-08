@@ -236,7 +236,6 @@ export function OptionalTriggerPrompt({
               <div
                 className={cn(
                   "w-24 h-32 rounded-lg border-2 overflow-hidden shrink-0",
-                  // biome-ignore lint/complexity/useLiteralKeys: TypeScript noPropertyAccessFromIndexSignature requires bracket notation
                   RARITY_BORDERS[cardInfo?.rarity ?? "common"] ?? RARITY_BORDERS["common"]
                 )}
               >

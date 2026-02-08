@@ -148,7 +148,7 @@ export function SpectatorGameView({ lobbyId, onExit }: SpectatorGameViewProps) {
                   {/* Opponent's Field */}
                   <div className="grid grid-cols-5 gap-2">
                     {/* Monster Zone */}
-                    {Array.from({ length: 5 }).map((_, idx) => {
+                    {Array.from({ length: 5 }, (_, idx) => idx).map((idx) => {
                       const monster = gameState.boardState?.opponentBoard[idx];
                       return (
                         <div
@@ -176,7 +176,7 @@ export function SpectatorGameView({ lobbyId, onExit }: SpectatorGameViewProps) {
 
                   {/* Opponent's Spell/Trap Zone */}
                   <div className="grid grid-cols-5 gap-2">
-                    {Array.from({ length: 5 }).map((_, idx) => {
+                    {Array.from({ length: 5 }, (_, idx) => idx).map((idx) => {
                       const st = gameState.boardState?.opponentSpellTrapZone[idx];
                       return (
                         <div
@@ -228,7 +228,7 @@ export function SpectatorGameView({ lobbyId, onExit }: SpectatorGameViewProps) {
 
                   {/* Host's Spell/Trap Zone */}
                   <div className="grid grid-cols-5 gap-2">
-                    {Array.from({ length: 5 }).map((_, idx) => {
+                    {Array.from({ length: 5 }, (_, idx) => idx).map((idx) => {
                       const st = gameState.boardState?.hostSpellTrapZone[idx];
                       return (
                         <div
@@ -249,7 +249,7 @@ export function SpectatorGameView({ lobbyId, onExit }: SpectatorGameViewProps) {
 
                   {/* Host's Monster Zone */}
                   <div className="grid grid-cols-5 gap-2">
-                    {Array.from({ length: 5 }).map((_, idx) => {
+                    {Array.from({ length: 5 }, (_, idx) => idx).map((idx) => {
                       const monster = gameState.boardState?.hostBoard[idx];
                       return (
                         <div

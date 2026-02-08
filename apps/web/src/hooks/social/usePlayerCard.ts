@@ -1,12 +1,22 @@
 "use client";
 
+import { typedApi } from "@/lib/convexHelpers";
 import { handleHookError } from "@/lib/errorHandling";
-import { api } from "@convex/_generated/api";
+import type { MatchMode } from "@/types/common";
+import { type WagerCurrency, formatWagerAmount } from "@/lib/wagerTiers";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
+
+// Module-scope references to avoid TS2589
+const getPlayerCardDataQuery = typedApi.social.friends.getPlayerCardData;
+const sendFriendRequestMutation = typedApi.social.friends.sendFriendRequest;
+const acceptFriendRequestMutation = typedApi.social.friends.acceptFriendRequest;
+const cancelFriendRequestMutation = typedApi.social.friends.cancelFriendRequest;
+const removeFriendMutation = typedApi.social.friends.removeFriend;
+const sendChallengeMutation = typedApi.social.challenges.sendChallenge;
 
 /**
  * Hook for player card modal functionality.
@@ -33,24 +43,21 @@ export function usePlayerCard(userId: Id<"users"> | null) {
   const { isAuthenticated } = useAuth();
 
   // Query player data when userId is provided
-  const playerData = useQuery(
-    api.social.friends.getPlayerCardData,
-    userId ? { targetUserId: userId } : "skip"
-  );
+  const playerData = useQuery(getPlayerCardDataQuery, userId ? { targetUserId: userId } : "skip");
 
   // Friend mutations
-  const sendRequestMutation = useMutation(api.social.friends.sendFriendRequest);
-  const acceptRequestMutation = useMutation(api.social.friends.acceptFriendRequest);
-  const cancelRequestMutation = useMutation(api.social.friends.cancelFriendRequest);
-  const removeFriendMutation = useMutation(api.social.friends.removeFriend);
+  const sendRequestMut = useMutation(sendFriendRequestMutation);
+  const acceptRequestMut = useMutation(acceptFriendRequestMutation);
+  const cancelRequestMut = useMutation(cancelFriendRequestMutation);
+  const removeFriendMut = useMutation(removeFriendMutation);
 
   // Challenge mutation
-  const sendChallengeMutation = useMutation(api.social.challenges.sendChallenge);
+  const sendChallengeMut = useMutation(sendChallengeMutation);
 
   const sendFriendRequest = async (friendUsername: string) => {
     if (!isAuthenticated) throw new Error("Not authenticated");
     try {
-      const result = await sendRequestMutation({ friendUsername });
+      const result = await sendRequestMut({ friendUsername });
       if (result.autoAccepted) {
         toast.success(`You are now friends with ${friendUsername}!`);
       } else {
@@ -67,7 +74,7 @@ export function usePlayerCard(userId: Id<"users"> | null) {
   const acceptFriendRequest = async (friendId: Id<"users">) => {
     if (!isAuthenticated) throw new Error("Not authenticated");
     try {
-      await acceptRequestMutation({ friendId });
+      await acceptRequestMut({ friendId });
       toast.success("Friend request accepted!");
     } catch (error) {
       const message = handleHookError(error, "Failed to accept friend request");
@@ -79,7 +86,7 @@ export function usePlayerCard(userId: Id<"users"> | null) {
   const cancelFriendRequest = async (friendId: Id<"users">) => {
     if (!isAuthenticated) throw new Error("Not authenticated");
     try {
-      await cancelRequestMutation({ friendId });
+      await cancelRequestMut({ friendId });
       toast.info("Friend request cancelled");
     } catch (error) {
       const message = handleHookError(error, "Failed to cancel friend request");
@@ -91,7 +98,7 @@ export function usePlayerCard(userId: Id<"users"> | null) {
   const removeFriend = async (friendId: Id<"users">) => {
     if (!isAuthenticated) throw new Error("Not authenticated");
     try {
-      await removeFriendMutation({ friendId });
+      await removeFriendMut({ friendId });
       toast.info("Friend removed");
     } catch (error) {
       const message = handleHookError(error, "Failed to remove friend");
@@ -100,11 +107,33 @@ export function usePlayerCard(userId: Id<"users"> | null) {
     }
   };
 
-  const sendChallenge = async (opponentUsername: string, mode: "casual" | "ranked") => {
+  const sendChallenge = async (
+    opponentUsername: string,
+    mode: MatchMode,
+    wagerAmount?: number,
+    cryptoWagerCurrency?: WagerCurrency,
+    cryptoWagerTier?: number
+  ) => {
     if (!isAuthenticated) throw new Error("Not authenticated");
     try {
-      const lobbyId = await sendChallengeMutation({ opponentUsername, mode });
-      toast.success("Challenge sent!", {
+      const lobbyId = await sendChallengeMut({
+        opponentUsername,
+        mode,
+        wagerAmount,
+        cryptoWagerCurrency,
+        cryptoWagerTier,
+      });
+
+      // Format toast message based on wager type
+      let wagerText = "";
+      if (cryptoWagerCurrency && cryptoWagerTier !== undefined) {
+        const formatted = formatWagerAmount(cryptoWagerTier, cryptoWagerCurrency);
+        wagerText = ` with ${formatted} wager`;
+      } else if (wagerAmount) {
+        wagerText = ` with ${wagerAmount.toLocaleString()} gold wager`;
+      }
+
+      toast.success(`Challenge sent${wagerText}!`, {
         description: `Redirecting to ${mode} game lobby...`,
       });
       router.push(`/game/${lobbyId}`);

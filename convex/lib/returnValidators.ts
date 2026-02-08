@@ -68,6 +68,7 @@ export const userInfoValidator = v.union(
   v.object({
     _id: v.id("users"),
     username: v.optional(v.string()),
+    image: v.optional(v.string()),
     bio: v.optional(v.string()),
     createdAt: v.optional(v.number()),
   })
@@ -185,6 +186,7 @@ export const packPurchaseValidator = v.object({
 export const friendInfoValidator = v.object({
   userId: v.id("users"),
   username: v.optional(v.string()),
+  image: v.optional(v.string()),
   level: v.number(),
   rankedElo: v.number(),
   isOnline: v.boolean(),
@@ -198,6 +200,7 @@ export const friendInfoValidator = v.object({
 export const friendRequestValidator = v.object({
   userId: v.id("users"),
   username: v.optional(v.string()),
+  image: v.optional(v.string()),
   level: v.number(),
   rankedElo: v.number(),
   requestedAt: v.number(),

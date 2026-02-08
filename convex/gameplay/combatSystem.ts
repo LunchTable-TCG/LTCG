@@ -34,6 +34,7 @@ import { isActionPrevented } from "./effectSystem/lingeringEffects";
 import { checkStateBasedActions } from "./gameEngine/stateBasedActions";
 import { recordEventHelper } from "./gameEvents";
 import { clearPendingReplay, getOpponentMonsterCount } from "./replaySystem";
+import { openResponseWindow, passResponsePriority } from "./responseWindow";
 
 interface BattleResult {
   destroyed: Id<"cardDefinitions">[];
@@ -111,7 +112,14 @@ export const declareAttack = mutation({
       });
     }
 
-    // 5.5. Check if attack is prevented by lingering effects
+    // 5.5. First turn restriction — first player cannot attack on turn 1
+    if (gameState.turnNumber === 1) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Cannot attack on the first turn of the game",
+      });
+    }
+
+    // 5.6. Check if attack is prevented by lingering effects
     const preventionCheck = isActionPrevented(gameState, "declare_attack", user.userId);
     if (preventionCheck.prevented) {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
@@ -151,6 +159,22 @@ export const declareAttack = mutation({
       // position 1 = Attack Position, other values = Defense/Face-down
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: "Monster must be in Attack Position to attack",
+        attackerCardId: args.attackerCardId,
+      });
+    }
+
+    // 6b. Check summoning sickness — cannot attack the turn a monster was summoned
+    if (attacker.turnSummoned === gameState.turnNumber) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Monster cannot attack the turn it was summoned",
+        attackerCardId: args.attackerCardId,
+      });
+    }
+
+    // 6c. Cannot attack after changing position this turn
+    if (attacker.hasChangedPosition) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Monster cannot attack after changing position this turn",
         attackerCardId: args.attackerCardId,
       });
     }
@@ -515,7 +539,14 @@ export const declareAttackWithResponse = mutation({
       });
     }
 
-    // 5.5. Check if attack is prevented by lingering effects
+    // 5.5. First turn restriction — first player cannot attack on turn 1
+    if (gameState.turnNumber === 1) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Cannot attack on the first turn of the game",
+      });
+    }
+
+    // 5.6. Check if attack is prevented by lingering effects
     const preventionCheck = isActionPrevented(gameState, "declare_attack", user.userId);
     if (preventionCheck.prevented) {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
@@ -544,6 +575,22 @@ export const declareAttackWithResponse = mutation({
     if (attacker.position !== 1) {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: "Monster must be in Attack Position to attack",
+      });
+    }
+
+    // 6c. Check summoning sickness — cannot attack the turn a monster was summoned
+    if (attacker.turnSummoned === gameState.turnNumber) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Monster cannot attack the turn it was summoned",
+        attackerCardId: args.attackerCardId,
+      });
+    }
+
+    // 6d. Cannot attack after changing position this turn
+    if (attacker.hasChangedPosition) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Monster cannot attack after changing position this turn",
+        attackerCardId: args.attackerCardId,
       });
     }
 
@@ -596,7 +643,14 @@ export const declareAttackWithResponse = mutation({
       },
     });
 
-    // 10. Record attack declaration event
+    // 10. Open attack_declaration response window — opponent can respond with traps
+    // Re-read gameState after pendingAction patch for consistency
+    const updatedGameState = await ctx.db.get(gameState._id);
+    if (updatedGameState) {
+      await openResponseWindow(ctx, updatedGameState, "attack_declaration", user.userId);
+    }
+
+    // 11. Record attack declaration event
     if (gameState.gameId && gameState.turnNumber !== undefined) {
       await recordEventHelper(ctx, {
         lobbyId: args.lobbyId,
@@ -737,6 +791,71 @@ async function resolveBattle(
     }
 
     return result;
+  }
+
+  // Flip face-down defender face-up before damage calculation
+  // Yu-Gi-Oh rule: Attacking a face-down monster flips it face-up (without triggering Flip Summon)
+  // but does trigger "on_flip" effects
+  const defenderBoardKey = isHostAttacking ? "opponentBoard" : "hostBoard";
+  const currentDefenderBoard = isHostAttacking ? gameState.opponentBoard : gameState.hostBoard;
+  const defenderBoardCard = currentDefenderBoard.find((bc) => bc.cardId === defender.cardId);
+
+  if (defenderBoardCard?.isFaceDown) {
+    const updatedDefBoard = currentDefenderBoard.map((bc) =>
+      bc.cardId === defender.cardId ? { ...bc, isFaceDown: false } : bc
+    );
+    await ctx.db.patch(gameState._id, { [defenderBoardKey]: updatedDefBoard });
+
+    await recordEventHelper(ctx, {
+      lobbyId,
+      gameId: gameState.gameId,
+      turnNumber,
+      eventType: "position_changed",
+      playerId: defenderId,
+      playerUsername: defenderUser?.username || "Unknown",
+      description: `${defenderCard?.name || "Monster"} was flipped face-up by battle`,
+      metadata: { cardId: defender.cardId, flippedByBattle: true },
+    });
+
+    // Trigger on_flip effects on the defender
+    if (defenderCard) {
+      const flipAbility = getCardAbility(defenderCard);
+      if (flipAbility) {
+        for (const flipEffect of flipAbility.effects) {
+          if (flipEffect.trigger !== "on_flip") continue;
+
+          const refreshedForFlip = await ctx.db
+            .query("gameStates")
+            .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+            .first();
+
+          if (refreshedForFlip) {
+            const flipResult = await executeEffect(
+              ctx,
+              refreshedForFlip,
+              lobbyId,
+              flipEffect,
+              defenderId,
+              defender.cardId,
+              []
+            );
+
+            if (flipResult.success) {
+              await recordEventHelper(ctx, {
+                lobbyId,
+                gameId: gameState.gameId,
+                turnNumber,
+                eventType: "effect_activated",
+                playerId: defenderId,
+                playerUsername: defenderUser?.username || "Unknown",
+                description: `FLIP: ${defenderCard.name} effect: ${flipResult.message}`,
+                metadata: { cardId: defender.cardId, trigger: "on_flip" },
+              });
+            }
+          }
+        }
+      }
+    }
   }
 
   // Get defender position first (needed for damage calculation triggers)
@@ -1326,7 +1445,11 @@ async function destroyCard(
     const cardAbility = getCardAbility(card);
     if (cardAbility) {
       for (const parsedEffect of cardAbility.effects) {
-        if (parsedEffect.trigger !== "on_destroy") continue;
+        if (
+          parsedEffect.trigger !== "on_destroy" &&
+          parsedEffect.trigger !== "on_destroy_by_battle"
+        )
+          continue;
 
         const refreshedState = await ctx.db
           .query("gameStates")
@@ -1361,15 +1484,73 @@ async function destroyCard(
     }
   }
 
-  // Move to graveyard
-  await moveCard(ctx, gameState, cardId, "board", "graveyard", ownerId, turnNumber);
+  // Refresh state after triggers may have modified the board
+  const refreshedStateAfterTriggers = await ctx.db
+    .query("gameStates")
+    .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+    .first();
+  if (!refreshedStateAfterTriggers) return;
 
-  // Remove from board
-  const isHost = ownerId === gameState.hostId;
-  const newBoard = board.filter((bc) => bc.cardId !== cardId);
-  await ctx.db.patch(gameState._id, {
-    [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
-  });
+  // Re-check card is still on board (trigger may have already removed it)
+  const isHost = ownerId === refreshedStateAfterTriggers.hostId;
+  const currentBoard = isHost
+    ? refreshedStateAfterTriggers.hostBoard
+    : refreshedStateAfterTriggers.opponentBoard;
+  const stillOnBoard = currentBoard.some((bc) => bc.cardId === cardId);
+  if (!stillOnBoard) return; // Already removed by trigger
+
+  // Move to graveyard
+  await moveCard(
+    ctx,
+    refreshedStateAfterTriggers,
+    cardId,
+    "board",
+    "graveyard",
+    ownerId,
+    turnNumber
+  );
+
+  // Build update: remove from board + destroy equipped spells
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
+  const updates: Record<string, any> = {
+    [isHost ? "hostBoard" : "opponentBoard"]: currentBoard.filter((bc) => bc.cardId !== cardId),
+  };
+
+  // Destroy equipped spells when monster is destroyed (mirror logic from destroy.ts)
+  const destroyedBoardCard = currentBoard.find((bc) => bc.cardId === cardId);
+  if (destroyedBoardCard?.equippedCards && destroyedBoardCard.equippedCards.length > 0) {
+    const equippedIds = destroyedBoardCard.equippedCards;
+
+    // Remove from host spell/trap zone
+    const hostEquips = refreshedStateAfterTriggers.hostSpellTrapZone.filter((st) =>
+      equippedIds.includes(st.cardId)
+    );
+    if (hostEquips.length > 0) {
+      updates["hostSpellTrapZone"] = refreshedStateAfterTriggers.hostSpellTrapZone.filter(
+        (st) => !equippedIds.includes(st.cardId)
+      );
+      updates["hostGraveyard"] = [
+        ...refreshedStateAfterTriggers.hostGraveyard,
+        ...hostEquips.map((st) => st.cardId),
+      ];
+    }
+
+    // Remove from opponent spell/trap zone
+    const opponentEquips = refreshedStateAfterTriggers.opponentSpellTrapZone.filter((st) =>
+      equippedIds.includes(st.cardId)
+    );
+    if (opponentEquips.length > 0) {
+      updates["opponentSpellTrapZone"] = refreshedStateAfterTriggers.opponentSpellTrapZone.filter(
+        (st) => !equippedIds.includes(st.cardId)
+      );
+      updates["opponentGraveyard"] = [
+        ...refreshedStateAfterTriggers.opponentGraveyard,
+        ...opponentEquips.map((st) => st.cardId),
+      ];
+    }
+  }
+
+  await ctx.db.patch(refreshedStateAfterTriggers._id, updates);
 }
 
 // ============================================================================
@@ -1467,6 +1648,13 @@ export const continueAttackAfterReplay = mutation({
           reason: "Target monster not on opponent's field",
         });
       }
+      // Validate target isn't protected
+      if (defender.cannotBeTargeted) {
+        await ctx.db.patch(gameState._id, { pendingAction: undefined });
+        throw createError(ErrorCode.GAME_INVALID_MOVE, {
+          reason: "Target monster cannot be targeted",
+        });
+      }
       const card = await ctx.db.get(pendingAction.targetId);
       if (!card) {
         throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
@@ -1544,12 +1732,7 @@ export const continueAttackAfterReplay = mutation({
       });
     }
 
-    // 11. Clear pending action before battle resolution
-    await ctx.db.patch(gameState._id, {
-      pendingAction: undefined,
-    });
-
-    // 12. Resolve battle
+    // 11. Resolve battle
     const battleResult = await resolveBattle(
       ctx,
       args.lobbyId,
@@ -1577,10 +1760,11 @@ export const continueAttackAfterReplay = mutation({
 
       await ctx.db.patch(refreshedState._id, {
         [isHost ? "hostBoard" : "opponentBoard"]: updatedPlayerBoard,
+        pendingAction: undefined,
       });
     }
 
-    // 14. Run state-based action checks
+    // 12. Run state-based action checks
     const sbaResult = await checkStateBasedActions(ctx, args.lobbyId, {
       skipHandLimit: true,
       turnNumber: gameState.turnNumber,
@@ -1650,6 +1834,13 @@ export const declareAttackInternal = internalMutation({
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: "Can only attack during Battle Phase",
         currentPhase,
+      });
+    }
+
+    // 5.5. First turn restriction — first player cannot attack on turn 1
+    if (gameState.turnNumber === 1) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Cannot attack on the first turn of the game",
       });
     }
 
@@ -1742,8 +1933,10 @@ export const declareAttackInternal = internalMutation({
           const newOpponentBoard = opponentBoard.filter((_: any, i: number) => i !== targetIndex);
           await ctx.db.patch(gameState._id, {
             [isHost ? "opponentBoard" : "hostBoard"]: newOpponentBoard,
-            [isHost ? "opponentLifePoints" : "hostLifePoints"]:
-              (isHost ? gameState.opponentLifePoints : gameState.hostLifePoints) - damage,
+            [isHost ? "opponentLifePoints" : "hostLifePoints"]: Math.max(
+              0,
+              (isHost ? gameState.opponentLifePoints : gameState.hostLifePoints) - damage
+            ),
           });
         } else if (attackerAtk < targetValue) {
           damage = targetValue - attackerAtk;
@@ -1753,8 +1946,10 @@ export const declareAttackInternal = internalMutation({
           const newMyBoard = myBoard.filter((_: any, i: number) => i !== attackerIndex);
           await ctx.db.patch(gameState._id, {
             [isHost ? "hostBoard" : "opponentBoard"]: newMyBoard,
-            [isHost ? "hostLifePoints" : "opponentLifePoints"]:
-              (isHost ? gameState.hostLifePoints : gameState.opponentLifePoints) - damage,
+            [isHost ? "hostLifePoints" : "opponentLifePoints"]: Math.max(
+              0,
+              (isHost ? gameState.hostLifePoints : gameState.opponentLifePoints) - damage
+            ),
           });
         } else {
           // Tie - both destroyed
@@ -1780,8 +1975,10 @@ export const declareAttackInternal = internalMutation({
         } else if (attackerAtk < targetValue) {
           damage = targetValue - attackerAtk;
           await ctx.db.patch(gameState._id, {
-            [isHost ? "hostLifePoints" : "opponentLifePoints"]:
-              (isHost ? gameState.hostLifePoints : gameState.opponentLifePoints) - damage,
+            [isHost ? "hostLifePoints" : "opponentLifePoints"]: Math.max(
+              0,
+              (isHost ? gameState.hostLifePoints : gameState.opponentLifePoints) - damage
+            ),
           });
         }
         // Tie in defense = nothing happens
@@ -1795,8 +1992,10 @@ export const declareAttackInternal = internalMutation({
       }
       damage = attackerAtk;
       await ctx.db.patch(gameState._id, {
-        [isHost ? "opponentLifePoints" : "hostLifePoints"]:
-          (isHost ? gameState.opponentLifePoints : gameState.hostLifePoints) - damage,
+        [isHost ? "opponentLifePoints" : "hostLifePoints"]: Math.max(
+          0,
+          (isHost ? gameState.opponentLifePoints : gameState.hostLifePoints) - damage
+        ),
       });
     }
 
@@ -1864,3 +2063,262 @@ export const declareAttackInternal = internalMutation({
     };
   },
 });
+
+/**
+ * Pass priority in a response window (Battle Step / Damage Step flow)
+ *
+ * Called by players to pass their priority during a response window.
+ * When both players pass consecutively, the window resolves and the
+ * battle transitions to the next step (attack_declaration → damage_calculation → resolve).
+ */
+export const passResponseWindowPriority = mutation({
+  args: { lobbyId: v.id("gameLobbies") },
+  handler: async (ctx, args) => {
+    const user = await requireAuthMutation(ctx);
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Game state not found",
+      });
+    }
+
+    if (!gameState.responseWindow) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "No response window active",
+      });
+    }
+
+    const result = await passResponsePriority(ctx, args.lobbyId, gameState, user.userId);
+
+    // If damage_calculation window closed, execute the damage step
+    if (result.battleTransition === "execute_damage") {
+      const freshState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+        .first();
+      if (freshState) {
+        const damageResult = await executeDamageStep(ctx, args.lobbyId, freshState);
+        return { ...result, battleResult: damageResult };
+      }
+    }
+
+    return result;
+  },
+});
+
+/**
+ * Pass priority in a response window (Internal - for agent API)
+ */
+export const passResponseWindowPriorityInternal = internalMutation({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    await validateGameActive(ctx.db, args.lobbyId);
+
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Game state not found",
+      });
+    }
+
+    if (!gameState.responseWindow) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "No response window active",
+      });
+    }
+
+    const result = await passResponsePriority(ctx, args.lobbyId, gameState, args.userId);
+
+    // If damage_calculation window closed, execute the damage step
+    if (result.battleTransition === "execute_damage") {
+      const freshState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+        .first();
+      if (freshState) {
+        const damageResult = await executeDamageStep(ctx, args.lobbyId, freshState);
+        return { ...result, battleResult: damageResult };
+      }
+    }
+
+    return result;
+  },
+});
+
+/**
+ * Execute the damage step from a pending attack action.
+ *
+ * Called when the damage_calculation response window closes (both players passed).
+ * Reads pendingAction, calculates effective stats, resolves battle, marks hasAttacked,
+ * runs state-based actions, and clears pendingAction.
+ */
+export async function executeDamageStep(
+  ctx: MutationCtx,
+  lobbyId: Id<"gameLobbies">,
+  gameState: Doc<"gameStates">
+) {
+  const pendingAction = gameState.pendingAction;
+  if (!pendingAction || pendingAction.type !== "attack" || !pendingAction.attackerId) {
+    return { success: false, message: "No pending attack" };
+  }
+
+  const isHost = gameState.currentTurnPlayerId === gameState.hostId;
+  const playerBoard = isHost ? gameState.hostBoard : gameState.opponentBoard;
+  const opponentId = isHost ? gameState.opponentId : gameState.hostId;
+  const opponentBoard = isHost ? gameState.opponentBoard : gameState.hostBoard;
+
+  // Validate attacker still exists
+  const attacker = playerBoard.find((bc) => bc.cardId === pendingAction.attackerId);
+  if (!attacker) {
+    await ctx.db.patch(gameState._id, { pendingAction: undefined });
+    return { success: false, message: "Attacking monster no longer on field" };
+  }
+
+  const attackerCard = await ctx.db.get(pendingAction.attackerId);
+  if (!attackerCard) {
+    await ctx.db.patch(gameState._id, { pendingAction: undefined });
+    return { success: false, message: "Attacker card not found" };
+  }
+
+  // Validate target if not direct attack
+  let defender: (typeof opponentBoard)[number] | undefined;
+  let defenderCard: Doc<"cardDefinitions"> | undefined;
+
+  if (pendingAction.targetId) {
+    defender = opponentBoard.find((bc) => bc.cardId === pendingAction.targetId);
+    if (!defender) {
+      await ctx.db.patch(gameState._id, { pendingAction: undefined });
+      return { success: false, message: "Target monster no longer on field" };
+    }
+    const card = await ctx.db.get(pendingAction.targetId);
+    if (card) defenderCard = card;
+  } else {
+    // Direct attack — validate opponent still has no monsters (unless card effect)
+    if (opponentBoard.length > 0) {
+      const parsedAbility = getCardFirstEffect(attackerCard);
+      let canDirectAttack = false;
+      if (parsedAbility?.type === "directAttack") {
+        if (parsedAbility.condition === "no_opponent_attack_monsters") {
+          const opponentAttackMonsters = opponentBoard.filter((bc) => bc.position === 1);
+          canDirectAttack = opponentAttackMonsters.length === 0;
+        }
+      }
+      if (!canDirectAttack) {
+        await ctx.db.patch(gameState._id, { pendingAction: undefined });
+        return { success: false, message: "Cannot attack directly while opponent has monsters" };
+      }
+    }
+  }
+
+  // Calculate effective stats
+  const attackerTempStats = getModifiedStats(
+    gameState,
+    attacker.cardId,
+    attackerCard.attack || 0,
+    attackerCard.defense || 0
+  );
+  const attackerContinuousBonus = await applyContinuousEffects(
+    ctx,
+    gameState,
+    attacker.cardId,
+    attackerCard,
+    isHost
+  );
+  const effectiveAttackerATK = attackerTempStats.attack + attackerContinuousBonus.atkBonus;
+
+  const effectiveAttacker = {
+    ...attacker,
+    attack: effectiveAttackerATK,
+  };
+
+  let effectiveDefender = defender;
+  if (defender && defenderCard) {
+    const defenderTempStats = getModifiedStats(
+      gameState,
+      defender.cardId,
+      defenderCard.attack || 0,
+      defenderCard.defense || 0
+    );
+    const defenderContinuousBonus = await applyContinuousEffects(
+      ctx,
+      gameState,
+      defender.cardId,
+      defenderCard,
+      !isHost
+    );
+    effectiveDefender = {
+      ...defender,
+      attack: Math.max(0, defenderTempStats.attack + defenderContinuousBonus.atkBonus),
+      defense: Math.max(0, defenderTempStats.defense + defenderContinuousBonus.defBonus),
+    };
+  }
+
+  if (gameState.turnNumber === undefined) {
+    return { success: false, message: "Turn number not found" };
+  }
+
+  // Resolve battle
+  const battleResult = await resolveBattle(
+    ctx,
+    lobbyId,
+    gameState,
+    gameState.turnNumber,
+    gameState.currentTurnPlayerId,
+    opponentId,
+    effectiveAttacker,
+    attackerCard,
+    effectiveDefender,
+    defenderCard
+  );
+
+  // Mark attacker as having attacked
+  const refreshedState = await ctx.db
+    .query("gameStates")
+    .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+    .first();
+
+  if (refreshedState) {
+    const refreshedPlayerBoard = isHost ? refreshedState.hostBoard : refreshedState.opponentBoard;
+    const updatedPlayerBoard = refreshedPlayerBoard.map((bc) =>
+      bc.cardId === pendingAction.attackerId ? { ...bc, hasAttacked: true } : bc
+    );
+
+    await ctx.db.patch(refreshedState._id, {
+      [isHost ? "hostBoard" : "opponentBoard"]: updatedPlayerBoard,
+      pendingAction: undefined,
+    });
+  }
+
+  // Run state-based action checks
+  const sbaResult = await checkStateBasedActions(ctx, lobbyId, {
+    skipHandLimit: true,
+    turnNumber: gameState.turnNumber,
+  });
+
+  if (sbaResult.gameEnded) {
+    battleResult.gameEnded = true;
+  }
+
+  return {
+    success: true,
+    battleResult,
+    sbaResult: {
+      gameEnded: sbaResult.gameEnded,
+      winnerId: sbaResult.winnerId,
+      destroyedCards: sbaResult.allDestroyedCards,
+    },
+  };
+}

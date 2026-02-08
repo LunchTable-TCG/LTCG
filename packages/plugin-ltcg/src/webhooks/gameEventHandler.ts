@@ -8,6 +8,7 @@
 import type { IAgentRuntime, State } from "@elizaos/core";
 import { logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
+import { LTCGEventType, emitLTCGEvent } from "../events/types";
 import { type ITurnOrchestrator, SERVICE_TYPES } from "../services/types";
 
 /**
@@ -219,6 +220,13 @@ async function handleTurnStarted(
     "Turn started - triggering autonomous turn execution"
   );
 
+  // Emit custom LTCG event
+  await emitLTCGEvent(runtime, LTCGEventType.TURN_STARTED, {
+    gameId,
+    phase: data.phase ?? "main1",
+    turnNumber: data.turnNumber ?? 1,
+  });
+
   // Get API client
   const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
   const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
@@ -285,6 +293,12 @@ async function handleChainWaiting(
     "Chain waiting - triggering chain response decision"
   );
 
+  // Emit custom LTCG event
+  await emitLTCGEvent(runtime, LTCGEventType.CHAIN_WAITING, {
+    gameId,
+    timeoutMs: chainState?.timeoutMs ?? 30000,
+  });
+
   // Store chain state for chain response action
   state.values.LTCG_CHAIN_WAITING = true;
   state.values.LTCG_CHAIN_TIMEOUT = chainState?.timeoutMs;
@@ -323,7 +337,7 @@ async function handleChainWaiting(
 async function handleOpponentAction(
   gameId: string,
   data: GameWebhookPayload["data"],
-  _runtime: IAgentRuntime,
+  runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   const oppAction = data.opponentAction;
@@ -332,6 +346,13 @@ async function handleOpponentAction(
     { gameId, actionType: oppAction?.type, description: oppAction?.description },
     "Opponent made an action"
   );
+
+  // Emit custom LTCG event
+  await emitLTCGEvent(runtime, LTCGEventType.OPPONENT_ACTION, {
+    gameId,
+    actionType: oppAction?.type ?? "unknown",
+    description: oppAction?.description ?? "",
+  });
 
   // Store for react action
   state.values.LTCG_LAST_OPPONENT_ACTION = oppAction;
@@ -348,10 +369,13 @@ async function handleOpponentAction(
 async function handleGameStarted(
   gameId: string,
   _data: GameWebhookPayload["data"],
-  _runtime: IAgentRuntime,
+  runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   logger.info({ gameId }, "Game has started");
+
+  // Emit custom LTCG event
+  await emitLTCGEvent(runtime, LTCGEventType.GAME_STARTED, { gameId });
 
   // Store game ID
   state.values.LTCG_CURRENT_GAME_ID = gameId;
@@ -369,12 +393,19 @@ async function handleGameStarted(
 async function handleGameEnded(
   gameId: string,
   data: GameWebhookPayload["data"],
-  _runtime: IAgentRuntime,
+  runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   const result = data.gameResult;
 
   logger.info({ gameId, winner: result?.winner, reason: result?.reason }, "Game has ended");
+
+  // Emit custom LTCG event
+  await emitLTCGEvent(runtime, LTCGEventType.GAME_ENDED, {
+    gameId,
+    winner: result?.winner ?? "opponent",
+    reason: result?.reason ?? "unknown",
+  });
 
   // Clear game state
   state.values.LTCG_CURRENT_GAME_ID = undefined;
@@ -393,10 +424,17 @@ async function handleGameEnded(
 async function handlePhaseChanged(
   gameId: string,
   data: GameWebhookPayload["data"],
-  _runtime: IAgentRuntime,
+  runtime: IAgentRuntime,
   state: State
 ): Promise<WebhookHandlerResult> {
   logger.info({ gameId, phase: data.phase }, "Phase changed");
+
+  // Emit custom LTCG event
+  await emitLTCGEvent(runtime, LTCGEventType.PHASE_CHANGED, {
+    gameId,
+    phase: data.phase ?? "unknown",
+    turnNumber: data.turnNumber ?? 0,
+  });
 
   state.values.LTCG_CURRENT_PHASE = data.phase;
 

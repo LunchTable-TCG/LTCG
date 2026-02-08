@@ -143,7 +143,7 @@ export function calculateDamageRange(
   // Get DEF values from defenders
   const defenderStats = defenders.map((d) => {
     const isDefense =
-      ("position" in d && d.position === "defense") || ("position" in d && d.position === 0);
+      ("position" in d && d.position === "defense") || ("position" in d && d.position === 2);
     if ("atk" in d && "def" in d) {
       return { atk: d.atk, def: d.def, isDefense };
     }

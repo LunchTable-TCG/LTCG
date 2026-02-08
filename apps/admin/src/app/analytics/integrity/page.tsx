@@ -55,19 +55,6 @@ function statusColor(status: string) {
   return status === "ok" ? "emerald" : "rose";
 }
 
-function overallStatusColor(status: string) {
-  switch (status) {
-    case "healthy":
-      return "emerald";
-    case "warning":
-      return "amber";
-    case "critical":
-      return "rose";
-    default:
-      return "gray";
-  }
-}
-
 function formatTimestamp(ts: number) {
   return new Date(ts).toLocaleString("en-US", {
     month: "short",
@@ -146,7 +133,7 @@ export default function IntegrityPage() {
       {/* Check Results Grid */}
       <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {isLoading
-          ? Array.from({ length: 9 }).map((_, i) => (
+          ? Array.from({ length: 9  }, (_, i) => i).map((i) => (
               <Card key={i} className="animate-pulse">
                 <div className="h-4 w-32 rounded bg-muted" />
                 <div className="mt-2 h-3 w-48 rounded bg-muted" />
@@ -202,7 +189,7 @@ export default function IntegrityPage() {
 
         {isLoading ? (
           <div className="mt-4 space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
+            {Array.from({ length: 3  }, (_, i) => i).map((i) => (
               <div key={i} className="animate-pulse h-10 rounded bg-muted" />
             ))}
           </div>

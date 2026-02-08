@@ -559,7 +559,7 @@ async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime:
     }
 
     const rtmpData = await rtmpResponse.json();
-    logger.info("Got Retake.tv RTMP credentials", { url: rtmpData.rtmp_url, key: rtmpData.stream_key });
+    logger.info(`Got Retake.tv RTMP credentials (url: ${rtmpData.rtmp_url})`);
 
     // 3. Start LTCG streaming system with LiveKit egress
     const appUrl = process.env.LTCG_APP_URL || "https://lunchtable.cards";
@@ -594,7 +594,7 @@ async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime:
     }
 
     const streamingData = await streamingResponse.json();
-    logger.info("LTCG streaming started", { sessionId: streamingData.sessionId });
+    logger.info(`LTCG streaming started (sessionId: ${streamingData.sessionId})`);
 
     res.json({
       success: true,

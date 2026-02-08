@@ -413,11 +413,20 @@ export function x402HttpAction(getPaymentConfig: PaymentConfigResolver, handler:
           request
         );
       }
+      if (!paymentResult.payer || !paymentResult.signature) {
+        return paymentErrorResponse(
+          X402_ERROR_CODES.PAYMENT_INVALID,
+          "Payment verification succeeded but payer/signature are missing",
+          402,
+          undefined,
+          request
+        );
+      }
 
       // Payment verified - execute handler
       return await handler(ctx, request, {
-        payer: paymentResult.payer!,
-        signature: paymentResult.signature!,
+        payer: paymentResult.payer,
+        signature: paymentResult.signature,
         amount: requirements.amount,
       });
     } catch (error) {
@@ -501,11 +510,14 @@ export function optionalX402HttpAction(
         // (could also return 402 error here depending on use case)
         return await handler(ctx, request, null);
       }
+      if (!paymentResult.payer || !paymentResult.signature) {
+        return await handler(ctx, request, null);
+      }
 
       // Payment verified - call handler with payment info
       return await handler(ctx, request, {
-        payer: paymentResult.payer!,
-        signature: paymentResult.signature!,
+        payer: paymentResult.payer,
+        signature: paymentResult.signature,
         amount: requirements.amount,
       });
     } catch (error) {

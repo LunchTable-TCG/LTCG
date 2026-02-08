@@ -74,6 +74,7 @@ export function AnnouncementBanner({ className }: AnnouncementBannerProps) {
       <div className="container mx-auto flex items-center justify-between gap-4">
         <p className="text-sm font-medium flex-1 text-center">{announcement}</p>
         <button
+          type="button"
           onClick={handleDismiss}
           className="p-1 hover:bg-black/10 rounded-full transition-colors flex-shrink-0"
           aria-label="Dismiss announcement"

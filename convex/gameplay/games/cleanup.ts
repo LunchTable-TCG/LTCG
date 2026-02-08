@@ -1,22 +1,12 @@
 import { v } from "convex/values";
-import { internal } from "../../_generated/api";
+import * as generatedApi from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { internalAction } from "../../_generated/server";
 import { internalMutation } from "../../functions";
 
-/**
- * Type-safe internal API accessor
- * Avoids TS2589 "Type instantiation is excessively deep" by using a typed wrapper
- */
-interface InternalGamesAPI {
-  getActiveLobbiesForCleanup: typeof internal.games.getActiveLobbiesForCleanup;
-  forfeitGame: typeof internal.games.forfeitGame;
-  getWaitingLobbiesForCleanup: typeof internal.games.getWaitingLobbiesForCleanup;
-  cancelStaleWaitingLobby: typeof internal.games.cancelStaleWaitingLobby;
-}
-
-const internalGames = internal.games as InternalGamesAPI;
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -65,14 +55,17 @@ export const cleanupStaleGames = internalAction({
     const TIMEOUT_MS = 120000; // 2 minutes (120 seconds)
 
     // Get all active games
-    const activeLobbies = await ctx.runQuery(internalGames.getActiveLobbiesForCleanup);
+    const activeLobbies = await ctx.runQuery(internalAny.games.getActiveLobbiesForCleanup);
 
     for (const lobby of activeLobbies) {
+      // Skip story mode — has its own AI turn watchdog (forceEndAITurn)
+      if (lobby.mode === "story") continue;
+
       // Check if last move was more than 2 minutes ago
       if (lobby.lastMoveAt && now - lobby.lastMoveAt > TIMEOUT_MS) {
         // Forfeit the game for the player whose turn it is
         if (lobby.currentTurnPlayerId) {
-          await ctx.runMutation(internalGames.forfeitGame, {
+          await ctx.runMutation(internalAny.games.forfeitGame, {
             lobbyId: lobby._id,
             forfeitingPlayerId: lobby.currentTurnPlayerId,
           });
@@ -82,11 +75,11 @@ export const cleanupStaleGames = internalAction({
 
     // Also cleanup waiting lobbies that have been waiting for too long (30 minutes)
     const WAITING_TIMEOUT_MS = 1800000; // 30 minutes
-    const waitingLobbies = await ctx.runQuery(internalGames.getWaitingLobbiesForCleanup);
+    const waitingLobbies = await ctx.runQuery(internalAny.games.getWaitingLobbiesForCleanup);
 
     for (const lobby of waitingLobbies) {
       if (now - lobby.createdAt > WAITING_TIMEOUT_MS) {
-        await ctx.runMutation(internalGames.cancelStaleWaitingLobby, {
+        await ctx.runMutation(internalAny.games.cancelStaleWaitingLobby, {
           lobbyId: lobby._id,
         });
       }

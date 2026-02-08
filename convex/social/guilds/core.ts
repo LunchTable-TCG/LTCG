@@ -468,12 +468,19 @@ export const deleteGuild = mutation({
       .collect();
     await Promise.all(requests.map((r) => ctx.db.delete(r._id)));
 
-    // Delete all messages (in batches to avoid timeout)
-    const messages = await ctx.db
-      .query("guildMessages")
-      .withIndex("by_guild_created", (q) => q.eq("guildId", args.guildId))
-      .take(1000);
-    await Promise.all(messages.map((m) => ctx.db.delete(m._id)));
+    // Delete all messages (in batches)
+    let hasMoreMessages = true;
+    while (hasMoreMessages) {
+      const messages = await ctx.db
+        .query("guildMessages")
+        .withIndex("by_guild_created", (q) => q.eq("guildId", args.guildId))
+        .take(1000);
+      if (messages.length === 0) {
+        hasMoreMessages = false;
+      } else {
+        await Promise.all(messages.map((m) => ctx.db.delete(m._id)));
+      }
+    }
 
     // Delete the guild
     await ctx.db.delete(args.guildId);

@@ -5,6 +5,9 @@
  */
 
 import { v } from "convex/values";
+import * as generatedApi from "../../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { internalMutation } from "../../functions";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { cleanupLingeringEffects } from "../effectSystem/lingeringEffects";
@@ -79,6 +82,16 @@ export const advanceToBattlePhaseInternal = internalMutation({
         previousPhase: "main1",
         newPhase: "battle",
       },
+    });
+
+    // 9. Trigger phase_changed webhooks
+    await ctx.runMutation(internalAny.gameplay.webhooks.triggerWebhooks, {
+      event: "phase_changed",
+      gameId: args.gameId,
+      lobbyId: gameState.lobbyId,
+      turnNumber: gameState.turnNumber ?? 0,
+      playerId: args.userId,
+      additionalData: { previousPhase: "main1", newPhase: "battle" },
     });
 
     return {
@@ -156,6 +169,16 @@ export const advanceToMainPhase2Internal = internalMutation({
         previousPhase: "battle",
         newPhase: "main2",
       },
+    });
+
+    // 9. Trigger phase_changed webhooks
+    await ctx.runMutation(internalAny.gameplay.webhooks.triggerWebhooks, {
+      event: "phase_changed",
+      gameId: args.gameId,
+      lobbyId: gameState.lobbyId,
+      turnNumber: gameState.turnNumber ?? 0,
+      playerId: args.userId,
+      additionalData: { previousPhase: "battle", newPhase: "main2" },
     });
 
     return {

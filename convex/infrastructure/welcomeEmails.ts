@@ -1,8 +1,10 @@
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
 import { internalMutation } from "../functions";
 
-// Email action references - extracted to module level for consistency
-const emailActions = internal.infrastructure.emailActions;
+// Email action references - public actions are on api.*, not internal.*
+const emailActions = apiAny.infrastructure.emailActions;
 
 // Helper to avoid TypeScript "Type instantiation is excessively deep" errors
 // biome-ignore lint/suspicious/noExplicitAny: Convex scheduler type workaround for TS2589

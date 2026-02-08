@@ -8,7 +8,9 @@
  * @see https://www.x402.org/
  */
 
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { httpAction } from "../_generated/server";
 import { GEM_PACKAGES } from "../lib/constants";
 import type { PaymentEndpointConfig } from "../lib/x402/types";
@@ -21,10 +23,6 @@ import {
   validateRequiredFields,
 } from "./middleware/responses";
 import { x402CorsPreflightResponse, x402HttpAction } from "./middleware/x402";
-
-// Module-scope helper to avoid TS2589
-// biome-ignore lint/suspicious/noExplicitAny: Required to break TS2589 deep type instantiation
-const internalAny = internal as unknown as any;
 
 // =============================================================================
 // Package Listing (No Auth Required)

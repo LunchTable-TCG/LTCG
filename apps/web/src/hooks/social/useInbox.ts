@@ -16,6 +16,8 @@ export type InboxMessageType =
   | "announcement"
   | "challenge"
   | "friend_request"
+  | "guild_invite"
+  | "guild_request"
   | "system"
   | "achievement";
 

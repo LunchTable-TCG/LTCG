@@ -1,6 +1,9 @@
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { type MutationCtx, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { internalMutation } from "../functions";
@@ -281,7 +284,7 @@ export const updateAchievementProgress = internalMutation({
           // Create achievement unlock notification
           await ctx.scheduler.runAfter(
             0,
-            internal.progression.notifications.createAchievementNotification,
+            internalAny.progression.notifications.createAchievementNotification,
             {
               userId: args.userId,
               achievementId: definition.achievementId,

@@ -115,7 +115,7 @@ export function PlayerSelector({
       <ScrollArea className="h-[300px] rounded-md border">
         <div className="p-4 space-y-2">
           {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)
+            Array.from({ length: 5  }, (_, i) => i).map((i) => <Skeleton key={i} className="h-10 w-full" />)
           ) : filteredPlayers.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">No players found</div>
           ) : (

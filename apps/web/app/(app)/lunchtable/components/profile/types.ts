@@ -3,6 +3,9 @@
  * Type definitions for player profile components
  */
 
+import type { Element, Rarity } from "@/types/cards";
+import type { PlayerStatus } from "@/types/common";
+
 export type DetailType = "badge" | "achievement" | "card";
 
 export interface DetailItem {
@@ -11,8 +14,8 @@ export interface DetailItem {
   name: string;
   description: string;
   icon?: string;
-  element?: "fire" | "water" | "earth" | "wind";
-  rarity?: "common" | "rare" | "epic" | "legendary";
+  element?: Element;
+  rarity?: Rarity;
   earnedAt?: number;
   progress?: number;
   maxProgress?: number;
@@ -55,14 +58,14 @@ export interface PlayerProfile {
   mostPlayedCard: {
     id: string;
     name: string;
-    element: "fire" | "water" | "earth" | "wind";
+    element: Element;
     timesPlayed: number;
   };
   callingCard: {
     id: string;
     name: string;
-    element: "fire" | "water" | "earth" | "wind";
-    rarity: "common" | "rare" | "epic" | "legendary";
+    element: Element;
+    rarity: Rarity;
   } | null;
   badges: Array<{
     id: string;
@@ -80,6 +83,6 @@ export interface PlayerProfile {
     maxProgress?: number;
   }>;
   joinedAt: number;
-  status: "online" | "in_game" | "idle" | "offline";
+  status: PlayerStatus;
   streamerModeEnabled?: boolean;
 }

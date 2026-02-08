@@ -5,6 +5,8 @@ import { useGuildChat, useMyGuild } from "@/hooks/guilds";
 import { useAIChat } from "@/hooks/social/useAIChat";
 import { useDMChat } from "@/hooks/social/useDMChat";
 import { useDMConversations } from "@/hooks/social/useDMConversations";
+import type { MatchMode } from "@/types/common";
+import type { WagerCurrency } from "@/lib/wagerTiers";
 import { sanitizeChatMessage, sanitizeText } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
@@ -278,7 +280,12 @@ export function GlobalChat() {
     setUserMenu(null);
   };
 
-  const handleChallengeConfirm = async (mode: "casual" | "ranked", wagerAmount?: number) => {
+  const handleChallengeConfirm = async (
+    mode: MatchMode,
+    wagerAmount?: number,
+    cryptoWagerCurrency?: WagerCurrency,
+    cryptoWagerTier?: number,
+  ) => {
     if (!challengeTarget) return;
 
     try {
@@ -286,6 +293,8 @@ export function GlobalChat() {
         opponentUsername: challengeTarget.username,
         mode,
         wagerAmount,
+        cryptoWagerCurrency,
+        cryptoWagerTier,
       });
 
       const wagerText = wagerAmount ? ` with a ${wagerAmount.toLocaleString()} gold wager` : "";
@@ -603,6 +612,7 @@ export function GlobalChat() {
                             ? "text-[#a89f94]/40 italic"
                             : "text-[#e8e0d5]"
                         )}
+                        // biome-ignore lint/security/noDangerouslySetInnerHtml: message content is sanitized by sanitizeChatMessage
                         dangerouslySetInnerHTML={{
                           __html: mutedUsers.has(msg.username)
                             ? "[Message hidden]"
@@ -689,6 +699,7 @@ export function GlobalChat() {
                   </div>
                   <p
                     className="text-sm text-[#e8e0d5] leading-relaxed wrap-break-word"
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: message content is sanitized by sanitizeChatMessage
                     dangerouslySetInnerHTML={{ __html: sanitizeChatMessage(msg.message) }}
                   />
                 </div>
@@ -780,8 +791,8 @@ export function GlobalChat() {
                   onClick={() => {
                     setActiveDMConversationId(conv._id);
                     setActiveDMFriend({
-                      userId: conv.otherUserId,
-                      username: conv.otherUsername || "Unknown",
+                      userId: conv.friendId,
+                      username: conv.friendUsername || "Unknown",
                     });
                     setChatMode("dm");
                   }}
@@ -789,16 +800,16 @@ export function GlobalChat() {
                 >
                   <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#8b4513] to-[#3d2b1f] flex items-center justify-center border border-[#d4af37]/20">
                     <span className="text-sm font-black text-[#d4af37]">
-                      {(conv.otherUsername || "?")[0]?.toUpperCase()}
+                      {(conv.friendUsername || "?")[0]?.toUpperCase()}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="font-medium text-[#e8e0d5] truncate block">
-                      {conv.otherUsername}
+                      {conv.friendUsername}
                     </span>
-                    {conv.lastMessage && (
+                    {conv.lastMessagePreview && (
                       <span className="text-xs text-[#a89f94] truncate block">
-                        {conv.lastMessage}
+                        {conv.lastMessagePreview}
                       </span>
                     )}
                   </div>
@@ -831,13 +842,13 @@ export function GlobalChat() {
               key={msg._id}
               className={cn(
                 "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300",
-                msg.isOwnMessage ? "flex-row-reverse" : ""
+                msg.isOwn ? "flex-row-reverse" : ""
               )}
             >
               <div
                 className={cn(
                   "shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border",
-                  msg.isOwnMessage
+                  msg.isOwn
                     ? "bg-linear-to-br from-[#8b4513] to-[#3d2b1f] border-[#d4af37]/20"
                     : "bg-blue-500/20 border-blue-500/30"
                 )}
@@ -845,18 +856,18 @@ export function GlobalChat() {
                 <span
                   className={cn(
                     "text-xs font-black",
-                    msg.isOwnMessage ? "text-[#d4af37]" : "text-blue-400"
+                    msg.isOwn ? "text-[#d4af37]" : "text-blue-400"
                   )}
                 >
                   {msg.senderUsername[0]?.toUpperCase()}
                 </span>
               </div>
 
-              <div className={cn("flex-1 min-w-0", msg.isOwnMessage && "flex justify-end")}>
+              <div className={cn("flex-1 min-w-0", msg.isOwn && "flex justify-end")}>
                 <div
                   className={cn(
                     "rounded-lg p-3 border max-w-[85%]",
-                    msg.isOwnMessage
+                    msg.isOwn
                       ? "bg-[#d4af37]/10 border-[#d4af37]/30"
                       : "bg-blue-500/10 border-blue-500/30"
                   )}
@@ -865,10 +876,10 @@ export function GlobalChat() {
                     <span
                       className={cn(
                         "text-xs font-black uppercase tracking-wide",
-                        msg.isOwnMessage ? "text-[#d4af37]" : "text-blue-400"
+                        msg.isOwn ? "text-[#d4af37]" : "text-blue-400"
                       )}
                     >
-                      {msg.isOwnMessage ? "You" : msg.senderUsername}
+                      {msg.isOwn ? "You" : msg.senderUsername}
                     </span>
                     <span className="text-[10px] text-[#a89f94]/60 ml-2">
                       {formatTime(msg.createdAt)}

@@ -3,7 +3,13 @@ import type { Id } from "@convex/_generated/dataModel";
 import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+function createConvexClient() {
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.trim();
+  if (!convexUrl) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+  }
+  return new ConvexHttpClient(convexUrl);
+}
 
 /**
  * Validate overlay access code
@@ -11,14 +17,12 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
  */
 export async function POST(req: NextRequest) {
   try {
+    const convex = createConvexClient();
     const body = await req.json();
     const { sessionId, code } = body;
 
     if (!sessionId || !code) {
-      return NextResponse.json(
-        { error: "Missing sessionId or code" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing sessionId or code" }, { status: 400 });
     }
 
     // Validate the access code

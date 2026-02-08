@@ -1,9 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import type { RewardType } from "@/types/economy";
 import { Coins, Gem, Image, Package, Sparkles, Star, Trophy, Zap } from "lucide-react";
-
-type RewardType = "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
 
 interface RewardIconProps {
   type: RewardType;

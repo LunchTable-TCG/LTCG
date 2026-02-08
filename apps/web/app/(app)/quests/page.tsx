@@ -1,6 +1,5 @@
 "use client";
 
-import { QuestRewardModal } from "@/components/quests/QuestRewardModal";
 import { Progress } from "@/components/ui/progress";
 import { useAchievements, useProfile, useQuests } from "@/hooks";
 import { cn } from "@/lib/utils";
@@ -24,11 +23,6 @@ export default function QuestsPage() {
   } = useAchievements();
 
   const [activeTab, setActiveTab] = useState<"quests" | "achievements">("quests");
-  const [rewardModalOpen, setRewardModalOpen] = useState(false);
-  const [selectedQuestReward, setSelectedQuestReward] = useState<{
-    name: string;
-    rewards: { gold?: number; xp?: number; items?: Array<{ name: string; quantity: number }> };
-  } | null>(null);
 
   if (isLoading || !profile) {
     return (
@@ -128,6 +122,7 @@ export default function QuestsPage() {
         {/* Tabs */}
         <div className="flex gap-4 mb-6">
           <button
+            type="button"
             onClick={() => setActiveTab("quests")}
             className={cn(
               "flex-1 py-3 px-6 rounded-lg font-bold transition-all",
@@ -147,6 +142,7 @@ export default function QuestsPage() {
             </div>
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab("achievements")}
             className={cn(
               "flex-1 py-3 px-6 rounded-lg font-bold transition-all",
@@ -293,6 +289,7 @@ export default function QuestsPage() {
                           </div>
 
                           <button
+                            type="button"
                             onClick={() => claimQuestReward(quest.questRecordId)}
                             className="ml-4 px-4 py-2 rounded-lg bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614] font-bold transition-all flex items-center gap-2"
                           >
@@ -447,23 +444,6 @@ export default function QuestsPage() {
           </div>
         )}
       </div>
-
-      {/* Quest Reward Modal */}
-      {selectedQuestReward && (
-        <QuestRewardModal
-          isOpen={rewardModalOpen}
-          onClose={() => {
-            setRewardModalOpen(false);
-            setSelectedQuestReward(null);
-          }}
-          questName={selectedQuestReward.name}
-          rewards={selectedQuestReward.rewards}
-          onClaim={async () => {
-            // Claim reward logic would go here
-            await new Promise((resolve) => setTimeout(resolve, 500));
-          }}
-        />
-      )}
     </div>
   );
 }

@@ -578,6 +578,10 @@ async function getOrCreateAIUser(ctx: any): Promise<Id<"users">> {
     .first();
 
   if (existingAI) {
+    // Backfill isAiAgent if missing (fixes ghost presence in global chat)
+    if (!existingAI.isAiAgent) {
+      await ctx.db.patch(existingAI._id, { isAiAgent: true });
+    }
     return existingAI._id;
   }
 
@@ -586,6 +590,7 @@ async function getOrCreateAIUser(ctx: any): Promise<Id<"users">> {
     username: "StoryModeAI",
     email: "ai@storymode.local",
     isAnonymous: false,
+    isAiAgent: true,
     activeDeckId: undefined, // AI doesn't need a stored deck
     createdAt: Date.now(),
   });

@@ -19,7 +19,7 @@
 
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import {
   internalAction,
@@ -35,9 +35,8 @@ import { adjustCardInventory } from "../lib/helpers";
 import { fromRawAmount } from "../lib/solana/tokenBalance";
 import { buildMarketplacePurchaseTransaction } from "../lib/solana/tokenTransfer";
 
-// Module-scope typed helper to avoid TS2589 "Type instantiation is excessively deep"
-// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround
-const internalAny = internal as any;
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 
 // ============================================================================
 // PUBLIC QUERIES
@@ -100,7 +99,7 @@ export const getTokenListings = query({
         cardCost: v.optional(v.number()),
         quantity: v.number(),
         tokenPrice: v.number(),
-        currencyType: v.union(v.literal("gold"), v.literal("token")),
+        currencyType: v.optional(v.union(v.literal("gold"), v.literal("token"))),
         createdAt: v.number(),
       })
     ),
@@ -370,7 +369,37 @@ export const cancelTokenListing = mutation({
  */
 export const getUserTokenListings = query({
   args: {},
-  returns: v.array(v.any()),
+  returns: v.array(
+    v.object({
+      _id: v.id("marketplaceListings"),
+      cardDefinitionId: v.id("cardDefinitions"),
+      cardName: v.string(),
+      cardType: v.union(
+        v.literal("creature"),
+        v.literal("spell"),
+        v.literal("trap"),
+        v.literal("equipment")
+      ),
+      cardRarity: v.union(
+        v.literal("common"),
+        v.literal("uncommon"),
+        v.literal("rare"),
+        v.literal("epic"),
+        v.literal("legendary")
+      ),
+      cardImageUrl: v.optional(v.string()),
+      quantity: v.number(),
+      tokenPrice: v.number(),
+      status: v.union(
+        v.literal("active"),
+        v.literal("sold"),
+        v.literal("cancelled"),
+        v.literal("expired"),
+        v.literal("suspended")
+      ),
+      createdAt: v.number(),
+    })
+  ),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
@@ -1119,11 +1148,7 @@ export const getTokenTransactionHistory = query({
         transactionType: v.string(),
         amount: v.number(),
         signature: v.optional(v.string()),
-        status: v.union(
-          v.literal("pending"),
-          v.literal("confirmed"),
-          v.literal("failed")
-        ),
+        status: v.union(v.literal("pending"), v.literal("confirmed"), v.literal("failed")),
         description: v.optional(v.string()),
         createdAt: v.number(),
         confirmedAt: v.optional(v.number()),

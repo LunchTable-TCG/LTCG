@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { Monitor, Camera, Mic, MicOff } from "lucide-react";
+import { Camera, Mic, MicOff, Monitor } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface CapturedMedia {
   screenStream: MediaStream | null;
@@ -138,14 +138,9 @@ export function MediaCapture({ onMediaCaptured, onError }: MediaCaptureProps) {
           </div>
           {screenStream ? (
             <div className="preview">
-              <video
-                ref={screenVideoRef}
-                autoPlay
-                muted
-                playsInline
-                className="preview-video"
-              />
+              <video ref={screenVideoRef} autoPlay muted playsInline className="preview-video" />
               <button
+                type="button"
                 onClick={() => {
                   screenStream.getTracks().forEach((t) => t.stop());
                   setScreenStream(null);
@@ -156,7 +151,12 @@ export function MediaCapture({ onMediaCaptured, onError }: MediaCaptureProps) {
               </button>
             </div>
           ) : (
-            <button onClick={captureScreen} className="btn-capture" disabled={isCapturing}>
+            <button
+              type="button"
+              onClick={captureScreen}
+              className="btn-capture"
+              disabled={isCapturing}
+            >
               <Monitor className="btn-icon" />
               Share Screen
             </button>
@@ -172,18 +172,13 @@ export function MediaCapture({ onMediaCaptured, onError }: MediaCaptureProps) {
           </div>
           {webcamStream ? (
             <div className="preview">
-              <video
-                ref={webcamVideoRef}
-                autoPlay
-                muted
-                playsInline
-                className="preview-video"
-              />
+              <video ref={webcamVideoRef} autoPlay muted playsInline className="preview-video" />
               <div className="preview-controls">
-                <button onClick={toggleAudio} className="btn-icon-small">
+                <button type="button" onClick={toggleAudio} className="btn-icon-small">
                   {audioEnabled ? <Mic /> : <MicOff />}
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     webcamStream.getTracks().forEach((t) => t.stop());
                     setWebcamStream(null);
@@ -195,7 +190,12 @@ export function MediaCapture({ onMediaCaptured, onError }: MediaCaptureProps) {
               </div>
             </div>
           ) : (
-            <button onClick={captureWebcam} className="btn-capture" disabled={isCapturing}>
+            <button
+              type="button"
+              onClick={captureWebcam}
+              className="btn-capture"
+              disabled={isCapturing}
+            >
               <Camera className="btn-icon" />
               Enable Webcam
             </button>
@@ -206,14 +206,13 @@ export function MediaCapture({ onMediaCaptured, onError }: MediaCaptureProps) {
       {!screenStream && !webcamStream && (
         <div className="info-banner">
           <p>
-            <strong>Tip:</strong> You can stream with just your screen, just your webcam, or
-            both!
+            <strong>Tip:</strong> You can stream with just your screen, just your webcam, or both!
           </p>
         </div>
       )}
 
       {(screenStream || webcamStream) && (
-        <button onClick={startCapture} className="btn-primary" disabled={isCapturing}>
+        <button type="button" onClick={startCapture} className="btn-primary" disabled={isCapturing}>
           Continue to Stream Setup
         </button>
       )}

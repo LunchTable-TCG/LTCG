@@ -1,20 +1,29 @@
-import { api } from "@convex/_generated/api";
+import * as generatedApi from "@convex/_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
+import { logError } from "@/lib/streaming/logging";
 import type { Id } from "@convex/_generated/dataModel";
 import { ConvexHttpClient } from "convex/browser";
-import { logError } from "@/lib/streaming/logging";
 import { type NextRequest, NextResponse } from "next/server";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+function createConvexClient() {
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.trim();
+  if (!convexUrl) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+  }
+  return new ConvexHttpClient(convexUrl);
+}
 
 export async function GET(req: NextRequest) {
   try {
+    const convex = createConvexClient();
     const sessionId = req.nextUrl.searchParams.get("sessionId");
 
     if (!sessionId) {
       return NextResponse.json({ error: "Missing sessionId parameter" }, { status: 400 });
     }
 
-    const session = await convex.query(api.streaming.sessions.getSession, {
+    const session = await convex.query(apiAny.streaming.sessions.getSessionPublic, {
       sessionId: sessionId as Id<"streamingSessions">,
     });
 
@@ -46,7 +55,9 @@ export async function GET(req: NextRequest) {
       errorMessage: session.errorMessage,
     });
   } catch (error) {
-    logError("Error getting stream status", { error: error instanceof Error ? error.message : String(error) });
+    logError("Error getting stream status", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

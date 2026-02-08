@@ -5,7 +5,9 @@
  * Tracks usage in Convex database for distributed rate limiting.
  */
 
-import { internal } from "../../_generated/api";
+import * as generatedApi from "../../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { AuthenticatedRequest } from "./auth";
 import type { HttpActionCtx } from "./auth";
 
@@ -48,14 +50,20 @@ export async function checkRateLimit(
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
   // Query recent API requests for this API key from database
-  const minuteUsage = await ctx.runQuery(internal.http.middleware.rateLimitInternal.getUsageCount, {
-    apiKeyId: auth.apiKeyId,
-    since: oneMinuteAgo,
-  });
-  const dailyUsage = await ctx.runQuery(internal.http.middleware.rateLimitInternal.getUsageCount, {
-    apiKeyId: auth.apiKeyId,
-    since: oneDayAgo,
-  });
+  const minuteUsage = await ctx.runQuery(
+    internalAny.http.middleware.rateLimitInternal.getUsageCount,
+    {
+      apiKeyId: auth.apiKeyId,
+      since: oneMinuteAgo,
+    }
+  );
+  const dailyUsage = await ctx.runQuery(
+    internalAny.http.middleware.rateLimitInternal.getUsageCount,
+    {
+      apiKeyId: auth.apiKeyId,
+      since: oneDayAgo,
+    }
+  );
 
   // Calculate remaining requests
   const minuteRemaining = Math.max(0, config.perMinuteLimit - minuteUsage);
@@ -99,7 +107,7 @@ export async function checkRateLimit(
   }
 
   // Record this request in the database
-  await ctx.runMutation(internal.http.middleware.rateLimitInternal.recordUsage, {
+  await ctx.runMutation(internalAny.http.middleware.rateLimitInternal.recordUsage, {
     apiKeyId: auth.apiKeyId,
     timestamp: now,
     endpoint,
@@ -128,14 +136,20 @@ export async function getRateLimitStatus(
   const oneMinuteAgo = now - 60 * 1000;
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
-  const minuteUsage = await ctx.runQuery(internal.http.middleware.rateLimitInternal.getUsageCount, {
-    apiKeyId: auth.apiKeyId,
-    since: oneMinuteAgo,
-  });
-  const dailyUsage = await ctx.runQuery(internal.http.middleware.rateLimitInternal.getUsageCount, {
-    apiKeyId: auth.apiKeyId,
-    since: oneDayAgo,
-  });
+  const minuteUsage = await ctx.runQuery(
+    internalAny.http.middleware.rateLimitInternal.getUsageCount,
+    {
+      apiKeyId: auth.apiKeyId,
+      since: oneMinuteAgo,
+    }
+  );
+  const dailyUsage = await ctx.runQuery(
+    internalAny.http.middleware.rateLimitInternal.getUsageCount,
+    {
+      apiKeyId: auth.apiKeyId,
+      since: oneDayAgo,
+    }
+  );
 
   return {
     remaining: Math.max(0, config.perMinuteLimit - minuteUsage),

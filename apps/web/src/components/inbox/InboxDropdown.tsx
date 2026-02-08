@@ -12,8 +12,10 @@ import {
   Gift,
   Loader2,
   Megaphone,
+  Shield,
   Sparkles,
   Swords,
+  UserPlus,
   Users,
   Wrench,
   X,
@@ -27,6 +29,8 @@ const messageIcons: Record<InboxMessageType, typeof Bell> = {
   announcement: Megaphone,
   challenge: Swords,
   friend_request: Users,
+  guild_invite: Shield,
+  guild_request: UserPlus,
   system: Wrench,
   achievement: Sparkles,
 };
@@ -37,6 +41,8 @@ const messageColors: Record<InboxMessageType, string> = {
   announcement: "text-blue-400",
   challenge: "text-red-400",
   friend_request: "text-green-400",
+  guild_invite: "text-amber-400",
+  guild_request: "text-amber-400",
   system: "text-gray-400",
   achievement: "text-purple-400",
 };
@@ -92,6 +98,7 @@ export function InboxDropdown({ className }: InboxDropdownProps) {
     <div ref={dropdownRef} className={cn("relative", className)}>
       {/* Bell Button */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "relative tcg-button w-10 h-10 rounded-lg flex items-center justify-center transition-all",
@@ -131,6 +138,7 @@ export function InboxDropdown({ className }: InboxDropdownProps) {
             <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <button
+                  type="button"
                   onClick={() => markAllAsRead()}
                   className="p-1.5 rounded-md hover:bg-secondary transition-colors"
                   title="Mark all as read"
@@ -139,6 +147,7 @@ export function InboxDropdown({ className }: InboxDropdownProps) {
                 </button>
               )}
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
                 className="p-1.5 rounded-md hover:bg-secondary transition-colors"
               >
@@ -269,6 +278,7 @@ function InboxMessageItem({ message, onMarkAsRead, onClaimReward }: InboxMessage
           {/* Claim button for unclaimed rewards */}
           {isUnclaimed && (
             <button
+              type="button"
               onClick={handleClaim}
               disabled={isClaiming}
               className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-yellow-400/20 hover:bg-yellow-400/30 text-yellow-400 text-xs font-medium transition-colors disabled:opacity-50"

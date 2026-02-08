@@ -2,8 +2,11 @@
 // Queries and mutations for story mode progression, XP, and badges
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { internalMutation, mutation } from "../functions";
@@ -682,7 +685,7 @@ export const completeChapter = mutation({
 
       // Update quest progress (story stage completion)
       // @ts-ignore - Type instantiation depth limitation with Convex internal API
-      await ctx.scheduler.runAfter(0, internal.progression.quests.updateQuestProgress, {
+      await ctx.scheduler.runAfter(0, internalAny.progression.quests.updateQuestProgress, {
         userId,
         event: {
           type: "complete_stage",
@@ -692,13 +695,17 @@ export const completeChapter = mutation({
       });
 
       // Update achievement progress (story stage completion)
-      await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
-        userId,
-        event: {
-          type: "complete_stage",
-          value: 1,
-        },
-      });
+      await ctx.scheduler.runAfter(
+        0,
+        internalAny.progression.achievements.updateAchievementProgress,
+        {
+          userId,
+          event: {
+            type: "complete_stage",
+            value: 1,
+          },
+        }
+      );
 
       // Unlock next chapter (if exists)
       const nextChapter = await ctx.db
@@ -728,13 +735,17 @@ export const completeChapter = mutation({
       }
 
       // Update chapter completion achievement
-      await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
-        userId,
-        event: {
-          type: "complete_chapter",
-          value: 1,
-        },
-      });
+      await ctx.scheduler.runAfter(
+        0,
+        internalAny.progression.achievements.updateAchievementProgress,
+        {
+          userId,
+          event: {
+            type: "complete_chapter",
+            value: 1,
+          },
+        }
+      );
 
       // Check for archetype completion badge
       const archetypeChapters = STORY_CHAPTERS.filter((ch) => ch.archetype === chapter.archetype);

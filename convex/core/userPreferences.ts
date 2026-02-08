@@ -2,6 +2,10 @@ import { v } from "convex/values";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
+import { userStreamingPlatformValidator } from "../lib/streamingPlatforms";
+
+const SUPPORTED_PROFILE_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_PROFILE_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 /**
  * User Preferences
@@ -82,6 +86,9 @@ const privacyValidator = v.object({
 
 const streamingValidator = v.object({
   streamerModeEnabled: v.boolean(),
+  platform: v.optional(userStreamingPlatformValidator),
+  streamKeyHash: v.optional(v.string()),
+  rtmpUrl: v.optional(v.string()),
 });
 
 /**
@@ -243,6 +250,54 @@ export const updateBio = mutation({
 });
 
 /**
+ * Set user profile image from an uploaded Convex storage file.
+ */
+export const setProfileImage = mutation({
+  args: {
+    storageId: v.id("_storage"),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    imageUrl: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+
+    const storageFile = await ctx.db.system
+      .query("_storage")
+      .filter((q) => q.eq(q.field("_id"), args.storageId))
+      .first();
+
+    if (!storageFile) {
+      throw new Error("Uploaded file not found");
+    }
+
+    if (
+      !storageFile.contentType ||
+      !SUPPORTED_PROFILE_IMAGE_TYPES.includes(storageFile.contentType)
+    ) {
+      throw new Error("Unsupported profile image format. Use PNG, JPEG, or WEBP.");
+    }
+
+    if (storageFile.size > MAX_PROFILE_IMAGE_SIZE_BYTES) {
+      throw new Error("Profile image is too large. Maximum size is 5MB.");
+    }
+
+    const imageUrl = await ctx.storage.getUrl(args.storageId);
+    if (!imageUrl) {
+      throw new Error("Failed to resolve profile image URL");
+    }
+
+    await ctx.db.patch(userId, { image: imageUrl });
+
+    return {
+      success: true,
+      imageUrl,
+    };
+  },
+});
+
+/**
  * Change password
  * Allows authenticated users to change their password by providing current and new passwords
  */
@@ -276,6 +331,117 @@ export const changePassword = mutation({
       error:
         "Password change requires email verification. This feature will be available soon. Please contact support if you need to change your password.",
     };
+  },
+});
+
+/**
+ * Get user streaming configuration.
+ * Returns platform, hasStreamKey, rtmpUrl — never returns plaintext stream key.
+ * Used by /api/streaming/start to resolve stored credentials.
+ */
+export const getUserStreamingConfig = query({
+  args: { userId: v.optional(v.id("users")) },
+  handler: async (ctx, args) => {
+    // Support both authenticated calls and internal calls with explicit userId
+    let targetUserId = args.userId;
+    if (!targetUserId) {
+      const auth = await requireAuthQuery(ctx);
+      targetUserId = auth.userId;
+    }
+
+    const prefs = await ctx.db
+      .query("userPreferences")
+      .withIndex("by_user", (q) => q.eq("userId", targetUserId))
+      .first();
+
+    if (!prefs?.streaming) {
+      return null;
+    }
+
+    return {
+      platform: prefs.streaming.platform ?? null,
+      hasStreamKey: Boolean(prefs.streaming.streamKeyHash),
+      streamKeyHash: prefs.streaming.streamKeyHash ?? null,
+      rtmpUrl: prefs.streaming.rtmpUrl ?? null,
+      streamerModeEnabled: prefs.streaming.streamerModeEnabled,
+    };
+  },
+});
+
+/**
+ * Save user streaming credentials (called from API route after server-side encryption).
+ */
+export const saveUserStreamingConfig = mutation({
+  args: {
+    platform: userStreamingPlatformValidator,
+    streamKeyHash: v.string(),
+    rtmpUrl: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+
+    const existing = await ctx.db
+      .query("userPreferences")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    const streamingUpdate = {
+      streamerModeEnabled: existing?.streaming?.streamerModeEnabled ?? true,
+      platform: args.platform,
+      streamKeyHash: args.streamKeyHash,
+      rtmpUrl: args.rtmpUrl,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        streaming: streamingUpdate,
+        updatedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.insert("userPreferences", {
+        userId,
+        notifications: DEFAULT_PREFERENCES.notifications,
+        display: DEFAULT_PREFERENCES.display,
+        game: DEFAULT_PREFERENCES.game,
+        privacy: DEFAULT_PREFERENCES.privacy,
+        streaming: streamingUpdate,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    }
+
+    return null;
+  },
+});
+
+/**
+ * Clear saved streaming credentials.
+ */
+export const clearStreamingCredentials = mutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const { userId } = await requireAuthMutation(ctx);
+
+    const existing = await ctx.db
+      .query("userPreferences")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (existing?.streaming) {
+      await ctx.db.patch(existing._id, {
+        streaming: {
+          streamerModeEnabled: existing.streaming.streamerModeEnabled,
+          platform: undefined,
+          streamKeyHash: undefined,
+          rtmpUrl: undefined,
+        },
+        updatedAt: Date.now(),
+      });
+    }
+
+    return null;
   },
 });
 

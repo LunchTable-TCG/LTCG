@@ -1,7 +1,9 @@
+import * as generatedApi from "../../_generated/api";
 import { httpAction } from "../../_generated/server";
-import { internal } from "../../_generated/api";
-import { createDedupeKey } from "../internal/dedupe";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { jwtVerify } from "jose";
+import { createDedupeKey } from "../internal/dedupe";
 
 /**
  * LiveKit Webhook Endpoint
@@ -42,11 +44,11 @@ export const livekitWebhook = httpAction(async (ctx, request) => {
 
     // Verify JWT signature
     const secretKey = new TextEncoder().encode(webhookSecret);
-    let payload: any;
+    let payload: Record<string, unknown>;
 
     try {
       const verified = await jwtVerify(token, secretKey);
-      payload = verified.payload;
+      payload = verified.payload as Record<string, unknown>;
     } catch (error) {
       console.error("JWT verification failed:", error);
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
@@ -56,14 +58,15 @@ export const livekitWebhook = httpAction(async (ctx, request) => {
     }
 
     // Verify body hash (LiveKit includes SHA256 hash of body in JWT)
-    if (payload.sha256) {
+    const payloadHash = typeof payload["sha256"] === "string" ? payload["sha256"] : undefined;
+    if (payloadHash) {
       const bodyEncoder = new TextEncoder();
       const bodyData = bodyEncoder.encode(body);
       const hashBuffer = await crypto.subtle.digest("SHA-256", bodyData);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const bodyHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+      const bodyHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 
-      if (bodyHash !== payload.sha256) {
+      if (bodyHash !== payloadHash) {
         console.error("Body hash mismatch");
         return new Response(JSON.stringify({ error: "Body hash mismatch" }), {
           status: 401,
@@ -73,13 +76,14 @@ export const livekitWebhook = httpAction(async (ctx, request) => {
     }
 
     // Parse the webhook event
-    const event = JSON.parse(body);
+    const event = JSON.parse(body) as Record<string, unknown>;
 
     // Extract event details
-    const eventType = event.event;
-    const roomName = event.room?.name;
-    const participantIdentity = event.participant?.identity;
-    const trackSid = event.track?.sid;
+    const eventType = getNestedString(event, ["event"]) ?? "unknown";
+    const roomName = getNestedString(event, ["room", "name"]);
+    const participantIdentity = getNestedString(event, ["participant", "identity"]);
+    const trackSid = getNestedString(event, ["track", "sid"]);
+    const createdAt = typeof event["createdAt"] === "number" ? event["createdAt"] : undefined;
 
     // Generate dedupe key
     const dedupeKey = await createDedupeKey({
@@ -87,12 +91,12 @@ export const livekitWebhook = httpAction(async (ctx, request) => {
       roomName,
       participantIdentity,
       trackSid,
-      createdAt: event.createdAt,
+      createdAt,
       payload: event,
     });
 
     // Apply event to database (idempotent)
-    await ctx.runMutation(internal.livekit.internal.mutations.applyWebhookEvent, {
+    await ctx.runMutation(internalAny.livekit.internal.mutations.applyWebhookEvent, {
       dedupeKey,
       eventType,
       roomName,
@@ -133,13 +137,13 @@ export const livekitWebhook = httpAction(async (ctx, request) => {
  * These run in background workpools/workflows without blocking the webhook response
  */
 async function enqueueAsyncHooks(
-  _ctx: any, // Reserved for future workpool/workflow integration
+  _ctx: unknown, // Reserved for future workpool/workflow integration
   eventType: string,
   data: {
     roomName?: string;
     participantIdentity?: string;
     trackSid?: string;
-    event: any;
+    event: unknown;
   }
 ) {
   // TODO: Integrate with workpool/workflow when ready
@@ -153,7 +157,7 @@ async function enqueueAsyncHooks(
 
     case "track_published":
       // Hook: onTrackPublished - could trigger transcription pipeline
-      if (data.event?.track?.source === "microphone") {
+      if (getNestedString(data.event, ["track", "source"]) === "microphone") {
         console.log("[Hook] audio track published:", data.trackSid);
         // Example: workpool.enqueue("media_pipeline", "startAudioPipeline", { ... })
       }
@@ -165,4 +169,15 @@ async function enqueueAsyncHooks(
       // Example: workflow.start("finalizeRoom", { roomName: data.roomName })
       break;
   }
+}
+
+function getNestedString(source: unknown, path: string[]): string | undefined {
+  let current: unknown = source;
+  for (const segment of path) {
+    if (!current || typeof current !== "object") {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return typeof current === "string" ? current : undefined;
 }

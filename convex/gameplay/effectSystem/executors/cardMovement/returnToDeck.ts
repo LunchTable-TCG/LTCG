@@ -50,6 +50,30 @@ export async function executeReturnToDeck(
 
     // Remove from board
     const board = targetIsHost ? gameState.hostBoard : gameState.opponentBoard;
+    const boardCard = board.find((bc) => bc.cardId === targetCardId);
+
+    // Tokens cease to exist when leaving the field — don't return to deck
+    if (boardCard?.isToken) {
+      const newBoard = board.filter((bc) => bc.cardId !== targetCardId);
+      await ctx.db.patch(gameState._id, {
+        [sourceField]: newBoard,
+      });
+      const tokenName = boardCard.tokenData?.name || "Token";
+      const lobby = await ctx.db.get(lobbyId);
+      const user = await ctx.db.get(playerId);
+      await recordEventHelper(ctx, {
+        lobbyId,
+        gameId: lobby?.gameId || "",
+        turnNumber: lobby?.turnNumber || 0,
+        eventType: "effect_activated",
+        playerId,
+        playerUsername: user?.username || "Unknown",
+        description: `${tokenName} was removed from play (token)`,
+        metadata: { cardId: targetCardId, fromLocation, isToken: true },
+      });
+      return { success: true, message: `${tokenName} removed from play (token)` };
+    }
+
     const newBoard = board.filter((bc) => bc.cardId !== targetCardId);
 
     // Add to deck at specified position
@@ -65,10 +89,42 @@ export async function executeReturnToDeck(
       newDeck = [...deck, targetCardId];
     }
 
-    await ctx.db.patch(gameState._id, {
+    // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
+    const updates: Record<string, any> = {
       [sourceField]: newBoard,
       [deckField]: newDeck,
-    });
+    };
+
+    // Destroy equipped spells when monster is returned to deck from board
+    if (boardCard?.equippedCards && boardCard.equippedCards.length > 0) {
+      const equippedIds = boardCard.equippedCards;
+      const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
+      if (hostEquips.length > 0) {
+        updates["hostSpellTrapZone"] = gameState.hostSpellTrapZone.filter(
+          (st) => !equippedIds.includes(st.cardId)
+        );
+        updates["hostGraveyard"] = [
+          ...gameState.hostGraveyard,
+          ...hostEquips.map((st) => st.cardId),
+        ];
+      }
+      const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
+      if (opponentEquips.length > 0) {
+        updates["opponentSpellTrapZone"] = gameState.opponentSpellTrapZone.filter(
+          (st) => !equippedIds.includes(st.cardId)
+        );
+        updates["opponentGraveyard"] = [
+          ...gameState.opponentGraveyard,
+          ...opponentEquips.map((st) => st.cardId),
+        ];
+      }
+    }
+
+    await ctx.db.patch(gameState._id, updates);
   } else if (fromLocation === "hand") {
     const inHostHand = gameState.hostHand.includes(targetCardId);
     const inOpponentHand = gameState.opponentHand.includes(targetCardId);

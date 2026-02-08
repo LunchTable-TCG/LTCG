@@ -64,7 +64,7 @@ export function QuestRewardModal({
         <AnimatePresence>
           {showParticles && (
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              {[...Array(30)].map((_, i) => (
+              {Array.from({ length: 30 }, (_, i) => i).map((i) => (
                 <motion.div
                   key={i}
                   className="absolute w-2 h-2 rounded-full"

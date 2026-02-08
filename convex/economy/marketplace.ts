@@ -1,5 +1,8 @@
+import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
-import { api } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
 import { query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
 import { marketplaceRateLimiter } from "../infrastructure/rateLimiters";
@@ -7,6 +10,7 @@ import { MARKETPLACE, PAGINATION } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { adjustCardInventory } from "../lib/helpers";
+import { getNotificationSetting } from "../lib/preferenceHelpers";
 import { auctionBidValidator } from "../lib/returnValidators";
 import { checkCardOwnership } from "../lib/validators";
 import { adjustPlayerCurrencyHelper } from "./economy";
@@ -160,7 +164,37 @@ export const getMarketplaceListings = query({
  */
 export const getUserListings = query({
   args: {},
-  returns: v.array(v.any()),
+  returns: v.array(
+    v.object({
+      _id: v.id("marketplaceListings"),
+      _creationTime: v.number(),
+      sellerId: v.id("users"),
+      sellerUsername: v.string(),
+      listingType: literals("fixed", "auction"),
+      cardDefinitionId: v.id("cardDefinitions"),
+      quantity: v.number(),
+      price: v.number(),
+      currentBid: v.optional(v.number()),
+      highestBidderId: v.optional(v.id("users")),
+      highestBidderUsername: v.optional(v.string()),
+      endsAt: v.optional(v.number()),
+      bidCount: v.number(),
+      status: literals("active", "sold", "cancelled", "expired", "suspended"),
+      soldTo: v.optional(v.id("users")),
+      soldFor: v.optional(v.number()),
+      soldAt: v.optional(v.number()),
+      platformFee: v.optional(v.number()),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      currencyType: v.optional(literals("gold", "token")),
+      tokenPrice: v.optional(v.number()),
+      claimed: v.optional(v.boolean()),
+      // Enriched fields from card definition join
+      cardName: v.string(),
+      cardRarity: v.string(),
+      cardImageUrl: v.optional(v.string()),
+    })
+  ),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
@@ -481,18 +515,29 @@ export const buyNow = mutation({
       updatedAt: Date.now(),
     });
 
-    // Send email notification to seller
+    // Send email notification to seller (if they have marketplaceSales notifications enabled)
     const seller = await ctx.db.get(listing.sellerId);
     const cardDefinition = await ctx.db.get(listing.cardDefinitionId);
 
     if (seller?.email && cardDefinition) {
-      await ctx.scheduler.runAfter(0, api.infrastructure.emailActions.sendCardSoldNotification, {
-        email: seller.email,
-        username: seller.username || seller.name || "Player",
-        cardName: cardDefinition.name,
-        rarity: cardDefinition.rarity,
-        price: listing.price,
-      });
+      const wantsSaleNotifs = await getNotificationSetting(
+        ctx,
+        listing.sellerId,
+        "marketplaceSales"
+      );
+      if (wantsSaleNotifs) {
+        await ctx.scheduler.runAfter(
+          0,
+          apiAny.infrastructure.emailActions.sendCardSoldNotification,
+          {
+            email: seller.email,
+            username: seller.username || seller.name || "Player",
+            cardName: cardDefinition.name,
+            rarity: cardDefinition.rarity,
+            price: listing.price,
+          }
+        );
+      }
     }
 
     return {
@@ -616,7 +661,7 @@ export const placeBid = mutation({
 
           await ctx.scheduler.runAfter(
             0,
-            api.infrastructure.emailActions.sendAuctionOutbidNotification,
+            apiAny.infrastructure.emailActions.sendAuctionOutbidNotification,
             {
               email: previousBidder.email,
               username: previousBidder.username || previousBidder.name || "Player",
@@ -725,25 +770,18 @@ export const claimAuctionWin = mutation({
       });
     }
 
-    // Calculate platform fee
+    // Calculate platform fee (deducted from seller's payout, not charged extra to winner)
     const platformFee = Math.floor(listing.currentBid * MARKETPLACE.PLATFORM_FEE_PERCENT);
+    const sellerPayout = listing.currentBid - platformFee;
 
-    // Deduct platform fee from winner (bid already locked)
-    await adjustPlayerCurrencyHelper(ctx, {
-      userId,
-      goldDelta: -platformFee,
-      transactionType: "marketplace_fee",
-      description: `Platform fee for auction #${args.listingId}`,
-      referenceId: args.listingId,
-    });
-
-    // Credit seller
+    // Credit seller (bid minus platform fee)
     await adjustPlayerCurrencyHelper(ctx, {
       userId: listing.sellerId,
-      goldDelta: listing.currentBid,
+      goldDelta: sellerPayout,
       transactionType: "sale",
       description: `Sold auction #${args.listingId}`,
       referenceId: args.listingId,
+      metadata: { platformFee, grossAmount: listing.currentBid },
     });
 
     // Transfer cards
@@ -781,24 +819,39 @@ export const claimAuctionWin = mutation({
 
     if (winner?.email && cardDefinition) {
       // Notify winner
-      await ctx.scheduler.runAfter(0, api.infrastructure.emailActions.sendAuctionWonNotification, {
-        email: winner.email,
-        username: winner.username || winner.name || "Player",
-        cardName: cardDefinition.name,
-        rarity: cardDefinition.rarity,
-        winningBid: listing.currentBid,
-      });
+      await ctx.scheduler.runAfter(
+        0,
+        apiAny.infrastructure.emailActions.sendAuctionWonNotification,
+        {
+          email: winner.email,
+          username: winner.username || winner.name || "Player",
+          cardName: cardDefinition.name,
+          rarity: cardDefinition.rarity,
+          winningBid: listing.currentBid,
+        }
+      );
     }
 
     if (seller?.email && cardDefinition) {
-      // Notify seller
-      await ctx.scheduler.runAfter(0, api.infrastructure.emailActions.sendCardSoldNotification, {
-        email: seller.email,
-        username: seller.username || seller.name || "Player",
-        cardName: cardDefinition.name,
-        rarity: cardDefinition.rarity,
-        price: listing.currentBid,
-      });
+      // Notify seller (if they have marketplaceSales notifications enabled)
+      const wantsSaleNotifs = await getNotificationSetting(
+        ctx,
+        listing.sellerId,
+        "marketplaceSales"
+      );
+      if (wantsSaleNotifs) {
+        await ctx.scheduler.runAfter(
+          0,
+          apiAny.infrastructure.emailActions.sendCardSoldNotification,
+          {
+            email: seller.email,
+            username: seller.username || seller.name || "Player",
+            cardName: cardDefinition.name,
+            rarity: cardDefinition.rarity,
+            price: listing.currentBid,
+          }
+        );
+      }
     }
 
     return {
@@ -848,24 +901,19 @@ export const finalizeExpiredAuctions = internalMutation({
       try {
         // Case 1: Auction with bids - transfer to winner
         if (listing.highestBidderId && listing.currentBid) {
+          // Calculate platform fee (deducted from seller's payout, not charged to winner)
+          // Winner already paid currentBid when placing the bid
           const platformFee = Math.floor(listing.currentBid * MARKETPLACE.PLATFORM_FEE_PERCENT);
+          const sellerPayout = listing.currentBid - platformFee;
 
-          // Deduct platform fee from winner
-          await adjustPlayerCurrencyHelper(ctx, {
-            userId: listing.highestBidderId,
-            goldDelta: -platformFee,
-            transactionType: "marketplace_fee",
-            description: `Auto-finalized auction #${listing._id}`,
-            referenceId: listing._id,
-          });
-
-          // Credit seller
+          // Credit seller (bid minus platform fee)
           await adjustPlayerCurrencyHelper(ctx, {
             userId: listing.sellerId,
-            goldDelta: listing.currentBid,
+            goldDelta: sellerPayout,
             transactionType: "sale",
             description: `Auto-finalized auction #${listing._id}`,
             referenceId: listing._id,
+            metadata: { platformFee, grossAmount: listing.currentBid },
           });
 
           // Transfer cards to winner

@@ -3,12 +3,13 @@
 import { useMyGuild } from "@/hooks/guilds";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { GuildChat } from "./GuildChat";
 import { GuildHeader } from "./GuildHeader";
 import { GuildInvitePanel } from "./GuildInvitePanel";
 import { GuildMemberList } from "./GuildMemberList";
 import { GuildSettings } from "./GuildSettings";
 
-type TabType = "members" | "settings" | "invites";
+type TabType = "members" | "chat" | "settings" | "invites";
 
 export function GuildDashboard() {
   const { guild, myRole, isOwner } = useMyGuild();
@@ -18,6 +19,7 @@ export function GuildDashboard() {
 
   const tabs = [
     { id: "members" as const, label: "Members", count: guild.memberCount },
+    { id: "chat" as const, label: "Chat" },
     ...(isOwner
       ? [
           { id: "invites" as const, label: "Invites & Requests" },
@@ -66,6 +68,7 @@ export function GuildDashboard() {
       {/* Tab Content */}
       <div className="min-h-[400px]">
         {activeTab === "members" && <GuildMemberList guildId={guild._id} />}
+        {activeTab === "chat" && <GuildChat guildId={guild._id} />}
         {activeTab === "settings" && isOwner && <GuildSettings guildId={guild._id} />}
         {activeTab === "invites" && isOwner && <GuildInvitePanel guildId={guild._id} />}
       </div>

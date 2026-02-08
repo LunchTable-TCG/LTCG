@@ -6,6 +6,7 @@
  */
 
 import { v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -29,7 +30,23 @@ export const listDesigns = query({
   args: {
     activeOnly: v.optional(v.boolean()),
   },
-  returns: v.array(v.any()),
+  returns: v.array(
+    v.object({
+      _id: v.id("freeformDesigns"),
+      _creationTime: v.number(),
+      name: v.string(),
+      description: v.optional(v.string()),
+      width: v.number(),
+      height: v.number(),
+      thumbnailUrl: v.optional(v.string()),
+      isActive: v.boolean(),
+      createdBy: v.optional(v.string()),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      // Computed field added by handler
+      elementCount: v.number(),
+    })
+  ),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "admin");
@@ -69,7 +86,6 @@ export const getDesign = query({
   args: {
     designId: v.id("freeformDesigns"),
   },
-  returns: v.any(),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "admin");
@@ -397,7 +413,7 @@ export const batchUpdateElements = mutation({
     const { userId } = await requireAuthMutation(ctx);
     await requireRole(ctx, userId, "admin");
 
-    let designId: string | null = null;
+    let designId: Id<"freeformDesigns"> | null = null;
 
     for (const update of args.updates) {
       const element = await ctx.db.get(update.elementId);
@@ -419,7 +435,7 @@ export const batchUpdateElements = mutation({
     }
 
     if (designId) {
-      await ctx.db.patch(designId as any, { updatedAt: Date.now() });
+      await ctx.db.patch(designId, { updatedAt: Date.now() });
     }
   },
 });
@@ -437,8 +453,8 @@ export const reorderElements = mutation({
     await requireRole(ctx, userId, "admin");
 
     // Update zIndex for each element in order
-    for (let i = 0; i < args.elementIds.length; i++) {
-      await ctx.db.patch(args.elementIds[i]!, { zIndex: i });
+    for (const [index, elementId] of args.elementIds.entries()) {
+      await ctx.db.patch(elementId, { zIndex: index });
     }
 
     await ctx.db.patch(args.designId, { updatedAt: Date.now() });

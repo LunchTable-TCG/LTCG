@@ -5,7 +5,8 @@
  */
 
 import type { Doc, Id } from "../../_generated/dataModel";
-import type { AIAction } from "./aiEngine";
+import { getCardAbility } from "../../lib/abilityHelpers";
+import type { AIAction, FieldSpell, SpellTrapCard } from "./aiEngine";
 import { canSummonWithoutTribute, findStrongestMonster, findWeakestMonster } from "./aiEngine";
 
 /**
@@ -21,8 +22,39 @@ export function handleMainPhase(
   myBoard: any[],
   // biome-ignore lint/suspicious/noExplicitAny: Board card structure varies
   oppBoard: any[],
-  cardData: Map<string, Doc<"cardDefinitions">>
+  cardData: Map<string, Doc<"cardDefinitions">>,
+  turnNumber = 1,
+  mySpellTrapZone: SpellTrapCard[] = [],
+  myFieldSpell: FieldSpell | undefined = undefined
 ): AIAction {
+  // Flip face-down monsters first (does NOT consume normal summon)
+  // Face-down monsters are dead weight — they can't attack or contribute
+  const faceDownMonsters = myBoard.filter((m) => m.isFaceDown && m.turnSummoned !== turnNumber);
+  if (faceDownMonsters.length > 0) {
+    const flipChance = { easy: 0.3, medium: 0.6, hard: 0.8, boss: 1.0 };
+    if (Math.random() < flipChance[difficulty]) {
+      return { type: "flip_summon", cardId: faceDownMonsters[0].cardId };
+    }
+  }
+
+  // Play field spell if available (provides continuous board advantage)
+  const fieldSpells = myHand.filter((cardId) => {
+    const card = cardData.get(cardId);
+    // biome-ignore lint/suspicious/noExplicitAny: spellType not in strict type
+    return card && card.cardType === "spell" && (card as any).spellType === "field";
+  });
+
+  if (fieldSpells.length > 0) {
+    // Don't play if we already have the same field spell active
+    const newFieldSpell = fieldSpells.find((id) => id !== myFieldSpell?.cardId);
+    if (newFieldSpell) {
+      const fieldChance = { easy: 0.2, medium: 0.5, hard: 0.8, boss: 0.95 };
+      if (Math.random() < fieldChance[difficulty]) {
+        return { type: "play_field_spell", cardId: newFieldSpell };
+      }
+    }
+  }
+
   // Try to summon a monster if we haven't yet
   if (!hasNormalSummoned && evaluation.hasMonsterZoneSpace) {
     // Find monsters we can summon
@@ -160,25 +192,15 @@ export function handleMainPhase(
         }
       }
     }
-
-    // Set a monster face-down if we can't summon
-    const setableMonsters = myHand.filter((cardId) => {
-      const card = cardData.get(cardId);
-      return card && card.cardType === "creature";
-    });
-
-    if (setableMonsters.length > 0) {
-      return {
-        type: "set",
-        cardId: setableMonsters[0],
-      };
-    }
   }
 
-  // Activate spells based on difficulty
+  // Activate spells based on difficulty (checked BEFORE set fallback)
+  // Only consider spells that have manual-trigger effects (avoid burning spells for nothing)
   const spells = myHand.filter((cardId) => {
     const card = cardData.get(cardId);
-    return card && card.cardType === "spell";
+    if (!card || card.cardType !== "spell") return false;
+    const ability = getCardAbility(card);
+    return ability?.effects.some((e) => e.trigger === "manual") ?? false;
   });
 
   if (spells.length > 0) {
@@ -197,6 +219,72 @@ export function handleMainPhase(
     }
   }
 
+  // Activate traps from spell/trap zone (must have been set on a prior turn)
+  const activatableTraps = mySpellTrapZone.filter((slot) => {
+    if (!slot.isFaceDown || slot.isActivated) return false;
+    if (slot.turnSet !== undefined && slot.turnSet >= turnNumber) return false;
+    const card = cardData.get(slot.cardId);
+    if (!card || card.cardType !== "trap") return false;
+    // biome-ignore lint/suspicious/noExplicitAny: trapType not in strict type
+    if ((card as any).trapType === "counter") return false;
+    const ability = getCardAbility(card);
+    return ability?.effects.some((e) => e.trigger === "manual") ?? false;
+  });
+
+  if (activatableTraps.length > 0) {
+    const trapChance = { easy: 0.1, medium: 0.3, hard: 0.5, boss: 0.7 };
+    if (Math.random() < trapChance[difficulty]) {
+      const firstTrap = activatableTraps[0];
+      if (firstTrap) {
+        return { type: "activate_trap", cardId: firstTrap.cardId };
+      }
+    }
+  }
+
+  // Set spells/traps from hand face-down
+  const setableSpellTraps = myHand.filter((cardId) => {
+    const card = cardData.get(cardId);
+    if (!card) return false;
+    if (card.cardType === "trap") return true;
+    if (card.cardType === "spell") {
+      // biome-ignore lint/suspicious/noExplicitAny: spellType not in strict type
+      const spellType = (card as any).spellType;
+      // Don't set normal spells (better to activate directly) or field spells (handled separately)
+      return spellType === "continuous" || spellType === "quick_play" || spellType === "equip";
+    }
+    return false;
+  });
+
+  if (setableSpellTraps.length > 0 && mySpellTrapZone.length < 5) {
+    const setChance = { easy: 0.1, medium: 0.3, hard: 0.6, boss: 0.8 };
+    if (Math.random() < setChance[difficulty]) {
+      // Prefer setting traps over spells
+      const traps = setableSpellTraps.filter((id) => {
+        const c = cardData.get(id);
+        return c?.cardType === "trap";
+      });
+      const toSet = traps.length > 0 ? traps[0] : setableSpellTraps[0];
+      if (toSet) {
+        return { type: "set_spell_trap", cardId: toSet };
+      }
+    }
+  }
+
+  // Set a monster face-down if we can't summon AND didn't activate a spell
+  if (!hasNormalSummoned && evaluation.hasMonsterZoneSpace) {
+    const setableMonsters = myHand.filter((cardId) => {
+      const card = cardData.get(cardId);
+      return card && card.cardType === "creature" && card.cost < 5;
+    });
+
+    if (setableMonsters.length > 0) {
+      return {
+        type: "set",
+        cardId: setableMonsters[0],
+      };
+    }
+  }
+
   // Pass if nothing to do
   return { type: "pass" };
 }
@@ -209,25 +297,37 @@ export function handleBattlePhase(
   // biome-ignore lint/suspicious/noExplicitAny: Board card structure varies
   myBoard: any[],
   // biome-ignore lint/suspicious/noExplicitAny: Board card structure varies
-  oppBoard: any[]
+  oppBoard: any[],
+  turnNumber: number
 ): AIAction {
-  // Easy: Sometimes attacks recklessly
+  // Easy: Sometimes attacks recklessly (never falls through to strategic logic)
   if (difficulty === "easy") {
-    // 50% chance to just attack with first monster
     if (myBoard.length > 0 && Math.random() > 0.5) {
       const firstMonster = myBoard[0];
-      if (!firstMonster.hasAttacked && firstMonster.position === 1) {
+      if (
+        !firstMonster.hasAttacked &&
+        firstMonster.position === 1 &&
+        !firstMonster.isFaceDown &&
+        firstMonster.turnSummoned !== turnNumber
+      ) {
         return {
           type: "attack",
           cardId: firstMonster.cardId,
         };
       }
     }
+    return { type: "end_phase" };
   }
 
   // Medium/Hard/Boss: Strategic attacks
   for (const monster of myBoard) {
-    if (monster.hasAttacked || monster.position !== 1) continue;
+    if (
+      monster.hasAttacked ||
+      monster.position !== 1 ||
+      monster.isFaceDown ||
+      monster.turnSummoned === turnNumber
+    )
+      continue;
 
     // Direct attack if no opposition
     if (oppBoard.length === 0) {
@@ -246,6 +346,7 @@ export function handleBattlePhase(
         return {
           type: "attack",
           cardId: monster.cardId,
+          targetId: oppMonster.cardId,
         };
       }
 
@@ -258,6 +359,7 @@ export function handleBattlePhase(
         return {
           type: "attack",
           cardId: monster.cardId,
+          targetId: oppMonster.cardId,
         };
       }
     }
@@ -265,4 +367,119 @@ export function handleBattlePhase(
 
   // No good attacks, end phase
   return { type: "end_phase" };
+}
+
+/**
+ * Evaluate whether the AI should respond during a chain/response window.
+ *
+ * Returns the card to activate (and whether it's from zone vs hand),
+ * or null if the AI decides not to respond.
+ */
+export function evaluateChainResponse(
+  difficulty: "easy" | "medium" | "hard" | "boss",
+  windowType: string,
+  availableTraps: SpellTrapCard[],
+  quickPlaySpells: Id<"cardDefinitions">[],
+  cardData: Map<string, Doc<"cardDefinitions">>,
+  // biome-ignore lint/suspicious/noExplicitAny: Chain link structure varies
+  _currentChain: any[],
+  stateContext: { myLP: number; oppLP: number; myBoardSize: number; oppBoardSize: number }
+): { respond: boolean; cardId: Id<"cardDefinitions">; fromZone: boolean } | null {
+  // Difficulty-weighted base chance to respond
+  const responseChance = { easy: 0.1, medium: 0.3, hard: 0.6, boss: 0.85 };
+  if (Math.random() >= responseChance[difficulty]) {
+    return null; // AI decides not to respond
+  }
+
+  // Collect eligible responses with priority scoring
+  const candidates: Array<{
+    cardId: Id<"cardDefinitions">;
+    fromZone: boolean;
+    priority: number;
+  }> = [];
+
+  // Check traps in spell/trap zone
+  for (const trap of availableTraps) {
+    const card = cardData.get(trap.cardId);
+    if (!card) continue;
+
+    // biome-ignore lint/suspicious/noExplicitAny: trapType not in strict type
+    const trapType = (card as any).trapType;
+    const isCounter = trapType === "counter";
+
+    // Counter traps only respond to spell/trap/effect activations
+    if (isCounter) {
+      if (
+        windowType !== "spell_activation" &&
+        windowType !== "trap_activation" &&
+        windowType !== "effect_activation"
+      ) {
+        continue;
+      }
+      // Counter traps get highest priority
+      candidates.push({ cardId: trap.cardId, fromZone: true, priority: 10 });
+      continue;
+    }
+
+    // Match non-counter traps to appropriate window types
+    let priority = 5;
+    const ability = getCardAbility(card);
+    const hasDestroy = ability?.effects.some((e) => e.type === "destroy") ?? false;
+    const hasDamage = ability?.effects.some((e) => e.type === "damage") ?? false;
+    const hasNegate =
+      ability?.effects.some((e) => e.type === "negate" || e.type === "negateActivation") ?? false;
+
+    if (windowType === "summon" && (hasDestroy || hasNegate)) {
+      priority = 8; // Destruction trap vs summon is high value
+    } else if (windowType === "attack_declaration" && (hasDestroy || hasDamage)) {
+      priority = 8; // Battle traps vs attacks
+    } else if (windowType === "spell_activation" && hasNegate) {
+      priority = 7;
+    } else if (windowType === "effect_activation") {
+      priority = 6;
+    }
+
+    // Boss AI: Don't waste destruction trap on weak monsters
+    if (difficulty === "boss" && hasDestroy && windowType === "summon") {
+      if (stateContext.oppBoardSize <= 1 && stateContext.myBoardSize >= 2) {
+        priority -= 3; // Less value if we already dominate board
+      }
+    }
+
+    candidates.push({ cardId: trap.cardId, fromZone: true, priority });
+  }
+
+  // Check quick-play spells from hand (Speed 2)
+  for (const spellId of quickPlaySpells) {
+    const card = cardData.get(spellId);
+    if (!card) continue;
+
+    const ability = getCardAbility(card);
+    const hasNegate =
+      ability?.effects.some((e) => e.type === "negate" || e.type === "negateActivation") ?? false;
+    const hasDestroy = ability?.effects.some((e) => e.type === "destroy") ?? false;
+
+    let priority = 4;
+    if (hasNegate && (windowType === "spell_activation" || windowType === "effect_activation")) {
+      priority = 7;
+    } else if (hasDestroy && windowType === "summon") {
+      priority = 6;
+    }
+
+    candidates.push({ cardId: spellId, fromZone: false, priority });
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Sort by priority (highest first) and pick the best
+  candidates.sort((a, b) => b.priority - a.priority);
+  const best = candidates[0];
+  if (!best) return null;
+
+  // Boss AI: additional validation — skip low-value responses
+  if (difficulty === "boss" && best.priority < 4) {
+    return null;
+  }
+
+  return { respond: true, cardId: best.cardId, fromZone: best.fromZone };
 }

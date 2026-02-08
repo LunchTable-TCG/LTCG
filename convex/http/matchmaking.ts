@@ -5,9 +5,18 @@
  * Used by elizaOS agents to find and join games.
  */
 
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
+import { ELO_SYSTEM } from "../lib/constants";
+import {
+  type WagerCurrency,
+  formatWagerAmount,
+  getDecimalsForCurrency,
+  getMintForCurrency,
+  isValidWagerTier,
+} from "../lib/wagerTiers";
 import type { LobbyInfo, MutationFunction, QueryFunction, User } from "./lib/apiHelpers";
 import { authHttpAction } from "./middleware/auth";
+import { authX402HttpAction } from "./middleware/authX402";
 import {
   corsPreflightResponse,
   errorResponse,
@@ -20,7 +29,7 @@ import {
 // Type-safe API references to avoid TS2589
 const createLobbyInternalMutation = require("../_generated/api").internal.gameplay.games.lobby
   .createLobbyInternal as MutationFunction<
-  { userId: Id<"users">; mode: string; isPrivate: boolean },
+  { userId: Id<"users">; mode: string; isPrivate: boolean; cryptoWagerCurrency?: string; cryptoWagerTier?: number },
   LobbyInfo
 >;
 
@@ -141,7 +150,7 @@ function checkEligibility(
 
   // For ranked mode, check rating difference
   if (lobby.mode === "ranked" && lobby.hostRating !== undefined) {
-    const userRating = user.rankedElo || 1000;
+    const userRating = user.rankedElo || ELO_SYSTEM.DEFAULT_RATING;
     const maxDiff = lobby.maxRatingDiff || 300; // Default 300 rating difference
     const ratingDiff = Math.abs(userRating - lobby.hostRating);
 
@@ -188,7 +197,7 @@ export const lobbies = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("ACCOUNT_SUSPENDED", "Your account is suspended from matchmaking", 403);
     }
 
-    const userRating = user?.rankedElo || 1000;
+    const userRating = user?.rankedElo || ELO_SYSTEM.DEFAULT_RATING;
 
     // List waiting lobbies
     const waitingLobbies = await ctx.runQuery(listWaitingLobbiesQuery, {
@@ -374,6 +383,315 @@ export const leave = authHttpAction(async (ctx, request, auth) => {
     }
 
     return errorResponse("LEAVE_LOBBY_FAILED", "Failed to leave lobby", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// ============================================================================
+// CRYPTO WAGER MATCHMAKING ENDPOINTS
+// ============================================================================
+
+// Type-safe API references for wager operations
+const getLobbyInternalQuery = require("../_generated/api").internal.gameplay.games.queries
+  .getLobbyInternal as QueryFunction<{ lobbyId: Id<"gameLobbies"> }, Doc<"gameLobbies"> | null>;
+
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (require("../_generated/api") as any).internal;
+
+/**
+ * POST /api/agents/matchmaking/wager-enter
+ * Create a crypto wager lobby (auth only, no payment at creation)
+ * Payment is collected when an opponent joins via wager-join.
+ *
+ * Requires API key authentication.
+ */
+export const wagerEnter = authHttpAction(async (ctx, request, auth) => {
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+
+  try {
+    const body = await parseJsonBody<{
+      mode: "casual" | "ranked";
+      cryptoWagerCurrency: "sol" | "usdc";
+      cryptoWagerTier: number;
+      isPrivate?: boolean;
+    }>(request);
+
+    if (body instanceof Response) return body;
+
+    const validation = validateRequiredFields(body, [
+      "mode",
+      "cryptoWagerCurrency",
+      "cryptoWagerTier",
+    ]);
+    if (validation) return validation;
+
+    // Validate wager tier
+    const currency = body.cryptoWagerCurrency as WagerCurrency;
+    const tier = body.cryptoWagerTier as number;
+    if (!isValidWagerTier(tier, currency)) {
+      return errorResponse(
+        "INVALID_WAGER_TIER",
+        `Invalid wager tier: ${tier} ${currency.toUpperCase()}. Use a predefined tier.`,
+        400
+      );
+    }
+
+    // Check user has wallet connected
+    const user = await ctx.runQuery(getUserQuery, { userId: auth.userId });
+    if (!user) {
+      return errorResponse("USER_NOT_FOUND", "User not found", 404);
+    }
+
+    if (!user.walletAddress) {
+      return errorResponse(
+        "WALLET_REQUIRED",
+        "Connect a Solana wallet to create crypto wager lobbies",
+        400
+      );
+    }
+
+    // Create lobby with crypto wager params
+    const lobby = await ctx.runMutation(createLobbyInternalMutation, {
+      userId: auth.userId,
+      mode: body.mode,
+      isPrivate: body.isPrivate || false,
+      cryptoWagerCurrency: currency,
+      cryptoWagerTier: tier,
+    });
+
+    // Note: Escrow PDA is NOT initialized here because the opponent wallet
+    // is not yet known. initializeEscrow runs in wagerJoin after opponent joins.
+
+    const formatted = formatWagerAmount(tier, currency);
+
+    return successResponse(
+      {
+        lobbyId: lobby._id,
+        joinCode: lobby.joinCode || null,
+        status: lobby.status,
+        mode: lobby.mode,
+        cryptoWager: {
+          currency,
+          tier,
+          formatted,
+          tokenMint: getMintForCurrency(currency),
+        },
+        createdAt: lobby.createdAt,
+      },
+      201
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes("already")) {
+        return errorResponse("ALREADY_IN_LOBBY", "You are already in an active lobby", 409);
+      }
+      if (error.message.includes("wallet")) {
+        return errorResponse(
+          "WALLET_REQUIRED",
+          "Connect a Solana wallet to create crypto wager lobbies",
+          400
+        );
+      }
+    }
+
+    return errorResponse("CREATE_WAGER_LOBBY_FAILED", "Failed to create wager lobby", 500, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+/**
+ * POST /api/agents/matchmaking/wager-join
+ * Join a crypto wager lobby with x402 payment
+ *
+ * Flow:
+ * 1. First request (no PAYMENT-SIGNATURE header) → returns 402 with payment requirements
+ * 2. Client signs deposit transaction
+ * 3. Second request (with PAYMENT-SIGNATURE header) → verifies payment, joins game
+ *
+ * Requires API key authentication + x402 payment.
+ */
+export const wagerJoin = authX402HttpAction(
+  // Dynamic payment config resolver — looks up lobby to determine payment requirements
+  async (ctx, request, _auth) => {
+    const body = await request.clone().json();
+    const lobbyId = body.lobbyId as Id<"gameLobbies"> | undefined;
+
+    if (!lobbyId) {
+      throw new Error("lobbyId is required");
+    }
+
+    const lobby = await ctx.runQuery(getLobbyInternalQuery, { lobbyId });
+    if (!lobby) {
+      throw new Error("Lobby not found");
+    }
+
+    if (lobby.status !== "waiting") {
+      throw new Error("Lobby is no longer available");
+    }
+
+    if (!lobby.cryptoWagerCurrency || !lobby.cryptoWagerTier) {
+      throw new Error("This lobby does not have a crypto wager");
+    }
+
+    const currency = lobby.cryptoWagerCurrency as WagerCurrency;
+    const tier = lobby.cryptoWagerTier;
+    const formatted = formatWagerAmount(tier, currency);
+
+    // recipient is intentionally omitted — falls back to treasury wallet
+    // via getX402TreasuryWallet() in authX402 middleware. The escrow PDA
+    // doesn't exist yet (created after opponent joins). initializeEscrow
+    // transfers opponent's share from treasury to PDA after creation.
+    return {
+      description: `Crypto Wager: ${formatted}`,
+      amount: tier,
+      tokenMint: getMintForCurrency(currency),
+      decimals: getDecimalsForCurrency(currency),
+    };
+  },
+
+  // Handler — runs after both auth and payment are verified
+  async (ctx, request, auth, payment) => {
+    try {
+      const body = await request.clone().json();
+      const lobbyId = body.lobbyId as Id<"gameLobbies">;
+
+      // Re-fetch lobby (may have changed since payment config resolution)
+      const lobby = await ctx.runQuery(getLobbyInternalQuery, { lobbyId });
+      if (!lobby || lobby.status !== "waiting") {
+        return errorResponse(
+          "LOBBY_UNAVAILABLE",
+          "Lobby is no longer available",
+          409,
+          undefined,
+          request
+        );
+      }
+
+      // Record joiner's deposit transaction
+      await ctx.runMutation(internalAny.wager.escrowMutations.recordDeposit, {
+        lobbyId,
+        userId: auth.userId,
+        walletAddress: payment.payer,
+        currency: lobby.cryptoWagerCurrency,
+        amount: lobby.cryptoWagerTier,
+        amountAtomic: payment.amount,
+        txSignature: payment.signature,
+        escrowPda: lobby.cryptoEscrowPda || "",
+        type: "deposit" as const,
+      });
+
+      // Update lobby: mark opponent deposit, set wallet
+      await ctx.runMutation(internalAny.gameplay.games.lobby.patchLobbyInternal, {
+        lobbyId,
+        patch: {
+          cryptoOpponentDeposited: true,
+          cryptoOpponentWallet: payment.payer,
+        },
+      });
+
+      // Initialize escrow PDA onchain — now that both wallets are known.
+      // initializeEscrow creates the PDA, confirms the opponent's x402 deposit,
+      // and chains to collectHostDeposit automatically.
+      await ctx.scheduler.runAfter(0, internalAny.wager.escrow.initializeEscrow, {
+        lobbyId,
+      });
+
+      // Also schedule confirmOpponentDeposit as a fallback — if the PDA was
+      // already initialized (e.g., challenge flow), this confirms the deposit
+      // directly. If not yet initialized, it no-ops and lets initializeEscrow handle it.
+      await ctx.scheduler.runAfter(0, internalAny.wager.escrow.confirmOpponentDeposit, {
+        lobbyId,
+        depositorWallet: payment.payer,
+      });
+
+      // Join the lobby (starts game if both deposits confirmed)
+      const result = await ctx.runMutation(joinLobbyInternalMutation, {
+        userId: auth.userId,
+        lobbyId,
+      });
+
+      const formatted = formatWagerAmount(
+        lobby.cryptoWagerTier as number,
+        lobby.cryptoWagerCurrency as WagerCurrency
+      );
+
+      return successResponse(
+        {
+          gameId: result.gameId,
+          lobbyId: result.lobbyId,
+          opponent: { username: result.opponentUsername },
+          mode: result.mode,
+          status: "active",
+          cryptoWager: {
+            currency: lobby.cryptoWagerCurrency,
+            tier: lobby.cryptoWagerTier,
+            formatted,
+            paymentSignature: payment.signature,
+            payer: payment.payer,
+          },
+          message: "Crypto wager match started!",
+        },
+        200,
+        request
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes("Both players must deposit")) {
+          return errorResponse(
+            "DEPOSITS_PENDING",
+            "Waiting for host deposit. Game will start once both deposits are confirmed.",
+            202,
+            undefined,
+            request
+          );
+        }
+      }
+
+      return errorResponse(
+        "WAGER_JOIN_FAILED",
+        "Failed to join wager lobby",
+        500,
+        { error: error instanceof Error ? error.message : String(error) },
+        request
+      );
+    }
+  }
+);
+
+/**
+ * POST /api/agents/matchmaking/heartbeat
+ * Send heartbeat during crypto wager games (prevents 30s DC forfeit)
+ * Must be called every 5 seconds by agents in active crypto wager matches.
+ */
+export const heartbeat = authHttpAction(async (ctx, request, auth) => {
+  if (request.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+  if (request.method !== "POST") {
+    return errorResponse("METHOD_NOT_ALLOWED", "Only POST method is allowed", 405);
+  }
+  try {
+    const body = await parseJsonBody<{ lobbyId: string }>(request);
+    if (body instanceof Response) return body;
+    const validation = validateRequiredFields(body, ["lobbyId"]);
+    if (validation) return validation;
+
+    await ctx.runMutation(internalAny.gameplay.games.heartbeat.heartbeatInternal, {
+      userId: auth.userId,
+      lobbyId: body.lobbyId as Id<"gameLobbies">,
+    });
+
+    return successResponse({ ok: true });
+  } catch (error) {
+    return errorResponse("HEARTBEAT_FAILED", "Failed to send heartbeat", 500, {
       error: error instanceof Error ? error.message : String(error),
     });
   }

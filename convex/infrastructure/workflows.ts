@@ -13,4 +13,7 @@
 import { WorkflowManager } from "@convex-dev/workflow";
 import { components } from "../_generated/api";
 
-export const workflow = new WorkflowManager((components as any).workflow);
+type WorkflowComponent = ConstructorParameters<typeof WorkflowManager>[0];
+const workflowComponent = (components as { workflow: WorkflowComponent }).workflow;
+
+export const workflow = new WorkflowManager(workflowComponent);

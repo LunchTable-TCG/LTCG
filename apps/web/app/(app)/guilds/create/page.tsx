@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { useMyGuild } from "@/hooks/guilds";
 import { useCreateGuild } from "@/hooks/guilds/useCreateGuild";
 import { cn } from "@/lib/utils";
+import type { Visibility } from "@/types/common";
 import {
   ArrowLeft,
   ArrowRight,
@@ -35,7 +36,7 @@ export default function CreateGuildPage() {
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [visibility, setVisibility] = useState<Visibility>("public");
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const [bannerImage, setBannerImage] = useState<File | null>(null);
@@ -193,8 +194,14 @@ export default function CreateGuildPage() {
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-[#a89f94]">Guild Name *</label>
+                    <label
+                      htmlFor="create-guild-name"
+                      className="text-sm font-medium text-[#a89f94]"
+                    >
+                      Guild Name *
+                    </label>
                     <Input
+                      id="create-guild-name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Enter guild name"
@@ -207,8 +214,14 @@ export default function CreateGuildPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-[#a89f94]">Description</label>
+                    <label
+                      htmlFor="create-guild-description"
+                      className="text-sm font-medium text-[#a89f94]"
+                    >
+                      Description
+                    </label>
                     <Textarea
+                      id="create-guild-description"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Tell others about your guild..."
@@ -220,7 +233,7 @@ export default function CreateGuildPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-sm font-medium text-[#a89f94]">Visibility</label>
+                    <p className="text-sm font-medium text-[#a89f94]">Visibility</p>
                     <div className="grid grid-cols-2 gap-3">
                       {[
                         {
@@ -285,8 +298,14 @@ export default function CreateGuildPage() {
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Profile Image */}
                   <div className="space-y-3">
-                    <label className="text-sm font-medium text-[#a89f94]">Profile Image</label>
-                    <div
+                    <label
+                      htmlFor="create-guild-profile-image"
+                      className="text-sm font-medium text-[#a89f94]"
+                    >
+                      Profile Image
+                    </label>
+                    <button
+                      type="button"
                       onClick={() => profileInputRef.current?.click()}
                       className="relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-[#3d2b1f] hover:border-[#d4af37]/50 cursor-pointer transition-colors group"
                     >
@@ -305,8 +324,9 @@ export default function CreateGuildPage() {
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Camera className="w-8 h-8 text-white" />
                       </div>
-                    </div>
+                    </button>
                     <input
+                      id="create-guild-profile-image"
                       ref={profileInputRef}
                       type="file"
                       accept="image/*"
@@ -317,8 +337,14 @@ export default function CreateGuildPage() {
 
                   {/* Banner Image */}
                   <div className="space-y-3">
-                    <label className="text-sm font-medium text-[#a89f94]">Banner Image</label>
-                    <div
+                    <label
+                      htmlFor="create-guild-banner-image"
+                      className="text-sm font-medium text-[#a89f94]"
+                    >
+                      Banner Image
+                    </label>
+                    <button
+                      type="button"
                       onClick={() => bannerInputRef.current?.click()}
                       className="relative aspect-[16/9] rounded-xl overflow-hidden border-2 border-dashed border-[#3d2b1f] hover:border-[#d4af37]/50 cursor-pointer transition-colors group"
                     >
@@ -337,8 +363,9 @@ export default function CreateGuildPage() {
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <ImageIcon className="w-8 h-8 text-white" />
                       </div>
-                    </div>
+                    </button>
                     <input
+                      id="create-guild-banner-image"
                       ref={bannerInputRef}
                       type="file"
                       accept="image/*"

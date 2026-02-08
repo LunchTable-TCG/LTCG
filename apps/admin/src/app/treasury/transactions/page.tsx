@@ -40,6 +40,21 @@ type TreasuryTransaction = Doc<"treasuryTransactions"> & {
   walletAddress: string;
 };
 
+interface TreasuryTransactionListResult {
+  transactions: TreasuryTransaction[];
+  total: number;
+}
+
+interface TreasuryStats {
+  totalTransactions: number;
+  byStatus?: {
+    pending?: number;
+    submitted?: number;
+    confirmed?: number;
+    failed?: number;
+  };
+}
+
 // =============================================================================
 // Helper Functions
 // =============================================================================
@@ -120,7 +135,6 @@ export default function TreasuryTransactionsPage() {
   const limit = 20;
 
   // Fetch transactions
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const { transactions, total } = (useConvexQuery(typedApi.treasury.transactions.listTransactions, {
     status:
       statusFilter !== "all"
@@ -138,11 +152,12 @@ export default function TreasuryTransactionsPage() {
         : undefined,
     limit,
     offset: page * limit,
-  }) as any) ?? { transactions: [], total: 0 };
+  }) as TreasuryTransactionListResult | undefined) ?? { transactions: [], total: 0 };
 
   // Fetch stats
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
-  const stats = useConvexQuery(typedApi.treasury.transactions.getStats, { daysBack: 30 }) as any;
+  const stats = useConvexQuery(typedApi.treasury.transactions.getStats, {
+    daysBack: 30,
+  }) as TreasuryStats | undefined;
 
   const isLoading = transactions === undefined;
   const totalPages = Math.ceil(total / limit);

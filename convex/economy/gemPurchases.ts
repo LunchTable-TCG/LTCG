@@ -5,9 +5,13 @@
  * Includes price oracle integration and transaction verification.
  */
 
+import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import { action, internalMutation, internalQuery, query } from "../_generated/server";
+
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { mutation } from "../functions";
 import { ELIZAOS_TOKEN, GEM_PACKAGES, TOKEN } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
@@ -199,7 +203,23 @@ export const getGemPurchaseHistory = query({
   args: {
     limit: v.optional(v.number()),
   },
-  returns: v.array(v.any()),
+  returns: v.array(
+    v.object({
+      _id: v.id("tokenGemPurchases"),
+      _creationTime: v.number(),
+      userId: v.id("users"),
+      packageId: v.string(),
+      gemsReceived: v.number(),
+      usdValue: v.number(),
+      tokenAmount: v.number(),
+      tokenPriceUsd: v.number(),
+      solanaSignature: v.string(),
+      status: literals("pending", "confirmed", "failed", "expired"),
+      createdAt: v.number(),
+      confirmedAt: v.optional(v.number()),
+      failureReason: v.optional(v.string()),
+    })
+  ),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     const limit = args.limit ?? 20;
@@ -217,7 +237,23 @@ export const getGemPurchaseHistory = query({
  */
 export const getPendingPurchases = query({
   args: {},
-  returns: v.array(v.any()),
+  returns: v.array(
+    v.object({
+      _id: v.id("tokenGemPurchases"),
+      _creationTime: v.number(),
+      userId: v.id("users"),
+      packageId: v.string(),
+      gemsReceived: v.number(),
+      usdValue: v.number(),
+      tokenAmount: v.number(),
+      tokenPriceUsd: v.number(),
+      solanaSignature: v.string(),
+      status: literals("pending", "confirmed", "failed", "expired"),
+      createdAt: v.number(),
+      confirmedAt: v.optional(v.number()),
+      failureReason: v.optional(v.string()),
+    })
+  ),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
 
@@ -425,7 +461,7 @@ export const verifyAndConfirmPurchase = action({
   }),
   handler: async (ctx, args): Promise<VerifyResult> => {
     // Get purchase by signature
-    const purchase = await ctx.runQuery(internal.economy.gemPurchases.getPurchaseBySignature, {
+    const purchase = await ctx.runQuery(internalAny.economy.gemPurchases.getPurchaseBySignature, {
       signature: args.solanaSignature,
     });
 
@@ -464,7 +500,7 @@ export const verifyAndConfirmPurchase = action({
 
       if (status.err) {
         // Transaction failed
-        await ctx.runMutation(internal.economy.gemPurchases.failPurchaseInternal, {
+        await ctx.runMutation(internalAny.economy.gemPurchases.failPurchaseInternal, {
           purchaseId: purchase._id,
           reason: "Transaction failed on chain",
         });
@@ -474,7 +510,7 @@ export const verifyAndConfirmPurchase = action({
       if (status.confirmationStatus === "finalized" || status.confirmationStatus === "confirmed") {
         // Transaction confirmed - credit gems
         const confirmResult = await ctx.runMutation(
-          internal.economy.gemPurchases.confirmPurchaseInternal,
+          internalAny.economy.gemPurchases.confirmPurchaseInternal,
           {
             purchaseId: purchase._id,
           }

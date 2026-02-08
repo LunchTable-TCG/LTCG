@@ -51,7 +51,8 @@ type TriggerType =
   | "bonding_progress"
   | "treasury_balance"
   | "transaction_failed"
-  | "graduation";
+  | "graduation"
+  | "integrity_violation";
 
 type Severity = "critical" | "warning" | "info";
 

@@ -5,13 +5,13 @@
  * Used by elizaOS agents and other external clients.
  */
 
-import { internal } from "../../_generated/api";
+import * as generatedApi from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { type ActionCtx, httpAction } from "../../_generated/server";
 
 // Module-scope helper to avoid TS2589 in function body
 // biome-ignore lint/suspicious/noExplicitAny: Required to break TS2589 deep type instantiation
-const internalAny: any = internal;
+const internalAny = (generatedApi as any).internal;
 
 // =============================================================================
 // Types
@@ -224,67 +224,4 @@ export function authHttpAction(handler: AuthenticatedHandler) {
       );
     }
   });
-}
-
-/**
- * Legacy callback-style authentication wrapper
- * Use authHttpAction instead for new code
- *
- * @deprecated Use authHttpAction instead
- * @example
- * export const myEndpoint = httpAction(async (ctx, request) => {
- *   return withAuth(ctx, request, async (authCtx, agentId) => {
- *     // Handler code
- *   });
- * });
- */
-export async function withAuth(
-  ctx: HttpActionCtx,
-  request: Request,
-  handler: (ctx: HttpActionCtx, agentId: Id<"agents">) => Promise<Response>
-): Promise<Response> {
-  try {
-    const auth = await authenticateRequest(ctx, request);
-    return await handler(ctx, auth.agentId);
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      return error.toResponse();
-    }
-
-    // Handle legacy JSON error format
-    if (error instanceof Error && error.message.startsWith("{")) {
-      try {
-        const errorData = JSON.parse(error.message);
-        return new Response(
-          JSON.stringify({
-            success: false,
-            ...errorData.error,
-            timestamp: Date.now(),
-          }),
-          {
-            status: errorData.status || 500,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      } catch {
-        // Fall through to generic error
-      }
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: {
-          code: "AUTHENTICATION_ERROR",
-          message: "Authentication failed",
-          details: { error: error instanceof Error ? error.message : String(error) },
-        },
-        timestamp: Date.now(),
-      }),
-      {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  }
 }

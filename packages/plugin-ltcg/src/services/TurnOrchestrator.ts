@@ -12,14 +12,14 @@
 
 import { type IAgentRuntime, ModelType, Service, logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
+import { LTCGEventType, emitLTCGEvent } from "../events/types";
 import type { Decision } from "../frontend/types/panel";
 import type {
   AvailableActionsResponse,
+  BoardCard,
   CardInHand,
   GameEvent,
   GameStateResponse,
-  MonsterCard,
-  SpellTrapCard,
 } from "../types/api";
 import {
   calculateDamageRange,
@@ -217,6 +217,15 @@ export class TurnOrchestrator extends Service {
         `🤖 LLM decided: ${decision.action}`
       );
 
+      // Emit action decided event
+      await emitLTCGEvent(this.runtime, LTCGEventType.ACTION_DECIDED, {
+        gameId,
+        action: decision.action,
+        reasoning: decision.reasoning,
+        turnNumber: context.turnNumber,
+        phase: context.phase,
+      });
+
       // Execute the chosen action
       if (decision.action === "END_TURN") {
         await this.executeEndTurn(gameId);
@@ -240,6 +249,13 @@ export class TurnOrchestrator extends Service {
     }
 
     logger.info({ gameId, actionCount }, "✅ Turn execution complete");
+
+    // Emit turn completed event
+    await emitLTCGEvent(this.runtime, LTCGEventType.TURN_COMPLETED, {
+      gameId,
+      actionCount,
+      turnNumber: 0, // Turn number not tracked at this level
+    });
   }
 
   // ============================================================================
@@ -276,8 +292,8 @@ export class TurnOrchestrator extends Service {
         phase: gameState.phase,
         turnNumber: gameState.turnNumber,
         lifePoints: {
-          agent: gameState.hostPlayer?.lifePoints ?? 8000,
-          opponent: gameState.opponentPlayer?.lifePoints ?? 8000,
+          agent: gameState.myLifePoints ?? 8000,
+          opponent: gameState.opponentLifePoints ?? 8000,
         },
       };
     } catch (error) {
@@ -294,30 +310,30 @@ export class TurnOrchestrator extends Service {
     if (hand.length === 0) return "Your hand is empty.";
 
     const cards = hand.map((card: CardInHand, idx: number) => {
-      const cardType = card.type || card.cardType;
+      const cardType = card.cardType || card.type;
       const lines: string[] = [];
 
       if (cardType === "creature") {
-        const atk = card.atk ?? card.attack ?? "?";
-        const def = card.def ?? card.defense ?? "?";
-        const level = card.level ?? card.cost ?? "?";
+        const atk = card.attack ?? card.atk ?? "?";
+        const def = card.defense ?? card.def ?? "?";
+        const level = card.cost ?? card.level ?? "?";
         lines.push(
-          `${idx}. **${card.name}** (Monster, ATK:${atk}/DEF:${def}, Level:${level}) [handIndex: ${card.handIndex}]`
+          `${idx}. **${card.name}** (Monster, ATK:${atk}/DEF:${def}, Level:${level}) [cardId: ${card._id}]`
         );
 
         // Add tribute requirement hint
-        const lvl = card.level ?? card.cost ?? 4;
+        const lvl = card.cost ?? card.level ?? 4;
         if (lvl >= 7) {
           lines.push("   ⚠️ Requires 2 tributes to summon");
         } else if (lvl >= 5) {
           lines.push("   ⚠️ Requires 1 tribute to summon");
         }
       } else if (cardType === "spell") {
-        lines.push(`${idx}. **${card.name}** (Spell) [handIndex: ${card.handIndex}]`);
+        lines.push(`${idx}. **${card.name}** (Spell) [cardId: ${card._id}]`);
       } else if (cardType === "trap") {
-        lines.push(`${idx}. **${card.name}** (Trap) [handIndex: ${card.handIndex}]`);
+        lines.push(`${idx}. **${card.name}** (Trap) [cardId: ${card._id}]`);
       } else {
-        lines.push(`${idx}. **${card.name}** (${cardType}) [handIndex: ${card.handIndex}]`);
+        lines.push(`${idx}. **${card.name}** (${cardType}) [cardId: ${card._id}]`);
       }
 
       // Add effect description if available
@@ -351,7 +367,7 @@ export class TurnOrchestrator extends Service {
     const lines: string[] = [];
 
     // Agent's field
-    const agentMonsters = state.hostPlayer?.monsterZone ?? [];
+    const agentMonsters = state.myBoard ?? [];
     const agentSpellTraps = state.hostPlayer?.spellTrapZone ?? [];
     const agentGraveyard = state.hostPlayer?.graveyard ?? [];
     const agentBanished = state.hostPlayer?.banished ?? [];
@@ -361,21 +377,23 @@ export class TurnOrchestrator extends Service {
       lines.push("Monster Zones: Empty");
     } else {
       lines.push("Monsters:");
-      agentMonsters.forEach((m: MonsterCard, i: number) => {
-        const pos =
-          m.position === "attack" ? "ATK" : m.position === "defense" ? "DEF" : "Face-down DEF";
-        const faceDown = m.position === "facedown" ? " (Face-down)" : "";
-        lines.push(
-          `  ${i}. ${m.name ?? "Unknown"} - ${pos} ${m.atk ?? "?"}/${m.def ?? "?"}${faceDown} [boardIndex: ${m.boardIndex}]`
-        );
+      agentMonsters.forEach((m: BoardCard, i: number) => {
+        if (m.isFaceDown) {
+          lines.push(`  ${i}. ${m.name ?? "Unknown"} - Face-down DEF [cardId: ${m._id}]`);
+        } else {
+          const pos = m.position === 1 ? "ATK" : "DEF";
+          const atk = m.currentAttack ?? m.attack ?? "?";
+          const def = m.currentDefense ?? m.defense ?? "?";
+          lines.push(`  ${i}. ${m.name ?? "Unknown"} - ${pos} ${atk}/${def} [cardId: ${m._id}]`);
+        }
       });
     }
 
     if (agentSpellTraps.length > 0) {
       lines.push("Spell/Trap:");
-      agentSpellTraps.forEach((st: SpellTrapCard, i: number) => {
+      agentSpellTraps.forEach((st, i) => {
         const faceStatus = st.faceUp ? "(Active)" : "(Set)";
-        lines.push(`  ${i}. ${st.name ?? "Unknown"} ${faceStatus} [boardIndex: ${st.boardIndex}]`);
+        lines.push(`  ${i}. ${st.name ?? "Unknown"} ${faceStatus} [cardId: ${st.cardId}]`);
       });
     }
 
@@ -392,7 +410,7 @@ export class TurnOrchestrator extends Service {
     }
 
     // Opponent's field
-    const oppMonsters = state.opponentPlayer?.monsterZone ?? [];
+    const oppMonsters = state.opponentBoard ?? [];
     const oppSpellTraps = state.opponentPlayer?.spellTrapZone ?? [];
     const oppGraveyard = state.opponentPlayer?.graveyard ?? [];
     const oppBanished = state.opponentPlayer?.banished ?? [];
@@ -402,14 +420,14 @@ export class TurnOrchestrator extends Service {
       lines.push("Monster Zones: Empty");
     } else {
       lines.push("Monsters:");
-      oppMonsters.forEach((m: MonsterCard, i: number) => {
-        if (m.position === "facedown" || !m.faceUp) {
-          lines.push(`  ${i}. Face-down Defense Position [boardIndex: ${m.boardIndex}]`);
+      oppMonsters.forEach((m: BoardCard, i: number) => {
+        if (m.isFaceDown) {
+          lines.push(`  ${i}. Face-down Defense Position [cardId: ${m._id}]`);
         } else {
-          const pos = m.position === "attack" ? "ATK" : "DEF";
-          lines.push(
-            `  ${i}. ${m.name ?? "Unknown"} - ${pos} ${m.atk ?? "?"}/${m.def ?? "?"} [boardIndex: ${m.boardIndex}]`
-          );
+          const pos = m.position === 1 ? "ATK" : "DEF";
+          const atk = m.currentAttack ?? m.attack ?? "?";
+          const def = m.currentDefense ?? m.defense ?? "?";
+          lines.push(`  ${i}. ${m.name ?? "Unknown"} - ${pos} ${atk}/${def} [cardId: ${m._id}]`);
         }
       });
     }
@@ -551,10 +569,10 @@ export class TurnOrchestrator extends Service {
    * Analyze strategic situation with win probability and lethal detection
    */
   private analyzeStrategy(state: GameStateResponse): string {
-    const agentLP = state.hostPlayer?.lifePoints ?? 8000;
-    const oppLP = state.opponentPlayer?.lifePoints ?? 8000;
-    const agentMonsters = state.hostPlayer?.monsterZone ?? [];
-    const oppMonsters = state.opponentPlayer?.monsterZone ?? [];
+    const agentLP = state.myLifePoints ?? 8000;
+    const oppLP = state.opponentLifePoints ?? 8000;
+    const agentMonsters = state.myBoard ?? [];
+    const oppMonsters = state.opponentBoard ?? [];
     const myBoard = state.myBoard ?? [];
     const oppBoard = state.opponentBoard ?? [];
 
@@ -608,10 +626,10 @@ export class TurnOrchestrator extends Service {
     } catch {
       // Fallback to basic calculation
       const agentAttackMonsters = agentMonsters.filter(
-        (m: MonsterCard) => m.position === "attack" && m.faceUp !== false
+        (m: BoardCard) => m.position === 1 && !m.isFaceDown
       );
       const totalAttack = agentAttackMonsters.reduce(
-        (sum: number, m: MonsterCard) => sum + (m.atk ?? 0),
+        (sum: number, m: BoardCard) => sum + (m.attack ?? 0),
         0
       );
 
@@ -624,12 +642,12 @@ export class TurnOrchestrator extends Service {
 
     // Threat assessment from opponent
     const oppAttackMonsters = oppMonsters.filter(
-      (m: MonsterCard) => m.position === "attack" && m.faceUp !== false
+      (m: BoardCard) => m.position === 1 && !m.isFaceDown
     );
     if (oppAttackMonsters.length > 0) {
-      const maxOppAtk = Math.max(...oppAttackMonsters.map((m: MonsterCard) => m.atk ?? 0));
+      const maxOppAtk = Math.max(...oppAttackMonsters.map((m: BoardCard) => m.attack ?? 0));
       const oppTotalAtk = oppAttackMonsters.reduce(
-        (sum: number, m: MonsterCard) => sum + (m.atk ?? 0),
+        (sum: number, m: BoardCard) => sum + (m.attack ?? 0),
         0
       );
       lines.push(
@@ -649,7 +667,7 @@ export class TurnOrchestrator extends Service {
 
     // Hand advantage
     const handSize = state.hand?.length ?? 0;
-    const oppDeckCount = state.opponentPlayer?.deckCount ?? 0;
+    const oppDeckCount = state.opponentDeckCount ?? 0;
     lines.push(`📝 Hand: ${handSize} cards, Opponent deck: ${oppDeckCount} cards`);
 
     // === OPPONENT PLAYSTYLE INFERENCE ===
@@ -669,24 +687,24 @@ export class TurnOrchestrator extends Service {
 
     // Battle consequence predictions
     const myAttackers = agentMonsters.filter(
-      (m: MonsterCard) => m.position === "attack" && m.canAttack && m.faceUp !== false
+      (m: BoardCard) => m.position === 1 && !m.hasAttacked && !m.isFaceDown
     );
 
     if (myAttackers.length > 0 && oppMonsters.length > 0) {
       lines.push("Attack Outcomes:");
       for (const attacker of myAttackers.slice(0, 3)) {
         // Limit to 3 for brevity
-        const myAtk = attacker.atk ?? 0;
+        const myAtk = attacker.attack ?? 0;
         for (const defender of oppMonsters.slice(0, 2)) {
           // Limit defenders analyzed
-          if (defender.position === "facedown" || !defender.faceUp) {
+          if (defender.isFaceDown) {
             lines.push(`  → ${attacker.name} (${myAtk}) vs Face-down: RISKY - unknown DEF`);
           } else {
             const defValue =
-              defender.position === "attack" ? (defender.atk ?? 0) : (defender.def ?? 0);
+              defender.position === 1 ? (defender.attack ?? 0) : (defender.defense ?? 0);
             const diff = myAtk - defValue;
             if (diff > 0) {
-              if (defender.position === "attack") {
+              if (defender.position === 1) {
                 lines.push(
                   `  → ${attacker.name} (${myAtk}) vs ${defender.name} (${defValue} ATK): WIN, deal ${diff} damage`
                 );
@@ -726,7 +744,7 @@ export class TurnOrchestrator extends Service {
     // End turn consequences
     if (agentMonsters.length === 0 && oppAttackMonsters.length > 0) {
       const potentialDamage = oppAttackMonsters.reduce(
-        (sum: number, m: MonsterCard) => sum + (m.atk ?? 0),
+        (sum: number, m: BoardCard) => sum + (m.attack ?? 0),
         0
       );
       lines.push(
@@ -746,16 +764,16 @@ export class TurnOrchestrator extends Service {
     insight: string;
     recommendation?: string;
   } {
-    const oppMonsters = state.opponentPlayer?.monsterZone ?? [];
+    const oppMonsters = state.opponentBoard ?? [];
     const oppBackrow = state.opponentPlayer?.spellTrapZone?.length ?? 0;
     const oppGraveyard = state.opponentPlayer?.graveyard ?? [];
 
     // Count attack vs defense position monsters
     const attackPosCount = oppMonsters.filter(
-      (m: MonsterCard) => m.position === "attack" && m.faceUp !== false
+      (m: BoardCard) => m.position === 1 && !m.isFaceDown
     ).length;
     const defensePosCount = oppMonsters.filter(
-      (m: MonsterCard) => m.position === "defense" || m.position === "facedown"
+      (m: BoardCard) => m.position === 2 || m.isFaceDown
     ).length;
 
     // Count monsters vs spells in graveyard (reveals playstyle)
@@ -962,12 +980,12 @@ Respond in this exact JSON format:
 {
   "action": "ACTION_NAME",
   "reasoning": "Brief explanation of why this is the best play",
-  "parameters": { "handIndex": 0, "boardIndex": 0 }
+  "parameters": { "cardId": "card_id_here" }
 }
 
 Valid actions: SUMMON_MONSTER, SET_CARD, ACTIVATE_SPELL, ACTIVATE_TRAP, ATTACK, CHANGE_POSITION, FLIP_SUMMON, END_TURN
 
-IMPORTANT: Use the handIndex or boardIndex values shown in brackets (e.g., [handIndex: 0]) for your parameters.
+IMPORTANT: Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parameters.
 
 Choose wisely!`;
   }
@@ -984,26 +1002,25 @@ Choose wisely!`;
     const phase = gameState.phase;
 
     if (!hasNormalSummoned && (phase === "main1" || phase === "main2")) {
-      lines.push("• SUMMON_MONSTER - Normal summon a monster from your hand (use handIndex)");
+      lines.push("• SUMMON_MONSTER - Normal summon a monster from your hand (use cardId)");
     }
 
     if (phase === "main1" || phase === "main2") {
-      lines.push("• SET_CARD - Set a monster, spell, or trap face-down (use handIndex)");
-      lines.push("• ACTIVATE_SPELL - Activate a spell card (use handIndex or boardIndex)");
-      lines.push("• FLIP_SUMMON - Flip summon a face-down defense monster (use boardIndex)");
+      lines.push("• SET_CARD - Set a monster, spell, or trap face-down (use cardId)");
+      lines.push("• ACTIVATE_SPELL - Activate a spell card (use cardId)");
+      lines.push("• FLIP_SUMMON - Flip summon a face-down defense monster (use cardId)");
       lines.push(
-        "• CHANGE_POSITION - Change a monster from ATK to DEF or vice versa (use boardIndex)"
+        "• CHANGE_POSITION - Change a monster from ATK to DEF or vice versa (use cardId)"
       );
     }
 
     if (phase === "battle") {
-      const attackers =
-        gameState.hostPlayer?.monsterZone?.filter(
-          (m: MonsterCard) => m.position === "attack" && m.canAttack
-        ) ?? [];
+      const attackers = (gameState.myBoard ?? []).filter(
+        (m: BoardCard) => m.position === 1 && !m.hasAttacked
+      );
       if (attackers.length > 0) {
         lines.push(
-          `• ATTACK - Attack with your monsters (${attackers.length} can attack, use attackerBoardIndex)`
+          `• ATTACK - Attack with your monsters (${attackers.length} can attack, use attackerCardId)`
         );
       }
     }
@@ -1120,6 +1137,14 @@ Choose wisely!`;
       // Record decision for panel display
       const endTime = Date.now();
       this.recordDecision(gameId, decision, context, success, startTime, endTime);
+
+      // Emit action executed event
+      await emitLTCGEvent(this.runtime, LTCGEventType.ACTION_EXECUTED, {
+        gameId,
+        action: decision.action,
+        success,
+        executionTimeMs: endTime - startTime,
+      });
     }
   }
 
@@ -1220,38 +1245,32 @@ Choose wisely!`;
     context: TurnContext
   ): Promise<boolean> {
     const hand = context.gameState.hand ?? [];
-    const monsters = hand.filter((c: CardInHand) => c.type === "creature");
+    const monsters = hand.filter((c: CardInHand) => c.cardType === "creature");
 
     if (monsters.length === 0) {
       logger.info("No monsters in hand to summon");
       return false;
     }
 
-    // Determine which card to summon
-    let handIndex = decision.parameters?.handIndex as number | undefined;
+    // LLM may provide cardId (new) or handIndex (legacy)
+    const requestedCardId = decision.parameters?.cardId as string | undefined;
+    const handIndex = decision.parameters?.handIndex as number | undefined;
     let selectedCard: CardInHand | undefined;
 
-    if (handIndex !== undefined) {
-      // Validate handIndex points to a valid monster
+    if (requestedCardId) {
+      selectedCard = monsters.find((c: CardInHand) => c._id === requestedCardId);
+    }
+    if (!selectedCard && handIndex !== undefined) {
       selectedCard = hand.find(
-        (c: CardInHand) => c.handIndex === handIndex && c.type === "creature"
+        (c: CardInHand) =>
+          c.handIndex === handIndex && (c.cardType === "creature" || c.type === "creature")
       );
-      if (!selectedCard) {
-        logger.warn(
-          { handIndex },
-          "LLM specified invalid handIndex, falling back to first monster"
-        );
-        selectedCard = monsters[0];
-        handIndex = selectedCard?.handIndex;
-      }
-    } else {
-      // No handIndex provided - use first available monster
-      logger.debug("LLM did not specify handIndex, using first monster");
+    }
+    if (!selectedCard) {
       selectedCard = monsters[0];
-      handIndex = selectedCard?.handIndex;
     }
 
-    if (handIndex === undefined) {
+    if (!selectedCard?._id) {
       logger.error("No valid monster to summon");
       return false;
     }
@@ -1261,14 +1280,14 @@ Choose wisely!`;
     try {
       await this.client?.summon({
         gameId,
-        handIndex,
+        cardId: selectedCard._id,
         position,
       });
 
-      logger.info({ cardName: selectedCard?.name, position, handIndex }, "Summoned monster");
+      logger.info({ cardName: selectedCard?.name, position, cardId: selectedCard._id }, "Summoned monster");
       return true;
     } catch (error) {
-      logger.error({ error, handIndex }, "Failed to execute summon");
+      logger.error({ error, cardId: selectedCard._id }, "Failed to execute summon");
       return false;
     }
   }
@@ -1284,19 +1303,22 @@ Choose wisely!`;
     const hand = context.gameState.hand ?? [];
     if (hand.length === 0) return false;
 
-    // Use handIndex from decision parameters, or fall back to first settable card
-    let handIndex = decision.parameters?.handIndex as number | undefined;
-    if (handIndex === undefined) {
-      // Prefer setting spells/traps over monsters
-      const spellTraps = hand.filter((c: CardInHand) => c.type !== "creature");
-      const toSet = spellTraps[0] ?? hand[0];
-      handIndex = toSet?.handIndex;
+    const requestedCardId = decision.parameters?.cardId as string | undefined;
+    let card: CardInHand | undefined;
+    if (requestedCardId) {
+      card = hand.find((c: CardInHand) => c._id === requestedCardId);
     }
-
-    const card = hand.find((c: CardInHand) => c.handIndex === handIndex);
-    const zone = card?.type === "creature" ? "monster" : "spellTrap";
-
-    if (handIndex === undefined) {
+    if (!card) {
+      const handIdx = decision.parameters?.handIndex as number | undefined;
+      if (handIdx !== undefined) {
+        card = hand.find((c: CardInHand) => c.handIndex === handIdx);
+      }
+    }
+    if (!card) {
+      const spellTraps = hand.filter((c: CardInHand) => c.cardType !== "creature");
+      card = spellTraps[0] ?? hand[0];
+    }
+    if (!card?._id) {
       logger.error("No valid card to set");
       return false;
     }
@@ -1304,8 +1326,7 @@ Choose wisely!`;
     try {
       await this.client?.setCard({
         gameId,
-        handIndex,
-        zone,
+        cardId: card._id,
       });
 
       logger.info({ cardName: card?.name }, "Set card");
@@ -1325,39 +1346,38 @@ Choose wisely!`;
     context: TurnContext
   ): Promise<boolean> {
     const hand = context.gameState.hand ?? [];
-    const spells = hand.filter((c: CardInHand) => c.type === "spell");
+    const spells = hand.filter((c: CardInHand) => c.cardType === "spell");
 
-    // Check if activating from hand or board
-    const boardIndex = decision.parameters?.boardIndex as number | undefined;
-    if (boardIndex !== undefined) {
+    const requestedCardId = decision.parameters?.cardId as string | undefined;
+
+    if (requestedCardId) {
       try {
-        await this.client?.activateSpell({
-          gameId,
-          boardIndex,
-        });
-        logger.info({ boardIndex }, "Activated spell from board");
+        await this.client?.activateSpell({ gameId, cardId: requestedCardId });
+        logger.info({ cardId: requestedCardId }, "Activated spell");
         return true;
       } catch (error) {
-        logger.error({ error }, "Failed to activate spell from board");
+        logger.error({ error }, "Failed to activate spell");
         return false;
       }
     }
 
-    if (spells.length === 0) return false;
-
-    let handIndex = decision.parameters?.handIndex as number | undefined;
-    if (handIndex === undefined) {
-      handIndex = spells[0]?.handIndex;
+    // Legacy fallback: find by handIndex
+    const handIdx = decision.parameters?.handIndex as number | undefined;
+    let spell: CardInHand | undefined;
+    if (handIdx !== undefined) {
+      spell = hand.find(
+        (c: CardInHand) =>
+          c.handIndex === handIdx && (c.cardType === "spell" || c.type === "spell")
+      );
     }
+    if (!spell) {
+      spell = spells[0];
+    }
+    if (!spell?._id) return false;
 
     try {
-      await this.client?.activateSpell({
-        gameId,
-        handIndex,
-      });
-
-      const spell = hand.find((c: CardInHand) => c.handIndex === handIndex);
-      logger.info({ cardName: spell?.name }, "Activated spell");
+      await this.client?.activateSpell({ gameId, cardId: spell._id });
+      logger.info({ cardName: spell.name }, "Activated spell");
       return true;
     } catch (error) {
       logger.error({ error }, "Failed to activate spell");
@@ -1373,54 +1393,53 @@ Choose wisely!`;
     decision: ActionDecision,
     context: TurnContext
   ): Promise<boolean> {
-    const myMonsters = context.gameState.hostPlayer?.monsterZone ?? [];
-    const oppMonsters = context.gameState.opponentPlayer?.monsterZone ?? [];
+    const myMonsters = context.gameState.myBoard ?? [];
+    const oppMonsters = context.gameState.opponentBoard ?? [];
 
-    const attackers = myMonsters.filter((m: MonsterCard) => m.position === "attack" && m.canAttack);
+    const attackers = myMonsters.filter(
+      (m: BoardCard) => m.position === 1 && !m.hasAttacked
+    );
 
     if (attackers.length === 0) return false;
 
-    // Use attackerBoardIndex from decision or pick first available attacker
-    let attackerBoardIndex = decision.parameters?.attackerBoardIndex as number | undefined;
-    if (attackerBoardIndex === undefined) {
-      attackerBoardIndex = attackers[0]?.boardIndex;
+    // Use attackerCardId from decision or pick first available attacker
+    let attackerCardId = decision.parameters?.attackerCardId as string | undefined;
+    if (!attackerCardId) {
+      attackerCardId = (decision.parameters?.cardId as string) ?? attackers[0]?._id;
     }
 
-    const attacker = myMonsters.find((m: MonsterCard) => m.boardIndex === attackerBoardIndex);
+    const attacker = myMonsters.find((m: BoardCard) => m._id === attackerCardId);
 
-    if (attackerBoardIndex === undefined) {
+    if (!attackerCardId) {
       logger.error("No valid attacker available");
       return false;
     }
 
     // Choose target - direct attack if no opponents, otherwise from decision or attack weakest
-    let targetBoardIndex = decision.parameters?.targetBoardIndex as number | undefined;
+    let targetCardId = decision.parameters?.targetCardId as string | undefined;
 
-    if (targetBoardIndex === undefined && oppMonsters.length > 0) {
-      // Attack the weakest face-up opponent monster
-      const faceUpOpp = oppMonsters.filter(
-        (m: MonsterCard) => m.faceUp !== false && m.position !== "facedown"
-      );
+    if (!targetCardId && oppMonsters.length > 0) {
+      const faceUpOpp = oppMonsters.filter((m: BoardCard) => !m.isFaceDown);
       if (faceUpOpp.length > 0) {
-        const weakest = faceUpOpp.reduce((min: MonsterCard, m: MonsterCard) =>
-          (m.position === "attack" ? (m.atk ?? 0) : (m.def ?? 0)) <
-          (min.position === "attack" ? (min.atk ?? 0) : (min.def ?? 0))
+        const weakest = faceUpOpp.reduce((min: BoardCard, m: BoardCard) =>
+          (m.position === 1 ? (m.attack ?? 0) : (m.defense ?? 0)) <
+          (min.position === 1 ? (min.attack ?? 0) : (min.defense ?? 0))
             ? m
             : min
         );
-        targetBoardIndex = weakest.boardIndex;
+        targetCardId = weakest._id;
       }
     }
 
     try {
       await this.client?.attack({
         gameId,
-        attackerBoardIndex,
-        targetBoardIndex, // undefined = direct attack
+        attackerCardId: attackerCardId!,
+        targetCardId,
       });
 
       logger.info(
-        { attacker: attacker?.name, target: targetBoardIndex !== undefined ? "monster" : "direct" },
+        { attacker: attacker?.name, target: targetCardId ? "monster" : "direct" },
         "Executed attack"
       );
       return true;
@@ -1438,29 +1457,30 @@ Choose wisely!`;
     decision: ActionDecision,
     context: TurnContext
   ): Promise<boolean> {
-    const myMonsters = context.gameState.hostPlayer?.monsterZone ?? [];
-    const changeable = myMonsters.filter((m: MonsterCard) => m.canChangePosition);
+    const myMonsters = context.gameState.myBoard ?? [];
+    const changeable = myMonsters.filter(
+      (m: BoardCard) => !m.hasChangedPosition && !m.hasAttacked
+    );
 
     if (changeable.length === 0) return false;
 
-    let boardIndex = decision.parameters?.boardIndex as number | undefined;
-    if (boardIndex === undefined) {
-      boardIndex = changeable[0]?.boardIndex;
+    let cardId = decision.parameters?.cardId as string | undefined;
+    if (!cardId) {
+      cardId = changeable[0]?._id;
     }
 
-    if (boardIndex === undefined) {
+    if (!cardId) {
       logger.error("No valid monster to change position");
       return false;
     }
 
-    const monster = myMonsters.find((m: MonsterCard) => m.boardIndex === boardIndex);
-    const newPosition = monster?.position === "attack" ? "defense" : "attack";
+    const monster = myMonsters.find((m: BoardCard) => m._id === cardId);
+    const newPosition = monster?.position === 1 ? "defense" : "attack";
 
     try {
       await this.client?.changePosition({
         gameId,
-        boardIndex,
-        newPosition,
+        cardId,
       });
 
       logger.info({ monster: monster?.name, newPosition }, "Changed position");
@@ -1479,27 +1499,28 @@ Choose wisely!`;
     decision: ActionDecision,
     context: TurnContext
   ): Promise<boolean> {
-    const myMonsters = context.gameState.hostPlayer?.monsterZone ?? [];
-    const faceDown = myMonsters.filter((m: MonsterCard) => m.position === "facedown");
+    const myMonsters = context.gameState.myBoard ?? [];
+    const faceDown = myMonsters.filter((m: BoardCard) => m.isFaceDown === true);
 
     if (faceDown.length === 0) return false;
 
-    let boardIndex = decision.parameters?.boardIndex as number | undefined;
-    if (boardIndex === undefined) {
-      boardIndex = faceDown[0]?.boardIndex;
+    let cardId = decision.parameters?.cardId as string | undefined;
+    if (!cardId) {
+      cardId = faceDown[0]?._id;
     }
 
-    if (boardIndex === undefined) {
+    if (!cardId) {
       logger.error("No valid face-down monster to flip summon");
       return false;
     }
 
-    const monster = myMonsters.find((m: MonsterCard) => m.boardIndex === boardIndex);
+    const monster = myMonsters.find((m: BoardCard) => m._id === cardId);
 
     try {
       await this.client?.flipSummon({
         gameId,
-        boardIndex,
+        cardId,
+        newPosition: "attack",
       });
 
       logger.info({ monster: monster?.name }, "Flip summoned");
@@ -1541,29 +1562,29 @@ Choose wisely!`;
 
       // Check if we have any cards that can chain
       const hand = gameState.hand ?? [];
-      const chainableSpells = hand.filter((c: CardInHand) => c.type === "spell");
+      const chainableSpells = hand.filter((c: CardInHand) => c.cardType === "spell");
 
       const setTraps =
         gameState.hostPlayer?.spellTrapZone?.filter(
-          (c: SpellTrapCard) => !c.faceUp && c.type === "trap"
+          (c) => !c.faceUp && c.type === "trap"
         ) ?? [];
 
       const hasChainOption = chainableSpells.length > 0 || setTraps.length > 0;
 
       if (!hasChainOption) {
         // No chain options, pass
-        await this.client.chainResponse({ gameId, respond: false });
+        await this.client.chainResponse({ gameId, pass: true });
         logger.info("Passed chain (no options)");
         return;
       }
 
       // Ask LLM if we should chain
       const prompt = `An opponent's effect is resolving. You can chain with:
-${chainableSpells.map((c: CardInHand) => `- ${c.name} (Spell) [handIndex: ${c.handIndex}]`).join("\n")}
-${setTraps.map((c: SpellTrapCard) => `- ${c.name} (Trap) [boardIndex: ${c.boardIndex}]`).join("\n")}
+${chainableSpells.map((c: CardInHand) => `- ${c.name} (Spell) [cardId: ${c._id}]`).join("\n")}
+${setTraps.map((c) => `- ${c.name} (Trap) [cardId: ${c.cardId}]`).join("\n")}
 
 Should you chain? Consider the strategic value.
-Respond with JSON: {"chain": true/false, "handIndex": number OR "boardIndex": number}`;
+Respond with JSON: {"chain": true/false, "cardId": "card_id"}`;
 
       const response = await this.runtime.useModel(ModelType.TEXT_SMALL, {
         prompt,
@@ -1578,9 +1599,8 @@ Respond with JSON: {"chain": true/false, "handIndex": number OR "boardIndex": nu
           if (parsed.chain) {
             await this.client.chainResponse({
               gameId,
-              respond: true,
-              handIndex: parsed.handIndex,
-              boardIndex: parsed.boardIndex,
+              pass: false,
+              cardId: parsed.cardId,
             });
             logger.info("Activated chain");
             return;
@@ -1590,7 +1610,7 @@ Respond with JSON: {"chain": true/false, "handIndex": number OR "boardIndex": nu
         // Parse failed, pass
       }
 
-      await this.client.chainResponse({ gameId, respond: false });
+      await this.client.chainResponse({ gameId, pass: true });
       logger.info("Passed chain");
     } catch (error) {
       logger.error({ error }, "Chain response failed");

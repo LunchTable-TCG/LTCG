@@ -41,15 +41,15 @@ User/Agent → API Routes → LiveKit Egress → Overlay Page → RTMP → Twitc
 NEXT_PUBLIC_APP_URL=https://lunchtable.cards
 
 # LiveKit Cloud
-LIVEKIT_URL=wss://lunchtable-rb51owhu.livekit.cloud
-LIVEKIT_API_KEY=APIVQCZkSrK2bLR
-LIVEKIT_API_SECRET=MUNC3YyvHUQpwFDMnhJTYeVHBSNSlCYElzbblonm3YH
+LIVEKIT_URL=wss://<your-livekit-project>.livekit.cloud
+LIVEKIT_API_KEY=<your-livekit-api-key>
+LIVEKIT_API_SECRET=<your-livekit-api-secret>
 
 # Encryption (32-byte hex)
-STREAM_KEY_ENCRYPTION_KEY=dbf5d139f131ce6dcfbe510876ca3efa9d21ee202eec922d492d4ffb07d34164
+STREAM_KEY_ENCRYPTION_KEY=<64-char-hex-key>
 
 # JWT for overlay authentication
-STREAMING_JWT_SECRET=5O4NWHH3R+Ls38Tk4oGisz7DoohU8ZT2BecINpqwuiY=
+STREAMING_JWT_SECRET=<base64-jwt-secret>
 ```
 
 ### LiveKit Dashboard Configuration

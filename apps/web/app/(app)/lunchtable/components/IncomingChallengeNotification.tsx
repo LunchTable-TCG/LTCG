@@ -2,6 +2,7 @@
 
 import { useGameLobby } from "@/hooks/game/useGameLobby";
 import { cn } from "@/lib/utils";
+import { formatWagerAmount } from "@/lib/wagerTiers";
 import { api } from "@convex/_generated/api";
 import { useMutation } from "convex/react";
 import { Check, Coins, Loader2, Swords, X } from "lucide-react";
@@ -65,6 +66,51 @@ export function IncomingChallengeNotification() {
   const rankColor = RANK_COLORS[incomingChallenge.hostRank] || "text-[#e8e0d5]";
   const modeLabel = incomingChallenge.mode === "ranked" ? "Ranked" : "Casual";
 
+  // Determine wager type and formatting
+  const hasCryptoWager =
+    incomingChallenge.cryptoWagerCurrency && incomingChallenge.cryptoWagerTier !== undefined;
+  const hasGoldWager = incomingChallenge.wagerAmount && incomingChallenge.wagerAmount > 0;
+  const hasAnyWager = hasCryptoWager || hasGoldWager;
+
+  let wagerBadgeContent: React.ReactNode = null;
+  let wagerText = "challenges you to battle!";
+
+  if (
+    hasCryptoWager &&
+    incomingChallenge.cryptoWagerCurrency &&
+    incomingChallenge.cryptoWagerTier !== undefined
+  ) {
+    const formattedWager = formatWagerAmount(
+      incomingChallenge.cryptoWagerTier,
+      incomingChallenge.cryptoWagerCurrency
+    );
+    const badgeClasses =
+      incomingChallenge.cryptoWagerCurrency === "sol"
+        ? "bg-purple-500/20 text-purple-300"
+        : "bg-blue-500/20 text-blue-300";
+
+    wagerBadgeContent = (
+      <span
+        className={cn(
+          "flex items-center gap-1 text-xs font-bold uppercase px-2 py-0.5 rounded",
+          badgeClasses
+        )}
+      >
+        <Coins className="w-3 h-3" />
+        {incomingChallenge.cryptoWagerTier}
+      </span>
+    );
+    wagerText = `wagers ${formattedWager}!`;
+  } else if (hasGoldWager && incomingChallenge.wagerAmount) {
+    wagerBadgeContent = (
+      <span className="flex items-center gap-1 text-xs font-bold uppercase px-2 py-0.5 rounded bg-[#d4af37]/20 text-[#d4af37]">
+        <Coins className="w-3 h-3" />
+        {incomingChallenge.wagerAmount.toLocaleString()}
+      </span>
+    );
+    wagerText = `wagers ${incomingChallenge.wagerAmount.toLocaleString()} gold!`;
+  }
+
   return (
     <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
       <div className="relative px-6 py-4 rounded-xl bg-gradient-to-br from-[#2a1f1a] via-[#1f1714] to-[#1a1311] border-2 border-[#d4af37]/60 shadow-[0_0_30px_rgba(212,175,55,0.3)]">
@@ -84,7 +130,7 @@ export function IncomingChallengeNotification() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-[#d4af37] uppercase tracking-wider">
-                {incomingChallenge.wagerAmount ? "Wager Challenge!" : "Challenge Received!"}
+                {hasAnyWager ? "Wager Challenge!" : "Challenge Received!"}
               </span>
               <span
                 className={cn(
@@ -96,23 +142,14 @@ export function IncomingChallengeNotification() {
               >
                 {modeLabel}
               </span>
-              {incomingChallenge.wagerAmount && incomingChallenge.wagerAmount > 0 && (
-                <span className="flex items-center gap-1 text-xs font-bold uppercase px-2 py-0.5 rounded bg-[#d4af37]/20 text-[#d4af37]">
-                  <Coins className="w-3 h-3" />
-                  {incomingChallenge.wagerAmount.toLocaleString()}
-                </span>
-              )}
+              {wagerBadgeContent}
             </div>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[#e8e0d5] font-bold">{incomingChallenge.hostUsername}</span>
               <span className={cn("text-sm font-semibold", rankColor)}>
                 ({incomingChallenge.hostRank})
               </span>
-              <span className="text-[#a89f94] text-sm">
-                {incomingChallenge.wagerAmount && incomingChallenge.wagerAmount > 0
-                  ? `wagers ${incomingChallenge.wagerAmount.toLocaleString()} gold!`
-                  : "challenges you to battle!"}
-              </span>
+              <span className="text-[#a89f94] text-sm">{wagerText}</span>
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useUserStreams, useAgentStreams } from "@/hooks/useStreaming";
+import { useAgentStreams, useUserStreams } from "@/hooks/useStreaming";
 import Link from "next/link";
 
 interface StreamStatusWidgetProps {
@@ -13,7 +13,11 @@ interface StreamStatusWidgetProps {
  * Compact widget showing stream status
  * Can be placed in navbar, header, or sidebar
  */
-export function StreamStatusWidget({ userId, agentId, variant = "minimal" }: StreamStatusWidgetProps) {
+export function StreamStatusWidget({
+  userId,
+  agentId,
+  variant = "minimal",
+}: StreamStatusWidgetProps) {
   const { activeSession: userStream } = useUserStreams(userId);
   const { activeSession: agentStream } = useAgentStreams(agentId);
 
@@ -106,7 +110,8 @@ export function StreamStatusWidget({ userId, agentId, variant = "minimal" }: Str
         <p className="stream-title">{activeStream.streamTitle}</p>
         {isLive && (
           <p className="viewer-count">
-            👁️ {activeStream.viewerCount || 0} {activeStream.viewerCount === 1 ? "viewer" : "viewers"}
+            👁️ {activeStream.viewerCount || 0}{" "}
+            {activeStream.viewerCount === 1 ? "viewer" : "viewers"}
           </p>
         )}
       </div>

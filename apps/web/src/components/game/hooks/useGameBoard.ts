@@ -111,6 +111,16 @@ interface GameState {
   opponentMana: number;
   mode: string;
   lastMoveAt: number;
+  responseWindow?: {
+    type: string;
+    triggerPlayerId: Id<"users">;
+    activePlayerId: Id<"users">;
+    canRespond: boolean;
+    chainOpen: boolean;
+    passCount: number;
+    createdAt: number;
+    expiresAt?: number;
+  };
 }
 
 interface AvailableActions {
@@ -388,7 +398,12 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   const advancePhaseMutation = useConvexMutation(typedApi.gameplay.phaseManager.advancePhase);
   const endTurnMutation = useConvexMutation(typedApi.gameplay.gameEngine.turns.endTurn);
   const surrenderGameMutation = useConvexMutation(typedApi.gameplay.games.lifecycle.surrenderGame);
-  const declareAttackMutation = useConvexMutation(typedApi.gameplay.combatSystem.declareAttack);
+  const declareAttackMutation = useConvexMutation(
+    typedApi.gameplay.combatSystem.declareAttackWithResponse
+  );
+  const passResponseWindowMutation = useConvexMutation(
+    typedApi.gameplay.combatSystem.passResponseWindowPriority
+  );
 
   // ==========================================================================
   // Actions
@@ -585,6 +600,16 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
     [activateMonsterEffectMutation, lobbyId]
   );
 
+  const passResponseWindow = useCallback(async () => {
+    try {
+      await passResponseWindowMutation({ lobbyId });
+      return { success: true };
+    } catch (error) {
+      console.error("Pass response window failed:", error);
+      return { success: false, error: String(error) };
+    }
+  }, [passResponseWindowMutation, lobbyId]);
+
   const respondToChain = useCallback(
     async (response: "pass" | { cardId: Id<"cardDefinitions">; effectIndex: number }) => {
       try {
@@ -740,6 +765,18 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         cardId: card._id,
         name: card.name,
         imageUrl: card.imageUrl,
+        cardType: card.cardType,
+        rarity: card.rarity,
+        archetype: card.archetype,
+        monsterStats:
+          card.cardType === "creature"
+            ? {
+                attack: card.attack,
+                defense: card.defense,
+                level: card.cost || 0,
+              }
+            : undefined,
+        effects: getCardEffectsArray(card.ability),
         isFaceDown: false,
       })),
       graveyardCount: gameState.myGraveyard.length,
@@ -810,6 +847,18 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         cardId: card._id,
         name: card.name,
         imageUrl: card.imageUrl,
+        cardType: card.cardType,
+        rarity: card.rarity,
+        archetype: card.archetype,
+        monsterStats:
+          card.cardType === "creature"
+            ? {
+                attack: card.attack,
+                defense: card.defense,
+                level: card.cost || 0,
+              }
+            : undefined,
+        effects: getCardEffectsArray(card.ability),
         isFaceDown: false,
       })),
       graveyardCount: gameState.opponentGraveyard.length,
@@ -986,6 +1035,13 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
           canRespond: chainState.priorityPlayer === currentPlayerId,
         }
       : undefined,
+    responseWindow: gameState?.responseWindow,
+    battleSubPhase:
+      gameState?.responseWindow?.type === "attack_declaration"
+        ? ("battle_step" as const)
+        : gameState?.responseWindow?.type === "damage_calculation"
+          ? ("damage_step" as const)
+          : undefined,
 
     // Computed
     isLoading,
@@ -1011,6 +1067,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
     activateTrap,
     activateMonsterEffect,
     respondToChain,
+    passResponseWindow,
   };
 }
 

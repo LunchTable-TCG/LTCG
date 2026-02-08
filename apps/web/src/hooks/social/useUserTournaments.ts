@@ -11,7 +11,9 @@ import { useAuth } from "../auth/useConvexAuthHook";
 // TYPES
 // ============================================================================
 
-export type TournamentVisibility = "public" | "private";
+import type { Visibility } from "@/types/common";
+export type { Visibility as TournamentVisibility } from "@/types/common";
+type TournamentVisibility = Visibility;
 export type TournamentMode = "ranked" | "casual";
 export type TournamentSize = 4 | 8 | 16 | 32;
 

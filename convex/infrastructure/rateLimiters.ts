@@ -33,6 +33,12 @@ export const chatRateLimiter = new RateLimiter(components.ratelimiter, {
     period: 10000, // per 10 seconds
     capacity: 5, // no burst capacity
   },
+  sendGuildMessage: {
+    kind: "token bucket",
+    rate: 5, // 5 messages
+    period: 10000, // per 10 seconds
+    capacity: 5, // no burst capacity
+  },
 });
 
 /**
@@ -133,15 +139,17 @@ export const adminRateLimiter = new RateLimiter(components.ratelimiter, {
  * Returns true if rate limit allows the operation, false if limit exceeded
  */
 export async function checkRateLimit(
-  ctx: any,
-  limiter: RateLimiter<any>,
+  ctx: unknown,
+  limiter: {
+    limit: (ctx: unknown, operation: string, options: { key: string }) => Promise<unknown>;
+  },
   operation: string,
   userId: string
 ): Promise<boolean> {
   try {
     await limiter.limit(ctx, operation, { key: userId });
     return true;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

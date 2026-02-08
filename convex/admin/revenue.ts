@@ -408,18 +408,17 @@ export const getCurrencyCirculation = query({
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "admin");
 
-    // Get all users with balances
-    const users = await ctx.db.query("users").collect();
+    // Get all currency balances from playerCurrency (single source of truth)
+    const currencies = await ctx.db.query("playerCurrency").collect();
 
-    const totalGold = users.reduce((sum, u) => sum + (u.gold || 0), 0);
-    // Note: gems are not stored on users table directly, tracked via transactions
-    const totalGems = 0;
+    const totalGold = currencies.reduce((sum, c) => sum + (c.gold || 0), 0);
+    const totalGems = currencies.reduce((sum, c) => sum + (c.gems || 0), 0);
 
-    const usersWithGold = users.filter((u) => (u.gold || 0) > 0).length;
-    const usersWithGems = 0;
+    const usersWithGold = currencies.filter((c) => (c.gold || 0) > 0).length;
+    const usersWithGems = currencies.filter((c) => (c.gems || 0) > 0).length;
 
-    const avgGold = users.length > 0 ? totalGold / users.length : 0;
-    const avgGems = 0;
+    const avgGold = currencies.length > 0 ? totalGold / currencies.length : 0;
+    const avgGems = currencies.length > 0 ? totalGems / currencies.length : 0;
 
     // Get recent transactions for flow analysis
     const now = Date.now();
@@ -464,7 +463,7 @@ export const getCurrencyCirculation = query({
         outflowToday: gemsOutflow,
         netFlowToday: gemsInflow - gemsOutflow,
       },
-      totalUsers: users.length,
+      totalUsers: currencies.length,
     };
   },
 });

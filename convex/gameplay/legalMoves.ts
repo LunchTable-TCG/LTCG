@@ -200,7 +200,13 @@ export const getLegalMoves = query({
         // Check each monster on board
         for (const boardCard of myBoard) {
           // Can only attack with face-up Attack Position monsters that haven't attacked
-          if (boardCard.position !== 1 || boardCard.hasAttacked || boardCard.isFaceDown) {
+          // and weren't summoned this turn (summoning sickness)
+          if (
+            boardCard.position !== 1 ||
+            boardCard.hasAttacked ||
+            boardCard.isFaceDown ||
+            boardCard.turnSummoned === gameState.turnNumber
+          ) {
             continue;
           }
 

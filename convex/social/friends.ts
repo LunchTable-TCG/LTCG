@@ -8,8 +8,10 @@ const internal = (generatedApi as any).internal;
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { socialRateLimiter } from "../infrastructure/rateLimiters";
+import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { getNotificationSetting, getPrivacySetting } from "../lib/preferenceHelpers";
 import { checkRateLimitWrapper } from "../lib/rateLimit";
 
 // Email action references - extracted to module level for consistency
@@ -94,6 +96,24 @@ export const sendFriendRequest = mutation({
           });
         }
 
+        // Track achievement progress for both users
+        await ctx.scheduler.runAfter(
+          0,
+          internal.progression.achievements.updateAchievementProgress,
+          {
+            userId,
+            event: { type: "add_friend", value: 1 },
+          }
+        );
+        await ctx.scheduler.runAfter(
+          0,
+          internal.progression.achievements.updateAchievementProgress,
+          {
+            userId: friend._id,
+            event: { type: "add_friend", value: 1 },
+          }
+        );
+
         return { success: true, autoAccepted: true };
       }
       if (existingFriendship.status === "blocked") {
@@ -108,6 +128,12 @@ export const sendFriendRequest = mutation({
       .first();
 
     if (blockedByFriend && blockedByFriend.status === "blocked") {
+      throw createError(ErrorCode.SOCIAL_USER_BLOCKED);
+    }
+
+    // Check if the target user allows friend requests
+    const allowsFriendRequests = await getPrivacySetting(ctx, friend._id, "allowFriendRequests");
+    if (!allowsFriendRequests) {
       throw createError(ErrorCode.SOCIAL_USER_BLOCKED);
     }
 
@@ -129,10 +155,11 @@ export const sendFriendRequest = mutation({
       createdAt: Date.now(),
     });
 
-    // Send email notification to the friend
+    // Send notifications to the friend (if they have friendRequests notifications enabled)
     const sender = await ctx.db.get(userId);
+    const wantsFriendNotifs = await getNotificationSetting(ctx, friend._id, "friendRequests");
 
-    if (friend.email && sender) {
+    if (wantsFriendNotifs && friend.email && sender) {
       await scheduleEmail(ctx, emailActions.sendFriendRequestNotification, {
         email: friend.email,
         username: friend.username || friend.name || "Player",
@@ -140,8 +167,7 @@ export const sendFriendRequest = mutation({
       });
     }
 
-    // Send inbox notification to the friend
-    if (sender) {
+    if (wantsFriendNotifs && sender) {
       await ctx.scheduler.runAfter(0, internal.social.inbox.createInboxMessage, {
         userId: friend._id,
         type: "friend_request" as const,
@@ -216,6 +242,35 @@ export const acceptFriendRequest = mutation({
       await ctx.db.patch(reciprocalFriendship._id, {
         status: "accepted",
         respondedAt: Date.now(),
+      });
+    }
+
+    // Track achievement progress for both users
+    await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
+      userId,
+      event: { type: "add_friend", value: 1 },
+    });
+    await ctx.scheduler.runAfter(0, internal.progression.achievements.updateAchievementProgress, {
+      userId: args.friendId,
+      event: { type: "add_friend", value: 1 },
+    });
+
+    // Notify the requester that their friend request was accepted (if they have friendRequests notifications enabled)
+    const accepter = await ctx.db.get(userId);
+    const wantsFriendNotifs = await getNotificationSetting(ctx, args.friendId, "friendRequests");
+    if (wantsFriendNotifs) {
+      await ctx.runMutation(internal.social.inbox.createInboxMessage, {
+        userId: args.friendId,
+        type: "friend_request",
+        title: "Friend Request Accepted",
+        message: `${accepter?.username || "Someone"} accepted your friend request!`,
+        data: {
+          requesterId: userId,
+          requesterUsername: accepter?.username || "Unknown",
+          status: "accepted",
+        },
+        senderId: userId,
+        senderUsername: accepter?.username,
       });
     }
 
@@ -505,6 +560,32 @@ export const getFriends = query({
         .map((p) => [p.userId, p])
     );
 
+    // Batch fetch playerXP records for level data
+    const xpRecords = await Promise.all(
+      friendIds.map((friendId) =>
+        ctx.db
+          .query("playerXP")
+          .withIndex("by_user", (q) => q.eq("userId", friendId))
+          .first()
+      )
+    );
+    const xpMap = new Map(
+      xpRecords.filter((x): x is NonNullable<typeof x> => x !== null).map((x) => [x.userId, x])
+    );
+
+    // Batch fetch userPreferences to check showOnlineStatus privacy
+    const prefRecords = await Promise.all(
+      friendIds.map((friendId) =>
+        ctx.db
+          .query("userPreferences")
+          .withIndex("by_user", (q) => q.eq("userId", friendId))
+          .first()
+      )
+    );
+    const prefMap = new Map(
+      prefRecords.filter((p): p is NonNullable<typeof p> => p !== null).map((p) => [p.userId, p])
+    );
+
     // Join data from Maps
     const friends = friendships
       .map((friendship) => {
@@ -512,13 +593,16 @@ export const getFriends = query({
         if (!friend) return null;
 
         const presence = presenceMap.get(friendship.friendId);
-        const isOnline = presence && Date.now() - presence.lastActiveAt < 120000; // 2 minutes
+        const friendPrefs = prefMap.get(friendship.friendId);
+        const showsOnline = friendPrefs?.privacy?.showOnlineStatus ?? true;
+        const isOnline = showsOnline && presence && Date.now() - presence.lastActiveAt < 120000; // 2 minutes
 
         return {
           userId: friend._id,
           username: friend.username,
-          level: friend.level || 1,
-          rankedElo: friend.rankedElo || 1000,
+          image: friend.image,
+          level: xpMap.get(friendship.friendId)?.currentLevel ?? 1,
+          rankedElo: friend.rankedElo || ELO_SYSTEM.DEFAULT_RATING,
           isOnline,
           friendsSince: friendship.createdAt,
           lastInteraction: friendship.lastInteraction,
@@ -527,6 +611,7 @@ export const getFriends = query({
       .filter((f) => f !== null) as Array<{
       userId: Id<"users">;
       username: string | undefined;
+      image: string | undefined;
       level: number;
       rankedElo: number;
       isOnline: boolean;
@@ -564,11 +649,17 @@ export const getIncomingRequests = query({
         const requester = await ctx.db.get(friendship.friendId);
         if (!requester) return null;
 
+        const xpRecord = await ctx.db
+          .query("playerXP")
+          .withIndex("by_user", (q) => q.eq("userId", friendship.friendId))
+          .first();
+
         return {
           userId: requester._id,
           username: requester.username,
-          level: requester.level || 1,
-          rankedElo: requester.rankedElo || 1000,
+          image: requester.image,
+          level: xpRecord?.currentLevel ?? 1,
+          rankedElo: requester.rankedElo || ELO_SYSTEM.DEFAULT_RATING,
           requestedAt: friendship.createdAt,
         };
       })
@@ -577,6 +668,7 @@ export const getIncomingRequests = query({
     return requests.filter((r) => r !== null) as Array<{
       userId: Id<"users">;
       username: string | undefined;
+      image: string | undefined;
       level: number;
       rankedElo: number;
       requestedAt: number;
@@ -610,11 +702,17 @@ export const getOutgoingRequests = query({
         const friend = await ctx.db.get(friendship.friendId);
         if (!friend) return null;
 
+        const xpRecord = await ctx.db
+          .query("playerXP")
+          .withIndex("by_user", (q) => q.eq("userId", friendship.friendId))
+          .first();
+
         return {
           userId: friend._id,
           username: friend.username,
-          level: friend.level || 1,
-          rankedElo: friend.rankedElo || 1000,
+          image: friend.image,
+          level: xpRecord?.currentLevel ?? 1,
+          rankedElo: friend.rankedElo || ELO_SYSTEM.DEFAULT_RATING,
           requestedAt: friendship.createdAt,
         };
       })
@@ -623,6 +721,7 @@ export const getOutgoingRequests = query({
     return requests.filter((r) => r !== null) as Array<{
       userId: Id<"users">;
       username: string | undefined;
+      image: string | undefined;
       level: number;
       rankedElo: number;
       requestedAt: number;
@@ -770,8 +869,8 @@ export const getPlayerCardData = query({
       bio: user.bio,
       createdAt: user.createdAt,
       level: playerXP?.currentLevel ?? 1, // Read from playerXP, fallback to default
-      rankedElo: user.rankedElo ?? 1000,
-      casualRating: user.casualRating ?? 1000,
+      rankedElo: user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING,
+      casualRating: user.casualRating ?? ELO_SYSTEM.DEFAULT_RATING,
       totalWins: user.totalWins ?? 0,
       totalLosses: user.totalLosses ?? 0,
       isAiAgent: user.isAiAgent ?? false,
@@ -832,7 +931,7 @@ export const searchUsers = query({
           userId: user._id,
           username: user.username,
           level: playerXP?.currentLevel ?? 1, // Read from playerXP, fallback to default
-          rankedElo: user.rankedElo || 1000,
+          rankedElo: user.rankedElo || ELO_SYSTEM.DEFAULT_RATING,
           friendshipStatus: friendship?.status || null,
           isSentRequest: friendship?.requestedBy === userId,
         };

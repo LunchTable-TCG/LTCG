@@ -10,6 +10,7 @@ import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { mutation } from "../functions";
+import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { scheduleAuditLog } from "../lib/internalHelpers";
@@ -795,7 +796,9 @@ export const grantTournamentEntry = mutation({
     const now = Date.now();
     const username = user.username || user.name || "Unknown";
     const rating =
-      tournament.mode === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
+      tournament.mode === "ranked"
+        ? user.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+        : user.casualRating || ELO_SYSTEM.DEFAULT_RATING;
 
     // Create participant record (no entry fee charged)
     const participantId = await ctx.db.insert("tournamentParticipants", {

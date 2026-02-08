@@ -2,6 +2,8 @@
 
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError } from "@/lib/errorHandling";
+import type { MatchMode } from "@/types/common";
+import type { WagerCurrency } from "@/lib/wagerTiers";
 import type { Id } from "@convex/_generated/dataModel";
 import { toast } from "sonner";
 
@@ -60,6 +62,8 @@ interface IncomingChallenge {
   mode: string;
   createdAt: number;
   wagerAmount?: number;
+  cryptoWagerCurrency?: WagerCurrency;
+  cryptoWagerTier?: number;
 }
 
 interface UseGameLobbyReturn {
@@ -70,7 +74,7 @@ interface UseGameLobbyReturn {
   isLoading: boolean;
   hasActiveLobby: boolean;
   createLobby: (
-    mode: "casual" | "ranked",
+    mode: MatchMode,
     isPrivate?: boolean,
     spectatorOptions?: { allowSpectators?: boolean; maxSpectators?: number }
   ) => Promise<CreateLobbyResult>;
@@ -147,7 +151,7 @@ export function useGameLobby(): UseGameLobbyReturn {
 
   // Actions
   const createLobby = async (
-    mode: "casual" | "ranked",
+    mode: MatchMode,
     isPrivate = false,
     spectatorOptions?: { allowSpectators?: boolean; maxSpectators?: number }
   ) => {

@@ -6,13 +6,22 @@
 
 import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { internalAction, internalMutation, mutation, query } from "../_generated/server";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 
-// @ts-ignore TS2589 workaround for deep type instantiation
-const internalAny: any = internal;
+import { streamingPlatformValidator } from "../lib/streamingPlatforms";
 
-const streamingPlatformValidator = literals("twitch", "youtube", "custom", "retake", "x", "pumpfun");
+function hasValidInternalAuth(internalAuth?: string): boolean {
+  const expectedSecret = process.env["INTERNAL_API_SECRET"]?.trim();
+  const providedSecret = internalAuth?.trim();
+  if (!expectedSecret || !providedSecret) {
+    return false;
+  }
+  return expectedSecret === providedSecret;
+}
 
 /**
  * Configure streaming settings for an agent
@@ -25,6 +34,13 @@ export const configureAgentStreaming = mutation({
     streamKeyHash: v.optional(v.string()),
     rtmpUrl: v.optional(v.string()),
     autoStart: v.optional(v.boolean()),
+    keepAlive: v.optional(v.boolean()),
+    voiceTrackUrl: v.optional(v.string()),
+    voiceVolume: v.optional(v.number()),
+    voiceLoop: v.optional(v.boolean()),
+    visualMode: v.optional(literals("webcam", "profile-picture")),
+    profilePictureUrl: v.optional(v.string()),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const agent = await ctx.db.get(args.agentId);
@@ -32,13 +48,32 @@ export const configureAgentStreaming = mutation({
       throw new Error("Agent not found");
     }
 
+    if (!hasValidInternalAuth(args.internalAuth)) {
+      const auth = await requireAuthMutation(ctx);
+      if (agent.userId !== auth.userId) {
+        throw new Error("Unauthorized to configure this agent");
+      }
+    }
+
     // Update agent with streaming config
     await ctx.db.patch(args.agentId, {
       streamingEnabled: args.enabled,
-      streamingPlatform: args.platform,
-      streamingKeyHash: args.streamKeyHash,
-      streamingRtmpUrl: args.rtmpUrl,
+      ...(args.platform !== undefined ? { streamingPlatform: args.platform } : {}),
+      ...(args.streamKeyHash !== undefined ? { streamingKeyHash: args.streamKeyHash } : {}),
+      ...(args.rtmpUrl !== undefined ? { streamingRtmpUrl: args.rtmpUrl } : {}),
       streamingAutoStart: args.autoStart ?? true,
+      streamingPersistent: args.enabled ? (args.keepAlive ?? true) : false,
+      ...(args.voiceTrackUrl !== undefined
+        ? { streamingVoiceTrackUrl: args.voiceTrackUrl.trim() || undefined }
+        : {}),
+      ...(args.voiceVolume !== undefined
+        ? { streamingVoiceVolume: Math.max(0, Math.min(1, args.voiceVolume)) }
+        : {}),
+      ...(args.voiceLoop !== undefined ? { streamingVoiceLoop: args.voiceLoop } : {}),
+      ...(args.visualMode !== undefined ? { streamingVisualMode: args.visualMode } : {}),
+      ...(args.profilePictureUrl !== undefined
+        ? { streamingProfilePictureUrl: args.profilePictureUrl.trim() || undefined }
+        : {}),
     });
 
     return { success: true };
@@ -51,15 +86,103 @@ export const configureAgentStreaming = mutation({
 export const getAgentStreamingConfig = query({
   args: { agentId: v.id("agents") },
   handler: async (ctx, args) => {
+    const auth = await requireAuthQuery(ctx);
+    const agent = await ctx.db.get(args.agentId);
+    if (!agent) return null;
+
+    if (agent.userId !== auth.userId) {
+      return null;
+    }
+
+    return {
+      enabled: agent.streamingEnabled ?? false,
+      platform: agent.streamingPlatform ?? null,
+      hasStreamKey: Boolean(agent.streamingKeyHash),
+      rtmpUrl: agent.streamingRtmpUrl ?? null,
+      autoStart: agent.streamingAutoStart ?? false,
+      keepAlive: agent.streamingPersistent ?? true,
+      voiceTrackUrl: agent.streamingVoiceTrackUrl ?? null,
+      voiceVolume: agent.streamingVoiceVolume ?? null,
+      voiceLoop: agent.streamingVoiceLoop ?? false,
+      visualMode: agent.streamingVisualMode ?? "profile-picture",
+      profilePictureUrl: agent.streamingProfilePictureUrl ?? null,
+    };
+  },
+});
+
+/**
+ * Get streaming configuration for an agent (API key / internal auth).
+ * Used by the plugin to check if UI-configured streaming is available.
+ * Never returns plaintext stream key — only hasStreamKey boolean.
+ */
+export const getAgentStreamingConfigByAuth = query({
+  args: {
+    agentId: v.id("agents"),
+    internalAuth: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Validate auth: either internal auth or user auth
+    let isAuthorized = false;
+
+    if (args.internalAuth && hasValidInternalAuth(args.internalAuth)) {
+      isAuthorized = true;
+    } else {
+      try {
+        const auth = await requireAuthQuery(ctx);
+        const agent = await ctx.db.get(args.agentId);
+        if (agent && agent.userId === auth.userId) {
+          isAuthorized = true;
+        }
+      } catch {
+        // Not authenticated via user auth
+      }
+    }
+
+    if (!isAuthorized) {
+      return null;
+    }
+
     const agent = await ctx.db.get(args.agentId);
     if (!agent) return null;
 
     return {
       enabled: agent.streamingEnabled ?? false,
-      platform: agent.streamingPlatform,
-      autoStart: agent.streamingAutoStart ?? false,
+      platform: agent.streamingPlatform ?? null,
       hasStreamKey: Boolean(agent.streamingKeyHash),
-      hasRtmpUrl: Boolean(agent.streamingRtmpUrl),
+      rtmpUrl: agent.streamingRtmpUrl ?? null,
+      autoStart: agent.streamingAutoStart ?? false,
+      keepAlive: agent.streamingPersistent ?? true,
+      voiceTrackUrl: agent.streamingVoiceTrackUrl ?? null,
+      voiceVolume: agent.streamingVoiceVolume ?? null,
+      voiceLoop: agent.streamingVoiceLoop ?? false,
+      visualMode: agent.streamingVisualMode ?? "profile-picture",
+      profilePictureUrl: agent.streamingProfilePictureUrl ?? null,
+    };
+  },
+});
+
+/**
+ * Get agent's encrypted stream key hash (internal auth only).
+ * Used by /api/streaming/start when useStoredCredentials is true.
+ * The encrypted key is decrypted server-side in the API route — never exposed to clients.
+ */
+export const getAgentStreamKeyHash = query({
+  args: {
+    agentId: v.id("agents"),
+    internalAuth: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!hasValidInternalAuth(args.internalAuth)) {
+      return null;
+    }
+
+    const agent = await ctx.db.get(args.agentId);
+    if (!agent) return null;
+
+    return {
+      streamingKeyHash: agent.streamingKeyHash ?? null,
+      streamingRtmpUrl: agent.streamingRtmpUrl ?? null,
+      streamingPlatform: agent.streamingPlatform ?? null,
     };
   },
 });
@@ -89,13 +212,38 @@ export const autoStartAgentStream = internalMutation({
       return { started: false, reason: "autostart_disabled" };
     }
 
+    const existingLiveSession = await ctx.db
+      .query("streamingSessions")
+      .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId).eq("status", "live"))
+      .first();
+
+    if (existingLiveSession) {
+      await ctx.db.patch(existingLiveSession._id, {
+        currentLobbyId: args.lobbyId,
+      });
+      const lobby = await ctx.db.get(args.lobbyId);
+      if (lobby) {
+        await ctx.db.patch(args.lobbyId, {
+          isPrivate: false,
+          allowSpectators: true,
+        });
+      }
+      return { started: false, reason: "already_live_linked_to_lobby" };
+    }
+
     if (!agent.streamingPlatform || !agent.streamingKeyHash) {
       console.warn("Agent streaming not configured:", args.agentId);
       return { started: false, reason: "not_configured" };
     }
 
-    // X and Pump.fun require a custom RTMP URL
-    if ((agent.streamingPlatform === "x" || agent.streamingPlatform === "pumpfun") && !agent.streamingRtmpUrl) {
+    const requiresCustomRtmp =
+      agent.streamingPlatform === "custom" ||
+      agent.streamingPlatform === "retake" ||
+      agent.streamingPlatform === "x" ||
+      agent.streamingPlatform === "pumpfun";
+
+    // Providers with external ingest endpoints require a configured base RTMP URL.
+    if (requiresCustomRtmp && !agent.streamingRtmpUrl) {
       console.warn("Agent streaming requires RTMP URL for platform:", agent.streamingPlatform);
       return { started: false, reason: "rtmp_url_required" };
     }
@@ -108,6 +256,11 @@ export const autoStartAgentStream = internalMutation({
       platform: agent.streamingPlatform,
       streamKeyHash: agent.streamingKeyHash,
       customRtmpUrl: agent.streamingRtmpUrl,
+      voiceTrackUrl: agent.streamingVoiceTrackUrl,
+      voiceVolume: agent.streamingVoiceVolume,
+      voiceLoop: agent.streamingVoiceLoop ?? false,
+      visualMode: agent.streamingVisualMode ?? "profile-picture",
+      profilePictureUrl: agent.streamingProfilePictureUrl,
     });
 
     return { started: true };
@@ -124,6 +277,11 @@ export const triggerAgentStreamStart = internalAction({
     platform: streamingPlatformValidator,
     streamKeyHash: v.string(),
     customRtmpUrl: v.optional(v.string()),
+    voiceTrackUrl: v.optional(v.string()),
+    voiceVolume: v.optional(v.number()),
+    voiceLoop: v.optional(v.boolean()),
+    visualMode: v.optional(literals("webcam", "profile-picture")),
+    profilePictureUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // 1. Get agent info
@@ -137,14 +295,18 @@ export const triggerAgentStreamStart = internalAction({
     }
 
     // 2. Call streaming API
-    const baseUrl = process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3000";
+    const baseUrl = process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3333";
+    const internalAuthSecret = process.env["INTERNAL_API_SECRET"];
+    if (!internalAuthSecret) {
+      throw new Error("INTERNAL_API_SECRET is required");
+    }
 
     try {
       const response = await fetch(`${baseUrl}/api/streaming/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-Auth": process.env["INTERNAL_API_SECRET"]!,
+          "X-Internal-Auth": internalAuthSecret,
         },
         body: JSON.stringify({
           agentId: args.agentId,
@@ -153,6 +315,23 @@ export const triggerAgentStreamStart = internalAction({
           streamKeyHash: args.streamKeyHash, // API will decrypt
           customRtmpUrl: args.customRtmpUrl,
           streamTitle: `${agent.name} - LTCG Tournament`,
+          overlayConfig: {
+            showDecisions: true,
+            showAgentInfo: true,
+            showEventFeed: true,
+            showPlayerCam: (args.visualMode ?? "profile-picture") === "profile-picture",
+            webcamPosition: "bottom-right",
+            webcamSize: "medium",
+            playerVisualMode: args.visualMode ?? "profile-picture",
+            profilePictureUrl: args.profilePictureUrl,
+            matchOverHoldMs: 45000,
+            showSceneLabel: true,
+            sceneTransitions: true,
+            voiceTrackUrl: args.voiceTrackUrl,
+            voiceVolume: args.voiceVolume,
+            voiceLoop: args.voiceLoop ?? false,
+            theme: "dark",
+          },
         }),
       });
 
@@ -193,6 +372,11 @@ export const autoStopAgentStream = internalMutation({
     lobbyId: v.id("gameLobbies"),
   },
   handler: async (ctx, args) => {
+    const agent = await ctx.db.get(args.agentId);
+    if (!agent) {
+      return { stopped: false, reason: "agent_not_found" };
+    }
+
     // Find active streaming session for this agent and lobby
     const session = await ctx.db
       .query("streamingSessions")
@@ -204,8 +388,38 @@ export const autoStopAgentStream = internalMutation({
       return { stopped: false, reason: "no_active_session" };
     }
 
-    // Trigger stop via scheduler
-    await ctx.scheduler.runAfter(0, internal.agents.streaming.triggerAgentStreamStop, {
+    const lobby = await ctx.db.get(args.lobbyId);
+    const now = Date.now();
+    const result =
+      lobby?.winnerId === agent.userId
+        ? "win"
+        : lobby?.winnerId
+          ? "loss"
+          : lobby?.status === "completed"
+            ? "draw"
+            : "unknown";
+
+    await ctx.db.patch(session._id, {
+      currentLobbyId: undefined,
+      lastMatchEndedAt: now,
+      lastMatchResult: result,
+      lastMatchReason: lobby?.status ?? "unknown",
+      lastMatchSummary:
+        result === "win"
+          ? "Match over: victory secured."
+          : result === "loss"
+            ? "Match over: tough loss. Reviewing lines."
+            : result === "draw"
+              ? "Match over: draw."
+              : "Match over.",
+    });
+
+    if (agent.streamingPersistent ?? true) {
+      return { stopped: false, reason: "persistent_stream_kept_live" };
+    }
+
+    // Trigger stop via scheduler when persistent mode is disabled
+    await ctx.scheduler.runAfter(0, internalAny.agents.streaming.triggerAgentStreamStop, {
       sessionId: session._id,
     });
 
@@ -221,14 +435,18 @@ export const triggerAgentStreamStop = internalAction({
     sessionId: v.id("streamingSessions"),
   },
   handler: async (_ctx, args) => {
-    const baseUrl = process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3000";
+    const baseUrl = process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3333";
+    const internalAuthSecret = process.env["INTERNAL_API_SECRET"];
+    if (!internalAuthSecret) {
+      return { success: false, error: "INTERNAL_API_SECRET is required" };
+    }
 
     try {
       const response = await fetch(`${baseUrl}/api/streaming/stop`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Internal-Auth": process.env["INTERNAL_API_SECRET"]!,
+          "X-Internal-Auth": internalAuthSecret,
         },
         body: JSON.stringify({
           sessionId: args.sessionId,

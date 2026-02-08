@@ -4,6 +4,7 @@
  */
 
 import { cn } from "@/lib/utils";
+import type { Element, Rarity } from "@/types/cards";
 import { Heart, Sparkles } from "lucide-react";
 import { ELEMENT_CONFIG, RARITY_CONFIG } from "./constants";
 import type { PlayerProfile } from "./types";
@@ -14,8 +15,8 @@ interface CallingCardSectionProps {
     card: {
       id: string;
       name: string;
-      element: "fire" | "water" | "earth" | "wind";
-      rarity?: "common" | "rare" | "epic" | "legendary";
+      element: Element;
+      rarity?: Rarity;
       timesPlayed?: number;
     },
     isCallingCard: boolean

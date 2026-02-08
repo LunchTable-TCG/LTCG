@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query } from "../../_generated/server";
 import { mutation } from "../../functions";
+import { ELO_SYSTEM } from "../../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { getGuildById, getUserGuildMembership, requireGuildOwnership } from "./core";
@@ -108,14 +109,20 @@ export const getGuildJoinRequests = query({
     // Resolve user details
     const results = await Promise.all(
       requests.map(async (request) => {
-        const user = await ctx.db.get(request.userId);
+        const [user, xpRecord] = await Promise.all([
+          ctx.db.get(request.userId),
+          ctx.db
+            .query("playerXP")
+            .withIndex("by_user", (q) => q.eq("userId", request.userId))
+            .first(),
+        ]);
 
         return {
           _id: request._id,
           userId: request.userId,
           username: user?.username,
-          level: user?.level ?? 1,
-          rankedElo: user?.rankedElo ?? 1000,
+          level: xpRecord?.currentLevel ?? 1,
+          rankedElo: user?.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING,
           isAiAgent: user?.isAiAgent ?? false,
           message: request.message,
           createdAt: request.createdAt,
@@ -196,7 +203,23 @@ export const requestToJoin = mutation({
       createdAt: now,
     });
 
-    // TODO: Send inbox notification to guild owner
+    // Send inbox notification to guild owner
+    const requester = await ctx.db.get(userId);
+    await ctx.db.insert("userInbox", {
+      userId: guild.ownerId,
+      type: "guild_request",
+      title: "New Join Request",
+      message: `${requester?.username || "Someone"} wants to join ${guild.name}`,
+      data: {
+        guildId: args.guildId,
+        guildName: guild.name,
+        requesterUsername: requester?.username || "Unknown",
+      },
+      senderId: userId,
+      senderUsername: requester?.username,
+      isRead: false,
+      createdAt: now,
+    });
 
     return { success: true };
   },
@@ -310,7 +333,20 @@ export const approveRequest = mutation({
       isSystem: true,
     });
 
-    // TODO: Send inbox notification to user
+    // Send inbox notification to user that request was approved
+    await ctx.db.insert("userInbox", {
+      userId: request.userId,
+      type: "guild_request",
+      title: "Request Approved",
+      message: `Your request to join ${guild.name} has been approved!`,
+      data: {
+        guildId: request.guildId,
+        guildName: guild.name,
+        status: "approved",
+      },
+      isRead: false,
+      createdAt: now,
+    });
 
     return { success: true };
   },
@@ -343,7 +379,21 @@ export const rejectRequest = mutation({
       respondedBy: ownerId,
     });
 
-    // TODO: Send inbox notification to user
+    // Send inbox notification to user that request was rejected
+    const guild = await ctx.db.get(request.guildId);
+    await ctx.db.insert("userInbox", {
+      userId: request.userId,
+      type: "guild_request",
+      title: "Request Declined",
+      message: `Your request to join ${guild?.name || "the guild"} was declined.`,
+      data: {
+        guildId: request.guildId,
+        guildName: guild?.name || "Unknown",
+        status: "rejected",
+      },
+      isRead: false,
+      createdAt: Date.now(),
+    });
 
     return { success: true };
   },

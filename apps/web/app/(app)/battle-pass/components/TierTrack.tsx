@@ -3,9 +3,8 @@
 import { cn } from "@/lib/utils";
 import { Crown } from "lucide-react";
 import { useEffect, useRef } from "react";
+import type { RewardType } from "@/types/economy";
 import { TierReward } from "./TierReward";
-
-type RewardType = "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
 
 interface BattlePassReward {
   type: RewardType;

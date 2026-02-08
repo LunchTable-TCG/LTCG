@@ -8,6 +8,12 @@ End-to-End tests for LTCG (Lunch Table Card Game) using Playwright.
 # Run all tests
 bun run test:e2e
 
+# Run streaming overlay visual snapshots (explicit opt-in)
+bun run test:e2e:overlay-visual
+
+# Update streaming overlay visual baselines
+bun run test:e2e:overlay-visual:update
+
 # Run specific suite
 bun run test:e2e:auth
 
@@ -30,6 +36,7 @@ bun run test:e2e:debug
 | `economy.spec.ts` | 19 | Shop & economy |
 | `story.spec.ts` | 24 | Story mode |
 | `social.spec.ts` | 22 | Social features |
+| `streaming-overlay.smoke.spec.ts` | 3 | Overlay visual regression (preview states) |
 | **`realtime.spec.ts`** | **20+** | **Real-time updates & stale data** ⚡ |
 
 **Total**: 174+ tests

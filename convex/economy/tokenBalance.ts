@@ -43,6 +43,7 @@ export const getTokenBalance = query({
       balance: v.number(),
       lastVerifiedAt: v.number(),
       isStale: v.boolean(),
+      walletAddress: v.string(),
     }),
     v.null()
   ),
@@ -75,6 +76,7 @@ export const getTokenBalance = query({
       balance: cached.balance,
       lastVerifiedAt: cached.lastVerifiedAt,
       isStale,
+      walletAddress: user.walletAddress,
     };
   },
 });

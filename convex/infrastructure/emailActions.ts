@@ -1,6 +1,7 @@
-// @ts-nocheck - ActionRetrier circular type issues - TODO: Add explicit return types
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internal = (generatedApi as any).internal;
 import { action, internalAction } from "../_generated/server";
 import { RetryConfig, actionRetrier } from "./actionRetrier";
 

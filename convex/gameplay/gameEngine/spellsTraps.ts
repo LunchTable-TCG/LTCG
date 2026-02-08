@@ -8,6 +8,9 @@
  */
 
 import { v } from "convex/values";
+import * as generatedApi from "../../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { internalMutation, mutation } from "../../functions";
@@ -76,6 +79,13 @@ async function setSpellTrapHandler(
   // 4. Validate it's the current player's turn
   if (gameState.currentTurnPlayerId !== user.userId) {
     throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
+  }
+
+  // 4b. Validate in Main Phase (can only set spells/traps during Main Phase)
+  if (gameState.currentPhase !== "main1" && gameState.currentPhase !== "main2") {
+    throw createError(ErrorCode.GAME_INVALID_PHASE, {
+      reason: "Spell/Trap cards can only be set during Main Phase",
+    });
   }
 
   const isHost = user.userId === gameState.hostId;
@@ -371,10 +381,7 @@ async function activateSpellHandler(
         }
 
         // If cost requires selection but no targets provided, return error
-        if (
-          validation.requiresSelection &&
-          (!args.costTargets || args.costTargets.length === 0)
-        ) {
+        if (validation.requiresSelection && (!args.costTargets || args.costTargets.length === 0)) {
           throw createError(ErrorCode.GAME_INVALID_MOVE, {
             reason: "Cost payment requires card selection",
             requiresSelection: true,
@@ -384,13 +391,7 @@ async function activateSpellHandler(
         }
 
         // Execute cost payment
-        const costResult = await executeCost(
-          ctx,
-          gameState,
-          user.userId,
-          effect,
-          args.costTargets
-        );
+        const costResult = await executeCost(ctx, gameState, user.userId, effect, args.costTargets);
 
         if (!costResult.success) {
           throw createError(ErrorCode.GAME_INVALID_MOVE, {
@@ -549,6 +550,17 @@ async function activateSpellHandler(
   if (isFieldSpell) {
     // Field spells don't go on chain - they activate immediately as continuous effects
     // No chain resolution needed, the continuous effect system handles their effects
+
+    // Trigger opponent_action webhooks
+    await ctx.runMutation(internalAny.gameplay.webhooks.triggerWebhooks, {
+      event: "opponent_action",
+      gameId: lobby.gameId ?? "",
+      lobbyId: args.lobbyId,
+      turnNumber: gameState.turnNumber,
+      playerId: user.userId,
+      additionalData: { actionType: "activate_field_spell", cardName: card.name },
+    });
+
     return {
       success: true,
       spellName: card.name,
@@ -574,7 +586,17 @@ async function activateSpellHandler(
     targets: args.targets,
   });
 
-  // 11. Return success with chain status
+  // 11. Trigger opponent_action webhooks
+  await ctx.runMutation(internalAny.gameplay.webhooks.triggerWebhooks, {
+    event: "opponent_action",
+    gameId: lobby.gameId ?? "",
+    lobbyId: args.lobbyId,
+    turnNumber: gameState.turnNumber,
+    playerId: user.userId,
+    additionalData: { actionType: "activate_spell", cardName: card.name },
+  });
+
+  // 12. Return success with chain status
   return {
     success: true,
     spellName: card.name,
@@ -816,10 +838,7 @@ async function activateTrapHandler(
         }
 
         // If cost requires selection but no targets provided, return error
-        if (
-          validation.requiresSelection &&
-          (!args.costTargets || args.costTargets.length === 0)
-        ) {
+        if (validation.requiresSelection && (!args.costTargets || args.costTargets.length === 0)) {
           throw createError(ErrorCode.GAME_INVALID_MOVE, {
             reason: "Cost payment requires card selection",
             requiresSelection: true,
@@ -829,13 +848,7 @@ async function activateTrapHandler(
         }
 
         // Execute cost payment
-        const costResult = await executeCost(
-          ctx,
-          gameState,
-          user.userId,
-          effect,
-          args.costTargets
-        );
+        const costResult = await executeCost(ctx, gameState, user.userId, effect, args.costTargets);
 
         if (!costResult.success) {
           throw createError(ErrorCode.GAME_INVALID_MOVE, {
@@ -852,8 +865,13 @@ async function activateTrapHandler(
     }
   }
 
-  // 7. Remove from spell/trap zone
-  const newSpellTrapZone = spellTrapZone.filter((st) => st.cardId !== args.cardId);
+  // 7. Remove from spell/trap zone (continuous traps stay face-up)
+  const isContinuousTrap = card.trapType === "continuous";
+  const newSpellTrapZone = isContinuousTrap
+    ? spellTrapZone.map((st) =>
+        st.cardId === args.cardId ? { ...st, isFaceDown: false, isActivated: true } : st
+      )
+    : spellTrapZone.filter((st) => st.cardId !== args.cardId);
   await ctx.db.patch(gameState._id, {
     [isHost ? "hostSpellTrapZone" : "opponentSpellTrapZone"]: newSpellTrapZone,
   });
@@ -906,7 +924,17 @@ async function activateTrapHandler(
     targets: args.targets,
   });
 
-  // 10. Return success with chain status
+  // 10. Trigger opponent_action webhooks
+  await ctx.runMutation(internalAny.gameplay.webhooks.triggerWebhooks, {
+    event: "opponent_action",
+    gameId: lobby.gameId ?? "",
+    lobbyId: args.lobbyId,
+    turnNumber: gameState.turnNumber,
+    playerId: user.userId,
+    additionalData: { actionType: "activate_trap", cardName: card.name },
+  });
+
+  // 11. Return success with chain status
   return {
     success: true,
     trapName: card.name,

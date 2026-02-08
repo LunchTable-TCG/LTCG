@@ -553,14 +553,13 @@ export const saveDeck = mutation({
     for (const [cardDefId, requiredQty] of cardCounts) {
       const playerCard = await ctx.db
         .query("playerCards")
-        .withIndex("by_user_card", (q) =>
-          q.eq("userId", userId).eq("cardDefinitionId", cardDefId))
+        .withIndex("by_user_card", (q) => q.eq("userId", userId).eq("cardDefinitionId", cardDefId))
         .first();
 
       if (!playerCard || playerCard.quantity < requiredQty) {
         const cardDef = await ctx.db.get(cardDefId);
         throw createError(ErrorCode.AUTHZ_RESOURCE_FORBIDDEN, {
-          reason: `You need ${requiredQty} copies of "${cardDef?.name ?? 'this card'}" but only own ${playerCard?.quantity ?? 0}`,
+          reason: `You need ${requiredQty} copies of "${cardDef?.name ?? "this card"}" but only own ${playerCard?.quantity ?? 0}`,
           cardId: cardDefId,
           required: requiredQty,
           owned: playerCard?.quantity ?? 0,

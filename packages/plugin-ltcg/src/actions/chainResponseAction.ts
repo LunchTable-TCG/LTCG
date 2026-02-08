@@ -50,7 +50,7 @@ export const chainResponseAction: Action = {
         hand?.filter((card) => {
           // In a real implementation, check card metadata for "Quick-Play"
           // For now, we'll assume any spell can potentially be chained
-          return card.type === "spell";
+          return card.cardType === "spell";
         }) || [];
 
       // Check for set traps
@@ -129,7 +129,7 @@ export const chainResponseAction: Action = {
       }
 
       // Get chainable cards
-      const quickPlaySpells = hand.filter((card) => card.type === "spell");
+      const quickPlaySpells = hand.filter((card) => card.cardType === "spell");
       const setTraps = gameState.hostPlayer.spellTrapZone.filter((card) => card.type === "trap");
 
       // Format card options
@@ -146,14 +146,14 @@ export const chainResponseAction: Action = {
       const trapOptions =
         setTraps.length > 0
           ? setTraps
-              .map((card, idx) => `Trap ${idx + 1}. ${card.name} (Position ${card.boardIndex})`)
+              .map((card, idx) => `Trap ${idx + 1}. ${card.name} (Set) [cardId: ${card.cardId}]`)
               .join("\n")
           : "None";
 
       const boardContext = `
 Game Context:
-- Your LP: ${gameState.hostPlayer.lifePoints}
-- Opponent LP: ${gameState.opponentPlayer.lifePoints}
+- Your LP: ${gameState.myLifePoints}
+- Opponent LP: ${gameState.opponentLifePoints}
 - Current Phase: ${gameState.phase}
 - Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
 - Threat Level: ${boardAnalysis?.threatLevel || "UNKNOWN"}
@@ -207,7 +207,7 @@ Respond with JSON: { "shouldChain": true/false, "location": "hand"/"field", "car
         // Make API call to decline chain
         const result = await client.chainResponse({
           gameId: gameState.gameId,
-          respond: false,
+          pass: true, // pass: true = decline to chain
         });
 
         return {
@@ -227,15 +227,14 @@ Respond with JSON: { "shouldChain": true/false, "location": "hand"/"field", "car
 
       // Agent decided to chain - get the selected card
       let selectedCard: CardInHand | SpellTrapCard | undefined;
-      let handIndex: number | undefined;
-      let boardIndex: number | undefined;
+      let cardId: string | undefined;
 
       if (parsed.location === "hand") {
         selectedCard = quickPlaySpells[parsed.cardIndex];
-        handIndex = (selectedCard as CardInHand)?.handIndex;
+        cardId = (selectedCard as CardInHand)?._id;
       } else {
         selectedCard = setTraps[parsed.cardIndex];
-        boardIndex = (selectedCard as SpellTrapCard)?.boardIndex;
+        cardId = (selectedCard as SpellTrapCard)?.cardId;
       }
 
       if (!selectedCard) {
@@ -245,10 +244,9 @@ Respond with JSON: { "shouldChain": true/false, "location": "hand"/"field", "car
       // Make API call to chain
       const result = await client.chainResponse({
         gameId: gameState.gameId,
-        respond: true,
-        handIndex,
-        boardIndex,
-        targets: parsed.targets,
+        pass: false, // pass: false = we ARE chaining
+        cardId,
+        targets: parsed.targets?.map((t: string | number) => typeof t === "string" ? t : String(t)),
       });
 
       // Callback to user

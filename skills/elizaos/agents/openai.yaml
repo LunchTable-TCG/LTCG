@@ -1,0 +1,3 @@
+interface:
+  display_name: "ElizaOS"
+  short_description: "Build and maintain ElizaOS agents and plugin-ltcg in LTCG"

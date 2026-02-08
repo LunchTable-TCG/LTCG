@@ -33,10 +33,6 @@ export default migrations.define({
       rankedElo: ELO_SYSTEM.DEFAULT_RATING,
       casualRating: ELO_SYSTEM.DEFAULT_RATING,
 
-      // Progression fields
-      xp: 0,
-      level: 1,
-
       // Stats fields
       totalWins: 0,
       totalLosses: 0,

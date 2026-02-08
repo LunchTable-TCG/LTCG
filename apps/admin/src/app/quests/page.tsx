@@ -233,7 +233,7 @@ function QuestList() {
 
         {isLoading ? (
           <div className="space-y-2">
-            {[...Array(8)].map((_, i) => (
+            {Array.from({ length: 8 }, (_, i) => i).map((i) => (
               <Skeleton key={i} className="h-14 w-full" />
             ))}
           </div>
@@ -483,7 +483,7 @@ function AchievementList() {
 
         {isLoading ? (
           <div className="space-y-2">
-            {[...Array(8)].map((_, i) => (
+            {Array.from({ length: 8 }, (_, i) => i).map((i) => (
               <Skeleton key={i} className="h-14 w-full" />
             ))}
           </div>

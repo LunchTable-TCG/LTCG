@@ -32,6 +32,7 @@ export function FeedbackWidget() {
     <>
       {/* Floating Button */}
       <button
+        type="button"
         id="feedback-widget"
         onClick={() => setIsOpen(true)}
         className={cn(

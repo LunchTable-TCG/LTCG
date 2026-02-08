@@ -103,15 +103,17 @@ export function AuthGuard({
       ) {
         syncInProgress.current = true;
         try {
-          // Read referral data from sessionStorage (set by invite landing page)
+          // Read referral data from sessionStorage (set by invite/referral landing pages)
           let referralSource: string | undefined;
           let referralGuildInviteCode: string | undefined;
+          let referralCode: string | undefined;
           try {
             const referralData = sessionStorage.getItem("referral");
             if (referralData) {
               const parsed = JSON.parse(referralData);
               referralSource = parsed.source;
               referralGuildInviteCode = parsed.code;
+              referralCode = parsed.referralCode;
               // Clear after reading so it's only used once
               sessionStorage.removeItem("referral");
             }
@@ -126,6 +128,7 @@ export function AuthGuard({
             walletType: embeddedWallet ? "privy_embedded" : undefined,
             referralSource,
             referralGuildInviteCode,
+            referralCode,
           });
           syncCompleted.current = true;
         } catch (error) {

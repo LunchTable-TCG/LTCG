@@ -1,3 +1,4 @@
+import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
@@ -19,7 +20,77 @@ import { cardWithOwnershipValidator } from "../lib/returnValidators";
  */
 export const getAllCardDefinitions = query({
   args: {},
-  returns: v.array(v.any()),
+  returns: v.array(
+    v.object({
+      _id: v.id("cardDefinitions"),
+      _creationTime: v.number(),
+      name: v.string(),
+      rarity: literals("common", "uncommon", "rare", "epic", "legendary"),
+      archetype: literals(
+        "infernal_dragons",
+        "abyssal_depths",
+        "iron_legion",
+        "necro_empire",
+        "abyssal_horrors",
+        "nature_spirits",
+        "storm_elementals",
+        "shadow_assassins",
+        "celestial_guardians",
+        "undead_legion",
+        "divine_knights",
+        "arcane_mages",
+        "mechanical_constructs",
+        "neutral",
+        "fire",
+        "water",
+        "earth",
+        "wind"
+      ),
+      cardType: literals("creature", "spell", "trap", "equipment"),
+      attack: v.optional(v.number()),
+      defense: v.optional(v.number()),
+      cost: v.number(),
+      level: v.optional(v.number()),
+      attribute: v.optional(
+        literals("fire", "water", "earth", "wind", "light", "dark", "divine", "neutral")
+      ),
+      monsterType: v.optional(
+        v.union(
+          v.literal("dragon"),
+          v.literal("spellcaster"),
+          v.literal("warrior"),
+          v.literal("beast"),
+          v.literal("fiend"),
+          v.literal("zombie"),
+          v.literal("machine"),
+          v.literal("aqua"),
+          v.literal("pyro"),
+          v.literal("divine_beast")
+        )
+      ),
+      spellType: v.optional(
+        v.union(
+          v.literal("normal"),
+          v.literal("quick_play"),
+          v.literal("continuous"),
+          v.literal("field"),
+          v.literal("equip"),
+          v.literal("ritual")
+        )
+      ),
+      trapType: v.optional(
+        v.union(v.literal("normal"), v.literal("continuous"), v.literal("counter"))
+      ),
+      ability: v.optional(jsonAbilityValidator),
+      flavorText: v.optional(v.string()),
+      imageUrl: v.optional(v.string()),
+      imageStorageId: v.optional(v.id("_storage")),
+      thumbnailStorageId: v.optional(v.id("_storage")),
+      isActive: v.boolean(),
+      createdAt: v.number(),
+      templateId: v.optional(v.id("cardTemplates")),
+    })
+  ),
   handler: async (ctx) => {
     return await ctx.db
       .query("cardDefinitions")

@@ -137,7 +137,7 @@ export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: Feedback
       setAdminNotes(feedback.adminNotes || "");
       setHasChanges(false);
     }
-  }, [feedback?._id, feedback?.priority, feedback?.status, feedback?.adminNotes]);
+  }, [feedback]);
 
   const handlePriorityChange = (value: string) => {
     setPriority(value as FeedbackPriority);
@@ -263,7 +263,9 @@ export function FeedbackDetailSheet({ feedbackId, open, onOpenChange }: Feedback
                         src={feedback.recordingUrl}
                         controls
                         className="rounded-lg border border-border max-h-48 w-full bg-black"
-                      />
+                      >
+                        <track kind="captions" />
+                      </video>
                     </div>
                   )}
                 </div>

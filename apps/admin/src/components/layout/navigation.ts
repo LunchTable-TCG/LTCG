@@ -449,9 +449,7 @@ function resolveRoutePattern(pathname: string): string | undefined {
   if (ROUTE_MAP[pathname]) return pathname;
   for (const pattern of Object.keys(ROUTE_MAP)) {
     if (!pattern.includes("[")) continue;
-    const regex = new RegExp(
-      "^" + pattern.replace(/\[[\w]+\]/g, "[^/]+") + "$"
-    );
+    const regex = new RegExp(`^${pattern.replace(/\[[\w]+\]/g, "[^/]+")}$`);
     if (regex.test(pathname)) return pattern;
   }
   return undefined;

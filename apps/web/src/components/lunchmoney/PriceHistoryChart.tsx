@@ -129,9 +129,15 @@ export function PriceHistoryChart({
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Card Selector */}
         <div className="flex-1">
-          <label className="block text-xs text-[#a89f94] mb-1.5">Select Card</label>
+          <label
+            htmlFor="price-history-card-selector"
+            className="block text-xs text-[#a89f94] mb-1.5"
+          >
+            Select Card
+          </label>
           <div className="relative">
             <select
+              id="price-history-card-selector"
               value={selectedCard || ""}
               onChange={(e) => setSelectedCard(e.target.value || null)}
               disabled={isLoadingTopCards}
@@ -150,11 +156,12 @@ export function PriceHistoryChart({
 
         {/* Time Range */}
         <div>
-          <label className="block text-xs text-[#a89f94] mb-1.5">Time Range</label>
+          <p className="block text-xs text-[#a89f94] mb-1.5">Time Range</p>
           <div className="flex gap-1">
             {(["7d", "30d", "90d", "all"] as const).map((range) => (
               <button
                 key={range}
+                type="button"
                 onClick={() => setTimeRange(range)}
                 className={cn(
                   "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
@@ -298,6 +305,7 @@ export function PriceHistoryChart({
             {topCards.slice(0, 6).map((card, index) => (
               <button
                 key={card.cardDefinitionId}
+                type="button"
                 onClick={() => setSelectedCard(card.cardDefinitionId)}
                 className={cn(
                   "flex items-center gap-3 p-3 rounded-lg border transition-all text-left",

@@ -1,13 +1,27 @@
 "use client";
 
+import { useGameWallet } from "@/hooks/wallet/useGameWallet";
 import { cn } from "@/lib/utils";
+import type { MatchMode } from "@/types/common";
+import {
+  type WagerCurrency,
+  CRYPTO_WAGER_WINNER_PERCENTAGE,
+  SOL_WAGER_TIERS,
+  USDC_WAGER_TIERS,
+  formatTierLabel,
+} from "@/lib/wagerTiers";
 import { Coins, Gamepad2, Swords, Trophy, X } from "lucide-react";
 import { useState } from "react";
 
 interface ChallengeConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (mode: "casual" | "ranked", wagerAmount?: number) => void;
+  onConfirm: (
+    mode: MatchMode,
+    wagerAmount?: number,
+    cryptoWagerCurrency?: WagerCurrency,
+    cryptoWagerTier?: number
+  ) => void;
   opponentUsername: string;
   opponentRank?: string;
   playerGold?: number;
@@ -31,10 +45,14 @@ export function ChallengeConfirmDialog({
   opponentRank = "Gold",
   playerGold = 0,
 }: ChallengeConfirmDialogProps) {
-  const [selectedMode, setSelectedMode] = useState<"casual" | "ranked">("casual");
+  const [selectedMode, setSelectedMode] = useState<MatchMode>("casual");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [wagerAmount, setWagerAmount] = useState<number>(0);
   const [wagerError, setWagerError] = useState<string | null>(null);
+  const [wagerType, setWagerType] = useState<"gold" | WagerCurrency>("gold");
+  const [selectedCryptoTier, setSelectedCryptoTier] = useState<number | null>(null);
+
+  const { isConnected } = useGameWallet();
 
   if (!isOpen) return null;
 
@@ -50,17 +68,31 @@ export function ChallengeConfirmDialog({
     }
   };
 
+  const handleWagerTypeChange = (type: "gold" | WagerCurrency) => {
+    setWagerType(type);
+    setSelectedCryptoTier(null);
+    setWagerAmount(0);
+    setWagerError(null);
+  };
+
   const handleConfirm = () => {
-    if (wagerAmount > playerGold) {
-      setWagerError(`Insufficient gold (you have ${playerGold.toLocaleString()})`);
-      return;
+    if (wagerType === "gold") {
+      if (wagerAmount > playerGold) {
+        setWagerError(`Insufficient gold (you have ${playerGold.toLocaleString()})`);
+        return;
+      }
+      setIsSubmitting(true);
+      setTimeout(() => {
+        onConfirm(selectedMode, wagerAmount > 0 ? wagerAmount : undefined);
+        setIsSubmitting(false);
+      }, 500);
+    } else {
+      setIsSubmitting(true);
+      setTimeout(() => {
+        onConfirm(selectedMode, undefined, wagerType, selectedCryptoTier ?? undefined);
+        setIsSubmitting(false);
+      }, 500);
     }
-    setIsSubmitting(true);
-    // Call onConfirm with the wager amount
-    setTimeout(() => {
-      onConfirm(selectedMode, wagerAmount > 0 ? wagerAmount : undefined);
-      setIsSubmitting(false);
-    }, 500);
   };
 
   return (
@@ -194,45 +226,147 @@ export function ChallengeConfirmDialog({
             {/* Wager Section */}
             <div className="mb-6">
               <p className="text-xs font-bold text-[#a89f94] uppercase tracking-wider mb-3">
-                Gold Wager (Optional)
+                Wager (Optional)
               </p>
+
+              {/* Wager Type Tabs */}
+              <div className="flex rounded-lg overflow-hidden border border-[#3d2b1f] mb-3">
+                {(["gold", "sol", "usdc"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => handleWagerTypeChange(type)}
+                    className={cn(
+                      "flex-1 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all border-r last:border-r-0 border-[#3d2b1f]",
+                      wagerType === type
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500"
+                        : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
+                    )}
+                  >
+                    {type === "gold" ? "Gold" : type.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
               <div className="p-4 rounded-xl bg-black/30 border border-[#3d2b1f]">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="flex items-center gap-2 flex-1">
-                    <Coins className="w-5 h-5 text-[#d4af37]" />
-                    <input
-                      type="number"
-                      min="0"
-                      max={playerGold}
-                      value={wagerAmount || ""}
-                      onChange={(e) => handleWagerChange(e.target.value)}
-                      placeholder="0"
-                      className="w-full bg-black/50 border border-[#3d2b1f] rounded-lg px-3 py-2 text-[#e8e0d5] font-bold placeholder:text-[#a89f94]/50 focus:outline-none focus:border-[#d4af37]/50"
-                    />
-                  </div>
-                  <span className="text-xs text-[#a89f94]">Gold</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#a89f94]">Your balance:</span>
-                  <span className="text-[#d4af37] font-bold">
-                    {playerGold.toLocaleString()} Gold
-                  </span>
-                </div>
-                {wagerError && <p className="text-xs text-red-400 mt-2">{wagerError}</p>}
-                {wagerAmount > 0 && !wagerError && (
-                  <p className="text-xs text-amber-400 mt-2">
-                    Winner takes 90% ({Math.floor(wagerAmount * 2 * 0.9).toLocaleString()} gold).
-                    10% platform fee.
-                  </p>
+                {/* Gold Wager (existing behavior) */}
+                {wagerType === "gold" && (
+                  <>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-2 flex-1">
+                        <Coins className="w-5 h-5 text-[#d4af37]" />
+                        <input
+                          type="number"
+                          min="0"
+                          max={playerGold}
+                          value={wagerAmount || ""}
+                          onChange={(e) => handleWagerChange(e.target.value)}
+                          placeholder="0"
+                          className="w-full bg-black/50 border border-[#3d2b1f] rounded-lg px-3 py-2 text-[#e8e0d5] font-bold placeholder:text-[#a89f94]/50 focus:outline-none focus:border-[#d4af37]/50"
+                        />
+                      </div>
+                      <span className="text-xs text-[#a89f94]">Gold</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[#a89f94]">Your balance:</span>
+                      <span className="text-[#d4af37] font-bold">
+                        {playerGold.toLocaleString()} Gold
+                      </span>
+                    </div>
+                    {wagerError && <p className="text-xs text-red-400 mt-2">{wagerError}</p>}
+                    {wagerAmount > 0 && !wagerError && (
+                      <p className="text-xs text-amber-400 mt-2">
+                        Winner takes 90% ({Math.floor(wagerAmount * 2 * 0.9).toLocaleString()}{" "}
+                        gold). 10% platform fee.
+                      </p>
+                    )}
+                  </>
                 )}
+
+                {/* SOL Wager */}
+                {wagerType === "sol" &&
+                  (!isConnected ? (
+                    <p className="text-xs text-[#a89f94] text-center py-2">
+                      Connect a Solana wallet in Settings to create crypto wagers
+                    </p>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {SOL_WAGER_TIERS.map((tier) => (
+                          <button
+                            key={tier}
+                            type="button"
+                            onClick={() =>
+                              setSelectedCryptoTier(selectedCryptoTier === tier ? null : tier)
+                            }
+                            className={cn(
+                              "px-3 py-2 rounded-lg text-xs font-bold transition-all border",
+                              selectedCryptoTier === tier
+                                ? "border-amber-500 bg-amber-500/20 text-amber-300"
+                                : "border-white/10 bg-white/5 text-gray-400 hover:border-white/20"
+                            )}
+                          >
+                            {formatTierLabel(tier, "sol")} SOL
+                          </button>
+                        ))}
+                      </div>
+                      {selectedCryptoTier !== null && (
+                        <p className="text-xs text-amber-400">
+                          Winner takes {CRYPTO_WAGER_WINNER_PERCENTAGE * 100}%.{" "}
+                          {(1 - CRYPTO_WAGER_WINNER_PERCENTAGE) * 100}% treasury fee (onchain).
+                        </p>
+                      )}
+                    </>
+                  ))}
+
+                {/* USDC Wager */}
+                {wagerType === "usdc" &&
+                  (!isConnected ? (
+                    <p className="text-xs text-[#a89f94] text-center py-2">
+                      Connect a Solana wallet in Settings to create crypto wagers
+                    </p>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {USDC_WAGER_TIERS.map((tier) => (
+                          <button
+                            key={tier}
+                            type="button"
+                            onClick={() =>
+                              setSelectedCryptoTier(selectedCryptoTier === tier ? null : tier)
+                            }
+                            className={cn(
+                              "px-3 py-2 rounded-lg text-xs font-bold transition-all border",
+                              selectedCryptoTier === tier
+                                ? "border-amber-500 bg-amber-500/20 text-amber-300"
+                                : "border-white/10 bg-white/5 text-gray-400 hover:border-white/20"
+                            )}
+                          >
+                            {formatTierLabel(tier, "usdc")}
+                          </button>
+                        ))}
+                      </div>
+                      {selectedCryptoTier !== null && (
+                        <p className="text-xs text-amber-400">
+                          Winner takes {CRYPTO_WAGER_WINNER_PERCENTAGE * 100}%.{" "}
+                          {(1 - CRYPTO_WAGER_WINNER_PERCENTAGE) * 100}% treasury fee (onchain).
+                        </p>
+                      )}
+                    </>
+                  ))}
               </div>
             </div>
 
             {/* Info Text */}
             <p className="text-xs text-[#a89f94] text-center mb-6">
               {opponentUsername} will receive a challenge notification
-              {wagerAmount > 0 && ` with a ${wagerAmount.toLocaleString()} gold wager`}. They have
-              60 seconds to accept.
+              {wagerType === "gold" &&
+                wagerAmount > 0 &&
+                ` with a ${wagerAmount.toLocaleString()} gold wager`}
+              {wagerType !== "gold" &&
+                selectedCryptoTier !== null &&
+                ` with a ${formatTierLabel(selectedCryptoTier, wagerType)} ${wagerType.toUpperCase()} wager`}
+              . They have 60 seconds to accept.
             </p>
 
             {/* Actions */}

@@ -1,12 +1,28 @@
-import { api } from "@convex/_generated/api";
+import { typedApi } from "@/lib/convexHelpers";
+import { resolveStreamingAuth } from "@/lib/streaming/serverAuth";
 import { ConvexHttpClient } from "convex/browser";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+// Module-scope reference to avoid TS2589
+const getActiveSessionsQuery = typedApi.streaming.sessions.getActiveSessions;
 
-export async function GET() {
+function createConvexClient() {
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.trim();
+  if (!convexUrl) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+  }
+  return new ConvexHttpClient(convexUrl);
+}
+
+export async function GET(req: NextRequest) {
   try {
-    const sessions = await convex.query(api.streaming.sessions.getActiveSessions, {});
+    const auth = await resolveStreamingAuth(req);
+    if (!auth.isInternal && !auth.userId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const convex = createConvexClient();
+    const sessions = await convex.query(getActiveSessionsQuery, {});
 
     return NextResponse.json({
       count: sessions.length,

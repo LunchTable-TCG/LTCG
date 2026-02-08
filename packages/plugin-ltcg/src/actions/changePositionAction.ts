@@ -43,12 +43,11 @@ export const changePositionAction: Action = {
       }
 
       // Must have monsters that can change position
-      const myMonsters = gameState.hostPlayer.monsterZone;
-      const canChangePosition = gameState.canChangePosition || [];
+      const myMonsters = gameState.myBoard;
 
-      const changeableMonsters = myMonsters.filter((_monster, idx) => {
+      const changeableMonsters = myMonsters.filter((monster) => {
         // Check if this monster can change position (not already changed this turn)
-        return canChangePosition[idx] !== false;
+        return !monster.hasChangedPosition;
       });
 
       if (changeableMonsters.length === 0) {
@@ -96,14 +95,12 @@ export const changePositionAction: Action = {
       });
 
       // Get changeable monsters
-      const myMonsters = gameState.hostPlayer.monsterZone;
-      const canChangePosition = gameState.canChangePosition || [];
+      const myMonsters = gameState.myBoard;
 
       const changeableMonsters = myMonsters
-        .map((monster, idx) => ({
+        .map((monster) => ({
           monster,
-          boardIndex: idx,
-          canChange: canChangePosition[idx] !== false,
+          canChange: !monster.hasChangedPosition,
         }))
         .filter((m) => m.canChange);
 
@@ -111,16 +108,16 @@ export const changePositionAction: Action = {
       const monsterOptions = changeableMonsters
         .map(
           (m, idx) =>
-            `${idx + 1}. ${m.monster.name} (${m.monster.atk} ATK / ${m.monster.def} DEF) - Currently in ${m.monster.position} position`
+            `${idx + 1}. ${m.monster.name} (${m.monster.attack ?? 0} ATK / ${m.monster.defense ?? 0} DEF) - Currently in ${m.monster.position === 1 ? "attack" : "defense"} position`
         )
         .join("\n");
 
       const boardContext = `
 Game State:
-- Your LP: ${gameState.hostPlayer.lifePoints}
-- Opponent LP: ${gameState.opponentPlayer.lifePoints}
-- Opponent monsters: ${gameState.opponentPlayer.monsterZone.length}
-- Opponent's strongest ATK: ${Math.max(...gameState.opponentPlayer.monsterZone.map((m) => m.atk), 0)}
+- Your LP: ${gameState.myLifePoints}
+- Opponent LP: ${gameState.opponentLifePoints}
+- Opponent monsters: ${gameState.opponentBoard.length}
+- Opponent's strongest ATK: ${Math.max(...gameState.opponentBoard.map((m) => m.attack ?? 0), 0)}
 `;
 
       const prompt = `${boardContext}
@@ -154,14 +151,13 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
         throw new Error("Invalid monster selection");
       }
 
-      // Determine new position
-      const newPosition = selected.monster.position === "attack" ? "defense" : "attack";
+      // Determine new position (for display only - server auto-toggles)
+      const newPosition = selected.monster.position === 1 ? "defense" : "attack";
 
       // Make API call
       const result = await client.changePosition({
         gameId: gameState.gameId,
-        boardIndex: selected.boardIndex,
-        newPosition,
+        cardId: selected.monster._id,
       });
 
       // Callback to user
@@ -178,7 +174,7 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
         text: `Successfully changed ${selected.monster.name} to ${newPosition} position`,
         values: {
           monsterName: selected.monster.name,
-          oldPosition: selected.monster.position,
+          oldPosition: selected.monster.position === 1 ? "attack" : "defense",
           newPosition,
         },
         data: {

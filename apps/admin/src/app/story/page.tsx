@@ -117,7 +117,6 @@ function CreateChapterDialog({
         }
       }
 
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
       const result = (await createChapter(args)) as unknown as { message: string };
       toast.success(result.message);
       onOpenChange(false);
@@ -269,13 +268,11 @@ export default function StoryPage() {
   const [showUnpublished, setShowUnpublished] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const chaptersResult = useConvexQuery(typedApi.admin.story.listChapters, {
     includeUnpublished: showUnpublished,
   }) as { chapters: Chapter[]; totalCount: number } | undefined;
 
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg/return types
-  const stats = useConvexQuery(typedApi.admin.story.getChapterStats, {} as any) as
+  const stats = useConvexQuery(typedApi.admin.story.getChapterStats, {} as Record<string, never>) as
     | {
         totalChapters: number;
         publishedChapters: number;
@@ -286,6 +283,10 @@ export default function StoryPage() {
 
   const publishChapter = useConvexMutation(typedApi.admin.story.publishChapter);
   const reorderChapters = useConvexMutation(typedApi.admin.story.reorderChapters);
+  const reorderChaptersUnsafe = reorderChapters as unknown as (args: {
+    chapterId: Id<"storyChapters">;
+    newNumber: number;
+  }) => Promise<unknown>;
 
   const handleTogglePublish = async (chapter: Chapter) => {
     try {
@@ -306,8 +307,7 @@ export default function StoryPage() {
 
     const prevChapter = chapters[currentIndex - 1];
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg types
-      await (reorderChapters as any)({
+      await reorderChaptersUnsafe({
         chapterId: chapter._id as Id<"storyChapters">,
         newNumber: prevChapter?.number ?? 1,
       });
@@ -324,8 +324,7 @@ export default function StoryPage() {
 
     const nextChapter = chapters[currentIndex + 1];
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg types
-      await (reorderChapters as any)({
+      await reorderChaptersUnsafe({
         chapterId: chapter._id as Id<"storyChapters">,
         newNumber: nextChapter?.number ?? 1,
       });
@@ -397,7 +396,7 @@ export default function StoryPage() {
 
         {isLoading ? (
           <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
+            {Array.from({ length: 5 }, (_, i) => i).map((i) => (
               <Skeleton key={i} className="h-20 w-full" />
             ))}
           </div>

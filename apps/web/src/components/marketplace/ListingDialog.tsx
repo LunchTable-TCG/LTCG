@@ -6,8 +6,7 @@ import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { Coins, Loader2, Package, X } from "lucide-react";
 import { useState } from "react";
-
-type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
+import type { Rarity } from "@/types/cards";
 
 interface Card {
   cardDefinitionId: Id<"cardDefinitions">;
@@ -119,9 +118,10 @@ export function ListingDialog({
 
         {/* Listing Type Selection */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-[#a89f94] mb-2">Listing Type</label>
+          <p className="block text-sm font-medium text-[#a89f94] mb-2">Listing Type</p>
           <div className="grid grid-cols-2 gap-3">
             <button
+              type="button"
               onClick={() => setListingType("fixed")}
               className={cn(
                 "p-3 rounded-lg border-2 transition-all text-left",
@@ -135,6 +135,7 @@ export function ListingDialog({
               <div className="text-xs text-[#a89f94]">Instant sale at fixed price</div>
             </button>
             <button
+              type="button"
               onClick={() => setListingType("auction")}
               className={cn(
                 "p-3 rounded-lg border-2 transition-all text-left",
@@ -152,12 +153,13 @@ export function ListingDialog({
 
         {/* Price Input */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-[#a89f94] mb-2">
+          <label htmlFor="listing-price" className="block text-sm font-medium text-[#a89f94] mb-2">
             {listingType === "auction" ? "Starting Bid" : "Price"}
           </label>
           <div className="relative">
             <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-400" />
             <Input
+              id="listing-price"
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
@@ -171,6 +173,7 @@ export function ListingDialog({
             {[50, 100, 250, 500, 1000].map((suggestedPrice) => (
               <button
                 key={suggestedPrice}
+                type="button"
                 onClick={() => setPrice(suggestedPrice.toString())}
                 className="px-2 py-1 text-xs rounded bg-black/40 border border-[#3d2b1f] text-[#a89f94] hover:border-[#d4af37] hover:text-[#d4af37] transition-colors"
                 disabled={isSubmitting}
@@ -184,8 +187,14 @@ export function ListingDialog({
         {/* Auction Duration (only for auctions) */}
         {listingType === "auction" && (
           <div className="mb-6">
-            <label className="block text-sm font-medium text-[#a89f94] mb-2">Duration</label>
+            <label
+              htmlFor="listing-duration"
+              className="block text-sm font-medium text-[#a89f94] mb-2"
+            >
+              Duration
+            </label>
             <select
+              id="listing-duration"
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
               className="w-full px-3 py-2 rounded-lg bg-black/40 border border-[#3d2b1f] text-[#e8e0d5]"

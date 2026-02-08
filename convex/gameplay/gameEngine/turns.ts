@@ -6,7 +6,9 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../../_generated/api";
+import * as generatedApi from "../../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Id } from "../../_generated/dataModel";
 import { internalMutation, mutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
@@ -65,6 +67,18 @@ export const endTurn = mutation({
     if (gameState.currentPhase !== "main2" && gameState.currentPhase !== "end") {
       throw createError(ErrorCode.GAME_INVALID_PHASE, {
         reason: "Must be in Main Phase 2 or End Phase to end turn",
+      });
+    }
+
+    // 5.5. Cannot end turn during an active chain or response window
+    if (gameState.currentChain && gameState.currentChain.length > 0) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Cannot end turn while a chain is resolving",
+      });
+    }
+    if (gameState.responseWindow) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Cannot end turn while a response window is active",
       });
     }
 
@@ -217,6 +231,10 @@ export const endTurn = mutation({
       // Reset normal summon flags
       hostNormalSummonedThisTurn: false,
       opponentNormalSummonedThisTurn: false,
+      // Clear SEGOC queue and optional trigger state from previous turn
+      segocQueue: [],
+      pendingOptionalTriggers: [],
+      skippedOptionalTriggers: [],
     });
 
     // Update lastMoveAt in lobby (for timeout tracking only - separate document, safe)
@@ -240,7 +258,7 @@ export const endTurn = mutation({
     });
 
     // Trigger turn_start webhooks
-    await ctx.runMutation(internal.gameplay.webhooks.triggerWebhooks, {
+    await ctx.runMutation(internalAny.gameplay.webhooks.triggerWebhooks, {
       event: "turn_start",
       gameId: lobby.gameId ?? "",
       lobbyId: args.lobbyId,
@@ -307,11 +325,30 @@ export const endTurn = mutation({
     }
 
     // Auto-advance through Draw Phase → Standby → Main Phase 1
+    // Step 1: Enter Standby Phase (on_standby triggers would fire here)
+    await ctx.db.patch(refreshedGameState._id, {
+      currentPhase: "standby",
+    });
+
+    await recordEventHelper(ctx, {
+      lobbyId: args.lobbyId,
+      gameId: lobby.gameId ?? "",
+      turnNumber: nextTurnNumber,
+      eventType: "phase_changed",
+      playerId: nextPlayerId,
+      playerUsername: nextPlayer?.username || "Unknown",
+      description: "Standby Phase",
+      metadata: {
+        previousPhase: "draw",
+        newPhase: "standby",
+      },
+    });
+
+    // Step 2: Advance to Main Phase 1
     await ctx.db.patch(refreshedGameState._id, {
       currentPhase: "main1",
     });
 
-    // Record phase change to Main Phase 1
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
       gameId: lobby.gameId ?? "",
@@ -321,13 +358,20 @@ export const endTurn = mutation({
       playerUsername: nextPlayer?.username || "Unknown",
       description: `${nextPlayer?.username || "Unknown"} entered Main Phase 1`,
       metadata: {
-        previousPhase: "end",
+        previousPhase: "standby",
         newPhase: "main1",
         cardDrawn: !shouldSkipDraw,
       },
     });
 
-    // 15. Return success
+    // 15. Auto-trigger AI turn in story mode
+    if (lobby.mode === "story" && nextPlayerId === gameState.opponentId && lobby.gameId) {
+      await ctx.scheduler.runAfter(500, internalAny.gameplay.ai.aiTurn.executeAITurnInternal, {
+        gameId: lobby.gameId,
+      });
+    }
+
+    // 16. Return success
     return {
       success: true,
       newTurnPlayer: nextPlayer?.username || "Unknown",
@@ -356,27 +400,30 @@ export const endTurnInternal = internalMutation({
       .first();
 
     if (!gameState) {
-      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
-        reason: "Game not found",
-        gameId: args.gameId,
-      });
+      // Soft return — game may have ended between scheduling and execution
+      console.warn("endTurnInternal: game state not found, skipping", { gameId: args.gameId });
+      return { success: false, message: "Game not found" };
     }
 
     // 2. Get lobby (for timeout tracking)
     const lobby = await ctx.db.get(gameState.lobbyId);
     if (!lobby) {
-      throw createError(ErrorCode.NOT_FOUND_LOBBY);
+      console.warn("endTurnInternal: lobby not found, skipping");
+      return { success: false, message: "Lobby not found" };
     }
 
     // 3. Validate it's the current player's turn (using gameState as source of truth)
+    // Soft return — turn may have already been ended by watchdog or duplicate scheduling
     if (gameState.currentTurnPlayerId !== args.userId) {
-      throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
+      console.warn("endTurnInternal: not this player's turn, skipping (likely duplicate call)");
+      return { success: false, message: "Not this player's turn" };
     }
 
     // 4. Get user info
     const user = await ctx.db.get(args.userId);
     if (!user) {
-      throw createError(ErrorCode.NOT_FOUND_USER);
+      console.warn("endTurnInternal: user not found, skipping");
+      return { success: false, message: "User not found" };
     }
 
     // 5. For story mode, allow ending from any main phase
@@ -388,6 +435,70 @@ export const endTurnInternal = internalMutation({
     }
 
     const isHost = args.userId === gameState.hostId;
+
+    // 5.5. Trigger end-of-turn effects (on_turn_end / on_end_phase)
+    // Mirror of endTurn step 6 — required for story mode AI turns
+    {
+      const playerBoard = isHost ? gameState.hostBoard : gameState.opponentBoard;
+      const opponentBoard = isHost ? gameState.opponentBoard : gameState.hostBoard;
+      const opponentId = isHost ? gameState.opponentId : gameState.hostId;
+
+      interface BoardCardWithOwner {
+        cardId: Id<"cardDefinitions">;
+        ownerId: Id<"users">;
+      }
+
+      const allBoards: BoardCardWithOwner[] = [
+        ...playerBoard.map((bc) => ({ cardId: bc.cardId, ownerId: args.userId })),
+        ...opponentBoard.map((bc) => ({ cardId: bc.cardId, ownerId: opponentId })),
+      ];
+
+      for (const boardCard of allBoards) {
+        const card = await ctx.db.get(boardCard.cardId);
+        if (!card) continue;
+
+        const cardAbility = getCardAbility(card);
+        if (!cardAbility) continue;
+
+        for (const parsedEffect of cardAbility.effects) {
+          if (parsedEffect.trigger !== "on_turn_end") continue;
+
+          const refreshedState = await ctx.db
+            .query("gameStates")
+            .withIndex("by_lobby", (q) => q.eq("lobbyId", gameState.lobbyId))
+            .first();
+
+          if (!refreshedState) continue;
+
+          const effectResult = await executeEffect(
+            ctx,
+            refreshedState,
+            gameState.lobbyId,
+            parsedEffect,
+            boardCard.ownerId,
+            boardCard.cardId,
+            []
+          );
+
+          if (effectResult.success && gameState.gameId && gameState.turnNumber !== undefined) {
+            const owner = await ctx.db.get(boardCard.ownerId);
+            await recordEventHelper(ctx, {
+              lobbyId: gameState.lobbyId,
+              gameId: gameState.gameId,
+              turnNumber: gameState.turnNumber,
+              eventType: "effect_activated",
+              playerId: boardCard.ownerId,
+              playerUsername: owner?.username || "Unknown",
+              description: `${card.name} end phase effect: ${effectResult.message}`,
+              metadata: {
+                cardId: boardCard.cardId,
+                trigger: parsedEffect.trigger,
+              },
+            });
+          }
+        }
+      }
+    }
 
     // 6. Enforce hand size limit via state-based actions
     const sbaResult = await checkStateBasedActions(ctx, gameState.lobbyId, {
@@ -407,6 +518,9 @@ export const endTurnInternal = internalMutation({
 
     // 7. Clear temporary modifiers
     await clearTemporaryModifiers(ctx, gameState, "end");
+
+    // 7.5. Clean up lingering effects that expire at end phase
+    await cleanupLingeringEffects(ctx, gameState, "end", gameState.turnNumber);
 
     // 8. Clear "this turn" flags
     const playerBoard = isHost ? gameState.hostBoard : gameState.opponentBoard;
@@ -443,23 +557,22 @@ export const endTurnInternal = internalMutation({
     const nextPlayerId = isHost ? gameState.opponentId : gameState.hostId;
     const nextTurnNumber = (gameState.turnNumber ?? 0) + 1;
 
-    // Update turn state in gameState (source of truth)
+    // ATOMIC: Combine all gameState updates into single patch (mirrors endTurn)
     await ctx.db.patch(gameState._id, {
       currentTurnPlayerId: nextPlayerId,
       turnNumber: nextTurnNumber,
-    });
-
-    // Update lastMoveAt in lobby (for timeout tracking only)
-    await ctx.db.patch(gameState.lobbyId, {
-      lastMoveAt: Date.now(),
-    });
-
-    // 11. Reset normal summon flags
-    await ctx.db.patch(gameState._id, {
       [isHost ? "hostBoard" : "opponentBoard"]: resetPlayerBoard,
       [isHost ? "opponentBoard" : "hostBoard"]: resetOpponentBoard,
       hostNormalSummonedThisTurn: false,
       opponentNormalSummonedThisTurn: false,
+      segocQueue: [],
+      pendingOptionalTriggers: [],
+      skippedOptionalTriggers: [],
+    });
+
+    // Update lastMoveAt in lobby (for timeout tracking only — separate document, safe)
+    await ctx.db.patch(gameState.lobbyId, {
+      lastMoveAt: Date.now(),
     });
 
     // 12. Record turn_start event for new turn
@@ -478,7 +591,7 @@ export const endTurnInternal = internalMutation({
     });
 
     // Trigger turn_start webhooks
-    await ctx.runMutation(internal.gameplay.webhooks.triggerWebhooks, {
+    await ctx.runMutation(internalAny.gameplay.webhooks.triggerWebhooks, {
       event: "turn_start",
       gameId: args.gameId,
       lobbyId: gameState.lobbyId,
@@ -500,9 +613,8 @@ export const endTurnInternal = internalMutation({
     const shouldSkipDraw = nextTurnNumber === 1 && nextPlayerId === lobby.hostId;
     const refreshedGameState = await ctx.db.get(gameState._id);
     if (!refreshedGameState) {
-      throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
-        reason: "Game state not found after turn transition",
-      });
+      console.warn("endTurnInternal: game state disappeared after turn transition");
+      return { success: false, message: "Game state lost after turn transition" };
     }
 
     if (!shouldSkipDraw) {
@@ -528,7 +640,27 @@ export const endTurnInternal = internalMutation({
       }
     }
 
-    // Auto-advance to Main Phase 1
+    // Auto-advance through Draw Phase → Standby → Main Phase 1
+    // Step 1: Enter Standby Phase (on_standby triggers would fire here)
+    await ctx.db.patch(refreshedGameState._id, {
+      currentPhase: "standby",
+    });
+
+    await recordEventHelper(ctx, {
+      lobbyId: gameState.lobbyId,
+      gameId: args.gameId,
+      turnNumber: nextTurnNumber,
+      eventType: "phase_changed",
+      playerId: nextPlayerId,
+      playerUsername: nextPlayer?.username || "AI Opponent",
+      description: "Standby Phase",
+      metadata: {
+        previousPhase: "draw",
+        newPhase: "standby",
+      },
+    });
+
+    // Step 2: Advance to Main Phase 1
     await ctx.db.patch(refreshedGameState._id, {
       currentPhase: "main1",
     });
@@ -542,11 +674,18 @@ export const endTurnInternal = internalMutation({
       playerUsername: nextPlayer?.username || "AI Opponent",
       description: `${nextPlayer?.username || "AI Opponent"} entered Main Phase 1`,
       metadata: {
-        previousPhase: "end",
+        previousPhase: "standby",
         newPhase: "main1",
         cardDrawn: !shouldSkipDraw,
       },
     });
+
+    // Auto-trigger AI turn in story mode
+    if (lobby.mode === "story" && nextPlayerId === gameState.opponentId && args.gameId) {
+      await ctx.scheduler.runAfter(500, internalAny.gameplay.ai.aiTurn.executeAITurnInternal, {
+        gameId: args.gameId,
+      });
+    }
 
     return {
       success: true,

@@ -161,7 +161,7 @@ export function FloatingToolbar({
           <TooltipContent>Zoom Out</TooltipContent>
         </Tooltip>
 
-        <button
+        <button type="button"
           onClick={onResetZoom}
           className="text-xs font-mono text-muted-foreground hover:text-foreground px-1 min-w-[3rem] text-center"
         >

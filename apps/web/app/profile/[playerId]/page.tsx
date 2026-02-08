@@ -1,20 +1,28 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { api } from "@/lib/convexApiWrapper";
 import { cn } from "@/lib/utils";
-import { useQuery } from "convex/react";
+import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
 import {
   Bot,
   Calendar,
+  Camera,
+  Check,
   Clock,
+  Copy,
   Gamepad2,
+  Link2,
+  Loader2,
   Lock,
   Medal,
   Percent,
   Settings,
+  Share2,
   Shield,
   Star,
   Swords,
@@ -22,11 +30,11 @@ import {
   TrendingUp,
   Trophy,
   UserPlus,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
-import { use } from "react";
-import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
+import { use, useRef, useState } from "react";
+import { toast } from "sonner";
 import { AgentManagement } from "./components";
 
 type PageParams = { playerId: string };
@@ -82,9 +90,14 @@ function getRank(gamesWon: number): { name: string; color: string; icon: typeof 
 export default function PlayerProfilePage({ params }: { params: Promise<PageParams> }) {
   const resolvedParams = use(params);
   const playerId = resolvedParams.playerId as Id<"users">;
+  const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
+  const profileImageInputRef = useRef<HTMLInputElement>(null);
 
   const { isAuthenticated } = useAuth();
   const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const generateUploadUrl = useMutation(api.storage.images.generateUploadUrl);
+  const setProfileImage = useMutation(api.core.userPreferences.setProfileImage);
+  const generateReferralLink = useMutation(api.social.referrals.generateReferralLink);
   const profileUser = useQuery(api.core.users.getUser, { userId: playerId });
   const userStats = useQuery(api.core.users.getUserStats, { userId: playerId });
   const profilePrivacy = useQuery(api.progression.matchHistory.getProfilePrivacy, {
@@ -96,6 +109,13 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
   });
 
   const isOwnProfile = currentUser?._id === playerId;
+
+  // Referral data (only for own profile)
+  const myReferralLink = useQuery(
+    api.social.referrals.getMyReferralLink,
+    isOwnProfile ? {} : "skip"
+  );
+  const referralStats = useQuery(api.social.referrals.getReferralStats, isOwnProfile ? {} : "skip");
 
   // Calculate stats from real data
   const gamesPlayed = (userStats?.totalWins ?? 0) + (userStats?.totalLosses ?? 0);
@@ -112,6 +132,48 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
 
   const rank = getRank(stats.gamesWon);
   const RankIcon = rank?.icon || Medal;
+
+  const handleProfileImageUpload = async (file: File) => {
+    if (!isOwnProfile) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image is too large. Maximum size is 5MB.");
+      return;
+    }
+
+    setIsUploadingProfileImage(true);
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload profile image");
+      }
+
+      const { storageId } = (await uploadResponse.json()) as { storageId?: Id<"_storage"> };
+      if (!storageId) {
+        throw new Error("Upload did not return a storage ID");
+      }
+
+      await setProfileImage({ storageId });
+      toast.success("Profile picture updated");
+    } catch (error) {
+      console.error("Profile picture upload failed:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update profile picture");
+    } finally {
+      setIsUploadingProfileImage(false);
+      if (profileImageInputRef.current) {
+        profileImageInputRef.current.value = "";
+      }
+    }
+  };
 
   if (profileUser === undefined) {
     return (
@@ -217,10 +279,46 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="relative z-10">
               <Avatar className="w-32 h-32 border-4 border-[#3d2b1f] shadow-2xl">
+                {profileUser.image && (
+                  <AvatarImage
+                    src={profileUser.image}
+                    alt={`${profileUser.username || "User"} avatar`}
+                  />
+                )}
                 <AvatarFallback className="bg-linear-to-br from-[#8b4513] to-[#3d2b1f] text-4xl font-black text-[#d4af37]">
                   {(profileUser.username || "U")[0]?.toUpperCase() || "?"}
                 </AvatarFallback>
               </Avatar>
+              {isOwnProfile && (
+                <>
+                  <input
+                    ref={profileImageInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        void handleProfileImageUpload(file);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => profileImageInputRef.current?.click()}
+                    disabled={isUploadingProfileImage}
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-8 px-3 text-[10px] font-bold uppercase tracking-wider tcg-button-primary text-white"
+                  >
+                    {isUploadingProfileImage ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Camera className="w-3.5 h-3.5 mr-1" />
+                    )}
+                    {isUploadingProfileImage ? "Uploading" : "Change"}
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Info */}
@@ -490,6 +588,13 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
         {/* Profile Settings (own profile only) */}
         {isOwnProfile && (
           <div className="mt-8 space-y-8">
+            {/* Referral Section */}
+            <ReferralSection
+              myReferralLink={myReferralLink}
+              referralStats={referralStats}
+              generateReferralLink={generateReferralLink}
+            />
+
             {/* AI Agents Section */}
             <div className="p-8 rounded-2xl tcg-chat-leather relative overflow-hidden shadow-2xl">
               <div className="ornament-corner ornament-corner-tl opacity-50" />
@@ -583,6 +688,178 @@ function Achievement({ name, description, unlocked }: AchievementProps) {
       >
         {description}
       </p>
+    </div>
+  );
+}
+
+// ============================================================================
+// Referral Section
+// ============================================================================
+
+interface ReferralSectionProps {
+  myReferralLink: { code: string; uses: number; createdAt: number } | null | undefined;
+  referralStats:
+    | {
+        totalReferrals: number;
+        referrals: Array<{ username?: string; image?: string; joinedAt: number }>;
+      }
+    | undefined;
+  generateReferralLink: (args: Record<string, never>) => Promise<{ code: string }>;
+}
+
+function ReferralSection({
+  myReferralLink,
+  referralStats,
+  generateReferralLink,
+}: ReferralSectionProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [justCopied, setJustCopied] = useState<string | null>(null);
+
+  const referralCode = myReferralLink?.code;
+  const referralUrl = referralCode
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/referral/${referralCode}`
+    : null;
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      await generateReferralLink({});
+      toast.success("Referral link generated!");
+    } catch {
+      toast.error("Failed to generate referral link");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopy = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setJustCopied(label);
+      toast.success("Copied to clipboard!");
+      setTimeout(() => setJustCopied(null), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  return (
+    <div className="p-8 rounded-2xl tcg-chat-leather relative overflow-hidden shadow-2xl">
+      <div className="ornament-corner ornament-corner-tl opacity-50" />
+      <h3 className="text-xl font-black mb-4 flex items-center gap-3 text-[#e8e0d5] uppercase tracking-tighter relative z-10">
+        <Share2 className="w-6 h-6 text-[#d4af37]" />
+        Refer Friends
+      </h3>
+      <p className="text-[#a89f94] text-xs font-medium italic mb-6 relative z-10">
+        Invite friends to Lunchtable TCG. Share your unique referral link and track who you've
+        brought in.
+      </p>
+
+      <div className="space-y-6 relative z-10">
+        {/* Referral Link */}
+        {myReferralLink === undefined ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-6 h-6 animate-spin text-[#d4af37]" />
+          </div>
+        ) : referralUrl ? (
+          <div className="space-y-4">
+            {/* Link display + copy */}
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-black/40 border border-[#3d2b1f] min-w-0">
+              <Link2 className="w-4 h-4 text-[#d4af37] shrink-0" />
+              <span className="text-sm text-[#a89f94] truncate flex-1 min-w-0 font-mono">
+                {referralUrl}
+              </span>
+              <Button
+                onClick={() => handleCopy(referralUrl, "link")}
+                size="sm"
+                variant="ghost"
+                className="shrink-0 text-[#d4af37] hover:text-[#f9e29f] hover:bg-[#d4af37]/10"
+              >
+                {justCopied === "link" ? (
+                  <Check className="w-4 h-4" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+
+            {/* Regenerate */}
+            <Button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              variant="outline"
+              size="sm"
+              className="border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5] hover:border-[#d4af37]/50 rounded-xl"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Link2 className="w-4 h-4 mr-2" />
+              )}
+              Generate New Link
+            </Button>
+          </div>
+        ) : (
+          /* No link yet */
+          <div className="text-center py-4 space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-[#d4af37]/10 border border-[#d4af37]/20 flex items-center justify-center">
+              <Share2 className="w-8 h-8 text-[#d4af37]" />
+            </div>
+            <div>
+              <p className="text-[#e8e0d5] font-medium">No referral link yet</p>
+              <p className="text-sm text-[#a89f94] mt-1">Generate a link to share with friends</p>
+            </div>
+            <Button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="tcg-button-primary rounded-xl px-8"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Link2 className="w-4 h-4 mr-2" />
+              )}
+              Generate Referral Link
+            </Button>
+          </div>
+        )}
+
+        {/* Referral Stats */}
+        {referralStats && referralStats.totalReferrals > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-[#d4af37]" />
+              <span className="text-sm font-bold text-[#e8e0d5]">
+                {referralStats.totalReferrals}{" "}
+                {referralStats.totalReferrals === 1 ? "Referral" : "Referrals"}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {referralStats.referrals.map((ref, i) => (
+                <div
+                  key={`referral-${i}`}
+                  className="flex items-center gap-3 p-2 rounded-lg bg-black/20 border border-[#3d2b1f]/50"
+                >
+                  <Avatar className="w-8 h-8 border border-[#3d2b1f]">
+                    {ref.image && <AvatarImage src={ref.image} alt={ref.username || "User"} />}
+                    <AvatarFallback className="bg-[#3d2b1f] text-[#d4af37] text-xs font-bold">
+                      {(ref.username || "?")[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[#e8e0d5] truncate">
+                      {ref.username || "Unknown"}
+                    </p>
+                    <p className="text-xs text-[#a89f94]">
+                      Joined {formatRelativeTime(ref.joinedAt)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

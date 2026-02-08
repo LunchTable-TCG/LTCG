@@ -20,9 +20,10 @@ import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { logger } from "../../lib/debug";
-import { moveCard } from "../../lib/gameHelpers";
+
 import { executeEffect } from "../effectSystem/index";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
+import { updatePlayerStatsAfterGame } from "../games/stats";
 
 // biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
 const internalAny = (generatedApi as any).internal;
@@ -61,9 +62,6 @@ export interface SBALoopResult {
   allActionsTaken: string[];
 }
 
-/** Track cards that have already triggered on_destroy to prevent infinite loops */
-const destroyTriggeredCards = new Set<string>();
-
 /**
  * Main SBA check loop
  *
@@ -93,6 +91,10 @@ export async function checkStateBasedActions(
     allDestroyedCards: [],
     allActionsTaken: [],
   };
+
+  // Track cards that have already triggered on_destroy to prevent infinite loops
+  // Local to this invocation — no cross-mutation contamination
+  const destroyTriggeredCards = new Set<string>();
 
   const maxCycles = 100; // Safety limit to prevent infinite loops
   let changed = true;
@@ -127,7 +129,8 @@ export async function checkStateBasedActions(
       gameState,
       lobbyId,
       turnNumber,
-      options?.skipHandLimit ?? true
+      options?.skipHandLimit ?? true,
+      destroyTriggeredCards
     );
 
     changed = cycleResult.changed;
@@ -160,9 +163,6 @@ export async function checkStateBasedActions(
     gameEnded: result.gameEnded,
   });
 
-  // Clear the destroy trigger tracking after full loop completes
-  destroyTriggeredCards.clear();
-
   return result;
 }
 
@@ -176,7 +176,8 @@ async function runSBACycle(
   gameState: Doc<"gameStates">,
   lobbyId: Id<"gameLobbies">,
   turnNumber: number,
-  skipHandLimit: boolean
+  skipHandLimit: boolean,
+  destroyTriggeredCards: Set<string>
 ): Promise<SBACheckResult> {
   const result: SBACheckResult = {
     changed: false,
@@ -208,7 +209,8 @@ async function runSBACycle(
     gameState,
     lobbyId,
     lobby.gameId,
-    turnNumber
+    turnNumber,
+    destroyTriggeredCards
   );
   if (monsterCheck.changed) {
     result.changed = true;
@@ -310,6 +312,10 @@ async function checkLPWinCondition(
       winnerId: gameState.opponentId,
     });
 
+    // Update player stats (opponent wins, host loses)
+    const hostLPGameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
+    await updatePlayerStatsAfterGame(ctx, gameState.opponentId, gameState.hostId, hostLPGameMode);
+
     // Handle story mode completion (host lost)
     if (lobby?.mode === "story" && lobby.stageId) {
       await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
@@ -357,6 +363,10 @@ async function checkLPWinCondition(
       status: "completed",
       winnerId: gameState.hostId,
     });
+
+    // Update player stats (host wins, opponent loses)
+    const oppLPGameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
+    await updatePlayerStatsAfterGame(ctx, gameState.hostId, gameState.opponentId, oppLPGameMode);
 
     // Handle story mode completion (host won)
     if (lobby?.mode === "story" && lobby.stageId) {
@@ -441,6 +451,10 @@ export async function checkDeckOutCondition(
       winnerId,
     });
 
+    // Update player stats (deck-out loser)
+    const deckOutGameMode = (lobby.mode || "casual") as "ranked" | "casual" | "story";
+    await updatePlayerStatsAfterGame(ctx, winnerId, playerId, deckOutGameMode);
+
     // Handle story mode completion (deck out)
     if (lobby.mode === "story" && lobby.stageId) {
       const hostWon = winnerId === gameState.hostId;
@@ -481,7 +495,8 @@ async function checkMonsterDestruction(
   gameState: Doc<"gameStates">,
   lobbyId: Id<"gameLobbies">,
   gameId: string,
-  turnNumber: number
+  turnNumber: number,
+  destroyTriggeredCards: Set<string>
 ): Promise<{ changed: boolean; destroyedCards: Id<"cardDefinitions">[]; actions: string[] }> {
   const result = {
     changed: false,
@@ -490,12 +505,12 @@ async function checkMonsterDestruction(
   };
 
   // Check host board
+  // Note: 0 ATK/DEF is valid (e.g. Kuriboh has 200 DEF, some tokens have 0).
+  // Only negative stats from effects trigger SBA destruction.
   const hostMonstersToDestroy = gameState.hostBoard.filter((bc) => {
-    // Check defense position monsters with DEF <= 0
-    if (bc.position === -1 && bc.defense <= 0) {
+    if (bc.position === -1 && bc.defense < 0) {
       return true;
     }
-    // Also check attack position monsters with negative stats (edge case from effects)
     if (bc.position === 1 && bc.attack < 0) {
       return true;
     }
@@ -504,7 +519,7 @@ async function checkMonsterDestruction(
 
   // Check opponent board
   const opponentMonstersToDestroy = gameState.opponentBoard.filter((bc) => {
-    if (bc.position === -1 && bc.defense <= 0) {
+    if (bc.position === -1 && bc.defense < 0) {
       return true;
     }
     if (bc.position === 1 && bc.attack < 0) {
@@ -523,7 +538,8 @@ async function checkMonsterDestruction(
       turnNumber,
       monster.cardId,
       gameState.hostId,
-      true
+      true,
+      destroyTriggeredCards
     );
     if (destroyed) {
       result.changed = true;
@@ -542,7 +558,8 @@ async function checkMonsterDestruction(
       turnNumber,
       monster.cardId,
       gameState.opponentId,
-      false
+      false,
+      destroyTriggeredCards
     );
     if (destroyed) {
       result.changed = true;
@@ -568,7 +585,8 @@ async function destroyMonsterBySBA(
   turnNumber: number,
   cardId: Id<"cardDefinitions">,
   ownerId: Id<"users">,
-  isHost: boolean
+  isHost: boolean,
+  destroyTriggeredCards: Set<string>
 ): Promise<boolean> {
   // Check if card is still on board (may have been destroyed already)
   const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
@@ -649,16 +667,26 @@ async function destroyMonsterBySBA(
     }
   }
 
-  // Remove from board
-  const newBoard = board.filter((bc) => bc.cardId !== cardId);
+  // Remove from board and add to graveyard in a single patch
+  // IMPORTANT: Re-read graveyard from DB to include any equip spell additions above
+  const freshState = await ctx.db.get(gameState._id);
+  const currentGraveyard = freshState
+    ? isHost
+      ? freshState.hostGraveyard
+      : freshState.opponentGraveyard
+    : isHost
+      ? gameState.hostGraveyard
+      : gameState.opponentGraveyard;
+  const currentBoard = freshState
+    ? isHost
+      ? freshState.hostBoard
+      : freshState.opponentBoard
+    : board;
+  const newBoard = currentBoard.filter((bc) => bc.cardId !== cardId);
+
   await ctx.db.patch(gameState._id, {
     [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
-  });
-
-  // Add to graveyard
-  const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
-  await ctx.db.patch(gameState._id, {
-    [isHost ? "hostGraveyard" : "opponentGraveyard"]: [...graveyard, cardId],
+    [isHost ? "hostGraveyard" : "opponentGraveyard"]: [...currentGraveyard, cardId],
   });
 
   // Trigger on_destroy effect if present (and not already triggered)
@@ -737,8 +765,10 @@ async function checkFieldSpellReplacement(
     const fieldCard = await ctx.db.get(gameState.hostFieldSpell.cardId);
     // If field spell card no longer exists or is not a spell, remove it
     if (!fieldCard || fieldCard.cardType !== "spell" || fieldCard.spellType !== "field") {
+      // Send invalid field spell to graveyard before removing
       await ctx.db.patch(gameState._id, {
         hostFieldSpell: undefined,
+        hostGraveyard: [...gameState.hostGraveyard, gameState.hostFieldSpell.cardId],
       });
 
       const host = await ctx.db.get(gameState.hostId);
@@ -766,8 +796,10 @@ async function checkFieldSpellReplacement(
     const fieldCard = await ctx.db.get(gameState.opponentFieldSpell.cardId);
     // If field spell card no longer exists or is not a spell, remove it
     if (!fieldCard || fieldCard.cardType !== "spell" || fieldCard.spellType !== "field") {
+      // Send invalid field spell to graveyard before removing
       await ctx.db.patch(gameState._id, {
         opponentFieldSpell: undefined,
+        opponentGraveyard: [...gameState.opponentGraveyard, gameState.opponentFieldSpell.cardId],
       });
 
       const opponent = await ctx.db.get(gameState.opponentId);
@@ -961,15 +993,29 @@ async function checkHandSizeLimit(
 
     const owner = await ctx.db.get(gameState.hostId);
 
-    // Move excess cards to graveyard
+    // Re-read graveyard from DB to avoid overwriting changes from earlier SBA checks
+    const freshState = await ctx.db.get(gameState._id);
+    const currentHostGraveyard = freshState?.hostGraveyard ?? gameState.hostGraveyard;
+
+    // Record events for each discarded card
     for (const cardId of cardsToDiscard) {
-      await moveCard(ctx, gameState, cardId, "hand", "graveyard", gameState.hostId, turnNumber);
+      const card = await ctx.db.get(cardId);
+      await recordEventHelper(ctx, {
+        lobbyId,
+        gameId,
+        turnNumber,
+        eventType: "card_to_graveyard",
+        playerId: gameState.hostId,
+        playerUsername: owner?.username || "Unknown",
+        description: `${owner?.username}'s ${card?.name || "card"} was discarded (hand limit)`,
+        metadata: { cardId, fromZone: "hand", toZone: "graveyard" },
+      });
     }
 
-    // Update hand
+    // Update hand and graveyard in a single batch
     await ctx.db.patch(gameState._id, {
       hostHand: newHand,
-      hostGraveyard: [...gameState.hostGraveyard, ...cardsToDiscard],
+      hostGraveyard: [...currentHostGraveyard, ...cardsToDiscard],
     });
 
     await recordEventHelper(ctx, {
@@ -1016,15 +1062,29 @@ async function checkHandSizeLimit(
 
     const owner = await ctx.db.get(gameState.opponentId);
 
-    // Move excess cards to graveyard
+    // Re-read graveyard from DB to avoid overwriting changes from earlier SBA checks
+    const freshState = await ctx.db.get(gameState._id);
+    const currentOpponentGraveyard = freshState?.opponentGraveyard ?? gameState.opponentGraveyard;
+
+    // Record events for each discarded card
     for (const cardId of cardsToDiscard) {
-      await moveCard(ctx, gameState, cardId, "hand", "graveyard", gameState.opponentId, turnNumber);
+      const card = await ctx.db.get(cardId);
+      await recordEventHelper(ctx, {
+        lobbyId,
+        gameId,
+        turnNumber,
+        eventType: "card_to_graveyard",
+        playerId: gameState.opponentId,
+        playerUsername: owner?.username || "Unknown",
+        description: `${owner?.username}'s ${card?.name || "card"} was discarded (hand limit)`,
+        metadata: { cardId, fromZone: "hand", toZone: "graveyard" },
+      });
     }
 
-    // Update hand
+    // Update hand and graveyard in a single batch
     await ctx.db.patch(gameState._id, {
       opponentHand: newHand,
-      opponentGraveyard: [...gameState.opponentGraveyard, ...cardsToDiscard],
+      opponentGraveyard: [...currentOpponentGraveyard, ...cardsToDiscard],
     });
 
     await recordEventHelper(ctx, {

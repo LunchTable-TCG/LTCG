@@ -1,7 +1,7 @@
 import { v } from "convex/values";
+import * as generatedApi from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { internal } from "../../_generated/api";
 import { adjustPlayerCurrencyHelper } from "../../economy/economy";
 import { internalMutation, mutation } from "../../functions";
 import { completedGamesCounter } from "../../infrastructure/shardedCounters";
@@ -11,8 +11,8 @@ import { ErrorCode, createError } from "../../lib/errorCodes";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
 import { updateAgentStatsAfterGame, updatePlayerStatsAfterGame } from "./stats";
 
-// @ts-ignore TS2589 workaround for deep type instantiation
-const internalAny: any = internal;
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 
 // ============================================================================
 // WAGER SYSTEM CONSTANTS
@@ -238,6 +238,22 @@ export async function initializeGameStateHelper(
     }
   }
 
+  // Validate deck sizes before starting the game
+  const MIN_DECK_SIZE = 30;
+  const MAX_DECK_SIZE = 60;
+
+  if (hostFullDeck.length < MIN_DECK_SIZE || hostFullDeck.length > MAX_DECK_SIZE) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: `Host deck must have between ${MIN_DECK_SIZE} and ${MAX_DECK_SIZE} cards (has ${hostFullDeck.length})`,
+    });
+  }
+
+  if (opponentFullDeck.length < MIN_DECK_SIZE || opponentFullDeck.length > MAX_DECK_SIZE) {
+    throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+      reason: `Opponent deck must have between ${MIN_DECK_SIZE} and ${MAX_DECK_SIZE} cards (has ${opponentFullDeck.length})`,
+    });
+  }
+
   // Shuffle decks using deterministic randomness
   // Use gameId as seed to ensure consistent shuffles on retry
   const shuffledHostDeck = shuffleArray(hostFullDeck, `${gameId}-host-deck`);
@@ -417,6 +433,20 @@ async function surrenderGameHandler(
       await processWagerPayout(ctx, args.lobbyId, lobby.wagerAmount, winnerId, userId);
     }
 
+    // Crypto wager settlement (schedule onchain settle instruction)
+    if (lobby.cryptoWagerCurrency && lobby.cryptoWagerTier && !lobby.cryptoSettled) {
+      // Store winner/loser on lobby so the retry cron can re-derive args
+      await ctx.db.patch(args.lobbyId, {
+        cryptoSettlementWinnerId: winnerId,
+        cryptoSettlementLoserId: userId,
+      });
+      await ctx.scheduler.runAfter(0, internalAny.wager.escrow.settleEscrow, {
+        lobbyId: args.lobbyId,
+        winnerId,
+        loserId: userId,
+      });
+    }
+
     // Check if players are agents and update agent stats
     const winnerAgent = await ctx.db
       .query("agents")
@@ -438,14 +468,34 @@ async function surrenderGameHandler(
   // Stop agent streams if active
   await stopAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, lobby.opponentId);
 
-  // Clean up game state (no longer needed after game ends)
-  const gameState = await ctx.db
-    .query("gameStates")
-    .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-    .first();
+  // Handle story mode completion on surrender
+  if (lobby.mode === "story" && lobby.stageId) {
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
 
-  if (gameState) {
-    await ctx.db.delete(gameState._id);
+    await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+      userId: lobby.hostId,
+      stageId: lobby.stageId,
+      won: winnerId === lobby.hostId,
+      finalLP: gameState ? (winnerId === lobby.hostId ? gameState.hostLifePoints : 0) : 0,
+    });
+
+    // Clean up game state
+    if (gameState) {
+      await ctx.db.delete(gameState._id);
+    }
+  } else {
+    // Clean up game state (no longer needed after game ends)
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (gameState) {
+      await ctx.db.delete(gameState._id);
+    }
   }
 
   return { success: true };
@@ -600,6 +650,20 @@ export const forfeitGame = internalMutation({
         );
       }
 
+      // Crypto wager settlement (schedule onchain settle instruction)
+      if (lobby.cryptoWagerCurrency && lobby.cryptoWagerTier && !lobby.cryptoSettled) {
+        // Store winner/loser on lobby so the retry cron can re-derive args
+        await ctx.db.patch(args.lobbyId, {
+          cryptoSettlementWinnerId: winnerId,
+          cryptoSettlementLoserId: args.forfeitingPlayerId,
+        });
+        await ctx.scheduler.runAfter(0, internalAny.wager.escrow.settleEscrow, {
+          lobbyId: args.lobbyId,
+          winnerId,
+          loserId: args.forfeitingPlayerId,
+        });
+      }
+
       // Check if players are agents and update agent stats
       const winnerAgent = await ctx.db
         .query("agents")
@@ -621,14 +685,33 @@ export const forfeitGame = internalMutation({
     // Stop agent streams if active
     await stopAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, lobby.opponentId);
 
-    // Clean up game state (no longer needed after game ends)
-    const gameState = await ctx.db
-      .query("gameStates")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-      .first();
+    // Handle story mode completion on forfeit
+    if (lobby.mode === "story" && lobby.stageId) {
+      const gameState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+        .first();
 
-    if (gameState) {
-      await ctx.db.delete(gameState._id);
+      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+        userId: lobby.hostId,
+        stageId: lobby.stageId,
+        won: winnerId === lobby.hostId,
+        finalLP: gameState ? (winnerId === lobby.hostId ? gameState.hostLifePoints : 0) : 0,
+      });
+
+      if (gameState) {
+        await ctx.db.delete(gameState._id);
+      }
+    } else {
+      // Clean up game state (no longer needed after game ends)
+      const gameState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+        .first();
+
+      if (gameState) {
+        await ctx.db.delete(gameState._id);
+      }
     }
   },
 });
@@ -682,6 +765,20 @@ export const completeGame = internalMutation({
       // Process wager payout if applicable
       if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.wagerPaid) {
         await processWagerPayout(ctx, args.lobbyId, lobby.wagerAmount, args.winnerId, loserId);
+      }
+
+      // Crypto wager settlement (schedule onchain settle instruction)
+      if (lobby.cryptoWagerCurrency && lobby.cryptoWagerTier && !lobby.cryptoSettled) {
+        // Store winner/loser on lobby so the retry cron can re-derive args
+        await ctx.db.patch(args.lobbyId, {
+          cryptoSettlementWinnerId: args.winnerId,
+          cryptoSettlementLoserId: loserId,
+        });
+        await ctx.scheduler.runAfter(0, internalAny.wager.escrow.settleEscrow, {
+          lobbyId: args.lobbyId,
+          winnerId: args.winnerId,
+          loserId,
+        });
       }
 
       // Check if players are agents and update agent stats

@@ -7,7 +7,7 @@ import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
 import { validateStreamingConfig } from "@/lib/streaming/validateConfig";
 
 // Validate streaming configuration at startup in production
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === "production") {
   validateStreamingConfig();
 }
 

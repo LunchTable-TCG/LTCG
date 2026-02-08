@@ -9,7 +9,9 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
 import { getCurrentUser, requireAuthMutation } from "../lib/convexAuth";
@@ -63,7 +65,7 @@ export const saveConnectedWallet = mutation({
 
     // Silently trigger ElizaOS token check for hidden achievement
     // This runs in the background and doesn't block the wallet connection
-    await ctx.scheduler.runAfter(0, internal.economy.elizaOSMonitor.checkOnWalletConnect, {
+    await ctx.scheduler.runAfter(0, internalAny.economy.elizaOSMonitor.checkOnWalletConnect, {
       userId: auth.userId,
       walletAddress: args.walletAddress,
     });
@@ -139,6 +141,13 @@ export const disconnectWallet = mutation({
       walletType: undefined,
       walletConnectedAt: undefined,
     });
+
+    // Clear stale token balance cache for this user
+    const cachedBalances = await ctx.db
+      .query("tokenBalanceCache")
+      .withIndex("by_user", (q) => q.eq("userId", auth.userId))
+      .collect();
+    await Promise.all(cachedBalances.map((c) => ctx.db.delete(c._id)));
 
     return true;
   },

@@ -442,7 +442,10 @@ export default function PromoCodeDetailPage() {
                     This code has expired
                   </Text>
                   <Text className="text-sm text-red-500 dark:text-red-400">
-                    Expired on {new Date(promoCode.expiresAt!).toLocaleDateString()}
+                    Expired on{" "}
+                    {promoCode.expiresAt
+                      ? new Date(promoCode.expiresAt).toLocaleDateString()
+                      : "unknown date"}
                   </Text>
                 </div>
               )}

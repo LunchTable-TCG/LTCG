@@ -12,9 +12,10 @@
  * result into `args` alongside required fields like `userId: v.id("users")`.
  */
 
+import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
 import type { GenericValidator, PropertyValidators, Validator } from "convex/values";
-import { literals } from "convex-helpers/validators";
+import { streamingPlatformValidator } from "./streamingPlatforms";
 
 // ============================================================================
 // PARTIAL HELPER
@@ -58,7 +59,7 @@ export function partial<Fields extends PropertyValidators>(fields: Fields) {
   return result as {
     [K in keyof Fields]: Fields[K] extends Validator<infer _T, "optional", infer _F>
       ? Fields[K]
-      : Fields[K] extends Validator<infer T, any, infer F>
+      : Fields[K] extends Validator<infer T, infer _Optionality, infer F>
         ? Validator<T | undefined, "optional", F>
         : never;
   };
@@ -222,11 +223,7 @@ export const patchableBattlePassProgressFields = {
  * Source: `friendships` table in schema.ts (lines 2360-2373)
  */
 export const patchableFriendshipFields = {
-  status: v.union(
-    v.literal("pending"),
-    v.literal("accepted"),
-    v.literal("blocked")
-  ),
+  status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("blocked")),
   respondedAt: v.optional(v.number()),
   lastInteraction: v.optional(v.number()),
 };
@@ -285,8 +282,9 @@ export const patchableAgentFields = {
   walletErrorMessage: v.optional(v.string()),
   // Streaming fields
   streamingEnabled: v.optional(v.boolean()),
-  streamingPlatform: v.optional(literals("twitch", "youtube", "custom")),
+  streamingPlatform: v.optional(streamingPlatformValidator),
   streamingAutoStart: v.optional(v.boolean()),
+  streamingPersistent: v.optional(v.boolean()),
   // Webhook fields
   callbackUrl: v.optional(v.string()),
   webhookEnabled: v.optional(v.boolean()),

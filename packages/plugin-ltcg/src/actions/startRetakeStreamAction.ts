@@ -5,7 +5,9 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
+import { LTCGApiClient } from "../client/LTCGApiClient";
 import { logger } from "../utils/logger";
+import { resolveStreamingCredentials, startStreamFromBackend } from "../utils/streamingConfig";
 
 /**
  * Start streaming to Retake.tv
@@ -13,16 +15,16 @@ import { logger } from "../utils/logger";
  * This action initiates a live stream to Retake.tv platform.
  * It should be called before starting a game when streaming is desired.
  *
- * Prerequisites:
- * - RETAKE_ACCESS_TOKEN must be set in environment/secrets
- * - RETAKE_USER_DB_ID must be set
- * - Agent must be registered on Retake.tv
+ * Credential resolution order:
+ * 1. Backend (UI-configured settings saved to agents table via AgentStreamingSettingsPanel)
+ * 2. Character secrets / environment variables (RETAKE_ACCESS_TOKEN, RETAKE_USER_DB_ID)
  *
  * Flow:
- * 1. Validate Retake credentials
+ * 1. Validate credentials (backend or env)
  * 2. Call Retake API to signal stream start
- * 3. Notify LTCG backend to enable streaming
- * 4. Return stream status to user
+ * 3. Get RTMP credentials from Retake
+ * 4. Notify LTCG backend to start LiveKit egress
+ * 5. Return stream status
  */
 export const startRetakeStreamAction: Action = {
   name: "START_RETAKE_STREAM",
@@ -37,7 +39,7 @@ export const startRetakeStreamAction: Action = {
   ],
 
   validate: async (runtime: IAgentRuntime, message: Memory) => {
-    const text = message.content.text.toLowerCase();
+    const text = (message.content.text ?? "").toLowerCase();
 
     // Check if user wants to start streaming
     const streamKeywords = ["stream", "go live", "broadcast", "retake"];
@@ -50,17 +52,18 @@ export const startRetakeStreamAction: Action = {
       return false;
     }
 
-    // Check if Retake credentials are available
-    const accessToken =
+    // Retake always requires its own API credentials for stream/start + RTMP setup
+    const retakeAccessToken =
       runtime.getSetting("RETAKE_ACCESS_TOKEN") ||
       process.env.RETAKE_ACCESS_TOKEN ||
       process.env.DIZZY_RETAKE_ACCESS_TOKEN;
 
-    if (!accessToken) {
-      logger.warn("Retake.tv credentials not configured");
+    if (!retakeAccessToken) {
+      logger.warn("Retake.tv API credentials not configured (RETAKE_ACCESS_TOKEN required)");
       return false;
     }
 
+    // LTCG backend config (for LiveKit egress) is optional — falls back to direct API call
     return true;
   },
 
@@ -72,32 +75,32 @@ export const startRetakeStreamAction: Action = {
     callback: HandlerCallback
   ) => {
     try {
-      // Get Retake.tv credentials
-      const accessToken =
+      // --- Retake API credentials (always required for Retake's own API) ---
+      const retakeAccessToken =
         runtime.getSetting("RETAKE_ACCESS_TOKEN") ||
         process.env.RETAKE_ACCESS_TOKEN ||
         process.env.DIZZY_RETAKE_ACCESS_TOKEN;
 
-      const userDbId =
+      const retakeUserDbId =
         runtime.getSetting("RETAKE_USER_DB_ID") ||
         process.env.RETAKE_USER_DB_ID ||
         process.env.DIZZY_RETAKE_USER_DB_ID;
 
-      if (!accessToken || !userDbId) {
+      if (!retakeAccessToken || !retakeUserDbId) {
         await callback({
-          text: "⚠️ Retake.tv credentials not configured. I need RETAKE_ACCESS_TOKEN and RETAKE_USER_DB_ID to stream.",
+          text: "Retake.tv credentials not configured. I need RETAKE_ACCESS_TOKEN and RETAKE_USER_DB_ID to stream.",
           error: true,
         });
         return { success: false, error: "Missing Retake credentials" };
       }
 
-      // Signal stream start to Retake.tv
+      // --- Step 1: Signal stream start to Retake.tv ---
       logger.info("Starting Retake.tv stream...");
 
       const response = await fetch("https://chat.retake.tv/api/agent/stream/start", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${accessToken}`,
+          "Authorization": `Bearer ${retakeAccessToken}`,
           "Content-Type": "application/json",
         },
       });
@@ -107,10 +110,10 @@ export const startRetakeStreamAction: Action = {
         throw new Error(`Retake.tv API error: ${errorText}`);
       }
 
-      // Get RTMP credentials
+      // --- Step 2: Get RTMP credentials from Retake ---
       const rtmpResponse = await fetch("https://chat.retake.tv/api/agent/rtmp", {
         headers: {
-          "Authorization": `Bearer ${accessToken}`,
+          "Authorization": `Bearer ${retakeAccessToken}`,
         },
       });
 
@@ -119,50 +122,56 @@ export const startRetakeStreamAction: Action = {
       }
 
       const rtmpData = await rtmpResponse.json();
-      logger.info("Retake.tv stream started successfully", {
-        rtmpUrl: rtmpData.rtmp_url,
-        streamKey: rtmpData.stream_key,
-      });
+      logger.info(`Retake.tv RTMP credentials received (hasRtmpUrl: ${Boolean(rtmpData.rtmp_url)}, hasStreamKey: ${Boolean(rtmpData.stream_key)})`);
 
-      // Notify LTCG backend to enable streaming
-      // This triggers the LiveKit egress to capture overlay and stream to Retake
-      // Use LTCG_STREAMING_API_URL for streaming endpoints (Next.js app)
-      // Falls back to LTCG_APP_URL, then LTCG_API_URL, then production
-      const ltcgStreamingUrl =
-        process.env.LTCG_STREAMING_API_URL ||
-        process.env.LTCG_APP_URL ||
-        process.env.LTCG_API_URL ||
-        "https://www.lunchtable.cards";
-      const ltcgApiKey = process.env.LTCG_API_KEY;
+      // --- Step 3: Start LTCG backend LiveKit egress (optional — best-effort) ---
+      const ltcgApiKey = runtime.getSetting("LTCG_API_KEY") as string;
+      const ltcgApiUrl = runtime.getSetting("LTCG_API_URL") as string;
+      let ltcgApiClient: LTCGApiClient | null = null;
+      if (ltcgApiKey && ltcgApiUrl) {
+        ltcgApiClient = new LTCGApiClient({ apiKey: ltcgApiKey, baseUrl: ltcgApiUrl });
+      }
+
+      const backendConfig = await resolveStreamingCredentials(runtime, ltcgApiClient, "retake");
 
       try {
-        // Get LTCG agent ID from settings (registered via registerAgentAction)
-        const ltcgAgentId =
-          runtime.getSetting("LTCG_AGENT_ID") ||
-          process.env.LTCG_AGENT_ID;
-
-        const streamingResponse = await fetch(`${ltcgStreamingUrl}/api/streaming/start`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${ltcgApiKey}`,
-          },
-          body: JSON.stringify({
-            agentId: ltcgAgentId,
-            streamType: "agent",
-            platform: "custom",
-            customRtmpUrl: rtmpData.rtmp_url,
-            streamKey: rtmpData.stream_key,
-            streamTitle: `${runtime.character.name} plays LTCG`,
-          }),
-        });
-
-        if (!streamingResponse.ok) {
-          const errorText = await streamingResponse.text();
-          logger.warn("LTCG streaming API error", { error: errorText });
+        if (backendConfig?.source === "backend" && ltcgApiClient) {
+          // Backend has stored retake config — use stored credentials flow
+          const streamData = await startStreamFromBackend(ltcgApiClient, runtime, "retake");
+          logger.info(`LTCG streaming started via backend config (sessionId: ${streamData.sessionId})`);
         } else {
-          const streamData = await streamingResponse.json();
-          logger.info("LTCG streaming started", { sessionId: streamData.sessionId });
+          // Fall back to direct API call with Retake RTMP creds
+          const ltcgStreamingUrl =
+            process.env.LTCG_STREAMING_API_URL ||
+            process.env.LTCG_APP_URL ||
+            ltcgApiUrl ||
+            "https://www.lunchtable.cards";
+          const ltcgAgentId =
+            runtime.getSetting("LTCG_AGENT_ID") || process.env.LTCG_AGENT_ID;
+
+          const streamingResponse = await fetch(`${ltcgStreamingUrl}/api/streaming/start`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(ltcgApiKey ? { "Authorization": `Bearer ${ltcgApiKey}` } : {}),
+            },
+            body: JSON.stringify({
+              agentId: ltcgAgentId,
+              streamType: "agent",
+              platform: "custom",
+              customRtmpUrl: rtmpData.rtmp_url,
+              streamKey: rtmpData.stream_key,
+              streamTitle: `${runtime.character.name} plays LTCG`,
+            }),
+          });
+
+          if (!streamingResponse.ok) {
+            const errorText = await streamingResponse.text();
+            logger.warn(`LTCG streaming API error: ${errorText}`);
+          } else {
+            const streamData = await streamingResponse.json();
+            logger.info(`LTCG streaming started (sessionId: ${streamData.sessionId})`);
+          }
         }
       } catch (error) {
         logger.warn("Failed to notify LTCG backend", error);
@@ -170,12 +179,12 @@ export const startRetakeStreamAction: Action = {
       }
 
       await callback({
-        text: `🎬 Stream is LIVE on Retake.tv!
+        text: `Stream is LIVE on Retake.tv!
 
 I'm now streaming to https://retake.tv/
 Chat is ready - I'll be responding to viewers during gameplay!
 
-Ready to start a game and show everyone what I've learned! 🎮⚔️`,
+Ready to start a game and show everyone what I've learned!`,
       });
 
       return {
@@ -183,19 +192,15 @@ Ready to start a game and show everyone what I've learned! 🎮⚔️`,
         data: {
           platform: "retake",
           status: "live",
-          accessToken, // For internal use
-          userDbId,
-          rtmpUrl: rtmpData.rtmp_url,
-          rtmpKey: rtmpData.stream_key,
         },
       };
     } catch (error) {
       logger.error("Failed to start Retake stream", error);
 
       await callback({
-        text: `❌ Failed to start stream: ${error instanceof Error ? error.message : "Unknown error"}
+        text: `Failed to start stream: ${error instanceof Error ? error.message : "Unknown error"}
 
-Make sure Retake.tv credentials are configured correctly.`,
+Configure credentials in the agent streaming settings UI, or set RETAKE_ACCESS_TOKEN and RETAKE_USER_DB_ID.`,
         error: true,
       });
 
@@ -215,7 +220,7 @@ Make sure Retake.tv credentials are configured correctly.`,
       {
         name: "{{agentName}}",
         content: {
-          text: "🎬 Stream is LIVE on Retake.tv!",
+          text: "Stream is LIVE on Retake.tv!",
         },
       },
     ],
@@ -239,7 +244,7 @@ Make sure Retake.tv credentials are configured correctly.`,
       {
         name: "{{agentName}}",
         content: {
-          text: "🎬 Stream is LIVE! Ready to play!",
+          text: "Stream is LIVE! Ready to play!",
         },
       },
     ],

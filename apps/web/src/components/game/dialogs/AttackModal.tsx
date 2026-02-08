@@ -45,8 +45,6 @@ export function AttackModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm px-4"
-            role="dialog"
-            aria-modal="true"
             aria-labelledby="attack-modal-title"
             aria-describedby="attack-modal-description"
           >
@@ -91,11 +89,11 @@ export function AttackModal({
               </div>
 
               {/* Target Selection */}
-              <div className="space-y-2" role="group" aria-label="Attack target selection">
+              <div className="space-y-2" aria-label="Attack target selection">
                 <p className="text-sm font-semibold text-[#e8e0d5] mb-2">Choose Target:</p>
 
                 {/* Monster Targets */}
-                <div role="listbox" aria-label="Enemy monsters">
+                <div aria-label="Enemy monsters">
                   {targets.map((target) => {
                     const isDefense =
                       target.position === "defense" || target.position === "setDefense";
@@ -120,7 +118,6 @@ export function AttackModal({
                     return (
                       <Button
                         key={target.instanceId}
-                        role="option"
                         aria-label={`Attack ${target.name}${hasKnownStats ? `, ${isDefense ? `Defense ${target.defense}` : `Attack ${target.attack}`}` : ", stats hidden"}${hasKnownStats ? `, ${attackerWins ? "you will win" : isDraw ? "will be a draw" : "you will lose"}` : ""}`}
                         className={cn(
                           "w-full justify-start gap-3 h-auto py-3 border-2 transition-all",

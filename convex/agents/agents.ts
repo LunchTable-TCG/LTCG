@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalQuery, query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
+import { ELO_SYSTEM } from "../lib/constants";
 import { getCurrentUser, requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 
@@ -21,6 +22,8 @@ import {
 import { STARTER_DECKS, type StarterDeckCode, VALID_DECK_CODES } from "../seeds/starterDecks";
 
 const MAX_AGENTS_PER_USER = 3;
+const SUPPORTED_PROFILE_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_PROFILE_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 // Type guard for starter deck codes
 function isValidDeckCode(code: string): code is StarterDeckCode {
@@ -308,7 +311,7 @@ export const listAllAgents = internalQuery({
   args: {},
   handler: async (ctx) => {
     const agents = await ctx.db.query("agents").collect();
-    return agents.map(agent => ({
+    return agents.map((agent) => ({
       agentId: agent._id,
       userId: agent.userId,
       name: agent.name,
@@ -335,7 +338,7 @@ export const getAgentByIdInternal = internalQuery({
       agentId: agent._id,
       userId: agent.userId,
       name: agent.name,
-      elo: user?.rankedElo ?? 1000,
+      elo: user?.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING,
       wins: user?.rankedWins ?? 0,
       losses: user?.rankedLosses ?? 0,
       createdAt: agent._creationTime,
@@ -343,6 +346,20 @@ export const getAgentByIdInternal = internalQuery({
       walletChainType: agent.walletChainType,
       walletCreatedAt: agent.walletCreatedAt,
     };
+  },
+});
+
+/**
+ * Get agent by user ID (internal - no auth required)
+ * Used to check if a user has an agent (for crypto wager deposits)
+ */
+export const getAgentByUserId = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("agents")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
   },
 });
 
@@ -1105,6 +1122,60 @@ export const updateAgent = mutation({
     }
 
     return { success: true };
+  },
+});
+
+/**
+ * Set an agent profile image from an uploaded Convex storage file.
+ */
+export const setAgentProfileImage = mutation({
+  args: {
+    agentId: v.id("agents"),
+    storageId: v.id("_storage"),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    profilePictureUrl: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuthMutation(ctx);
+    const agent = await ctx.db.get(args.agentId);
+
+    if (!agent || agent.userId !== userId || !agent.isActive) {
+      throw createError(ErrorCode.AGENT_NOT_FOUND, { agentId: args.agentId });
+    }
+
+    const storageFile = await ctx.db.system
+      .query("_storage")
+      .filter((q) => q.eq(q.field("_id"), args.storageId))
+      .first();
+
+    if (!storageFile) {
+      throw new Error("Uploaded file not found");
+    }
+
+    if (
+      !storageFile.contentType ||
+      !SUPPORTED_PROFILE_IMAGE_TYPES.includes(storageFile.contentType)
+    ) {
+      throw new Error("Unsupported profile image format. Use PNG, JPEG, or WEBP.");
+    }
+
+    if (storageFile.size > MAX_PROFILE_IMAGE_SIZE_BYTES) {
+      throw new Error("Profile image is too large. Maximum size is 5MB.");
+    }
+
+    const profilePictureUrl = await ctx.storage.getUrl(args.storageId);
+    if (!profilePictureUrl) {
+      throw new Error("Failed to resolve profile image URL");
+    }
+
+    await ctx.db.patch(args.agentId, { profilePictureUrl });
+
+    return {
+      success: true,
+      profilePictureUrl,
+    };
   },
 });
 

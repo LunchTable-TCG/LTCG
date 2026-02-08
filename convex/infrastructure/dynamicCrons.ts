@@ -9,4 +9,8 @@
 import { Crons } from "@convex-dev/crons";
 import { components } from "../_generated/api";
 
-export const dynamicCrons = new Crons((components as any).dynamicCrons);
+type DynamicCronsComponent = ConstructorParameters<typeof Crons>[0];
+const dynamicCronsComponent = (components as unknown as { dynamicCrons: DynamicCronsComponent })
+  .dynamicCrons;
+
+export const dynamicCrons = new Crons(dynamicCronsComponent);

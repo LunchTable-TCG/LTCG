@@ -15,12 +15,14 @@ const textFieldValidator = v.object({
   color: v.string(),
   align: v.string(),
   stroke: v.optional(v.object({ color: v.string(), width: v.number() })),
-  shadow: v.optional(v.object({
-    color: v.string(),
-    blur: v.number(),
-    offsetX: v.number(),
-    offsetY: v.number(),
-  })),
+  shadow: v.optional(
+    v.object({
+      color: v.string(),
+      blur: v.number(),
+      offsetX: v.number(),
+      offsetY: v.number(),
+    })
+  ),
   letterSpacing: v.number(),
   lineHeight: v.number(),
   autoScale: v.boolean(),
@@ -77,18 +79,18 @@ export const upsert = mutation({
         updatedAt: now,
       });
       return args.id;
-    } else {
-      return await ctx.db.insert("cardTypeTemplates", {
-        cardType: args.cardType,
-        name: args.name,
-        backgroundId: args.backgroundId,
-        canvasWidth: args.canvasWidth,
-        canvasHeight: args.canvasHeight,
-        textFields: args.textFields,
-        createdAt: now,
-        updatedAt: now,
-      });
     }
+
+    return await ctx.db.insert("cardTypeTemplates", {
+      cardType: args.cardType,
+      name: args.name,
+      backgroundId: args.backgroundId,
+      canvasWidth: args.canvasWidth,
+      canvasHeight: args.canvasHeight,
+      textFields: args.textFields,
+      createdAt: now,
+      updatedAt: now,
+    });
   },
 });
 

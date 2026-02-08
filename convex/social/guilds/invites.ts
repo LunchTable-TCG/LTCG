@@ -214,7 +214,24 @@ export const sendInvite = mutation({
       expiresAt: now + INVITE_EXPIRY_MS,
     });
 
-    // TODO: Send inbox notification to target user
+    // Send inbox notification to target user
+    const inviter = await ctx.db.get(userId);
+    await ctx.db.insert("userInbox", {
+      userId: targetUser._id,
+      type: "guild_invite",
+      title: "Guild Invitation",
+      message: `${inviter?.username || "Someone"} invited you to join ${guild.name}`,
+      data: {
+        guildId: args.guildId,
+        guildName: guild.name,
+        status: "invited",
+      },
+      senderId: userId,
+      senderUsername: inviter?.username,
+      isRead: false,
+      expiresAt: now + INVITE_EXPIRY_MS,
+      createdAt: now,
+    });
 
     return { success: true };
   },

@@ -63,7 +63,7 @@ class FrontendLogger {
     level: LogLevel,
     message: string,
     context?: LogContext
-  ): [string, LogContext | {}] {
+  ): [string, LogContext | Record<string, never>] {
     const timestamp = new Date().toISOString();
     const emoji = {
       debug: "🔍",
@@ -72,7 +72,7 @@ class FrontendLogger {
       error: "❌",
     }[level];
 
-    return [`${emoji} [${timestamp}] ${message}`, context || {}];
+    return [`${emoji} [${timestamp}] ${message}`, context ?? {}];
   }
 
   debug(message: string, context?: LogContext): void {

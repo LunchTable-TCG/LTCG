@@ -14,9 +14,9 @@
 
 **Already configured in .env.local:**
 ```bash
-LIVEKIT_URL=wss://lunchtable-rb51owhu.livekit.cloud
-LIVEKIT_API_KEY=APIVQCZkSrK2bLR
-LIVEKIT_API_SECRET=MUNC3YyvHUQpwFDMnhJTYeVHBSNSlCYElzbblonm3YH
+LIVEKIT_URL=wss://<your-livekit-project>.livekit.cloud
+LIVEKIT_API_KEY=<your-livekit-api-key>
+LIVEKIT_API_SECRET=<your-livekit-api-secret>
 ```
 
 **Add these to Vercel environment variables:**

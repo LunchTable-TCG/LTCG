@@ -7,6 +7,7 @@ import { useGameWallet, useTokenBalance } from "@/hooks";
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
+import { usePrivy } from "@privy-io/react-auth";
 import {
   AlertTriangle,
   Bell,
@@ -17,6 +18,7 @@ import {
   Eye,
   EyeOff,
   Gamepad2,
+  KeyRound,
   Loader2,
   Mail,
   Palette,
@@ -30,12 +32,20 @@ import {
   Volume2,
   VolumeX,
   Wallet,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-type SettingsTab = "account" | "wallet" | "notifications" | "display" | "game" | "privacy" | "streaming";
+type SettingsTab =
+  | "account"
+  | "wallet"
+  | "notifications"
+  | "display"
+  | "game"
+  | "privacy"
+  | "streaming";
 
 interface ToggleProps {
   enabled: boolean;
@@ -67,6 +77,7 @@ function Toggle({ enabled, onChange, disabled }: ToggleProps) {
 
 export default function SettingsPage() {
   const { isAuthenticated } = useAuth();
+  const { getAccessToken } = usePrivy();
   const currentUser = useConvexQuery(
     typedApi.core.users.currentUser,
     isAuthenticated ? {} : "skip"
@@ -154,6 +165,98 @@ export default function SettingsPage() {
   const [streaming, setStreaming] = useState({
     streamerModeEnabled: false,
   });
+
+  // Streaming config (persisted credentials — separate from preferences)
+  const streamingConfig = useConvexQuery(
+    typedApi.core.userPreferences.getUserStreamingConfig,
+    isAuthenticated ? {} : "skip"
+  );
+  const [streamPlatform, setStreamPlatform] = useState("");
+  const [streamKey, setStreamKey] = useState("");
+  const [streamRtmpUrl, setStreamRtmpUrl] = useState("");
+  const [showStreamKey, setShowStreamKey] = useState(false);
+  const [isSavingStreamConfig, setIsSavingStreamConfig] = useState(false);
+  const [isClearingStreamConfig, setIsClearingStreamConfig] = useState(false);
+  const clearStreamingCredentials = useConvexMutation(
+    typedApi.core.userPreferences.clearStreamingCredentials
+  );
+
+  // Load streaming config when available
+  useEffect(() => {
+    if (streamingConfig) {
+      setStreamPlatform(streamingConfig.platform ?? "");
+    }
+  }, [streamingConfig]);
+
+  const PLATFORM_OPTIONS = [
+    { value: "twitch", label: "Twitch" },
+    { value: "youtube", label: "YouTube" },
+    { value: "kick", label: "Kick" },
+    { value: "x", label: "X (Twitter)" },
+    { value: "pumpfun", label: "Pump.fun" },
+    { value: "custom", label: "Custom RTMP" },
+  ];
+
+  const platformRequiresRtmpUrl = ["x", "pumpfun", "custom"].includes(streamPlatform);
+
+  const handleSaveStreamConfig = async () => {
+    if (!streamPlatform) {
+      toast.error("Please select a platform");
+      return;
+    }
+    if (!streamKey.trim()) {
+      toast.error("Please enter a stream key");
+      return;
+    }
+    if (platformRequiresRtmpUrl && !streamRtmpUrl.trim()) {
+      toast.error("RTMP URL is required for this platform");
+      return;
+    }
+
+    setIsSavingStreamConfig(true);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch("/api/streaming/configure-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          platform: streamPlatform,
+          streamKey: streamKey.trim(),
+          rtmpUrl: streamRtmpUrl.trim() || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save streaming config");
+      }
+      toast.success("Streaming credentials saved");
+      setStreamKey("");
+      setStreamRtmpUrl("");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save");
+    } finally {
+      setIsSavingStreamConfig(false);
+    }
+  };
+
+  const handleClearStreamConfig = async () => {
+    setIsClearingStreamConfig(true);
+    try {
+      await clearStreamingCredentials({});
+      setStreamPlatform("");
+      setStreamKey("");
+      setStreamRtmpUrl("");
+      toast.success("Streaming credentials removed");
+    } catch (error) {
+      toast.error("Failed to clear credentials");
+      console.error(error);
+    } finally {
+      setIsClearingStreamConfig(false);
+    }
+  };
 
   // Track if settings have been modified (dirty state)
   const [isDirty, setIsDirty] = useState(false);
@@ -504,10 +607,14 @@ export default function SettingsPage() {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-[#a89f94] mb-2">
+                            <label
+                              htmlFor="delete-confirm-password"
+                              className="block text-sm font-medium text-[#a89f94] mb-2"
+                            >
                               Enter your password to confirm deletion
                             </label>
                             <Input
+                              id="delete-confirm-password"
                               type="password"
                               value={deleteConfirmPassword}
                               onChange={(e) => setDeleteConfirmPassword(e.target.value)}
@@ -1052,6 +1159,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-4">
+                    {/* Streamer Mode Toggle */}
                     <div className="flex items-center justify-between p-4 rounded-lg bg-black/20 border border-[#3d2b1f]">
                       <div className="flex items-center gap-3">
                         <Video className="w-5 h-5 text-[#d4af37]" />
@@ -1071,29 +1179,186 @@ export default function SettingsPage() {
                     </div>
 
                     {streaming.streamerModeEnabled && (
-                      <div className="p-4 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30">
-                        <p className="text-sm text-[#e8e0d5] font-medium mb-2">
-                          ✨ Streamer Mode Active
-                        </p>
-                        <p className="text-sm text-[#a89f94] mb-3">
-                          You now have access to streaming features:
-                        </p>
-                        <ul className="text-sm text-[#a89f94] space-y-1 list-disc list-inside ml-2">
-                          <li>&quot;Go Live&quot; button in main navigation</li>
-                          <li>Stream to Twitch or YouTube</li>
-                          <li>Screen sharing with webcam overlay</li>
-                          <li>Customizable stream layouts</li>
-                          <li>AI agent auto-streaming capabilities</li>
-                        </ul>
-                      </div>
+                      <>
+                        {/* Streaming Credentials */}
+                        <div className="p-4 rounded-lg bg-black/20 border border-[#3d2b1f] space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <KeyRound className="w-5 h-5 text-[#d4af37]" />
+                              <div>
+                                <p className="font-medium text-[#e8e0d5]">Streaming Credentials</p>
+                                <p className="text-sm text-[#a89f94]">
+                                  Save your credentials to start streams without re-entering them
+                                </p>
+                              </div>
+                            </div>
+                            {streamingConfig?.hasStreamKey && (
+                              <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-medium">
+                                Saved
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Platform Selector */}
+                          <div>
+                            <label
+                              htmlFor="stream-platform"
+                              className="block text-sm font-medium text-[#a89f94] mb-2"
+                            >
+                              Platform
+                            </label>
+                            <select
+                              id="stream-platform"
+                              value={streamPlatform}
+                              onChange={(e) => {
+                                setStreamPlatform(e.target.value);
+                                setStreamKey("");
+                                setStreamRtmpUrl("");
+                              }}
+                              className="w-full px-3 py-2 bg-black/40 border border-[#3d2b1f] rounded-md text-[#e8e0d5] focus:outline-none focus:ring-2 focus:ring-[#d4af37]/50"
+                            >
+                              <option value="">Select platform...</option>
+                              {PLATFORM_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {streamPlatform && (
+                            <>
+                              {/* Stream Key */}
+                              <div>
+                                <label
+                                  htmlFor="stream-key"
+                                  className="block text-sm font-medium text-[#a89f94] mb-2"
+                                >
+                                  Stream Key
+                                </label>
+                                <div className="relative">
+                                  <Input
+                                    id="stream-key"
+                                    type={showStreamKey ? "text" : "password"}
+                                    value={streamKey}
+                                    onChange={(e) => setStreamKey(e.target.value)}
+                                    className="pr-10 bg-black/40 border-[#3d2b1f] text-[#e8e0d5]"
+                                    placeholder={
+                                      streamingConfig?.hasStreamKey
+                                        ? "Enter new key to update"
+                                        : "Enter your stream key"
+                                    }
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowStreamKey(!showStreamKey)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a89f94] hover:text-[#e8e0d5]"
+                                  >
+                                    {showStreamKey ? (
+                                      <EyeOff className="w-4 h-4" />
+                                    ) : (
+                                      <Eye className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </div>
+                                <p className="text-xs text-[#a89f94]/60 mt-1">
+                                  Your key is encrypted server-side and never stored in plaintext
+                                </p>
+                              </div>
+
+                              {/* RTMP URL (conditional) */}
+                              {platformRequiresRtmpUrl && (
+                                <div>
+                                  <label
+                                    htmlFor="stream-rtmp-url"
+                                    className="block text-sm font-medium text-[#a89f94] mb-2"
+                                  >
+                                    RTMP URL
+                                  </label>
+                                  <Input
+                                    id="stream-rtmp-url"
+                                    value={streamRtmpUrl}
+                                    onChange={(e) => setStreamRtmpUrl(e.target.value)}
+                                    className="bg-black/40 border-[#3d2b1f] text-[#e8e0d5]"
+                                    placeholder={
+                                      streamingConfig?.rtmpUrl
+                                        ? streamingConfig.rtmpUrl
+                                        : "rtmp://..."
+                                    }
+                                  />
+                                </div>
+                              )}
+
+                              {/* Save / Clear Buttons */}
+                              <div className="flex gap-2 pt-2">
+                                <Button
+                                  onClick={handleSaveStreamConfig}
+                                  disabled={isSavingStreamConfig || !streamKey.trim()}
+                                  className="bg-[#d4af37] hover:bg-[#c49d2e] text-black"
+                                >
+                                  {isSavingStreamConfig ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Save className="w-4 h-4 mr-2" />
+                                  )}
+                                  Save Credentials
+                                </Button>
+                                {streamingConfig?.hasStreamKey && (
+                                  <Button
+                                    variant="outline"
+                                    onClick={handleClearStreamConfig}
+                                    disabled={isClearingStreamConfig}
+                                    className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                                  >
+                                    {isClearingStreamConfig ? (
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                      <X className="w-4 h-4 mr-2" />
+                                    )}
+                                    Remove Saved
+                                  </Button>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Streaming Dashboard Link */}
+                        <Link
+                          href="/streaming/live"
+                          className="flex items-center justify-between p-4 rounded-lg bg-black/20 border border-[#3d2b1f] hover:border-[#d4af37]/50 transition-colors group"
+                        >
+                          <div>
+                            <p className="font-medium text-[#e8e0d5]">Streaming Dashboard</p>
+                            <p className="text-sm text-[#a89f94]">
+                              Go live, manage overlays, and monitor your stream
+                            </p>
+                          </div>
+                          <ExternalLink className="w-5 h-5 text-[#a89f94] group-hover:text-[#d4af37] transition-colors" />
+                        </Link>
+
+                        {/* Feature List */}
+                        <div className="p-4 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30">
+                          <p className="text-sm text-[#e8e0d5] font-medium mb-2">
+                            Streamer Mode Features
+                          </p>
+                          <ul className="text-sm text-[#a89f94] space-y-1 list-disc list-inside ml-2">
+                            <li>&quot;Go Live&quot; button in main navigation</li>
+                            <li>Stream to Twitch, YouTube, Kick, X, Pump.fun, or custom RTMP</li>
+                            <li>Screen sharing with webcam overlay</li>
+                            <li>Customizable stream layouts</li>
+                            <li>AI agent auto-streaming capabilities</li>
+                          </ul>
+                        </div>
+                      </>
                     )}
 
                     {!streaming.streamerModeEnabled && (
                       <div className="p-4 rounded-lg bg-black/20 border border-[#3d2b1f]">
                         <p className="text-sm text-[#a89f94]">
                           Enable Streamer Mode to unlock live streaming features. Stream your
-                          gameplay directly to Twitch or YouTube with screen sharing, webcam
-                          support, and customizable overlays.
+                          gameplay directly to Twitch, YouTube, Kick, X, Pump.fun, or a custom RTMP
+                          endpoint with screen sharing, webcam support, and customizable overlays.
                         </p>
                       </div>
                     )}

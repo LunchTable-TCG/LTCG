@@ -6,7 +6,9 @@
  * Results visible at /analytics/integrity in the admin dashboard.
  */
 
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internalMutation, query } from "../_generated/server";
 import { requireAuthQuery } from "../lib/convexAuth";
@@ -66,10 +68,7 @@ async function checkDuplicateRewardTransactions(ctx: QueryCtx | MutationCtx) {
   const recentRewards = await ctx.db
     .query("currencyTransactions")
     .filter((q) =>
-      q.and(
-        q.eq(q.field("transactionType"), "reward"),
-        q.neq(q.field("referenceId"), undefined)
-      )
+      q.and(q.eq(q.field("transactionType"), "reward"), q.neq(q.field("referenceId"), undefined))
     )
     .order("desc")
     .take(500);
@@ -276,10 +275,7 @@ async function checkStoryProgressMismatch(ctx: QueryCtx | MutationCtx) {
     const wonAttempts = await ctx.db
       .query("storyBattleAttempts")
       .filter((q) =>
-        q.and(
-          q.eq(q.field("progressId"), progress._id),
-          q.eq(q.field("outcome"), "won")
-        )
+        q.and(q.eq(q.field("progressId"), progress._id), q.eq(q.field("outcome"), "won"))
       )
       .collect();
 
@@ -393,7 +389,7 @@ export const runIntegrityChecks = internalMutation({
     // Notify admins for critical issues
     if (hasCritical) {
       // Schedule notification to avoid mutation-in-mutation issues
-      await ctx.scheduler.runAfter(0, internal.alerts.notifications.createForAllAdmins, {
+      await ctx.scheduler.runAfter(0, internalAny.alerts.notifications.createForAllAdmins, {
         title: `Integrity Alert: ${anomalies.length} anomaly(s)`,
         message: summary,
         type: "alert",

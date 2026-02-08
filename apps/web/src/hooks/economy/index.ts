@@ -12,5 +12,3 @@ export { useTokenBalance } from "./useTokenBalance";
 export { useLunchMoney } from "./useLunchMoney";
 export { useTransactionHistory } from "./useTransactionHistory";
 export { usePriceHistory } from "./usePriceHistory";
-export { useDailyRewards } from "./useDailyRewards";
-export { useGemPurchases } from "./useGemPurchases";

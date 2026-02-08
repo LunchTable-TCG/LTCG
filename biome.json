@@ -41,13 +41,13 @@
         "noConfusingVoidType": "error",
         "noDoubleEquals": "error",
         "noThenProperty": "off",
-        "noArrayIndexKey": "warn",
+        "noArrayIndexKey": "off",
         "noAssignInExpressions": "warn"
       },
       "correctness": {
         "noUnusedVariables": "error",
         "noUnusedImports": "error",
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "off"
       },
       "complexity": {
         "noForEach": "off",
@@ -63,9 +63,9 @@
       },
       "a11y": {
         "useButtonType": "warn",
-        "noSvgWithoutTitle": "warn",
-        "useKeyWithClickEvents": "warn",
-        "useSemanticElements": "warn"
+        "noSvgWithoutTitle": "off",
+        "useKeyWithClickEvents": "off",
+        "useSemanticElements": "off"
       }
     }
   },

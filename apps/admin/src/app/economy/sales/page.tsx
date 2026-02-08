@@ -90,7 +90,7 @@ function SalesStatsOverview() {
   if (!stats) {
     return (
       <div className="grid gap-4 md:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+        {Array.from({ length: 4 }, (_, i) => i).map((i) => (
           <Card key={i}>
             <CardContent className="pt-6">
               <div className="h-16 animate-pulse bg-muted rounded" />
@@ -734,7 +734,7 @@ function SalesList({ filter }: { filter: "active" | "upcoming" | "all" | "expire
   if (!sales) {
     return (
       <div className="grid gap-4 md:grid-cols-2">
-        {[...Array(4)].map((_, i) => (
+        {Array.from({ length: 4 }, (_, i) => i).map((i) => (
           <Card key={i}>
             <CardContent className="pt-6">
               <div className="h-48 animate-pulse bg-muted rounded" />

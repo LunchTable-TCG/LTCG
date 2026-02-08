@@ -167,7 +167,6 @@ export function CardInspectorModal({
                           <div className="flex gap-px ml-0.5">
                             {Array.from({ length: Math.min(card.monsterStats.level, 6) }).map(
                               (_, i) => (
-                                // biome-ignore lint/suspicious/noArrayIndexKey: Static level indicators don't reorder
                                 <div
                                   key={`level-indicator-${i}`}
                                   className="w-1.5 h-1.5 rounded-full bg-yellow-400"

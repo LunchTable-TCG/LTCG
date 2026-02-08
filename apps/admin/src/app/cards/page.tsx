@@ -128,7 +128,7 @@ export default function CardsPage() {
 
   const statsResult = useConvexQuery(typedApi.admin.cards.getCardStats, {}) as CardStats | undefined;
 
-  const toggleActive = useConvexMutation(typedApi.admin.cards.toggleCardActive as any);
+  const toggleActive = useConvexMutation(typedApi.admin.cards.toggleCardActive);
 
   const handleToggleActive = async (cardId: string, _cardName: string) => {
     try {

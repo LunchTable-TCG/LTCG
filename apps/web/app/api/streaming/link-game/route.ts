@@ -1,9 +1,19 @@
-import { api } from "@convex/_generated/api";
+import { logError } from "@/lib/streaming/logging";
+import { resolveStreamingAuth } from "@/lib/streaming/serverAuth";
+import * as generatedApi from "@convex/_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
 import type { Id } from "@convex/_generated/dataModel";
 import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL ?? "");
+function createConvexClient() {
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.trim();
+  if (!convexUrl) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+  }
+  return new ConvexHttpClient(convexUrl);
+}
 
 /**
  * Link a game lobby to an active streaming session
@@ -11,14 +21,16 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL ?? "");
  */
 export async function POST(req: NextRequest) {
   try {
-    // Check internal auth header for agent requests
-    const authHeader = req.headers.get("Authorization");
-    const apiKey = authHeader?.replace("Bearer ", "");
-
-    if (!apiKey || apiKey !== process.env.LTCG_API_KEY?.trim()) {
+    const auth = await resolveStreamingAuth(req);
+    if (!auth.isInternal && !auth.isAgentApiKey) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const internalAuth = process.env.INTERNAL_API_SECRET?.trim();
+    if (!internalAuth) {
+      return NextResponse.json({ error: "INTERNAL_API_SECRET is not configured" }, { status: 500 });
+    }
 
+    const convex = createConvexClient();
     const body = await req.json();
     const { sessionId, lobbyId, gameId } = body;
 
@@ -33,8 +45,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify session exists
-    const session = await convex.query(api.streaming.sessions.getSession, {
+    const session = await convex.query(apiAny.streaming.sessions.getSession, {
       sessionId: sessionId as Id<"streamingSessions">,
+      internalAuth,
     });
 
     if (!session) {
@@ -42,9 +55,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Link game to session
-    await convex.mutation(api.streaming.sessions.linkLobby, {
+    await convex.mutation(apiAny.streaming.sessions.linkLobby, {
       sessionId: sessionId as Id<"streamingSessions">,
       lobbyId: targetLobbyId,
+      internalAuth,
     });
 
     return NextResponse.json({
@@ -54,7 +68,9 @@ export async function POST(req: NextRequest) {
       lobbyId: targetLobbyId,
     });
   } catch (error) {
-    console.error("Error linking game to stream:", error);
+    logError("Error linking game to stream", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

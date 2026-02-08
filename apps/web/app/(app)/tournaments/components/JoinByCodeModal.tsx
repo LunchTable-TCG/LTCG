@@ -3,7 +3,7 @@
 import { useJoinUserTournament, useTournamentByCode } from "@/hooks/social/useUserTournaments";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Coins, Hash, Loader2, Trophy, Users, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface JoinByCodeModalProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ export function JoinByCodeModal({
 }: JoinByCodeModalProps) {
   const [code, setCode] = useState(initialCode);
   const [error, setError] = useState<string | null>(null);
+  const codeInputRef = useRef<HTMLInputElement>(null);
 
   const { tournament, isLoading: isSearching, isValid } = useTournamentByCode(code);
   const { joinByCode, isJoining } = useJoinUserTournament();
@@ -46,6 +47,12 @@ export function JoinByCodeModal({
       setCode(initialCode.toUpperCase());
     }
   }, [initialCode]);
+
+  useEffect(() => {
+    if (isOpen) {
+      codeInputRef.current?.focus();
+    }
+  }, [isOpen]);
 
   const handleCodeChange = (value: string) => {
     // Allow only alphanumeric, convert to uppercase, max 6 characters
@@ -124,13 +131,13 @@ export function JoinByCodeModal({
               Tournament Code
             </label>
             <input
+              ref={codeInputRef}
               id="code"
               type="text"
               value={code}
               onChange={(e) => handleCodeChange(e.target.value)}
               placeholder="ABC123"
               maxLength={6}
-              autoFocus
               className="w-full px-4 py-4 rounded-lg bg-black/40 border border-[#3d2b1f] text-[#e8e0d5] placeholder-[#6b5d52] focus:border-[#d4af37]/50 focus:outline-none transition-all text-center text-2xl font-mono tracking-[0.3em] uppercase"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && canJoin) {

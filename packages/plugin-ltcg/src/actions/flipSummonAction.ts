@@ -44,8 +44,8 @@ export const flipSummonAction: Action = {
       }
 
       // Must have at least one face-down monster
-      const faceDownMonsters = gameState.hostPlayer.monsterZone.filter(
-        (monster) => monster.position === "facedown"
+      const faceDownMonsters = gameState.myBoard.filter(
+        (monster) => monster.isFaceDown === true
       );
 
       if (faceDownMonsters.length === 0) {
@@ -101,8 +101,8 @@ export const flipSummonAction: Action = {
       });
 
       // Get face-down monsters
-      const faceDownMonsters = gameState.hostPlayer.monsterZone.filter(
-        (monster) => monster.position === "facedown"
+      const faceDownMonsters = gameState.myBoard.filter(
+        (monster) => monster.isFaceDown === true
       );
 
       if (faceDownMonsters.length === 0) {
@@ -113,24 +113,23 @@ export const flipSummonAction: Action = {
       const monsterOptions = faceDownMonsters
         .map(
           (monster, idx) =>
-            `${idx + 1}. Face-down monster at position ${monster.boardIndex} (${monster.name || "Unknown"})`
+            `${idx + 1}. Face-down monster (${monster.name || "Unknown"}) - ${monster.attack ?? 0} ATK / ${monster.defense ?? 0} DEF`
         )
         .join("\n");
 
       // Get opponent's strongest monster for comparison
-      const opponentMonsters = gameState.opponentPlayer.monsterZone;
+      const opponentMonsters = gameState.opponentBoard;
       const opponentStrongestAtk =
-        opponentMonsters.length > 0 ? Math.max(...opponentMonsters.map((m) => m.atk)) : 0;
+        opponentMonsters.length > 0 ? Math.max(...opponentMonsters.map((m) => m.attack ?? 0)) : 0;
 
       const boardContext = `
 Game State:
-- Your LP: ${gameState.hostPlayer.lifePoints}
-- Opponent LP: ${gameState.opponentPlayer.lifePoints}
+- Your LP: ${gameState.myLifePoints}
+- Opponent LP: ${gameState.opponentLifePoints}
 - Current Phase: ${gameState.phase}
 - Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
 - Opponent's Strongest ATK: ${opponentStrongestAtk}
 - Opponent Monsters: ${opponentMonsters.length}
-- Opponent Backrow: ${gameState.opponentPlayer.spellTrapZone.length} (may have traps)
 `;
 
       const prompt = `${boardContext}
@@ -167,7 +166,8 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
       // Make API call
       const result = await client.flipSummon({
         gameId: gameState.gameId,
-        boardIndex: selectedMonster.boardIndex,
+        cardId: selectedMonster._id,
+        newPosition: "attack", // Flip summon always goes to attack position
       });
 
       // Callback to user
@@ -185,9 +185,9 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
         text: `Successfully flip summoned ${selectedMonster.name}`,
         values: {
           monsterName: selectedMonster.name,
-          atk: selectedMonster.atk,
-          def: selectedMonster.def,
-          level: selectedMonster.level,
+          atk: selectedMonster.attack,
+          def: selectedMonster.defense,
+          level: selectedMonster.cost,
           reasoning: parsed.reasoning,
         },
         data: {

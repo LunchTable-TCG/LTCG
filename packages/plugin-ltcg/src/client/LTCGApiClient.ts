@@ -605,6 +605,33 @@ export class LTCGApiClient {
   }
 
   /**
+   * Enter wager matchmaking queue with crypto wager
+   * POST /api/agents/matchmaking/wager-enter
+   *
+   * Creates a crypto-wagered lobby. Requires x402 payment configuration
+   * for automatic escrow deposits. The server will initialize the onchain
+   * escrow PDA and may return a 402 requiring deposit payment.
+   *
+   * @param params - Wager matchmaking parameters
+   * @returns Lobby ID and optional escrow PDA address
+   */
+  async enterWagerMatchmaking(params: {
+    mode: "casual" | "ranked";
+    cryptoWagerCurrency: "sol" | "usdc";
+    cryptoWagerTier: number;
+    isPrivate?: boolean;
+  }): Promise<{ lobbyId: string; escrowPda?: string }> {
+    return this.request<{ lobbyId: string; escrowPda?: string }>(
+      API_ENDPOINTS.MATCHMAKING_WAGER_ENTER,
+      {
+        method: "POST",
+        body: JSON.stringify(params),
+      },
+      TIMEOUTS.MATCHMAKING // Use longer timeout for matchmaking
+    );
+  }
+
+  /**
    * Get available lobbies
    * GET /api/agents/matchmaking/lobbies?mode=xxx
    */
@@ -640,6 +667,20 @@ export class LTCGApiClient {
    */
   async leaveLobby(lobbyId: string): Promise<{ success: true; message: string }> {
     return this.request<{ success: true; message: string }>(API_ENDPOINTS.MATCHMAKING_LEAVE, {
+      method: "POST",
+      body: JSON.stringify({ lobbyId }),
+    });
+  }
+
+  /**
+   * Send heartbeat during crypto wager games
+   * POST /api/agents/matchmaking/heartbeat
+   *
+   * Must be called every 5 seconds during active crypto wager matches to prevent
+   * 30-second disconnect forfeit. Only applies to crypto wager games.
+   */
+  async sendHeartbeat(lobbyId: string): Promise<{ ok: true }> {
+    return this.request<{ ok: true }>(API_ENDPOINTS.MATCHMAKING_HEARTBEAT, {
       method: "POST",
       body: JSON.stringify({ lobbyId }),
     });
@@ -1308,6 +1349,60 @@ export class LTCGApiClient {
     }>("/api/agents/shop/pack-gems", {
       method: "POST",
       body: JSON.stringify({ productId }),
+    });
+  }
+
+  // ============================================================================
+  // Streaming Configuration
+  // ============================================================================
+
+  /**
+   * Get agent streaming configuration from the backend.
+   * Returns platform, hasStreamKey, rtmpUrl, and other settings.
+   * Never returns plaintext stream keys.
+   */
+  async getStreamingConfig(agentId: string) {
+    return this.request<{
+      enabled: boolean;
+      platform: string | null;
+      hasStreamKey: boolean;
+      rtmpUrl: string | null;
+      autoStart: boolean;
+      keepAlive: boolean;
+      voiceTrackUrl: string | null;
+      voiceVolume: number | null;
+      voiceLoop: boolean;
+      visualMode: "webcam" | "profile-picture";
+      profilePictureUrl: string | null;
+    }>(`/api/agents/streaming-config?agentId=${encodeURIComponent(agentId)}`, {
+      method: "GET",
+    });
+  }
+
+  /**
+   * Start a stream using stored backend credentials.
+   * The server decrypts the stream key server-side — no credentials exposed to the plugin.
+   */
+  async startStreamWithStoredCredentials(params: {
+    agentId: string;
+    platform?: string;
+    streamTitle?: string;
+    lobbyId?: string;
+  }) {
+    return this.request<{
+      sessionId: string;
+      overlayUrl: string;
+      status: string;
+    }>("/api/streaming/start", {
+      method: "POST",
+      body: JSON.stringify({
+        agentId: params.agentId,
+        streamType: "agent",
+        platform: params.platform,
+        useStoredCredentials: true,
+        streamTitle: params.streamTitle,
+        lobbyId: params.lobbyId,
+      }),
     });
   }
 

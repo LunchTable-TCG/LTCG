@@ -11,6 +11,7 @@
 import { TableAggregate } from "@convex-dev/aggregate";
 import { components } from "../_generated/api";
 import type { DataModel } from "../_generated/dataModel";
+import { ELO_SYSTEM } from "../lib/constants";
 
 // ============================================================================
 // RANKED LEADERBOARDS
@@ -22,7 +23,7 @@ export const rankedLeaderboard = new TableAggregate<{
   DataModel: DataModel;
   TableName: "users";
 }>(components.aggregate, {
-  sortKey: (user) => -(user.rankedElo ?? 1000),
+  sortKey: (user) => -(user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING),
 });
 
 /** Ranked leaderboard - humans only */
@@ -32,7 +33,7 @@ export const rankedLeaderboardHumans = new TableAggregate<{
   TableName: "users";
   Namespace: "human" | "ai";
 }>(components.aggregate, {
-  sortKey: (user) => -(user.rankedElo ?? 1000),
+  sortKey: (user) => -(user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING),
   namespace: (user) => (user.isAiAgent ? "ai" : "human"),
 });
 
@@ -43,7 +44,7 @@ export const rankedLeaderboardAI = new TableAggregate<{
   TableName: "users";
   Namespace: "human" | "ai";
 }>(components.aggregate, {
-  sortKey: (user) => -(user.rankedElo ?? 1000),
+  sortKey: (user) => -(user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING),
   namespace: (user) => (user.isAiAgent ? "ai" : "human"),
 });
 
@@ -57,7 +58,7 @@ export const casualLeaderboard = new TableAggregate<{
   DataModel: DataModel;
   TableName: "users";
 }>(components.aggregate, {
-  sortKey: (user) => -(user.casualRating ?? 1000),
+  sortKey: (user) => -(user.casualRating ?? ELO_SYSTEM.DEFAULT_RATING),
 });
 
 /** Casual leaderboard - humans only */
@@ -67,7 +68,7 @@ export const casualLeaderboardHumans = new TableAggregate<{
   TableName: "users";
   Namespace: "human" | "ai";
 }>(components.aggregate, {
-  sortKey: (user) => -(user.casualRating ?? 1000),
+  sortKey: (user) => -(user.casualRating ?? ELO_SYSTEM.DEFAULT_RATING),
   namespace: (user) => (user.isAiAgent ? "ai" : "human"),
 });
 
@@ -78,7 +79,7 @@ export const casualLeaderboardAI = new TableAggregate<{
   TableName: "users";
   Namespace: "human" | "ai";
 }>(components.aggregate, {
-  sortKey: (user) => -(user.casualRating ?? 1000),
+  sortKey: (user) => -(user.casualRating ?? ELO_SYSTEM.DEFAULT_RATING),
   namespace: (user) => (user.isAiAgent ? "ai" : "human"),
 });
 

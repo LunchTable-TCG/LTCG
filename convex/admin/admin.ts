@@ -707,7 +707,7 @@ export const listPlayers = query({
       playerId: user._id,
       name: user.username || user.email || "Unknown",
       type: (user.isAiAgent ? "ai" : "human") as "ai" | "human",
-      eloRating: user.rankedElo || 1000,
+      eloRating: user.rankedElo || ELO_SYSTEM.DEFAULT_RATING,
       rank: index + 1, // Simple ranking by query order
     }));
   },

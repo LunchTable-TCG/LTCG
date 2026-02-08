@@ -291,12 +291,15 @@ export const getPlayerEmails = query({
       .filter((q) => q.neq(q.field("email"), undefined))
       .take(args.limit ?? 10000);
 
-    return users
-      .filter((u) => u.email)
-      .map((u) => ({
-        id: u._id,
-        email: u.email!,
-        name: u.username ?? u.name ?? "Player",
-      }));
+    return users.flatMap((u) => {
+      if (!u.email) return [];
+      return [
+        {
+          id: u._id,
+          email: u.email,
+          name: u.username ?? u.name ?? "Player",
+        },
+      ];
+    });
   },
 });

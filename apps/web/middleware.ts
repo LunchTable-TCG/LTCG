@@ -1,3 +1,4 @@
+import type { StreamType } from "@/lib/streaming/types";
 import { get } from "@vercel/edge-config";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -51,7 +52,7 @@ async function verifyOverlayToken(token: string) {
 
     return {
       sessionId: payload.sessionId as string,
-      streamType: payload.streamType as "user" | "agent",
+      streamType: payload.streamType as StreamType,
       entityId: payload.entityId as string,
     };
   } catch (error) {
@@ -71,6 +72,18 @@ export async function middleware(request: NextRequest) {
 
   // Validate JWT token for stream overlay pages
   if (pathname.startsWith("/stream/overlay")) {
+    const previewMode = request.nextUrl.searchParams.get("preview");
+    const isOverlayPreview =
+      previewMode === "live" || previewMode === "waiting" || previewMode === "error";
+    const allowOverlayPreview =
+      isOverlayPreview &&
+      (process.env.NODE_ENV !== "production" || process.env.ALLOW_OVERLAY_PREVIEW === "1");
+
+    // Allow deterministic visual QA preview mode in non-production contexts.
+    if (allowOverlayPreview) {
+      return NextResponse.next();
+    }
+
     const token = request.nextUrl.searchParams.get("token");
     const sessionId = request.nextUrl.searchParams.get("sessionId");
 

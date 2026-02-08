@@ -165,7 +165,6 @@ function CreateStageDialog({
       if (opponentDeckArchetype) args.opponentDeckArchetype = opponentDeckArchetype;
       if (firstClearGems) args.firstClearGems = Number.parseInt(firstClearGems, 10);
 
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
       const result = (await createStage(args)) as unknown as { message: string };
       toast.success(result.message);
       onOpenChange(false);
@@ -526,7 +525,8 @@ export default function ChapterDetailPage() {
     const currentIndex = stages.findIndex((s) => s._id === stage._id);
     if (currentIndex <= 0) return;
 
-    const prevStage = stages[currentIndex - 1]!;
+    const prevStage = stages[currentIndex - 1];
+    if (!prevStage) return;
     try {
       // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg types
       await (reorderStages as any)({
@@ -543,7 +543,8 @@ export default function ChapterDetailPage() {
     const currentIndex = stages.findIndex((s) => s._id === stage._id);
     if (currentIndex >= stages.length - 1) return;
 
-    const nextStage = stages[currentIndex + 1]!;
+    const nextStage = stages[currentIndex + 1];
+    if (!nextStage) return;
     try {
       // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg types
       await (reorderStages as any)({

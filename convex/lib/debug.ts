@@ -302,13 +302,6 @@ export function withErrorLogging<T extends (...args: any[]) => any>(
 // ============================================================================
 
 /**
- * Log game state for debugging
- */
-export function logGameState(lobbyId: string, phase: string, context: LogContext) {
-  logger.debug(`Game State: ${lobbyId}`, { phase, ...context });
-}
-
-/**
  * Log card effect execution
  */
 export function logCardEffect(

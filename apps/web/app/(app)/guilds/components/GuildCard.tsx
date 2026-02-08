@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { Visibility } from "@/types/common";
 import type { Id } from "@convex/_generated/dataModel";
 import { Crown, Lock, Shield, Users } from "lucide-react";
 
@@ -11,7 +12,7 @@ interface GuildCardProps {
     name: string;
     description?: string;
     profileImageUrl?: string;
-    visibility: "public" | "private";
+    visibility: Visibility;
     memberCount: number;
     ownerUsername?: string;
   };

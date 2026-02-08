@@ -111,7 +111,7 @@ type TestFixtures = {
  */
 export const test = base.extend<TestFixtures>({
   // Factory fixture with automatic cleanup
-  factory: async (_deps, use) => {
+  factory: async ({ page: _page }, use) => {
     const factory = new TestDataFactory(TEST_ENV.CONVEX_URL);
     await use(factory);
     await factory.cleanup();

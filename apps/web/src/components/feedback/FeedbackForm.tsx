@@ -235,7 +235,7 @@ export function FeedbackForm({ onSuccess, onCancel }: FeedbackFormProps) {
 
       {/* Media Capture */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-[#d4af37]">Attachments (optional)</label>
+        <p className="block text-sm font-medium text-[#d4af37]">Attachments (optional)</p>
 
         <div className="flex gap-2">
           {/* Screenshot Button */}

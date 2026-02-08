@@ -4,7 +4,7 @@
  */
 export function validateStreamingConfig() {
   // Skip validation if streaming is not enabled
-  if (process.env.NEXT_PUBLIC_STREAMING_ENABLED !== 'true') {
+  if (process.env.NEXT_PUBLIC_STREAMING_ENABLED !== "true") {
     return;
   }
 
@@ -24,7 +24,7 @@ export function validateStreamingConfig() {
 
   if (missing.length > 0) {
     throw new Error(
-      `Streaming is enabled but missing required environment variables:\n${missing.map((key) => `  - ${key}`).join('\n')}`
+      `Streaming is enabled but missing required environment variables:\n${missing.map((key) => `  - ${key}`).join("\n")}`
     );
   }
 
@@ -32,14 +32,14 @@ export function validateStreamingConfig() {
   const encryptionKey = process.env.STREAM_KEY_ENCRYPTION_KEY;
   if (encryptionKey) {
     try {
-      const buffer = Buffer.from(encryptionKey, 'hex');
+      const buffer = Buffer.from(encryptionKey, "hex");
       if (buffer.length !== 32) {
-        throw new Error('Invalid length');
+        throw new Error("Invalid length");
       }
     } catch {
       throw new Error(
-        'STREAM_KEY_ENCRYPTION_KEY must be 32 bytes (64 hex characters). ' +
-          'Generate with: openssl rand -hex 32'
+        "STREAM_KEY_ENCRYPTION_KEY must be 32 bytes (64 hex characters). " +
+          "Generate with: openssl rand -hex 32"
       );
     }
   }

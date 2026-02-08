@@ -15,6 +15,8 @@ export const inboxMessageTypeValidator = v.union(
   v.literal("announcement"),
   v.literal("challenge"),
   v.literal("friend_request"),
+  v.literal("guild_invite"),
+  v.literal("guild_request"),
   v.literal("system"),
   v.literal("achievement")
 );
@@ -24,6 +26,8 @@ export type InboxMessageType =
   | "announcement"
   | "challenge"
   | "friend_request"
+  | "guild_invite"
+  | "guild_request"
   | "system"
   | "achievement";
 

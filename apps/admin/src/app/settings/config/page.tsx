@@ -107,6 +107,10 @@ function EditConfigDialog({
   onSuccess: (key: string, newValue: number | string | boolean) => void;
 }) {
   const updateConfig = useConvexMutation(typedApi.admin.config.updateConfig);
+  const updateConfigUnsafe = updateConfig as unknown as (args: {
+    key: string;
+    value: number | string | boolean;
+  }) => Promise<{ message: string }>;
   const [editValue, setEditValue] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -171,22 +175,22 @@ function EditConfigDialog({
     if (!config) return;
 
     const result = parseValue();
-    if (!result.success) {
+    if (!result.success || result.value === undefined) {
       setError(result.error ?? "Invalid value");
       return;
     }
 
+    const value = result.value;
     setIsSaving(true);
     setError(null);
 
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg types
-      const response = (await (updateConfig as any)({
+      const response = await updateConfigUnsafe({
         key: config.key,
-        value: result.value,
-      })) as { message: string };
+        value,
+      });
       toast.success(response.message);
-      onSuccess(config.key, result.value as number | string | boolean);
+      onSuccess(config.key, value);
       onOpenChange(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to update config";
@@ -324,16 +328,18 @@ function ConfigField({
   onEditClick: () => void;
 }) {
   const resetToDefault = useConvexMutation(typedApi.admin.config.resetToDefault);
+  const resetToDefaultUnsafe = resetToDefault as unknown as (args: {
+    key: string;
+  }) => Promise<{
+    message: string;
+    defaultValue: number | string | boolean;
+  }>;
   const [isResetting, setIsResetting] = useState(false);
 
   const handleResetToDefault = async () => {
     setIsResetting(true);
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect arg/return types
-      const result = (await (resetToDefault as any)({ key: config.key })) as {
-        message: string;
-        defaultValue: number | string | boolean;
-      };
+      const result = await resetToDefaultUnsafe({ key: config.key });
       toast.success(result.message);
       onChange(result.defaultValue);
     } catch (error) {
@@ -444,7 +450,6 @@ function CategoryTab({
         value: localValues[c.key],
       }));
 
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
       const result = (await bulkUpdate({ updates })) as unknown as {
         success: boolean;
         message: string;
@@ -563,7 +568,7 @@ function LoadingSkeleton() {
           <Skeleton className="h-4 w-64" />
         </CardHeader>
         <CardContent className="space-y-4">
-          {[...Array(5)].map((_, i) => (
+          {Array.from({ length: 5 }, (_, i) => i).map((i) => (
             <div key={i} className="flex items-center justify-between py-4">
               <div className="space-y-2">
                 <Skeleton className="h-5 w-32" />
@@ -595,11 +600,9 @@ export default function SystemConfigPage() {
   const [editingConfig, setEditingConfig] = useState<ConfigItem | null>(null);
 
   // Queries
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const configsResult = useConvexQuery(typedApi.admin.config.listConfigs, {}) as
     | { configs: ConfigItem[]; totalCount: number }
     | undefined;
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const statsResult = useConvexQuery(typedApi.admin.config.getConfigStats, {}) as
     | { totalConfigs: number; byCategory: Record<string, number> }
     | undefined;
@@ -635,7 +638,6 @@ export default function SystemConfigPage() {
   const handleInitializeDefaults = async () => {
     setIsInitializing(true);
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
       const result = (await initializeDefaults({})) as unknown as {
         createdCount: number;
         message: string;

@@ -1,8 +1,7 @@
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
-
-// @ts-ignore TS2589 workaround for deep type instantiation
-const internalAny: any = internal;
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { mutation, query } from "../_generated/server";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { requireRole } from "../lib/roles";
@@ -132,27 +131,30 @@ export const list = query({
 
     // Build query based on filters
     if (args.type && args.status) {
+      const { type, status } = args;
       const items = await ctx.db
         .query("scheduledContent")
-        .withIndex("by_type", (q) => q.eq("type", args.type!).eq("status", args.status!))
+        .withIndex("by_type", (q) => q.eq("type", type).eq("status", status))
         .order("desc")
         .take(args.limit ?? 1000);
       return items;
     }
 
     if (args.status) {
+      const { status } = args;
       const items = await ctx.db
         .query("scheduledContent")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .withIndex("by_status", (q) => q.eq("status", status))
         .order("desc")
         .take(args.limit ?? 1000);
       return items;
     }
 
     if (args.type) {
+      const { type } = args;
       const items = await ctx.db
         .query("scheduledContent")
-        .withIndex("by_type", (q) => q.eq("type", args.type!))
+        .withIndex("by_type", (q) => q.eq("type", type))
         .order("desc")
         .take(args.limit ?? 1000);
       return items;
@@ -225,11 +227,9 @@ export const create = mutation({
 
     // If initially scheduled, schedule publication at exact time
     if (args.status === "scheduled") {
-      await ctx.scheduler.runAt(
-        args.scheduledFor,
-        internalAny.content.publishing.publishContent,
-        { contentId }
-      );
+      await ctx.scheduler.runAt(args.scheduledFor, internalAny.content.publishing.publishContent, {
+        contentId,
+      });
     }
 
     return contentId;
@@ -304,11 +304,9 @@ export const schedule = mutation({
     });
 
     // Schedule publication at exact time (replaces polling cron)
-    await ctx.scheduler.runAt(
-      publishAt,
-      internalAny.content.publishing.publishContent,
-      { contentId: args.id }
-    );
+    await ctx.scheduler.runAt(publishAt, internalAny.content.publishing.publishContent, {
+      contentId: args.id,
+    });
 
     return { success: true };
   },
@@ -331,11 +329,9 @@ export const publishNow = mutation({
     });
 
     // Schedule immediate publication (replaces cron polling)
-    await ctx.scheduler.runAfter(
-      0,
-      internalAny.content.publishing.publishContent,
-      { contentId: args.id }
-    );
+    await ctx.scheduler.runAfter(0, internalAny.content.publishing.publishContent, {
+      contentId: args.id,
+    });
 
     return { success: true };
   },

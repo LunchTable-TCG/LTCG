@@ -59,19 +59,19 @@ export const summonAction: Action = {
       }
 
       // Check for summonable monsters
-      const monstersOnField = gameState.hostPlayer.monsterZone.length;
+      const monstersOnField = gameState.myBoard.length;
       const summonableMonsters = hand.filter((card) => {
-        if (card.type !== "creature") return false;
+        if (card.cardType !== "creature") return false;
 
-        const level = card.level || 0;
+        const cost = card.cost || 0;
 
-        // Level 1-4: No tributes needed
-        if (level <= 4) return true;
+        // Cost 1-4: No tributes needed
+        if (cost <= 4) return true;
 
-        // Level 5-6: Need 1 tribute
-        if (level <= 6) return monstersOnField >= 1;
+        // Cost 5-6: Need 1 tribute
+        if (cost <= 6) return monstersOnField >= 1;
 
-        // Level 7+: Need 2 tributes
+        // Cost 7+: Need 2 tributes
         return monstersOnField >= 2;
       });
 
@@ -123,14 +123,14 @@ export const summonAction: Action = {
       });
 
       // Get summonable monsters
-      const monstersOnField = gameState.hostPlayer.monsterZone;
+      const monstersOnField = gameState.myBoard;
       const summonableMonsters = hand.filter((card) => {
-        if (card.type !== "creature") return false;
+        if (card.cardType !== "creature") return false;
 
-        const level = card.level || 0;
+        const cost = card.cost || 0;
 
-        if (level <= 4) return true;
-        if (level <= 6) return monstersOnField.length >= 1;
+        if (cost <= 4) return true;
+        if (cost <= 6) return monstersOnField.length >= 1;
         return monstersOnField.length >= 2;
       });
 
@@ -138,10 +138,10 @@ export const summonAction: Action = {
       const monsterOptions = summonableMonsters
         .map(
           (card, idx) =>
-            `${idx + 1}. ${card.name} (Level ${card.level}, ${card.atk} ATK, ${card.def} DEF)${
-              (card.level || 0) > 6
+            `${idx + 1}. ${card.name} (Cost ${card.cost}, ${card.attack} ATK, ${card.defense} DEF)${
+              (card.cost || 0) > 6
                 ? " - requires 2 tributes"
-                : (card.level || 0) >= 5
+                : (card.cost || 0) >= 5
                   ? " - requires 1 tribute"
                   : ""
             }`
@@ -150,10 +150,10 @@ export const summonAction: Action = {
 
       const boardContext = `
 Game State:
-- Your LP: ${gameState.hostPlayer.lifePoints}
-- Opponent LP: ${gameState.opponentPlayer.lifePoints}
+- Your LP: ${gameState.myLifePoints}
+- Opponent LP: ${gameState.opponentLifePoints}
 - Your field: ${monstersOnField.length} monsters
-- Opponent field: ${gameState.opponentPlayer.monsterZone.length} monsters
+- Opponent field: ${gameState.opponentBoard.length} monsters
 `;
 
       const prompt = `${boardContext}
@@ -164,7 +164,7 @@ ${monsterOptions}
 Select which monster to summon and in what position (attack or defense).
 Consider the board state and choose strategically.
 
-Respond with JSON: { "handIndex": <index>, "position": "attack" or "defense", "tributeIndices": [<indices if needed>] }`;
+Respond with JSON: { "monsterIndex": <index>, "position": "attack" or "defense", "tributeIndices": [<indices if needed>] }`;
 
       const decision = await runtime.useModel(ModelType.TEXT_SMALL, {
         prompt,
@@ -174,22 +174,22 @@ Respond with JSON: { "handIndex": <index>, "position": "attack" or "defense", "t
 
       // Parse LLM decision
       const parsed = extractJsonFromLlmResponse(decision, {
-        handIndex: 0,
+        monsterIndex: 0,
         position: "attack",
         tributeIndices: [],
       });
-      const selectedCard = summonableMonsters[parsed.handIndex];
+      const selectedCard = summonableMonsters[parsed.monsterIndex];
 
       if (!selectedCard) {
         throw new Error("Invalid monster selection");
       }
 
       // Determine tributes if needed
-      const level = selectedCard.level || 0;
+      const cost = selectedCard.cost || 0;
       let tributeIndices: number[] = [];
 
-      if (level >= 5) {
-        const tributesNeeded = level >= 7 ? 2 : 1;
+      if (cost >= 5) {
+        const tributesNeeded = cost >= 7 ? 2 : 1;
 
         // Use provided tribute indices or select automatically
         if (parsed.tributeIndices && parsed.tributeIndices.length >= tributesNeeded) {
@@ -198,7 +198,7 @@ Respond with JSON: { "handIndex": <index>, "position": "attack" or "defense", "t
           // Auto-select weakest monsters as tributes
           const sortedMonsters = [...monstersOnField]
             .map((m, idx) => ({ monster: m, boardIndex: idx }))
-            .sort((a, b) => a.monster.atk - b.monster.atk);
+            .sort((a, b) => (a.monster.attack ?? 0) - (b.monster.attack ?? 0));
 
           tributeIndices = sortedMonsters.slice(0, tributesNeeded).map((m) => m.boardIndex);
         }
@@ -208,11 +208,14 @@ Respond with JSON: { "handIndex": <index>, "position": "attack" or "defense", "t
       const position = (parsed.position === "defense" ? "defense" : "attack") as
         | "attack"
         | "defense";
+      const tributeCardIds = tributeIndices.length > 0
+        ? tributeIndices.map((idx) => monstersOnField[idx]._id)
+        : undefined;
       const result = await client.summon({
         gameId: gameState.gameId,
-        handIndex: selectedCard.handIndex ?? 0,
+        cardId: selectedCard._id,
         position,
-        tributeIndices: tributeIndices.length > 0 ? tributeIndices : undefined,
+        tributeCardIds,
       });
 
       // Callback to user
@@ -226,7 +229,7 @@ Respond with JSON: { "handIndex": <index>, "position": "attack" or "defense", "t
         text: responseText,
         actions: ["SUMMON_MONSTER"],
         source: message.content.source,
-        thought: `Selected ${selectedCard.name} (${selectedCard.atk} ATK) for optimal field presence${tributeIndices.length > 0 ? ` after tributing ${tributeIndices.length} weaker monster(s)` : " without tributes"}`,
+        thought: `Selected ${selectedCard.name} (${selectedCard.attack} ATK) for optimal field presence${tributeIndices.length > 0 ? ` after tributing ${tributeIndices.length} weaker monster(s)` : " without tributes"}`,
       } as Content);
 
       return {
@@ -235,15 +238,15 @@ Respond with JSON: { "handIndex": <index>, "position": "attack" or "defense", "t
         values: {
           monsterName: selectedCard.name,
           position: parsed.position || "attack",
-          level: selectedCard.level,
-          atk: selectedCard.atk,
-          def: selectedCard.def,
+          cost: selectedCard.cost,
+          attack: selectedCard.attack,
+          defense: selectedCard.defense,
           tributeCount: tributeIndices.length,
         },
         data: {
           actionName: "SUMMON_MONSTER",
           cardSummoned: selectedCard,
-          tributeIndices,
+          tributeCardIds,
           result,
         },
       };

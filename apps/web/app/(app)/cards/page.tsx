@@ -163,10 +163,9 @@ function CardCodexContent() {
 
   // Stats
   const stats = useMemo(() => {
-    const byRarity = RARITIES.reduce(
-      (acc, r) => ({ ...acc, [r]: cards.filter((c) => c.rarity === r).length }),
-      {} as Record<Rarity, number>
-    );
+    const byRarity = Object.fromEntries(
+      RARITIES.map((rarity) => [rarity, cards.filter((card) => card.rarity === rarity).length])
+    ) as Record<Rarity, number>;
     return { total: cards.length, byRarity };
   }, [cards]);
 
@@ -291,10 +290,14 @@ function CardCodexContent() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {/* Element Filter */}
                 <div>
-                  <label className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+                  <label
+                    htmlFor="cards-filter-element"
+                    className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+                  >
                     Element
                   </label>
                   <select
+                    id="cards-filter-element"
                     value={selectedElement}
                     onChange={(e) => setSelectedElement(e.target.value as Element | "all")}
                     className="w-full px-3 py-2 rounded-lg bg-black/40 border border-[#3d2b1f] text-[#e8e0d5] focus:outline-none focus:border-[#d4af37]/50"
@@ -310,10 +313,14 @@ function CardCodexContent() {
 
                 {/* Type Filter */}
                 <div>
-                  <label className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+                  <label
+                    htmlFor="cards-filter-type"
+                    className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+                  >
                     Card Type
                   </label>
                   <select
+                    id="cards-filter-type"
                     value={selectedType}
                     onChange={(e) => setSelectedType(e.target.value as CardType | "all")}
                     className="w-full px-3 py-2 rounded-lg bg-black/40 border border-[#3d2b1f] text-[#e8e0d5] focus:outline-none focus:border-[#d4af37]/50"
@@ -329,10 +336,14 @@ function CardCodexContent() {
 
                 {/* Sort By */}
                 <div>
-                  <label className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+                  <label
+                    htmlFor="cards-filter-sort-by"
+                    className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+                  >
                     Sort By
                   </label>
                   <select
+                    id="cards-filter-sort-by"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
                     className="w-full px-3 py-2 rounded-lg bg-black/40 border border-[#3d2b1f] text-[#e8e0d5] focus:outline-none focus:border-[#d4af37]/50"
@@ -348,10 +359,14 @@ function CardCodexContent() {
 
                 {/* Sort Order */}
                 <div>
-                  <label className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2">
+                  <label
+                    htmlFor="cards-filter-sort-order"
+                    className="block text-xs text-[#a89f94] uppercase tracking-wider mb-2"
+                  >
                     Order
                   </label>
                   <select
+                    id="cards-filter-sort-order"
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
                     className="w-full px-3 py-2 rounded-lg bg-black/40 border border-[#3d2b1f] text-[#e8e0d5] focus:outline-none focus:border-[#d4af37]/50"
@@ -389,7 +404,7 @@ function CardCodexContent() {
                 : "space-y-2"
             )}
           >
-            {Array.from({ length: 24 }).map((_, i) => (
+            {Array.from({ length: 24 }, (_, i) => i).map((i) => (
               <BinderCardSkeleton key={i} variant={viewMode} />
             ))}
           </div>

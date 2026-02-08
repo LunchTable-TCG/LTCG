@@ -23,8 +23,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-
-type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
+import type { Rarity } from "@/types/cards";
 
 interface Card {
   cardDefinitionId: Id<"cardDefinitions">;

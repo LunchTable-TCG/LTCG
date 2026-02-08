@@ -218,7 +218,7 @@ export default function ErrorHeatmapPage() {
             const isSelected = selectedPage === page.page;
 
             return (
-              <button
+              <button type="button"
                 key={page.page}
                 onClick={() => setSelectedPage(isSelected ? null : page.page)}
                 className={`p-4 rounded-lg border text-left transition-all ${

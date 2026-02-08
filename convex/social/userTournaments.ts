@@ -1,10 +1,14 @@
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import * as generatedApi from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
+
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { MutationCtx } from "../_generated/server";
 import { internalMutation, mutation, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { tournamentRateLimiter } from "../infrastructure/rateLimiters";
+import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { checkRateLimitWrapper } from "../lib/rateLimit";
@@ -214,7 +218,9 @@ export const createUserTournament = mutation({
 
     // Get user's rating for seeding
     const seedRating =
-      args.mode === "ranked" ? (user.rankedElo ?? 1000) : (user.casualRating ?? 1000);
+      args.mode === "ranked"
+        ? (user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING)
+        : (user.casualRating ?? ELO_SYSTEM.DEFAULT_RATING);
 
     // Auto-register creator as first participant
     await ctx.db.insert("tournamentParticipants", {
@@ -234,11 +240,9 @@ export const createUserTournament = mutation({
 
     // Schedule automatic expiry at the expiry time
     // expireTournament is idempotent — it checks status === "registration" before acting
-    await ctx.scheduler.runAt(
-      expiresAt,
-      internal.social.userTournaments.expireTournament,
-      { tournamentId }
-    );
+    await ctx.scheduler.runAt(expiresAt, internalAny.social.userTournaments.expireTournament, {
+      tournamentId,
+    });
 
     return {
       tournamentId,
@@ -280,7 +284,7 @@ export const joinUserTournament = mutation({
     }
 
     // Find tournament
-    let tournament;
+    let tournament: Doc<"tournaments"> | null = null;
     if (args.tournamentId) {
       tournament = await ctx.db.get(args.tournamentId);
     } else if (args.joinCode) {
@@ -364,7 +368,9 @@ export const joinUserTournament = mutation({
 
     // Get user's rating for seeding
     const seedRating =
-      tournament.mode === "ranked" ? (user.rankedElo ?? 1000) : (user.casualRating ?? 1000);
+      tournament.mode === "ranked"
+        ? (user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING)
+        : (user.casualRating ?? ELO_SYSTEM.DEFAULT_RATING);
 
     // Register participant
     await ctx.db.insert("tournamentParticipants", {
@@ -386,7 +392,7 @@ export const joinUserTournament = mutation({
     // Check if tournament is now full - auto-start
     if (newCount >= tournament.maxPlayers) {
       // Schedule auto-start (immediate)
-      await ctx.scheduler.runAfter(0, internal.social.userTournaments.autoStartTournament, {
+      await ctx.scheduler.runAfter(0, internalAny.social.userTournaments.autoStartTournament, {
         tournamentId: tournament._id,
       });
     }
@@ -620,7 +626,7 @@ export const autoStartTournament = internalMutation({
     });
 
     // Schedule the actual start (uses existing tournament start logic)
-    await ctx.scheduler.runAfter(1000, internal.social.tournaments.startTournament, {
+    await ctx.scheduler.runAfter(1000, internalAny.social.tournaments.startTournament, {
       tournamentId,
     });
   },
@@ -637,7 +643,6 @@ export const getPublicUserTournaments = query({
   args: {
     limit: v.optional(v.number()),
   },
-  returns: v.any(),
   handler: async (ctx, args) => {
     const limit = args.limit ?? 20;
 
@@ -655,9 +660,7 @@ export const getPublicUserTournaments = query({
     // Batch fetch all creators in parallel
     const creatorIds = [...new Set(userOnly.map((t) => t.createdBy))];
     const creators = await Promise.all(creatorIds.map((id) => ctx.db.get(id)));
-    const creatorMap = new Map(
-      creatorIds.map((id, i) => [id, creators[i]])
-    );
+    const creatorMap = new Map(creatorIds.map((id, i) => [id, creators[i]]));
 
     // Enrich with creator info
     const userTournaments = userOnly.map((t) => {
@@ -679,7 +682,6 @@ export const getPublicUserTournaments = query({
  */
 export const getMyHostedTournament = query({
   args: {},
-  returns: v.any(),
   handler: async (ctx) => {
     const auth = await requireAuthQuery(ctx);
 
@@ -716,7 +718,6 @@ export const getTournamentByCode = query({
   args: {
     joinCode: v.string(),
   },
-  returns: v.any(),
   handler: async (ctx, { joinCode }) => {
     const normalizedCode = joinCode.toUpperCase().trim();
 
@@ -753,7 +754,6 @@ export const getTournamentByCode = query({
  */
 export const getMyRegisteredTournaments = query({
   args: {},
-  returns: v.any(),
   handler: async (ctx) => {
     const auth = await requireAuthQuery(ctx);
 
@@ -763,9 +763,7 @@ export const getMyRegisteredTournaments = query({
       .collect();
 
     // Batch fetch all tournaments in parallel
-    const allTournaments = await Promise.all(
-      participations.map((p) => ctx.db.get(p.tournamentId))
-    );
+    const allTournaments = await Promise.all(participations.map((p) => ctx.db.get(p.tournamentId)));
 
     // Filter to active user tournaments with type narrowing
     const activePairs: Array<{
@@ -773,6 +771,10 @@ export const getMyRegisteredTournaments = query({
       tournament: NonNullable<(typeof allTournaments)[number]>;
     }> = [];
     for (let i = 0; i < participations.length; i++) {
+      const participation = participations[i];
+      if (!participation) {
+        continue;
+      }
       const tournament = allTournaments[i];
       if (
         tournament &&
@@ -780,16 +782,14 @@ export const getMyRegisteredTournaments = query({
         tournament.status !== "cancelled" &&
         tournament.status !== "completed"
       ) {
-        activePairs.push({ participation: participations[i]!, tournament });
+        activePairs.push({ participation, tournament });
       }
     }
 
     // Batch fetch all creators in parallel
     const creatorIds = [...new Set(activePairs.map(({ tournament }) => tournament.createdBy))];
     const creators = await Promise.all(creatorIds.map((id) => ctx.db.get(id)));
-    const creatorMap = new Map(
-      creatorIds.map((id, i) => [id, creators[i]])
-    );
+    const creatorMap = new Map(creatorIds.map((id, i) => [id, creators[i]]));
 
     const tournaments = activePairs.map(({ participation: p, tournament }) => {
       const creator = creatorMap.get(tournament.createdBy);

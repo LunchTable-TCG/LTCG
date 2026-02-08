@@ -5,6 +5,7 @@
  * Supports flash sales, weekend deals, returning player offers, etc.
  */
 
+import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
@@ -149,9 +150,42 @@ async function canUseSale(
 /**
  * Get all currently active sales
  */
+/** Reusable validator matching the shopSales table document shape */
+const shopSaleDocValidator = v.object({
+  _id: v.id("shopSales"),
+  _creationTime: v.number(),
+  saleId: v.string(),
+  name: v.string(),
+  description: v.string(),
+  saleType: literals("flash", "weekend", "launch", "holiday", "anniversary", "returning"),
+  discountPercent: v.optional(v.number()),
+  bonusCards: v.optional(v.number()),
+  bonusGems: v.optional(v.number()),
+  applicableProducts: v.array(v.string()),
+  applicableProductTypes: v.optional(v.array(literals("pack", "box", "currency", "gem_package"))),
+  startsAt: v.number(),
+  endsAt: v.number(),
+  isActive: v.boolean(),
+  priority: v.number(),
+  conditions: v.optional(
+    v.object({
+      minPurchaseAmount: v.optional(v.number()),
+      maxUsesTotal: v.optional(v.number()),
+      maxUsesPerUser: v.optional(v.number()),
+      returningPlayerOnly: v.optional(v.boolean()),
+      newPlayerOnly: v.optional(v.boolean()),
+      minPlayerLevel: v.optional(v.number()),
+    })
+  ),
+  usageCount: v.number(),
+  totalDiscountGiven: v.number(),
+  createdBy: v.id("users"),
+  createdAt: v.number(),
+});
+
 export const getActiveSales = query({
   args: {},
-  returns: v.array(v.any()),
+  returns: v.array(shopSaleDocValidator),
   handler: async (ctx) => {
     const now = Date.now();
 
@@ -173,7 +207,7 @@ export const getSalesForProduct = query({
   args: {
     productId: v.string(),
   },
-  returns: v.array(v.any()),
+  returns: v.array(shopSaleDocValidator),
   handler: async (ctx, args) => {
     const now = Date.now();
 
@@ -270,7 +304,7 @@ export const getDiscountedPrice = query({
  */
 export const getAvailableSalesForUser = query({
   args: {},
-  returns: v.array(v.any()),
+  returns: v.array(shopSaleDocValidator),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     const now = Date.now();
@@ -301,7 +335,19 @@ export const getSaleUsageHistory = query({
   args: {
     limit: v.optional(v.number()),
   },
-  returns: v.array(v.any()),
+  returns: v.array(
+    v.object({
+      _id: v.id("saleUsage"),
+      _creationTime: v.number(),
+      userId: v.id("users"),
+      saleId: v.string(),
+      productId: v.string(),
+      originalPrice: v.number(),
+      discountedPrice: v.number(),
+      discountAmount: v.number(),
+      usedAt: v.number(),
+    })
+  ),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     const limit = args.limit ?? 20;

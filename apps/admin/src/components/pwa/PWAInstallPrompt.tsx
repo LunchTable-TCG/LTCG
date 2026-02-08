@@ -138,7 +138,7 @@ export function PWAInstallPrompt() {
     <div className="fixed bottom-0 left-0 right-0 z-[100] p-4 pb-safe animate-in slide-in-from-bottom duration-300 md:bottom-4 md:left-auto md:right-4 md:max-w-sm md:p-0">
       <Card className="relative overflow-hidden border-primary/20 bg-card/95 shadow-2xl backdrop-blur-sm">
         {/* Dismiss button */}
-        <button
+        <button type="button"
           onClick={handleDismiss}
           className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
           aria-label="Dismiss"

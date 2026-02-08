@@ -174,3 +174,9 @@ test-results/
 playwright-report/
 playwright/.cache/
 .env*.local
+
+# Solana / Anchor
+target/
+programs/*/target/
+*.so
+*-keypair.json

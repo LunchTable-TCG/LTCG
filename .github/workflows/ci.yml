@@ -58,6 +58,76 @@ jobs:
       - name: Run unit tests
         run: bun run test:unit
 
+  plugin-contract-tests:
+    name: Plugin Contract Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.5
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run plugin cardId contract tests
+        run: |
+          bun test \
+            packages/plugin-ltcg/__tests__/actions/startMultiStreamAction.test.ts \
+            packages/plugin-ltcg/__tests__/streaming/agentStreaming.test.ts \
+            packages/plugin-ltcg/__tests__/providers/legalActionsProvider.cardid.test.ts \
+            packages/plugin-ltcg/__tests__/evaluators/strategyEvaluator.cardid.test.ts \
+            packages/plugin-ltcg/__tests__/providers/winConditionProvider.test.ts \
+            packages/plugin-ltcg/__tests__/services/TurnOrchestrator.cardid.integration.test.ts
+
+  streaming-contract-tests:
+    name: Streaming Contract Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.5
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run streaming route/auth contracts
+        run: |
+          bun test \
+            apps/web/__tests__/api/streaming/routes.test.ts \
+            apps/web/__tests__/lib/streaming/serverAuth.test.ts
+
+  mcp-transport-tests:
+    name: MCP Transport Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.5
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run MCP HTTP transport contracts
+        run: bun test packages/mcp-server/tests/http-transport.test.ts
+
   typecheck:
     name: TypeScript Type Check
     runs-on: ubuntu-latest
@@ -76,7 +146,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Type check
-        run: bun run type-check || echo "Type check not configured"
+        run: bun run type-check
 
   security:
     name: Security Audit
@@ -113,7 +183,16 @@ jobs:
     name: Build Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [lint, unit-tests, typecheck, security]
+    needs:
+      [
+        lint,
+        unit-tests,
+        plugin-contract-tests,
+        streaming-contract-tests,
+        mcp-transport-tests,
+        typecheck,
+        security,
+      ]
 
     steps:
       - name: Checkout code
@@ -136,13 +215,23 @@ jobs:
   pr-success:
     name: PR Validation Complete
     runs-on: ubuntu-latest
-    needs: [lint, unit-tests, typecheck, security, build]
+    needs:
+      [
+        lint,
+        unit-tests,
+        plugin-contract-tests,
+        streaming-contract-tests,
+        mcp-transport-tests,
+        typecheck,
+        security,
+        build,
+      ]
     if: always()
 
     steps:
       - name: Check job results
         run: |
-          if [ "${{ needs.lint.result }}" = "failure" ] || [ "${{ needs.unit-tests.result }}" = "failure" ] || [ "${{ needs.typecheck.result }}" = "failure" ] || [ "${{ needs.security.result }}" = "failure" ] || [ "${{ needs.build.result }}" = "failure" ]; then
+          if [ "${{ needs.lint.result }}" = "failure" ] || [ "${{ needs.unit-tests.result }}" = "failure" ] || [ "${{ needs.plugin-contract-tests.result }}" = "failure" ] || [ "${{ needs.streaming-contract-tests.result }}" = "failure" ] || [ "${{ needs.mcp-transport-tests.result }}" = "failure" ] || [ "${{ needs.typecheck.result }}" = "failure" ] || [ "${{ needs.security.result }}" = "failure" ] || [ "${{ needs.build.result }}" = "failure" ]; then
             echo "❌ PR validation failed"
             exit 1
           fi

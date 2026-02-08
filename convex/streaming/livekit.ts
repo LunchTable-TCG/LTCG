@@ -9,7 +9,9 @@
  */
 
 import { v } from "convex/values";
-import { api } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
 import { action } from "../_generated/server";
 
 /**
@@ -25,7 +27,7 @@ export const markEgressStarted = action({
     overlayUrl: v.string(),
   },
   handler: async (ctx, args) => {
-    await ctx.runMutation(api.streaming.sessions.updateSession, {
+    await ctx.runMutation(apiAny.streaming.sessions.updateSession, {
       sessionId: args.sessionId,
       updates: {
         egressId: args.egressId,
@@ -45,7 +47,7 @@ export const markEgressLive = action({
     sessionId: v.id("streamingSessions"),
   },
   handler: async (ctx, args) => {
-    await ctx.runMutation(api.streaming.sessions.updateSession, {
+    await ctx.runMutation(apiAny.streaming.sessions.updateSession, {
       sessionId: args.sessionId,
       updates: {
         status: "live",
@@ -65,7 +67,7 @@ export const markEgressEnded = action({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await ctx.runMutation(api.streaming.sessions.endSession, {
+    await ctx.runMutation(apiAny.streaming.sessions.endSession, {
       sessionId: args.sessionId,
       reason: args.reason || "egress_ended",
     });
@@ -82,7 +84,7 @@ export const markEgressError = action({
     errorMessage: v.string(),
   },
   handler: async (ctx, args) => {
-    await ctx.runMutation(api.streaming.sessions.updateSession, {
+    await ctx.runMutation(apiAny.streaming.sessions.updateSession, {
       sessionId: args.sessionId,
       updates: {
         status: "error",

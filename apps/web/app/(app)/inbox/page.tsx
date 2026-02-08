@@ -1,6 +1,7 @@
 "use client";
 
 import { type InboxMessage, type InboxMessageType, useInbox } from "@/hooks/social/useInbox";
+import type { MatchMode } from "@/types/common";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AuthLoading, Authenticated } from "convex/react";
@@ -13,9 +14,11 @@ import {
   Gift,
   Loader2,
   Megaphone,
+  Shield,
   Sparkles,
   Swords,
   Trash2,
+  UserPlus,
   Users,
   Wrench,
 } from "lucide-react";
@@ -28,6 +31,8 @@ const messageIcons: Record<InboxMessageType, typeof Bell> = {
   announcement: Megaphone,
   challenge: Swords,
   friend_request: Users,
+  guild_invite: Shield,
+  guild_request: UserPlus,
   system: Wrench,
   achievement: Sparkles,
 };
@@ -37,6 +42,8 @@ const messageColors: Record<InboxMessageType, string> = {
   announcement: "text-blue-400 bg-blue-400/10",
   challenge: "text-red-400 bg-red-400/10",
   friend_request: "text-green-400 bg-green-400/10",
+  guild_invite: "text-amber-400 bg-amber-400/10",
+  guild_request: "text-amber-400 bg-amber-400/10",
   system: "text-gray-400 bg-gray-400/10",
   achievement: "text-purple-400 bg-purple-400/10",
 };
@@ -47,6 +54,8 @@ const filterLabels: Record<InboxMessageType | "all", string> = {
   announcement: "Announcements",
   challenge: "Challenges",
   friend_request: "Friend Requests",
+  guild_invite: "Guild Invites",
+  guild_request: "Guild Requests",
   system: "System",
   achievement: "Achievements",
 };
@@ -96,6 +105,8 @@ function InboxContent() {
     { key: "announcement", count: getMessagesByType("announcement").length },
     { key: "challenge", count: getMessagesByType("challenge").length },
     { key: "friend_request", count: getMessagesByType("friend_request").length },
+    { key: "guild_invite", count: getMessagesByType("guild_invite").length },
+    { key: "guild_request", count: getMessagesByType("guild_request").length },
     { key: "system", count: getMessagesByType("system").length },
     { key: "achievement", count: getMessagesByType("achievement").length },
   ];
@@ -131,6 +142,7 @@ function InboxContent() {
               )}
               {unreadCount > 0 && (
                 <button
+                  type="button"
                   onClick={() => markAllAsRead()}
                   className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-sm font-medium flex items-center gap-2 transition-colors"
                 >
@@ -147,6 +159,7 @@ function InboxContent() {
           <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           {filterOptions.map((option) => (
             <button
+              type="button"
               key={option.key}
               onClick={() => setActiveFilter(option.key)}
               className={cn(
@@ -206,7 +219,7 @@ interface ChallengeData {
   lobbyId: string;
   challengerId: string;
   challengerUsername: string;
-  mode: "casual" | "ranked";
+  mode: MatchMode;
 }
 
 // Individual message row component
@@ -328,6 +341,7 @@ function InboxMessageRow({ message, onMarkAsRead, onClaimReward, onDelete }: Inb
             {/* Claim button for unclaimed rewards */}
             {isUnclaimed && (
               <button
+                type="button"
                 onClick={handleClaim}
                 disabled={isClaiming}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-400/20 hover:bg-yellow-400/30 text-yellow-400 text-sm font-medium transition-colors disabled:opacity-50"
@@ -346,9 +360,25 @@ function InboxMessageRow({ message, onMarkAsRead, onClaimReward, onDelete }: Inb
               </button>
             )}
 
+            {/* View Guild button for guild notifications */}
+            {(message.type === "guild_invite" || message.type === "guild_request") && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push("/guilds");
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 text-amber-400 text-sm font-medium transition-colors"
+              >
+                <Shield className="w-4 h-4" />
+                View Guilds
+              </button>
+            )}
+
             {/* Accept Challenge button */}
             {message.type === "challenge" && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   const data = message.data as ChallengeData | undefined;
@@ -374,6 +404,7 @@ function InboxMessageRow({ message, onMarkAsRead, onClaimReward, onDelete }: Inb
             {/* Delete button */}
             {canDelete && (
               <button
+                type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
                 className="ml-auto p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-red-400 transition-colors disabled:opacity-50"

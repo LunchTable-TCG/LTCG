@@ -141,54 +141,6 @@ export async function checkReplayCondition(
 }
 
 /**
- * Check for replay based on monster count change
- *
- * This is called with the original monster count that was saved at attack declaration.
- */
-export async function checkReplayByMonsterCount(
-  ctx: MutationCtx,
-  lobbyId: Id<"gameLobbies">,
-  gameState: Doc<"gameStates">,
-  originalMonsterCount: number
-): Promise<boolean> {
-  const pendingAction = gameState.pendingAction;
-
-  if (!pendingAction || pendingAction.type !== "attack" || !pendingAction.attackerId) {
-    return false;
-  }
-
-  const isHostAttacking = gameState.currentTurnPlayerId === gameState.hostId;
-  const attackerBoard = isHostAttacking ? gameState.hostBoard : gameState.opponentBoard;
-  const opponentBoard = isHostAttacking ? gameState.opponentBoard : gameState.hostBoard;
-
-  // Check attacker still exists
-  const attackerStillExists = attackerBoard.some((bc) => bc.cardId === pendingAction.attackerId);
-  if (!attackerStillExists) {
-    await ctx.db.patch(gameState._id, { pendingAction: undefined });
-    return false;
-  }
-
-  const currentMonsterCount = opponentBoard.length;
-
-  // Replay triggers when monster count CHANGES (not just decreases)
-  if (currentMonsterCount !== originalMonsterCount) {
-    return await triggerReplay(
-      ctx,
-      lobbyId,
-      gameState,
-      pendingAction.attackerId,
-      gameState.currentTurnPlayerId,
-      pendingAction.targetId,
-      opponentBoard,
-      originalMonsterCount,
-      currentMonsterCount
-    );
-  }
-
-  return false;
-}
-
-/**
  * Trigger the replay state
  */
 async function triggerReplay(
@@ -275,16 +227,9 @@ export function hasPendingReplay(gameState: Doc<"gameStates">, playerId: Id<"use
 }
 
 /**
- * Get pending replay state
- */
-export function getPendingReplay(gameState: Doc<"gameStates">): ReplayState | null {
-  return gameState.pendingReplay || null;
-}
-
-/**
  * Validate a replay choice
  */
-export function validateReplayChoice(
+function validateReplayChoice(
   replayState: ReplayState,
   choice: ReplayChoice
 ): { valid: boolean; reason?: string } {

@@ -1,16 +1,17 @@
 "use client";
 
 import { handleHookError } from "@/lib/errorHandling";
-import { api } from "@convex/_generated/api";
+import * as generatedApi from "@convex/_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
 import { useMutation, usePaginatedQuery } from "convex/react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 import { useConvexPresence } from "./useConvexPresence";
 
 interface UseGlobalChatReturn {
-  messages: ReturnType<
-    typeof usePaginatedQuery<typeof api.globalChat.getPaginatedMessages>
-  >["results"];
+  // biome-ignore lint/suspicious/noExplicitAny: Avoids TS2589 from deeply nested usePaginatedQuery generic
+  messages: any[];
   onlineUsers: ReturnType<typeof useConvexPresence>["users"];
   onlineCount: number;
   isLoading: boolean;
@@ -75,7 +76,7 @@ export function useGlobalChat(): UseGlobalChatReturn {
     results: messages,
     status: paginationStatus,
     loadMore,
-  } = usePaginatedQuery(api.globalChat.getPaginatedMessages, {}, { initialNumItems: 50 });
+  } = usePaginatedQuery(apiAny.globalChat.getPaginatedMessages, {}, { initialNumItems: 50 });
 
   // Use new presence system with automatic heartbeat
   const { users: onlineUsers, userCount: onlineCount } = useConvexPresence({
@@ -85,7 +86,7 @@ export function useGlobalChat(): UseGlobalChatReturn {
   });
 
   // Mutations
-  const sendMessageMutation = useMutation(api.globalChat.sendMessage);
+  const sendMessageMutation = useMutation(apiAny.globalChat.sendMessage);
 
   // Actions
   const sendMessage = async (message: string) => {

@@ -11,7 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useCurrency } from "@/hooks/economy/useCurrency";
 import { usePlayerCard } from "@/hooks/social/usePlayerCard";
+import type { MatchMode } from "@/types/common";
+import type { WagerCurrency } from "@/lib/wagerTiers";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import {
@@ -29,6 +32,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { ChallengeConfirmDialog } from "../../../app/(app)/lunchtable/components/ChallengeConfirmDialog";
 
 interface PlayerCardModalProps {
   userId: Id<"users"> | null;
@@ -47,8 +51,6 @@ interface PlayerCardModalProps {
   };
 }
 
-type ChallengeMode = "casual" | "ranked";
-
 /**
  * Modal that displays player details and social action buttons.
  *
@@ -56,8 +58,10 @@ type ChallengeMode = "casual" | "ranked";
  * Shows player stats, and provides buttons to add friend, challenge, or invite to guild.
  */
 export function PlayerCardModal({ userId, isOpen, onClose, initialData }: PlayerCardModalProps) {
-  const [challengeMode, setChallengeMode] = useState<ChallengeMode | null>(null);
+  const [showChallengeDialog, setShowChallengeDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { gold } = useCurrency();
 
   const {
     playerData,
@@ -114,17 +118,22 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
     }
   };
 
-  const handleChallenge = async (mode: ChallengeMode) => {
+  const handleChallengeConfirm = async (
+    mode: MatchMode,
+    wagerAmount?: number,
+    cryptoWagerCurrency?: WagerCurrency,
+    cryptoWagerTier?: number,
+  ) => {
     if (!displayData?.username) return;
     setIsSubmitting(true);
     try {
-      await sendChallenge(displayData.username, mode);
+      await sendChallenge(displayData.username, mode, wagerAmount, cryptoWagerCurrency, cryptoWagerTier);
+      setShowChallengeDialog(false);
       onClose();
     } catch {
       // Error handled in hook
     } finally {
       setIsSubmitting(false);
-      setChallengeMode(null);
     }
   };
 
@@ -238,84 +247,64 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
               </div>
             )}
 
-            {/* Challenge Mode Selection */}
-            {challengeMode !== null ? (
-              <div className="space-y-3">
-                <p className="text-sm text-[#a89f94] text-center">Select game mode:</p>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleChallenge("casual")}
-                    disabled={isSubmitting}
-                    className="flex-1 bg-blue-600 hover:bg-blue-500"
-                  >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Casual"}
-                  </Button>
-                  <Button
-                    onClick={() => handleChallenge("ranked")}
-                    disabled={isSubmitting}
-                    className="flex-1 bg-purple-600 hover:bg-purple-500"
-                  >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ranked"}
-                  </Button>
-                </div>
-                <Button
-                  variant="ghost"
-                  onClick={() => setChallengeMode(null)}
-                  className="w-full text-[#a89f94]"
-                >
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              /* Action Buttons */
-              <div className="flex flex-col gap-2">
-                {/* Friend Button */}
-                <Button
-                  onClick={handleFriendAction}
-                  disabled={isSubmitting || friendButton.disabled || isLoading}
-                  variant={friendButton.variant}
-                  className={cn(
-                    "w-full",
-                    friendButton.variant !== "outline" &&
-                      "bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]"
-                  )}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <friendButton.icon className="w-4 h-4 mr-2" />
-                  )}
-                  {friendButton.label}
-                </Button>
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-2">
+              {/* Friend Button */}
+              <Button
+                onClick={handleFriendAction}
+                disabled={isSubmitting || friendButton.disabled || isLoading}
+                variant={friendButton.variant}
+                className={cn(
+                  "w-full",
+                  friendButton.variant !== "outline" &&
+                    "bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]"
+                )}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <friendButton.icon className="w-4 h-4 mr-2" />
+                )}
+                {friendButton.label}
+              </Button>
 
-                {/* Challenge Button */}
-                <Button
-                  onClick={() => setChallengeMode("casual")}
-                  disabled={isSubmitting || isLoading || !isAuthenticated}
-                  className="w-full bg-orange-600 hover:bg-orange-500"
-                >
-                  <Swords className="w-4 h-4 mr-2" />
-                  Challenge
-                </Button>
+              {/* Challenge Button */}
+              <Button
+                onClick={() => setShowChallengeDialog(true)}
+                disabled={isSubmitting || isLoading || !isAuthenticated}
+                className="w-full bg-orange-600 hover:bg-orange-500"
+              >
+                <Swords className="w-4 h-4 mr-2" />
+                Challenge
+              </Button>
 
-                {/* Guild Button (Disabled) */}
-                <SimpleTooltip content="Guilds coming soon!">
-                  <Button
-                    disabled
-                    variant="outline"
-                    className="w-full border-[#3d2b1f] text-[#a89f94] opacity-50 cursor-not-allowed"
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    Invite to Guild
-                  </Button>
-                </SimpleTooltip>
-              </div>
-            )}
+              {/* Guild Button (Disabled) */}
+              <SimpleTooltip content="Guilds coming soon!">
+                <Button
+                  disabled
+                  variant="outline"
+                  className="w-full border-[#3d2b1f] text-[#a89f94] opacity-50 cursor-not-allowed"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Invite to Guild
+                </Button>
+              </SimpleTooltip>
+            </div>
           </div>
         ) : (
           <div className="text-center py-8 text-[#a89f94]">Player not found</div>
         )}
       </DialogContent>
+
+      {showChallengeDialog && displayData && (
+        <ChallengeConfirmDialog
+          isOpen={showChallengeDialog}
+          onClose={() => setShowChallengeDialog(false)}
+          onConfirm={handleChallengeConfirm}
+          opponentUsername={displayData.username}
+          playerGold={gold}
+        />
+      )}
     </Dialog>
   );
 }

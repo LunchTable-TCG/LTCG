@@ -92,14 +92,12 @@ export default function ShopPage() {
   const [showInactive, setShowInactive] = useState(false);
 
   // Query
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const productsResult = useConvexQuery(typedApi.admin.shop.listProducts, {
     search: search || undefined,
     productType: typeFilter !== "all" ? typeFilter : undefined,
     includeInactive: showInactive,
   }) as { products: ShopProduct[]; totalCount: number } | undefined;
 
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
   const statsResult = useConvexQuery(typedApi.admin.shop.getShopStats, {}) as
     | {
         totalProducts: number;
@@ -113,7 +111,6 @@ export default function ShopPage() {
 
   const handleToggleActive = async (productDbId: string, _productName: string) => {
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
       const result = (await toggleActive({
         productDbId: productDbId as Id<"shopProducts">,
       })) as unknown as {
@@ -241,7 +238,7 @@ export default function ShopPage() {
 
         {isLoading ? (
           <div className="space-y-2">
-            {[...Array(10)].map((_, i) => (
+            {Array.from({ length: 10 }, (_, i) => i).map((i) => (
               <Skeleton key={i} className="h-16 w-full" />
             ))}
           </div>

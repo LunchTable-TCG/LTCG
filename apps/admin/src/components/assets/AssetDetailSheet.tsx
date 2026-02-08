@@ -169,7 +169,9 @@ export function AssetDetailSheet({
                     className="max-h-64 w-full object-contain"
                   />
                 ) : (
-                  <video src={imageUrl} className="max-h-64 w-full" controls preload="metadata" />
+                  <video src={imageUrl} className="max-h-64 w-full" controls preload="metadata">
+                    <track kind="captions" />
+                  </video>
                 )
               ) : (
                 <div className="flex h-32 items-center justify-center">

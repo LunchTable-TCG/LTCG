@@ -1,4 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import type { StreamingPlatform } from "./platforms";
+import { requiresCustomRtmpUrl } from "./platforms";
 
 const ALGORITHM = "aes-256-gcm";
 
@@ -13,6 +15,9 @@ export function encryptStreamKey(plainKey: string): string {
   }
 
   const key = Buffer.from(encryptionKey, "hex");
+  if (key.length !== 32) {
+    throw new Error("STREAM_KEY_ENCRYPTION_KEY must be 64 hex characters (32 bytes)");
+  }
   const iv = randomBytes(16);
   const cipher = createCipheriv(ALGORITHM, key, iv);
 
@@ -38,6 +43,9 @@ export function decryptStreamKey(encryptedKey: string): string {
   }
 
   const key = Buffer.from(encryptionKey, "hex");
+  if (key.length !== 32) {
+    throw new Error("STREAM_KEY_ENCRYPTION_KEY must be 64 hex characters (32 bytes)");
+  }
   const decipher = createDecipheriv(ALGORITHM, key, Buffer.from(ivHex, "hex"));
   decipher.setAuthTag(Buffer.from(authTagHex, "hex"));
 
@@ -51,29 +59,87 @@ export function decryptStreamKey(encryptedKey: string): string {
  * Build RTMP URL for a given platform and stream key
  */
 export function buildRtmpUrl(
-  platform: "twitch" | "youtube" | "custom" | "retake" | "x" | "pumpfun",
+  platform: StreamingPlatform,
   streamKey: string,
   customRtmpUrl?: string
 ): string {
+  const normalizedStreamKey = streamKey.trim();
+  if (!normalizedStreamKey) {
+    throw new Error("Stream key is required");
+  }
+
   switch (platform) {
     case "twitch":
-      return `rtmp://live.twitch.tv/app/${streamKey}`;
+      return withStreamKey(
+        normalizeOptionalOverride(customRtmpUrl, platform) ?? "rtmps://live.twitch.tv/app",
+        normalizedStreamKey
+      );
     case "youtube":
-      return `rtmp://a.rtmp.youtube.com/live2/${streamKey}`;
+      return withStreamKey(
+        normalizeOptionalOverride(customRtmpUrl, platform) ?? "rtmps://a.rtmp.youtube.com/live2",
+        normalizedStreamKey
+      );
+    case "kick":
+      return withStreamKey(
+        normalizeOptionalOverride(customRtmpUrl, platform) ??
+          "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app",
+        normalizedStreamKey
+      );
+    case "custom":
     case "retake":
     case "x":
     case "pumpfun":
-      // These platforms provide dynamic RTMP URLs via their APIs
-      if (!customRtmpUrl) {
-        throw new Error(`RTMP URL required for ${platform} platform`);
-      }
-      return customRtmpUrl.includes(streamKey) ? customRtmpUrl : `${customRtmpUrl}/${streamKey}`;
-    case "custom":
-      if (!customRtmpUrl) {
-        throw new Error("Custom RTMP URL required for custom platform");
-      }
-      return customRtmpUrl.includes(streamKey) ? customRtmpUrl : `${customRtmpUrl}/${streamKey}`;
+      return withStreamKey(
+        normalizeRequiredCustomRtmpBaseUrl(customRtmpUrl, platform),
+        normalizedStreamKey
+      );
     default:
       throw new Error(`Unsupported platform: ${platform}`);
   }
+}
+
+function normalizeRequiredCustomRtmpBaseUrl(
+  customRtmpUrl: string | undefined,
+  platform: StreamingPlatform
+): string {
+  if (!requiresCustomRtmpUrl(platform)) {
+    throw new Error(`RTMP URL is not expected for ${platform}`);
+  }
+
+  const trimmed = customRtmpUrl?.trim();
+  if (!trimmed) {
+    throw new Error(`RTMP URL required for ${platform} platform`);
+  }
+
+  return normalizeProvidedRtmpBaseUrl(trimmed, platform);
+}
+
+function normalizeOptionalOverride(
+  customRtmpUrl: string | undefined,
+  platform: StreamingPlatform
+): string | undefined {
+  const trimmed = customRtmpUrl?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return normalizeProvidedRtmpBaseUrl(trimmed, platform);
+}
+
+function normalizeProvidedRtmpBaseUrl(rtmpUrl: string, platform: StreamingPlatform): string {
+  if (!/^rtmps?:\/\//i.test(rtmpUrl)) {
+    throw new Error(`RTMP URL for ${platform} must start with rtmp:// or rtmps://`);
+  }
+
+  return rtmpUrl.replace(/\/+$/, "");
+}
+
+function withStreamKey(rtmpBaseUrl: string, streamKey: string): string {
+  if (
+    rtmpBaseUrl.endsWith(`/${streamKey}`) ||
+    rtmpBaseUrl.includes(`/${streamKey}?`) ||
+    rtmpBaseUrl.includes(`/${streamKey}#`)
+  ) {
+    return rtmpBaseUrl;
+  }
+  return `${rtmpBaseUrl}/${streamKey}`;
 }

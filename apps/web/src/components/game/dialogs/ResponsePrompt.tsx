@@ -65,6 +65,7 @@ export function ResponsePrompt({
 
   const seconds = Math.ceil(timeRemaining / 1000);
   const progressPercent = (timeRemaining / 30000) * 100;
+  const singleResponseCard = responseCards[0];
 
   const getPromptMessage = () => {
     switch (actionType) {
@@ -74,6 +75,8 @@ export function ResponsePrompt({
         return "Attack declared! Activate a trap?";
       case "summon_response":
         return "Monster summoned! Respond?";
+      case "damage_response":
+        return "Damage step! Modify ATK/DEF?";
       default:
         return "Activate a response?";
     }
@@ -196,7 +199,11 @@ export function ResponsePrompt({
                 {responseCards.length === 1 && (
                   <Button
                     className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white"
-                    onClick={() => handleActivate(responseCards[0]!)}
+                    onClick={() => {
+                      if (singleResponseCard) {
+                        handleActivate(singleResponseCard);
+                      }
+                    }}
                     size="sm"
                   >
                     <Zap className="w-3 h-3 mr-1" />

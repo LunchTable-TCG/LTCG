@@ -200,16 +200,29 @@ export const list = query({
       sessionId?: string;
     };
 
-    return presenceList.map((p) => {
-      const data = p.data as PresenceData | undefined;
-      return {
-        userId: p.userId,
-        sessionId: data?.sessionId ?? p.userId, // Use userId as fallback sessionId
-        username: data?.username ?? "Unknown",
-        status: data?.status ?? "online",
-        lastActiveAt: data?.lastActiveAt ?? Date.now(),
-      };
-    });
+    const results = await Promise.all(
+      presenceList.map(async (p) => {
+        const data = p.data as PresenceData | undefined;
+
+        // Look up user from DB to get real username and check AI status
+        const user = await ctx.db.get(p.userId as Id<"users">);
+
+        // Filter out AI agents (story mode NPCs) and deleted users
+        if (!user || user.isAiAgent) return null;
+
+        const username = data?.username || user.username || user.name || "Unknown";
+
+        return {
+          userId: p.userId,
+          sessionId: data?.sessionId ?? p.userId,
+          username,
+          status: data?.status ?? "online",
+          lastActiveAt: data?.lastActiveAt ?? Date.now(),
+        };
+      })
+    );
+
+    return results.filter((r): r is NonNullable<typeof r> => r !== null);
   },
 });
 

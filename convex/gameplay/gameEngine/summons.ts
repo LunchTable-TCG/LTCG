@@ -8,13 +8,16 @@
  */
 
 import { v } from "convex/values";
+import * as generatedApi from "../../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { internalMutation, mutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
-import { moveCard } from "../../lib/gameHelpers";
+
 import { validateGameActive } from "../../lib/gameValidation";
 import { validateMonsterZone } from "../../lib/validation";
 import { executeEffect } from "../effectSystem";
@@ -112,7 +115,14 @@ export const normalSummon = mutation({
     const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
     // 5.5. Validate monster zone has space (max 5 monsters)
-    validateMonsterZone(board, 5);
+    // Account for tributes that will free up space
+    const tributeCount = args.tributeCardIds?.length || 0;
+    const effectiveBoardSize = board.length - tributeCount;
+    if (effectiveBoardSize >= 5) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Monster zone is full",
+      });
+    }
 
     // 6. Get card details
     const card = await ctx.db.get(args.cardId);
@@ -124,7 +134,6 @@ export const normalSummon = mutation({
     }
 
     // 7. Process tributes (if any)
-    const tributeCount = args.tributeCardIds?.length || 0;
     if (tributeCount > 0 && args.tributeCardIds) {
       // Record tribute_paid event
       await recordEventHelper(ctx, {
@@ -162,10 +171,44 @@ export const normalSummon = mutation({
       const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
       const graveyardAfterTributes = [...graveyard, ...args.tributeCardIds];
 
-      await ctx.db.patch(gameState._id, {
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
+      const tributeUpdates: Record<string, any> = {
         [isHost ? "hostBoard" : "opponentBoard"]: boardAfterTributes,
         [isHost ? "hostGraveyard" : "opponentGraveyard"]: graveyardAfterTributes,
-      });
+      };
+
+      // Clean up equip spells on tributed monsters
+      for (const bc of board) {
+        if (!tributeSet.has(bc.cardId)) continue;
+        if (!bc.equippedCards || bc.equippedCards.length === 0) continue;
+        const equippedIds = bc.equippedCards;
+        const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
+          equippedIds.includes(st.cardId)
+        );
+        if (hostEquips.length > 0) {
+          tributeUpdates["hostSpellTrapZone"] = (
+            tributeUpdates["hostSpellTrapZone"] ?? gameState.hostSpellTrapZone
+          ).filter((st: { cardId: Id<"cardDefinitions"> }) => !equippedIds.includes(st.cardId));
+          tributeUpdates["hostGraveyard"] = [
+            ...(tributeUpdates["hostGraveyard"] ?? gameState.hostGraveyard),
+            ...hostEquips.map((st) => st.cardId),
+          ];
+        }
+        const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
+          equippedIds.includes(st.cardId)
+        );
+        if (opponentEquips.length > 0) {
+          tributeUpdates["opponentSpellTrapZone"] = (
+            tributeUpdates["opponentSpellTrapZone"] ?? gameState.opponentSpellTrapZone
+          ).filter((st: { cardId: Id<"cardDefinitions"> }) => !equippedIds.includes(st.cardId));
+          tributeUpdates["opponentGraveyard"] = [
+            ...(tributeUpdates["opponentGraveyard"] ?? gameState.opponentGraveyard),
+            ...opponentEquips.map((st) => st.cardId),
+          ];
+        }
+      }
+
+      await ctx.db.patch(gameState._id, tributeUpdates);
     }
 
     // 8. Re-fetch game state to get current board after tribute removals
@@ -330,7 +373,21 @@ export const normalSummon = mutation({
       }
     }
 
-    // 14. Return success
+    // 14. Trigger opponent_action webhooks
+    await ctx.runMutation(internalAny.gameplay.webhooks.triggerWebhooks, {
+      event: "opponent_action",
+      gameId: lobby.gameId ?? "",
+      lobbyId: args.lobbyId,
+      turnNumber: gameState.turnNumber,
+      playerId: user.userId,
+      additionalData: {
+        actionType: eventType,
+        cardName: card.name,
+        position: args.position,
+      },
+    });
+
+    // 15. Return success
     return {
       success: true,
       cardSummoned: card.name,
@@ -363,7 +420,11 @@ export const normalSummon = mutation({
  */
 async function setMonsterHandler(
   ctx: MutationCtx,
-  args: { lobbyId: Id<"gameLobbies">; cardId: Id<"cardDefinitions">; tributeCardIds?: Id<"cardDefinitions">[] },
+  args: {
+    lobbyId: Id<"gameLobbies">;
+    cardId: Id<"cardDefinitions">;
+    tributeCardIds?: Id<"cardDefinitions">[];
+  },
   user: AuthenticatedUser
 ) {
   // 2. Validate game is active
@@ -421,7 +482,6 @@ async function setMonsterHandler(
   }
 
   const isHost = user.userId === gameState.hostId;
-  const hand = isHost ? gameState.hostHand : gameState.opponentHand;
   const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
   // 5.5. Validate monster zone has space (max 5 monsters)
@@ -453,26 +513,77 @@ async function setMonsterHandler(
       },
     });
 
+    // Record card_to_graveyard events for each tribute
     for (const tributeId of args.tributeCardIds) {
-      await moveCard(
-        ctx,
-        gameState,
-        tributeId,
-        "board",
-        "graveyard",
-        user.userId,
-        gameState.turnNumber
-      );
-
-      const updatedBoard = board.filter((bc) => bc.cardId !== tributeId);
-      await ctx.db.patch(gameState._id, {
-        [isHost ? "hostBoard" : "opponentBoard"]: updatedBoard,
+      const tributeCard = await ctx.db.get(tributeId);
+      await recordEventHelper(ctx, {
+        lobbyId: args.lobbyId,
+        gameId: lobby.gameId,
+        turnNumber: gameState.turnNumber,
+        eventType: "card_to_graveyard",
+        playerId: user.userId,
+        playerUsername: user.username,
+        description: `${user.username}'s ${tributeCard?.name || "card"} was sent to the graveyard`,
+        metadata: { cardId: tributeId, fromZone: "board", toZone: "graveyard" },
       });
     }
+
+    // Remove tributes from board and add to graveyard in one batch operation
+    const tributeSet = new Set(args.tributeCardIds);
+    const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId));
+    const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
+    const graveyardAfterTributes = [...graveyard, ...args.tributeCardIds];
+
+    // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
+    const tributeUpdates: Record<string, any> = {
+      [isHost ? "hostBoard" : "opponentBoard"]: boardAfterTributes,
+      [isHost ? "hostGraveyard" : "opponentGraveyard"]: graveyardAfterTributes,
+    };
+
+    // Clean up equip spells on tributed monsters
+    for (const bc of board) {
+      if (!tributeSet.has(bc.cardId)) continue;
+      if (!bc.equippedCards || bc.equippedCards.length === 0) continue;
+      const equippedIds = bc.equippedCards;
+      const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
+      if (hostEquips.length > 0) {
+        tributeUpdates["hostSpellTrapZone"] = (
+          tributeUpdates["hostSpellTrapZone"] ?? gameState.hostSpellTrapZone
+        ).filter((st: { cardId: Id<"cardDefinitions"> }) => !equippedIds.includes(st.cardId));
+        tributeUpdates["hostGraveyard"] = [
+          ...(tributeUpdates["hostGraveyard"] ?? gameState.hostGraveyard),
+          ...hostEquips.map((st) => st.cardId),
+        ];
+      }
+      const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
+      if (opponentEquips.length > 0) {
+        tributeUpdates["opponentSpellTrapZone"] = (
+          tributeUpdates["opponentSpellTrapZone"] ?? gameState.opponentSpellTrapZone
+        ).filter((st: { cardId: Id<"cardDefinitions"> }) => !equippedIds.includes(st.cardId));
+        tributeUpdates["opponentGraveyard"] = [
+          ...(tributeUpdates["opponentGraveyard"] ?? gameState.opponentGraveyard),
+          ...opponentEquips.map((st) => st.cardId),
+        ];
+      }
+    }
+
+    await ctx.db.patch(gameState._id, tributeUpdates);
   }
 
-  // 8. Remove card from hand
-  const newHand = hand.filter((c) => c !== args.cardId);
+  // 8. Re-fetch game state to get current board/hand after tribute removals
+  const refreshedGameState = await ctx.db.get(gameState._id);
+  if (!refreshedGameState) {
+    throw createError(ErrorCode.GAME_STATE_NOT_FOUND);
+  }
+  const currentBoard = isHost ? refreshedGameState.hostBoard : refreshedGameState.opponentBoard;
+  const currentHand = isHost ? refreshedGameState.hostHand : refreshedGameState.opponentHand;
+
+  // 8b. Remove card from hand
+  const newHand = currentHand.filter((c) => c !== args.cardId);
 
   // 9. Add card to board (face-down defense position)
   const newBoardCard = {
@@ -486,7 +597,7 @@ async function setMonsterHandler(
     turnSummoned: gameState.turnNumber,
   };
 
-  const newBoard = [...board, newBoardCard];
+  const newBoard = [...currentBoard, newBoardCard];
 
   // 10. Mark player as having normal summoned/set this turn
   await ctx.db.patch(gameState._id, {
@@ -565,7 +676,11 @@ export const setMonsterInternal = internalMutation({
  */
 async function flipSummonHandler(
   ctx: MutationCtx,
-  args: { lobbyId: Id<"gameLobbies">; cardId: Id<"cardDefinitions">; newPosition: "attack" | "defense" },
+  args: {
+    lobbyId: Id<"gameLobbies">;
+    cardId: Id<"cardDefinitions">;
+    newPosition: "attack" | "defense";
+  },
   user: AuthenticatedUser
 ) {
   // 2. Validate game is active
@@ -639,6 +754,7 @@ async function flipSummonHandler(
     ...currentCard,
     position: positionValue,
     isFaceDown: false, // Flip to face-up
+    hasChangedPosition: true, // Prevent double position change in same turn
   };
 
   await ctx.db.patch(gameState._id, {
@@ -822,13 +938,84 @@ export const normalSummonInternal = internalMutation({
       });
     }
 
-    // 8. Validate monster zone has space
-    validateMonsterZone(board, 5);
+    // 8. Validate tribute count matches card level requirements
+    const tributeCardIds = args.tributeCardIds?.map((id) => id as Id<"cardDefinitions">) ?? [];
+    const cardLevel = card.level ?? card.cost;
+    const requiredTributes = cardLevel >= 7 ? 2 : cardLevel >= 5 ? 1 : 0;
+    if (tributeCardIds.length !== requiredTributes) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: `This monster requires ${requiredTributes} tribute(s) but ${tributeCardIds.length} were provided`,
+      });
+    }
 
-    // 9. Remove card from hand
-    const newHand = hand.filter((c) => c !== cardIdAsId);
+    // 8.5. Validate monster zone has space (account for tributes freeing space)
+    const effectiveBoardSize = board.length - tributeCardIds.length;
+    if (effectiveBoardSize >= 5) {
+      throw createError(ErrorCode.GAME_INVALID_MOVE, {
+        reason: "Monster zone is full",
+      });
+    }
 
-    // 10. Add card to board
+    // 8.6. Process tributes (if any)
+    if (tributeCardIds.length > 0) {
+      const tributeSet = new Set(tributeCardIds);
+      const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId));
+      const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
+      const graveyardAfterTributes = [...graveyard, ...tributeCardIds];
+
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
+      const tributeUpdates: Record<string, any> = {
+        [isHost ? "hostBoard" : "opponentBoard"]: boardAfterTributes,
+        [isHost ? "hostGraveyard" : "opponentGraveyard"]: graveyardAfterTributes,
+      };
+
+      // Clean up equip spells on tributed monsters
+      for (const bc of board) {
+        if (!tributeSet.has(bc.cardId)) continue;
+        if (!bc.equippedCards || bc.equippedCards.length === 0) continue;
+        const equippedIds = bc.equippedCards;
+        const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
+          equippedIds.includes(st.cardId)
+        );
+        if (hostEquips.length > 0) {
+          tributeUpdates["hostSpellTrapZone"] = (
+            tributeUpdates["hostSpellTrapZone"] ?? gameState.hostSpellTrapZone
+          ).filter((st: { cardId: Id<"cardDefinitions"> }) => !equippedIds.includes(st.cardId));
+          tributeUpdates["hostGraveyard"] = [
+            ...(tributeUpdates["hostGraveyard"] ?? gameState.hostGraveyard),
+            ...hostEquips.map((st) => st.cardId),
+          ];
+        }
+        const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
+          equippedIds.includes(st.cardId)
+        );
+        if (opponentEquips.length > 0) {
+          tributeUpdates["opponentSpellTrapZone"] = (
+            tributeUpdates["opponentSpellTrapZone"] ?? gameState.opponentSpellTrapZone
+          ).filter((st: { cardId: Id<"cardDefinitions"> }) => !equippedIds.includes(st.cardId));
+          tributeUpdates["opponentGraveyard"] = [
+            ...(tributeUpdates["opponentGraveyard"] ?? gameState.opponentGraveyard),
+            ...opponentEquips.map((st) => st.cardId),
+          ];
+        }
+      }
+
+      await ctx.db.patch(gameState._id, tributeUpdates);
+    }
+
+    // 9. Re-fetch game state after tribute removals
+    const currentGameState =
+      tributeCardIds.length > 0 ? await ctx.db.get(gameState._id) : gameState;
+    if (!currentGameState) {
+      throw createError(ErrorCode.GAME_STATE_NOT_FOUND);
+    }
+    const currentBoard = isHost ? currentGameState.hostBoard : currentGameState.opponentBoard;
+    const currentHand = isHost ? currentGameState.hostHand : currentGameState.opponentHand;
+
+    // 10. Remove card from hand
+    const newHand = currentHand.filter((c) => c !== cardIdAsId);
+
+    // 11. Add card to board
     const positionValue = args.position === "attack" ? 1 : -1;
 
     // Parse ability for protection flags
@@ -861,10 +1048,10 @@ export const normalSummonInternal = internalMutation({
       ...protectionFlags,
     };
 
-    const newBoard = [...board, newBoardCard];
+    const newBoard = [...currentBoard, newBoardCard];
 
-    // 11. Update game state
-    await ctx.db.patch(gameState._id, {
+    // 12. Update game state
+    await ctx.db.patch(currentGameState._id, {
       [isHost ? "hostHand" : "opponentHand"]: newHand,
       [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
       [isHost ? "hostNormalSummonedThisTurn" : "opponentNormalSummonedThisTurn"]: true,
@@ -888,11 +1075,25 @@ export const normalSummonInternal = internalMutation({
       },
     });
 
+    // 13. Trigger opponent_action webhooks
+    await ctx.runMutation(internalAny.gameplay.webhooks.triggerWebhooks, {
+      event: "opponent_action",
+      gameId: args.gameId,
+      lobbyId: gameState.lobbyId,
+      turnNumber: gameState.turnNumber ?? 0,
+      playerId: args.userId,
+      additionalData: {
+        actionType: "normal_summon",
+        cardName: card.name,
+        position: args.position,
+      },
+    });
+
     return {
       success: true,
       cardSummoned: card.name,
       position: args.position,
-      tributesUsed: 0,
+      tributesUsed: tributeCardIds.length,
     };
   },
 });

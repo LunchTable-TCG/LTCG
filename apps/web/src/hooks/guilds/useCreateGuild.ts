@@ -1,22 +1,23 @@
 "use client";
 
+import { typedApi } from "@/lib/convexHelpers";
 import { handleHookError } from "@/lib/errorHandling";
-import { api } from "@convex/_generated/api";
+import type { Visibility } from "@/types/common";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 // Module-scope references to avoid TS2589
-const createGuildMutationRef = api.social.guilds.core.createGuild;
-const setProfileImageMutationRef = api.social.guilds.core.setProfileImage;
-const setBannerImageMutationRef = api.social.guilds.core.setBannerImage;
-const generateUploadUrlMutationRef = api.storage.images.generateUploadUrl;
+const createGuildMutationRef = typedApi.social.guilds.core.createGuild;
+const setProfileImageMutationRef = typedApi.social.guilds.core.setProfileImage;
+const setBannerImageMutationRef = typedApi.social.guilds.core.setBannerImage;
+const generateUploadUrlMutationRef = typedApi.storage.images.generateUploadUrl;
 
 interface CreateGuildData {
   name: string;
   description?: string;
-  visibility: "public" | "private";
+  visibility: Visibility;
 }
 
 /**

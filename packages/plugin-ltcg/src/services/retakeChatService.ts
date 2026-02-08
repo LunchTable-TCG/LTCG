@@ -1,4 +1,4 @@
-import type { IAgentRuntime, Service, ServiceType } from "@elizaos/core";
+import { Service, type IAgentRuntime } from "@elizaos/core";
 import { logger } from "../utils/logger";
 
 /**
@@ -19,16 +19,25 @@ interface RetakeChatMessage {
   type: "chat" | "tip" | "system";
 }
 
-export class RetakeChatService implements Service {
-  private runtime: IAgentRuntime | null = null;
+export class RetakeChatService extends Service {
   private pollingInterval: NodeJS.Timeout | null = null;
   private lastMessageId: string | null = null;
   private isPolling = false;
 
-  static serviceType: ServiceType = "retake_chat" as ServiceType;
+  static override serviceType = "retake_chat";
+  capabilityDescription = "Polls Retake.tv chat for viewer messages during streams";
 
-  async initialize(runtime: IAgentRuntime): Promise<void> {
-    this.runtime = runtime;
+  static override async start(runtime: IAgentRuntime): Promise<Service> {
+    const service = new RetakeChatService(runtime);
+    await service.initialize();
+    return service;
+  }
+
+  static override async stop(_runtime: IAgentRuntime): Promise<void> {
+    // Cleanup handled by instance stop()
+  }
+
+  async initialize(): Promise<void> {
     logger.info("Retake Chat Service initialized");
 
     // Check if Retake credentials are available
@@ -42,7 +51,7 @@ export class RetakeChatService implements Service {
     this.startPolling();
   }
 
-  async cleanup(): Promise<void> {
+  async stop(): Promise<void> {
     this.stopPolling();
     logger.info("Retake Chat Service cleaned up");
   }
@@ -90,7 +99,7 @@ export class RetakeChatService implements Service {
    */
   private async pollChat(): Promise<void> {
     const accessToken = this.getAccessToken();
-    if (!accessToken || !this.runtime) {
+    if (!accessToken) {
       return;
     }
 
@@ -133,15 +142,9 @@ export class RetakeChatService implements Service {
    * Process an incoming chat message
    */
   private async processMessage(message: RetakeChatMessage): Promise<void> {
-    if (!this.runtime) {
-      return;
-    }
-
-    logger.info("Received chat message", {
-      from: message.user.username,
-      type: message.type,
-      messageLength: message.message.length,
-    });
+    logger.info(
+      `Received chat message from ${message.user.username} (${message.type}, ${message.message.length} chars)`
+    );
 
     // Skip system messages
     if (message.type === "system") {
@@ -155,7 +158,6 @@ export class RetakeChatService implements Service {
     }
 
     // Process chat messages through the agent's runtime
-    // This will trigger appropriate actions/evaluators to generate a response
     try {
       const memory = {
         userId: message.user.username,
@@ -172,9 +174,9 @@ export class RetakeChatService implements Service {
         },
       };
 
-      // Let the runtime process the message and generate responses
-      // The agent's evaluators and actions will determine how to respond
-      await this.runtime.processMessage(memory);
+      // Use processActions to handle the message through the agent pipeline
+      // biome-ignore lint/suspicious/noExplicitAny: Memory shape doesn't match strict ElizaOS types at compile time
+      await this.runtime.processActions(memory as any, [], undefined, undefined);
     } catch (error) {
       logger.error("Failed to process chat message:", error);
     }
@@ -184,29 +186,27 @@ export class RetakeChatService implements Service {
    * Handle tip notifications
    */
   private async handleTip(message: RetakeChatMessage): Promise<void> {
-    logger.info("Received tip", {
-      from: message.user.username,
-      message: message.message,
-    });
+    logger.info(
+      `Received tip from ${message.user.username}: ${message.message}`
+    );
 
     // Send a thank you message via the chat response action
-    if (this.runtime) {
-      const thankYouMessage = {
-        userId: message.user.username,
-        agentId: this.runtime.agentId,
-        roomId: "retake_chat",
-        content: {
-          text: `Thank you @${message.user.username} for the tip! 💖 Much appreciated!`,
-          source: "retake_chat",
-          action: "RETAKE_CHAT_RESPONSE",
-        },
-      };
+    const thankYouMessage = {
+      userId: message.user.username,
+      agentId: this.runtime.agentId,
+      roomId: "retake_chat",
+      content: {
+        text: `Thank you @${message.user.username} for the tip! Much appreciated!`,
+        source: "retake_chat",
+        action: "RETAKE_CHAT_RESPONSE",
+      },
+    };
 
-      try {
-        await this.runtime.processMessage(thankYouMessage);
-      } catch (error) {
-        logger.error("Failed to send tip thank you:", error);
-      }
+    try {
+      // biome-ignore lint/suspicious/noExplicitAny: Memory shape doesn't match strict ElizaOS types at compile time
+      await this.runtime.processActions(thankYouMessage as any, [], undefined, undefined);
+    } catch (error) {
+      logger.error("Failed to send tip thank you:", error);
     }
   }
 
@@ -214,16 +214,13 @@ export class RetakeChatService implements Service {
    * Get Retake.tv access token from runtime settings
    */
   private getAccessToken(): string | null {
-    if (!this.runtime) {
-      return null;
-    }
-
-    return (
+    const token =
       this.runtime.getSetting("RETAKE_ACCESS_TOKEN") ||
       process.env.RETAKE_ACCESS_TOKEN ||
       process.env.DIZZY_RETAKE_ACCESS_TOKEN ||
-      null
-    );
+      null;
+
+    return typeof token === "string" ? token : null;
   }
 }
 

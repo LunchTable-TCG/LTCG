@@ -1,15 +1,15 @@
 "use client";
 
-import { useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { useMutationWithToast } from "@/lib/useMutationWithToast";
-import { api } from "@convex/_generated/api";
 import { useAuth } from "../auth/useConvexAuthHook";
 
-// Module-scope references to avoid TS2589
-const getMyGuildInviteLinkQuery = api.social.guilds.inviteLinks.getMyGuildInviteLink;
-const getGuildByInviteCodeQuery = api.social.guilds.inviteLinks.getGuildByInviteCode;
-const generateInviteLinkMutation = api.social.guilds.inviteLinks.generateInviteLink;
-const joinViaInviteLinkMutation = api.social.guilds.inviteLinks.joinViaInviteLink;
+// Module-scope references to avoid TS2589 (typedApi is pre-cast to any)
+const inviteLinksApi = typedApi.social.guilds.inviteLinks;
+const getMyGuildInviteLinkQuery = inviteLinksApi.getMyGuildInviteLink;
+const getGuildByInviteCodeQuery = inviteLinksApi.getGuildByInviteCode;
+const generateInviteLinkMutation = inviteLinksApi.generateInviteLink;
+const joinViaInviteLinkMutation = inviteLinksApi.joinViaInviteLink;
 
 /**
  * Hook for managing guild invite links (shareable links).
@@ -19,10 +19,7 @@ export function useGuildInviteLink() {
   const { isAuthenticated } = useAuth();
 
   // Get user's current active invite link
-  const myInviteLink = useConvexQuery(
-    getMyGuildInviteLinkQuery,
-    isAuthenticated ? {} : "skip"
-  );
+  const myInviteLink = useConvexQuery(getMyGuildInviteLinkQuery, isAuthenticated ? {} : "skip");
 
   // Mutations
   const generateLink = useMutationWithToast(generateInviteLinkMutation, {
@@ -47,10 +44,7 @@ export function useGuildInviteLink() {
  * Works for both authenticated and unauthenticated users.
  */
 export function useGuildInvitePreview(code: string) {
-  const guildPreview = useConvexQuery(
-    getGuildByInviteCodeQuery,
-    code ? { code } : "skip"
-  );
+  const guildPreview = useConvexQuery(getGuildByInviteCodeQuery, code ? { code } : "skip");
 
   return {
     guildPreview,

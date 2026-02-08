@@ -1,8 +1,11 @@
 "use client";
 
+import type { StreamType } from "@/lib/streaming/types";
+
 const PLATFORM_BADGE: Record<string, { label: string; color: string; icon: string }> = {
   twitch: { label: "Twitch", color: "#9146FF", icon: "\uD83D\uDFE3" },
   youtube: { label: "YouTube", color: "#FF0000", icon: "\uD83D\uDD34" },
+  kick: { label: "Kick", color: "#53FC18", icon: "K" },
   retake: { label: "Retake.tv", color: "#00D4AA", icon: "\uD83D\uDCFA" },
   x: { label: "X", color: "#1DA1F2", icon: "\u2715" },
   pumpfun: { label: "Pump.fun", color: "#00E676", icon: "\uD83D\uDCA7" },
@@ -12,7 +15,7 @@ const PLATFORM_BADGE: Record<string, { label: string; color: string; icon: strin
 interface StreamerInfoPanelProps {
   name: string;
   avatar?: string;
-  streamType: "user" | "agent";
+  streamType: StreamType;
   platform: string;
 }
 
@@ -23,9 +26,7 @@ export function StreamerInfoPanel({ name, avatar, streamType, platform }: Stream
   return (
     <div className="streamer-info">
       <div className="streamer-info__left">
-        {avatar && (
-          <img src={avatar} alt={displayName} className="streamer-info__avatar" />
-        )}
+        {avatar && <img src={avatar} alt={displayName} className="streamer-info__avatar" />}
         <div className="streamer-info__details">
           <h1 className="streamer-info__name">{displayName}</h1>
         </div>

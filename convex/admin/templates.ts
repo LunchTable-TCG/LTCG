@@ -5,6 +5,7 @@
  * Requires admin role or higher.
  */
 
+import { literals } from "convex-helpers/validators";
 import { v } from "convex/values";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
@@ -65,7 +66,42 @@ export const listTemplates = query({
     cardType: v.optional(cardTypeValidator),
     activeOnly: v.optional(v.boolean()),
   },
-  returns: v.array(v.any()), // Use v.any() to avoid validation errors when schema fields change
+  returns: v.array(
+    v.object({
+      _id: v.id("cardTemplates"),
+      _creationTime: v.number(),
+      name: v.string(),
+      description: v.optional(v.string()),
+      cardType: literals("creature", "spell", "trap", "equipment", "universal"),
+      mode: v.optional(literals("frame_artwork", "full_card_image")),
+      width: v.number(),
+      height: v.number(),
+      frameImages: v.object({
+        common: v.optional(v.string()),
+        uncommon: v.optional(v.string()),
+        rare: v.optional(v.string()),
+        epic: v.optional(v.string()),
+        legendary: v.optional(v.string()),
+      }),
+      defaultFrameImageUrl: v.optional(v.string()),
+      artworkBounds: v.object({
+        x: v.number(),
+        y: v.number(),
+        width: v.number(),
+        height: v.number(),
+      }),
+      defaultFontFamily: v.string(),
+      defaultFontSize: v.number(),
+      defaultFontColor: v.string(),
+      isDefault: v.boolean(),
+      isActive: v.boolean(),
+      createdBy: v.optional(v.id("users")),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      // Computed field added by handler
+      blockCount: v.number(),
+    })
+  ),
   handler: async (ctx, args) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "admin");

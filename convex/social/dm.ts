@@ -1,7 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { query } from "../_generated/server";
+import { type MutationCtx, query } from "../_generated/server";
 import { mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
@@ -33,13 +33,13 @@ function sortParticipants(userId1: Id<"users">, userId2: Id<"users">) {
  * Checks if two users are friends
  */
 async function areFriends(
-  ctx: { db: any },
+  ctx: { db: MutationCtx["db"] },
   userId1: Id<"users">,
   userId2: Id<"users">
 ): Promise<boolean> {
   const friendship = await ctx.db
     .query("friendships")
-    .withIndex("by_user_friend", (q: any) => q.eq("userId", userId1).eq("friendId", userId2))
+    .withIndex("by_user_friend", (q) => q.eq("userId", userId1).eq("friendId", userId2))
     .first();
 
   return friendship?.status === "accepted";

@@ -9,8 +9,8 @@ export async function generateRoomToken(params: {
   participantName?: string;
   metadata?: string;
 }): Promise<string> {
-  const apiKey = process.env.LIVEKIT_API_KEY;
-  const apiSecret = process.env.LIVEKIT_API_SECRET;
+  const apiKey = process.env.LIVEKIT_API_KEY?.trim();
+  const apiSecret = process.env.LIVEKIT_API_SECRET?.trim();
 
   if (!apiKey || !apiSecret) {
     throw new Error("LiveKit credentials not configured");
@@ -37,7 +37,7 @@ export async function generateRoomToken(params: {
  * Get LiveKit server URL
  */
 export function getLiveKitUrl(): string {
-  const url = process.env.LIVEKIT_URL;
+  const url = process.env.LIVEKIT_URL?.trim();
   if (!url) {
     throw new Error("LIVEKIT_URL not configured");
   }

@@ -16,6 +16,7 @@ function Progress({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={value}
+      tabIndex={0}
       className={cn("relative h-2 w-full overflow-hidden rounded-full bg-primary/20", className)}
       {...props}
     >

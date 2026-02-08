@@ -7,6 +7,7 @@
  */
 
 import { typedApi } from "@/lib/convexHelpers";
+import type { TransactionFilter } from "@/types/economy";
 import { usePaginatedQuery } from "convex/react";
 import { useState } from "react";
 import { useAuth } from "../auth/useConvexAuthHook";
@@ -49,8 +50,8 @@ interface UseTransactionHistoryReturn {
   allTransactions: Array<Transaction | TokenTransaction>;
 
   // Filter
-  filter: "all" | "gold" | "gems" | "token";
-  setFilter: (filter: "all" | "gold" | "gems" | "token") => void;
+  filter: TransactionFilter;
+  setFilter: (filter: TransactionFilter) => void;
 }
 
 /**
@@ -86,7 +87,7 @@ interface UseTransactionHistoryReturn {
  */
 export function useTransactionHistory(): UseTransactionHistoryReturn {
   const { isAuthenticated } = useAuth();
-  const [filter, setFilter] = useState<"all" | "gold" | "gems" | "token">("all");
+  const [filter, setFilter] = useState<TransactionFilter>("all");
 
   // Gold/Gems transactions with pagination
   const {

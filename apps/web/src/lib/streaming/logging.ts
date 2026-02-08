@@ -3,47 +3,47 @@
  */
 
 const SENSITIVE_KEYS = [
-  'streamKey',
-  'customRtmpUrl',
-  'token',
-  'rtmpUrl',
-  'overlayToken',
-  'accessCode',
-  'streamKeyHash',
-  'authorization',
-  'password',
-  'secret',
-  'apiKey',
-  'apiSecret',
-  'webhookSecret',
+  "streamKey",
+  "customRtmpUrl",
+  "token",
+  "rtmpUrl",
+  "overlayToken",
+  "accessCode",
+  "streamKeyHash",
+  "authorization",
+  "password",
+  "secret",
+  "apiKey",
+  "apiSecret",
+  "webhookSecret",
 ];
 
 /**
  * Recursively sanitize an object to redact sensitive keys
  */
-export function sanitizeForLogging(obj: any): any {
+export function sanitizeForLogging(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
     return obj;
   }
 
   // Handle primitives
-  if (typeof obj !== 'object') {
+  if (typeof obj !== "object") {
     return obj;
   }
 
   // Handle arrays
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeForLogging(item));
+    return obj.map((item) => sanitizeForLogging(item));
   }
 
   // Handle objects
-  const sanitized = { ...obj };
+  const sanitized: Record<string, unknown> = { ...(obj as Record<string, unknown>) };
 
   for (const key in sanitized) {
     if (Object.prototype.hasOwnProperty.call(sanitized, key)) {
       if (SENSITIVE_KEYS.includes(key)) {
-        sanitized[key] = '[REDACTED]';
-      } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+        sanitized[key] = "[REDACTED]";
+      } else if (typeof sanitized[key] === "object" && sanitized[key] !== null) {
         sanitized[key] = sanitizeForLogging(sanitized[key]);
       }
     }
@@ -55,7 +55,7 @@ export function sanitizeForLogging(obj: any): any {
 /**
  * Log error with automatic sanitization
  */
-export function logError(message: string, context?: any): void {
+export function logError(message: string, context?: unknown): void {
   if (context) {
     console.error(message, sanitizeForLogging(context));
   } else {
@@ -66,7 +66,7 @@ export function logError(message: string, context?: any): void {
 /**
  * Log warning with automatic sanitization
  */
-export function logWarn(message: string, context?: any): void {
+export function logWarn(message: string, context?: unknown): void {
   if (context) {
     console.warn(message, sanitizeForLogging(context));
   } else {
@@ -77,7 +77,7 @@ export function logWarn(message: string, context?: any): void {
 /**
  * Log info with automatic sanitization
  */
-export function logInfo(message: string, context?: any): void {
+export function logInfo(message: string, context?: unknown): void {
   if (context) {
     console.log(message, sanitizeForLogging(context));
   } else {

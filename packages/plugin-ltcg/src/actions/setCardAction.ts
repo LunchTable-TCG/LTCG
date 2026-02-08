@@ -53,12 +53,11 @@ export const setCardAction: Action = {
       }
 
       // Check for any cards that can be set
-      const monsterZoneFull = gameState.hostPlayer.monsterZone.length >= 5;
-      const spellTrapZoneFull = gameState.hostPlayer.spellTrapZone.length >= 5;
+      const monsterZoneFull = gameState.myBoard.length >= 5;
 
       const settableCards = hand.filter((card) => {
-        if (card.type === "creature" && !monsterZoneFull) return true;
-        if ((card.type === "spell" || card.type === "trap") && !spellTrapZoneFull) return true;
+        if (card.cardType === "creature" && !monsterZoneFull) return true;
+        if (card.cardType === "spell" || card.cardType === "trap") return true;
         return false;
       });
 
@@ -110,35 +109,30 @@ export const setCardAction: Action = {
       });
 
       // Get settable cards
-      const monsterZoneFull = gameState.hostPlayer.monsterZone.length >= 5;
-      const spellTrapZoneFull = gameState.hostPlayer.spellTrapZone.length >= 5;
+      const monsterZoneFull = gameState.myBoard.length >= 5;
 
       const settableCards = hand.filter((card) => {
-        if (card.type === "creature" && !monsterZoneFull) return true;
-        if ((card.type === "spell" || card.type === "trap") && !spellTrapZoneFull) return true;
+        if (card.cardType === "creature" && !monsterZoneFull) return true;
+        if (card.cardType === "spell" || card.cardType === "trap") return true;
         return false;
       });
 
       // Use LLM to select which card to set
-      // Note: Use cardType (creature/spell/trap) and fall back to type for compatibility
       const cardOptions = settableCards
         .map((card, idx) => {
-          const cardTypeName: string = card.cardType || card.type || "unknown";
-          const isCreature = cardTypeName === "creature" || cardTypeName === "creature";
-          return `${idx + 1}. ${card.name} (${cardTypeName.toUpperCase()})${
-            isCreature ? ` - ${card.defense ?? card.def ?? 0} DEF` : ""
+          const isCreature = card.cardType === "creature";
+          return `${idx + 1}. ${card.name} (${card.cardType.toUpperCase()})${
+            isCreature ? ` - ${card.defense ?? 0} DEF` : ""
           }${card.description ? ` - ${card.description.substring(0, 100)}` : ""}`;
         })
         .join("\n");
 
       const boardContext = `
 Game State:
-- Your LP: ${gameState.hostPlayer.lifePoints}
-- Opponent LP: ${gameState.opponentPlayer.lifePoints}
-- Your monsters: ${gameState.hostPlayer.monsterZone.length}/5
-- Your backrow: ${gameState.hostPlayer.spellTrapZone.length}/5
-- Opponent monsters: ${gameState.opponentPlayer.monsterZone.length}
-- Opponent backrow: ${gameState.opponentPlayer.spellTrapZone.length}
+- Your LP: ${gameState.myLifePoints}
+- Opponent LP: ${gameState.opponentLifePoints}
+- Your monsters: ${gameState.myBoard.length}/5
+- Opponent monsters: ${gameState.opponentBoard.length}
 `;
 
       const prompt = `${boardContext}
@@ -162,7 +156,6 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
       // Parse LLM decision
       const parsed = extractJsonFromLlmResponse(decision, {
         handIndex: 0,
-        zone: "monster",
       });
       const selectedCard = settableCards[parsed.handIndex];
 
@@ -170,16 +163,10 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
         throw new Error("Invalid card selection");
       }
 
-      // Determine zone based on card type (use cardType, fall back to type)
-      const cardTypeName: string = selectedCard.cardType || selectedCard.type || "unknown";
-      const isCreature = cardTypeName === "creature" || cardTypeName === "creature";
-      const zone = isCreature ? "monster" : "spellTrap";
-
       // Make API call
       const result = await client.setCard({
         gameId: gameState.gameId,
-        handIndex: selectedCard.handIndex ?? 0,
-        zone,
+        cardId: selectedCard._id,
       });
 
       // Callback to user
@@ -189,7 +176,7 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
         text: responseText,
         actions: ["SET_CARD"],
         source: message.content.source,
-        thought: `Setting ${selectedCard.name} face-down in ${zone} zone to ${selectedCard.type === "creature" ? "protect LP with defense" : "prepare reactive play for future turns"}`,
+        thought: `Setting ${selectedCard.name} face-down to ${selectedCard.cardType === "creature" ? "protect LP with defense" : "prepare reactive play for future turns"}`,
       } as Content);
 
       return {
@@ -197,13 +184,11 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
         text: `Successfully set ${selectedCard.name}`,
         values: {
           cardName: selectedCard.name,
-          cardType: selectedCard.type,
-          zone,
+          cardType: selectedCard.cardType,
         },
         data: {
           actionName: "SET_CARD",
           cardSet: selectedCard,
-          zone,
           result,
         },
       };

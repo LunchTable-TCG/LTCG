@@ -55,7 +55,7 @@ interface ThreatAssessment {
  */
 interface MustAnswerThreat {
   cardName: string;
-  boardIndex: number;
+  cardId: string;
   reason: string;
   priority: "immediate" | "high" | "medium";
   suggestedAnswer: string;
@@ -322,7 +322,7 @@ function calculateLethalPath(
   // Sort defenders by ease of destruction (weakest first)
   const sortedDefenders = defenders
     .map((d, i) => {
-      const isDefense = d.position === 0;
+      const isDefense = d.position === 2;
       return {
         index: i,
         name: d.name,
@@ -454,7 +454,7 @@ function assessThreats(
     if (atk >= 2500) {
       mustAnswerThreats.push({
         cardName: card.name,
-        boardIndex: i,
+        cardId: card._id,
         reason: `High ATK (${atk}) - can destroy most monsters`,
         priority: atk >= 3000 ? "immediate" : "high",
         suggestedAnswer: "Destroy with spell/trap or summon stronger monster",
@@ -465,7 +465,7 @@ function assessThreats(
     if (card.name.toLowerCase().includes("effect") || atk === 0) {
       mustAnswerThreats.push({
         cardName: card.name,
-        boardIndex: i,
+        cardId: card._id,
         reason: "Possible effect monster - may have dangerous abilities",
         priority: "medium",
         suggestedAnswer: "Consider removing before it activates effect",

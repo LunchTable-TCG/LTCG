@@ -7,28 +7,31 @@
  */
 
 import { Migrations } from "@convex-dev/migrations";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { components } from "../_generated/api";
 import type { DataModel } from "../_generated/dataModel";
 import { internalMutation } from "../functions";
 
-export const migrations = new Migrations<DataModel>((components as any).migrations, {
+type MigrationsComponent = ConstructorParameters<typeof Migrations>[0];
+const migrationsComponent = (components as { migrations: MigrationsComponent }).migrations;
+
+export const migrations = new Migrations<DataModel>(migrationsComponent, {
   internalMutation,
 });
 
-// Single migration runner: npx convex run migrations/index:run '{fn: "migrations/syncGoldToPlayerCurrency"}'
+// Single migration runner: npx convex run migrations/index:run '{fn: "migrations/<name>"}'
 export const run = migrations.runner();
 
 // Run all table migrations in order
 // Note: loadAllCards is a data import, not a table migration. Run separately:
 // npx convex run migrations/loadAllCards:loadAllCards
 export const runAll = migrations.runner([
-  internal.migrations.syncGoldToPlayerCurrency,
-  internal.migrations.syncXPToPlayerXP,
-  internal.migrations.addLeaderboardFields,
-  internal.migrations.updateArchetypes,
-  internal.migrations.updateShopProducts,
-  internal.migrations.migrateAdminRoles,
-  internal.migrations.manualAbilities,
-  internal.migrations.mergeMarketplaceBids,
+  internalAny.migrations.addLeaderboardFields,
+  internalAny.migrations.updateArchetypes,
+  internalAny.migrations.updateShopProducts,
+  internalAny.migrations.migrateAdminRoles,
+  internalAny.migrations.manualAbilities,
+  internalAny.migrations.mergeMarketplaceBids,
 ]);

@@ -68,6 +68,10 @@
     "apps",
     "packages",
     "convex",
+    "convex-tests",
+    "e2e",
+    "integrations",
+    "skills",
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/__tests__/**"

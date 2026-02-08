@@ -21,7 +21,7 @@ export default function NotFound() {
       {/* Floating particles - only render on client to avoid hydration mismatch */}
       {mounted && (
         <div className="absolute inset-0 overflow-hidden">
-          {[...Array(20)].map((_, i) => (
+          {Array.from({ length: 20 }, (_, i) => i).map((i) => (
             <motion.div
               key={i}
               className="absolute w-1 h-1 bg-[#d4af37]/30 rounded-full"

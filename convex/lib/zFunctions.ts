@@ -45,19 +45,15 @@
  * NOTE: Uses `convex-helpers/server/zod4` which imports from `zod/v4`.
  */
 
+import { NoOp, customCtx } from "convex-helpers/server/customFunctions";
+import { zCustomAction, zCustomMutation, zCustomQuery } from "convex-helpers/server/zod4";
 import {
-  zCustomQuery,
-  zCustomMutation,
-  zCustomAction,
-} from "convex-helpers/server/zod4";
-import { customCtx, NoOp } from "convex-helpers/server/customFunctions";
-import {
-  query as rawQuery,
-  internalQuery as rawInternalQuery,
-  mutation as rawMutation,
-  internalMutation as rawInternalMutation,
   action as rawAction,
   internalAction as rawInternalAction,
+  internalMutation as rawInternalMutation,
+  internalQuery as rawInternalQuery,
+  mutation as rawMutation,
+  query as rawQuery,
 } from "../_generated/server";
 import { triggers } from "../infrastructure/triggers";
 
@@ -130,10 +126,7 @@ export const zMutation = zCustomMutation(rawMutation, customCtx(triggers.wrapDB)
  * Same as zMutation but only callable from other Convex functions.
  * Triggers still run on all database writes.
  */
-export const zInternalMutation = zCustomMutation(
-  rawInternalMutation,
-  customCtx(triggers.wrapDB)
-);
+export const zInternalMutation = zCustomMutation(rawInternalMutation, customCtx(triggers.wrapDB));
 
 // ============================================================================
 // ZOD-VALIDATED ACTIONS (no triggers for actions)

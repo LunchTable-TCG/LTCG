@@ -5,7 +5,7 @@ import { type MutationCtx, query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
 import { chatRateLimiter } from "../infrastructure/rateLimiters";
 import { globalChatMessageCounter } from "../infrastructure/shardedCounters";
-import { CHAT } from "../lib/constants";
+import { CHAT, ELO_SYSTEM } from "../lib/constants";
 import { requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { getRankFromRating } from "../lib/helpers";
@@ -152,7 +152,7 @@ export const getOnlineUsers = query({
         if (!user) return null;
 
         // Get user's ranked ELO and calculate rank
-        const rankedElo = user.rankedElo ?? 1000;
+        const rankedElo = user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING;
         const rank = getRankFromRating(rankedElo);
 
         // Use presence username, fallback to user record, then "Unknown"

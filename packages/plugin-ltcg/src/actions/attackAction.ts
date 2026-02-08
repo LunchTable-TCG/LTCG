@@ -44,8 +44,8 @@ export const attackAction: Action = {
       }
 
       // Must have at least one monster that can attack
-      const myMonsters = gameState.hostPlayer.monsterZone;
-      const canAttackMonsters = myMonsters.filter((monster) => monster.canAttack);
+      const myMonsters = gameState.myBoard;
+      const canAttackMonsters = myMonsters.filter((monster) => !monster.hasAttacked && monster.position === 1);
 
       if (canAttackMonsters.length === 0) {
         logger.debug("No monsters can attack");
@@ -95,15 +95,15 @@ export const attackAction: Action = {
       });
 
       // Get attackers and targets
-      const myMonsters = gameState.hostPlayer.monsterZone;
-      const attackers = myMonsters.filter((monster) => monster.canAttack);
-      const opponentMonsters = gameState.opponentPlayer.monsterZone;
+      const myMonsters = gameState.myBoard;
+      const attackers = myMonsters.filter((monster) => !monster.hasAttacked && monster.position === 1);
+      const opponentMonsters = gameState.opponentBoard;
 
       // Build attack options
       const attackerOptions = attackers
         .map(
           (monster, idx) =>
-            `${idx + 1}. ${monster.name} (${monster.atk} ATK, Position: ${monster.position})`
+            `${idx + 1}. ${monster.name} (${monster.attack} ATK, Position: ${monster.position === 1 ? "attack" : "defense"})`
         )
         .join("\n");
 
@@ -112,17 +112,17 @@ export const attackAction: Action = {
           ? opponentMonsters
               .map(
                 (monster, idx) =>
-                  `${idx + 1}. ${monster.name} (${monster.faceUp ? `${monster.atk} ATK, ${monster.def} DEF` : "Face-down"}, Position: ${monster.position})`
+                  `${idx + 1}. ${monster.name} (${!monster.isFaceDown ? `${monster.attack} ATK, ${monster.defense} DEF` : "Face-down"}, Position: ${monster.position === 1 ? "attack" : "defense"})`
               )
               .join("\n")
           : "None - direct attack available";
 
       const boardContext = `
 Game State:
-- Your LP: ${gameState.hostPlayer.lifePoints}
-- Opponent LP: ${gameState.opponentPlayer.lifePoints}
+- Your LP: ${gameState.myLifePoints}
+- Opponent LP: ${gameState.opponentLifePoints}
 - Board Advantage: ${boardAnalysis?.advantage || "UNKNOWN"}
-- Opponent Backrow: ${gameState.opponentPlayer.spellTrapZone.length} cards (may have traps!)
+- Opponent may have backrow cards (traps!)
 `;
 
       const prompt = `${boardContext}
@@ -161,8 +161,8 @@ Respond with JSON: { "attackerIndex": <index>, "targetIndex": <index or null for
       // Make API call
       const result = await client.attack({
         gameId: gameState.gameId,
-        attackerBoardIndex: attacker.boardIndex,
-        targetBoardIndex: parsed.targetIndex !== null ? parsed.targetIndex : undefined,
+        attackerCardId: attacker._id,
+        targetCardId: parsed.targetIndex !== null ? opponentMonsters[parsed.targetIndex]?._id : undefined,
       });
 
       // Callback to user
@@ -177,7 +177,7 @@ Respond with JSON: { "attackerIndex": <index>, "targetIndex": <index or null for
         text: responseText,
         actions: ["ATTACK"],
         source: message.content.source,
-        thought: `Attacking ${parsed.targetIndex !== null ? "opponent monster to remove board threat" : "directly to reduce opponent life points"} with ${attacker.name} (${attacker.atk} ATK)`,
+        thought: `Attacking ${parsed.targetIndex !== null ? "opponent monster to remove board threat" : "directly to reduce opponent life points"} with ${attacker.name} (${attacker.attack} ATK)`,
       } as Content);
 
       return {
@@ -185,7 +185,7 @@ Respond with JSON: { "attackerIndex": <index>, "targetIndex": <index or null for
         text: `Successfully declared attack with ${attacker.name}`,
         values: {
           attackerName: attacker.name,
-          attackerAtk: attacker.atk,
+          attackerAtk: attacker.attack,
           isDirect: parsed.targetIndex === null,
           targetName:
             parsed.targetIndex !== null ? opponentMonsters[parsed.targetIndex]?.name : null,

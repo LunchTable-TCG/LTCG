@@ -37,16 +37,10 @@ export default function GuildInvitePage() {
   const isAuthLoading = !privyReady || convexLoading;
 
   // Guild preview (no auth required)
-  const guildPreview = useConvexQuery(
-    getGuildByInviteCodeQuery,
-    code ? { code } : "skip"
-  );
+  const guildPreview = useConvexQuery(getGuildByInviteCodeQuery, code ? { code } : "skip");
 
   // Check if user already has a guild (only when authenticated)
-  const hasGuild = useConvexQuery(
-    hasGuildQuery,
-    isAuthenticated ? {} : "skip"
-  );
+  const hasGuild = useConvexQuery(hasGuildQuery, isAuthenticated ? {} : "skip");
 
   // Join mutation
   const joinViaLink = useMutationWithToast(joinViaInviteLinkMutation, {
@@ -58,7 +52,7 @@ export default function GuildInvitePage() {
 
   // Store referral info in sessionStorage for the auth flow
   useEffect(() => {
-    if (guildPreview && guildPreview.guildId) {
+    if (guildPreview?.guildId) {
       sessionStorage.setItem(
         "referral",
         JSON.stringify({
@@ -109,17 +103,11 @@ export default function GuildInvitePage() {
             <AlertCircle className="w-10 h-10 text-red-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-[#e8e0d5] mb-2">
-              Invalid Invite Link
-            </h1>
-            <p className="text-[#a89f94]">
-              This invite link is no longer active or doesn't exist.
-            </p>
+            <h1 className="text-2xl font-black text-[#e8e0d5] mb-2">Invalid Invite Link</h1>
+            <p className="text-[#a89f94]">This invite link is no longer active or doesn't exist.</p>
           </div>
           <Link href="/">
-            <Button className="tcg-button-primary rounded-xl px-8">
-              Go to Home
-            </Button>
+            <Button className="tcg-button-primary rounded-xl px-8">Go to Home</Button>
           </Link>
         </div>
       </div>
@@ -135,18 +123,15 @@ export default function GuildInvitePage() {
             <Clock className="w-10 h-10 text-amber-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-[#e8e0d5] mb-2">
-              Invite Expired
-            </h1>
+            <h1 className="text-2xl font-black text-[#e8e0d5] mb-2">Invite Expired</h1>
             <p className="text-[#a89f94]">
-              This invite link to <span className="text-[#e8e0d5] font-bold">{guildPreview.guildName}</span> has expired.
-              Ask a guild member for a new link.
+              This invite link to{" "}
+              <span className="text-[#e8e0d5] font-bold">{guildPreview.guildName}</span> has
+              expired. Ask a guild member for a new link.
             </p>
           </div>
           <Link href="/">
-            <Button className="tcg-button-primary rounded-xl px-8">
-              Go to Home
-            </Button>
+            <Button className="tcg-button-primary rounded-xl px-8">Go to Home</Button>
           </Link>
         </div>
       </div>
@@ -178,9 +163,7 @@ export default function GuildInvitePage() {
             </div>
 
             {/* Guild info */}
-            <h1 className="text-2xl font-black text-[#e8e0d5] mb-1">
-              {guildPreview.guildName}
-            </h1>
+            <h1 className="text-2xl font-black text-[#e8e0d5] mb-1">{guildPreview.guildName}</h1>
 
             {guildPreview.guildDescription && (
               <p className="text-[#a89f94] text-sm mb-4 line-clamp-2">
@@ -191,20 +174,14 @@ export default function GuildInvitePage() {
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-[#d4af37]" />
-                <span className="text-[#e8e0d5] font-medium">
-                  {guildPreview.guildMemberCount}
-                </span>
-                <span className="text-[#a89f94]">
-                  /{guildPreview.guildMaxMembers} members
-                </span>
+                <span className="text-[#e8e0d5] font-medium">{guildPreview.guildMemberCount}</span>
+                <span className="text-[#a89f94]">/{guildPreview.guildMaxMembers} members</span>
               </div>
 
               {guildPreview.inviterUsername && (
                 <span className="text-[#a89f94] text-xs">
                   Invited by{" "}
-                  <span className="text-[#e8e0d5] font-medium">
-                    {guildPreview.inviterUsername}
-                  </span>
+                  <span className="text-[#e8e0d5] font-medium">{guildPreview.inviterUsername}</span>
                 </span>
               )}
             </div>
@@ -257,9 +234,7 @@ export default function GuildInvitePage() {
             /* Already in a guild */
             <div className="text-center p-6 rounded-xl bg-black/40 border border-[#3d2b1f]">
               <Shield className="w-8 h-8 mx-auto mb-3 text-[#a89f94]" />
-              <p className="text-[#e8e0d5] font-medium">
-                You're already in a guild
-              </p>
+              <p className="text-[#e8e0d5] font-medium">You're already in a guild</p>
               <p className="text-sm text-[#a89f94] mt-1">
                 Leave your current guild first to join a new one.
               </p>

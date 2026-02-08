@@ -6,13 +6,22 @@
  */
 
 import { v } from "convex/values";
-import { internal as generatedInternal } from "../_generated/api";
-import { httpAction, internalQuery } from "../_generated/server";
-import { internalMutation } from "../functions";
-import { tokenHolderCounter, tokenTx24hCounter } from "../infrastructure/shardedCounters";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
+import { httpAction, internalMutation, internalQuery } from "../_generated/server";
 
-// biome-ignore lint/suspicious/noExplicitAny: Convex deep type workaround for new modules
-const internal = generatedInternal as any;
+type CounterAny = {
+  add: (ctx: unknown, key: string, amount: number) => Promise<void>;
+  set: (ctx: unknown, key: string, value: number) => Promise<void>;
+};
+
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const tokenHolderCounterAny = (require("../infrastructure/shardedCounters") as any)
+  .tokenHolderCounter as CounterAny;
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const tokenTx24hCounterAny = (require("../infrastructure/shardedCounters") as any)
+  .tokenTx24hCounter as CounterAny;
 
 // =============================================================================
 // Types for Helius Webhook Payloads
@@ -357,13 +366,13 @@ export const handleWebhook = httpAction(async (ctx, request) => {
     }
 
     // Get token mint from webhook config
-    const webhookConfig = await ctx.runQuery(internal.webhooks.helius.getWebhookConfig);
+    const webhookConfig = await ctx.runQuery(internalAny.webhooks.helius.getWebhookConfig);
     const tokenMint = webhookConfig?.tokenMint;
 
     if (!tokenMint) {
       console.warn("No token mint configured for Helius webhook");
       // Still record the event
-      await ctx.runMutation(internal.alerts.webhooks.recordEvent, {
+      await ctx.runMutation(internalAny.alerts.webhooks.recordEvent, {
         provider: "helius",
       });
       return new Response(JSON.stringify({ processed: 0, message: "No token mint configured" }), {
@@ -393,14 +402,14 @@ export const handleWebhook = httpAction(async (ctx, request) => {
     // Record trades
     if (processedSwaps.length > 0) {
       // Get total supply for whale detection
-      const latestMetrics = await ctx.runQuery(internal.webhooks.helius.getLatestMetrics);
+      const latestMetrics = await ctx.runQuery(internalAny.webhooks.helius.getLatestMetrics);
       const totalSupply = latestMetrics?.holderCount ? 1_000_000_000 : 1_000_000_000; // Default 1B
 
       for (const swap of processedSwaps) {
         const isWhale = (swap.tokenAmount / totalSupply) * 100 >= WHALE_THRESHOLD_PERCENT;
 
         // Record trade
-        await ctx.runMutation(internal.tokenAnalytics.trades.record, {
+        await ctx.runMutation(internalAny.tokenAnalytics.trades.record, {
           signature: swap.signature,
           traderAddress: swap.traderAddress,
           type: swap.type,
@@ -413,7 +422,7 @@ export const handleWebhook = httpAction(async (ctx, request) => {
         });
 
         // Update holder
-        await ctx.runMutation(internal.webhooks.helius.updateHolderFromTrade, {
+        await ctx.runMutation(internalAny.webhooks.helius.updateHolderFromTrade, {
           address: swap.traderAddress,
           type: swap.type,
           tokenAmount: swap.tokenAmount,
@@ -423,7 +432,7 @@ export const handleWebhook = httpAction(async (ctx, request) => {
       // Update metrics with latest price
       const latestSwap = processedSwaps[processedSwaps.length - 1];
       if (latestSwap) {
-        await ctx.runMutation(internal.webhooks.helius.updateMetricsFromSwap, {
+        await ctx.runMutation(internalAny.webhooks.helius.updateMetricsFromSwap, {
           price: latestSwap.pricePerToken,
           timestamp: latestSwap.timestamp,
         });
@@ -431,7 +440,7 @@ export const handleWebhook = httpAction(async (ctx, request) => {
     }
 
     // Record webhook event
-    await ctx.runMutation(internal.alerts.webhooks.recordEvent, {
+    await ctx.runMutation(internalAny.alerts.webhooks.recordEvent, {
       provider: "helius",
     });
 
@@ -453,7 +462,7 @@ export const handleWebhook = httpAction(async (ctx, request) => {
     console.error("Helius webhook error:", error);
 
     // Record error
-    await ctx.runMutation(internal.alerts.webhooks.recordError, {
+    await ctx.runMutation(internalAny.alerts.webhooks.recordError, {
       provider: "helius",
     });
 
@@ -547,10 +556,10 @@ export const updateHolderFromTrade = internalMutation({
       // Track holder count changes when balance crosses zero threshold
       if (oldBalance === 0 && newBalance > 0) {
         // New holder (balance went from 0 to positive)
-        await tokenHolderCounter.add(ctx, "global", 1);
+        await tokenHolderCounterAny.add(ctx, "global", 1);
       } else if (oldBalance > 0 && newBalance === 0) {
         // Lost holder (balance went from positive to 0)
-        await tokenHolderCounter.add(ctx, "global", -1);
+        await tokenHolderCounterAny.add(ctx, "global", -1);
       }
 
       // If balance goes to 0, we could delete the holder
@@ -575,11 +584,11 @@ export const updateHolderFromTrade = internalMutation({
       });
 
       // Increment holder count for new holder
-      await tokenHolderCounter.add(ctx, "global", 1);
+      await tokenHolderCounterAny.add(ctx, "global", 1);
     }
 
     // Increment 24h transaction counter on each trade
-    await tokenTx24hCounter.add(ctx, "global", 1);
+    await tokenTx24hCounterAny.add(ctx, "global", 1);
   },
 });
 
@@ -590,8 +599,7 @@ export const updateHolderFromTrade = internalMutation({
 export const reset24hTxCounter = internalMutation({
   args: {},
   handler: async (ctx) => {
-    // @ts-expect-error - ShardedCounter component type definition incomplete
-    await tokenTx24hCounter.set(ctx, "global", 0);
+    await tokenTx24hCounterAny.set(ctx, "global", 0);
   },
 });
 

@@ -1,7 +1,18 @@
 import { v } from "convex/values";
+import * as generatedApi from "../../_generated/api";
 import { action } from "../../_generated/server";
-import { internal } from "../../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import { SignJWT } from "jose";
+
+type VideoGrant = {
+  roomJoin: boolean;
+  room: string;
+  canPublish?: boolean;
+  canSubscribe?: boolean;
+  canPublishData?: boolean;
+  roomAdmin?: boolean;
+};
 
 /**
  * Mint a LiveKit access token for a participant
@@ -34,7 +45,9 @@ export const mintAccessToken = action({
     const livekitUrl = process.env["LIVEKIT_URL"]?.trim();
 
     if (!apiKey || !apiSecret || !livekitUrl) {
-      throw new Error("LiveKit credentials not configured (LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL)");
+      throw new Error(
+        "LiveKit credentials not configured (LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL)"
+      );
     }
 
     // Default grants
@@ -54,7 +67,7 @@ export const mintAccessToken = action({
     const expiresAt = now + ttl;
 
     // Build LiveKit video grant (matches LiveKit's AccessToken format)
-    const videoGrant: any = {
+    const videoGrant: VideoGrant = {
       roomJoin: true,
       room: args.roomName,
     };
@@ -79,7 +92,7 @@ export const mintAccessToken = action({
       .sign(secretKey);
 
     // Audit: record token issuance
-    await ctx.runMutation(internal.livekit.internal.mutations.recordTokenGrant, {
+    await ctx.runMutation(internalAny.livekit.internal.mutations.recordTokenGrant, {
       roomName: args.roomName,
       identity: args.identity,
       grants,

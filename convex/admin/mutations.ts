@@ -6,7 +6,9 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
@@ -382,7 +384,7 @@ export const forceCloseMyGame = mutation({
 
       for (const lobby of lobbies) {
         await ctx.db.patch(lobby._id, {
-          status: "completed",
+          status: "cancelled",
         });
       }
       closedCount = lobbies.length;
@@ -564,8 +566,8 @@ export const seedProgressionSystem = mutation({
     await requireRole(ctx, userId, "admin");
 
     // Schedule both seed functions
-    await ctx.scheduler.runAfter(0, internal.progression.quests.seedQuests);
-    await ctx.scheduler.runAfter(0, internal.progression.achievements.seedAchievements);
+    await ctx.scheduler.runAfter(0, internalAny.progression.quests.seedQuests);
+    await ctx.scheduler.runAfter(0, internalAny.progression.achievements.seedAchievements);
 
     // Log the action
     await scheduleAuditLog(ctx, {
@@ -609,8 +611,8 @@ export const devSeedProgressionSystem = mutation({
     }
 
     // Schedule both seed functions
-    await ctx.scheduler.runAfter(0, internal.progression.quests.seedQuests);
-    await ctx.scheduler.runAfter(0, internal.progression.achievements.seedAchievements);
+    await ctx.scheduler.runAfter(0, internalAny.progression.quests.seedQuests);
+    await ctx.scheduler.runAfter(0, internalAny.progression.achievements.seedAchievements);
 
     // Log the action
     await scheduleAuditLog(ctx, {

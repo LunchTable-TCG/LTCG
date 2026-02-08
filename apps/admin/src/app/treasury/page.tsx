@@ -23,6 +23,15 @@ import Link from "next/link";
 
 type TreasuryWallet = Doc<"treasuryWallets">;
 type TreasuryTransaction = Doc<"treasuryTransactions">;
+interface TreasuryOverview {
+  totalSolBalance: number;
+  totalTokenBalance: number;
+  totalWallets: number;
+  pendingTransactions: number;
+  byType?: Record<string, number>;
+  byPurpose?: Record<string, number>;
+  recentTransactions?: TreasuryTransaction[];
+}
 
 // =============================================================================
 // Helper Functions
@@ -95,9 +104,9 @@ function getTransactionTypeLabel(type: string) {
 
 export default function TreasuryOverviewPage() {
   // Fetch treasury data
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incomplete return type
-  const overview = useConvexQuery(typedApi.treasury.wallets.getOverview) as any;
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incomplete return type
+  const overview = useConvexQuery(typedApi.treasury.wallets.getOverview) as
+    | TreasuryOverview
+    | undefined;
   const wallets = useConvexQuery(typedApi.treasury.wallets.listWallets, { status: "active" }) as
     | TreasuryWallet[]
     | undefined;

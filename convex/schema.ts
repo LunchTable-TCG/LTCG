@@ -3,9 +3,13 @@ import { rateLimitTables } from "convex-helpers/server/rateLimit";
 import { literals } from "convex-helpers/validators";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { livekitTables } from "./livekit/schema";
 import type { Infer } from "convex/values";
 import { jsonAbilityValidator } from "./gameplay/effectSystem/jsonEffectValidators";
+import {
+  streamingPlatformValidator,
+  userStreamingPlatformValidator,
+} from "./lib/streamingPlatforms";
+import { livekitTables } from "./livekit/schema";
 
 // ============================================================================
 // SHARED VALIDATORS (Reusable across schema and function args)
@@ -121,18 +125,12 @@ export default defineSchema({
     casualWins: v.optional(v.number()), // default: 0
     casualLosses: v.optional(v.number()), // default: 0
     storyWins: v.optional(v.number()), // default: 0
+    storyLosses: v.optional(v.number()), // default: 0
     currentWinStreak: v.optional(v.number()), // default: 0, current consecutive wins
     longestWinStreak: v.optional(v.number()), // default: 0, all-time best win streak
 
     // Leaderboard: Player type
     isAiAgent: v.optional(v.boolean()), // default: false
-
-    // @deprecated Use playerXP table - migrations completed, keeping for old code paths
-    xp: v.optional(v.number()),
-    // @deprecated Use playerXP table - migrations completed, keeping for old code paths
-    level: v.optional(v.number()),
-    // @deprecated Use playerCurrency table - migrations completed, keeping for old code paths
-    gold: v.optional(v.number()),
 
     lastStatsUpdate: v.optional(v.number()),
 
@@ -194,9 +192,11 @@ export default defineSchema({
     elizaOSBalance: v.optional(v.number()), // Their ElizaOS token balance (smallest unit)
 
     // Referral tracking
-    referralSource: v.optional(v.string()), // "guild_invite", "direct", etc.
+    referralSource: v.optional(v.string()), // "guild_invite", "user_referral", "direct", etc.
     referralGuildInviteCode: v.optional(v.string()), // The invite code used
     referralGuildId: v.optional(v.id("guilds")), // The guild they were invited to
+    referredBy: v.optional(v.id("users")), // User who referred them (user referral system)
+    referralCode: v.optional(v.string()), // The referral code used to sign up
     // Activity tracking for optimized queries (e.g., quest generation)
     lastActiveAt: v.optional(v.number()),
   })
@@ -212,11 +212,9 @@ export default defineSchema({
     .index("rankedElo", ["rankedElo"])
     .index("casualRating", ["casualRating"])
     .index("totalWins", ["totalWins"])
-    .index("xp", ["xp"]) // @deprecated - use playerXP table queries
     // Composite indexes for segmented leaderboards
     .index("rankedElo_byType", ["isAiAgent", "rankedElo"])
     .index("casualRating_byType", ["isAiAgent", "casualRating"])
-    .index("xp_byType", ["isAiAgent", "xp"]) // @deprecated - use playerXP table queries
     .index("by_lastActiveAt", ["lastActiveAt"])
     .searchIndex("search_username", { searchField: "username" }),
 
@@ -319,6 +317,9 @@ export default defineSchema({
     streaming: v.optional(
       v.object({
         streamerModeEnabled: v.boolean(),
+        platform: v.optional(userStreamingPlatformValidator),
+        streamKeyHash: v.optional(v.string()),
+        rtmpUrl: v.optional(v.string()),
       })
     ),
     createdAt: v.number(),
@@ -353,10 +354,16 @@ export default defineSchema({
 
     // Streaming configuration for agent gameplay broadcasts
     streamingEnabled: v.optional(v.boolean()), // Whether agent can stream their games
-    streamingPlatform: v.optional(literals("twitch", "youtube", "custom", "retake", "x", "pumpfun")), // Platform to stream to
+    streamingPlatform: v.optional(streamingPlatformValidator), // Platform to stream to
     streamingKeyHash: v.optional(v.string()), // Encrypted stream key (AES-256-GCM)
-    streamingRtmpUrl: v.optional(v.string()), // Custom RTMP URL (required for x/pumpfun)
+    streamingRtmpUrl: v.optional(v.string()), // Base RTMP URL (required for custom/retake/x/pumpfun)
     streamingAutoStart: v.optional(v.boolean()), // Auto-start streaming when game begins
+    streamingPersistent: v.optional(v.boolean()), // Keep stream live between matches/lobby chat
+    streamingVoiceTrackUrl: v.optional(v.string()), // Optional external TTS/voice track URL
+    streamingVoiceVolume: v.optional(v.number()), // Voice track mix level (0..1)
+    streamingVoiceLoop: v.optional(v.boolean()), // Loop voice track continuously
+    streamingVisualMode: v.optional(literals("webcam", "profile-picture")), // PiP source mode
+    streamingProfilePictureUrl: v.optional(v.string()), // Optional override profile image URL for PiP
     lastStreamAt: v.optional(v.number()), // Last streaming session timestamp
 
     // Webhook callback configuration for real-time notifications
@@ -506,6 +513,19 @@ export default defineSchema({
     // Wager system (gold bet on challenge matches)
     wagerAmount: v.optional(v.number()), // Amount each player wagers (0 = no wager)
     wagerPaid: v.optional(v.boolean()), // Whether wager payout has been processed
+
+    // Crypto wager system (SOL/USDC — parallel to gold wagerAmount/wagerPaid)
+    cryptoWagerCurrency: v.optional(v.union(v.literal("sol"), v.literal("usdc"))),
+    cryptoWagerTier: v.optional(v.number()), // Human-readable amount (e.g., 0.05 SOL or 10 USDC)
+    cryptoEscrowPda: v.optional(v.string()), // Onchain MatchEscrow PDA address
+    cryptoHostWallet: v.optional(v.string()), // Host's Solana wallet pubkey
+    cryptoOpponentWallet: v.optional(v.string()), // Opponent's Solana wallet pubkey
+    cryptoHostDeposited: v.optional(v.boolean()), // Host has deposited to escrow
+    cryptoOpponentDeposited: v.optional(v.boolean()), // Opponent has deposited to escrow
+    cryptoSettled: v.optional(v.boolean()), // Escrow settlement completed
+    cryptoSettleTxSig: v.optional(v.string()), // Settlement transaction signature
+    cryptoSettlementWinnerId: v.optional(v.id("users")), // Winner for settlement retry
+    cryptoSettlementLoserId: v.optional(v.id("users")), // Loser for settlement retry
   })
     .index("by_status", ["status"])
     .index("by_mode_status", ["mode", "status"])
@@ -887,6 +907,10 @@ export default defineSchema({
       )
     ),
 
+    // Tracks the last resolved effect type for miss-timing logic
+    // Optional "when" effects with canMissTiming=true miss if this is set
+    lastResolvedEventType: v.optional(v.string()),
+
     // AI & Story Mode (for single-player battles)
     gameMode: v.optional(literals("pvp", "story")), // Default: "pvp"
     isAIOpponent: v.optional(v.boolean()), // True if opponent is AI
@@ -954,6 +978,12 @@ export default defineSchema({
         })
       )
     ),
+
+    // Disconnect detection for crypto wager matches (heartbeat-based)
+    hostLastHeartbeat: v.optional(v.number()), // Timestamp of last heartbeat from host
+    opponentLastHeartbeat: v.optional(v.number()), // Timestamp of last heartbeat from opponent
+    dcTimerStartedAt: v.optional(v.number()), // When disconnect timer started
+    dcPlayerId: v.optional(v.id("users")), // Player being tracked for disconnect
 
     // Timestamps
     lastMoveAt: v.number(),
@@ -1452,6 +1482,32 @@ export default defineSchema({
     .index("by_user_time", ["userId", "createdAt"])
     .index("by_type", ["transactionType", "createdAt"])
     .index("by_reference", ["referenceId"]),
+
+  // Crypto wager transactions (SOL/USDC onchain escrow records)
+  cryptoWagerTransactions: defineTable({
+    lobbyId: v.id("gameLobbies"),
+    userId: v.id("users"),
+    walletAddress: v.string(),
+    type: v.union(
+      v.literal("deposit"), // Player deposits to escrow
+      v.literal("payout"), // Winner receives payout from escrow
+      v.literal("treasury_fee") // Treasury receives platform fee
+    ),
+    currency: v.union(v.literal("sol"), v.literal("usdc")),
+    amount: v.number(), // Human-readable amount
+    amountAtomic: v.string(), // Atomic units as string (bigint-safe)
+    txSignature: v.optional(v.string()), // Solana transaction signature
+    escrowPda: v.string(), // MatchEscrow PDA address
+    status: v.union(
+      v.literal("pending"), // Transaction built but not confirmed
+      v.literal("confirmed"), // Transaction confirmed onchain
+      v.literal("failed") // Transaction failed
+    ),
+    createdAt: v.number(),
+  })
+    .index("by_lobby", ["lobbyId"])
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
 
   // Shop product catalog
   shopProducts: defineTable({
@@ -2037,6 +2093,8 @@ export default defineSchema({
       "announcement", // System/admin announcements
       "challenge", // Game challenge invitations
       "friend_request", // Friend request notifications
+      "guild_invite", // Guild invitation notifications
+      "guild_request", // Guild join request notifications (to owner)
       "system", // System messages (maintenance, updates)
       "achievement" // Achievement unlocks (synced from playerNotifications)
     ),
@@ -2051,6 +2109,8 @@ export default defineSchema({
      * - announcement: { priority?: "normal"|"important"|"urgent", actionUrl?: string }
      * - challenge: { challengerId: Id<"users">, challengerUsername: string, lobbyId: Id<"gameLobbies">, mode: string }
      * - friend_request: { requesterId: Id<"users">, requesterUsername: string }
+     * - guild_invite: { guildId: Id<"guilds">, guildName: string, inviteId?: Id<"guildInvites">, status?: "invited"|"approved"|"rejected" }
+     * - guild_request: { guildId: Id<"guilds">, guildName: string, requestId: Id<"guildJoinRequests">, requesterUsername: string }
      * - system: { category?: string, actionUrl?: string }
      * - achievement: { achievementId: string, achievementName: string }
      */
@@ -3285,53 +3345,6 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_mint", ["mintAddress"]),
 
-  // Launch checklist items
-  launchChecklist: defineTable({
-    category: v.union(
-      v.literal("treasury"), // Treasury funded, wallets ready
-      v.literal("token"), // Config complete, image uploaded
-      v.literal("marketing"), // Socials ready, announcements scheduled
-      v.literal("technical"), // Webhooks configured, monitoring ready
-      v.literal("team") // Team briefed, roles assigned
-    ),
-    item: v.string(), // "Treasury wallet funded with 5 SOL"
-    description: v.optional(v.string()),
-    isRequired: v.boolean(),
-    isCompleted: v.boolean(),
-    completedBy: v.optional(v.id("users")),
-    completedAt: v.optional(v.number()),
-    evidence: v.optional(v.string()), // Screenshot URL, tx signature, etc.
-    order: v.number(), // Display order within category
-  })
-    .index("by_category", ["category"])
-    .index("by_completed", ["isCompleted"]),
-
-  // Multi-admin launch approvals
-  launchApprovals: defineTable({
-    adminId: v.id("users"),
-    approved: v.boolean(),
-    comments: v.optional(v.string()),
-    approvedAt: v.number(),
-  }).index("by_admin", ["adminId"]),
-
-  // Launch schedule
-  launchSchedule: defineTable({
-    scheduledAt: v.optional(v.number()), // Target launch time
-    timezone: v.string(),
-    countdownEnabled: v.boolean(),
-    status: v.union(
-      v.literal("not_scheduled"),
-      v.literal("scheduled"),
-      v.literal("countdown"), // Within 24hrs
-      v.literal("go"), // All approvals, checklist complete
-      v.literal("launched"),
-      v.literal("aborted")
-    ),
-    launchTxSignature: v.optional(v.string()),
-    abortReason: v.optional(v.string()),
-    updatedAt: v.number(),
-  }).index("by_status", ["status"]),
-
   // ============================================================================
   // TOKEN ANALYTICS (Post-Launch)
   // ============================================================================
@@ -3708,7 +3721,7 @@ export default defineSchema({
     streamType: literals("user", "agent"),
 
     // Platform configuration
-    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
+    platform: streamingPlatformValidator,
     streamTitle: v.string(),
 
     // Status tracking
@@ -3737,8 +3750,24 @@ export default defineSchema({
       showAgentInfo: v.boolean(),
       showEventFeed: v.boolean(),
       showPlayerCam: v.boolean(),
+      webcamPosition: literals("top-left", "top-right", "bottom-left", "bottom-right"),
+      webcamSize: literals("small", "medium", "large"),
+      playerVisualMode: v.optional(literals("webcam", "profile-picture")),
+      profilePictureUrl: v.optional(v.string()),
+      matchOverHoldMs: v.number(),
+      showSceneLabel: v.boolean(),
+      sceneTransitions: v.boolean(),
+      voiceTrackUrl: v.optional(v.string()),
+      voiceVolume: v.optional(v.number()),
+      voiceLoop: v.optional(v.boolean()),
       theme: literals("dark", "light"),
     }),
+
+    // Last known match snapshot for persistent stream loops (match-over scene)
+    lastMatchEndedAt: v.optional(v.number()),
+    lastMatchResult: v.optional(literals("win", "loss", "draw", "unknown")),
+    lastMatchReason: v.optional(v.string()),
+    lastMatchSummary: v.optional(v.string()),
 
     // Metrics
     viewerCount: v.optional(v.number()),
@@ -3779,42 +3808,10 @@ export default defineSchema({
     .index("by_session_code", ["sessionId", "code"])
     .index("by_expiry", ["expiresAt"]),
 
-  // Persistent platform credentials for streaming
-  streamingPlatforms: defineTable({
-    userId: v.id("users"),
-    agentId: v.optional(v.id("agents")),
-    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
-
-    // Encrypted credentials
-    streamKeyHash: v.string(),
-    rtmpUrl: v.optional(v.string()),
-
-    // Retake.tv specific
-    retakeAccessToken: v.optional(v.string()), // Encrypted
-    retakeUserDbId: v.optional(v.string()),
-
-    // Platform metadata
-    channelName: v.optional(v.string()),
-
-    // Settings
-    autoStart: v.boolean(), // Auto-start streaming on game start
-    enabled: v.boolean(),
-
-    // Usage tracking
-    totalStreams: v.number(),
-    totalDuration: v.number(),
-
-    createdAt: v.number(),
-    lastUsedAt: v.optional(v.number()),
-  })
-    .index("by_user", ["userId"])
-    .index("by_agent", ["agentId"])
-    .index("by_user_platform", ["userId", "platform"]),
-
   // Multi-destination streaming — tracks individual RTMP destinations per session
   streamingDestinations: defineTable({
     sessionId: v.id("streamingSessions"),
-    platform: literals("twitch", "youtube", "custom", "retake", "x", "pumpfun"),
+    platform: streamingPlatformValidator,
     rtmpUrl: v.string(),
     streamKeyHash: v.string(),
     status: literals("active", "failed", "removed"),
@@ -3836,6 +3833,38 @@ export default defineSchema({
   })
     .index("by_agent", ["agentId"])
     .index("by_active", ["isActive"]),
+
+  // ============================================================================
+  // REFERRAL SYSTEM
+  // ============================================================================
+
+  /**
+   * User referral links for inviting new players to the platform.
+   * Each user gets one active referral code at a time.
+   */
+  userReferralLinks: defineTable({
+    userId: v.id("users"),
+    code: v.string(), // Short unique code (e.g. "XyZ12345")
+    uses: v.number(), // How many times the link was used
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_code", ["code"])
+    .index("by_user", ["userId", "isActive"]),
+
+  /**
+   * Tracks individual referral conversions.
+   * Created when a referred user signs up using a referral code.
+   */
+  referrals: defineTable({
+    referrerId: v.id("users"), // User who shared the referral
+    referredUserId: v.id("users"), // User who signed up via referral
+    referralCode: v.string(), // The code used
+    createdAt: v.number(),
+  })
+    .index("by_referrer", ["referrerId", "createdAt"])
+    .index("by_referred", ["referredUserId"])
+    .index("by_code", ["referralCode"]),
 
   // ============================================================================
   // ANALYTICS SNAPSHOTS (Periodic Trend Data)

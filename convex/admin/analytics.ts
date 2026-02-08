@@ -14,6 +14,7 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
+import { ELO_SYSTEM } from "../lib/constants";
 import { requireAuthQuery } from "../lib/convexAuth";
 import { requireRole } from "../lib/roles";
 
@@ -111,7 +112,19 @@ export const getTopCardsByWinRate = query({
     limit: v.number(),
     minGames: v.optional(v.number()),
   },
-  returns: v.any(),
+  returns: v.array(
+    v.object({
+      cardId: v.id("cardDefinitions"),
+      cardName: v.string(),
+      archetype: v.string(),
+      rarity: v.string(),
+      cardType: v.string(),
+      winRate: v.number(),
+      gamesPlayed: v.number(),
+      wins: v.number(),
+      losses: v.number(),
+    })
+  ),
   handler: async (ctx, { periodType, limit, minGames = 5 }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -223,7 +236,18 @@ export const getTopCardsByPlayRate = query({
     ),
     limit: v.number(),
   },
-  returns: v.any(),
+  returns: v.array(
+    v.object({
+      cardId: v.id("cardDefinitions"),
+      cardName: v.string(),
+      archetype: v.string(),
+      rarity: v.string(),
+      cardType: v.string(),
+      playRate: v.number(),
+      gamesPlayed: v.number(),
+      totalGames: v.number(),
+    })
+  ),
   handler: async (ctx, { periodType, limit }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -322,7 +346,21 @@ export const getCardStatsByArchetype = query({
       v.literal("all_time")
     ),
   },
-  returns: v.any(),
+  returns: v.array(
+    v.object({
+      cardId: v.id("cardDefinitions"),
+      cardName: v.string(),
+      rarity: v.string(),
+      cardType: v.string(),
+      attack: v.optional(v.number()),
+      defense: v.optional(v.number()),
+      cost: v.number(),
+      winRate: v.number(),
+      gamesPlayed: v.number(),
+      wins: v.number(),
+      losses: v.number(),
+    })
+  ),
   handler: async (ctx, { archetype, periodType }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -441,30 +479,50 @@ export const getCardStatsByArchetype = query({
  */
 export const getCurrentEconomySnapshot = query({
   args: {},
-  returns: v.any(),
+  returns: v.object({
+    totalGoldInCirculation: v.number(),
+    totalGemsInCirculation: v.number(),
+    averageGoldPerPlayer: v.number(),
+    averageGemsPerPlayer: v.number(),
+    totalTransactions: v.number(),
+    totalCards: v.number(),
+    totalPacks: v.number(),
+    totalListings: v.number(),
+    goldInCirculation: v.number(),
+    weeklyNetGoldChange: v.number(),
+    dustInCirculation: v.number(),
+    activeListings: v.number(),
+    medianPlayerGold: v.number(),
+    top10PercentShare: v.number(),
+    top1PercentShare: v.number(),
+    inflationTrend: v.union(
+      v.literal("inflationary"),
+      v.literal("deflationary"),
+      v.literal("stable")
+    ),
+    timestamp: v.number(),
+  }),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    // Get all users
-    const users = await ctx.db.query("users").take(10000);
-    const humanUsers = users.filter((u) => !u.isAiAgent);
+    // Get player currency data (single source of truth for gold and gems)
+    const currencies = await ctx.db.query("playerCurrency").take(10000);
 
-    // Calculate gold in circulation
-    const goldValues = humanUsers.map((u) => u.gold || 0);
+    // Calculate gold in circulation from playerCurrency
+    const goldValues = currencies.map((c) => c.gold || 0);
     const totalGold = goldValues.reduce((sum, g) => sum + g, 0);
-    const averageGold = humanUsers.length > 0 ? totalGold / humanUsers.length : 0;
+    const averageGold = currencies.length > 0 ? totalGold / currencies.length : 0;
     const medianGold = calculateMedian(goldValues);
 
     // Calculate wealth concentration
     const sortedGold = [...goldValues].sort((a, b) => b - a);
-    const top10Count = Math.ceil(humanUsers.length * 0.1);
-    const top1Count = Math.ceil(humanUsers.length * 0.01);
+    const top10Count = Math.ceil(currencies.length * 0.1);
+    const top1Count = Math.ceil(currencies.length * 0.01);
     const top10Gold = sortedGold.slice(0, top10Count).reduce((sum, g) => sum + g, 0);
     const top1Gold = sortedGold.slice(0, top1Count).reduce((sum, g) => sum + g, 0);
 
-    // Get player currency data for gems
-    const currencies = await ctx.db.query("playerCurrency").take(10000);
+    // Calculate gems
     const totalGems = currencies.reduce((sum, c) => sum + (c.gems || 0), 0);
     const averageGems = currencies.length > 0 ? totalGems / currencies.length : 0;
 
@@ -541,7 +599,17 @@ export const getEconomyTrends = query({
     periodType: v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly")),
     days: v.number(),
   },
-  returns: v.any(),
+  returns: v.array(
+    v.object({
+      date: v.string(),
+      goldGenerated: v.number(),
+      goldSpent: v.number(),
+      netGoldChange: v.number(),
+      packsOpened: v.number(),
+      marketplaceSales: v.number(),
+      marketplaceVolume: v.number(),
+    })
+  ),
   handler: async (ctx, { periodType, days }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -624,7 +692,22 @@ export const getEconomyMetrics = query({
   args: {
     days: v.number(),
   },
-  returns: v.any(),
+  returns: v.array(
+    v.object({
+      date: v.string(),
+      goldInCirculation: v.number(),
+      goldGenerated: v.number(),
+      goldSpent: v.number(),
+      netGoldChange: v.number(),
+      dustInCirculation: v.number(),
+      totalCards: v.number(),
+      packsOpened: v.number(),
+      activeListings: v.number(),
+      salesVolume: v.number(),
+      medianPlayerGold: v.number(),
+      top10PercentGold: v.number(),
+    })
+  ),
   handler: async (ctx, { days }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -693,14 +776,13 @@ export const getEconomyMetrics = query({
         )
         .take(10000);
 
-      // Get user gold stats (snapshot estimation)
-      const users = await ctx.db.query("users").take(10000);
-      const humanUsers = users.filter((u) => !u.isAiAgent);
-      const goldValues = humanUsers.map((u) => u.gold || 0);
+      // Get gold stats from playerCurrency (single source of truth)
+      const currencies = await ctx.db.query("playerCurrency").take(10000);
+      const goldValues = currencies.map((c) => c.gold || 0);
       const totalGold = goldValues.reduce((sum, g) => sum + g, 0);
       const medianGold = calculateMedian(goldValues);
       const sortedGold = [...goldValues].sort((a, b) => b - a);
-      const top10Count = Math.ceil(humanUsers.length * 0.1);
+      const top10Count = Math.ceil(currencies.length * 0.1);
       const top10Gold = sortedGold.slice(0, top10Count).reduce((sum, g) => sum + g, 0);
 
       // Get card count
@@ -733,16 +815,27 @@ export const getEconomyMetrics = query({
  */
 export const getWealthDistribution = query({
   args: {},
-  returns: v.any(),
+  returns: v.object({
+    distribution: v.array(
+      v.object({
+        label: v.string(),
+        count: v.number(),
+        percentage: v.number(),
+      })
+    ),
+    medianGold: v.number(),
+    averageGold: v.number(),
+    totalPlayers: v.number(),
+    giniCoefficient: v.number(),
+  }),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
 
-    // Get all human users
-    const users = await ctx.db.query("users").take(10000);
-    const humanUsers = users.filter((u) => !u.isAiAgent);
+    // Get gold data from playerCurrency (single source of truth)
+    const currencies = await ctx.db.query("playerCurrency").take(10000);
 
-    if (humanUsers.length === 0) {
+    if (currencies.length === 0) {
       return {
         distribution: [],
         medianGold: 0,
@@ -753,9 +846,9 @@ export const getWealthDistribution = query({
     }
 
     // Extract gold values
-    const goldValues = humanUsers.map((u) => u.gold || 0);
+    const goldValues = currencies.map((c) => c.gold || 0);
     const totalGold = goldValues.reduce((sum, g) => sum + g, 0);
-    const averageGold = totalGold / humanUsers.length;
+    const averageGold = totalGold / currencies.length;
     const medianGold = calculateMedian(goldValues);
     const giniCoefficient = calculateGiniCoefficient(goldValues);
 
@@ -775,10 +868,10 @@ export const getWealthDistribution = query({
       label: bucket.label,
       count: goldValues.filter((g) => g >= bucket.min && g < bucket.max).length,
       percentage:
-        humanUsers.length > 0
+        currencies.length > 0
           ? Math.round(
               (goldValues.filter((g) => g >= bucket.min && g < bucket.max).length /
-                humanUsers.length) *
+                currencies.length) *
                 100
             )
           : 0,
@@ -788,7 +881,7 @@ export const getWealthDistribution = query({
       distribution,
       medianGold: Math.round(medianGold),
       averageGold: Math.round(averageGold),
-      totalPlayers: humanUsers.length,
+      totalPlayers: currencies.length,
       giniCoefficient: Math.round(giniCoefficient * 1000) / 1000,
     };
   },
@@ -804,7 +897,13 @@ export const getWealthDistribution = query({
  */
 export const getPlayerDistribution = query({
   args: {},
-  returns: v.any(),
+  returns: v.object({
+    totalPlayers: v.number(),
+    humanPlayers: v.number(),
+    aiPlayers: v.number(),
+    activePlayers: v.number(),
+    newPlayers: v.number(),
+  }),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -851,7 +950,11 @@ export const getPlayerRetention = query({
   args: {
     periodType: v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly")),
   },
-  returns: v.any(),
+  returns: v.object({
+    day1: v.number(),
+    day7: v.number(),
+    day30: v.number(),
+  }),
   handler: async (ctx, { periodType }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -960,7 +1063,13 @@ export const getGameStats = query({
       v.literal("all_time")
     ),
   },
-  returns: v.any(),
+  returns: v.object({
+    totalGames: v.number(),
+    completedGames: v.number(),
+    activeGames: v.number(),
+    averageGameDuration: v.number(),
+    averageTurns: v.number(),
+  }),
   handler: async (ctx, { periodType }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1013,7 +1122,11 @@ export const getGameStats = query({
  */
 export const getMatchmakingStats = query({
   args: {},
-  returns: v.any(),
+  returns: v.object({
+    averageQueueTime: v.number(),
+    matchSuccessRate: v.number(),
+    playersInQueue: v.number(),
+  }),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1055,7 +1168,30 @@ export const getMatchmakingStats = query({
  */
 export const getMatchmakingHealth = query({
   args: {},
-  returns: v.any(),
+  returns: v.object({
+    status: v.union(v.literal("healthy"), v.literal("degraded"), v.literal("unhealthy")),
+    averageWaitTime: v.number(),
+    queueDepth: v.number(),
+    matchQuality: v.number(),
+    ranked: v.object({
+      tierDistribution: v.object({
+        bronze: v.number(),
+        silver: v.number(),
+        gold: v.number(),
+        platinum: v.number(),
+        diamond: v.number(),
+      }),
+      healthScore: v.number(),
+      avgQueueTime: v.number(),
+      avgRatingDiff: v.number(),
+      totalMatchesToday: v.number(),
+    }),
+    casual: v.object({
+      healthScore: v.number(),
+      avgQueueTime: v.number(),
+      totalMatchesToday: v.number(),
+    }),
+  }),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1102,7 +1238,7 @@ export const getMatchmakingHealth = query({
     const users = await ctx.db.query("users").take(10000);
     const tierCounts = { bronze: 0, silver: 0, gold: 0, platinum: 0, diamond: 0 };
     for (const user of users) {
-      const tier = getRankTier(user.rankedElo || 1000);
+      const tier = getRankTier(user.rankedElo || ELO_SYSTEM.DEFAULT_RATING);
       if (tier in tierCounts) {
         tierCounts[tier as keyof typeof tierCounts]++;
       }
@@ -1159,7 +1295,18 @@ export const getMatchmakingStatsDetailed = query({
   args: {
     days: v.number(),
   },
-  returns: v.any(),
+  returns: v.array(
+    v.object({
+      date: v.string(),
+      queueType: v.string(),
+      avgQueueTime: v.number(),
+      avgRatingDiff: v.number(),
+      fairMatches: v.number(),
+      aiFilledMatches: v.number(),
+      totalMatches: v.number(),
+      avgWaitTime: v.number(),
+    })
+  ),
   handler: async (ctx, { days }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1261,7 +1408,31 @@ export const getSkillDistribution = query({
   args: {
     ratingType: v.string(),
   },
-  returns: v.any(),
+  returns: v.object({
+    distribution: v.object({
+      under800: v.number(),
+      r800_1000: v.number(),
+      r1000_1200: v.number(),
+      r1200_1400: v.number(),
+      r1400_1600: v.number(),
+      r1600_1800: v.number(),
+      r1800_2000: v.number(),
+      r2000_2200: v.number(),
+      over2200: v.number(),
+    }),
+    summary: v.object({
+      totalPlayers: v.number(),
+      average: v.number(),
+      median: v.number(),
+    }),
+    percentiles: v.object({
+      p25: v.number(),
+      p50: v.number(),
+      p75: v.number(),
+      p90: v.number(),
+      p99: v.number(),
+    }),
+  }),
   handler: async (ctx, { ratingType }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1272,7 +1443,9 @@ export const getSkillDistribution = query({
 
     // Get ratings based on type
     const ratings = humanUsers.map((u) =>
-      ratingType === "ranked" ? u.rankedElo || 1000 : u.casualRating || 1000
+      ratingType === "ranked"
+        ? u.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+        : u.casualRating || ELO_SYSTEM.DEFAULT_RATING
     );
 
     if (ratings.length === 0) {
@@ -1337,7 +1510,17 @@ export const getSkillDistribution = query({
  */
 export const getRetentionOverview = query({
   args: {},
-  returns: v.any(),
+  returns: v.object({
+    day1: v.number(),
+    day3: v.number(),
+    day7: v.number(),
+    day14: v.number(),
+    day30: v.number(),
+    day1Avg: v.number(),
+    day7Avg: v.number(),
+    day30Avg: v.number(),
+    trend: v.union(v.literal("improving"), v.literal("declining"), v.literal("stable")),
+  }),
   handler: async (ctx) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1442,7 +1625,18 @@ export const getTopEngagedPlayers = query({
     days: v.number(),
     limit: v.number(),
   },
-  returns: v.any(),
+  returns: v.array(
+    v.object({
+      rank: v.number(),
+      userId: v.id("users"),
+      username: v.string(),
+      gamesPlayed: v.number(),
+      daysActive: v.number(),
+      avgGamesPerDay: v.number(),
+      lastActiveAt: v.number(),
+      engagementScore: v.number(),
+    })
+  ),
   handler: async (ctx, { days, limit }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1504,7 +1698,22 @@ export const getDailyActiveStats = query({
   args: {
     days: v.number(),
   },
-  returns: v.any(),
+  returns: v.array(
+    v.object({
+      date: v.string(),
+      dau: v.number(),
+      dauHumans: v.number(),
+      dauAi: v.number(),
+      newUsers: v.number(),
+      returningUsers: v.number(),
+      totalGames: v.number(),
+      rankedGames: v.number(),
+      casualGames: v.number(),
+      day1Retention: v.number(),
+      day7Retention: v.number(),
+      averageGameDuration: v.number(),
+    })
+  ),
   handler: async (ctx, { days }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1624,7 +1833,18 @@ export const getMarketplaceStats = query({
       v.literal("all_time")
     ),
   },
-  returns: v.any(),
+  returns: v.object({
+    totalListings: v.number(),
+    activeListings: v.number(),
+    activeListingsCount: v.number(),
+    fixedListings: v.number(),
+    auctionListings: v.number(),
+    totalTransactions: v.number(),
+    totalVolume: v.number(),
+    averagePrice: v.number(),
+    volume24h: v.number(),
+    sales24h: v.number(),
+  }),
   handler: async (ctx, { periodType }) => {
     const { userId } = await requireAuthQuery(ctx);
     await requireRole(ctx, userId, "moderator");
@@ -1683,7 +1903,23 @@ export const getPlayerEngagement = query({
     userId: v.id("users"),
     days: v.number(),
   },
-  returns: v.any(),
+  returns: v.object({
+    userId: v.id("users"),
+    username: v.optional(v.string()),
+    period: v.object({
+      days: v.number(),
+      cutoffTime: v.number(),
+    }),
+    metrics: v.object({
+      totalGames: v.number(),
+      daysActive: v.number(),
+      avgGamesPerDay: v.number(),
+      engagementRate: v.number(),
+      lastActiveAt: v.number(),
+      daysSinceLastActive: v.number(),
+    }),
+    timestamp: v.number(),
+  }),
   handler: async (ctx, { userId, days }) => {
     const { userId: adminId } = await requireAuthQuery(ctx);
     await requireRole(ctx, adminId, "moderator");

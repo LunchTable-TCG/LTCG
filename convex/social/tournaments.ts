@@ -18,13 +18,14 @@
  */
 
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { internalQuery, query } from "../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../economy/economy";
 import { internalMutation, mutation } from "../functions";
 import { tournamentRateLimiter } from "../infrastructure/rateLimiters";
+import { ELO_SYSTEM } from "../lib/constants";
 import { requireAdminMutation, requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { getRankFromRating } from "../lib/helpers";
@@ -38,8 +39,8 @@ import {
   userTournamentStatsValidator,
 } from "../lib/returnValidators";
 
-// TS2589 workaround for deep Convex internal types
-const internalAny = internal as any;
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 
 // ============================================================================
 // CONSTANTS
@@ -427,7 +428,9 @@ export const registerForTournament = mutation({
 
     // Get player's rating for seeding
     const rating =
-      tournament.mode === "ranked" ? user.rankedElo || 1000 : user.casualRating || 1000;
+      tournament.mode === "ranked"
+        ? user.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+        : user.casualRating || ELO_SYSTEM.DEFAULT_RATING;
 
     // Atomic increment FIRST to reserve spot (prevents race condition)
     // Convex's OCC will retry the entire transaction if tournament was modified
@@ -928,7 +931,7 @@ async function completeMatchInternal(
   ctx: MutationCtx,
   matchId: Id<"tournamentMatches">,
   winnerId: Id<"users">,
-  loserId: Id<"users">,
+  loserId: Id<"users"> | undefined,
   winReason: "game_win" | "opponent_forfeit" | "opponent_no_show" | "bye"
 ) {
   const match = await ctx.db.get(matchId);
@@ -941,7 +944,7 @@ async function completeMatchInternal(
 
   // Get winner and loser usernames
   const winner = await ctx.db.get(winnerId);
-  const loser = await ctx.db.get(loserId);
+  const loser = loserId ? await ctx.db.get(loserId) : null;
 
   // Update match
   await ctx.db.patch(matchId, {
@@ -955,29 +958,31 @@ async function completeMatchInternal(
     updatedAt: now,
   });
 
-  // Update loser participant - eliminated
-  const loserParticipant = await ctx.db
-    .query("tournamentParticipants")
-    .withIndex("by_tournament_user", (q) =>
-      q.eq("tournamentId", match.tournamentId).eq("userId", loserId)
-    )
-    .first();
+  // Update loser participant - eliminated (skip for byes, there is no real loser)
+  if (winReason !== "bye" && loserId) {
+    const loserParticipant = await ctx.db
+      .query("tournamentParticipants")
+      .withIndex("by_tournament_user", (q) =>
+        q.eq("tournamentId", match.tournamentId).eq("userId", loserId)
+      )
+      .first();
 
-  if (loserParticipant) {
-    // Calculate placement based on round eliminated
-    const placement = calculatePlacement(match.round, tournament.totalRounds || 1);
+    if (loserParticipant) {
+      // Calculate placement based on round eliminated
+      const placement = calculatePlacement(match.round, tournament.totalRounds || 1);
 
-    await ctx.db.patch(loserParticipant._id, {
-      status: "eliminated",
-      eliminatedInRound: match.round,
-      finalPlacement: placement,
-    });
+      await ctx.db.patch(loserParticipant._id, {
+        status: "eliminated",
+        eliminatedInRound: match.round,
+        finalPlacement: placement,
+      });
+    }
   }
 
   // Check if this was the final match
   const totalRounds = tournament.totalRounds || calculateTotalRounds(tournament.maxPlayers);
-  if (match.round === totalRounds) {
-    // Tournament complete!
+  if (match.round === totalRounds && loserId) {
+    // Tournament complete! (final match always has both players)
     await completeTournamentInternal(ctx, match.tournamentId, winnerId, loserId);
     return;
   }
@@ -1413,11 +1418,11 @@ async function createBracketMatches(
 
     // Check for byes
     if (match.player1Id && !match.player2Id) {
-      // Player 1 gets a bye - auto-advance
-      await completeMatchInternal(ctx, matchId, match.player1Id, match.player1Id, "bye");
+      // Player 1 gets a bye - auto-advance (no loser in a bye)
+      await completeMatchInternal(ctx, matchId, match.player1Id, undefined, "bye");
     } else if (!match.player1Id && match.player2Id) {
-      // Player 2 gets a bye - auto-advance
-      await completeMatchInternal(ctx, matchId, match.player2Id, match.player2Id, "bye");
+      // Player 2 gets a bye - auto-advance (no loser in a bye)
+      await completeMatchInternal(ctx, matchId, match.player2Id, undefined, "bye");
     } else if (match.player1Id && match.player2Id) {
       // Both players present - create game lobby
       await createMatchGameLobby(ctx, matchId);
@@ -1444,9 +1449,13 @@ async function createMatchGameLobby(ctx: MutationCtx, matchId: Id<"tournamentMat
   const goesFirst = Math.random() < 0.5 ? match.player1Id : match.player2Id;
 
   const player1Rating =
-    tournament.mode === "ranked" ? player1.rankedElo || 1000 : player1.casualRating || 1000;
+    tournament.mode === "ranked"
+      ? player1.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+      : player1.casualRating || ELO_SYSTEM.DEFAULT_RATING;
   const player2Rating =
-    tournament.mode === "ranked" ? player2.rankedElo || 1000 : player2.casualRating || 1000;
+    tournament.mode === "ranked"
+      ? player2.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+      : player2.casualRating || ELO_SYSTEM.DEFAULT_RATING;
 
   // Get player deck archetype (for lobby display)
   const player1Deck = player1.activeDeckId ? await ctx.db.get(player1.activeDeckId) : null;

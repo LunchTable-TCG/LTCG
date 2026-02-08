@@ -1,4 +1,3 @@
-// @ts-nocheck - TODO: Add proper types
 /**
  * Custom Function Builders with Built-in Authentication
  *
@@ -93,48 +92,24 @@ export interface AdminAuthContext extends AuthContext {
  * Custom context for regular authenticated users
  * Injects ctx.auth with { userId, user, privyId, username }
  */
-const authenticatedQueryCtx = customCtx(query, {
-  async auth(ctx) {
-    // Use existing requireAuthQuery for consistent auth logic
-    const { userId, privyId, username } = await requireAuthQuery(ctx);
-
-    // Get full user document
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      throw createError(ErrorCode.NOT_FOUND_USER);
-    }
-
-    return {
-      userId,
-      user,
-      privyId,
-      username,
-    };
-  },
+// biome-ignore lint/suspicious/noExplicitAny: convex-helpers customCtx requires generic ctx
+const authenticatedQueryCtx = customCtx(async (ctx: any) => {
+  const { userId, privyId, username } = await requireAuthQuery(ctx);
+  const user = await ctx.db.get(userId);
+  if (!user) throw createError(ErrorCode.NOT_FOUND_USER);
+  return { auth: { userId, user, privyId, username } };
 });
 
 /**
  * Custom context for authenticated mutations
  * Injects ctx.auth with { userId, user, privyId, username }
  */
-const authenticatedMutationCtx = customCtx(mutation, {
-  async auth(ctx) {
-    // Use existing requireAuthMutation for consistent auth logic
-    const { userId, privyId, username } = await requireAuthMutation(ctx);
-
-    // Get full user document
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      throw createError(ErrorCode.NOT_FOUND_USER);
-    }
-
-    return {
-      userId,
-      user,
-      privyId,
-      username,
-    };
-  },
+// biome-ignore lint/suspicious/noExplicitAny: convex-helpers customCtx requires generic ctx
+const authenticatedMutationCtx = customCtx(async (ctx: any) => {
+  const { userId, privyId, username } = await requireAuthMutation(ctx);
+  const user = await ctx.db.get(userId);
+  if (!user) throw createError(ErrorCode.NOT_FOUND_USER);
+  return { auth: { userId, user, privyId, username } };
 });
 
 /**
@@ -191,94 +166,68 @@ export const authedMutation = customMutation(mutation, authenticatedMutationCtx)
 // ADMIN-ONLY CONTEXT BUILDERS
 // =============================================================================
 
+/** Shared admin role lookup to avoid repeating untyped query builder code */
+// biome-ignore lint/suspicious/noExplicitAny: ctx is untyped in customCtx callback
+async function getAdminRole(ctx: any, userId: Id<"users">) {
+  await requireRole(ctx, userId, "admin");
+  const adminRole = await ctx.db
+    .query("adminRoles")
+    .withIndex("by_user", (q: { eq: (field: string, value: Id<"users">) => unknown }) =>
+      q.eq("userId", userId)
+    )
+    .filter((q: { eq: (a: unknown, b: boolean) => unknown; field: (name: string) => unknown }) =>
+      q.eq(q.field("isActive"), true)
+    )
+    .first();
+  if (!adminRole) throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
+  if (adminRole.expiresAt && adminRole.expiresAt < Date.now()) {
+    throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
+  }
+  return adminRole;
+}
+
 /**
  * Custom context for admin-only queries
  * Injects ctx.auth with full user info + admin role validation
  */
-const adminQueryCtx = customCtx(query, {
-  async auth(ctx) {
-    // First, authenticate the user
-    const { userId, privyId, username } = await requireAuthQuery(ctx);
-
-    // Get full user document
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      throw createError(ErrorCode.NOT_FOUND_USER);
-    }
-
-    // Require admin role (throws if not admin)
-    await requireRole(ctx, userId, "admin");
-
-    // Get admin role details
-    const adminRole = await ctx.db
-      .query("adminRoles")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .first();
-
-    if (!adminRole) {
-      throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
-    }
-
-    // Check if role has expired
-    if (adminRole.expiresAt && adminRole.expiresAt < Date.now()) {
-      throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
-    }
-
-    return {
+// biome-ignore lint/suspicious/noExplicitAny: convex-helpers customCtx requires generic ctx
+const adminQueryCtx = customCtx(async (ctx: any) => {
+  const { userId, privyId, username } = await requireAuthQuery(ctx);
+  const user = await ctx.db.get(userId);
+  if (!user) throw createError(ErrorCode.NOT_FOUND_USER);
+  const adminRole = await getAdminRole(ctx, userId);
+  return {
+    auth: {
       userId,
       user,
       privyId,
       username,
       adminRole,
       role: adminRole.role as "admin" | "superadmin",
-    };
-  },
+    },
+  };
 });
 
 /**
  * Custom context for admin-only mutations
  * Injects ctx.auth with full user info + admin role validation
  */
-const adminMutationCtx = customCtx(mutation, {
-  async auth(ctx) {
-    // First, authenticate the user
-    const { userId, privyId, username } = await requireAuthMutation(ctx);
-
-    // Get full user document
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      throw createError(ErrorCode.NOT_FOUND_USER);
-    }
-
-    // Require admin role (throws if not admin)
-    await requireRole(ctx, userId, "admin");
-
-    // Get admin role details
-    const adminRole = await ctx.db
-      .query("adminRoles")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .first();
-
-    if (!adminRole) {
-      throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
-    }
-
-    // Check if role has expired
-    if (adminRole.expiresAt && adminRole.expiresAt < Date.now()) {
-      throw createError(ErrorCode.AUTHZ_ADMIN_REQUIRED);
-    }
-
-    return {
+// biome-ignore lint/suspicious/noExplicitAny: convex-helpers customCtx requires generic ctx
+const adminMutationCtx = customCtx(async (ctx: any) => {
+  const { userId, privyId, username } = await requireAuthMutation(ctx);
+  const user = await ctx.db.get(userId);
+  if (!user) throw createError(ErrorCode.NOT_FOUND_USER);
+  const adminRole = await getAdminRole(ctx, userId);
+  return {
+    auth: {
       userId,
       user,
       privyId,
       username,
       adminRole,
       role: adminRole.role as "admin" | "superadmin",
-    };
-  },
+    },
+  };
 });
 
 /**
@@ -353,83 +302,32 @@ export const adminMutation = customMutation(mutation, adminMutationCtx);
  *
  * See lib/rowLevelSecurity.ts for rule definitions.
  */
-const rlsQueryCtx = customCtx(query, {
-  async auth(ctx) {
-    // Use existing requireAuthQuery for consistent auth logic
-    const { userId, privyId, username } = await requireAuthQuery(ctx);
-
-    // Get full user document
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      throw createError(ErrorCode.NOT_FOUND_USER);
-    }
-
-    return {
-      userId,
-      user,
-      privyId,
-      username,
-    };
-  },
-  async db(ctx) {
-    // Get the authenticated user ID from the auth context
-    const { userId } = await requireAuthQuery(ctx);
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      throw createError(ErrorCode.NOT_FOUND_USER);
-    }
-
-    // Create RLS rules for this user
-    const rules = await createRLSRules(ctx, userId);
-
-    // Wrap the database reader with RLS enforcement
-    return wrapDatabaseReader(ctx, ctx.db, rules);
-  },
+// biome-ignore lint/suspicious/noExplicitAny: convex-helpers customCtx requires generic ctx
+const rlsQueryCtx = customCtx(async (ctx: any) => {
+  const { userId, privyId, username } = await requireAuthQuery(ctx);
+  const user = await ctx.db.get(userId);
+  if (!user) throw createError(ErrorCode.NOT_FOUND_USER);
+  const rules = await createRLSRules(ctx, userId);
+  return {
+    auth: { userId, user, privyId, username },
+    db: wrapDatabaseReader(ctx, ctx.db, rules),
+  };
 });
 
 /**
  * Custom context for authenticated mutations with Row-Level Security
  * Injects ctx.auth and wraps ctx.db with RLS rules
- *
- * RLS automatically enforces write permissions:
- * - Users can only modify their own data
- * - Admins have restricted modification rights
- * - Superadmins can modify anything
- *
- * See lib/rowLevelSecurity.ts for rule definitions.
  */
-const rlsMutationCtx = customCtx(mutation, {
-  async auth(ctx) {
-    // Use existing requireAuthMutation for consistent auth logic
-    const { userId, privyId, username } = await requireAuthMutation(ctx);
-
-    // Get full user document
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      throw createError(ErrorCode.NOT_FOUND_USER);
-    }
-
-    return {
-      userId,
-      user,
-      privyId,
-      username,
-    };
-  },
-  async db(ctx) {
-    // Get the authenticated user ID from the auth context
-    const { userId } = await requireAuthMutation(ctx);
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      throw createError(ErrorCode.NOT_FOUND_USER);
-    }
-
-    // Create RLS rules for this user
-    const rules = await createRLSRules(ctx, userId);
-
-    // Wrap the database writer with RLS enforcement
-    return wrapDatabaseWriter(ctx, ctx.db, rules);
-  },
+// biome-ignore lint/suspicious/noExplicitAny: convex-helpers customCtx requires generic ctx
+const rlsMutationCtx = customCtx(async (ctx: any) => {
+  const { userId, privyId, username } = await requireAuthMutation(ctx);
+  const user = await ctx.db.get(userId);
+  if (!user) throw createError(ErrorCode.NOT_FOUND_USER);
+  const rules = await createRLSRules(ctx, userId);
+  return {
+    auth: { userId, user, privyId, username },
+    db: wrapDatabaseWriter(ctx, ctx.db, rules),
+  };
 });
 
 /**

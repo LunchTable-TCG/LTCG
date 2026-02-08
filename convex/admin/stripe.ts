@@ -330,7 +330,8 @@ export const searchStripeCustomers = query({
     // Get user details for matches
     const userIds = filtered.map((c) => c.userId);
     const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
-    const userMap = new Map(users.filter(Boolean).map((u) => [u?._id.toString(), u!]));
+    const existingUsers = users.filter((u): u is NonNullable<typeof u> => Boolean(u));
+    const userMap = new Map(existingUsers.map((u) => [u._id.toString(), u]));
 
     return filtered.slice(0, limit).map((c) => {
       const user = userMap.get(c.userId.toString());

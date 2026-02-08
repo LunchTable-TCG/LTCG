@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "../../_generated/dataModel";
 import { internalQuery, query } from "../../_generated/server";
+import { ELO_SYSTEM } from "../../lib/constants";
 import { requireAuthQuery } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { DEFAULT_TIMEOUT_CONFIG } from "../timeoutSystem";
@@ -9,10 +10,7 @@ import { DEFAULT_TIMEOUT_CONFIG } from "../timeoutSystem";
 // CONSTANTS
 // ============================================================================
 
-const RATING_DEFAULTS = {
-  DEFAULT_RATING: 1000,
-  RANKED_RATING_WINDOW: 200,
-} as const;
+const RANKED_RATING_WINDOW = 200;
 
 // ============================================================================
 // QUERIES
@@ -37,7 +35,7 @@ export const listWaitingLobbies = query({
   },
   handler: async (ctx, args) => {
     const mode = args.mode || "all";
-    const userRating = args.userRating || RATING_DEFAULTS.DEFAULT_RATING;
+    const userRating = args.userRating || ELO_SYSTEM.DEFAULT_RATING;
 
     // Query waiting lobbies
     const allLobbies = await (mode === "all"
@@ -58,7 +56,7 @@ export const listWaitingLobbies = query({
       publicLobbies = publicLobbies.filter((lobby) => {
         if (lobby.mode !== "ranked") return true;
         const ratingDiff = Math.abs(lobby.hostRating - userRating);
-        return ratingDiff <= RATING_DEFAULTS.RANKED_RATING_WINDOW;
+        return ratingDiff <= RANKED_RATING_WINDOW;
       });
     }
 
@@ -201,6 +199,19 @@ export const getLobbyDetails = query({
 });
 
 /**
+ * Get lobby by ID (internal, no auth check)
+ * Used by httpAction handlers that have already authenticated via API key.
+ */
+export const getLobbyInternal = internalQuery({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.lobbyId);
+  },
+});
+
+/**
  * Get user's private lobby (to show join code)
  *
  * Retrieves the authenticated user's private lobby with join code.
@@ -333,7 +344,6 @@ export const getGameSpectatorView = query({
     }
 
     // Get player information
-    // const host = await ctx.db.get(lobby.hostId);
     const opponent = lobby.opponentId ? await ctx.db.get(lobby.opponentId) : null;
 
     // Get game state for spectator view (public zones only)
@@ -900,6 +910,9 @@ export const getGameStateForPlayer = query({
       opponentLifePoints: isHost ? gameState.opponentLifePoints : gameState.hostLifePoints,
       opponentMana: isHost ? gameState.opponentMana : gameState.hostMana,
 
+      // Response window state (for chain response UI)
+      responseWindow: gameState.responseWindow,
+
       // Metadata
       mode: lobby.mode,
       lastMoveAt: gameState.lastMoveAt,
@@ -933,6 +946,7 @@ export const getActiveLobbiesForCleanup = internalQuery({
           currentTurnPlayerId: gameState?.currentTurnPlayerId, // From gameState (single source of truth)
           hostId: lobby.hostId,
           hostUsername: lobby.hostUsername,
+          mode: lobby.mode, // Needed to skip story mode in cleanup
         };
       })
     );

@@ -1,9 +1,19 @@
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import * as generatedApi from "../_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import type { Doc } from "../_generated/dataModel";
-import { internalAction, internalMutation, mutation } from "../_generated/server";
+import {
+  type ActionCtx,
+  internalAction,
+  internalMutation,
+  internalQuery,
+  mutation,
+} from "../_generated/server";
 import { requireAuthMutation } from "../lib/convexAuth";
+import { getNotificationSetting } from "../lib/preferenceHelpers";
 import { requireRole } from "../lib/roles";
+import type { EmailRecipientType } from "../schema";
 
 /**
  * Content Publishing System
@@ -27,7 +37,7 @@ export const publishContent = internalAction({
   args: { contentId: v.id("scheduledContent") },
   handler: async (ctx, args) => {
     // Get content
-    const content = await ctx.runQuery(internal.content.publishing._getContent, {
+    const content = await ctx.runQuery(internalAny.content.publishing._getContent, {
       id: args.contentId,
     });
 
@@ -68,14 +78,14 @@ export const publishContent = internalAction({
       }
 
       // Mark as published
-      await ctx.runMutation(internal.content.publishing._markPublished, {
+      await ctx.runMutation(internalAny.content.publishing._markPublished, {
         id: args.contentId,
       });
     } catch (error) {
       console.error(`Failed to publish content ${args.contentId}:`, error);
 
       // Mark as failed
-      await ctx.runMutation(internal.content.publishing._markFailed, {
+      await ctx.runMutation(internalAny.content.publishing._markFailed, {
         id: args.contentId,
         error: error instanceof Error ? error.message : "Unknown error",
       });
@@ -87,9 +97,9 @@ export const publishContent = internalAction({
 // TYPE-SPECIFIC PUBLISHERS
 // ============================================================================
 
-async function publishBlog(ctx: any, content: Doc<"scheduledContent">) {
+async function publishBlog(ctx: ActionCtx, content: Doc<"scheduledContent">) {
   // Create a news article from the blog content
-  await ctx.runMutation(internal.content.publishing._createNewsArticle, {
+  await ctx.runMutation(internalAny.content.publishing._createNewsArticle, {
     title: content.title,
     slug: content.metadata.slug ?? generateSlug(content.title),
     excerpt: content.metadata.excerpt ?? content.content.slice(0, 200),
@@ -133,9 +143,9 @@ async function publishReddit(_ctx: unknown, content: Doc<"scheduledContent">) {
   console.log(`[REDDIT] Would post to r/${content.metadata.subreddit}: ${content.title}`);
 }
 
-async function publishEmail(ctx: any, content: Doc<"scheduledContent">) {
+async function publishEmail(ctx: ActionCtx, content: Doc<"scheduledContent">) {
   // Use the email send system
-  await ctx.runMutation(internal.content.publishing._sendEmailCampaign, {
+  await ctx.runMutation(internalAny.content.publishing._sendEmailCampaign, {
     contentId: content._id,
     subject: content.metadata.subject ?? content.title,
     body: content.content,
@@ -144,20 +154,20 @@ async function publishEmail(ctx: any, content: Doc<"scheduledContent">) {
   });
 }
 
-async function publishAnnouncement(ctx: any, content: Doc<"scheduledContent">) {
+async function publishAnnouncement(ctx: ActionCtx, content: Doc<"scheduledContent">) {
   // Use existing broadcast system
-  await ctx.runMutation(internal.content.publishing._broadcastAnnouncement, {
+  await ctx.runMutation(internalAny.content.publishing._broadcastAnnouncement, {
     message: content.content,
     priority: content.metadata.priority ?? "normal",
     expiresAt: content.metadata.expiresAt,
   });
 }
 
-async function publishNews(ctx: any, content: Doc<"scheduledContent">) {
+async function publishNews(ctx: ActionCtx, content: Doc<"scheduledContent">) {
   // If linking to existing news, just mark as published
   if (content.metadata.newsArticleId) {
     // Optionally publish the linked news article
-    await ctx.runMutation(internal.content.publishing._publishNewsArticle, {
+    await ctx.runMutation(internalAny.content.publishing._publishNewsArticle, {
       articleId: content.metadata.newsArticleId,
     });
   }
@@ -174,7 +184,7 @@ async function publishImage(_ctx: unknown, content: Doc<"scheduledContent">) {
 // INTERNAL HELPERS
 // ============================================================================
 
-export const _getContent = internalMutation({
+export const _getContent = internalQuery({
   args: { id: v.id("scheduledContent") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
@@ -243,8 +253,16 @@ export const _sendEmailCampaign = internalMutation({
     listId: v.optional(v.id("emailLists")),
   },
   handler: async (ctx, args) => {
+    const scheduledContent = await ctx.db.get(args.contentId);
+    if (!scheduledContent) {
+      throw new Error(`Scheduled content not found: ${args.contentId}`);
+    }
+    if (!scheduledContent.authorId) {
+      throw new Error(`Scheduled content missing authorId: ${args.contentId}`);
+    }
+
     // Trigger email sending via scheduler
-    await ctx.scheduler.runAfter(0, internal.email.send.processCampaign, {
+    await ctx.scheduler.runAfter(0, internalAny.email.send.processCampaign, {
       historyId: await ctx.db.insert("emailHistory", {
         scheduledContentId: args.contentId,
         subject: args.subject,
@@ -252,12 +270,12 @@ export const _sendEmailCampaign = internalMutation({
         sentCount: 0,
         failedCount: 0,
         status: "sending",
-        sentBy: (await ctx.db.get(args.contentId))?.authorId!,
+        sentBy: scheduledContent.authorId,
         sentAt: Date.now(),
       }),
       subject: args.subject,
       body: args.body,
-      recipientType: args.recipientType as any,
+      recipientType: toEmailRecipientType(args.recipientType),
       listId: args.listId,
     });
   },
@@ -270,11 +288,14 @@ export const _broadcastAnnouncement = internalMutation({
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Get all active users and send them inbox messages
+    // Get all active users and send them inbox messages (respecting promotions preference)
     const users = await ctx.db.query("users").take(10000);
 
     const now = Date.now();
     for (const user of users) {
+      const wantsPromotions = await getNotificationSetting(ctx, user._id, "promotions");
+      if (!wantsPromotions) continue;
+
       await ctx.db.insert("userInbox", {
         userId: user._id,
         type: "announcement",
@@ -313,7 +334,7 @@ export const manualPublish = mutation({
     if (!content) throw new Error("Content not found");
 
     // Schedule immediate publishing
-    await ctx.scheduler.runAfter(0, internal.content.publishing.publishContent, {
+    await ctx.scheduler.runAfter(0, internalAny.content.publishing.publishContent, {
       contentId: args.id,
     });
 
@@ -331,4 +352,11 @@ function generateSlug(title: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 100);
+}
+
+function toEmailRecipientType(value: string): EmailRecipientType {
+  if (value === "players" || value === "subscribers" || value === "both" || value === "custom") {
+    return value;
+  }
+  return "players";
 }

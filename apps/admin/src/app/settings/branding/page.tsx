@@ -78,14 +78,12 @@ export default function BrandingPage() {
   const updateGuidelines = useConvexMutation(typedApi.admin.branding.updateGuidelines);
 
   // Derived state
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI return type differs from actual
   const folderTree = (folderTreeResult ?? []) as unknown as FolderTreeNode[];
   const childFolders = (childFoldersResult ?? []) as BrandingFolder[];
   const assets = (assetsResult ?? []) as EnrichedBrandingAsset[];
   const selectedFolder = selectedFolderResult as BrandingFolder | null;
   const selectedAsset = selectedAssetResult as EnrichedBrandingAsset | null;
   const allTags = (allTagsResult ?? []) as string[];
-  // biome-ignore lint/suspicious/noExplicitAny: TypedAPI return type differs from actual
   const allGuidelines = (guidelinesResult ?? []) as unknown as BrandingGuidelines[];
 
   const isLoading = folderTreeResult === undefined;
@@ -93,11 +91,17 @@ export default function BrandingPage() {
 
   // Update path when folder changes
   useEffect(() => {
-    if (selectedFolder) {
-      setCurrentPath(selectedFolder.path);
-      // Auto-expand parent folders
-      const parts = selectedFolder.path.split("/");
-      const newExpanded = new Set(expandedFolders);
+    if (!selectedFolder) {
+      setCurrentPath("");
+      return;
+    }
+
+    setCurrentPath(selectedFolder.path);
+
+    // Auto-expand parent folders
+    const parts = selectedFolder.path.split("/");
+    setExpandedFolders((prev) => {
+      const newExpanded = new Set(prev);
       let path = "";
       for (const part of parts) {
         path = path ? `${path}/${part}` : part;
@@ -113,17 +117,14 @@ export default function BrandingPage() {
         const folderId = findFolderId(folderTree);
         if (folderId) newExpanded.add(folderId);
       }
-      setExpandedFolders(newExpanded);
-    } else {
-      setCurrentPath("");
-    }
-  }, [selectedFolder?.path]);
+      return newExpanded;
+    });
+  }, [selectedFolder, folderTree]);
 
   // Handlers
   const handleInitialize = async () => {
     setIsInitializing(true);
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: TypedAPI has incorrect return type
       const result = (await initializeBranding({})) as unknown as { message: string };
       toast.success(result.message);
     } catch (_error) {
@@ -217,17 +218,17 @@ export default function BrandingPage() {
     return (
       <PageWrapper title="Branding" description="Loading branding assets...">
         <div className="flex h-[calc(100vh-180px)]">
-          <div className="w-64 border-r p-4 space-y-2">
-            <Skeleton className="h-6 w-24 mb-4" />
-            {[...Array(9)].map((_, i) => (
-              <Skeleton key={i} className="h-8 w-full" />
+            <div className="w-64 border-r p-4 space-y-2">
+              <Skeleton className="h-6 w-24 mb-4" />
+            {Array.from({ length: 9 }, (_, index) => `sidebar-skeleton-${index}`).map((key) => (
+              <Skeleton key={key} className="h-8 w-full" />
             ))}
           </div>
           <div className="flex-1 p-6">
             <Skeleton className="h-10 w-64 mb-6" />
             <div className="grid grid-cols-6 gap-4">
-              {[...Array(12)].map((_, i) => (
-                <Skeleton key={i} className="aspect-square" />
+              {Array.from({ length: 12 }, (_, index) => `grid-skeleton-${index}`).map((key) => (
+                <Skeleton key={key} className="aspect-square" />
               ))}
             </div>
           </div>
@@ -331,7 +332,7 @@ export default function BrandingPage() {
         open={showUploadAssets && !!selectedFolderId}
         onOpenChange={setShowUploadAssets}
         mode="branding"
-        folderId={selectedFolderId!}
+        folderId={selectedFolderId ?? undefined}
         onSuccess={() => setShowUploadAssets(false)}
       />
 

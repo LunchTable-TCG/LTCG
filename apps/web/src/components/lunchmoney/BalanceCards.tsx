@@ -109,6 +109,7 @@ export function BalanceCards({
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-primary/80">LTCG Tokens</p>
             <button
+              type="button"
               onClick={onRefreshToken}
               className="p-1 rounded hover:bg-primary/10 transition-colors"
               title="Refresh balance"

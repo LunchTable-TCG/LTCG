@@ -1,5 +1,22 @@
 import { v } from "convex/values";
-import { internalMutation } from "../../_generated/server";
+import { type MutationCtx, internalMutation } from "../../_generated/server";
+
+interface LiveKitParticipantPayload {
+  name?: string;
+  metadata?: string;
+  kind?: "human" | "agent" | "service";
+}
+
+interface LiveKitTrackPayload {
+  source?: "camera" | "microphone" | "screen_share" | "data";
+  mimeType?: string;
+  name?: string;
+}
+
+interface LiveKitWebhookPayload {
+  participant?: LiveKitParticipantPayload;
+  track?: LiveKitTrackPayload;
+}
 
 /**
  * Record a token grant for audit trail
@@ -64,27 +81,52 @@ export const applyWebhookEvent = internalMutation({
     // Apply state changes based on event type
     switch (args.eventType) {
       case "room_started":
-        await handleRoomStarted(ctx, args.roomName!, now);
+        if (args.roomName) {
+          await handleRoomStarted(ctx, args.roomName, now);
+        }
         break;
 
       case "room_finished":
-        await handleRoomFinished(ctx, args.roomName!, now);
+        if (args.roomName) {
+          await handleRoomFinished(ctx, args.roomName, now);
+        }
         break;
 
       case "participant_joined":
-        await handleParticipantJoined(ctx, args.roomName!, args.participantIdentity!, args.payload, now);
+        if (args.roomName && args.participantIdentity) {
+          await handleParticipantJoined(
+            ctx,
+            args.roomName,
+            args.participantIdentity,
+            args.payload,
+            now
+          );
+        }
         break;
 
       case "participant_left":
-        await handleParticipantLeft(ctx, args.roomName!, args.participantIdentity!, now);
+        if (args.roomName && args.participantIdentity) {
+          await handleParticipantLeft(ctx, args.roomName, args.participantIdentity, now);
+        }
         break;
 
       case "track_published":
-        await handleTrackPublished(ctx, args.roomName!, args.participantIdentity!, args.trackSid!, args.payload, now);
+        if (args.roomName && args.participantIdentity && args.trackSid) {
+          await handleTrackPublished(
+            ctx,
+            args.roomName,
+            args.participantIdentity,
+            args.trackSid,
+            args.payload,
+            now
+          );
+        }
         break;
 
       case "track_unpublished":
-        await handleTrackUnpublished(ctx, args.roomName!, args.trackSid!, now);
+        if (args.roomName && args.trackSid) {
+          await handleTrackUnpublished(ctx, args.roomName, args.trackSid, now);
+        }
         break;
     }
 
@@ -94,10 +136,10 @@ export const applyWebhookEvent = internalMutation({
 
 // Event handlers
 
-async function handleRoomStarted(ctx: any, roomName: string, now: number) {
+async function handleRoomStarted(ctx: MutationCtx, roomName: string, now: number) {
   const room = await ctx.db
     .query("rooms")
-    .withIndex("by_roomName", (q: any) => q.eq("roomName", roomName))
+    .withIndex("by_roomName", (q) => q.eq("roomName", roomName))
     .first();
 
   if (room) {
@@ -119,10 +161,10 @@ async function handleRoomStarted(ctx: any, roomName: string, now: number) {
   }
 }
 
-async function handleRoomFinished(ctx: any, roomName: string, now: number) {
+async function handleRoomFinished(ctx: MutationCtx, roomName: string, now: number) {
   const room = await ctx.db
     .query("rooms")
-    .withIndex("by_roomName", (q: any) => q.eq("roomName", roomName))
+    .withIndex("by_roomName", (q) => q.eq("roomName", roomName))
     .first();
 
   if (room) {
@@ -137,7 +179,7 @@ async function handleRoomFinished(ctx: any, roomName: string, now: number) {
     // Mark all participants as left
     const participants = await ctx.db
       .query("participants")
-      .withIndex("by_roomName_state", (q: any) => q.eq("roomName", roomName).eq("state", "active"))
+      .withIndex("by_roomName_state", (q) => q.eq("roomName", roomName).eq("state", "active"))
       .collect();
 
     for (const participant of participants) {
@@ -150,7 +192,7 @@ async function handleRoomFinished(ctx: any, roomName: string, now: number) {
     // Mark all tracks as unpublished
     const tracks = await ctx.db
       .query("tracks")
-      .withIndex("by_roomName_state", (q: any) => q.eq("roomName", roomName).eq("state", "published"))
+      .withIndex("by_roomName_state", (q) => q.eq("roomName", roomName).eq("state", "published"))
       .collect();
 
     for (const track of tracks) {
@@ -162,10 +204,18 @@ async function handleRoomFinished(ctx: any, roomName: string, now: number) {
   }
 }
 
-async function handleParticipantJoined(ctx: any, roomName: string, identity: string, payload: any, now: number) {
+async function handleParticipantJoined(
+  ctx: MutationCtx,
+  roomName: string,
+  identity: string,
+  payload: unknown,
+  now: number
+) {
+  const parsedPayload = normalizeWebhookPayload(payload);
+  const participantPayload = parsedPayload.participant;
   const existing = await ctx.db
     .query("participants")
-    .withIndex("by_roomName_identity", (q: any) => q.eq("roomName", roomName).eq("identity", identity))
+    .withIndex("by_roomName_identity", (q) => q.eq("roomName", roomName).eq("identity", identity))
     .first();
 
   if (existing) {
@@ -173,25 +223,25 @@ async function handleParticipantJoined(ctx: any, roomName: string, identity: str
       state: "active",
       joinedAt: now,
       leftAt: undefined,
-      name: payload.participant?.name,
-      metadata: payload.participant?.metadata,
+      name: participantPayload?.name,
+      metadata: participantPayload?.metadata,
     });
   } else {
     await ctx.db.insert("participants", {
       roomName,
       identity,
-      name: payload.participant?.name,
-      kind: payload.participant?.kind || "human",
+      name: participantPayload?.name,
+      kind: coerceParticipantKind(participantPayload?.kind),
       state: "active",
       joinedAt: now,
-      metadata: payload.participant?.metadata,
+      metadata: participantPayload?.metadata,
     });
   }
 
   // Increment active participant count
   const room = await ctx.db
     .query("rooms")
-    .withIndex("by_roomName", (q: any) => q.eq("roomName", roomName))
+    .withIndex("by_roomName", (q) => q.eq("roomName", roomName))
     .first();
 
   if (room) {
@@ -202,10 +252,15 @@ async function handleParticipantJoined(ctx: any, roomName: string, identity: str
   }
 }
 
-async function handleParticipantLeft(ctx: any, roomName: string, identity: string, now: number) {
+async function handleParticipantLeft(
+  ctx: MutationCtx,
+  roomName: string,
+  identity: string,
+  now: number
+) {
   const participant = await ctx.db
     .query("participants")
-    .withIndex("by_roomName_identity", (q: any) => q.eq("roomName", roomName).eq("identity", identity))
+    .withIndex("by_roomName_identity", (q) => q.eq("roomName", roomName).eq("identity", identity))
     .first();
 
   if (participant && participant.state === "active") {
@@ -217,7 +272,7 @@ async function handleParticipantLeft(ctx: any, roomName: string, identity: strin
     // Decrement active participant count
     const room = await ctx.db
       .query("rooms")
-      .withIndex("by_roomName", (q: any) => q.eq("roomName", roomName))
+      .withIndex("by_roomName", (q) => q.eq("roomName", roomName))
       .first();
 
     if (room && room.activeParticipantCount > 0) {
@@ -229,10 +284,19 @@ async function handleParticipantLeft(ctx: any, roomName: string, identity: strin
   }
 }
 
-async function handleTrackPublished(ctx: any, roomName: string, participantIdentity: string, trackSid: string, payload: any, now: number) {
+async function handleTrackPublished(
+  ctx: MutationCtx,
+  roomName: string,
+  participantIdentity: string,
+  trackSid: string,
+  payload: unknown,
+  now: number
+) {
+  const parsedPayload = normalizeWebhookPayload(payload);
+  const trackPayload = parsedPayload.track;
   const existing = await ctx.db
     .query("tracks")
-    .withIndex("by_roomName_trackSid", (q: any) => q.eq("roomName", roomName).eq("trackSid", trackSid))
+    .withIndex("by_roomName_trackSid", (q) => q.eq("roomName", roomName).eq("trackSid", trackSid))
     .first();
 
   if (existing) {
@@ -246,18 +310,18 @@ async function handleTrackPublished(ctx: any, roomName: string, participantIdent
       roomName,
       participantIdentity,
       trackSid,
-      source: payload.track?.source || "camera",
+      source: coerceTrackSource(trackPayload?.source),
       state: "published",
       publishedAt: now,
-      mimeType: payload.track?.mimeType,
-      name: payload.track?.name,
+      mimeType: trackPayload?.mimeType,
+      name: trackPayload?.name,
     });
   }
 
   // Increment active track count
   const room = await ctx.db
     .query("rooms")
-    .withIndex("by_roomName", (q: any) => q.eq("roomName", roomName))
+    .withIndex("by_roomName", (q) => q.eq("roomName", roomName))
     .first();
 
   if (room) {
@@ -268,10 +332,15 @@ async function handleTrackPublished(ctx: any, roomName: string, participantIdent
   }
 }
 
-async function handleTrackUnpublished(ctx: any, roomName: string, trackSid: string, now: number) {
+async function handleTrackUnpublished(
+  ctx: MutationCtx,
+  roomName: string,
+  trackSid: string,
+  now: number
+) {
   const track = await ctx.db
     .query("tracks")
-    .withIndex("by_roomName_trackSid", (q: any) => q.eq("roomName", roomName).eq("trackSid", trackSid))
+    .withIndex("by_roomName_trackSid", (q) => q.eq("roomName", roomName).eq("trackSid", trackSid))
     .first();
 
   if (track && track.state === "published") {
@@ -283,7 +352,7 @@ async function handleTrackUnpublished(ctx: any, roomName: string, trackSid: stri
     // Decrement active track count
     const room = await ctx.db
       .query("rooms")
-      .withIndex("by_roomName", (q: any) => q.eq("roomName", roomName))
+      .withIndex("by_roomName", (q) => q.eq("roomName", roomName))
       .first();
 
     if (room && room.activeTrackCount > 0) {
@@ -293,4 +362,34 @@ async function handleTrackUnpublished(ctx: any, roomName: string, trackSid: stri
       });
     }
   }
+}
+
+function normalizeWebhookPayload(payload: unknown): LiveKitWebhookPayload {
+  if (!payload || typeof payload !== "object") {
+    return {};
+  }
+  return payload as LiveKitWebhookPayload;
+}
+
+function coerceParticipantKind(
+  kind: LiveKitParticipantPayload["kind"] | string | undefined
+): "human" | "agent" | "service" {
+  if (kind === "agent" || kind === "service" || kind === "human") {
+    return kind;
+  }
+  return "human";
+}
+
+function coerceTrackSource(
+  source: LiveKitTrackPayload["source"] | string | undefined
+): "camera" | "microphone" | "screen_share" | "data" {
+  if (
+    source === "camera" ||
+    source === "microphone" ||
+    source === "screen_share" ||
+    source === "data"
+  ) {
+    return source;
+  }
+  return "camera";
 }

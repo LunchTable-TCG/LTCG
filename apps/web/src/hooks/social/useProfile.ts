@@ -1,12 +1,16 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
+import { typedApi } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
 // Import inferred types from validators - single source of truth
 import type { FullUser, UserInfo } from "@convex/lib/returnValidators";
 import { useQuery } from "convex/react";
 
 import { useAuth } from "../auth/useConvexAuthHook";
+
+// Module-scope references to avoid TS2589
+const currentUserQuery = typedApi.core.users.currentUser;
+const getUserQuery = typedApi.core.users.getUser;
 
 /**
  * Type-safe profile with optional stats fields
@@ -59,10 +63,9 @@ export type ProfileWithStats = (FullUser | UserInfo) & {
 export function useProfile(userId?: Id<"users">) {
   const { isAuthenticated } = useAuth();
 
-  // Let TypeScript infer types from the generated api
-  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useQuery(currentUserQuery, isAuthenticated ? {} : "skip");
 
-  const otherUser = useQuery(api.core.users.getUser, userId ? { userId } : "skip");
+  const otherUser = useQuery(getUserQuery, userId ? { userId } : "skip");
 
   // Profile type is inferred from validators via query return types
   const profile: FullUser | UserInfo | null | undefined = userId ? otherUser : currentUser;

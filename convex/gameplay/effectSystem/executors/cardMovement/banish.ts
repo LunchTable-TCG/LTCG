@@ -16,7 +16,7 @@ export async function executeBanish(
   gameState: Doc<"gameStates">,
   targetCardId: Id<"cardDefinitions">,
   playerId: Id<"users">,
-  fromLocation: "board" | "graveyard" | "hand" | "deck" | "banished" = "board"
+  fromLocation: "board" | "graveyard" | "hand" | "deck" | "banished" | "spell_trap" = "board"
 ): Promise<{ success: boolean; message: string }> {
   // Can't banish something already banished
   if (fromLocation === "banished") {
@@ -71,6 +71,19 @@ export async function executeBanish(
     targetIsHost = inHostHand;
     sourceZone = targetIsHost ? gameState.hostHand : gameState.opponentHand;
     sourceField = targetIsHost ? "hostHand" : "opponentHand";
+  } else if (fromLocation === "spell_trap") {
+    const inHostZone = gameState.hostSpellTrapZone.some((sc) => sc.cardId === targetCardId);
+    const inOpponentZone = gameState.opponentSpellTrapZone.some((sc) => sc.cardId === targetCardId);
+
+    if (!inHostZone && !inOpponentZone) {
+      return { success: false, message: "Card not found in spell/trap zone" };
+    }
+
+    targetIsHost = inHostZone;
+    sourceZone = (targetIsHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone).map(
+      (sc) => sc.cardId
+    );
+    sourceField = targetIsHost ? "hostSpellTrapZone" : "opponentSpellTrapZone";
   } else {
     // deck
     const inHostDeck = gameState.hostDeck.includes(targetCardId);
@@ -85,23 +98,78 @@ export async function executeBanish(
     sourceField = targetIsHost ? "hostDeck" : "opponentDeck";
   }
 
+  // Tokens cease to exist when leaving the field — don't send to banished zone
+  if (fromLocation === "board") {
+    const board = targetIsHost ? gameState.hostBoard : gameState.opponentBoard;
+    const boardCard = board.find((bc) => bc.cardId === targetCardId);
+    if (boardCard?.isToken) {
+      const newBoard = board.filter((bc) => bc.cardId !== targetCardId);
+      await ctx.db.patch(gameState._id, {
+        [sourceField]: newBoard,
+      });
+      const tokenName = boardCard.tokenData?.name || "Token";
+      return { success: true, message: `${tokenName} removed from play (token)` };
+    }
+  }
+
   // Remove from source zone
   const newSourceZone =
     fromLocation === "board"
       ? (targetIsHost ? gameState.hostBoard : gameState.opponentBoard).filter(
           (bc) => bc.cardId !== targetCardId
         )
-      : sourceZone.filter((c) => c !== targetCardId);
+      : fromLocation === "spell_trap"
+        ? (targetIsHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone).filter(
+            (sc) => sc.cardId !== targetCardId
+          )
+        : sourceZone.filter((c) => c !== targetCardId);
 
   // Add to banished zone
   const banishedZone = targetIsHost ? gameState.hostBanished : gameState.opponentBanished;
   const newBanishedZone = [...banishedZone, targetCardId];
 
-  // Update game state
-  await ctx.db.patch(gameState._id, {
-    [sourceField]: fromLocation === "board" ? newSourceZone : newSourceZone,
+  // Build update
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
+  const updates: Record<string, any> = {
+    [sourceField]: newSourceZone,
     [targetIsHost ? "hostBanished" : "opponentBanished"]: newBanishedZone,
-  });
+  };
+
+  // Destroy equipped spells when monster is banished from board
+  if (fromLocation === "board") {
+    const board = targetIsHost ? gameState.hostBoard : gameState.opponentBoard;
+    const boardCard = board.find((bc) => bc.cardId === targetCardId);
+    if (boardCard?.equippedCards && boardCard.equippedCards.length > 0) {
+      const equippedIds = boardCard.equippedCards;
+      const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
+      if (hostEquips.length > 0) {
+        updates["hostSpellTrapZone"] = gameState.hostSpellTrapZone.filter(
+          (st) => !equippedIds.includes(st.cardId)
+        );
+        updates["hostGraveyard"] = [
+          ...gameState.hostGraveyard,
+          ...hostEquips.map((st) => st.cardId),
+        ];
+      }
+      const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
+      if (opponentEquips.length > 0) {
+        updates["opponentSpellTrapZone"] = gameState.opponentSpellTrapZone.filter(
+          (st) => !equippedIds.includes(st.cardId)
+        );
+        updates["opponentGraveyard"] = [
+          ...gameState.opponentGraveyard,
+          ...opponentEquips.map((st) => st.cardId),
+        ];
+      }
+    }
+  }
+
+  // Update game state
+  await ctx.db.patch(gameState._id, updates);
 
   return { success: true, message: `Banished ${card.name} from ${fromLocation}` };
 }

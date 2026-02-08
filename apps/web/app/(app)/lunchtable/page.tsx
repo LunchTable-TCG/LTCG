@@ -1,7 +1,7 @@
 "use client";
 
 import { DailyLoginRewards } from "@/components/rewards/DailyLoginRewards";
-import { api } from "@convex/_generated/api";
+import { typedApi } from "@/lib/convexHelpers";
 import { AuthLoading, Authenticated, useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -34,8 +34,8 @@ export default function LunchtablePage() {
 }
 
 function LunchtableContent() {
-  const currentUser = useQuery(api.core.users.currentUser, {});
-  const selectStarterDeck = useMutation(api.core.decks.selectStarterDeck);
+  const currentUser = useQuery(typedApi.core.users.currentUser, {});
+  const selectStarterDeck = useMutation(typedApi.core.decks.selectStarterDeck);
 
   // Track if user needs onboarding (no starter deck)
   const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
@@ -60,9 +60,7 @@ function LunchtableContent() {
   }, []);
 
   const handleWelcomeComplete = async (selectedDeck: string) => {
-    console.log("🎮 handleWelcomeComplete called with:", selectedDeck);
     if (!currentUser) {
-      console.log("❌ No current user, aborting");
       return;
     }
 
@@ -74,18 +72,14 @@ function LunchtableContent() {
     };
 
     const deckCode = deckCodeMap[selectedDeck as keyof typeof deckCodeMap];
-    console.log("🎯 Mapped deck code:", deckCode);
     if (!deckCode) {
-      console.log("❌ Invalid deck code");
       toast.error("Invalid starter deck selection.");
       return;
     }
 
     setIsClaimingDeck(true);
     try {
-      console.log("🚀 Calling selectStarterDeck mutation...");
       const result = await selectStarterDeck({ deckCode });
-      console.log("✅ Mutation success:", result);
       toast.success(`${result.deckName} claimed! You received ${result.cardsReceived} cards.`);
       setShowWelcomeGuide(false);
     } catch (error: unknown) {

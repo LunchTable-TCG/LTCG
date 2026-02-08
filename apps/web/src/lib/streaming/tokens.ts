@@ -46,15 +46,23 @@ export async function verifyOverlayToken(token: string): Promise<{
     const secretKey = new TextEncoder().encode(secret);
     const { payload } = await jwtVerify(token, secretKey);
 
+    if (
+      payload.type !== "overlay_access" ||
+      typeof payload.sessionId !== "string" ||
+      typeof payload.entityId !== "string" ||
+      (payload.streamType !== "user" && payload.streamType !== "agent")
+    ) {
+      console.error("Invalid overlay token payload structure");
+      return null;
+    }
+
     return {
-      sessionId: payload.sessionId as string,
-      streamType: payload.streamType as "user" | "agent",
-      entityId: payload.entityId as string,
+      sessionId: payload.sessionId,
+      streamType: payload.streamType,
+      entityId: payload.entityId,
     };
   } catch (error) {
     console.error("Token verification failed:", error);
-    console.error("Secret length:", secret?.length);
-    console.error("Has trailing newline:", secret?.endsWith("\\n"));
     return null;
   }
 }

@@ -6,8 +6,7 @@ import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { Loader2, Package, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
-
-type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
+import type { Rarity } from "@/types/cards";
 
 interface CardData {
   cardDefinitionId: Id<"cardDefinitions">;
@@ -147,6 +146,7 @@ export function CardSelectorModal({
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {filteredCards.map((card) => (
                 <button
+                  type="button"
                   key={card.playerCardId}
                   onClick={() => {
                     onSelectCard(card);

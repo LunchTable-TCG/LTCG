@@ -8,9 +8,10 @@ import { useState } from "react";
 interface ApiKeyDisplayProps {
   apiKey: string;
   onAcknowledge: () => void;
+  buttonLabel?: string;
 }
 
-export function ApiKeyDisplay({ apiKey, onAcknowledge }: ApiKeyDisplayProps) {
+export function ApiKeyDisplay({ apiKey, onAcknowledge, buttonLabel }: ApiKeyDisplayProps) {
   const [copied, setCopied] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
 
@@ -42,9 +43,9 @@ export function ApiKeyDisplay({ apiKey, onAcknowledge }: ApiKeyDisplayProps) {
 
       {/* API Key Display */}
       <div className="space-y-3">
-        <label className="block text-[10px] font-black text-[#a89f94] uppercase tracking-widest">
+        <p className="block text-[10px] font-black text-[#a89f94] uppercase tracking-widest">
           Your Agent's API Key
-        </label>
+        </p>
         <div className="relative">
           <div className="flex items-center gap-2 p-4 rounded-xl bg-black/40 border border-[#3d2b1f] font-mono text-sm text-[#d4af37] break-all">
             <Key className="w-4 h-4 flex-shrink-0 text-[#d4af37]/60" />
@@ -77,9 +78,10 @@ export function ApiKeyDisplay({ apiKey, onAcknowledge }: ApiKeyDisplayProps) {
       </div>
 
       {/* Acknowledgment Checkbox */}
-      <label className="flex items-start gap-3 cursor-pointer group">
+      <div className="flex items-start gap-3 cursor-pointer group">
         <div className="relative mt-0.5">
           <input
+            id="acknowledge-api-key"
             type="checkbox"
             checked={acknowledged}
             onChange={(e) => setAcknowledged(e.target.checked)}
@@ -96,10 +98,10 @@ export function ApiKeyDisplay({ apiKey, onAcknowledge }: ApiKeyDisplayProps) {
             {acknowledged && <Check className="w-4 h-4 text-black" />}
           </div>
         </div>
-        <span className="text-[#a89f94] text-sm">
+        <label htmlFor="acknowledge-api-key" className="text-[#a89f94] text-sm">
           I have copied and securely saved this API key
-        </span>
-      </label>
+        </label>
+      </div>
 
       {/* Done Button */}
       <Button
@@ -112,7 +114,7 @@ export function ApiKeyDisplay({ apiKey, onAcknowledge }: ApiKeyDisplayProps) {
             : "bg-[#3d2b1f]/50 text-[#a89f94]/50 cursor-not-allowed"
         )}
       >
-        Complete Registration
+        {buttonLabel || "Complete Registration"}
       </Button>
     </div>
   );

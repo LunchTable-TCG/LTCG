@@ -44,7 +44,7 @@ export function BrandingContentGrid({
           <Skeleton className="h-10 w-32" />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {[...Array(12)].map((_, i) => (
+          {Array.from({ length: 12 }, (_, i) => i).map((i) => (
             <Skeleton key={i} className="aspect-square rounded-lg" />
           ))}
         </div>

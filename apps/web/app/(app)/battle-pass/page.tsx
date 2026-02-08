@@ -7,9 +7,8 @@ import { useState } from "react";
 import { BattlePassHeader } from "./components/BattlePassHeader";
 import { PremiumUpgradeModal } from "./components/PremiumUpgradeModal";
 import { RewardClaimModal } from "./components/RewardClaimModal";
+import type { RewardType } from "@/types/economy";
 import { TierTrack } from "./components/TierTrack";
-
-type RewardType = "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
 
 interface BattlePassReward {
   type: RewardType;
@@ -153,6 +152,7 @@ export default function BattlePassPage() {
         {totalClaimableCount > 0 && (
           <div className="mb-6 flex justify-end">
             <button
+              type="button"
               onClick={handleClaimAll}
               disabled={isClaimingAll}
               className={cn(

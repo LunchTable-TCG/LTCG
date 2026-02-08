@@ -155,9 +155,9 @@ interface StrategicEvaluation {
  * Action parameters - flexible structure for different action types
  */
 interface ActionParams {
-  attackerIndex?: number;
-  targetIndex?: number | null;
-  handIndex?: number;
+  attackerCardId?: string;
+  targetCardId?: string | null;
+  cardId?: string;
   [key: string]: unknown;
 }
 
@@ -227,15 +227,15 @@ function evaluateAttack(
   _boardAnalysis: BoardAnalysis,
   riskTolerance: string
 ): StrategicEvaluation {
-  const attackerIndex = params.attackerIndex;
-  const targetIndex = params.targetIndex;
+  const attackerCardId = params.attackerCardId;
+  const targetCardId = params.targetCardId;
 
-  if (attackerIndex === undefined) {
+  if (!attackerCardId) {
     return {
       quality: "TERRIBLE",
       risk: "CRITICAL",
       shouldFilter: true,
-      reason: "No attacker index provided",
+      reason: "No attacker card ID provided",
       suggestion: "Select a monster to attack with",
     };
   }
@@ -245,20 +245,20 @@ function evaluateAttack(
   const oppMonsters = gameState.opponentBoard ?? gameState.opponentPlayer?.monsterZone ?? [];
   const oppBackrow = gameState.opponentPlayer?.spellTrapZone?.length ?? 0;
 
-  const attacker = myMonsters[attackerIndex];
+  const attacker = myMonsters.find(m => m._id === attackerCardId);
 
   if (!attacker) {
     return {
       quality: "TERRIBLE",
       risk: "CRITICAL",
       shouldFilter: true,
-      reason: "Invalid attacker index",
+      reason: "Invalid attacker card ID",
       suggestion: "Select a valid monster to attack with",
     };
   }
 
   // Direct attack evaluation
-  if (targetIndex === null || targetIndex === undefined) {
+  if (!targetCardId) {
     // Check if opponent has monsters - attacking directly when they have monsters is usually bad
     if (oppMonsters.length > 0) {
       return {
@@ -289,21 +289,21 @@ function evaluateAttack(
   }
 
   // Monster-to-monster attack evaluation
-  const target = oppMonsters[targetIndex];
+  const target = oppMonsters.find(m => m._id === targetCardId);
 
   if (!target) {
     return {
       quality: "TERRIBLE",
       risk: "CRITICAL",
       shouldFilter: true,
-      reason: "Invalid target index",
+      reason: "Invalid target card ID",
       suggestion: "Select a valid target monster",
     };
   }
 
-  // Check if attack will succeed (BoardCard uses .attack/.defense and position: 0|1)
+  // Check if attack will succeed (BoardCard uses .attack/.defense and position: 1|2)
   const attackerAtk = attacker.attack ?? 0;
-  // BoardCard position: 0 = defense, 1 = attack
+  // BoardCard position: 1 = attack, 2 = defense
   const targetAtk = target.position === 1 ? (target.attack ?? 0) : (target.defense ?? 0);
 
   if (attackerAtk < targetAtk) {
@@ -357,22 +357,22 @@ function evaluateSummon(
   boardAnalysis: BoardAnalysis,
   _riskTolerance: string
 ): StrategicEvaluation {
-  const handIndex = params.handIndex;
+  const cardId = params.cardId;
   const hand = gameState.hand;
 
-  if (handIndex === undefined) {
+  if (!cardId) {
     return {
       quality: "TERRIBLE",
       risk: "CRITICAL",
       shouldFilter: true,
-      reason: "No hand index provided",
+      reason: "No card ID provided",
       suggestion: "Select a card from hand to summon",
     };
   }
 
-  const monsterToSummon = hand[handIndex];
+  const monsterToSummon = hand.find(c => c._id === cardId);
 
-  if (!monsterToSummon || monsterToSummon.type !== "creature") {
+  if (!monsterToSummon || monsterToSummon.cardType !== "creature") {
     return {
       quality: "TERRIBLE",
       risk: "CRITICAL",
@@ -383,13 +383,13 @@ function evaluateSummon(
   }
 
   // Check if summoning weak monster when stronger one available
-  const monstersInHand = hand.filter((card) => card.type === "creature");
+  const monstersInHand = hand.filter((card) => card.cardType === "creature");
   const strongestInHand = monstersInHand.reduce((strongest, monster) => {
-    return (monster.atk || 0) > (strongest.atk || 0) ? monster : strongest;
+    return (monster.attack || 0) > (strongest.attack || 0) ? monster : strongest;
   }, monsterToSummon);
 
-  const summonAtk = monsterToSummon.atk || 0;
-  const strongestAtk = strongestInHand.atk || 0;
+  const summonAtk = monsterToSummon.attack || 0;
+  const strongestAtk = strongestInHand.attack || 0;
 
   if (summonAtk < strongestAtk - 500 && !gameState.hasNormalSummoned) {
     // Summoning weak monster when stronger available - questionable
@@ -423,22 +423,22 @@ function evaluateSpellTrap(
   _riskTolerance: string
 ): StrategicEvaluation {
   // Basic validation - can be enhanced later
-  const handIndex = params.handIndex;
+  const cardId = params.cardId;
   const hand = gameState.hand;
 
-  if (handIndex === undefined) {
+  if (!cardId) {
     return {
       quality: "TERRIBLE",
       risk: "CRITICAL",
       shouldFilter: true,
-      reason: "No hand index provided",
+      reason: "No card ID provided",
       suggestion: "Select a card from hand to activate",
     };
   }
 
-  const card = hand[handIndex];
+  const card = hand.find(c => c._id === cardId);
 
-  if (!card || (card.type !== "spell" && card.type !== "trap")) {
+  if (!card || (card.cardType !== "spell" && card.cardType !== "trap")) {
     return {
       quality: "TERRIBLE",
       risk: "CRITICAL",
@@ -468,7 +468,7 @@ function evaluateEndTurn(
 ): StrategicEvaluation {
   // Check if ending turn without using resources
   const hand = gameState.hand;
-  const monstersInHand = hand.filter((card) => card.type === "creature" && (card.level || 4) <= 4);
+  const monstersInHand = hand.filter((card) => card.cardType === "creature" && (card.cost || 4) <= 4);
   const hasNormalSummoned = gameState.hasNormalSummoned;
 
   // If can summon but haven't and board is empty - questionable

@@ -51,7 +51,7 @@ export function SummonModal({
       setShowTributeSelection(false);
       setPendingSummonPosition(null);
     }
-  }, [isOpen, card?.instanceId]);
+  }, [isOpen, card]);
 
   // Debug logging for tribute selection
   useEffect(() => {
@@ -160,8 +160,6 @@ export function SummonModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md px-4"
-            role="dialog"
-            aria-modal="true"
             aria-labelledby="summon-modal-title"
             aria-describedby="summon-modal-description"
           >
@@ -329,7 +327,7 @@ export function SummonModal({
               )}
 
               {/* Play Options */}
-              <div className="space-y-2" role="group" aria-label="Card play options">
+              <div className="space-y-2" aria-label="Card play options">
                 <div className="flex items-center justify-between mb-3">
                   <p id="summon-modal-description" className="text-sm font-semibold text-[#e8e0d5]">
                     How would you like to play this card?
@@ -490,7 +488,6 @@ export function SummonModal({
 
                       <div
                         className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto"
-                        role="listbox"
                         aria-label="Available monsters to tribute"
                         aria-multiselectable="true"
                       >
@@ -500,7 +497,6 @@ export function SummonModal({
                             <button
                               key={tribute.instanceId}
                               type="button"
-                              role="option"
                               aria-selected={isSelected}
                               aria-label={`${tribute.name}, Level ${tribute.monsterStats?.level}, Attack ${tribute.monsterStats?.attack}${isSelected ? ", selected" : ""}`}
                               onClick={() => toggleTribute(tribute.cardId)}

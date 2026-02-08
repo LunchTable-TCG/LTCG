@@ -42,6 +42,7 @@ export function HelpModeToggle({
 
   return (
     <button
+      type="button"
       onClick={toggleHelpMode}
       className={cn(
         // Base styles

@@ -40,15 +40,40 @@ export default function StreamingAnalyticsPage() {
 
   const avgViewers = completedStreams.length > 0 ? totalViewers / completedStreams.length : 0;
 
-  // Platform breakdown
-  const platformStats = allSessions.reduce(
-    (acc: { twitch: number; youtube: number; custom: number }, session: typeof allSessions[number]) => {
-      if (session.platform === "twitch") acc.twitch++;
-      else if (session.platform === "youtube") acc.youtube++;
-      else acc.custom++;
-      return acc;
-    },
-    { twitch: 0, youtube: 0, custom: 0 }
+  // Platform breakdown (dynamic — handles all platforms)
+  const platformCounts: Record<string, number> = {};
+  for (const session of allSessions) {
+    const p = (session as { platform?: string }).platform ?? "unknown";
+    platformCounts[p] = (platformCounts[p] || 0) + 1;
+  }
+
+  const PLATFORM_LABELS: Record<string, string> = {
+    twitch: "Twitch",
+    youtube: "YouTube",
+    kick: "Kick",
+    retake: "Retake.tv",
+    x: "X",
+    pumpfun: "Pump.fun",
+    custom: "Custom RTMP",
+  };
+
+  const PLATFORM_COLORS: Record<string, string> = {
+    twitch: "purple",
+    youtube: "red",
+    kick: "green",
+    retake: "teal",
+    x: "blue",
+    pumpfun: "emerald",
+    custom: "gray",
+  };
+
+  const platformChartData = Object.entries(platformCounts).map(([platform, count]) => ({
+    name: PLATFORM_LABELS[platform] || platform,
+    value: count,
+  }));
+
+  const platformChartColors = Object.keys(platformCounts).map(
+    (p) => PLATFORM_COLORS[p] || "gray"
   );
 
   // Stream type breakdown
@@ -128,14 +153,10 @@ export default function StreamingAnalyticsPage() {
             >
               <DonutChart
                 className="h-full"
-                data={[
-                  { name: "Twitch", value: platformStats.twitch },
-                  { name: "YouTube", value: platformStats.youtube },
-                  { name: "Custom RTMP", value: platformStats.custom },
-                ]}
+                data={platformChartData}
                 category="value"
                 index="name"
-                colors={["purple", "red", "gray"]}
+                colors={platformChartColors}
                 showAnimation
                 valueFormatter={(v: number) => v.toLocaleString()}
               />

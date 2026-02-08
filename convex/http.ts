@@ -1,13 +1,16 @@
 import { registerRoutes } from "@convex-dev/stripe";
 import type Stripe from "stripe";
 
-import { components, internal } from "./_generated/api";
+import * as generatedApi from "./_generated/api";
+import { components } from "./_generated/api";
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const internalAny = (generatedApi as any).internal;
 import router from "./router";
 
-// Webhooks
-import * as heliusWebhook from "./webhooks/helius";
 import * as livekitWebhook from "./livekit/http/webhook";
 import * as streamingHttp from "./streaming/http";
+// Webhooks
+import * as heliusWebhook from "./webhooks/helius";
 
 // Privy handles auth externally - no auth routes needed here
 const http = router;
@@ -25,7 +28,7 @@ registerRoutes(http, components.stripe, {
       if (subscription.status === "active" || subscription.status === "trialing") {
         const userId = subscription.metadata?.["userId"];
         if (userId) {
-          await ctx.runMutation(internal.stripe.battlePassSync.grantPremiumAccess, {
+          await ctx.runMutation(internalAny.stripe.battlePassSync.grantPremiumAccess, {
             privyId: userId,
           });
         }
@@ -37,11 +40,11 @@ registerRoutes(http, components.stripe, {
       if (!userId) return;
 
       if (subscription.status === "active" || subscription.status === "trialing") {
-        await ctx.runMutation(internal.stripe.battlePassSync.grantPremiumAccess, {
+        await ctx.runMutation(internalAny.stripe.battlePassSync.grantPremiumAccess, {
           privyId: userId,
         });
       } else if (subscription.status === "canceled" || subscription.status === "unpaid") {
-        await ctx.runMutation(internal.stripe.battlePassSync.revokePremiumAccess, {
+        await ctx.runMutation(internalAny.stripe.battlePassSync.revokePremiumAccess, {
           privyId: userId,
         });
       }
@@ -50,7 +53,7 @@ registerRoutes(http, components.stripe, {
       const subscription = event.data.object as Stripe.Subscription;
       const userId = subscription.metadata?.["userId"];
       if (userId) {
-        await ctx.runMutation(internal.stripe.battlePassSync.revokePremiumAccess, {
+        await ctx.runMutation(internalAny.stripe.battlePassSync.revokePremiumAccess, {
           privyId: userId,
         });
       }

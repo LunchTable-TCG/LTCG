@@ -7,16 +7,15 @@ import { TransactionHistory } from "@/components/lunchmoney/TransactionHistory";
 import { useLunchMoney, usePriceHistory, useTransactionHistory } from "@/hooks/economy";
 import { getAssetUrl } from "@/lib/blob";
 import { cn } from "@/lib/utils";
-import { BarChart3, History, Loader2, Package, PieChart, Wallet } from "lucide-react";
+import type { TransactionFilter } from "@/types/economy";
+import { BarChart3, History, LineChart, Loader2, Package, PieChart, Wallet } from "lucide-react";
 import { useState } from "react";
 
-type TabType = "overview" | "transactions" | "listings" | "prices";
+type TabType = "overview" | "transactions" | "listings" | "prices" | "chart";
 
 export default function LunchMoneyPage() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [transactionFilter, setTransactionFilter] = useState<"all" | "gold" | "gems" | "token">(
-    "all"
-  );
+  const [transactionFilter, setTransactionFilter] = useState<TransactionFilter>("all");
 
   // Economy data
   const {
@@ -122,6 +121,7 @@ export default function LunchMoneyPage() {
             { id: "transactions" as TabType, label: "Transactions", icon: History },
             { id: "listings" as TabType, label: "My Listings", icon: Package },
             { id: "prices" as TabType, label: "Price History", icon: BarChart3 },
+            { id: "chart" as TabType, label: "LUNCH Chart", icon: LineChart },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -164,6 +164,7 @@ export default function LunchMoneyPage() {
                     Recent Transactions
                   </h2>
                   <button
+                    type="button"
                     onClick={() => setActiveTab("transactions")}
                     className="text-sm text-primary hover:underline"
                   >
@@ -189,6 +190,7 @@ export default function LunchMoneyPage() {
                     Active Listings
                   </h2>
                   <button
+                    type="button"
                     onClick={() => setActiveTab("listings")}
                     className="text-sm text-primary hover:underline"
                   >
@@ -265,6 +267,26 @@ export default function LunchMoneyPage() {
                 isLoading={isLoadingPrices}
                 isLoadingTopCards={isLoadingTopCards}
               />
+            </div>
+          )}
+
+          {/* LUNCH Token Chart Tab */}
+          {activeTab === "chart" && (
+            <div className="rounded-xl border border-[#3d2b1f] bg-black/40 p-6">
+              <h2 className="text-lg font-semibold text-[#e8e0d5] flex items-center gap-2 mb-4">
+                <LineChart className="w-5 h-5 text-primary" />
+                LUNCH Token Live Chart
+              </h2>
+              <div className="relative w-full" style={{ paddingBottom: "65%" }}>
+                <iframe
+                  src="https://dexscreener.com/solana/BdDkntHfNoe77xjXDACaXJCVa6DksrgcHKn6gfr7dTPU?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"
+                  className="absolute top-0 left-0 w-full h-full rounded-lg"
+                  style={{ border: 0 }}
+                  title="LUNCH Token DexScreener Chart"
+                  allow="clipboard-write"
+                  loading="lazy"
+                />
+              </div>
             </div>
           )}
         </div>

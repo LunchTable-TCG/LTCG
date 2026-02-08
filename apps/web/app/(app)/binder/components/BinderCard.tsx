@@ -6,10 +6,9 @@ import { cn } from "@/lib/utils";
 import { Flame, Heart, Shield, Star, Waves, Zap } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState } from "react";
+import type { CardType, ElementWithNeutral as Element, Rarity } from "@/types/cards";
 
-export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
-export type Element = "fire" | "water" | "earth" | "wind" | "neutral";
-export type CardType = "creature" | "spell" | "trap" | "equipment";
+export type { Rarity, Element, CardType };
 
 // Re-export for backwards compatibility
 export type { JsonAbility };
@@ -103,8 +102,6 @@ export function BinderCard({
   const [isHovering, setIsHovering] = useState(false);
 
   const rarity = RARITY_CONFIG[card.rarity];
-
-  console.log("🃏 Rendering BinderCard:", card.name, "imageUrl:", card.imageUrl);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!cardRef.current || variant !== "grid") return;

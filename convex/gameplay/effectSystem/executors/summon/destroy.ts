@@ -120,7 +120,12 @@ export async function executeDestroy(
   let hadDestroyTrigger = false;
   const parsedAbility = getCardAbility(card);
   if (parsedAbility) {
-    hadDestroyTrigger = parsedAbility.effects.some((effect) => effect.trigger === "on_destroy");
+    hadDestroyTrigger = parsedAbility.effects.some(
+      (effect) =>
+        effect.trigger === "on_destroy" ||
+        effect.trigger === "on_destroy_by_battle" ||
+        effect.trigger === "on_destroy_by_effect"
+    );
   }
 
   // Add to graveyard
@@ -136,31 +141,29 @@ export async function executeDestroy(
     // If destroying a monster, also destroy its equip spells
     const boardCard = hostBoard.find((bc) => bc.cardId === targetCardId);
     if (boardCard?.equippedCards && boardCard.equippedCards.length > 0) {
-      // Destroy all equipped cards by sending them to graveyard
       const equippedIds = boardCard.equippedCards;
-      const hostSpellTrapZone = gameState.hostSpellTrapZone;
-      const opponentSpellTrapZone = gameState.opponentSpellTrapZone;
-
-      // Remove from host spell/trap zone
-      const hostEquips = hostSpellTrapZone.filter((st) => equippedIds.includes(st.cardId));
+      const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
       if (hostEquips.length > 0) {
-        updates["hostSpellTrapZone"] = hostSpellTrapZone.filter(
+        updates["hostSpellTrapZone"] = gameState.hostSpellTrapZone.filter(
           (st) => !equippedIds.includes(st.cardId)
         );
+        // Accumulate onto newGraveyard (which already includes the destroyed monster)
         updates["hostGraveyard"] = [
-          ...gameState.hostGraveyard,
+          ...(updates["hostGraveyard"] ?? gameState.hostGraveyard),
           ...hostEquips.map((st) => st.cardId),
         ];
       }
-
-      // Remove from opponent spell/trap zone
-      const opponentEquips = opponentSpellTrapZone.filter((st) => equippedIds.includes(st.cardId));
+      const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
       if (opponentEquips.length > 0) {
-        updates["opponentSpellTrapZone"] = opponentSpellTrapZone.filter(
+        updates["opponentSpellTrapZone"] = gameState.opponentSpellTrapZone.filter(
           (st) => !equippedIds.includes(st.cardId)
         );
         updates["opponentGraveyard"] = [
-          ...gameState.opponentGraveyard,
+          ...(updates["opponentGraveyard"] ?? gameState.opponentGraveyard),
           ...opponentEquips.map((st) => st.cardId),
         ];
       }
@@ -170,31 +173,28 @@ export async function executeDestroy(
     // If destroying a monster, also destroy its equip spells
     const boardCard = opponentBoard.find((bc) => bc.cardId === targetCardId);
     if (boardCard?.equippedCards && boardCard.equippedCards.length > 0) {
-      // Destroy all equipped cards by sending them to graveyard
       const equippedIds = boardCard.equippedCards;
-      const hostSpellTrapZone = gameState.hostSpellTrapZone;
-      const opponentSpellTrapZone = gameState.opponentSpellTrapZone;
-
-      // Remove from host spell/trap zone
-      const hostEquips = hostSpellTrapZone.filter((st) => equippedIds.includes(st.cardId));
+      const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
       if (hostEquips.length > 0) {
-        updates["hostSpellTrapZone"] = hostSpellTrapZone.filter(
+        updates["hostSpellTrapZone"] = gameState.hostSpellTrapZone.filter(
           (st) => !equippedIds.includes(st.cardId)
         );
         updates["hostGraveyard"] = [
-          ...gameState.hostGraveyard,
+          ...(updates["hostGraveyard"] ?? gameState.hostGraveyard),
           ...hostEquips.map((st) => st.cardId),
         ];
       }
-
-      // Remove from opponent spell/trap zone
-      const opponentEquips = opponentSpellTrapZone.filter((st) => equippedIds.includes(st.cardId));
+      const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
+        equippedIds.includes(st.cardId)
+      );
       if (opponentEquips.length > 0) {
-        updates["opponentSpellTrapZone"] = opponentSpellTrapZone.filter(
+        updates["opponentSpellTrapZone"] = gameState.opponentSpellTrapZone.filter(
           (st) => !equippedIds.includes(st.cardId)
         );
         updates["opponentGraveyard"] = [
-          ...gameState.opponentGraveyard,
+          ...(updates["opponentGraveyard"] ?? gameState.opponentGraveyard),
           ...opponentEquips.map((st) => st.cardId),
         ];
       }

@@ -591,10 +591,14 @@ function TransferDialog({
 
         <div className="space-y-4 my-4">
           <div>
-            <label className="block text-[10px] font-black text-[#a89f94] uppercase tracking-widest mb-2">
+            <label
+              htmlFor="wallet-transfer-recipient"
+              className="block text-[10px] font-black text-[#a89f94] uppercase tracking-widest mb-2"
+            >
               Recipient Address
             </label>
             <Input
+              id="wallet-transfer-recipient"
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
               placeholder="Solana wallet address..."
@@ -603,11 +607,15 @@ function TransferDialog({
           </div>
 
           <div>
-            <label className="block text-[10px] font-black text-[#a89f94] uppercase tracking-widest mb-2">
+            <label
+              htmlFor="wallet-transfer-amount"
+              className="block text-[10px] font-black text-[#a89f94] uppercase tracking-widest mb-2"
+            >
               Amount
             </label>
             <div className="relative">
               <Input
+                id="wallet-transfer-amount"
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}

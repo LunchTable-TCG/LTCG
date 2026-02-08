@@ -154,6 +154,34 @@ crons.interval(
 );
 
 // ============================================================================
+// CRYPTO WAGER DISCONNECT MONITOR
+// ============================================================================
+
+// Check for disconnected players in crypto wager matches every 10 seconds
+// - Starts 30s DC timer when heartbeat goes stale (>15s)
+// - Forfeits disconnected player when timer exceeds 30s
+// - If both disconnect, last-to-DC loses (host wins tiebreaker)
+crons.interval(
+  "check-wager-disconnects",
+  { seconds: 10 },
+  internalAny.wager.disconnectMonitor.checkDisconnects
+);
+
+// ============================================================================
+// CRYPTO WAGER SETTLEMENT RETRY
+// ============================================================================
+
+// Retry failed crypto wager settlements every 60 seconds
+// - Finds completed games where cryptoSettled is false
+// - Re-schedules settleEscrow with stored winner/loser IDs
+// - settleEscrow is idempotent (no-ops if already settled)
+crons.interval(
+  "retry-wager-settlements",
+  { seconds: 60 },
+  internalAny.wager.settlementRetry.retryFailedSettlements
+);
+
+// ============================================================================
 // DATA INTEGRITY MONITORING
 // ============================================================================
 
@@ -182,6 +210,17 @@ crons.daily(
   "cleanup-analytics-snapshots",
   { hourUTC: 3, minuteUTC: 0 },
   internalAny.admin.analyticsSnapshots.cleanupOldSnapshots
+);
+
+// ============================================================================
+// BATTLE PASS LIFECYCLE
+// ============================================================================
+
+// Auto-activate upcoming and auto-end expired battle passes daily at 00:05 UTC
+crons.daily(
+  "battle-pass-lifecycle",
+  { hourUTC: 0, minuteUTC: 5 },
+  internal.progression.battlePass.checkBattlePassLifecycle
 );
 
 export default crons;

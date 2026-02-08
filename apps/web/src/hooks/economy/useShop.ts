@@ -4,14 +4,16 @@ import { handleHookError } from "@/lib/errorHandling";
 import { api } from "@convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
+import type { CardType, Rarity } from "@/types/cards";
+import type { Currency } from "@/types/economy";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface CardResult {
   cardDefinitionId: string;
   name: string;
-  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  rarity: Rarity;
   archetype: string;
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: CardType;
   attack?: number;
   defense?: number;
   cost: number;
@@ -23,7 +25,7 @@ interface PackPurchaseResult {
   success: boolean;
   productName: string;
   cardsReceived: CardResult[];
-  currencyUsed: "gold" | "gems";
+  currencyUsed: Currency;
   amountPaid: number;
 }
 
@@ -33,7 +35,7 @@ interface BoxPurchaseResult {
   packsOpened: number;
   bonusCards: number;
   cardsReceived: CardResult[];
-  currencyUsed: "gold" | "gems";
+  currencyUsed: Currency;
   amountPaid: number;
 }
 
@@ -45,8 +47,10 @@ interface CurrencyBundleResult {
 }
 
 interface UseShopReturn {
-  products: ReturnType<typeof useQuery<typeof api.shop.getShopProducts>> | undefined;
-  packHistory: ReturnType<typeof useQuery<typeof api.shop.getPackOpeningHistory>> | undefined;
+  // biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround — Convex query return types are too deeply nested
+  products: any;
+  // biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround
+  packHistory: any;
   isLoading: boolean;
   purchasePack: (productId: string, useGems: boolean) => Promise<PackPurchaseResult>;
   purchaseBox: (productId: string, useGems: boolean) => Promise<BoxPurchaseResult>;

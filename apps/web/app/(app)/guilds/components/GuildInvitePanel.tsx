@@ -31,7 +31,7 @@ export function GuildInvitePanel({ guildId }: GuildInvitePanelProps) {
     try {
       await sendInvite(guildId, inviteUsername.trim());
       setInviteUsername("");
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the hook
     } finally {
       setIsSending(false);
@@ -42,7 +42,7 @@ export function GuildInvitePanel({ guildId }: GuildInvitePanelProps) {
     try {
       await approveRequest(requestId);
       toast.success(`${username} has joined the guild!`);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to approve request");
     }
   };
@@ -51,7 +51,7 @@ export function GuildInvitePanel({ guildId }: GuildInvitePanelProps) {
     try {
       await rejectRequest(requestId);
       toast.success(`Request from ${username} declined`);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to reject request");
     }
   };
@@ -128,99 +128,93 @@ export function GuildInvitePanel({ guildId }: GuildInvitePanelProps) {
 
       {/* Content */}
       <div className="space-y-3">
-        {activeTab === "invites" && (
-          <>
-            {guildPendingInvites && guildPendingInvites.length > 0 ? (
-              guildPendingInvites.map((invite) => (
-                <div
-                  key={invite._id}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-black/40 border border-[#3d2b1f]"
+        {activeTab === "invites" &&
+          (guildPendingInvites && guildPendingInvites.length > 0 ? (
+            guildPendingInvites.map((invite) => (
+              <div
+                key={invite._id}
+                className="flex items-center gap-4 p-4 rounded-xl bg-black/40 border border-[#3d2b1f]"
+              >
+                <Avatar className="w-12 h-12 border border-[#3d2b1f]">
+                  <AvatarFallback className="bg-[#1a1614] text-[#d4af37] font-bold">
+                    {invite.invitedUsername?.[0]?.toUpperCase() || "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-[#e8e0d5]">
+                    {invite.invitedUsername || "Unknown"}
+                  </p>
+                  <p className="text-xs text-[#a89f94] flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Expires {new Date(invite.expiresAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => cancelInvite(invite._id)}
+                  size="sm"
+                  variant="ghost"
+                  className="text-[#a89f94] hover:text-red-400 hover:bg-red-500/10"
+                  aria-label={`Cancel invite to ${invite.invitedUsername || "user"}`}
                 >
-                  <Avatar className="w-12 h-12 border border-[#3d2b1f]">
-                    <AvatarFallback className="bg-[#1a1614] text-[#d4af37] font-bold">
-                      {invite.invitedUsername?.[0]?.toUpperCase() || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[#e8e0d5]">
-                      {invite.invitedUsername || "Unknown"}
-                    </p>
-                    <p className="text-xs text-[#a89f94] flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      Expires {new Date(invite.expiresAt).toLocaleDateString()}
-                    </p>
-                  </div>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-12 rounded-xl bg-black/40 border border-[#3d2b1f]">
+              <Mail className="w-12 h-12 mx-auto mb-3 text-[#a89f94]/50" />
+              <p className="text-[#a89f94]">No pending invites</p>
+            </div>
+          ))}
+
+        {activeTab === "requests" &&
+          (joinRequests && joinRequests.length > 0 ? (
+            joinRequests.map((request) => (
+              <div
+                key={request._id}
+                className="flex items-center gap-4 p-4 rounded-xl bg-black/40 border border-[#3d2b1f]"
+              >
+                <Avatar className="w-12 h-12 border border-[#3d2b1f]">
+                  <AvatarFallback className="bg-[#1a1614] text-[#d4af37] font-bold">
+                    {request.username?.[0]?.toUpperCase() || "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-[#e8e0d5]">{request.username || "Unknown"}</p>
+                  {request.message && (
+                    <p className="text-sm text-[#a89f94] line-clamp-1">{request.message}</p>
+                  )}
+                  <p className="text-xs text-[#a89f94]/60 mt-1">
+                    Requested {new Date(request.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex gap-2">
                   <Button
-                    onClick={() => cancelInvite(invite._id)}
+                    onClick={() => handleApprove(request._id, request.username || "Unknown")}
                     size="sm"
-                    variant="ghost"
-                    className="text-[#a89f94] hover:text-red-400 hover:bg-red-500/10"
-                    aria-label={`Cancel invite to ${invite.invitedUsername || "user"}`}
+                    className="bg-green-600 hover:bg-green-500 text-white rounded-lg"
+                    aria-label={`Approve ${request.username || "user"}'s join request`}
+                  >
+                    <Check className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => handleReject(request._id, request.username || "Unknown")}
+                    size="sm"
+                    variant="outline"
+                    className="border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-lg"
+                    aria-label={`Reject ${request.username || "user"}'s join request`}
                   >
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-12 rounded-xl bg-black/40 border border-[#3d2b1f]">
-                <Mail className="w-12 h-12 mx-auto mb-3 text-[#a89f94]/50" />
-                <p className="text-[#a89f94]">No pending invites</p>
               </div>
-            )}
-          </>
-        )}
-
-        {activeTab === "requests" && (
-          <>
-            {joinRequests && joinRequests.length > 0 ? (
-              joinRequests.map((request) => (
-                <div
-                  key={request._id}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-black/40 border border-[#3d2b1f]"
-                >
-                  <Avatar className="w-12 h-12 border border-[#3d2b1f]">
-                    <AvatarFallback className="bg-[#1a1614] text-[#d4af37] font-bold">
-                      {request.username?.[0]?.toUpperCase() || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[#e8e0d5]">{request.username || "Unknown"}</p>
-                    {request.message && (
-                      <p className="text-sm text-[#a89f94] line-clamp-1">{request.message}</p>
-                    )}
-                    <p className="text-xs text-[#a89f94]/60 mt-1">
-                      Requested {new Date(request.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => handleApprove(request._id, request.username || "Unknown")}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-500 text-white rounded-lg"
-                      aria-label={`Approve ${request.username || "user"}'s join request`}
-                    >
-                      <Check className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      onClick={() => handleReject(request._id, request.username || "Unknown")}
-                      size="sm"
-                      variant="outline"
-                      className="border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-lg"
-                      aria-label={`Reject ${request.username || "user"}'s join request`}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-12 rounded-xl bg-black/40 border border-[#3d2b1f]">
-                <UserPlus className="w-12 h-12 mx-auto mb-3 text-[#a89f94]/50" />
-                <p className="text-[#a89f94]">No pending join requests</p>
-              </div>
-            )}
-          </>
-        )}
+            ))
+          ) : (
+            <div className="text-center py-12 rounded-xl bg-black/40 border border-[#3d2b1f]">
+              <UserPlus className="w-12 h-12 mx-auto mb-3 text-[#a89f94]/50" />
+              <p className="text-[#a89f94]">No pending join requests</p>
+            </div>
+          ))}
       </div>
     </div>
   );

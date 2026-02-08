@@ -502,9 +502,9 @@ export async function openPack(
     });
   }
 
-  // 3. Check if pity triggered (after increment)
-  const PITY_THRESHOLD = 50; // Adjust based on game design (50 packs = guaranteed legendary)
-  const triggeredPity = (currentPity + 1) >= PITY_THRESHOLD;
+  // 3. Check if pity triggered (after increment) — uses dynamic config from rngConfig
+  const pityThreshold = rngConfig.pityThresholds.legendary;
+  const triggeredPity = currentPity + 1 >= pityThreshold;
   // ============================================================================
 
   let gotEpic = false;

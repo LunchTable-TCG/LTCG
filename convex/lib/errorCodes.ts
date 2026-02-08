@@ -118,6 +118,11 @@ export const ErrorCode = {
   GUILD_INVITE_LINK_EXPIRED: "GUILD_7119",
   GUILD_INVITE_LINK_MAX_USES: "GUILD_7120",
 
+  // Referral Errors (74xx - Social Related)
+  REFERRAL_LINK_NOT_FOUND: "REFERRAL_7401",
+  REFERRAL_SELF_REFERRAL: "REFERRAL_7402",
+  REFERRAL_ALREADY_REFERRED: "REFERRAL_7403",
+
   // DM Errors (7xxx - Social Related)
   DM_NOT_FRIENDS: "DM_7201",
   DM_CONVERSATION_NOT_FOUND: "DM_7202",
@@ -322,6 +327,11 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   GUILD_7119: "This invite link has expired",
   GUILD_7120: "This invite link has reached its maximum number of uses",
 
+  // Referral
+  REFERRAL_7401: "Referral link not found",
+  REFERRAL_7402: "You cannot use your own referral link",
+  REFERRAL_7403: "You have already been referred",
+
   // DM
   DM_7201: "You can only message friends",
   DM_7202: "Conversation not found",
@@ -465,18 +475,4 @@ export function parseConvexError(error: unknown): {
     return { code: match[1] ?? "", message: match[2] ?? "" };
   }
   return { code: "", message: error.data };
-}
-
-/**
- * @deprecated Use isConvexError and parseConvexError instead
- */
-export function hasErrorCode(error: unknown): boolean {
-  return isConvexError(error);
-}
-
-/**
- * @deprecated Use parseConvexError instead
- */
-export function getErrorData(error: unknown): { code: string; message: string } | null {
-  return parseConvexError(error);
 }

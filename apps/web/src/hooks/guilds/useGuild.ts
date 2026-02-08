@@ -1,23 +1,23 @@
 "use client";
 
-import { useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { useMutationWithToast } from "@/lib/useMutationWithToast";
-import { api } from "@convex/_generated/api";
+import type { Visibility } from "@/types/common";
 import type { Id } from "@convex/_generated/dataModel";
 
 // Module-scope references to avoid TS2589
-const getGuildQuery = api.social.guilds.core.getGuild;
-const getGuildMembersQuery = api.social.guilds.members.getGuildMembers;
-const getOnlineMemberCountQuery = api.social.guilds.members.getOnlineMemberCount;
-const getGuildJoinRequestsQuery = api.social.guilds.requests.getGuildJoinRequests;
-const updateGuildMutation = api.social.guilds.core.updateGuild;
-const deleteGuildMutation = api.social.guilds.core.deleteGuild;
-const setProfileImageMutation = api.social.guilds.core.setProfileImage;
-const setBannerImageMutation = api.social.guilds.core.setBannerImage;
-const transferOwnershipMutation = api.social.guilds.core.transferOwnership;
-const kickMemberMutation = api.social.guilds.members.kickMember;
-const approveRequestMutation = api.social.guilds.requests.approveRequest;
-const rejectRequestMutation = api.social.guilds.requests.rejectRequest;
+const getGuildQuery = typedApi.social.guilds.core.getGuild;
+const getGuildMembersQuery = typedApi.social.guilds.members.getGuildMembers;
+const getOnlineMemberCountQuery = typedApi.social.guilds.members.getOnlineMemberCount;
+const getGuildJoinRequestsQuery = typedApi.social.guilds.requests.getGuildJoinRequests;
+const updateGuildMutation = typedApi.social.guilds.core.updateGuild;
+const deleteGuildMutation = typedApi.social.guilds.core.deleteGuild;
+const setProfileImageMutation = typedApi.social.guilds.core.setProfileImage;
+const setBannerImageMutation = typedApi.social.guilds.core.setBannerImage;
+const transferOwnershipMutation = typedApi.social.guilds.core.transferOwnership;
+const kickMemberMutation = typedApi.social.guilds.members.kickMember;
+const approveRequestMutation = typedApi.social.guilds.requests.approveRequest;
+const rejectRequestMutation = typedApi.social.guilds.requests.rejectRequest;
 
 /**
  * Hook for viewing and managing a specific guild
@@ -80,7 +80,7 @@ export function useGuild(guildId: Id<"guilds"> | null) {
   const updateGuild = (data: {
     name?: string;
     description?: string;
-    visibility?: "public" | "private";
+    visibility?: Visibility;
   }) => {
     if (!guildId) return Promise.resolve();
     return updateGuildRaw({ guildId, ...data });
