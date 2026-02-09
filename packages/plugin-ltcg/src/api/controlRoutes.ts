@@ -12,9 +12,6 @@ import { logger } from "@elizaos/core";
 import { validateControlRequest } from "./authMiddleware";
 import { type IPollingService, SERVICE_TYPES } from "../services/types";
 
-// Validation patterns for IDs
-const ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
-
 /**
  * Add CORS and cache headers to response
  */
@@ -24,24 +21,6 @@ function setCorsHeaders(res: RouteResponse) {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  }
-}
-
-/**
- * Helper to get runtime from request
- */
-function getRuntime(req: RouteRequest): IAgentRuntime | null {
-  try {
-    const extendedReq = req as RouteRequest & { runtime?: IAgentRuntime };
-    const runtime = extendedReq.runtime;
-    if (!runtime) {
-      logger.warn("Runtime not available in request context");
-      return null;
-    }
-    return runtime;
-  } catch (error) {
-    logger.error({ error }, "Error getting runtime");
-    return null;
   }
 }
 
@@ -61,6 +40,100 @@ function sendError(res: RouteResponse, status: number, message: string) {
  */
 function getApiKey(): string | undefined {
   return process.env.LTCG_CONTROL_API_KEY;
+}
+
+/**
+ * Start streaming to a given platform via the LTCG streaming API.
+ *
+ * For Retake: fetches RTMP creds from Retake.tv API, passes to backend.
+ * For all other platforms: backend resolves creds from its own env vars.
+ */
+async function startStreamForPlatform(
+  platform: string,
+  gameId: string,
+  _runtime: IAgentRuntime,
+): Promise<{ sessionId: string; status: string; overlayUrl?: string; platform: string }> {
+  const appUrl = process.env.LTCG_APP_URL || process.env.LTCG_API_URL || "https://lunchtable.cards";
+  const agentId = process.env.LTCG_AGENT_ID || "agent_dizzy";
+  const ltcgApiKey = process.env.LTCG_API_KEY;
+
+  // For Retake, agent-side must signal go-live and fetch RTMP creds
+  let streamKey: string | undefined;
+  let customRtmpUrl: string | undefined;
+  let streamPlatform = platform;
+
+  if (platform === "retake") {
+    const accessToken =
+      process.env.DIZZY_RETAKE_ACCESS_TOKEN ||
+      process.env.RETAKE_ACCESS_TOKEN;
+
+    if (!accessToken) {
+      throw new Error("Retake.tv credentials not configured (DIZZY_RETAKE_ACCESS_TOKEN required)");
+    }
+
+    // Signal Retake.tv that we're going live
+    const retakeStartResponse = await fetch("https://chat.retake.tv/api/agent/stream/start", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!retakeStartResponse.ok) {
+      const errorText = await retakeStartResponse.text();
+      throw new Error(`Retake.tv API error: ${errorText}`);
+    }
+
+    // Get RTMP credentials from Retake.tv
+    const rtmpResponse = await fetch("https://chat.retake.tv/api/agent/rtmp", {
+      headers: { "Authorization": `Bearer ${accessToken}` },
+    });
+
+    if (!rtmpResponse.ok) {
+      throw new Error("Failed to get Retake RTMP credentials");
+    }
+
+    const rtmpData = await rtmpResponse.json();
+    logger.info(`Got Retake.tv RTMP credentials (url: ${rtmpData.rtmp_url})`);
+
+    streamKey = rtmpData.stream_key;
+    customRtmpUrl = rtmpData.rtmp_url;
+    streamPlatform = "custom"; // Retake uses custom RTMP
+  }
+
+  // Call the LTCG streaming API — backend resolves env-var creds for non-Retake platforms
+  const streamingResponse = await fetch(`${appUrl}/api/streaming/start`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(ltcgApiKey ? { "Authorization": `Bearer ${ltcgApiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      agentId,
+      gameId,
+      streamType: "agent",
+      platform: streamPlatform,
+      ...(streamKey ? { streamKey } : {}),
+      ...(customRtmpUrl ? { customRtmpUrl } : {}),
+      streamTitle: "Dizzy plays LTCG",
+    }),
+  });
+
+  if (!streamingResponse.ok) {
+    const errorText = await streamingResponse.text();
+    throw new Error(`LTCG streaming API error: ${errorText}`);
+  }
+
+  const streamingData = await streamingResponse.json();
+  logger.info({ sessionId: streamingData.sessionId, platform }, "Stream started via control API");
+
+  return {
+    sessionId: streamingData.sessionId,
+    status: streamingData.status,
+    overlayUrl: streamingData.overlayUrl,
+    platform,
+  };
 }
 
 
@@ -164,6 +237,32 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
 
     logger.info({ gameId: result.gameId }, "Polling started for story mode game");
 
+    // Auto-start streaming if configured
+    const streamingPlatform =
+      (body as { platform?: string }).platform ||
+      process.env.STREAMING_PLATFORM;
+    const autoStart = process.env.STREAMING_AUTO_START !== "false";
+
+    let streamingResult: { sessionId?: string; status?: string; platform?: string; error?: string } = {
+      error: "No streaming platform configured",
+    };
+
+    if (streamingPlatform && autoStart) {
+      try {
+        logger.info({ platform: streamingPlatform, gameId: result.gameId }, "Auto-starting stream for story mode");
+        const streamData = await startStreamForPlatform(streamingPlatform, result.gameId, runtime);
+        streamingResult = {
+          sessionId: streamData.sessionId,
+          status: streamData.status,
+          platform: streamData.platform,
+        };
+      } catch (streamError) {
+        const msg = streamError instanceof Error ? streamError.message : String(streamError);
+        logger.warn({ error: msg }, "Failed to auto-start stream (game will continue without streaming)");
+        streamingResult = { error: msg };
+      }
+    }
+
     // Return response with streaming info
     res.json({
       success: true,
@@ -174,11 +273,9 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
       stage: result.stage,
       aiOpponent: result.aiOpponent,
       difficulty: result.difficulty || body.difficulty,
-      streaming: {
-        autoStartConfigured: true,
-        willAutoStart: true,
-        note: "Streaming will auto-start if agent has streaming configured in Convex",
-      },
+      streaming: streamingResult.error
+        ? { autoStarted: false, error: streamingResult.error }
+        : { autoStarted: true, sessionId: streamingResult.sessionId, status: streamingResult.status, platform: streamingResult.platform },
       polling: {
         started: true,
         intervalMs: 1500,
@@ -479,13 +576,17 @@ async function handleStop(req: RouteRequest, res: RouteResponse, runtime: IAgent
 /**
  * POST /ltcg/control/start-stream
  *
- * Start Retake.tv streaming with LiveKit egress.
- * This properly integrates with the LTCG streaming system.
+ * Start streaming with LiveKit egress to any supported platform.
+ *
+ * Request body:
+ * - platform?: string (default: STREAMING_PLATFORM env var)
+ *   Supported: "pumpfun", "retake", "twitch", "youtube", "kick", "x", or any custom
  *
  * Response:
  * - success: boolean
  * - sessionId: string
  * - status: string
+ * - platform: string
  * - message: string
  */
 async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime: IAgentRuntime) {
@@ -499,7 +600,14 @@ async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime:
       return sendError(res, 401, authError);
     }
 
-    logger.info("Control API: Start stream trigger received");
+    const body = (req.body as { platform?: string }) || {};
+    const platform = body.platform || process.env.STREAMING_PLATFORM;
+
+    if (!platform) {
+      return sendError(res, 400, "No platform specified. Pass { platform: 'pumpfun' } or set STREAMING_PLATFORM env var.");
+    }
+
+    logger.info({ platform }, "Control API: Start stream trigger received");
 
     // Get polling service to check for active game
     const pollingService = runtime.getService(
@@ -515,98 +623,18 @@ async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime:
       return sendError(res, 400, "No active game - start a game first before streaming");
     }
 
-    // Get Retake credentials
-    const accessToken =
-      process.env.DIZZY_RETAKE_ACCESS_TOKEN ||
-      process.env.RETAKE_ACCESS_TOKEN;
-
-    const userDbId =
-      process.env.DIZZY_RETAKE_USER_DB_ID ||
-      process.env.RETAKE_USER_DB_ID;
-
-    const agentId =
-      process.env.DIZZY_RETAKE_AGENT_ID ||
-      process.env.RETAKE_AGENT_ID;
-
-    if (!accessToken || !userDbId) {
-      return sendError(res, 400, "Retake.tv credentials not configured (DIZZY_RETAKE_ACCESS_TOKEN and DIZZY_RETAKE_USER_DB_ID required)");
-    }
-
-    // 1. Signal Retake.tv that we're going live
-    const retakeStartResponse = await fetch("https://chat.retake.tv/api/agent/stream/start", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!retakeStartResponse.ok) {
-      const errorText = await retakeStartResponse.text();
-      logger.error({ error: errorText }, "Retake.tv API error");
-      return sendError(res, 502, `Retake.tv API error: ${errorText}`);
-    }
-
-    // 2. Get RTMP credentials from Retake.tv
-    const rtmpResponse = await fetch("https://chat.retake.tv/api/agent/rtmp", {
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!rtmpResponse.ok) {
-      return sendError(res, 502, "Failed to get Retake RTMP credentials");
-    }
-
-    const rtmpData = await rtmpResponse.json();
-    logger.info(`Got Retake.tv RTMP credentials (url: ${rtmpData.rtmp_url})`);
-
-    // 3. Start LTCG streaming system with LiveKit egress
-    const appUrl = process.env.LTCG_APP_URL || "https://lunchtable.cards";
-
-    const streamingResponse = await fetch(`${appUrl}/api/streaming/start`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        agentId: agentId || "agent_dizzy",
-        gameId: currentGameId, // Include gameId for overlay (now supports story game IDs)
-        streamType: "agent",
-        platform: "custom", // Retake.tv is custom RTMP
-        streamKey: rtmpData.stream_key,
-        customRtmpUrl: rtmpData.rtmp_url,
-        streamTitle: "Dizzy plays LTCG",
-        overlayConfig: {
-          showDecisions: true,
-          showAgentInfo: true,
-          showEventFeed: true,
-          showPlayerCam: false,
-          theme: "dark",
-        },
-      }),
-    });
-
-    if (!streamingResponse.ok) {
-      const errorText = await streamingResponse.text();
-      logger.error({ error: errorText }, "LTCG streaming API error");
-      return sendError(res, 502, `LTCG streaming error: ${errorText}`);
-    }
-
-    const streamingData = await streamingResponse.json();
-    logger.info(`LTCG streaming started (sessionId: ${streamingData.sessionId})`);
+    const streamData = await startStreamForPlatform(platform, currentGameId, runtime);
 
     res.json({
       success: true,
-      sessionId: streamingData.sessionId,
-      status: streamingData.status,
-      platform: "retake",
-      message: "Stream is starting! LiveKit is capturing the overlay and streaming to Retake.tv. Check https://retake.tv/Dizzy in 10-15 seconds.",
-      url: "https://retake.tv/Dizzy",
-      overlayUrl: streamingData.overlayUrl,
+      sessionId: streamData.sessionId,
+      status: streamData.status,
+      platform: streamData.platform,
+      overlayUrl: streamData.overlayUrl,
+      message: `Stream is starting on ${platform}! LiveKit egress is capturing the overlay. It may take 10-15 seconds to go live.`,
     });
   } catch (error) {
-    logger.error({ error }, "Error starting Retake stream");
+    logger.error({ error }, "Error starting stream");
     const errorMessage = error instanceof Error ? error.message : String(error);
     sendError(res, 500, `Failed to start stream: ${errorMessage}`);
   }

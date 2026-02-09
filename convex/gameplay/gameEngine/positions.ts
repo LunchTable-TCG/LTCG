@@ -11,6 +11,7 @@ import type { MutationCtx } from "../../_generated/server";
 import { internalMutation, mutation } from "../../functions";
 import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { resolveGameIdToLobbyId } from "../../lib/gameHelpers";
 import { recordEventHelper } from "../gameEvents";
 import { validatePositionChange } from "../summonValidator";
 
@@ -128,13 +129,13 @@ export const changePosition = mutation({
 
 export const changePositionInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
     cardId: v.id("cardDefinitions"),
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const { userId, ...gameArgs } = args;
-    const user = await getAuthForUser(ctx, userId);
-    return changePositionHandler(ctx, gameArgs, user);
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
+    const user = await getAuthForUser(ctx, args.userId);
+    return changePositionHandler(ctx, { lobbyId, cardId: args.cardId }, user);
   },
 });

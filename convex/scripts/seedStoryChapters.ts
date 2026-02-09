@@ -19,6 +19,12 @@ export const seedStoryChapters = mutation({
       await ctx.db.delete(stage._id);
     }
 
+    // Clear stale progress records (they reference old stageIds)
+    const existingProgress = await ctx.db.query("storyStageProgress").collect();
+    for (const progress of existingProgress) {
+      await ctx.db.delete(progress._id);
+    }
+
     // Insert all story chapters with stages
     let chaptersInserted = 0;
     let stagesInserted = 0;

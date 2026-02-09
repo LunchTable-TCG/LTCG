@@ -7,13 +7,41 @@
 
 import { getAll } from "convex-helpers/server/relationships";
 import type { Doc, Id } from "../_generated/dataModel";
-import type { MutationCtx } from "../_generated/server";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { JsonCondition, NumericRange } from "../gameplay/effectSystem/types";
 import { recordEventHelper, recordGameEndHelper } from "../gameplay/gameEvents";
 import { getCardAbility } from "./abilityHelpers";
 import { ErrorCode, createError } from "./errorCodes";
 
 export type CardZone = "hand" | "deck" | "board" | "graveyard" | "banished" | "extraDeck";
+
+/**
+ * Resolve a gameId string to a lobbyId.
+ *
+ * Story mode games use string-based gameIds (e.g. "story_<agentId>_<ts>")
+ * while lobby games use the lobbyId directly as gameId. This helper looks up
+ * the gameStates table by the `by_game_id` index and returns the canonical
+ * lobbyId so callers can pass it to handler functions that expect
+ * `Id<"gameLobbies">`.
+ */
+export async function resolveGameIdToLobbyId(
+  ctx: MutationCtx | QueryCtx,
+  gameId: string,
+): Promise<Id<"gameLobbies">> {
+  const gameState = await ctx.db
+    .query("gameStates")
+    .withIndex("by_game_id", (q) => q.eq("gameId", gameId))
+    .first();
+
+  if (!gameState) {
+    throw createError(ErrorCode.GAME_STATE_NOT_FOUND, {
+      reason: "Game not found",
+      gameId,
+    });
+  }
+
+  return gameState.lobbyId;
+}
 
 /**
  * Draw cards from deck to hand

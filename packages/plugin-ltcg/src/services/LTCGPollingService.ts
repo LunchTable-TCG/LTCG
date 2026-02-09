@@ -256,6 +256,9 @@ export class LTCGPollingService extends Service {
   }
 
   async stop(): Promise<void> {
+    // Cleanup active game and stream before stopping
+    await this.cleanupActiveResources();
+
     this.stopPolling();
     this.stopDiscovery();
     this.stopMatchmaking();
@@ -264,6 +267,50 @@ export class LTCGPollingService extends Service {
     this.circuitBreakers.clear();
     this.retryDelays.clear();
     logger.info("Polling service stopped");
+  }
+
+  /**
+   * Cleanup active game and streaming resources on shutdown.
+   * Surrenders any active game and ends any active streaming session
+   * to prevent stale processes from blocking future sessions.
+   */
+  private async cleanupActiveResources(): Promise<void> {
+    if (!this.client) return;
+
+    // Surrender active game if one exists
+    if (this.currentGameId) {
+      try {
+        logger.info({ gameId: this.currentGameId }, "Surrendering active game on shutdown");
+        await this.client.surrender({ gameId: this.currentGameId });
+        logger.info({ gameId: this.currentGameId }, "Game surrendered successfully");
+      } catch (error) {
+        // Non-fatal: game may have already ended
+        logger.warn({ error, gameId: this.currentGameId }, "Failed to surrender game on shutdown (may have already ended)");
+      }
+    }
+
+    // End active streaming session via app API
+    const appUrl = process.env.LTCG_APP_URL;
+    const apiKey = process.env.LTCG_API_KEY;
+    const agentId = process.env.LTCG_AGENT_ID;
+
+    if (appUrl && agentId) {
+      try {
+        logger.info("Ending streaming session on shutdown via app API");
+        await fetch(`${appUrl}/api/streaming/stop`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+          },
+          body: JSON.stringify({ agentId, reason: "agent_shutdown" }),
+        });
+        logger.info("Streaming stop request sent successfully");
+      } catch (error) {
+        // Non-fatal: streaming may not be active
+        logger.warn({ error }, "Failed to stop streaming on shutdown (may not be active)");
+      }
+    }
   }
 
   // ============================================================================
@@ -1058,15 +1105,14 @@ export class LTCGPollingService extends Service {
       SERVICE_TYPES.ORCHESTRATOR
     ) as ITurnOrchestrator | null;
     if (!orchestrator) {
-      if (this.debug) {
-        logger.debug("TurnOrchestrator not available, skipping autonomous action");
-      }
+      logger.warn("TurnOrchestrator not available via runtime.getService, skipping autonomous action");
       return;
     }
 
     try {
       switch (event.type) {
         case "turn_started":
+          logger.info({ gameId: this.currentGameId, phase: fullState.phase, turnNumber: fullState.turnNumber }, "Triggering TurnOrchestrator.onTurnStarted");
           await orchestrator.onTurnStarted(
             this.currentGameId,
             fullState.phase,

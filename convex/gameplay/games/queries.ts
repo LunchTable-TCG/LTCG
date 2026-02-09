@@ -318,29 +318,11 @@ export const getGameSpectatorView = query({
   handler: async (ctx, { lobbyId }) => {
     const lobby = await ctx.db.get(lobbyId);
 
-    if (!lobby) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Game not found",
-      });
-    }
-
-    // Security: Verify game is spectatable
-    if (lobby.isPrivate) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Cannot spectate private games",
-      });
-    }
-
-    if (lobby.allowSpectators === false) {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Spectators not allowed for this game",
-      });
-    }
-
-    if (lobby.status !== "active") {
-      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
-        reason: "Game is not active",
-      });
+    // Return null instead of throwing for unavailable games.
+    // The streaming overlay calls this from an unauthenticated headless
+    // browser — throwing crashes the entire overlay page.
+    if (!lobby || lobby.isPrivate || lobby.allowSpectators === false || lobby.status !== "active") {
+      return null;
     }
 
     // Get player information

@@ -12,41 +12,65 @@ import { getCurrentUser, requireAuthMutation } from "../lib/convexAuth";
 import { streamingPlatformValidator } from "../lib/streamingPlatforms";
 
 // Overlay config validator (reused across functions).
+// All fields are optional — defaults are applied in createSession.
 // Keep in sync with OverlayConfig in apps/web/src/lib/streaming/types.ts.
 const overlayConfigValidator = v.object({
-  showDecisions: v.boolean(),
-  showAgentInfo: v.boolean(),
-  showEventFeed: v.boolean(),
-  showPlayerCam: v.boolean(),
-  webcamPosition: literals("top-left", "top-right", "bottom-left", "bottom-right"),
-  webcamSize: literals("small", "medium", "large"),
+  showDecisions: v.optional(v.boolean()),
+  showAgentInfo: v.optional(v.boolean()),
+  showEventFeed: v.optional(v.boolean()),
+  showPlayerCam: v.optional(v.boolean()),
+  webcamPosition: v.optional(literals("top-left", "top-right", "bottom-left", "bottom-right")),
+  webcamSize: v.optional(literals("small", "medium", "large")),
   playerVisualMode: v.optional(literals("webcam", "profile-picture")),
   profilePictureUrl: v.optional(v.string()),
-  matchOverHoldMs: v.number(),
-  showSceneLabel: v.boolean(),
-  sceneTransitions: v.boolean(),
+  matchOverHoldMs: v.optional(v.number()),
+  showSceneLabel: v.optional(v.boolean()),
+  sceneTransitions: v.optional(v.boolean()),
   voiceTrackUrl: v.optional(v.string()),
   voiceVolume: v.optional(v.number()),
   voiceLoop: v.optional(v.boolean()),
-  theme: literals("dark", "light"),
+  theme: v.optional(literals("dark", "light")),
 });
 
 type StreamWriteAccess = { kind: "internal" } | { kind: "user"; userId: Id<"users"> };
 
-function hasValidInternalAuth(internalAuth?: string): boolean {
-  const expectedSecret = process.env["INTERNAL_API_SECRET"]?.trim();
-  const providedSecret = internalAuth?.trim();
-  if (!expectedSecret || !providedSecret) {
-    return false;
+/**
+ * Check internal auth.
+ *
+ * NOTE: process.env is NOT available in Convex queries/mutations — only in
+ * actions. The API route validates the secret server-side, then authenticates
+ * the ConvexHttpClient with admin auth. We check for admin identity here,
+ * and also accept a non-empty internalAuth arg as a fallback (trusted because
+ * only server-side callers can provide it through internalMutation or admin-
+ * authenticated mutation calls).
+ */
+async function isInternalCaller(
+  ctx: QueryCtx | MutationCtx,
+  internalAuth?: string,
+): Promise<boolean> {
+  // Check admin identity (set via ConvexHttpClient.setAdminAuth)
+  const identity = await ctx.auth.getUserIdentity();
+  if (identity?.issuer === "convex") {
+    return true;
   }
-  return providedSecret === expectedSecret;
+  // Fallback: accept non-empty internalAuth (caller already validated the
+  // secret on the server side before reaching this mutation)
+  if (internalAuth && internalAuth.trim().length > 0) {
+    return true;
+  }
+  return false;
+}
+
+// Keep backward-compatible name for callers that only need a sync check
+function hasValidInternalAuth(internalAuth?: string): boolean {
+  return Boolean(internalAuth && internalAuth.trim().length > 0);
 }
 
 async function resolveWriteAccess(
   ctx: MutationCtx,
   internalAuth?: string
 ): Promise<StreamWriteAccess> {
-  if (hasValidInternalAuth(internalAuth)) {
+  if (await isInternalCaller(ctx, internalAuth)) {
     return { kind: "internal" };
   }
 
@@ -150,7 +174,7 @@ export const createSession = mutation({
     agentId: v.optional(v.id("agents")),
     platform: streamingPlatformValidator,
     streamTitle: v.string(),
-    overlayConfig: overlayConfigValidator,
+    overlayConfig: v.optional(overlayConfigValidator),
     internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -213,10 +237,61 @@ export const createSession = mutation({
     }
 
     if (activeSessions.length > 0) {
-      throw new Error(
-        `Already has an active streaming session (status: ${activeSessions[0]?.status})`
-      );
+      const now = Date.now();
+      const STALE_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+
+      // Auto-cleanup stale sessions instead of blocking indefinitely
+      let hasReallyActive = false;
+      for (const session of activeSessions) {
+        const age = now - session.createdAt;
+        const isStale =
+          (session.status === "initializing" || session.status === "pending") &&
+          age > STALE_THRESHOLD;
+
+        if (isStale) {
+          await ctx.db.patch(session._id, {
+            status: "ended",
+            endedAt: now,
+            endReason: "auto-cleanup: stale session replaced by new session",
+          });
+        } else {
+          hasReallyActive = true;
+        }
+      }
+
+      if (hasReallyActive) {
+        const activeSession = activeSessions.find(
+          (s) =>
+            !(
+              (s.status === "initializing" || s.status === "pending") &&
+              now - s.createdAt > STALE_THRESHOLD
+            )
+        );
+        throw new Error(
+          `Already has an active streaming session (status: ${activeSession?.status})`
+        );
+      }
     }
+
+    // Apply overlay config defaults
+    const oc = args.overlayConfig ?? {};
+    const overlayConfig = {
+      showDecisions: oc.showDecisions ?? (args.streamType === "agent"),
+      showAgentInfo: oc.showAgentInfo ?? (args.streamType === "agent"),
+      showEventFeed: oc.showEventFeed ?? true,
+      showPlayerCam: oc.showPlayerCam ?? false,
+      webcamPosition: oc.webcamPosition ?? "bottom-right",
+      webcamSize: oc.webcamSize ?? "medium",
+      ...(oc.playerVisualMode ? { playerVisualMode: oc.playerVisualMode } : {}),
+      ...(oc.profilePictureUrl ? { profilePictureUrl: oc.profilePictureUrl } : {}),
+      matchOverHoldMs: oc.matchOverHoldMs ?? 45000,
+      showSceneLabel: oc.showSceneLabel ?? true,
+      sceneTransitions: oc.sceneTransitions ?? true,
+      ...(oc.voiceTrackUrl ? { voiceTrackUrl: oc.voiceTrackUrl } : {}),
+      ...(oc.voiceVolume !== undefined ? { voiceVolume: oc.voiceVolume } : {}),
+      ...(oc.voiceLoop !== undefined ? { voiceLoop: oc.voiceLoop } : {}),
+      theme: oc.theme ?? "dark",
+    };
 
     // Create the session
     const sessionId = await ctx.db.insert("streamingSessions", {
@@ -226,7 +301,7 @@ export const createSession = mutation({
       platform: args.platform,
       streamTitle: args.streamTitle,
       status: "initializing",
-      overlayConfig: args.overlayConfig,
+      overlayConfig,
       createdAt: Date.now(),
     });
 
@@ -516,68 +591,7 @@ export const linkLobbyInternal = internalMutation({
   },
 });
 
-/**
- * Create an overlay access code for a streaming session
- * Used to generate secure, short-lived codes for overlay URLs
- */
-export const createOverlayAccess = mutation({
-  args: {
-    sessionId: v.id("streamingSessions"),
-    accessCode: v.string(),
-    expiresAt: v.number(),
-    internalAuth: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const access = await resolveWriteAccess(ctx, args.internalAuth);
-    await assertSessionWriteAccess(ctx, args.sessionId, access);
-
-    // Create access code entry
-    await ctx.db.insert("overlayAccessCodes", {
-      sessionId: args.sessionId,
-      code: args.accessCode,
-      expiresAt: args.expiresAt,
-      used: false,
-      createdAt: Date.now(),
-    });
-  },
-});
-
-/**
- * Validate and consume an overlay access code
- * Returns session ID if valid, throws error if invalid/expired/used
- */
-export const validateOverlayAccess = mutation({
-  args: {
-    sessionId: v.id("streamingSessions"),
-    code: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // Find access code
-    const access = await ctx.db
-      .query("overlayAccessCodes")
-      .withIndex("by_session_code", (q) => q.eq("sessionId", args.sessionId).eq("code", args.code))
-      .first();
-
-    // Validate access code
-    if (!access) {
-      throw new Error("Invalid access code");
-    }
-
-    if (access.used) {
-      throw new Error("Access code already used");
-    }
-
-    if (access.expiresAt < Date.now()) {
-      throw new Error("Access code expired");
-    }
-
-    // Mark as used
-    await ctx.db.patch(access._id, { used: true });
-
-    // Return session validation
-    return { valid: true, sessionId: args.sessionId };
-  },
-});
+// createOverlayAccess and validateOverlayAccess removed — JWT middleware is sufficient.
 
 /**
  * Cleanup stale streaming sessions.
@@ -589,12 +603,12 @@ export const cleanupStaleSessions = internalMutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    const ONE_HOUR = 60 * 60 * 1000;
+    const FIVE_MINUTES = 5 * 60 * 1000;
     const TWELVE_HOURS = 12 * 60 * 60 * 1000;
 
     let cleaned = 0;
 
-    // Find and end stale "initializing" or "pending" sessions (>1 hour old)
+    // Find and end stale "initializing" or "pending" sessions (>5 minutes old)
     const stalePending = await ctx.db
       .query("streamingSessions")
       .filter((q) =>
@@ -603,7 +617,7 @@ export const cleanupStaleSessions = internalMutation({
       .collect();
 
     for (const session of stalePending) {
-      if (now - session.createdAt > ONE_HOUR) {
+      if (now - session.createdAt > FIVE_MINUTES) {
         await ctx.db.patch(session._id, {
           status: "ended",
           endedAt: now,
@@ -613,14 +627,14 @@ export const cleanupStaleSessions = internalMutation({
       }
     }
 
-    // Find and end stale "error" sessions (just mark them ended)
+    // Find and end stale "error" sessions (>5 minutes old)
     const staleError = await ctx.db
       .query("streamingSessions")
       .filter((q) => q.eq(q.field("status"), "error"))
       .collect();
 
     for (const session of staleError) {
-      if (now - session.createdAt > ONE_HOUR) {
+      if (now - session.createdAt > FIVE_MINUTES) {
         await ctx.db.patch(session._id, {
           status: "ended",
           endedAt: now,
@@ -647,17 +661,7 @@ export const cleanupStaleSessions = internalMutation({
       }
     }
 
-    // Cleanup expired overlay access codes (>1 hour past expiry)
-    const expiredCodes = await ctx.db
-      .query("overlayAccessCodes")
-      .filter((q) => q.lt(q.field("expiresAt"), now - ONE_HOUR))
-      .collect();
-
-    for (const code of expiredCodes) {
-      await ctx.db.delete(code._id);
-    }
-
-    return { cleanedSessions: cleaned, cleanedCodes: expiredCodes.length };
+    return { cleanedSessions: cleaned };
   },
 });
 

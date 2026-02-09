@@ -13,6 +13,7 @@ import { internalMutation, mutation } from "../../functions";
 import { getCardAbility, getRawJsonAbility } from "../../lib/abilityHelpers";
 import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { resolveGameIdToLobbyId } from "../../lib/gameHelpers";
 import { validateGameActive } from "../../lib/gameValidation";
 import { type ChainEffect, addToChainHelper } from "../chainResolver";
 import { executeCost, validateCost } from "../effectSystem/costValidator";
@@ -294,7 +295,7 @@ export const activateMonsterEffect = mutation({
 
 export const activateMonsterEffectInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
     cardId: v.id("cardDefinitions"),
     effectIndex: v.optional(v.number()),
     targets: v.optional(v.array(v.id("cardDefinitions"))),
@@ -302,8 +303,8 @@ export const activateMonsterEffectInternal = internalMutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const { userId, ...gameArgs } = args;
-    const user = await getAuthForUser(ctx, userId);
-    return activateMonsterEffectHandler(ctx, gameArgs, user);
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
+    const user = await getAuthForUser(ctx, args.userId);
+    return activateMonsterEffectHandler(ctx, { lobbyId, cardId: args.cardId, effectIndex: args.effectIndex, targets: args.targets, costTargets: args.costTargets }, user);
   },
 });

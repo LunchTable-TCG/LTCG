@@ -306,26 +306,24 @@
 
   "plugins": [
     "@elizaos/plugin-sql",
-    "./dist/index.js",
+    "@elizaos/plugin-ltcg",
     "@elizaos/plugin-openrouter",
     "@elizaos/plugin-bootstrap"
   ],
 
   "settings": {
-    "model": "openrouter:anthropic/claude-3.5-sonnet",
+    "model": "openrouter:z-ai/glm-4.7-flash",
     "embeddingModel": "openai:text-embedding-3-small",
     "temperature": 0.7,
     "maxTokens": 2000,
     "avatar": "https://lunchtable.cards/logo.png",
     "voice": "en-US-Neural2-F",
 
-    "LTCG_API_URL": "https://lunchtable.cards/api",
-    "LTCG_RANKED_MODE": "true",
-    "LTCG_AUTO_MATCHMAKING": "true",
-    "LTCG_MATCHMAKING_INTERVAL": "10000",
+    "LTCG_API_URL": "https://grandiose-viper-981.convex.site",
+    "LTCG_AUTO_MATCHMAKING": "false",
     "LTCG_ADAPTIVE_POLLING": "true",
 
-    "STREAMING_PLATFORM": "retake",
+    "STREAMING_PLATFORM": "pumpfun",
     "STREAMING_AUTO_START": "true",
     "STREAMING_TITLE": "Dizzy Masters LTCG - AI Learning Live!",
     "STREAMING_CATEGORY": "Card Games",

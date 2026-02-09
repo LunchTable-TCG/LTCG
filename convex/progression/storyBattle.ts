@@ -462,15 +462,15 @@ export const initializeStoryBattle = mutation({
       opponentUsername: `AI - ${chapter.title}`,
       mode: "story",
       status: "active",
-      isPrivate: true, // Story games are private
+      isPrivate: false,
       joinCode: `story-${gameId}`,
       // Turn state is initialized in gameStates via initializeGameStateHelper
       lastMoveAt: now, // Keep for timeout tracking
       createdAt: now,
       startedAt: now,
-      allowSpectators: false,
+      allowSpectators: true,
       spectatorCount: 0,
-      maxSpectators: 0,
+      maxSpectators: 100,
     });
 
     // Initialize game state with AI opponent
@@ -884,15 +884,15 @@ export const initializeStoryBattleInternal = internalMutation({
       opponentUsername: `AI - ${chapter.title}`,
       mode: "story",
       status: "active",
-      isPrivate: true,
+      isPrivate: false,
       joinCode: `story-${gameId}`,
       // Turn state is initialized in gameStates via initializeGameStateHelper
       lastMoveAt: now, // Keep for timeout tracking
       createdAt: now,
       startedAt: now,
-      allowSpectators: false,
+      allowSpectators: true,
       spectatorCount: 0,
-      maxSpectators: 0,
+      maxSpectators: 100,
       // Story mode tracking
       stageId: stage._id,
     });
@@ -1095,15 +1095,15 @@ export const quickPlayStoryInternal = internalMutation({
       opponentUsername: `AI - ${chapter.title}`,
       mode: "story",
       status: "active",
-      isPrivate: true,
+      isPrivate: false,
       joinCode: `story-${gameId}`,
       // Turn state is initialized in gameStates via initializeGameStateHelper
       lastMoveAt: now, // Keep for timeout tracking
       createdAt: now,
       startedAt: now,
-      allowSpectators: false,
+      allowSpectators: true,
       spectatorCount: 0,
-      maxSpectators: 0,
+      maxSpectators: 100,
       // Story mode tracking
       stageId: stage._id,
     });

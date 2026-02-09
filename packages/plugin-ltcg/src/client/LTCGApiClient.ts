@@ -429,9 +429,12 @@ export class LTCGApiClient {
    * GET /api/agents/games/history?gameId=xxx
    */
   async getGameHistory(gameId: string): Promise<GameEvent[]> {
-    return this.request<GameEvent[]>(`${API_ENDPOINTS.GET_GAME_HISTORY}?gameId=${gameId}`, {
-      method: "GET",
-    });
+    // API returns { events: GameEvent[], count, limit, offset }, not a raw array
+    const response = await this.request<{ events: GameEvent[]; count: number }>(
+      `${API_ENDPOINTS.GET_GAME_HISTORY}?gameId=${gameId}`,
+      { method: "GET" }
+    );
+    return Array.isArray(response) ? response : (response?.events ?? []);
   }
 
   // ============================================================================

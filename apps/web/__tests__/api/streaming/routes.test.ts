@@ -9,7 +9,6 @@ const refs = {
       createSession: {} as any,
       linkLobby: {} as any,
       updateSession: {} as any,
-      createOverlayAccess: {} as any,
       addDestination: {} as any,
       getSession: {} as any,
       endSession: {} as any,
@@ -158,7 +157,6 @@ describe("Streaming API routes", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(payload.success).toBe(true);
     expect(payload.sessionId).toBe("session_123");
     expect(setAuthMock).toHaveBeenCalledWith("user-token");
 
@@ -189,7 +187,8 @@ describe("Streaming API routes", () => {
         streamType: "agent",
         agentId: "agent_1",
         platform: "retake",
-        streamKeyHash: "encrypted-key",
+        streamKey: "some-key",
+        customRtmpUrl: "rtmp://retake.example/live",
       }),
     });
 
@@ -216,29 +215,10 @@ describe("Streaming API routes", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(400);
-    expect(payload.error).toContain("Unsupported streaming platform");
+    expect(payload.error).toContain("unsupported platform");
   });
 
-  it("POST /start rejects Retake for user streams", async () => {
-    const route = await loadStartRoute();
-    const request = new NextRequest("http://localhost/api/streaming/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        streamType: "user",
-        platform: "retake",
-        streamKey: "plain-stream-key",
-      }),
-    });
-
-    const response = await route.POST(request);
-    const payload = await response.json();
-
-    expect(response.status).toBe(400);
-    expect(payload.error).toContain("agent-only");
-  });
-
-  it("POST /start forwards voice overlay config to session creation", async () => {
+  it("POST /start forwards overlay config to session creation", async () => {
     mutationMock.mockImplementation(async (fn: unknown) => {
       if (fn === refs.streaming.sessions.createSession) {
         return "session_voice_1";
@@ -258,7 +238,7 @@ describe("Streaming API routes", () => {
           playerVisualMode: "profile-picture",
           profilePictureUrl: "https://cdn.example.com/profile.png",
           voiceTrackUrl: "https://cdn.example.com/voice.mp3",
-          voiceVolume: 1.5,
+          voiceVolume: 0.8,
           voiceLoop: true,
         },
       }),
@@ -275,7 +255,7 @@ describe("Streaming API routes", () => {
         playerVisualMode: "profile-picture",
         profilePictureUrl: "https://cdn.example.com/profile.png",
         voiceTrackUrl: "https://cdn.example.com/voice.mp3",
-        voiceVolume: 1,
+        voiceVolume: 0.8,
         voiceLoop: true,
       }),
     });

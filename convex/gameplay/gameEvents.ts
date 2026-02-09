@@ -26,16 +26,30 @@ import { mutation } from "../functions";
  */
 export const getGameEvents = query({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    lobbyId: v.optional(v.id("gameLobbies")),
+    gameId: v.optional(v.string()),
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
   },
-  handler: async (ctx, { lobbyId, limit = 50, offset = 0 }) => {
-    const events = await ctx.db
-      .query("gameEvents")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
-      .order("asc") // Chronological order (oldest first)
-      .collect();
+  handler: async (ctx, { lobbyId, gameId, limit = 50, offset = 0 }) => {
+    if (!lobbyId && !gameId) {
+      throw new Error("Either lobbyId or gameId must be provided");
+    }
+
+    // At least one of lobbyId or gameId is guaranteed non-null by the check above
+    const resolvedGameId = gameId as string;
+
+    const events = lobbyId
+      ? await ctx.db
+          .query("gameEvents")
+          .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+          .order("asc")
+          .collect()
+      : await ctx.db
+          .query("gameEvents")
+          .withIndex("by_game", (q) => q.eq("gameId", resolvedGameId))
+          .order("asc")
+          .collect();
 
     // Apply pagination
     const paginatedEvents = events.slice(offset, offset + limit);

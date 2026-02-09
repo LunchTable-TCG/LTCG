@@ -21,6 +21,7 @@ import { query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
 import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
+import { resolveGameIdToLobbyId } from "../lib/gameHelpers";
 import { type JsonAbility, executeEffect, parseJsonAbility } from "./effectSystem/index";
 import { jsonAbilityValidator } from "./effectSystem/jsonEffectValidators";
 import { checkStateBasedActions } from "./gameEngine/stateBasedActions";
@@ -340,7 +341,7 @@ export const addToChain = mutation({
 
 export const addToChainInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
     cardId: v.id("cardDefinitions"),
     spellSpeed: v.number(),
     effect: jsonAbilityValidator,
@@ -348,9 +349,10 @@ export const addToChainInternal = internalMutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
     const user = await getAuthForUser(ctx, args.userId);
     return await addToChainHelper(ctx, {
-      lobbyId: args.lobbyId,
+      lobbyId,
       cardId: args.cardId,
       playerId: user.userId,
       playerUsername: user.username,
@@ -812,10 +814,11 @@ export const resolveChain = mutation({
 
 export const resolveChainInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
   },
   handler: async (ctx, args) => {
-    return await resolveChainHelper(ctx, args);
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
+    return await resolveChainHelper(ctx, { lobbyId });
   },
 });
 
@@ -920,13 +923,13 @@ export const passPriority = mutation({
 
 export const passPriorityInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const { userId, ...gameArgs } = args;
-    const user = await getAuthForUser(ctx, userId);
-    return passPriorityHandler(ctx, gameArgs, user);
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
+    const user = await getAuthForUser(ctx, args.userId);
+    return passPriorityHandler(ctx, { lobbyId }, user);
   },
 });
 

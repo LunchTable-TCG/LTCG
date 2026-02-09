@@ -86,3 +86,17 @@ Every entry should convert a mistake into a concrete prevention rule.
 - Commit: `79cdb9d`
 - Details: A misplaced agentId validation block was accidentally appended at module scope in controlRoutes.ts, causing parse/type/test failure.
 - Prevention: After each patch touching large route files, run immediate syntax check (tsc --noEmit) before additional edits and inspect file tail with nl -ba to ensure no orphan blocks remain.
+
+## [2026-02-09 14:56 UTC] Mistake: ElizaOS plugin routes need plugin name prefix
+
+- Branch: `main`
+- Commit: `702e010`
+- Details: Tried calling /control/story-mode directly but ElizaOS registerPlugin() prepends /<plugin.name>/ to all route paths. The correct URL is /ltcg/control/story-mode, not /control/story-mode. Wasted significant time guessing URL patterns.
+- Prevention: Always check ElizaOS skill docs for route namespacing. Routes are at /<plugin-name>/<path>, e.g. /ltcg/control/story-mode
+
+## [2026-02-09 14:56 UTC] Mistake: API client response shape mismatch with server
+
+- Branch: `main`
+- Commit: `702e010`
+- Details: getGameHistory() in LTCGApiClient expected GameEvent[] but server returns successResponse({events, count, limit, offset}). Client request<T> extracts .data, yielding {events: [...]} not a raw array. Caused history.filter is not a function error that completely blocked TurnOrchestrator from executing moves.
+- Prevention: When adding API client methods, always verify the server handler's successResponse() shape matches the client's type parameter T. The client extracts .data from the wrapper.

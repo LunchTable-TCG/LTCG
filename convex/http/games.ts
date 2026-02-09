@@ -438,7 +438,7 @@ export const gameHistory = authHttpAction(async (ctx, request, _auth) => {
 
     // Get game events
     const events = await runGameQuery<unknown[]>(ctx, "gameplay.gameEvents.getGameEvents", {
-      lobbyId: gameId,
+      gameId,
       limit,
       offset,
     });
@@ -564,7 +564,7 @@ export const setCard = authHttpAction(async (ctx, request, auth) => {
     const result: SetCardMutationResult = await ctx.runMutation(
       internalAny.gameplay.gameEngine.summons.setMonsterInternal,
       {
-        lobbyId: body.gameId as Id<"gameLobbies">,
+        gameId: body.gameId,
         cardId: body.cardId as Id<"cardDefinitions">,
         tributeCardIds: body.tributeCardIds as Id<"cardDefinitions">[] | undefined,
         userId: auth.userId,
@@ -639,7 +639,7 @@ export const flipSummonMonster = authHttpAction(async (ctx, request, auth) => {
     const result: FlipSummonMutationResult = await ctx.runMutation(
       internalAny.gameplay.gameEngine.summons.flipSummonInternal,
       {
-        lobbyId: body.gameId as Id<"gameLobbies">,
+        gameId: body.gameId,
         cardId: body.cardId as Id<"cardDefinitions">,
         newPosition: body.newPosition,
         userId: auth.userId,
@@ -705,7 +705,7 @@ export const changeMonsterPosition = authHttpAction(async (ctx, request, auth) =
     const result: ChangePositionResult = await ctx.runMutation(
       internalAny.gameplay.gameEngine.positions.changePositionInternal,
       {
-        lobbyId: body.gameId as Id<"gameLobbies">,
+        gameId: body.gameId,
         cardId: body.cardId as Id<"cardDefinitions">,
         userId: auth.userId,
       }
@@ -778,7 +778,7 @@ export const setSpellTrapCard = authHttpAction(async (ctx, request, auth) => {
     const result: SetSpellTrapResult = await ctx.runMutation(
       internalAny.gameplay.gameEngine.spellsTraps.setSpellTrapInternal,
       {
-        lobbyId: body.gameId as Id<"gameLobbies">,
+        gameId: body.gameId,
         cardId: body.cardId as Id<"cardDefinitions">,
         userId: auth.userId,
       }
@@ -840,7 +840,7 @@ export const activateSpellCard = authHttpAction(async (ctx, request, auth) => {
     const result: ActivateSpellResult = await ctx.runMutation(
       internalAny.gameplay.gameEngine.spellsTraps.activateSpellInternal,
       {
-        lobbyId: body.gameId as Id<"gameLobbies">,
+        gameId: body.gameId,
         cardId: body.cardId as Id<"cardDefinitions">,
         targets: body.targets as Id<"cardDefinitions">[] | undefined,
         userId: auth.userId,
@@ -918,7 +918,7 @@ export const activateTrapCard = authHttpAction(async (ctx, request, auth) => {
     const result: ActivateTrapResult = await ctx.runMutation(
       internalAny.gameplay.gameEngine.spellsTraps.activateTrapInternal,
       {
-        lobbyId: body.gameId as Id<"gameLobbies">,
+        gameId: body.gameId,
         cardId: body.cardId as Id<"cardDefinitions">,
         targets: body.targets as Id<"cardDefinitions">[] | undefined,
         userId: auth.userId,
@@ -994,7 +994,7 @@ export const chainResponse = authHttpAction(async (ctx, request, auth) => {
       const result: PassPriorityResult = await ctx.runMutation(
         internalAny.gameplay.chainResolver.passPriorityInternal,
         {
-          lobbyId: body.gameId as Id<"gameLobbies">,
+          gameId: body.gameId,
           userId: auth.userId,
         }
       );
@@ -1377,7 +1377,7 @@ export const surrenderGame = authHttpAction(async (ctx, request, auth) => {
 
     // Execute surrender via game lifecycle
     await ctx.runMutation(internalAny.gameplay.games.lifecycle.surrenderGameInternal, {
-      lobbyId: body.gameId as Id<"gameLobbies">,
+      gameId: body.gameId,
       userId: auth.userId,
     });
 
@@ -1430,7 +1430,7 @@ export const activateMonsterEffect = authHttpAction(async (ctx, request, auth) =
     const result = await ctx.runMutation(
       internalAny.gameplay.gameEngine.monsterEffects.activateMonsterEffectInternal,
       {
-        lobbyId: body["gameId"] as Id<"gameLobbies">,
+        gameId: body["gameId"] as string,
         cardId: body["cardId"] as Id<"cardDefinitions">,
         effectIndex: body["effectIndex"] as number | undefined,
         targets: body["targets"] as Id<"cardDefinitions">[] | undefined,
@@ -1482,7 +1482,7 @@ export const chainAdd = authHttpAction(async (ctx, request, auth) => {
     if (validation) return validation;
 
     const result = await ctx.runMutation(internalAny.gameplay.chainResolver.addToChainInternal, {
-      lobbyId: body["lobbyId"] as Id<"gameLobbies">,
+      gameId: (body["gameId"] || body["lobbyId"]) as string,
       cardId: body["cardId"] as Id<"cardDefinitions">,
       spellSpeed: body["spellSpeed"] as number,
       effect: body["effect"],
@@ -1530,7 +1530,7 @@ export const chainResolve = authHttpAction(async (ctx, request, _auth) => {
     if (validation) return validation;
 
     const result = await ctx.runMutation(internalAny.gameplay.chainResolver.resolveChainInternal, {
-      lobbyId: body["lobbyId"] as Id<"gameLobbies">,
+      gameId: (body["gameId"] || body["lobbyId"]) as string,
     });
 
     return successResponse(result);

@@ -17,6 +17,7 @@ import { internalMutation, mutation } from "../../functions";
 import { getCardAbility, getRawJsonAbility } from "../../lib/abilityHelpers";
 import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { resolveGameIdToLobbyId } from "../../lib/gameHelpers";
 import { validateGameActive } from "../../lib/gameValidation";
 import { getSpellSpeed } from "../../lib/spellSpeedHelper";
 import { type ChainEffect, addToChainHelper } from "../chainResolver";
@@ -169,14 +170,14 @@ export const setSpellTrap = mutation({
 
 export const setSpellTrapInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
     cardId: v.id("cardDefinitions"),
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const { userId, ...gameArgs } = args;
-    const user = await getAuthForUser(ctx, userId);
-    return setSpellTrapHandler(ctx, gameArgs, user);
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
+    const user = await getAuthForUser(ctx, args.userId);
+    return setSpellTrapHandler(ctx, { lobbyId, cardId: args.cardId }, user);
   },
 });
 
@@ -623,7 +624,7 @@ export const activateSpell = mutation({
 
 export const activateSpellInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
     cardId: v.id("cardDefinitions"),
     targets: v.optional(v.array(v.id("cardDefinitions"))),
     costTargets: v.optional(v.array(v.id("cardDefinitions"))),
@@ -631,9 +632,9 @@ export const activateSpellInternal = internalMutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const { userId, ...gameArgs } = args;
-    const user = await getAuthForUser(ctx, userId);
-    return activateSpellHandler(ctx, gameArgs, user);
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
+    const user = await getAuthForUser(ctx, args.userId);
+    return activateSpellHandler(ctx, { lobbyId, cardId: args.cardId, targets: args.targets, costTargets: args.costTargets, effectIndex: args.effectIndex }, user);
   },
 });
 
@@ -961,7 +962,7 @@ export const activateTrap = mutation({
 
 export const activateTrapInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
     cardId: v.id("cardDefinitions"),
     targets: v.optional(v.array(v.id("cardDefinitions"))),
     costTargets: v.optional(v.array(v.id("cardDefinitions"))),
@@ -969,8 +970,8 @@ export const activateTrapInternal = internalMutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const { userId, ...gameArgs } = args;
-    const user = await getAuthForUser(ctx, userId);
-    return activateTrapHandler(ctx, gameArgs, user);
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
+    const user = await getAuthForUser(ctx, args.userId);
+    return activateTrapHandler(ctx, { lobbyId, cardId: args.cardId, targets: args.targets, costTargets: args.costTargets, effectIndex: args.effectIndex }, user);
   },
 });

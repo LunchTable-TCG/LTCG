@@ -210,3 +210,9 @@ Use this file for patterns, wins, and technical observations worth repeating.
 - Branch: `main`
 - Commit: `79cdb9d`
 - Details: Added GlobalChatService auto-reply loop with mention-only gating, alias support, cooldowns, and model-generated replies; wired config keys + plugin registration and added service tests proving no-reply without mention and reply-on-mention.
+
+## [2026-02-09 14:57 UTC] Observation: LTCG agent testing workflow
+
+- Branch: `main`
+- Commit: `702e010`
+- Details: To test the LTCG ElizaOS agent: 1) Build plugin: cd packages/plugin-ltcg && bun run build. 2) Start: elizaos start (from plugin dir). 3) Trigger story mode: curl -X POST http://localhost:3000/ltcg/control/story-mode -H 'Content-Type: application/json' -d '{"chapterNumber":1,"stageNumber":1}'. 4) Check status: curl http://localhost:3000/ltcg/control/status. 5) Logs: tee /tmp/ltcg-fg.log. Key: route URLs are /<plugin-name>/<path>, NOT just /<path>.

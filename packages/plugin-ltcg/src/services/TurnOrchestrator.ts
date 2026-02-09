@@ -47,6 +47,11 @@ interface ActionDecision {
   parameters?: Record<string, unknown>;
 }
 
+interface FailedAction {
+  action: string;
+  reason: string;
+}
+
 interface TurnContext {
   gameState: GameStateResponse;
   availableActions: AvailableActionsResponse;
@@ -57,6 +62,7 @@ interface TurnContext {
   phase: string;
   turnNumber: number;
   lifePoints: { agent: number; opponent: number };
+  failedActions: FailedAction[];
 }
 
 export class TurnOrchestrator extends Service {
@@ -179,6 +185,8 @@ export class TurnOrchestrator extends Service {
    */
   private async executeTurn(gameId: string): Promise<void> {
     let actionCount = 0;
+    const failedActions: FailedAction[] = [];
+    let consecutiveFailures = 0;
 
     while (actionCount < this.maxActionsPerTurn) {
       actionCount++;
@@ -191,8 +199,11 @@ export class TurnOrchestrator extends Service {
         break;
       }
 
-      // Check if it's still our turn
-      if (context.gameState.currentTurn !== "host") {
+      // Pass accumulated failed actions to LLM so it knows what already failed
+      context.failedActions = failedActions;
+
+      // Check if it's still our turn (use isMyTurn which works for both host and opponent roles)
+      if (!context.gameState.isMyTurn) {
         logger.info("No longer our turn, ending turn execution");
         break;
       }
@@ -200,6 +211,15 @@ export class TurnOrchestrator extends Service {
       // Check if game ended
       if (context.gameState.status === "completed") {
         logger.info("Game completed during turn");
+        break;
+      }
+
+      // If server says no actions available (other than END_TURN), just end turn
+      const serverActions = context.availableActions?.actions ?? [];
+      const nonEndActions = serverActions.filter(a => a.action !== "end_turn");
+      if (nonEndActions.length === 0) {
+        logger.info("Server reports no actions available, ending turn");
+        await this.executeEndTurn(gameId);
         break;
       }
 
@@ -235,8 +255,24 @@ export class TurnOrchestrator extends Service {
       const success = await this.executeAction(gameId, decision, context);
 
       if (!success) {
-        logger.warn({ action: decision.action }, "Action failed, will try again");
-        // Don't break - let the LLM try a different action
+        consecutiveFailures++;
+        failedActions.push({
+          action: decision.action,
+          reason: `${decision.action} with card ${decision.parameters?.cardId ?? "unknown"} failed`,
+        });
+        logger.warn(
+          { action: decision.action, consecutiveFailures, totalFailed: failedActions.length },
+          "Action failed, tracking for LLM context"
+        );
+
+        // If 3+ consecutive failures, force end turn to avoid infinite loop
+        if (consecutiveFailures >= 3) {
+          logger.warn("3 consecutive failures, forcing end turn");
+          await this.executeEndTurn(gameId);
+          break;
+        }
+      } else {
+        consecutiveFailures = 0; // Reset on success
       }
 
       // Small delay to avoid hammering the API
@@ -273,7 +309,7 @@ export class TurnOrchestrator extends Service {
       const [gameState, availableActions, gameHistory] = await Promise.all([
         this.client.getGameState(gameId),
         this.client.getAvailableActions(gameId),
-        this.client.getGameHistory(gameId).catch(() => [] as GameEvent[]),
+        this.client.getGameHistory(gameId).then(h => Array.isArray(h) ? h : []).catch(() => [] as GameEvent[]),
       ]);
 
       // Build context strings
@@ -295,6 +331,7 @@ export class TurnOrchestrator extends Service {
           agent: gameState.myLifePoints ?? 8000,
           opponent: gameState.opponentLifePoints ?? 8000,
         },
+        failedActions: [],
       };
     } catch (error) {
       logger.error({ error, gameId }, "Failed to gather turn context");
@@ -884,9 +921,10 @@ export class TurnOrchestrator extends Service {
 
     try {
       const response = await this.runtime.useModel(ModelType.TEXT_LARGE, {
-        prompt,
+        prompt: `SYSTEM: You are a JSON-only game AI. You MUST respond with a single JSON object and nothing else. No markdown, no code fences, no explanation outside the JSON.\n\n${prompt}`,
         temperature: 0.7,
         maxTokens: 500,
+        responseFormat: { type: "json_object" },
       });
 
       const decision = this.parseActionDecision(response);
@@ -991,41 +1029,53 @@ Choose wisely!`;
   }
 
   /**
-   * Format available actions for the prompt
+   * Format available actions for the prompt using server-provided actions
    */
   private formatAvailableActions(context: TurnContext): string {
-    const { gameState } = context;
     const lines: string[] = [];
+    const serverActions = context.availableActions?.actions ?? [];
 
-    // Check what can be done based on game state
-    const hasNormalSummoned = gameState.hasNormalSummoned;
-    const phase = gameState.phase;
+    // Map server action names to LLM action names with descriptions
+    const actionMap: Record<string, string> = {
+      summon: "SUMMON_MONSTER - Normal summon a monster from your hand (use cardId)",
+      set_monster: "SET_CARD - Set a monster face-down in defense position (use cardId)",
+      set_spell_trap: "SET_CARD - Set a spell or trap face-down (use cardId)",
+      activate_spell: "ACTIVATE_SPELL - Activate a spell card (use cardId)",
+      activate_trap: "ACTIVATE_TRAP - Activate a trap card (use cardId)",
+      flip_summon: "FLIP_SUMMON - Flip summon a face-down defense monster (use cardId)",
+      change_position: "CHANGE_POSITION - Change a monster from ATK to DEF or vice versa (use cardId)",
+      attack: "ATTACK - Attack with a monster (use attackerCardId)",
+      end_turn: "END_TURN - End your turn and pass to opponent",
+    };
 
-    if (!hasNormalSummoned && (phase === "main1" || phase === "main2")) {
-      lines.push("• SUMMON_MONSTER - Normal summon a monster from your hand (use cardId)");
-    }
-
-    if (phase === "main1" || phase === "main2") {
-      lines.push("• SET_CARD - Set a monster, spell, or trap face-down (use cardId)");
-      lines.push("• ACTIVATE_SPELL - Activate a spell card (use cardId)");
-      lines.push("• FLIP_SUMMON - Flip summon a face-down defense monster (use cardId)");
-      lines.push(
-        "• CHANGE_POSITION - Change a monster from ATK to DEF or vice versa (use cardId)"
-      );
-    }
-
-    if (phase === "battle") {
-      const attackers = (gameState.myBoard ?? []).filter(
-        (m: BoardCard) => m.position === 1 && !m.hasAttacked
-      );
-      if (attackers.length > 0) {
-        lines.push(
-          `• ATTACK - Attack with your monsters (${attackers.length} can attack, use attackerCardId)`
-        );
+    const seen = new Set<string>();
+    for (const serverAction of serverActions) {
+      const mapped = actionMap[serverAction.action];
+      if (mapped && !seen.has(mapped)) {
+        seen.add(mapped);
+        // Include available card count if provided
+        const cardInfo = serverAction.availableCards?.length
+          ? ` [${serverAction.availableCards.length} eligible cards]`
+          : "";
+        lines.push(`• ${mapped}${cardInfo}`);
       }
     }
 
-    lines.push("• END_TURN - End your turn and pass to opponent");
+    // Always include END_TURN as an option
+    const endTurnLine = "END_TURN - End your turn and pass to opponent";
+    if (!seen.has(endTurnLine)) {
+      lines.push(`• ${endTurnLine}`);
+    }
+
+    // Add failed actions warning if any
+    if (context.failedActions.length > 0) {
+      lines.push("");
+      lines.push("⚠️ ALREADY FAILED THIS TURN (do NOT retry these):");
+      for (const failed of context.failedActions) {
+        lines.push(`  ✗ ${failed.reason}`);
+      }
+      lines.push("Choose a DIFFERENT action or END_TURN.");
+    }
 
     return lines.join("\n");
   }
@@ -1434,7 +1484,7 @@ Choose wisely!`;
     try {
       await this.client?.attack({
         gameId,
-        attackerCardId: attackerCardId!,
+        attackerCardId,
         targetCardId,
       });
 
@@ -1587,9 +1637,10 @@ Should you chain? Consider the strategic value.
 Respond with JSON: {"chain": true/false, "cardId": "card_id"}`;
 
       const response = await this.runtime.useModel(ModelType.TEXT_SMALL, {
-        prompt,
+        prompt: `SYSTEM: You are a JSON-only game AI. Respond with a single JSON object only.\n\n${prompt}`,
         temperature: 0.3,
         maxTokens: 100,
+        responseFormat: { type: "json_object" },
       });
 
       try {

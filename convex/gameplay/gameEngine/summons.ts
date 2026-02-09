@@ -17,7 +17,7 @@ import { internalMutation, mutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
-
+import { resolveGameIdToLobbyId } from "../../lib/gameHelpers";
 import { validateGameActive } from "../../lib/gameValidation";
 import { validateMonsterZone } from "../../lib/validation";
 import { executeEffect } from "../effectSystem";
@@ -644,15 +644,15 @@ export const setMonster = mutation({
 
 export const setMonsterInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
     cardId: v.id("cardDefinitions"),
     tributeCardIds: v.optional(v.array(v.id("cardDefinitions"))),
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const { userId, ...gameArgs } = args;
-    const user = await getAuthForUser(ctx, userId);
-    return setMonsterHandler(ctx, gameArgs, user);
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
+    const user = await getAuthForUser(ctx, args.userId);
+    return setMonsterHandler(ctx, { lobbyId, cardId: args.cardId, tributeCardIds: args.tributeCardIds }, user);
   },
 });
 
@@ -843,15 +843,15 @@ export const flipSummon = mutation({
 
 export const flipSummonInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
     cardId: v.id("cardDefinitions"),
     newPosition: v.union(v.literal("attack"), v.literal("defense")),
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const { userId, ...gameArgs } = args;
-    const user = await getAuthForUser(ctx, userId);
-    return flipSummonHandler(ctx, gameArgs, user);
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
+    const user = await getAuthForUser(ctx, args.userId);
+    return flipSummonHandler(ctx, { lobbyId, cardId: args.cardId, newPosition: args.newPosition }, user);
   },
 });
 

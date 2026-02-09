@@ -148,7 +148,6 @@ function getSceneLabel(scene: OverlayScene): string {
 function StreamOverlayContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId");
-  const code = searchParams.get("code");
   const token = searchParams.get("token");
   const roomName = searchParams.get("roomName");
   const livekitUrl = searchParams.get("livekitUrl");
@@ -158,9 +157,6 @@ function StreamOverlayContent() {
   const isPreview = previewState !== null;
   const disableMotion = isPreview || searchParams.get("static") === "1";
   const [isReady, setIsReady] = useState(false);
-  const [isValidating, setIsValidating] = useState(!isPreview);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [validatedToken, setValidatedToken] = useState<string | null>(null);
 
   // Get streaming session
   const session = useQuery(
@@ -207,57 +203,9 @@ function StreamOverlayContent() {
       : "skip"
   );
 
-  // Validate access code on mount
-  useEffect(() => {
-    if (isPreview) {
-      setIsValidating(false);
-      setValidationError(null);
-      return;
-    }
-
-    const validateAccess = async () => {
-      if (!sessionId || !code) {
-        setValidationError("Missing session ID or access code");
-        setIsValidating(false);
-        return;
-      }
-
-      try {
-        const response = await fetch("/api/streaming/validate-overlay", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, code }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.valid) {
-          // In headless/streaming environment, allow to proceed if we have sessionId
-          console.warn("Validation failed, but allowing access for streaming:", data.error);
-          setIsValidating(false);
-          return;
-        }
-
-        // Access code is valid - store token if provided
-        if (token) {
-          setValidatedToken(token);
-        }
-
-        setIsValidating(false);
-      } catch (error) {
-        // In headless/streaming environment, network failures are common
-        // Allow overlay to proceed if we have sessionId
-        console.error("Validation request failed (headless environment?):", error);
-        setIsValidating(false);
-      }
-    };
-
-    validateAccess();
-  }, [isPreview, sessionId, code, token]);
-
   // Signal LiveKit when overlay is ready
   useEffect(() => {
-    if (!isPreview && session && !isReady && !isValidating && !validationError) {
+    if (!isPreview && session && !isReady) {
       setIsReady(true);
       // Wait a brief moment for rendering to complete
       setTimeout(() => {
@@ -267,7 +215,7 @@ function StreamOverlayContent() {
         }
       }, 1000);
     }
-  }, [isPreview, session, isReady, isValidating, validationError]);
+  }, [isPreview, session, isReady]);
 
   // Keep a near-silent audio signal active so RTMP destinations that require an audio track
   // (like Retake's player pipeline) always receive one, even in no-voice scenes.
@@ -368,25 +316,6 @@ function StreamOverlayContent() {
     }
   }, [voiceVolumeRaw]);
 
-  // Show validation status
-  if (!isPreview && isValidating) {
-    return (
-      <div className="stream-overlay-loading">
-        <div className="spinner" />
-        <p>Validating access...</p>
-      </div>
-    );
-  }
-
-  if (!isPreview && validationError) {
-    return (
-      <div className="stream-overlay-error">
-        <h1>Access Denied</h1>
-        <p>{validationError}</p>
-      </div>
-    );
-  }
-
   if (!isPreview && !sessionId) {
     return (
       <div className="stream-overlay-error">
@@ -443,9 +372,9 @@ function StreamOverlayContent() {
   }
 
   // LiveKit composite mode - for user streams with screen share + webcam
-  if (!isPreview && useLiveKitComposite && roomName && livekitUrl && validatedToken && sessionId) {
+  if (!isPreview && useLiveKitComposite && roomName && livekitUrl && token && sessionId) {
     return (
-      <LiveKitRoom token={validatedToken} serverUrl={livekitUrl} connect={true}>
+      <LiveKitRoom token={token} serverUrl={livekitUrl} connect={true}>
         <StreamCompositeView sessionId={sessionId} />
       </LiveKitRoom>
     );

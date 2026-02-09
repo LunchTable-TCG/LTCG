@@ -77,22 +77,19 @@ export function LiveStreamingRoom({
     setIsCreatingRoom(true);
 
     try {
-      // Create LiveKit room
-      const response = await fetch("/api/streaming/room", {
+      const authToken = await getAccessToken();
+      const response = await fetch("/api/streaming/start", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(await (async () => {
-            const token = await getAccessToken();
-            return token ? { Authorization: `Bearer ${token}` } : {};
-          })()),
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
           userId,
           agentId,
           streamType,
           platform,
-          ...(useStoredCredentials ? { useStoredCredentials: true } : { streamKey, customRtmpUrl }),
+          ...(useStoredCredentials ? {} : { streamKey, customRtmpUrl }),
           streamTitle: `${values.username}'s Stream`,
           overlayConfig: {
             showDecisions: streamType === "agent",
@@ -103,13 +100,9 @@ export function LiveStreamingRoom({
             profilePictureUrl,
             webcamPosition,
             webcamSize,
-            matchOverHoldMs: 45000,
-            showSceneLabel: true,
-            sceneTransitions: true,
             voiceTrackUrl,
             voiceVolume,
             voiceLoop,
-            theme: "dark",
           },
         }),
       });
@@ -117,16 +110,16 @@ export function LiveStreamingRoom({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create room");
+        throw new Error(data.error || "Failed to start stream");
       }
 
-      setToken(data.token);
-      setLivekitUrl(data.livekitUrl);
+      setToken(data.overlayToken || "");
+      setLivekitUrl(data.overlayUrl || "");
       setSessionId(data.sessionId);
 
       onStreamStarted?.(data.sessionId);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to create room";
+      const message = err instanceof Error ? err.message : "Failed to start stream";
       onError?.(message);
       setIsCreatingRoom(false);
     }

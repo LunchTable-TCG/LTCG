@@ -8,6 +8,7 @@ import { completedGamesCounter } from "../../infrastructure/shardedCounters";
 import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../../lib/convexAuth";
 import { shuffleArray } from "../../lib/deterministicRandom";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { resolveGameIdToLobbyId } from "../../lib/gameHelpers";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
 import { updateAgentStatsAfterGame, updatePlayerStatsAfterGame } from "./stats";
 
@@ -513,13 +514,13 @@ export const surrenderGame = mutation({
 
 export const surrenderGameInternal = internalMutation({
   args: {
-    lobbyId: v.id("gameLobbies"),
+    gameId: v.string(),
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const { userId, ...gameArgs } = args;
-    const user = await getAuthForUser(ctx, userId);
-    return surrenderGameHandler(ctx, gameArgs, user);
+    const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
+    const user = await getAuthForUser(ctx, args.userId);
+    return surrenderGameHandler(ctx, { lobbyId }, user);
   },
 });
 
