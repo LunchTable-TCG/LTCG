@@ -1419,25 +1419,26 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
         }
       }
 
+      // Summon before entering battle — build board presence each turn
+      if (canTry("SUMMON_MONSTER")) {
+        const summonCardId = this.selectSummonCardId(context);
+        if (summonCardId) {
+          return {
+            action: "SUMMON_MONSTER",
+            reasoning: "Summoning monster before battle phase",
+            parameters: { cardId: summonCardId, position: "attack" },
+          };
+        }
+      }
+
       const attackersReady = (context.gameState.myBoard ?? []).some(
         (m: BoardCard) => !m.isFaceDown && m.position === 1 && !m.hasAttacked
       );
       if (attackersReady && canTry("ENTER_BATTLE_PHASE")) {
         return {
           action: "ENTER_BATTLE_PHASE",
-          reasoning: "Attacker available, entering battle phase deterministically",
+          reasoning: "Attacker available, entering battle phase",
         };
-      }
-
-      if (canTry("SUMMON_MONSTER")) {
-        const summonCardId = this.selectSummonCardId(context);
-        if (summonCardId) {
-          return {
-            action: "SUMMON_MONSTER",
-            reasoning: "Using deterministic summon fallback in main phase 1",
-            parameters: { cardId: summonCardId, position: "attack" },
-          };
-        }
       }
 
       if (canTry("SET_CARD")) {
