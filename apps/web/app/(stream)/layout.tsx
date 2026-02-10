@@ -1,33 +1,16 @@
-import { Cinzel, Crimson_Text } from "next/font/google";
-import "../globals.css";
 import { StreamConvexProvider } from "./providers";
 
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
-  subsets: ["latin"],
-});
-
-const crimsonText = Crimson_Text({
-  weight: ["400", "600", "700"],
-  variable: "--font-crimson",
-  subsets: ["latin"],
-});
-
 /**
- * Minimal layout for streaming overlays.
- * No Privy auth, no LayoutWrapper — just a bare ConvexProvider
- * so overlay pages can subscribe to queries without authentication.
+ * Route-group layout for streaming overlays.
+ *
+ * This does NOT render <html>/<body> — the root layout already does that.
+ * We just override the Convex provider so overlay pages get a plain
+ * ConvexProvider (no Privy auth) for unauthenticated spectator queries.
  */
 export default function StreamLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body className={`${cinzel.variable} ${crimsonText.variable}`}>
-        <StreamConvexProvider>{children}</StreamConvexProvider>
-      </body>
-    </html>
-  );
+  return <StreamConvexProvider>{children}</StreamConvexProvider>;
 }
