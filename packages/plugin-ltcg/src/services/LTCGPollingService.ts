@@ -98,6 +98,7 @@ export class LTCGPollingService extends Service {
   private currentStageId: string | null = null;
   /** Active streaming session ID (set via startPollingGame metadata) */
   private currentStreamingSessionId: string | null = null;
+  private lastKnownGameState: GameStateResponse | null = null;
   private lastSnapshot: GameStateSnapshot | null = null;
   private intervalMs: number;
   private discoveryIntervalMs: number;
@@ -399,6 +400,7 @@ export class LTCGPollingService extends Service {
     this.currentStageId = null;
     this.currentStreamingSessionId = null;
     this.lastSnapshot = null;
+    this.lastKnownGameState = null;
 
     // Clear per-game recovery state to avoid stale open circuits after game completion.
     if (activeGameId) {
@@ -418,8 +420,16 @@ export class LTCGPollingService extends Service {
    */
   private async handleGameEnd(gameState: GameStateResponse | null): Promise<void> {
     const agentWon = gameState ? this.didAgentWin(gameState) : false;
-    const playerLP = gameState?.hostPlayer?.lifePoints ?? 0;
+    const playerLP = gameState?.myLifePoints ?? gameState?.hostPlayer?.lifePoints ?? 0;
     const result: "win" | "loss" = agentWon ? "win" : "loss";
+
+    logger.info({
+      myLP: gameState?.myLifePoints,
+      oppLP: gameState?.opponentLifePoints,
+      agentWon,
+      result,
+      status: gameState?.status,
+    }, "Game ended — evaluating result");
 
     // 1. Complete story stage (unlocks next stage)
     if (this.currentStageId && this.client) {
@@ -959,7 +969,8 @@ export class LTCGPollingService extends Service {
 
     if (gameNotFound) {
       logger.info({ gameId }, "Game no longer exists, stopping polling and clearing active game");
-      await this.handleGameEnd(null);
+      // Use last known game state for win detection (LP values)
+      await this.handleGameEnd(this.lastKnownGameState);
       this.stopPolling();
       return;
     }
@@ -968,6 +979,9 @@ export class LTCGPollingService extends Service {
       // Failed to get game state - error recovery handles logging
       return;
     }
+
+    // Save for win detection when game becomes 404
+    this.lastKnownGameState = gameState;
 
     const newSnapshot = this.createSnapshot(gameState);
 
@@ -1134,15 +1148,22 @@ export class LTCGPollingService extends Service {
    * Check if agent won the game
    */
   private didAgentWin(state: GameStateResponse): boolean {
-    // Check extended state for winner info
+    // Check explicit winner field if present
     interface ExtendedGameState extends GameStateResponse {
       winner?: string;
       [key: string]: string | number | boolean | undefined | unknown;
     }
     const extState = state as ExtendedGameState;
     if (extState.winner) {
-      const agentPlayerId = state.hostPlayer?.playerId;
+      const agentPlayerId = state.myPlayerId ?? state.hostPlayer?.playerId;
       return extState.winner === agentPlayerId;
+    }
+
+    // Fallback: compare life points — agent wins if opponent LP is 0
+    if (state.opponentLifePoints !== undefined && state.myLifePoints !== undefined) {
+      if (state.opponentLifePoints <= 0 && state.myLifePoints > 0) {
+        return true;
+      }
     }
     return false;
   }
