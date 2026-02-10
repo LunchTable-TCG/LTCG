@@ -72,6 +72,12 @@ export async function middleware(request: NextRequest) {
 
   // Validate JWT token for stream overlay pages
   if (pathname.startsWith("/stream/overlay")) {
+    // Allow probe methods used by egress/browser health checks.
+    // Enforcing redirect-based auth on HEAD/OPTIONS causes false offline flaps.
+    if (request.method === "HEAD" || request.method === "OPTIONS") {
+      return NextResponse.next();
+    }
+
     const previewMode = request.nextUrl.searchParams.get("preview");
     const isOverlayPreview =
       previewMode === "live" || previewMode === "waiting" || previewMode === "error";

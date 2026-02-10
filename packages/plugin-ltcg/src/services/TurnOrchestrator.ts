@@ -28,6 +28,40 @@ import {
 } from "../utils/probabilityCalculator";
 import { SERVICE_TYPES } from "./types";
 
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function resolveDecisionModelType(value: string | undefined) {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "large" || normalized === "text_large") {
+    return ModelType.TEXT_LARGE;
+  }
+  return ModelType.TEXT_SMALL;
+}
+
+function resolveMonsterLevel(card: CardInHand): number {
+  const level =
+    typeof card.cost === "number"
+      ? card.cost
+      : typeof card.level === "number"
+        ? card.level
+        : 0;
+  return Number.isFinite(level) ? level : 0;
+}
+
+function resolveTributeRequirement(card: CardInHand): number {
+  const level = resolveMonsterLevel(card);
+  if (level >= 7) {
+    return 2;
+  }
+  if (level >= 5) {
+    return 1;
+  }
+  return 0;
+}
+
 // Action types the orchestrator can choose
 export type OrchestratorAction =
   | "SUMMON_MONSTER"
@@ -35,6 +69,8 @@ export type OrchestratorAction =
   | "ACTIVATE_SPELL"
   | "ACTIVATE_TRAP"
   | "ATTACK"
+  | "ENTER_BATTLE_PHASE"
+  | "ENTER_MAIN_PHASE_2"
   | "CHANGE_POSITION"
   | "FLIP_SUMMON"
   | "END_TURN"
@@ -45,6 +81,7 @@ interface ActionDecision {
   action: OrchestratorAction;
   reasoning: string;
   parameters?: Record<string, unknown>;
+  source?: "heuristic" | "llm" | "fallback";
 }
 
 interface FailedAction {
@@ -71,11 +108,41 @@ export class TurnOrchestrator extends Service {
   // Note: runtime is inherited from Service base class as protected
   private client: LTCGApiClient | null = null;
   private isExecutingTurn = false;
-  private maxActionsPerTurn = 20; // Safety limit
+  private maxActionsPerTurn = 16; // Safety limit
+  private readonly maxConsecutiveFailures = 2;
+  private readonly actionLoopDelayMs = parsePositiveInt(
+    process.env.LTCG_ACTION_LOOP_DELAY_MS,
+    1500
+  );
+  private readonly minLlmDecisionIntervalMs = parsePositiveInt(
+    process.env.LTCG_MIN_LLM_DECISION_INTERVAL_MS,
+    4000
+  );
+  private readonly maxLlmDecisionsPerTurn = parsePositiveInt(
+    process.env.LTCG_MAX_LLM_DECISIONS_PER_TURN,
+    2
+  );
+  private readonly decisionModelType = resolveDecisionModelType(process.env.LTCG_ORCHESTRATOR_MODEL);
+  private readonly llmChainDecisionsEnabled = process.env.LTCG_LLM_CHAIN_DECISIONS === "true";
+  private lastLlmDecisionAt = 0;
 
   // Decision history tracking for panels
   private decisionHistory: Map<string, Decision[]> = new Map();
   private readonly maxHistoryPerGame = 100;
+  private readonly validActions: Set<OrchestratorAction> = new Set([
+    "SUMMON_MONSTER",
+    "SET_CARD",
+    "ACTIVATE_SPELL",
+    "ACTIVATE_TRAP",
+    "ATTACK",
+    "ENTER_BATTLE_PHASE",
+    "ENTER_MAIN_PHASE_2",
+    "CHANGE_POSITION",
+    "FLIP_SUMMON",
+    "END_TURN",
+    "CHAIN_RESPONSE",
+    "PASS_CHAIN",
+  ]);
 
   capabilityDescription = "Orchestrates autonomous turn-by-turn gameplay decisions";
 
@@ -94,7 +161,19 @@ export class TurnOrchestrator extends Service {
         baseUrl: apiUrl,
         debug: process.env.LTCG_DEBUG_MODE === "true",
       });
-      logger.info("Turn orchestrator initialized with API client");
+      try {
+        const profile = await service.client.getAgentProfile();
+        logger.info(
+          { agentId: profile.agentId, name: profile.name },
+          "Turn orchestrator initialized with verified API client"
+        );
+      } catch (error) {
+        logger.error(
+          { error: error instanceof Error ? error.message : String(error) },
+          "LTCG API key validation failed; turn orchestrator disabled"
+        );
+        service.client = null;
+      }
     } else {
       logger.warn("API credentials not configured - orchestrator cannot execute actions");
     }
@@ -187,6 +266,7 @@ export class TurnOrchestrator extends Service {
     let actionCount = 0;
     const failedActions: FailedAction[] = [];
     let consecutiveFailures = 0;
+    let llmDecisionsThisTurn = 0;
 
     while (actionCount < this.maxActionsPerTurn) {
       actionCount++;
@@ -216,15 +296,17 @@ export class TurnOrchestrator extends Service {
 
       // If server says no actions available (other than END_TURN), just end turn
       const serverActions = context.availableActions?.actions ?? [];
-      const nonEndActions = serverActions.filter(a => a.action !== "end_turn");
+      const nonEndActions = serverActions.filter(
+        (a) => this.normalizeActionName(a.action) !== "END_TURN"
+      );
       if (nonEndActions.length === 0) {
         logger.info("Server reports no actions available, ending turn");
         await this.executeEndTurn(gameId);
         break;
       }
 
-      // Ask LLM what action to take
-      const decision = await this.decideAction(context);
+      const allowLlm = llmDecisionsThisTurn < this.maxLlmDecisionsPerTurn;
+      const decision = await this.decideAction(context, allowLlm);
 
       if (!decision) {
         logger.error("LLM failed to decide action, ending turn");
@@ -232,9 +314,19 @@ export class TurnOrchestrator extends Service {
         break;
       }
 
+      if (decision.source === "llm") {
+        llmDecisionsThisTurn++;
+      }
+
       logger.info(
-        { action: decision.action, reasoning: decision.reasoning },
-        `🤖 LLM decided: ${decision.action}`
+        {
+          action: decision.action,
+          reasoning: decision.reasoning,
+          source: decision.source ?? "unknown",
+          llmDecisionsThisTurn,
+          maxLlmDecisionsPerTurn: this.maxLlmDecisionsPerTurn,
+        },
+        `🤖 Decision selected: ${decision.action}`
       );
 
       // Emit action decided event
@@ -266,8 +358,11 @@ export class TurnOrchestrator extends Service {
         );
 
         // If 3+ consecutive failures, force end turn to avoid infinite loop
-        if (consecutiveFailures >= 3) {
-          logger.warn("3 consecutive failures, forcing end turn");
+        if (consecutiveFailures >= this.maxConsecutiveFailures) {
+          logger.warn(
+            { consecutiveFailures, threshold: this.maxConsecutiveFailures },
+            "Consecutive failure threshold reached, forcing end turn"
+          );
           await this.executeEndTurn(gameId);
           break;
         }
@@ -276,7 +371,7 @@ export class TurnOrchestrator extends Service {
       }
 
       // Small delay to avoid hammering the API
-      await this.sleep(500);
+      await this.sleep(this.actionLoopDelayMs);
     }
 
     if (actionCount >= this.maxActionsPerTurn) {
@@ -359,10 +454,10 @@ export class TurnOrchestrator extends Service {
         );
 
         // Add tribute requirement hint
-        const lvl = card.cost ?? card.level ?? 4;
-        if (lvl >= 7) {
+        const tributeRequirement = resolveTributeRequirement(card);
+        if (tributeRequirement >= 2) {
           lines.push("   ⚠️ Requires 2 tributes to summon");
-        } else if (lvl >= 5) {
+        } else if (tributeRequirement === 1) {
           lines.push("   ⚠️ Requires 1 tribute to summon");
         }
       } else if (cardType === "spell") {
@@ -530,8 +625,15 @@ export class TurnOrchestrator extends Service {
       return "No opponent actions recorded yet.";
     }
 
-    // Determine opponent player ID (the one who isn't the host)
-    const myPlayerId = gameState.hostPlayer?.playerId;
+    // Determine our player ID from normalized API fields.
+    // During our turn this should always be present and stable.
+    const myPlayerId =
+      gameState.myPlayerId ??
+      (gameState.isMyTurn ? gameState.currentTurnPlayer : undefined) ??
+      gameState.hostPlayer?.playerId;
+    if (!myPlayerId) {
+      return "No recent opponent actions.";
+    }
 
     // Filter opponent events from last 2 turns
     const currentTurn = gameState.turnNumber;
@@ -901,10 +1003,55 @@ export class TurnOrchestrator extends Service {
   /**
    * Ask LLM to decide which action to take
    */
-  private async decideAction(context: TurnContext): Promise<ActionDecision | null> {
-    const prompt = this.buildDecisionPrompt(context);
+  private async decideAction(context: TurnContext, allowLlm = true): Promise<ActionDecision | null> {
     const { gameState } = context;
     const startTime = Date.now();
+    const legalActionSet = this.getLegalActions(context);
+    const legalActions = Array.from(legalActionSet);
+
+    logger.debug(
+      {
+        gameId: gameState.gameId,
+        turnNumber: context.turnNumber,
+        phase: context.phase,
+        legalActions,
+        serverActions: (context.availableActions?.actions ?? []).map((a) => a.action),
+        handCount: gameState.hand?.length ?? 0,
+        myBoardCount: gameState.myBoard?.length ?? 0,
+        opponentBoardCount: gameState.opponentBoard?.length ?? 0,
+      },
+      "Turn context snapshot for LLM"
+    );
+
+    const heuristicDecision = this.getHeuristicDecision(context, legalActionSet);
+    if (heuristicDecision) {
+      heuristicDecision.source = "heuristic";
+      const executionTimeMs = Date.now() - startTime;
+      await this.emitAgentEvent(
+        gameState.gameId,
+        gameState.lobbyId,
+        context.turnNumber,
+        "agent_decided",
+        `${this.getAgentName()} chose: ${heuristicDecision.action}`,
+        {
+          action: heuristicDecision.action,
+          reasoning: heuristicDecision.reasoning.substring(0, 150),
+          executionTimeMs,
+          source: "rule_based",
+        }
+      );
+      return heuristicDecision;
+    }
+
+    if (!allowLlm) {
+      const fallbackDecision = this.getNoLlmFallbackDecision(context, legalActionSet);
+      if (fallbackDecision) {
+        fallbackDecision.source = "fallback";
+      }
+      return fallbackDecision;
+    }
+
+    const prompt = this.buildDecisionPrompt(context);
 
     // Emit thinking event - visible to spectators and opponent
     await this.emitAgentEvent(
@@ -920,14 +1067,26 @@ export class TurnOrchestrator extends Service {
     );
 
     try {
-      const response = await this.runtime.useModel(ModelType.TEXT_LARGE, {
+      const now = Date.now();
+      const waitMs = this.minLlmDecisionIntervalMs - (now - this.lastLlmDecisionAt);
+      if (waitMs > 0) {
+        await this.sleep(waitMs);
+      }
+
+      this.lastLlmDecisionAt = Date.now();
+
+      const response = await this.runtime.useModel(this.decisionModelType, {
         prompt: `SYSTEM: You are a JSON-only game AI. You MUST respond with a single JSON object and nothing else. No markdown, no code fences, no explanation outside the JSON.\n\n${prompt}`,
-        temperature: 0.7,
-        maxTokens: 500,
+        temperature: 0.2,
+        maxTokens: 220,
         responseFormat: { type: "json_object" },
       });
 
-      const decision = this.parseActionDecision(response);
+      const parsedDecision = this.parseActionDecision(response);
+      const decision: ActionDecision = parsedDecision
+        ? this.ensureDecisionIsLegal(parsedDecision, context)
+        : { action: "END_TURN" as const, reasoning: "Could not parse model decision", source: "llm" };
+      decision.source = "llm";
       const executionTimeMs = Date.now() - startTime;
 
       // Emit decided event with reasoning
@@ -942,6 +1101,7 @@ export class TurnOrchestrator extends Service {
             action: decision.action,
             reasoning: decision.reasoning.substring(0, 150),
             executionTimeMs,
+            source: "llm",
           }
         );
       }
@@ -1000,32 +1160,40 @@ ${strategy}
 ## AVAILABLE ACTIONS
 ${availableActionsText}
 
+## RULES
+- The "AVAILABLE ACTIONS" list is authoritative. Never choose an action that is not listed there.
+- In main1, if ATTACK is not available but ENTER_BATTLE_PHASE is available, choose ENTER_BATTLE_PHASE first.
+- You cannot attack on turn 1 (first turn battle restriction).
+- You can only NORMAL SUMMON once per turn. If you already summoned, do NOT try again.
+- ATTACK is how you win! If you have monsters in attack position, attack the opponent.
+- Turn flow: summon/set (main1) → ATTACK → set more (main2) → END_TURN.
+
 ## YOUR TASK
-Choose the BEST action to take right now. PRIORITY ORDER:
+Choose the BEST action. PRIORITY ORDER:
 
-1. **LETHAL CHECK** - If "LETHAL AVAILABLE" appears above, ATTACK to win immediately!
-2. **SURVIVE** - If "DANGER: Opponent has lethal", summon defender or remove threats
-3. **DEVELOP** - If safe, summon strongest monster in attack position
-4. **SET PROTECTION** - Set traps/spells if board is established
-5. **END TURN** - Only if no better options or conserving resources
+1. **LETHAL** - If "LETHAL AVAILABLE" appears, ATTACK to win NOW!
+2. **ATTACK** - If you have monsters in attack position, ATTACK the opponent's monsters or directly!
+3. **SUMMON** - If you haven't summoned this turn, summon your strongest available monster.
+4. **SPELLS** - Activate beneficial spells to boost your monsters or damage opponent.
+5. **SET** - Set traps/spells face-down for protection.
+6. **END_TURN** - When you've summoned + attacked + no more useful actions.
 
-IMPORTANT:
-- If you see "LETHAL AVAILABLE", execute attacks in sequence to WIN THE GAME
-- Check backrow warnings before attacking - traps may interrupt lethal
-- Always prioritize winning over building board
+CRITICAL: After summoning a monster, your next action should be ATTACK (not another summon).
+If ATTACK is in the available actions list, USE IT before ending your turn.
 
 Respond in this exact JSON format:
 {
   "action": "ACTION_NAME",
-  "reasoning": "Brief explanation of why this is the best play",
+  "reasoning": "Brief explanation",
   "parameters": { "cardId": "card_id_here" }
 }
 
-Valid actions: SUMMON_MONSTER, SET_CARD, ACTIVATE_SPELL, ACTIVATE_TRAP, ATTACK, CHANGE_POSITION, FLIP_SUMMON, END_TURN
+For ATTACK, use: { "attackerCardId": "your_monster_id", "targetCardId": "opponent_monster_id" }
+For direct attack (no opponent monsters): { "attackerCardId": "your_monster_id" }
 
-IMPORTANT: Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parameters.
+Valid actions: SUMMON_MONSTER, SET_CARD, ACTIVATE_SPELL, ACTIVATE_TRAP, ATTACK, ENTER_BATTLE_PHASE, ENTER_MAIN_PHASE_2, CHANGE_POSITION, FLIP_SUMMON, END_TURN
 
-Choose wisely!`;
+Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parameters.`;
   }
 
   /**
@@ -1034,37 +1202,36 @@ Choose wisely!`;
   private formatAvailableActions(context: TurnContext): string {
     const lines: string[] = [];
     const serverActions = context.availableActions?.actions ?? [];
+    const cardLookup = this.buildCardLookup(context.gameState);
+    const legalActions = this.getLegalActions(context);
 
-    // Map server action names to LLM action names with descriptions
-    const actionMap: Record<string, string> = {
-      summon: "SUMMON_MONSTER - Normal summon a monster from your hand (use cardId)",
-      set_monster: "SET_CARD - Set a monster face-down in defense position (use cardId)",
-      set_spell_trap: "SET_CARD - Set a spell or trap face-down (use cardId)",
-      activate_spell: "ACTIVATE_SPELL - Activate a spell card (use cardId)",
-      activate_trap: "ACTIVATE_TRAP - Activate a trap card (use cardId)",
-      flip_summon: "FLIP_SUMMON - Flip summon a face-down defense monster (use cardId)",
-      change_position: "CHANGE_POSITION - Change a monster from ATK to DEF or vice versa (use cardId)",
-      attack: "ATTACK - Attack with a monster (use attackerCardId)",
-      end_turn: "END_TURN - End your turn and pass to opponent",
-    };
-
-    const seen = new Set<string>();
+    const seen = new Set<OrchestratorAction>();
     for (const serverAction of serverActions) {
-      const mapped = actionMap[serverAction.action];
-      if (mapped && !seen.has(mapped)) {
-        seen.add(mapped);
-        // Include available card count if provided
-        const cardInfo = serverAction.availableCards?.length
-          ? ` [${serverAction.availableCards.length} eligible cards]`
+      const normalized = this.normalizeActionName(serverAction.action);
+      if (!normalized || seen.has(normalized) || !legalActions.has(normalized)) continue;
+
+      seen.add(normalized);
+      const cardInfo = this.formatAvailableCardHints(serverAction.availableCards, cardLookup);
+      const phaseInfo =
+        normalized === "ENTER_BATTLE_PHASE" && typeof serverAction.attackableMonsters === "number"
+          ? ` [${serverAction.attackableMonsters} attacker(s) ready]`
           : "";
-        lines.push(`• ${mapped}${cardInfo}`);
+      const parameterInfo =
+        serverAction.parameters && Object.keys(serverAction.parameters).length > 0
+          ? ` [params: ${Object.keys(serverAction.parameters).slice(0, 4).join(", ")}]`
+          : "";
+      lines.push(`• ${normalized} - ${this.describeAction(normalized)}${cardInfo}${phaseInfo}`);
+      if (parameterInfo) {
+        lines[lines.length - 1] += parameterInfo;
       }
     }
 
-    // Always include END_TURN as an option
-    const endTurnLine = "END_TURN - End your turn and pass to opponent";
-    if (!seen.has(endTurnLine)) {
-      lines.push(`• ${endTurnLine}`);
+    if (!seen.has("END_TURN")) {
+      lines.push("• END_TURN - End your turn and pass to opponent");
+    }
+
+    if (lines.length === 0) {
+      lines.push("• END_TURN - No legal actions detected, end turn");
     }
 
     // Add failed actions warning if any
@@ -1080,6 +1247,45 @@ Choose wisely!`;
     return lines.join("\n");
   }
 
+  private buildCardLookup(gameState: GameStateResponse): Map<string, string> {
+    const lookup = new Map<string, string>();
+
+    for (const card of gameState.hand ?? []) {
+      if (card?._id) {
+        lookup.set(card._id, `${card.name} (hand) [cardId: ${card._id}]`);
+      }
+    }
+
+    for (const card of gameState.myBoard ?? []) {
+      if (card?._id) {
+        lookup.set(card._id, `${card.name ?? "Unknown"} (your field) [cardId: ${card._id}]`);
+      }
+    }
+
+    for (const card of gameState.opponentBoard ?? []) {
+      if (card?._id) {
+        lookup.set(card._id, `${card.name ?? "Unknown"} (opponent field) [cardId: ${card._id}]`);
+      }
+    }
+
+    return lookup;
+  }
+
+  private formatAvailableCardHints(
+    availableCards: string[] | undefined,
+    cardLookup: Map<string, string>
+  ): string {
+    if (!availableCards || availableCards.length === 0) {
+      return "";
+    }
+
+    const preview = availableCards
+      .slice(0, 4)
+      .map((cardId) => cardLookup.get(cardId) ?? `Unknown [cardId: ${cardId}]`);
+    const suffix = availableCards.length > 4 ? ` +${availableCards.length - 4} more` : "";
+    return ` [eligible: ${preview.join("; ")}${suffix}]`;
+  }
+
   /**
    * Parse LLM response into action decision
    */
@@ -1093,22 +1299,8 @@ Choose wisely!`;
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
-
-      const validActions: OrchestratorAction[] = [
-        "SUMMON_MONSTER",
-        "SET_CARD",
-        "ACTIVATE_SPELL",
-        "ACTIVATE_TRAP",
-        "ATTACK",
-        "CHANGE_POSITION",
-        "FLIP_SUMMON",
-        "END_TURN",
-        "CHAIN_RESPONSE",
-        "PASS_CHAIN",
-      ];
-
-      const action = parsed.action?.toUpperCase() as OrchestratorAction;
-      if (!validActions.includes(action)) {
+      const action = this.normalizeActionName(parsed.action);
+      if (!action || !this.validActions.has(action)) {
         logger.warn({ action }, "Invalid action from LLM");
         return { action: "END_TURN", reasoning: "Invalid action chosen" };
       }
@@ -1125,6 +1317,507 @@ Choose wisely!`;
       );
       return { action: "END_TURN", reasoning: "Failed to parse response" };
     }
+  }
+
+  private normalizeActionName(action: unknown): OrchestratorAction | null {
+    if (typeof action !== "string" || action.trim().length === 0) {
+      return null;
+    }
+
+    const normalized = action.trim().toUpperCase().replace(/[\s-]+/g, "_");
+
+    switch (normalized) {
+      case "SUMMON":
+      case "NORMAL_SUMMON":
+      case "SUMMON_MONSTER":
+        return "SUMMON_MONSTER";
+      case "SET":
+      case "SET_MONSTER":
+      case "SET_SPELL_TRAP":
+      case "SET_CARD":
+        return "SET_CARD";
+      case "ACTIVATE_SPELL":
+        return "ACTIVATE_SPELL";
+      case "ACTIVATE_TRAP":
+        return "ACTIVATE_TRAP";
+      case "ATTACK":
+      case "DECLARE_ATTACK":
+        return "ATTACK";
+      case "ENTER_BATTLE":
+      case "ENTER_BATTLE_PHASE":
+        return "ENTER_BATTLE_PHASE";
+      case "ENTER_MAIN2":
+      case "ENTER_MAIN_2":
+      case "ENTER_MAIN_PHASE2":
+      case "ENTER_MAIN_PHASE_2":
+        return "ENTER_MAIN_PHASE_2";
+      case "CHANGE_POSITION":
+        return "CHANGE_POSITION";
+      case "FLIP_SUMMON":
+        return "FLIP_SUMMON";
+      case "END_TURN":
+        return "END_TURN";
+      case "CHAIN_RESPONSE":
+        return "CHAIN_RESPONSE";
+      case "PASS_CHAIN":
+        return "PASS_CHAIN";
+      default:
+        return null;
+    }
+  }
+
+  private getLegalActions(context: TurnContext): Set<OrchestratorAction> {
+    const legal = new Set<OrchestratorAction>();
+
+    for (const action of context.availableActions?.actions ?? []) {
+      const normalized = this.normalizeActionName(action.action);
+      if (normalized) {
+        legal.add(normalized);
+      }
+    }
+
+    // First-turn battle restriction is enforced server-side but not always reflected in available-actions.
+    if (context.turnNumber <= 1) {
+      legal.delete("ATTACK");
+      legal.delete("ENTER_BATTLE_PHASE");
+    }
+
+    return legal;
+  }
+
+  private getHeuristicDecision(
+    context: TurnContext,
+    legalActions: Set<OrchestratorAction>
+  ): ActionDecision | null {
+    const failedThisTurn = new Set(context.failedActions.map((failed) => failed.action));
+    const canTry = (action: OrchestratorAction) =>
+      legalActions.has(action) && !failedThisTurn.has(action);
+
+    if (legalActions.size === 0) {
+      return {
+        action: "END_TURN",
+        reasoning: "No legal actions available",
+      };
+    }
+
+    if (legalActions.size === 1 && legalActions.has("END_TURN")) {
+      return {
+        action: "END_TURN",
+        reasoning: "Only END_TURN is legal",
+      };
+    }
+
+    if (context.phase === "main1") {
+      if (canTry("ACTIVATE_SPELL")) {
+        const spellCardId = this.selectActivateSpellCardId(context);
+        if (spellCardId) {
+          return {
+            action: "ACTIVATE_SPELL",
+            reasoning: "Using deterministic spell activation in main phase 1",
+            parameters: { cardId: spellCardId },
+          };
+        }
+      }
+
+      const attackersReady = (context.gameState.myBoard ?? []).some(
+        (m: BoardCard) => !m.isFaceDown && m.position === 1 && !m.hasAttacked
+      );
+      if (attackersReady && canTry("ENTER_BATTLE_PHASE")) {
+        return {
+          action: "ENTER_BATTLE_PHASE",
+          reasoning: "Attacker available, entering battle phase deterministically",
+        };
+      }
+
+      if (canTry("SUMMON_MONSTER")) {
+        const summonCardId = this.selectSummonCardId(context);
+        if (summonCardId) {
+          return {
+            action: "SUMMON_MONSTER",
+            reasoning: "Using deterministic summon fallback in main phase 1",
+            parameters: { cardId: summonCardId, position: "attack" },
+          };
+        }
+      }
+
+      if (canTry("SET_CARD")) {
+        const setCardId = this.selectSetCardId(context);
+        if (setCardId) {
+          return {
+            action: "SET_CARD",
+            reasoning: "Setting a legal defensive card in main phase 1",
+            parameters: { cardId: setCardId },
+          };
+        }
+      }
+    }
+
+    if (context.phase === "battle") {
+      if (canTry("ATTACK")) {
+        const attackParams = this.selectAttackParameters(context.gameState);
+        if (attackParams) {
+          return {
+            action: "ATTACK",
+            reasoning: "Battle phase with legal attacker available",
+            parameters: attackParams,
+          };
+        }
+      }
+
+      if (canTry("ENTER_MAIN_PHASE_2")) {
+        return {
+          action: "ENTER_MAIN_PHASE_2",
+          reasoning: "No safe attacks available, advancing to main phase 2",
+        };
+      }
+
+      if (canTry("END_TURN")) {
+        return {
+          action: "END_TURN",
+          reasoning: "No deterministic battle attack available",
+        };
+      }
+    }
+
+    if (context.phase === "main2") {
+      if (canTry("ACTIVATE_SPELL")) {
+        const spellCardId = this.selectActivateSpellCardId(context);
+        if (spellCardId) {
+          return {
+            action: "ACTIVATE_SPELL",
+            reasoning: "Using deterministic spell activation in main phase 2",
+            parameters: { cardId: spellCardId },
+          };
+        }
+      }
+
+      if (canTry("SET_CARD")) {
+        const setCardId = this.selectSetCardId(context);
+        if (setCardId) {
+          return {
+            action: "SET_CARD",
+            reasoning: "Using deterministic set fallback in main phase 2",
+            parameters: { cardId: setCardId },
+          };
+        }
+      }
+
+      if (canTry("END_TURN")) {
+        return {
+          action: "END_TURN",
+          reasoning: "Main phase 2 fallback complete, ending turn",
+        };
+      }
+    }
+
+    if (
+      legalActions.has("END_TURN") &&
+      !legalActions.has("ATTACK") &&
+      !legalActions.has("SUMMON_MONSTER") &&
+      !legalActions.has("SET_CARD") &&
+      !legalActions.has("ACTIVATE_SPELL") &&
+      !legalActions.has("ACTIVATE_TRAP") &&
+      !legalActions.has("CHAIN_RESPONSE")
+    ) {
+      return {
+        action: "END_TURN",
+        reasoning: "No high-value deterministic actions available",
+      };
+    }
+
+    return null;
+  }
+
+  private getNoLlmFallbackDecision(
+    context: TurnContext,
+    legalActions: Set<OrchestratorAction>
+  ): ActionDecision {
+    const failedThisTurn = new Set(context.failedActions.map((failed) => failed.action));
+    const canTry = (action: OrchestratorAction) =>
+      legalActions.has(action) && !failedThisTurn.has(action);
+
+    if (context.phase === "battle" && canTry("ENTER_MAIN_PHASE_2")) {
+      return {
+        action: "ENTER_MAIN_PHASE_2",
+        reasoning: "LLM budget reached, advancing out of battle phase",
+      };
+    }
+
+    if (canTry("ATTACK")) {
+      const attackParams = this.selectAttackParameters(context.gameState);
+      if (attackParams) {
+        return {
+          action: "ATTACK",
+          reasoning: "LLM budget reached, using deterministic attack fallback",
+          parameters: attackParams,
+        };
+      }
+    }
+
+    if (canTry("ENTER_BATTLE_PHASE")) {
+      return {
+        action: "ENTER_BATTLE_PHASE",
+        reasoning: "LLM budget reached, entering battle phase deterministically",
+      };
+    }
+
+    if (canTry("SUMMON_MONSTER")) {
+      const summonCardId = this.selectSummonCardId(context);
+      if (summonCardId) {
+        return {
+          action: "SUMMON_MONSTER",
+          reasoning: "LLM budget reached, summoning strongest legal monster",
+          parameters: { cardId: summonCardId, position: "attack" },
+        };
+      }
+    }
+
+    if (canTry("ACTIVATE_SPELL")) {
+      const spellCardId = this.selectActivateSpellCardId(context);
+      if (spellCardId) {
+        return {
+          action: "ACTIVATE_SPELL",
+          reasoning: "LLM budget reached, activating first legal spell",
+          parameters: { cardId: spellCardId },
+        };
+      }
+    }
+
+    if (canTry("SET_CARD")) {
+      const setCardId = this.selectSetCardId(context);
+      if (setCardId) {
+        return {
+          action: "SET_CARD",
+          reasoning: "LLM budget reached, setting best available card",
+          parameters: { cardId: setCardId },
+        };
+      }
+    }
+
+    if (canTry("END_TURN")) {
+      return {
+        action: "END_TURN",
+        reasoning: "LLM budget reached and no deterministic high-value action remains",
+      };
+    }
+
+    const fallback =
+      Array.from(legalActions).find((action) => action !== "CHAIN_RESPONSE" && action !== "PASS_CHAIN") ??
+      "END_TURN";
+    return {
+      action: fallback,
+      reasoning: "LLM budget reached, using legal fallback action",
+    };
+  }
+
+  private selectAttackParameters(
+    gameState: GameStateResponse
+  ): { attackerCardId: string; targetCardId?: string } | null {
+    const attackers = (gameState.myBoard ?? []).filter(
+      (m: BoardCard) => !m.isFaceDown && m.position === 1 && !m.hasAttacked
+    );
+    if (attackers.length === 0) {
+      return null;
+    }
+
+    const attacker = attackers.reduce((best, card) => {
+      const bestAtk = best.currentAttack ?? best.attack ?? 0;
+      const cardAtk = card.currentAttack ?? card.attack ?? 0;
+      return cardAtk > bestAtk ? card : best;
+    }, attackers[0]);
+
+    if (!attacker?._id) {
+      return null;
+    }
+
+    const opponents = gameState.opponentBoard ?? [];
+    if (opponents.length === 0) {
+      return { attackerCardId: attacker._id };
+    }
+
+    const faceUp = opponents.filter((m: BoardCard) => !m.isFaceDown);
+    const targetPool = faceUp.length > 0 ? faceUp : opponents;
+    const target = targetPool.reduce((weakest, card) => {
+      const weakestVal =
+        weakest.position === 1 ? (weakest.currentAttack ?? weakest.attack ?? 0) : (weakest.currentDefense ?? weakest.defense ?? 0);
+      const cardVal =
+        card.position === 1 ? (card.currentAttack ?? card.attack ?? 0) : (card.currentDefense ?? card.defense ?? 0);
+      return cardVal < weakestVal ? card : weakest;
+    }, targetPool[0]);
+
+    return target?._id
+      ? { attackerCardId: attacker._id, targetCardId: target._id }
+      : { attackerCardId: attacker._id };
+  }
+
+  private selectSummonCardId(context: TurnContext): string | null {
+    const summonAction = this.getServerAction(context, "SUMMON_MONSTER");
+    const legalCardIds = new Set(summonAction?.availableCards ?? []);
+    const monsters = (context.gameState.hand ?? []).filter((c: CardInHand) => c.cardType === "creature");
+    const summonable =
+      legalCardIds.size > 0
+        ? monsters.filter((c: CardInHand) => legalCardIds.has(c._id))
+        : monsters;
+    if (summonable.length === 0) {
+      return null;
+    }
+
+    const ranked = [...summonable].sort((a, b) => {
+      const tributeDiff = resolveTributeRequirement(a) - resolveTributeRequirement(b);
+      if (tributeDiff !== 0) {
+        return tributeDiff;
+      }
+
+      const atkA = a.attack ?? a.atk ?? 0;
+      const atkB = b.attack ?? b.atk ?? 0;
+      return atkB - atkA;
+    });
+
+    return ranked[0]?._id ?? null;
+  }
+
+  private selectSetCardId(context: TurnContext): string | null {
+    const setAction = this.getServerAction(context, "SET_CARD");
+    const legalCardIds = new Set(setAction?.availableCards ?? []);
+    const hand = context.gameState.hand ?? [];
+    const candidates =
+      legalCardIds.size > 0
+        ? hand.filter((c: CardInHand) => legalCardIds.has(c._id))
+        : hand;
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    // Prefer spell/traps for deterministic, low-risk sets.
+    const spellTrap = candidates.find((c: CardInHand) => c.cardType !== "creature");
+    if (spellTrap?._id) {
+      return spellTrap._id;
+    }
+
+    // If the server explicitly provided legal cards, trust it and choose the
+    // lowest-tribute monster to avoid invalid tribute-required sets.
+    if (legalCardIds.size > 0) {
+      const monsters = candidates.filter((c: CardInHand) => c.cardType === "creature");
+      const ranked = [...monsters].sort((a, b) => {
+        const tributeDiff = resolveTributeRequirement(a) - resolveTributeRequirement(b);
+        if (tributeDiff !== 0) {
+          return tributeDiff;
+        }
+        const atkA = a.attack ?? a.atk ?? 0;
+        const atkB = b.attack ?? b.atk ?? 0;
+        return atkB - atkA;
+      });
+      return ranked[0]?._id ?? null;
+    }
+
+    // When server doesn't provide availableCards for SET_CARD, avoid blind
+    // high-level monster sets that commonly fail due to tribute requirements.
+    const lowTributeMonsters = candidates.filter(
+      (c: CardInHand) => c.cardType === "creature" && resolveTributeRequirement(c) === 0
+    );
+    return lowTributeMonsters[0]?._id ?? null;
+  }
+
+  private selectActivateSpellCardId(context: TurnContext): string | null {
+    const spellAction = this.getServerAction(context, "ACTIVATE_SPELL");
+    const legalCardIds = new Set(spellAction?.availableCards ?? []);
+    const hand = context.gameState.hand ?? [];
+    const spells =
+      legalCardIds.size > 0
+        ? hand.filter((c: CardInHand) => c.cardType === "spell" && legalCardIds.has(c._id))
+        : hand.filter((c: CardInHand) => c.cardType === "spell");
+    return spells[0]?._id ?? null;
+  }
+
+  private describeAction(action: OrchestratorAction): string {
+    switch (action) {
+      case "SUMMON_MONSTER":
+        return "Normal summon a monster from hand (use cardId)";
+      case "SET_CARD":
+        return "Set a monster/spell/trap face-down (use cardId)";
+      case "ACTIVATE_SPELL":
+        return "Activate a spell card (use cardId)";
+      case "ACTIVATE_TRAP":
+        return "Activate a trap card (use cardId)";
+      case "ATTACK":
+        return "Declare attack (use attackerCardId and optional targetCardId)";
+      case "ENTER_BATTLE_PHASE":
+        return "Move from main phase into battle phase";
+      case "ENTER_MAIN_PHASE_2":
+        return "Move from battle phase into main phase 2";
+      case "CHANGE_POSITION":
+        return "Change a monster between attack/defense";
+      case "FLIP_SUMMON":
+        return "Flip summon a face-down monster";
+      case "END_TURN":
+        return "End turn and pass to opponent";
+      case "CHAIN_RESPONSE":
+        return "Respond to a chain with an effect";
+      case "PASS_CHAIN":
+        return "Pass chain response";
+      default:
+        return "Take a legal game action";
+    }
+  }
+
+  private ensureDecisionIsLegal(decision: ActionDecision, context: TurnContext): ActionDecision {
+    const legal = this.getLegalActions(context);
+    if (legal.size === 0) {
+      return {
+        action: "END_TURN",
+        reasoning: `${decision.reasoning} (server reported no legal actions, ending turn)`,
+      };
+    }
+
+    if (legal.has(decision.action)) {
+      return decision;
+    }
+
+    // Common invalid pattern in main1: model picks ATTACK before entering battle phase.
+    if (decision.action === "ATTACK" && legal.has("ENTER_BATTLE_PHASE")) {
+      return {
+        action: "ENTER_BATTLE_PHASE",
+        reasoning: `${decision.reasoning} (attack not legal yet, entering battle phase first)`,
+      };
+    }
+
+    const fallbackPriority: OrchestratorAction[] = [
+      "ATTACK",
+      "ENTER_BATTLE_PHASE",
+      "SUMMON_MONSTER",
+      "ACTIVATE_SPELL",
+      "SET_CARD",
+      "CHANGE_POSITION",
+      "FLIP_SUMMON",
+      "ENTER_MAIN_PHASE_2",
+      "END_TURN",
+    ];
+
+    const fallback =
+      fallbackPriority.find((action) => legal.has(action)) ??
+      (context.availableActions?.actions ?? [])
+        .map((a) => this.normalizeActionName(a.action))
+        .find((a): a is OrchestratorAction => a !== null) ??
+      "END_TURN";
+
+    logger.warn(
+      { requested: decision.action, fallback, legal: Array.from(legal) },
+      "LLM selected action not in server legal action list"
+    );
+
+    return {
+      action: fallback,
+      reasoning: `${decision.reasoning} (requested action was illegal, using ${fallback})`,
+    };
+  }
+
+  private getServerAction(
+    context: TurnContext,
+    action: OrchestratorAction
+  ): AvailableActionsResponse["actions"][number] | undefined {
+    return (context.availableActions?.actions ?? []).find(
+      (a) => this.normalizeActionName(a.action) === action
+    );
   }
 
   // ============================================================================
@@ -1160,6 +1853,14 @@ Choose wisely!`;
 
         case "ATTACK":
           success = await this.executeAttack(gameId, decision, context);
+          break;
+
+        case "ENTER_BATTLE_PHASE":
+          success = await this.executeEnterBattlePhase(gameId);
+          break;
+
+        case "ENTER_MAIN_PHASE_2":
+          success = await this.executeEnterMainPhase2(gameId);
           break;
 
         case "CHANGE_POSITION":
@@ -1296,8 +1997,14 @@ Choose wisely!`;
   ): Promise<boolean> {
     const hand = context.gameState.hand ?? [];
     const monsters = hand.filter((c: CardInHand) => c.cardType === "creature");
+    const summonAction = this.getServerAction(context, "SUMMON_MONSTER");
+    const legalCardIds = new Set(summonAction?.availableCards ?? []);
+    const summonableMonsters =
+      legalCardIds.size > 0
+        ? monsters.filter((c: CardInHand) => legalCardIds.has(c._id))
+        : monsters;
 
-    if (monsters.length === 0) {
+    if (summonableMonsters.length === 0) {
       logger.info("No monsters in hand to summon");
       return false;
     }
@@ -1308,16 +2015,20 @@ Choose wisely!`;
     let selectedCard: CardInHand | undefined;
 
     if (requestedCardId) {
-      selectedCard = monsters.find((c: CardInHand) => c._id === requestedCardId);
+      selectedCard = summonableMonsters.find((c: CardInHand) => c._id === requestedCardId);
     }
     if (!selectedCard && handIndex !== undefined) {
-      selectedCard = hand.find(
+      selectedCard = summonableMonsters.find(
         (c: CardInHand) =>
           c.handIndex === handIndex && (c.cardType === "creature" || c.type === "creature")
       );
     }
     if (!selectedCard) {
-      selectedCard = monsters[0];
+      selectedCard = summonableMonsters.reduce((best, card) => {
+        const bestAtk = best.attack ?? best.atk ?? 0;
+        const cardAtk = card.attack ?? card.atk ?? 0;
+        return cardAtk > bestAtk ? card : best;
+      }, summonableMonsters[0]);
     }
 
     if (!selectedCard?._id) {
@@ -1326,15 +2037,35 @@ Choose wisely!`;
     }
 
     const position = (decision.parameters?.position as "attack" | "defense") ?? "attack";
+    const requiredTributes = resolveTributeRequirement(selectedCard);
+    let tributeCardIds = Array.isArray(decision.parameters?.tributeCardIds)
+      ? (decision.parameters?.tributeCardIds as string[])
+      : undefined;
+
+    if (requiredTributes > 0 && (!tributeCardIds || tributeCardIds.length < requiredTributes)) {
+      tributeCardIds = this.selectTributeCardIds(context.gameState, requiredTributes);
+    }
+
+    if (requiredTributes > 0 && (!tributeCardIds || tributeCardIds.length < requiredTributes)) {
+      logger.info(
+        { cardId: selectedCard._id, cardName: selectedCard.name, requiredTributes },
+        "Skipping summon due to insufficient tributes"
+      );
+      return false;
+    }
 
     try {
       await this.client?.summon({
         gameId,
         cardId: selectedCard._id,
         position,
+        tributeCardIds,
       });
 
-      logger.info({ cardName: selectedCard?.name, position, cardId: selectedCard._id }, "Summoned monster");
+      logger.info(
+        { cardName: selectedCard?.name, position, cardId: selectedCard._id },
+        "Summoned monster"
+      );
       return true;
     } catch (error) {
       logger.error({ error, cardId: selectedCard._id }, "Failed to execute summon");
@@ -1352,39 +2083,92 @@ Choose wisely!`;
   ): Promise<boolean> {
     const hand = context.gameState.hand ?? [];
     if (hand.length === 0) return false;
+    const setAction = this.getServerAction(context, "SET_CARD");
+    const legalCardIds = new Set(setAction?.availableCards ?? []);
 
     const requestedCardId = decision.parameters?.cardId as string | undefined;
     let card: CardInHand | undefined;
-    if (requestedCardId) {
+    if (requestedCardId && (legalCardIds.size === 0 || legalCardIds.has(requestedCardId))) {
       card = hand.find((c: CardInHand) => c._id === requestedCardId);
     }
     if (!card) {
       const handIdx = decision.parameters?.handIndex as number | undefined;
       if (handIdx !== undefined) {
-        card = hand.find((c: CardInHand) => c.handIndex === handIdx);
+        card = hand.find(
+          (c: CardInHand) =>
+            c.handIndex === handIdx && (legalCardIds.size === 0 || legalCardIds.has(c._id))
+        );
       }
     }
     if (!card) {
-      const spellTraps = hand.filter((c: CardInHand) => c.cardType !== "creature");
-      card = spellTraps[0] ?? hand[0];
+      const candidates =
+        legalCardIds.size > 0
+          ? hand.filter((c: CardInHand) => legalCardIds.has(c._id))
+          : hand;
+      const spellTraps = candidates.filter((c: CardInHand) => c.cardType !== "creature");
+      card = spellTraps[0] ?? candidates[0];
     }
     if (!card?._id) {
       logger.error("No valid card to set");
       return false;
     }
 
-    try {
-      await this.client?.setCard({
-        gameId,
-        cardId: card._id,
-      });
+    const requiredTributes = card.cardType === "creature" ? resolveTributeRequirement(card) : 0;
+    let tributeCardIds = Array.isArray(decision.parameters?.tributeCardIds)
+      ? (decision.parameters?.tributeCardIds as string[])
+      : undefined;
+    if (requiredTributes > 0 && (!tributeCardIds || tributeCardIds.length < requiredTributes)) {
+      tributeCardIds = this.selectTributeCardIds(context.gameState, requiredTributes);
+    }
+    if (requiredTributes > 0 && (!tributeCardIds || tributeCardIds.length < requiredTributes)) {
+      logger.info(
+        { cardId: card._id, cardName: card.name, requiredTributes },
+        "Skipping set-card due to insufficient tributes"
+      );
+      return false;
+    }
 
-      logger.info({ cardName: card?.name }, "Set card");
+    try {
+      if (card.cardType === "creature") {
+        await this.client?.setCard({
+          gameId,
+          cardId: card._id,
+          tributeCardIds,
+        });
+      } else {
+        // Spell/trap cards use a different endpoint
+        await this.client?.setSpellTrapCard({
+          gameId,
+          cardId: card._id,
+        });
+      }
+
+      logger.info({ cardName: card?.name, cardType: card.cardType }, "Set card");
       return true;
     } catch (error) {
       logger.error({ error }, "Failed to set card");
       return false;
     }
+  }
+
+  private selectTributeCardIds(
+    gameState: GameStateResponse,
+    requiredTributes: number
+  ): string[] | undefined {
+    if (requiredTributes <= 0) {
+      return undefined;
+    }
+
+    const availableTributes = (gameState.myBoard ?? [])
+      .filter((card) => !!card._id && !card.isFaceDown)
+      .map((card) => card._id)
+      .filter((cardId): cardId is string => typeof cardId === "string" && cardId.length > 0);
+
+    if (availableTributes.length < requiredTributes) {
+      return undefined;
+    }
+
+    return availableTributes.slice(0, requiredTributes);
   }
 
   /**
@@ -1396,11 +2180,16 @@ Choose wisely!`;
     context: TurnContext
   ): Promise<boolean> {
     const hand = context.gameState.hand ?? [];
-    const spells = hand.filter((c: CardInHand) => c.cardType === "spell");
+    const activateSpellAction = this.getServerAction(context, "ACTIVATE_SPELL");
+    const legalCardIds = new Set(activateSpellAction?.availableCards ?? []);
+    const spells = hand.filter(
+      (c: CardInHand) =>
+        c.cardType === "spell" && (legalCardIds.size === 0 || legalCardIds.has(c._id))
+    );
 
     const requestedCardId = decision.parameters?.cardId as string | undefined;
 
-    if (requestedCardId) {
+    if (requestedCardId && (legalCardIds.size === 0 || legalCardIds.has(requestedCardId))) {
       try {
         await this.client?.activateSpell({ gameId, cardId: requestedCardId });
         logger.info({ cardId: requestedCardId }, "Activated spell");
@@ -1443,18 +2232,23 @@ Choose wisely!`;
     decision: ActionDecision,
     context: TurnContext
   ): Promise<boolean> {
+    if (!this.getLegalActions(context).has("ATTACK")) {
+      logger.warn({ phase: context.phase }, "ATTACK requested but not legal in current phase");
+      return false;
+    }
+
     const myMonsters = context.gameState.myBoard ?? [];
     const oppMonsters = context.gameState.opponentBoard ?? [];
 
     const attackers = myMonsters.filter(
-      (m: BoardCard) => m.position === 1 && !m.hasAttacked
+      (m: BoardCard) => !m.isFaceDown && m.position === 1 && !m.hasAttacked
     );
 
     if (attackers.length === 0) return false;
 
     // Use attackerCardId from decision or pick first available attacker
     let attackerCardId = decision.parameters?.attackerCardId as string | undefined;
-    if (!attackerCardId) {
+    if (!attackerCardId || !attackers.some((m: BoardCard) => m._id === attackerCardId)) {
       attackerCardId = (decision.parameters?.cardId as string) ?? attackers[0]?._id;
     }
 
@@ -1467,6 +2261,9 @@ Choose wisely!`;
 
     // Choose target - direct attack if no opponents, otherwise from decision or attack weakest
     let targetCardId = decision.parameters?.targetCardId as string | undefined;
+    if (targetCardId && !oppMonsters.some((m: BoardCard) => m._id === targetCardId)) {
+      targetCardId = undefined;
+    }
 
     if (!targetCardId && oppMonsters.length > 0) {
       const faceUpOpp = oppMonsters.filter((m: BoardCard) => !m.isFaceDown);
@@ -1478,6 +2275,9 @@ Choose wisely!`;
             : min
         );
         targetCardId = weakest._id;
+      } else {
+        // All monsters are face-down; still need a legal target when monsters exist.
+        targetCardId = oppMonsters[0]?._id;
       }
     }
 
@@ -1495,6 +2295,38 @@ Choose wisely!`;
       return true;
     } catch (error) {
       logger.error({ error }, "Failed to execute attack");
+      return false;
+    }
+  }
+
+  /**
+   * Execute enter battle phase
+   */
+  private async executeEnterBattlePhase(gameId: string): Promise<boolean> {
+    if (!this.client) return false;
+
+    try {
+      await this.client.enterBattlePhase(gameId);
+      logger.info({ gameId }, "Entered battle phase");
+      return true;
+    } catch (error) {
+      logger.error({ error, gameId }, "Failed to enter battle phase");
+      return false;
+    }
+  }
+
+  /**
+   * Execute enter main phase 2
+   */
+  private async executeEnterMainPhase2(gameId: string): Promise<boolean> {
+    if (!this.client) return false;
+
+    try {
+      await this.client.enterMainPhase2(gameId);
+      logger.info({ gameId }, "Entered main phase 2");
+      return true;
+    } catch (error) {
+      logger.error({ error, gameId }, "Failed to enter main phase 2");
       return false;
     }
   }
@@ -1628,6 +2460,12 @@ Choose wisely!`;
         return;
       }
 
+      if (!this.llmChainDecisionsEnabled) {
+        await this.client.chainResponse({ gameId, pass: true });
+        logger.info("Passed chain (LLM chain decisions disabled)");
+        return;
+      }
+
       // Ask LLM if we should chain
       const prompt = `An opponent's effect is resolving. You can chain with:
 ${chainableSpells.map((c: CardInHand) => `- ${c.name} (Spell) [cardId: ${c._id}]`).join("\n")}
@@ -1636,7 +2474,14 @@ ${setTraps.map((c) => `- ${c.name} (Trap) [cardId: ${c.cardId}]`).join("\n")}
 Should you chain? Consider the strategic value.
 Respond with JSON: {"chain": true/false, "cardId": "card_id"}`;
 
-      const response = await this.runtime.useModel(ModelType.TEXT_SMALL, {
+      const now = Date.now();
+      const waitMs = this.minLlmDecisionIntervalMs - (now - this.lastLlmDecisionAt);
+      if (waitMs > 0) {
+        await this.sleep(waitMs);
+      }
+      this.lastLlmDecisionAt = Date.now();
+
+      const response = await this.runtime.useModel(this.decisionModelType, {
         prompt: `SYSTEM: You are a JSON-only game AI. Respond with a single JSON object only.\n\n${prompt}`,
         temperature: 0.3,
         maxTokens: 100,

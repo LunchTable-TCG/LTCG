@@ -58,7 +58,20 @@ echo "  Mode: $MODE"
 echo ""
 
 # Check critical environment variables
+set -a
 source .env 2>/dev/null || true
+set +a
+
+# Safe orchestrator defaults (can be overridden in .env)
+export LTCG_ORCHESTRATOR_MODEL="${LTCG_ORCHESTRATOR_MODEL:-text_small}"
+export LTCG_MIN_LLM_DECISION_INTERVAL_MS="${LTCG_MIN_LLM_DECISION_INTERVAL_MS:-4000}"
+export LTCG_ACTION_LOOP_DELAY_MS="${LTCG_ACTION_LOOP_DELAY_MS:-1500}"
+export LTCG_MAX_LLM_DECISIONS_PER_TURN="${LTCG_MAX_LLM_DECISIONS_PER_TURN:-2}"
+export LTCG_LLM_CHAIN_DECISIONS="${LTCG_LLM_CHAIN_DECISIONS:-false}"
+export LTCG_RETAKE_CHAT_USE_LLM="${LTCG_RETAKE_CHAT_USE_LLM:-false}"
+export LTCG_RETAKE_CHAT_REPLY_COOLDOWN_MS="${LTCG_RETAKE_CHAT_REPLY_COOLDOWN_MS:-8000}"
+export LTCG_STREAM_FORCE_RESTART="${LTCG_STREAM_FORCE_RESTART:-false}"
+export LTCG_PREFER_BACKEND_STREAM_AUTOSTART="${LTCG_PREFER_BACKEND_STREAM_AUTOSTART:-true}"
 
 if [ -z "$OPENROUTER_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$OPENAI_API_KEY" ]; then
     echo "⚠️  No LLM API key found in .env"

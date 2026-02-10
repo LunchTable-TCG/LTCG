@@ -6,13 +6,15 @@ import { GameBoardSpectator } from "@/components/streaming/GameBoardSpectator";
 import { StreamCompositeView } from "@/components/streaming/StreamCompositeView";
 import { StreamerInfoPanel } from "@/components/streaming/StreamerInfoPanel";
 import type { OverlayConfig, SessionStatus, StreamType } from "@/lib/streaming/types";
-import { api } from "@convex/_generated/api";
+import * as generatedApi from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { LiveKitRoom } from "@livekit/components-react";
 import { useQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import "@livekit/components-styles";
+// biome-ignore lint/suspicious/noExplicitAny: avoids deep type instantiation in heavily-typed overlay queries
+const apiAny = (generatedApi as any).api;
 
 // Declare window.startRecording for LiveKit
 declare global {
@@ -160,35 +162,32 @@ function StreamOverlayContent() {
 
   // Get streaming session
   const session = useQuery(
-    api.streaming.sessions.getSessionPublic,
+    apiAny.streaming.sessions.getSessionPublic,
     sessionId && !isPreview ? { sessionId: sessionId as Id<"streamingSessions"> } : "skip"
   );
 
   // If roomName is provided, use LiveKit composite mode
   const useLiveKitComposite = !isPreview && Boolean(roomName && livekitUrl && token);
 
-  // Determine if the currentLobbyId is a story game ID (story_xxx) or a real lobby ID
+  // currentLobbyId may contain either a lobbyId or a gameId (story + some control flows).
   const currentLobbyId = session?.currentLobbyId;
-  const isStoryGame = typeof currentLobbyId === "string" && currentLobbyId.startsWith("story_");
-
-  // Story games store gameId as currentLobbyId — resolve to actual lobbyId first
-  const storyGameLookup = useQuery(
-    api.gameplay.games.queries.getGameStateByGameId,
-    !isPreview && currentLobbyId && isStoryGame ? { gameId: currentLobbyId } : "skip"
+  const gameLookup = useQuery(
+    apiAny.gameplay.games.queries.getGameStateByGameId,
+    !isPreview && currentLobbyId ? { gameId: currentLobbyId } : "skip"
   );
 
-  // Resolve the actual lobby ID for all queries
-  const resolvedLobbyId = isStoryGame ? storyGameLookup?.lobbyId : currentLobbyId;
+  // Prefer a resolved lobbyId from game lookup when available, otherwise use the raw value.
+  const resolvedLobbyId = gameLookup?.lobbyId || currentLobbyId;
 
   // Get game state (works for both story and multiplayer once we have a lobby ID)
   const gameState = useQuery(
-    api.gameplay.games.queries.getGameSpectatorView,
+    apiAny.gameplay.games.queries.getGameSpectatorView,
     !isPreview && resolvedLobbyId ? { lobbyId: resolvedLobbyId as Id<"gameLobbies"> } : "skip"
   );
 
   // Get recent game events
   const events = useQuery(
-    api.gameplay.gameEvents.subscribeToGameEvents,
+    apiAny.gameplay.gameEvents.subscribeToGameEvents,
     !isPreview && resolvedLobbyId
       ? { lobbyId: resolvedLobbyId as Id<"gameLobbies">, limit: 10 }
       : "skip"
@@ -197,7 +196,7 @@ function StreamOverlayContent() {
   // Get agent decisions (for agent streams) — filter by current game to avoid stale decisions
   const currentGameId = gameState?.gameId;
   const decisions = useQuery(
-    api.agents.decisions.getRecentDecisionsForStream,
+    apiAny.agents.decisions.getRecentDecisionsForStream,
     !isPreview && session?.agentId
       ? { agentId: session.agentId, gameId: currentGameId || undefined, limit: 5 }
       : "skip"
@@ -273,6 +272,26 @@ function StreamOverlayContent() {
   const overlayEvents = isPreview ? PREVIEW_EVENTS : events || [];
   const overlayDecisions = isPreview ? PREVIEW_DECISIONS : decisions || [];
   const overlayLobbyId = isPreview ? "preview_lobby_001" : resolvedLobbyId;
+
+  const hostUsernameRaw = overlayGameState?.host?.username ?? "Player 1";
+  const opponentUsernameRaw = overlayGameState?.opponent?.username ?? "AI Opponent";
+  let hostUsernameDisplay = hostUsernameRaw;
+  let opponentUsernameDisplay = opponentUsernameRaw;
+
+  if (!isPreview && overlaySession?.streamType === "agent" && overlaySession.entityName) {
+    const entityUserId = (overlaySession as { entityUserId?: string }).entityUserId;
+    const hostUserId = overlayGameState?.host?.userId as string | undefined;
+    const opponentUserId = overlayGameState?.opponent?.userId as string | undefined;
+
+    if (entityUserId && hostUserId === entityUserId) {
+      hostUsernameDisplay = overlaySession.entityName;
+    } else if (entityUserId && opponentUserId && opponentUserId === entityUserId) {
+      opponentUsernameDisplay = overlaySession.entityName;
+    } else {
+      // Fallback for legacy sessions without entity user mapping.
+      hostUsernameDisplay = overlaySession.entityName;
+    }
+  }
 
   const voiceTrackUrl = overlaySession?.overlayConfig?.voiceTrackUrl?.trim();
   const voiceVolumeRaw = overlaySession?.overlayConfig?.voiceVolume;
@@ -435,8 +454,8 @@ function StreamOverlayContent() {
             <GameBoardSpectator
               gameState={{
                 ...overlayGameState.boardState,
-                hostUsername: overlayGameState.host?.username,
-                opponentUsername: overlayGameState.opponent?.username ?? "AI Opponent",
+                hostUsername: hostUsernameDisplay,
+                opponentUsername: opponentUsernameDisplay,
                 turnNumber: overlayGameState.turnNumber,
               }}
             />

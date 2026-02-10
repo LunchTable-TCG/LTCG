@@ -1299,6 +1299,37 @@ export const getGameStateForPlayerInternal = internalQuery({
     );
     const opponentBoard = opponentBoardData.filter(Boolean);
 
+    // Get spell/trap zones with card data
+    const mySpellTrapZoneRaw = isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
+    const mySpellTrapData = await Promise.all(
+      mySpellTrapZoneRaw.map(async (stCard) => {
+        const cardData = await getCardData(stCard.cardId);
+        if (!cardData) return null;
+        return {
+          ...cardData,
+          isFaceDown: stCard.isFaceDown,
+          isActivated: stCard.isActivated,
+        };
+      })
+    );
+    const mySpellTrapZone = mySpellTrapData.filter(Boolean);
+
+    const opponentSpellTrapZoneRaw = isHost
+      ? gameState.opponentSpellTrapZone
+      : gameState.hostSpellTrapZone;
+    const opponentSpellTrapData = await Promise.all(
+      opponentSpellTrapZoneRaw.map(async (stCard) => {
+        const cardData = await getCardData(stCard.cardId);
+        if (!cardData) return null;
+        return {
+          ...cardData,
+          isFaceDown: stCard.isFaceDown,
+          isActivated: stCard.isActivated,
+        };
+      })
+    );
+    const opponentSpellTrapZone = opponentSpellTrapData.filter(Boolean);
+
     // Calculate timeout status
     const config = gameState.timeoutConfig || DEFAULT_TIMEOUT_CONFIG;
     const now = Date.now();
@@ -1335,6 +1366,8 @@ export const getGameStateForPlayerInternal = internalQuery({
       hand: myHand,
       myBoard,
       opponentBoard,
+      mySpellTrapZone,
+      opponentSpellTrapZone,
       myDeckCount: isHost ? gameState.hostDeck?.length || 0 : gameState.opponentDeck?.length || 0,
       opponentDeckCount: isHost
         ? gameState.opponentDeck?.length || 0

@@ -1,5 +1,6 @@
 import {
   EgressClient,
+  EgressStatus,
   EncodingOptionsPreset,
   StreamOutput,
   StreamProtocol,
@@ -65,6 +66,64 @@ export async function stopWebEgress(egressId: string): Promise<void> {
   } catch (error) {
     console.warn("Failed to stop egress (may already be stopped):", error);
   }
+}
+
+/**
+ * Check whether a specific egress is currently active.
+ */
+export async function isWebEgressActive(egressId: string): Promise<boolean> {
+  const client = getEgressClient();
+  const [egress] = await client.listEgress({ egressId });
+  if (!egress) {
+    return false;
+  }
+
+  return egress.status === EgressStatus.EGRESS_ACTIVE || egress.status === EgressStatus.EGRESS_STARTING;
+}
+
+/**
+ * Stop active web-overlay egresses that no longer map to active Convex sessions.
+ * This prevents duplicate/orphaned streams from fighting each other.
+ */
+export async function stopOrphanedOverlayEgresses(activeEgressIds: string[]): Promise<string[]> {
+  const client = getEgressClient();
+  const activeSet = new Set(activeEgressIds.filter((id) => typeof id === "string" && id.length > 0));
+  const egresses = await client.listEgress({ active: true });
+  const stopped: string[] = [];
+
+  for (const egress of egresses) {
+    const isActive =
+      egress.status === EgressStatus.EGRESS_ACTIVE ||
+      egress.status === EgressStatus.EGRESS_STARTING;
+    if (!isActive) {
+      continue;
+    }
+
+    const isOverlayWebEgress =
+      egress.request.case === "web" &&
+      typeof egress.request.value.url === "string" &&
+      egress.request.value.url.includes("/stream/overlay");
+
+    if (!isOverlayWebEgress) {
+      continue;
+    }
+
+    if (activeSet.has(egress.egressId)) {
+      continue;
+    }
+
+    try {
+      await client.stopEgress(egress.egressId);
+      stopped.push(egress.egressId);
+    } catch (error) {
+      console.warn("Failed to stop orphaned overlay egress:", {
+        egressId: egress.egressId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return stopped;
 }
 
 /**

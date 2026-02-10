@@ -89,6 +89,7 @@ export function LiveStreamingRoom({
           agentId,
           streamType,
           platform,
+          useStoredCredentials,
           ...(useStoredCredentials ? {} : { streamKey, customRtmpUrl }),
           streamTitle: `${values.username}'s Stream`,
           overlayConfig: {

@@ -105,17 +105,20 @@ export interface StartStreamBody {
   streamKey?: string;
   streamKeyHash?: string;
   customRtmpUrl?: string;
+  retakeAccessToken?: string;
   useStoredCredentials?: boolean;
   streamTitle?: string;
   overlayConfig?: OverlayConfigInput;
   gameId?: string;
   lobbyId?: string;
   baseUrl?: string;
+  forceRestart?: boolean;
   destinations?: StartStreamDestination[];
 }
 
 export interface StopStreamBody {
-  sessionId: string;
+  sessionId?: string;
+  agentId?: string;
   reason?: string;
 }
 
@@ -155,6 +158,7 @@ export interface PublicStreamSession {
   currentLobbyId?: string;
   entityName?: string;
   entityAvatar?: string;
+  entityUserId?: string;
   viewerCount?: number;
   peakViewerCount?: number;
   startedAt?: number;

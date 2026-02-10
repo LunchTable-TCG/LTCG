@@ -212,13 +212,27 @@ export const autoStartAgentStream = internalMutation({
       return { started: false, reason: "autostart_disabled" };
     }
 
-    const existingLiveSession = await ctx.db
-      .query("streamingSessions")
-      .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId).eq("status", "live"))
-      .first();
+    const existingSessions = await Promise.all([
+      ctx.db
+        .query("streamingSessions")
+        .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId).eq("status", "live"))
+        .first(),
+      ctx.db
+        .query("streamingSessions")
+        .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId).eq("status", "pending"))
+        .first(),
+      ctx.db
+        .query("streamingSessions")
+        .withIndex("by_agent_status", (q) =>
+          q.eq("agentId", args.agentId).eq("status", "initializing")
+        )
+        .first(),
+    ]);
 
-    if (existingLiveSession) {
-      await ctx.db.patch(existingLiveSession._id, {
+    const existingActiveSession = existingSessions.find(Boolean);
+
+    if (existingActiveSession) {
+      await ctx.db.patch(existingActiveSession._id, {
         currentLobbyId: args.lobbyId,
       });
       const lobby = await ctx.db.get(args.lobbyId);
@@ -228,7 +242,7 @@ export const autoStartAgentStream = internalMutation({
           allowSpectators: true,
         });
       }
-      return { started: false, reason: "already_live_linked_to_lobby" };
+      return { started: false, reason: "already_active_linked_to_lobby" };
     }
 
     if (!agent.streamingPlatform || !agent.streamingKeyHash) {
@@ -295,13 +309,24 @@ export const triggerAgentStreamStart = internalAction({
     }
 
     // 2. Call streaming API
-    const baseUrl = process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3333";
+    const configuredAppUrl =
+      process.env["LTCG_APP_URL"] ||
+      process.env["NEXT_PUBLIC_APP_URL"] ||
+      "http://localhost:3333";
+    const baseUrl = configuredAppUrl.includes(".convex.site")
+      ? "https://www.lunchtable.cards"
+      : configuredAppUrl;
     const internalAuthSecret = process.env["INTERNAL_API_SECRET"];
     if (!internalAuthSecret) {
       throw new Error("INTERNAL_API_SECRET is required");
     }
 
     try {
+      const retakeAccessToken =
+        args.platform === "retake"
+          ? process.env["RETAKE_ACCESS_TOKEN"] || process.env["DIZZY_RETAKE_ACCESS_TOKEN"]
+          : undefined;
+
       const response = await fetch(`${baseUrl}/api/streaming/start`, {
         method: "POST",
         headers: {
@@ -314,6 +339,8 @@ export const triggerAgentStreamStart = internalAction({
           platform: args.platform,
           streamKeyHash: args.streamKeyHash, // API will decrypt
           customRtmpUrl: args.customRtmpUrl,
+          lobbyId: args.lobbyId,
+          ...(retakeAccessToken ? { retakeAccessToken } : {}),
           streamTitle: `${agent.name} - LTCG Tournament`,
           overlayConfig: {
             showDecisions: true,
@@ -378,11 +405,27 @@ export const autoStopAgentStream = internalMutation({
     }
 
     // Find active streaming session for this agent and lobby
-    const session = await ctx.db
-      .query("streamingSessions")
-      .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId).eq("status", "live"))
-      .filter((q) => q.eq(q.field("currentLobbyId"), args.lobbyId))
-      .first();
+    const sessionCandidates = await Promise.all([
+      ctx.db
+        .query("streamingSessions")
+        .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId).eq("status", "live"))
+        .filter((q) => q.eq(q.field("currentLobbyId"), args.lobbyId))
+        .first(),
+      ctx.db
+        .query("streamingSessions")
+        .withIndex("by_agent_status", (q) => q.eq("agentId", args.agentId).eq("status", "pending"))
+        .filter((q) => q.eq(q.field("currentLobbyId"), args.lobbyId))
+        .first(),
+      ctx.db
+        .query("streamingSessions")
+        .withIndex("by_agent_status", (q) =>
+          q.eq("agentId", args.agentId).eq("status", "initializing")
+        )
+        .filter((q) => q.eq(q.field("currentLobbyId"), args.lobbyId))
+        .first(),
+    ]);
+
+    const session = sessionCandidates.find(Boolean);
 
     if (!session) {
       return { stopped: false, reason: "no_active_session" };
@@ -435,7 +478,13 @@ export const triggerAgentStreamStop = internalAction({
     sessionId: v.id("streamingSessions"),
   },
   handler: async (_ctx, args) => {
-    const baseUrl = process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3333";
+    const configuredAppUrl =
+      process.env["LTCG_APP_URL"] ||
+      process.env["NEXT_PUBLIC_APP_URL"] ||
+      "http://localhost:3333";
+    const baseUrl = configuredAppUrl.includes(".convex.site")
+      ? "https://www.lunchtable.cards"
+      : configuredAppUrl;
     const internalAuthSecret = process.env["INTERNAL_API_SECRET"];
     if (!internalAuthSecret) {
       return { success: false, error: "INTERNAL_API_SECRET is required" };

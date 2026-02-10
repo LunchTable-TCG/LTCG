@@ -86,6 +86,39 @@ describe("LTCGApiClient - Basic Functionality", () => {
       const callHeaders = mockFetch.mock.calls[0][1].headers;
       expect(callHeaders.Authorization).toBeUndefined();
     });
+
+    it("should include x-api-key when emitting agent events", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: { success: true, eventId: "evt_1" },
+          timestamp: Date.now(),
+        }),
+      });
+
+      await client.emitAgentEvent({
+        gameId: "game123",
+        lobbyId: "lobby123",
+        turnNumber: 1,
+        eventType: "agent_thinking",
+        agentName: "Dizzy",
+        description: "Considering options",
+      });
+
+      const expectedEventsBaseUrl =
+        process.env.LTCG_APP_URL || process.env.NEXT_PUBLIC_APP_URL || TEST_BASE_URL;
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${expectedEventsBaseUrl.replace(/\/$/, "")}/api/agents/events`,
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: `Bearer ${TEST_API_KEY}`,
+            "x-api-key": TEST_API_KEY,
+          }),
+        })
+      );
+    });
   });
 
   describe("error handling", () => {

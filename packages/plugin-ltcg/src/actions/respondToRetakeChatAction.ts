@@ -5,7 +5,36 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { logger} from "../utils/logger";
+import { ModelType } from "@elizaos/core";
+import { logger } from "../utils/logger";
+
+function isEnabled(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes";
+  }
+  return false;
+}
+
+function buildDeterministicReply(username: string, viewerMessage: string): string {
+  const lowered = viewerMessage.toLowerCase();
+
+  if (lowered.includes("gg")) {
+    return `@${username} gg - appreciate you being here while we grind these lines.`;
+  }
+  if (lowered.includes("?")) {
+    return `@${username} good question - I'm reading board state and taking the safest line this turn.`;
+  }
+  if (lowered.includes("attack")) {
+    return `@${username} I'm checking lethal and trap risk before I commit to attacks.`;
+  }
+  if (lowered.includes("deck")) {
+    return `@${username} this list is tuned for steady board control and clean battle phase pressure.`;
+  }
+
+  return `@${username} thanks for the message - I'm locked in on this turn.`;
+}
 
 /**
  * Respond to Retake.tv Chat
@@ -33,35 +62,35 @@ export const respondToRetakeChatAction: Action = {
 
   validate: async (runtime: IAgentRuntime, message: Memory) => {
     const text = (message.content.text ?? "").toLowerCase();
-
-    // Check if this is a chat/viewer engagement context
-    const chatKeywords = [
-      "chat",
-      "viewers",
-      "stream",
-      "audience",
-      "watching",
-      "everyone",
-    ];
+    const source = typeof message.content.source === "string" ? message.content.source : "";
 
     // Check if there's an active stream (has credentials)
     const accessToken =
       runtime.getSetting("RETAKE_ACCESS_TOKEN") ||
       process.env.RETAKE_ACCESS_TOKEN ||
       process.env.DIZZY_RETAKE_ACCESS_TOKEN;
+    const userDbId =
+      runtime.getSetting("RETAKE_USER_DB_ID") ||
+      process.env.RETAKE_USER_DB_ID ||
+      process.env.DIZZY_RETAKE_USER_DB_ID;
 
-    if (!accessToken) {
+    if (!accessToken || !userDbId) {
       return false; // No active stream
     }
 
-    // If message mentions chat/viewers, this might be a good action
-    return chatKeywords.some((kw) => text.includes(kw));
+    // Always allow direct Retake chat events from the chat polling service.
+    if (source === "retake_chat") {
+      return true;
+    }
+
+    // Allow explicit manual requests to speak in stream chat.
+    return /\b(retake|stream\s*chat|chat)\b/.test(text);
   },
 
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
+    _state: State,
     _options: Record<string, unknown>,
     callback: HandlerCallback
   ) => {
@@ -82,9 +111,59 @@ export const respondToRetakeChatAction: Action = {
         return { success: false, error: "No active stream" };
       }
 
-      // Extract the message to send to chat
-      // This would typically be the agent's response to a viewer question
-      const chatMessage = message.content.text ?? "";
+      const source = typeof message.content.source === "string" ? message.content.source : "";
+      const viewerMessage = (message.content.text ?? "").trim();
+      const metadata =
+        message.content.metadata && typeof message.content.metadata === "object"
+          ? (message.content.metadata as Record<string, unknown>)
+          : undefined;
+      const username =
+        typeof metadata?.username === "string" && metadata.username.trim().length > 0
+          ? metadata.username.trim()
+          : "viewer";
+      const useLlmForChat = isEnabled(
+        runtime.getSetting("LTCG_RETAKE_CHAT_USE_LLM") ?? process.env.LTCG_RETAKE_CHAT_USE_LLM
+      );
+
+      let chatMessage = viewerMessage;
+      if (source === "retake_chat") {
+        if (!useLlmForChat) {
+          chatMessage = buildDeterministicReply(username, viewerMessage);
+        } else {
+          try {
+            const generated = await runtime.useModel(ModelType.TEXT_SMALL, {
+              prompt: `You are a live TCG streamer replying to chat.
+
+Viewer (@${username}) said: "${viewerMessage}"
+
+Write one concise friendly response as plain text.
+Rules:
+- 1 sentence, max 180 characters
+- no markdown, no quotes, no emojis
+- mention the viewer as @${username}
+- stay in gameplay context`,
+              temperature: 0.4,
+              maxTokens: 80,
+            });
+
+            if (typeof generated === "string" && generated.trim().length > 0) {
+              chatMessage = generated.trim().replace(/^["']|["']$/g, "");
+            } else {
+              chatMessage = buildDeterministicReply(username, viewerMessage);
+            }
+          } catch (generationError) {
+            logger.debug(
+              { error: generationError },
+              "Failed to generate Retake chat response, using deterministic fallback"
+            );
+            chatMessage = buildDeterministicReply(username, viewerMessage);
+          }
+        }
+      }
+
+      if (!chatMessage.trim()) {
+        return { success: false, error: "Empty chat message" };
+      }
 
       // Send message to Retake.tv chat
       logger.info(`Sending message to Retake chat (${chatMessage.length} chars)`);
@@ -97,7 +176,7 @@ export const respondToRetakeChatAction: Action = {
         },
         body: JSON.stringify({
           userDbId,
-          message: chatMessage,
+          message: chatMessage.trim(),
         }),
       });
 
@@ -109,15 +188,17 @@ export const respondToRetakeChatAction: Action = {
       logger.info("Chat message sent successfully");
 
       // Also send via callback for local chat
-      await callback({
-        text: `💬 [To Retake Chat]: ${chatMessage}`,
-      });
+      if (callback) {
+        await callback({
+          text: `[To Retake Chat] ${chatMessage}`,
+        });
+      }
 
       return {
         success: true,
         data: {
           platform: "retake",
-          messageSent: chatMessage,
+          messageSent: chatMessage.trim(),
           timestamp: Date.now(),
         },
       };

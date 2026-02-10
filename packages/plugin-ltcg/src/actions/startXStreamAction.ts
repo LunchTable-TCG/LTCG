@@ -95,7 +95,7 @@ export const startXStreamAction: Action = {
         const ltcgStreamingUrl =
           process.env.LTCG_STREAMING_API_URL ||
           process.env.LTCG_APP_URL ||
-          process.env.LTCG_API_URL ||
+          process.env.NEXT_PUBLIC_APP_URL ||
           "https://www.lunchtable.cards";
         const ltcgApiKey = process.env.LTCG_API_KEY;
         const ltcgAgentId =
@@ -105,7 +105,12 @@ export const startXStreamAction: Action = {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${ltcgApiKey}`,
+            ...(ltcgApiKey
+              ? {
+                  "Authorization": `Bearer ${ltcgApiKey}`,
+                  "x-api-key": ltcgApiKey,
+                }
+              : {}),
           },
           body: JSON.stringify({
             agentId: ltcgAgentId,

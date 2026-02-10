@@ -1,10 +1,9 @@
+import * as generatedApi from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { ConvexHttpClient } from "convex/browser";
 import { type NextRequest, NextResponse } from "next/server";
-
-// Use require to avoid TS2589 deep type instantiation issues
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { api } = require("@convex/_generated/api");
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
 
 function createConvexClient() {
   const convexUrl = process.env["NEXT_PUBLIC_CONVEX_URL"]?.trim();
@@ -21,7 +20,7 @@ function createConvexClient() {
  * This enables real-time visibility of agent thinking/decisions in the UI.
  *
  * Required headers:
- * - x-api-key: Agent's API key for authentication
+ * - x-api-key: Agent's API key for authentication (or Authorization: Bearer <key>)
  *
  * Request body:
  * - gameId: string
@@ -36,8 +35,11 @@ export async function POST(req: NextRequest) {
   try {
     const convex = createConvexClient();
 
-    // Validate API key
-    const apiKey = req.headers.get("x-api-key");
+    // Validate API key (supports x-api-key and Authorization: Bearer)
+    const authHeader = req.headers.get("Authorization");
+    const apiKeyFromBearer =
+      authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
+    const apiKey = req.headers.get("x-api-key")?.trim() || apiKeyFromBearer;
     if (!apiKey) {
       return NextResponse.json({ error: "API key required" }, { status: 401 });
     }
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest) {
     if (!lobbyId || typeof lobbyId !== "string") {
       return NextResponse.json({ error: "lobbyId is required" }, { status: 400 });
     }
-    if (typeof turnNumber !== "number") {
+    if (typeof turnNumber !== "number" || !Number.isFinite(turnNumber) || turnNumber < 0) {
       return NextResponse.json({ error: "turnNumber is required" }, { status: 400 });
     }
     if (!["agent_thinking", "agent_decided", "agent_error"].includes(eventType)) {
@@ -68,13 +70,13 @@ export async function POST(req: NextRequest) {
 
     // Validate API key and get associated user
     // For now, we'll use a simple validation - in production this should check against stored keys
-    const agentUser = await convex.query(api.agents.agents.getAgentByApiKey, { apiKey });
+    const agentUser = await convex.query(apiAny.agents.agents.getAgentByApiKey, { apiKey });
     if (!agentUser) {
       return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
     }
 
     // Record the event via Convex
-    await convex.mutation(api.gameplay.gameEvents.recordEvent, {
+    await convex.mutation(apiAny.gameplay.gameEvents.recordEvent, {
       lobbyId: lobbyId as Id<"gameLobbies">,
       gameId,
       turnNumber,
@@ -90,7 +92,11 @@ export async function POST(req: NextRequest) {
       eventId: `${lobbyId}-${Date.now()}`,
     });
   } catch (error) {
+    const details =
+      error instanceof Error
+        ? error.message.slice(0, 300)
+        : String(error).slice(0, 300);
     console.error("Failed to record agent event:", error);
-    return NextResponse.json({ error: "Failed to record event" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to record event", details }, { status: 500 });
   }
 }

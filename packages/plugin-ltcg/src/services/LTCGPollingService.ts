@@ -94,6 +94,10 @@ export class LTCGPollingService extends Service {
   private discoveryInterval: ReturnType<typeof setInterval> | null = null;
   private matchmakingInterval: ReturnType<typeof setInterval> | null = null;
   private currentGameId: string | null = null;
+  /** Story stage ID for the current game (set via startPollingGame metadata) */
+  private currentStageId: string | null = null;
+  /** Active streaming session ID (set via startPollingGame metadata) */
+  private currentStreamingSessionId: string | null = null;
   private lastSnapshot: GameStateSnapshot | null = null;
   private intervalMs: number;
   private discoveryIntervalMs: number;
@@ -228,7 +232,20 @@ export class LTCGPollingService extends Service {
         baseUrl: apiUrl,
         debug: debugMode,
       });
-      logger.info("Polling service initialized with API client");
+      try {
+        const profile = await service.client.getAgentProfile();
+        logger.info(
+          { agentId: profile.agentId, name: profile.name },
+          "Polling service initialized with verified API client"
+        );
+      } catch (error) {
+        logger.error(
+          { error: error instanceof Error ? error.message : String(error) },
+          "LTCG API key validation failed; polling service will stay idle"
+        );
+        service.client = null;
+        return service;
+      }
 
       // Start auto-discovery loop
       service.startDiscovery();
@@ -301,7 +318,12 @@ export class LTCGPollingService extends Service {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+            ...(apiKey
+              ? {
+                  Authorization: `Bearer ${apiKey}`,
+                  "x-api-key": apiKey,
+                }
+              : {}),
           },
           body: JSON.stringify({ agentId, reason: "agent_shutdown" }),
         });
@@ -320,7 +342,7 @@ export class LTCGPollingService extends Service {
   /**
    * Start polling for a specific game
    */
-  startPollingGame(gameId: string): void {
+  startPollingGame(gameId: string, meta?: { stageId?: string; streamingSessionId?: string }): void {
     if (!this.client) {
       logger.warn("Cannot start polling - API client not initialized");
       return;
@@ -335,6 +357,8 @@ export class LTCGPollingService extends Service {
     this.stopPolling();
 
     this.currentGameId = gameId;
+    this.currentStageId = meta?.stageId ?? null;
+    this.currentStreamingSessionId = meta?.streamingSessionId ?? null;
     this.lastSnapshot = null;
     this.isPolling = true;
 
@@ -364,16 +388,72 @@ export class LTCGPollingService extends Service {
    * Stop polling
    */
   stopPolling(): void {
+    const activeGameId = this.currentGameId;
+
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
     }
     this.isPolling = false;
     this.currentGameId = null;
+    this.currentStageId = null;
+    this.currentStreamingSessionId = null;
     this.lastSnapshot = null;
+
+    // Clear per-game recovery state to avoid stale open circuits after game completion.
+    if (activeGameId) {
+      const operationName = `poll_game_${activeGameId}`;
+      this.circuitBreakers.delete(operationName);
+      this.retryDelays.delete(operationName);
+    }
 
     if (this.debug) {
       logger.debug("Polling stopped");
+    }
+  }
+
+  /**
+   * Handle game end: complete story stage and update streaming session with match result.
+   * Called before stopPolling clears state.
+   */
+  private async handleGameEnd(gameState: GameStateResponse | null): Promise<void> {
+    const agentWon = gameState ? this.didAgentWin(gameState) : false;
+    const playerLP = gameState?.hostPlayer?.lifePoints ?? 0;
+    const result: "win" | "loss" = agentWon ? "win" : "loss";
+
+    // 1. Complete story stage (unlocks next stage)
+    if (this.currentStageId && this.client) {
+      try {
+        const completion = await this.client.completeStoryStage(this.currentStageId, agentWon, playerLP);
+        logger.info({ stageId: this.currentStageId, won: agentWon, unlockedNextStage: completion.unlockedNextStage }, "Story stage completed");
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        logger.warn({ error: msg, stageId: this.currentStageId }, "Failed to complete story stage");
+      }
+    }
+
+    // 2. Update streaming session with match result (shows win/loss overlay)
+    if (this.currentStreamingSessionId && this.client) {
+      try {
+        const appBaseUrl = (process.env.LTCG_APP_URL || "https://www.lunchtable.cards").replace(/\/$/, "");
+        const internalAuth = process.env.INTERNAL_API_SECRET?.trim();
+        if (internalAuth) {
+          await fetch(`${appBaseUrl}/api/streaming/match-result`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-api-key": internalAuth },
+            body: JSON.stringify({
+              sessionId: this.currentStreamingSessionId,
+              lastMatchEndedAt: Date.now(),
+              lastMatchResult: result,
+              lastMatchSummary: agentWon ? "Match over: victory secured." : "Match over: tough loss. Reviewing lines.",
+            }),
+          });
+          logger.info({ sessionId: this.currentStreamingSessionId, result }, "Updated streaming session with match result");
+        }
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        logger.warn({ error: msg }, "Failed to update streaming session with match result");
+      }
     }
   }
 
@@ -863,11 +943,26 @@ export class LTCGPollingService extends Service {
     }
 
     const gameId = this.currentGameId;
+    let gameNotFound = false;
     const gameState = await this.executeWithRecovery(
       `poll_game_${gameId}`,
       async () => this.client?.getGameState(gameId),
-      { silent: true }
+      {
+        silent: true,
+        onError: (error) => {
+          if (this.isGameNotFoundError(error)) {
+            gameNotFound = true;
+          }
+        },
+      }
     );
+
+    if (gameNotFound) {
+      logger.info({ gameId }, "Game no longer exists, stopping polling and clearing active game");
+      await this.handleGameEnd(null);
+      this.stopPolling();
+      return;
+    }
 
     if (!gameState) {
       // Failed to get game state - error recovery handles logging
@@ -898,6 +993,7 @@ export class LTCGPollingService extends Service {
         { gameId: this.currentGameId, status: gameState.status },
         "Game ended, stopping polling"
       );
+      await this.handleGameEnd(gameState);
       this.stopPolling();
     }
   }
@@ -1244,7 +1340,7 @@ export class LTCGPollingService extends Service {
   private async executeWithRecovery<T>(
     operationName: string,
     operation: () => Promise<T>,
-    options?: { silent?: boolean }
+    options?: { silent?: boolean; onError?: (error: unknown) => void }
   ): Promise<T | null> {
     // Check circuit breaker
     if (this.isCircuitOpen(operationName)) {
@@ -1259,6 +1355,7 @@ export class LTCGPollingService extends Service {
       this.recordSuccess(operationName);
       return result;
     } catch (error) {
+      options?.onError?.(error);
       this.recordFailure(operationName);
       const delay = this.getRetryDelay(operationName);
 
@@ -1271,6 +1368,11 @@ export class LTCGPollingService extends Service {
 
       return null;
     }
+  }
+
+  private isGameNotFoundError(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error);
+    return /game[_\s-]?not[_\s-]?found/i.test(message);
   }
 
   /**

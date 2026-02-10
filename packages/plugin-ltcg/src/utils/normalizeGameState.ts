@@ -11,6 +11,7 @@ import type {
   GameStateResponse,
   MonsterCard,
   PlayerState,
+  SpellTrapCard,
 } from "../types/api";
 
 /**
@@ -57,6 +58,41 @@ function normalizeCardInHand(card: CardInHand, index: number): CardInHand {
   };
 }
 
+type SpellTrapLike = {
+  boardIndex?: number;
+  cardId?: string;
+  _id?: string;
+  name?: string;
+  faceUp?: boolean;
+  isFaceDown?: boolean;
+  type?: "spell" | "trap";
+  cardType?: "spell" | "trap";
+};
+
+function normalizeSpellTrapZone(zone: SpellTrapLike[] | undefined): SpellTrapCard[] {
+  if (!Array.isArray(zone)) {
+    return [];
+  }
+
+  return zone
+    .map((card, index) => {
+      const cardId = card.cardId ?? card._id;
+      const type = card.type ?? card.cardType;
+      if (!cardId || !type) {
+        return null;
+      }
+      const faceUp = typeof card.faceUp === "boolean" ? card.faceUp : !Boolean(card.isFaceDown);
+      return {
+        boardIndex: typeof card.boardIndex === "number" ? card.boardIndex : index,
+        cardId,
+        name: card.name ?? "Unknown",
+        faceUp,
+        type,
+      } satisfies SpellTrapCard;
+    })
+    .filter((card): card is SpellTrapCard => card !== null);
+}
+
 /**
  * Normalize game state response to include legacy fields
  * This allows existing actions to work without modification
@@ -74,25 +110,36 @@ export function normalizeGameState(state: GameStateResponse): NormalizedGameStat
 
   // Normalize hand cards
   const normalizedHand = (state.hand || []).map((card, idx) => normalizeCardInHand(card, idx));
+  const mySpellTrapZone = normalizeSpellTrapZone(state.mySpellTrapZone as SpellTrapLike[] | undefined);
+  const opponentSpellTrapZone = normalizeSpellTrapZone(
+    state.opponentSpellTrapZone as SpellTrapLike[] | undefined
+  );
+
+  const myPlayerId =
+    state.myPlayerId || (state.isMyTurn ? state.currentTurnPlayer : state.hostPlayer?.playerId) || "";
+  const opponentPlayerId =
+    state.opponentPlayerId ||
+    (!state.isMyTurn ? state.currentTurnPlayer : state.opponentPlayer?.playerId) ||
+    "";
 
   // Build legacy player states
   const hostPlayer: PlayerState = {
-    playerId: state.currentTurnPlayer || "",
+    playerId: myPlayerId,
     lifePoints: state.myLifePoints,
     deckCount: state.myDeckCount,
     monsterZone: myMonsterZone,
-    spellTrapZone: [], // Not returned separately in current API
+    spellTrapZone: mySpellTrapZone,
     graveyard: [],
     banished: [],
     extraDeck: 0,
   };
 
   const opponentPlayer: PlayerState = {
-    playerId: "",
+    playerId: opponentPlayerId,
     lifePoints: state.opponentLifePoints,
     deckCount: state.opponentDeckCount,
     monsterZone: opponentMonsterZone,
-    spellTrapZone: [], // Not returned separately in current API
+    spellTrapZone: opponentSpellTrapZone,
     graveyard: [],
     banished: [],
     extraDeck: 0,

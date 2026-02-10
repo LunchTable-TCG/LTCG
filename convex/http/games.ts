@@ -203,6 +203,29 @@ export const gameState = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("GAME_NOT_FOUND", "Game not found", 404);
     }
 
+    const mySpellTrapZone = (state.mySpellTrapZone ?? []).map((card, index) => ({
+      boardIndex: index,
+      cardId: card._id,
+      name: card.name,
+      faceUp: !card.isFaceDown,
+      type: card.cardType,
+    }));
+
+    const opponentSpellTrapZone = (state.opponentSpellTrapZone ?? []).map((card, index) => ({
+      boardIndex: index,
+      cardId: card._id,
+      name: card.name,
+      faceUp: !card.isFaceDown,
+      type: card.cardType,
+    }));
+
+    const opponentPlayerId =
+      state.hostId && state.opponentId
+        ? auth.userId === state.hostId
+          ? state.opponentId
+          : state.hostId
+        : undefined;
+
     // Return formatted game state
     return successResponse({
       gameId: state.gameId,
@@ -211,11 +234,15 @@ export const gameState = authHttpAction(async (ctx, request, auth) => {
       turnNumber: state.turnNumber,
       currentTurnPlayer: state.currentTurnPlayerId,
       isMyTurn: state.currentTurnPlayerId === auth.userId,
+      myPlayerId: auth.userId,
+      opponentPlayerId,
       myLifePoints: state.myLifePoints,
       opponentLifePoints: state.opponentLifePoints,
       hand: state.hand,
       myBoard: state.myBoard,
       opponentBoard: state.opponentBoard,
+      mySpellTrapZone,
+      opponentSpellTrapZone,
       myDeckCount: state.myDeckCount,
       opponentDeckCount: state.opponentDeckCount,
       myGraveyardCount: state.myGraveyardCount,

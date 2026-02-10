@@ -90,6 +90,11 @@ export class LTCGApiClient {
       : null;
   }
 
+  private getAppBaseUrl(): string {
+    const appBaseUrl = process.env.LTCG_APP_URL || process.env.NEXT_PUBLIC_APP_URL || this.baseUrl;
+    return appBaseUrl.endsWith("/") ? appBaseUrl.slice(0, -1) : appBaseUrl;
+  }
+
   // ============================================================================
   // Private Helper Methods
   // ============================================================================
@@ -101,12 +106,15 @@ export class LTCGApiClient {
     endpoint: string,
     options: RequestInit = {},
     timeout: number = this.timeout,
-    requiresAuth = true
+    requiresAuth = true,
+    maxAttempts: number = this.maxRetries
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    const isAbsoluteUrl = /^https?:\/\//i.test(endpoint);
+    const url = isAbsoluteUrl ? endpoint : `${this.baseUrl}${endpoint}`;
     let lastError: Error | null = null;
+    const attempts = Math.max(1, maxAttempts);
 
-    for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+    for (let attempt = 0; attempt < attempts; attempt++) {
       try {
         if (this.debug) {
           console.log(`[LTCG API] ${options.method || "GET"} ${endpoint} (attempt ${attempt + 1})`);
@@ -231,7 +239,7 @@ export class LTCGApiClient {
           const error = parseErrorResponse(response.status, body);
 
           // Retry on rate limit errors (429)
-          if (error instanceof RateLimitError && attempt < this.maxRetries - 1) {
+          if (error instanceof RateLimitError && attempt < attempts - 1) {
             const delay = error.retryAfter
               ? error.retryAfter * 1000
               : this.calculateBackoff(attempt);
@@ -243,7 +251,7 @@ export class LTCGApiClient {
           }
 
           // Retry on 5xx errors
-          if (response.status >= 500 && attempt < this.maxRetries - 1) {
+          if (response.status >= 500 && attempt < attempts - 1) {
             const delay = this.calculateBackoff(attempt);
             if (this.debug) {
               console.log(
@@ -287,7 +295,7 @@ export class LTCGApiClient {
         }
 
         // Network errors - retry with backoff
-        if (attempt < this.maxRetries - 1) {
+        if (attempt < attempts - 1) {
           const delay = this.calculateBackoff(attempt);
           if (this.debug) {
             console.log(`[LTCG API] Network error, retrying after ${delay}ms:`, error);
@@ -298,9 +306,9 @@ export class LTCGApiClient {
 
         // Max retries exceeded
         throw new NetworkError(
-          `Failed after ${this.maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`,
+          `Failed after ${attempts} attempts: ${error instanceof Error ? error.message : String(error)}`,
           error instanceof Error ? error : undefined,
-          { endpoint, attempts: this.maxRetries }
+          { endpoint, attempts }
         );
       }
     }
@@ -1187,10 +1195,19 @@ export class LTCGApiClient {
       executionTimeMs?: number;
     };
   }): Promise<{ success: boolean; eventId: string }> {
-    return this.request<{ success: boolean; eventId: string }>("/api/agents/events", {
-      method: "POST",
-      body: JSON.stringify(event),
-    });
+    return this.request<{ success: boolean; eventId: string }>(
+      `${this.getAppBaseUrl()}/api/agents/events`,
+      {
+        method: "POST",
+        headers: {
+          "x-api-key": this.apiKey,
+        },
+        body: JSON.stringify(event),
+      },
+      Math.min(this.timeout, 5000),
+      true,
+      1 // Non-critical path; avoid retrying failed event writes.
+    );
   }
 
   // ============================================================================
@@ -1377,7 +1394,7 @@ export class LTCGApiClient {
       voiceLoop: boolean;
       visualMode: "webcam" | "profile-picture";
       profilePictureUrl: string | null;
-    }>(`/api/agents/streaming-config?agentId=${encodeURIComponent(agentId)}`, {
+    }>(`${this.getAppBaseUrl()}/api/agents/streaming-config?agentId=${encodeURIComponent(agentId)}`, {
       method: "GET",
     });
   }
@@ -1396,7 +1413,7 @@ export class LTCGApiClient {
       sessionId: string;
       overlayUrl: string;
       status: string;
-    }>("/api/streaming/start", {
+    }>(`${this.getAppBaseUrl()}/api/streaming/start`, {
       method: "POST",
       body: JSON.stringify({
         agentId: params.agentId,

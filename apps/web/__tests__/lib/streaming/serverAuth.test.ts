@@ -49,6 +49,24 @@ describe("resolveStreamingAuth", () => {
     expect(auth.userId).toBeNull();
   });
 
+  it("detects agent API key via x-api-key header", async () => {
+    const { resolveStreamingAuth } = await import("@/lib/streaming/serverAuth");
+    process.env.LTCG_API_KEY = "agent-key";
+
+    const request = new Request("http://localhost/api", {
+      headers: {
+        "x-api-key": "agent-key",
+      },
+    });
+
+    const auth = await resolveStreamingAuth(request);
+
+    expect(auth.isInternal).toBe(false);
+    expect(auth.isAgentApiKey).toBe(true);
+    expect(auth.bearerToken).toBe("agent-key");
+    expect(auth.userId).toBeNull();
+  });
+
   it("returns unauthenticated context when no auth is provided", async () => {
     const { resolveStreamingAuth } = await import("@/lib/streaming/serverAuth");
     const request = new Request("http://localhost/api");

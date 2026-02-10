@@ -27,15 +27,22 @@ export const stopRetakeStreamAction: Action = {
 
   validate: async (runtime: IAgentRuntime, message: Memory) => {
     const text = (message.content.text ?? "").toLowerCase();
+    const metadata = message.content.metadata as { source?: string } | undefined;
+    const source = metadata?.source;
 
-    // Check if user wants to stop streaming
-    const streamKeywords = ["stream", "broadcast", "retake", "live"];
-    const stopKeywords = ["stop", "end", "finish", "turn off", "offline"];
+    // Never allow public Retake chat to issue stream stop commands.
+    // This action is operational and should only run from trusted/local operator input.
+    if (source === "retake_chat") {
+      return false;
+    }
 
-    const hasStreamKeyword = streamKeywords.some((kw) => text.includes(kw));
-    const hasStopKeyword = stopKeywords.some((kw) => text.includes(kw));
+    // Require an explicit command-like intent instead of broad keyword matches.
+    // This prevents accidental stop actions from normal conversation.
+    const explicitStopIntent =
+      /^\/?(stop|end)\s+(the\s+)?(retake\s+)?(stream|broadcast)\b/.test(text) ||
+      /\b(go\s+offline|end\s+broadcast)\b/.test(text);
 
-    if (!hasStreamKeyword || !hasStopKeyword) {
+    if (!explicitStopIntent) {
       return false;
     }
 
@@ -56,6 +63,14 @@ export const stopRetakeStreamAction: Action = {
     callback: HandlerCallback
   ) => {
     try {
+      const metadata = message.content.metadata as { source?: string } | undefined;
+      if (metadata?.source === "retake_chat") {
+        await callback({
+          text: "Ignoring stream-stop request from public chat.",
+        });
+        return { success: false, error: "Stop stream action is disabled for retake_chat source" };
+      }
+
       // Get Retake.tv credentials
       const accessToken =
         runtime.getSetting("RETAKE_ACCESS_TOKEN") ||
@@ -88,16 +103,32 @@ export const stopRetakeStreamAction: Action = {
       logger.info("Retake.tv stream stopped successfully");
 
       // Notify LTCG backend to stop streaming
-      const ltcgApiUrl = process.env.LTCG_API_URL || "https://lunchtable.cards";
+      const ltcgApiUrl =
+        process.env.LTCG_APP_URL ||
+        process.env.NEXT_PUBLIC_APP_URL ||
+        "https://www.lunchtable.cards";
+      const ltcgApiKey =
+        (runtime.getSetting("LTCG_API_KEY") as string) || process.env.LTCG_API_KEY;
+      const ltcgAgentId =
+        (runtime.getSetting("LTCG_AGENT_ID") as string) ||
+        process.env.LTCG_AGENT_ID ||
+        runtime.agentId;
 
       try {
         await fetch(`${ltcgApiUrl}/api/streaming/stop`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(ltcgApiKey
+              ? {
+                  "Authorization": `Bearer ${ltcgApiKey}`,
+                  "x-api-key": ltcgApiKey,
+                }
+              : {}),
           },
           body: JSON.stringify({
-            agentId: runtime.agentId,
+            agentId: ltcgAgentId,
+            reason: "retake_stop_action",
           }),
         });
       } catch (error) {

@@ -38,7 +38,7 @@ export interface IPollingService {
   /**
    * Start polling for a specific game
    */
-  startPollingGame(gameId: string): void;
+  startPollingGame(gameId: string, meta?: { stageId?: string; streamingSessionId?: string }): void;
 
   /**
    * Stop polling

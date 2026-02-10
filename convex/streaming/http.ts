@@ -46,7 +46,13 @@ export const startStreaming = httpAction(async (_ctx, request) => {
 
     // For now, use the existing Next.js streaming API to handle LiveKit egress
     // TODO: Migrate egress creation to use LiveKit REST API directly
-    const nextJsUrl = process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3333";
+    const configuredAppUrl =
+      process.env["LTCG_APP_URL"] ||
+      process.env["NEXT_PUBLIC_APP_URL"] ||
+      "http://localhost:3333";
+    const nextJsUrl = configuredAppUrl.includes(".convex.site")
+      ? "https://www.lunchtable.cards"
+      : configuredAppUrl;
 
     const response = await fetch(`${nextJsUrl}/api/streaming/start`, {
       method: "POST",

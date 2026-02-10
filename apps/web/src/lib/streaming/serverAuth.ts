@@ -14,6 +14,11 @@ type AuthResult = {
   userId: Id<"users"> | null;
 };
 
+type AgentLookupResult = {
+  isAgentApiKey: boolean;
+  userId: Id<"users"> | null;
+};
+
 function createConvexClient() {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
   if (!convexUrl) {
@@ -25,10 +30,48 @@ function createConvexClient() {
 function getBearerToken(request: Request): string | null {
   const authHeader = request.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    return null;
+    const apiKeyHeader = request.headers.get("x-api-key")?.trim();
+    return apiKeyHeader && apiKeyHeader.length > 0 ? apiKeyHeader : null;
   }
   const token = authHeader.slice(7).trim();
   return token.length > 0 ? token : null;
+}
+
+async function resolveAgentApiKeyIdentity(
+  convex: ConvexHttpClient,
+  bearerToken: string | null,
+  envAgentApiKey: string | undefined
+): Promise<AgentLookupResult> {
+  if (!bearerToken) {
+    return { isAgentApiKey: false, userId: null };
+  }
+
+  // Fast-path for configured single-agent deployments.
+  if (envAgentApiKey && bearerToken === envAgentApiKey) {
+    return { isAgentApiKey: true, userId: null };
+  }
+
+  // Avoid extra lookup for likely JWT tokens.
+  if (!bearerToken.startsWith("ltcg_")) {
+    return { isAgentApiKey: false, userId: null };
+  }
+
+  try {
+    const agent = await convex.query(apiAny.agents.agents.getAgentByApiKey, {
+      apiKey: bearerToken,
+    });
+
+    if (!agent?.agentId) {
+      return { isAgentApiKey: false, userId: null };
+    }
+
+    return {
+      isAgentApiKey: true,
+      userId: (agent.userId as Id<"users">) ?? null,
+    };
+  } catch {
+    return { isAgentApiKey: false, userId: null };
+  }
 }
 
 /**
@@ -51,11 +94,8 @@ export async function resolveStreamingAuth(request: Request): Promise<AuthResult
   const agentApiKey = process.env.LTCG_API_KEY?.trim();
 
   const isInternal = Boolean(internalSecret && internalHeader && internalHeader === internalSecret);
-  const isAgentApiKey = Boolean(agentApiKey && bearerToken && bearerToken === agentApiKey);
-
-  // Internal or agent API key: identity resolved, no Convex lookup needed
-  if (isInternal || isAgentApiKey) {
-    return { isInternal, isAgentApiKey, bearerToken, userId: null };
+  if (isInternal) {
+    return { isInternal: true, isAgentApiKey: false, bearerToken, userId: null };
   }
 
   // No bearer token: return unauthenticated result — callers enforce access
@@ -63,16 +103,42 @@ export async function resolveStreamingAuth(request: Request): Promise<AuthResult
     return { isInternal: false, isAgentApiKey: false, bearerToken: null, userId: null };
   }
 
-  // Bearer token present but not agent key: resolve as Privy user
+  if (agentApiKey && bearerToken === agentApiKey) {
+    return {
+      isInternal: false,
+      isAgentApiKey: true,
+      bearerToken,
+      userId: null,
+    };
+  }
+
   const convex = createConvexClient();
-  convex.setAuth(bearerToken);
+  const agentLookup = await resolveAgentApiKeyIdentity(convex, bearerToken, agentApiKey);
+  if (agentLookup.isAgentApiKey) {
+    return {
+      isInternal: false,
+      isAgentApiKey: true,
+      bearerToken,
+      userId: agentLookup.userId,
+    };
+  }
 
-  const currentUser = await convex.query(apiAny.core.users.currentUser, {});
-
-  return {
-    isInternal: false,
-    isAgentApiKey: false,
-    bearerToken,
-    userId: currentUser?._id ?? null,
-  };
+  // Bearer token present but not agent key: resolve as Privy user
+  try {
+    convex.setAuth(bearerToken);
+    const currentUser = await convex.query(apiAny.core.users.currentUser, {});
+    return {
+      isInternal: false,
+      isAgentApiKey: false,
+      bearerToken,
+      userId: currentUser?._id ?? null,
+    };
+  } catch {
+    return {
+      isInternal: false,
+      isAgentApiKey: false,
+      bearerToken,
+      userId: null,
+    };
+  }
 }

@@ -594,7 +594,11 @@ export default defineSchema({
       "lp_changed",
       "tribute_paid",
       "deck_shuffled",
-      "hand_limit_enforced"
+      "hand_limit_enforced",
+      // Agent Visibility Events (3)
+      "agent_thinking",
+      "agent_decided",
+      "agent_error"
     ),
     playerId: v.id("users"),
     playerUsername: v.string(),

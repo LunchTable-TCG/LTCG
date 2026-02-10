@@ -79,6 +79,8 @@ export interface GameStateResponse {
   turnNumber: number;
   currentTurnPlayer: string;
   isMyTurn: boolean;
+  myPlayerId?: string;
+  opponentPlayerId?: string;
   status: "waiting" | "active" | "completed"; // Added for compatibility
   currentTurn: "host" | "opponent"; // Added for compatibility
 
@@ -92,6 +94,8 @@ export interface GameStateResponse {
   // Board state - monsters/cards on field
   myBoard: BoardCard[];
   opponentBoard: BoardCard[];
+  mySpellTrapZone?: SpellTrapCard[];
+  opponentSpellTrapZone?: SpellTrapCard[];
 
   // Card counts
   myDeckCount: number;

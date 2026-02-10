@@ -122,22 +122,25 @@ async function assertSessionReadAccess(
 async function enrichSessionEntity(ctx: QueryCtx | MutationCtx, session: Doc<"streamingSessions">) {
   let entityName = "";
   let entityAvatar = "";
+  let entityUserId: Id<"users"> | undefined;
 
   if (session.agentId) {
     const agent = await ctx.db.get(session.agentId);
     entityName = agent?.name || "Unknown Agent";
     entityAvatar = agent?.profilePictureUrl || "";
+    entityUserId = agent?.userId;
   } else if (session.userId) {
     const user = await ctx.db.get(session.userId);
     entityName = user?.username || user?.name || "Unknown User";
     entityAvatar = user?.image || "";
+    entityUserId = session.userId;
   }
 
-  return { entityName, entityAvatar };
+  return { entityName, entityAvatar, entityUserId };
 }
 
 async function toPublicSession(ctx: QueryCtx, session: Doc<"streamingSessions">) {
-  const { entityName, entityAvatar } = await enrichSessionEntity(ctx, session);
+  const { entityName, entityAvatar, entityUserId } = await enrichSessionEntity(ctx, session);
   return {
     _id: session._id,
     streamType: session.streamType,
@@ -161,6 +164,7 @@ async function toPublicSession(ctx: QueryCtx, session: Doc<"streamingSessions">)
     stats: session.stats,
     entityName,
     entityAvatar,
+    entityUserId,
   };
 }
 
@@ -403,8 +407,8 @@ export const getSession = query({
     if (!session) {
       return null;
     }
-    const { entityName, entityAvatar } = await enrichSessionEntity(ctx, session);
-    return { ...session, entityName, entityAvatar };
+    const { entityName, entityAvatar, entityUserId } = await enrichSessionEntity(ctx, session);
+    return { ...session, entityName, entityAvatar, entityUserId };
   },
 });
 
