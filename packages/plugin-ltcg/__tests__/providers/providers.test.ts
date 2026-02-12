@@ -427,22 +427,22 @@ describe("LTCG Providers", () => {
       };
 
       const mockAvailableActions: AvailableActionsResponse = {
-        gameId: "game-123",
         phase: "main1",
+        turnNumber: 2,
         actions: [
           {
-            type: "summon",
+            action: "summon",
             description: "Normal summon a creature from hand",
             parameters: {
               availableCards: [
-                { handIndex: 0, name: "Ember Wyrmling", cost: 3, attack: 1200 },
-                { handIndex: 1, name: "Blazing Drake", cost: 4, attack: 1600 },
+                { handIndex: 0, name: "Ember Wyrmling", cost: 3, atk: 1200 },
+                { handIndex: 1, name: "Blazing Drake", cost: 4, atk: 1600 },
               ],
               normalSummonUsed: false,
             },
           },
           {
-            type: "set",
+            action: "set",
             description: "Set a card face-down",
             parameters: {
               availableCards: [
@@ -452,7 +452,7 @@ describe("LTCG Providers", () => {
             },
           },
           {
-            type: "activate_spell",
+            action: "activate_spell",
             description: "Activate a spell card",
             parameters: {
               availableCards: [
@@ -462,12 +462,12 @@ describe("LTCG Providers", () => {
             },
           },
           {
-            type: "end_turn",
+            action: "end_turn",
             description: "End your turn",
             parameters: {},
           },
         ],
-      };
+      } as AvailableActionsResponse;
 
       mockGetGameState.mockResolvedValue(mockGameState);
       mockGetAvailableActions.mockResolvedValue(mockAvailableActions);

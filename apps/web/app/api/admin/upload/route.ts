@@ -7,7 +7,12 @@
 
 import { del, list } from "@vercel/blob";
 import { type HandleUploadBody, handleUpload } from "@vercel/blob/client";
+import * as generatedApi from "@convex/_generated/api";
+import { ConvexHttpClient } from "convex/browser";
 import { NextResponse } from "next/server";
+
+// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
+const apiAny = (generatedApi as any).api;
 
 // CORS helper - dynamically set origin based on request
 function getCorsHeaders(request?: Request) {
@@ -31,6 +36,45 @@ function getCorsHeaders(request?: Request) {
 }
 
 // Note: Use getCorsHeaders(request) in each handler for dynamic origin matching
+
+function createConvexClient() {
+  const convexUrl = process.env["NEXT_PUBLIC_CONVEX_URL"]?.trim();
+  if (!convexUrl) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+  }
+  return new ConvexHttpClient(convexUrl);
+}
+
+function getBearerToken(request: Request): string | null {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return null;
+  }
+  const token = authHeader.slice(7).trim();
+  return token.length > 0 ? token : null;
+}
+
+async function requireAdminAuth(request: Request, headers: Record<string, string>) {
+  const token = getBearerToken(request);
+  if (!token) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401, headers });
+  }
+
+  const convex = createConvexClient();
+  convex.setAuth(token);
+
+  const currentUser = await convex.query(apiAny.core.users.currentUser, {});
+  if (!currentUser?._id) {
+    return NextResponse.json({ error: "Invalid authentication token" }, { status: 401, headers });
+  }
+
+  const adminRole = await convex.query(apiAny.admin.admin.getMyAdminRole, {});
+  if (!adminRole) {
+    return NextResponse.json({ error: "Admin role required" }, { status: 403, headers });
+  }
+
+  return null;
+}
 
 /**
  * OPTIONS /api/admin/upload
@@ -71,6 +115,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
 
   try {
+    const requiresUserAuth = body.type === "blob.generate-client-token";
+    if (requiresUserAuth) {
+      const authError = await requireAdminAuth(request, headers);
+      if (authError) {
+        return authError;
+      }
+    }
+
     const jsonResponse = await handleUpload({
       body,
       request,
@@ -138,6 +190,11 @@ export async function POST(request: Request): Promise<NextResponse> {
 export async function GET(request: Request): Promise<NextResponse> {
   const headers = getCorsHeaders(request);
   try {
+    const authError = await requireAdminAuth(request, headers);
+    if (authError) {
+      return authError;
+    }
+
     const allBlobs: Array<{
       url: string;
       pathname: string;
@@ -186,6 +243,11 @@ export async function GET(request: Request): Promise<NextResponse> {
 export async function DELETE(request: Request): Promise<NextResponse> {
   const headers = getCorsHeaders(request);
   try {
+    const authError = await requireAdminAuth(request, headers);
+    if (authError) {
+      return authError;
+    }
+
     const { url } = await request.json();
 
     if (!url || typeof url !== "string") {

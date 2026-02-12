@@ -18,7 +18,11 @@ import { ModelType, logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
 import { gameStateProvider } from "../providers/gameStateProvider";
 import { handProvider } from "../providers/handProvider";
-import type { CardInHand, GameStateResponse, SpellTrapCard } from "../types/api";
+import type {
+  CardInHand,
+  GameStateResponse,
+  SpellTrapCard,
+} from "../types/api";
 import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const activateSpellAction: Action = {
@@ -26,10 +30,18 @@ export const activateSpellAction: Action = {
   similes: ["CAST_SPELL", "USE_SPELL", "ACTIVATE"],
   description: "Activate a spell card from your hand or field",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -41,14 +53,17 @@ export const activateSpellAction: Action = {
       const handResult = await handProvider.get(runtime, message, state);
       const hand = handResult.data?.hand as CardInHand[];
 
-      const spellsInHand = hand?.filter((card) => card.cardType === "spell") || [];
+      const spellsInHand =
+        hand?.filter((card) => card.cardType === "spell") || [];
 
       // Check field for face-up spells that can be activated
+      // spellTrapZone items use `type` field (not `cardType`)
       const spellsOnField = gameState.hostPlayer.spellTrapZone.filter(
-        (card) => card.cardType === "spell" && card.faceUp
+        (card) => card.type === "spell" && card.faceUp,
       );
 
-      const hasActivatableSpells = spellsInHand.length > 0 || spellsOnField.length > 0;
+      const hasActivatableSpells =
+        spellsInHand.length > 0 || spellsOnField.length > 0;
 
       if (!hasActivatableSpells) {
         logger.debug("No activatable spell cards");
@@ -67,13 +82,17 @@ export const activateSpellAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling ACTIVATE_SPELL action");
 
       // Get game state and hand
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       const handResult = await handProvider.get(runtime, message, state);
@@ -99,22 +118,23 @@ export const activateSpellAction: Action = {
 
       // Get activatable spells
       const spellsInHand = hand.filter((card) => card.cardType === "spell");
+      // spellTrapZone items use `type` field (not `cardType`)
       const spellsOnField = gameState.hostPlayer.spellTrapZone.filter(
-        (card) => card.cardType === "spell" && card.faceUp
+        (card) => card.type === "spell" && card.faceUp,
       );
 
       // Use LLM to select which spell to activate
       const handOptions = spellsInHand
         .map(
           (card, idx) =>
-            `Hand ${idx + 1}. ${card.name} - ${card.description?.substring(0, 100) || "No description"}`
+            `Hand ${idx + 1}. ${card.name} - ${card.description?.substring(0, 100) || "No description"}`,
         )
         .join("\n");
 
       const fieldOptions = spellsOnField
         .map(
           (card, idx) =>
-            `Field ${idx + 1}. ${card.name} - ${card.description?.substring(0, 100) || "No description"}`
+            `Field ${idx + 1}. ${card.name} - ${card.description?.substring(0, 100) || "No description"}`,
         )
         .join("\n");
 
@@ -165,13 +185,16 @@ Respond with JSON: { "location": "hand" or "field", "index": <index>, "targets":
       }
 
       // Make API call
-      const cardId = parsed.location === "hand"
-        ? (selectedCard as CardInHand)._id
-        : (selectedCard as SpellTrapCard).cardId;
+      const cardId =
+        parsed.location === "hand"
+          ? (selectedCard as CardInHand)._id
+          : (selectedCard as SpellTrapCard).cardId;
       const result = await client.activateSpell({
         gameId: gameState.gameId,
         cardId,
-        targets: parsed.targets?.map((t: any) => typeof t === 'string' ? t : String(t)),
+        targets: parsed.targets?.map((t: any) =>
+          typeof t === "string" ? t : String(t),
+        ),
       });
 
       // Callback to user

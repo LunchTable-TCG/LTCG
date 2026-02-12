@@ -26,10 +26,18 @@ export const summonAction: Action = {
   similes: ["SUMMON", "PLAY_MONSTER", "NORMAL_SUMMON"],
   description: "Summon a monster from your hand to the field",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -92,13 +100,17 @@ export const summonAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling SUMMON_MONSTER action");
 
       // Get game state and hand
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       const handResult = await handProvider.get(runtime, message, state);
@@ -144,7 +156,7 @@ export const summonAction: Action = {
                 : (card.cost || 0) >= 5
                   ? " - requires 1 tribute"
                   : ""
-            }`
+            }`,
         )
         .join("\n");
 
@@ -192,7 +204,10 @@ Respond with JSON: { "monsterIndex": <index>, "position": "attack" or "defense",
         const tributesNeeded = cost >= 7 ? 2 : 1;
 
         // Use provided tribute indices or select automatically
-        if (parsed.tributeIndices && parsed.tributeIndices.length >= tributesNeeded) {
+        if (
+          parsed.tributeIndices &&
+          parsed.tributeIndices.length >= tributesNeeded
+        ) {
           tributeIndices = parsed.tributeIndices.slice(0, tributesNeeded);
         } else {
           // Auto-select weakest monsters as tributes
@@ -200,17 +215,20 @@ Respond with JSON: { "monsterIndex": <index>, "position": "attack" or "defense",
             .map((m, idx) => ({ monster: m, boardIndex: idx }))
             .sort((a, b) => (a.monster.attack ?? 0) - (b.monster.attack ?? 0));
 
-          tributeIndices = sortedMonsters.slice(0, tributesNeeded).map((m) => m.boardIndex);
+          tributeIndices = sortedMonsters
+            .slice(0, tributesNeeded)
+            .map((m) => m.boardIndex);
         }
       }
 
       // Make API call
-      const position = (parsed.position === "defense" ? "defense" : "attack") as
-        | "attack"
-        | "defense";
-      const tributeCardIds = tributeIndices.length > 0
-        ? tributeIndices.map((idx) => monstersOnField[idx]._id)
-        : undefined;
+      const position = (
+        parsed.position === "defense" ? "defense" : "attack"
+      ) as "attack" | "defense";
+      const tributeCardIds =
+        tributeIndices.length > 0
+          ? tributeIndices.map((idx) => monstersOnField[idx]._id)
+          : undefined;
       const result = await client.summon({
         gameId: gameState.gameId,
         cardId: selectedCard._id,

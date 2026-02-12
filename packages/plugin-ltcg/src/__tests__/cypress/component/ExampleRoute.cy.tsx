@@ -14,7 +14,9 @@ const ExampleRoute = () => {
   if (!config?.agentId) {
     return (
       <div className="p-4 text-center">
-        <div className="text-red-600 font-medium">Error: Agent ID not found</div>
+        <div className="text-red-600 font-medium">
+          Error: Agent ID not found
+        </div>
         <div className="text-sm text-gray-600 mt-2">
           The server should inject the agent ID configuration.
         </div>
@@ -46,7 +48,9 @@ describe("ExampleRoute Component Tests", () => {
 
       // Check error message is displayed
       cy.contains("Error: Agent ID not found").should("be.visible");
-      cy.contains("The server should inject the agent ID configuration.").should("be.visible");
+      cy.contains(
+        "The server should inject the agent ID configuration.",
+      ).should("be.visible");
     });
 
     it("should render correctly with agent ID", () => {

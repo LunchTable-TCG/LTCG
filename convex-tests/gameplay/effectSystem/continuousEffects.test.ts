@@ -4,7 +4,7 @@
  * Tests for JSON condition evaluation and continuous effect calculations.
  */
 
-import type { Doc, Id } from "../../../_generated/dataModel";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import {
   _matchesCondition,
   _matchesLegacyCondition,
@@ -13,15 +13,15 @@ import {
   evaluateFieldCount,
   evaluateGraveyardContains,
   evaluateJsonCondition,
-} from "../../../gameplay/effectSystem/continuousEffects";
+} from "../../../convex/gameplay/effectSystem/continuousEffects";
 import type {
   CardOnBoard,
   ConditionContext,
   FieldCountCondition,
   GraveyardCondition,
   JsonCondition,
-} from "../../../gameplay/effectSystem/jsonEffectSchema";
-import { convertLegacyCondition } from "../../../gameplay/effectSystem/jsonEffectSchema";
+} from "../../../convex/gameplay/effectSystem/jsonEffectSchema";
+import { convertLegacyCondition } from "../../../convex/gameplay/effectSystem/jsonEffectSchema";
 import { describe, expect, it } from "vitest";
 
 // ============================================================================

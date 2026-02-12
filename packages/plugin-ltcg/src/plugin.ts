@@ -111,7 +111,7 @@ const configSchema = z.object({
     .transform((val) => {
       if (!val) {
         console.warn(
-          "Warning: LTCG_CONTROL_API_KEY not provided - external control API disabled (not secured)"
+          "Warning: LTCG_CONTROL_API_KEY not provided - control routes will fall back to LTCG_API_KEY; set a dedicated control key for strict key separation"
         );
       }
       return val;

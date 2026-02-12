@@ -37,7 +37,11 @@ export const purchaseGemsAction: Action = {
   description:
     "Purchase gems using Solana tokens via x402 payment protocol. Gems can be used to buy card packs and other in-game items.",
 
-  validate: async (runtime: IAgentRuntime, _message: Memory, _state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    _message: Memory,
+    _state: State,
+  ): Promise<boolean> => {
     try {
       // Must have API key
       const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
@@ -79,7 +83,7 @@ export const purchaseGemsAction: Action = {
     message: Memory,
     _state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling PURCHASE_GEMS action");
@@ -90,8 +94,11 @@ export const purchaseGemsAction: Action = {
       const walletAddress = runtime.getSetting("LTCG_WALLET_ADDRESS") as string;
       const privyAppId = runtime.getSetting("PRIVY_APP_ID") as string;
       const privyAppSecret = runtime.getSetting("PRIVY_APP_SECRET") as string;
-      const agentPrivyUserId = runtime.getSetting("LTCG_PRIVY_USER_ID") as string;
-      const maxAutoPayment = Number(runtime.getSetting("LTCG_MAX_AUTO_PAYMENT")) || 100;
+      const agentPrivyUserId = runtime.getSetting(
+        "LTCG_PRIVY_USER_ID",
+      ) as string;
+      const maxAutoPayment =
+        Number(runtime.getSetting("LTCG_MAX_AUTO_PAYMENT")) || 100;
 
       if (!apiUrl || !apiKey) {
         throw new Error("LTCG API not configured");
@@ -127,9 +134,13 @@ export const purchaseGemsAction: Action = {
       let selectedPackage: GemPackage | undefined;
 
       // Check for specific package mentions
-      const packageIdMatch = messageText.match(/package[:\s]+([a-zA-Z0-9_\-]+)/i);
+      const packageIdMatch = messageText.match(
+        /package[:\s]+([a-zA-Z0-9_\-]+)/i,
+      );
       if (packageIdMatch) {
-        selectedPackage = packages.find((p) => p.packageId === packageIdMatch[1]);
+        selectedPackage = packages.find(
+          (p) => p.packageId === packageIdMatch[1],
+        );
       }
 
       // Check for gem amount mentions
@@ -139,7 +150,9 @@ export const purchaseGemsAction: Action = {
           const requestedAmount = Number.parseInt(gemAmountMatch[1], 10);
           // Find closest package
           selectedPackage = packages.reduce((closest, pkg) => {
-            const closestDiff = Math.abs((closest?.gems || 0) - requestedAmount);
+            const closestDiff = Math.abs(
+              (closest?.gems || 0) - requestedAmount,
+            );
             const pkgDiff = Math.abs(pkg.gems - requestedAmount);
             return pkgDiff < closestDiff ? pkg : closest;
           }, packages[0]);
@@ -151,7 +164,7 @@ export const purchaseGemsAction: Action = {
         const packageOptions = packages
           .map(
             (pkg, idx) =>
-              `${idx + 1}. ${pkg.name}: ${pkg.gems.toLocaleString()} gems for $${(pkg.usdCents / 100).toFixed(2)}${pkg.bonusPercent ? ` (+${pkg.bonusPercent}% bonus)` : ""}`
+              `${idx + 1}. ${pkg.name}: ${pkg.gems.toLocaleString()} gems for $${(pkg.usdCents / 100).toFixed(2)}${pkg.bonusPercent ? ` (+${pkg.bonusPercent}% bonus)` : ""}`,
           )
           .join("\n");
 
@@ -198,13 +211,13 @@ Respond with JSON: { "packageIndex": <0-based index> }`;
           BigInt(Math.round(maxAutoPayment * 1_000_000)),
           {
             reason: `Package costs $${usdAmount.toFixed(2)} but max auto-payment is $${maxAutoPayment}`,
-          }
+          },
         );
       }
 
       logger.info(
         { packageId: selectedPackage.packageId, gems: selectedPackage.gems },
-        "Purchasing gem package"
+        "Purchasing gem package",
       );
 
       // Attempt purchase (x402 flow handled by client)
@@ -251,7 +264,8 @@ Your gems are ready to use in the shop!`;
 
       if (error instanceof PaymentRequiredError) {
         errorMessage = `Payment required but could not complete x402 flow. Requirements: ${JSON.stringify(error.paymentRequirements)}`;
-        thought = "x402 payment flow failed - check wallet balance and delegation permissions";
+        thought =
+          "x402 payment flow failed - check wallet balance and delegation permissions";
       } else if (error instanceof InsufficientBalanceError) {
         errorMessage = `Insufficient token balance. Need ${error.requiredAmount.toString()} but have ${error.currentBalance.toString()}`;
         thought =

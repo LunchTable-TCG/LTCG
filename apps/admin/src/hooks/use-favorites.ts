@@ -38,22 +38,16 @@ export function useFavorites() {
   const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const favorites: string[] = JSON.parse(raw);
 
-  const toggleFavorite = useCallback(
-    (href: string) => {
-      const current: string[] = JSON.parse(getSnapshot());
-      if (current.includes(href)) {
-        setFavorites(current.filter((f) => f !== href));
-      } else {
-        setFavorites([...current, href]);
-      }
-    },
-    []
-  );
+  const toggleFavorite = useCallback((href: string) => {
+    const current: string[] = JSON.parse(getSnapshot());
+    if (current.includes(href)) {
+      setFavorites(current.filter((f) => f !== href));
+    } else {
+      setFavorites([...current, href]);
+    }
+  }, []);
 
-  const isFavorite = useCallback(
-    (href: string) => favorites.includes(href),
-    [favorites]
-  );
+  const isFavorite = useCallback((href: string) => favorites.includes(href), [favorites]);
 
   return { favorites, toggleFavorite, isFavorite };
 }

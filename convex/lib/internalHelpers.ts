@@ -412,6 +412,13 @@ export const auditLogAction = internalAny.lib.adminAudit.logAdminAction;
  * ```
  */
 export async function scheduleAuditLog(ctx: MutationCtx, params: AuditLogParams) {
+  const isTestRuntime = process.env["VITEST"] === "true" || process.env["NODE_ENV"] === "test";
+  if (isTestRuntime) {
+    // Run inline in tests to avoid scheduler teardown races in convex-test.
+    await ctx.runMutation(auditLogAction, params);
+    return;
+  }
+
   await ctx.scheduler.runAfter(0, auditLogAction, params);
 }
 

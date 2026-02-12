@@ -7,12 +7,12 @@
  * Supports both legacy string effects and JSON effects.
  */
 
-import type { JsonAbility } from "../../../gameplay/effectSystem/types";
+import type { JsonAbility } from "../../convex/gameplay/effectSystem/types";
 import schema from "../../schema";
 import { modules } from "../../test.setup";
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import { addToChainHelper, resolveChainHelper } from "../../gameplay/chainResolver";
+import { addToChainHelper, resolveChainHelper } from "../../convex/gameplay/chainResolver";
 
 // Helper: Create a JSON ability for draw effect
 function createDrawJsonAbility(count: number): JsonAbility {

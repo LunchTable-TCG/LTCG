@@ -25,6 +25,12 @@ export async function POST(req: NextRequest) {
     if (!auth.isInternal && !auth.isAgentApiKey) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (auth.isAgentApiKey && !auth.agentId) {
+      return NextResponse.json(
+        { error: "Agent API key is not bound to a registered agent" },
+        { status: 403 }
+      );
+    }
     const internalAuth = process.env.INTERNAL_API_SECRET?.trim();
     if (!internalAuth) {
       return NextResponse.json({ error: "INTERNAL_API_SECRET is not configured" }, { status: 500 });
@@ -52,6 +58,12 @@ export async function POST(req: NextRequest) {
 
     if (!session) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+    if (auth.isAgentApiKey && session.streamType !== "agent") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (auth.isAgentApiKey && session.agentId !== auth.agentId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Link game to session

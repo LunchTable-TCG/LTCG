@@ -101,6 +101,17 @@ export async function POST(req: NextRequest) {
     if (!agentId) {
       return NextResponse.json({ error: "Missing agentId" }, { status: 400 });
     }
+    if (auth.isAgentApiKey) {
+      if (!auth.agentId) {
+        return NextResponse.json(
+          { error: "Agent API key is not bound to a registered agent" },
+          { status: 403 }
+        );
+      }
+      if (agentId !== auth.agentId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
 
     let validatedPlatform: StreamingPlatform | undefined;
     if (enabled !== false) {

@@ -26,10 +26,18 @@ export const setCardAction: Action = {
   similes: ["SET", "SET_MONSTER", "SET_SPELL_TRAP"],
   description: "Set a card face-down on the field",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -78,13 +86,17 @@ export const setCardAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling SET_CARD action");
 
       // Get game state and hand
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       const handResult = await handProvider.get(runtime, message, state);
@@ -163,11 +175,17 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
         throw new Error("Invalid card selection");
       }
 
-      // Make API call
-      const result = await client.setCard({
-        gameId: gameState.gameId,
-        cardId: selectedCard._id,
-      });
+      // Make API call — creatures use setCard, spells/traps use setSpellTrapCard
+      const result =
+        selectedCard.cardType === "creature"
+          ? await client.setCard({
+              gameId: gameState.gameId,
+              cardId: selectedCard._id,
+            })
+          : await client.setSpellTrapCard({
+              gameId: gameState.gameId,
+              cardId: selectedCard._id,
+            });
 
       // Callback to user
       const responseText = `I set ${selectedCard.name} face-down!`;

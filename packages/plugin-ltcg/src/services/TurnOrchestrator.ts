@@ -33,20 +33,28 @@ function parsePositiveInt(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function resolveDecisionModelType(value: string | undefined) {
+function isEnabled(value: string | undefined): boolean {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "true" || normalized === "1" || normalized === "yes";
+}
+
+function resolveDecisionModelType(value: string | undefined, allowLargeDecisionModel: boolean) {
   const normalized = value?.trim().toLowerCase();
-  if (normalized === "large" || normalized === "text_large") {
+  if ((normalized === "large" || normalized === "text_large") && allowLargeDecisionModel) {
     return ModelType.TEXT_LARGE;
   }
   return ModelType.TEXT_SMALL;
 }
 
 function resolveMonsterLevel(card: CardInHand): number {
+  // Match backend priority: card.level first, card.cost as fallback
+  // (see convex/lib/cardPropertyHelpers.ts — getCardLevel)
   const level =
-    typeof card.cost === "number"
-      ? card.cost
-      : typeof card.level === "number"
-        ? card.level
+    typeof card.level === "number"
+      ? card.level
+      : typeof card.cost === "number"
+        ? card.cost
         : 0;
   return Number.isFinite(level) ? level : 0;
 }
@@ -112,17 +120,22 @@ export class TurnOrchestrator extends Service {
   private readonly maxConsecutiveFailures = 2;
   private readonly actionLoopDelayMs = parsePositiveInt(
     process.env.LTCG_ACTION_LOOP_DELAY_MS,
-    1500
+    2000
   );
   private readonly minLlmDecisionIntervalMs = parsePositiveInt(
     process.env.LTCG_MIN_LLM_DECISION_INTERVAL_MS,
-    4000
+    8000
   );
   private readonly maxLlmDecisionsPerTurn = parsePositiveInt(
     process.env.LTCG_MAX_LLM_DECISIONS_PER_TURN,
-    2
+    1
   );
-  private readonly decisionModelType = resolveDecisionModelType(process.env.LTCG_ORCHESTRATOR_MODEL);
+  private readonly requestedDecisionModel = process.env.LTCG_ORCHESTRATOR_MODEL?.trim().toLowerCase();
+  private readonly allowLargeDecisionModel = isEnabled(process.env.LTCG_ALLOW_LARGE_DECISION_MODEL);
+  private readonly decisionModelType = resolveDecisionModelType(
+    process.env.LTCG_ORCHESTRATOR_MODEL,
+    this.allowLargeDecisionModel
+  );
   private readonly llmChainDecisionsEnabled = process.env.LTCG_LLM_CHAIN_DECISIONS === "true";
   private lastLlmDecisionAt = 0;
 
@@ -145,6 +158,19 @@ export class TurnOrchestrator extends Service {
   ]);
 
   capabilityDescription = "Orchestrates autonomous turn-by-turn gameplay decisions";
+
+  constructor(runtime: IAgentRuntime) {
+    super(runtime);
+
+    if (
+      (this.requestedDecisionModel === "large" || this.requestedDecisionModel === "text_large") &&
+      !this.allowLargeDecisionModel
+    ) {
+      logger.warn(
+        "LTCG_ORCHESTRATOR_MODEL requested a large model, but LTCG_ALLOW_LARGE_DECISION_MODEL is not enabled. Falling back to TEXT_SMALL."
+      );
+    }
+  }
 
   static async start(runtime: IAgentRuntime): Promise<Service> {
     logger.info("*** Starting LTCG Turn Orchestrator ***");
@@ -448,7 +474,7 @@ export class TurnOrchestrator extends Service {
       if (cardType === "creature") {
         const atk = card.attack ?? card.atk ?? "?";
         const def = card.defense ?? card.def ?? "?";
-        const level = card.cost ?? card.level ?? "?";
+        const level = card.level ?? card.cost ?? "?";
         lines.push(
           `${idx}. **${card.name}** (Monster, ATK:${atk}/DEF:${def}, Level:${level}) [cardId: ${card._id}]`
         );
@@ -2161,15 +2187,22 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
     }
 
     const availableTributes = (gameState.myBoard ?? [])
-      .filter((card) => !!card._id && !card.isFaceDown)
-      .map((card) => card._id)
-      .filter((cardId): cardId is string => typeof cardId === "string" && cardId.length > 0);
+      .filter((card): card is BoardCard & { _id: string } =>
+        typeof card._id === "string" && card._id.length > 0 && !card.isFaceDown
+      );
 
     if (availableTributes.length < requiredTributes) {
       return undefined;
     }
 
-    return availableTributes.slice(0, requiredTributes);
+    // Pick weakest monsters first (lowest ATK+DEF) to preserve stronger board presence
+    const sorted = [...availableTributes].sort((a, b) => {
+      const powerA = (a.currentAttack ?? a.attack ?? 0) + (a.currentDefense ?? a.defense ?? 0);
+      const powerB = (b.currentAttack ?? b.attack ?? 0) + (b.currentDefense ?? b.defense ?? 0);
+      return powerA - powerB;
+    });
+
+    return sorted.slice(0, requiredTributes).map((card) => card._id);
   }
 
   /**
@@ -2270,8 +2303,8 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
       const faceUpOpp = oppMonsters.filter((m: BoardCard) => !m.isFaceDown);
       if (faceUpOpp.length > 0) {
         const weakest = faceUpOpp.reduce((min: BoardCard, m: BoardCard) =>
-          (m.position === 1 ? (m.attack ?? 0) : (m.defense ?? 0)) <
-          (min.position === 1 ? (min.attack ?? 0) : (min.defense ?? 0))
+          (m.position === 1 ? (m.currentAttack ?? m.attack ?? 0) : (m.currentDefense ?? m.defense ?? 0)) <
+          (min.position === 1 ? (min.currentAttack ?? min.attack ?? 0) : (min.currentDefense ?? min.defense ?? 0))
             ? m
             : min
         );

@@ -602,9 +602,10 @@ describe("deleteUserByEmail", () => {
       email: "todelete@test.com",
     });
 
-    // Execute scheduled functions
-    vi.runAllTimers();
-    await t.finishInProgressScheduledFunctions();
+    // Execute all scheduled functions (including nested schedules)
+    await t.finishAllScheduledFunctions(() => {
+      vi.runAllTimers();
+    });
 
     expect(result.success).toBe(true);
     expect(result.message).toContain("Deleted user");
@@ -642,9 +643,10 @@ describe("deleteUserByEmail", () => {
       email: "nonexistent@test.com",
     });
 
-    // Execute scheduled functions (even though mutation fails)
-    vi.runAllTimers();
-    await t.finishInProgressScheduledFunctions();
+    // Execute all scheduled functions (including nested schedules)
+    await t.finishAllScheduledFunctions(() => {
+      vi.runAllTimers();
+    });
 
     expect(result.success).toBe(false);
     expect(result.message).toContain("not found");

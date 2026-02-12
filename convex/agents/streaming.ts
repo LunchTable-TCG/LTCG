@@ -310,9 +310,7 @@ export const triggerAgentStreamStart = internalAction({
 
     // 2. Call streaming API
     const configuredAppUrl =
-      process.env["LTCG_APP_URL"] ||
-      process.env["NEXT_PUBLIC_APP_URL"] ||
-      "http://localhost:3333";
+      process.env["LTCG_APP_URL"] || process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3334";
     const baseUrl = configuredAppUrl.includes(".convex.site")
       ? "https://www.lunchtable.cards"
       : configuredAppUrl;
@@ -425,7 +423,24 @@ export const autoStopAgentStream = internalMutation({
         .first(),
     ]);
 
-    const session = sessionCandidates.find(Boolean);
+    let session = sessionCandidates.find(Boolean);
+    let matchedByLobby = true;
+
+    if (!session) {
+      matchedByLobby = false;
+      const fallbackSessions = await ctx.db
+        .query("streamingSessions")
+        .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))
+        .filter((q) =>
+          q.or(
+            q.eq(q.field("status"), "live"),
+            q.eq(q.field("status"), "pending"),
+            q.eq(q.field("status"), "initializing")
+          )
+        )
+        .collect();
+      session = fallbackSessions.sort((a, b) => b.createdAt - a.createdAt)[0];
+    }
 
     if (!session) {
       return { stopped: false, reason: "no_active_session" };
@@ -458,7 +473,12 @@ export const autoStopAgentStream = internalMutation({
     });
 
     if (agent.streamingPersistent ?? true) {
-      return { stopped: false, reason: "persistent_stream_kept_live" };
+      return {
+        stopped: false,
+        reason: matchedByLobby
+          ? "persistent_stream_kept_live"
+          : "persistent_stream_kept_live_fallback_no_lobby_match",
+      };
     }
 
     // Trigger stop via scheduler when persistent mode is disabled
@@ -466,7 +486,10 @@ export const autoStopAgentStream = internalMutation({
       sessionId: session._id,
     });
 
-    return { stopped: true };
+    return {
+      stopped: true,
+      ...(matchedByLobby ? {} : { reason: "stopped_fallback_no_lobby_match" }),
+    };
   },
 });
 
@@ -479,9 +502,7 @@ export const triggerAgentStreamStop = internalAction({
   },
   handler: async (_ctx, args) => {
     const configuredAppUrl =
-      process.env["LTCG_APP_URL"] ||
-      process.env["NEXT_PUBLIC_APP_URL"] ||
-      "http://localhost:3333";
+      process.env["LTCG_APP_URL"] || process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3334";
     const baseUrl = configuredAppUrl.includes(".convex.site")
       ? "https://www.lunchtable.cards"
       : configuredAppUrl;

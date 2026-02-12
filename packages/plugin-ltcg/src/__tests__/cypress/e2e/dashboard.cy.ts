@@ -77,7 +77,9 @@ describe("Dashboard E2E Tests", () => {
           expect($nav).to.be.visible;
         } else {
           // Look for mobile menu button
-          cy.get('[aria-label*="menu"], button[class*="menu"]').should("be.visible");
+          cy.get('[aria-label*="menu"], button[class*="menu"]').should(
+            "be.visible",
+          );
         }
       });
     });
@@ -96,12 +98,16 @@ describe("Dashboard E2E Tests", () => {
       cy.visit("/non-existent-page", { failOnStatusCode: false });
 
       // Should show some error message or redirect
-      cy.contains(/404|not found|error/i, { timeout: 5000 }).should("be.visible");
+      cy.contains(/404|not found|error/i, { timeout: 5000 }).should(
+        "be.visible",
+      );
     });
 
     it("should handle network errors", () => {
       // Intercept and force a network error
-      cy.intercept("GET", "/api/**", { forceNetworkError: true }).as("networkError");
+      cy.intercept("GET", "/api/**", { forceNetworkError: true }).as(
+        "networkError",
+      );
 
       cy.visit("/");
 

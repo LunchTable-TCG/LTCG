@@ -7,6 +7,7 @@ const originalEnv = { ...process.env };
 
 beforeEach(() => {
   process.env = { ...originalEnv };
+  process.env.NEXT_PUBLIC_CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || "http://localhost:3210";
 });
 
 afterEach(() => {
@@ -29,6 +30,7 @@ describe("resolveStreamingAuth", () => {
     expect(auth.isInternal).toBe(true);
     expect(auth.isAgentApiKey).toBe(false);
     expect(auth.userId).toBeNull();
+    expect(auth.agentId).toBeNull();
   });
 
   it("detects agent API key via bearer token", async () => {
@@ -47,6 +49,7 @@ describe("resolveStreamingAuth", () => {
     expect(auth.isAgentApiKey).toBe(true);
     expect(auth.bearerToken).toBe("agent-key");
     expect(auth.userId).toBeNull();
+    expect(auth.agentId).toBeNull();
   });
 
   it("detects agent API key via x-api-key header", async () => {
@@ -65,6 +68,7 @@ describe("resolveStreamingAuth", () => {
     expect(auth.isAgentApiKey).toBe(true);
     expect(auth.bearerToken).toBe("agent-key");
     expect(auth.userId).toBeNull();
+    expect(auth.agentId).toBeNull();
   });
 
   it("returns unauthenticated context when no auth is provided", async () => {
@@ -77,5 +81,6 @@ describe("resolveStreamingAuth", () => {
     expect(auth.isAgentApiKey).toBe(false);
     expect(auth.bearerToken).toBeNull();
     expect(auth.userId).toBeNull();
+    expect(auth.agentId).toBeNull();
   });
 });

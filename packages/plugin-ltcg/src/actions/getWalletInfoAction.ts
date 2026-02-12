@@ -22,7 +22,11 @@ export const getWalletInfoAction: Action = {
   similes: ["CHECK_WALLET", "WALLET_STATUS", "WALLET_BALANCE", "MY_WALLET"],
   description: "Check the agent's Solana wallet address and balance",
 
-  validate: async (runtime: IAgentRuntime, _message: Memory, _state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    _message: Memory,
+    _state: State,
+  ): Promise<boolean> => {
     try {
       // Must have API key (be registered)
       const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
@@ -50,7 +54,7 @@ export const getWalletInfoAction: Action = {
     _message: Memory,
     _state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling GET_WALLET_INFO action");
@@ -60,7 +64,9 @@ export const getWalletInfoAction: Action = {
       const apiUrl = runtime.getSetting("LTCG_API_URL") as string;
 
       if (!apiKey || !apiUrl) {
-        throw new Error("Agent not properly configured - missing API key or URL");
+        throw new Error(
+          "Agent not properly configured - missing API key or URL",
+        );
       }
 
       // Create API client

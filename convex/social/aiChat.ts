@@ -270,6 +270,11 @@ export const saveAgentResponse = mutation({
     message: v.string(),
   },
   handler: async (ctx, args) => {
+    const auth = await requireAuthMutation(ctx);
+    if (auth.userId !== args.userId) {
+      throw createError(ErrorCode.AUTHZ_RESOURCE_FORBIDDEN);
+    }
+
     const now = Date.now();
 
     // Verify session exists and belongs to the specified user

@@ -31,6 +31,14 @@ function createConvexClient() {
   return new ConvexHttpClient(convexUrl);
 }
 
+function isAgentOnlyStreamingEnabled(): boolean {
+  const raw = process.env.STREAMING_AGENT_ONLY?.trim().toLowerCase();
+  if (!raw) {
+    return true;
+  }
+  return raw !== "false" && raw !== "0" && raw !== "off";
+}
+
 type StartRouteBody = StartStreamBody & {
   retakeAccessToken?: string;
 };
@@ -284,11 +292,16 @@ function isActiveSessionStatus(status: StoredStreamingSession["status"]): boolea
   return status === "live" || status === "pending" || status === "initializing";
 }
 
+type AgentSessionSnapshot = {
+  allSessions: StoredStreamingSession[];
+  activeAgentSessions: StoredStreamingSession[];
+};
+
 async function listActiveAgentSessions(params: {
   convex: ConvexHttpClient;
   agentId: string;
   internalAuth: string;
-}): Promise<StoredStreamingSession[]> {
+}): Promise<AgentSessionSnapshot> {
   const { convex, agentId, internalAuth } = params;
   const sessionsRaw = await convex.query(apiAny.streaming.sessions.getAllSessions, {
     limit: 100,
@@ -296,10 +309,15 @@ async function listActiveAgentSessions(params: {
   });
   const sessions = Array.isArray(sessionsRaw) ? (sessionsRaw as StoredStreamingSession[]) : [];
 
-  return sessions
+  const activeAgentSessions = sessions
     .filter((session) => session.agentId === (agentId as Id<"agents">))
     .filter((session) => isActiveSessionStatus(session.status))
     .sort((a, b) => b.createdAt - a.createdAt);
+
+  return {
+    allSessions: sessions,
+    activeAgentSessions,
+  };
 }
 
 async function cleanupExistingAgentSessions(params: {
@@ -309,9 +327,9 @@ async function cleanupExistingAgentSessions(params: {
   keepSessionId?: Id<"streamingSessions">;
 }): Promise<void> {
   const { convex, agentId, internalAuth, keepSessionId } = params;
-  const existingSessions = await listActiveAgentSessions({ convex, agentId, internalAuth });
+  const { activeAgentSessions } = await listActiveAgentSessions({ convex, agentId, internalAuth });
 
-  for (const session of existingSessions) {
+  for (const session of activeAgentSessions) {
     if (keepSessionId && session._id === keepSessionId) {
       continue;
     }
@@ -361,15 +379,19 @@ async function isAgentSessionReusable(session: StoredStreamingSession): Promise<
 async function cleanupOrphanedEgresses(params: {
   convex: ConvexHttpClient;
   internalAuth: string;
+  sessions?: StoredStreamingSession[];
 }): Promise<void> {
   const { convex, internalAuth } = params;
 
   try {
-    const sessionsRaw = await convex.query(apiAny.streaming.sessions.getAllSessions, {
-      limit: 100,
-      internalAuth,
-    });
-    const sessions = Array.isArray(sessionsRaw) ? (sessionsRaw as StoredStreamingSession[]) : [];
+    let sessions = params.sessions;
+    if (!sessions) {
+      const sessionsRaw = await convex.query(apiAny.streaming.sessions.getAllSessions, {
+        limit: 100,
+        internalAuth,
+      });
+      sessions = Array.isArray(sessionsRaw) ? (sessionsRaw as StoredStreamingSession[]) : [];
+    }
 
     const activeEgressIds = sessions
       .filter((session) => isActiveSessionStatus(session.status))
@@ -410,18 +432,26 @@ export async function POST(req: NextRequest) {
       streamType = "user",
       streamTitle,
       overlayConfig,
-      gameId,
       lobbyId,
       baseUrl: customBaseUrl,
     } = body;
     const forceRestart = body.forceRestart === true;
 
     const platformFromBody = body.platform;
+    if (isAgentOnlyStreamingEnabled() && streamType !== "agent") {
+      return NextResponse.json(
+        { error: "Human/user streaming is disabled. Agent streaming only." },
+        { status: 403 }
+      );
+    }
     if (platformFromBody && !isStreamingPlatform(platformFromBody)) {
       return NextResponse.json({ error: "Missing or unsupported platform" }, { status: 400 });
     }
     if (!platformFromBody && !body.useStoredCredentials) {
       return NextResponse.json({ error: "Missing or unsupported platform" }, { status: 400 });
+    }
+    if (auth.isAgentApiKey && streamType !== "agent") {
+      return NextResponse.json({ error: "Agent API keys may only start agent streams" }, { status: 403 });
     }
     if (streamType === "agent" && !auth.isInternal && !auth.isAgentApiKey) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -435,17 +465,29 @@ export async function POST(req: NextRequest) {
     if (streamType === "agent" && !agentId) {
       return NextResponse.json({ error: "agentId required for agent streams" }, { status: 400 });
     }
+    if (streamType === "agent" && auth.isAgentApiKey) {
+      if (!auth.agentId) {
+        return NextResponse.json(
+          { error: "Agent API key is not bound to a registered agent" },
+          { status: 403 }
+        );
+      }
+      if (agentId !== auth.agentId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
 
     const userId = streamType === "user" ? auth.userId : undefined;
-    const baseUrl = (customBaseUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3333").trim();
-    const currentLobbyId = lobbyId || gameId;
+    const baseUrl = (customBaseUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3334").trim();
+    const currentLobbyId = firstNonEmpty(lobbyId);
 
     if (streamType === "agent" && agentId && internalAuth) {
-      const existingSessions = await listActiveAgentSessions({
+      const sessionSnapshot = await listActiveAgentSessions({
         convex,
         agentId,
         internalAuth,
       });
+      const existingSessions = sessionSnapshot.activeAgentSessions;
       const existing = existingSessions[0];
 
       if (existing && !forceRestart) {
@@ -504,6 +546,17 @@ export async function POST(req: NextRequest) {
         });
         await cleanupOrphanedEgresses({ convex, internalAuth });
       }
+
+      // Even when no active session exists in Convex, an orphaned LiveKit overlay egress
+      // may still be running from a prior crash/redeploy. Always clean these before
+      // creating a fresh agent stream to avoid duplicate outputs fighting each other.
+      if (!existingSessions.length) {
+        await cleanupOrphanedEgresses({
+          convex,
+          internalAuth,
+          sessions: sessionSnapshot.allSessions,
+        });
+      }
     }
 
     // 3. Resolve stream destination
@@ -548,7 +601,7 @@ export async function POST(req: NextRequest) {
           agentId,
           internalAuth,
         });
-        const existing = existingSessions[0];
+        const existing = existingSessions.activeAgentSessions[0];
         if (existing) {
           const reusable = await isAgentSessionReusable(existing);
           if (reusable) {
@@ -585,6 +638,7 @@ export async function POST(req: NextRequest) {
             agentId,
             internalAuth,
           });
+          await cleanupOrphanedEgresses({ convex, internalAuth });
 
           sessionId = await convex.mutation(apiAny.streaming.sessions.createSession, {
             streamType,

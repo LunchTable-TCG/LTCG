@@ -21,7 +21,7 @@ export class LTCGApiError extends Error {
     message: string,
     code: string = ApiErrorCode.INTERNAL_ERROR,
     statusCode = 500,
-    details?: ErrorDetails
+    details?: ErrorDetails,
   ) {
     super(message);
     this.name = "LTCGApiError";
@@ -75,7 +75,7 @@ export class RateLimitError extends LTCGApiError {
     remaining = 0,
     limit = 60,
     resetAt?: number,
-    details?: ErrorDetails
+    details?: ErrorDetails,
   ) {
     super(message, ApiErrorCode.RATE_LIMIT_EXCEEDED, 429, details);
     this.name = "RateLimitError";
@@ -103,7 +103,11 @@ export class RateLimitError extends LTCGApiError {
 export class ValidationError extends LTCGApiError {
   public readonly invalidFields?: string[];
 
-  constructor(message = "Validation failed", invalidFields?: string[], details?: ErrorDetails) {
+  constructor(
+    message = "Validation failed",
+    invalidFields?: string[],
+    details?: ErrorDetails,
+  ) {
     super(message, ApiErrorCode.VALIDATION_ERROR, 400, details);
     this.name = "ValidationError";
     this.invalidFields = invalidFields;
@@ -124,7 +128,11 @@ export class ValidationError extends LTCGApiError {
 export class NetworkError extends LTCGApiError {
   public readonly originalError?: Error;
 
-  constructor(message = "Network request failed", originalError?: Error, details?: ErrorDetails) {
+  constructor(
+    message = "Network request failed",
+    originalError?: Error,
+    details?: ErrorDetails,
+  ) {
     super(message, ApiErrorCode.NETWORK_ERROR, 0, details);
     this.name = "NetworkError";
     this.originalError = originalError;
@@ -152,7 +160,7 @@ export class GameError extends LTCGApiError {
     code: string,
     statusCode = 400,
     gameId?: string,
-    details?: ErrorDetails
+    details?: ErrorDetails,
   ) {
     super(message, code, statusCode, details);
     this.name = "GameError";
@@ -185,7 +193,7 @@ export class PaymentRequiredError extends LTCGApiError {
   constructor(
     requirements: X402PaymentRequirements,
     message = "Payment required",
-    details?: ErrorDetails
+    details?: ErrorDetails,
   ) {
     super(message, "PAYMENT_REQUIRED", 402, details);
     this.name = "PaymentRequiredError";
@@ -208,12 +216,16 @@ export class InsufficientBalanceError extends LTCGApiError {
   public readonly currentBalance: bigint;
   public readonly requiredAmount: bigint;
 
-  constructor(currentBalance: bigint, requiredAmount: bigint, details?: ErrorDetails) {
+  constructor(
+    currentBalance: bigint,
+    requiredAmount: bigint,
+    details?: ErrorDetails,
+  ) {
     super(
       `Insufficient balance: have ${currentBalance.toString()}, need ${requiredAmount.toString()}`,
       "INSUFFICIENT_BALANCE",
       400,
-      details
+      details,
     );
     this.name = "InsufficientBalanceError";
     this.currentBalance = currentBalance;
@@ -242,7 +254,7 @@ export class PaymentLimitExceededError extends LTCGApiError {
       `Payment amount ${amount.toString()} exceeds limit ${limit.toString()}`,
       "PAYMENT_LIMIT_EXCEEDED",
       400,
-      details
+      details,
     );
     this.name = "PaymentLimitExceededError";
     this.amount = amount;
@@ -263,7 +275,10 @@ export class PaymentLimitExceededError extends LTCGApiError {
  * Thrown when agent hasn't delegated signing permissions
  */
 export class WalletDelegationError extends LTCGApiError {
-  constructor(message = "Agent has not delegated signing permissions", details?: ErrorDetails) {
+  constructor(
+    message = "Agent has not delegated signing permissions",
+    details?: ErrorDetails,
+  ) {
     super(message, "WALLET_DELEGATION_REQUIRED", 403, details);
     this.name = "WalletDelegationError";
   }
@@ -279,7 +294,7 @@ export class UnsupportedPaymentError extends LTCGApiError {
   constructor(
     message = "No supported payment method available",
     supportedSchemes: string[] = [],
-    details?: ErrorDetails
+    details?: ErrorDetails,
   ) {
     super(message, "UNSUPPORTED_PAYMENT", 400, details);
     this.name = "UnsupportedPaymentError";
@@ -321,12 +336,16 @@ export interface X402PaymentRequirements {
 /**
  * Parse error response from API and throw appropriate error
  */
-export function parseErrorResponse(statusCode: number, body: ErrorDetails): LTCGApiError {
+export function parseErrorResponse(
+  statusCode: number,
+  body: ErrorDetails,
+): LTCGApiError {
   const bodyWithError = body as ErrorDetails & {
     error?: { code?: string; message?: string; details?: ErrorDetails };
   };
   const errorCode = bodyWithError?.error?.code || "UNKNOWN_ERROR";
-  const errorMessage = bodyWithError?.error?.message || "An unknown error occurred";
+  const errorMessage =
+    bodyWithError?.error?.message || "An unknown error occurred";
   const errorDetails = bodyWithError?.error?.details;
 
   // Authentication errors (401)
@@ -344,7 +363,14 @@ export function parseErrorResponse(statusCode: number, body: ErrorDetails): LTCG
     const remaining = errorDetails?.remaining ?? 0;
     const limit = errorDetails?.limit ?? 60;
     const resetAt = errorDetails?.resetAt;
-    return new RateLimitError(errorMessage, retryAfter, remaining, limit, resetAt, errorDetails);
+    return new RateLimitError(
+      errorMessage,
+      retryAfter,
+      remaining,
+      limit,
+      resetAt,
+      errorDetails,
+    );
   }
 
   // Validation errors (400)
@@ -354,7 +380,8 @@ export function parseErrorResponse(statusCode: number, body: ErrorDetails): LTCG
       errorDetails?.missingFields ||
       errorDetails?.invalidFields)
   ) {
-    const invalidFields = errorDetails?.missingFields || errorDetails?.invalidFields;
+    const invalidFields =
+      errorDetails?.missingFields || errorDetails?.invalidFields;
     return new ValidationError(errorMessage, invalidFields, errorDetails);
   }
 
@@ -375,7 +402,13 @@ export function parseErrorResponse(statusCode: number, body: ErrorDetails): LTCG
     ].includes(errorCode as ApiErrorCode)
   ) {
     const gameId = errorDetails?.gameId;
-    return new GameError(errorMessage, errorCode, statusCode, gameId, errorDetails);
+    return new GameError(
+      errorMessage,
+      errorCode,
+      statusCode,
+      gameId,
+      errorDetails,
+    );
   }
 
   // Generic API error

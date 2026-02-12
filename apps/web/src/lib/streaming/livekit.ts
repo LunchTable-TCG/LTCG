@@ -78,7 +78,9 @@ export async function isWebEgressActive(egressId: string): Promise<boolean> {
     return false;
   }
 
-  return egress.status === EgressStatus.EGRESS_ACTIVE || egress.status === EgressStatus.EGRESS_STARTING;
+  return (
+    egress.status === EgressStatus.EGRESS_ACTIVE || egress.status === EgressStatus.EGRESS_STARTING
+  );
 }
 
 /**
@@ -87,7 +89,9 @@ export async function isWebEgressActive(egressId: string): Promise<boolean> {
  */
 export async function stopOrphanedOverlayEgresses(activeEgressIds: string[]): Promise<string[]> {
   const client = getEgressClient();
-  const activeSet = new Set(activeEgressIds.filter((id) => typeof id === "string" && id.length > 0));
+  const activeSet = new Set(
+    activeEgressIds.filter((id) => typeof id === "string" && id.length > 0)
+  );
   const egresses = await client.listEgress({ active: true });
   const stopped: string[] = [];
 

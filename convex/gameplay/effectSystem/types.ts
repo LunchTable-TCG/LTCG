@@ -300,6 +300,8 @@ export interface JsonEffect {
 
   // Targeting
   target?: JsonTarget; // For effects that target specific cards
+  targetCount?: number; // Simplified target count (shorthand for target.count)
+  targetType?: "monster" | "spell" | "trap" | "any"; // Simplified target type filter
   targetLocation?: ZoneLocation; // Simplified target location
   targetOwner?: TargetOwner; // Simplified target owner
 

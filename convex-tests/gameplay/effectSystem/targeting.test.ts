@@ -8,8 +8,8 @@
  * - Zone restrictions
  */
 
-import type { JsonAbility } from "../../../gameplay/effectSystem/types";
-import { executeEffect } from "../../../gameplay/effectSystem/executor";
+import type { JsonAbility } from "../../../convex/gameplay/effectSystem/types";
+import { executeEffect } from "../../../convex/gameplay/effectSystem/executor";
 import schema from "../../../schema";
 import { modules } from "../../../test.setup";
 import { convexTest } from "convex-test";

@@ -22,7 +22,11 @@ export const joinLobbyAction: Action = {
   similes: ["ENTER_GAME", "JOIN_MATCH", "ACCEPT_CHALLENGE"],
   description: "Join a specific lobby by ID or join code",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Check if already in a game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;
@@ -62,7 +66,7 @@ export const joinLobbyAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling JOIN_LOBBY action");
@@ -87,7 +91,9 @@ export const joinLobbyAction: Action = {
       let joinCode: string | undefined;
 
       const lobbyIdMatch = messageText.match(/lobby[:\s]*([a-zA-Z0-9\-_]+)/i);
-      const joinCodeMatch = messageText.match(/(?:code|join)[:\s]*([A-Z0-9]{6})/i);
+      const joinCodeMatch = messageText.match(
+        /(?:code|join)[:\s]*([A-Z0-9]{6})/i,
+      );
 
       if (joinCodeMatch) {
         joinCode = joinCodeMatch[1]?.toUpperCase();
@@ -97,7 +103,7 @@ export const joinLobbyAction: Action = {
         logger.debug(`Extracted lobby ID: ${lobbyId}`);
       } else {
         throw new Error(
-          'Could not extract lobby ID or join code. Please provide in format "lobby: <id>" or "code: <code>"'
+          'Could not extract lobby ID or join code. Please provide in format "lobby: <id>" or "code: <code>"',
         );
       }
 
@@ -153,7 +159,8 @@ export const joinLobbyAction: Action = {
       await callback({
         text: `Failed to join lobby: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: "Join lobby failed due to invalid lobby ID/code, lobby full, or connection error",
+        thought:
+          "Join lobby failed due to invalid lobby ID/code, lobby full, or connection error",
       } as Content);
 
       return {

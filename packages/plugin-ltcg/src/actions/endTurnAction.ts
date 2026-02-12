@@ -24,10 +24,18 @@ export const endTurnAction: Action = {
   similes: ["PASS_TURN", "FINISH_TURN", "END"],
   description: "End your current turn and pass to the opponent",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -56,13 +64,17 @@ export const endTurnAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling END_TURN action");
 
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {

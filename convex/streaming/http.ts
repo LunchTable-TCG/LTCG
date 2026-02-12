@@ -49,7 +49,7 @@ export const startStreaming = httpAction(async (_ctx, request) => {
     const configuredAppUrl =
       process.env["LTCG_APP_URL"] ||
       process.env["NEXT_PUBLIC_APP_URL"] ||
-      "http://localhost:3333";
+      "http://localhost:3334";
     const nextJsUrl = configuredAppUrl.includes(".convex.site")
       ? "https://www.lunchtable.cards"
       : configuredAppUrl;

@@ -13,6 +13,16 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { query } from "../_generated/server";
 import { mutation } from "../functions";
+import { requireAuthMutation } from "../lib/convexAuth";
+
+function hasValidInternalAuth(internalAuth?: string): boolean {
+  const expectedSecret = process.env["INTERNAL_API_SECRET"]?.trim();
+  const providedSecret = internalAuth?.trim();
+  if (!expectedSecret || !providedSecret) {
+    return false;
+  }
+  return expectedSecret === providedSecret;
+}
 
 // ============================================================================
 // PUBLIC QUERIES
@@ -334,9 +344,25 @@ export const recordEvent = mutation({
     playerUsername: v.string(),
     description: v.string(),
     metadata: v.optional(v.any()),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, params) => {
-    await recordEventHelper(ctx, params);
+    const { internalAuth, ...eventParams } = params;
+    let playerUsername = eventParams.playerUsername;
+
+    if (!hasValidInternalAuth(internalAuth)) {
+      const auth = await requireAuthMutation(ctx);
+      if (auth.userId !== eventParams.playerId) {
+        throw new Error("Unauthorized");
+      }
+      // Prevent spoofing actor names when event writes are user-authenticated.
+      playerUsername = auth.username;
+    }
+
+    await recordEventHelper(ctx, {
+      ...eventParams,
+      playerUsername,
+    });
   },
 });
 

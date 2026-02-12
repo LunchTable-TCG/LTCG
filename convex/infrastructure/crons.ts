@@ -153,6 +153,17 @@ crons.interval(
   internalAny.streaming.sessions.cleanupStaleSessions
 );
 
+// Agent autonomy watchdog every minute
+// - Heartbeats agent presence for observability
+// - Cleans duplicate stream sessions/egresses
+// - Restarts story mode if an agent is idle too long
+// - Attempts stream start for active games missing a stream session
+crons.interval(
+  "agent-autonomy-watchdog",
+  { minutes: 1 },
+  internalAny.agents.autonomy.tick
+);
+
 // ============================================================================
 // CRYPTO WAGER DISCONNECT MONITOR
 // ============================================================================

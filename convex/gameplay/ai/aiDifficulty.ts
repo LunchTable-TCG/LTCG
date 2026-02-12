@@ -7,7 +7,12 @@
 import type { Doc, Id } from "../../_generated/dataModel";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import type { AIAction, FieldSpell, SpellTrapCard } from "./aiEngine";
-import { canSummonWithoutTribute, findStrongestMonster, findWeakestMonster } from "./aiEngine";
+import {
+  canSummonWithoutTribute,
+  findStrongestMonster,
+  findWeakestMonster,
+  getTributeCount,
+} from "./aiEngine";
 
 /**
  * Handle Main Phase decisions based on difficulty
@@ -63,10 +68,10 @@ export function handleMainPhase(
       return card && canSummonWithoutTribute(card);
     });
 
-    // Check for tribute summons
+    // Check for tribute summons (level 5+)
     const highCostMonsters = myHand.filter((cardId) => {
       const card = cardData.get(cardId);
-      return card && card.cardType === "creature" && card.cost >= 5;
+      return card && card.cardType === "creature" && getTributeCount(card) > 0;
     });
 
     // Difficulty-based summon logic
@@ -104,7 +109,7 @@ export function handleMainPhase(
       ) {
         const highCostCard = cardData.get(firstHighCostHard);
         if (highCostCard) {
-          const requiredTributes = highCostCard.cost >= 7 ? 2 : 1;
+          const requiredTributes = getTributeCount(highCostCard);
 
           if (myBoard.length >= requiredTributes) {
             const weakestTributes: Id<"cardDefinitions">[] = [];
@@ -144,7 +149,7 @@ export function handleMainPhase(
         if (firstHighCostBoss) {
           const highCostCard = cardData.get(firstHighCostBoss);
           if (highCostCard) {
-            const requiredTributes = highCostCard.cost >= 7 ? 2 : 1;
+            const requiredTributes = getTributeCount(highCostCard);
 
             if (myBoard.length >= requiredTributes) {
               const weakestTributes: Id<"cardDefinitions">[] = [];
@@ -274,7 +279,7 @@ export function handleMainPhase(
   if (!hasNormalSummoned && evaluation.hasMonsterZoneSpace) {
     const setableMonsters = myHand.filter((cardId) => {
       const card = cardData.get(cardId);
-      return card && card.cardType === "creature" && card.cost < 5;
+      return card && card.cardType === "creature" && getTributeCount(card) === 0;
     });
 
     if (setableMonsters.length > 0) {
@@ -302,17 +307,23 @@ export function handleBattlePhase(
 ): AIAction {
   // Easy: Sometimes attacks recklessly (never falls through to strategic logic)
   if (difficulty === "easy") {
-    if (myBoard.length > 0 && Math.random() > 0.5) {
-      const firstMonster = myBoard[0];
-      if (
-        !firstMonster.hasAttacked &&
-        firstMonster.position === 1 &&
-        !firstMonster.isFaceDown &&
-        firstMonster.turnSummoned !== turnNumber
-      ) {
+    // Find all eligible attackers (not just the first one)
+    const eligibleAttackers = myBoard.filter(
+      (m) =>
+        !m.hasAttacked &&
+        m.position === 1 &&
+        !m.isFaceDown &&
+        m.turnSummoned !== turnNumber
+    );
+
+    if (eligibleAttackers.length > 0 && Math.random() > 0.5) {
+      // Pick a random eligible attacker
+      const randomAttacker =
+        eligibleAttackers[Math.floor(Math.random() * eligibleAttackers.length)];
+      if (randomAttacker) {
         return {
           type: "attack",
-          cardId: firstMonster.cardId,
+          cardId: randomAttacker.cardId,
         };
       }
     }
@@ -337,31 +348,50 @@ export function handleBattlePhase(
       };
     }
 
-    // Find best target
-    for (const oppMonster of oppBoard) {
+    // Sort opponent monsters: target strongest beatable first (maximize board impact)
+    const sortedTargets = [...oppBoard].sort((a, b) => {
+      const aVal = a.position === -1 ? a.defense : a.attack;
+      const bVal = b.position === -1 ? b.defense : b.attack;
+      return bVal - aVal; // Descending — strongest first
+    });
+
+    // Find strongest target this monster can beat
+    let bestTarget = null;
+    let bestEvenTrade = null;
+
+    for (const oppMonster of sortedTargets) {
       const targetDEF = oppMonster.position === -1 ? oppMonster.defense : oppMonster.attack;
 
-      // Can destroy opponent's monster
       if (monster.attack > targetDEF) {
-        return {
-          type: "attack",
-          cardId: monster.cardId,
-          targetId: oppMonster.cardId,
-        };
+        bestTarget = oppMonster;
+        break; // Strongest beatable found (list is sorted descending)
       }
 
-      // Boss difficulty: Even trade if it helps board control
+      // Boss difficulty: Track even trades for board control
       if (
         difficulty === "boss" &&
         monster.attack === targetDEF &&
-        myBoard.length > oppBoard.length
+        myBoard.length > oppBoard.length &&
+        !bestEvenTrade
       ) {
-        return {
-          type: "attack",
-          cardId: monster.cardId,
-          targetId: oppMonster.cardId,
-        };
+        bestEvenTrade = oppMonster;
       }
+    }
+
+    if (bestTarget) {
+      return {
+        type: "attack",
+        cardId: monster.cardId,
+        targetId: bestTarget.cardId,
+      };
+    }
+
+    if (bestEvenTrade) {
+      return {
+        type: "attack",
+        cardId: monster.cardId,
+        targetId: bestEvenTrade.cardId,
+      };
     }
   }
 

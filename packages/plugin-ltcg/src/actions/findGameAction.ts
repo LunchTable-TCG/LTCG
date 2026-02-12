@@ -23,7 +23,11 @@ export const findGameAction: Action = {
   similes: ["SEARCH_GAME", "MATCHMAKING", "PLAY_GAME"],
   description: "Automatically find and join an available game",
 
-  validate: async (runtime: IAgentRuntime, _message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    _message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Check if already in a game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;
@@ -53,7 +57,7 @@ export const findGameAction: Action = {
     _message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling FIND_GAME action");
@@ -78,7 +82,8 @@ export const findGameAction: Action = {
         await callback({
           text: "Auto-matchmaking is disabled. Please enable it or use CREATE_LOBBY instead.",
           error: true,
-          thought: "Cannot proceed with matchmaking as auto-matchmaking is disabled in settings",
+          thought:
+            "Cannot proceed with matchmaking as auto-matchmaking is disabled in settings",
         } as Content);
 
         return {
@@ -115,7 +120,7 @@ export const findGameAction: Action = {
         const lobbyOptions = lobbies
           .map(
             (lobby, idx) =>
-              `${idx + 1}. Lobby ${lobby.lobbyId.slice(0, 8)}... - Host: ${lobby.hostPlayerName}, Mode: ${lobby.mode}, Private: ${lobby.isPrivate ? "Yes" : "No"}`
+              `${idx + 1}. Lobby ${lobby.lobbyId.slice(0, 8)}... - Host: ${lobby.hostPlayerName}, Mode: ${lobby.mode}, Private: ${lobby.isPrivate ? "Yes" : "No"}`,
           )
           .join("\n");
 
@@ -164,7 +169,10 @@ Respond with JSON: { "lobbyIndex": <index> }`;
           isPrivate: false,
         });
 
-        if (matchmakingResult.status === "matched" && matchmakingResult.gameId) {
+        if (
+          matchmakingResult.status === "matched" &&
+          matchmakingResult.gameId
+        ) {
           gameId = matchmakingResult.gameId;
 
           await callback({
@@ -206,7 +214,9 @@ Respond with JSON: { "lobbyIndex": <index> }`;
 
       return {
         success: true,
-        text: joinedExisting ? "Successfully joined game" : "Successfully matched",
+        text: joinedExisting
+          ? "Successfully joined game"
+          : "Successfully matched",
         values: {
           gameId,
           mode,

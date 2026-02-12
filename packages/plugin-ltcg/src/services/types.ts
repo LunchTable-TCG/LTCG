@@ -56,6 +56,11 @@ export interface IPollingService {
   getCurrentGameId(): string | null;
 
   /**
+   * Get current lobby ID for the active game, if known
+   */
+  getCurrentLobbyId(): string | null;
+
+  /**
    * Check if auto-matchmaking is enabled
    */
   isMatchmakingEnabled(): boolean;

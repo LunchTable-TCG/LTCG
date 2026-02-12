@@ -6,8 +6,62 @@
  */
 
 import { v } from "convex/values";
-import { internalQuery, query } from "../_generated/server";
+import type { Id } from "../_generated/dataModel";
+import { internalQuery, type MutationCtx, query, type QueryCtx } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
+import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
+
+type DecisionAccess = { kind: "internal" } | { kind: "user"; userId: Id<"users"> };
+
+function hasValidInternalAuth(internalAuth?: string): boolean {
+  const expectedSecret = process.env["INTERNAL_API_SECRET"]?.trim();
+  const providedSecret = internalAuth?.trim();
+  if (!expectedSecret || !providedSecret) {
+    return false;
+  }
+  return expectedSecret === providedSecret;
+}
+
+async function isInternalCaller(ctx: QueryCtx | MutationCtx, internalAuth?: string): Promise<boolean> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (identity?.issuer === "convex") {
+    return true;
+  }
+  return hasValidInternalAuth(internalAuth);
+}
+
+async function resolveWriteAccess(
+  ctx: MutationCtx,
+  internalAuth?: string
+): Promise<DecisionAccess> {
+  if (await isInternalCaller(ctx, internalAuth)) {
+    return { kind: "internal" };
+  }
+  const auth = await requireAuthMutation(ctx);
+  return { kind: "user", userId: auth.userId };
+}
+
+async function resolveReadAccess(
+  ctx: QueryCtx,
+  internalAuth?: string
+): Promise<DecisionAccess> {
+  if (await isInternalCaller(ctx, internalAuth)) {
+    return { kind: "internal" };
+  }
+  const auth = await requireAuthQuery(ctx);
+  return { kind: "user", userId: auth.userId };
+}
+
+async function assertAgentOwnedByUser(
+  ctx: QueryCtx | MutationCtx,
+  agentId: Id<"agents">,
+  userId: Id<"users">
+) {
+  const agent = await ctx.db.get(agentId);
+  if (!agent || agent.userId !== userId) {
+    throw new Error("Unauthorized");
+  }
+}
 
 /**
  * Get recent decisions for streaming overlay (public query)
@@ -62,10 +116,24 @@ export const saveDecision = mutation({
     parameters: v.optional(v.any()),
     executionTimeMs: v.optional(v.number()),
     result: v.optional(v.string()),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const access = await resolveWriteAccess(ctx, args.internalAuth);
+    if (access.kind === "user") {
+      await assertAgentOwnedByUser(ctx, args.agentId, access.userId);
+    }
+
     const decisionId = await ctx.db.insert("agentDecisions", {
-      ...args,
+      agentId: args.agentId,
+      gameId: args.gameId,
+      turnNumber: args.turnNumber,
+      phase: args.phase,
+      action: args.action,
+      reasoning: args.reasoning,
+      parameters: args.parameters,
+      executionTimeMs: args.executionTimeMs,
+      result: args.result,
       createdAt: Date.now(),
     });
     return decisionId;
@@ -79,15 +147,35 @@ export const saveDecision = mutation({
 export const getGameDecisions = query({
   args: {
     gameId: v.string(),
+    agentId: v.optional(v.id("agents")),
     limit: v.optional(v.number()),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const access = await resolveReadAccess(ctx, args.internalAuth);
     const limit = args.limit ?? 100;
-    const decisions = await ctx.db
-      .query("agentDecisions")
-      .withIndex("by_game", (q) => q.eq("gameId", args.gameId))
-      .order("asc")
-      .take(limit);
+
+    if (access.kind === "user") {
+      if (!args.agentId) {
+        throw new Error("agentId is required");
+      }
+      await assertAgentOwnedByUser(ctx, args.agentId, access.userId);
+    }
+
+    const decisions = args.agentId
+      ? await ctx.db
+          .query("agentDecisions")
+          .withIndex("by_agent_game", (q) =>
+            q.eq("agentId", args.agentId as Id<"agents">).eq("gameId", args.gameId)
+          )
+          .order("asc")
+          .take(limit)
+      : await ctx.db
+          .query("agentDecisions")
+          .withIndex("by_game", (q) => q.eq("gameId", args.gameId))
+          .order("asc")
+          .take(limit);
+
     return decisions;
   },
 });
@@ -100,8 +188,14 @@ export const getAgentDecisions = query({
   args: {
     agentId: v.id("agents"),
     limit: v.optional(v.number()),
+    internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const access = await resolveReadAccess(ctx, args.internalAuth);
+    if (access.kind === "user") {
+      await assertAgentOwnedByUser(ctx, args.agentId, access.userId);
+    }
+
     const limit = args.limit ?? 50;
     const decisions = await ctx.db
       .query("agentDecisions")

@@ -140,11 +140,13 @@ export async function addToChainHelper(
 
   // 5. Recursion detection - prevent same card from being added multiple times
   // unless it has a different effect type (for cards with multiple effects)
-  const cardAlreadyInChain = currentChain.some(
-    (link) =>
-      link.cardId === args.cardId &&
-      JSON.stringify(link.effect.effects) === JSON.stringify(args.effect.effects)
-  );
+  // Compare by cardId + first effect type (avoid JSON.stringify key-order sensitivity)
+  const cardAlreadyInChain = currentChain.some((link) => {
+    if (link.cardId !== args.cardId) return false;
+    const linkTypes = link.effect.effects.map((e: { type?: string }) => e.type).join(",");
+    const argsTypes = args.effect.effects.map((e: { type?: string }) => e.type).join(",");
+    return linkTypes === argsTypes;
+  });
 
   if (cardAlreadyInChain) {
     // Check if card has OPT (once per turn) - for now, we block duplicate cards

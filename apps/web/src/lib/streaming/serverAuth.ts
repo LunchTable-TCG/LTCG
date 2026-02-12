@@ -12,11 +12,13 @@ type AuthResult = {
   isAgentApiKey: boolean;
   bearerToken: string | null;
   userId: Id<"users"> | null;
+  agentId: Id<"agents"> | null;
 };
 
 type AgentLookupResult = {
   isAgentApiKey: boolean;
   userId: Id<"users"> | null;
+  agentId: Id<"agents"> | null;
 };
 
 function createConvexClient() {
@@ -43,17 +45,14 @@ async function resolveAgentApiKeyIdentity(
   envAgentApiKey: string | undefined
 ): Promise<AgentLookupResult> {
   if (!bearerToken) {
-    return { isAgentApiKey: false, userId: null };
-  }
-
-  // Fast-path for configured single-agent deployments.
-  if (envAgentApiKey && bearerToken === envAgentApiKey) {
-    return { isAgentApiKey: true, userId: null };
+    return { isAgentApiKey: false, userId: null, agentId: null };
   }
 
   // Avoid extra lookup for likely JWT tokens.
-  if (!bearerToken.startsWith("ltcg_")) {
-    return { isAgentApiKey: false, userId: null };
+  const looksLikeAgentKey = bearerToken.startsWith("ltcg_");
+  const matchesEnvAgentKey = Boolean(envAgentApiKey && bearerToken === envAgentApiKey);
+  if (!looksLikeAgentKey && !matchesEnvAgentKey) {
+    return { isAgentApiKey: false, userId: null, agentId: null };
   }
 
   try {
@@ -62,15 +61,24 @@ async function resolveAgentApiKeyIdentity(
     });
 
     if (!agent?.agentId) {
-      return { isAgentApiKey: false, userId: null };
+      // Keep backward compatibility for legacy single-key deployments,
+      // but without an agent binding.
+      if (matchesEnvAgentKey) {
+        return { isAgentApiKey: true, userId: null, agentId: null };
+      }
+      return { isAgentApiKey: false, userId: null, agentId: null };
     }
 
     return {
       isAgentApiKey: true,
       userId: (agent.userId as Id<"users">) ?? null,
+      agentId: agent.agentId as Id<"agents">,
     };
   } catch {
-    return { isAgentApiKey: false, userId: null };
+    if (matchesEnvAgentKey) {
+      return { isAgentApiKey: true, userId: null, agentId: null };
+    }
+    return { isAgentApiKey: false, userId: null, agentId: null };
   }
 }
 
@@ -95,20 +103,17 @@ export async function resolveStreamingAuth(request: Request): Promise<AuthResult
 
   const isInternal = Boolean(internalSecret && internalHeader && internalHeader === internalSecret);
   if (isInternal) {
-    return { isInternal: true, isAgentApiKey: false, bearerToken, userId: null };
+    return { isInternal: true, isAgentApiKey: false, bearerToken, userId: null, agentId: null };
   }
 
   // No bearer token: return unauthenticated result — callers enforce access
   if (!bearerToken) {
-    return { isInternal: false, isAgentApiKey: false, bearerToken: null, userId: null };
-  }
-
-  if (agentApiKey && bearerToken === agentApiKey) {
     return {
       isInternal: false,
-      isAgentApiKey: true,
-      bearerToken,
+      isAgentApiKey: false,
+      bearerToken: null,
       userId: null,
+      agentId: null,
     };
   }
 
@@ -120,6 +125,7 @@ export async function resolveStreamingAuth(request: Request): Promise<AuthResult
       isAgentApiKey: true,
       bearerToken,
       userId: agentLookup.userId,
+      agentId: agentLookup.agentId,
     };
   }
 
@@ -132,6 +138,7 @@ export async function resolveStreamingAuth(request: Request): Promise<AuthResult
       isAgentApiKey: false,
       bearerToken,
       userId: currentUser?._id ?? null,
+      agentId: null,
     };
   } catch {
     return {
@@ -139,6 +146,7 @@ export async function resolveStreamingAuth(request: Request): Promise<AuthResult
       isAgentApiKey: false,
       bearerToken,
       userId: null,
+      agentId: null,
     };
   }
 }

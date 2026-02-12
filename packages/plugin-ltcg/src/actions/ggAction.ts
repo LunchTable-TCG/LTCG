@@ -23,7 +23,11 @@ export const ggAction: Action = {
   similes: ["GOOD_GAME", "WELL_PLAYED", "GAME_END_MESSAGE"],
   description: "Send a good game message at the end of a match",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Check if chat is enabled
       const chatEnabled = runtime.getSetting("LTCG_CHAT_ENABLED") !== "false";
@@ -33,7 +37,11 @@ export const ggAction: Action = {
       }
 
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -66,13 +74,17 @@ export const ggAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling GG action");
 
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -81,7 +93,8 @@ export const ggAction: Action = {
 
       // Get character personality
       const characterName = runtime.character?.name || "AI Agent";
-      const personality = runtime.character?.bio || "Strategic and thoughtful card game player";
+      const personality =
+        runtime.character?.bio || "Strategic and thoughtful card game player";
 
       // Determine game outcome
       const outcome = determineGameOutcome(gameState);

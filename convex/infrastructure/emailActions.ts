@@ -19,6 +19,25 @@ import { RetryConfig, actionRetrier } from "./actionRetrier";
 
 const EMAIL_FROM = process.env["AUTH_EMAIL"] ?? "Lunchtable <onboarding@resend.dev>";
 
+function isTestRuntime(): boolean {
+  return process.env["VITEST"] === "true" || process.env["NODE_ENV"] === "test";
+}
+
+async function runEmailAction(
+  // biome-ignore lint/suspicious/noExplicitAny: action refs are dynamically typed via generated API
+  ctx: any,
+  // biome-ignore lint/suspicious/noExplicitAny: action refs are dynamically typed via generated API
+  internalActionRef: any,
+  args: Record<string, unknown>
+): Promise<string> {
+  if (isTestRuntime()) {
+    await ctx.runAction(internalActionRef, args);
+    return "test-inline";
+  }
+
+  return await actionRetrier.run(ctx, internalActionRef, args, RetryConfig.email);
+}
+
 async function sendEmail({
   to,
   subject,
@@ -178,11 +197,10 @@ export const sendCardSoldNotification = action({
     price: v.number(),
   },
   handler: async (ctx, args): Promise<{ runId: string }> => {
-    const runId: string = await actionRetrier.run(
+    const runId: string = await runEmailAction(
       ctx,
       internal.infrastructure.emailActions._sendCardSoldNotificationInternal,
-      args,
-      RetryConfig.email
+      args
     );
     return { runId };
   },
@@ -234,11 +252,10 @@ export const sendAuctionWonNotification = action({
     winningBid: v.number(),
   },
   handler: async (ctx, args): Promise<{ runId: string }> => {
-    const runId: string = await actionRetrier.run(
+    const runId: string = await runEmailAction(
       ctx,
       internal.infrastructure.emailActions._sendAuctionWonNotificationInternal,
-      args,
-      RetryConfig.email
+      args
     );
     return { runId };
   },

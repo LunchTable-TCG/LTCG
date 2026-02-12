@@ -11,9 +11,12 @@ describe("Agent Chat E2E Tests", () => {
     cy.visit("/");
 
     // Navigate to chat or agents section
-    cy.get('a[href*="chat"], a[href*="agent"], button:contains("chat"), button:contains("agent")', {
-      timeout: 5000,
-    })
+    cy.get(
+      'a[href*="chat"], a[href*="agent"], button:contains("chat"), button:contains("agent")',
+      {
+        timeout: 5000,
+      },
+    )
       .first()
       .click({ force: true });
   });
@@ -21,9 +24,9 @@ describe("Agent Chat E2E Tests", () => {
   describe("Chat Interface", () => {
     it("should display the chat interface", () => {
       // Look for chat-related elements
-      cy.get('[data-testid="chat-container"], .chat-container, #chat, [role="main"]').should(
-        "be.visible"
-      );
+      cy.get(
+        '[data-testid="chat-container"], .chat-container, #chat, [role="main"]',
+      ).should("be.visible");
     });
 
     it("should have a message input field", () => {
@@ -122,14 +125,20 @@ describe("Agent Chat E2E Tests", () => {
         .type("Tell me about yourself{enter}");
 
       // Look for typing indicator
-      cy.get('[data-testid="typing"], [class*="typing"], [aria-label*="typing"]', {
-        timeout: 5000,
-      }).should("be.visible");
+      cy.get(
+        '[data-testid="typing"], [class*="typing"], [aria-label*="typing"]',
+        {
+          timeout: 5000,
+        },
+      ).should("be.visible");
 
       // Typing indicator should disappear after response
-      cy.get('[data-testid="typing"], [class*="typing"], [aria-label*="typing"]', {
-        timeout: 15000,
-      }).should("not.exist");
+      cy.get(
+        '[data-testid="typing"], [class*="typing"], [aria-label*="typing"]',
+        {
+          timeout: 15000,
+        },
+      ).should("not.exist");
     });
   });
 
@@ -184,7 +193,9 @@ describe("Agent Chat E2E Tests", () => {
         .type("This will fail{enter}");
 
       // Should show error message
-      cy.contains(/error|failed|try again/i, { timeout: 10000 }).should("be.visible");
+      cy.contains(/error|failed|try again/i, { timeout: 10000 }).should(
+        "be.visible",
+      );
     });
 
     it("should prevent sending empty messages", () => {
@@ -195,7 +206,10 @@ describe("Agent Chat E2E Tests", () => {
         .click();
 
       // Should not create any new message elements
-      cy.get('[data-testid*="message"], [class*="message"]').should("have.length", 0);
+      cy.get('[data-testid*="message"], [class*="message"]').should(
+        "have.length",
+        0,
+      );
     });
   });
 });

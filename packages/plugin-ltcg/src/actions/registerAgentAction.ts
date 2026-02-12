@@ -24,7 +24,11 @@ export const registerAgentAction: Action = {
   similes: ["CREATE_ACCOUNT", "SIGN_UP", "INITIALIZE"],
   description: "Register a new agent account with LTCG and get API key",
 
-  validate: async (runtime: IAgentRuntime, _message: Memory, _state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    _message: Memory,
+    _state: State,
+  ): Promise<boolean> => {
     try {
       // Must NOT already have API key
       const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
@@ -52,7 +56,7 @@ export const registerAgentAction: Action = {
     message: Memory,
     _state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling REGISTER_AGENT action");
@@ -70,7 +74,8 @@ export const registerAgentAction: Action = {
       });
 
       // Get agent name from runtime character or ask
-      let agentName = runtime.character?.name || (runtime.getSetting("AGENT_NAME") as string);
+      let agentName =
+        runtime.character?.name || (runtime.getSetting("AGENT_NAME") as string);
 
       if (!agentName) {
         // Extract from message if provided
@@ -85,7 +90,8 @@ export const registerAgentAction: Action = {
       }
 
       // Get play style preference
-      const playStyle = (runtime.getSetting("LTCG_PLAY_STYLE") as string) || "balanced";
+      const playStyle =
+        (runtime.getSetting("LTCG_PLAY_STYLE") as string) || "balanced";
 
       // Get available starter decks
       const starterDecks = await client.getStarterDecks();
@@ -101,29 +107,47 @@ export const registerAgentAction: Action = {
         case "aggressive":
         case "attack":
           selectedDeck =
-            starterDecks.find((d) => d.archetype.toLowerCase().includes("attack")) ||
-            starterDecks.find((d) => d.archetype.toLowerCase().includes("aggressive"));
+            starterDecks.find((d) =>
+              d.archetype.toLowerCase().includes("attack"),
+            ) ||
+            starterDecks.find((d) =>
+              d.archetype.toLowerCase().includes("aggressive"),
+            );
           break;
 
         case "defensive":
         case "defense":
           selectedDeck =
-            starterDecks.find((d) => d.archetype.toLowerCase().includes("defense")) ||
-            starterDecks.find((d) => d.archetype.toLowerCase().includes("wall"));
+            starterDecks.find((d) =>
+              d.archetype.toLowerCase().includes("defense"),
+            ) ||
+            starterDecks.find((d) =>
+              d.archetype.toLowerCase().includes("wall"),
+            );
           break;
 
         case "control":
         case "spell":
         case "trap":
           selectedDeck =
-            starterDecks.find((d) => d.archetype.toLowerCase().includes("spell")) ||
-            starterDecks.find((d) => d.archetype.toLowerCase().includes("trap")) ||
-            starterDecks.find((d) => d.archetype.toLowerCase().includes("control"));
+            starterDecks.find((d) =>
+              d.archetype.toLowerCase().includes("spell"),
+            ) ||
+            starterDecks.find((d) =>
+              d.archetype.toLowerCase().includes("trap"),
+            ) ||
+            starterDecks.find((d) =>
+              d.archetype.toLowerCase().includes("control"),
+            );
           break;
         default:
           selectedDeck =
-            starterDecks.find((d) => d.archetype.toLowerCase().includes("balanced")) ||
-            starterDecks.find((d) => d.archetype.toLowerCase().includes("starter"));
+            starterDecks.find((d) =>
+              d.archetype.toLowerCase().includes("balanced"),
+            ) ||
+            starterDecks.find((d) =>
+              d.archetype.toLowerCase().includes("starter"),
+            );
           break;
       }
 
@@ -131,7 +155,8 @@ export const registerAgentAction: Action = {
       if (!selectedDeck && starterDecks.length > 1) {
         const deckOptions = starterDecks
           .map(
-            (deck, idx) => `${idx + 1}. ${deck.name} (${deck.archetype})\n   ${deck.description}`
+            (deck, idx) =>
+              `${idx + 1}. ${deck.name} (${deck.archetype})\n   ${deck.description}`,
           )
           .join("\n\n");
 

@@ -13,7 +13,9 @@ interface FormData {
 /**
  * Example accessible form component
  */
-const AccessibleForm: React.FC<{ onSubmit: (data: FormData) => void }> = ({ onSubmit }) => {
+const AccessibleForm: React.FC<{ onSubmit: (data: FormData) => void }> = ({
+  onSubmit,
+}) => {
   const [formData, setFormData] = React.useState({
     name: "",
     email: "",
@@ -83,7 +85,11 @@ const AccessibleForm: React.FC<{ onSubmit: (data: FormData) => void }> = ({ onSu
           className="w-full px-3 py-2 border rounded-md"
         />
         {errors.email && (
-          <p id="email-error" role="alert" className="text-red-500 text-sm mt-1">
+          <p
+            id="email-error"
+            role="alert"
+            className="text-red-500 text-sm mt-1"
+          >
             {errors.email}
           </p>
         )}
@@ -96,7 +102,9 @@ const AccessibleForm: React.FC<{ onSubmit: (data: FormData) => void }> = ({ onSu
         <textarea
           id="message"
           value={formData.message}
-          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, message: e.target.value })
+          }
           rows={4}
           className="w-full px-3 py-2 border rounded-md"
         />
@@ -155,8 +163,16 @@ describe("Accessibility Tests", () => {
       cy.get("input#email").should("have.attr", "aria-invalid", "true");
 
       // Check aria-describedby links errors to inputs
-      cy.get("input#name").should("have.attr", "aria-describedby", "name-error");
-      cy.get("input#email").should("have.attr", "aria-describedby", "email-error");
+      cy.get("input#name").should(
+        "have.attr",
+        "aria-describedby",
+        "name-error",
+      );
+      cy.get("input#email").should(
+        "have.attr",
+        "aria-describedby",
+        "email-error",
+      );
     });
 
     it("should be keyboard navigable", () => {
@@ -176,7 +192,11 @@ describe("Accessibility Tests", () => {
       cy.focused().should("contain", "Send Message");
 
       // Verify tabindex is not preventing keyboard access
-      cy.get("input, textarea, button").should("not.have.attr", "tabindex", "-1");
+      cy.get("input, textarea, button").should(
+        "not.have.attr",
+        "tabindex",
+        "-1",
+      );
     });
 
     it("should have proper focus indicators", () => {
@@ -194,8 +214,10 @@ describe("Accessibility Tests", () => {
         <div className="dark bg-gray-900 p-4">
           <h1 className="text-white">High Contrast Title</h1>
           <p className="text-gray-300">Body text with good contrast</p>
-          <button className="bg-blue-600 text-white px-4 py-2">Action Button</button>
-        </div>
+          <button className="bg-blue-600 text-white px-4 py-2">
+            Action Button
+          </button>
+        </div>,
       );
 
       // Visual check - in real tests you might use cypress-axe
@@ -215,7 +237,7 @@ describe("Accessibility Tests", () => {
             <h3>Subsection</h3>
             <p>More content</p>
           </section>
-        </article>
+        </article>,
       );
 
       // Check heading hierarchy
@@ -235,7 +257,7 @@ describe("Accessibility Tests", () => {
               <a href="#about">About</a>
             </li>
           </ul>
-        </nav>
+        </nav>,
       );
 
       cy.get("nav").should("have.attr", "aria-label", "Main navigation");

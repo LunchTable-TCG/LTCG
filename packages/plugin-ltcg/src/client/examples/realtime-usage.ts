@@ -5,7 +5,11 @@
  * real-time game updates in the LTCG ElizaOS plugin.
  */
 
-import type { GameEventCallback, GameStateCallback, TurnNotificationCallback } from "../events";
+import type {
+  GameEventCallback,
+  GameStateCallback,
+  TurnNotificationCallback,
+} from "../events";
 import { ConvexRealtimeClient } from "../realtimeClient";
 
 // ============================================================================
@@ -306,7 +310,9 @@ class GameSubscriptionManager {
    * Clean up all subscriptions
    */
   cleanup() {
-    console.log(`Cleaning up ${this.gameSubscriptions.size} game subscriptions`);
+    console.log(
+      `Cleaning up ${this.gameSubscriptions.size} game subscriptions`,
+    );
     for (const [_gameId, unsubscribe] of this.gameSubscriptions.entries()) {
       unsubscribe();
     }

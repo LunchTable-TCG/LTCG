@@ -103,7 +103,10 @@ export type GameEventCallback = (event: GameEvent) => void;
 /**
  * Callback for chain window notifications
  */
-export type ChainWindowCallback = (gameId: string, timeRemaining: number) => void;
+export type ChainWindowCallback = (
+  gameId: string,
+  timeRemaining: number,
+) => void;
 
 /**
  * Generic event callback
@@ -121,11 +124,23 @@ export interface GameEventEmitter {
   /**
    * Subscribe to a specific event type
    */
-  on(event: "game_state_updated", callback: EventCallback<GameStateUpdatedEvent>): () => void;
-  on(event: "turn_notification", callback: EventCallback<TurnNotificationEvent>): () => void;
-  on(event: "game_event_occurred", callback: EventCallback<GameEventOccurredEvent>): () => void;
+  on(
+    event: "game_state_updated",
+    callback: EventCallback<GameStateUpdatedEvent>,
+  ): () => void;
+  on(
+    event: "turn_notification",
+    callback: EventCallback<TurnNotificationEvent>,
+  ): () => void;
+  on(
+    event: "game_event_occurred",
+    callback: EventCallback<GameEventOccurredEvent>,
+  ): () => void;
   on(event: "game_ended", callback: EventCallback<GameEndedEvent>): () => void;
-  on(event: "chain_window_open", callback: EventCallback<ChainWindowOpenEvent>): () => void;
+  on(
+    event: "chain_window_open",
+    callback: EventCallback<ChainWindowOpenEvent>,
+  ): () => void;
   on(event: string, callback: EventCallback): () => void;
 
   /**

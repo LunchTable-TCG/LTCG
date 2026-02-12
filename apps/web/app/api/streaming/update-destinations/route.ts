@@ -57,6 +57,12 @@ export async function POST(req: NextRequest) {
     if ((auth.isInternal || auth.isAgentApiKey) && !internalAuth) {
       return NextResponse.json({ error: "INTERNAL_API_SECRET is not configured" }, { status: 500 });
     }
+    if (auth.isAgentApiKey && !auth.agentId) {
+      return NextResponse.json(
+        { error: "Agent API key is not bound to a registered agent" },
+        { status: 403 }
+      );
+    }
     const body = await req.json();
     const { sessionId, addDestinations, removeDestinations } = body as {
       sessionId: string;
@@ -79,6 +85,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (auth.isAgentApiKey && session.streamType !== "agent") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (auth.isAgentApiKey && session.agentId !== auth.agentId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

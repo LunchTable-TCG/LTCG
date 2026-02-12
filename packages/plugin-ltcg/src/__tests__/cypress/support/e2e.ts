@@ -62,17 +62,30 @@ declare global {
 }
 
 // Login command
-Cypress.Commands.add("login", (username = "testuser", password = "testpass") => {
-  // Check if login is required
-  cy.get("body").then(($body) => {
-    if ($body.find('[data-testid="login"], form[name="login"], input[name="username"]').length) {
-      cy.get('input[name="username"], input[type="email"]').first().type(username);
-      cy.get('input[name="password"], input[type="password"]').first().type(password);
-      cy.get('button[type="submit"], button:contains("Login")').first().click();
-      cy.wait(1000);
-    }
-  });
-});
+Cypress.Commands.add(
+  "login",
+  (username = "testuser", password = "testpass") => {
+    // Check if login is required
+    cy.get("body").then(($body) => {
+      if (
+        $body.find(
+          '[data-testid="login"], form[name="login"], input[name="username"]',
+        ).length
+      ) {
+        cy.get('input[name="username"], input[type="email"]')
+          .first()
+          .type(username);
+        cy.get('input[name="password"], input[type="password"]')
+          .first()
+          .type(password);
+        cy.get('button[type="submit"], button:contains("Login")')
+          .first()
+          .click();
+        cy.wait(1000);
+      }
+    });
+  },
+);
 
 // Wait for app to be ready
 Cypress.Commands.add("waitForApp", () => {
@@ -93,7 +106,9 @@ Cypress.Commands.add("navigateToAgent", (agentId?: string) => {
   if (agentId) {
     cy.visit(`/agent/${agentId}`);
   } else {
-    cy.get('a[href*="agent"], button:contains("agent")').first().click({ force: true });
+    cy.get('a[href*="agent"], button:contains("agent")')
+      .first()
+      .click({ force: true });
   }
   cy.waitForApp();
 });
@@ -108,7 +123,10 @@ Cypress.Commands.add("sendChatMessage", (message: string) => {
     .type(message);
 
   // Send the message
-  cy.get("button").filter(':contains("Send"), [aria-label*="send"]').first().click();
+  cy.get("button")
+    .filter(':contains("Send"), [aria-label*="send"]')
+    .first()
+    .click();
 
   // Wait for the message to appear
   cy.contains(message, { timeout: 5000 }).should("be.visible");

@@ -21,6 +21,38 @@ import {
 } from "../webhooks/gameEventHandler";
 import { type ITurnOrchestrator, SERVICE_TYPES } from "./types";
 
+function firstNonEmpty(...values: Array<string | null | undefined>): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
+type StoryDifficulty = "easy" | "medium" | "hard" | "boss";
+
+function parseNonNegativeInt(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseInt(value ?? "", 10);
+  if (!Number.isFinite(parsed) || Number.isNaN(parsed)) {
+    return fallback;
+  }
+  return Math.max(0, parsed);
+}
+
+function parseStoryDifficulty(value: string | undefined): StoryDifficulty | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (
+    normalized === "easy" ||
+    normalized === "medium" ||
+    normalized === "hard" ||
+    normalized === "boss"
+  ) {
+    return normalized;
+  }
+  return undefined;
+}
+
 export interface PollingConfig {
   /** Polling interval in milliseconds (default: 1500ms) */
   intervalMs?: number;
@@ -40,6 +72,12 @@ export interface PollingConfig {
   idleMultiplier?: number;
   /** Maximum polling interval multiplier cap (default: 5) */
   maxIntervalMultiplier?: number;
+  /** Automatically queue the next story-mode game when a story game ends (default: true) */
+  autoContinueStoryMode?: boolean;
+  /** Delay before auto-queueing the next story-mode game (default: 2500ms) */
+  storyRequeueDelayMs?: number;
+  /** Preferred quick-play story difficulty for auto-queued games */
+  storyDifficulty?: StoryDifficulty;
 }
 
 interface GameStateSnapshot {
@@ -90,9 +128,9 @@ export class LTCGPollingService extends Service {
 
   // Note: runtime is inherited from Service base class as protected
   private client: LTCGApiClient | null = null;
-  private pollingInterval: ReturnType<typeof setInterval> | null = null;
-  private discoveryInterval: ReturnType<typeof setInterval> | null = null;
-  private matchmakingInterval: ReturnType<typeof setInterval> | null = null;
+  private pollingInterval: ReturnType<typeof setTimeout> | null = null;
+  private discoveryInterval: ReturnType<typeof setTimeout> | null = null;
+  private matchmakingInterval: ReturnType<typeof setTimeout> | null = null;
   private currentGameId: string | null = null;
   /** Story stage ID for the current game (set via startPollingGame metadata) */
   private currentStageId: string | null = null;
@@ -106,6 +144,8 @@ export class LTCGPollingService extends Service {
   private autoMatchmaking: boolean;
   private debug: boolean;
   private isPolling = false;
+  private isDiscoveryRunning = false;
+  private isMatchmakingRunning = false;
 
   // Adaptive polling state
   private adaptivePollingEnabled: boolean;
@@ -132,6 +172,10 @@ export class LTCGPollingService extends Service {
   };
   private readonly maxEventHistory = 50;
   private cachedDeckId: string | null = null;
+  private readonly autoContinueStoryMode: boolean;
+  private readonly storyRequeueDelayMs: number;
+  private readonly preferredStoryDifficulty: StoryDifficulty | undefined;
+  private storyContinuationInFlight = false;
 
   capabilityDescription = "Provides real-time game updates via HTTP polling for local development";
 
@@ -149,6 +193,19 @@ export class LTCGPollingService extends Service {
     this.idleTimeoutMs = config?.idleTimeoutMs ?? 30000;
     this.idleMultiplier = config?.idleMultiplier ?? 1.5;
     this.maxIntervalMultiplier = config?.maxIntervalMultiplier ?? 5;
+    this.autoContinueStoryMode =
+      config?.autoContinueStoryMode ?? process.env.LTCG_AUTO_CONTINUE_STORY_MODE !== "false";
+    this.storyRequeueDelayMs =
+      config?.storyRequeueDelayMs ??
+      parseNonNegativeInt(process.env.LTCG_STORY_REQUEUE_DELAY_MS, 2500);
+    this.preferredStoryDifficulty =
+      config?.storyDifficulty ??
+      parseStoryDifficulty(
+        firstNonEmpty(
+          process.env.LTCG_STORY_MODE_DIFFICULTY,
+          process.env.LTCG_STORY_QUICK_PLAY_DIFFICULTY
+        ) ?? undefined
+      );
 
     // Initialize adaptive polling state
     this.adaptivePollingState = {
@@ -193,6 +250,14 @@ export class LTCGPollingService extends Service {
     const maxIntervalMultiplier = Number.parseInt(
       process.env.LTCG_MAX_INTERVAL_MULTIPLIER || "5"
     );
+    const autoContinueStoryMode = process.env.LTCG_AUTO_CONTINUE_STORY_MODE !== "false";
+    const storyRequeueDelayMs = parseNonNegativeInt(process.env.LTCG_STORY_REQUEUE_DELAY_MS, 2500);
+    const storyDifficulty = parseStoryDifficulty(
+      firstNonEmpty(
+        process.env.LTCG_STORY_MODE_DIFFICULTY,
+        process.env.LTCG_STORY_QUICK_PLAY_DIFFICULTY
+      ) ?? undefined
+    );
 
     logger.debug(
       {
@@ -221,6 +286,9 @@ export class LTCGPollingService extends Service {
       idleTimeoutMs,
       idleMultiplier,
       maxIntervalMultiplier,
+      autoContinueStoryMode,
+      storyRequeueDelayMs,
+      storyDifficulty,
     });
 
     // Initialize API client (read from process.env set by plugin init)
@@ -277,6 +345,7 @@ export class LTCGPollingService extends Service {
     // Cleanup active game and stream before stopping
     await this.cleanupActiveResources();
 
+    this.storyContinuationInFlight = false;
     this.stopPolling();
     this.stopDiscovery();
     this.stopMatchmaking();
@@ -372,17 +441,29 @@ export class LTCGPollingService extends Service {
       "Starting game polling"
     );
 
-    // Start polling loop with adaptive intervals
-    this.pollingInterval = setInterval(() => {
-      this.pollGameState().catch((error) => {
-        logger.error({ error, gameId }, "Polling error");
-      });
-    }, this.getCurrentGamePollingInterval());
+    // Schedule next poll using setTimeout so interval adapts each cycle
+    const scheduleNextPoll = () => {
+      if (!this.isPolling) return;
+      const interval = this.getCurrentGamePollingInterval();
+      this.pollingInterval = setTimeout(() => {
+        this.pollGameState()
+          .catch((error) => {
+            logger.error({ error, gameId }, "Polling error");
+          })
+          .finally(() => {
+            scheduleNextPoll();
+          });
+      }, interval);
+    };
 
-    // Do an immediate poll
-    this.pollGameState().catch((error) => {
-      logger.error({ error, gameId }, "Initial poll error");
-    });
+    // Do an immediate poll, then start the adaptive schedule
+    this.pollGameState()
+      .catch((error) => {
+        logger.error({ error, gameId }, "Initial poll error");
+      })
+      .finally(() => {
+        scheduleNextPoll();
+      });
   }
 
   /**
@@ -392,7 +473,7 @@ export class LTCGPollingService extends Service {
     const activeGameId = this.currentGameId;
 
     if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
+      clearTimeout(this.pollingInterval);
       this.pollingInterval = null;
     }
     this.isPolling = false;
@@ -431,14 +512,21 @@ export class LTCGPollingService extends Service {
       status: gameState?.status,
     }, "Game ended — evaluating result");
 
-    // 1. Complete story stage (unlocks next stage)
-    if (this.currentStageId && this.client) {
+    // 1. Story completion fallback.
+    // Primary completion/reward handling is performed by core gameplay on match end.
+    // Keep this path opt-in only for emergency fallback scenarios.
+    const shouldFallbackCompleteStory =
+      process.env.LTCG_POLLING_COMPLETE_STORY_STAGE_FALLBACK?.trim().toLowerCase() === "true";
+    if (this.currentStageId && this.client && shouldFallbackCompleteStory) {
       try {
         const completion = await this.client.completeStoryStage(this.currentStageId, agentWon, playerLP);
-        logger.info({ stageId: this.currentStageId, won: agentWon, unlockedNextStage: completion.unlockedNextStage }, "Story stage completed");
+        logger.info(
+          { stageId: this.currentStageId, won: agentWon, unlockedNextStage: completion.unlockedNextStage },
+          "Story stage completed via polling fallback"
+        );
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logger.warn({ error: msg, stageId: this.currentStageId }, "Failed to complete story stage");
+        logger.warn({ error: msg, stageId: this.currentStageId }, "Polling fallback failed to complete story stage");
       }
     }
 
@@ -448,7 +536,7 @@ export class LTCGPollingService extends Service {
         const appBaseUrl = (process.env.LTCG_APP_URL || "https://www.lunchtable.cards").replace(/\/$/, "");
         const internalAuth = process.env.INTERNAL_API_SECRET?.trim();
         if (internalAuth) {
-          await fetch(`${appBaseUrl}/api/streaming/match-result`, {
+          const response = await fetch(`${appBaseUrl}/api/streaming/match-result`, {
             method: "POST",
             headers: { "Content-Type": "application/json", "x-api-key": internalAuth },
             body: JSON.stringify({
@@ -456,14 +544,306 @@ export class LTCGPollingService extends Service {
               lastMatchEndedAt: Date.now(),
               lastMatchResult: result,
               lastMatchSummary: agentWon ? "Match over: victory secured." : "Match over: tough loss. Reviewing lines.",
+              clearCurrentLobby: true,
             }),
           });
-          logger.info({ sessionId: this.currentStreamingSessionId, result }, "Updated streaming session with match result");
+          if (!response.ok) {
+            const text = await response.text().catch(() => `status ${response.status}`);
+            throw new Error(`match-result API failed (${response.status}): ${text}`);
+          }
+          const cleared = await this.ensureLobbyLinkCleared(
+            this.currentStreamingSessionId,
+            appBaseUrl,
+            internalAuth
+          );
+          if (!cleared) {
+            logger.warn(
+              { sessionId: this.currentStreamingSessionId },
+              "Match result updated but lobby linkage may still be present"
+            );
+          }
+          logger.info(
+            { sessionId: this.currentStreamingSessionId, result, clearedLobbyLink: cleared },
+            "Updated streaming session with match result"
+          );
         }
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         logger.warn({ error: msg }, "Failed to update streaming session with match result");
       }
+    }
+  }
+
+  private shouldAutoContinueStoryGame(): boolean {
+    return this.autoContinueStoryMode && Boolean(this.currentStageId);
+  }
+
+  private async continueStoryModeAfterGameEnd(params: {
+    reason: "completed" | "game_not_found";
+    previousStreamingSessionId: string | null;
+  }): Promise<void> {
+    if (!this.client) {
+      return;
+    }
+
+    if (this.storyContinuationInFlight) {
+      logger.debug(
+        { reason: params.reason },
+        "Story continuation already in progress; skipping duplicate continuation trigger"
+      );
+      return;
+    }
+
+    this.storyContinuationInFlight = true;
+
+    try {
+      if (this.storyRequeueDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, this.storyRequeueDelayMs));
+      }
+
+      const nextStoryGame = await this.executeWithRecovery("story_quick_play", async () => {
+        if (!this.client) {
+          throw new Error("API client not initialized");
+        }
+        return this.client.quickPlayStory(this.preferredStoryDifficulty);
+      });
+
+      if (!nextStoryGame) {
+        logger.warn(
+          { reason: params.reason },
+          "Failed to queue next story game after game end; will rely on discovery/autonomy fallback"
+        );
+        return;
+      }
+
+      const linkedStreamingSessionId = await this.relinkStoryStreamToLobby(
+        nextStoryGame.lobbyId,
+        params.previousStreamingSessionId
+      );
+
+      this.startPollingGame(nextStoryGame.gameId, {
+        stageId: nextStoryGame.stageId,
+        streamingSessionId: linkedStreamingSessionId ?? undefined,
+      });
+
+      logger.info(
+        {
+          previousGameEndReason: params.reason,
+          gameId: nextStoryGame.gameId,
+          lobbyId: nextStoryGame.lobbyId,
+          stageId: nextStoryGame.stageId,
+          difficulty: nextStoryGame.difficulty,
+        },
+        "Started next story game automatically"
+      );
+    } catch (error) {
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error), reason: params.reason },
+        "Auto story continuation failed after game end"
+      );
+    } finally {
+      this.storyContinuationInFlight = false;
+    }
+  }
+
+  private async relinkStoryStreamToLobby(
+    lobbyId: string,
+    previousStreamingSessionId: string | null
+  ): Promise<string | null> {
+    if (!previousStreamingSessionId) {
+      return null;
+    }
+
+    const apiKey = firstNonEmpty(process.env.LTCG_API_KEY);
+    const agentId = firstNonEmpty(process.env.LTCG_AGENT_ID);
+    const configuredAppUrl =
+      firstNonEmpty(process.env.LTCG_APP_URL, process.env.NEXT_PUBLIC_APP_URL) ??
+      "https://www.lunchtable.cards";
+    const appBaseUrl = configuredAppUrl.includes(".convex.site")
+      ? "https://www.lunchtable.cards"
+      : configuredAppUrl.replace(/\/+$/, "");
+
+    if (!apiKey || !agentId) {
+      return previousStreamingSessionId;
+    }
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "x-api-key": apiKey,
+    };
+
+    const platform = firstNonEmpty(process.env.STREAMING_PLATFORM);
+    const body: Record<string, unknown> = {
+      agentId,
+      streamType: "agent",
+      lobbyId,
+      useStoredCredentials: true,
+    };
+    if (platform) {
+      body.platform = platform;
+    }
+
+    try {
+      const response = await fetch(`${appBaseUrl}/api/streaming/start`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        logger.warn(
+          {
+            sessionId: previousStreamingSessionId,
+            lobbyId,
+            status: response.status,
+            error: text,
+          },
+          "Failed to relink stream to next story lobby; preserving previous session reference"
+        );
+        return previousStreamingSessionId;
+      }
+
+      const payload = await response.json().catch(() => null);
+      const linkedSessionId =
+        payload && typeof payload === "object" && typeof payload.sessionId === "string"
+          ? payload.sessionId
+          : null;
+
+      return linkedSessionId ?? previousStreamingSessionId;
+    } catch (error) {
+      logger.warn(
+        {
+          sessionId: previousStreamingSessionId,
+          lobbyId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "Stream relink request failed while continuing story mode"
+      );
+      return previousStreamingSessionId;
+    }
+  }
+
+  private async ensureLobbyLinkCleared(
+    sessionId: string,
+    appBaseUrl: string,
+    internalAuth: string
+  ): Promise<boolean> {
+    const statusCheck = await this.fetchStreamingStatus(appBaseUrl, sessionId);
+    if (statusCheck && !statusCheck.currentLobbyId) {
+      return true;
+    }
+
+    const clearedViaConvex = await this.clearLobbyLinkDirectlyInConvex(sessionId, internalAuth);
+    if (!clearedViaConvex) {
+      return false;
+    }
+
+    const afterDirectClear = await this.fetchStreamingStatus(appBaseUrl, sessionId);
+    return afterDirectClear ? !afterDirectClear.currentLobbyId : true;
+  }
+
+  private async fetchStreamingStatus(
+    appBaseUrl: string,
+    sessionId: string
+  ): Promise<{ currentLobbyId?: unknown } | null> {
+    try {
+      const response = await fetch(
+        `${appBaseUrl}/api/streaming/status?sessionId=${encodeURIComponent(sessionId)}`
+      );
+      if (!response.ok) {
+        return null;
+      }
+      const body = await response.json();
+      if (!body || typeof body !== "object") {
+        return null;
+      }
+      return body as { currentLobbyId?: unknown };
+    } catch {
+      return null;
+    }
+  }
+
+  private async clearLobbyLinkDirectlyInConvex(
+    sessionId: string,
+    internalAuth: string
+  ): Promise<boolean> {
+    const convexBaseUrl = firstNonEmpty(
+      process.env.LTCG_CONVEX_URL,
+      process.env.NEXT_PUBLIC_CONVEX_URL,
+      process.env.CONVEX_URL
+    );
+    if (!convexBaseUrl) {
+      return false;
+    }
+
+    const convexMutationUrl = `${convexBaseUrl.replace(/\/+$/, "")}/api/mutation`;
+
+    const runMutation = async (path: string, args: Record<string, unknown>) => {
+      const response = await fetch(convexMutationUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ path, args }),
+      });
+      const text = await response.text().catch(() => "");
+      let parsed: unknown = null;
+      try {
+        parsed = text ? JSON.parse(text) : null;
+      } catch {
+        parsed = text;
+      }
+      const hasConvexError =
+        parsed &&
+        typeof parsed === "object" &&
+        ((parsed as { status?: string }).status === "error" ||
+          typeof (parsed as { errorMessage?: unknown }).errorMessage === "string");
+      return {
+        ok: response.ok && !hasConvexError,
+        status: response.status,
+        body: parsed,
+      };
+    };
+
+    try {
+      const clearLobbyResult = await runMutation("streaming/sessions:clearLobbyLink", {
+        sessionId,
+        internalAuth,
+      });
+      if (clearLobbyResult.ok) {
+        return true;
+      }
+
+      const legacyFallbackResult = await runMutation("streaming/sessions:updateSession", {
+        sessionId,
+        internalAuth,
+        updates: {
+          currentLobbyId: "",
+        },
+      });
+      if (!legacyFallbackResult.ok) {
+        logger.warn(
+          {
+            sessionId,
+            primaryStatus: clearLobbyResult.status,
+            primaryBody: clearLobbyResult.body,
+            fallbackStatus: legacyFallbackResult.status,
+            fallbackBody: legacyFallbackResult.body,
+          },
+          "Direct Convex lobby clear mutation failed (primary + fallback)"
+        );
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      logger.warn(
+        { sessionId, error: error instanceof Error ? error.message : String(error) },
+        "Direct Convex clearLobbyLink mutation errored"
+      );
+      return false;
     }
   }
 
@@ -479,6 +859,13 @@ export class LTCGPollingService extends Service {
    */
   getCurrentGameId(): string | null {
     return this.currentGameId;
+  }
+
+  /**
+   * Get current lobby ID if known from latest game state.
+   */
+  getCurrentLobbyId(): string | null {
+    return this.lastKnownGameState?.lobbyId ?? null;
   }
 
   /**
@@ -532,8 +919,8 @@ export class LTCGPollingService extends Service {
       },
       active: {
         isPolling: this.isPolling,
-        isDiscoveryRunning: this.discoveryInterval !== null,
-        isMatchmakingRunning: this.matchmakingInterval !== null,
+        isDiscoveryRunning: this.isDiscoveryRunning,
+        isMatchmakingRunning: this.isMatchmakingRunning,
       },
     };
   }
@@ -558,7 +945,7 @@ export class LTCGPollingService extends Service {
         gamesStarted: this.matchmakingStats.gamesStarted,
         lastScanAt: this.matchmakingStats.lastScanAt,
       },
-      nextScanIn: this.matchmakingInterval ? this.matchmakingIntervalMs : 0,
+      nextScanIn: this.isMatchmakingRunning ? this.matchmakingIntervalMs : 0,
     };
   }
 
@@ -606,7 +993,7 @@ export class LTCGPollingService extends Service {
       return;
     }
 
-    if (this.discoveryInterval) {
+    if (this.isDiscoveryRunning) {
       logger.debug("Discovery already running");
       return;
     }
@@ -619,25 +1006,40 @@ export class LTCGPollingService extends Service {
       "Starting game discovery"
     );
 
-    // Start discovery loop with adaptive intervals
-    this.discoveryInterval = setInterval(() => {
-      this.checkForPendingGames().catch((error) => {
-        logger.error({ error }, "Discovery error");
-      });
-    }, this.getCurrentDiscoveryInterval());
+    this.isDiscoveryRunning = true;
 
-    // Do an immediate check
-    this.checkForPendingGames().catch((error) => {
-      logger.error({ error }, "Initial discovery error");
-    });
+    // Schedule next discovery using setTimeout so interval adapts each cycle
+    const scheduleNextDiscovery = () => {
+      if (!this.isDiscoveryRunning) return;
+      const interval = this.getCurrentDiscoveryInterval();
+      this.discoveryInterval = setTimeout(() => {
+        this.checkForPendingGames()
+          .catch((error) => {
+            logger.error({ error }, "Discovery error");
+          })
+          .finally(() => {
+            scheduleNextDiscovery();
+          });
+      }, interval);
+    };
+
+    // Do an immediate check, then start the adaptive schedule
+    this.checkForPendingGames()
+      .catch((error) => {
+        logger.error({ error }, "Initial discovery error");
+      })
+      .finally(() => {
+        scheduleNextDiscovery();
+      });
   }
 
   /**
    * Stop auto-discovery
    */
   stopDiscovery(): void {
+    this.isDiscoveryRunning = false;
     if (this.discoveryInterval) {
-      clearInterval(this.discoveryInterval);
+      clearTimeout(this.discoveryInterval);
       this.discoveryInterval = null;
       logger.debug("Discovery stopped");
     }
@@ -652,7 +1054,7 @@ export class LTCGPollingService extends Service {
       return;
     }
 
-    if (this.matchmakingInterval) {
+    if (this.isMatchmakingRunning) {
       logger.debug("Matchmaking already running");
       return;
     }
@@ -670,25 +1072,40 @@ export class LTCGPollingService extends Service {
       "🎯 Starting auto-matchmaking"
     );
 
-    // Start matchmaking loop with adaptive intervals
-    this.matchmakingInterval = setInterval(() => {
-      this.checkForAvailableLobbies().catch((error) => {
-        logger.error({ error }, "Matchmaking error");
-      });
-    }, this.getCurrentMatchmakingInterval());
+    this.isMatchmakingRunning = true;
 
-    // Do an immediate check
-    this.checkForAvailableLobbies().catch((error) => {
-      logger.error({ error }, "Initial matchmaking check error");
-    });
+    // Schedule next matchmaking using setTimeout so interval adapts each cycle
+    const scheduleNextMatchmaking = () => {
+      if (!this.isMatchmakingRunning) return;
+      const interval = this.getCurrentMatchmakingInterval();
+      this.matchmakingInterval = setTimeout(() => {
+        this.checkForAvailableLobbies()
+          .catch((error) => {
+            logger.error({ error }, "Matchmaking error");
+          })
+          .finally(() => {
+            scheduleNextMatchmaking();
+          });
+      }, interval);
+    };
+
+    // Do an immediate check, then start the adaptive schedule
+    this.checkForAvailableLobbies()
+      .catch((error) => {
+        logger.error({ error }, "Initial matchmaking check error");
+      })
+      .finally(() => {
+        scheduleNextMatchmaking();
+      });
   }
 
   /**
    * Stop auto-matchmaking
    */
   stopMatchmaking(): void {
+    this.isMatchmakingRunning = false;
     if (this.matchmakingInterval) {
-      clearInterval(this.matchmakingInterval);
+      clearTimeout(this.matchmakingInterval);
       this.matchmakingInterval = null;
       logger.debug("Matchmaking stopped");
     }
@@ -968,10 +1385,18 @@ export class LTCGPollingService extends Service {
     );
 
     if (gameNotFound) {
+      const shouldContinueStory = this.shouldAutoContinueStoryGame();
+      const previousStreamingSessionId = this.currentStreamingSessionId;
       logger.info({ gameId }, "Game no longer exists, stopping polling and clearing active game");
       // Use last known game state for win detection (LP values)
       await this.handleGameEnd(this.lastKnownGameState);
       this.stopPolling();
+      if (shouldContinueStory) {
+        await this.continueStoryModeAfterGameEnd({
+          reason: "game_not_found",
+          previousStreamingSessionId,
+        });
+      }
       return;
     }
 
@@ -1003,12 +1428,20 @@ export class LTCGPollingService extends Service {
 
     // Check if game ended
     if (gameState.status === "completed") {
+      const shouldContinueStory = this.shouldAutoContinueStoryGame();
+      const previousStreamingSessionId = this.currentStreamingSessionId;
       logger.info(
         { gameId: this.currentGameId, status: gameState.status },
         "Game ended, stopping polling"
       );
       await this.handleGameEnd(gameState);
       this.stopPolling();
+      if (shouldContinueStory) {
+        await this.continueStoryModeAfterGameEnd({
+          reason: "completed",
+          previousStreamingSessionId,
+        });
+      }
     }
   }
 

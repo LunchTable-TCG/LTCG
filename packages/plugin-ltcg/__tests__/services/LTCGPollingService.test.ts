@@ -56,6 +56,19 @@ function createMockApiClient(overrides: Partial<LTCGApiClient> = {}): LTCGApiCli
     ),
     joinLobby: mock(() => Promise.resolve({ gameId: "test-game-id" })),
     getDecks: mock(() => Promise.resolve([{ deckId: "test-deck-id", name: "Test Deck" }])),
+    quickPlayStory: mock(() =>
+      Promise.resolve({
+        gameId: "next-game-id",
+        lobbyId: "next-lobby-id",
+        stageId: "next-stage-id",
+        chapter: "Test Chapter",
+        stage: { name: "Test Stage", number: 1 },
+        aiOpponent: "Test Opponent",
+        difficulty: "easy",
+        rewards: { gold: 100, xp: 50, firstClearBonus: 0 },
+        message: "Started",
+      })
+    ),
     ...overrides,
   } as unknown as LTCGApiClient;
 }
@@ -66,6 +79,9 @@ function createMockApiClient(overrides: Partial<LTCGApiClient> = {}): LTCGApiCli
 function getPrivateMembers(service: LTCGPollingService) {
   return service as unknown as {
     client: LTCGApiClient | null;
+    currentGameId: string | null;
+    currentStageId: string | null;
+    currentStreamingSessionId: string | null;
     circuitBreakers: Map<
       string,
       {
@@ -98,6 +114,8 @@ function getPrivateMembers(service: LTCGPollingService) {
       operation: () => Promise<T>,
       options?: { silent?: boolean }
     ): Promise<T | null>;
+    handleGameEnd(gameState: unknown): Promise<void>;
+    pollGameState(): Promise<void>;
   };
 }
 
@@ -784,6 +802,195 @@ describe("LTCGPollingService - Edge Cases", () => {
 
       const breaker = privateMethods.getCircuitBreaker(operationName);
       expect(breaker.state).toBe("closed");
+    });
+  });
+
+  describe("handleGameEnd story completion fallback", () => {
+    const fallbackEnvVar = "LTCG_POLLING_COMPLETE_STORY_STAGE_FALLBACK";
+    let previousValue: string | undefined;
+
+    beforeEach(() => {
+      previousValue = process.env[fallbackEnvVar];
+      delete process.env[fallbackEnvVar];
+    });
+
+    afterEach(() => {
+      if (previousValue === undefined) {
+        delete process.env[fallbackEnvVar];
+      } else {
+        process.env[fallbackEnvVar] = previousValue;
+      }
+    });
+
+    it("does not complete story stage when fallback is disabled", async () => {
+      const completeStoryStage = mock(() =>
+        Promise.resolve({ won: true, rewards: { gold: 100, xp: 50 }, starsEarned: 2 })
+      );
+      privateMethods.client = createMockApiClient({ completeStoryStage });
+      privateMethods.currentStageId = "story_stage_1";
+      privateMethods.currentStreamingSessionId = null;
+
+      await privateMethods.handleGameEnd({
+        status: "completed",
+        myLifePoints: 4000,
+        opponentLifePoints: 0,
+      });
+
+      expect(completeStoryStage).not.toHaveBeenCalled();
+    });
+
+    it("completes story stage when fallback is explicitly enabled", async () => {
+      process.env[fallbackEnvVar] = "true";
+      const completeStoryStage = mock(() =>
+        Promise.resolve({ won: true, rewards: { gold: 100, xp: 50 }, starsEarned: 2 })
+      );
+      privateMethods.client = createMockApiClient({ completeStoryStage });
+      privateMethods.currentStageId = "story_stage_1";
+      privateMethods.currentStreamingSessionId = null;
+
+      await privateMethods.handleGameEnd({
+        status: "completed",
+        myLifePoints: 4000,
+        opponentLifePoints: 0,
+      });
+
+      expect(completeStoryStage).toHaveBeenCalledWith("story_stage_1", true, 4000);
+    });
+  });
+
+  describe("story-mode auto continuation", () => {
+    const autoContinueEnvVar = "LTCG_AUTO_CONTINUE_STORY_MODE";
+    const requeueDelayEnvVar = "LTCG_STORY_REQUEUE_DELAY_MS";
+    let previousAutoContinue: string | undefined;
+    let previousRequeueDelay: string | undefined;
+
+    beforeEach(() => {
+      previousAutoContinue = process.env[autoContinueEnvVar];
+      previousRequeueDelay = process.env[requeueDelayEnvVar];
+      process.env[requeueDelayEnvVar] = "0";
+    });
+
+    afterEach(() => {
+      if (previousAutoContinue === undefined) {
+        delete process.env[autoContinueEnvVar];
+      } else {
+        process.env[autoContinueEnvVar] = previousAutoContinue;
+      }
+
+      if (previousRequeueDelay === undefined) {
+        delete process.env[requeueDelayEnvVar];
+      } else {
+        process.env[requeueDelayEnvVar] = previousRequeueDelay;
+      }
+    });
+
+    it("queues a new story game after completion when auto continuation is enabled", async () => {
+      process.env[autoContinueEnvVar] = "true";
+      service.stop();
+      service = new LTCGPollingService(mockRuntime, { debug: false });
+      privateMethods = getPrivateMembers(service);
+
+      let stateCalls = 0;
+      const getGameState = mock(() => {
+        stateCalls += 1;
+        if (stateCalls === 1) {
+          return Promise.resolve({
+            status: "completed",
+            phase: "end",
+            turnNumber: 12,
+            currentTurn: "host",
+            isMyTurn: false,
+            myLifePoints: 0,
+            opponentLifePoints: 1200,
+            hand: [],
+          });
+        }
+
+        return Promise.resolve({
+          status: "in_progress",
+          phase: "draw",
+          turnNumber: 1,
+          currentTurn: "host",
+          isMyTurn: false,
+          myLifePoints: 8000,
+          opponentLifePoints: 8000,
+          lobbyId: "next-lobby-id",
+          hand: [],
+        });
+      });
+
+      const quickPlayStory = mock(() =>
+        Promise.resolve({
+          gameId: "next-game-id",
+          lobbyId: "next-lobby-id",
+          stageId: "next-stage-id",
+          chapter: "Chapter 1",
+          stage: { name: "Stage 2", number: 2 },
+          aiOpponent: "Opponent",
+          difficulty: "easy",
+          rewards: { gold: 100, xp: 50, firstClearBonus: 0 },
+          message: "Started",
+        })
+      );
+
+      privateMethods.client = createMockApiClient({
+        getGameState,
+        quickPlayStory,
+      });
+      privateMethods.currentGameId = "completed-game-id";
+      privateMethods.currentStageId = "completed-stage-id";
+      privateMethods.currentStreamingSessionId = null;
+
+      await privateMethods.pollGameState();
+
+      expect(quickPlayStory).toHaveBeenCalledTimes(1);
+      expect(privateMethods.currentGameId).toBe("next-game-id");
+      expect(privateMethods.currentStageId).toBe("next-stage-id");
+    });
+
+    it("does not queue a new story game when auto continuation is disabled", async () => {
+      process.env[autoContinueEnvVar] = "false";
+      service.stop();
+      service = new LTCGPollingService(mockRuntime, { debug: false });
+      privateMethods = getPrivateMembers(service);
+
+      const quickPlayStory = mock(() =>
+        Promise.resolve({
+          gameId: "next-game-id",
+          lobbyId: "next-lobby-id",
+          stageId: "next-stage-id",
+          chapter: "Chapter 1",
+          stage: { name: "Stage 2", number: 2 },
+          aiOpponent: "Opponent",
+          difficulty: "easy",
+          rewards: { gold: 100, xp: 50, firstClearBonus: 0 },
+          message: "Started",
+        })
+      );
+
+      privateMethods.client = createMockApiClient({
+        getGameState: mock(() =>
+          Promise.resolve({
+            status: "completed",
+            phase: "end",
+            turnNumber: 4,
+            currentTurn: "host",
+            isMyTurn: false,
+            myLifePoints: 2500,
+            opponentLifePoints: 0,
+            hand: [],
+          })
+        ),
+        quickPlayStory,
+      });
+      privateMethods.currentGameId = "completed-game-id";
+      privateMethods.currentStageId = "completed-stage-id";
+      privateMethods.currentStreamingSessionId = null;
+
+      await privateMethods.pollGameState();
+
+      expect(quickPlayStory).not.toHaveBeenCalled();
+      expect(privateMethods.currentGameId).toBeNull();
     });
   });
 });

@@ -23,8 +23,25 @@ type RecentStreamStart = {
 const recentStreamStarts = new Map<string, RecentStreamStart>();
 const STREAM_START_DEDUPE_WINDOW_MS = Math.max(
   5000,
-  Number.parseInt(process.env.LTCG_STREAM_START_DEDUPE_WINDOW_MS || "30000", 10) || 30000
+  Number.parseInt(
+    process.env.LTCG_STREAM_START_DEDUPE_WINDOW_MS || "30000",
+    10,
+  ) || 30000,
 );
+const AGENT_ID_CACHE_TTL_MS = 5 * 60 * 1000;
+let resolvedAgentIdCache: { agentId: string; resolvedAt: number } | null = null;
+let didWarnControlKeyFallback = false;
+
+function firstNonEmpty(
+  ...values: Array<string | null | undefined>
+): string | undefined {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return undefined;
+}
 
 /**
  * Add CORS and cache headers to response
@@ -33,7 +50,10 @@ function setCorsHeaders(res: RouteResponse) {
   if (res.setHeader) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization",
+    );
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   }
 }
@@ -53,7 +73,75 @@ function sendError(res: RouteResponse, status: number, message: string) {
  * Get API key from environment
  */
 function getApiKey(): string | undefined {
-  return process.env.LTCG_CONTROL_API_KEY;
+  const controlKey = process.env.LTCG_CONTROL_API_KEY?.trim();
+  if (controlKey) {
+    return controlKey;
+  }
+
+  // Backward-compatible fallback: reuse LTCG_API_KEY when dedicated control key is missing.
+  const fallbackKey = process.env.LTCG_API_KEY?.trim();
+  if (fallbackKey) {
+    if (!didWarnControlKeyFallback) {
+      didWarnControlKeyFallback = true;
+      logger.warn(
+        "LTCG_CONTROL_API_KEY is not configured; using LTCG_API_KEY as control-route auth key",
+      );
+    }
+    return fallbackKey;
+  }
+
+  return undefined;
+}
+
+async function resolveAgentId(
+  runtime: IAgentRuntime,
+  pollingService?: IPollingService | null,
+): Promise<string> {
+  const runtimeSetting = runtime.getSetting("LTCG_AGENT_ID");
+  const runtimeAgentId =
+    typeof runtimeSetting === "string" ? runtimeSetting.trim() : undefined;
+
+  const characterSettings =
+    runtime.character?.settings &&
+    typeof runtime.character.settings === "object"
+      ? (runtime.character.settings as Record<string, unknown>)
+      : undefined;
+  const characterAgentId =
+    typeof characterSettings?.LTCG_AGENT_ID === "string"
+      ? characterSettings.LTCG_AGENT_ID.trim()
+      : undefined;
+
+  const configuredAgentId = firstNonEmpty(
+    process.env.LTCG_AGENT_ID,
+    runtimeAgentId,
+    characterAgentId,
+  );
+  if (configuredAgentId) {
+    return configuredAgentId;
+  }
+
+  if (
+    resolvedAgentIdCache &&
+    Date.now() - resolvedAgentIdCache.resolvedAt < AGENT_ID_CACHE_TTL_MS
+  ) {
+    return resolvedAgentIdCache.agentId;
+  }
+
+  const client = pollingService?.getClient();
+  if (client) {
+    const profile = await client.getAgentProfile();
+    if (profile?.agentId) {
+      resolvedAgentIdCache = {
+        agentId: profile.agentId,
+        resolvedAt: Date.now(),
+      };
+      return profile.agentId;
+    }
+  }
+
+  throw new Error(
+    "LTCG agent ID is not configured. Set LTCG_AGENT_ID in environment or character settings.",
+  );
 }
 
 /**
@@ -65,15 +153,21 @@ function getApiKey(): string | undefined {
 async function startStreamForPlatform(
   platform: string,
   ids: { gameId: string; lobbyId?: string },
-  _runtime: IAgentRuntime,
-): Promise<{ sessionId: string; status: string; overlayUrl?: string; platform: string }> {
+  agentId: string,
+): Promise<{
+  sessionId: string;
+  status: string;
+  overlayUrl?: string;
+  platform: string;
+}> {
   const { gameId, lobbyId } = ids;
   const configuredAppUrl =
-    process.env.LTCG_APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://www.lunchtable.cards";
+    process.env.LTCG_APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://www.lunchtable.cards";
   const appUrl = configuredAppUrl.includes(".convex.site")
     ? "https://www.lunchtable.cards"
     : configuredAppUrl;
-  const agentId = process.env.LTCG_AGENT_ID || "agent_dizzy";
   const ltcgApiKey = process.env.LTCG_API_KEY;
   const forceRestart = process.env.LTCG_STREAM_FORCE_RESTART === "true";
   const authHeaders: Record<string, string> = {};
@@ -84,10 +178,17 @@ async function startStreamForPlatform(
 
   const dedupeKey = `${agentId}:${lobbyId || gameId}:${platform}`;
   const recentStart = recentStreamStarts.get(dedupeKey);
-  if (recentStart && Date.now() - recentStart.startedAt < STREAM_START_DEDUPE_WINDOW_MS) {
+  if (
+    recentStart &&
+    Date.now() - recentStart.startedAt < STREAM_START_DEDUPE_WINDOW_MS
+  ) {
     logger.info(
-      { dedupeKey, sessionId: recentStart.sessionId, windowMs: STREAM_START_DEDUPE_WINDOW_MS },
-      "Returning deduped recent stream start result"
+      {
+        dedupeKey,
+        sessionId: recentStart.sessionId,
+        windowMs: STREAM_START_DEDUPE_WINDOW_MS,
+      },
+      "Returning deduped recent stream start result",
     );
     return {
       sessionId: recentStart.sessionId,
@@ -103,11 +204,12 @@ async function startStreamForPlatform(
 
   if (platform === "retake") {
     retakeAccessToken =
-      process.env.DIZZY_RETAKE_ACCESS_TOKEN ||
-      process.env.RETAKE_ACCESS_TOKEN;
+      process.env.DIZZY_RETAKE_ACCESS_TOKEN || process.env.RETAKE_ACCESS_TOKEN;
 
     if (!retakeAccessToken) {
-      throw new Error("Retake.tv credentials not configured (DIZZY_RETAKE_ACCESS_TOKEN required)");
+      throw new Error(
+        "Retake.tv credentials not configured (DIZZY_RETAKE_ACCESS_TOKEN required)",
+      );
     }
     streamPlatform = "retake";
   }
@@ -137,7 +239,10 @@ async function startStreamForPlatform(
   }
 
   const streamingData = await streamingResponse.json();
-  logger.info({ sessionId: streamingData.sessionId, platform }, "Stream started via control API");
+  logger.info(
+    { sessionId: streamingData.sessionId, platform },
+    "Stream started via control API",
+  );
 
   recentStreamStarts.set(dedupeKey, {
     sessionId: streamingData.sessionId,
@@ -154,7 +259,6 @@ async function startStreamForPlatform(
     platform,
   };
 }
-
 
 /**
  * POST /ltcg/control/story-mode
@@ -179,7 +283,11 @@ async function startStreamForPlatform(
  * - streaming: { autoStartConfigured: boolean, willAutoStart: boolean }
  * - polling: { started: boolean, intervalMs: number }
  */
-async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: IAgentRuntime) {
+async function handleStoryMode(
+  req: RouteRequest,
+  res: RouteResponse,
+  runtime: IAgentRuntime,
+) {
   setCorsHeaders(res);
 
   try {
@@ -191,17 +299,18 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
     }
 
     // Parse request body
-    const body = (req.body as {
-      difficulty?: "easy" | "medium" | "hard" | "boss";
-      chapterId?: string;
-      stageNumber?: number;
-    }) || {};
+    const body =
+      (req.body as {
+        difficulty?: "easy" | "medium" | "hard" | "boss";
+        chapterId?: string;
+        stageNumber?: number;
+      }) || {};
 
     logger.info({ body }, "Control API: Story mode trigger received");
 
     // Get polling service
     const pollingService = runtime.getService(
-      SERVICE_TYPES.POLLING
+      SERVICE_TYPES.POLLING,
     ) as unknown as IPollingService | null;
 
     if (!pollingService) {
@@ -215,7 +324,7 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
       return sendError(
         res,
         409,
-        `Agent is already in a game (${currentGameId}). Use /control/surrender or /control/stop first.`
+        `Agent is already in a game (${currentGameId}). Use /control/surrender or /control/stop first.`,
       );
     }
 
@@ -240,16 +349,22 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
       // Specific chapter/stage
       logger.info(
         { chapterId: body.chapterId, stageNumber: body.stageNumber },
-        "Starting specific story battle"
+        "Starting specific story battle",
       );
       result = await client.startStoryBattle(body.chapterId, body.stageNumber);
     } else {
       // Quick play with difficulty
-      logger.info({ difficulty: body.difficulty || "easy" }, "Starting quick play story battle");
+      logger.info(
+        { difficulty: body.difficulty || "easy" },
+        "Starting quick play story battle",
+      );
       result = await client.quickPlayStory(body.difficulty);
     }
 
-    logger.info({ gameId: result.gameId, lobbyId: result.lobbyId }, "Story battle started");
+    logger.info(
+      { gameId: result.gameId, lobbyId: result.lobbyId },
+      "Story battle started",
+    );
 
     // Auto-start streaming if configured
     const streamingPlatform =
@@ -268,14 +383,32 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
       error: "No streaming platform configured",
     };
 
-    const preferBackendAutoStart = process.env.LTCG_PREFER_BACKEND_STREAM_AUTOSTART !== "false";
+    const preferBackendAutoStart =
+      process.env.LTCG_PREFER_BACKEND_STREAM_AUTOSTART !== "false";
     let skipControlAutoStart = false;
 
+    let resolvedAgentId: string | null = null;
+    try {
+      resolvedAgentId = await resolveAgentId(runtime, pollingService);
+    } catch (error) {
+      logger.warn(
+        { error: error instanceof Error ? error.message : String(error) },
+        "Unable to resolve LTCG_AGENT_ID during story-mode start",
+      );
+    }
+
     if (streamingPlatform && autoStart && preferBackendAutoStart) {
-      const configuredAgentId = process.env.LTCG_AGENT_ID;
-      if (configuredAgentId) {
+      if (!resolvedAgentId) {
+        skipControlAutoStart = true;
+        streamingResult = {
+          skipped: true,
+          reason: "backend_autostart_assumed_missing_agent_id",
+          platform: streamingPlatform,
+        };
+      } else {
         try {
-          const backendStreamingConfig = await client.getStreamingConfig(configuredAgentId);
+          const backendStreamingConfig =
+            await client.getStreamingConfig(resolvedAgentId);
           if (
             backendStreamingConfig?.enabled &&
             backendStreamingConfig.autoStart &&
@@ -289,16 +422,21 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
             };
             logger.info(
               {
-                agentId: configuredAgentId,
+                agentId: resolvedAgentId,
                 platform: backendStreamingConfig.platform || streamingPlatform,
               },
-              "Skipping control-route stream start because backend agent auto-start is enabled"
+              "Skipping control-route stream start because backend agent auto-start is enabled",
             );
           }
         } catch (configError) {
           logger.debug(
-            { error: configError instanceof Error ? configError.message : String(configError) },
-            "Failed to inspect backend streaming config; proceeding with control-route auto-start"
+            {
+              error:
+                configError instanceof Error
+                  ? configError.message
+                  : String(configError),
+            },
+            "Failed to inspect backend streaming config; proceeding with control-route auto-start",
           );
         }
       }
@@ -306,11 +444,17 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
 
     if (streamingPlatform && autoStart && !skipControlAutoStart) {
       try {
-        logger.info({ platform: streamingPlatform, gameId: result.gameId }, "Auto-starting stream for story mode");
+        if (!resolvedAgentId) {
+          throw new Error("Unable to resolve LTCG agent ID for stream start");
+        }
+        logger.info(
+          { platform: streamingPlatform, gameId: result.gameId },
+          "Auto-starting stream for story mode",
+        );
         const streamData = await startStreamForPlatform(
           streamingPlatform,
           { gameId: result.gameId, lobbyId: result.lobbyId },
-          runtime
+          resolvedAgentId,
         );
         streamingResult = {
           sessionId: streamData.sessionId,
@@ -318,8 +462,14 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
           platform: streamData.platform,
         };
       } catch (streamError) {
-        const msg = streamError instanceof Error ? streamError.message : String(streamError);
-        logger.warn({ error: msg }, "Failed to auto-start stream (game will continue without streaming)");
+        const msg =
+          streamError instanceof Error
+            ? streamError.message
+            : String(streamError);
+        logger.warn(
+          { error: msg },
+          "Failed to auto-start stream (game will continue without streaming)",
+        );
         streamingResult = { error: msg };
       }
     }
@@ -329,7 +479,14 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
       stageId: result.stageId,
       streamingSessionId: streamingResult.sessionId,
     });
-    logger.info({ gameId: result.gameId, stageId: result.stageId, sessionId: streamingResult.sessionId }, "Polling started for story mode game");
+    logger.info(
+      {
+        gameId: result.gameId,
+        stageId: result.stageId,
+        sessionId: streamingResult.sessionId,
+      },
+      "Polling started for story mode game",
+    );
 
     // Return response with streaming info
     res.json({
@@ -387,7 +544,11 @@ async function handleStoryMode(req: RouteRequest, res: RouteResponse, runtime: I
  * - streaming: { configured: boolean, autoStart: boolean }
  * - uptime: number (ms)
  */
-async function handleStatus(req: RouteRequest, res: RouteResponse, runtime: IAgentRuntime) {
+async function handleStatus(
+  req: RouteRequest,
+  res: RouteResponse,
+  runtime: IAgentRuntime,
+) {
   setCorsHeaders(res);
 
   try {
@@ -400,7 +561,7 @@ async function handleStatus(req: RouteRequest, res: RouteResponse, runtime: IAge
 
     // Get services
     const pollingService = runtime.getService(
-      SERVICE_TYPES.POLLING
+      SERVICE_TYPES.POLLING,
     ) as unknown as IPollingService | null;
 
     if (!pollingService) {
@@ -439,16 +600,21 @@ async function handleStatus(req: RouteRequest, res: RouteResponse, runtime: IAge
           player: {
             lifePoints: gameState.myLifePoints,
             handCount: gameState.hand?.length || 0,
-            fieldCount: gameState.myBoard?.filter((c) => c !== null).length || 0,
+            fieldCount:
+              gameState.myBoard?.filter((c) => c !== null).length || 0,
           },
           opponent: {
             lifePoints: gameState.opponentLifePoints,
             handCount: 0, // Not exposed in API
-            fieldCount: gameState.opponentBoard?.filter((c) => c !== null).length || 0,
+            fieldCount:
+              gameState.opponentBoard?.filter((c) => c !== null).length || 0,
           },
         };
       } catch (error) {
-        logger.warn({ error, gameId: currentGameId }, "Failed to fetch game state for status");
+        logger.warn(
+          { error, gameId: currentGameId },
+          "Failed to fetch game state for status",
+        );
         status.gameStateError = "Failed to fetch current game state";
       }
     }
@@ -475,7 +641,11 @@ async function handleStatus(req: RouteRequest, res: RouteResponse, runtime: IAge
  * - status: string
  * - message: string
  */
-async function handleFindGame(req: RouteRequest, res: RouteResponse, runtime: IAgentRuntime) {
+async function handleFindGame(
+  req: RouteRequest,
+  res: RouteResponse,
+  runtime: IAgentRuntime,
+) {
   setCorsHeaders(res);
 
   try {
@@ -488,11 +658,14 @@ async function handleFindGame(req: RouteRequest, res: RouteResponse, runtime: IA
 
     const body = (req.body as { deckId?: string }) || {};
 
-    logger.info({ deckId: body.deckId }, "Control API: Find game trigger received");
+    logger.info(
+      { deckId: body.deckId },
+      "Control API: Find game trigger received",
+    );
 
     // Get polling service
     const pollingService = runtime.getService(
-      SERVICE_TYPES.POLLING
+      SERVICE_TYPES.POLLING,
     ) as unknown as IPollingService | null;
 
     if (!pollingService) {
@@ -505,7 +678,7 @@ async function handleFindGame(req: RouteRequest, res: RouteResponse, runtime: IA
       return sendError(
         res,
         409,
-        `Agent is already in a game (${currentGameId}). Use /control/surrender first.`
+        `Agent is already in a game (${currentGameId}). Use /control/surrender first.`,
       );
     }
 
@@ -521,7 +694,10 @@ async function handleFindGame(req: RouteRequest, res: RouteResponse, runtime: IA
       mode: "casual", // Default to casual mode
     });
 
-    logger.info({ lobbyId: result.lobbyId, status: result.status }, "Entered matchmaking");
+    logger.info(
+      { lobbyId: result.lobbyId, status: result.status },
+      "Entered matchmaking",
+    );
 
     res.json({
       success: true,
@@ -547,7 +723,11 @@ async function handleFindGame(req: RouteRequest, res: RouteResponse, runtime: IA
  * - success: boolean
  * - message: string
  */
-async function handleSurrender(req: RouteRequest, res: RouteResponse, runtime: IAgentRuntime) {
+async function handleSurrender(
+  req: RouteRequest,
+  res: RouteResponse,
+  runtime: IAgentRuntime,
+) {
   setCorsHeaders(res);
 
   try {
@@ -562,7 +742,7 @@ async function handleSurrender(req: RouteRequest, res: RouteResponse, runtime: I
 
     // Get polling service
     const pollingService = runtime.getService(
-      SERVICE_TYPES.POLLING
+      SERVICE_TYPES.POLLING,
     ) as unknown as IPollingService | null;
 
     if (!pollingService) {
@@ -610,7 +790,11 @@ async function handleSurrender(req: RouteRequest, res: RouteResponse, runtime: I
  * - success: boolean
  * - message: string
  */
-async function handleStop(req: RouteRequest, res: RouteResponse, runtime: IAgentRuntime) {
+async function handleStop(
+  req: RouteRequest,
+  res: RouteResponse,
+  runtime: IAgentRuntime,
+) {
   setCorsHeaders(res);
 
   try {
@@ -625,7 +809,7 @@ async function handleStop(req: RouteRequest, res: RouteResponse, runtime: IAgent
 
     // Get polling service
     const pollingService = runtime.getService(
-      SERVICE_TYPES.POLLING
+      SERVICE_TYPES.POLLING,
     ) as unknown as IPollingService | null;
 
     if (!pollingService) {
@@ -661,6 +845,7 @@ async function handleStop(req: RouteRequest, res: RouteResponse, runtime: IAgent
  * Request body:
  * - platform?: string (default: STREAMING_PLATFORM env var)
  *   Supported: "pumpfun", "retake", "twitch", "youtube", "kick", "x", or any custom
+ * - lobbyId?: string (optional override for current lobby linkage)
  *
  * Response:
  * - success: boolean
@@ -669,7 +854,11 @@ async function handleStop(req: RouteRequest, res: RouteResponse, runtime: IAgent
  * - platform: string
  * - message: string
  */
-async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime: IAgentRuntime) {
+async function handleStartStream(
+  req: RouteRequest,
+  res: RouteResponse,
+  runtime: IAgentRuntime,
+) {
   setCorsHeaders(res);
 
   try {
@@ -680,18 +869,22 @@ async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime:
       return sendError(res, 401, authError);
     }
 
-    const body = (req.body as { platform?: string }) || {};
+    const body = (req.body as { platform?: string; lobbyId?: string }) || {};
     const platform = body.platform || process.env.STREAMING_PLATFORM;
 
     if (!platform) {
-      return sendError(res, 400, "No platform specified. Pass { platform: 'pumpfun' } or set STREAMING_PLATFORM env var.");
+      return sendError(
+        res,
+        400,
+        "No platform specified. Pass { platform: 'pumpfun' } or set STREAMING_PLATFORM env var.",
+      );
     }
 
     logger.info({ platform }, "Control API: Start stream trigger received");
 
     // Get polling service to check for active game
     const pollingService = runtime.getService(
-      SERVICE_TYPES.POLLING
+      SERVICE_TYPES.POLLING,
     ) as unknown as IPollingService | null;
 
     if (!pollingService) {
@@ -700,10 +893,37 @@ async function handleStartStream(req: RouteRequest, res: RouteResponse, runtime:
 
     const currentGameId = pollingService.getCurrentGameId();
     if (!currentGameId) {
-      return sendError(res, 400, "No active game - start a game first before streaming");
+      return sendError(
+        res,
+        400,
+        "No active game - start a game first before streaming",
+      );
     }
 
-    const streamData = await startStreamForPlatform(platform, { gameId: currentGameId }, runtime);
+    let lobbyId = body.lobbyId?.trim() || pollingService.getCurrentLobbyId();
+    if (!lobbyId) {
+      try {
+        const liveState = await pollingService
+          .getClient()
+          ?.getGameState(currentGameId);
+        lobbyId = liveState?.lobbyId || null;
+      } catch (error) {
+        logger.debug(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            gameId: currentGameId,
+          },
+          "Unable to resolve lobbyId during start-stream; continuing with gameId only",
+        );
+      }
+    }
+
+    const agentId = await resolveAgentId(runtime, pollingService);
+    const streamData = await startStreamForPlatform(
+      platform,
+      { gameId: currentGameId, ...(lobbyId ? { lobbyId } : {}) },
+      agentId,
+    );
 
     res.json({
       success: true,

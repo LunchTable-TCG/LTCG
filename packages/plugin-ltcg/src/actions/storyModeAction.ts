@@ -19,10 +19,22 @@ import { LTCGApiClient } from "../client/LTCGApiClient";
 
 export const storyModeAction: Action = {
   name: "STORY_MODE",
-  similes: ["PLAY_STORY", "QUICK_PLAY", "PLAY_AI", "PRACTICE", "PVE", "SINGLE_PLAYER"],
-  description: "Start an instant AI battle in story mode without waiting for matchmaking",
+  similes: [
+    "PLAY_STORY",
+    "QUICK_PLAY",
+    "PLAY_AI",
+    "PRACTICE",
+    "PVE",
+    "SINGLE_PLAYER",
+  ],
+  description:
+    "Start an instant AI battle in story mode without waiting for matchmaking",
 
-  validate: async (runtime: IAgentRuntime, _message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    _message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Check if already in a game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;
@@ -59,7 +71,7 @@ export const storyModeAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling STORY_MODE action");
@@ -88,7 +100,10 @@ export const storyModeAction: Action = {
         difficulty = "hard";
       } else if (messageText.includes("boss")) {
         difficulty = "boss";
-      } else if (messageText.includes("medium") || messageText.includes("normal")) {
+      } else if (
+        messageText.includes("medium") ||
+        messageText.includes("normal")
+      ) {
         difficulty = "medium";
       }
 
@@ -111,11 +126,18 @@ export const storyModeAction: Action = {
       if (chapterMatch) {
         // Start specific chapter/stage
         const actNum = Number.parseInt(chapterMatch[1], 10);
-        const chapNum = chapterMatch[2] ? Number.parseInt(chapterMatch[2], 10) : 1;
+        const chapNum = chapterMatch[2]
+          ? Number.parseInt(chapterMatch[2], 10)
+          : 1;
         const chapterId = `${actNum}-${chapNum}`;
-        const stageNumber = stageMatch ? Number.parseInt(stageMatch[1], 10) : undefined;
+        const stageNumber = stageMatch
+          ? Number.parseInt(stageMatch[1], 10)
+          : undefined;
 
-        logger.info({ chapterId, stageNumber }, "Starting specific story battle");
+        logger.info(
+          { chapterId, stageNumber },
+          "Starting specific story battle",
+        );
         result = await client.startStoryBattle(chapterId, stageNumber);
       } else {
         // Quick play - random available stage

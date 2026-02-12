@@ -23,6 +23,13 @@ function createConvexClient() {
  * is never exposed to the client bundle.
  */
 export async function POST(req: NextRequest) {
+  if ((process.env.STREAMING_AGENT_ONLY?.trim().toLowerCase() ?? "true") !== "false") {
+    return NextResponse.json(
+      { error: "Human/user streaming is disabled. Agent streaming only." },
+      { status: 410 }
+    );
+  }
+
   try {
     const auth = await resolveStreamingAuth(req);
     if (!auth.userId) {

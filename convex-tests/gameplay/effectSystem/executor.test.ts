@@ -5,9 +5,9 @@
  * Covers happy paths, error cases, and edge conditions.
  */
 
-import type { Id } from "../../../_generated/dataModel";
-import type { JsonAbility } from "../../../gameplay/effectSystem/types";
-import { executeEffect, executeMultiPartAbility } from "../../../gameplay/effectSystem/executor";
+import type { Id } from "../../../convex/_generated/dataModel";
+import type { JsonAbility } from "../../../convex/gameplay/effectSystem/types";
+import { executeEffect, executeMultiPartAbility } from "../../../convex/gameplay/effectSystem/executor";
 import schema from "../../../schema";
 import { modules } from "../../../test.setup";
 import { convexTest } from "convex-test";

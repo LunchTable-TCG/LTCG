@@ -34,7 +34,12 @@ describe("PanelComponent Tests", () => {
     });
 
     it("should handle different agent IDs", () => {
-      const agentIds = ["agent-1", "agent-2", "12345678-1234-1234-1234-123456789abc", "test-agent"];
+      const agentIds = [
+        "agent-1",
+        "agent-2",
+        "12345678-1234-1234-1234-123456789abc",
+        "test-agent",
+      ];
 
       agentIds.forEach((agentId) => {
         cy.mount(<PanelComponent agentId={agentId} />);

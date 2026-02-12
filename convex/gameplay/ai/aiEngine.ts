@@ -6,6 +6,7 @@
  */
 
 import type { Doc, Id } from "../../_generated/dataModel";
+import { getCardLevel, getTributeCount } from "../../lib/cardPropertyHelpers";
 import { handleBattlePhase, handleMainPhase } from "./aiDifficulty";
 
 export interface AIAction {
@@ -114,11 +115,16 @@ export function findWeakestMonster(
 }
 
 /**
- * Checks if a monster can be summoned without tribute (cost ≤ 4)
+ * Checks if a monster can be summoned without tribute (level ≤ 4)
  */
 export function canSummonWithoutTribute(card: Doc<"cardDefinitions">): boolean {
-  return card.cardType === "creature" && card.cost <= 4;
+  return card.cardType === "creature" && getTributeCount(card) === 0;
 }
+
+/**
+ * Re-export for AI modules that need level/tribute info
+ */
+export { getCardLevel, getTributeCount };
 
 /**
  * Main AI decision function for Normal difficulty

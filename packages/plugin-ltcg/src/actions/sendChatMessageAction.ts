@@ -24,7 +24,11 @@ export const sendChatMessageAction: Action = {
   similes: ["CHAT", "SAY", "TALK_IN_CHAT", "TAVERN_CHAT"],
   description: "Send a message to the global chat (Tavern Hall)",
 
-  validate: async (runtime: IAgentRuntime, _message: Memory, _state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    _message: Memory,
+    _state: State,
+  ): Promise<boolean> => {
     try {
       // Check if chat is enabled
       const chatEnabled = runtime.getSetting("LTCG_CHAT_ENABLED") !== "false";
@@ -54,7 +58,7 @@ export const sendChatMessageAction: Action = {
     message: Memory,
     _state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling SEND_CHAT_MESSAGE action");
@@ -123,7 +127,10 @@ export const sendChatMessageAction: Action = {
       // Send message
       const result = await client.sendChatMessage(chatMessage);
 
-      logger.info({ messageId: result.messageId }, "Chat message sent successfully");
+      logger.info(
+        { messageId: result.messageId },
+        "Chat message sent successfully",
+      );
 
       // Notify callback
       await callback?.({
@@ -150,10 +157,14 @@ export const sendChatMessageAction: Action = {
     } catch (error) {
       logger.error({ error }, "Error sending chat message");
 
-      const errorMessage = error instanceof Error ? error.message : "Failed to send chat message";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to send chat message";
 
       // Check for rate limit error
-      if (errorMessage.includes("rate limit") || errorMessage.includes("RATE_LIMIT")) {
+      if (
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("RATE_LIMIT")
+      ) {
         await callback?.({
           text: "Rate limited. Please wait before sending another message (5 messages per 10 seconds).",
           actions: ["SEND_CHAT_MESSAGE"],

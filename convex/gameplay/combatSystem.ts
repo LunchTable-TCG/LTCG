@@ -858,6 +858,25 @@ async function resolveBattle(
     }
   }
 
+  // Safety: Re-verify both combatants still exist on the board after flip effects
+  // A flip effect (e.g., "destroy 1 monster") could have removed the attacker
+  {
+    const postFlipState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+      .first();
+    if (postFlipState) {
+      const attackerBoard = isHostAttacking ? postFlipState.hostBoard : postFlipState.opponentBoard;
+      const defenderBoard = isHostAttacking ? postFlipState.opponentBoard : postFlipState.hostBoard;
+      const attackerStillExists = attackerBoard.some((bc) => bc.cardId === attacker.cardId);
+      const defenderStillExists = defenderBoard.some((bc) => bc.cardId === defender.cardId);
+      if (!attackerStillExists || !defenderStillExists) {
+        // Battle cannot continue — one or both combatants were removed by flip effect
+        return { sbaResult: await checkStateBasedActions(ctx, lobbyId), battleResult: result };
+      }
+    }
+  }
+
   // Get defender position first (needed for damage calculation triggers)
   const defenderIsAttack = defender.position === 1;
 
@@ -1241,9 +1260,10 @@ async function resolveBattle(
         false
       );
 
-      // Check for piercing damage (check if ability name contains "piercing" or has a piercing effect)
+      // Check for piercing damage via structured ability type
+      const attackerParsedAbility = getCardAbility(attackerCard);
       const hasPiercing =
-        attackerCard.ability?.name?.toLowerCase().includes("piercing") ||
+        attackerParsedAbility?.effects.some((e) => e.type === "piercing") ||
         attackerCard.ability?.effects?.some((e: { type?: string }) => e.type === "piercing");
       if (hasPiercing) {
         const piercingDamage = effectiveAttackerATK - defenderValue;

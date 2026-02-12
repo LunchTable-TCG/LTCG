@@ -20,9 +20,9 @@ describe("Summon Action", () => {
         return null;
       }),
       useModel: mock(async () => {
-        // Mock LLM decision to summon first monster
+        // Mock LLM decision to summon first monster (handler expects monsterIndex)
         return JSON.stringify({
-          handIndex: 0,
+          monsterIndex: 0,
           position: "attack",
           tributeIndices: [],
         });

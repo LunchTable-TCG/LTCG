@@ -12,6 +12,7 @@ const internalAny = (generatedApi as any).internal;
 import type { Doc, Id } from "../../_generated/dataModel";
 import { internalMutation, mutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
+import { getTributeCount } from "../../lib/cardPropertyHelpers";
 import { getSpellSpeed } from "../../lib/spellSpeedHelper";
 import { recordEventHelper } from "../gameEvents";
 import { evaluateChainResponse } from "./aiDifficulty";
@@ -450,8 +451,8 @@ function executeAction(
       if (card.cardType !== "creature")
         return { success: false, description: "Only creatures can be summoned" };
 
-      // Validate tribute count
-      const requiredTributes = card.cost >= 7 ? 2 : card.cost >= 5 ? 1 : 0;
+      // Validate tribute count (use shared helper to match game engine)
+      const requiredTributes = getTributeCount(card);
       const providedTributes = action.tributeIds?.length || 0;
       if (providedTributes !== requiredTributes) {
         return {
@@ -529,10 +530,10 @@ function executeAction(
         return { success: false, description: "Only creatures can be set by AI" };
       }
 
-      // Setting a monster still requires tributes (cost >= 5 needs 1, cost >= 7 needs 2)
-      // The AI set fallback doesn't provide tributes, so reject high-cost monsters
-      if (card.cost >= 5) {
-        return { success: false, description: "Cannot set high-cost monster without tributes" };
+      // Setting a monster still requires tributes (level 5+ needs tributes)
+      // The AI set fallback doesn't provide tributes, so reject high-level monsters
+      if (getTributeCount(card) > 0) {
+        return { success: false, description: "Cannot set high-level monster without tributes" };
       }
 
       // Validate monster zone has space (max 5 slots)
@@ -1414,6 +1415,7 @@ export const executeAITurn = mutation({
         opponentNormalSummonedThisTurn: stateChanges.opponentNormalSummonedThisTurn,
         opponentBanished: stateChanges.opponentBanished,
         opponentSpellTrapZone: stateChanges.opponentSpellTrapZone,
+        opponentFieldSpell: stateChanges.opponentFieldSpell,
         opponentMana: stateChanges.opponentMana,
         hostBoard: stateChanges.hostBoard,
         hostHand: stateChanges.hostHand,
@@ -1422,6 +1424,7 @@ export const executeAITurn = mutation({
         hostDeck: stateChanges.hostDeck,
         hostBanished: stateChanges.hostBanished,
         hostSpellTrapZone: stateChanges.hostSpellTrapZone,
+        hostFieldSpell: stateChanges.hostFieldSpell,
         hostMana: stateChanges.hostMana,
         lingeringEffects: stateChanges.lingeringEffects,
       });
@@ -1655,6 +1658,7 @@ export const executeAITurnInternal = internalMutation({
         opponentNormalSummonedThisTurn: stateChanges.opponentNormalSummonedThisTurn,
         opponentBanished: stateChanges.opponentBanished,
         opponentSpellTrapZone: stateChanges.opponentSpellTrapZone,
+        opponentFieldSpell: stateChanges.opponentFieldSpell,
         opponentMana: stateChanges.opponentMana,
         hostBoard: stateChanges.hostBoard,
         hostHand: stateChanges.hostHand,
@@ -1663,6 +1667,7 @@ export const executeAITurnInternal = internalMutation({
         hostDeck: stateChanges.hostDeck,
         hostBanished: stateChanges.hostBanished,
         hostSpellTrapZone: stateChanges.hostSpellTrapZone,
+        hostFieldSpell: stateChanges.hostFieldSpell,
         hostMana: stateChanges.hostMana,
         lingeringEffects: stateChanges.lingeringEffects,
       });

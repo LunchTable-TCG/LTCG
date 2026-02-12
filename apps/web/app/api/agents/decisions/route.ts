@@ -21,6 +21,10 @@ function createConvexClient() {
 export async function POST(req: NextRequest) {
   try {
     const convex = createConvexClient();
+    const internalAuth = process.env.INTERNAL_API_SECRET?.trim();
+    if (!internalAuth) {
+      return NextResponse.json({ error: "INTERNAL_API_SECRET is not configured" }, { status: 500 });
+    }
 
     // Authenticate via API key
     const authHeader = req.headers.get("Authorization");
@@ -64,6 +68,7 @@ export async function POST(req: NextRequest) {
       parameters,
       executionTimeMs,
       result,
+      internalAuth,
     });
 
     return NextResponse.json({
@@ -84,6 +89,10 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const convex = createConvexClient();
+    const internalAuth = process.env.INTERNAL_API_SECRET?.trim();
+    if (!internalAuth) {
+      return NextResponse.json({ error: "INTERNAL_API_SECRET is not configured" }, { status: 500 });
+    }
 
     // Authenticate via API key
     const authHeader = req.headers.get("Authorization");
@@ -110,11 +119,14 @@ export async function GET(req: NextRequest) {
     const decisions = gameId
       ? await convex.query(apiAny.agents.decisions.getGameDecisions, {
           gameId,
+          agentId: agent.agentId as Id<"agents">,
           limit,
+          internalAuth,
         })
       : await convex.query(apiAny.agents.decisions.getAgentDecisions, {
           agentId: agent.agentId as Id<"agents">,
           limit,
+          internalAuth,
         });
 
     return NextResponse.json({

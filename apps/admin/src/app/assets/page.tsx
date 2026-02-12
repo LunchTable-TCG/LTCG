@@ -38,6 +38,7 @@ import {
 import { RoleGuard } from "@/contexts/AdminContext";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
+import { usePrivy } from "@privy-io/react-auth";
 import { Loader2Icon, SearchIcon, UploadIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -58,6 +59,7 @@ export default function AssetsPage() {
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [deleteConfirmAsset, setDeleteConfirmAsset] = useState<Asset | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { getAccessToken } = usePrivy();
 
   // Filters
   const [categoryFilter, setCategoryFilter] = useState<AssetCategory | "all">("all");
@@ -85,9 +87,13 @@ export default function AssetsPage() {
 
     const syncFromBlob = async () => {
       try {
+        const accessToken = await getAccessToken();
+        const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+
         // Fetch all blobs from Vercel
         const response = await fetch(`${WEB_APP_URL}/api/admin/upload`, {
           method: "GET",
+          headers,
         });
 
         if (!response.ok) {
@@ -113,7 +119,7 @@ export default function AssetsPage() {
     };
 
     syncFromBlob();
-  }, [syncBlobAssets]);
+  }, [getAccessToken, syncBlobAssets]);
 
   // Handlers
   const handleSelectAsset = useCallback((asset: Asset) => {
@@ -150,9 +156,13 @@ export default function AssetsPage() {
     try {
       // Delete from Vercel Blob first
       if (deleteConfirmAsset.blobUrl) {
+        const accessToken = await getAccessToken();
         const response = await fetch(`${WEB_APP_URL}/api/admin/upload`, {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
           body: JSON.stringify({ url: deleteConfirmAsset.blobUrl }),
         });
 
@@ -174,16 +184,20 @@ export default function AssetsPage() {
     } finally {
       setIsDeleting(false);
     }
-  }, [deleteConfirmAsset, deleteAssetMetadata]);
+  }, [deleteConfirmAsset, deleteAssetMetadata, getAccessToken]);
 
   const handleDeleteFromSheet = useCallback(
     async (asset: Asset) => {
       // Actually delete the asset (sheet already has its own confirmation dialog)
       // Delete from Vercel Blob first
       if (asset.blobUrl) {
+        const accessToken = await getAccessToken();
         const response = await fetch(`${WEB_APP_URL}/api/admin/upload`, {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
           body: JSON.stringify({ url: asset.blobUrl }),
         });
 
@@ -198,7 +212,7 @@ export default function AssetsPage() {
       // Clear selection
       setSelectedAsset(null);
     },
-    [deleteAssetMetadata]
+    [deleteAssetMetadata, getAccessToken]
   );
 
   // Format total size

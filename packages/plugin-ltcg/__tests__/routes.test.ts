@@ -10,9 +10,9 @@ describe("Plugin Routes", () => {
     }
   });
 
-  it("should have a route for /ltcg/health", () => {
+  it("should have a route for /health", () => {
     if (plugin.routes) {
-      const healthRoute = plugin.routes.find((route) => route.path === "/ltcg/health");
+      const healthRoute = plugin.routes.find((route) => route.path === "/health");
       expect(healthRoute).toBeDefined();
 
       if (healthRoute) {
@@ -24,10 +24,8 @@ describe("Plugin Routes", () => {
 
   it("should have webhook routes", () => {
     if (plugin.routes) {
-      const gameWebhookRoute = plugin.routes.find((route) => route.path === "/ltcg/webhook/game");
-      const webhookHealthRoute = plugin.routes.find(
-        (route) => route.path === "/ltcg/webhook/health"
-      );
+      const gameWebhookRoute = plugin.routes.find((route) => route.path === "/webhook/game");
+      const webhookHealthRoute = plugin.routes.find((route) => route.path === "/webhook/health");
 
       expect(gameWebhookRoute).toBeDefined();
       expect(webhookHealthRoute).toBeDefined();
@@ -43,7 +41,7 @@ describe("Plugin Routes", () => {
 
   it("should handle health route requests correctly", async () => {
     if (plugin.routes) {
-      const healthRoute = plugin.routes.find((route) => route.path === "/ltcg/health");
+      const healthRoute = plugin.routes.find((route) => route.path === "/health");
 
       if (healthRoute && healthRoute.handler) {
         // Create mock request and response objects

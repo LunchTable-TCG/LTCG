@@ -67,7 +67,10 @@ describe("API Integration Tests", () => {
 
       cy.mount(<DataFetchingComponent agentId="test-123" />);
       cy.get('[data-testid="loading"]').should("be.visible");
-      cy.get('[data-testid="loading"]').should("contain", "Loading agent data...");
+      cy.get('[data-testid="loading"]').should(
+        "contain",
+        "Loading agent data...",
+      );
     });
 
     it("should fetch and display data successfully", () => {
@@ -139,7 +142,10 @@ describe("API Integration Tests", () => {
 
         return (
           <>
-            <button onClick={() => setAgentId("agent-2")} data-testid="change-agent">
+            <button
+              onClick={() => setAgentId("agent-2")}
+              data-testid="change-agent"
+            >
               Change Agent
             </button>
             <DataFetchingComponent agentId={agentId} />

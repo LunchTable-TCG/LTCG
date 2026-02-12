@@ -23,7 +23,11 @@ export const createLobbyAction: Action = {
   similes: ["HOST_GAME", "START_LOBBY", "NEW_GAME"],
   description: "Create a new game lobby and wait for opponent",
 
-  validate: async (runtime: IAgentRuntime, _message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    _message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Check if already in a game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;
@@ -60,7 +64,7 @@ export const createLobbyAction: Action = {
     _message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling CREATE_LOBBY action");
@@ -95,7 +99,7 @@ export const createLobbyAction: Action = {
           const deckOptions = decks
             .map(
               (deck, idx) =>
-                `${idx + 1}. ${deck.name} (${deck.cards.length} cards)${deck.archetype ? ` - ${deck.archetype}` : ""}`
+                `${idx + 1}. ${deck.name} (${deck.cards.length} cards)${deck.archetype ? ` - ${deck.archetype}` : ""}`,
             )
             .join("\n");
 
@@ -144,7 +148,10 @@ Respond with JSON: { "mode": "ranked" or "casual" }`;
       let isPrivate = false;
       const messageText = _message.content.text?.toLowerCase() || "";
 
-      if (messageText.includes("private") || messageText.includes("join code")) {
+      if (
+        messageText.includes("private") ||
+        messageText.includes("join code")
+      ) {
         isPrivate = true;
       } else if (messageText.includes("public")) {
         isPrivate = false;

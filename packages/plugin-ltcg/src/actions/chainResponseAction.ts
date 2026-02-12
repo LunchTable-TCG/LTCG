@@ -19,18 +19,32 @@ import { LTCGApiClient } from "../client/LTCGApiClient";
 import { boardAnalysisProvider } from "../providers/boardAnalysisProvider";
 import { gameStateProvider } from "../providers/gameStateProvider";
 import { handProvider } from "../providers/handProvider";
-import type { CardInHand, GameEvent, GameStateResponse, SpellTrapCard } from "../types/api";
+import type {
+  CardInHand,
+  GameEvent,
+  GameStateResponse,
+  SpellTrapCard,
+} from "../types/api";
 import { extractJsonFromLlmResponse } from "../utils/safeParseJson";
 
 export const chainResponseAction: Action = {
   name: "CHAIN_RESPONSE",
   similes: ["RESPOND_TO_CHAIN", "CHAIN", "COUNTER"],
-  description: "Respond to opponent's card activation by chaining your own card",
+  description:
+    "Respond to opponent's card activation by chaining your own card",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -54,9 +68,12 @@ export const chainResponseAction: Action = {
         }) || [];
 
       // Check for set traps
-      const setTraps = gameState.hostPlayer.spellTrapZone.filter((card) => card.type === "trap");
+      const setTraps = gameState.hostPlayer.spellTrapZone.filter(
+        (card) => card.type === "trap",
+      );
 
-      const hasChainableCards = quickPlaySpells.length > 0 || setTraps.length > 0;
+      const hasChainableCards =
+        quickPlaySpells.length > 0 || setTraps.length > 0;
 
       if (!hasChainableCards) {
         logger.debug("No chainable cards available");
@@ -80,19 +97,27 @@ export const chainResponseAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling CHAIN_RESPONSE action");
 
       // Get game state, hand, and board analysis
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       const handResult = await handProvider.get(runtime, message, state);
       const hand = handResult.data?.hand as CardInHand[];
 
-      const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
+      const boardAnalysisResult = await boardAnalysisProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const boardAnalysis = boardAnalysisResult.data;
 
       if (!gameState || !hand) {
@@ -130,7 +155,9 @@ export const chainResponseAction: Action = {
 
       // Get chainable cards
       const quickPlaySpells = hand.filter((card) => card.cardType === "spell");
-      const setTraps = gameState.hostPlayer.spellTrapZone.filter((card) => card.type === "trap");
+      const setTraps = gameState.hostPlayer.spellTrapZone.filter(
+        (card) => card.type === "trap",
+      );
 
       // Format card options
       const handOptions =
@@ -138,7 +165,7 @@ export const chainResponseAction: Action = {
           ? quickPlaySpells
               .map(
                 (card, idx) =>
-                  `Hand ${idx + 1}. ${card.name} - ${card.description?.substring(0, 100) || "No description"}`
+                  `Hand ${idx + 1}. ${card.name} - ${card.description?.substring(0, 100) || "No description"}`,
               )
               .join("\n")
           : "None";
@@ -146,7 +173,10 @@ export const chainResponseAction: Action = {
       const trapOptions =
         setTraps.length > 0
           ? setTraps
-              .map((card, idx) => `Trap ${idx + 1}. ${card.name} (Set) [cardId: ${card.cardId}]`)
+              .map(
+                (card, idx) =>
+                  `Trap ${idx + 1}. ${card.name} (Set) [cardId: ${card.cardId}]`,
+              )
               .join("\n")
           : "None";
 
@@ -246,7 +276,9 @@ Respond with JSON: { "shouldChain": true/false, "location": "hand"/"field", "car
         gameId: gameState.gameId,
         pass: false, // pass: false = we ARE chaining
         cardId,
-        targets: parsed.targets?.map((t: string | number) => typeof t === "string" ? t : String(t)),
+        targets: parsed.targets?.map((t: string | number) =>
+          typeof t === "string" ? t : String(t),
+        ),
       });
 
       // Callback to user

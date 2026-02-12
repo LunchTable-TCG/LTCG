@@ -47,6 +47,7 @@ import type * as admin_stripe from "../admin/stripe.js";
 import type * as admin_templates from "../admin/templates.js";
 import type * as admin_tournaments from "../admin/tournaments.js";
 import type * as agents_agents from "../agents/agents.js";
+import type * as agents_autonomy from "../agents/autonomy.js";
 import type * as agents_decisions from "../agents/decisions.js";
 import type * as agents_streaming from "../agents/streaming.js";
 import type * as agents_webhooks from "../agents/webhooks.js";
@@ -390,6 +391,7 @@ declare const fullApi: ApiFromModules<{
   "admin/templates": typeof admin_templates;
   "admin/tournaments": typeof admin_tournaments;
   "agents/agents": typeof agents_agents;
+  "agents/autonomy": typeof agents_autonomy;
   "agents/decisions": typeof agents_decisions;
   "agents/streaming": typeof agents_streaming;
   "agents/webhooks": typeof agents_webhooks;

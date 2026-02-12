@@ -118,22 +118,35 @@ export class X402PaymentHandler {
   /**
    * Handle a 402 Payment Required response
    */
-  async handlePayment(requirements: X402PaymentRequirements): Promise<PaymentResult> {
+  async handlePayment(
+    requirements: X402PaymentRequirements,
+  ): Promise<PaymentResult> {
     // Find a supported payment method
     const accept = requirements.accepts.find(
-      (a) => a.scheme === "exact" && a.network.startsWith("solana:")
+      (a) => a.scheme === "exact" && a.network.startsWith("solana:"),
     );
 
     if (!accept) {
-      const schemes = requirements.accepts.map((a) => `${a.scheme}:${a.network}`);
-      throw new UnsupportedPaymentError("No supported Solana payment method available", schemes);
+      const schemes = requirements.accepts.map(
+        (a) => `${a.scheme}:${a.network}`,
+      );
+      throw new UnsupportedPaymentError(
+        "No supported Solana payment method available",
+        schemes,
+      );
     }
 
     const amount = BigInt(accept.amount);
 
     // Check against safety limit
-    if (this.config.maxAutoPaymentAmount && amount > this.config.maxAutoPaymentAmount) {
-      throw new PaymentLimitExceededError(amount, this.config.maxAutoPaymentAmount);
+    if (
+      this.config.maxAutoPaymentAmount &&
+      amount > this.config.maxAutoPaymentAmount
+    ) {
+      throw new PaymentLimitExceededError(
+        amount,
+        this.config.maxAutoPaymentAmount,
+      );
     }
 
     // Check wallet balance
@@ -147,7 +160,7 @@ export class X402PaymentHandler {
       const signedTransaction = await this.buildAndSignTransaction(
         accept.payTo,
         accept.asset,
-        amount
+        amount,
       );
 
       // Build payment proof
@@ -170,7 +183,8 @@ export class X402PaymentHandler {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to sign transaction",
+        error:
+          error instanceof Error ? error.message : "Failed to sign transaction",
       };
     }
   }
@@ -183,7 +197,10 @@ export class X402PaymentHandler {
    */
   async getWalletBalance(tokenMint: string): Promise<bigint> {
     // Check cache
-    if (this.balanceCache && Date.now() - this.balanceCache.timestamp < this.BALANCE_CACHE_TTL_MS) {
+    if (
+      this.balanceCache &&
+      Date.now() - this.balanceCache.timestamp < this.BALANCE_CACHE_TTL_MS
+    ) {
       return this.balanceCache.balance;
     }
 
@@ -204,10 +221,11 @@ export class X402PaymentHandler {
       // SPL token balance — find the associated token account
       const ataAddress = await this.getAssociatedTokenAddress(
         this.config.walletAddress,
-        tokenMint
+        tokenMint,
       );
 
-      const rpcUrl = this.config.solanaRpcUrl || "https://api.mainnet-beta.solana.com";
+      const rpcUrl =
+        this.config.solanaRpcUrl || "https://api.mainnet-beta.solana.com";
       const response = await fetch(rpcUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -253,7 +271,7 @@ export class X402PaymentHandler {
   private async buildAndSignTransaction(
     recipient: string,
     tokenMint: string,
-    amount: bigint
+    amount: bigint,
   ): Promise<string> {
     const connection = this.getConnection();
     const payerPubkey = new PublicKey(this.config.walletAddress);
@@ -272,7 +290,7 @@ export class X402PaymentHandler {
       // Native SOL transfer via SystemProgram
       logger.info(
         `[x402] Building SOL transfer: ${amount.toString()} lamports ` +
-          `(${Number(amount) / LAMPORTS_PER_SOL} SOL) to ${recipient}`
+          `(${Number(amount) / LAMPORTS_PER_SOL} SOL) to ${recipient}`,
       );
 
       transaction.add(
@@ -280,27 +298,32 @@ export class X402PaymentHandler {
           fromPubkey: payerPubkey,
           toPubkey: recipientPubkey,
           lamports: amount,
-        })
+        }),
       );
     } else {
       // SPL token transfer (e.g. USDC)
       logger.info(
         `[x402] Building SPL token transfer: ${amount.toString()} atomic units ` +
-          `(mint: ${tokenMint}) to ${recipient}`
+          `(mint: ${tokenMint}) to ${recipient}`,
       );
 
       // Get sender's associated token account
       const senderAta = await this.getAssociatedTokenAddress(
         this.config.walletAddress,
-        tokenMint
+        tokenMint,
       );
       // Get recipient's associated token account
-      const recipientAta = await this.getAssociatedTokenAddress(recipient, tokenMint);
+      const recipientAta = await this.getAssociatedTokenAddress(
+        recipient,
+        tokenMint,
+      );
 
       // TODO: Replace with @solana/spl-token createTransferInstruction when the
       // package is added to dependencies. For now, build the instruction manually
       // using the SPL Token Program transfer layout.
-      const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+      const TOKEN_PROGRAM_ID = new PublicKey(
+        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      );
 
       // SPL Token transfer instruction (instruction index 3)
       // Layout: [1 byte instruction index (3)] [8 bytes LE amount]
@@ -310,8 +333,16 @@ export class X402PaymentHandler {
 
       transaction.add({
         keys: [
-          { pubkey: new PublicKey(senderAta), isSigner: false, isWritable: true },
-          { pubkey: new PublicKey(recipientAta), isSigner: false, isWritable: true },
+          {
+            pubkey: new PublicKey(senderAta),
+            isSigner: false,
+            isWritable: true,
+          },
+          {
+            pubkey: new PublicKey(recipientAta),
+            isSigner: false,
+            isWritable: true,
+          },
           { pubkey: payerPubkey, isSigner: true, isWritable: false },
         ],
         programId: TOKEN_PROGRAM_ID,
@@ -340,7 +371,7 @@ export class X402PaymentHandler {
     if (!privyAppId || !privyAppSecret || !agentPrivyUserId) {
       throw new Error(
         "Privy configuration incomplete. Provide privyAppId, privyAppSecret, and " +
-          "agentPrivyUserId in x402Config to enable transaction signing."
+          "agentPrivyUserId in x402Config to enable transaction signing.",
       );
     }
 
@@ -354,7 +385,9 @@ export class X402PaymentHandler {
       })
       .toString("base64");
 
-    logger.debug(`[x402] Signing transaction via Privy for user ${agentPrivyUserId}`);
+    logger.debug(
+      `[x402] Signing transaction via Privy for user ${agentPrivyUserId}`,
+    );
 
     // Use Privy's wallet RPC to sign (not signAndSend — the server broadcasts)
     const signResponse = await fetch(
@@ -374,13 +407,13 @@ export class X402PaymentHandler {
             caip2: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", // Solana mainnet
           },
         }),
-      }
+      },
     );
 
     if (!signResponse.ok) {
       const errorText = await signResponse.text();
       throw new Error(
-        `Privy transaction signing failed (${signResponse.status}): ${errorText}`
+        `Privy transaction signing failed (${signResponse.status}): ${errorText}`,
       );
     }
 
@@ -388,7 +421,7 @@ export class X402PaymentHandler {
 
     if (!result.data?.signedTransaction) {
       throw new Error(
-        `Privy signTransaction returned no signed transaction: ${JSON.stringify(result)}`
+        `Privy signTransaction returned no signed transaction: ${JSON.stringify(result)}`,
       );
     }
 
@@ -403,14 +436,17 @@ export class X402PaymentHandler {
    * matching the convention in convex/lib/wagerTiers.ts SOL_MINT.
    */
   private isNativeSol(tokenMint: string): boolean {
-    return tokenMint === "11111111111111111111111111111111" || tokenMint === "native";
+    return (
+      tokenMint === "11111111111111111111111111111111" || tokenMint === "native"
+    );
   }
 
   /**
    * Create a Solana Connection from configured RPC URL.
    */
   private getConnection(): Connection {
-    const rpcUrl = this.config.solanaRpcUrl || "https://api.mainnet-beta.solana.com";
+    const rpcUrl =
+      this.config.solanaRpcUrl || "https://api.mainnet-beta.solana.com";
     return new Connection(rpcUrl, { commitment: "confirmed" });
   }
 
@@ -420,14 +456,20 @@ export class X402PaymentHandler {
    * Queries the RPC for existing token accounts. If none found, derives
    * the ATA address using the standard PDA seeds.
    */
-  private async getAssociatedTokenAddress(wallet: string, mint: string): Promise<string> {
+  private async getAssociatedTokenAddress(
+    wallet: string,
+    mint: string,
+  ): Promise<string> {
     const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
-      "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+      "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
     );
-    const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+    const TOKEN_PROGRAM_ID = new PublicKey(
+      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    );
 
     // First, try to find an existing token account via RPC
-    const rpcUrl = this.config.solanaRpcUrl || "https://api.mainnet-beta.solana.com";
+    const rpcUrl =
+      this.config.solanaRpcUrl || "https://api.mainnet-beta.solana.com";
 
     try {
       const response = await fetch(rpcUrl, {
@@ -458,8 +500,12 @@ export class X402PaymentHandler {
     const mintPubkey = new PublicKey(mint);
 
     const [ata] = PublicKey.findProgramAddressSync(
-      [walletPubkey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mintPubkey.toBuffer()],
-      ASSOCIATED_TOKEN_PROGRAM_ID
+      [
+        walletPubkey.toBuffer(),
+        TOKEN_PROGRAM_ID.toBuffer(),
+        mintPubkey.toBuffer(),
+      ],
+      ASSOCIATED_TOKEN_PROGRAM_ID,
     );
 
     return ata.toBase58();

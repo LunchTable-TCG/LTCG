@@ -880,7 +880,7 @@ function getAvailableActionsForPhase(
       return {
         canSummon: false,
         canSetCard: false,
-        canActivateSpell: false, // Only Quick-Play spells
+        canActivateSpell: true, // Quick-Play spells only (enforced in legalMoves)
         canActivateTrap: true,
         canDeclareAttack: true,
         canChangePosition: false, // Cannot change position during Battle Phase

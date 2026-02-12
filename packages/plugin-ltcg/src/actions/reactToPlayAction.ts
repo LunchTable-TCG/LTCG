@@ -25,7 +25,11 @@ export const reactToPlayAction: Action = {
   similes: ["RESPOND", "COMMENT", "EMOTE"],
   description: "React emotionally to opponent's moves",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Check if chat is enabled
       const chatEnabled = runtime.getSetting("LTCG_CHAT_ENABLED") !== "false";
@@ -35,7 +39,11 @@ export const reactToPlayAction: Action = {
       }
 
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -51,7 +59,9 @@ export const reactToPlayAction: Action = {
 
       // Check if there's a recent opponent action to react to
       const ltcgState = state as LTCGState;
-      const opponentAction = ltcgState.values.lastOpponentAction as string | undefined;
+      const opponentAction = ltcgState.values.lastOpponentAction as
+        | string
+        | undefined;
       if (!opponentAction) {
         logger.debug("No recent opponent action to react to");
         return false;
@@ -69,16 +79,24 @@ export const reactToPlayAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling REACT_TO_PLAY action");
 
       // Get game state and board analysis
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
-      const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
+      const boardAnalysisResult = await boardAnalysisProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const boardAnalysis = boardAnalysisResult.data;
 
       if (!gameState) {
@@ -87,15 +105,21 @@ export const reactToPlayAction: Action = {
 
       // Get character personality
       const characterName = runtime.character?.name || "AI Agent";
-      const personality = runtime.character?.bio || "Strategic and thoughtful card game player";
+      const personality =
+        runtime.character?.bio || "Strategic and thoughtful card game player";
 
       // Get opponent action from state
       const ltcgState = state as LTCGState;
-      const opponentAction = (ltcgState.values.lastOpponentAction as string) || "made a play";
+      const opponentAction =
+        (ltcgState.values.lastOpponentAction as string) || "made a play";
 
       // Classify opponent's play
       const boardAnalysisData = boardAnalysis as BoardAnalysisData;
-      const classification = classifyOpponentPlay(opponentAction, gameState, boardAnalysisData);
+      const classification = classifyOpponentPlay(
+        opponentAction,
+        gameState,
+        boardAnalysisData,
+      );
 
       // Build prompt
       const prompt = `You are ${characterName}, a card game player with this personality: ${personality}
@@ -152,7 +176,8 @@ Your reaction (just the message, no quotes or labels):`;
       await callback({
         text: `Failed to react to play: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: "Reaction generation failed due to LLM error or missing opponent action context",
+        thought:
+          "Reaction generation failed due to LLM error or missing opponent action context",
       } as Content);
 
       return {
@@ -231,7 +256,12 @@ Your reaction (just the message, no quotes or labels):`;
  * Play classification result
  */
 interface PlayClassification {
-  type: "STRONG_PLAY" | "WEAK_PLAY" | "THREATENING_PLAY" | "FAILED_PLAY" | "NEUTRAL_PLAY";
+  type:
+    | "STRONG_PLAY"
+    | "WEAK_PLAY"
+    | "THREATENING_PLAY"
+    | "FAILED_PLAY"
+    | "NEUTRAL_PLAY";
   threatLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   reasoning: string;
 }
@@ -242,7 +272,7 @@ interface PlayClassification {
 function classifyOpponentPlay(
   action: string,
   gameState: GameStateResponse,
-  boardAnalysis: BoardAnalysisData
+  boardAnalysis: BoardAnalysisData,
 ): PlayClassification {
   const actionLower = action.toLowerCase();
 
@@ -262,7 +292,8 @@ function classifyOpponentPlay(
   if (actionLower.includes("attack") && actionLower.includes("direct")) {
     return {
       type: "THREATENING_PLAY",
-      threatLevel: gameState.hostPlayer.lifePoints < 2000 ? "CRITICAL" : "MEDIUM",
+      threatLevel:
+        gameState.hostPlayer.lifePoints < 2000 ? "CRITICAL" : "MEDIUM",
       reasoning: "Direct attack threatening life points",
     };
   }

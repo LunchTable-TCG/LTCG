@@ -44,11 +44,22 @@ interface CardReceived {
 
 export const purchasePackAction: Action = {
   name: "PURCHASE_PACK",
-  similes: ["BUY_PACK", "OPEN_PACK", "GET_CARDS", "BUY_CARDS", "ACQUIRE_CARDS", "BUY_BOOSTER"],
+  similes: [
+    "BUY_PACK",
+    "OPEN_PACK",
+    "GET_CARDS",
+    "BUY_CARDS",
+    "ACQUIRE_CARDS",
+    "BUY_BOOSTER",
+  ],
   description:
     "Purchase a card pack using gems or Solana tokens (x402). Opens the pack immediately and adds cards to collection.",
 
-  validate: async (runtime: IAgentRuntime, _message: Memory, _state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    _message: Memory,
+    _state: State,
+  ): Promise<boolean> => {
     try {
       // Must have API key
       const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
@@ -76,7 +87,7 @@ export const purchasePackAction: Action = {
     message: Memory,
     _state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling PURCHASE_PACK action");
@@ -87,8 +98,11 @@ export const purchasePackAction: Action = {
       const walletAddress = runtime.getSetting("LTCG_WALLET_ADDRESS") as string;
       const privyAppId = runtime.getSetting("PRIVY_APP_ID") as string;
       const privyAppSecret = runtime.getSetting("PRIVY_APP_SECRET") as string;
-      const agentPrivyUserId = runtime.getSetting("LTCG_PRIVY_USER_ID") as string;
-      const maxAutoPayment = Number(runtime.getSetting("LTCG_MAX_AUTO_PAYMENT")) || 100;
+      const agentPrivyUserId = runtime.getSetting(
+        "LTCG_PRIVY_USER_ID",
+      ) as string;
+      const maxAutoPayment =
+        Number(runtime.getSetting("LTCG_MAX_AUTO_PAYMENT")) || 100;
 
       if (!apiUrl || !apiKey) {
         throw new Error("LTCG API not configured");
@@ -96,7 +110,7 @@ export const purchasePackAction: Action = {
 
       // Check if x402 is available
       const x402Available = Boolean(
-        walletAddress && privyAppId && privyAppSecret && agentPrivyUserId
+        walletAddress && privyAppId && privyAppSecret && agentPrivyUserId,
       );
 
       // Create API client with optional x402 config
@@ -147,20 +161,31 @@ export const purchasePackAction: Action = {
       }
 
       // Check for specific product mentions
-      const productIdMatch = messageText.match(/product[:\s]+([a-zA-Z0-9_\-]+)/i);
+      const productIdMatch = messageText.match(
+        /product[:\s]+([a-zA-Z0-9_\-]+)/i,
+      );
       if (productIdMatch) {
-        selectedProduct = products.find((p) => p.productId === productIdMatch[1]);
+        selectedProduct = products.find(
+          (p) => p.productId === productIdMatch[1],
+        );
       }
 
       // Check for rarity mentions
       if (!selectedProduct) {
-        const rarityKeywords = ["legendary", "epic", "rare", "premium", "basic", "starter"];
+        const rarityKeywords = [
+          "legendary",
+          "epic",
+          "rare",
+          "premium",
+          "basic",
+          "starter",
+        ];
         for (const keyword of rarityKeywords) {
           if (messageText.toLowerCase().includes(keyword)) {
             selectedProduct = products.find(
               (p) =>
                 p.name.toLowerCase().includes(keyword) ||
-                p.guaranteedRarity?.toLowerCase().includes(keyword)
+                p.guaranteedRarity?.toLowerCase().includes(keyword),
             );
             if (selectedProduct) break;
           }
@@ -229,11 +254,16 @@ Respond with JSON: { "productIndex": <0-based index> }`;
       // If x402 requested and available, use tokens
       // Otherwise default to gems if available
       if (paymentMethod === "tokens" && !x402Available) {
-        logger.warn("Tokens requested but x402 not configured, falling back to gems");
+        logger.warn(
+          "Tokens requested but x402 not configured, falling back to gems",
+        );
         paymentMethod = "gems";
       }
 
-      if (paymentMethod === "tokens" && selectedProduct.usdCents === undefined) {
+      if (
+        paymentMethod === "tokens" &&
+        selectedProduct.usdCents === undefined
+      ) {
         logger.warn("Product has no USD price, falling back to gems");
         paymentMethod = "gems";
       }
@@ -243,12 +273,17 @@ Respond with JSON: { "productIndex": <0-based index> }`;
           logger.info("Product has no gem price, switching to token payment");
           paymentMethod = "tokens";
         } else {
-          throw new Error("Product cannot be purchased - no gem price and x402 not available");
+          throw new Error(
+            "Product cannot be purchased - no gem price and x402 not available",
+          );
         }
       }
 
       // Check payment limit for token purchases
-      if (paymentMethod === "tokens" && selectedProduct.usdCents !== undefined) {
+      if (
+        paymentMethod === "tokens" &&
+        selectedProduct.usdCents !== undefined
+      ) {
         const usdAmount = selectedProduct.usdCents / 100;
         if (usdAmount > maxAutoPayment) {
           throw new PaymentLimitExceededError(
@@ -256,7 +291,7 @@ Respond with JSON: { "productIndex": <0-based index> }`;
             BigInt(Math.round(maxAutoPayment * 1_000_000)),
             {
               reason: `Pack costs $${usdAmount.toFixed(2)} but max auto-payment is $${maxAutoPayment}`,
-            }
+            },
           );
         }
       }
@@ -267,7 +302,7 @@ Respond with JSON: { "productIndex": <0-based index> }`;
           type: selectedProduct.type,
           paymentMethod,
         },
-        "Purchasing pack"
+        "Purchasing pack",
       );
 
       let result: {
@@ -282,7 +317,9 @@ Respond with JSON: { "productIndex": <0-based index> }`;
         result = await client.purchasePack(selectedProduct.productId);
       } else {
         // Use gems payment (via regular API)
-        const gemResult = await client.purchaseWithGems(selectedProduct.productId);
+        const gemResult = await client.purchaseWithGems(
+          selectedProduct.productId,
+        );
         result = {
           success: true,
           productName: gemResult.productName,
@@ -353,7 +390,8 @@ These cards have been added to your collection!`;
       if (error instanceof PaymentRequiredError) {
         errorMessage =
           "Payment required but could not complete x402 flow. Check wallet balance and permissions.";
-        thought = "x402 payment flow failed - check wallet balance and delegation permissions";
+        thought =
+          "x402 payment flow failed - check wallet balance and delegation permissions";
       } else if (error instanceof InsufficientBalanceError) {
         errorMessage = `Insufficient balance. Need ${error.requiredAmount.toString()} but have ${error.currentBalance.toString()}`;
         thought =
@@ -364,7 +402,8 @@ These cards have been added to your collection!`;
           "This purchase is above the configured safety limit. Agent needs manual approval or limit increase.";
       } else {
         errorMessage = `Failed to purchase pack: ${error instanceof Error ? error.message : String(error)}`;
-        thought = "Pack purchase failed due to API error, payment issue, or insufficient funds";
+        thought =
+          "Pack purchase failed due to API error, payment issue, or insufficient funds";
       }
 
       await callback({

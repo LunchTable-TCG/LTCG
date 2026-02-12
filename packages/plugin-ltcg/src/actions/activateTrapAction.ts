@@ -27,10 +27,18 @@ export const activateTrapAction: Action = {
   similes: ["TRIGGER_TRAP", "USE_TRAP", "SPRING_TRAP"],
   description: "Activate a set trap card in response to opponent's action",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -39,8 +47,9 @@ export const activateTrapAction: Action = {
       }
 
       // Must have at least one set trap
+      // spellTrapZone items use `type` field (not `cardType`)
       const setTraps = gameState.hostPlayer.spellTrapZone.filter(
-        (card) => card.cardType === "trap" && !card.faceUp
+        (card) => card.type === "trap" && !card.faceUp,
       );
 
       if (setTraps.length === 0) {
@@ -65,16 +74,24 @@ export const activateTrapAction: Action = {
     message: Memory,
     state: State,
     _options: ActionHandlerOptions,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling ACTIVATE_TRAP action");
 
       // Get game state and board analysis
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
-      const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
+      const boardAnalysisResult = await boardAnalysisProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const boardAnalysis = boardAnalysisResult.data;
 
       if (!gameState) {
@@ -95,9 +112,9 @@ export const activateTrapAction: Action = {
         baseUrl: apiUrl,
       });
 
-      // Get set traps
+      // Get set traps (spellTrapZone items use `type` field)
       const setTraps = gameState.hostPlayer.spellTrapZone.filter(
-        (card) => card.cardType === "trap" && !card.faceUp
+        (card) => card.type === "trap" && !card.faceUp,
       );
 
       if (setTraps.length === 0) {
@@ -122,7 +139,10 @@ export const activateTrapAction: Action = {
 
       // Format trap options
       const trapOptions = setTraps
-        .map((card, idx) => `${idx + 1}. ${card.name} (Set) [cardId: ${card.cardId}]`)
+        .map(
+          (card, idx) =>
+            `${idx + 1}. ${card.name} (Set) [cardId: ${card.cardId}]`,
+        )
         .join("\n");
 
       const boardContext = `
@@ -202,7 +222,9 @@ Respond with JSON: { "shouldActivate": true/false, "trapIndex": <index if activa
       const result = await client.activateTrap({
         gameId: gameState.gameId,
         cardId: selectedTrap.cardId,
-        targets: parsed.targets?.map((t: any) => typeof t === 'string' ? t : String(t)),
+        targets: parsed.targets?.map((t: any) =>
+          typeof t === "string" ? t : String(t),
+        ),
       });
 
       // Callback to user

@@ -9,6 +9,7 @@ const refs = {
       createSession: {} as any,
       linkLobby: {} as any,
       updateSession: {} as any,
+      clearLobbyLink: {} as any,
       addDestination: {} as any,
       getSession: {} as any,
       endSession: {} as any,
@@ -106,12 +107,17 @@ async function loadStatusRoute() {
   return await import("../../../app/api/streaming/status/route");
 }
 
+async function loadMatchResultRoute() {
+  return await import("../../../app/api/streaming/match-result/route");
+}
+
 beforeEach(() => {
   process.env = {
     ...originalEnv,
     NEXT_PUBLIC_CONVEX_URL: "https://convex.example",
     NEXT_PUBLIC_APP_URL: "https://app.example",
     INTERNAL_API_SECRET: "internal-secret",
+    STREAMING_AGENT_ONLY: "false",
   };
 
   setAuthMock.mockReset();
@@ -149,6 +155,7 @@ beforeEach(() => {
     isAgentApiKey: false,
     bearerToken: "user-token",
     userId: "user_1",
+    agentId: null,
   });
 
   buildRtmpUrlMock.mockImplementation((platform: string) => `rtmp://${platform}/live/new`);
@@ -205,6 +212,27 @@ describe("Streaming API routes", () => {
     });
   });
 
+  it("POST /start rejects user streams when agent-only mode is enabled", async () => {
+    delete process.env.STREAMING_AGENT_ONLY;
+
+    const route = await loadStartRoute();
+    const request = new NextRequest("http://localhost/api/streaming/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        streamType: "user",
+        platform: "twitch",
+        streamKey: "plain-stream-key",
+      }),
+    });
+
+    const response = await route.POST(request);
+    const payload = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(payload.error).toContain("Agent streaming only");
+  });
+
   it("POST /start returns 500 for internal requests when INTERNAL_API_SECRET is missing", async () => {
     delete process.env.INTERNAL_API_SECRET;
     resolveStreamingAuthMock.mockResolvedValue({
@@ -212,6 +240,7 @@ describe("Streaming API routes", () => {
       isAgentApiKey: false,
       bearerToken: null,
       userId: null,
+      agentId: null,
     });
 
     const route = await loadStartRoute();
@@ -302,6 +331,7 @@ describe("Streaming API routes", () => {
       isAgentApiKey: true,
       bearerToken: "ltcg_agent_key",
       userId: null,
+      agentId: "agent_1",
     });
     queryMock
       .mockResolvedValueOnce([])
@@ -388,6 +418,7 @@ describe("Streaming API routes", () => {
       isAgentApiKey: true,
       bearerToken: "ltcg_agent_key",
       userId: null,
+      agentId: "agent_1",
     });
     queryMock.mockResolvedValueOnce([]);
     mutationMock.mockImplementation(async (fn: unknown) => {
@@ -419,12 +450,50 @@ describe("Streaming API routes", () => {
     expect(buildRtmpUrlMock).toHaveBeenCalledWith("retake", "retake-key", "rtmp://retake.example/live");
   });
 
+  it("POST /start for agent stream cleans orphaned overlay egresses even with no active session", async () => {
+    resolveStreamingAuthMock.mockResolvedValue({
+      isInternal: false,
+      isAgentApiKey: true,
+      bearerToken: "ltcg_agent_key",
+      userId: null,
+      agentId: "agent_1",
+    });
+
+    queryMock.mockResolvedValueOnce([]);
+    mutationMock.mockImplementation(async (fn: unknown) => {
+      if (fn === refs.streaming.sessions.createSession) {
+        return "session_agent_new";
+      }
+      return undefined;
+    });
+
+    const route = await loadStartRoute();
+    const request = new NextRequest("http://localhost/api/streaming/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        streamType: "agent",
+        agentId: "agent_1",
+        platform: "twitch",
+        streamKey: "agent-stream-key",
+      }),
+    });
+
+    const response = await route.POST(request);
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.sessionId).toBe("session_agent_new");
+    expect(stopOrphanedOverlayEgressesMock).toHaveBeenCalledWith([]);
+  });
+
   it("POST /start reuses existing active agent session by default", async () => {
     resolveStreamingAuthMock.mockResolvedValue({
       isInternal: false,
       isAgentApiKey: true,
       bearerToken: "ltcg_agent_key",
       userId: null,
+      agentId: "agent_1",
     });
 
     queryMock.mockResolvedValueOnce([
@@ -489,6 +558,7 @@ describe("Streaming API routes", () => {
       isAgentApiKey: true,
       bearerToken: "ltcg_agent_key",
       userId: null,
+      agentId: "agent_1",
     });
 
     queryMock
@@ -591,6 +661,7 @@ describe("Streaming API routes", () => {
       isAgentApiKey: true,
       bearerToken: "ltcg_agent_key",
       userId: null,
+      agentId: "agent_1",
     });
 
     queryMock
@@ -644,6 +715,7 @@ describe("Streaming API routes", () => {
       isAgentApiKey: true,
       bearerToken: "ltcg_agent_key",
       userId: null,
+      agentId: "agent_1",
     });
 
     queryMock
@@ -907,5 +979,68 @@ describe("Streaming API routes", () => {
 
     expect(response.status).toBe(400);
     expect(payload.error).toContain("sessionId");
+  });
+
+  it("POST /match-result updates match fields and clears lobby by default", async () => {
+    const route = await loadMatchResultRoute();
+
+    const request = new NextRequest("http://localhost/api/streaming/match-result", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": "internal-secret",
+      },
+      body: JSON.stringify({
+        sessionId: "session_123",
+        lastMatchResult: "win",
+        lastMatchSummary: "Victory!",
+      }),
+    });
+
+    const response = await route.POST(request);
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.success).toBe(true);
+    expect(mutationMock).toHaveBeenCalledWith(refs.streaming.sessions.updateSession, {
+      sessionId: "session_123",
+      internalAuth: "internal-secret",
+      updates: expect.objectContaining({
+        lastMatchResult: "win",
+        lastMatchSummary: "Victory!",
+      }),
+    });
+    expect(mutationMock).toHaveBeenCalledWith(refs.streaming.sessions.clearLobbyLink, {
+      sessionId: "session_123",
+      internalAuth: "internal-secret",
+    });
+  });
+
+  it("POST /match-result skips lobby clear when clearCurrentLobby=false", async () => {
+    const route = await loadMatchResultRoute();
+
+    const request = new NextRequest("http://localhost/api/streaming/match-result", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": "internal-secret",
+      },
+      body: JSON.stringify({
+        sessionId: "session_123",
+        lastMatchResult: "loss",
+        clearCurrentLobby: false,
+      }),
+    });
+
+    const response = await route.POST(request);
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.success).toBe(true);
+
+    const clearCalls = mutationMock.mock.calls.filter(
+      (call: unknown[]) => call[0] === refs.streaming.sessions.clearLobbyLink
+    );
+    expect(clearCalls.length).toBe(0);
   });
 });

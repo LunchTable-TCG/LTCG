@@ -17,9 +17,37 @@
     "real-time",
     "webhook"
   ],
+  "homepage": "http://localhost:3334",
   "repository": {
     "type": "git",
     "url": ""
+  },
+  "elizaos": {
+    "kind": "app",
+    "displayName": "LunchTable",
+    "configKeys": [
+      "LTCG_API_KEY",
+      "LTCG_API_URL",
+      "LTCG_CALLBACK_URL",
+      "LTCG_WEBHOOK_SECRET",
+      "LTCG_AUTO_MATCHMAKING",
+      "LTCG_DEBUG_MODE",
+      "LTCG_CONTROL_API_KEY"
+    ],
+    "configDefaults": {
+      "LTCG_API_URL": "http://localhost:3334",
+      "LTCG_AUTO_MATCHMAKING": "false",
+      "LTCG_DEBUG_MODE": "false"
+    },
+    "app": {
+      "displayName": "LunchTable",
+      "category": "game",
+      "launchType": "connect",
+      "launchUrl": "http://localhost:3334",
+      "capabilities": ["multiplayer", "ai-opponent"],
+      "minPlayers": 1,
+      "maxPlayers": 2
+    }
   },
   "exports": {
     "./package.json": "./package.json",

@@ -33,6 +33,17 @@ export async function GET(req: NextRequest) {
     if (!agentId) {
       return NextResponse.json({ error: "Missing agentId query parameter" }, { status: 400 });
     }
+    if (auth.isAgentApiKey) {
+      if (!auth.agentId) {
+        return NextResponse.json(
+          { error: "Agent API key is not bound to a registered agent" },
+          { status: 403 }
+        );
+      }
+      if (agentId !== auth.agentId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
 
     const convex = createConvexClient();
     const internalAuth = process.env.INTERNAL_API_SECRET?.trim();

@@ -108,7 +108,7 @@ export const TEST_CONFIG = {
   STARTING_GOLD: 500,
 
   // URLs - matching actual app routes
-  BASE_URL: "http://localhost:3333",
+  BASE_URL: "http://localhost:3334",
   LOGIN_URL: "/login",
   SIGNUP_URL: "/signup",
   SETUP_USERNAME_URL: "/setup-username",

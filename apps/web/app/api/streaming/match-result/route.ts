@@ -27,7 +27,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { sessionId, lastMatchEndedAt, lastMatchResult, lastMatchSummary } = await req.json();
+    const {
+      sessionId,
+      lastMatchEndedAt,
+      lastMatchResult,
+      lastMatchSummary,
+      clearCurrentLobby,
+    } = await req.json();
 
     if (!sessionId || typeof sessionId !== "string") {
       return NextResponse.json({ error: "sessionId is required" }, { status: 400 });
@@ -43,6 +49,13 @@ export async function POST(req: NextRequest) {
         lastMatchSummary: lastMatchSummary ?? "Match over.",
       },
     });
+
+    if (clearCurrentLobby !== false) {
+      await convex.mutation(apiAny.streaming.sessions.clearLobbyLink, {
+        sessionId: sessionId as Id<"streamingSessions">,
+        internalAuth,
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

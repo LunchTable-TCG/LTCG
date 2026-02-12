@@ -23,9 +23,14 @@ import type { LTCGState } from "../types/eliza";
 export const trashTalkAction: Action = {
   name: "TRASH_TALK",
   similes: ["TAUNT", "BANTER", "TEASE"],
-  description: "Generate personality-driven trash talk based on current game state",
+  description:
+    "Generate personality-driven trash talk based on current game state",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Check if chat is enabled
       const chatEnabled = runtime.getSetting("LTCG_CHAT_ENABLED") !== "false";
@@ -35,14 +40,19 @@ export const trashTalkAction: Action = {
       }
 
       // Check trash talk level
-      const trashTalkLevel = runtime.getSetting("LTCG_TRASH_TALK_LEVEL") || "mild";
+      const trashTalkLevel =
+        runtime.getSetting("LTCG_TRASH_TALK_LEVEL") || "mild";
       if (trashTalkLevel === "none") {
         logger.debug("Trash talk is disabled");
         return false;
       }
 
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -68,16 +78,24 @@ export const trashTalkAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling TRASH_TALK action");
 
       // Get game state and board analysis
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
-      const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
+      const boardAnalysisResult = await boardAnalysisProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const boardAnalysis = boardAnalysisResult.data;
 
       if (!gameState) {
@@ -86,10 +104,13 @@ export const trashTalkAction: Action = {
 
       // Get character personality
       const characterName = runtime.character?.name || "AI Agent";
-      const personality = runtime.character?.bio || "Strategic and thoughtful card game player";
+      const personality =
+        runtime.character?.bio || "Strategic and thoughtful card game player";
 
       // Get trash talk level
-      const trashTalkLevel = String(runtime.getSetting("LTCG_TRASH_TALK_LEVEL") || "mild");
+      const trashTalkLevel = String(
+        runtime.getSetting("LTCG_TRASH_TALK_LEVEL") || "mild",
+      );
 
       // Determine game context for trash talk
       const advantage: string = (boardAnalysis?.advantage as string) || "EVEN";
@@ -104,7 +125,9 @@ export const trashTalkAction: Action = {
       if (advantage === "STRONG_ADVANTAGE") {
         context = `You are dominating the game with a strong board advantage. Your life points: ${myLP}, opponent's: ${oppLP}.`;
         tone =
-          trashTalkLevel === "aggressive" ? "confident and arrogant" : "friendly but confident";
+          trashTalkLevel === "aggressive"
+            ? "confident and arrogant"
+            : "friendly but confident";
       } else if (advantage === "SLIGHT_ADVANTAGE") {
         context = `You have a slight edge in the game. Your life points: ${myLP}, opponent's: ${oppLP}.`;
         tone = "competitive and focused";
@@ -182,7 +205,8 @@ Your trash talk (just the message, no quotes or labels):`;
       await callback({
         text: `Failed to generate trash talk: ${error instanceof Error ? error.message : String(error)}`,
         error: true,
-        thought: "Trash talk generation failed due to LLM error or invalid game state context",
+        thought:
+          "Trash talk generation failed due to LLM error or invalid game state context",
       } as Content);
 
       return {

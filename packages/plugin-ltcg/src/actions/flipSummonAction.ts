@@ -26,10 +26,18 @@ export const flipSummonAction: Action = {
   similes: ["FLIP", "FLIP_UP", "REVEAL_MONSTER"],
   description: "Flip a face-down monster to face-up attack position",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -45,7 +53,7 @@ export const flipSummonAction: Action = {
 
       // Must have at least one face-down monster
       const faceDownMonsters = gameState.myBoard.filter(
-        (monster) => monster.isFaceDown === true
+        (monster) => monster.isFaceDown === true,
       );
 
       if (faceDownMonsters.length === 0) {
@@ -70,16 +78,24 @@ export const flipSummonAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling FLIP_SUMMON action");
 
       // Get game state and board analysis
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
-      const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
+      const boardAnalysisResult = await boardAnalysisProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const boardAnalysis = boardAnalysisResult.data;
 
       if (!gameState) {
@@ -102,7 +118,7 @@ export const flipSummonAction: Action = {
 
       // Get face-down monsters
       const faceDownMonsters = gameState.myBoard.filter(
-        (monster) => monster.isFaceDown === true
+        (monster) => monster.isFaceDown === true,
       );
 
       if (faceDownMonsters.length === 0) {
@@ -113,14 +129,16 @@ export const flipSummonAction: Action = {
       const monsterOptions = faceDownMonsters
         .map(
           (monster, idx) =>
-            `${idx + 1}. Face-down monster (${monster.name || "Unknown"}) - ${monster.attack ?? 0} ATK / ${monster.defense ?? 0} DEF`
+            `${idx + 1}. Face-down monster (${monster.name || "Unknown"}) - ${monster.attack ?? 0} ATK / ${monster.defense ?? 0} DEF`,
         )
         .join("\n");
 
       // Get opponent's strongest monster for comparison
       const opponentMonsters = gameState.opponentBoard;
       const opponentStrongestAtk =
-        opponentMonsters.length > 0 ? Math.max(...opponentMonsters.map((m) => m.attack ?? 0)) : 0;
+        opponentMonsters.length > 0
+          ? Math.max(...opponentMonsters.map((m) => m.attack ?? 0))
+          : 0;
 
       const boardContext = `
 Game State:
@@ -187,7 +205,7 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
           monsterName: selectedMonster.name,
           atk: selectedMonster.attack,
           def: selectedMonster.defense,
-          level: selectedMonster.cost,
+          cost: selectedMonster.cost,
           reasoning: parsed.reasoning,
         },
         data: {

@@ -13,7 +13,10 @@ describe("Complete User Workflow E2E Tests", () => {
 
       // Check for welcome message or onboarding prompt
       cy.get("body").then(($body) => {
-        if ($body.text().includes("Welcome") || $body.text().includes("Get Started")) {
+        if (
+          $body.text().includes("Welcome") ||
+          $body.text().includes("Get Started")
+        ) {
           // Click get started if available
           cy.contains(/get started|start|begin/i)
             .first()
@@ -22,7 +25,9 @@ describe("Complete User Workflow E2E Tests", () => {
       });
 
       // Navigate to agents/chat
-      cy.get('a[href*="agent"], button:contains("agent"), a[href*="chat"], button:contains("chat")')
+      cy.get(
+        'a[href*="agent"], button:contains("agent"), a[href*="chat"], button:contains("chat")',
+      )
         .first()
         .click({ force: true });
 
@@ -59,7 +64,7 @@ describe("Complete User Workflow E2E Tests", () => {
 
       // Look for settings or configuration
       cy.get(
-        'a[href*="settings"], button:contains("settings"), a[href*="config"], button:contains("config")'
+        'a[href*="settings"], button:contains("settings"), a[href*="config"], button:contains("config")',
       )
         .first()
         .then(($elem) => {
@@ -70,12 +75,18 @@ describe("Complete User Workflow E2E Tests", () => {
             cy.contains(/agent|model|personality/i).should("be.visible");
 
             // Navigate back to chat
-            cy.get('a[href*="chat"], button:contains("chat")').first().click({ force: true });
+            cy.get('a[href*="chat"], button:contains("chat")')
+              .first()
+              .click({ force: true });
           }
         });
 
       // Test agent with specific queries
-      const queries = ["What is your name?", "Tell me a joke", "What is 2 + 2?"];
+      const queries = [
+        "What is your name?",
+        "Tell me a joke",
+        "What is 2 + 2?",
+      ];
 
       queries.forEach((query, index) => {
         cy.get('input[type="text"], textarea, [contenteditable="true"]')
@@ -87,10 +98,9 @@ describe("Complete User Workflow E2E Tests", () => {
         cy.wait(2000);
 
         // Verify response received
-        cy.get('[data-testid*="message"], [class*="message"], [role="article"]').should(
-          "have.length.greaterThan",
-          index * 2
-        );
+        cy.get(
+          '[data-testid*="message"], [class*="message"], [role="article"]',
+        ).should("have.length.greaterThan", index * 2);
       });
     });
   });
@@ -100,7 +110,9 @@ describe("Complete User Workflow E2E Tests", () => {
       cy.visit("/");
 
       // Navigate to chat
-      cy.get('a[href*="chat"], a[href*="agent"], button:contains("chat"), button:contains("agent")')
+      cy.get(
+        'a[href*="chat"], a[href*="agent"], button:contains("chat"), button:contains("agent")',
+      )
         .first()
         .click({ force: true });
 
@@ -125,7 +137,9 @@ describe("Complete User Workflow E2E Tests", () => {
       cy.visit("/");
 
       // Create first chat session
-      cy.get('a[href*="chat"], button:contains("chat")').first().click({ force: true });
+      cy.get('a[href*="chat"], button:contains("chat")')
+        .first()
+        .click({ force: true });
 
       cy.get('input[type="text"], textarea, [contenteditable="true"]')
         .filter(":visible")
@@ -164,7 +178,9 @@ describe("Complete User Workflow E2E Tests", () => {
       cy.intercept("*", { forceNetworkError: true }).as("offlineMode");
 
       // Try to send a message
-      cy.get('a[href*="chat"], button:contains("chat")').first().click({ force: true });
+      cy.get('a[href*="chat"], button:contains("chat")')
+        .first()
+        .click({ force: true });
 
       cy.get('input[type="text"], textarea, [contenteditable="true"]')
         .filter(":visible")
@@ -172,7 +188,9 @@ describe("Complete User Workflow E2E Tests", () => {
         .type("Offline message{enter}");
 
       // Should show error
-      cy.contains(/offline|error|connection|failed/i, { timeout: 5000 }).should("be.visible");
+      cy.contains(/offline|error|connection|failed/i, { timeout: 5000 }).should(
+        "be.visible",
+      );
 
       // Remove the offline intercept to go back online
       cy.intercept("*", (req) => {
@@ -194,7 +212,9 @@ describe("Complete User Workflow E2E Tests", () => {
     it("should handle rapid message sending", () => {
       cy.visit("/");
 
-      cy.get('a[href*="chat"], button:contains("chat")').first().click({ force: true });
+      cy.get('a[href*="chat"], button:contains("chat")')
+        .first()
+        .click({ force: true });
 
       // Send multiple messages rapidly
       for (let i = 0; i < 5; i++) {

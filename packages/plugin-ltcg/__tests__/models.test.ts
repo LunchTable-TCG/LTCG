@@ -101,8 +101,10 @@ const runCoreModelTests = async (
 };
 
 describe("Plugin Models", () => {
-  it("should have models defined", () => {
-    expect(plugin.models).toBeDefined();
+  it("should not define models (LTCG delegates to AI provider plugins)", () => {
+    // LTCG plugin uses runtime.useModel() which delegates to whichever
+    // AI provider plugin is loaded (e.g., plugin-openrouter).
+    // The plugin itself does not export model implementations.
     if (plugin.models) {
       expect(typeof plugin.models).toBe("object");
     }

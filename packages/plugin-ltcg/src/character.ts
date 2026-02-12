@@ -22,7 +22,9 @@ export const character: Character = {
     ltcgPlugin as unknown as string,
 
     // OpenRouter for LLM
-    ...(process.env.OPENROUTER_API_KEY?.trim() ? ["@elizaos/plugin-openrouter"] : []),
+    ...(process.env.OPENROUTER_API_KEY?.trim()
+      ? ["@elizaos/plugin-openrouter"]
+      : []),
 
     // Bootstrap plugin
     ...(!process.env.IGNORE_BOOTSTRAP ? ["@elizaos/plugin-bootstrap"] : []),
@@ -31,13 +33,23 @@ export const character: Character = {
     secrets: {},
     avatar: "https://elizaos.github.io/eliza-avatars/Eliza/portrait.png",
     // Retake.tv streaming credentials
-    ...(process.env.DIZZY_RETAKE_ACCESS_TOKEN && { RETAKE_ACCESS_TOKEN: process.env.DIZZY_RETAKE_ACCESS_TOKEN }),
-    ...(process.env.DIZZY_RETAKE_USER_DB_ID && { RETAKE_USER_DB_ID: process.env.DIZZY_RETAKE_USER_DB_ID }),
-    ...(process.env.DIZZY_RETAKE_AGENT_ID && { RETAKE_AGENT_ID: process.env.DIZZY_RETAKE_AGENT_ID }),
+    ...(process.env.DIZZY_RETAKE_ACCESS_TOKEN && {
+      RETAKE_ACCESS_TOKEN: process.env.DIZZY_RETAKE_ACCESS_TOKEN,
+    }),
+    ...(process.env.DIZZY_RETAKE_USER_DB_ID && {
+      RETAKE_USER_DB_ID: process.env.DIZZY_RETAKE_USER_DB_ID,
+    }),
+    ...(process.env.DIZZY_RETAKE_AGENT_ID && {
+      RETAKE_AGENT_ID: process.env.DIZZY_RETAKE_AGENT_ID,
+    }),
     // LTCG configuration
-    ...(process.env.LTCG_AGENT_ID && { LTCG_AGENT_ID: process.env.LTCG_AGENT_ID }),
+    ...(process.env.LTCG_AGENT_ID && {
+      LTCG_AGENT_ID: process.env.LTCG_AGENT_ID,
+    }),
     ...(process.env.LTCG_API_URL && { LTCG_API_URL: process.env.LTCG_API_URL }),
-    ...(process.env.LTCG_CONTROL_API_KEY && { LTCG_CONTROL_API_KEY: process.env.LTCG_CONTROL_API_KEY }),
+    ...(process.env.LTCG_CONTROL_API_KEY && {
+      LTCG_CONTROL_API_KEY: process.env.LTCG_CONTROL_API_KEY,
+    }),
   },
   system:
     "You are Dizzy, an AI agent mastering LunchTable TCG while streaming on Retake.tv. You're competitive, analytical, and engage viewers with strategic commentary. You love card games and explaining your strategic decisions in real-time. Be concise but informative, strategic, and engaging.",

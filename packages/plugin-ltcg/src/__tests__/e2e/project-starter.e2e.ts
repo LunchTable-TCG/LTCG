@@ -139,7 +139,10 @@ export const ProjectStarterTestSuite: TestSuite = {
         // Lore is optional in Character type
         // Skip lore check as it's not a required field
 
-        if (!character.messageExamples || character.messageExamples.length === 0) {
+        if (
+          !character.messageExamples ||
+          character.messageExamples.length === 0
+        ) {
           throw new Error("Character messageExamples are missing or empty");
         }
 
@@ -162,7 +165,9 @@ export const ProjectStarterTestSuite: TestSuite = {
           throw new Error("Character plugins is not an array");
         }
 
-        logger.info(`✓ Character "${character.name}" loaded successfully with all required fields`);
+        logger.info(
+          `✓ Character "${character.name}" loaded successfully with all required fields`,
+        );
       },
     },
 
@@ -212,7 +217,9 @@ export const ProjectStarterTestSuite: TestSuite = {
           logger.info("✓ Agent can receive and store messages");
         } catch (_error) {
           // If connection setup fails, it's a test environment limitation
-          logger.info("⚠ Message processing test skipped (test environment limitation)");
+          logger.info(
+            "⚠ Message processing test skipped (test environment limitation)",
+          );
         }
       },
     },
@@ -223,7 +230,9 @@ export const ProjectStarterTestSuite: TestSuite = {
         // Test for specific hello world response
         // This requires the HELLO_WORLD action to be available
 
-        const helloWorldAction = runtime.actions.find((a: Action) => a.name === "HELLO_WORLD");
+        const helloWorldAction = runtime.actions.find(
+          (a: Action) => a.name === "HELLO_WORLD",
+        );
 
         if (!helloWorldAction) {
           logger.info("⚠ HELLO_WORLD action not found, skipping test");
@@ -257,7 +266,9 @@ export const ProjectStarterTestSuite: TestSuite = {
 
           // Verify message structure is valid
           if (!message.content.text) {
-            throw new Error(`Invalid message created for greeting: ${greeting}`);
+            throw new Error(
+              `Invalid message created for greeting: ${greeting}`,
+            );
           }
         }
 
@@ -282,7 +293,9 @@ export const ProjectStarterTestSuite: TestSuite = {
 
           logger.info("✓ Conversation context system is available");
         } catch (_error) {
-          logger.info("⚠ Conversation context test skipped (test environment limitation)");
+          logger.info(
+            "⚠ Conversation context test skipped (test environment limitation)",
+          );
         }
       },
     },
@@ -292,10 +305,14 @@ export const ProjectStarterTestSuite: TestSuite = {
       name: "hello_world_action_direct_execution",
       fn: async (runtime: IAgentRuntime) => {
         // Test direct action execution if available
-        const helloWorldAction = runtime.actions.find((a: Action) => a.name === "HELLO_WORLD");
+        const helloWorldAction = runtime.actions.find(
+          (a: Action) => a.name === "HELLO_WORLD",
+        );
 
         if (!helloWorldAction) {
-          logger.info("⚠ HELLO_WORLD action not found, skipping direct execution test");
+          logger.info(
+            "⚠ HELLO_WORLD action not found, skipping direct execution test",
+          );
           return;
         }
 
@@ -322,19 +339,31 @@ export const ProjectStarterTestSuite: TestSuite = {
         let responseReceived = false;
         const callback: HandlerCallback = async (
           response: Content,
-          _files?: unknown
+          _files?: unknown,
         ): Promise<Memory[]> => {
-          if (response.text === "hello world!" && response.action === "HELLO_WORLD") {
+          if (
+            response.text === "hello world!" &&
+            response.action === "HELLO_WORLD"
+          ) {
             responseReceived = true;
           }
           return [];
         };
 
         // Try direct action execution
-        await helloWorldAction.handler(runtime, message, state, {}, callback, []);
+        await helloWorldAction.handler(
+          runtime,
+          message,
+          state,
+          {},
+          callback,
+          [],
+        );
 
         if (!responseReceived) {
-          throw new Error("HELLO_WORLD action did not produce expected response");
+          throw new Error(
+            "HELLO_WORLD action did not produce expected response",
+          );
         }
 
         logger.info("✓ HELLO_WORLD action executed successfully");
@@ -353,11 +382,13 @@ export const ProjectStarterTestSuite: TestSuite = {
 
         // Find the HELLO_WORLD_PROVIDER if it exists
         const helloWorldProvider = runtime.providers.find(
-          (p: Provider) => p.name === "HELLO_WORLD_PROVIDER"
+          (p: Provider) => p.name === "HELLO_WORLD_PROVIDER",
         );
 
         if (!helloWorldProvider) {
-          logger.info("⚠ HELLO_WORLD_PROVIDER not found, skipping provider test");
+          logger.info(
+            "⚠ HELLO_WORLD_PROVIDER not found, skipping provider test",
+          );
           return;
         }
 
@@ -382,7 +413,11 @@ export const ProjectStarterTestSuite: TestSuite = {
         };
 
         // Get provider data
-        const providerData = await helloWorldProvider.get(runtime, mockMessage, mockState);
+        const providerData = await helloWorldProvider.get(
+          runtime,
+          mockMessage,
+          mockState,
+        );
 
         // Verify provider returns expected data
         if (!providerData || typeof providerData !== "object") {
@@ -463,10 +498,14 @@ export const ProjectStarterTestSuite: TestSuite = {
             throw new Error("No messages retrieved from memory system");
           }
 
-          logger.info(`✓ Memory system stored and retrieved ${retrievedMessages.length} messages`);
+          logger.info(
+            `✓ Memory system stored and retrieved ${retrievedMessages.length} messages`,
+          );
         } catch (_error) {
           // Memory operations might fail in test environment
-          logger.info("⚠ Memory system test skipped (test environment limitation)");
+          logger.info(
+            "⚠ Memory system test skipped (test environment limitation)",
+          );
         }
       },
     },
@@ -502,7 +541,9 @@ export const ProjectStarterTestSuite: TestSuite = {
 
           logger.info("✓ Successfully handled concurrent message creation");
         } catch (_error) {
-          logger.info("⚠ Concurrent message test skipped (test environment limitation)");
+          logger.info(
+            "⚠ Concurrent message test skipped (test environment limitation)",
+          );
         }
       },
     },
@@ -557,7 +598,8 @@ export const ProjectStarterTestSuite: TestSuite = {
         // Test specific plugin features if available
         const hasActions = runtime.actions && runtime.actions.length > 0;
         const hasProviders = runtime.providers && runtime.providers.length > 0;
-        const hasEvaluators = runtime.evaluators && runtime.evaluators.length > 0;
+        const hasEvaluators =
+          runtime.evaluators && runtime.evaluators.length > 0;
 
         if (hasActions) {
           logger.info(`  - ${runtime.actions.length} actions registered`);

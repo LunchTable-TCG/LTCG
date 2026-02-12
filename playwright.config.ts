@@ -40,7 +40,7 @@ export default defineConfig({
   globalTeardown: "./e2e/setup/global-teardown.ts",
 
   use: {
-    baseURL: process.env["BASE_URL"] || "http://localhost:3333",
+    baseURL: process.env["BASE_URL"] || "http://localhost:3334",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
@@ -91,7 +91,7 @@ export default defineConfig({
     ? undefined
     : {
         command: "bun run dev",
-        url: "http://localhost:3333",
+        url: "http://localhost:3334",
         reuseExistingServer: true,
         timeout: 120000,
       },

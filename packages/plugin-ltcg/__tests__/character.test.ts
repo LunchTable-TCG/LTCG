@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import character from "../../characters/blaze-master.json";
+import character from "../characters/blaze-master.json";
 
 describe("Character Configuration", () => {
   it("should have all required fields", () => {

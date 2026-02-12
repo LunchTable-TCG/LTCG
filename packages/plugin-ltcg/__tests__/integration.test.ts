@@ -6,6 +6,9 @@ import { type IAgentRuntime, type Plugin, logger } from "@elizaos/core";
 import { character } from "../src/character";
 import plugin from "../src/plugin";
 
+// Resolve package root from test file location (not monorepo cwd)
+const PKG_ROOT = path.resolve(import.meta.dir, "..");
+
 // Set up spies on logger
 beforeAll(() => {
   spyOn(logger, "info").mockImplementation(() => {});
@@ -28,7 +31,7 @@ const isCI = Boolean(process.env['CI']);
  */
 describe("Integration: Project Structure and Components", () => {
   it("should have a valid package structure", () => {
-    const srcDir = path.join(process.cwd(), "src");
+    const srcDir = path.join(PKG_ROOT, "src");
     expect(fs.existsSync(srcDir)).toBe(true);
 
     // Check for required source files - only checking core files
@@ -40,7 +43,7 @@ describe("Integration: Project Structure and Components", () => {
   });
 
   it("should have dist directory for build outputs", () => {
-    const distDir = path.join(process.cwd(), "dist");
+    const distDir = path.join(PKG_ROOT, "dist");
 
     // Skip directory content validation if dist doesn't exist yet
     if (!fs.existsSync(distDir)) {
@@ -176,7 +179,7 @@ describeScaffolding("Integration: Project Scaffolding", () => {
       const srcFiles = ["index.ts", "plugin.ts", "character.ts"];
 
       for (const file of srcFiles) {
-        const sourceFilePath = path.join(process.cwd(), "src", file);
+        const sourceFilePath = path.join(PKG_ROOT, "src", file);
         const targetFilePath = path.join(TEST_DIR, file);
 
         if (fs.existsSync(sourceFilePath)) {

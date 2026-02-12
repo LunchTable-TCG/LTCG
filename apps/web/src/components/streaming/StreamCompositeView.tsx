@@ -85,6 +85,10 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
       Date.now() - session.lastMatchEndedAt < 60 * 60 * 1000 &&
       !gameState
   );
+  const matchResult =
+    session?.lastMatchResult === "win" || session?.lastMatchResult === "loss"
+      ? session.lastMatchResult
+      : null;
   const visualMode = config.playerVisualMode === "profile-picture" ? "profile-picture" : "webcam";
   const profilePictureUrl = config.profilePictureUrl?.trim() || session?.entityAvatar?.trim() || "";
   const shouldShowProfilePip =
@@ -156,6 +160,11 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
         ) : hasRecentMatchSummary ? (
           <div className="waiting-state">
             <h2>Match Over</h2>
+            {matchResult && (
+              <p className={`match-result ${matchResult === "win" ? "match-result--win" : "match-result--loss"}`}>
+                Result: {matchResult.toUpperCase()}
+              </p>
+            )}
             <p>{session?.lastMatchSummary || "The last match has ended."}</p>
             <p className="waiting-sub">Looping stream in lobby mode until the next game starts.</p>
           </div>
@@ -350,6 +359,21 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
           margin: 0 0 10px;
           font-size: 28px;
           color: #f3e0b6;
+        }
+
+        .match-result {
+          margin: 0 0 10px;
+          font-size: 22px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+        }
+
+        .match-result--win {
+          color: #4ade80;
+        }
+
+        .match-result--loss {
+          color: #f87171;
         }
 
         .waiting-state p {

@@ -25,10 +25,18 @@ export const changePositionAction: Action = {
   similes: ["SWITCH_POSITION", "FLIP_POSITION", "DEFENSE_MODE", "ATTACK_MODE"],
   description: "Change a monster's battle position between attack and defense",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -67,13 +75,17 @@ export const changePositionAction: Action = {
     _message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling CHANGE_POSITION action");
 
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, _message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        _message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -108,7 +120,7 @@ export const changePositionAction: Action = {
       const monsterOptions = changeableMonsters
         .map(
           (m, idx) =>
-            `${idx + 1}. ${m.monster.name} (${m.monster.attack ?? 0} ATK / ${m.monster.defense ?? 0} DEF) - Currently in ${m.monster.position === 1 ? "attack" : "defense"} position`
+            `${idx + 1}. ${m.monster.name} (${m.monster.attack ?? 0} ATK / ${m.monster.defense ?? 0} DEF) - Currently in ${m.monster.position === 1 ? "attack" : "defense"} position`,
         )
         .join("\n");
 
@@ -152,7 +164,8 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
       }
 
       // Determine new position (for display only - server auto-toggles)
-      const newPosition = selected.monster.position === 1 ? "defense" : "attack";
+      const newPosition =
+        selected.monster.position === 1 ? "defense" : "attack";
 
       // Make API call
       const result = await client.changePosition({

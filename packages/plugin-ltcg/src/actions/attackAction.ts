@@ -26,10 +26,18 @@ export const attackAction: Action = {
   similes: ["ATTACK_OPPONENT", "BATTLE", "DECLARE_ATTACK"],
   description: "Declare an attack with one of your monsters",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Get game state
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
       if (!gameState) {
@@ -45,7 +53,9 @@ export const attackAction: Action = {
 
       // Must have at least one monster that can attack
       const myMonsters = gameState.myBoard;
-      const canAttackMonsters = myMonsters.filter((monster) => !monster.hasAttacked && monster.position === 1);
+      const canAttackMonsters = myMonsters.filter(
+        (monster) => !monster.hasAttacked && monster.position === 1,
+      );
 
       if (canAttackMonsters.length === 0) {
         logger.debug("No monsters can attack");
@@ -64,16 +74,24 @@ export const attackAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling ATTACK action");
 
       // Get game state and board analysis
-      const gameStateResult = await gameStateProvider.get(runtime, message, state);
+      const gameStateResult = await gameStateProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
-      const boardAnalysisResult = await boardAnalysisProvider.get(runtime, message, state);
+      const boardAnalysisResult = await boardAnalysisProvider.get(
+        runtime,
+        message,
+        state,
+      );
       const boardAnalysis = boardAnalysisResult.data;
 
       if (!gameState) {
@@ -96,14 +114,16 @@ export const attackAction: Action = {
 
       // Get attackers and targets
       const myMonsters = gameState.myBoard;
-      const attackers = myMonsters.filter((monster) => !monster.hasAttacked && monster.position === 1);
+      const attackers = myMonsters.filter(
+        (monster) => !monster.hasAttacked && monster.position === 1,
+      );
       const opponentMonsters = gameState.opponentBoard;
 
       // Build attack options
       const attackerOptions = attackers
         .map(
           (monster, idx) =>
-            `${idx + 1}. ${monster.name} (${monster.attack} ATK, Position: ${monster.position === 1 ? "attack" : "defense"})`
+            `${idx + 1}. ${monster.name} (${monster.attack} ATK, Position: ${monster.position === 1 ? "attack" : "defense"})`,
         )
         .join("\n");
 
@@ -112,7 +132,7 @@ export const attackAction: Action = {
           ? opponentMonsters
               .map(
                 (monster, idx) =>
-                  `${idx + 1}. ${monster.name} (${!monster.isFaceDown ? `${monster.attack} ATK, ${monster.defense} DEF` : "Face-down"}, Position: ${monster.position === 1 ? "attack" : "defense"})`
+                  `${idx + 1}. ${monster.name} (${!monster.isFaceDown ? `${monster.attack} ATK, ${monster.defense} DEF` : "Face-down"}, Position: ${monster.position === 1 ? "attack" : "defense"})`,
               )
               .join("\n")
           : "None - direct attack available";
@@ -162,7 +182,10 @@ Respond with JSON: { "attackerIndex": <index>, "targetIndex": <index or null for
       const result = await client.attack({
         gameId: gameState.gameId,
         attackerCardId: attacker._id,
-        targetCardId: parsed.targetIndex !== null ? opponentMonsters[parsed.targetIndex]?._id : undefined,
+        targetCardId:
+          parsed.targetIndex !== null
+            ? opponentMonsters[parsed.targetIndex]?._id
+            : undefined,
       });
 
       // Callback to user
@@ -188,7 +211,9 @@ Respond with JSON: { "attackerIndex": <index>, "targetIndex": <index or null for
           attackerAtk: attacker.attack,
           isDirect: parsed.targetIndex === null,
           targetName:
-            parsed.targetIndex !== null ? opponentMonsters[parsed.targetIndex]?.name : null,
+            parsed.targetIndex !== null
+              ? opponentMonsters[parsed.targetIndex]?.name
+              : null,
         },
         data: {
           actionName: "ATTACK",

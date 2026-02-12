@@ -44,6 +44,7 @@ beforeEach(() => {
   process.env = {
     ...originalEnv,
     NEXT_PUBLIC_CONVEX_URL: "https://convex.example",
+    INTERNAL_API_SECRET: "internal-secret",
   };
   queryMock.mockReset();
   mutationMock.mockReset();

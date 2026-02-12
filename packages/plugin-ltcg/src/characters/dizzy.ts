@@ -22,8 +22,12 @@ export const dizzy: Character = {
   settings: {
     secrets: {
       // Retake.tv credentials (stored encrypted in database)
-      ...(process.env.DIZZY_RETAKE_ACCESS_TOKEN && { RETAKE_ACCESS_TOKEN: process.env.DIZZY_RETAKE_ACCESS_TOKEN }),
-      ...(process.env.DIZZY_RETAKE_USER_DB_ID && { RETAKE_USER_DB_ID: process.env.DIZZY_RETAKE_USER_DB_ID }),
+      ...(process.env.DIZZY_RETAKE_ACCESS_TOKEN && {
+        RETAKE_ACCESS_TOKEN: process.env.DIZZY_RETAKE_ACCESS_TOKEN,
+      }),
+      ...(process.env.DIZZY_RETAKE_USER_DB_ID && {
+        RETAKE_USER_DB_ID: process.env.DIZZY_RETAKE_USER_DB_ID,
+      }),
     },
     avatar: "https://lunchtable.cards/logo.png",
   },
@@ -37,12 +41,18 @@ export const dizzy: Character = {
     ltcgPlugin as unknown as string,
 
     // LLM providers (OpenRouter preferred for Dizzy)
-    ...(process.env.OPENROUTER_API_KEY?.trim() ? ["@elizaos/plugin-openrouter"] : []),
-    ...(process.env.ANTHROPIC_API_KEY?.trim() ? ["@elizaos/plugin-anthropic"] : []),
+    ...(process.env.OPENROUTER_API_KEY?.trim()
+      ? ["@elizaos/plugin-openrouter"]
+      : []),
+    ...(process.env.ANTHROPIC_API_KEY?.trim()
+      ? ["@elizaos/plugin-anthropic"]
+      : []),
     ...(process.env.OPENAI_API_KEY?.trim() ? ["@elizaos/plugin-openai"] : []),
 
     // Platform plugins (optional)
-    ...(process.env.DISCORD_API_TOKEN?.trim() ? ["@elizaos/plugin-discord"] : []),
+    ...(process.env.DISCORD_API_TOKEN?.trim()
+      ? ["@elizaos/plugin-discord"]
+      : []),
     ...(process.env.TWITTER_API_KEY?.trim() ? ["@elizaos/plugin-twitter"] : []),
 
     // Bootstrap last
@@ -205,7 +215,9 @@ Remember: You're not just playing - you're entertaining and educating viewers wh
     [
       {
         name: "{{viewer1}}",
-        content: { text: "Been watching since your first stream, you've improved so much!" },
+        content: {
+          text: "Been watching since your first stream, you've improved so much!",
+        },
       },
       {
         name: "Dizzy",

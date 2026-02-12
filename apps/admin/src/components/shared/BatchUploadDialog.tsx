@@ -24,6 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
+import { usePrivy } from "@privy-io/react-auth";
 import { upload } from "@vercel/blob/client";
 import {
   AlertCircleIcon,
@@ -133,6 +134,7 @@ export function BatchUploadDialog({
   const [currentTagInputs, setCurrentTagInputs] = useState<Record<string, string>>({});
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { getAccessToken } = usePrivy();
 
   // Convex mutations
   const saveAssetMetadata = useConvexMutation(typedApi.admin.assets.saveAssetMetadata);
@@ -274,9 +276,12 @@ export function BatchUploadDialog({
       try {
         // Upload to Vercel Blob (route lives on the web app, not admin app)
         const webAppUrl = process.env["NEXT_PUBLIC_WEB_APP_URL"] || "http://localhost:3000";
+        const accessToken = await getAccessToken();
+        const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
         const blob = await upload(fileData.file.name, fileData.file, {
           access: "public",
           handleUploadUrl: `${webAppUrl}/api/admin/upload`,
+          headers,
           clientPayload: JSON.stringify({
             category: mode === "branding" ? "branding" : fileData.category,
             description: fileData.description,

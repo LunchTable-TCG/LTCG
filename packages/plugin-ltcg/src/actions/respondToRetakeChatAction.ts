@@ -17,7 +17,10 @@ function isEnabled(value: unknown): boolean {
   return false;
 }
 
-function buildDeterministicReply(username: string, viewerMessage: string): string {
+function buildDeterministicReply(
+  username: string,
+  viewerMessage: string,
+): string {
   const lowered = viewerMessage.toLowerCase();
 
   if (lowered.includes("gg")) {
@@ -62,7 +65,8 @@ export const respondToRetakeChatAction: Action = {
 
   validate: async (runtime: IAgentRuntime, message: Memory) => {
     const text = (message.content.text ?? "").toLowerCase();
-    const source = typeof message.content.source === "string" ? message.content.source : "";
+    const source =
+      typeof message.content.source === "string" ? message.content.source : "";
 
     // Check if there's an active stream (has credentials)
     const accessToken =
@@ -92,7 +96,7 @@ export const respondToRetakeChatAction: Action = {
     message: Memory,
     _state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ) => {
     try {
       // Get Retake.tv credentials
@@ -111,18 +115,23 @@ export const respondToRetakeChatAction: Action = {
         return { success: false, error: "No active stream" };
       }
 
-      const source = typeof message.content.source === "string" ? message.content.source : "";
+      const source =
+        typeof message.content.source === "string"
+          ? message.content.source
+          : "";
       const viewerMessage = (message.content.text ?? "").trim();
       const metadata =
         message.content.metadata && typeof message.content.metadata === "object"
           ? (message.content.metadata as Record<string, unknown>)
           : undefined;
       const username =
-        typeof metadata?.username === "string" && metadata.username.trim().length > 0
+        typeof metadata?.username === "string" &&
+        metadata.username.trim().length > 0
           ? metadata.username.trim()
           : "viewer";
       const useLlmForChat = isEnabled(
-        runtime.getSetting("LTCG_RETAKE_CHAT_USE_LLM") ?? process.env.LTCG_RETAKE_CHAT_USE_LLM
+        runtime.getSetting("LTCG_RETAKE_CHAT_USE_LLM") ??
+          process.env.LTCG_RETAKE_CHAT_USE_LLM,
       );
 
       let chatMessage = viewerMessage;
@@ -154,7 +163,7 @@ Rules:
           } catch (generationError) {
             logger.debug(
               { error: generationError },
-              "Failed to generate Retake chat response, using deterministic fallback"
+              "Failed to generate Retake chat response, using deterministic fallback",
             );
             chatMessage = buildDeterministicReply(username, viewerMessage);
           }
@@ -166,19 +175,24 @@ Rules:
       }
 
       // Send message to Retake.tv chat
-      logger.info(`Sending message to Retake chat (${chatMessage.length} chars)`);
+      logger.info(
+        `Sending message to Retake chat (${chatMessage.length} chars)`,
+      );
 
-      const response = await fetch("https://chat.retake.tv/api/agent/chat/send", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "https://chat.retake.tv/api/agent/chat/send",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userDbId,
+            message: chatMessage.trim(),
+          }),
         },
-        body: JSON.stringify({
-          userDbId,
-          message: chatMessage.trim(),
-        }),
-      });
+      );
 
       if (!response.ok) {
         const errorText = await response.text();

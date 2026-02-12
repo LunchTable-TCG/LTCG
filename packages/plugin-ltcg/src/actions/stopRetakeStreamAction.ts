@@ -27,7 +27,9 @@ export const stopRetakeStreamAction: Action = {
 
   validate: async (runtime: IAgentRuntime, message: Memory) => {
     const text = (message.content.text ?? "").toLowerCase();
-    const metadata = message.content.metadata as { source?: string } | undefined;
+    const metadata = message.content.metadata as
+      | { source?: string }
+      | undefined;
     const source = metadata?.source;
 
     // Never allow public Retake chat to issue stream stop commands.
@@ -60,15 +62,20 @@ export const stopRetakeStreamAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ) => {
     try {
-      const metadata = message.content.metadata as { source?: string } | undefined;
+      const metadata = message.content.metadata as
+        | { source?: string }
+        | undefined;
       if (metadata?.source === "retake_chat") {
         await callback({
           text: "Ignoring stream-stop request from public chat.",
         });
-        return { success: false, error: "Stop stream action is disabled for retake_chat source" };
+        return {
+          success: false,
+          error: "Stop stream action is disabled for retake_chat source",
+        };
       }
 
       // Get Retake.tv credentials
@@ -87,13 +94,16 @@ export const stopRetakeStreamAction: Action = {
       // Signal stream stop to Retake.tv
       logger.info("Stopping Retake.tv stream...");
 
-      const response = await fetch("https://chat.retake.tv/api/agent/stream/stop", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "https://chat.retake.tv/api/agent/stream/stop",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -108,7 +118,8 @@ export const stopRetakeStreamAction: Action = {
         process.env.NEXT_PUBLIC_APP_URL ||
         "https://www.lunchtable.cards";
       const ltcgApiKey =
-        (runtime.getSetting("LTCG_API_KEY") as string) || process.env.LTCG_API_KEY;
+        (runtime.getSetting("LTCG_API_KEY") as string) ||
+        process.env.LTCG_API_KEY;
       const ltcgAgentId =
         (runtime.getSetting("LTCG_AGENT_ID") as string) ||
         process.env.LTCG_AGENT_ID ||
@@ -121,7 +132,7 @@ export const stopRetakeStreamAction: Action = {
             "Content-Type": "application/json",
             ...(ltcgApiKey
               ? {
-                  "Authorization": `Bearer ${ltcgApiKey}`,
+                  Authorization: `Bearer ${ltcgApiKey}`,
                   "x-api-key": ltcgApiKey,
                 }
               : {}),

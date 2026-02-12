@@ -7,7 +7,10 @@ import type {
 } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
 import { logger } from "../utils/logger";
-import { resolveStreamingCredentials, startStreamFromBackend } from "../utils/streamingConfig";
+import {
+  resolveStreamingCredentials,
+  startStreamFromBackend,
+} from "../utils/streamingConfig";
 
 /**
  * Start streaming to X (Twitter)
@@ -52,7 +55,9 @@ export const startXStreamAction: Action = {
 
     const config = await resolveStreamingCredentials(runtime, apiClient, "x");
     if (!config) {
-      logger.warn("X streaming credentials not configured (checked backend + env)");
+      logger.warn(
+        "X streaming credentials not configured (checked backend + env)",
+      );
       return false;
     }
 
@@ -64,7 +69,7 @@ export const startXStreamAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ) => {
     try {
       const apiKey = runtime.getSetting("LTCG_API_KEY") as string;
@@ -101,26 +106,29 @@ export const startXStreamAction: Action = {
         const ltcgAgentId =
           runtime.getSetting("LTCG_AGENT_ID") || process.env.LTCG_AGENT_ID;
 
-        const response = await fetch(`${ltcgStreamingUrl}/api/streaming/start`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(ltcgApiKey
-              ? {
-                  "Authorization": `Bearer ${ltcgApiKey}`,
-                  "x-api-key": ltcgApiKey,
-                }
-              : {}),
+        const response = await fetch(
+          `${ltcgStreamingUrl}/api/streaming/start`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(ltcgApiKey
+                ? {
+                    Authorization: `Bearer ${ltcgApiKey}`,
+                    "x-api-key": ltcgApiKey,
+                  }
+                : {}),
+            },
+            body: JSON.stringify({
+              agentId: ltcgAgentId,
+              streamType: "agent",
+              platform: "x",
+              customRtmpUrl: config.customRtmpUrl,
+              streamKey: config.streamKey,
+              streamTitle: `${runtime.character.name} plays LTCG`,
+            }),
           },
-          body: JSON.stringify({
-            agentId: ltcgAgentId,
-            streamType: "agent",
-            platform: "x",
-            customRtmpUrl: config.customRtmpUrl,
-            streamKey: config.streamKey,
-            streamTitle: `${runtime.character.name} plays LTCG`,
-          }),
-        });
+        );
 
         if (!response.ok) {
           const errorText = await response.text();

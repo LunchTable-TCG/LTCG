@@ -242,8 +242,10 @@ describe("Project Starter Character Plugin Ordering", () => {
     it("should have valid plugin names", () => {
       const plugins = character.plugins;
 
-      plugins.forEach((plugin) => {
-        expect(typeof plugin).toBe("string");
+      // Non-string entries are local Plugin objects (e.g., ltcgPlugin) — valid
+      const stringPlugins = plugins.filter((p): p is string => typeof p === "string");
+      expect(stringPlugins.length).toBeGreaterThan(0);
+      stringPlugins.forEach((plugin) => {
         expect(plugin).toMatch(/^@elizaos\/plugin-/);
       });
     });
@@ -267,14 +269,19 @@ describe("Project Starter Character Plugin Ordering", () => {
         "@elizaos/plugin-google-genai",
       ];
 
-      // In a complete setup, at least one AI provider should be present
-      // Test the logical structure based on current environment
-      const hasOtherAiProviders = character.plugins.some((plugin) =>
+      // AI providers are conditionally included based on env vars
+      const stringPlugins = character.plugins.filter((p): p is string => typeof p === "string");
+      const hasAiProvider = stringPlugins.some((plugin) =>
         allAiProviders.includes(plugin)
       );
 
-      // At least one AI provider should be present
-      expect(hasOtherAiProviders).toBe(true);
+      // AI providers are only present when corresponding env vars are set
+      // (e.g., OPENROUTER_API_KEY for plugin-openrouter)
+      if (process.env.OPENROUTER_API_KEY?.trim()) {
+        expect(hasAiProvider).toBe(true);
+      }
+      // Always has at least core plugins + LTCG plugin object
+      expect(character.plugins.length).toBeGreaterThanOrEqual(2);
     });
 
     it("should validate embedding vs text-only categorization", () => {
@@ -304,19 +311,15 @@ describe("Project Starter Character Plugin Ordering", () => {
       // Should have bootstrap (unless ignored)
       expect(plugins).toContain("@elizaos/plugin-bootstrap");
 
-      // Should have fallback logic working correctly
-      const hasOtherAiProviders = plugins.some((plugin) =>
-        [
-          "@elizaos/plugin-anthropic",
-          "@elizaos/plugin-openai",
-          "@elizaos/plugin-openrouter",
-          "@elizaos/plugin-ollama",
-          "@elizaos/plugin-google-genai",
-        ].includes(plugin)
-      );
+      // Should have the LTCG plugin (as a non-string Plugin object)
+      const hasLtcgPlugin = plugins.some((plugin) => typeof plugin !== "string");
+      expect(hasLtcgPlugin).toBe(true);
 
-      // Should have at least one AI provider
-      expect(hasOtherAiProviders).toBe(true);
+      // AI providers are conditional on env vars — only assert when configured
+      const stringPlugins = plugins.filter((p): p is string => typeof p === "string");
+      if (process.env.OPENROUTER_API_KEY?.trim()) {
+        expect(stringPlugins).toContain("@elizaos/plugin-openrouter");
+      }
     });
   });
 });

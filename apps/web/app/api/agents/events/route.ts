@@ -34,6 +34,10 @@ function createConvexClient() {
 export async function POST(req: NextRequest) {
   try {
     const convex = createConvexClient();
+    const internalAuth = process.env.INTERNAL_API_SECRET?.trim();
+    if (!internalAuth) {
+      return NextResponse.json({ error: "INTERNAL_API_SECRET is not configured" }, { status: 500 });
+    }
 
     // Validate API key (supports x-api-key and Authorization: Bearer)
     const authHeader = req.headers.get("Authorization");
@@ -46,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
-    const { gameId, lobbyId, turnNumber, eventType, agentName, description, metadata } = body;
+    const { gameId, lobbyId, turnNumber, eventType, description, metadata } = body;
 
     // Validate required fields
     if (!gameId || typeof gameId !== "string") {
@@ -60,9 +64,6 @@ export async function POST(req: NextRequest) {
     }
     if (!["agent_thinking", "agent_decided", "agent_error"].includes(eventType)) {
       return NextResponse.json({ error: "Invalid eventType" }, { status: 400 });
-    }
-    if (!agentName || typeof agentName !== "string") {
-      return NextResponse.json({ error: "agentName is required" }, { status: 400 });
     }
     if (!description || typeof description !== "string") {
       return NextResponse.json({ error: "description is required" }, { status: 400 });
@@ -82,9 +83,10 @@ export async function POST(req: NextRequest) {
       turnNumber,
       eventType,
       playerId: agentUser.userId as Id<"users">,
-      playerUsername: agentName,
+      playerUsername: agentUser.name || "Agent",
       description,
       metadata: metadata ?? {},
+      internalAuth,
     });
 
     return NextResponse.json({

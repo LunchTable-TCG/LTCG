@@ -18,11 +18,18 @@ const rateLimitTracker = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 10;
 
+function isEnabled(value: string | undefined): boolean {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "true" || normalized === "1" || normalized === "yes";
+}
+
 /**
  * Extract Bearer token from Authorization header
  */
 function extractBearerToken(req: RouteRequest): string | null {
-  const authHeader = req.headers?.["authorization"] || req.headers?.["Authorization"];
+  const authHeader =
+    req.headers?.["authorization"] || req.headers?.["Authorization"];
 
   if (!authHeader) {
     return null;
@@ -39,7 +46,8 @@ function extractBearerToken(req: RouteRequest): string | null {
  */
 function getClientIp(req: RouteRequest): string {
   // Try common headers first
-  const forwarded = req.headers?.["x-forwarded-for"] || req.headers?.["X-Forwarded-For"];
+  const forwarded =
+    req.headers?.["x-forwarded-for"] || req.headers?.["X-Forwarded-For"];
   if (forwarded) {
     const forwardedValue = Array.isArray(forwarded) ? forwarded[0] : forwarded;
     return forwardedValue.split(",")[0].trim();
@@ -63,7 +71,9 @@ export function checkRateLimit(ip: string): boolean {
   const requests = rateLimitTracker.get(ip) || [];
 
   // Filter out requests outside the time window
-  const recentRequests = requests.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
+  const recentRequests = requests.filter(
+    (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS,
+  );
 
   // Check if limit exceeded
   if (recentRequests.length >= RATE_LIMIT_MAX_REQUESTS) {
@@ -107,11 +117,26 @@ function cleanupRateLimitTracker() {
  * Validate Bearer token authentication
  * Returns true if authenticated, false otherwise
  */
-export function validateControlAuth(req: RouteRequest, expectedKey: string | undefined): boolean {
-  // No key configured = auth disabled (warn but allow)
+export function validateControlAuth(
+  req: RouteRequest,
+  expectedKey: string | undefined,
+): boolean {
+  // Secure-by-default: require an API key unless explicitly opted out.
   if (!expectedKey) {
-    logger.warn("LTCG_CONTROL_API_KEY not configured - external control API is not secured");
-    return true;
+    const allowUnsecured = isEnabled(
+      process.env.LTCG_ALLOW_UNSECURED_CONTROL_API,
+    );
+    if (allowUnsecured) {
+      logger.warn(
+        "LTCG_ALLOW_UNSECURED_CONTROL_API=true — control API authentication is disabled",
+      );
+      return true;
+    }
+
+    logger.error(
+      "Control API rejected request because no control key is configured. Set LTCG_CONTROL_API_KEY (or LTCG_API_KEY fallback).",
+    );
+    return false;
   }
 
   const token = extractBearerToken(req);
@@ -145,7 +170,7 @@ export function validateControlAuth(req: RouteRequest, expectedKey: string | und
  */
 export function validateControlRequest(
   req: RouteRequest,
-  expectedKey: string | undefined
+  expectedKey: string | undefined,
 ): string | null {
   // Check authentication first
   if (!validateControlAuth(req, expectedKey)) {

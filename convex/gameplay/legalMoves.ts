@@ -279,18 +279,23 @@ export const getLegalMoves = query({
     // ACTIVATE SPELL ACTIONS
     // ============================================================================
 
-    // Can activate spells during Main Phase 1 or Main Phase 2
-    if (currentPhase === "main1" || currentPhase === "main2") {
-      // Check each spell card in hand
+    // Normal spells: Main Phase 1 or Main Phase 2 only
+    // Quick-Play spells: Main Phase 1, Main Phase 2, Battle Phase, or opponent's turn
+    const isMainPhase = currentPhase === "main1" || currentPhase === "main2";
+    const isBattlePhase =
+      currentPhase === "battle" || currentPhase === "battle_start" || currentPhase === "battle_end";
+
+    if (isMainPhase || isBattlePhase) {
       for (const cardId of myHand) {
         const card = await ctx.db.get(cardId);
         if (!card || card.cardType !== "spell") continue;
 
-        // Check spell type
         const spellType = card.spellType || "normal";
         const isQuickPlay = spellType === "quick_play";
 
-        // Normal spells and Quick-Play spells can be activated from hand
+        // During battle phase, only Quick-Play spells can be activated
+        if (isBattlePhase && !isQuickPlay) continue;
+
         if (spellType === "normal" || isQuickPlay) {
           legalMoves.canActivateSpell.push({
             cardId,

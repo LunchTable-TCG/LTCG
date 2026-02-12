@@ -26,7 +26,10 @@ function setCorsHeaders(res: RouteResponse) {
   if (res.setHeader) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization",
+    );
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   }
 }
@@ -45,7 +48,7 @@ function getAggregator(req: RouteRequest): IStateAggregator | null {
     }
 
     const aggregator = runtime.getService(
-      SERVICE_TYPES.STATE_AGGREGATOR
+      SERVICE_TYPES.STATE_AGGREGATOR,
     ) as unknown as IStateAggregator;
     if (!aggregator) {
       logger.warn("StateAggregator service not found");
@@ -102,7 +105,10 @@ export async function handleAgentStatus(req: RouteRequest, res: RouteResponse) {
  *
  * Returns matchmaking status and recent events
  */
-export async function handleMatchmakingStatus(req: RouteRequest, res: RouteResponse) {
+export async function handleMatchmakingStatus(
+  req: RouteRequest,
+  res: RouteResponse,
+) {
   setCorsHeaders(res);
 
   try {
@@ -159,7 +165,10 @@ export async function handleGameState(req: RouteRequest, res: RouteResponse) {
  *
  * Returns AI decision history for a game
  */
-export async function handleDecisionHistory(req: RouteRequest, res: RouteResponse) {
+export async function handleDecisionHistory(
+  req: RouteRequest,
+  res: RouteResponse,
+) {
   setCorsHeaders(res);
 
   try {
@@ -182,7 +191,11 @@ export async function handleDecisionHistory(req: RouteRequest, res: RouteRespons
       return sendError(res, 503, "StateAggregator service not available");
     }
 
-    const decisions = await aggregator.getDecisionHistory(agentId, gameId, limit);
+    const decisions = await aggregator.getDecisionHistory(
+      agentId,
+      gameId,
+      limit,
+    );
     res.json(decisions);
   } catch (error) {
     logger.error({ error }, "Error fetching decision history");

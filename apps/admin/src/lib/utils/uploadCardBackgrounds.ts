@@ -1,6 +1,6 @@
-import { put } from "@vercel/blob";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { put } from "@vercel/blob";
 import sharp from "sharp";
 
 interface UploadResult {
@@ -21,9 +21,7 @@ export async function uploadCardBackgrounds(
   try {
     // Read all files from source directory
     const files = await fs.readdir(sourcePath);
-    const imageFiles = files.filter((f) =>
-      /\.(png|jpg|jpeg|webp)$/i.test(f)
-    );
+    const imageFiles = files.filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f));
 
     for (let i = 0; i < imageFiles.length; i++) {
       const filename = imageFiles[i];
@@ -82,9 +80,7 @@ function getContentType(filename: string): string {
   }
 }
 
-async function getImageDimensions(
-  buffer: Buffer
-): Promise<{ width: number; height: number }> {
+async function getImageDimensions(buffer: Buffer): Promise<{ width: number; height: number }> {
   const metadata = await sharp(buffer).metadata();
   return {
     width: metadata.width || 750,

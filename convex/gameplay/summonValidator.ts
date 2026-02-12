@@ -198,7 +198,11 @@ export async function validateFlipSummon(
   }
 
   // 3. Check if card was set this turn (cannot flip summon same turn it was set)
-  if (boardCard.turnSummoned === gameState.turnNumber) {
+  // When turnSummoned is undefined (legacy data), allow the flip — assume it was set on a previous turn
+  if (
+    boardCard.turnSummoned !== undefined &&
+    boardCard.turnSummoned === gameState.turnNumber
+  ) {
     return {
       valid: false,
       error: "Cannot Flip Summon a monster the same turn it was Set.",

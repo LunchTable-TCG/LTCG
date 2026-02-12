@@ -36,8 +36,8 @@ describe("Strategy Evaluator", () => {
       values: {
         currentAction: "ATTACK",
         actionParams: {
-          attackerIndex: 0,
-          targetIndex: 0,
+          attackerCardId: "card-1",
+          targetCardId: "card-2",
         },
       },
       data: {},
@@ -315,8 +315,8 @@ describe("Strategy Evaluator", () => {
 
     it("should filter direct attack when opponent has monsters", async () => {
       mockState.values.actionParams = {
-        attackerIndex: 0,
-        targetIndex: null,
+        attackerCardId: "card-1",
+        targetCardId: null,
       };
 
       const mockGameStateProvider = {
@@ -409,8 +409,8 @@ describe("Strategy Evaluator", () => {
       });
 
       mockState.values.actionParams = {
-        attackerIndex: 0,
-        targetIndex: null,
+        attackerCardId: "card-1",
+        targetCardId: null,
       };
 
       const mockGameStateProvider = {
@@ -496,7 +496,7 @@ describe("Strategy Evaluator", () => {
       mockMessage.content = { ...mockMessage.content, action: "SUMMON_MONSTER" };
       mockState.values.currentAction = "SUMMON_MONSTER";
       mockState.values.actionParams = {
-        handIndex: 0,
+        cardId: "card-blazing-drake",
       };
 
       const mockGameStateProvider = {
@@ -522,6 +522,7 @@ describe("Strategy Evaluator", () => {
               opponentBoard: [],
               hand: [
                 {
+                  _id: "card-blazing-drake",
                   handIndex: 0,
                   cardId: "card-blazing-drake",
                   name: "Blazing Drake",

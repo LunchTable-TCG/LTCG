@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
-    const { message, sessionId, userId, authToken } = body;
+    const { message, sessionId, userId: requestedUserId, authToken: bodyAuthToken } = body;
 
     // Validate required fields
     if (!message || typeof message !== "string") {
@@ -45,13 +45,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Session ID is required" }, { status: 400 });
     }
 
-    if (!userId || typeof userId !== "string") {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    const authHeader = req.headers.get("Authorization");
+    const authToken =
+      authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : bodyAuthToken;
+    if (!authToken || typeof authToken !== "string") {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    // Set auth token for Convex calls if provided
-    if (authToken) {
-      convex.setAuth(authToken);
+    convex.setAuth(authToken);
+
+    const currentUser = await convex.query(api.core.users.currentUser, {});
+    if (!currentUser?._id) {
+      return NextResponse.json({ error: "Invalid authentication token" }, { status: 401 });
+    }
+
+    const userId = currentUser._id as Id<"users">;
+    if (requestedUserId && requestedUserId !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Fetch recent conversation history for context

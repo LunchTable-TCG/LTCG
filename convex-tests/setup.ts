@@ -3,10 +3,15 @@
  * Suppresses harmless cleanup errors from scheduled functions
  */
 
-import { afterEach, beforeAll } from "vitest";
+import { afterEach, beforeAll, vi } from "vitest";
+
+type SchedulableTestInstance = {
+  finishInProgressScheduledFunctions?: () => Promise<void>;
+  finishAllScheduledFunctions?: (advanceTimers: () => void) => Promise<void>;
+};
 
 // Global test instance tracker
-let currentTestInstance: unknown = null;
+const registeredInstances = new Set<SchedulableTestInstance>();
 
 // Store original console.error
 const originalConsoleError = console.error;
@@ -17,7 +22,11 @@ const suppressedErrors = new Set<string>();
  * Call this after creating a test instance with createTestWithComponents
  */
 export function registerTestInstance(instance: unknown) {
-  currentTestInstance = instance;
+  const candidate = instance as SchedulableTestInstance | null;
+  if (!candidate) {
+    return;
+  }
+  registeredInstances.add(candidate);
 }
 
 /**
@@ -52,19 +61,34 @@ beforeAll(() => {
   };
 });
 
+function advanceTimersSafely() {
+  try {
+    vi.runAllTimers();
+  } catch {
+    // Ignore when fake timers are not enabled for this test.
+  }
+}
+
 /**
  * Global afterEach hook to clean up scheduled functions
  * This attempts to finish pending functions but won't fail tests if cleanup errors occur
  */
 afterEach(async () => {
-  if (currentTestInstance) {
+  if (registeredInstances.size === 0) {
+    return;
+  }
+
+  for (const instance of registeredInstances) {
     try {
-      // Attempt to finish any pending scheduled functions
-      await currentTestInstance.finishInProgressScheduledFunctions();
+      if (instance.finishAllScheduledFunctions) {
+        await instance.finishAllScheduledFunctions(advanceTimersSafely);
+      } else if (instance.finishInProgressScheduledFunctions) {
+        await instance.finishInProgressScheduledFunctions();
+      }
     } catch {
       // Silently ignore - these are cleanup errors, not test failures
-    } finally {
-      currentTestInstance = null;
     }
   }
+
+  registeredInstances.clear();
 });

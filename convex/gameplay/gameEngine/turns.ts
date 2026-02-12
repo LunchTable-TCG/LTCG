@@ -235,6 +235,11 @@ export const endTurn = mutation({
       segocQueue: [],
       pendingOptionalTriggers: [],
       skippedOptionalTriggers: [],
+      // Defensive cleanup: clear any stale response/chain/pending state
+      responseWindow: undefined,
+      currentPriorityPlayer: undefined,
+      currentChain: undefined,
+      pendingAction: undefined,
     });
 
     // Update lastMoveAt in lobby (for timeout tracking only - separate document, safe)

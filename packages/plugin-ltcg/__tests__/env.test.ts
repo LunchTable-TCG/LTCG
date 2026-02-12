@@ -2,18 +2,21 @@ import { describe, expect, it } from "bun:test";
 import fs from "node:fs";
 import path from "node:path";
 
+// Resolve package root from test file location (not monorepo cwd)
+const PKG_ROOT = path.resolve(import.meta.dir, "..");
+
 describe("Environment Setup", () => {
   it("should verify configuration files exist", () => {
     const requiredFiles = ["package.json", "tsconfig.json", "tsconfig.build.json", "bunfig.toml"];
 
     for (const file of requiredFiles) {
-      const filePath = path.join(process.cwd(), file);
+      const filePath = path.join(PKG_ROOT, file);
       expect(fs.existsSync(filePath)).toBe(true);
     }
   });
 
   it("should have proper src directory structure", () => {
-    const srcDir = path.join(process.cwd(), "src");
+    const srcDir = path.join(PKG_ROOT, "src");
     expect(fs.existsSync(srcDir)).toBe(true);
 
     const requiredSrcFiles = ["index.ts", "plugin.ts"];
@@ -25,7 +28,7 @@ describe("Environment Setup", () => {
   });
 
   it("should have a valid package.json with required fields", () => {
-    const packageJsonPath = path.join(process.cwd(), "package.json");
+    const packageJsonPath = path.join(PKG_ROOT, "package.json");
     expect(fs.existsSync(packageJsonPath)).toBe(true);
 
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
@@ -50,7 +53,7 @@ describe("Environment Setup", () => {
   });
 
   it("should have a valid tsconfig.json with required configuration", () => {
-    const tsconfigPath = path.join(process.cwd(), "tsconfig.json");
+    const tsconfigPath = path.join(PKG_ROOT, "tsconfig.json");
     expect(fs.existsSync(tsconfigPath)).toBe(true);
 
     const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, "utf8"));
@@ -64,7 +67,7 @@ describe("Environment Setup", () => {
   });
 
   it("should have a valid build.ts for building", () => {
-    const buildTsPath = path.join(process.cwd(), "build.ts");
+    const buildTsPath = path.join(PKG_ROOT, "build.ts");
     expect(fs.existsSync(buildTsPath)).toBe(true);
 
     const buildTs = fs.readFileSync(buildTsPath, "utf8");
@@ -73,10 +76,10 @@ describe("Environment Setup", () => {
   });
 
   it("should have a valid README.md file", () => {
-    const readmePath = path.join(process.cwd(), "README.md");
+    const readmePath = path.join(PKG_ROOT, "README.md");
     expect(fs.existsSync(readmePath)).toBe(true);
 
     const readme = fs.readFileSync(readmePath, "utf8");
-    expect(readme).toContain("# LTCG ElizaOS Plugin");
+    expect(readme).toContain("# LTCG elizaOS Plugin");
   });
 });

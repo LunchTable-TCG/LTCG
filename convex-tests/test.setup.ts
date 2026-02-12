@@ -1,100 +1,110 @@
 /**
  * Test setup for convex-test
  *
- * Provides module loader for convex-test with Bun compatibility
- * and component registration for tests requiring Convex components.
+ * Provides module loaders for convex-test and Convex components.
  */
 
-import { Glob } from "bun";
+import { readdir } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { convexTest } from "convex-test";
 import schema from "./schema";
 
-// Load all Convex modules for testing using Bun's Glob API
-// convex-test expects modules to be lazy-loaded functions
-async function loadModules() {
-  const glob = new Glob("**/*.ts");
-  const modules: Record<string, () => Promise<unknown>> = {};
+const THIS_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(THIS_DIR, "..");
+const CONVEX_DIR = path.join(REPO_ROOT, "convex");
 
-  const convexPath = import.meta.dir;
+function isTypeScriptFile(file: string): boolean {
+  return file.endsWith(".ts") || file.endsWith(".tsx");
+}
 
-  for await (const file of glob.scan({
-    cwd: convexPath,
-    onlyFiles: true,
-  })) {
-    // Skip test files and node_modules, but INCLUDE _generated
-    if (
-      file.includes("__tests__") ||
-      file.includes("node_modules") ||
-      file.includes("test.setup.ts")
-    ) {
+function shouldSkip(file: string): boolean {
+  return (
+    file.includes("__tests__") ||
+    file.includes("node_modules") ||
+    file.includes(".test.") ||
+    file.includes("test.setup.ts")
+  );
+}
+
+async function collectFiles(baseDir: string, currentDir: string): Promise<string[]> {
+  const entries = await readdir(currentDir, { withFileTypes: true });
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const fullPath = path.join(currentDir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await collectFiles(baseDir, fullPath)));
       continue;
     }
 
-    const modulePath = `./${file}`;
+    const relativePath = path.relative(baseDir, fullPath).replace(/\\/g, "/");
+    if (!isTypeScriptFile(relativePath) || shouldSkip(relativePath)) {
+      continue;
+    }
 
-    // Wrap in lazy-loading function as convex-test expects
-    modules[modulePath] = async () => {
+    files.push(relativePath);
+  }
+
+  return files;
+}
+
+async function loadModulesFromDir(baseDir: string, importPrefix?: string) {
+  const files = await collectFiles(baseDir, baseDir);
+  const modules: Record<string, () => Promise<unknown>> = {};
+
+  for (const file of files) {
+    const importPath = importPrefix
+      ? `${importPrefix}/${file}`
+      : path.join(baseDir, file).replace(/\\/g, "/");
+
+    const moduleLoader = async () => {
       try {
-        return await import(modulePath);
-      } catch {
-        // Skip files that can't be imported (e.g., type-only files, convex.config.ts)
+        return await import(importPath);
+      } catch (error) {
+        if (process.env["CONVEX_TEST_DEBUG"] === "1") {
+          console.warn(`[convex-tests] Failed to import ${importPath}`, error);
+        }
+        // Ignore files that are not loadable in test runtime.
         return {};
       }
     };
+
+    modules[`./${file}`] = moduleLoader;
+    const extensionlessKey = `./${file.replace(/\.[^.]+$/, "")}`;
+    modules[extensionlessKey] = moduleLoader;
   }
 
   return modules;
 }
 
-// For Bun test runner, we need to export modules directly
+async function loadModules() {
+  return loadModulesFromDir(CONVEX_DIR, "../convex");
+}
+
+// For vitest, export modules directly
 export const modules = await loadModules();
 
 // Load modules for a specific Convex component from node_modules
 async function loadComponentModules(packageName: string) {
-  const glob = new Glob("**/*.ts");
-  const modules: Record<string, () => Promise<unknown>> = {};
-
-  // Use absolute path to avoid path resolution issues
-  const componentPath = `/Users/home/Desktop/LTCG/node_modules/@convex-dev/${packageName}/src/component`;
-
-  for await (const file of glob.scan({
-    cwd: componentPath,
-    onlyFiles: true,
-  })) {
-    // Skip test files but INCLUDE _generated (required by convex-test)
-    if (file.includes(".test.")) {
-      continue;
-    }
-
-    const modulePath = `${componentPath}/${file}`;
-
-    modules[`./${file}`] = async () => {
-      try {
-        return await import(modulePath);
-      } catch {
-        return {};
-      }
-    };
-  }
-
-  return modules;
+  const componentPath = path.join(
+    REPO_ROOT,
+    "node_modules",
+    "@convex-dev",
+    packageName,
+    "src",
+    "component"
+  );
+  return loadModulesFromDir(componentPath, `../node_modules/@convex-dev/${packageName}/src/component`);
 }
 
 /**
  * Create test instance with all components registered
  * Use this instead of convexTest() for tests that use component-dependent mutations
- *
- * Automatically registers the instance for cleanup to prevent scheduled function errors.
- *
- * Example:
- *   const t = await createTestWithComponents();
- *   await t.mutation(api.economy.marketplace.placeBid, { ... }); // Uses ratelimiter
  */
 export async function createTestWithComponents() {
   const t = convexTest(schema, modules);
 
-  // Register all components used by the app
-  // Note: Component registration must happen before running any mutations/queries
   const components = [
     { name: "ratelimiter", packageName: "ratelimiter" },
     { name: "shardedCounter", packageName: "sharded-counter" },
@@ -104,13 +114,12 @@ export async function createTestWithComponents() {
     { name: "presence", packageName: "presence" },
     { name: "agent", packageName: "agent" },
     { name: "rag", packageName: "rag" },
-  ];
+  ] as const;
 
   for (const component of components) {
     const componentModules = await loadComponentModules(component.packageName);
-    // Import schema dynamically
     const schemaModule = await import(
-      `/Users/home/Desktop/LTCG/node_modules/@convex-dev/${component.packageName}/src/component/schema.ts`
+      `../node_modules/@convex-dev/${component.packageName}/src/component/schema.ts`
     );
     t.registerComponent(component.name, schemaModule.default, componentModules);
   }
@@ -120,7 +129,7 @@ export async function createTestWithComponents() {
     const { registerTestInstance } = await import("./setup");
     registerTestInstance(t);
   } catch {
-    // Setup file not loaded (running tests without vitest config) - skip registration
+    // setup.ts may not be loaded in all runners
   }
 
   return t;

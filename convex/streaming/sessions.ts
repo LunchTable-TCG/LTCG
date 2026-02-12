@@ -37,12 +37,9 @@ type StreamWriteAccess = { kind: "internal" } | { kind: "user"; userId: Id<"user
 /**
  * Check internal auth.
  *
- * NOTE: process.env is NOT available in Convex queries/mutations — only in
- * actions. The API route validates the secret server-side, then authenticates
- * the ConvexHttpClient with admin auth. We check for admin identity here,
- * and also accept a non-empty internalAuth arg as a fallback (trusted because
- * only server-side callers can provide it through internalMutation or admin-
- * authenticated mutation calls).
+ * Internal access is granted only when:
+ * - the call has Convex admin identity (setAdminAuth), or
+ * - the provided internalAuth exactly matches INTERNAL_API_SECRET.
  */
 async function isInternalCaller(
   ctx: QueryCtx | MutationCtx,
@@ -53,17 +50,17 @@ async function isInternalCaller(
   if (identity?.issuer === "convex") {
     return true;
   }
-  // Fallback: accept non-empty internalAuth (caller already validated the
-  // secret on the server side before reaching this mutation)
-  if (internalAuth && internalAuth.trim().length > 0) {
-    return true;
-  }
-  return false;
+  return hasValidInternalAuth(internalAuth);
 }
 
 // Keep backward-compatible name for callers that only need a sync check
 function hasValidInternalAuth(internalAuth?: string): boolean {
-  return Boolean(internalAuth && internalAuth.trim().length > 0);
+  const expectedSecret = process.env["INTERNAL_API_SECRET"]?.trim();
+  const providedSecret = internalAuth?.trim();
+  if (!expectedSecret || !providedSecret) {
+    return false;
+  }
+  return expectedSecret === providedSecret;
 }
 
 async function resolveWriteAccess(
@@ -107,7 +104,7 @@ async function assertSessionReadAccess(
     return null;
   }
 
-  if (hasValidInternalAuth(internalAuth)) {
+  if (await isInternalCaller(ctx, internalAuth)) {
     return session;
   }
 
@@ -433,7 +430,7 @@ export const getByEgressId = query({
     internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    if (!hasValidInternalAuth(args.internalAuth)) {
+    if (!(await isInternalCaller(ctx, args.internalAuth))) {
       throw new Error("Unauthorized");
     }
 
@@ -458,7 +455,7 @@ export const getActiveSessions = query({
       .collect();
 
     // Internal callers get full docs (e.g., cleanup route needs egressId)
-    if (hasValidInternalAuth(args.internalAuth)) {
+    if (await isInternalCaller(ctx, args.internalAuth)) {
       return Promise.all(
         sessions.map(async (session) => {
           const { entityName } = await enrichSessionEntity(ctx, session);
@@ -517,7 +514,7 @@ export const getAllSessions = query({
     internalAuth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    if (!hasValidInternalAuth(args.internalAuth)) {
+    if (!(await isInternalCaller(ctx, args.internalAuth))) {
       throw new Error("Unauthorized");
     }
 
@@ -592,6 +589,26 @@ export const linkLobbyInternal = internalMutation({
     } catch {
       // lobbyId may be a string game ID, not a document ID
     }
+  },
+});
+
+/**
+ * Clear the current lobby association for a streaming session.
+ * Kept as a dedicated mutation so callers can clear linkage reliably without
+ * relying on optional-field/undefined serialization across HTTP boundaries.
+ */
+export const clearLobbyLink = mutation({
+  args: {
+    sessionId: v.id("streamingSessions"),
+    internalAuth: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const access = await resolveWriteAccess(ctx, args.internalAuth);
+    await assertSessionWriteAccess(ctx, args.sessionId, access);
+
+    await ctx.db.patch(args.sessionId, {
+      currentLobbyId: undefined,
+    });
   },
 });
 

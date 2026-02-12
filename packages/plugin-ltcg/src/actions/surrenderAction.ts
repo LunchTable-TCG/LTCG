@@ -25,7 +25,11 @@ export const surrenderAction: Action = {
   similes: ["FORFEIT", "CONCEDE", "GIVE_UP"],
   description: "Forfeit the current game",
 
-  validate: async (runtime: IAgentRuntime, message: Memory, state: State): Promise<boolean> => {
+  validate: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: State,
+  ): Promise<boolean> => {
     try {
       // Must be in an active game
       const currentGameId = state.values.LTCG_CURRENT_GAME_ID;
@@ -45,7 +49,11 @@ export const surrenderAction: Action = {
 
       // Get game state to verify game is not already completed
       try {
-        const gameStateResult = await gameStateProvider.get(runtime, message, state);
+        const gameStateResult = await gameStateProvider.get(
+          runtime,
+          message,
+          state,
+        );
         const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
         if (!gameState) {
@@ -61,7 +69,10 @@ export const surrenderAction: Action = {
         return true;
       } catch (error) {
         // If we can't get game state, still allow surrender as cleanup
-        logger.warn({ error }, "Could not verify game state, allowing surrender");
+        logger.warn(
+          { error },
+          "Could not verify game state, allowing surrender",
+        );
         return true;
       }
     } catch (error) {
@@ -75,7 +86,7 @@ export const surrenderAction: Action = {
     message: Memory,
     state: State,
     _options: Record<string, unknown>,
-    callback: HandlerCallback
+    callback: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       logger.info("Handling SURRENDER action");
@@ -105,7 +116,11 @@ export const surrenderAction: Action = {
       const autoSurrender = runtime.getSetting("LTCG_AUTO_SURRENDER");
       if (autoSurrender !== "true") {
         // Ask LLM for confirmation
-        const gameStateResult = await gameStateProvider.get(runtime, message, state);
+        const gameStateResult = await gameStateProvider.get(
+          runtime,
+          message,
+          state,
+        );
         const gameState = gameStateResult.data?.gameState as GameStateResponse;
 
         if (gameState) {
@@ -186,7 +201,10 @@ Respond with JSON: { "confirm": true or false }`;
         runtime.setSetting("LTCG_CURRENT_GAME_ID", null);
         runtime.setSetting("LTCG_CURRENT_LOBBY_ID", null);
       } catch (cleanupError) {
-        logger.error({ cleanupError }, "Failed to clean up state after surrender error");
+        logger.error(
+          { cleanupError },
+          "Failed to clean up state after surrender error",
+        );
       }
 
       await callback({

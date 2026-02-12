@@ -1,5 +1,9 @@
 import { mock } from "bun:test";
-import { composeActionExamples, formatActionNames, formatActions } from "@elizaos/core";
+import {
+  composeActionExamples,
+  formatActionNames,
+  formatActions,
+} from "@elizaos/core";
 import type { Action, IAgentRuntime, Memory, State } from "@elizaos/core";
 import { logger } from "@elizaos/core";
 // Simple UUID-like generator for tests - no external dependency needed
@@ -87,10 +91,17 @@ export interface SetupActionTestOptions {
  * ```
  */
 export const setupActionTest = (options: SetupActionTestOptions = {}) => {
-  const { stateOverrides = {}, settingOverrides = {}, characterOverrides = {} } = options;
+  const {
+    stateOverrides = {},
+    settingOverrides = {},
+    characterOverrides = {},
+  } = options;
 
   // Create mock runtime with proper getSetting/setSetting
-  const mockRuntime = createMockRuntimeWithSettings(settingOverrides, characterOverrides);
+  const mockRuntime = createMockRuntimeWithSettings(
+    settingOverrides,
+    characterOverrides,
+  );
 
   // Create mock message
   const mockMessage = createMockMessage("Test message");
@@ -115,7 +126,7 @@ export const setupActionTest = (options: SetupActionTestOptions = {}) => {
  */
 export const createMockRuntimeWithSettings = (
   initialSettings: SettingsMap = {},
-  characterOverrides: { name?: string; bio?: string; system?: string } = {}
+  characterOverrides: { name?: string; bio?: string; system?: string } = {},
 ): MockRuntime => {
   const _settings: SettingsMap = { ...initialSettings };
   const _secretSettings = new Set<string>();
@@ -125,19 +136,22 @@ export const createMockRuntimeWithSettings = (
     character: {
       name: characterOverrides.name || "Test Character",
       bio: characterOverrides.bio || "A test character for unit tests",
-      system: characterOverrides.system || "You are a helpful assistant for testing.",
+      system:
+        characterOverrides.system || "You are a helpful assistant for testing.",
     },
     _settings,
     _secretSettings,
     getSetting: (key: string) => {
       return _settings[key] ?? null;
     },
-    setSetting: mock(async (key: string, value: unknown, isSecret?: boolean) => {
-      _settings[key] = value;
-      if (isSecret) {
-        _secretSettings.add(key);
-      }
-    }),
+    setSetting: mock(
+      async (key: string, value: unknown, isSecret?: boolean) => {
+        _settings[key] = value;
+        if (isSecret) {
+          _secretSettings.add(key);
+        }
+      },
+    ),
     // Legacy methods for compatibility - prefer state.values for transient state
     get: mock(async (key: string) => _settings[key] ?? null),
     set: mock(async (key: string, value: unknown) => {
@@ -182,7 +196,7 @@ export const createMockRuntimeWithSettings = (
  * Following ElizaOS pattern: state.values for transient game state
  */
 export const createMockStateWithOverrides = (
-  overrides: { values?: StateValues; data?: StateData; text?: string } = {}
+  overrides: { values?: StateValues; data?: StateData; text?: string } = {},
 ): State => {
   return {
     values: { ...overrides.values },
@@ -223,13 +237,19 @@ export const runCoreActionTests = (actions: Action[]) => {
     for (const example of action.examples ?? []) {
       for (const message of example) {
         if (!message.name) {
-          throw new Error(`Example message in action ${action.name} missing name property`);
+          throw new Error(
+            `Example message in action ${action.name} missing name property`,
+          );
         }
         if (!message.content) {
-          throw new Error(`Example message in action ${action.name} missing content property`);
+          throw new Error(
+            `Example message in action ${action.name} missing content property`,
+          );
         }
         if (!message.content.text) {
-          throw new Error(`Example message in action ${action.name} missing content.text property`);
+          throw new Error(
+            `Example message in action ${action.name} missing content.text property`,
+          );
         }
       }
     }
@@ -279,7 +299,7 @@ export const createMockRuntime = (): IAgentRuntime => {
 export const documentTestResult = (
   testName: string,
   result: unknown,
-  error: Error | null = null
+  error: Error | null = null,
 ) => {
   // Clean, useful test documentation for developers
   logger.info(`✓ Testing: ${testName}`);
@@ -295,7 +315,8 @@ export const documentTestResult = (
   if (result) {
     if (typeof result === "string") {
       if (result.trim() && result.length > 0) {
-        const preview = result.length > 60 ? `${result.substring(0, 60)}...` : result;
+        const preview =
+          result.length > 60 ? `${result.substring(0, 60)}...` : result;
         logger.info(`  → ${preview}`);
       }
     } else if (typeof result === "object") {
