@@ -1,18 +1,18 @@
 "use client";
 
-import { useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { useMutationWithToast } from "@/lib/useMutationWithToast";
-import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useAuth } from "../auth/useConvexAuthHook";
 
+
 // Module-scope references to avoid TS2589
-const getMyInvitesQuery = api.social.guilds.invites.getMyInvites;
-const getGuildPendingInvitesQuery = api.social.guilds.invites.getGuildPendingInvites;
-const sendInviteMutation = api.social.guilds.invites.sendInvite;
-const acceptInviteMutation = api.social.guilds.invites.acceptInvite;
-const declineInviteMutation = api.social.guilds.invites.declineInvite;
-const cancelInviteMutation = api.social.guilds.invites.cancelInvite;
+const getMyInvitesQuery = typedApi.social.guilds.invites.getMyInvites;
+const getGuildPendingInvitesQuery = typedApi.social.guilds.invites.getGuildPendingInvites;
+const sendInviteMutation = typedApi.social.guilds.invites.sendInvite;
+const acceptInviteMutation = typedApi.social.guilds.invites.acceptInvite;
+const declineInviteMutation = typedApi.social.guilds.invites.declineInvite;
+const cancelInviteMutation = typedApi.social.guilds.invites.cancelInvite;
 
 /**
  * Hook for managing guild invites (both sent and received)

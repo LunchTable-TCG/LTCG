@@ -1,17 +1,17 @@
 "use client";
 
-import { useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { useMutationWithToast } from "@/lib/useMutationWithToast";
-import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useState } from "react";
 
 // Module-scope references to avoid TS2589
-const getFeaturedGuildsQuery = api.social.guilds.discovery.getFeaturedGuilds;
-const searchGuildsQuery = api.social.guilds.discovery.searchGuilds;
-const getPublicGuildsQuery = api.social.guilds.discovery.getPublicGuilds;
-const joinPublicGuildMutation = api.social.guilds.members.joinPublicGuild;
-const requestToJoinMutation = api.social.guilds.requests.requestToJoin;
+// Module-scope references to avoid TS2589
+const getFeaturedGuildsQuery = typedApi.social.guilds.discovery.getFeaturedGuilds;
+const searchGuildsQuery = typedApi.social.guilds.discovery.searchGuilds;
+const getPublicGuildsQuery = typedApi.social.guilds.discovery.getPublicGuilds;
+const joinPublicGuildMutation = typedApi.social.guilds.members.joinPublicGuild;
+const requestToJoinMutation = typedApi.social.guilds.requests.requestToJoin;
 
 /**
  * Hook for discovering and joining guilds

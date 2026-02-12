@@ -6,7 +6,7 @@
  * the web app and admin dashboard.
  */
 
-import type { Attribute, CardType, Rarity } from "../types/api";
+import type { Attribute, CardType, Rarity } from "../types";
 
 // =============================================================================
 // Rarity Colors

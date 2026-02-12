@@ -39,7 +39,7 @@ export type {
   CardListing,
   MarketOverview,
   Id,
-} from "@ltcg/core/types/api";
+} from "@ltcg/core/types";
 
 export {
   createTypedQuery,

@@ -872,7 +872,9 @@ async function resolveBattle(
       const defenderStillExists = defenderBoard.some((bc) => bc.cardId === defender.cardId);
       if (!attackerStillExists || !defenderStillExists) {
         // Battle cannot continue — one or both combatants were removed by flip effect
-        return { sbaResult: await checkStateBasedActions(ctx, lobbyId), battleResult: result };
+        const sba = await checkStateBasedActions(ctx, lobbyId);
+        if (sba.gameEnded) result.gameEnded = true;
+        return result;
       }
     }
   }

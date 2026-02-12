@@ -60,7 +60,8 @@ export type EffectType =
   | "mill" // Send cards from top of deck to GY
   | "discard" // Discard cards from hand to GY
   | "multipleAttack" // Allow multiple attacks per turn (passive)
-  | "generateToken"; // Generate monster token(s) on field
+  | "generateToken" // Generate monster token(s) on field
+  | "piercing"; // Piercing damage
 
 export type TriggerCondition =
   | "on_summon" // When this card is summoned
