@@ -1,11 +1,11 @@
 "use client";
 
 import { handleHookError } from "@/lib/errorHandling";
+import type { CardType, Rarity } from "@/types/cards";
+import type { Currency } from "@/types/economy";
 import { api } from "@convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
-import type { CardType, Rarity } from "@/types/cards";
-import type { Currency } from "@/types/economy";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface CardResult {

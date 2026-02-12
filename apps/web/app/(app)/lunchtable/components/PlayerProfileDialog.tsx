@@ -2,8 +2,8 @@
 
 import { useCurrency } from "@/hooks";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import type { MatchMode } from "@/types/common";
 import type { WagerCurrency } from "@/lib/wagerTiers";
+import type { MatchMode } from "@/types/common";
 import { Loader2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -74,7 +74,7 @@ export function PlayerProfileDialog({ isOpen, onClose, username }: PlayerProfile
     mode: MatchMode,
     wagerAmount?: number,
     cryptoWagerCurrency?: WagerCurrency,
-    cryptoWagerTier?: number,
+    cryptoWagerTier?: number
   ) => {
     try {
       await sendChallengeMutation({

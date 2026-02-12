@@ -706,9 +706,7 @@ export const collectHostDeposit = internalAction({
 
     if (!hostAgent?.privyUserId) {
       // Human host — they deposit via frontend, not via this action
-      console.log(
-        `Host for lobby ${args.lobbyId} is human. Skipping server-side deposit.`
-      );
+      console.log(`Host for lobby ${args.lobbyId} is human. Skipping server-side deposit.`);
       return {
         success: false,
         error: "Human host — deposit via frontend wallet required",

@@ -1,11 +1,10 @@
 "use client";
 
 import { DailyLoginRewards } from "@/components/rewards/DailyLoginRewards";
-import { typedApi } from "@/lib/convexHelpers";
-import { AuthLoading, Authenticated, useMutation, useQuery } from "convex/react";
+import { useLunchtableLogic } from "@/hooks";
+import { AuthLoading, Authenticated } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   GameLobby,
   GlobalChat,
@@ -34,62 +33,33 @@ export default function LunchtablePage() {
 }
 
 function LunchtableContent() {
-  const currentUser = useQuery(typedApi.core.users.currentUser, {});
-  const selectStarterDeck = useMutation(typedApi.core.decks.selectStarterDeck);
-
-  // Track if user needs onboarding (no starter deck)
-  const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
-  const [_isClaimingDeck, setIsClaimingDeck] = useState(false);
-  const [showDailyRewards, setShowDailyRewards] = useState(false);
-
-  // Check if user has completed onboarding - runs on every currentUser update
-  useEffect(() => {
-    if (currentUser) {
-      // Show welcome guide if user has no active deck
-      if (!currentUser.activeDeckId) {
-        setShowWelcomeGuide(true);
-      } else {
-        setShowWelcomeGuide(false);
-      }
-    }
-  }, [currentUser]);
+  const {
+    currentUser,
+    profileLoading,
+    showWelcomeGuide,
+    isClaimingDeck,
+    showDailyRewards,
+    setShowDailyRewards,
+    handleWelcomeComplete,
+  } = useLunchtableLogic();
 
   // Reset scroll position on mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleWelcomeComplete = async (selectedDeck: string) => {
-    if (!currentUser) {
-      return;
-    }
-
-    // Map frontend archetype to backend deck code
-    // Note: Only fire and water starter decks are currently available
-    const deckCodeMap: Record<string, "INFERNAL_DRAGONS" | "ABYSSAL_DEPTHS"> = {
-      fire: "INFERNAL_DRAGONS",
-      water: "ABYSSAL_DEPTHS",
-    };
-
-    const deckCode = deckCodeMap[selectedDeck as keyof typeof deckCodeMap];
-    if (!deckCode) {
-      toast.error("Invalid starter deck selection.");
-      return;
-    }
-
-    setIsClaimingDeck(true);
-    try {
-      const result = await selectStarterDeck({ deckCode });
-      toast.success(`${result.deckName} claimed! You received ${result.cardsReceived} cards.`);
-      setShowWelcomeGuide(false);
-    } catch (error: unknown) {
-      console.error("❌ Mutation error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to claim starter deck";
-      toast.error(errorMessage);
-    } finally {
-      setIsClaimingDeck(false);
-    }
-  };
+  if (profileLoading || !currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0d0a09]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
+          <p className="text-[#a89f94] text-sm uppercase tracking-widest font-bold">
+            Loading Profile...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return (
@@ -106,11 +76,11 @@ function LunchtableContent() {
 
   return (
     <div className="h-screen relative overflow-hidden bg-black">
-      {/* Welcome Guide Dialog for first-time users */}
       <WelcomeGuideDialog
         isOpen={showWelcomeGuide}
         onComplete={handleWelcomeComplete}
         username={currentUser.username || "Traveler"}
+        isClaiming={isClaimingDeck}
       />
 
       {/* Incoming Challenge Notification */}

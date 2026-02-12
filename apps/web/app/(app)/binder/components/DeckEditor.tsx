@@ -18,6 +18,7 @@ import {
 import { useMemo } from "react";
 import type { DeckCard } from "../types";
 import { DECK_MIN_SIZE } from "../types";
+import { calculateDeckStats } from "@/lib/deckUtils";
 import { BinderCard, type CardData, type Rarity } from "./BinderCard";
 
 const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: string }> = {
@@ -69,27 +70,8 @@ export function DeckEditor({
   getCardCount,
   canAddCard,
 }: DeckEditorProps) {
-  const deckCardCount = useMemo(() => {
-    return deckCards.reduce((sum, dc) => sum + dc.count, 0);
-  }, [deckCards]);
-
-  const deckStats = useMemo(() => {
-    let totalCost = 0;
-    let creatureCount = 0;
-    let spellCount = 0;
-
-    deckCards.forEach(({ card, count }) => {
-      totalCost += card.cost * count;
-      if (card.cardType === "creature") creatureCount += count;
-      if (card.cardType === "spell") spellCount += count;
-    });
-
-    return {
-      avgCost: deckCardCount > 0 ? (totalCost / deckCardCount).toFixed(1) : "0",
-      creatureCount,
-      spellCount,
-    };
-  }, [deckCards, deckCardCount]);
+  const deckStats = useMemo(() => calculateDeckStats(deckCards), [deckCards]);
+  const deckCardCount = deckStats.totalCards;
 
   return (
     <div className="space-y-6" data-testid="deck-editor">

@@ -9,62 +9,6 @@
  */
 
 import type { Id } from "@convex/_generated/dataModel";
-import type { Achievement, UserQuest as Quest } from "./generated";
-
-/**
- * Achievement data structure from Convex backend.
- *
- * Achievements are long-term goals that reward players with gold, XP, and status.
- *
- * @example
- * ```typescript
- * const achievement: Achievement = {
- *   _id: "jd8s9d0..." as Id<"achievements">,
- *   _creationTime: 1234567890,
- *   achievementId: "first_win",
- *   name: "First Victory",
- *   description: "Win your first match",
- *   category: "combat",
- *   rarity: "common",
- *   rewards: { gold: 100, xp: 50 },
- *   requirement: { type: "wins", count: 1 },
- *   progress: 1,
- *   isComplete: true,
- *   unlockedAt: 1234567890
- * };
- * ```
- *
- * @see Quest - For time-limited objectives
- * @see Badge - For visual rewards earned from achievements
- */
-export type { Achievement };
-
-/**
- * Quest data structure with progress tracking from Convex backend.
- *
- * Quests are daily or weekly objectives that refresh periodically.
- *
- * @example
- * ```typescript
- * const quest: Quest = {
- *   _id: "jq7h2k9..." as Id<"userQuests">,
- *   _creationTime: 1234567890,
- *   userId: "ju8s9d0..." as Id<"users">,
- *   questId: "daily_3wins",
- *   questType: "daily",
- *   name: "Win 3 Matches",
- *   description: "Achieve 3 victories in any game mode",
- *   progress: 2,
- *   target: 3,
- *   isComplete: false,
- *   rewards: { gold: 200, xp: 100 },
- *   expiresAt: 1234654290
- * };
- * ```
- *
- * @see Achievement - For permanent progression goals
- */
-export type { Quest };
 
 /**
  * Player badge earned from completing achievements or milestones.
@@ -213,6 +157,164 @@ export interface BadgeEarnedNotification extends BaseNotification {
   };
 }
 
+// =============================================================================
+// Match History Types
+// =============================================================================
+
+/**
+ * Game mode for matches.
+ */
+export type MatchHistoryMode = "ranked" | "casual" | "story";
+
+/**
+ * Result of a match.
+ */
+export type MatchHistoryResult = "victory" | "defeat";
+
+/**
+ * Unified Match History Entry.
+ */
+export interface MatchHistoryEntry {
+  id: string;
+  mode: MatchHistoryMode;
+  result: MatchHistoryResult;
+  opponent: {
+    username: string;
+    avatarUrl?: string;
+  };
+  xpGained: number;
+  ratingChange?: number;
+  timestamp: number;
+}
+
+/**
+ * Match history statistics overview.
+ */
+export interface MatchHistoryStats {
+  total: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number;
+}
+
+// =============================================================================
+// Battle Pass Types
+// =============================================================================
+
+import type { RewardType } from "./economy";
+
+/**
+ * Battle Pass reward structure.
+ */
+export interface BattlePassReward {
+  type: RewardType;
+  amount?: number;
+  cardId?: string;
+  packProductId?: string;
+  titleName?: string;
+  avatarUrl?: string;
+}
+
+/**
+ * Individual Battle Pass tier.
+ */
+export interface BattlePassTier {
+  tier: number;
+  freeReward?: BattlePassReward;
+  premiumReward?: BattlePassReward;
+  isMilestone: boolean;
+  isUnlocked: boolean;
+  freeRewardClaimed: boolean;
+  premiumRewardClaimed: boolean;
+  canClaimFree: boolean;
+  canClaimPremium: boolean;
+}
+
+/**
+ * Battle Pass season status.
+ */
+export interface BattlePassStatus {
+  battlePassId: string;
+  seasonId: string;
+  name: string;
+  description?: string;
+  seasonName?: string;
+  status: "upcoming" | "active" | "ended";
+  totalTiers: number;
+  xpPerTier: number;
+  startDate: number;
+  endDate: number;
+  currentXP: number;
+  currentTier: number;
+  isPremium: boolean;
+  claimedFreeTiers: number[];
+  claimedPremiumTiers: number[];
+  xpToNextTier: number;
+  daysRemaining: number;
+}
+
+// =============================================================================
+// Achievement & Quest Types
+// =============================================================================
+
+/**
+ * Achievement categories.
+ */
+export type AchievementCategory = "combat" | "collection" | "social" | "progression" | "special";
+
+/**
+ * Achievement rarities.
+ */
+export type AchievementRarity = "common" | "rare" | "epic" | "legendary";
+
+/**
+ * Achievement definition.
+ */
+export interface Achievement {
+  achievementId: string;
+  name: string;
+  description: string;
+  category: AchievementCategory;
+  rarity: AchievementRarity;
+  rewards: {
+    gold?: number;
+    xp?: number;
+    gems?: number;
+  };
+  targetValue: number;
+  currentProgress: number;
+  isUnlocked: boolean;
+  unlockedAt?: number;
+}
+
+/**
+ * Quest types.
+ */
+export type QuestType = "daily" | "weekly" | "achievement" | "event";
+
+/**
+ * Quest definition and progress.
+ */
+export interface Quest {
+  questRecordId: Id<"userQuests">;
+  questId: string;
+  questType: QuestType;
+  name: string;
+  description: string;
+  currentProgress: number;
+  targetValue: number;
+  status: "active" | "completed" | "claimed";
+  rewardGold: number;
+  rewardXp: number;
+  rewardGems?: number;
+  expiresAt?: number;
+}
+
+// =============================================================================
+// Notification Types
+// =============================================================================
+
 /**
  * In-game notification alerting players to progression events.
  *
@@ -337,42 +439,6 @@ export interface MarkAllAsReadResult {
 // =============================================================================
 
 /**
- * Type guard to check if a value is an Achievement.
- *
- * @param value - The value to check
- * @returns True if the value is an Achievement
- *
- * @example
- * ```typescript
- * const data = await fetchProgression();
- * if (isAchievement(data)) {
- *   console.log(`Achievement: ${data.name}`);
- * }
- * ```
- */
-export function isAchievement(value: unknown): value is Achievement {
-  return typeof value === "object" && value !== null && "_id" in value && "category" in value;
-}
-
-/**
- * Type guard to check if a value is a Quest.
- *
- * @param value - The value to check
- * @returns True if the value is a Quest
- *
- * @example
- * ```typescript
- * const data = await fetchProgression();
- * if (isQuest(data)) {
- *   console.log(`Quest: ${data.progress}/${data.target}`);
- * }
- * ```
- */
-export function isQuest(value: unknown): value is Quest {
-  return typeof value === "object" && value !== null && "_id" in value && "questType" in value;
-}
-
-/**
  * Type guard to check if a value is a Badge.
  *
  * @param value - The value to check
@@ -388,6 +454,26 @@ export function isQuest(value: unknown): value is Quest {
  */
 export function isBadge(value: unknown): value is Badge {
   return typeof value === "object" && value !== null && "badgeId" in value;
+}
+
+/**
+ * Type guard to check if a value is a Quest.
+ *
+ * @param value - The value to check
+ * @returns True if the value is a Quest
+ *
+ * @example
+ * ```typescript
+ * const data = await fetchProgression();
+ * if (isQuest(data)) {
+ *   console.log(`Quest: ${data.currentProgress}/${data.targetValue}`);
+ * }
+ * ```
+ */
+export function isQuest(value: unknown): value is Quest {
+  return (
+    typeof value === "object" && value !== null && "questRecordId" in value && "questType" in value
+  );
 }
 
 /**

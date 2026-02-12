@@ -3,9 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WalletConnect } from "@/components/wallet";
-import { useGameWallet, useTokenBalance } from "@/hooks";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import type { SettingsTab } from "@/hooks/social/useSettingsInteraction";
+import { useSettingsInteraction as useSettings } from "@/hooks/social/useSettingsInteraction";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -32,17 +31,6 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-
-type SettingsTab =
-  | "account"
-  | "wallet"
-  | "notifications"
-  | "display"
-  | "game"
-  | "privacy"
-  | "streaming";
 
 interface ToggleProps {
   enabled: boolean;
@@ -73,201 +61,51 @@ function Toggle({ enabled, onChange, disabled }: ToggleProps) {
 }
 
 export default function SettingsPage() {
-  const { isAuthenticated } = useAuth();
-  const currentUser = useConvexQuery(
-    typedApi.core.users.currentUser,
-    isAuthenticated ? {} : "skip"
-  );
-  const preferences = useConvexQuery(
-    typedApi.core.userPreferences.getPreferences,
-    isAuthenticated ? {} : "skip"
-  );
+  const {
+    isLoading,
+    activeTab,
+    setActiveTab,
+    isSaving,
+    saveSuccess,
+    isDirty,
+    currentUser,
+    forms,
+    handleSave,
+    deletion,
+    wallet,
+    tokenBalance,
+  } = useSettings();
 
-  const updatePreferences = useConvexMutation(typedApi.core.userPreferences.updatePreferences);
-  const updateUsername = useConvexMutation(typedApi.core.userPreferences.updateUsername);
-  const updateBio = useConvexMutation(typedApi.core.userPreferences.updateBio);
-  const deleteAccount = useConvexMutation(typedApi.core.userPreferences.deleteAccount);
+  const {
+    username,
+    setUsername,
+    email,
+    bio,
+    setBio,
+    notifications,
+    setNotifications,
+    display,
+    setDisplay,
+    game,
+    setGame,
+    privacy,
+    setPrivacy,
+  } = forms;
 
-  // Wallet hooks
   const {
     walletAddress,
     walletType,
     isConnected,
     disconnectWallet,
     isLoading: walletLoading,
-  } = useGameWallet();
-  const {
-    balance: tokenBalance,
-    isStale,
-    refresh: refreshBalance,
-    isRefreshing,
-    lastVerifiedAt,
-  } = useTokenBalance();
-
-  const [activeTab, setActiveTab] = useState<SettingsTab>("account");
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [showWalletConnect, setShowWalletConnect] = useState(false);
-  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
-
-  // Account settings
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [bio, setBio] = useState("");
-
-  // Account deletion
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteConfirmPassword, setDeleteConfirmPassword] = useState("");
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-
-  // Notification settings
-  const [notifications, setNotifications] = useState({
-    questComplete: true,
-    matchInvites: true,
-    friendRequests: true,
-    marketplaceSales: true,
-    dailyReminders: false,
-    promotions: false,
-  });
-
-  // Display settings
-  const [display, setDisplay] = useState({
-    animations: true,
-    reducedMotion: false,
-    cardQuality: "high" as "low" | "medium" | "high",
-    showDamageNumbers: true,
-  });
-
-  // Game settings
-  const [game, setGame] = useState({
-    soundEnabled: true,
-    musicEnabled: true,
-    soundVolume: 80,
-    musicVolume: 60,
-    autoEndTurn: false,
-    confirmActions: true,
-    showTutorialHints: true,
-  });
-
-  // Privacy settings
-  const [privacy, setPrivacy] = useState({
-    profilePublic: true,
-    showOnlineStatus: true,
-    allowFriendRequests: true,
-    showMatchHistory: true,
-  });
-
-  // Streaming settings
-  const [streaming, setStreaming] = useState({
-    streamerModeEnabled: false,
-  });
-
-  // Track if settings have been modified (dirty state)
-  const [isDirty, setIsDirty] = useState(false);
-
-  // Load preferences when they're available
-  useEffect(() => {
-    if (preferences) {
-      setNotifications(preferences.notifications as typeof notifications);
-      setDisplay(preferences.display as typeof display);
-      setGame(preferences.game as typeof game);
-      setPrivacy(preferences.privacy as typeof privacy);
-      setStreaming(preferences.streaming as typeof streaming);
-    }
-  }, [preferences]);
-
-  // Track dirty state when settings change
-  useEffect(() => {
-    if (!preferences) return;
-    const hasChanges =
-      JSON.stringify(notifications) !== JSON.stringify(preferences.notifications) ||
-      JSON.stringify(display) !== JSON.stringify(preferences.display) ||
-      JSON.stringify(game) !== JSON.stringify(preferences.game) ||
-      JSON.stringify(privacy) !== JSON.stringify(preferences.privacy) ||
-      JSON.stringify(streaming) !== JSON.stringify(preferences.streaming) ||
-      username !== (currentUser?.username || "") ||
-      bio !== (currentUser?.bio || "");
-    setIsDirty(hasChanges);
-  }, [
-    notifications,
-    display,
-    game,
-    privacy,
-    streaming,
-    username,
-    bio,
-    preferences,
-    currentUser?.username,
-    currentUser?.bio,
-  ]);
-
-  // Warn user before leaving with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent): void => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDirty]);
-
-  // Load current user data
-  useEffect(() => {
-    if (currentUser) {
-      setUsername(currentUser.username || "");
-      setEmail(currentUser.email || "");
-      setBio(currentUser.bio || "");
-    }
-  }, [currentUser]);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      // Save username if changed
-      if (username !== currentUser?.username) {
-        const result = await updateUsername({ username });
-        if (!result.success) {
-          toast.error(result.error || "Failed to update username");
-          setIsSaving(false);
-          return;
-        }
-      }
-
-      // Save bio if changed
-      if (bio !== (currentUser?.bio || "")) {
-        await updateBio({ bio });
-      }
-
-      // Save preferences
-      await updatePreferences({
-        notifications,
-        display,
-        game,
-        privacy,
-        streaming,
-      });
-
-      setSaveSuccess(true);
-      toast.success("Settings saved successfully");
-      setTimeout(() => setSaveSuccess(false), 2000);
-    } catch (error) {
-      toast.error("Failed to save settings");
-      console.error("Save settings error:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  } = wallet;
 
   const handleDisconnectWallet = async () => {
     try {
       await disconnectWallet();
-      setShowDisconnectConfirm(false);
-      toast.success("Wallet disconnected");
+      wallet.setShowDisconnectConfirm(false);
+      // Success toast handled in hook if needed, or add here
     } catch (error) {
-      toast.error("Failed to disconnect wallet");
       console.error("Wallet disconnect error:", error);
     }
   };
@@ -275,33 +113,7 @@ export default function SettingsPage() {
   const copyWalletAddress = () => {
     if (walletAddress) {
       navigator.clipboard.writeText(walletAddress);
-      toast.success("Wallet address copied");
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!deleteConfirmPassword) {
-      toast.error("Please enter your password to confirm");
-      return;
-    }
-
-    setIsDeletingAccount(true);
-    try {
-      const result = await deleteAccount({
-        confirmPassword: deleteConfirmPassword,
-      });
-
-      if (result.success) {
-        toast.success("Account deleted successfully");
-        // User will be redirected to login by auth system
-      } else {
-        toast.error(result.error || "Failed to delete account");
-        setIsDeletingAccount(false);
-      }
-    } catch (error) {
-      toast.error("Failed to delete account");
-      console.error("Account deletion error:", error);
-      setIsDeletingAccount(false);
+      // Toast handled by UI component ideally
     }
   };
 
@@ -315,7 +127,7 @@ export default function SettingsPage() {
     { id: "streaming", label: "Streaming", icon: Video },
   ];
 
-  if (!isAuthenticated || !currentUser || preferences === undefined) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
@@ -480,12 +292,12 @@ export default function SettingsPage() {
                     <div className="pt-4 border-t border-[#3d2b1f]">
                       <h3 className="text-lg font-semibold text-red-400 mb-4">Danger Zone</h3>
 
-                      {!showDeleteConfirm ? (
+                      {!deletion.showConfirm ? (
                         <>
                           <Button
                             variant="outline"
                             className="w-full justify-start border-red-500/30 text-red-400 hover:bg-red-500/10"
-                            onClick={() => setShowDeleteConfirm(true)}
+                            onClick={() => deletion.setShowConfirm(true)}
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete Account
@@ -520,22 +332,22 @@ export default function SettingsPage() {
                             <Input
                               id="delete-confirm-password"
                               type="password"
-                              value={deleteConfirmPassword}
-                              onChange={(e) => setDeleteConfirmPassword(e.target.value)}
+                              value={deletion.password}
+                              onChange={(e) => deletion.setPassword(e.target.value)}
                               className="bg-black/40 border-red-500/30 text-[#e8e0d5]"
                               placeholder="Enter your password"
-                              disabled={isDeletingAccount}
+                              disabled={deletion.isDeleting}
                             />
                           </div>
 
                           <div className="flex gap-2">
                             <Button
                               type="button"
-                              onClick={handleDeleteAccount}
+                              onClick={deletion.handleDelete}
                               className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                              disabled={isDeletingAccount || !deleteConfirmPassword}
+                              disabled={deletion.isDeleting || !deletion.password}
                             >
-                              {isDeletingAccount ? (
+                              {deletion.isDeleting ? (
                                 <>
                                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                   Deleting...
@@ -551,10 +363,10 @@ export default function SettingsPage() {
                               type="button"
                               variant="outline"
                               onClick={() => {
-                                setShowDeleteConfirm(false);
-                                setDeleteConfirmPassword("");
+                                deletion.setShowConfirm(false);
+                                deletion.setPassword("");
                               }}
-                              disabled={isDeletingAccount}
+                              disabled={deletion.isDeleting}
                               className="border-[#3d2b1f] text-[#a89f94]"
                             >
                               Cancel
@@ -621,28 +433,32 @@ export default function SettingsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={refreshBalance}
-                            disabled={isRefreshing}
+                            onClick={tokenBalance.refresh}
+                            disabled={tokenBalance.isRefreshing}
                             className="text-[#a89f94] hover:text-[#e8e0d5]"
                           >
-                            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+                            <RefreshCw
+                              className={cn("w-4 h-4", tokenBalance.isRefreshing && "animate-spin")}
+                            />
                           </Button>
                         </div>
                         <div className="flex items-baseline gap-2">
                           <span className="text-2xl font-bold text-[#d4af37]">
-                            {tokenBalance !== null ? tokenBalance.toLocaleString() : "---"}
+                            {tokenBalance.balance !== null
+                              ? tokenBalance.balance.toLocaleString()
+                              : "---"}
                           </span>
                           <span className="text-sm text-[#a89f94]">LTCG</span>
                         </div>
-                        {isStale && (
+                        {tokenBalance.isStale && (
                           <p className="text-xs text-yellow-400/70 mt-2 flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3" />
                             Balance may be outdated
                           </p>
                         )}
-                        {lastVerifiedAt && (
+                        {tokenBalance.lastVerifiedAt && (
                           <p className="text-xs text-[#a89f94]/60 mt-1">
-                            Last updated: {new Date(lastVerifiedAt).toLocaleString()}
+                            Last updated: {new Date(tokenBalance.lastVerifiedAt).toLocaleString()}
                           </p>
                         )}
                       </div>
@@ -661,11 +477,11 @@ export default function SettingsPage() {
 
                       {/* Disconnect Button */}
                       <div className="pt-4 border-t border-[#3d2b1f]">
-                        {!showDisconnectConfirm ? (
+                        {!wallet.showDisconnectConfirm ? (
                           <Button
                             variant="outline"
                             className="w-full justify-center border-red-500/30 text-red-400 hover:bg-red-500/10"
-                            onClick={() => setShowDisconnectConfirm(true)}
+                            onClick={() => wallet.setShowDisconnectConfirm(true)}
                           >
                             Disconnect Wallet
                           </Button>
@@ -691,7 +507,7 @@ export default function SettingsPage() {
                               </Button>
                               <Button
                                 variant="outline"
-                                onClick={() => setShowDisconnectConfirm(false)}
+                                onClick={() => wallet.setShowDisconnectConfirm(false)}
                                 className="border-[#3d2b1f] text-[#a89f94]"
                               >
                                 Cancel
@@ -714,7 +530,7 @@ export default function SettingsPage() {
                         marketplace.
                       </p>
                       <Button
-                        onClick={() => setShowWalletConnect(true)}
+                        onClick={() => wallet.setShowConnect(true)}
                         className="bg-[#d4af37] hover:bg-[#c49d2e] text-black"
                       >
                         <Wallet className="w-4 h-4 mr-2" />
@@ -726,7 +542,7 @@ export default function SettingsPage() {
               )}
 
               {/* Wallet Connect Dialog */}
-              <WalletConnect open={showWalletConnect} onOpenChange={setShowWalletConnect} />
+              <WalletConnect open={wallet.showConnect} onOpenChange={wallet.setShowConnect} />
 
               {/* Notification Settings */}
               {activeTab === "notifications" && (
@@ -1064,7 +880,9 @@ export default function SettingsPage() {
 
                   <div className="space-y-4">
                     <div className="p-4 rounded-lg bg-black/20 border border-[#3d2b1f]">
-                      <p className="font-medium text-[#e8e0d5] mb-1">Manual Human Go-Live Disabled</p>
+                      <p className="font-medium text-[#e8e0d5] mb-1">
+                        Manual Human Go-Live Disabled
+                      </p>
                       <p className="text-sm text-[#a89f94]">
                         Navigation and settings no longer expose human streaming buttons or
                         credential setup.
@@ -1074,9 +892,13 @@ export default function SettingsPage() {
                     <div className="p-4 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30">
                       <p className="text-sm text-[#e8e0d5] font-medium mb-2">Agent-Only Flow</p>
                       <ul className="text-sm text-[#a89f94] space-y-1 list-disc list-inside ml-2">
-                        <li>Streams are tied to AI agents, not manual user camera/screen sessions.</li>
+                        <li>
+                          Streams are tied to AI agents, not manual user camera/screen sessions.
+                        </li>
                         <li>Agent streams start and stop from gameplay lifecycle events.</li>
-                        <li>No pre-live room, no user RTMP credential form, no human go-live button.</li>
+                        <li>
+                          No pre-live room, no user RTMP credential form, no human go-live button.
+                        </li>
                       </ul>
                     </div>
 

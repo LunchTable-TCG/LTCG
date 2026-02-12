@@ -1,19 +1,19 @@
 "use client";
 
-import { useMyGuild } from "@/hooks/guilds";
+import type { useGuildInteraction } from "@/hooks/guilds/useGuildInteraction";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 import { GuildChat } from "./GuildChat";
 import { GuildHeader } from "./GuildHeader";
 import { GuildInvitePanel } from "./GuildInvitePanel";
 import { GuildMemberList } from "./GuildMemberList";
 import { GuildSettings } from "./GuildSettings";
 
-type TabType = "members" | "chat" | "settings" | "invites";
+interface GuildDashboardProps {
+  dashboard: ReturnType<typeof useGuildInteraction>["dashboard"];
+}
 
-export function GuildDashboard() {
-  const { guild, myRole, isOwner } = useMyGuild();
-  const [activeTab, setActiveTab] = useState<TabType>("members");
+export function GuildDashboard({ dashboard }: GuildDashboardProps) {
+  const { guild, activeTab, setActiveTab, isOwner, myRole } = dashboard;
 
   if (!guild) return null;
 
@@ -67,7 +67,15 @@ export function GuildDashboard() {
 
       {/* Tab Content */}
       <div className="min-h-[400px]">
-        {activeTab === "members" && <GuildMemberList guildId={guild._id} />}
+        {activeTab === "members" && (
+          <GuildMemberList
+            members={dashboard.members}
+            isLoading={!dashboard.members}
+            isOwner={dashboard.isOwner}
+            onKickMember={dashboard.kickMember}
+            onTransferOwnership={dashboard.transferOwnership}
+          />
+        )}
         {activeTab === "chat" && <GuildChat guildId={guild._id} />}
         {activeTab === "settings" && isOwner && <GuildSettings guildId={guild._id} />}
         {activeTab === "invites" && isOwner && <GuildInvitePanel guildId={guild._id} />}

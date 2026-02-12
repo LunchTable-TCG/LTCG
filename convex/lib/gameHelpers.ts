@@ -26,7 +26,7 @@ export type CardZone = "hand" | "deck" | "board" | "graveyard" | "banished" | "e
  */
 export async function resolveGameIdToLobbyId(
   ctx: MutationCtx | QueryCtx,
-  gameId: string,
+  gameId: string
 ): Promise<Id<"gameLobbies">> {
   const gameState = await ctx.db
     .query("gameStates")

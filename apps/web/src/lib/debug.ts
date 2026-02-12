@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Centralized Debug and Logging Utilities for Frontend
  *

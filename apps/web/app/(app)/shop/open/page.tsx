@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { getAssetUrl } from "@/lib/blob";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
+import type { Rarity } from "@/types/cards";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -23,7 +24,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { Rarity } from "@/types/cards";
 
 interface Card {
   cardDefinitionId: Id<"cardDefinitions">;

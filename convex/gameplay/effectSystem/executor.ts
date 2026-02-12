@@ -274,9 +274,540 @@ export async function executeEffect(
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
       .first();
+    // Track current state which may be updated by cost payment
+    let currentState = gameState;
     if (refreshedAfterCost) {
-      gameState = refreshedAfterCost;
+      currentState = refreshedAfterCost;
     }
+
+    // Execute the effect and capture result
+    let result: EffectResult;
+
+    switch (effect.type) {
+      case "draw": {
+        // Edge case: Validate draw value is positive
+        const drawValue = effect.value || 1;
+        if (drawValue <= 0 || Number.isNaN(drawValue)) {
+          result = { success: false, message: "Invalid draw count" };
+        } else {
+          result = await executeDraw(ctx, currentState, playerId, drawValue);
+          // Check for deck-out: if draw failed because deck is empty, player loses
+          if (!result.success && result.message.includes("deck out")) {
+            const deckOutResult = await checkDeckOutCondition(
+              ctx,
+              lobbyId,
+              playerId,
+              currentState.turnNumber ?? 0
+            );
+            if (deckOutResult.gameEnded) {
+              result.message += " (Game ended: deck out)";
+            }
+          }
+        }
+        break;
+      }
+
+      case "destroy":
+        if (!targets || targets.length === 0) {
+          result = { success: false, message: "No targets selected" };
+        } else if (effect.targetCount && effect.targetCount > 1) {
+          // Multi-target destroy (e.g., "Destroy 2 target monsters")
+          const destroyResults: string[] = [];
+          let allSucceeded = true;
+
+          // Edge case: Validate targetCount is positive
+          const safeTargetCount = Math.max(1, Math.min(effect.targetCount, targets.length));
+
+          for (let i = 0; i < safeTargetCount; i++) {
+            // Edge case: Check array bounds
+            if (i >= targets.length) break;
+
+            const target = targets[i];
+            if (!target) continue;
+
+            const destroyResult = await executeDestroy(
+              ctx,
+              currentState,
+              lobbyId,
+              target,
+              playerId
+            );
+            destroyResults.push(destroyResult.message);
+            if (!destroyResult.success) {
+              allSucceeded = false;
+            }
+
+            // Handle on_destroy trigger for each destroyed card
+            if (
+              destroyResult.success &&
+              destroyResult.hadDestroyTrigger &&
+              destroyResult.destroyedCardId
+            ) {
+              const destroyedCard = await ctx.db.get(destroyResult.destroyedCardId);
+              const parsedAbility = getCardAbility(destroyedCard);
+              if (parsedAbility) {
+                // Find on_destroy / on_destroy_by_effect triggered effects
+                for (const parsedEffect of parsedAbility.effects) {
+                  if (
+                    parsedEffect.trigger === "on_destroy" ||
+                    parsedEffect.trigger === "on_destroy_by_effect"
+                  ) {
+                    // Refresh game state
+                    const refreshedState = await ctx.db
+                      .query("gameStates")
+                      .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+                      .first();
+
+                    if (refreshedState && destroyResult.destroyedCardOwnerId) {
+                      const triggerResult = await executeEffect(
+                        ctx,
+                        refreshedState,
+                        lobbyId,
+                        parsedEffect,
+                        destroyResult.destroyedCardOwnerId,
+                        destroyResult.destroyedCardId,
+                        [],
+                        0, // effectIndex for the on_destroy trigger
+                        triggerDepth + 1 // Increment trigger depth
+                      );
+
+                      if (triggerResult.success) {
+                        destroyResults.push(
+                          `${destroyedCard?.name} effect: ${triggerResult.message}`
+                        );
+                      }
+                    }
+                    break; // Only execute the first on_destroy effect
+                  }
+                }
+              }
+            }
+          }
+
+          result = {
+            success: allSucceeded,
+            message: destroyResults.join("; "),
+          };
+        } else {
+          // Single target destroy
+          // Edge case: Validate array has at least one element
+          if (targets.length === 0) {
+            result = { success: false, message: "No targets provided" };
+            break;
+          }
+
+          const target = targets[0];
+          if (!target) {
+            result = { success: false, message: "No target selected" };
+          } else {
+            const destroyResult = await executeDestroy(
+              ctx,
+              currentState,
+              lobbyId,
+              target,
+              playerId
+            );
+            result = destroyResult;
+
+            // Handle on_destroy trigger if card had one
+            if (
+              destroyResult.success &&
+              destroyResult.hadDestroyTrigger &&
+              destroyResult.destroyedCardId
+            ) {
+              const destroyedCard = await ctx.db.get(destroyResult.destroyedCardId);
+              const parsedAbility = getCardAbility(destroyedCard);
+              if (parsedAbility) {
+                // Find on_destroy / on_destroy_by_effect triggered effects
+                for (const parsedEffect of parsedAbility.effects) {
+                  if (
+                    parsedEffect.trigger === "on_destroy" ||
+                    parsedEffect.trigger === "on_destroy_by_effect"
+                  ) {
+                    // Refresh game state before executing trigger
+                    const refreshedState = await ctx.db
+                      .query("gameStates")
+                      .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+                      .first();
+
+                    if (refreshedState && destroyResult.destroyedCardOwnerId) {
+                      // Execute the on_destroy trigger
+                      const triggerResult = await executeEffect(
+                        ctx,
+                        refreshedState,
+                        lobbyId,
+                        parsedEffect,
+                        destroyResult.destroyedCardOwnerId,
+                        destroyResult.destroyedCardId,
+                        [],
+                        0, // effectIndex for the on_destroy trigger
+                        triggerDepth + 1 // Increment trigger depth
+                      );
+
+                      // Append trigger result to message
+                      if (triggerResult.success) {
+                        result.message += ` → ${destroyedCard?.name} effect: ${triggerResult.message}`;
+                      }
+                    }
+                    break; // Only execute the first on_destroy effect
+                  }
+                }
+              }
+            }
+          }
+        }
+        break;
+
+      case "damage": {
+        // Edge case: Validate damage value is non-negative
+        const damageValue = effect.value || 0;
+        if (damageValue < 0 || Number.isNaN(damageValue)) {
+          result = { success: false, message: "Invalid damage value" };
+        } else {
+          result = await executeDamage(ctx, currentState, lobbyId, opponentId, damageValue);
+        }
+        break;
+      }
+
+      case "gainLP": {
+        // Edge case: Validate LP gain value is non-negative
+        const lpValue = effect.value || 0;
+        if (lpValue < 0 || Number.isNaN(lpValue)) {
+          result = { success: false, message: "Invalid LP gain value" };
+        } else {
+          result = await executeGainLP(ctx, currentState, lobbyId, playerId, lpValue);
+        }
+        break;
+      }
+
+      case "modifyATK":
+        if (!targets || targets.length === 0) {
+          result = { success: false, message: "No targets selected" };
+        } else {
+          // Edge case: Check array bounds
+          if (targets.length === 0) {
+            result = { success: false, message: "No targets provided" };
+            break;
+          }
+
+          const target = targets[0];
+          if (!target) {
+            result = { success: false, message: "No target selected" };
+          } else {
+            // Edge case: Validate ATK modifier value is not NaN
+            const atkModifier = effect.value || 0;
+            if (Number.isNaN(atkModifier)) {
+              result = { success: false, message: "Invalid ATK modifier value" };
+            } else {
+              // Check if this is a lingering effect
+              if (effect.duration || effect.lingering) {
+                // Create lingering effect instead of immediate modification
+                const sourceCard = await ctx.db.get(cardId);
+                await addLingeringEffect(ctx, currentState, {
+                  effectType: "modifyATK",
+                  value: atkModifier,
+                  sourceCardId: cardId,
+                  sourceCardName: sourceCard?.name,
+                  appliedBy: playerId,
+                  appliedTurn: currentState.turnNumber,
+                  duration: effect.duration || { type: "until_turn_end" },
+                  conditions: {
+                    targetCardId: target,
+                  },
+                });
+                result = {
+                  success: true,
+                  message: `${sourceCard?.name || "Effect"} will modify ATK by ${atkModifier} ${effect.duration ? `(${effect.duration.type})` : ""}`,
+                };
+              } else {
+                // Immediate modification
+                result = await executeModifyATK(ctx, currentState, target, atkModifier, isHost);
+              }
+            }
+          }
+        }
+        break;
+
+      case "modifyDEF":
+        if (!targets || targets.length === 0) {
+          result = { success: false, message: "No targets selected" };
+        } else {
+          // Edge case: Check array bounds
+          if (targets.length === 0) {
+            result = { success: false, message: "No targets provided" };
+            break;
+          }
+
+          const target = targets[0];
+          if (!target) {
+            result = { success: false, message: "No target selected" };
+          } else {
+            // Edge case: Validate DEF modifier value is not NaN
+            const defModifier = effect.value || 0;
+            if (Number.isNaN(defModifier)) {
+              result = { success: false, message: "Invalid DEF modifier value" };
+            } else {
+              // Check if this is a lingering effect
+              if (effect.duration || effect.lingering) {
+                // Create lingering effect instead of immediate modification
+                const sourceCard = await ctx.db.get(cardId);
+                await addLingeringEffect(ctx, currentState, {
+                  effectType: "modifyDEF",
+                  value: defModifier,
+                  sourceCardId: cardId,
+                  sourceCardName: sourceCard?.name,
+                  appliedBy: playerId,
+                  appliedTurn: currentState.turnNumber,
+                  duration: effect.duration || { type: "until_turn_end" },
+                  conditions: {
+                    targetCardId: target,
+                  },
+                });
+                result = {
+                  success: true,
+                  message: `${sourceCard?.name || "Effect"} will modify DEF by ${defModifier} ${effect.duration ? `(${effect.duration.type})` : ""}`,
+                };
+              } else {
+                // Immediate modification
+                result = await executeModifyDEF(ctx, currentState, target, defModifier, isHost);
+              }
+            }
+          }
+        }
+        break;
+
+      case "summon":
+        if (!targets || targets.length === 0) {
+          result = { success: false, message: "No targets selected" };
+        } else {
+          const target = targets[0];
+          if (!target) {
+            result = { success: false, message: "No target selected" };
+          } else {
+            result = await executeSpecialSummon(
+              ctx,
+              currentState,
+              target,
+              playerId,
+              effect.targetLocation || "hand"
+            );
+          }
+        }
+        break;
+
+      case "toHand":
+        if (!targets || targets.length === 0) {
+          result = { success: false, message: "No targets selected" };
+        } else {
+          const target = targets[0];
+          if (!target) {
+            result = { success: false, message: "No target selected" };
+          } else {
+            result = await executeToHand(
+              ctx,
+              currentState,
+              lobbyId,
+              target,
+              playerId,
+              effect.targetLocation || "graveyard"
+            );
+          }
+        }
+        break;
+
+      case "search":
+        // Search deck for cards matching criteria
+        // Note: In a real implementation, this would require a two-step process:
+        // 1. Call executeSearch without selectedCardId to get matching cards
+        // 2. Present choices to player
+        // 3. Call executeSearch again with selectedCardId to add to hand
+        // For now, we'll return the matching cards for UI selection
+        result = await executeSearch(ctx, currentState, playerId, effect, targets?.[0]);
+        break;
+
+      case "negate":
+        if (!targets || targets.length === 0) {
+          result = { success: false, message: "No targets selected for negation" };
+        } else {
+          const target = targets[0];
+          if (!target) {
+            result = { success: false, message: "No target selected" };
+          } else {
+            result = await executeNegate(ctx, currentState, target, effect);
+          }
+        }
+        break;
+
+      case "negateActivation":
+        // Activation negation - negates activation and optionally destroys
+        // Target is optional (defaults to most recent chain link)
+        result = await executeNegateActivation(
+          ctx,
+          currentState,
+          lobbyId,
+          effect,
+          playerId,
+          targets?.[0]
+        );
+        break;
+
+      case "generateToken":
+        // Generate token monsters on the field
+        result = await executeGenerateToken(ctx, currentState, lobbyId, effect, playerId, cardId);
+        break;
+
+      case "toGraveyard":
+        if (!targets || targets.length === 0) {
+          result = { success: false, message: "No targets selected" };
+        } else {
+          const target = targets[0];
+          if (!target) {
+            result = { success: false, message: "No target selected" };
+          } else {
+            // Filter targetLocation to valid source locations for sending to GY
+            const validLocation =
+              effect.targetLocation === "board" ||
+              effect.targetLocation === "hand" ||
+              effect.targetLocation === "deck"
+                ? effect.targetLocation
+                : "board";
+
+            result = await executeSendToGraveyard(
+              ctx,
+              currentState,
+              lobbyId,
+              target,
+              playerId,
+              validLocation
+            );
+          }
+        }
+        break;
+
+      case "banish":
+        if (!targets || targets.length === 0) {
+          result = { success: false, message: "No targets selected" };
+        } else {
+          const target = targets[0];
+          if (!target) {
+            result = { success: false, message: "No target selected" };
+          } else {
+            result = await executeBanish(
+              ctx,
+              currentState,
+              target,
+              playerId,
+              effect.targetLocation || "board"
+            );
+          }
+        }
+        break;
+
+      case "directAttack":
+        // directAttack is a passive ability checked in combatSystem.ts during attack declaration
+        // This executor is a no-op for consistency - the effect is not "executed", it's evaluated
+        result = { success: true, message: "Direct attack ability active" };
+        break;
+
+      case "mill": {
+        // Edge case: Validate mill value is positive
+        const millValue = effect.value || 1;
+        if (millValue <= 0 || Number.isNaN(millValue)) {
+          result = { success: false, message: "Invalid mill count" };
+        } else {
+          result = await executeMill(ctx, currentState, opponentId, millValue);
+        }
+        break;
+      }
+
+      case "discard": {
+        // Edge case: Validate discard value is positive
+        const discardValue = effect.value || 1;
+        if (discardValue <= 0 || Number.isNaN(discardValue)) {
+          result = { success: false, message: "Invalid discard count" };
+        } else {
+          // Discard effects can target specific cards or be random
+          result = await executeDiscard(ctx, currentState, playerId, discardValue, targets);
+        }
+        break;
+      }
+
+      case "multipleAttack":
+        // multipleAttack is a passive ability checked in combatSystem.ts
+        // This executor is a no-op - the ability is evaluated during attack validation
+        result = { success: true, message: "Can attack multiple times per turn" };
+        break;
+
+      default:
+        result = { success: false, message: `Unknown effect type: ${effect.type}` };
+    }
+
+    // Mark card as having used OPT/HOPT effect if successful
+    if (result.success && hasOPTRestriction) {
+      await markEffectUsed(ctx, currentState, cardId, effectIndex, playerId, isHOPT);
+      logger.debug(`Marked ${isHOPT ? "HOPT" : "OPT"} as used`, {
+        cardId,
+        cardName,
+        effectIndex,
+        isHOPT,
+      });
+    }
+
+    // Log effect result
+    logCardEffect(cardName, effect.type, result.success, {
+      lobbyId,
+      playerId,
+      targetsCount: targets?.length || 0,
+      message: result.message,
+    });
+
+    if (result.success) {
+      logger.info(`Card effect executed: ${effect.type}`, {
+        cardId,
+        cardName,
+        lobbyId,
+        playerId,
+      });
+
+      // Run state-based action checks after successful effect resolution
+      // Skip hand limit check (only enforced at end of turn)
+      const sbaResult = await checkStateBasedActions(ctx, lobbyId, {
+        skipHandLimit: true,
+      });
+
+      if (sbaResult.gameEnded) {
+        logger.info("Game ended by SBA after effect", {
+          lobbyId,
+          effectType: effect.type,
+          winnerId: sbaResult.winnerId,
+        });
+        result.message += ` (Game ended: ${sbaResult.endReason})`;
+      } else if (sbaResult.anyChanged) {
+        logger.debug("SBA made changes after effect", {
+          lobbyId,
+          effectType: effect.type,
+          cycleCount: sbaResult.cycleCount,
+          destroyedCount: sbaResult.allDestroyedCards.length,
+        });
+      }
+    } else {
+      logger.warn(`Card effect failed: ${effect.type}`, {
+        cardId,
+        cardName,
+        lobbyId,
+        playerId,
+        reason: result.message,
+      });
+    }
+
+    performance.end(opId, { cardId, effectType: effect.type, success: result.success });
+
+    // Track last resolved effect type for miss-timing logic
+    if (result.success) {
+      await ctx.db.patch(currentState._id, { lastResolvedEventType: effect.type });
+    }
+
+    return result;
   }
 
   // Execute the effect and capture result

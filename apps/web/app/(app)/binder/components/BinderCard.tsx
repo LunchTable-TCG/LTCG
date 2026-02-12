@@ -3,10 +3,10 @@
 import { getArchetypeIcon } from "@/lib/archetypeIcons";
 import { type JsonAbility, getAbilityDisplayText } from "@/lib/cardHelpers";
 import { cn } from "@/lib/utils";
+import type { CardType, ElementWithNeutral as Element, Rarity } from "@/types/cards";
 import { Flame, Heart, Shield, Star, Waves, Zap } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState } from "react";
-import type { CardType, ElementWithNeutral as Element, Rarity } from "@/types/cards";
 
 export type { Rarity, Element, CardType };
 

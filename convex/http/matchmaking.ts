@@ -29,7 +29,13 @@ import {
 // Type-safe API references to avoid TS2589
 const createLobbyInternalMutation = require("../_generated/api").internal.gameplay.games.lobby
   .createLobbyInternal as MutationFunction<
-  { userId: Id<"users">; mode: string; isPrivate: boolean; cryptoWagerCurrency?: string; cryptoWagerTier?: number },
+  {
+    userId: Id<"users">;
+    mode: string;
+    isPrivate: boolean;
+    cryptoWagerCurrency?: string;
+    cryptoWagerTier?: number;
+  },
   LobbyInfo
 >;
 

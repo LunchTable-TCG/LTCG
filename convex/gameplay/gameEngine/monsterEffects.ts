@@ -305,6 +305,16 @@ export const activateMonsterEffectInternal = internalMutation({
   handler: async (ctx, args) => {
     const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
     const user = await getAuthForUser(ctx, args.userId);
-    return activateMonsterEffectHandler(ctx, { lobbyId, cardId: args.cardId, effectIndex: args.effectIndex, targets: args.targets, costTargets: args.costTargets }, user);
+    return activateMonsterEffectHandler(
+      ctx,
+      {
+        lobbyId,
+        cardId: args.cardId,
+        effectIndex: args.effectIndex,
+        targets: args.targets,
+        costTargets: args.costTargets,
+      },
+      user
+    );
   },
 });

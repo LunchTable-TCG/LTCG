@@ -2,14 +2,14 @@
 
 import { useGameWallet } from "@/hooks/wallet/useGameWallet";
 import { cn } from "@/lib/utils";
-import type { MatchMode } from "@/types/common";
 import {
-  type WagerCurrency,
   CRYPTO_WAGER_WINNER_PERCENTAGE,
   SOL_WAGER_TIERS,
   USDC_WAGER_TIERS,
+  type WagerCurrency,
   formatTierLabel,
 } from "@/lib/wagerTiers";
+import type { MatchMode } from "@/types/common";
 import { Coins, Gamepad2, Swords, Trophy, X } from "lucide-react";
 import { useState } from "react";
 

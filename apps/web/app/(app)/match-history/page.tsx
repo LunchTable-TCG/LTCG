@@ -1,11 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useProfile } from "@/hooks";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
+import { useMatchHistoryInteraction } from "@/hooks";
 import { cn } from "@/lib/utils";
-import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
 import {
   Calendar,
   ChevronRight,
@@ -17,7 +14,6 @@ import {
   TrendingUp,
   Trophy,
 } from "lucide-react";
-import { useState } from "react";
 
 const resultConfig: Record<
   "victory" | "defeat",
@@ -54,43 +50,19 @@ function formatTimeAgo(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString();
 }
 
-const MATCHES_PER_PAGE = 10;
+const _MATCHES_PER_PAGE = 10;
 
 export default function MatchHistoryPage() {
-  const { profile: currentUser, isLoading: profileLoading } = useProfile();
-  const { isAuthenticated } = useAuth();
-
-  const [filter, setFilter] = useState<"ranked" | "casual" | "story" | "all">("all");
-  const [displayLimit, setDisplayLimit] = useState(MATCHES_PER_PAGE);
-
-  // Fetch real match history from Convex
-  const matchHistory = useQuery(
-    api.progression.matchHistory.getMatchHistory,
-    isAuthenticated ? { limit: 50 } : "skip"
-  );
-
-  const isLoading = profileLoading || matchHistory === undefined;
-
-  const matches = matchHistory ?? [];
-  const allFilteredMatches =
-    filter === "all" ? matches : matches.filter((m: (typeof matches)[number]) => m.mode === filter);
-  const filteredMatches = allFilteredMatches.slice(0, displayLimit);
-  const hasMoreMatches = displayLimit < allFilteredMatches.length;
-
-  const stats = {
-    total: matches.length,
-    wins: matches.filter((m: (typeof matches)[number]) => m.result === "victory").length,
-    losses: matches.filter((m: (typeof matches)[number]) => m.result === "defeat").length,
-    draws: 0, // Draw support not implemented yet
-    winRate:
-      matches.length > 0
-        ? Math.round(
-            (matches.filter((m: (typeof matches)[number]) => m.result === "victory").length /
-              matches.length) *
-              100
-          )
-        : 0,
-  };
+  const {
+    currentUser,
+    isLoading,
+    filter,
+    setFilter,
+    filteredMatches,
+    hasMoreMatches,
+    stats,
+    loadMore,
+  } = useMatchHistoryInteraction();
 
   if (isLoading || !currentUser) {
     return (
@@ -179,11 +151,9 @@ export default function MatchHistoryPage() {
                     <div
                       className={cn(
                         "w-12 h-12 rounded-lg flex items-center justify-center",
-                        match.result === "victory"
+                        match.result === "victory" || match.result === "win"
                           ? "bg-green-500/20"
-                          : match.result === "defeat"
-                            ? "bg-red-500/20"
-                            : "bg-blue-500/20"
+                          : "bg-red-500/20"
                       )}
                     >
                       <Icon className={cn("w-6 h-6", config.color)} />
@@ -198,7 +168,7 @@ export default function MatchHistoryPage() {
                           {match.opponent.username}
                         </span>
                         <span className="px-2 py-0.5 rounded bg-black/40 text-[10px] text-[#a89f94] uppercase">
-                          {modeLabels[match.mode as "ranked" | "casual" | "story"]}
+                          {modeLabels[match.mode]}
                         </span>
                       </div>
                       {match.xpGained > 0 && (
@@ -253,9 +223,9 @@ export default function MatchHistoryPage() {
             <Button
               variant="outline"
               className="border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5]"
-              onClick={() => setDisplayLimit((prev) => prev + MATCHES_PER_PAGE)}
+              onClick={loadMore}
             >
-              Load More Matches ({allFilteredMatches.length - displayLimit} remaining)
+              Load More Matches
             </Button>
           </div>
         )}

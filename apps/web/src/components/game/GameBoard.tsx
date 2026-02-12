@@ -1,15 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import { componentLogger, logger, perf, useDebugLifecycle } from "@/lib/debug";
-import { categorizeEffect, showEffectActivated } from "@/lib/effectToasts";
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
+import { componentLogger, useDebugLifecycle } from "@/lib/debug";
 import type { Id } from "@convex/_generated/dataModel";
 import { Flag, Loader2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { AgentActivityIndicator } from "./AgentActivityIndicator";
 import { GameResultScreen } from "./GameResultScreen";
 import { TutorialManager } from "./TutorialManager";
@@ -34,38 +32,13 @@ import { ResponsePrompt } from "./dialogs/ResponsePrompt";
 import { SummonModal } from "./dialogs/SummonModal";
 import { EffectFeedback, useEffectFeedback } from "./effects/EffectFeedback";
 import { EffectQueueWidget, type QueuedEffect } from "./effects/EffectQueueWidget";
-import { type CardInZone, useGameBoard } from "./hooks/useGameBoard";
+import { useGameBoard } from "./hooks/useGameBoard";
+import { useGameInteraction } from "./hooks/useGameInteraction";
 
 interface GameBoardProps {
   lobbyId: Id<"gameLobbies">;
   playerId?: Id<"users">;
   gameMode?: "pvp" | "story";
-}
-
-interface TargetCard {
-  cardId: Id<"cardDefinitions">;
-  name: string;
-  instanceId: string;
-  imageUrl?: string;
-  attack?: number;
-  defense?: number;
-  cardType?: string;
-  monsterStats?: {
-    level: number;
-    attack: number;
-    defense: number;
-  };
-}
-
-interface ActivationResult {
-  success: boolean;
-  error?: string;
-  requiresSelection?: boolean;
-  availableTargets?: TargetCard[];
-  selectionSource?: "deck" | "graveyard" | "banished" | "board" | "hand";
-  minSelections?: number;
-  maxSelections?: number;
-  selectionPrompt?: string;
 }
 
 interface ChainLink {
@@ -97,28 +70,12 @@ export function GameBoard({
   // First check lobby status - MUST be called before any conditional returns
   const lobbyDetails = useConvexQuery(typedApi.gameplay.games.queries.getLobbyDetails, { lobbyId });
 
-  // Selection effect mutations
-  const completeSearchEffectMutation = useConvexMutation(
-    typedApi.gameplay.gameEngine.spellsTraps.completeSearchEffect
-  );
-  const completeSearchEffect = useCallback(
-    async (args: {
-      lobbyId: Id<"gameLobbies">;
-      sourceCardId: Id<"cardDefinitions">;
-      selectedCardId: Id<"cardDefinitions">;
-    }) => {
-      return completeSearchEffectMutation(args);
-    },
-    [completeSearchEffectMutation]
-  );
-
+  const gameBoard = useGameBoard(lobbyId, playerId ?? ("" as Id<"users">));
   const {
-    // State
     player,
     opponent,
     phase,
     validActions,
-    attackOptions,
     pendingAction,
     chainResponses,
     responseWindow,
@@ -134,726 +91,72 @@ export function GameBoard({
     playableHandCards,
     activatableBackrowCards,
     // Actions
-    normalSummon,
-    setMonster,
-    setSpellTrap,
-    advancePhase,
-    endTurn,
-    declareAttack,
-    forfeitGame,
-    activateSpell,
-    activateFieldSpell,
-    activateTrap,
-    activateMonsterEffect,
     respondToChain,
-    passResponseWindow,
-  } = useGameBoard(lobbyId, playerId ?? ("" as Id<"users">));
+  } = gameBoard;
 
-  // UI State
-  const [selectedHandCard, setSelectedHandCard] = useState<CardInZone | null>(null);
-  const [selectedFieldCard, setSelectedFieldCard] = useState<CardInZone | null>(null);
-  const [selectedBackrowCard, setSelectedBackrowCard] = useState<CardInZone | null>(null);
-  const [inspectedCard, setInspectedCard] = useState<CardInZone | null>(null);
-  const [isInspectedOpponent, setIsInspectedOpponent] = useState(false);
-  const [showSummonModal, setShowSummonModal] = useState(false);
-  const [showAttackModal, setShowAttackModal] = useState(false);
-  const [showForfeitDialog, setShowForfeitDialog] = useState(false);
-  const [showActivateModal, setShowActivateModal] = useState(false);
-  const [showCardInspector, setShowCardInspector] = useState(false);
-  const [isForfeitLoading, setIsForfeitLoading] = useState(false);
+  const {
+    // UI State
+    selectedHandCard,
+    setSelectedHandCard,
+    selectedFieldCard,
+    setSelectedFieldCard,
+    selectedBackrowCard,
+    setSelectedBackrowCard,
+    inspectedCard,
+    setInspectedCard,
+    isInspectedOpponent,
+    showSummonModal,
+    setShowSummonModal,
+    showAttackModal,
+    setShowAttackModal,
+    showForfeitDialog,
+    setShowForfeitDialog,
+    showActivateModal,
+    setShowActivateModal,
+    showCardInspector,
+    setShowCardInspector,
+    isForfeitLoading,
+    cardSelection,
+    setCardSelection,
+    costPayment,
+    setCostPayment,
 
-  // Card Selection State (for search effects, etc.)
-  const [cardSelection, setCardSelection] = useState<{
-    cards: CardInZone[];
-    zone: "deck" | "graveyard" | "banished" | "board" | "hand";
-    selectionMode?: "single" | "multi";
-    minSelections?: number;
-    maxSelections?: number;
-    title?: string;
-    description?: string;
-    callback: (cardIds: Id<"cardDefinitions">[]) => void;
-  } | null>(null);
+    // Handlers
+    handleHandCardClick,
+    handleMonsterAttackClick,
+    handleFieldCardClick,
+    handleSummon,
+    handleSetMonster,
+    handleSetSpellTrap,
+    handleHandCardActivate,
+    handleAdvancePhase,
+    handleEndTurn,
+    handleForfeit,
+    handleBackrowCardClick,
+    handleActivateCard,
+    handleDeclareAttack,
+    handleChainResponse,
+    handlePassChain,
+    handlePassResponseWindow,
+
+    // Memos / Data
+    attackableAttackers,
+    selectedAttackOption,
+    targetableCards,
+    attackTargets,
+    canAttack,
+    defaultAttacker,
+    responseCards,
+    showBattleResponseWindow,
+    battleResponseActionType,
+    battleResponseCards,
+    pendingOptionalTriggers,
+    timeoutStatus,
+  } = useGameInteraction(lobbyId, gameBoard, gameMode);
 
   // Effect Feedback System
   const effectFeedback = useEffectFeedback();
   const [effectQueue, _setEffectQueue] = useState<QueuedEffect[]>([]);
-
-  // Cost Payment State
-  const [costPayment, setCostPayment] = useState<{
-    cardId: Id<"cardDefinitions">;
-    cardName: string;
-    costType: "discard" | "pay_lp" | "tribute" | "banish";
-    costValue: number;
-    availableCards: CardInZone[];
-    effectIndex?: number;
-    callback: (costTargets?: Id<"cardDefinitions">[]) => void;
-  } | null>(null);
-
-  // New feature queries
-  const pendingOptionalTriggers = useConvexQuery(
-    typedApi.gameplay.games.queries.getPendingOptionalTriggers,
-    { lobbyId }
-  );
-  const timeoutStatus = useConvexQuery(typedApi.gameplay.games.queries.getTimeoutStatus, {
-    lobbyId,
-  });
-
-  // Effect Notifications - Subscribe to auto-triggered effects
-  const lastEventTimestamp = useRef<number>(Date.now());
-  const gameEventsArgs = lobbyId
-    ? {
-        lobbyId,
-        sinceTimestamp: lastEventTimestamp.current,
-        eventTypes: ["effect_activated"],
-        limit: 10,
-      }
-    : "skip";
-  const gameEvents = useConvexQuery(
-    typedApi.gameplay.gameEvents.subscribeToGameEvents,
-    gameEventsArgs
-  );
-
-  // Show toast notifications for auto-triggered effects
-  useEffect(() => {
-    if (!gameEvents || gameEvents.length === 0) return;
-
-    gameEvents.forEach(
-      (event: {
-        timestamp: number;
-        description?: string;
-        metadata?: { trigger?: string; cardName?: string };
-      }) => {
-        // Update last seen timestamp
-        if (event.timestamp > lastEventTimestamp.current) {
-          lastEventTimestamp.current = event.timestamp;
-        }
-
-        // Don't show notifications for manual activations (handled by other toasts)
-        if (event.metadata?.trigger === "manual") return;
-
-        const cardName = event.metadata?.cardName as string | undefined;
-        const description = event.description || "Effect activated";
-
-        // Distinct toast for AI optional trigger activations
-        if (event.metadata?.trigger === "optional_ai") {
-          toast.info(`Opponent triggered ${cardName || "a card"}`, {
-            description: "Optional effect activated",
-            duration: 3000,
-          });
-          return;
-        }
-
-        // Use enhanced toast with categorization
-        categorizeEffect(description);
-        showEffectActivated(cardName || "Card Effect", description);
-      }
-    );
-  }, [gameEvents]);
-
-  // Track AI chain responses — toast when opponent adds a chain link
-  const prevChainLength = useRef(0);
-  useEffect(() => {
-    const chain = chainResponses?.chain;
-    if (!chain || chain.length === 0) {
-      prevChainLength.current = 0;
-      return;
-    }
-    if (chain.length > prevChainLength.current) {
-      // New chain link(s) added — check if any are from the opponent
-      for (let i = prevChainLength.current; i < chain.length; i++) {
-        const link = chain[i] as ChainLink | undefined;
-        if (link && link.playerId !== playerId) {
-          toast.info(`Opponent activated ${link.cardName || "a card"}`, {
-            description: `Chain Link ${link.chainLink || i + 1}`,
-            duration: 3000,
-          });
-        }
-      }
-    }
-    prevChainLength.current = chain.length;
-  }, [chainResponses?.chain, playerId]);
-
-  const attackableAttackers = useMemo(() => {
-    if (!attackOptions) return new Set<Id<"cardDefinitions">>();
-    return new Set(
-      attackOptions.filter((option) => option.canAttack).map((option) => option.instanceId)
-    );
-  }, [attackOptions]);
-
-  const selectedAttackOption = useMemo(() => {
-    if (!attackOptions || !selectedFieldCard) return null;
-    return (
-      attackOptions.find((option) => option.instanceId === selectedFieldCard.instanceId) ?? null
-    );
-  }, [attackOptions, selectedFieldCard]);
-
-  const targetableCards = useMemo(() => {
-    if (!isBattlePhase || !selectedAttackOption || !selectedAttackOption.canAttack) {
-      return new Set<Id<"cardDefinitions">>();
-    }
-    return new Set(selectedAttackOption.validTargets);
-  }, [isBattlePhase, selectedAttackOption]);
-
-  const attackTargets = useMemo(() => {
-    if (!selectedAttackOption || !opponent) return [];
-    const opponentField = new Map<Id<"cardDefinitions">, CardInZone>();
-    if (opponent.frontline) {
-      opponentField.set(opponent.frontline.instanceId, opponent.frontline);
-    }
-    for (const card of opponent.support) {
-      opponentField.set(card.instanceId, card);
-    }
-
-    return selectedAttackOption.validTargets.flatMap((targetId) => {
-      const card = opponentField.get(targetId);
-      if (!card) return [];
-      return [
-        {
-          instanceId: card.instanceId,
-          name: card.name,
-          attack: card.monsterStats?.attack,
-          defense: card.monsterStats?.defense,
-          position: card.position ?? (card.isFaceDown ? "setDefense" : "attack"),
-          isFaceDown: card.isFaceDown,
-        },
-      ];
-    });
-  }, [selectedAttackOption, opponent]);
-
-  const canAttack = useMemo(() => {
-    return attackOptions?.some((option) => option.canAttack) ?? false;
-  }, [attackOptions]);
-
-  const defaultAttacker = useMemo(() => {
-    if (!player || attackableAttackers.size === 0) return null;
-    if (player.frontline && attackableAttackers.has(player.frontline.instanceId)) {
-      return player.frontline;
-    }
-    return player.support.find((card) => attackableAttackers.has(card.instanceId)) ?? null;
-  }, [player, attackableAttackers]);
-
-  const handleDeclareAttack = useCallback(
-    async (targetId?: Id<"cardDefinitions">) => {
-      if (!selectedFieldCard) return;
-
-      const result = await declareAttack(selectedFieldCard.instanceId, targetId);
-
-      if (result.success) {
-        toast.success(`${selectedFieldCard.name} attacked!`);
-        setSelectedFieldCard(null);
-        setShowAttackModal(false);
-      } else if (result.error) {
-        toast.error("Attack Failed", {
-          description: result.error,
-        });
-      }
-    },
-    [selectedFieldCard, declareAttack]
-  );
-
-  const handleHandCardClick = useCallback(
-    (card: CardInZone) => {
-      console.log("Hand card clicked:", {
-        cardName: card.name,
-        isPlayerTurn,
-        isMainPhase,
-        currentPhase: phase?.currentPhase,
-        validActions,
-      });
-
-      if (!isPlayerTurn) {
-        toast.warning("Not Your Turn", {
-          description: "Wait for your opponent to finish their turn.",
-        });
-        return;
-      }
-
-      if (!isMainPhase) {
-        const phaseNames: Record<string, string> = {
-          draw: "Draw Phase",
-          standby: "Standby Phase",
-          main1: "Main Phase 1",
-          battle_start: "Battle Start",
-          battle: "Battle Phase",
-          battle_end: "Battle End",
-          main2: "Main Phase 2",
-          end: "End Phase",
-        };
-        const phaseName =
-          phaseNames[phase?.currentPhase || ""] || phase?.currentPhase || "Unknown Phase";
-        toast.warning("Wrong Phase", {
-          description: `You can only play cards during Main Phase 1 or Main Phase 2. Current Phase: ${phaseName}. Click the "Next" or "Battle" button to advance.`,
-        });
-        return;
-      }
-
-      // Allow clicking any card in hand - backend will validate if action is allowed
-      console.log("Opening card dialog for:", card.name);
-      setSelectedHandCard(card);
-      setShowSummonModal(true);
-    },
-    [isPlayerTurn, isMainPhase, phase, validActions]
-  );
-
-  const handleMonsterAttackClick = useCallback(
-    (card: CardInZone) => {
-      if (!isBattlePhase || !isPlayerTurn) return;
-      console.log("Monster attack button clicked:", card.name);
-      setSelectedFieldCard(card);
-      setShowAttackModal(true);
-    },
-    [isBattlePhase, isPlayerTurn]
-  );
-
-  const handleFieldCardClick = useCallback(
-    (card: CardInZone) => {
-      // Check if this is a battle phase attack
-      if (isBattlePhase && isPlayerTurn && attackableAttackers.has(card.instanceId)) {
-        setSelectedFieldCard(card);
-        setShowAttackModal(true);
-        return;
-      }
-
-      // Check if this is selecting an attack target
-      if (isBattlePhase && selectedFieldCard && targetableCards.has(card.instanceId)) {
-        handleDeclareAttack(card.instanceId);
-        return;
-      }
-
-      // Check if this is your own monster with activatable effects
-      const isPlayerCard =
-        player?.frontline?.instanceId === card.instanceId ||
-        player?.support?.some((c) => c.instanceId === card.instanceId);
-      const isMonster = card.cardType === "monster" || card.cardType === "creature";
-      const hasManualEffects = card.effects?.some(
-        (e) => e.activationType === "ignition" || e.activationType === "quick"
-      );
-
-      if (isPlayerCard && isMonster && hasManualEffects && !card.isFaceDown && isPlayerTurn) {
-        // Show activation modal for monster with manual effects
-        setSelectedFieldCard(card);
-        setShowActivateModal(true);
-        return;
-      }
-
-      // Default: Show card inspector for face-up cards
-      if (!card.isFaceDown) {
-        setInspectedCard(card);
-        const isOpponentCard =
-          opponent?.frontline?.instanceId === card.instanceId ||
-          opponent?.support?.some((c) => c.instanceId === card.instanceId) ||
-          opponent?.backrow?.some((c) => c.instanceId === card.instanceId);
-        setIsInspectedOpponent(isOpponentCard ?? false);
-        setShowCardInspector(true);
-        return;
-      }
-
-      setSelectedFieldCard((prev) => (prev?.instanceId === card.instanceId ? null : card));
-    },
-    [
-      isBattlePhase,
-      isPlayerTurn,
-      player,
-      opponent,
-      attackableAttackers,
-      selectedFieldCard,
-      targetableCards,
-      handleDeclareAttack,
-    ]
-  );
-
-  const handleSummon = useCallback(
-    async (position: "attack" | "defense", tributeIds?: Id<"cardDefinitions">[]) => {
-      if (!selectedHandCard) return;
-
-      logger.userAction("summon_monster", {
-        cardName: selectedHandCard.name,
-        position,
-        tributesCount: tributeIds?.length || 0,
-      });
-
-      // Calculate tributes required based on monster level
-      const level = selectedHandCard.monsterStats?.level ?? 0;
-      const tributesRequired = level >= 7 ? 2 : level >= 5 ? 1 : 0;
-      const tributesProvided = tributeIds?.length ?? 0;
-
-      log.debug("Calculating tribute requirements", {
-        cardName: selectedHandCard.name,
-        level,
-        tributesRequired,
-        tributesProvided,
-      });
-
-      // Validate tributes before attempting summon
-      if (tributesRequired > 0 && tributesProvided < tributesRequired) {
-        log.warn("Insufficient tributes", {
-          cardName: selectedHandCard.name,
-          required: tributesRequired,
-          provided: tributesProvided,
-        });
-        toast.error("Tribute Required", {
-          description: `This Level ${level} monster requires ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}. Please select ${tributesRequired} monster${tributesRequired > 1 ? "s" : ""} from your field to tribute.`,
-        });
-        return;
-      }
-
-      const result = await perf.time(`normalSummon_${selectedHandCard.name}`, async () =>
-        normalSummon(selectedHandCard.instanceId, position, tributeIds)
-      );
-
-      if (result.success) {
-        log.info("Monster summoned successfully", {
-          cardName: selectedHandCard.name,
-          position,
-        });
-        toast.success(`${selectedHandCard.name} summoned in ${position} position!`);
-        setSelectedHandCard(null);
-        setShowSummonModal(false);
-      } else if (result.error) {
-        log.warn("Summon failed", { cardName: selectedHandCard.name, error: result.error });
-        toast.error("Summon Failed", {
-          description: result.error,
-        });
-      }
-    },
-    [selectedHandCard, normalSummon, log]
-  );
-
-  const handleSetMonster = useCallback(async () => {
-    if (!selectedHandCard) return;
-
-    const result = await setMonster(selectedHandCard.instanceId);
-
-    if (result.success) {
-      toast.success(`${selectedHandCard.name} set face-down in defense position!`);
-      setSelectedHandCard(null);
-      setShowSummonModal(false);
-    } else if (result.error) {
-      toast.error("Set Monster Failed", {
-        description: result.error,
-      });
-    }
-  }, [selectedHandCard, setMonster]);
-
-  const handleSetSpellTrap = useCallback(async () => {
-    if (!selectedHandCard) return;
-
-    const result = await setSpellTrap(selectedHandCard.instanceId);
-
-    if (result.success) {
-      toast.success(`${selectedHandCard.name} set face-down in spell/trap zone!`);
-      setSelectedHandCard(null);
-      setShowSummonModal(false);
-    } else if (result.error) {
-      toast.error("Set Spell/Trap Failed", {
-        description: result.error,
-      });
-    }
-  }, [selectedHandCard, setSpellTrap]);
-
-  const handleHandCardActivate = useCallback(async () => {
-    if (!selectedHandCard) return;
-
-    let result: ActivationResult;
-    if (selectedHandCard.cardType === "field") {
-      result = await activateFieldSpell(selectedHandCard.instanceId);
-    } else {
-      result = await activateSpell(selectedHandCard.instanceId);
-    }
-
-    // Check if effect requires player selection (search, etc.)
-    if (result?.success && result.requiresSelection && Array.isArray(result.availableTargets)) {
-      setCardSelection({
-        cards: result.availableTargets.map((target) => ({
-          cardId: target.cardId,
-          name: target.name,
-          cardType: target.cardType,
-          imageUrl: target.imageUrl,
-          monsterStats: target.monsterStats,
-          instanceId: target.cardId, // Use cardId as instanceId for selection
-        })),
-        zone: result.selectionSource || "deck",
-        selectionMode: (result.maxSelections || 1) > 1 ? "multi" : "single",
-        minSelections: result.minSelections || 1,
-        maxSelections: result.maxSelections || 1,
-        title: result.selectionPrompt?.split(":")[0] || "Select Cards",
-        description: result.selectionPrompt || "Select a card",
-        callback: async (selectedIds) => {
-          const selectedCardId = selectedIds[0];
-          if (!selectedCardId) {
-            toast.error("No card selected");
-            return;
-          }
-          try {
-            await completeSearchEffect({
-              lobbyId,
-              sourceCardId: selectedHandCard.cardId,
-              selectedCardId,
-            });
-            toast.success("Card added to hand!");
-            setSelectedHandCard(null);
-            setShowSummonModal(false);
-          } catch (_error) {
-            toast.error("Failed to complete search");
-          }
-        },
-      });
-    } else if (result?.success) {
-      toast.success(`${selectedHandCard.name} activated!`);
-      setSelectedHandCard(null);
-      setShowSummonModal(false);
-    } else if (result?.error) {
-      toast.error("Activation Failed", {
-        description: result.error,
-      });
-    }
-  }, [selectedHandCard, activateSpell, activateFieldSpell, lobbyId, completeSearchEffect]);
-
-  const handleAdvancePhase = useCallback(async () => {
-    const result = await advancePhase();
-    if (!result.success && result.error) {
-      toast.error("Phase Advance Failed", {
-        description: result.error,
-      });
-    }
-  }, [advancePhase]);
-
-  const handleEndTurn = useCallback(async () => {
-    const result = await endTurn();
-    if (!result.success && result.error) {
-      toast.error("End Turn Failed", {
-        description: result.error,
-      });
-    }
-  }, [endTurn]);
-
-  const handleForfeit = useCallback(async () => {
-    setIsForfeitLoading(true);
-    try {
-      const result = await forfeitGame();
-      if (result.success) {
-        toast.info("Game forfeited");
-
-        // Redirect to appropriate screen after forfeit
-        if (gameMode === "story") {
-          // Redirect back to story mode page
-          router.push("/play/story");
-        } else {
-          // Redirect to lobby for PVP games
-          router.push("/lunchtable");
-        }
-      } else if (result.error) {
-        toast.error("Forfeit Failed", {
-          description: result.error,
-        });
-      }
-    } finally {
-      setIsForfeitLoading(false);
-      setShowForfeitDialog(false);
-    }
-  }, [forfeitGame, gameMode, router]);
-
-  const handleBackrowCardClick = useCallback((card: CardInZone) => {
-    setSelectedBackrowCard(card);
-    setShowActivateModal(true);
-  }, []);
-
-  // Cost payment query
-  const getPendingCostMutation = useConvexMutation(
-    typedApi.gameplay.effectSystem.costPayment.getPendingCostRequirement
-  );
-
-  const handleActivateCard = useCallback(
-    async (effectIndex?: number, costTargets?: Id<"cardDefinitions">[]) => {
-      const selectedCard = selectedBackrowCard || selectedFieldCard;
-      if (!selectedCard) return;
-
-      const isField = selectedCard.cardType === "field";
-      const isSpell = selectedCard.cardType === "spell" || selectedCard.cardType === "equipment";
-      const isTrap = selectedCard.cardType === "trap";
-      const isMonster = selectedCard.cardType === "monster" || selectedCard.cardType === "creature";
-
-      // Check for cost requirement first
-      try {
-        const costCheck = await getPendingCostMutation({
-          lobbyId,
-          cardId: selectedCard.cardId,
-          effectIndex,
-        });
-
-        if (costCheck.hasCost && costCheck.canPay && costCheck.requiresSelection && !costTargets) {
-          // Show cost payment modal
-          setCostPayment({
-            cardId: selectedCard.cardId,
-            cardName: costCheck.cardName || selectedCard.name,
-            costType: costCheck.costType as "discard" | "pay_lp" | "tribute" | "banish",
-            costValue: costCheck.costValue || 1,
-            availableCards: ((costCheck.availableTargets || []) as TargetCard[]).map((target) => ({
-              cardId: target.cardId,
-              name: target.name,
-              cardType: target.cardType,
-              imageUrl: target.imageUrl,
-              monsterStats: target.monsterStats,
-              instanceId: target.cardId,
-            })),
-            effectIndex,
-            callback: async (selectedCostTargets) => {
-              // Recursively call with cost targets
-              await handleActivateCard(effectIndex, selectedCostTargets);
-              setCostPayment(null);
-            },
-          });
-          return;
-        }
-      } catch (error) {
-        // Cost check failed, continue with activation attempt
-        console.error("Cost check error:", error);
-      }
-
-      let result: ActivationResult | undefined;
-      if (isField) {
-        result = await activateFieldSpell(selectedCard.instanceId, effectIndex);
-      } else if (isSpell) {
-        result = await activateSpell(selectedCard.instanceId, effectIndex);
-      } else if (isTrap) {
-        result = await activateTrap(selectedCard.instanceId, effectIndex);
-      } else if (isMonster) {
-        result = await activateMonsterEffect(selectedCard.instanceId, effectIndex);
-      } else {
-        return; // Not a valid card type
-      }
-
-      // Check if effect requires player selection
-      if (result?.success && result.requiresSelection && Array.isArray(result.availableTargets)) {
-        setCardSelection({
-          cards: result.availableTargets.map((target) => ({
-            cardId: target.cardId,
-            name: target.name,
-            cardType: target.cardType,
-            imageUrl: target.imageUrl,
-            monsterStats: target.monsterStats,
-            instanceId: target.cardId,
-          })),
-          zone: result.selectionSource || "deck",
-          selectionMode: (result.maxSelections || 1) > 1 ? "multi" : "single",
-          minSelections: result.minSelections || 1,
-          maxSelections: result.maxSelections || 1,
-          title: result.selectionPrompt?.split(":")[0] || "Select Cards",
-          description: result.selectionPrompt || "Select a card",
-          callback: async (selectedIds) => {
-            const selectedCardId = selectedIds[0];
-            if (!selectedCardId) {
-              toast.error("No card selected");
-              return;
-            }
-            try {
-              await completeSearchEffect({
-                lobbyId,
-                sourceCardId: selectedCard.cardId,
-                selectedCardId,
-              });
-              toast.success("Card added to hand!");
-              setSelectedBackrowCard(null);
-              setShowActivateModal(false);
-            } catch (_error) {
-              toast.error("Failed to complete effect");
-            }
-          },
-        });
-      } else if (result?.success) {
-        toast.success(`${selectedCard.name} activated!`);
-        setSelectedBackrowCard(null);
-        setSelectedFieldCard(null);
-        setShowActivateModal(false);
-      } else if (result?.error) {
-        toast.error("Activation Failed", {
-          description: result.error,
-        });
-      }
-    },
-    [
-      selectedBackrowCard,
-      selectedFieldCard,
-      activateSpell,
-      activateFieldSpell,
-      activateTrap,
-      activateMonsterEffect,
-      lobbyId,
-      completeSearchEffect,
-      getPendingCostMutation,
-    ]
-  );
-
-  const handleChainResponse = useCallback(
-    async (cardInstanceId: Id<"cardDefinitions">, effectIndex: number) => {
-      await respondToChain({
-        cardId: cardInstanceId,
-        effectIndex,
-      });
-    },
-    [respondToChain]
-  );
-
-  const handlePassChain = useCallback(async () => {
-    await respondToChain("pass");
-  }, [respondToChain]);
-
-  const handlePassResponseWindow = useCallback(async () => {
-    await passResponseWindow();
-  }, [passResponseWindow]);
-
-  const responseCards = useMemo(() => {
-    if (!chainResponses || !chainResponses.chain || !player) return [];
-
-    return chainResponses.chain.map((response) => {
-      const card =
-        player.backrow.find((c) => c.instanceId === response.cardId) ??
-        player.hand.find((c) => c.instanceId === response.cardId);
-
-      return {
-        cardId: response.cardId,
-        effectName: response.effect,
-        effectIndex: 0,
-        speed: response.spellSpeed as 1 | 2 | 3,
-        card,
-      };
-    });
-  }, [chainResponses, player]);
-
-  // Battle response window detection — show prompt when it's this player's turn
-  const showBattleResponseWindow = useMemo(() => {
-    if (!responseWindow) return false;
-    const isBattleWindow =
-      responseWindow.type === "attack_declaration" || responseWindow.type === "damage_calculation";
-    return (
-      isBattleWindow && responseWindow.canRespond && responseWindow.activePlayerId === playerId
-    );
-  }, [responseWindow, playerId]);
-
-  const battleResponseActionType = useMemo(() => {
-    if (!responseWindow) return "chain_response";
-    if (responseWindow.type === "attack_declaration") return "attack_response";
-    if (responseWindow.type === "damage_calculation") return "damage_response";
-    return "chain_response";
-  }, [responseWindow]);
-
-  // Get activatable cards for battle response windows (spell speed 2+ from backrow)
-  const battleResponseCards = useMemo(() => {
-    if (!showBattleResponseWindow || !player) return [];
-    return player.backrow
-      .filter((card) => {
-        // Traps and quick-play spells can respond during battle
-        // Face-down traps and quick-play spells are activatable
-        return card.cardType === "trap" || card.cardType === "spell";
-      })
-      .map((card) => ({
-        cardId: card.instanceId,
-        effectName: card.name || "Activate",
-        effectIndex: 0,
-        speed: 2 as 1 | 2 | 3,
-        card,
-      }));
-  }, [showBattleResponseWindow, player]);
 
   // Player ID check - MUST happen after all hooks are called
   if (!playerId) {

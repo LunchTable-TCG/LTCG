@@ -41,8 +41,7 @@ export async function POST(req: NextRequest) {
 
     // Validate API key (supports x-api-key and Authorization: Bearer)
     const authHeader = req.headers.get("Authorization");
-    const apiKeyFromBearer =
-      authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
+    const apiKeyFromBearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
     const apiKey = req.headers.get("x-api-key")?.trim() || apiKeyFromBearer;
     if (!apiKey) {
       return NextResponse.json({ error: "API key required" }, { status: 401 });
@@ -95,9 +94,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     const details =
-      error instanceof Error
-        ? error.message.slice(0, 300)
-        : String(error).slice(0, 300);
+      error instanceof Error ? error.message.slice(0, 300) : String(error).slice(0, 300);
     console.error("Failed to record agent event:", error);
     return NextResponse.json({ error: "Failed to record event", details }, { status: 500 });
   }

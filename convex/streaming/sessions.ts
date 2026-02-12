@@ -43,7 +43,7 @@ type StreamWriteAccess = { kind: "internal" } | { kind: "user"; userId: Id<"user
  */
 async function isInternalCaller(
   ctx: QueryCtx | MutationCtx,
-  internalAuth?: string,
+  internalAuth?: string
 ): Promise<boolean> {
   // Check admin identity (set via ConvexHttpClient.setAdminAuth)
   const identity = await ctx.auth.getUserIdentity();
@@ -277,8 +277,8 @@ export const createSession = mutation({
     // Apply overlay config defaults
     const oc = args.overlayConfig ?? {};
     const overlayConfig = {
-      showDecisions: oc.showDecisions ?? (args.streamType === "agent"),
-      showAgentInfo: oc.showAgentInfo ?? (args.streamType === "agent"),
+      showDecisions: oc.showDecisions ?? args.streamType === "agent",
+      showAgentInfo: oc.showAgentInfo ?? args.streamType === "agent",
       showEventFeed: oc.showEventFeed ?? true,
       showPlayerCam: oc.showPlayerCam ?? false,
       webcamPosition: oc.webcamPosition ?? "bottom-right",

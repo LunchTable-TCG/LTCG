@@ -13,9 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { useCurrency } from "@/hooks/economy/useCurrency";
 import { usePlayerCard } from "@/hooks/social/usePlayerCard";
-import type { MatchMode } from "@/types/common";
-import type { WagerCurrency } from "@/lib/wagerTiers";
 import { cn } from "@/lib/utils";
+import type { WagerCurrency } from "@/lib/wagerTiers";
+import type { MatchMode } from "@/types/common";
 import type { Id } from "@convex/_generated/dataModel";
 import {
   Bot,
@@ -122,12 +122,18 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
     mode: MatchMode,
     wagerAmount?: number,
     cryptoWagerCurrency?: WagerCurrency,
-    cryptoWagerTier?: number,
+    cryptoWagerTier?: number
   ) => {
     if (!displayData?.username) return;
     setIsSubmitting(true);
     try {
-      await sendChallenge(displayData.username, mode, wagerAmount, cryptoWagerCurrency, cryptoWagerTier);
+      await sendChallenge(
+        displayData.username,
+        mode,
+        wagerAmount,
+        cryptoWagerCurrency,
+        cryptoWagerTier
+      );
       setShowChallengeDialog(false);
       onClose();
     } catch {

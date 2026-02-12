@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useGuildDiscovery } from "@/hooks/guilds";
+import type { useGuildInteraction } from "@/hooks/guilds/useGuildInteraction";
 import { cn } from "@/lib/utils";
 import {
   ArrowRight,
@@ -20,10 +20,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { GuildCard } from "./GuildCard";
 
-export function NoGuildView() {
+interface NoGuildViewProps {
+  discovery: ReturnType<typeof useGuildInteraction>["discovery"];
+}
+
+export function NoGuildView({ discovery }: NoGuildViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { publicGuilds, searchResults, isLoading, joinPublicGuild, requestToJoin, search } =
-    useGuildDiscovery();
+    discovery;
 
   const displayGuilds = searchQuery.trim() ? searchResults : publicGuilds;
   const isSearching = searchQuery.trim().length > 0 && isLoading;

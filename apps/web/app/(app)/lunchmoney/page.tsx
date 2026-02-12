@@ -4,18 +4,24 @@ import { BalanceCards } from "@/components/lunchmoney/BalanceCards";
 import { MyListings } from "@/components/lunchmoney/MyListings";
 import { PriceHistoryChart } from "@/components/lunchmoney/PriceHistoryChart";
 import { TransactionHistory } from "@/components/lunchmoney/TransactionHistory";
-import { useLunchMoney, usePriceHistory, useTransactionHistory } from "@/hooks/economy";
+import { useLunchMoneyInteraction } from "@/hooks/economy/useLunchMoneyInteraction";
 import { getAssetUrl } from "@/lib/blob";
 import { cn } from "@/lib/utils";
-import type { TransactionFilter } from "@/types/economy";
 import { BarChart3, History, LineChart, Loader2, Package, PieChart, Wallet } from "lucide-react";
-import { useState } from "react";
 
 type TabType = "overview" | "transactions" | "listings" | "prices" | "chart";
 
 export default function LunchMoneyPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [transactionFilter, setTransactionFilter] = useState<TransactionFilter>("all");
+  const {
+    activeTab,
+    setActiveTab,
+    transactionFilter,
+    setTransactionFilter,
+    economy,
+    transactions,
+    prices,
+    isLoading,
+  } = useLunchMoneyInteraction();
 
   // Economy data
   const {
@@ -32,20 +38,19 @@ export default function LunchMoneyPage() {
     goldListings,
     tokenListings,
     pendingPurchases,
-    isLoading,
     cancelGoldListing,
     cancelTokenListing,
     refreshTokenBalance,
-  } = useLunchMoney();
+  } = economy;
 
   // Transaction history
   const {
-    transactions,
+    transactions: historyTransactions,
     tokenTransactions,
     loadMore: loadMoreTransactions,
     hasMore: hasMoreTransactions,
     isLoading: isLoadingTransactions,
-  } = useTransactionHistory();
+  } = transactions;
 
   // Price history
   const {
@@ -61,7 +66,7 @@ export default function LunchMoneyPage() {
     totalVolume,
     isLoading: isLoadingPrices,
     isLoadingTopCards,
-  } = usePriceHistory();
+  } = prices;
 
   if (isLoading) {
     return (
@@ -172,7 +177,7 @@ export default function LunchMoneyPage() {
                   </button>
                 </div>
                 <TransactionHistory
-                  transactions={transactions.slice(0, 5)}
+                  transactions={historyTransactions.slice(0, 5)}
                   tokenTransactions={tokenTransactions.slice(0, 5)}
                   hasMore={false}
                   loadMore={() => {}}
@@ -217,7 +222,7 @@ export default function LunchMoneyPage() {
                 Transaction History
               </h2>
               <TransactionHistory
-                transactions={transactions}
+                transactions={historyTransactions}
                 tokenTransactions={tokenTransactions}
                 hasMore={hasMoreTransactions}
                 loadMore={loadMoreTransactions}

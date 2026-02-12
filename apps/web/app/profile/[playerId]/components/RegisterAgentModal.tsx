@@ -47,9 +47,8 @@ export function RegisterAgentModal({ isOpen, onClose, onSuccess }: RegisterAgent
   const [streamingRtmpUrl, setStreamingRtmpUrl] = useState("");
   const [streamingAutoStart, setStreamingAutoStart] = useState(true);
   const [streamingKeepAlive, setStreamingKeepAlive] = useState(true);
-  const [streamingVisualMode, setStreamingVisualMode] = useState<PlayerVisualMode>(
-    "profile-picture"
-  );
+  const [streamingVisualMode, setStreamingVisualMode] =
+    useState<PlayerVisualMode>("profile-picture");
   const [streamingProfilePictureUrl, setStreamingProfilePictureUrl] = useState("");
   const [streamingVoiceTrackUrl, setStreamingVoiceTrackUrl] = useState("");
   const [streamingVoiceVolume, setStreamingVoiceVolume] = useState("0.9");

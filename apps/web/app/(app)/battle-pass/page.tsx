@@ -1,30 +1,12 @@
 "use client";
 
-import { useBattlePass } from "@/hooks";
+import { useBattlePassInteraction } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { Gift, Loader2, Trophy } from "lucide-react";
-import { useState } from "react";
 import { BattlePassHeader } from "./components/BattlePassHeader";
 import { PremiumUpgradeModal } from "./components/PremiumUpgradeModal";
 import { RewardClaimModal } from "./components/RewardClaimModal";
-import type { RewardType } from "@/types/economy";
 import { TierTrack } from "./components/TierTrack";
-
-interface BattlePassReward {
-  type: RewardType;
-  amount?: number;
-  cardId?: string;
-  packProductId?: string;
-  titleName?: string;
-  avatarUrl?: string;
-}
-
-interface ClaimModalState {
-  isOpen: boolean;
-  tier: number;
-  track: "free" | "premium";
-  reward: BattlePassReward | null;
-}
 
 export default function BattlePassPage() {
   const {
@@ -41,19 +23,17 @@ export default function BattlePassPage() {
     totalClaimableCount,
     claimableFreeCount,
     claimablePremiumCount,
-    claimReward,
-    claimAllRewards,
     purchasePremium,
-  } = useBattlePass();
-
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [claimModalState, setClaimModalState] = useState<ClaimModalState>({
-    isOpen: false,
-    tier: 0,
-    track: "free",
-    reward: null,
-  });
-  const [isClaimingAll, setIsClaimingAll] = useState(false);
+    showPremiumModal,
+    setShowPremiumModal,
+    claimModalState,
+    setClaimModalState,
+    isClaimingAll,
+    handleClaimFromTrack,
+    handleClaimReward,
+    handleClaimAll,
+    unlockedPremiumRewards,
+  } = useBattlePassInteraction();
 
   // Loading state
   if (isLoading) {
@@ -82,43 +62,6 @@ export default function BattlePassPage() {
       </div>
     );
   }
-
-  // Handle reward claim from tier track
-  const handleClaimFromTrack = (tier: number, track: "free" | "premium") => {
-    const tierData = tiers.find((t) => t.tier === tier);
-    if (!tierData) return;
-
-    const reward = track === "free" ? tierData.freeReward : tierData.premiumReward;
-    if (!reward) return;
-
-    setClaimModalState({
-      isOpen: true,
-      tier,
-      track,
-      reward,
-    });
-  };
-
-  // Handle single reward claim
-  const handleClaimReward = async () => {
-    await claimReward(claimModalState.tier, claimModalState.track);
-  };
-
-  // Handle claim all
-  const handleClaimAll = async () => {
-    if (totalClaimableCount === 0) return;
-    setIsClaimingAll(true);
-    try {
-      await claimAllRewards();
-    } finally {
-      setIsClaimingAll(false);
-    }
-  };
-
-  // Calculate unlocked premium rewards for modal
-  const unlockedPremiumRewards = tiers.filter(
-    (t) => t.isUnlocked && t.premiumReward && !t.premiumRewardClaimed
-  ).length;
 
   return (
     <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden">

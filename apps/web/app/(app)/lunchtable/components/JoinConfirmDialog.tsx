@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { MatchMode } from "@/types/common";
 import type { Element } from "@/types/cards";
+import type { MatchMode } from "@/types/common";
 import { Flame, Gamepad2, Shield, Swords, Trophy, Waves, X, Zap } from "lucide-react";
 
 interface GameLobbyEntry {

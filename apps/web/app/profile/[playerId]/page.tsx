@@ -3,11 +3,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { api } from "@/lib/convexApiWrapper";
+import { useUserProfile } from "@/hooks/social/useUserProfile";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
 import {
   Bot,
   Calendar,
@@ -19,21 +17,19 @@ import {
   Link2,
   Loader2,
   Lock,
-  Medal,
   Percent,
   Settings,
   Share2,
   Shield,
-  Star,
   Swords,
   Target,
   TrendingUp,
-  Trophy,
   UserPlus,
   Users,
 } from "lucide-react";
+import { Medal, Star, Trophy } from "lucide-react";
 import Link from "next/link";
-import { use, useRef, useState } from "react";
+import { use, useState } from "react";
 import { toast } from "sonner";
 import { AgentManagement } from "./components";
 
@@ -76,104 +72,27 @@ function formatRelativeTime(timestamp: number): string {
   return formatDate(timestamp);
 }
 
-// Get rank from win count
-function getRank(gamesWon: number): { name: string; color: string; icon: typeof Medal } {
-  if (gamesWon >= 500) return { name: "Legend", color: "text-yellow-400", icon: Trophy };
-  if (gamesWon >= 250) return { name: "Master", color: "text-purple-400", icon: Star };
-  if (gamesWon >= 100) return { name: "Diamond", color: "text-cyan-400", icon: Medal };
-  if (gamesWon >= 50) return { name: "Platinum", color: "text-blue-400", icon: Medal };
-  if (gamesWon >= 25) return { name: "Gold", color: "text-yellow-500", icon: Medal };
-  if (gamesWon >= 10) return { name: "Silver", color: "text-gray-300", icon: Medal };
-  return { name: "Bronze", color: "text-orange-400", icon: Medal };
-}
-
 export default function PlayerProfilePage({ params }: { params: Promise<PageParams> }) {
   const resolvedParams = use(params);
   const playerId = resolvedParams.playerId as Id<"users">;
-  const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
-  const profileImageInputRef = useRef<HTMLInputElement>(null);
+  const {
+    currentUser,
+    profileUser,
+    userStats,
+    profilePrivacy,
+    matchHistory,
+    isOwnProfile,
+    myReferralLink,
+    referralStats,
+    isUploadingProfileImage,
+    profileImageInputRef,
+    stats,
+    handleProfileImageUpload,
+    generateReferralLink,
+  } = useUserProfile({ playerId });
 
-  const { isAuthenticated } = useAuth();
-  const currentUser = useQuery(api.core.users.currentUser, isAuthenticated ? {} : "skip");
-  const generateUploadUrl = useMutation(api.storage.images.generateUploadUrl);
-  const setProfileImage = useMutation(api.core.userPreferences.setProfileImage);
-  const generateReferralLink = useMutation(api.social.referrals.generateReferralLink);
-  const profileUser = useQuery(api.core.users.getUser, { userId: playerId });
-  const userStats = useQuery(api.core.users.getUserStats, { userId: playerId });
-  const profilePrivacy = useQuery(api.progression.matchHistory.getProfilePrivacy, {
-    userId: playerId,
-  });
-  const matchHistory = useQuery(api.progression.matchHistory.getPublicMatchHistory, {
-    userId: playerId,
-    limit: 5,
-  });
-
-  const isOwnProfile = currentUser?._id === playerId;
-
-  // Referral data (only for own profile)
-  const myReferralLink = useQuery(
-    api.social.referrals.getMyReferralLink,
-    isOwnProfile ? {} : "skip"
-  );
-  const referralStats = useQuery(api.social.referrals.getReferralStats, isOwnProfile ? {} : "skip");
-
-  // Calculate stats from real data
-  const gamesPlayed = (userStats?.totalWins ?? 0) + (userStats?.totalLosses ?? 0);
-  const gamesWon = userStats?.totalWins ?? 0;
-  const totalScore = (userStats?.rankedElo ?? 1000) + (userStats?.casualRating ?? 1000);
-
-  const stats = {
-    gamesPlayed,
-    gamesWon,
-    totalScore,
-  };
-
-  const winRate = gamesPlayed > 0 ? Math.round((gamesWon / gamesPlayed) * 100) : 0;
-
-  const rank = getRank(stats.gamesWon);
-  const RankIcon = rank?.icon || Medal;
-
-  const handleProfileImageUpload = async (file: File) => {
-    if (!isOwnProfile) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image file");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image is too large. Maximum size is 5MB.");
-      return;
-    }
-
-    setIsUploadingProfileImage(true);
-    try {
-      const uploadUrl = await generateUploadUrl();
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("Failed to upload profile image");
-      }
-
-      const { storageId } = (await uploadResponse.json()) as { storageId?: Id<"_storage"> };
-      if (!storageId) {
-        throw new Error("Upload did not return a storage ID");
-      }
-
-      await setProfileImage({ storageId });
-      toast.success("Profile picture updated");
-    } catch (error) {
-      console.error("Profile picture upload failed:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to update profile picture");
-    } finally {
-      setIsUploadingProfileImage(false);
-      if (profileImageInputRef.current) {
-        profileImageInputRef.current.value = "";
-      }
-    }
-  };
+  const RankIcon =
+    stats.rank.name === "Legend" ? Trophy : stats.rank.name === "Master" ? Star : Medal;
 
   if (profileUser === undefined) {
     return (
@@ -264,7 +183,7 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
           <div className="ornament-corner ornament-corner-tr" />
 
           {/* Rank Badge */}
-          {rank && (
+          {stats.rank && (
             <Badge
               className={cn(
                 "absolute top-6 right-6 text-[10px] px-3 py-1 font-black uppercase tracking-widest z-20",
@@ -272,7 +191,7 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
               )}
             >
               <RankIcon className="w-4 h-4 mr-2" />
-              {rank.name}
+              {stats.rank.name}
             </Badge>
           )}
 
@@ -401,7 +320,12 @@ export default function PlayerProfilePage({ params }: { params: Promise<PagePara
             value={stats.gamesWon}
             color="text-yellow-400"
           />
-          <StatCard icon={Percent} label="Win Rate" value={`${winRate}%`} color="text-green-400" />
+          <StatCard
+            icon={Percent}
+            label="Win Rate"
+            value={`${stats.winRate}%`}
+            color="text-green-400"
+          />
           <StatCard
             icon={Target}
             label="Total Score"
@@ -704,7 +628,7 @@ interface ReferralSectionProps {
         referrals: Array<{ username?: string; image?: string; joinedAt: number }>;
       }
     | undefined;
-  generateReferralLink: (args: Record<string, never>) => Promise<{ code: string }>;
+  generateReferralLink: () => Promise<void>;
 }
 
 function ReferralSection({
@@ -723,7 +647,7 @@ function ReferralSection({
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      await generateReferralLink({});
+      await generateReferralLink();
       toast.success("Referral link generated!");
     } catch {
       toast.error("Failed to generate referral link");

@@ -1,26 +1,17 @@
 "use client";
 
-import { useCurrency } from "@/hooks/economy/useCurrency";
-import { useTournament, useTournamentHistory, useTournaments } from "@/hooks/social/useTournament";
-import {
-  useJoinUserTournament,
-  useMyHostedTournament,
-  usePublicUserTournaments,
-} from "@/hooks/social/useUserTournaments";
+import { useTournamentInteraction } from "@/hooks";
 import { cn } from "@/lib/utils";
-import type { Id } from "@convex/_generated/dataModel";
-import { Crown, Hash, History, Loader2, Medal, Plus, Trophy, Users } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
 import {
-  CreateTournamentModal,
-  JoinByCodeModal,
-  RegisterModal,
-  TournamentCard,
-  UserTournamentCard,
-} from "./components";
-
-type TabType = "active" | "community" | "history";
+  Crown,
+  Hash,
+  History as HistoryIcon,
+  Loader2,
+  Medal,
+  Plus,
+  Trophy,
+  Users,
+} from "lucide-react";
 
 function getOrdinalSuffix(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -29,60 +20,39 @@ function getOrdinalSuffix(n: number): string {
   return `${n}${suffix}`;
 }
 
-function formatDate(timestamp: number) {
-  return new Date(timestamp).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+import {
+  CreateTournamentModal,
+  JoinByCodeModal,
+  RegisterModal,
+  TournamentCard,
+  UserTournamentCard,
+} from "./components";
 
 export default function TournamentsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("active");
-  const [registeringForTournament, setRegisteringForTournament] =
-    useState<Id<"tournaments"> | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showJoinCodeModal, setShowJoinCodeModal] = useState(false);
-
-  // Hooks
-  const { tournaments, isLoading: tournamentsLoading } = useTournaments();
-  const { history, stats, isLoading: historyLoading } = useTournamentHistory();
-  const { tournaments: communityTournaments, isLoading: communityLoading } =
-    usePublicUserTournaments();
-  const { tournament: myHostedTournament, isLoading: hostedLoading } = useMyHostedTournament();
-  const { joinById } = useJoinUserTournament();
-  const { gold } = useCurrency();
-
-  // For registration modal - get the selected tournament details
-  const { tournament: selectedTournament, register } = useTournament(
-    registeringForTournament ?? undefined
-  );
-
-  const handleRegister = async () => {
-    if (!selectedTournament) return;
-
-    try {
-      const result = await register();
-      toast.success(result.message);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Registration failed");
-      throw error;
-    }
-  };
-
-  const handleJoinCommunityTournament = async (tournamentId: Id<"tournaments">) => {
-    try {
-      await joinById(tournamentId);
-    } catch {
-      // Error handled by hook
-    }
-  };
-
-  const activeTournaments = tournaments.filter(
-    (t) => t.status === "registration" || t.status === "checkin" || t.status === "active"
-  );
-
-  const canCreateTournament = !myHostedTournament;
+  const {
+    activeTab,
+    setActiveTab,
+    registeringForTournament,
+    setRegisteringForTournament,
+    showCreateModal,
+    setShowCreateModal,
+    showJoinCodeModal,
+    setShowJoinCodeModal,
+    gold,
+    activeTournaments,
+    communityTournaments,
+    myHostedTournament,
+    history,
+    stats,
+    selectedTournament,
+    tournamentsLoading,
+    historyLoading,
+    communityLoading,
+    hostedLoading,
+    handleRegister,
+    handleJoinCommunityTournament,
+    canCreateTournament,
+  } = useTournamentInteraction();
 
   return (
     <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden">
@@ -271,7 +241,7 @@ export default function TournamentsPage() {
                 : "text-[#a89f94] hover:text-[#e8e0d5] hover:bg-white/5"
             )}
           >
-            <History className="w-4 h-4" />
+            <HistoryIcon className="w-4 h-4" />
             <span>History</span>
           </button>
         </div>
@@ -395,7 +365,7 @@ export default function TournamentsPage() {
                           <div>
                             <p className="text-xs text-[#a89f94]">Date</p>
                             <p className="text-sm text-[#e8e0d5]">
-                              {formatDate(entry.completedAt)}
+                              {new Date(entry.completedAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -464,7 +434,7 @@ export default function TournamentsPage() {
                         {/* Date */}
                         <div className="col-span-2 text-center">
                           <span className="text-[#a89f94] text-sm">
-                            {formatDate(entry.completedAt)}
+                            {new Date(entry.completedAt).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
@@ -474,7 +444,7 @@ export default function TournamentsPage() {
               </div>
             ) : (
               <EmptyState
-                icon={History}
+                icon={HistoryIcon}
                 title="No Tournament History"
                 description="Join a tournament to start building your history!"
               />

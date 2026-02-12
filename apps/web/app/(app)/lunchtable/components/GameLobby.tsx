@@ -2,8 +2,9 @@
 
 import { useGameLobby, useMatchmaking, useSpectator } from "@/hooks";
 import { logError } from "@/lib/errorHandling";
-import type { MatchMode } from "@/types/common";
 import { cn } from "@/lib/utils";
+import type { Element } from "@/types/cards";
+import type { MatchMode } from "@/types/common";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
@@ -24,7 +25,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { Element } from "@/types/cards";
 import { CreateGameModal } from "./CreateGameModal";
 import { JoinConfirmDialog } from "./JoinConfirmDialog";
 

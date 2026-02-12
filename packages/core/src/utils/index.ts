@@ -24,3 +24,4 @@ export function cn(...inputs: ClassValue[]) {
 export type { ClassValue };
 
 export * from "./card-logic";
+export * from "./user";

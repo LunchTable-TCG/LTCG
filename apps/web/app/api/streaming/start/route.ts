@@ -229,7 +229,9 @@ async function resolveDestination(params: {
 }): Promise<ResolvedDestination> {
   const { convex, body, streamType, userId, internalAuth } = params;
   const requestedPlatform =
-    typeof body.platform === "string" && isStreamingPlatform(body.platform) ? body.platform : undefined;
+    typeof body.platform === "string" && isStreamingPlatform(body.platform)
+      ? body.platform
+      : undefined;
 
   let platform: StreamingPlatform | undefined = requestedPlatform;
   let streamKey = firstNonEmpty(body.streamKey);
@@ -451,7 +453,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing or unsupported platform" }, { status: 400 });
     }
     if (auth.isAgentApiKey && streamType !== "agent") {
-      return NextResponse.json({ error: "Agent API keys may only start agent streams" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Agent API keys may only start agent streams" },
+        { status: 403 }
+      );
     }
     if (streamType === "agent" && !auth.isInternal && !auth.isAgentApiKey) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -478,7 +483,11 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = streamType === "user" ? auth.userId : undefined;
-    const baseUrl = (customBaseUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3334").trim();
+    const baseUrl = (
+      customBaseUrl ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "http://localhost:3334"
+    ).trim();
     const currentLobbyId = firstNonEmpty(lobbyId);
 
     if (streamType === "agent" && agentId && internalAuth) {
@@ -570,7 +579,11 @@ export async function POST(req: NextRequest) {
         userId,
         internalAuth,
       });
-      rtmpUrl = buildRtmpUrl(destination.platform, destination.streamKey, destination.customRtmpUrl);
+      rtmpUrl = buildRtmpUrl(
+        destination.platform,
+        destination.streamKey,
+        destination.customRtmpUrl
+      );
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Invalid RTMP destination";
       return NextResponse.json({ error: msg }, { status: 400 });
@@ -664,7 +677,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Generate JWT overlay token
-    const entityId = streamType === "user" ? (userId ?? "external_user") : agentId || "external_agent";
+    const entityId =
+      streamType === "user" ? (userId ?? "external_user") : agentId || "external_agent";
     const overlayToken = await generateOverlayToken(sessionId, streamType, entityId);
 
     // 6. Build overlay URL

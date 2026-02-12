@@ -1024,6 +1024,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
     // State
     player,
     opponent,
+    playerId: currentPlayerId,
     phase,
     validActions,
     attackOptions,

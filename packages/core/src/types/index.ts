@@ -9,3 +9,4 @@ export * from "./api";
 export * from "./card-logic";
 export * from "./common";
 export * from "./game";
+export * from "./user";

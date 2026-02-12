@@ -2,21 +2,28 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useMyGuild } from "@/hooks/guilds";
-import { useGuild } from "@/hooks/guilds/useGuild";
 import { cn } from "@/lib/utils";
+import type { GuildMember } from "@/types/guilds";
 import type { Id } from "@convex/_generated/dataModel";
 import { Circle, Crown, Loader2, MoreVertical, Shield, UserMinus, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 interface GuildMemberListProps {
-  guildId: Id<"guilds">;
+  members: GuildMember[];
+  isLoading: boolean;
+  isOwner: boolean;
+  onKickMember: (userId: Id<"users">) => Promise<unknown>;
+  onTransferOwnership: (userId: Id<"users">) => Promise<unknown>;
 }
 
-export function GuildMemberList({ guildId }: GuildMemberListProps) {
-  const { members, isLoading, kickMember, transferOwnership } = useGuild(guildId);
-  const { isOwner } = useMyGuild();
+export function GuildMemberList({
+  members,
+  isLoading,
+  isOwner,
+  onKickMember,
+  onTransferOwnership,
+}: GuildMemberListProps) {
   const [actionMenu, setActionMenu] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{
     userId: string;
@@ -25,7 +32,7 @@ export function GuildMemberList({ guildId }: GuildMemberListProps) {
 
   const handleKick = async (userId: Id<"users">, username: string) => {
     try {
-      await kickMember(userId);
+      await onKickMember(userId);
       toast.success(`${username} has been removed from the guild`);
     } catch (_error) {
       toast.error("Failed to remove member");
@@ -36,7 +43,7 @@ export function GuildMemberList({ guildId }: GuildMemberListProps) {
 
   const handleTransfer = async (userId: Id<"users">, username: string) => {
     try {
-      await transferOwnership(userId);
+      await onTransferOwnership(userId);
       toast.success(`Ownership transferred to ${username}`);
     } catch (_error) {
       toast.error("Failed to transfer ownership");

@@ -5,7 +5,6 @@ import { useMutationWithToast } from "@/lib/useMutationWithToast";
 import type { Id } from "@convex/_generated/dataModel";
 import { useAuth } from "../auth/useConvexAuthHook";
 
-
 // Module-scope references to avoid TS2589
 const getMyInvitesQuery = typedApi.social.guilds.invites.getMyInvites;
 const getGuildPendingInvitesQuery = typedApi.social.guilds.invites.getGuildPendingInvites;

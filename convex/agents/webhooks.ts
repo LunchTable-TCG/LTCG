@@ -6,23 +6,23 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
 import * as generatedApi from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 // biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
 const apiAny = (generatedApi as any).api;
 // biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
 const internal = (generatedApi as any).internal;
 import {
-  action,
   type ActionCtx,
+  type MutationCtx,
+  action,
   internalAction,
   internalQuery,
-  type MutationCtx,
 } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
 import { RetryConfig, actionRetrier } from "../infrastructure/actionRetrier";
-import { internalAny } from "../lib/internalHelpers";
 import { requireAuthMutation } from "../lib/convexAuth";
+import { internalAny } from "../lib/internalHelpers";
 
 /**
  * Webhook event types
@@ -91,7 +91,9 @@ function isPrivateOrLocalHost(hostname: string): boolean {
   }
 
   if (host.includes(":")) {
-    return host === "::1" || host.startsWith("fe80:") || host.startsWith("fc") || host.startsWith("fd");
+    return (
+      host === "::1" || host.startsWith("fe80:") || host.startsWith("fc") || host.startsWith("fd")
+    );
   }
 
   return false;
@@ -356,7 +358,10 @@ export const _sendWebhookInternal = internalAction({
       timestamp: Date.now(),
       data: args.data as Record<string, unknown>,
     };
-    const signature = await generateSignature(JSON.stringify(unsignedPayload), config.webhookSecret);
+    const signature = await generateSignature(
+      JSON.stringify(unsignedPayload),
+      config.webhookSecret
+    );
 
     const payload: WebhookPayload = {
       ...unsignedPayload,

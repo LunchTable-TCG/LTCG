@@ -473,7 +473,9 @@ async function handleEgressEnded(
       : undefined;
   const errorMessage = error && typeof error === "string" ? error : undefined;
 
-  console.log(`[Egress] Ending session ${session._id}${errorMessage ? ` (error: ${errorMessage})` : ""}`);
+  console.log(
+    `[Egress] Ending session ${session._id}${errorMessage ? ` (error: ${errorMessage})` : ""}`
+  );
   await ctx.db.patch(session._id, {
     status: errorMessage ? "error" : "ended",
     endedAt: now,

@@ -174,7 +174,10 @@ async function enqueueAsyncHooks(
       break;
 
     case "egress_started":
-      console.log("[Hook] egress_started:", getNestedString(data.event, ["egressInfo", "egressId"]));
+      console.log(
+        "[Hook] egress_started:",
+        getNestedString(data.event, ["egressInfo", "egressId"])
+      );
       break;
 
     case "egress_ended":

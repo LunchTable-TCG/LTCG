@@ -634,7 +634,17 @@ export const activateSpellInternal = internalMutation({
   handler: async (ctx, args) => {
     const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
     const user = await getAuthForUser(ctx, args.userId);
-    return activateSpellHandler(ctx, { lobbyId, cardId: args.cardId, targets: args.targets, costTargets: args.costTargets, effectIndex: args.effectIndex }, user);
+    return activateSpellHandler(
+      ctx,
+      {
+        lobbyId,
+        cardId: args.cardId,
+        targets: args.targets,
+        costTargets: args.costTargets,
+        effectIndex: args.effectIndex,
+      },
+      user
+    );
   },
 });
 
@@ -972,6 +982,16 @@ export const activateTrapInternal = internalMutation({
   handler: async (ctx, args) => {
     const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
     const user = await getAuthForUser(ctx, args.userId);
-    return activateTrapHandler(ctx, { lobbyId, cardId: args.cardId, targets: args.targets, costTargets: args.costTargets, effectIndex: args.effectIndex }, user);
+    return activateTrapHandler(
+      ctx,
+      {
+        lobbyId,
+        cardId: args.cardId,
+        targets: args.targets,
+        costTargets: args.costTargets,
+        effectIndex: args.effectIndex,
+      },
+      user
+    );
   },
 });

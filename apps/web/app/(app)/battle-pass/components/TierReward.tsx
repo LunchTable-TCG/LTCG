@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Check, Crown, Lock } from "lucide-react";
 import type { RewardType } from "@/types/economy";
+import { Check, Crown, Lock } from "lucide-react";
 import { MilestoneIcon, RewardIcon } from "./RewardIcon";
 
 interface BattlePassReward {

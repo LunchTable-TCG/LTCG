@@ -46,8 +46,9 @@ export async function POST(req: NextRequest) {
     }
 
     const authHeader = req.headers.get("Authorization");
-    const authToken =
-      authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : bodyAuthToken;
+    const authToken = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice(7).trim()
+      : bodyAuthToken;
     if (!authToken || typeof authToken !== "string") {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }

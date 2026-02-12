@@ -61,7 +61,14 @@ export async function POST(req: NextRequest) {
         internalAuth,
       });
 
-      const activeForAgent = (sessions as Array<{ _id: Id<"streamingSessions">; agentId?: Id<"agents">; status: string; createdAt: number }>)
+      const activeForAgent = (
+        sessions as Array<{
+          _id: Id<"streamingSessions">;
+          agentId?: Id<"agents">;
+          status: string;
+          createdAt: number;
+        }>
+      )
         .filter((s) => s.agentId === (agentId as Id<"agents">))
         .filter((s) => isActiveSessionStatus(s.status))
         .sort((a, b) => b.createdAt - a.createdAt);
@@ -77,7 +84,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (targetSessionIds.length === 0) {
-      return NextResponse.json({ error: "Missing sessionId or active session for agentId" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing sessionId or active session for agentId" },
+        { status: 400 }
+      );
     }
 
     const stoppedSessionIds: Id<"streamingSessions">[] = [];

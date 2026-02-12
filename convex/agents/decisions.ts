@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { internalQuery, type MutationCtx, query, type QueryCtx } from "../_generated/server";
+import { type MutationCtx, type QueryCtx, internalQuery, query } from "../_generated/server";
 import { internalMutation, mutation } from "../functions";
 import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 
@@ -22,7 +22,10 @@ function hasValidInternalAuth(internalAuth?: string): boolean {
   return expectedSecret === providedSecret;
 }
 
-async function isInternalCaller(ctx: QueryCtx | MutationCtx, internalAuth?: string): Promise<boolean> {
+async function isInternalCaller(
+  ctx: QueryCtx | MutationCtx,
+  internalAuth?: string
+): Promise<boolean> {
   const identity = await ctx.auth.getUserIdentity();
   if (identity?.issuer === "convex") {
     return true;
@@ -41,10 +44,7 @@ async function resolveWriteAccess(
   return { kind: "user", userId: auth.userId };
 }
 
-async function resolveReadAccess(
-  ctx: QueryCtx,
-  internalAuth?: string
-): Promise<DecisionAccess> {
+async function resolveReadAccess(ctx: QueryCtx, internalAuth?: string): Promise<DecisionAccess> {
   if (await isInternalCaller(ctx, internalAuth)) {
     return { kind: "internal" };
   }

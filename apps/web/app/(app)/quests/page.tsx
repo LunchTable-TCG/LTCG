@@ -1,48 +1,34 @@
 "use client";
 
 import { Progress } from "@/components/ui/progress";
-import { useAchievements, useProfile, useQuests } from "@/hooks";
+import { useQuestsInteraction } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { Award, CheckCircle2, Clock, Gift, Loader2, Sparkles, Star, Trophy } from "lucide-react";
-import { useState } from "react";
 
 export default function QuestsPage() {
-  const { profile, isLoading } = useProfile();
   const {
-    quests,
-    activeQuests,
-    completedQuests,
-    claimQuestReward,
-    isLoading: questsLoading,
-  } = useQuests();
-  const {
-    achievements,
-    unlockedAchievements,
-    completionPercent,
-    isLoading: achievementsLoading,
-  } = useAchievements();
+    currentUser: profileWithStats,
+    quests: { quests, activeQuests, completedQuests, claimQuestReward, isLoading: questsLoading },
+    achievements: {
+      achievements,
+      unlockedAchievements,
+      completionPercent,
+      isLoading: achievementsLoading,
+    },
+    isLoading,
+    activeTab,
+    setActiveTab,
+    xpStats: { xpInLevel, xpToNext, progressPercent },
+    winRate,
+  } = useQuestsInteraction();
 
-  const [activeTab, setActiveTab] = useState<"quests" | "achievements">("quests");
-
-  if (isLoading || !profile) {
+  if (isLoading || !profileWithStats) {
     return (
       <div className="min-h-screen bg-[#0d0a09] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-[#d4af37] animate-spin" />
       </div>
     );
   }
-
-  // Calculate XP progress
-  const profileWithStats = profile as typeof profile & {
-    xp?: number;
-    level?: number;
-    totalWins?: number;
-    totalLosses?: number;
-    rankedElo?: number;
-  };
-  const xpInLevel = (profileWithStats.xp ?? 0) % 1000;
-  const xpToNext = 1000;
-  const progressPercent = (xpInLevel / xpToNext) * 100;
 
   return (
     <div className="min-h-screen bg-[#0d0a09] relative overflow-hidden">
@@ -105,16 +91,7 @@ export default function QuestsPage() {
           </div>
           <div className="p-4 rounded-xl bg-linear-to-br from-[#d4af37]/10 to-[#d4af37]/5 border border-[#d4af37]/30">
             <Star className="w-8 h-8 text-[#d4af37] mb-2" />
-            <p className="text-2xl font-black text-[#e8e0d5]">
-              {(profileWithStats.totalWins || 0) > 0
-                ? Math.round(
-                    ((profileWithStats.totalWins || 0) /
-                      ((profileWithStats.totalWins || 0) + (profileWithStats.totalLosses || 0))) *
-                      100
-                  )
-                : 0}
-              %
-            </p>
+            <p className="text-2xl font-black text-[#e8e0d5]">{winRate}%</p>
             <p className="text-xs text-[#a89f94]">Win Rate</p>
           </div>
         </div>

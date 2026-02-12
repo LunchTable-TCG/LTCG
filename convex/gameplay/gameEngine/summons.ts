@@ -652,7 +652,11 @@ export const setMonsterInternal = internalMutation({
   handler: async (ctx, args) => {
     const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
     const user = await getAuthForUser(ctx, args.userId);
-    return setMonsterHandler(ctx, { lobbyId, cardId: args.cardId, tributeCardIds: args.tributeCardIds }, user);
+    return setMonsterHandler(
+      ctx,
+      { lobbyId, cardId: args.cardId, tributeCardIds: args.tributeCardIds },
+      user
+    );
   },
 });
 
@@ -851,7 +855,11 @@ export const flipSummonInternal = internalMutation({
   handler: async (ctx, args) => {
     const lobbyId = await resolveGameIdToLobbyId(ctx, args.gameId);
     const user = await getAuthForUser(ctx, args.userId);
-    return flipSummonHandler(ctx, { lobbyId, cardId: args.cardId, newPosition: args.newPosition }, user);
+    return flipSummonHandler(
+      ctx,
+      { lobbyId, cardId: args.cardId, newPosition: args.newPosition },
+      user
+    );
   },
 });
 

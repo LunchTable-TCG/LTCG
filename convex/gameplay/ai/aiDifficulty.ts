@@ -309,11 +309,7 @@ export function handleBattlePhase(
   if (difficulty === "easy") {
     // Find all eligible attackers (not just the first one)
     const eligibleAttackers = myBoard.filter(
-      (m) =>
-        !m.hasAttacked &&
-        m.position === 1 &&
-        !m.isFaceDown &&
-        m.turnSummoned !== turnNumber
+      (m) => !m.hasAttacked && m.position === 1 && !m.isFaceDown && m.turnSummoned !== turnNumber
     );
 
     if (eligibleAttackers.length > 0 && Math.random() > 0.5) {

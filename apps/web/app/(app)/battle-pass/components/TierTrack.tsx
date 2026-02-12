@@ -1,9 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import type { RewardType } from "@/types/economy";
 import { Crown } from "lucide-react";
 import { useEffect, useRef } from "react";
-import type { RewardType } from "@/types/economy";
 import { TierReward } from "./TierReward";
 
 interface BattlePassReward {

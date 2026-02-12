@@ -5,9 +5,9 @@
  * Uses handleUpload to generate secure upload tokens and process completion callbacks.
  */
 
+import * as generatedApi from "@convex/_generated/api";
 import { del, list } from "@vercel/blob";
 import { type HandleUploadBody, handleUpload } from "@vercel/blob/client";
-import * as generatedApi from "@convex/_generated/api";
 import { ConvexHttpClient } from "convex/browser";
 import { NextResponse } from "next/server";
 

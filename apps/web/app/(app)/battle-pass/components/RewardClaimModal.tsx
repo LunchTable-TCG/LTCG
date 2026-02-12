@@ -6,17 +6,10 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Crown, Gift, Loader2, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { RewardType } from "@/types/economy";
+
 import { RewardIcon } from "./RewardIcon";
 
-interface BattlePassReward {
-  type: RewardType;
-  amount?: number;
-  cardId?: string;
-  packProductId?: string;
-  titleName?: string;
-  avatarUrl?: string;
-}
+import type { BattlePassReward } from "@/types/progression";
 
 interface RewardClaimModalProps {
   isOpen: boolean;

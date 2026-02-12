@@ -1,14 +1,12 @@
 "use client";
 
-import { useAuth } from "@/hooks/auth/useConvexAuthHook";
-import { useMyGuild } from "@/hooks/guilds";
+import { useGuildInteraction } from "@/hooks/guilds/useGuildInteraction";
 import { Loader2, Shield } from "lucide-react";
 import { GuildDashboard } from "./components/GuildDashboard";
 import { NoGuildView } from "./components/NoGuildView";
 
 export default function GuildsPage() {
-  const { isAuthenticated } = useAuth();
-  const { guild, isLoading } = useMyGuild();
+  const { isAuthenticated, isLoading, hasGuild, dashboard, discovery } = useGuildInteraction();
 
   if (!isAuthenticated) {
     return (
@@ -38,7 +36,11 @@ export default function GuildsPage() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-amber-900/10 via-[#0d0a09] to-[#0d0a09]" />
 
       <div className="container mx-auto px-4 pt-28 pb-16 relative z-10">
-        {guild ? <GuildDashboard /> : <NoGuildView />}
+        {hasGuild ? (
+          <GuildDashboard dashboard={dashboard} />
+        ) : (
+          <NoGuildView discovery={discovery} />
+        )}
       </div>
     </div>
   );

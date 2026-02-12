@@ -158,11 +158,7 @@ crons.interval(
 // - Cleans duplicate stream sessions/egresses
 // - Restarts story mode if an agent is idle too long
 // - Attempts stream start for active games missing a stream session
-crons.interval(
-  "agent-autonomy-watchdog",
-  { minutes: 1 },
-  internalAny.agents.autonomy.tick
-);
+crons.interval("agent-autonomy-watchdog", { minutes: 1 }, internalAny.agents.autonomy.tick);
 
 // ============================================================================
 // CRYPTO WAGER DISCONNECT MONITOR

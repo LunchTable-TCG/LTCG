@@ -1300,7 +1300,9 @@ export const getGameStateForPlayerInternal = internalQuery({
     const opponentBoard = opponentBoardData.filter(Boolean);
 
     // Get spell/trap zones with card data
-    const mySpellTrapZoneRaw = isHost ? gameState.hostSpellTrapZone : gameState.opponentSpellTrapZone;
+    const mySpellTrapZoneRaw = isHost
+      ? gameState.hostSpellTrapZone
+      : gameState.opponentSpellTrapZone;
     const mySpellTrapData = await Promise.all(
       mySpellTrapZoneRaw.map(async (stCard) => {
         const cardData = await getCardData(stCard.cardId);

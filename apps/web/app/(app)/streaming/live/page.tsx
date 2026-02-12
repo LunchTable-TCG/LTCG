@@ -108,11 +108,12 @@ export default function LiveStreamingPage() {
                       </div>
                       <div className="mt-2 text-xs text-[#a89f94]">
                         <p>
-                          Streaming: {agent.streamingEnabled ? "enabled" : "disabled"} · Auto-start: {" "}
+                          Streaming: {agent.streamingEnabled ? "enabled" : "disabled"} · Auto-start:{" "}
                           {agent.streamingAutoStart ? "on" : "off"}
                         </p>
                         <p>
-                          Platform: {agent.streamingPlatform ? agent.streamingPlatform : "not configured"}
+                          Platform:{" "}
+                          {agent.streamingPlatform ? agent.streamingPlatform : "not configured"}
                         </p>
                       </div>
                     </div>
@@ -125,7 +126,8 @@ export default function LiveStreamingPage() {
           <aside className="space-y-4">
             <ChannelHealthPanel sessionId={activeSessionId} />
             <div className="rounded-2xl border border-[#3d2b1f] bg-black/30 p-4 text-xs text-[#a89f94]">
-              Active stream sessions: <span className="text-[#f5deb3]">{activeAgentStreams.length}</span>
+              Active stream sessions:{" "}
+              <span className="text-[#f5deb3]">{activeAgentStreams.length}</span>
             </div>
           </aside>
         </div>

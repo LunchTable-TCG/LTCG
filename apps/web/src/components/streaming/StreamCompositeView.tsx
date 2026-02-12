@@ -161,7 +161,9 @@ export function StreamCompositeView({ sessionId }: StreamCompositeViewProps) {
           <div className="waiting-state">
             <h2>Match Over</h2>
             {matchResult && (
-              <p className={`match-result ${matchResult === "win" ? "match-result--win" : "match-result--loss"}`}>
+              <p
+                className={`match-result ${matchResult === "win" ? "match-result--win" : "match-result--loss"}`}
+              >
                 Result: {matchResult.toUpperCase()}
               </p>
             )}

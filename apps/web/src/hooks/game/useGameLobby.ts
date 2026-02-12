@@ -2,8 +2,8 @@
 
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { handleHookError } from "@/lib/errorHandling";
-import type { MatchMode } from "@/types/common";
 import type { WagerCurrency } from "@/lib/wagerTiers";
+import type { MatchMode } from "@/types/common";
 import type { Id } from "@convex/_generated/dataModel";
 import { toast } from "sonner";
 

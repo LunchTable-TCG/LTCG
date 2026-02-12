@@ -5,10 +5,10 @@ import { useGuildChat, useMyGuild } from "@/hooks/guilds";
 import { useAIChat } from "@/hooks/social/useAIChat";
 import { useDMChat } from "@/hooks/social/useDMChat";
 import { useDMConversations } from "@/hooks/social/useDMConversations";
-import type { MatchMode } from "@/types/common";
-import type { WagerCurrency } from "@/lib/wagerTiers";
 import { sanitizeChatMessage, sanitizeText } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
+import type { WagerCurrency } from "@/lib/wagerTiers";
+import type { MatchMode } from "@/types/common";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
@@ -284,7 +284,7 @@ export function GlobalChat() {
     mode: MatchMode,
     wagerAmount?: number,
     cryptoWagerCurrency?: WagerCurrency,
-    cryptoWagerTier?: number,
+    cryptoWagerTier?: number
   ) => {
     if (!challengeTarget) return;
 

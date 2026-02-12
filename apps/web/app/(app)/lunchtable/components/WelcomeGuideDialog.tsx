@@ -6,6 +6,7 @@ import {
   Check,
   ChevronRight,
   Flame,
+  Loader2,
   Shield,
   Sparkles,
   Swords,
@@ -18,6 +19,7 @@ interface WelcomeGuideDialogProps {
   isOpen: boolean;
   onComplete: (selectedDeck: string) => void;
   username?: string;
+  isClaiming?: boolean;
 }
 
 type Step = "welcome" | "deck";
@@ -85,6 +87,7 @@ export function WelcomeGuideDialog({
   isOpen,
   onComplete,
   username = "Traveler",
+  isClaiming = false,
 }: WelcomeGuideDialogProps) {
   const [step, setStep] = useState<Step>("welcome");
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
@@ -312,7 +315,7 @@ export function WelcomeGuideDialog({
               <button
                 type="button"
                 onClick={handleComplete}
-                disabled={!selectedDeck}
+                disabled={!selectedDeck || isClaiming}
                 className={cn(
                   "px-8 py-3 rounded-xl font-black uppercase tracking-wide text-sm flex items-center gap-2 transition-all",
                   selectedDeck
@@ -320,8 +323,12 @@ export function WelcomeGuideDialog({
                     : "bg-[#3d2b1f]/50 text-[#a89f94]/50 cursor-not-allowed border border-[#3d2b1f]"
                 )}
               >
-                <Sparkles className="w-4 h-4" />
-                Begin Your Journey
+                {isClaiming ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                {isClaiming ? "Claiming..." : "Begin Your Journey"}
               </button>
             </div>
           </div>

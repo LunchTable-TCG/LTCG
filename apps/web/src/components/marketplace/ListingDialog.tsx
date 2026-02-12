@@ -3,10 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import type { Rarity } from "@/types/cards";
 import type { Id } from "@convex/_generated/dataModel";
 import { Coins, Loader2, Package, X } from "lucide-react";
 import { useState } from "react";
-import type { Rarity } from "@/types/cards";
 
 interface Card {
   cardDefinitionId: Id<"cardDefinitions">;

@@ -27,13 +27,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const {
-      sessionId,
-      lastMatchEndedAt,
-      lastMatchResult,
-      lastMatchSummary,
-      clearCurrentLobby,
-    } = await req.json();
+    const { sessionId, lastMatchEndedAt, lastMatchResult, lastMatchSummary, clearCurrentLobby } =
+      await req.json();
 
     if (!sessionId || typeof sessionId !== "string") {
       return NextResponse.json({ error: "sessionId is required" }, { status: 400 });

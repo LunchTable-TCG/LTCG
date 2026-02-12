@@ -33,19 +33,36 @@ export { useMatchmaking } from "./game/useMatchmaking";
 // Collection Hooks
 export { useDeckBuilder, useDeck, useValidateDeck } from "./collection/useDeckBuilder";
 export { useCardBinder } from "./collection/useCardBinder";
+export { useCardCollection } from "./collection/useCardCollection";
+export { useDeckEditor } from "./collection/useDeckEditor";
+export { useBinderInteraction } from "./collection/useBinderInteraction";
 
 // Economy Hooks
-export { useCurrency } from "./economy/useCurrency";
-export { useShop } from "./economy/useShop";
-export { useMarketplace } from "./economy/useMarketplace";
-export { usePromoCode } from "./economy/usePromoCode";
-export { useTokenBalance } from "./economy/useTokenBalance";
+export * from "./economy/useCurrency";
+export * from "./economy/useMarketplace";
+export * from "./economy/useShop";
+export * from "./economy/useShopInteraction";
+export * from "./economy/useLunchMoneyInteraction";
+export * from "./marketplace/useTokenPurchase";
+export * from "./social/useSettingsInteraction";
+export * from "./marketplace/useTokenListing";
+export * from "./social/useInboxInteraction";
 
-// Social Hooks
-export { useGlobalChat } from "./social/useGlobalChat";
+// Social & Profile Hooks
+export * from "./social/useUserProfile";
+export * from "./social/useFriendsInteraction";
+export * from "./social/useProfile";
+export * from "./social/useTournament";
+
+// Game & Tournament Hooks
+export * from "./game/useTournamentInteraction";
+
+// Onboarding & Logic Hooks
+export * from "./onboarding/useLunchtableLogic";
+
 export { useLeaderboard } from "./social/useLeaderboard";
-export { useProfile } from "./social/useProfile";
-export { useFriends, useSearchUsers } from "./social/useFriends";
+export * from "./social/useLeaderboardInteraction";
+
 export { usePlayerCard } from "./social/usePlayerCard";
 export { useTournaments, useTournament, useTournamentHistory } from "./social/useTournament";
 export type {
@@ -64,9 +81,13 @@ export type {
   UserTournamentStats,
 } from "./social/useTournament";
 
-// Progression Hooks
-export { useQuests } from "./progression/useQuests";
-export { useAchievements } from "./progression/useAchievements";
+// Progression & Battle Pass Hooks
+export * from "./progression/useBattlePass";
+export * from "./progression/useBattlePassInteraction";
+export * from "./progression/useQuests";
+export * from "./progression/useQuestsInteraction";
+export * from "./progression/useAchievements";
+export * from "./progression/useMatchHistoryInteraction";
 export { useNotifications } from "./progression/useNotifications";
 export { useBattlePass } from "./progression/useBattlePass";
 
