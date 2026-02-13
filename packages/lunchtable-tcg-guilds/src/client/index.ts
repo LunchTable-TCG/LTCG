@@ -39,11 +39,15 @@ export class LTCGGuilds {
   public guilds: GuildsClient;
   public members: MembersClient;
   public invites: InvitesClient;
+  public chat: ChatClient;
+  public discovery: DiscoveryClient;
 
   constructor(private component: typeof api) {
     this.guilds = new GuildsClient(component);
     this.members = new MembersClient(component);
     this.invites = new InvitesClient(component);
+    this.chat = new ChatClient(component);
+    this.discovery = new DiscoveryClient(component);
   }
 }
 
@@ -325,6 +329,151 @@ export class InvitesClient {
     return await ctx.runMutation(this.component.invites.deleteInviteLink, {
       linkId: args.linkId as any,
       deletedBy: args.deletedBy,
+    });
+  }
+}
+
+/**
+ * Client for guild chat operations.
+ */
+export class ChatClient {
+  constructor(private component: typeof api) {}
+
+  async sendMessage(
+    ctx: RunMutationCtx,
+    args: {
+      guildId: string;
+      senderId: string;
+      senderName: string;
+      content: string;
+      metadata?: any;
+    }
+  ) {
+    return await ctx.runMutation(this.component.chat.sendMessage, {
+      guildId: args.guildId as any,
+      senderId: args.senderId,
+      senderName: args.senderName,
+      content: args.content,
+      metadata: args.metadata,
+    });
+  }
+
+  async getMessages(
+    ctx: RunQueryCtx,
+    args: {
+      guildId: string;
+      limit?: number;
+      before?: number;
+    }
+  ) {
+    return await ctx.runQuery(this.component.chat.getMessages, {
+      guildId: args.guildId as any,
+      limit: args.limit,
+      before: args.before,
+    });
+  }
+
+  async getRecentMessages(
+    ctx: RunQueryCtx,
+    args: {
+      guildId: string;
+      count?: number;
+    }
+  ) {
+    return await ctx.runQuery(this.component.chat.getRecentMessages, {
+      guildId: args.guildId as any,
+      count: args.count,
+    });
+  }
+
+  async deleteMessage(
+    ctx: RunMutationCtx,
+    args: {
+      messageId: string;
+      deletedBy: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.chat.deleteMessage, {
+      messageId: args.messageId as any,
+      deletedBy: args.deletedBy,
+    });
+  }
+}
+
+/**
+ * Client for guild discovery and join request operations.
+ */
+export class DiscoveryClient {
+  constructor(private component: typeof api) {}
+
+  async searchGuilds(
+    ctx: RunQueryCtx,
+    args: {
+      searchTerm: string;
+      limit?: number;
+    }
+  ) {
+    return await ctx.runQuery(this.component.discovery.searchGuilds, args);
+  }
+
+  async submitJoinRequest(
+    ctx: RunMutationCtx,
+    args: {
+      guildId: string;
+      requesterId: string;
+      message?: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.discovery.submitJoinRequest, {
+      guildId: args.guildId as any,
+      requesterId: args.requesterId,
+      message: args.message,
+    });
+  }
+
+  async getJoinRequests(
+    ctx: RunQueryCtx,
+    args: {
+      guildId: string;
+    }
+  ) {
+    return await ctx.runQuery(this.component.discovery.getJoinRequests, {
+      guildId: args.guildId as any,
+    });
+  }
+
+  async getPlayerRequests(
+    ctx: RunQueryCtx,
+    args: {
+      requesterId: string;
+    }
+  ) {
+    return await ctx.runQuery(this.component.discovery.getPlayerRequests, args);
+  }
+
+  async approveJoinRequest(
+    ctx: RunMutationCtx,
+    args: {
+      requestId: string;
+      approvedBy: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.discovery.approveJoinRequest, {
+      requestId: args.requestId as any,
+      approvedBy: args.approvedBy,
+    });
+  }
+
+  async rejectJoinRequest(
+    ctx: RunMutationCtx,
+    args: {
+      requestId: string;
+      rejectedBy: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.discovery.rejectJoinRequest, {
+      requestId: args.requestId as any,
+      rejectedBy: args.rejectedBy,
     });
   }
 }
