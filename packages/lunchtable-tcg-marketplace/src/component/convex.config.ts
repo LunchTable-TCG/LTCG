@@ -1,1 +1,3 @@
-// Component configuration will be implemented in later tasks
+import { defineComponent } from "convex/server";
+
+export default defineComponent("lunchtable-tcg-marketplace");
