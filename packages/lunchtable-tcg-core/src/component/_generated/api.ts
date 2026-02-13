@@ -14,8 +14,19 @@ import type {
   FunctionReference,
 } from "convex/server";
 import { anyApi, componentsGeneric } from "convex/server";
+import type * as cards from "../cards";
+import type * as decks from "../decks";
+import type * as game from "../game";
+import type * as hooks from "../hooks";
+import type * as matchmaking from "../matchmaking";
 
-const fullApi: ApiFromModules<{}> = anyApi as any;
+const fullApi: ApiFromModules<{
+  cards: typeof cards;
+  decks: typeof decks;
+  game: typeof game;
+  hooks: typeof hooks;
+  matchmaking: typeof matchmaking;
+}> = anyApi as any;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

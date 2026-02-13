@@ -76,12 +76,12 @@ export const create = mutation({
       if (!deckDoc) {
         // Fallback: try direct get in case deckId is a valid document ID
         const deckById = await ctx.db.get(player.deckId as any);
-        if (!deckById) {
+        if (!deckById || !('cards' in deckById)) {
           throw new Error(
             `Deck not found for player ${player.id}: ${player.deckId}`
           );
         }
-        // Use deckById
+        // Use deckById - TypeScript now knows it has 'cards' property
         const cardInstances = deckById.cards.map((cardId: string) => ({
           instanceId: `${cardId}_${randomHex(8)}`,
           cardId,
