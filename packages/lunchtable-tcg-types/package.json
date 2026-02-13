@@ -1,0 +1,41 @@
+{
+  "name": "@lunchtable-tcg/types",
+  "version": "0.1.0",
+  "description": "Shared TypeScript types for Lunchtable TCG engine components",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./card": {
+      "types": "./dist/card.d.ts",
+      "import": "./dist/card.js"
+    },
+    "./game": {
+      "types": "./dist/game.d.ts",
+      "import": "./dist/game.js"
+    },
+    "./effect": {
+      "types": "./dist/effect.d.ts",
+      "import": "./dist/effect.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "convex": "^1.24.8"
+  },
+  "devDependencies": {
+    "convex": "^1.31.6",
+    "typescript": "^5.7.3"
+  },
+  "files": ["dist", "src"],
+  "keywords": ["tcg", "convex", "types", "card-game"]
+}
