@@ -14,10 +14,12 @@ import type {
   FunctionReference,
 } from "convex/server";
 import { anyApi, componentsGeneric } from "convex/server";
-import type * as battle from "../battle";
+import type * as battleLog from "../battleLog";
+import type * as combat from "../combat";
 
 const fullApi: ApiFromModules<{
-  battle: typeof battle;
+  battleLog: typeof battleLog;
+  combat: typeof combat;
 }> = anyApi as any;
 
 /**

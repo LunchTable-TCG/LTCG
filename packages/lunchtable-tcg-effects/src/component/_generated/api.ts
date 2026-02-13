@@ -14,8 +14,15 @@ import type {
   FunctionReference,
 } from "convex/server";
 import { anyApi, componentsGeneric } from "convex/server";
+import type * as chains from "../chains";
+import type * as effects from "../effects";
+import type * as triggers from "../triggers";
 
-const fullApi: ApiFromModules<{}> = anyApi as any;
+const fullApi: ApiFromModules<{
+  chains: typeof chains;
+  effects: typeof effects;
+  triggers: typeof triggers;
+}> = anyApi as any;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

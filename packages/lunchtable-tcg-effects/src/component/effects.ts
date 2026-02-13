@@ -122,8 +122,9 @@ export const getModifiers = query({
 
     // Filter by target if provided
     if (args.targetCardId !== undefined) {
+      const targetCardId = args.targetCardId;
       filtered = filtered.filter((effect) =>
-        effect.targets.includes(args.targetCardId)
+        effect.targets.includes(targetCardId)
       );
     }
 
