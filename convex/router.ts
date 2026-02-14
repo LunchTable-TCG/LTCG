@@ -38,6 +38,9 @@ import * as decisions from "./http/decisions";
 // Well-Known (x402 Discovery)
 import * as wellknown from "./http/wellknown";
 
+// Admin Management
+import * as admin from "./http/admin";
+
 const http = httpRouter();
 
 // ============================================================================
@@ -545,6 +548,45 @@ http.route({
   path: "/api/agents/shop/pack-gems",
   method: "POST",
   handler: shop.purchasePackWithGems,
+});
+
+// ============================================================================
+// Admin Management Endpoints
+// ============================================================================
+
+// GET /api/admin/config - Get current game configuration
+http.route({
+  path: "/api/admin/config",
+  method: "GET",
+  handler: admin.getConfig,
+});
+
+// OPTIONS /api/admin/config - CORS preflight
+http.route({
+  path: "/api/admin/config",
+  method: "OPTIONS",
+  handler: admin.getConfig,
+});
+
+// PUT /api/admin/config - Update game configuration
+http.route({
+  path: "/api/admin/config",
+  method: "PUT",
+  handler: admin.updateConfig,
+});
+
+// POST /api/admin/seed-cards - Seed card definitions
+http.route({
+  path: "/api/admin/seed-cards",
+  method: "POST",
+  handler: admin.seedCards,
+});
+
+// OPTIONS /api/admin/seed-cards - CORS preflight
+http.route({
+  path: "/api/admin/seed-cards",
+  method: "OPTIONS",
+  handler: admin.seedCards,
 });
 
 export default http;
