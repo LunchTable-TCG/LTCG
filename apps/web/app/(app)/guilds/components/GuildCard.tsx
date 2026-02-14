@@ -30,94 +30,93 @@ export function GuildCard({
   const isPrivate = guild.visibility === "private";
 
   return (
-    <div className="group relative overflow-hidden rounded-xl bg-card border border-border hover:border-primary/50 transition-all duration-300">
-      {/* Hover glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      <div className="relative p-5">
-        {/* Header */}
-        <div className="flex items-start gap-4 mb-4">
-          {/* Guild Avatar */}
-          <div className="relative shrink-0">
+    <div className={cn(
+      "paper-panel group relative flex flex-col p-5 transition-all border-2 border-primary min-h-[180px]",
+      "hover:shadow-[4px_4px_0px_0px_rgba(18,18,18,1)] hover:-translate-y-0.5",
+      isJoining && "opacity-70 grayscale pointer-events-none"
+    )}>
+      {/* Header */}
+      <div className="flex items-start gap-4 mb-4">
+        {/* Guild Avatar */}
+        <div className="relative shrink-0">
+          <div className="w-16 h-16 border-2 border-primary bg-slate-50 overflow-hidden relative shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             {guild.profileImageUrl ? (
               <img
                 src={guild.profileImageUrl}
                 alt={guild.name}
-                className="w-14 h-14 rounded-xl object-cover border-2 border-primary/20 group-hover:border-primary/50 transition-colors"
+                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
               />
             ) : (
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-primary/20 group-hover:border-primary/50 flex items-center justify-center transition-colors">
-                <Shield className="w-7 h-7 text-primary" />
-              </div>
-            )}
-            {isPrivate && (
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card border border-border flex items-center justify-center">
-                <Lock className="w-3 h-3 text-muted-foreground" />
+              <div className="w-full h-full flex items-center justify-center bg-secondary/20">
+                <Shield className="w-8 h-8 text-primary" />
               </div>
             )}
           </div>
-
-          {/* Guild Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                {guild.name}
-              </h3>
+          {isPrivate && (
+            <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-white border-2 border-primary flex items-center justify-center shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+              <Lock className="w-3 h-3 text-primary" />
             </div>
-            {guild.ownerUsername && (
-              <div className="flex items-center gap-1.5 mt-1">
-                <Crown className="w-3 h-3 text-primary" />
-                <span className="text-xs text-muted-foreground">{guild.ownerUsername}</span>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Description */}
+        {/* Guild Info */}
+        <div className="flex-1 min-w-0">
+          <h3 className="text-xl font-black uppercase italic tracking-tighter leading-none ink-bleed truncate pr-2 group-hover:text-destructive transition-colors">
+            {guild.name}
+          </h3>
+          {guild.ownerUsername && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <Crown className="w-3 h-3 text-destructive" />
+              <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter">
+                Lead: {guild.ownerUsername}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Description */}
+      <div className="flex-1">
         {guild.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
+          <p className="text-xs font-bold text-muted-foreground uppercase leading-tight line-clamp-2 mb-4 tracking-tighter">
             {guild.description}
           </p>
         )}
+      </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">
-                {guild.memberCount}
-                <span className="text-muted-foreground">/50</span>
-              </span>
-            </div>
-            <div
-              className={cn(
-                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                isPrivate
-                  ? "bg-muted/10 text-muted-foreground border border-muted/20"
-                  : "bg-green-500/10 text-green-400 border border-green-500/20"
-              )}
-            >
-              {isPrivate ? "Private" : "Public"}
-            </div>
+      {/* Footer */}
+      <div className="flex items-center justify-between mt-auto pt-4 border-t-2 border-dashed border-primary/20">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <Users className="w-4 h-4 text-primary" />
+            <span className="text-xs font-black uppercase tracking-tighter">
+              {guild.memberCount}<span className="opacity-40">/50</span>
+            </span>
           </div>
-
-          {showJoinButton && onJoin && guild.memberCount < 50 && (
-            <Button
-              onClick={onJoin}
-              disabled={isJoining}
-              size="sm"
-              className={cn(
-                "rounded-lg font-bold text-xs",
-                isPrivate
-                  ? "bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90"
-              )}
-            >
-              {isJoining ? "..." : isPrivate ? "Request" : "Join"}
-            </Button>
-          )}
+          <div
+            className={cn(
+              "px-2 py-0.5 border-2 font-black text-[9px] uppercase tracking-widest",
+              isPrivate
+                ? "border-muted-foreground/30 text-muted-foreground bg-secondary/10"
+                : "border-primary bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] text-primary"
+            )}
+          >
+            {isPrivate ? "Private" : "Public"}
+          </div>
         </div>
+
+        {showJoinButton && onJoin && guild.memberCount < 50 && (
+          <Button
+            onClick={onJoin}
+            disabled={isJoining}
+            className={cn(
+              "tcg-button-primary h-9 px-4 text-[10px] font-black uppercase tracking-widest",
+              isPrivate && "bg-secondary text-foreground hover:bg-secondary/80 border-primary"
+            )}
+          >
+             {isPrivate ? "Apply" : "Join"}
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -18,23 +18,23 @@ export function GuildDashboard({ dashboard }: GuildDashboardProps) {
   if (!guild) return null;
 
   const tabs = [
-    { id: "members" as const, label: "Members", count: guild.memberCount },
-    { id: "chat" as const, label: "Chat" },
+    { id: "members" as const, label: "Registry", count: guild.memberCount },
+    { id: "chat" as const, label: "Comms" },
     ...(isOwner
       ? [
-          { id: "invites" as const, label: "Invites & Requests" },
-          { id: "settings" as const, label: "Settings" },
+          { id: "invites" as const, label: "Requests" },
+          { id: "settings" as const, label: "Admin" },
         ]
       : []),
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10 scanner-noise">
       {/* Guild Header with Banner */}
       <GuildHeader guild={guild} myRole={myRole} />
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1 bg-card/40 rounded-xl border border-border w-fit">
+      <div className="flex flex-wrap gap-2 p-2 border-4 border-primary bg-secondary/10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -43,21 +43,22 @@ export function GuildDashboard({ dashboard }: GuildDashboardProps) {
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all",
+                "flex items-center gap-3 px-6 py-3 font-black uppercase tracking-widest transition-all text-xs",
+                "border-2",
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  ? "bg-primary text-primary-foreground border-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]"
+                  : "bg-white text-muted-foreground border-primary/20 hover:border-primary/50 hover:text-foreground hover:translate-y-[-1px]"
               )}
             >
-              <span>{tab.label}</span>
+              <span className="ink-bleed">{tab.label}</span>
               {tab.count !== undefined && (
                 <span
                   className={cn(
-                    "px-2 py-0.5 rounded-full text-xs font-bold",
-                    isActive ? "bg-black/20" : "bg-white/10"
+                    "px-1.5 py-0.5 font-bold text-[10px]",
+                    isActive ? "bg-black/20" : "bg-primary/10 text-primary"
                   )}
                 >
-                  {tab.count}
+                  {tab.count.toString().padStart(2, '0')}
                 </span>
               )}
             </button>
@@ -66,7 +67,7 @@ export function GuildDashboard({ dashboard }: GuildDashboardProps) {
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[400px]">
+      <div className="min-h-[500px] paper-panel border-4 border-primary p-6 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mt-2">
         {activeTab === "members" && (
           <GuildMemberList
             members={dashboard.members}

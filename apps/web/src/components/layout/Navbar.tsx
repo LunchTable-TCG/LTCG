@@ -8,6 +8,7 @@ import { WalletButton } from "@/components/wallet";
 import { useAuth, useLogout } from "@/hooks/auth/useConvexAuthHook";
 import { getAssetUrl } from "@/lib/blob";
 import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
+import { XPDisplay } from "@/components/shared/XPDisplay";
 import { cn } from "@/lib/utils";
 import {
   Award,
@@ -314,7 +315,11 @@ export function Navbar() {
                         ? "LOADING..."
                         : currentUser?.username || "STUDENT"}
                     </p>
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Regret Level: {currentUser?.level ?? 1}</p>
+                    <XPDisplay
+                      level={currentUser?.level ?? 1}
+                      currentXP={currentUser?.xp ?? 0}
+                      className="mt-1"
+                    />
                   </div>
                 </div>
               </div>

@@ -41,6 +41,7 @@ export class LTCGEconomy {
   public promo: PromoClient;
   public seeds: SeedsClient;
   public wager: WagerClient;
+  public rngConfig: RngConfigClient;
 
   constructor(private component: typeof api) {
     this.currency = new CurrencyClient(component);
@@ -50,6 +51,7 @@ export class LTCGEconomy {
     this.promo = new PromoClient(component);
     this.seeds = new SeedsClient(component);
     this.wager = new WagerClient(component);
+    this.rngConfig = new RngConfigClient(component);
   }
 }
 
@@ -453,5 +455,49 @@ export class WagerClient {
       status: args.status,
       txSignature: args.txSignature,
     });
+  }
+}
+
+// ============================================================================
+// RNG CONFIG CLIENT
+// ============================================================================
+
+export type RngConfigData = {
+  rarityWeights: {
+    common: number;
+    uncommon: number;
+    rare: number;
+    epic: number;
+    legendary: number;
+  };
+  variantRates: {
+    standard: number;
+    foil: number;
+    altArt: number;
+    fullArt: number;
+  };
+  pityThresholds: {
+    epic: number;
+    legendary: number;
+    fullArt: number;
+  };
+};
+
+export class RngConfigClient {
+  constructor(private component: typeof api) {}
+
+  async getRngConfig(ctx: RunQueryCtx): Promise<RngConfigData | null> {
+    return await ctx.runQuery(this.component.rngConfig.getRngConfig, {});
+  }
+
+  async setRngConfig(
+    ctx: RunMutationCtx,
+    args: {
+      rarityWeights?: RngConfigData["rarityWeights"];
+      variantRates?: RngConfigData["variantRates"];
+      pityThresholds?: RngConfigData["pityThresholds"];
+    }
+  ) {
+    return await ctx.runMutation(this.component.rngConfig.setRngConfig, args);
   }
 }

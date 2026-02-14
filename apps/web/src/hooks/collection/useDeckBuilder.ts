@@ -1,14 +1,15 @@
 "use client";
 
 import { handleHookError } from "@/lib/errorHandling";
-import { api } from "@convex/_generated/api";
+import { typedApi, useQuery } from "@/lib/convexHelpers";
+import { api } from "@/lib/convexApiWrapper";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UseDeckBuilderReturn {
-  decks: ReturnType<typeof useQuery<typeof api.core.decks.getUserDecks>> | undefined;
+  decks: any;
   isLoading: boolean;
   createDeck: (name: string) => Promise<Id<"userDecks">>;
   saveDeck: (
@@ -74,22 +75,33 @@ interface UseDeckBuilderReturn {
 export function useDeckBuilder(): UseDeckBuilderReturn {
   const { isAuthenticated } = useAuth();
 
+  // Fetch current user details
+  const currentUser = useQuery(
+    typedApi.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
+
+  const userId = currentUser?._id;
+
   // Queries
-  const decks = useQuery(api.core.decks.getUserDecks, isAuthenticated ? {} : "skip");
+  const decks = useQuery(
+    (api as any).core.decks.getUserDecks,
+    userId ? { userId } : "skip"
+  );
 
   // Mutations
-  const createMutation = useMutation(api.core.decks.createDeck);
-  const saveMutation = useMutation(api.core.decks.saveDeck);
-  const renameMutation = useMutation(api.core.decks.renameDeck);
-  const deleteMutation = useMutation(api.core.decks.deleteDeck);
-  const duplicateMutation = useMutation(api.core.decks.duplicateDeck);
-  const setActiveMutation = useMutation(api.core.decks.setActiveDeck);
+  const createMutation = useMutation((api as any).core.decks.createDeck);
+  const saveMutation = useMutation((api as any).core.decks.saveDeck);
+  const renameMutation = useMutation((api as any).core.decks.renameDeck);
+  const deleteMutation = useMutation((api as any).core.decks.deleteDeck);
+  const duplicateMutation = useMutation((api as any).core.decks.duplicateDeck);
+  const setActiveMutation = useMutation((api as any).core.decks.setActiveDeck);
 
   // Actions
   const createDeck = async (name: string) => {
-    if (!isAuthenticated) throw new Error("Not authenticated");
+    if (!isAuthenticated || !userId) throw new Error("Not authenticated");
     try {
-      const result = await createMutation({ name });
+      const result = await createMutation({ userId, name });
       toast.success(`Deck "${name}" created`);
       return result.deckId;
     } catch (error) {
@@ -103,9 +115,9 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
     deckId: Id<"userDecks">,
     cards: Array<{ cardDefinitionId: Id<"cardDefinitions">; quantity: number }>
   ) => {
-    if (!isAuthenticated) throw new Error("Not authenticated");
+    if (!isAuthenticated || !userId) throw new Error("Not authenticated");
     try {
-      await saveMutation({ deckId, cards });
+      await saveMutation({ userId, deckId, cards });
       toast.success("Deck saved");
     } catch (error) {
       const message = handleHookError(error, "Failed to save deck");
@@ -115,9 +127,9 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
   };
 
   const renameDeck = async (deckId: Id<"userDecks">, newName: string) => {
-    if (!isAuthenticated) throw new Error("Not authenticated");
+    if (!isAuthenticated || !userId) throw new Error("Not authenticated");
     try {
-      await renameMutation({ deckId, newName });
+      await renameMutation({ userId, deckId, newName });
       toast.success(`Deck renamed to "${newName}"`);
     } catch (error) {
       const message = handleHookError(error, "Failed to rename deck");
@@ -127,9 +139,9 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
   };
 
   const deleteDeck = async (deckId: Id<"userDecks">) => {
-    if (!isAuthenticated) throw new Error("Not authenticated");
+    if (!isAuthenticated || !userId) throw new Error("Not authenticated");
     try {
-      await deleteMutation({ deckId });
+      await deleteMutation({ userId, deckId });
       toast.success("Deck deleted");
     } catch (error) {
       const message = handleHookError(error, "Failed to delete deck");
@@ -139,13 +151,14 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
   };
 
   const duplicateDeck = async (deckId: Id<"userDecks">, newName?: string) => {
-    if (!isAuthenticated) throw new Error("Not authenticated");
+    if (!isAuthenticated || !userId) throw new Error("Not authenticated");
     try {
       // Find source deck to generate a name if not provided
-      const sourceDeck = decks?.find((d: NonNullable<typeof decks>[number]) => d.id === deckId);
+      const sourceDeck = decks?.find((d: any) => d.id === deckId);
       const duplicateName = newName || (sourceDeck ? `${sourceDeck.name} (Copy)` : "Deck Copy");
 
       const result = await duplicateMutation({
+        userId,
         newName: duplicateName,
         sourceDeckId: deckId,
       });
@@ -159,9 +172,9 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
   };
 
   const setActiveDeck = async (deckId: Id<"userDecks">) => {
-    if (!isAuthenticated) throw new Error("Not authenticated");
+    if (!isAuthenticated || !userId) throw new Error("Not authenticated");
     try {
-      await setActiveMutation({ deckId });
+      await setActiveMutation({ userId, deckId });
       toast.success("Active deck updated");
     } catch (error) {
       const message = handleHookError(error, "Failed to set active deck");
@@ -173,7 +186,7 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
   return {
     // Data
     decks,
-    isLoading: decks === undefined,
+    isLoading: currentUser === undefined || decks === undefined,
 
     // Actions
     createDeck,
@@ -214,7 +227,18 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
 export function useDeck(deckId: Id<"userDecks"> | null) {
   const { isAuthenticated } = useAuth();
 
-  return useQuery(api.core.decks.getDeckWithCards, isAuthenticated && deckId ? { deckId } : "skip");
+  // Fetch current user details
+  const currentUser = useQuery(
+    typedApi.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
+
+  const userId = currentUser?._id;
+
+  return useQuery(
+    (api as any).core.decks.getDeckWithCards,
+    userId && deckId ? { userId, deckId } : "skip"
+  );
 }
 
 /**
@@ -250,5 +274,16 @@ export function useDeck(deckId: Id<"userDecks"> | null) {
 export function useValidateDeck(deckId: Id<"userDecks"> | null) {
   const { isAuthenticated } = useAuth();
 
-  return useQuery(api.core.decks.validateDeck, isAuthenticated && deckId ? { deckId } : "skip");
+  // Fetch current user details
+  const currentUser = useQuery(
+    typedApi.core.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
+
+  const userId = currentUser?._id;
+
+  return useQuery(
+    (api as any).core.decks.validateDeck,
+    userId && deckId ? { userId, deckId } : "skip"
+  );
 }

@@ -3,7 +3,7 @@
 import { calculateCollectionStats, filterCards, sortCards } from "@/lib/collectionUtils";
 import type { SortOption } from "@/types";
 import type { BinderTab, CardData, ViewMode } from "@/types/binder";
-import type { CardType, ElementWithNeutral as Element, Rarity } from "@/types/cards";
+import type { CardType, Element, Rarity } from "@/types/cards";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMemo, useState } from "react";
 import { useCardBinder } from "./useCardBinder";

@@ -1,18 +1,20 @@
 /**
- * XP Helpers — inline implementation
+ * XP Helpers — wired to @lunchtable-tcg/progression component.
  *
- * No component API exists for XP yet. This patches the `users` table
- * directly (the `xp` field). Can be extracted to a component later.
+ * Provides a convenience wrapper so callers don't need to import
+ * the component client directly.
  */
 
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { progression } from "./componentClients";
 
 /**
  * Add XP to a user.
  *
- * Updates the `xp` field on the `users` table. Caller (`stats.ts`)
- * passes `{ source }` as the 4th arg — we accept that shape.
+ * Delegates to the progression component's XP system which tracks
+ * lifetime XP and computes levels automatically. Caller (`stats.ts`)
+ * passes `{ source }` as the 4th arg — accepted for API compatibility.
  */
 export async function addXP(
   ctx: MutationCtx,
@@ -26,8 +28,8 @@ export async function addXP(
     return;
   }
 
-  const currentXP = user.xp ?? 0;
-  await ctx.db.patch(userId, {
-    xp: currentXP + amount,
+  await progression.xp.addXP(ctx, {
+    userId: userId as string,
+    amount,
   });
 }

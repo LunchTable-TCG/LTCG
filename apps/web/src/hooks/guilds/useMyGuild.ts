@@ -1,6 +1,7 @@
 "use client";
 
-import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useQuery } from "@/lib/convexHelpers";
+import { useMutation } from "convex/react";
 import { handleHookError } from "@/lib/errorHandling";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
@@ -18,11 +19,11 @@ const leaveGuildMutationRef = typedApi.social.guilds.members.leaveGuild;
 export function useMyGuild() {
   const { isAuthenticated } = useAuth();
 
-  const myGuild = useConvexQuery(getMyGuildQuery, isAuthenticated ? {} : "skip");
-  const hasGuild = useConvexQuery(hasGuildQuery, isAuthenticated ? {} : "skip");
+  const myGuild = useQuery(getMyGuildQuery, isAuthenticated ? {} : "skip");
+  const hasGuild = useQuery(hasGuildQuery, isAuthenticated ? {} : "skip");
 
   // Mutations
-  const leaveGuildMutation = useConvexMutation(leaveGuildMutationRef);
+  const leaveGuildMutation = useMutation(leaveGuildMutationRef);
 
   // Actions
   const leaveGuild = async () => {

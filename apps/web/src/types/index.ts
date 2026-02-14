@@ -103,7 +103,6 @@ export {
 export type {
   Rarity,
   Element,
-  ElementWithNeutral,
   CardType,
 } from "./cards";
 

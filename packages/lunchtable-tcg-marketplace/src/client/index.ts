@@ -194,8 +194,7 @@ export class BidsClient {
 }
 
 /**
- * Client for marketplace price caps.
- * NOTE: Shop products/sales features removed - tables no longer exist in schema.
+ * Client for marketplace shop products, sales, and price caps.
  */
 export class ShopClient {
   constructor(private component: typeof api) {}
@@ -214,11 +213,97 @@ export class ShopClient {
       isActive: args?.isActive,
     });
   }
+
+  async getProducts(ctx: RunQueryCtx, args?: { category?: string }) {
+    return await ctx.runQuery(this.component.shop.getProducts, args || {});
+  }
+
+  async getProductById(ctx: RunQueryCtx, args: { id: string }) {
+    return await ctx.runQuery(this.component.shop.getProductById, {
+      id: args.id as any,
+    });
+  }
+
+  async purchaseProduct(
+    ctx: RunMutationCtx,
+    args: {
+      productId: string;
+      buyerId: string;
+      quantity: number;
+    }
+  ) {
+    return await ctx.runMutation(this.component.shop.purchaseProduct, {
+      productId: args.productId as any,
+      buyerId: args.buyerId,
+      quantity: args.quantity,
+    });
+  }
+
+  async createProduct(
+    ctx: RunMutationCtx,
+    args: {
+      name: string;
+      description: string;
+      category: string;
+      price: number;
+      currency: string;
+      imageUrl?: string;
+      stock?: number;
+      metadata?: any;
+    }
+  ) {
+    return await ctx.runMutation(this.component.shop.createProduct, args);
+  }
+
+  async updateProduct(
+    ctx: RunMutationCtx,
+    args: {
+      id: string;
+      fields: {
+        name?: string;
+        description?: string;
+        category?: string;
+        price?: number;
+        currency?: string;
+        imageUrl?: string;
+        stock?: number;
+        isActive?: boolean;
+        saleId?: string;
+        metadata?: any;
+      };
+    }
+  ) {
+    return await ctx.runMutation(this.component.shop.updateProduct, {
+      id: args.id as any,
+      fields: {
+        ...args.fields,
+        saleId: args.fields.saleId ? (args.fields.saleId as any) : undefined,
+      },
+    });
+  }
+
+  async createSale(
+    ctx: RunMutationCtx,
+    args: {
+      name: string;
+      discountPercent: number;
+      startTime: number;
+      endTime: number;
+      productIds?: string[];
+      metadata?: any;
+    }
+  ) {
+    return await ctx.runMutation(this.component.shop.createSale, args);
+  }
+
+  async getActiveSales(ctx: RunQueryCtx) {
+    return await ctx.runQuery(this.component.shop.getActiveSales, {});
+  }
 }
 
 /**
  * Client for marketplace analytics and price tracking.
- * NOTE: Now uses sold listings instead of removed transactions/priceHistory tables.
+ * Derives data from sold marketplaceListings.
  */
 export class AnalyticsClient {
   constructor(private component: typeof api) {}

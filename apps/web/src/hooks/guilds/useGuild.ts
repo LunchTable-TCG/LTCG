@@ -1,6 +1,6 @@
 "use client";
 
-import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useQuery } from "@/lib/convexHelpers";
 import { useMutationWithToast } from "@/lib/useMutationWithToast";
 import type { Visibility } from "@/types/common";
 import type { Id } from "@convex/_generated/dataModel";
@@ -27,13 +27,13 @@ const rejectRequestMutation = typedApi.social.guilds.requests.rejectRequest;
  */
 export function useGuild(guildId: Id<"guilds"> | null) {
   // Queries
-  const guild = useConvexQuery(getGuildQuery, guildId ? { guildId } : "skip");
-  const members = useConvexQuery(getGuildMembersQuery, guildId ? { guildId } : "skip");
-  const onlineMemberCount = useConvexQuery(
+  const guild = useQuery(getGuildQuery, guildId ? { guildId } : "skip");
+  const members = useQuery(getGuildMembersQuery, guildId ? { guildId } : "skip");
+  const onlineMemberCount = useQuery(
     getOnlineMemberCountQuery,
     guildId ? { guildId } : "skip"
   );
-  const joinRequests = useConvexQuery(getGuildJoinRequestsQuery, guildId ? { guildId } : "skip");
+  const joinRequests = useQuery(getGuildJoinRequestsQuery, guildId ? { guildId } : "skip");
 
   // Mutations with toast handling
   const updateGuildRaw = useMutationWithToast(updateGuildMutation, {

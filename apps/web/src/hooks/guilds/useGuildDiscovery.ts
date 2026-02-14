@@ -1,6 +1,6 @@
 "use client";
 
-import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
+import { typedApi, useQuery } from "@/lib/convexHelpers";
 import { useMutationWithToast } from "@/lib/useMutationWithToast";
 import type { Id } from "@convex/_generated/dataModel";
 import { useState } from "react";
@@ -21,12 +21,12 @@ export function useGuildDiscovery() {
   const [sortBy, setSortBy] = useState<"members" | "recent" | "name">("members");
 
   // Queries
-  const featuredGuilds = useConvexQuery(getFeaturedGuildsQuery, { limit: 6 });
-  const searchResults = useConvexQuery(
+  const featuredGuilds = useQuery(getFeaturedGuildsQuery, { limit: 6 });
+  const searchResults = useQuery(
     searchGuildsQuery,
     searchQuery.length >= 2 ? { query: searchQuery, limit: 20 } : "skip"
   );
-  const publicGuilds = useConvexQuery(getPublicGuildsQuery, { limit: 20, sortBy });
+  const publicGuilds = useQuery(getPublicGuildsQuery, { limit: 20, sortBy });
 
   // Mutations with toast handling
   const joinPublicGuild = useMutationWithToast(joinPublicGuildMutation, {

@@ -288,6 +288,30 @@ export default defineSchema({
     .index("by_code", ["promoCodeId", "redeemedAt"])
     .index("by_user_code", ["userId", "promoCodeId"]),
 
+  // Dynamic RNG configuration (rarity weights, variant rates, pity thresholds)
+  rngConfig: defineTable({
+    key: v.literal("active"),
+    rarityWeights: v.object({
+      common: v.number(),
+      uncommon: v.number(),
+      rare: v.number(),
+      epic: v.number(),
+      legendary: v.number(),
+    }),
+    variantRates: v.object({
+      standard: v.number(),
+      foil: v.number(),
+      altArt: v.number(),
+      fullArt: v.number(),
+    }),
+    pityThresholds: v.object({
+      epic: v.number(),
+      legendary: v.number(),
+      fullArt: v.number(),
+    }),
+    updatedAt: v.number(),
+  }).index("by_key", ["key"]),
+
   // Crypto wager transactions (merged from wager component)
   cryptoWagerTransactions: defineTable({
     lobbyId: v.string(),

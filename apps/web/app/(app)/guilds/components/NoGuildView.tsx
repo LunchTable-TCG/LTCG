@@ -3,13 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { useGuildInteraction } from "@/hooks/guilds/useGuildInteraction";
-import { cn } from "@/lib/utils";
 import {
-  ArrowRight,
-  Loader2,
   Plus,
   Search,
-  Shield,
   Sparkles,
   Swords,
   Trophy,
@@ -19,6 +15,9 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { GuildCard } from "./GuildCard";
+import { Badge } from "@/components/ui/badge";
+
+import { ToolGrid } from "@/components/shared/ToolGrid";
 
 interface NoGuildViewProps {
   discovery: ReturnType<typeof useGuildInteraction>["discovery"];
@@ -26,11 +25,16 @@ interface NoGuildViewProps {
 
 export function NoGuildView({ discovery }: NoGuildViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { publicGuilds, searchResults, isLoading, joinPublicGuild, requestToJoin, search } =
-    discovery;
+  const {
+    publicGuilds,
+    searchResults,
+    isLoading,
+    joinPublicGuild,
+    requestToJoin,
+    search
+  } = discovery;
 
   const displayGuilds = searchQuery.trim() ? searchResults : publicGuilds;
-  const isSearching = searchQuery.trim().length > 0 && isLoading;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,214 +44,172 @@ export function NoGuildView({ discovery }: NoGuildViewProps) {
   };
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-12 scanner-noise">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-card/50">
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#d4af37]/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-600/5 rounded-full blur-2xl" />
+      <div className="paper-panel p-8 md:p-12 border-4 border-primary relative overflow-hidden bg-secondary/10">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32" />
 
-        <div className="relative p-8 md:p-12">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            {/* Left - CTA */}
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30">
-                <Shield className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold text-primary uppercase tracking-wider">
-                  Guilds
-                </span>
-              </div>
-
-              <h1 className="text-4xl md:text-5xl font-black text-foreground leading-tight">
-                Forge Your
-                <span className="block text-primary">Legacy Together</span>
-              </h1>
-
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                Join forces with fellow champions. Create your guild, recruit members, and dominate
-                the leaderboards as a united force.
-              </p>
-
-              <div className="flex flex-wrap gap-4">
-                <Button
-                  asChild
-                  className="tcg-button-primary rounded-xl px-6 py-6 text-base font-bold"
-                >
-                  <Link href="/guilds/create">
-                    <Plus className="w-5 h-5 mr-2" />
-                    Create Guild
-                  </Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="rounded-xl px-6 py-6 text-base border-border text-foreground hover:bg-primary/10 hover:border-primary/50"
-                  onClick={() =>
-                    document
-                      .getElementById("guild-discovery")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
-                >
-                  <Search className="w-5 h-5 mr-2" />
-                  Find a Guild
-                </Button>
-              </div>
+        <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <div className="inline-block px-3 py-1 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
+              Social Registry
             </div>
 
-            {/* Right - Feature Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { icon: Users, label: "50 Members Max", desc: "Build your army" },
-                { icon: Trophy, label: "Guild Rankings", desc: "Coming Soon" },
-                { icon: Swords, label: "Guild Wars", desc: "Coming Soon" },
-                { icon: Sparkles, label: "AI Agents", desc: "Recruit bots" },
-              ].map((feature) => {
-                const Icon = feature.icon;
-                return (
-                  <div
-                    key={feature.label}
-                    className="p-4 rounded-xl bg-card/30 border border-border hover:border-primary/30 transition-all group"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                      <Icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <p className="font-bold text-foreground text-sm">{feature.label}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                      {feature.desc}
-                    </p>
+            <h1 className="text-5xl md:text-7xl font-black uppercase italic leading-none tracking-tighter ink-bleed">
+              Guilds
+            </h1>
+
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-tight max-w-md leading-snug">
+              Forge your legacy together. Join forces with fellow champions, recruit members, and dominate the hierarchy as a united front.
+            </p>
+
+            <div className="flex flex-wrap gap-4 pt-4">
+              <Button
+                asChild
+                className="tcg-button-primary h-14 px-8 text-lg gap-3"
+              >
+                <Link href="/guilds/create">
+                  <Plus className="w-6 h-6" />
+                  Form Guild
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="tcg-button-outline h-14 px-8 text-lg border-2"
+                onClick={() =>
+                  document
+                    .getElementById("guild-discovery")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                <Search className="w-6 h-6" />
+                Find Active
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { icon: Users, label: "50 Seats", desc: "Member Cap" },
+              { icon: Trophy, label: "Rankings", desc: "Live Soon" },
+              { icon: Swords, label: "Wars", desc: "Conflict Mod" },
+              { icon: Sparkles, label: "AI Recruits", desc: "Bot Support" },
+            ].map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={feature.label}
+                  className="p-4 border-2 border-primary bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-transform"
+                >
+                  <div className="w-10 h-10 border-2 border-primary bg-secondary/20 flex items-center justify-center mb-3">
+                    <Icon className="w-5 h-5 text-primary" />
                   </div>
-                );
-              })}
-            </div>
+                  <p className="font-black text-xs uppercase tracking-tighter">{feature.label}</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1 opacity-60">
+                    {feature.desc}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Guild Discovery Section */}
-      <div id="guild-discovery" className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
-              <Search className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-foreground">Discover Guilds</h2>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                Find your new home
-              </p>
-            </div>
+      {/* Discovery Section */}
+      <div id="guild-discovery" className="space-y-8 pt-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b-4 border-primary pb-6">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-black uppercase italic tracking-tighter leading-none ink-bleed">
+              Active Discovery
+            </h2>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+              Search the registry for your new home
+            </p>
           </div>
+
+          <form onSubmit={handleSearch} className="relative w-full md:max-w-sm">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary opacity-50" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter by name..."
+              className="pl-12 pr-4 h-12 bg-white border-2 border-primary rounded-none font-bold uppercase text-xs focus:ring-0 focus:border-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+            />
+          </form>
         </div>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="relative max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#a89f94]" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search guilds by name..."
-            className="pl-12 pr-4 py-6 bg-card/40 border-border text-foreground rounded-xl focus:border-primary/50"
-          />
-        </form>
-
-        {/* Guild Grid */}
-        {isSearching ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          </div>
-        ) : displayGuilds.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayGuilds.map((guild) => (
-              <GuildCard
-                key={guild._id}
-                guild={guild}
-                onJoin={() => {
-                  if (guild.visibility === "public") {
-                    joinPublicGuild(guild._id);
-                  } else {
-                    requestToJoin(guild._id);
-                  }
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16 rounded-xl bg-card/40 border border-border">
-            <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-foreground font-bold mb-2">
-              {searchQuery ? "No guilds found" : "No public guilds yet"}
-            </p>
-            <p className="text-muted-foreground mb-6">
-              {searchQuery ? "Try a different search term" : "Be the first to create one!"}
-            </p>
-            <Button asChild className="rounded-xl">
-              <Link href="/guilds/create">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Guild
-              </Link>
-            </Button>
-          </div>
-        )}
+        <ToolGrid
+          isLoading={isLoading}
+          isEmpty={displayGuilds.length === 0}
+          emptyMessage={searchQuery ? "No guilds found for this filter." : "No public guilds registered."}
+        >
+          {displayGuilds.map((guild) => (
+            <GuildCard
+              key={guild._id}
+              guild={guild}
+              onJoin={() => {
+                if (guild.visibility === "public") {
+                  joinPublicGuild(guild._id);
+                } else {
+                  requestToJoin(guild._id);
+                }
+              }}
+            />
+          ))}
+        </ToolGrid>
       </div>
 
-      {/* Future Features Teaser */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
-            <Zap className="w-5 h-5 text-purple-400" />
+      {/* Features Teaser */}
+      <div className="space-y-8 pt-12">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary bg-secondary/20 flex items-center justify-center">
+            <Zap className="w-6 h-6 text-primary" />
           </div>
-          <div>
-            <h2 className="text-xl font-black text-[#e8e0d5]">Coming Soon</h2>
-            <p className="text-xs text-[#a89f94] uppercase tracking-wider">The future awaits</p>
+          <div className="space-y-0.5">
+            <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">Upcoming Systems</h2>
+            <div className="h-1 w-32 bg-primary" />
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-3 gap-6">
           {[
             {
               icon: Trophy,
-              title: "Guild Leaderboards",
-              desc: "Compete against other guilds for seasonal rewards and eternal glory.",
-              color: "amber",
+              title: "Leaderboards",
+              desc: "Seasonal conflicts for eternal glory.",
+              status: "PENDING"
             },
             {
               icon: Swords,
               title: "Guild Wars",
-              desc: "Wage epic battles against rival guilds in strategic conquest mode.",
-              color: "red",
+              desc: "Strategic conquest modes.",
+              status: "LOCKED"
             },
             {
               icon: Sparkles,
-              title: "AI Agent Surprises",
-              desc: "Recruit powerful AI agents with unique abilities to your guild.",
-              color: "purple",
+              title: "AI Recruits",
+              desc: "Neural network members.",
+              status: "ALPHA"
             },
           ].map((feature) => {
             const Icon = feature.icon;
-            const colorClasses = {
-              amber: "bg-amber-500/10 border-amber-500/20 text-amber-400",
-              red: "bg-red-500/10 border-red-500/20 text-red-400",
-              purple: "bg-purple-500/10 border-purple-500/20 text-purple-400",
-            };
             return (
               <div
                 key={feature.title}
-                className="relative overflow-hidden p-6 rounded-xl bg-black/40 border border-[#3d2b1f] hover:border-[#d4af37]/30 transition-all group"
+                className="paper-panel p-6 border-2 border-primary bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group"
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div
-                  className={cn(
-                    "w-12 h-12 rounded-xl border flex items-center justify-center mb-4",
-                    colorClasses[feature.color as keyof typeof colorClasses]
-                  )}
-                >
-                  <Icon className="w-6 h-6" />
+                <div className="flex items-center justify-between mb-4">
+                   <div className="w-12 h-12 border-2 border-primary bg-secondary/10 flex items-center justify-center">
+                     <Icon className="w-6 h-6 text-primary" />
+                   </div>
+                   <Badge className="rounded-none border-2 border-primary bg-primary text-primary-foreground text-[8px] font-black uppercase px-2 py-0.5">
+                     {feature.status}
+                   </Badge>
                 </div>
-                <h3 className="font-bold text-[#e8e0d5] mb-2">{feature.title}</h3>
-                <p className="text-sm text-[#a89f94] leading-relaxed">{feature.desc}</p>
-                <div className="mt-4 flex items-center gap-2 text-xs text-[#d4af37]">
-                  <span className="font-bold uppercase tracking-wider">Learn More</span>
-                  <ArrowRight className="w-3 h-3" />
-                </div>
+                <h3 className="font-black text-lg uppercase italic tracking-tighter mb-2">{feature.title}</h3>
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-tight leading-snug">
+                  {feature.desc}
+                </p>
               </div>
             );
           })}

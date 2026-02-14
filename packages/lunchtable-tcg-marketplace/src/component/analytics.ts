@@ -1,8 +1,8 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 
-// TODO: priceHistory and transactions tables were removed from schema.
-// These analytics functions need to be rewritten to work with marketplaceListings only.
+// Analytics functions derive data from sold marketplaceListings.
+// No separate priceHistory or transactions tables needed.
 
 const listingSaleReturnValidator = v.object({
   _id: v.string(),

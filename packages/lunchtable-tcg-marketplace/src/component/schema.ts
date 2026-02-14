@@ -69,4 +69,51 @@ export default defineSchema({
   })
     .index("by_card", ["cardDefinitionId"])
     .index("by_active", ["isActive", "createdAt"]),
+
+  // Shop product catalog for the marketplace storefront
+  shopProducts: defineTable({
+    name: v.string(),
+    description: v.string(),
+    category: v.string(),
+    price: v.number(),
+    currency: v.string(),
+    imageUrl: v.optional(v.string()),
+    stock: v.optional(v.number()),
+    isActive: v.boolean(),
+    saleId: v.optional(v.id("shopSales")),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_category", ["category", "isActive"])
+    .index("by_active", ["isActive", "createdAt"]),
+
+  // Sales/discounts for shop products
+  shopSales: defineTable({
+    name: v.string(),
+    discountPercent: v.number(),
+    startTime: v.number(),
+    endTime: v.number(),
+    productIds: v.optional(v.array(v.string())),
+    isActive: v.boolean(),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_active", ["isActive", "startTime"])
+    .index("by_time", ["startTime", "endTime"]),
+
+  // Purchase records for shop products
+  shopPurchases: defineTable({
+    productId: v.id("shopProducts"),
+    buyerId: v.string(),
+    quantity: v.number(),
+    unitPrice: v.number(),
+    totalPrice: v.number(),
+    currency: v.string(),
+    discountApplied: v.optional(v.number()),
+    saleId: v.optional(v.id("shopSales")),
+    purchasedAt: v.number(),
+  })
+    .index("by_buyer", ["buyerId", "purchasedAt"])
+    .index("by_product", ["productId", "purchasedAt"]),
 });

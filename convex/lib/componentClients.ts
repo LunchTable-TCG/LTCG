@@ -17,6 +17,8 @@
 import { components } from "../_generated/api";
 import { LTCGAdmin } from "@lunchtable-tcg/admin";
 import { LTCGEconomy } from "@lunchtable-tcg/economy";
+import { LTCGPayments } from "@lunchtable-tcg/payments";
+import { LTCGProgression } from "@lunchtable-tcg/progression";
 
 // biome-ignore lint/suspicious/noExplicitAny: generated types are stale — will resolve after `npx convex dev`
 const c = components as any;
@@ -30,3 +32,13 @@ export const economy = new LTCGEconomy(c.ltcgEconomy);
  * Admin component client — roles, audit, moderation.
  */
 export const admin = new LTCGAdmin(c.ltcgAdmin);
+
+/**
+ * Payments component client — gem packages, Stripe integration, x402 payments.
+ */
+export const payments = new LTCGPayments(c.ltcgPayments);
+
+/**
+ * Progression component client — XP, achievements, quests, battle pass, badges.
+ */
+export const progression = new LTCGProgression(c.ltcgProgression);

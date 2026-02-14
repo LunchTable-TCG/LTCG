@@ -7,6 +7,7 @@
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { economy } from "./componentClients";
 // Types previously from economy/rngConfig — now inline since economy module moved to component
 export type RarityWeights = {
   common: number;
@@ -31,9 +32,12 @@ type FullRngConfig = {
   variantRates: VariantRates;
   pityThresholds: PityThresholds;
 };
-// Stub: returns constant defaults. Re-wire to economy component for dynamic config.
-async function getFullRngConfig(_ctx: unknown): Promise<FullRngConfig> {
-  return {
+/**
+ * Fetch RNG configuration from the economy component.
+ * Falls back to hardcoded constants when no DB config exists.
+ */
+async function getFullRngConfig(ctx: QueryCtx | MutationCtx): Promise<FullRngConfig> {
+  const DEFAULTS: FullRngConfig = {
     rarityWeights: RARITY_WEIGHTS as unknown as RarityWeights,
     variantRates: {
       standard: VARIANT_CONFIG.BASE_RATES.standard,
@@ -43,6 +47,20 @@ async function getFullRngConfig(_ctx: unknown): Promise<FullRngConfig> {
     },
     pityThresholds: PITY_THRESHOLDS as unknown as PityThresholds,
   };
+
+  try {
+    const dbConfig = await economy.rngConfig.getRngConfig(ctx);
+    if (!dbConfig) return DEFAULTS;
+
+    return {
+      rarityWeights: dbConfig.rarityWeights,
+      variantRates: dbConfig.variantRates,
+      pityThresholds: dbConfig.pityThresholds,
+    };
+  } catch {
+    // If the component query fails (e.g. table doesn't exist yet), use defaults
+    return DEFAULTS;
+  }
 }
 import {
   ELO_SYSTEM,

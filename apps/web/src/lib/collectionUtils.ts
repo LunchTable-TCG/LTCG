@@ -1,7 +1,7 @@
 import { getAbilityDisplayText } from "@/lib/cardHelpers";
 import type { SortOption } from "@/types";
 import type { CardData } from "@/types/binder";
-import type { CardType, ElementWithNeutral as Element, Rarity } from "@/types/cards";
+import type { CardType, Element, Rarity } from "@/types/cards";
 
 export const RARITY_ORDER: Record<string, number> = {
   legendary: 5,
@@ -109,9 +109,9 @@ export function sortCards(cards: CardData[], options: CardSortOptions): CardData
  * Calculate statistics for a collection of cards
  */
 export function calculateCollectionStats(cards: CardData[]) {
-  const totalUnique = cards.length;
+  const uniqueCards = cards.length;
   const totalCards = cards.reduce((sum, c) => sum + (c.owned || 0), 0);
-  const favorites = cards.filter((c) => c.isFavorite).length;
+  const favoriteCount = cards.filter((c) => c.isFavorite).length;
 
   const byRarity: Record<Rarity, number> = {
     common: 0,
@@ -122,11 +122,12 @@ export function calculateCollectionStats(cards: CardData[]) {
   };
 
   const byElement: Record<Element, number> = {
-    fire: 0,
-    water: 0,
-    earth: 0,
-    wind: 0,
-    neutral: 0,
+    red: 0,
+    blue: 0,
+    yellow: 0,
+    purple: 0,
+    green: 0,
+    white: 0,
   };
 
   for (const card of cards) {
@@ -134,5 +135,5 @@ export function calculateCollectionStats(cards: CardData[]) {
     if (card.element in byElement) byElement[card.element]++;
   }
 
-  return { totalUnique, totalCards, favorites, byRarity, byElement };
+  return { uniqueCards, totalCards, favoriteCount, byRarity, byElement };
 }

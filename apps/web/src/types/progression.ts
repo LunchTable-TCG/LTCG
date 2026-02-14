@@ -439,6 +439,16 @@ export interface MarkAllAsReadResult {
 // =============================================================================
 
 /**
+ * Type guard to check if a value is an Achievement.
+ *
+ * @param value - The value to check
+ * @returns True if the value is an Achievement
+ */
+export function isAchievement(value: unknown): value is Achievement {
+  return typeof value === "object" && value !== null && "achievementId" in value;
+}
+
+/**
  * Type guard to check if a value is a Badge.
  *
  * @param value - The value to check

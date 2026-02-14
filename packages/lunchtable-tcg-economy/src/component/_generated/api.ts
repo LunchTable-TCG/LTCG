@@ -21,6 +21,7 @@ import type * as sales from "../sales.js";
 import type * as promoCodes from "../promoCodes.js";
 import type * as seeds from "../seeds.js";
 import type * as wager from "../wager.js";
+import type * as rngConfig from "../rngConfig.js";
 
 const fullApi: ApiFromModules<{
   currency: typeof currency;
@@ -30,6 +31,7 @@ const fullApi: ApiFromModules<{
   promoCodes: typeof promoCodes;
   seeds: typeof seeds;
   wager: typeof wager;
+  rngConfig: typeof rngConfig;
 }> = anyApi as any;
 
 /**

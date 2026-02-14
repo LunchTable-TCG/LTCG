@@ -1,5 +1,5 @@
 import type { JsonAbility } from "@/lib/cardHelpers";
-import type { CardType, ElementWithNeutral as Element, Rarity } from "@/types/cards";
+import type { CardType, Element, Rarity } from "@/types/cards";
 
 export interface CardData {
   id: string;
