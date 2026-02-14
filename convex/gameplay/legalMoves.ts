@@ -9,7 +9,7 @@
  */
 
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { getCardFirstEffect } from "../lib/abilityHelpers";
 import { requireAuthQuery } from "../lib/convexAuth";
@@ -151,11 +151,11 @@ export const getLegalMoves = query({
           // Must be face-down and set for at least 1 full turn
           if (!setCard.isFaceDown || (setCard.turnSet || currentTurn) >= currentTurn) continue;
 
-          const card = await ctx.db.get(setCard.cardId);
+          const card = (await ctx.db.get(setCard.cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
           if (!card || card.cardType !== "trap") continue;
 
           legalMoves.canActivateTrap.push({
-            cardId: setCard.cardId,
+            cardId: setCard.cardId as Id<"cardDefinitions">,
             cardName: card.name,
             trapType: card.trapType || "normal",
           });
@@ -177,7 +177,7 @@ export const getLegalMoves = query({
         if (myBoard.length < 3) {
           // Check each monster card in hand
           for (const cardId of myHand) {
-            const card = await ctx.db.get(cardId);
+            const card = (await ctx.db.get(cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
             if (!card || card.cardType !== "stereotype") continue;
 
             const level = card.level || 0;
@@ -189,12 +189,12 @@ export const getLegalMoves = query({
             }
 
             // Get valid tributes (face-up monsters on field)
-            const validTributes = myBoard.filter((bc) => !bc.isFaceDown).map((bc) => bc.cardId);
+            const validTributes = myBoard.filter((bc) => !bc.isFaceDown).map((bc) => bc.cardId as Id<"cardDefinitions">);
 
             // Can only summon if we have enough tributes
             if (validTributes.length >= requiresTributes) {
               legalMoves.canSummon.push({
-                cardId,
+                cardId: cardId as Id<"cardDefinitions">,
                 cardName: card.name,
                 level,
                 attack: card.attack || 0,
@@ -230,16 +230,16 @@ export const getLegalMoves = query({
             continue;
           }
 
-          const card = await ctx.db.get(boardCard.cardId);
+          const card = (await ctx.db.get(boardCard.cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
           if (!card) continue;
 
           // Get valid targets (opponent's monsters)
           const validTargets = [];
           for (const opponentCard of opponentBoard) {
-            const targetCard = await ctx.db.get(opponentCard.cardId);
+            const targetCard = (await ctx.db.get(opponentCard.cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
             if (targetCard) {
               validTargets.push({
-                cardId: opponentCard.cardId,
+                cardId: opponentCard.cardId as Id<"cardDefinitions">,
                 cardName: opponentCard.isFaceDown ? "Face-down monster" : targetCard.name,
                 position: opponentCard.position,
               });
@@ -261,7 +261,7 @@ export const getLegalMoves = query({
           }
 
           legalMoves.canAttack.push({
-            cardId: boardCard.cardId,
+            cardId: boardCard.cardId as Id<"cardDefinitions">,
             cardName: card.name,
             attack: boardCard.attack,
             validTargets,
@@ -281,12 +281,12 @@ export const getLegalMoves = query({
       if (mySpellTrapZone.length < 3) {
         // Check each spell/trap card in hand
         for (const cardId of myHand) {
-          const card = await ctx.db.get(cardId);
+          const card = (await ctx.db.get(cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
           if (!card) continue;
 
           if (card.cardType === "spell" || card.cardType === "trap") {
             legalMoves.canSetSpellTrap.push({
-              cardId,
+              cardId: cardId as Id<"cardDefinitions">,
               cardName: card.name,
               cardType: card.cardType,
             });
@@ -306,7 +306,7 @@ export const getLegalMoves = query({
 
     if (isMainPhase || isCombatPhase) {
       for (const cardId of myHand) {
-        const card = await ctx.db.get(cardId);
+        const card = (await ctx.db.get(cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
         if (!card || card.cardType !== "spell") continue;
 
         const spellType = card.spellType || "normal";
@@ -317,7 +317,7 @@ export const getLegalMoves = query({
 
         if (spellType === "normal" || isQuickPlay) {
           legalMoves.canActivateSpell.push({
-            cardId,
+            cardId: cardId as Id<"cardDefinitions">,
             cardName: card.name,
             isQuickPlay,
           });
@@ -338,11 +338,11 @@ export const getLegalMoves = query({
           // Must be face-down and set for at least 1 full turn
           if (!setCard.isFaceDown || (setCard.turnSet || currentTurn) >= currentTurn) continue;
 
-          const card = await ctx.db.get(setCard.cardId);
+          const card = (await ctx.db.get(setCard.cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
           if (!card || card.cardType !== "trap") continue;
 
           legalMoves.canActivateTrap.push({
-            cardId: setCard.cardId,
+            cardId: setCard.cardId as Id<"cardDefinitions">,
             cardName: card.name,
             trapType: card.trapType || "normal",
           });
@@ -367,10 +367,10 @@ export const getLegalMoves = query({
           !boardCard.hasChangedPosition &&
           boardCard.turnSummoned !== gameState.turnNumber
         ) {
-          const card = await ctx.db.get(boardCard.cardId);
+          const card = (await ctx.db.get(boardCard.cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
           if (card) {
             legalMoves.canChangePosition.push({
-              cardId: boardCard.cardId,
+              cardId: boardCard.cardId as Id<"cardDefinitions">,
               cardName: card.name,
               currentPosition: boardCard.position,
             });

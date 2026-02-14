@@ -326,7 +326,7 @@ export const getGameSpectatorView = query({
     }
 
     // Get player information
-    const opponent = lobby.opponentId ? await ctx.db.get(lobby.opponentId) : null;
+    const opponent = lobby.opponentId ? await ctx.db.get(lobby.opponentId as Id<"users">) : null;
 
     // Get game state for spectator view (public zones only)
     const gameState = await ctx.db
@@ -338,18 +338,18 @@ export const getGameSpectatorView = query({
     if (gameState) {
       // Collect all unique card IDs from all zones (batch optimization)
       const allCardIds: Id<"cardDefinitions">[] = [
-        ...gameState.hostBoard.map((bc) => bc.cardId),
-        ...gameState.hostSpellTrapZone.map((st) => st.cardId),
-        ...gameState.hostGraveyard,
-        ...gameState.opponentBoard.map((bc) => bc.cardId),
-        ...gameState.opponentSpellTrapZone.map((st) => st.cardId),
-        ...gameState.opponentGraveyard,
+        ...gameState.hostBoard.map((bc) => bc.cardId as Id<"cardDefinitions">),
+        ...gameState.hostSpellTrapZone.map((st) => st.cardId as Id<"cardDefinitions">),
+        ...gameState.hostGraveyard.map((id) => id as Id<"cardDefinitions">),
+        ...gameState.opponentBoard.map((bc) => bc.cardId as Id<"cardDefinitions">),
+        ...gameState.opponentSpellTrapZone.map((st) => st.cardId as Id<"cardDefinitions">),
+        ...gameState.opponentGraveyard.map((id) => id as Id<"cardDefinitions">),
       ];
       if (gameState.hostFieldSpell) {
-        allCardIds.push(gameState.hostFieldSpell.cardId);
+        allCardIds.push(gameState.hostFieldSpell.cardId as Id<"cardDefinitions">);
       }
       if (gameState.opponentFieldSpell) {
-        allCardIds.push(gameState.opponentFieldSpell.cardId);
+        allCardIds.push(gameState.opponentFieldSpell.cardId as Id<"cardDefinitions">);
       }
 
       // Deduplicate and batch fetch all cards in parallel
@@ -369,7 +369,7 @@ export const getGameSpectatorView = query({
       // Build host board data using pre-fetched cards
       const hostBoardData = gameState.hostBoard
         .map((bc) => {
-          const card = getCard(bc.cardId);
+          const card = getCard(bc.cardId as Id<"cardDefinitions">);
           if (!card) return null;
           return {
             ...card,
@@ -384,7 +384,7 @@ export const getGameSpectatorView = query({
 
       const hostSpellTrapData = gameState.hostSpellTrapZone
         .map((st) => {
-          const card = getCard(st.cardId);
+          const card = getCard(st.cardId as Id<"cardDefinitions">);
           if (!card) return null;
           return {
             ...card,
@@ -394,13 +394,13 @@ export const getGameSpectatorView = query({
         .filter(Boolean);
 
       const hostGraveyardData = gameState.hostGraveyard
-        .map((cardId) => getCard(cardId))
+        .map((cardId) => getCard(cardId as Id<"cardDefinitions">))
         .filter((c) => c !== undefined);
 
       // Build opponent board data using pre-fetched cards
       const opponentBoardData = gameState.opponentBoard
         .map((bc) => {
-          const card = getCard(bc.cardId);
+          const card = getCard(bc.cardId as Id<"cardDefinitions">);
           if (!card) return null;
           return {
             ...card,
@@ -415,7 +415,7 @@ export const getGameSpectatorView = query({
 
       const opponentSpellTrapData = gameState.opponentSpellTrapZone
         .map((st) => {
-          const card = getCard(st.cardId);
+          const card = getCard(st.cardId as Id<"cardDefinitions">);
           if (!card) return null;
           return {
             ...card,
@@ -425,13 +425,13 @@ export const getGameSpectatorView = query({
         .filter(Boolean);
 
       const opponentGraveyardData = gameState.opponentGraveyard
-        .map((cardId) => getCard(cardId))
+        .map((cardId) => getCard(cardId as Id<"cardDefinitions">))
         .filter((c) => c !== undefined);
 
       // Build field spells using pre-fetched cards
       let hostFieldSpell = null;
       if (gameState.hostFieldSpell) {
-        const card = getCard(gameState.hostFieldSpell.cardId);
+        const card = getCard(gameState.hostFieldSpell.cardId as Id<"cardDefinitions">);
         if (card) {
           hostFieldSpell = {
             ...card,
@@ -442,7 +442,7 @@ export const getGameSpectatorView = query({
 
       let opponentFieldSpell = null;
       if (gameState.opponentFieldSpell) {
-        const card = getCard(gameState.opponentFieldSpell.cardId);
+        const card = getCard(gameState.opponentFieldSpell.cardId as Id<"cardDefinitions">);
         if (card) {
           opponentFieldSpell = {
             ...card,
@@ -721,7 +721,7 @@ export const getGameStateForPlayer = query({
     const myHandRaw = isHost ? gameState.hostHand : gameState.opponentHand;
     const myHandData = await Promise.all(
       myHandRaw.map(async (cardId) => {
-        const cardData = await getCardData(cardId);
+        const cardData = await getCardData(cardId as Id<"cardDefinitions">);
         return cardData;
       })
     );
@@ -731,7 +731,7 @@ export const getGameStateForPlayer = query({
     const myBoardRaw = isHost ? gameState.hostBoard : gameState.opponentBoard;
     const myBoardData = await Promise.all(
       myBoardRaw.map(async (boardCard) => {
-        const cardData = await getCardData(boardCard.cardId);
+        const cardData = await getCardData(boardCard.cardId as Id<"cardDefinitions">);
         if (!cardData) return null;
         return {
           ...cardData,
@@ -750,7 +750,7 @@ export const getGameStateForPlayer = query({
     const opponentBoardRaw = isHost ? gameState.opponentBoard : gameState.hostBoard;
     const opponentBoardData = await Promise.all(
       opponentBoardRaw.map(async (boardCard) => {
-        const cardData = await getCardData(boardCard.cardId);
+        const cardData = await getCardData(boardCard.cardId as Id<"cardDefinitions">);
         if (!cardData) return null;
         return {
           ...cardData,
@@ -770,7 +770,7 @@ export const getGameStateForPlayer = query({
       : gameState.opponentSpellTrapZone;
     const mySpellTrapData = await Promise.all(
       mySpellTrapZoneRaw.map(async (stCard) => {
-        const cardData = await getCardData(stCard.cardId);
+        const cardData = await getCardData(stCard.cardId as Id<"cardDefinitions">);
         if (!cardData) return null;
         return {
           ...cardData,
@@ -786,7 +786,7 @@ export const getGameStateForPlayer = query({
       : gameState.hostSpellTrapZone;
     const opponentSpellTrapData = await Promise.all(
       opponentSpellTrapZoneRaw.map(async (stCard) => {
-        const cardData = await getCardData(stCard.cardId);
+        const cardData = await getCardData(stCard.cardId as Id<"cardDefinitions">);
         if (!cardData) return null;
         return {
           ...cardData,
@@ -801,7 +801,7 @@ export const getGameStateForPlayer = query({
     const myGraveyardRaw = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
     const myGraveyardData = await Promise.all(
       myGraveyardRaw.map(async (cardId) => {
-        const cardData = await getCardData(cardId);
+        const cardData = await getCardData(cardId as Id<"cardDefinitions">);
         return cardData;
       })
     );
@@ -810,7 +810,7 @@ export const getGameStateForPlayer = query({
     const opponentGraveyardRaw = isHost ? gameState.opponentGraveyard : gameState.hostGraveyard;
     const opponentGraveyardData = await Promise.all(
       opponentGraveyardRaw.map(async (cardId) => {
-        const cardData = await getCardData(cardId);
+        const cardData = await getCardData(cardId as Id<"cardDefinitions">);
         return cardData;
       })
     );
@@ -822,7 +822,7 @@ export const getGameStateForPlayer = query({
     const myFieldSpellRaw = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
     let myFieldSpell = null;
     if (myFieldSpellRaw) {
-      const fieldCard = await getCardData(myFieldSpellRaw.cardId);
+      const fieldCard = await getCardData(myFieldSpellRaw.cardId as Id<"cardDefinitions">);
       if (fieldCard) {
         myFieldSpell = {
           ...fieldCard,
@@ -834,7 +834,7 @@ export const getGameStateForPlayer = query({
     const opponentFieldSpellRaw = isHost ? gameState.opponentFieldSpell : gameState.hostFieldSpell;
     let opponentFieldSpell = null;
     if (opponentFieldSpellRaw) {
-      const fieldCard = await getCardData(opponentFieldSpellRaw.cardId);
+      const fieldCard = await getCardData(opponentFieldSpellRaw.cardId as Id<"cardDefinitions">);
       if (fieldCard) {
         opponentFieldSpell = {
           ...fieldCard,
@@ -1254,7 +1254,7 @@ export const getGameStateForPlayerInternal = internalQuery({
     // Get player's hand with card data
     const myHandRaw = isHost ? gameState.hostHand : gameState.opponentHand;
     const myHandData = await Promise.all(
-      myHandRaw.map(async (cardId) => await getCardData(cardId))
+      myHandRaw.map(async (cardId) => await getCardData(cardId as Id<"cardDefinitions">))
     );
     const myHand = myHandData.filter((c): c is Doc<"cardDefinitions"> => c !== null);
 
@@ -1262,7 +1262,7 @@ export const getGameStateForPlayerInternal = internalQuery({
     const myBoardRaw = isHost ? gameState.hostBoard : gameState.opponentBoard;
     const myBoardData = await Promise.all(
       myBoardRaw.map(async (boardCard) => {
-        const cardData = await getCardData(boardCard.cardId);
+        const cardData = await getCardData(boardCard.cardId as Id<"cardDefinitions">);
         if (!cardData) return null;
         return {
           ...cardData,
@@ -1280,7 +1280,7 @@ export const getGameStateForPlayerInternal = internalQuery({
     const opponentBoardRaw = isHost ? gameState.opponentBoard : gameState.hostBoard;
     const opponentBoardData = await Promise.all(
       opponentBoardRaw.map(async (boardCard) => {
-        const cardData = await getCardData(boardCard.cardId);
+        const cardData = await getCardData(boardCard.cardId as Id<"cardDefinitions">);
         if (!cardData) return null;
         return {
           ...cardData,
@@ -1300,7 +1300,7 @@ export const getGameStateForPlayerInternal = internalQuery({
       : gameState.opponentSpellTrapZone;
     const mySpellTrapData = await Promise.all(
       mySpellTrapZoneRaw.map(async (stCard) => {
-        const cardData = await getCardData(stCard.cardId);
+        const cardData = await getCardData(stCard.cardId as Id<"cardDefinitions">);
         if (!cardData) return null;
         return {
           ...cardData,
@@ -1316,7 +1316,7 @@ export const getGameStateForPlayerInternal = internalQuery({
       : gameState.hostSpellTrapZone;
     const opponentSpellTrapData = await Promise.all(
       opponentSpellTrapZoneRaw.map(async (stCard) => {
-        const cardData = await getCardData(stCard.cardId);
+        const cardData = await getCardData(stCard.cardId as Id<"cardDefinitions">);
         if (!cardData) return null;
         return {
           ...cardData,

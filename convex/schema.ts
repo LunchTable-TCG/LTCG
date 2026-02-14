@@ -788,6 +788,20 @@ export default defineSchema({
     .index("by_created", ["createdAt"])
     .index("by_type", ["modelType", "createdAt"]),
 
+  // Webhooks subscription for game events
+  webhooks: defineTable({
+    agentId: v.id("agents"), // intra-component ref
+    url: v.string(),
+    secret: v.optional(v.string()),
+    events: v.array(v.string()),
+    isActive: v.boolean(),
+    lastTriggered: v.optional(v.number()),
+    failureCount: v.number(),
+  })
+    .index("by_agent", ["agentId"])
+    .index("by_active", ["isActive"]),
+
+
   aiUsageDailyStats: defineTable({
     date: v.string(),
     provider: v.union(v.literal("openrouter"), v.literal("vercel")),
