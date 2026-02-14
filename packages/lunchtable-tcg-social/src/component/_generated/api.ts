@@ -17,11 +17,15 @@ import { anyApi, componentsGeneric } from "convex/server";
 import type * as friends from "../friends.js";
 import type * as messages from "../messages.js";
 import type * as presence from "../presence.js";
+import type * as globalChat from "../globalChat.js";
+import type * as inbox from "../inbox.js";
 
 const fullApi: ApiFromModules<{
   friends: typeof friends;
   messages: typeof messages;
   presence: typeof presence;
+  globalChat: typeof globalChat;
+  inbox: typeof inbox;
 }> = anyApi as any;
 
 /**

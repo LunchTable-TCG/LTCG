@@ -202,4 +202,26 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_level", ["currentLevel"])
     .index("by_lifetime_xp", ["lifetimeXP"]),
+
+  // Player badges earned through gameplay
+  playerBadges: defineTable({
+    userId: v.string(),
+    badgeType: v.union(
+      v.literal("archetype_complete"),
+      v.literal("act_complete"),
+      v.literal("difficulty_complete"),
+      v.literal("perfect_chapter"),
+      v.literal("speed_run"),
+      v.literal("milestone")
+    ),
+    badgeId: v.string(),
+    displayName: v.string(),
+    description: v.string(),
+    archetype: v.optional(v.string()),
+    iconUrl: v.optional(v.string()),
+    earnedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_type", ["userId", "badgeType"])
+    .index("by_badge", ["badgeId"]),
 });

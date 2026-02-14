@@ -14,22 +14,22 @@ import type {
   FunctionReference,
 } from "convex/server";
 import { anyApi, componentsGeneric } from "convex/server";
-import type * as currency from "../currency.js";
-import type * as shop from "../shop.js";
-import type * as rewards from "../rewards.js";
-import type * as sales from "../sales.js";
-import type * as promoCodes from "../promoCodes.js";
-import type * as seeds from "../seeds.js";
-import type * as wager from "../wager.js";
+import type * as rankings from "../rankings.js";
+import type * as snapshots from "../snapshots.js";
+import type * as matches from "../matches.js";
+import type * as tournaments from "../tournaments.js";
+import type * as participants from "../participants.js";
+import type * as brackets from "../brackets.js";
+import type * as history from "../history.js";
 
 const fullApi: ApiFromModules<{
-  currency: typeof currency;
-  shop: typeof shop;
-  rewards: typeof rewards;
-  sales: typeof sales;
-  promoCodes: typeof promoCodes;
-  seeds: typeof seeds;
-  wager: typeof wager;
+  rankings: typeof rankings;
+  snapshots: typeof snapshots;
+  matches: typeof matches;
+  tournaments: typeof tournaments;
+  participants: typeof participants;
+  brackets: typeof brackets;
+  history: typeof history;
 }> = anyApi as any;
 
 /**

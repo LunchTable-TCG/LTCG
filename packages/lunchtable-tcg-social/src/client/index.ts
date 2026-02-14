@@ -39,11 +39,15 @@ export class LTCGSocial {
   public friends: FriendsClient;
   public messages: MessagesClient;
   public presence: PresenceClient;
+  public globalChat: GlobalChatClient;
+  public inbox: InboxClient;
 
   constructor(private component: typeof api) {
     this.friends = new FriendsClient(component);
     this.messages = new MessagesClient(component);
     this.presence = new PresenceClient(component);
+    this.globalChat = new GlobalChatClient(component);
+    this.inbox = new InboxClient(component);
   }
 }
 
@@ -206,26 +210,34 @@ export class MessagesClient {
 export class PresenceClient {
   constructor(private component: typeof api) {}
 
-  // TODO: userPresence table removed - these methods need reimplementation or removal
-  // async updatePresence(
-  //   ctx: RunMutationCtx,
-  //   args: {
-  //     userId: string;
-  //     status: string;
-  //     currentActivity?: string;
-  //     metadata?: any;
-  //   }
-  // ) {
-  //   return await ctx.runMutation(this.component.presence.updatePresence, args);
-  // }
+  async updatePresence(
+    ctx: RunMutationCtx,
+    args: {
+      userId: string;
+      username: string;
+      status: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.presence.updatePresence, {
+      userId: args.userId,
+      username: args.username,
+      status: args.status as any,
+    });
+  }
 
-  // async getPresence(ctx: RunQueryCtx, args: { userId: string }) {
-  //   return await ctx.runQuery(this.component.presence.getPresence, args);
-  // }
+  async getPresence(ctx: RunQueryCtx, args: { userId: string }) {
+    return await ctx.runQuery(this.component.presence.getPresence, args);
+  }
 
-  // async getBulkPresence(ctx: RunQueryCtx, args: { userIds: string[] }) {
-  //   return await ctx.runQuery(this.component.presence.getBulkPresence, args);
-  // }
+  async getOnlineUsers(
+    ctx: RunQueryCtx,
+    args?: { sinceMinutes?: number; limit?: number }
+  ) {
+    return await ctx.runQuery(
+      this.component.presence.getOnlineUsers,
+      args ?? {}
+    );
+  }
 
   async createNotification(
     ctx: RunMutationCtx,
@@ -275,5 +287,123 @@ export class PresenceClient {
       this.component.presence.clearNotifications,
       args
     );
+  }
+}
+
+// ============================================================================
+// GLOBAL CHAT CLIENT
+// ============================================================================
+
+/**
+ * Client for global chat operations.
+ */
+export class GlobalChatClient {
+  constructor(private component: typeof api) {}
+
+  async sendMessage(
+    ctx: RunMutationCtx,
+    args: {
+      userId: string;
+      username: string;
+      message: string;
+      isSystem?: boolean;
+    }
+  ) {
+    return await ctx.runMutation(this.component.globalChat.sendMessage, args);
+  }
+
+  async getRecentMessages(
+    ctx: RunQueryCtx,
+    args?: { limit?: number; before?: number }
+  ) {
+    return await ctx.runQuery(
+      this.component.globalChat.getRecentMessages,
+      args ?? {}
+    );
+  }
+
+  async getByUser(ctx: RunQueryCtx, args: { userId: string; limit?: number }) {
+    return await ctx.runQuery(this.component.globalChat.getByUser, args);
+  }
+}
+
+// ============================================================================
+// INBOX CLIENT
+// ============================================================================
+
+/**
+ * Client for user inbox operations.
+ */
+export class InboxClient {
+  constructor(private component: typeof api) {}
+
+  async send(
+    ctx: RunMutationCtx,
+    args: {
+      userId: string;
+      type: string;
+      title: string;
+      message: string;
+      data?: any;
+      senderId?: string;
+      senderUsername?: string;
+      expiresAt?: number;
+    }
+  ) {
+    return await ctx.runMutation(this.component.inbox.send, {
+      ...args,
+      type: args.type as any,
+    });
+  }
+
+  async markRead(
+    ctx: RunMutationCtx,
+    args: { inboxItemId: string; userId: string }
+  ) {
+    return await ctx.runMutation(this.component.inbox.markRead, {
+      inboxItemId: args.inboxItemId as any,
+      userId: args.userId,
+    });
+  }
+
+  async claimReward(
+    ctx: RunMutationCtx,
+    args: { inboxItemId: string; userId: string }
+  ) {
+    return await ctx.runMutation(this.component.inbox.claimReward, {
+      inboxItemId: args.inboxItemId as any,
+      userId: args.userId,
+    });
+  }
+
+  async deleteItem(
+    ctx: RunMutationCtx,
+    args: { inboxItemId: string; userId: string }
+  ) {
+    return await ctx.runMutation(this.component.inbox.deleteItem, {
+      inboxItemId: args.inboxItemId as any,
+      userId: args.userId,
+    });
+  }
+
+  async getInbox(
+    ctx: RunQueryCtx,
+    args: {
+      userId: string;
+      limit?: number;
+      unreadOnly?: boolean;
+      type?: string;
+    }
+  ) {
+    return await ctx.runQuery(this.component.inbox.getInbox, {
+      userId: args.userId,
+      limit: args.limit,
+      unreadOnly: args.unreadOnly,
+      type: args.type as any,
+    });
+  }
+
+  async getUnreadCount(ctx: RunQueryCtx, args: { userId: string }) {
+    return await ctx.runQuery(this.component.inbox.getUnreadCount, args);
   }
 }

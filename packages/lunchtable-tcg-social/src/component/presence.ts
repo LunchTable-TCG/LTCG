@@ -1,17 +1,11 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
-// TODO: userPresence table was removed from schema
-// These functions need to be reimplemented or removed
-// const presenceReturnValidator = v.object({
-//   _id: v.string(),
-//   _creationTime: v.number(),
-//   userId: v.string(),
-//   status: v.string(),
-//   lastSeen: v.number(),
-//   currentActivity: v.optional(v.string()),
-//   metadata: v.optional(v.any()),
-// });
+const presenceStatusValidator = v.union(
+  v.literal("online"),
+  v.literal("in_game"),
+  v.literal("idle")
+);
 
 const notificationReturnValidator = v.object({
   _id: v.string(),
@@ -31,41 +25,80 @@ const notificationReturnValidator = v.object({
   createdAt: v.number(),
 });
 
-// TODO: userPresence table removed - reimplemented needed
-// export const updatePresence = mutation({
-//   args: {
-//     userId: v.string(),
-//     status: v.string(),
-//     currentActivity: v.optional(v.string()),
-//     metadata: v.optional(v.any()),
-//   },
-//   returns: v.string(),
-//   handler: async (ctx, args) => {
-//     throw new Error("userPresence table removed - needs reimplementation");
-//   },
-// });
+/**
+ * Update a user's presence status (upsert).
+ */
+export const updatePresence = mutation({
+  args: {
+    userId: v.string(),
+    username: v.string(),
+    status: presenceStatusValidator,
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("userPresence")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
 
-// TODO: userPresence table removed - reimplemented needed
-// export const getPresence = query({
-//   args: {
-//     userId: v.string(),
-//   },
-//   returns: v.union(presenceReturnValidator, v.null()),
-//   handler: async (ctx, args) => {
-//     throw new Error("userPresence table removed - needs reimplementation");
-//   },
-// });
+    const now = Date.now();
 
-// TODO: userPresence table removed - reimplemented needed
-// export const getBulkPresence = query({
-//   args: {
-//     userIds: v.array(v.string()),
-//   },
-//   returns: v.array(presenceReturnValidator),
-//   handler: async (ctx, args) => {
-//     throw new Error("userPresence table removed - needs reimplementation");
-//   },
-// });
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        username: args.username,
+        lastActiveAt: now,
+        status: args.status,
+      });
+      return existing._id as string;
+    }
+
+    const id = await ctx.db.insert("userPresence", {
+      userId: args.userId,
+      username: args.username,
+      lastActiveAt: now,
+      status: args.status,
+    });
+    return id as string;
+  },
+});
+
+/**
+ * Get a user's presence status.
+ */
+export const getPresence = query({
+  args: {
+    userId: v.string(),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("userPresence")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+  },
+});
+
+/**
+ * Get online users (active within the last N minutes).
+ */
+export const getOnlineUsers = query({
+  args: {
+    sinceMinutes: v.optional(v.number()),
+    limit: v.optional(v.number()),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    const cutoff = Date.now() - (args.sinceMinutes ?? 5) * 60 * 1000;
+
+    const users = await ctx.db
+      .query("userPresence")
+      .withIndex("by_last_active")
+      .order("desc")
+      .take(args.limit ?? 100);
+
+    return users.filter((u) => u.lastActiveAt >= cutoff);
+  },
+});
 
 export const createNotification = mutation({
   args: {

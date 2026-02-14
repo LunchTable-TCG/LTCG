@@ -258,4 +258,78 @@ export default defineSchema({
     .index("by_admin", ["adminId"])
     .index("by_admin_read", ["adminId", "isRead"])
     .index("by_created", ["createdAt"]),
+
+  // API keys for agent/service authentication
+  apiKeys: defineTable({
+    agentId: v.string(),
+    userId: v.string(),
+    keyHash: v.string(),
+    keyPrefix: v.string(),
+    lastUsedAt: v.optional(v.number()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_key_hash", ["keyHash"])
+    .index("by_agent", ["agentId"])
+    .index("by_prefix_active", ["keyPrefix", "isActive"])
+    .index("by_user", ["userId"]),
+
+  // API key usage tracking
+  apiKeyUsage: defineTable({
+    apiKeyId: v.id("apiKeys"),
+    timestamp: v.number(),
+    endpoint: v.optional(v.string()),
+    responseStatus: v.optional(v.number()),
+    durationMs: v.optional(v.number()),
+  })
+    .index("by_key_and_time", ["apiKeyId", "timestamp"])
+    .index("by_timestamp", ["timestamp"]),
+
+  // User reports for moderation
+  userReports: defineTable({
+    reporterId: v.string(),
+    reporterUsername: v.string(),
+    reportedUserId: v.string(),
+    reportedUsername: v.string(),
+    reason: v.string(),
+    status: v.union(v.literal("pending"), v.literal("reviewed"), v.literal("resolved"), v.literal("dismissed")),
+    reviewedBy: v.optional(v.string()),
+    reviewedAt: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_status", ["status", "createdAt"])
+    .index("by_reported_user", ["reportedUserId"])
+    .index("by_reporter", ["reporterId"]),
+
+  // File metadata for uploaded assets
+  fileMetadata: defineTable({
+    userId: v.string(),
+    storageId: v.string(),
+    fileName: v.string(),
+    contentType: v.string(),
+    size: v.number(),
+    category: v.union(
+      v.literal("profile_picture"),
+      v.literal("card_image"),
+      v.literal("document"),
+      v.literal("other"),
+      v.literal("background"),
+      v.literal("texture"),
+      v.literal("ui_element"),
+      v.literal("shop_asset"),
+      v.literal("story_asset"),
+      v.literal("logo")
+    ),
+    blobUrl: v.optional(v.string()),
+    blobPathname: v.optional(v.string()),
+    description: v.optional(v.string()),
+    uploadedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_category", ["userId", "category"])
+    .index("by_uploaded_at", ["uploadedAt"])
+    .index("by_storage_id", ["storageId"])
+    .index("by_category", ["category"])
+    .index("by_blob_pathname", ["blobPathname"]),
 });

@@ -287,4 +287,22 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_code", ["promoCodeId", "redeemedAt"])
     .index("by_user_code", ["userId", "promoCodeId"]),
+
+  // Crypto wager transactions (merged from wager component)
+  cryptoWagerTransactions: defineTable({
+    lobbyId: v.string(),
+    userId: v.string(),
+    walletAddress: v.string(),
+    type: v.union(v.literal("deposit"), v.literal("payout"), v.literal("treasury_fee")),
+    currency: v.union(v.literal("sol"), v.literal("usdc")),
+    amount: v.number(),
+    amountAtomic: v.string(),
+    txSignature: v.optional(v.string()),
+    escrowPda: v.string(),
+    status: v.union(v.literal("pending"), v.literal("confirmed"), v.literal("failed")),
+    createdAt: v.number(),
+  })
+    .index("by_lobby", ["lobbyId"])
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
 });

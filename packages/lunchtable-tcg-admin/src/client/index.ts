@@ -41,6 +41,9 @@ export class LTCGAdmin {
   public alerts: AlertsClient;
   public notifications: NotificationsClient;
   public analytics: AnalyticsClient;
+  public apiKeys: ApiKeysClient;
+  public reports: ReportsClient;
+  public files: FilesClient;
 
   constructor(private component: typeof api) {
     this.roles = new RolesClient(component);
@@ -51,6 +54,9 @@ export class LTCGAdmin {
     this.alerts = new AlertsClient(component);
     this.notifications = new NotificationsClient(component);
     this.analytics = new AnalyticsClient(component);
+    this.apiKeys = new ApiKeysClient(component);
+    this.reports = new ReportsClient(component);
+    this.files = new FilesClient(component);
   }
 }
 
@@ -503,5 +509,193 @@ export class AnalyticsClient {
       this.component.analytics.cleanupOldSnapshots,
       { olderThan }
     );
+  }
+}
+
+// ============================================================================
+// API KEYS CLIENT
+// ============================================================================
+
+export class ApiKeysClient {
+  constructor(private component: typeof api) {}
+
+  async create(
+    ctx: RunMutationCtx,
+    args: {
+      agentId: string;
+      userId: string;
+      keyHash: string;
+      keyPrefix: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.apiKeys.create, args);
+  }
+
+  async deactivate(ctx: RunMutationCtx, keyHash: string) {
+    return await ctx.runMutation(this.component.apiKeys.deactivate, {
+      keyHash,
+    });
+  }
+
+  async recordUsage(
+    ctx: RunMutationCtx,
+    args: {
+      apiKeyId: string;
+      endpoint?: string;
+      responseStatus?: number;
+      durationMs?: number;
+    }
+  ) {
+    return await ctx.runMutation(this.component.apiKeys.recordUsage, {
+      apiKeyId: args.apiKeyId as any,
+      endpoint: args.endpoint,
+      responseStatus: args.responseStatus,
+      durationMs: args.durationMs,
+    });
+  }
+
+  async getByHash(ctx: RunQueryCtx, keyHash: string) {
+    return await ctx.runQuery(this.component.apiKeys.getByHash, { keyHash });
+  }
+
+  async getByAgent(ctx: RunQueryCtx, agentId: string) {
+    return await ctx.runQuery(this.component.apiKeys.getByAgent, { agentId });
+  }
+
+  async getByUser(ctx: RunQueryCtx, userId: string) {
+    return await ctx.runQuery(this.component.apiKeys.getByUser, { userId });
+  }
+
+  async getUsage(
+    ctx: RunQueryCtx,
+    args: {
+      apiKeyId: string;
+      limit?: number;
+      since?: number;
+    }
+  ) {
+    return await ctx.runQuery(this.component.apiKeys.getUsage, {
+      apiKeyId: args.apiKeyId as any,
+      limit: args.limit,
+      since: args.since,
+    });
+  }
+}
+
+// ============================================================================
+// REPORTS CLIENT
+// ============================================================================
+
+export class ReportsClient {
+  constructor(private component: typeof api) {}
+
+  async submitReport(
+    ctx: RunMutationCtx,
+    args: {
+      reporterId: string;
+      reporterUsername: string;
+      reportedUserId: string;
+      reportedUsername: string;
+      reason: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.reports.submitReport, args);
+  }
+
+  async updateReportStatus(
+    ctx: RunMutationCtx,
+    args: {
+      reportId: string;
+      status: string;
+      reviewedBy: string;
+      notes?: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.reports.updateReportStatus, {
+      reportId: args.reportId as any,
+      status: args.status as any,
+      reviewedBy: args.reviewedBy,
+      notes: args.notes,
+    });
+  }
+
+  async getByStatus(ctx: RunQueryCtx, status: string, limit?: number) {
+    return await ctx.runQuery(this.component.reports.getByStatus, {
+      status: status as any,
+      limit,
+    });
+  }
+
+  async getByReportedUser(ctx: RunQueryCtx, reportedUserId: string) {
+    return await ctx.runQuery(this.component.reports.getByReportedUser, {
+      reportedUserId,
+    });
+  }
+
+  async getByReporter(ctx: RunQueryCtx, reporterId: string) {
+    return await ctx.runQuery(this.component.reports.getByReporter, {
+      reporterId,
+    });
+  }
+}
+
+// ============================================================================
+// FILES CLIENT
+// ============================================================================
+
+export class FilesClient {
+  constructor(private component: typeof api) {}
+
+  async createFileMetadata(
+    ctx: RunMutationCtx,
+    args: {
+      userId: string;
+      storageId: string;
+      fileName: string;
+      contentType: string;
+      size: number;
+      category: string;
+      blobUrl?: string;
+      blobPathname?: string;
+      description?: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.files.createFileMetadata, {
+      ...args,
+      category: args.category as any,
+    });
+  }
+
+  async deleteFileMetadata(ctx: RunMutationCtx, fileId: string) {
+    return await ctx.runMutation(this.component.files.deleteFileMetadata, {
+      fileId: fileId as any,
+    });
+  }
+
+  async getByUser(ctx: RunQueryCtx, userId: string, limit?: number) {
+    return await ctx.runQuery(this.component.files.getByUser, {
+      userId,
+      limit,
+    });
+  }
+
+  async getByCategory(ctx: RunQueryCtx, category: string, limit?: number) {
+    return await ctx.runQuery(this.component.files.getByCategory, {
+      category: category as any,
+      limit,
+    });
+  }
+
+  async getByStorageId(ctx: RunQueryCtx, storageId: string) {
+    return await ctx.runQuery(this.component.files.getByStorageId, {
+      storageId,
+    });
+  }
+
+  async getByUserCategory(ctx: RunQueryCtx, userId: string, category: string) {
+    return await ctx.runQuery(this.component.files.getByUserCategory, {
+      userId,
+      category: category as any,
+    });
   }
 }

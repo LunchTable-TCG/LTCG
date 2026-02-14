@@ -40,6 +40,7 @@ export class LTCGEconomy {
   public sales: SalesClient;
   public promo: PromoClient;
   public seeds: SeedsClient;
+  public wager: WagerClient;
 
   constructor(private component: typeof api) {
     this.currency = new CurrencyClient(component);
@@ -48,6 +49,7 @@ export class LTCGEconomy {
     this.sales = new SalesClient(component);
     this.promo = new PromoClient(component);
     this.seeds = new SeedsClient(component);
+    this.wager = new WagerClient(component);
   }
 }
 
@@ -376,6 +378,80 @@ export class SeedsClient {
   async seedShopProducts(ctx: RunMutationCtx, products: any[]) {
     return await ctx.runMutation(this.component.seeds.seedShopProducts, {
       products,
+    });
+  }
+}
+
+// ============================================================================
+// WAGER CLIENT
+// ============================================================================
+
+export class WagerClient {
+  constructor(private component: typeof api) {}
+
+  async record(
+    ctx: RunMutationCtx,
+    args: {
+      lobbyId: string;
+      userId: string;
+      walletAddress: string;
+      type: "deposit" | "payout" | "treasury_fee";
+      currency: "sol" | "usdc";
+      amount: number;
+      amountAtomic: string;
+      escrowPda: string;
+      txSignature?: string;
+      status?: "pending" | "confirmed" | "failed";
+    }
+  ) {
+    return await ctx.runMutation(this.component.wager.recordTransaction, {
+      lobbyId: args.lobbyId,
+      userId: args.userId,
+      walletAddress: args.walletAddress,
+      type: args.type,
+      currency: args.currency,
+      amount: args.amount,
+      amountAtomic: args.amountAtomic,
+      escrowPda: args.escrowPda,
+      txSignature: args.txSignature,
+      status: args.status,
+    });
+  }
+
+  async getForPlayer(ctx: RunQueryCtx, args: { userId: string; limit?: number }) {
+    return await ctx.runQuery(this.component.wager.getPlayerTransactions, {
+      userId: args.userId,
+      limit: args.limit,
+    });
+  }
+
+  async getForLobby(ctx: RunQueryCtx, args: { lobbyId: string }) {
+    return await ctx.runQuery(this.component.wager.getTransactionsByLobby, {
+      lobbyId: args.lobbyId,
+    });
+  }
+
+  async getPlayerBalance(ctx: RunQueryCtx, args: { userId: string; currency?: "sol" | "usdc" }) {
+    return await ctx.runQuery(this.component.wager.getPlayerBalance, {
+      userId: args.userId,
+      currency: args.currency,
+    });
+  }
+
+  async getById(ctx: RunQueryCtx, args: { id: string }) {
+    return await ctx.runQuery(this.component.wager.getTransactionById, {
+      id: args.id as any,
+    });
+  }
+
+  async updateStatus(
+    ctx: RunMutationCtx,
+    args: { id: string; status: "pending" | "confirmed" | "failed"; txSignature?: string }
+  ) {
+    return await ctx.runMutation(this.component.wager.updateTransactionStatus, {
+      id: args.id as any,
+      status: args.status,
+      txSignature: args.txSignature,
     });
   }
 }

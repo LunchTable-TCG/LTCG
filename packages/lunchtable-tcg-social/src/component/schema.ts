@@ -66,4 +66,57 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_read", ["userId", "isRead"])
     .index("by_created", ["createdAt"]),
+
+  // Global chat messages
+  globalChatMessages: defineTable({
+    userId: v.string(),
+    username: v.string(),
+    message: v.string(),
+    createdAt: v.number(),
+    isSystem: v.boolean(),
+  })
+    .index("by_created", ["createdAt"])
+    .index("by_user", ["userId"]),
+
+  // User presence tracking
+  userPresence: defineTable({
+    userId: v.string(),
+    username: v.string(),
+    lastActiveAt: v.number(),
+    status: v.union(v.literal("online"), v.literal("in_game"), v.literal("idle")),
+  })
+    .index("by_user", ["userId"])
+    .index("by_last_active", ["lastActiveAt"]),
+
+  // User inbox for notifications, rewards, challenges, etc.
+  userInbox: defineTable({
+    userId: v.string(),
+    type: v.union(
+      v.literal("reward"),
+      v.literal("announcement"),
+      v.literal("challenge"),
+      v.literal("friend_request"),
+      v.literal("guild_invite"),
+      v.literal("guild_request"),
+      v.literal("system"),
+      v.literal("achievement")
+    ),
+    title: v.string(),
+    message: v.string(),
+    data: v.optional(v.any()),
+    senderId: v.optional(v.string()),
+    senderUsername: v.optional(v.string()),
+    isRead: v.boolean(),
+    readAt: v.optional(v.number()),
+    claimedAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_unread", ["userId", "isRead"])
+    .index("by_user_type", ["userId", "type"])
+    .index("by_user_deleted", ["userId", "deletedAt"])
+    .index("by_created", ["createdAt"])
+    .index("by_expires", ["expiresAt"]),
 });

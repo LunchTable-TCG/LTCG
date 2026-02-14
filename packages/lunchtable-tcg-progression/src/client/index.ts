@@ -40,12 +40,14 @@ export class LTCGProgression {
   public quests: QuestsClient;
   public battlePass: BattlePassClient;
   public xp: XPClient;
+  public badges: BadgesClient;
 
   constructor(private component: typeof api) {
     this.achievements = new AchievementsClient(component);
     this.quests = new QuestsClient(component);
     this.battlePass = new BattlePassClient(component);
     this.xp = new XPClient(component);
+    this.badges = new BadgesClient(component);
   }
 }
 
@@ -356,5 +358,58 @@ export class XPClient {
     }
   ) {
     return await ctx.runQuery(this.component.xp.getLeaderboard, args ?? {});
+  }
+}
+
+// ============================================================================
+// BADGES CLIENT
+// ============================================================================
+
+/**
+ * Client for player badge system.
+ */
+export class BadgesClient {
+  constructor(private component: typeof api) {}
+
+  async awardBadge(
+    ctx: RunMutationCtx,
+    args: {
+      userId: string;
+      badgeType: string;
+      badgeId: string;
+      displayName: string;
+      description: string;
+      archetype?: string;
+      iconUrl?: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.badges.awardBadge, {
+      ...args,
+      badgeType: args.badgeType as any,
+    });
+  }
+
+  async getUserBadges(
+    ctx: RunQueryCtx,
+    args: {
+      userId: string;
+      badgeType?: string;
+    }
+  ) {
+    return await ctx.runQuery(this.component.badges.getUserBadges, {
+      userId: args.userId,
+      badgeType: args.badgeType as any,
+    });
+  }
+
+  async getByBadgeId(ctx: RunQueryCtx, badgeId: string) {
+    return await ctx.runQuery(this.component.badges.getByBadgeId, { badgeId });
+  }
+
+  async hasBadge(ctx: RunQueryCtx, userId: string, badgeId: string) {
+    return await ctx.runQuery(this.component.badges.hasBadge, {
+      userId,
+      badgeId,
+    });
   }
 }

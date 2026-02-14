@@ -18,12 +18,14 @@ import type * as achievements from "../achievements.js";
 import type * as battlepass from "../battlepass.js";
 import type * as quests from "../quests.js";
 import type * as xp from "../xp.js";
+import type * as badges from "../badges.js";
 
 const fullApi: ApiFromModules<{
   achievements: typeof achievements;
   battlepass: typeof battlepass;
   quests: typeof quests;
   xp: typeof xp;
+  badges: typeof badges;
 }> = anyApi as any;
 
 /**

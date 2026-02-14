@@ -22,6 +22,9 @@ import type * as features from "../features.js";
 import type * as alerts from "../alerts.js";
 import type * as notifications from "../notifications.js";
 import type * as analytics from "../analytics.js";
+import type * as apiKeys from "../apiKeys.js";
+import type * as reports from "../reports.js";
+import type * as files from "../files.js";
 
 const fullApi: ApiFromModules<{
   roles: typeof roles;
@@ -32,6 +35,9 @@ const fullApi: ApiFromModules<{
   alerts: typeof alerts;
   notifications: typeof notifications;
   analytics: typeof analytics;
+  apiKeys: typeof apiKeys;
+  reports: typeof reports;
+  files: typeof files;
 }> = anyApi as any;
 
 /**
