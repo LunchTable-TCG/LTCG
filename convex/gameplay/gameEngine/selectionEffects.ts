@@ -7,6 +7,7 @@
  * - Revival effects
  */
 
+import type { Doc, Id } from "../../_generated/dataModel";
 import { v } from "convex/values";
 import { query } from "../../_generated/server";
 import { mutation } from "../../functions";
@@ -42,14 +43,14 @@ export const getGraveyardSummonTargets = query({
     const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
 
     // 3. Filter for monsters only - batch fetch all cards
-    const cards = await Promise.all(graveyard.map((id) => ctx.db.get(id)));
+    const cards = await Promise.all(graveyard.map((id) => ctx.db.get(id as Id<"cardDefinitions">)));
     const cardMap = new Map(
-      cards.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
+      cards.filter((c): c is Doc<"cardDefinitions"> => c !== null).map((c) => [c._id, c])
     );
 
     const targets = [];
     for (const cardId of graveyard) {
-      const card = cardMap.get(cardId);
+      const card = cardMap.get(cardId as Id<"cardDefinitions">);
       if (!card || card.cardType !== "stereotype") continue;
 
       targets.push({
@@ -97,14 +98,14 @@ export const getBanishedSummonTargets = query({
     const banished = isHost ? gameState.hostBanished : gameState.opponentBanished;
 
     // 3. Filter for monsters only - batch fetch all cards
-    const cards = await Promise.all(banished.map((id) => ctx.db.get(id)));
+    const cards = await Promise.all(banished.map((id) => ctx.db.get(id as Id<"cardDefinitions">)));
     const cardMap = new Map(
-      cards.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
+      cards.filter((c): c is Doc<"cardDefinitions"> => c !== null).map((c) => [c._id, c])
     );
 
     const targets = [];
     for (const cardId of banished) {
-      const card = cardMap.get(cardId);
+      const card = cardMap.get(cardId as Id<"cardDefinitions">);
       if (!card || card.cardType !== "stereotype") continue;
 
       targets.push({
@@ -225,15 +226,15 @@ export const getDestructionTargets = query({
       ...board.map((bc) => bc.cardId),
       ...spellTrapZone.filter((st) => !st.isFaceDown).map((st) => st.cardId),
     ];
-    const cards = await Promise.all(allCardIds.map((id) => ctx.db.get(id)));
+    const cards = await Promise.all(allCardIds.map((id) => ctx.db.get(id as Id<"cardDefinitions">)));
     const cardMap = new Map(
-      cards.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
+      cards.filter((c): c is Doc<"cardDefinitions"> => c !== null).map((c) => [c._id, c])
     );
 
     // 3. Check monster board
     if (targetType === "monster" || targetType === "any") {
       for (const boardCard of board) {
-        const card = cardMap.get(boardCard.cardId);
+        const card = cardMap.get(boardCard.cardId as Id<"cardDefinitions">);
         if (!card) continue;
 
         targets.push({
@@ -254,7 +255,7 @@ export const getDestructionTargets = query({
       for (const stCard of spellTrapZone) {
         if (stCard.isFaceDown) continue; // Skip face-down cards
 
-        const card = cardMap.get(stCard.cardId);
+        const card = cardMap.get(stCard.cardId as Id<"cardDefinitions">);
         if (!card) continue;
 
         // Filter by type if specified

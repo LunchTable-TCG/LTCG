@@ -195,9 +195,12 @@ export const getGameEventStats = query({
       (acc, event) => {
         const username = event.playerUsername;
         if (!acc[username]) {
-          acc[username] = { actionsCount: 0, playerId: event.playerId };
+          acc[username] = { actionsCount: 0, playerId: event.playerId as Id<"users"> };
         }
-        acc[username].actionsCount++;
+        const stats = acc[username];
+        if (stats) {
+          stats.actionsCount++;
+        }
         return acc;
       },
       {} as Record<string, { actionsCount: number; playerId: Id<"users"> }>

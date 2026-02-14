@@ -104,8 +104,8 @@ export const endTurn = mutation({
       }
 
       const allBoards: BoardCardWithOwner[] = [
-        ...playerBoard.map((bc) => ({ cardId: bc.cardId, ownerId: user.userId })),
-        ...opponentBoard.map((bc) => ({ cardId: bc.cardId, ownerId: opponentId })),
+        ...playerBoard.map((bc) => ({ cardId: bc.cardId as Id<"cardDefinitions">, ownerId: user.userId })),
+        ...opponentBoard.map((bc) => ({ cardId: bc.cardId as Id<"cardDefinitions">, ownerId: opponentId as Id<"users"> })),
       ];
 
       for (const boardCard of allBoards) {
@@ -248,13 +248,13 @@ export const endTurn = mutation({
     });
 
     // 12. Record turn_start event for new turn
-    const nextPlayer = await ctx.db.get(nextPlayerId);
+    const nextPlayer = await ctx.db.get(nextPlayerId as Id<"users">);
     await recordEventHelper(ctx, {
       lobbyId: args.lobbyId,
       gameId: lobby.gameId ?? "",
       turnNumber: nextTurnNumber,
       eventType: "turn_start",
-      playerId: nextPlayerId,
+      playerId: nextPlayerId as Id<"users">,
       playerUsername: nextPlayer?.username || "Unknown",
       description: `${nextPlayer?.username || "Unknown"}'s turn ${nextTurnNumber}`,
       metadata: {
@@ -280,7 +280,7 @@ export const endTurn = mutation({
     // gameState was already updated with new turn state above
     const gameStateForOPT = await ctx.db.get(gameState._id);
     if (gameStateForOPT) {
-      await resetOPTEffects(ctx, gameStateForOPT, nextPlayerId);
+      await resetOPTEffects(ctx, gameStateForOPT, nextPlayerId as Id<"users">);
     }
 
     // 13. Auto-execute Draw Phase and advance to Main Phase 1
@@ -296,7 +296,7 @@ export const endTurn = mutation({
 
     if (!shouldSkipDraw) {
       // Draw 1 card for the new turn (drawCards already records the event)
-      const drawnCards = await drawCards(ctx, refreshedGameState, nextPlayerId, 1);
+      const drawnCards = await drawCards(ctx, refreshedGameState, nextPlayerId as Id<"users">, 1);
       console.log(
         `Turn ${nextTurnNumber}: ${nextPlayer?.username} drew ${drawnCards.length} card(s)`
       );
@@ -306,7 +306,7 @@ export const endTurn = mutation({
         const deckOutResult = await checkDeckOutCondition(
           ctx,
           args.lobbyId,
-          nextPlayerId,
+          nextPlayerId as Id<"users">,
           nextTurnNumber
         );
         if (deckOutResult.gameEnded) {
@@ -339,7 +339,7 @@ export const endTurn = mutation({
       gameId: lobby.gameId ?? "",
       turnNumber: nextTurnNumber,
       eventType: "phase_changed",
-      playerId: nextPlayerId,
+      playerId: nextPlayerId as Id<"users">,
       playerUsername: nextPlayer?.username || "Unknown",
       description: `${nextPlayer?.username || "Unknown"} entered Main Phase`,
       metadata: {
@@ -434,8 +434,8 @@ export const endTurnInternal = internalMutation({
       }
 
       const allBoards: BoardCardWithOwner[] = [
-        ...playerBoard.map((bc) => ({ cardId: bc.cardId, ownerId: args.userId })),
-        ...opponentBoard.map((bc) => ({ cardId: bc.cardId, ownerId: opponentId })),
+        ...playerBoard.map((bc) => ({ cardId: bc.cardId as Id<"cardDefinitions">, ownerId: args.userId })),
+        ...opponentBoard.map((bc) => ({ cardId: bc.cardId as Id<"cardDefinitions">, ownerId: opponentId as Id<"users"> })),
       ];
 
       for (const boardCard of allBoards) {
@@ -561,13 +561,13 @@ export const endTurnInternal = internalMutation({
     });
 
     // 12. Record turn_start event for new turn
-    const nextPlayer = await ctx.db.get(nextPlayerId);
+    const nextPlayer = await ctx.db.get(nextPlayerId as Id<"users">);
     await recordEventHelper(ctx, {
       lobbyId: gameState.lobbyId,
       gameId: args.gameId,
       turnNumber: nextTurnNumber,
       eventType: "turn_start",
-      playerId: nextPlayerId,
+      playerId: nextPlayerId as Id<"users">,
       playerUsername: nextPlayer?.username || "AI Opponent",
       description: `${nextPlayer?.username || "AI Opponent"}'s turn ${nextTurnNumber}`,
       metadata: {
@@ -581,7 +581,7 @@ export const endTurnInternal = internalMutation({
       gameId: args.gameId,
       lobbyId: gameState.lobbyId,
       turnNumber: nextTurnNumber,
-      playerId: nextPlayerId,
+      playerId: nextPlayerId as Id<"users">,
       additionalData: {
         playerUsername: nextPlayer?.username || "AI Opponent",
       },
@@ -591,7 +591,7 @@ export const endTurnInternal = internalMutation({
     // gameState was already updated with new turn state above
     const gameStateForOPT = await ctx.db.get(gameState._id);
     if (gameStateForOPT) {
-      await resetOPTEffects(ctx, gameStateForOPT, nextPlayerId);
+      await resetOPTEffects(ctx, gameStateForOPT, nextPlayerId as Id<"users">);
     }
 
     // 13. Auto-execute Draw Phase and advance to Main Phase 1
@@ -603,13 +603,13 @@ export const endTurnInternal = internalMutation({
     }
 
     if (!shouldSkipDraw) {
-      const drawnCards = await drawCards(ctx, refreshedGameState, nextPlayerId, 1);
+      const drawnCards = await drawCards(ctx, refreshedGameState, nextPlayerId as Id<"users">, 1);
 
       if (drawnCards.length === 0) {
         const deckOutResult = await checkDeckOutCondition(
           ctx,
           gameState.lobbyId,
-          nextPlayerId,
+          nextPlayerId as Id<"users">,
           nextTurnNumber
         );
         if (deckOutResult.gameEnded) {
@@ -635,7 +635,7 @@ export const endTurnInternal = internalMutation({
       gameId: args.gameId,
       turnNumber: nextTurnNumber,
       eventType: "phase_changed",
-      playerId: nextPlayerId,
+      playerId: nextPlayerId as Id<"users">,
       playerUsername: nextPlayer?.username || "AI Opponent",
       description: `${nextPlayer?.username || "AI Opponent"} entered Main Phase`,
       metadata: {

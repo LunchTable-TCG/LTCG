@@ -326,16 +326,16 @@ async function checkLPWinCondition(
 
   // Check host LP
   if (gameState.hostLifePoints <= 0) {
-    const winner = await ctx.db.get(gameState.opponentId);
-    const loser = await ctx.db.get(gameState.hostId);
+    const winner = await ctx.db.get(gameState.opponentId as Id<"users">);
+    const loser = await ctx.db.get(gameState.hostId as Id<"users">);
 
     await recordGameEndHelper(ctx, {
       lobbyId,
       gameId,
       turnNumber,
-      winnerId: gameState.opponentId,
+      winnerId: gameState.opponentId as Id<"users">,
       winnerUsername: winner?.username || "Unknown",
-      loserId: gameState.hostId,
+      loserId: gameState.hostId as Id<"users">,
       loserUsername: loser?.username || "Unknown",
     });
 
@@ -347,12 +347,12 @@ async function checkLPWinCondition(
 
     // Update player stats (opponent wins, host loses)
     const hostLPGameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, gameState.opponentId, gameState.hostId, hostLPGameMode);
+    await updatePlayerStatsAfterGame(ctx, gameState.opponentId as Id<"users">, gameState.hostId as Id<"users">, hostLPGameMode);
 
     // Handle story mode completion (host lost)
     if (lobby?.mode === "story" && lobby.stageId) {
       await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
-        userId: gameState.hostId,
+        userId: gameState.hostId as Id<"users">,
         stageId: lobby.stageId,
         won: false,
         finalLP: 0,
@@ -371,23 +371,23 @@ async function checkLPWinCondition(
 
     return {
       gameEnded: true,
-      winnerId: gameState.opponentId,
+      winnerId: gameState.opponentId as Id<"users">,
       action: `${loser?.username}'s LP reached 0 - ${winner?.username} wins!`,
     };
   }
 
   // Check opponent LP
   if (gameState.opponentLifePoints <= 0) {
-    const winner = await ctx.db.get(gameState.hostId);
-    const loser = await ctx.db.get(gameState.opponentId);
+    const winner = await ctx.db.get(gameState.hostId as Id<"users">);
+    const loser = await ctx.db.get(gameState.opponentId as Id<"users">);
 
     await recordGameEndHelper(ctx, {
       lobbyId,
       gameId,
       turnNumber,
-      winnerId: gameState.hostId,
+      winnerId: gameState.hostId as Id<"users">,
       winnerUsername: winner?.username || "Unknown",
-      loserId: gameState.opponentId,
+      loserId: gameState.opponentId as Id<"users">,
       loserUsername: loser?.username || "Unknown",
     });
 
@@ -399,12 +399,12 @@ async function checkLPWinCondition(
 
     // Update player stats (host wins, opponent loses)
     const oppLPGameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, gameState.hostId, gameState.opponentId, oppLPGameMode);
+    await updatePlayerStatsAfterGame(ctx, gameState.hostId as Id<"users">, gameState.opponentId as Id<"users">, oppLPGameMode);
 
     // Handle story mode completion (host won)
     if (lobby?.mode === "story" && lobby.stageId) {
       await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
-        userId: gameState.hostId,
+        userId: gameState.hostId as Id<"users">,
         stageId: lobby.stageId,
         won: true,
         finalLP: gameState.hostLifePoints,
@@ -424,7 +424,7 @@ async function checkLPWinCondition(
 
     return {
       gameEnded: true,
-      winnerId: gameState.hostId,
+      winnerId: gameState.hostId as Id<"users">,
       action: `${loser?.username}'s LP reached 0 - ${winner?.username} wins!`,
     };
   }
@@ -464,7 +464,7 @@ export async function checkDeckOutCondition(
 
   if (deck.length === 0) {
     // Player loses due to deck out
-    const winnerId = isHost ? gameState.opponentId : gameState.hostId;
+    const winnerId = (isHost ? gameState.opponentId : gameState.hostId) as Id<"users">;
     const winner = await ctx.db.get(winnerId);
     const loser = await ctx.db.get(playerId);
 
@@ -472,7 +472,7 @@ export async function checkDeckOutCondition(
       lobbyId,
       gameId: lobby.gameId,
       turnNumber,
-      winnerId,
+      winnerId: winnerId as Id<"users">,
       winnerUsername: winner?.username || "Unknown",
       loserId: playerId,
       loserUsername: loser?.username || "Unknown",
@@ -486,13 +486,13 @@ export async function checkDeckOutCondition(
 
     // Update player stats (deck-out loser)
     const deckOutGameMode = (lobby.mode || "casual") as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, winnerId, playerId, deckOutGameMode);
+    await updatePlayerStatsAfterGame(ctx, winnerId as Id<"users">, playerId, deckOutGameMode);
 
     // Handle story mode completion (deck out)
     if (lobby.mode === "story" && lobby.stageId) {
       const hostWon = winnerId === gameState.hostId;
       await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
-        userId: gameState.hostId,
+        userId: gameState.hostId as Id<"users">,
         stageId: lobby.stageId,
         won: hostWon,
         finalLP: hostWon ? gameState.hostLifePoints : 0,
@@ -569,14 +569,15 @@ async function checkMonsterDestruction(
       lobbyId,
       gameId,
       turnNumber,
-      monster.cardId,
-      gameState.hostId,
+
+      monster.cardId as Id<"cardDefinitions">,
+      gameState.hostId as Id<"users">,
       true,
       destroyTriggeredCards
     );
     if (destroyed) {
       result.changed = true;
-      result.destroyedCards.push(monster.cardId);
+      result.destroyedCards.push(monster.cardId as Id<"cardDefinitions">);
       result.actions.push("Host monster destroyed by SBA (stats reduced to 0)");
     }
   }
@@ -589,14 +590,15 @@ async function checkMonsterDestruction(
       lobbyId,
       gameId,
       turnNumber,
-      monster.cardId,
-      gameState.opponentId,
+
+      monster.cardId as Id<"cardDefinitions">,
+      gameState.opponentId as Id<"users">,
       false,
       destroyTriggeredCards
     );
     if (destroyed) {
       result.changed = true;
-      result.destroyedCards.push(monster.cardId);
+      result.destroyedCards.push(monster.cardId as Id<"cardDefinitions">);
       result.actions.push("Opponent monster destroyed by SBA (stats reduced to 0)");
     }
   }
@@ -678,15 +680,15 @@ async function destroyMonsterBySBA(
         });
 
         // Record destruction events for equip spells
-        const equipOwner = await ctx.db.get(playerId);
+        const equipOwner = await ctx.db.get(playerId as Id<"users">);
         for (const equipId of equipCardIds) {
-          const equipCard = await ctx.db.get(equipId);
+          const equipCard = await ctx.db.get(equipId as Id<"cardDefinitions">);
           await recordEventHelper(ctx, {
             lobbyId,
             gameId,
             turnNumber,
             eventType: "card_destroyed",
-            playerId,
+            playerId: playerId as Id<"users">,
             playerUsername: equipOwner?.username || "Unknown",
             description: `${equipCard?.name || "Equip Spell"} destroyed (equipped monster destroyed)`,
             metadata: {
@@ -795,7 +797,7 @@ async function checkFieldSpellReplacement(
 
   // Validate host field spell
   if (gameState.hostFieldSpell) {
-    const fieldCard = await ctx.db.get(gameState.hostFieldSpell.cardId);
+    const fieldCard = await ctx.db.get(gameState.hostFieldSpell.cardId as Id<"cardDefinitions">);
     // If field spell card no longer exists or is not a spell, remove it
     if (!fieldCard || fieldCard.cardType !== "spell" || fieldCard.spellType !== "field") {
       // Send invalid field spell to graveyard before removing
@@ -804,13 +806,13 @@ async function checkFieldSpellReplacement(
         hostGraveyard: [...gameState.hostGraveyard, gameState.hostFieldSpell.cardId],
       });
 
-      const host = await ctx.db.get(gameState.hostId);
+      const host = await ctx.db.get(gameState.hostId as Id<"users">);
       await recordEventHelper(ctx, {
         lobbyId,
         gameId,
         turnNumber,
         eventType: "card_destroyed",
-        playerId: gameState.hostId,
+        playerId: gameState.hostId as Id<"users">,
         playerUsername: host?.username || "Unknown",
         description: "Invalid field spell removed by SBA",
         metadata: {
@@ -826,7 +828,7 @@ async function checkFieldSpellReplacement(
 
   // Validate opponent field spell
   if (gameState.opponentFieldSpell) {
-    const fieldCard = await ctx.db.get(gameState.opponentFieldSpell.cardId);
+    const fieldCard = await ctx.db.get(gameState.opponentFieldSpell.cardId as Id<"cardDefinitions">);
     // If field spell card no longer exists or is not a spell, remove it
     if (!fieldCard || fieldCard.cardType !== "spell" || fieldCard.spellType !== "field") {
       // Send invalid field spell to graveyard before removing
@@ -835,13 +837,13 @@ async function checkFieldSpellReplacement(
         opponentGraveyard: [...gameState.opponentGraveyard, gameState.opponentFieldSpell.cardId],
       });
 
-      const opponent = await ctx.db.get(gameState.opponentId);
+      const opponent = await ctx.db.get(gameState.opponentId as Id<"users">);
       await recordEventHelper(ctx, {
         lobbyId,
         gameId,
         turnNumber,
         eventType: "card_destroyed",
-        playerId: gameState.opponentId,
+        playerId: gameState.opponentId as Id<"users">,
         playerUsername: opponent?.username || "Unknown",
         description: "Invalid field spell removed by SBA",
         metadata: {
@@ -881,7 +883,7 @@ async function checkOrphanedEquipSpells(
   // Check all equip spells in both players' spell/trap zones
   const checkZone = async (
     zone: typeof gameState.hostSpellTrapZone,
-    playerId: Id<"users">,
+    playerId: string,
     zoneKey: "hostSpellTrapZone" | "opponentSpellTrapZone"
   ) => {
     const orphanedEquips: Id<"cardDefinitions">[] = [];
@@ -889,7 +891,7 @@ async function checkOrphanedEquipSpells(
     for (const spellTrap of zone) {
       if (!spellTrap.equippedTo) continue; // Not an equip spell
 
-      const card = await ctx.db.get(spellTrap.cardId);
+      const card = await ctx.db.get(spellTrap.cardId as Id<"cardDefinitions">);
       if (!card || card.cardType !== "spell" || card.spellType !== "equip") continue;
 
       // Check if target monster still exists on field and is face-up
@@ -900,13 +902,13 @@ async function checkOrphanedEquipSpells(
 
       if (!targetMonster || targetMonster.isFaceDown) {
         // Target is invalid - mark equip spell for destruction
-        orphanedEquips.push(spellTrap.cardId);
+        orphanedEquips.push(spellTrap.cardId as Id<"cardDefinitions">);
       }
     }
 
     // Destroy orphaned equip spells
     if (orphanedEquips.length > 0) {
-      const newZone = zone.filter((st) => !orphanedEquips.includes(st.cardId));
+      const newZone = zone.filter((st) => !orphanedEquips.includes(st.cardId as Id<"cardDefinitions">));
       const graveyard =
         playerId === gameState.hostId ? gameState.hostGraveyard : gameState.opponentGraveyard;
       const newGraveyard = [...graveyard, ...orphanedEquips];
@@ -968,7 +970,7 @@ async function checkOrphanedEquipSpells(
       }
 
       // Record events for destroyed equip spells
-      const player = await ctx.db.get(playerId);
+      const player = await ctx.db.get(playerId as Id<"users">);
       for (const equipId of orphanedEquips) {
         const equipCard = await ctx.db.get(equipId);
         await recordEventHelper(ctx, {
@@ -976,7 +978,7 @@ async function checkOrphanedEquipSpells(
           gameId,
           turnNumber,
           eventType: "card_destroyed",
-          playerId,
+          playerId: playerId as Id<"users">,
           playerUsername: player?.username || "Unknown",
           description: `${equipCard?.name || "Equip Spell"} destroyed by SBA (target invalid)`,
           metadata: {
@@ -1024,7 +1026,7 @@ async function checkHandSizeLimit(
     const cardsToDiscard = gameState.hostHand.slice(HAND_LIMIT);
     const newHand = gameState.hostHand.slice(0, HAND_LIMIT);
 
-    const owner = await ctx.db.get(gameState.hostId);
+    const owner = await ctx.db.get(gameState.hostId as Id<"users">);
 
     // Re-read graveyard from DB to avoid overwriting changes from earlier SBA checks
     const freshState = await ctx.db.get(gameState._id);
@@ -1032,13 +1034,13 @@ async function checkHandSizeLimit(
 
     // Record events for each discarded card
     for (const cardId of cardsToDiscard) {
-      const card = await ctx.db.get(cardId);
+      const card = await ctx.db.get(cardId as Id<"cardDefinitions">);
       await recordEventHelper(ctx, {
         lobbyId,
         gameId,
         turnNumber,
         eventType: "card_to_graveyard",
-        playerId: gameState.hostId,
+        playerId: gameState.hostId as Id<"users">,
         playerUsername: owner?.username || "Unknown",
         description: `${owner?.username}'s ${card?.name || "card"} was discarded (hand limit)`,
         metadata: { cardId, fromZone: "hand", toZone: "graveyard" },
@@ -1056,7 +1058,7 @@ async function checkHandSizeLimit(
       gameId,
       turnNumber,
       eventType: "hand_limit_enforced",
-      playerId: gameState.hostId,
+      playerId: gameState.hostId as Id<"users">,
       playerUsername: owner?.username || "Unknown",
       description: `${owner?.username} discarded ${excessCount} card(s) due to hand limit`,
       metadata: {
@@ -1078,7 +1080,7 @@ async function checkHandSizeLimit(
     // Load card data to calculate power
     const handCards = await Promise.all(
       gameState.opponentHand.map(async (cardId) => {
-        const card = await ctx.db.get(cardId);
+        const card = await ctx.db.get(cardId as Id<"cardDefinitions">);
         return {
           cardId,
           power: card ? (card.attack || 0) + (card.defense || 0) : 0,
@@ -1093,7 +1095,7 @@ async function checkHandSizeLimit(
     const cardsToDiscard = handCards.slice(0, excessCount).map((c) => c.cardId);
     const newHand = handCards.slice(excessCount).map((c) => c.cardId);
 
-    const owner = await ctx.db.get(gameState.opponentId);
+    const owner = await ctx.db.get(gameState.opponentId as Id<"users">);
 
     // Re-read graveyard from DB to avoid overwriting changes from earlier SBA checks
     const freshState = await ctx.db.get(gameState._id);
@@ -1101,13 +1103,13 @@ async function checkHandSizeLimit(
 
     // Record events for each discarded card
     for (const cardId of cardsToDiscard) {
-      const card = await ctx.db.get(cardId);
+      const card = await ctx.db.get(cardId as Id<"cardDefinitions">);
       await recordEventHelper(ctx, {
         lobbyId,
         gameId,
         turnNumber,
         eventType: "card_to_graveyard",
-        playerId: gameState.opponentId,
+        playerId: gameState.opponentId as Id<"users">,
         playerUsername: owner?.username || "Unknown",
         description: `${owner?.username}'s ${card?.name || "card"} was discarded (hand limit)`,
         metadata: { cardId, fromZone: "hand", toZone: "graveyard" },
@@ -1125,7 +1127,7 @@ async function checkHandSizeLimit(
       gameId,
       turnNumber,
       eventType: "hand_limit_enforced",
-      playerId: gameState.opponentId,
+      playerId: gameState.opponentId as Id<"users">,
       playerUsername: owner?.username || "Unknown",
       description: `${owner?.username} discarded ${excessCount} card(s) due to hand limit`,
       metadata: {
@@ -1159,9 +1161,9 @@ async function checkTokenZoneViolations(
 
   // Check all zones for tokens (except board)
   const checkZone = async (
-    zone: Id<"cardDefinitions">[],
+    zone: string[],
     zoneName: string,
-    playerId: Id<"users">,
+    playerId: string,
     zoneKey: string
   ) => {
     // Tokens have fake IDs in the format: cardId_token_timestamp_index
@@ -1181,13 +1183,13 @@ async function checkTokenZoneViolations(
         [zoneKey]: newZone,
       });
 
-      const player = await ctx.db.get(playerId);
+      const player = await ctx.db.get(playerId as Id<"users">);
       await recordEventHelper(ctx, {
         lobbyId,
         gameId,
         turnNumber,
         eventType: "card_destroyed",
-        playerId,
+        playerId: playerId as Id<"users">,
         playerUsername: player?.username || "Unknown",
         description: `${tokensInZone.length} token(s) removed from ${zoneName} (tokens cannot exist off field)`,
         metadata: {
@@ -1245,16 +1247,16 @@ async function checkBreakdownWinCondition(
 
   // Check if host caused enough breakdowns to win
   if (hostBreakdowns >= MAX_BREAKDOWNS_WIN) {
-    const winner = await ctx.db.get(gameState.hostId);
-    const loser = await ctx.db.get(gameState.opponentId);
+    const winner = await ctx.db.get(gameState.hostId as Id<"users">);
+    const loser = await ctx.db.get(gameState.opponentId as Id<"users">);
 
     await recordGameEndHelper(ctx, {
       lobbyId,
       gameId,
       turnNumber,
-      winnerId: gameState.hostId,
+      winnerId: gameState.hostId as Id<"users">,
       winnerUsername: winner?.username || "Unknown",
-      loserId: gameState.opponentId,
+      loserId: gameState.opponentId as Id<"users">,
       loserUsername: loser?.username || "Unknown",
     });
 
@@ -1264,7 +1266,7 @@ async function checkBreakdownWinCondition(
     });
 
     const gameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, gameState.hostId, gameState.opponentId, gameMode);
+    await updatePlayerStatsAfterGame(ctx, gameState.hostId as Id<"users">, gameState.opponentId as Id<"users">, gameMode);
 
     if (lobby?.mode === "story" && lobby.stageId) {
       await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
@@ -1283,23 +1285,23 @@ async function checkBreakdownWinCondition(
 
     return {
       gameEnded: true,
-      winnerId: gameState.hostId,
+      winnerId: gameState.hostId as Id<"users">,
       action: `${winner?.username} wins by causing ${hostBreakdowns} Breakdowns!`,
     };
   }
 
   // Check if opponent caused enough breakdowns to win
   if (opponentBreakdowns >= MAX_BREAKDOWNS_WIN) {
-    const winner = await ctx.db.get(gameState.opponentId);
-    const loser = await ctx.db.get(gameState.hostId);
+    const winner = await ctx.db.get(gameState.opponentId as Id<"users">);
+    const loser = await ctx.db.get(gameState.hostId as Id<"users">);
 
     await recordGameEndHelper(ctx, {
       lobbyId,
       gameId,
       turnNumber,
-      winnerId: gameState.opponentId,
+      winnerId: gameState.opponentId as Id<"users">,
       winnerUsername: winner?.username || "Unknown",
-      loserId: gameState.hostId,
+      loserId: gameState.hostId as Id<"users">,
       loserUsername: loser?.username || "Unknown",
     });
 
@@ -1309,7 +1311,7 @@ async function checkBreakdownWinCondition(
     });
 
     const gameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, gameState.opponentId, gameState.hostId, gameMode);
+    await updatePlayerStatsAfterGame(ctx, gameState.opponentId as Id<"users">, gameState.hostId as Id<"users">, gameMode);
 
     if (lobby?.mode === "story" && lobby.stageId) {
       await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
@@ -1328,7 +1330,7 @@ async function checkBreakdownWinCondition(
 
     return {
       gameEnded: true,
-      winnerId: gameState.opponentId,
+      winnerId: gameState.opponentId as Id<"users">,
       action: `${winner?.username} wins by causing ${opponentBreakdowns} Breakdowns!`,
     };
   }
@@ -1384,14 +1386,15 @@ async function checkBreakdownTriggers(
       lobbyId,
       gameId,
       turnNumber,
-      card.cardId,
-      gameState.hostId,
+
+      card.cardId as Id<"cardDefinitions">,
+      gameState.hostId as Id<"users">,
       true,
       destroyTriggeredCards
     );
     if (destroyed) {
       result.changed = true;
-      result.destroyedCards.push(card.cardId);
+      result.destroyedCards.push(card.cardId as Id<"cardDefinitions">);
       const reason = (card.viceCounters ?? 0) >= BREAKDOWN_THRESHOLD
         ? `Vice overload (${card.viceCounters} counters)`
         : "Stability reached 0";
@@ -1407,14 +1410,15 @@ async function checkBreakdownTriggers(
       lobbyId,
       gameId,
       turnNumber,
-      card.cardId,
-      gameState.opponentId,
+
+      card.cardId as Id<"cardDefinitions">,
+      gameState.opponentId as Id<"users">,
       false,
       destroyTriggeredCards
     );
     if (destroyed) {
       result.changed = true;
-      result.destroyedCards.push(card.cardId);
+      result.destroyedCards.push(card.cardId as Id<"cardDefinitions">);
       const reason = (card.viceCounters ?? 0) >= BREAKDOWN_THRESHOLD
         ? `Vice overload (${card.viceCounters} counters)`
         : "Stability reached 0";
@@ -1453,8 +1457,8 @@ async function processBreakdown(
     return false;
   }
 
-  const card = await ctx.db.get(cardId);
-  const owner = await ctx.db.get(ownerId);
+  const card = await ctx.db.get(cardId as Id<"cardDefinitions">);
+  const owner = await ctx.db.get(ownerId as Id<"users">);
 
   // Record the Breakdown event
   await recordEventHelper(ctx, {

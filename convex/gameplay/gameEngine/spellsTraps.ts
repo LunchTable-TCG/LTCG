@@ -11,7 +11,7 @@ import { v } from "convex/values";
 import * as generatedApi from "../../_generated/api";
 // biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
 const internalAny = (generatedApi as any).internal;
-import type { Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { internalMutation, mutation } from "../../functions";
 import { getCardAbility, getRawJsonAbility } from "../../lib/abilityHelpers";
@@ -422,7 +422,7 @@ async function activateSpellHandler(
       });
 
       // Record field spell replacement event
-      const oldFieldCard = await ctx.db.get(currentFieldSpell.cardId);
+      const oldFieldCard = await ctx.db.get(currentFieldSpell.cardId as Id<"cardDefinitions">) as Doc<"cardDefinitions"> | null;
       if (oldFieldCard) {
         await recordEventHelper(ctx, {
           lobbyId: args.lobbyId,

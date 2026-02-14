@@ -11,7 +11,7 @@ import { v } from "convex/values";
 import * as generatedApi from "../../_generated/api";
 // biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
 const internalAny = (generatedApi as any).internal;
-import type { Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { internalMutation, mutation } from "../../functions";
 import { getCardAbility } from "../../lib/abilityHelpers";
@@ -125,7 +125,7 @@ export const normalSummon = mutation({
     }
 
     // 6. Get card details
-    const card = await ctx.db.get(args.cardId);
+    const card = await ctx.db.get(args.cardId as Id<"cardDefinitions">);
     if (!card) {
       throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
         reason: "Card not found",
@@ -152,7 +152,7 @@ export const normalSummon = mutation({
 
       // Record card_to_graveyard events for each tribute (don't use moveCard to avoid stale state issues)
       for (const tributeId of args.tributeCardIds) {
-        const tributeCard = await ctx.db.get(tributeId);
+        const tributeCard = await ctx.db.get(tributeId as Id<"cardDefinitions">);
         await recordEventHelper(ctx, {
           lobbyId: args.lobbyId,
           gameId: lobby.gameId,
@@ -166,10 +166,10 @@ export const normalSummon = mutation({
       }
 
       // Remove tributes from board and add to graveyard in one batch operation
-      const tributeSet = new Set(args.tributeCardIds);
-      const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId));
+      const tributeSet = new Set(args.tributeCardIds as Id<"cardDefinitions">[]);
+      const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId as Id<"cardDefinitions">));
       const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
-      const graveyardAfterTributes = [...graveyard, ...args.tributeCardIds];
+      const graveyardAfterTributes = [...graveyard, ...args.tributeCardIds] as Id<"cardDefinitions">[];
 
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
       const tributeUpdates: Record<string, any> = {
@@ -179,11 +179,11 @@ export const normalSummon = mutation({
 
       // Clean up equip spells on tributed monsters
       for (const bc of board) {
-        if (!tributeSet.has(bc.cardId)) continue;
+        if (!tributeSet.has(bc.cardId as Id<"cardDefinitions">)) continue;
         if (!bc.equippedCards || bc.equippedCards.length === 0) continue;
         const equippedIds = bc.equippedCards;
         const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
-          equippedIds.includes(st.cardId)
+          equippedIds.includes(st.cardId as Id<"cardDefinitions">)
         );
         if (hostEquips.length > 0) {
           tributeUpdates["hostSpellTrapZone"] = (
@@ -195,7 +195,7 @@ export const normalSummon = mutation({
           ];
         }
         const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
-          equippedIds.includes(st.cardId)
+          equippedIds.includes(st.cardId as Id<"cardDefinitions">)
         );
         if (opponentEquips.length > 0) {
           tributeUpdates["opponentSpellTrapZone"] = (
@@ -328,7 +328,7 @@ export const normalSummon = mutation({
     for (const zoneCard of opponentSpellTrapZone) {
       // Only check active (face-up) continuous traps
       if (!zoneCard.isFaceDown && zoneCard.isActivated) {
-        const trapCard = await ctx.db.get(zoneCard.cardId);
+        const trapCard = await ctx.db.get(zoneCard.cardId as Id<"cardDefinitions">) as Doc<"cardDefinitions"> | null;
         if (trapCard?.cardType === "trap") {
           const trapAbility = getCardAbility(trapCard);
           const trapEffect = trapAbility?.effects.find(
@@ -348,20 +348,20 @@ export const normalSummon = mutation({
                 refreshedState,
                 args.lobbyId,
                 trapEffect,
-                opponentId,
-                zoneCard.cardId,
+                opponentId as Id<"users">,
+                zoneCard.cardId as Id<"cardDefinitions">,
                 [] // No targets needed for automatic triggers
               );
 
               if (opponentTriggerResult.success) {
-                const opponent = await ctx.db.get(opponentId);
+                const opponent = await ctx.db.get(opponentId as Id<"users">) as Doc<"users"> | null;
                 // Record opponent's trap activation
                 await recordEventHelper(ctx, {
                   lobbyId: args.lobbyId,
                   gameId: lobby.gameId,
-                  turnNumber: gameState.turnNumber,
+                  turnNumber: gameState.turnNumber as number,
                   eventType: "effect_activated",
-                  playerId: opponentId,
+                  playerId: opponentId as Id<"users">,
                   playerUsername: opponent?.username || "Opponent",
                   description: `${trapCard.name} effect: ${opponentTriggerResult.message}`,
                   metadata: { cardId: zoneCard.cardId, trigger: "on_opponent_summon" },
@@ -428,7 +428,7 @@ async function setMonsterHandler(
   user: AuthenticatedUser
 ) {
   // 2. Validate game is active
-  await validateGameActive(ctx.db, args.lobbyId);
+  await validateGameActive(ctx.db, args.lobbyId as Id<"gameLobbies">);
 
   // 3. Get lobby (for gameId/status only - turn state is in gameStates)
   const lobby = await ctx.db.get(args.lobbyId);
@@ -485,10 +485,10 @@ async function setMonsterHandler(
   const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
   // 5.5. Validate monster zone has space (max 3 stereotypes)
-  validateMonsterZone(board, 3);
+  validateMonsterZone(board as any[], 3);
 
   // 6. Get card details
-  const card = await ctx.db.get(args.cardId);
+  const card = await ctx.db.get(args.cardId as Id<"cardDefinitions">);
   if (!card) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: "Card not found",
@@ -514,25 +514,25 @@ async function setMonsterHandler(
     });
 
     // Record card_to_graveyard events for each tribute
-    for (const tributeId of args.tributeCardIds) {
-      const tributeCard = await ctx.db.get(tributeId);
-      await recordEventHelper(ctx, {
-        lobbyId: args.lobbyId,
-        gameId: lobby.gameId,
-        turnNumber: gameState.turnNumber,
-        eventType: "card_to_graveyard",
-        playerId: user.userId,
-        playerUsername: user.username,
-        description: `${user.username}'s ${tributeCard?.name || "card"} was sent to the graveyard`,
-        metadata: { cardId: tributeId, fromZone: "board", toZone: "graveyard" },
-      });
-    }
+      for (const tributeId of args.tributeCardIds) {
+        const tributeCard = await ctx.db.get(tributeId as Id<"cardDefinitions">);
+        await recordEventHelper(ctx, {
+          lobbyId: args.lobbyId,
+          gameId: lobby.gameId as string,
+          turnNumber: gameState.turnNumber as number,
+          eventType: "card_to_graveyard",
+          playerId: user.userId,
+          playerUsername: user.username,
+          description: `${user.username}'s ${tributeCard?.name || "card"} was sent to the graveyard`,
+          metadata: { cardId: tributeId as Id<"cardDefinitions">, fromZone: "board", toZone: "graveyard" },
+        });
+      }
 
     // Remove tributes from board and add to graveyard in one batch operation
-    const tributeSet = new Set(args.tributeCardIds);
-    const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId));
+    const tributeSet = new Set(args.tributeCardIds as Id<"cardDefinitions">[]);
+    const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId as Id<"cardDefinitions">));
     const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
-    const graveyardAfterTributes = [...graveyard, ...args.tributeCardIds];
+    const graveyardAfterTributes = [...graveyard, ...args.tributeCardIds] as Id<"cardDefinitions">[];
 
     // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
     const tributeUpdates: Record<string, any> = {
@@ -542,11 +542,11 @@ async function setMonsterHandler(
 
     // Clean up equip spells on tributed monsters
     for (const bc of board) {
-      if (!tributeSet.has(bc.cardId)) continue;
+      if (!tributeSet.has(bc.cardId as Id<"cardDefinitions">)) continue;
       if (!bc.equippedCards || bc.equippedCards.length === 0) continue;
       const equippedIds = bc.equippedCards;
       const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
-        equippedIds.includes(st.cardId)
+        equippedIds.includes(st.cardId as Id<"cardDefinitions">)
       );
       if (hostEquips.length > 0) {
         tributeUpdates["hostSpellTrapZone"] = (
@@ -558,7 +558,7 @@ async function setMonsterHandler(
         ];
       }
       const opponentEquips = gameState.opponentSpellTrapZone.filter((st) =>
-        equippedIds.includes(st.cardId)
+        equippedIds.includes(st.cardId as Id<"cardDefinitions">)
       );
       if (opponentEquips.length > 0) {
         tributeUpdates["opponentSpellTrapZone"] = (
@@ -587,17 +587,17 @@ async function setMonsterHandler(
 
   // 9. Add card to board (face-down defense position)
   const newBoardCard = {
-    cardId: args.cardId,
+    cardId: args.cardId as Id<"cardDefinitions">,
     position: -1, // -1 = Defense
     attack: card.attack || 0,
     defense: card.defense || 0,
     hasAttacked: false,
     isFaceDown: true, // Set monsters are face-down
     hasChangedPosition: false,
-    turnSummoned: gameState.turnNumber,
+    turnSummoned: gameState.turnNumber as number,
   };
 
-  const newBoard = [...currentBoard, newBoardCard];
+  const newBoard = [...currentBoard, newBoardCard] as any[];
 
   // 10. Mark player as having normal summoned/set this turn
   await ctx.db.patch(gameState._id, {
@@ -739,7 +739,7 @@ async function flipSummonHandler(
     });
   }
 
-  const card = await ctx.db.get(args.cardId);
+  const card = await ctx.db.get(args.cardId as Id<"cardDefinitions">);
   if (!card) {
     throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
       reason: "Card not found",
@@ -966,10 +966,10 @@ export const normalSummonInternal = internalMutation({
 
     // 8.6. Process tributes (if any)
     if (tributeCardIds.length > 0) {
-      const tributeSet = new Set(tributeCardIds);
-      const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId));
-      const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
-      const graveyardAfterTributes = [...graveyard, ...tributeCardIds];
+      const tributeSet = new Set(tributeCardIds as Id<"cardDefinitions">[]);
+      const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId as Id<"cardDefinitions">));
+      const graveyard = (isHost ? gameState.hostGraveyard : gameState.opponentGraveyard) as Id<"cardDefinitions">[];
+      const graveyardAfterTributes = [...graveyard, ...tributeCardIds] as Id<"cardDefinitions">[];
 
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
       const tributeUpdates: Record<string, any> = {
@@ -979,7 +979,7 @@ export const normalSummonInternal = internalMutation({
 
       // Clean up equip spells on tributed monsters
       for (const bc of board) {
-        if (!tributeSet.has(bc.cardId)) continue;
+        if (!tributeSet.has(bc.cardId as Id<"cardDefinitions">)) continue;
         if (!bc.equippedCards || bc.equippedCards.length === 0) continue;
         const equippedIds = bc.equippedCards;
         const hostEquips = gameState.hostSpellTrapZone.filter((st) =>
@@ -1045,18 +1045,18 @@ export const normalSummonInternal = internalMutation({
     }
 
     const newBoardCard = {
-      cardId: cardIdAsId,
+      cardId: cardIdAsId as Id<"cardDefinitions">,
       position: positionValue,
       attack: card.attack || 0,
       defense: card.defense || 0,
       hasAttacked: false,
       isFaceDown: false,
       hasChangedPosition: false,
-      turnSummoned: gameState.turnNumber ?? 0,
+      turnSummoned: (gameState.turnNumber ?? 0) as number,
       ...protectionFlags,
     };
 
-    const newBoard = [...currentBoard, newBoardCard];
+    const newBoard = [...currentBoard, newBoardCard] as any[];
 
     // 12. Update game state
     await ctx.db.patch(currentGameState._id, {

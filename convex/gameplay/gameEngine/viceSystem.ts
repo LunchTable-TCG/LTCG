@@ -30,9 +30,9 @@ import { recordEventHelper } from "../gameEvents";
 export async function addViceCounter(
   ctx: MutationCtx,
   gameState: Doc<"gameStates">,
-  lobbyId: Id<"gameLobbies">,
+  _lobbyId: Id<"gameLobbies">,
   cardId: Id<"cardDefinitions">,
-  ownerId: Id<"users">,
+  _ownerId: Id<"users">,
   isHost: boolean
 ): Promise<boolean> {
   const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
@@ -103,7 +103,7 @@ export async function checkBreakdowns(
   const hostBreakdowns: Id<"cardDefinitions">[] = [];
   for (const boardCard of gameState.hostBoard) {
     if ((boardCard.viceCounters || 0) >= GAME_CONFIG.VICE.BREAKDOWN_THRESHOLD) {
-      hostBreakdowns.push(boardCard.cardId);
+      hostBreakdowns.push(boardCard.cardId as Id<"cardDefinitions">);
     }
   }
 
@@ -111,7 +111,7 @@ export async function checkBreakdowns(
   const opponentBreakdowns: Id<"cardDefinitions">[] = [];
   for (const boardCard of gameState.opponentBoard) {
     if ((boardCard.viceCounters || 0) >= GAME_CONFIG.VICE.BREAKDOWN_THRESHOLD) {
-      opponentBreakdowns.push(boardCard.cardId);
+      opponentBreakdowns.push(boardCard.cardId as Id<"cardDefinitions">);
     }
   }
 
@@ -123,7 +123,7 @@ export async function checkBreakdowns(
     }
 
     const newHostBoard = freshState.hostBoard.filter(
-      (bc) => !hostBreakdowns.includes(bc.cardId)
+      (bc) => !hostBreakdowns.includes(bc.cardId as Id<"cardDefinitions">)
     );
     const newHostGraveyard = [...freshState.hostGraveyard, ...hostBreakdowns];
     const newOpponentBreakdownsCaused = freshState.opponentBreakdownsCaused + hostBreakdowns.length;
@@ -135,17 +135,17 @@ export async function checkBreakdowns(
     });
 
     // Record events for each breakdown
-    const host = await ctx.db.get(gameState.hostId);
-    const opponent = await ctx.db.get(gameState.opponentId);
+    const host = await ctx.db.get(gameState.hostId as Id<"users">);
+    // const opponent = await ctx.db.get(gameState.opponentId as Id<"users">); // Unused
 
     for (const cardId of hostBreakdowns) {
-      const card = await ctx.db.get(cardId);
+      const card = await ctx.db.get(cardId as Id<"cardDefinitions">);
       await recordEventHelper(ctx, {
         lobbyId,
         gameId,
         turnNumber,
         eventType: "card_to_graveyard",
-        playerId: gameState.hostId,
+        playerId: gameState.hostId as Id<"users">,
         playerUsername: host?.username || "Unknown",
         description: `${card?.name || "Stereotype"} suffered a breakdown!`,
         metadata: {
@@ -174,7 +174,7 @@ export async function checkBreakdowns(
     }
 
     const newOpponentBoard = freshState.opponentBoard.filter(
-      (bc) => !opponentBreakdowns.includes(bc.cardId)
+      (bc) => !opponentBreakdowns.includes(bc.cardId as Id<"cardDefinitions">)
     );
     const newOpponentGraveyard = [...freshState.opponentGraveyard, ...opponentBreakdowns];
     const newHostBreakdownsCaused = freshState.hostBreakdownsCaused + opponentBreakdowns.length;
@@ -186,17 +186,17 @@ export async function checkBreakdowns(
     });
 
     // Record events for each breakdown
-    const host = await ctx.db.get(gameState.hostId);
-    const opponent = await ctx.db.get(gameState.opponentId);
+    // const host = await ctx.db.get(gameState.hostId as Id<"users">); // Unused
+    const opponent = await ctx.db.get(gameState.opponentId as Id<"users">);
 
     for (const cardId of opponentBreakdowns) {
-      const card = await ctx.db.get(cardId);
+      const card = await ctx.db.get(cardId as Id<"cardDefinitions">);
       await recordEventHelper(ctx, {
         lobbyId,
         gameId,
         turnNumber,
         eventType: "card_to_graveyard",
-        playerId: gameState.opponentId,
+        playerId: gameState.opponentId as Id<"users">,
         playerUsername: opponent?.username || "Unknown",
         description: `${card?.name || "Stereotype"} suffered a breakdown!`,
         metadata: {
@@ -259,21 +259,21 @@ export async function checkBreakdownWinCondition(
 
   // Check if host caused 3 breakdowns (host wins)
   if (freshState.hostBreakdownsCaused >= GAME_CONFIG.VICE.MAX_BREAKDOWNS_WIN) {
-    const winner = await ctx.db.get(freshState.hostId);
-    const loser = await ctx.db.get(freshState.opponentId);
+    const winner = await ctx.db.get(freshState.hostId as Id<"users">);
+    const loser = await ctx.db.get(freshState.opponentId as Id<"users">);
 
     await recordEventHelper(ctx, {
       lobbyId,
       gameId,
       turnNumber,
       eventType: "game_end",
-      playerId: freshState.hostId,
+      playerId: freshState.hostId as Id<"users">,
       playerUsername: "System",
       description: `${winner?.username || "Host"} wins by causing ${GAME_CONFIG.VICE.MAX_BREAKDOWNS_WIN} breakdowns!`,
       metadata: {
-        winnerId: freshState.hostId,
+        winnerId: freshState.hostId as Id<"users">,
         winnerUsername: winner?.username,
-        loserId: freshState.opponentId,
+        loserId: freshState.opponentId as Id<"users">,
         loserUsername: loser?.username,
         winCondition: "breakdown",
         breakdownsCaused: freshState.hostBreakdownsCaused,
@@ -283,7 +283,7 @@ export async function checkBreakdownWinCondition(
     // Update lobby status
     await ctx.db.patch(lobbyId, {
       status: "completed",
-      winnerId: freshState.hostId,
+      winnerId: freshState.hostId as Id<"users">,
     });
 
     logger.info("Game ended by breakdown win condition (host wins)", {
@@ -292,26 +292,26 @@ export async function checkBreakdownWinCondition(
       breakdownsCaused: freshState.hostBreakdownsCaused,
     });
 
-    return { gameEnded: true, winnerId: freshState.hostId };
+    return { gameEnded: true, winnerId: freshState.hostId as Id<"users"> };
   }
 
   // Check if opponent caused 3 breakdowns (opponent wins)
   if (freshState.opponentBreakdownsCaused >= GAME_CONFIG.VICE.MAX_BREAKDOWNS_WIN) {
-    const winner = await ctx.db.get(freshState.opponentId);
-    const loser = await ctx.db.get(freshState.hostId);
+    const winner = await ctx.db.get(freshState.opponentId as Id<"users">);
+    const loser = await ctx.db.get(freshState.hostId as Id<"users">);
 
     await recordEventHelper(ctx, {
       lobbyId,
       gameId,
       turnNumber,
       eventType: "game_end",
-      playerId: freshState.opponentId,
+      playerId: freshState.opponentId as Id<"users">,
       playerUsername: "System",
       description: `${winner?.username || "Opponent"} wins by causing ${GAME_CONFIG.VICE.MAX_BREAKDOWNS_WIN} breakdowns!`,
       metadata: {
-        winnerId: freshState.opponentId,
+        winnerId: freshState.opponentId as Id<"users">,
         winnerUsername: winner?.username,
-        loserId: freshState.hostId,
+        loserId: freshState.hostId as Id<"users">,
         loserUsername: loser?.username,
         winCondition: "breakdown",
         breakdownsCaused: freshState.opponentBreakdownsCaused,
@@ -321,7 +321,7 @@ export async function checkBreakdownWinCondition(
     // Update lobby status
     await ctx.db.patch(lobbyId, {
       status: "completed",
-      winnerId: freshState.opponentId,
+      winnerId: freshState.opponentId as Id<"users">,
     });
 
     logger.info("Game ended by breakdown win condition (opponent wins)", {
@@ -330,7 +330,7 @@ export async function checkBreakdownWinCondition(
       breakdownsCaused: freshState.opponentBreakdownsCaused,
     });
 
-    return { gameEnded: true, winnerId: freshState.opponentId };
+    return { gameEnded: true, winnerId: freshState.opponentId as Id<"users"> };
   }
 
   return { gameEnded: false };

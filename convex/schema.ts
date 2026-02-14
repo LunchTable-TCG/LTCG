@@ -1141,6 +1141,17 @@ export default defineSchema({
   // ECONOMY COMPONENT TABLES
   // ============================================================================
 
+  treasuryWallets: defineTable({
+    address: v.string(),
+    purpose: v.string(), // "fee_collection", "staking_rewards", etc.
+    status: v.string(), // "active", "deprecated"
+    label: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_purpose", ["purpose"])
+    .index("by_address", ["address"])
+    .index("by_status", ["status"]),
+
   playerCurrency: defineTable({
     userId: v.string(), // cross-component: users
     currencyType: v.string(), // "gold", "gems", "credits"
