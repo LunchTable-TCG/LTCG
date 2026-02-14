@@ -3,11 +3,16 @@
  *
  * Centralized configuration values used across feature modules.
  * Modify these values to adjust game economy and behavior.
+ *
+ * NOTE: Values below are being migrated to @lunchtable-tcg/config defaults.
+ * New constants should go to the config package.
+ * See packages/config/src/defaults.ts for config-driven equivalents.
  */
 
 /**
  * Rarity distribution weights (out of 1000)
  * Used for pack opening and random card generation
+ * → config.economy.rarityWeights
  */
 export const RARITY_WEIGHTS = {
   common: 550, // 55%
@@ -91,9 +96,10 @@ export const MARKETPLACE = {
 
 /**
  * Economy Configuration
+ * → config.economy.startingCurrency (WELCOME_BONUS_GOLD)
  */
 export const ECONOMY = {
-  /** Starting gold for new players */
+  /** Starting gold for new players → config.economy.startingCurrency */
   WELCOME_BONUS_GOLD: 500,
 
   /** Starting gems for new players */
@@ -144,6 +150,7 @@ export const LEADERBOARD = {
 
 /**
  * XP and Level Progression System
+ * → config.progression.xp
  */
 export const XP_SYSTEM = {
   /** Base XP required for level 2 */
@@ -152,16 +159,22 @@ export const XP_SYSTEM = {
   /** Gentle curve: each level requires 1.2x more XP than previous */
   XP_MULTIPLIER: 1.2,
 
-  /** XP awarded for story mode victory */
+  /** XP awarded for story mode victory → config.progression.xp.storyWin */
   STORY_WIN_XP: 50,
 
-  /** XP awarded for ranked match victory */
+  /** XP awarded for ranked match victory → config.progression.xp.rankedWin */
   RANKED_WIN_XP: 30,
 
-  /** XP awarded for casual match victory */
+  /** XP awarded for casual match victory → config.progression.xp.casualWin */
   CASUAL_WIN_XP: 20,
 
-  /** XP awarded for story mode loss (no penalty) */
+  /** XP awarded for ranked match loss (participation) → config.progression.xp.rankedLoss */
+  RANKED_LOSS_XP: 10,
+
+  /** XP awarded for casual match loss (participation) → config.progression.xp.casualLoss */
+  CASUAL_LOSS_XP: 5,
+
+  /** XP awarded for story mode loss (no penalty) → config.progression.xp.storyLoss */
   STORY_LOSS_XP: 0,
 
   /** XP awarded for daily login, scales with streak day (1-7) */
