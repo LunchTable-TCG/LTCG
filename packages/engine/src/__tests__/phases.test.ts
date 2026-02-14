@@ -36,9 +36,11 @@ describe("ADVANCE_PHASE", () => {
     expect(engine.getState().currentPhase).toBe("draw");
 
     const events = engine.decide({ type: "ADVANCE_PHASE" }, "host");
-    expect(events).toHaveLength(1);
+    expect(events).toHaveLength(2); // PHASE_CHANGED and CARD_DRAWN
     expect(events[0].type).toBe("PHASE_CHANGED");
     expect(events[0]).toMatchObject({ from: "draw", to: "standby" });
+    expect(events[1].type).toBe("CARD_DRAWN");
+    expect(events[1]).toMatchObject({ seat: "host" });
 
     engine.evolve(events);
     expect(engine.getState().currentPhase).toBe("standby");

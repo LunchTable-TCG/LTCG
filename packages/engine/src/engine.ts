@@ -9,6 +9,7 @@ import { decideSummon, decideSetMonster, decideFlipSummon, evolveSummon } from "
 import { decideSetSpellTrap, decideActivateSpell, decideActivateTrap, evolveSpellTrap } from "./rules/spellsTraps.js";
 import { decideDeclareAttack, evolveCombat } from "./rules/combat.js";
 import { evolveVice } from "./rules/vice.js";
+import { drawCard } from "./rules/stateBasedActions.js";
 
 export interface EngineOptions {
   config?: Partial<EngineConfig>;
@@ -217,6 +218,11 @@ function decide(state: GameState, command: Command, seat: Seat): EngineEvent[] {
       const from = state.currentPhase;
       const to = nextPhase(from);
       events.push({ type: "PHASE_CHANGED", from, to });
+
+      // When transitioning from draw phase, current player draws a card
+      if (from === "draw" && to === "standby") {
+        events.push(...drawCard(state, state.currentTurnPlayer));
+      }
       break;
     }
 
@@ -336,7 +342,28 @@ function evolve(state: GameState, events: EngineEvent[]): GameState {
         newState = evolveVice(newState, event);
         break;
 
-      // TODO: Handle other events (CARD_DRAWN, etc.)
+      case "CARD_DRAWN": {
+        const { seat, cardId } = event;
+        if (seat === "host") {
+          newState.hostDeck = newState.hostDeck.slice(1); // Remove top card from deck
+          newState.hostHand = [...newState.hostHand, cardId]; // Add to hand
+        } else {
+          newState.awayDeck = newState.awayDeck.slice(1);
+          newState.awayHand = [...newState.awayHand, cardId];
+        }
+        break;
+      }
+
+      case "DECK_OUT": {
+        const { seat } = event;
+        const winner = opponentSeat(seat);
+        newState.gameOver = true;
+        newState.winner = winner;
+        newState.winReason = "deck_out";
+        break;
+      }
+
+      // TODO: Handle other events
       default:
         break;
     }

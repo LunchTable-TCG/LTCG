@@ -296,6 +296,21 @@ export function evolveSummon(state: GameState, event: EngineEvent): GameState {
             newState.awayGraveyard = [...newState.awayGraveyard, cardId];
           }
         }
+      } else if (from === "hand") {
+        // Find which player's hand has this card
+        const hostIndex = newState.hostHand.indexOf(cardId);
+        if (hostIndex > -1) {
+          newState.hostHand = [...newState.hostHand];
+          newState.hostHand.splice(hostIndex, 1);
+          newState.hostGraveyard = [...newState.hostGraveyard, cardId];
+        } else {
+          const awayIndex = newState.awayHand.indexOf(cardId);
+          if (awayIndex > -1) {
+            newState.awayHand = [...newState.awayHand];
+            newState.awayHand.splice(awayIndex, 1);
+            newState.awayGraveyard = [...newState.awayGraveyard, cardId];
+          }
+        }
       }
       break;
     }
