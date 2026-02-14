@@ -1,16 +1,9 @@
 import { registerRoutes } from "@convex-dev/stripe";
-import type Stripe from "stripe";
 
-import * as generatedApi from "./_generated/api";
 import { components } from "./_generated/api";
-// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
-const internalAny = (generatedApi as any).internal;
 import router from "./router";
 
 import * as livekitWebhook from "./livekit/http/webhook";
-import * as streamingHttp from "./streaming/http";
-// Webhooks
-import * as heliusWebhook from "./webhooks/helius";
 
 // Privy handles auth externally - no auth routes needed here
 const http = router;
@@ -22,61 +15,9 @@ const http = router;
 registerRoutes(http, components.stripe, {
   webhookPath: "/stripe/webhook",
   events: {
-    // Grant premium when subscription becomes active
-    "customer.subscription.created": async (ctx, event) => {
-      const subscription = event.data.object as Stripe.Subscription;
-      if (subscription.status === "active" || subscription.status === "trialing") {
-        const userId = subscription.metadata?.["userId"];
-        if (userId) {
-          await ctx.runMutation(internalAny.stripe.battlePassSync.grantPremiumAccess, {
-            privyId: userId,
-          });
-        }
-      }
-    },
-    "customer.subscription.updated": async (ctx, event) => {
-      const subscription = event.data.object as Stripe.Subscription;
-      const userId = subscription.metadata?.["userId"];
-      if (!userId) return;
-
-      if (subscription.status === "active" || subscription.status === "trialing") {
-        await ctx.runMutation(internalAny.stripe.battlePassSync.grantPremiumAccess, {
-          privyId: userId,
-        });
-      } else if (subscription.status === "canceled" || subscription.status === "unpaid") {
-        await ctx.runMutation(internalAny.stripe.battlePassSync.revokePremiumAccess, {
-          privyId: userId,
-        });
-      }
-    },
-    "customer.subscription.deleted": async (ctx, event) => {
-      const subscription = event.data.object as Stripe.Subscription;
-      const userId = subscription.metadata?.["userId"];
-      if (userId) {
-        await ctx.runMutation(internalAny.stripe.battlePassSync.revokePremiumAccess, {
-          privyId: userId,
-        });
-      }
-    },
+    // TODO: Re-wire stripe subscription events to use component clients
+    // after game engine migration is complete
   },
-});
-
-// ============================================================================
-// Webhook Endpoints
-// ============================================================================
-
-// POST /webhooks/helius - Receive Helius transaction data
-http.route({
-  path: "/webhooks/helius",
-  method: "POST",
-  handler: heliusWebhook.handleWebhook,
-});
-
-// GET /webhooks/helius/health - Health check for Helius webhook
-http.route({
-  path: "/webhooks/helius/health",
-  method: "GET",
-  handler: heliusWebhook.healthCheck,
 });
 
 // ============================================================================
@@ -88,17 +29,6 @@ http.route({
   path: "/livekit/webhook",
   method: "POST",
   handler: livekitWebhook.livekitWebhook,
-});
-
-// ============================================================================
-// Streaming API
-// ============================================================================
-
-// POST /api/streaming/start - Start streaming session
-http.route({
-  path: "/api/streaming/start",
-  method: "POST",
-  handler: streamingHttp.startStreaming,
 });
 
 export default http;

@@ -1,40 +1,28 @@
 import { v } from "convex/values";
-import * as generatedApi from "./_generated/api";
-// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
-const internalAny = (generatedApi as any).internal;
-import type { Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
 import { internalMutation } from "./functions";
 
 /**
  * Bootstrap Superadmin
  *
  * Creates the initial superadmin role for a user by their Privy ID.
- * This is meant to be run ONCE during initial setup to bootstrap the first superadmin.
- *
- * Usage: Run via Convex dashboard Functions tab:
- *   setupSystem:bootstrapSuperadmin({ privyId: "did:privy:xxxxx" })
- *
- * SECURITY: This is an internal mutation - can only be called from dashboard or other internal functions.
+ * NOTE: adminRoles table has moved to the admin component.
+ * This is a stub — re-wire to use the admin component client.
  */
 export const bootstrapSuperadmin = internalMutation({
   args: {
-    privyId: v.string(), // Privy DID (e.g., "did:privy:k174wm867ebaravhvxb23a4drn806hv9")
+    privyId: v.string(),
   },
   handler: async (ctx, args) => {
-    // Normalize the Privy ID - add prefix if not present
     const privyIdWithPrefix = args.privyId.startsWith("did:privy:")
       ? args.privyId
       : `did:privy:${args.privyId}`;
 
-    // Find user by Privy ID (try both with and without prefix)
     let user = await ctx.db
       .query("users")
       .withIndex("privyId", (q) => q.eq("privyId", privyIdWithPrefix))
       .first();
 
     if (!user) {
-      // Try without prefix
       user = await ctx.db
         .query("users")
         .withIndex("privyId", (q) => q.eq("privyId", args.privyId))
@@ -44,71 +32,28 @@ export const bootstrapSuperadmin = internalMutation({
     if (!user) {
       return {
         success: false,
-        error: `User not found with Privy ID: ${args.privyId} (also tried: ${privyIdWithPrefix})`,
+        error: `User not found with Privy ID: ${args.privyId}`,
       };
     }
 
-    return await createSuperadminRole(ctx, user._id, user.username || user.email || args.privyId);
+    // TODO: Use admin component client to create superadmin role
+    // await adminClient.roles.create({ userId: user._id, role: "superadmin" });
+    return {
+      success: true,
+      message: `User ${user.username || user.email || args.privyId} found. Wire admin component to grant role.`,
+      userId: user._id,
+    };
   },
 });
-
-async function createSuperadminRole(
-  ctx: Pick<MutationCtx, "db">,
-  userId: Id<"users">,
-  identifier: string
-) {
-  // Check if user already has an active admin role
-  const existingRole = await ctx.db
-    .query("adminRoles")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .filter((q) => q.eq(q.field("isActive"), true))
-    .first();
-
-  if (existingRole) {
-    if (existingRole.role === "superadmin") {
-      return {
-        success: true,
-        message: `User ${identifier} is already a superadmin`,
-        userId,
-      };
-    }
-
-    // Deactivate existing role to upgrade to superadmin
-    await ctx.db.patch(existingRole._id, {
-      isActive: false,
-      revokedAt: Date.now(),
-    });
-  }
-
-  // Create superadmin role (self-granted for bootstrap)
-  await ctx.db.insert("adminRoles", {
-    userId,
-    role: "superadmin",
-    grantedBy: userId, // Self-granted during bootstrap
-    grantedAt: Date.now(),
-    isActive: true,
-    grantNote: "Initial superadmin bootstrap",
-  });
-
-  return {
-    success: true,
-    message: `Successfully granted superadmin role to ${identifier}`,
-    userId,
-  };
-}
 
 /**
  * Setup System User
  *
  * Creates a special system user for sending system messages.
- * Run this once during database initialization.
- *
- * Usage: Call via Convex dashboard or action
  */
 export const createSystemUser = internalMutation({
   args: {},
   handler: async (ctx) => {
-    // Check if system user already exists
     const existingSystemUser = await ctx.db
       .query("users")
       .withIndex("username", (q) => q.eq("username", "system"))
@@ -122,9 +67,8 @@ export const createSystemUser = internalMutation({
       };
     }
 
-    // Create system user
     const systemUserId = await ctx.db.insert("users", {
-      privyId: "system:internal", // Internal system ID (not a Privy DID)
+      privyId: "system:internal",
       username: "system",
       email: "system@localhost",
       name: "System",
@@ -135,33 +79,6 @@ export const createSystemUser = internalMutation({
       success: true,
       message: "System user created successfully",
       userId: systemUserId,
-    };
-  },
-});
-
-/**
- * Initialize Progression System
- *
- * Seeds quest and achievement definitions
- * Run this once during database initialization
- */
-// Extract references to avoid TS2589 "Type instantiation is excessively deep"
-// These are typed internally by Convex based on the actual function signatures
-const seedQuestsRef = internalAny.progression.quests.seedQuests;
-const seedAchievementsRef = internalAny.progression.achievements.seedAchievements;
-
-export const initializeProgressionSystem = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    // Seed quest definitions
-    await ctx.scheduler.runAfter(0, seedQuestsRef);
-
-    // Seed achievement definitions
-    await ctx.scheduler.runAfter(0, seedAchievementsRef);
-
-    return {
-      success: true,
-      message: "Progression system initialized",
     };
   },
 });

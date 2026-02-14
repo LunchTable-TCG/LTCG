@@ -7,12 +7,43 @@
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import {
-  type PityThresholds,
-  type RarityWeights,
-  type VariantRates,
-  getFullRngConfig,
-} from "../economy/rngConfig";
+// Types previously from economy/rngConfig — now inline since economy module moved to component
+export type RarityWeights = {
+  common: number;
+  uncommon: number;
+  rare: number;
+  epic: number;
+  legendary: number;
+};
+export type VariantRates = {
+  standard: number;
+  foil: number;
+  altArt: number;
+  fullArt: number;
+};
+export type PityThresholds = {
+  epic: number;
+  legendary: number;
+  fullArt: number;
+};
+type FullRngConfig = {
+  rarityWeights: RarityWeights;
+  variantRates: VariantRates;
+  pityThresholds: PityThresholds;
+};
+// Stub: returns constant defaults. Re-wire to economy component for dynamic config.
+async function getFullRngConfig(_ctx: unknown): Promise<FullRngConfig> {
+  return {
+    rarityWeights: RARITY_WEIGHTS as unknown as RarityWeights,
+    variantRates: {
+      standard: VARIANT_CONFIG.BASE_RATES.standard,
+      foil: VARIANT_CONFIG.BASE_RATES.foil,
+      altArt: VARIANT_CONFIG.BASE_RATES.alt_art,
+      fullArt: VARIANT_CONFIG.BASE_RATES.full_art,
+    },
+    pityThresholds: PITY_THRESHOLDS as unknown as PityThresholds,
+  };
+}
 import {
   ELO_SYSTEM,
   PITY_THRESHOLDS,
